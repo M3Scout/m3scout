@@ -21,6 +21,8 @@ import Dashboard from "./pages/app/Dashboard";
 import AppPlayers from "./pages/app/AppPlayers";
 import ScoutingReports from "./pages/app/ScoutingReports";
 import NewScoutingReport from "./pages/app/NewScoutingReport";
+import Competitions from "./pages/app/Competitions";
+import CompetitionsImport from "./pages/app/CompetitionsImport";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +50,8 @@ const App = () => (
             <Route path="players" element={<AppPlayers />} />
             <Route path="reports" element={<ScoutingReports />} />
             <Route path="reports/new" element={<NewScoutingReport />} />
+            <Route path="competitions" element={<Competitions />} />
+            <Route path="competitions/import" element={<CompetitionsImport />} />
           </Route>
 
           {/* Catch-all */}
