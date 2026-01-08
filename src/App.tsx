@@ -29,6 +29,7 @@ import EditScoutingReport from "./pages/app/EditScoutingReport";
 import ReportDetail from "./pages/app/ReportDetail";
 import Competitions from "./pages/app/Competitions";
 import CompetitionsImport from "./pages/app/CompetitionsImport";
+import Leads from "./pages/app/Leads";
 
 const queryClient = new QueryClient();
 
@@ -70,6 +71,7 @@ const App = () => (
               <Route path="reports/:id/edit" element={<EditScoutingReport />} />
               <Route path="competitions" element={<Competitions />} />
               <Route path="competitions/import" element={<CompetitionsImport />} />
+              <Route path="leads" element={<Leads />} />
             </Route>
 
             {/* Catch-all */}
