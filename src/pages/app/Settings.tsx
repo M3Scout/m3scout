@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +17,9 @@ import {
   Loader2,
   Save,
   Mail,
-  Calendar
+  Calendar,
+  Camera,
+  Trash2
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -26,6 +28,8 @@ export default function Settings() {
   const { user, isAdmin, isScout } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [profile, setProfile] = useState<{
     full_name: string | null;
     avatar_url: string | null;
@@ -79,6 +83,91 @@ export default function Settings() {
     setSaving(false);
   };
 
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast.error("Por favor, selecione uma imagem");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("A imagem deve ter no máximo 5MB");
+      return;
+    }
+
+    setUploadingAvatar(true);
+
+    try {
+      const fileExt = file.name.split(".").pop();
+      const filePath = `${user.id}/avatar.${fileExt}`;
+
+      // Upload to storage
+      const { error: uploadError } = await supabase.storage
+        .from("player-photos")
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from("player-photos")
+        .getPublicUrl(filePath);
+
+      const avatarUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+
+      // Update profile
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ avatar_url: avatarUrl })
+        .eq("user_id", user.id);
+
+      if (updateError) throw updateError;
+
+      setProfile({ ...profile, avatar_url: avatarUrl });
+      toast.success("Foto atualizada com sucesso");
+    } catch (error: any) {
+      console.error("Error uploading avatar:", error);
+      toast.error("Erro ao enviar foto");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    if (!user || !profile.avatar_url) return;
+
+    setUploadingAvatar(true);
+
+    try {
+      // Extract file path from URL
+      const urlParts = profile.avatar_url.split("/player-photos/");
+      if (urlParts.length > 1) {
+        const filePath = urlParts[1].split("?")[0];
+        await supabase.storage.from("player-photos").remove([filePath]);
+      }
+
+      // Update profile
+      const { error } = await supabase
+        .from("profiles")
+        .update({ avatar_url: null })
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+
+      setProfile({ ...profile, avatar_url: null });
+      toast.success("Foto removida");
+    } catch (error: any) {
+      console.error("Error removing avatar:", error);
+      toast.error("Erro ao remover foto");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   const getRoleBadge = () => {
     if (isAdmin) {
       return <Badge className="bg-red-500 text-white">Admin</Badge>;
@@ -128,17 +217,52 @@ export default function Settings() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex items-center gap-4">
-              <Avatar className="h-20 w-20">
-                <AvatarImage src={profile.avatar_url || undefined} />
-                <AvatarFallback className="text-lg bg-primary text-primary-foreground">
-                  {getInitials(profile.full_name)}
-                </AvatarFallback>
-              </Avatar>
-              <div>
+              <div className="relative">
+                <Avatar className="h-20 w-20">
+                  <AvatarImage src={profile.avatar_url || undefined} />
+                  <AvatarFallback className="text-lg bg-primary text-primary-foreground">
+                    {getInitials(profile.full_name)}
+                  </AvatarFallback>
+                </Avatar>
+                {uploadingAvatar && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-background/80 rounded-full">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  </div>
+                )}
+              </div>
+              <div className="space-y-2">
                 <p className="font-medium text-lg">
                   {profile.full_name || "Sem nome"}
                 </p>
-                <p className="text-sm text-muted-foreground">{user?.email}</p>
+                <div className="flex gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                    className="hidden"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingAvatar}
+                  >
+                    <Camera className="h-4 w-4" />
+                    Alterar foto
+                  </Button>
+                  {profile.avatar_url && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleRemoveAvatar}
+                      disabled={uploadingAvatar}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
 
