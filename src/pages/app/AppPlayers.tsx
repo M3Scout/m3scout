@@ -182,9 +182,9 @@ const AppPlayers = () => {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem asChild>
-                            <Link to={`/players/${player.id}`}>
+                            <Link to={`/app/players/${player.id}`}>
                               <Eye className="w-4 h-4 mr-2" />
-                              Ver Perfil
+                              Ver Detalhes
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem asChild>

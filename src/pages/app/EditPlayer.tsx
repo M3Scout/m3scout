@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Upload, User, Shield, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { DeletePlayerDialog } from "@/components/players/DeletePlayerDialog";
 
 const positions = [
   "Goleiro",
@@ -49,7 +50,8 @@ export default function EditPlayer() {
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [existingPhotoUrl, setExistingPhotoUrl] = useState<string | null>(null);
-
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [playerName, setPlayerName] = useState("");
   const [formData, setFormData] = useState({
     full_name: "",
     position: "",
@@ -115,6 +117,7 @@ export default function EditPlayer() {
         setPhotoPreview(data.photo_url);
       }
 
+      setPlayerName(data.full_name);
       setFetching(false);
     };
 
@@ -553,20 +556,39 @@ export default function EditPlayer() {
         <Separator />
 
         {/* Actions */}
-        <div className="flex justify-end gap-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => navigate("/app/players")}
-          >
-            Cancelar
-          </Button>
-          <Button type="submit" disabled={loading}>
-            {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Salvar Alterações
-          </Button>
+        <div className="flex justify-between gap-4">
+          {isAdmin && (
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => setDeleteDialogOpen(true)}
+            >
+              <Trash2 className="w-4 h-4" />
+              Excluir Atleta
+            </Button>
+          )}
+          <div className="flex gap-4 ml-auto">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate("/app/players")}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Salvar Alterações
+            </Button>
+          </div>
         </div>
       </form>
+
+      <DeletePlayerDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        player={id ? { id, full_name: playerName } : null}
+        onSuccess={() => navigate("/app/players")}
+      />
     </div>
   );
 }
