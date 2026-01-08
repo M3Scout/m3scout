@@ -143,17 +143,26 @@ const Competitions = () => {
     setIsDeleting(true);
 
     try {
-      const { error } = await supabase
+      // First, delete all scouting reports (they have FK to competitions)
+      const { error: reportsError } = await supabase
+        .from("scouting_reports")
+        .delete()
+        .neq("id", "00000000-0000-0000-0000-000000000000");
+
+      if (reportsError) throw reportsError;
+
+      // Then, delete all competitions
+      const { error: competitionsError } = await supabase
         .from("competitions")
         .delete()
-        .neq("id", "00000000-0000-0000-0000-000000000000"); // Delete all rows
+        .neq("id", "00000000-0000-0000-0000-000000000000");
 
-      if (error) throw error;
+      if (competitionsError) throw competitionsError;
 
       setCompetitions([]);
       setDeleteDialogOpen(false);
       setConfirmationInput("");
-      toast.success("Todas as competições foram removidas.");
+      toast.success("Todas as competições e relatórios vinculados foram removidos.");
     } catch (error: any) {
       console.error("Error deleting competitions:", error);
       toast.error(error.message || "Erro ao excluir competições");
@@ -196,7 +205,8 @@ const Competitions = () => {
                   <AlertDialogDescription className="space-y-4">
                     <p>
                       Esta ação irá <strong>remover permanentemente</strong> todas as{" "}
-                      <strong>{competitions.length} competições</strong> do sistema.
+                      <strong>{competitions.length} competições</strong> e{" "}
+                      <strong>todos os relatórios de scouting vinculados</strong>.
                     </p>
                     <p className="text-destructive font-medium">
                       ⚠️ Esta ação NÃO pode ser desfeita!
