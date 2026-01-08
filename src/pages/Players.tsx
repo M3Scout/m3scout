@@ -1,114 +1,47 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { PlayerCard } from "@/components/players/PlayerCard";
 import { PlayerFilters } from "@/components/players/PlayerFilters";
+import { Loader2 } from "lucide-react";
 
-// Mock data - will be replaced with real data from Supabase
-const allPlayers = [
-  {
-    id: "1",
-    slug: "gabriel-santos",
-    name: "Gabriel Santos",
-    position: "Meia Atacante",
-    secondaryPositions: ["Ponta Direita", "Segundo Volante"],
-    age: 22,
-    nationality: "Brasil",
-    currentClub: "EC Bahia",
-    imageUrl: "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=400&h=600&fit=crop",
-    rating: 4,
-  },
-  {
-    id: "2",
-    slug: "lucas-oliveira",
-    name: "Lucas Oliveira",
-    position: "Zagueiro",
-    secondaryPositions: ["Lateral Direito"],
-    age: 24,
-    nationality: "Brasil",
-    currentClub: "Cruzeiro EC",
-    imageUrl: "https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=400&h=600&fit=crop",
-    rating: 5,
-  },
-  {
-    id: "3",
-    slug: "matheus-costa",
-    name: "Matheus Costa",
-    position: "Centroavante",
-    secondaryPositions: ["Ponta Esquerda"],
-    age: 20,
-    nationality: "Brasil",
-    currentClub: "Santos FC",
-    imageUrl: "https://images.unsplash.com/photo-1517466787929-bc90951d0974?w=400&h=600&fit=crop",
-    rating: 4,
-  },
-  {
-    id: "4",
-    slug: "pedro-almeida",
-    name: "Pedro Almeida",
-    position: "Volante",
-    secondaryPositions: ["Meio-campo"],
-    age: 23,
-    nationality: "Brasil",
-    currentClub: "Fluminense FC",
-    imageUrl: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=400&h=600&fit=crop",
-    rating: 3,
-  },
-  {
-    id: "5",
-    slug: "rafael-silva",
-    name: "Rafael Silva",
-    position: "Goleiro",
-    secondaryPositions: [],
-    age: 26,
-    nationality: "Brasil",
-    currentClub: "Atlético Mineiro",
-    imageUrl: "https://images.unsplash.com/photo-1543326727-cf6c39e8f84c?w=400&h=600&fit=crop",
-    rating: 4,
-  },
-  {
-    id: "6",
-    slug: "diego-martinez",
-    name: "Diego Martínez",
-    position: "Lateral Esquerdo",
-    secondaryPositions: ["Meia Esquerda"],
-    age: 21,
-    nationality: "Argentina",
-    currentClub: "Racing Club",
-    imageUrl: "https://images.unsplash.com/photo-1560272564-c83b66b1ad12?w=400&h=600&fit=crop",
-    rating: 3,
-  },
-  {
-    id: "7",
-    slug: "thiago-fernandes",
-    name: "Thiago Fernandes",
-    position: "Ponta Direita",
-    secondaryPositions: ["Meia Atacante"],
-    age: 19,
-    nationality: "Brasil",
-    currentClub: "São Paulo FC",
-    imageUrl: "https://images.unsplash.com/photo-1551958219-acbc608c6377?w=400&h=600&fit=crop",
-    rating: 4,
-  },
-  {
-    id: "8",
-    slug: "andre-souza",
-    name: "André Souza",
-    position: "Meio-campo",
-    secondaryPositions: ["Volante", "Meia Atacante"],
-    age: 25,
-    nationality: "Brasil",
-    currentClub: "Internacional",
-    imageUrl: "https://images.unsplash.com/photo-1518604666860-9ed391f76460?w=400&h=600&fit=crop",
-    rating: 5,
-  },
-];
+interface Player {
+  id: string;
+  slug: string;
+  full_name: string;
+  position: string;
+  secondary_positions: string[];
+  age: number | null;
+  nationality: string;
+  current_club: string | null;
+  photo_url: string | null;
+}
 
 const Players = () => {
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [positionFilter, setPositionFilter] = useState("todos");
   const [nationalityFilter, setNationalityFilter] = useState("todos");
 
-  const filteredPlayers = allPlayers.filter((player) => {
-    const matchesSearch = player.name.toLowerCase().includes(searchQuery.toLowerCase());
+  useEffect(() => {
+    const fetchPlayers = async () => {
+      const { data, error } = await supabase
+        .from("players")
+        .select("id, slug, full_name, position, secondary_positions, age, nationality, current_club, photo_url")
+        .eq("is_public", true)
+        .order("full_name");
+
+      if (data) {
+        setPlayers(data);
+      }
+      setLoading(false);
+    };
+
+    fetchPlayers();
+  }, []);
+
+  const filteredPlayers = players.filter((player) => {
+    const matchesSearch = player.full_name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesPosition = positionFilter === "todos" || 
       player.position.toLowerCase().includes(positionFilter);
     const matchesNationality = nationalityFilter === "todos" || 
@@ -150,8 +83,12 @@ const Players = () => {
           </p>
         </div>
 
-        {/* Players Grid */}
-        {filteredPlayers.length > 0 ? (
+        {/* Loading State */}
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        ) : filteredPlayers.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredPlayers.map((player, index) => (
               <div 
@@ -159,7 +96,17 @@ const Players = () => {
                 className="animate-scale-in"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
-                <PlayerCard {...player} />
+                <PlayerCard
+                  id={player.id}
+                  slug={player.slug}
+                  name={player.full_name}
+                  position={player.position}
+                  secondaryPositions={player.secondary_positions || []}
+                  age={player.age || 0}
+                  nationality={player.nationality}
+                  currentClub={player.current_club || ""}
+                  imageUrl={player.photo_url || "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=400&h=600&fit=crop"}
+                />
               </div>
             ))}
           </div>

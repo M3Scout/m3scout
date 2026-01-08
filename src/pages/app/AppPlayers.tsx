@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -9,7 +10,8 @@ import {
   MoreVertical,
   Eye,
   FileText,
-  Edit
+  Edit,
+  Loader2
 } from "lucide-react";
 import { RatingStars } from "@/components/players/RatingStars";
 import {
@@ -19,67 +21,40 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-// Mock data
-const players = [
-  {
-    id: "1",
-    name: "Gabriel Santos",
-    position: "Meia Atacante",
-    age: 22,
-    nationality: "Brasil",
-    currentClub: "EC Bahia",
-    rating: 4,
-    reportsCount: 8,
-    lastReport: "2024-01-15",
-    contractEnd: "2025-12-31",
-    isPublic: true,
-  },
-  {
-    id: "2",
-    name: "Lucas Oliveira",
-    position: "Zagueiro",
-    age: 24,
-    nationality: "Brasil",
-    currentClub: "Cruzeiro EC",
-    rating: 5,
-    reportsCount: 12,
-    lastReport: "2024-01-14",
-    contractEnd: "2026-06-30",
-    isPublic: true,
-  },
-  {
-    id: "3",
-    name: "Matheus Costa",
-    position: "Centroavante",
-    age: 20,
-    nationality: "Brasil",
-    currentClub: "Santos FC",
-    rating: 4,
-    reportsCount: 6,
-    lastReport: "2024-01-10",
-    contractEnd: "2025-06-30",
-    isPublic: true,
-  },
-  {
-    id: "4",
-    name: "Pedro Almeida",
-    position: "Volante",
-    age: 23,
-    nationality: "Brasil",
-    currentClub: "Fluminense FC",
-    rating: 3,
-    reportsCount: 4,
-    lastReport: "2024-01-13",
-    contractEnd: "2024-12-31",
-    isPublic: false,
-  },
-];
+interface Player {
+  id: string;
+  full_name: string;
+  position: string;
+  age: number | null;
+  nationality: string;
+  current_club: string | null;
+  contract_end: string | null;
+  is_public: boolean;
+}
 
 const AppPlayers = () => {
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
+  useEffect(() => {
+    const fetchPlayers = async () => {
+      const { data, error } = await supabase
+        .from("players")
+        .select("id, full_name, position, age, nationality, current_club, contract_end, is_public")
+        .order("full_name");
+
+      if (data) {
+        setPlayers(data);
+      }
+      setLoading(false);
+    };
+
+    fetchPlayers();
+  }, []);
+
   const filteredPlayers = players.filter((player) =>
-    player.name.toLowerCase().includes(searchQuery.toLowerCase())
+    player.full_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -117,104 +92,102 @@ const AppPlayers = () => {
       </div>
 
       {/* Table */}
-      <div className="glass-card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border/50">
-                <th className="text-left p-4 text-sm font-medium text-muted-foreground">
-                  Atleta
-                </th>
-                <th className="text-left p-4 text-sm font-medium text-muted-foreground">
-                  Posição
-                </th>
-                <th className="text-left p-4 text-sm font-medium text-muted-foreground">
-                  Clube
-                </th>
-                <th className="text-left p-4 text-sm font-medium text-muted-foreground">
-                  Rating
-                </th>
-                <th className="text-left p-4 text-sm font-medium text-muted-foreground">
-                  Relatórios
-                </th>
-                <th className="text-left p-4 text-sm font-medium text-muted-foreground">
-                  Contrato
-                </th>
-                <th className="text-left p-4 text-sm font-medium text-muted-foreground">
-                  Status
-                </th>
-                <th className="text-right p-4 text-sm font-medium text-muted-foreground">
-                  Ações
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredPlayers.map((player) => (
-                <tr 
-                  key={player.id}
-                  className="border-b border-border/30 hover:bg-secondary/30 transition-colors"
-                >
-                  <td className="p-4">
-                    <div>
-                      <p className="font-medium">{player.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {player.age} anos • {player.nationality}
-                      </p>
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    <span className="position-badge">{player.position}</span>
-                  </td>
-                  <td className="p-4 text-muted-foreground">
-                    {player.currentClub}
-                  </td>
-                  <td className="p-4">
-                    <RatingStars rating={player.rating} size="sm" />
-                  </td>
-                  <td className="p-4 text-muted-foreground">
-                    {player.reportsCount}
-                  </td>
-                  <td className="p-4 text-muted-foreground">
-                    {new Date(player.contractEnd).toLocaleDateString("pt-BR")}
-                  </td>
-                  <td className="p-4">
-                    <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
-                      player.isPublic 
-                        ? "bg-primary/20 text-primary" 
-                        : "bg-muted text-muted-foreground"
-                    }`}>
-                      {player.isPublic ? "Público" : "Privado"}
-                    </span>
-                  </td>
-                  <td className="p-4 text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreVertical className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
-                          <Eye className="w-4 h-4 mr-2" />
-                          Ver Perfil
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Edit className="w-4 h-4 mr-2" />
-                          Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <FileText className="w-4 h-4 mr-2" />
-                          Novo Relatório
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {loading ? (
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
-      </div>
+      ) : (
+        <div className="glass-card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border/50">
+                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">
+                    Atleta
+                  </th>
+                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">
+                    Posição
+                  </th>
+                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">
+                    Clube
+                  </th>
+                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">
+                    Contrato
+                  </th>
+                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">
+                    Status
+                  </th>
+                  <th className="text-right p-4 text-sm font-medium text-muted-foreground">
+                    Ações
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredPlayers.map((player) => (
+                  <tr 
+                    key={player.id}
+                    className="border-b border-border/30 hover:bg-secondary/30 transition-colors"
+                  >
+                    <td className="p-4">
+                      <div>
+                        <p className="font-medium">{player.full_name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {player.age ? `${player.age} anos` : ''}{player.age && player.nationality ? ' • ' : ''}{player.nationality}
+                        </p>
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <span className="position-badge">{player.position}</span>
+                    </td>
+                    <td className="p-4 text-muted-foreground">
+                      {player.current_club || '-'}
+                    </td>
+                    <td className="p-4 text-muted-foreground">
+                      {player.contract_end 
+                        ? new Date(player.contract_end).toLocaleDateString("pt-BR") 
+                        : '-'}
+                    </td>
+                    <td className="p-4">
+                      <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
+                        player.is_public 
+                          ? "bg-primary/20 text-primary" 
+                          : "bg-muted text-muted-foreground"
+                      }`}>
+                        {player.is_public ? "Público" : "Privado"}
+                      </span>
+                    </td>
+                    <td className="p-4 text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreVertical className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem>
+                            <Eye className="w-4 h-4 mr-2" />
+                            Ver Perfil
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <Edit className="w-4 h-4 mr-2" />
+                            Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link to={`/app/reports/new?player=${player.id}`}>
+                              <FileText className="w-4 h-4 mr-2" />
+                              Novo Relatório
+                            </Link>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
