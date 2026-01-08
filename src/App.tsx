@@ -23,6 +23,7 @@ import Dashboard from "./pages/app/Dashboard";
 import AppPlayers from "./pages/app/AppPlayers";
 import NewPlayer from "./pages/app/NewPlayer";
 import EditPlayer from "./pages/app/EditPlayer";
+import PlayerDetail from "./pages/app/PlayerDetail";
 import ScoutingReports from "./pages/app/ScoutingReports";
 import NewScoutingReport from "./pages/app/NewScoutingReport";
 import EditScoutingReport from "./pages/app/EditScoutingReport";
@@ -65,6 +66,7 @@ const App = () => (
               <Route index element={<Dashboard />} />
               <Route path="players" element={<AppPlayers />} />
               <Route path="players/new" element={<NewPlayer />} />
+              <Route path="players/:id" element={<PlayerDetail />} />
               <Route path="players/:id/edit" element={<EditPlayer />} />
               <Route path="reports" element={<ScoutingReports />} />
               <Route path="reports/new" element={<NewScoutingReport />} />
