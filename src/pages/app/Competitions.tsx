@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -7,10 +7,11 @@ import {
   Search, 
   Upload, 
   Trophy,
-  Filter,
   MoreVertical,
   Edit,
-  Trash2
+  Trash2,
+  Loader2,
+  MapPin
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -45,6 +46,7 @@ const Competitions = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [stateFilter, setStateFilter] = useState("all");
 
   useEffect(() => {
     fetchCompetitions();
@@ -62,11 +64,25 @@ const Competitions = () => {
     setLoading(false);
   };
 
-  const filteredCompetitions = competitions.filter((comp) => {
-    const matchesSearch = comp.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = typeFilter === "all" || comp.type === typeFilter;
-    return matchesSearch && matchesType;
-  });
+  // Get unique states for filter
+  const uniqueStates = useMemo(() => {
+    const states = new Set<string>();
+    competitions.forEach((comp) => {
+      if (comp.state) states.add(comp.state);
+    });
+    return Array.from(states).sort();
+  }, [competitions]);
+
+  const filteredCompetitions = useMemo(() => {
+    return competitions.filter((comp) => {
+      const matchesSearch = 
+        comp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (comp.state && comp.state.toLowerCase().includes(searchQuery.toLowerCase()));
+      const matchesType = typeFilter === "all" || comp.type === typeFilter;
+      const matchesState = stateFilter === "all" || comp.state === stateFilter;
+      return matchesSearch && matchesType && matchesState;
+    });
+  }, [competitions, searchQuery, typeFilter, stateFilter]);
 
   const getTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
@@ -87,6 +103,14 @@ const Competitions = () => {
     };
     return colors[type] || "bg-muted text-muted-foreground";
   };
+
+  const clearFilters = () => {
+    setSearchQuery("");
+    setTypeFilter("all");
+    setStateFilter("all");
+  };
+
+  const hasActiveFilters = searchQuery || typeFilter !== "all" || stateFilter !== "all";
 
   return (
     <div className="space-y-6">
@@ -115,7 +139,7 @@ const Competitions = () => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="Buscar competição..."
+            placeholder="Buscar por nome ou estado..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10 input-dark"
@@ -133,12 +157,31 @@ const Competitions = () => {
             <SelectItem value="continental">Continental</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={stateFilter} onValueChange={setStateFilter}>
+          <SelectTrigger className="w-full md:w-[180px] input-dark">
+            <MapPin className="w-4 h-4 mr-2" />
+            <SelectValue placeholder="Estado" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os estados</SelectItem>
+            {uniqueStates.map((state) => (
+              <SelectItem key={state} value={state}>
+                {state}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {hasActiveFilters && (
+          <Button variant="ghost" onClick={clearFilters} className="shrink-0">
+            Limpar filtros
+          </Button>
+        )}
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <div className="glass-card p-4 text-center">
-          <p className="text-2xl font-bold text-primary">{competitions.length}</p>
+          <p className="text-2xl font-bold text-foreground">{competitions.length}</p>
           <p className="text-sm text-muted-foreground">Total</p>
         </div>
         <div className="glass-card p-4 text-center">
@@ -159,26 +202,50 @@ const Competitions = () => {
           </p>
           <p className="text-sm text-muted-foreground">Estaduais</p>
         </div>
+        <div className="glass-card p-4 text-center">
+          <p className="text-2xl font-bold text-purple-400">
+            {competitions.filter(c => c.type === 'continental').length}
+          </p>
+          <p className="text-sm text-muted-foreground">Continentais</p>
+        </div>
       </div>
+
+      {/* Results count */}
+      {hasActiveFilters && (
+        <p className="text-sm text-muted-foreground">
+          Mostrando {filteredCompetitions.length} de {competitions.length} competições
+        </p>
+      )}
 
       {/* Table */}
       {loading ? (
-        <div className="text-center py-12 text-muted-foreground">
-          Carregando competições...
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
       ) : filteredCompetitions.length === 0 ? (
         <div className="glass-card p-12 text-center">
           <Trophy className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">Nenhuma competição encontrada</h3>
+          <h3 className="text-lg font-semibold mb-2">
+            {hasActiveFilters ? "Nenhuma competição encontrada" : "Nenhuma competição cadastrada"}
+          </h3>
           <p className="text-muted-foreground mb-6">
-            Importe um arquivo CSV para adicionar competições.
+            {hasActiveFilters 
+              ? "Tente ajustar os filtros de busca."
+              : "Importe um arquivo CSV para adicionar competições."
+            }
           </p>
-          <Link to="/app/competitions/import">
-            <Button variant="gradient">
-              <Upload className="w-4 h-4" />
-              Importar CSV
+          {hasActiveFilters ? (
+            <Button variant="outline" onClick={clearFilters}>
+              Limpar filtros
             </Button>
-          </Link>
+          ) : (
+            <Link to="/app/competitions/import">
+              <Button variant="gradient">
+                <Upload className="w-4 h-4" />
+                Importar CSV
+              </Button>
+            </Link>
+          )}
         </div>
       ) : (
         <div className="glass-card overflow-hidden">
@@ -193,7 +260,10 @@ const Competitions = () => {
                     Tipo
                   </th>
                   <th className="text-left p-4 text-sm font-medium text-muted-foreground">
-                    Divisão
+                    Estado
+                  </th>
+                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">
+                    Divisão / Fase
                   </th>
                   <th className="text-left p-4 text-sm font-medium text-muted-foreground">
                     Coeficiente
@@ -216,7 +286,7 @@ const Competitions = () => {
                       <div>
                         <p className="font-medium">{comp.name}</p>
                         <p className="text-sm text-muted-foreground">
-                          {comp.country}{comp.state && ` • ${comp.state}`}
+                          {comp.country}
                         </p>
                       </div>
                     </td>
@@ -224,6 +294,9 @@ const Competitions = () => {
                       <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(comp.type)}`}>
                         {getTypeLabel(comp.type)}
                       </span>
+                    </td>
+                    <td className="p-4 text-muted-foreground">
+                      {comp.state || '-'}
                     </td>
                     <td className="p-4 text-muted-foreground">
                       {comp.division || '-'}{comp.phase && ` / ${comp.phase}`}
