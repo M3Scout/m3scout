@@ -166,13 +166,17 @@ const AppPlayers = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
-                            <Eye className="w-4 h-4 mr-2" />
-                            Ver Perfil
+                          <DropdownMenuItem asChild>
+                            <Link to={`/players/${player.id}`}>
+                              <Eye className="w-4 h-4 mr-2" />
+                              Ver Perfil
+                            </Link>
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Edit className="w-4 h-4 mr-2" />
-                            Editar
+                          <DropdownMenuItem asChild>
+                            <Link to={`/app/players/${player.id}/edit`}>
+                              <Edit className="w-4 h-4 mr-2" />
+                              Editar
+                            </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem asChild>
                             <Link to={`/app/reports/new?player=${player.id}`}>
