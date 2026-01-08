@@ -5,6 +5,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   Select,
   SelectContent,
@@ -23,7 +25,15 @@ import {
   Loader2,
   Trash2,
   X,
-  Star
+  Star,
+  LayoutGrid,
+  LayoutList,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  User,
+  MapPin,
+  Calendar
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -49,7 +59,12 @@ interface Player {
   contract_end: string | null;
   is_public: boolean;
   avg_score?: number | null;
+  photo_url?: string | null;
 }
+
+type SortField = "full_name" | "position" | "current_club" | "avg_score" | "contract_end" | "is_public";
+type SortDirection = "asc" | "desc";
+type ViewMode = "table" | "grid";
 
 const AppPlayers = () => {
   const { isAdmin } = useAuth();
@@ -59,6 +74,11 @@ const AppPlayers = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [playerToDelete, setPlayerToDelete] = useState<{ id: string; full_name: string } | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("table");
+  
+  // Sorting
+  const [sortField, setSortField] = useState<SortField>("full_name");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   
   // Filters
   const [positionFilter, setPositionFilter] = useState<string>("all");
@@ -67,10 +87,10 @@ const AppPlayers = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const fetchPlayers = async () => {
-    // Fetch players
+    // Fetch players with photo_url
     const { data: playersData, error: playersError } = await supabase
       .from("players")
-      .select("id, full_name, position, age, nationality, current_club, contract_end, is_public")
+      .select("id, full_name, position, age, nationality, current_club, contract_end, is_public, photo_url")
       .order("full_name");
 
     if (playersError || !playersData) {
@@ -115,8 +135,9 @@ const AppPlayers = () => {
     return { positions, nationalities, clubs };
   }, [players]);
 
-  const filteredPlayers = useMemo(() => {
-    return players.filter((player) => {
+  const filteredAndSortedPlayers = useMemo(() => {
+    // Filter
+    const filtered = players.filter((player) => {
       const matchesSearch = player.full_name.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesPosition = positionFilter === "all" || player.position === positionFilter;
       const matchesNationality = nationalityFilter === "all" || player.nationality === nationalityFilter;
@@ -128,7 +149,46 @@ const AppPlayers = () => {
 
       return matchesSearch && matchesPosition && matchesNationality && matchesClub && matchesStatus;
     });
-  }, [players, searchQuery, positionFilter, nationalityFilter, clubFilter, statusFilter]);
+
+    // Sort
+    return filtered.sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortField) {
+        case "full_name":
+          aValue = a.full_name.toLowerCase();
+          bValue = b.full_name.toLowerCase();
+          break;
+        case "position":
+          aValue = a.position.toLowerCase();
+          bValue = b.position.toLowerCase();
+          break;
+        case "current_club":
+          aValue = (a.current_club || "").toLowerCase();
+          bValue = (b.current_club || "").toLowerCase();
+          break;
+        case "avg_score":
+          aValue = a.avg_score ?? -1;
+          bValue = b.avg_score ?? -1;
+          break;
+        case "contract_end":
+          aValue = a.contract_end ? new Date(a.contract_end).getTime() : 0;
+          bValue = b.contract_end ? new Date(b.contract_end).getTime() : 0;
+          break;
+        case "is_public":
+          aValue = a.is_public ? 1 : 0;
+          bValue = b.is_public ? 1 : 0;
+          break;
+        default:
+          return 0;
+      }
+
+      if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
+      if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [players, searchQuery, positionFilter, nationalityFilter, clubFilter, statusFilter, sortField, sortDirection]);
 
   const activeFiltersCount = [positionFilter, nationalityFilter, clubFilter, statusFilter].filter(
     (f) => f !== "all"
@@ -139,6 +199,22 @@ const AppPlayers = () => {
     setNationalityFilter("all");
     setClubFilter("all");
     setStatusFilter("all");
+  };
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) return <ArrowUpDown className="w-3 h-3 ml-1 opacity-50" />;
+    return sortDirection === "asc" 
+      ? <ArrowUp className="w-3 h-3 ml-1" /> 
+      : <ArrowDown className="w-3 h-3 ml-1" />;
   };
 
   const handleDeleteClick = (player: Player) => {
@@ -181,19 +257,35 @@ const AppPlayers = () => {
               className="pl-10 input-dark"
             />
           </div>
-          <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
-            <CollapsibleTrigger asChild>
-              <Button variant="outline" className="relative">
-                <Filter className="w-4 h-4" />
-                Filtros
-                {activeFiltersCount > 0 && (
-                  <Badge className="ml-2 h-5 w-5 p-0 flex items-center justify-center text-xs">
-                    {activeFiltersCount}
-                  </Badge>
-                )}
-              </Button>
-            </CollapsibleTrigger>
-          </Collapsible>
+          <div className="flex gap-2">
+            <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
+              <CollapsibleTrigger asChild>
+                <Button variant="outline" className="relative">
+                  <Filter className="w-4 h-4" />
+                  Filtros
+                  {activeFiltersCount > 0 && (
+                    <Badge className="ml-2 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                      {activeFiltersCount}
+                    </Badge>
+                  )}
+                </Button>
+              </CollapsibleTrigger>
+            </Collapsible>
+            
+            <ToggleGroup
+              type="single"
+              value={viewMode}
+              onValueChange={(value) => value && setViewMode(value as ViewMode)}
+              className="border rounded-md"
+            >
+              <ToggleGroupItem value="table" aria-label="Visualização em tabela" className="px-3">
+                <LayoutList className="w-4 h-4" />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="grid" aria-label="Visualização em cards" className="px-3">
+                <LayoutGrid className="w-4 h-4" />
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
         </div>
 
         {/* Advanced Filters */}
@@ -282,37 +374,74 @@ const AppPlayers = () => {
 
       {/* Results count */}
       <p className="text-sm text-muted-foreground">
-        {filteredPlayers.length} atleta{filteredPlayers.length !== 1 ? "s" : ""} encontrado{filteredPlayers.length !== 1 ? "s" : ""}
+        {filteredAndSortedPlayers.length} atleta{filteredAndSortedPlayers.length !== 1 ? "s" : ""} encontrado{filteredAndSortedPlayers.length !== 1 ? "s" : ""}
       </p>
 
-      {/* Table */}
+      {/* Content */}
       {loading ? (
         <div className="flex items-center justify-center py-16">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
-      ) : (
+      ) : viewMode === "table" ? (
+        /* Table View */
         <div className="glass-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border/50">
-                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">
-                    Atleta
+                  <th 
+                    className="text-left p-4 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
+                    onClick={() => handleSort("full_name")}
+                  >
+                    <span className="flex items-center">
+                      Atleta
+                      <SortIcon field="full_name" />
+                    </span>
                   </th>
-                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">
-                    Posição
+                  <th 
+                    className="text-left p-4 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
+                    onClick={() => handleSort("position")}
+                  >
+                    <span className="flex items-center">
+                      Posição
+                      <SortIcon field="position" />
+                    </span>
                   </th>
-                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">
-                    Clube
+                  <th 
+                    className="text-left p-4 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
+                    onClick={() => handleSort("current_club")}
+                  >
+                    <span className="flex items-center">
+                      Clube
+                      <SortIcon field="current_club" />
+                    </span>
                   </th>
-                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">
-                    Média Score
+                  <th 
+                    className="text-left p-4 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
+                    onClick={() => handleSort("avg_score")}
+                  >
+                    <span className="flex items-center">
+                      Média Score
+                      <SortIcon field="avg_score" />
+                    </span>
                   </th>
-                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">
-                    Contrato
+                  <th 
+                    className="text-left p-4 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
+                    onClick={() => handleSort("contract_end")}
+                  >
+                    <span className="flex items-center">
+                      Contrato
+                      <SortIcon field="contract_end" />
+                    </span>
                   </th>
-                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">
-                    Status
+                  <th 
+                    className="text-left p-4 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
+                    onClick={() => handleSort("is_public")}
+                  >
+                    <span className="flex items-center">
+                      Status
+                      <SortIcon field="is_public" />
+                    </span>
                   </th>
                   <th className="text-right p-4 text-sm font-medium text-muted-foreground">
                     Ações
@@ -320,7 +449,7 @@ const AppPlayers = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredPlayers.map((player) => (
+                {filteredAndSortedPlayers.map((player) => (
                   <tr 
                     key={player.id}
                     className="border-b border-border/30 hover:bg-secondary/30 transition-colors"
@@ -409,6 +538,114 @@ const AppPlayers = () => {
               </tbody>
             </table>
           </div>
+        </div>
+      ) : (
+        /* Grid/Cards View */
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {filteredAndSortedPlayers.map((player) => (
+            <Card key={player.id} className="group overflow-hidden hover:ring-2 hover:ring-primary/50 transition-all">
+              <Link to={`/app/players/${player.id}`}>
+                <div className="aspect-[4/3] relative bg-secondary/50 overflow-hidden">
+                  {player.photo_url ? (
+                    <img
+                      src={player.photo_url}
+                      alt={player.full_name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <User className="w-16 h-16 text-muted-foreground/50" />
+                    </div>
+                  )}
+                  {/* Status Badge */}
+                  <div className="absolute top-2 right-2">
+                    <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
+                      player.is_public 
+                        ? "bg-primary/90 text-primary-foreground" 
+                        : "bg-muted/90 text-muted-foreground"
+                    }`}>
+                      {player.is_public ? "Público" : "Privado"}
+                    </span>
+                  </div>
+                  {/* Score Badge */}
+                  {player.avg_score !== null && player.avg_score !== undefined && (
+                    <div className="absolute top-2 left-2 flex items-center gap-1 bg-background/90 backdrop-blur-sm px-2 py-1 rounded-full">
+                      <Star className="w-3 h-3 text-primary fill-primary" />
+                      <span className="text-xs font-medium">{player.avg_score.toFixed(1)}</span>
+                    </div>
+                  )}
+                  {/* Position Badge */}
+                  <div className="absolute bottom-2 left-2">
+                    <span className="position-badge text-xs">{player.position}</span>
+                  </div>
+                </div>
+              </Link>
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <Link to={`/app/players/${player.id}`}>
+                      <h3 className="font-semibold truncate hover:text-primary transition-colors">
+                        {player.full_name}
+                      </h3>
+                    </Link>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-sm text-muted-foreground">
+                      {player.age && (
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {player.age} anos
+                        </span>
+                      )}
+                      {player.current_club && (
+                        <span className="flex items-center gap-1 truncate">
+                          <MapPin className="w-3 h-3 flex-shrink-0" />
+                          <span className="truncate">{player.current_club}</span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="flex-shrink-0 -mr-2">
+                        <MoreVertical className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem asChild>
+                        <Link to={`/app/players/${player.id}`}>
+                          <Eye className="w-4 h-4 mr-2" />
+                          Ver Detalhes
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to={`/app/players/${player.id}/edit`}>
+                          <Edit className="w-4 h-4 mr-2" />
+                          Editar
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to={`/app/reports/new?player=${player.id}`}>
+                          <FileText className="w-4 h-4 mr-2" />
+                          Novo Relatório
+                        </Link>
+                      </DropdownMenuItem>
+                      {isAdmin && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => handleDeleteClick(player)}
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Excluir
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
 
