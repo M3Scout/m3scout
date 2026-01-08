@@ -1,8 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { 
   Search, 
   Upload, 
@@ -11,7 +13,8 @@ import {
   Edit,
   Trash2,
   Loader2,
-  MapPin
+  MapPin,
+  AlertTriangle
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -26,6 +29,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 interface Competition {
   id: string;
@@ -41,18 +56,25 @@ interface Competition {
   is_active: boolean;
 }
 
+const CONFIRMATION_TEXT = "EXCLUIR TUDO";
+
 const Competitions = () => {
+  const { isAdmin } = useAuth();
   const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [stateFilter, setStateFilter] = useState("all");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [confirmationInput, setConfirmationInput] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     fetchCompetitions();
   }, []);
 
   const fetchCompetitions = async () => {
+    setLoading(true);
     const { data, error } = await supabase
       .from("competitions")
       .select("*")
@@ -112,6 +134,36 @@ const Competitions = () => {
 
   const hasActiveFilters = searchQuery || typeFilter !== "all" || stateFilter !== "all";
 
+  const handleDeleteAll = async () => {
+    if (confirmationInput !== CONFIRMATION_TEXT) {
+      toast.error("Texto de confirmação incorreto");
+      return;
+    }
+
+    setIsDeleting(true);
+
+    try {
+      const { error } = await supabase
+        .from("competitions")
+        .delete()
+        .neq("id", "00000000-0000-0000-0000-000000000000"); // Delete all rows
+
+      if (error) throw error;
+
+      setCompetitions([]);
+      setDeleteDialogOpen(false);
+      setConfirmationInput("");
+      toast.success("Todas as competições foram removidas.");
+    } catch (error: any) {
+      console.error("Error deleting competitions:", error);
+      toast.error(error.message || "Erro ao excluir competições");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const isConfirmationValid = confirmationInput === CONFIRMATION_TEXT;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -125,12 +177,76 @@ const Competitions = () => {
             Gerencie competições e seus coeficientes
           </p>
         </div>
-        <Link to="/app/competitions/import">
-          <Button variant="gradient">
-            <Upload className="w-4 h-4" />
-            Importar CSV
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          {/* Delete All Button - Admin Only */}
+          {isAdmin && competitions.length > 0 && (
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="default">
+                  <Trash2 className="w-4 h-4" />
+                  Excluir Todas
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+                    <AlertTriangle className="w-5 h-5" />
+                    Excluir TODAS as Competições?
+                  </AlertDialogTitle>
+                  <AlertDialogDescription className="space-y-4">
+                    <p>
+                      Esta ação irá <strong>remover permanentemente</strong> todas as{" "}
+                      <strong>{competitions.length} competições</strong> do sistema.
+                    </p>
+                    <p className="text-destructive font-medium">
+                      ⚠️ Esta ação NÃO pode ser desfeita!
+                    </p>
+                    <div className="space-y-2 pt-2">
+                      <Label htmlFor="confirmation">
+                        Digite <strong>{CONFIRMATION_TEXT}</strong> para confirmar:
+                      </Label>
+                      <Input
+                        id="confirmation"
+                        value={confirmationInput}
+                        onChange={(e) => setConfirmationInput(e.target.value)}
+                        placeholder={CONFIRMATION_TEXT}
+                        className="font-mono"
+                      />
+                    </div>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel onClick={() => setConfirmationInput("")}>
+                    Cancelar
+                  </AlertDialogCancel>
+                  <Button
+                    variant="destructive"
+                    onClick={handleDeleteAll}
+                    disabled={!isConfirmationValid || isDeleting}
+                  >
+                    {isDeleting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Excluindo...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="w-4 h-4" />
+                        Excluir Todas
+                      </>
+                    )}
+                  </Button>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+          <Link to="/app/competitions/import">
+            <Button variant="gradient">
+              <Upload className="w-4 h-4" />
+              Importar CSV
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Filters */}
