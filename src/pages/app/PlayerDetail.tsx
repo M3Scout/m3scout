@@ -6,28 +6,31 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ArrowLeft,
   Edit,
   Trash2,
   FileText,
   Calendar,
-  Ruler,
   User,
   Flag,
   MapPin,
-  Building2,
-  Phone,
   Play,
   Eye,
   EyeOff,
   Loader2,
-  Shield,
-  Clock,
-  DollarSign,
-  StickyNote,
+  Activity,
+  Target,
+  Stethoscope,
+  FileText as ContractIcon,
 } from "lucide-react";
 import { DeletePlayerDialog } from "@/components/players/DeletePlayerDialog";
+import { PhysicalDataSection } from "@/components/players/sections/PhysicalDataSection";
+import { TechnicalProfileSection } from "@/components/players/sections/TechnicalProfileSection";
+import { InjuryHistorySection } from "@/components/players/sections/InjuryHistorySection";
+import { ContractSection } from "@/components/players/sections/ContractSection";
+import { InternalEvaluationSection } from "@/components/players/sections/InternalEvaluationSection";
 
 interface Player {
   id: string;
@@ -46,14 +49,54 @@ interface Player {
   bio_public: string | null;
   highlight_video_url: string | null;
   is_public: boolean | null;
+  // Contract
+  contract_start: string | null;
   contract_end: string | null;
   contract_notes: string | null;
   salary_info: string | null;
-  internal_notes: string | null;
+  release_clause: string | null;
+  contract_status: string | null;
+  passports: string[] | null;
   agent_name: string | null;
   agent_contact: string | null;
+  // Physical
+  weight: number | null;
+  body_fat_percentage: number | null;
+  muscle_mass: number | null;
+  wingspan: number | null;
+  max_speed: number | null;
+  sprint_30m: number | null;
+  vo2_max: number | null;
+  last_physical_evaluation: string | null;
+  // Technical
+  playing_height_preference: string | null;
+  play_style: string | null;
+  primary_tactical_role: string | null;
+  secondary_tactical_role: string | null;
+  strengths: string[] | null;
+  areas_to_develop: string[] | null;
+  // Medical
+  physical_status: string | null;
+  medical_notes: string | null;
+  // Internal Evaluation
+  overall_rating: number | null;
+  potential_rating: number | null;
+  ready_to_compete: boolean | null;
+  estimated_level: string | null;
+  internal_evaluation_notes: string | null;
+  internal_notes: string | null;
+  // Metadata
   created_at: string;
   updated_at: string;
+}
+
+interface Injury {
+  id: string;
+  injury_type: string;
+  start_date: string;
+  return_date: string | null;
+  severity: string;
+  notes: string | null;
 }
 
 interface ScoutingReport {
@@ -69,22 +112,30 @@ interface ScoutingReport {
 const PlayerDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { isAdmin } = useAuth();
+  const { isAdmin, isScout } = useAuth();
   const [player, setPlayer] = useState<Player | null>(null);
+  const [injuries, setInjuries] = useState<Injury[]>([]);
   const [reports, setReports] = useState<ScoutingReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  const canViewPrivate = isAdmin || isScout;
 
   useEffect(() => {
     const fetchData = async () => {
       if (!id) return;
 
-      const [playerRes, reportsRes] = await Promise.all([
+      const [playerRes, injuriesRes, reportsRes] = await Promise.all([
         supabase
           .from("players")
           .select("*")
           .eq("id", id)
           .maybeSingle(),
+        supabase
+          .from("player_injuries")
+          .select("*")
+          .eq("player_id", id)
+          .order("start_date", { ascending: false }),
         supabase
           .from("scouting_reports")
           .select("id, match_date, final_score, rating, competition:competitions(name)")
@@ -94,7 +145,10 @@ const PlayerDetail = () => {
       ]);
 
       if (playerRes.data) {
-        setPlayer(playerRes.data);
+        setPlayer(playerRes.data as Player);
+      }
+      if (injuriesRes.data) {
+        setInjuries(injuriesRes.data);
       }
       if (reportsRes.data) {
         setReports(reportsRes.data as ScoutingReport[]);
@@ -204,283 +258,227 @@ const PlayerDetail = () => {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Main Info */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Basic Info Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="w-5 h-5" />
-                Informações Básicas
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {player.age && (
-                  <div className="flex items-center gap-3">
-                    <Calendar className="w-4 h-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">Idade</p>
-                      <p className="font-medium">{player.age} anos</p>
-                    </div>
-                  </div>
-                )}
-                {player.birth_date && (
-                  <div className="flex items-center gap-3">
-                    <Calendar className="w-4 h-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">Nascimento</p>
-                      <p className="font-medium">
-                        {new Date(player.birth_date).toLocaleDateString("pt-BR")}
-                      </p>
-                    </div>
-                  </div>
-                )}
-                <div className="flex items-center gap-3">
-                  <Flag className="w-4 h-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Nacionalidade</p>
-                    <p className="font-medium">{player.nationality}</p>
-                  </div>
-                </div>
-                {player.height && (
-                  <div className="flex items-center gap-3">
-                    <Ruler className="w-4 h-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">Altura</p>
-                      <p className="font-medium">{player.height} cm</p>
-                    </div>
-                  </div>
-                )}
-                {player.dominant_foot && (
-                  <div className="flex items-center gap-3">
-                    <User className="w-4 h-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">Pé Dominante</p>
-                      <p className="font-medium">{player.dominant_foot}</p>
-                    </div>
-                  </div>
-                )}
-                {player.current_club && (
-                  <div className="flex items-center gap-3">
-                    <Building2 className="w-4 h-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">Clube Atual</p>
-                      <p className="font-medium">{player.current_club}</p>
-                    </div>
-                  </div>
-                )}
-                {player.country && (
-                  <div className="flex items-center gap-3">
-                    <MapPin className="w-4 h-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">País de Atuação</p>
-                      <p className="font-medium">{player.country}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
+      {/* Main Content with Tabs */}
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 h-auto">
+          <TabsTrigger value="overview" className="gap-2">
+            <User className="w-4 h-4" />
+            <span className="hidden sm:inline">Visão Geral</span>
+          </TabsTrigger>
+          <TabsTrigger value="physical" className="gap-2">
+            <Activity className="w-4 h-4" />
+            <span className="hidden sm:inline">Físico</span>
+          </TabsTrigger>
+          <TabsTrigger value="technical" className="gap-2">
+            <Target className="w-4 h-4" />
+            <span className="hidden sm:inline">Técnico</span>
+          </TabsTrigger>
+          <TabsTrigger value="medical" className="gap-2">
+            <Stethoscope className="w-4 h-4" />
+            <span className="hidden sm:inline">Médico</span>
+          </TabsTrigger>
+          <TabsTrigger value="contract" className="gap-2">
+            <ContractIcon className="w-4 h-4" />
+            <span className="hidden sm:inline">Contrato</span>
+          </TabsTrigger>
+        </TabsList>
 
-              {player.bio_public && (
-                <>
-                  <Separator className="my-4" />
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-2">Biografia</p>
-                    <p className="text-sm">{player.bio_public}</p>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Private Info Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="w-5 h-5" />
-                Informações Privadas
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 sm:grid-cols-2">
-                {player.contract_end && (
-                  <div className="flex items-center gap-3">
-                    <Clock className="w-4 h-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">Fim do Contrato</p>
-                      <p className="font-medium">
-                        {new Date(player.contract_end).toLocaleDateString("pt-BR")}
-                      </p>
-                    </div>
-                  </div>
-                )}
-                {player.agent_name && (
-                  <div className="flex items-center gap-3">
-                    <User className="w-4 h-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">Agente</p>
-                      <p className="font-medium">{player.agent_name}</p>
-                    </div>
-                  </div>
-                )}
-                {player.agent_contact && (
-                  <div className="flex items-center gap-3">
-                    <Phone className="w-4 h-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">Contato do Agente</p>
-                      <p className="font-medium">{player.agent_contact}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {player.salary_info && (
-                <>
-                  <Separator className="my-4" />
-                  <div className="flex items-start gap-3">
-                    <DollarSign className="w-4 h-4 text-muted-foreground mt-0.5" />
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Informações Salariais</p>
-                      <p className="text-sm">{player.salary_info}</p>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {player.contract_notes && (
-                <>
-                  <Separator className="my-4" />
-                  <div className="flex items-start gap-3">
-                    <StickyNote className="w-4 h-4 text-muted-foreground mt-0.5" />
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Notas de Contrato</p>
-                      <p className="text-sm">{player.contract_notes}</p>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {player.internal_notes && (
-                <>
-                  <Separator className="my-4" />
-                  <div className="flex items-start gap-3">
-                    <StickyNote className="w-4 h-4 text-muted-foreground mt-0.5" />
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Notas Internas</p>
-                      <p className="text-sm">{player.internal_notes}</p>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {!player.contract_end && !player.agent_name && !player.salary_info && !player.contract_notes && !player.internal_notes && (
-                <p className="text-muted-foreground text-sm">Nenhuma informação privada cadastrada.</p>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Video */}
-          {player.highlight_video_url && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Play className="w-5 h-5" />
-                  Vídeo de Destaque
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="aspect-video rounded-lg overflow-hidden">
-                  <iframe
-                    src={player.highlight_video_url}
-                    title="Player Highlights"
-                    className="w-full h-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Recent Reports */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="w-5 h-5" />
-                Relatórios Recentes
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {reports.length > 0 ? (
-                <div className="space-y-3">
-                  {reports.map((report) => (
-                    <Link
-                      key={report.id}
-                      to={`/app/reports/${report.id}`}
-                      className="block p-3 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors"
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium">
-                          {report.competition?.name || "Competição"}
-                        </span>
-                        <Badge variant="outline">{report.final_score.toFixed(1)}</Badge>
+        {/* Overview Tab */}
+        <TabsContent value="overview">
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="lg:col-span-2 space-y-6">
+              {/* Basic Info Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <User className="w-5 h-5" />
+                    Informações Básicas
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {player.age && (
+                      <div className="flex items-center gap-3">
+                        <Calendar className="w-4 h-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Idade</p>
+                          <p className="font-medium">{player.age} anos</p>
+                        </div>
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(report.match_date).toLocaleDateString("pt-BR")}
-                      </p>
-                    </Link>
-                  ))}
-                  <Button variant="ghost" className="w-full" asChild>
-                    <Link to={`/app/reports?player=${player.id}`}>
-                      Ver todos os relatórios
-                    </Link>
-                  </Button>
-                </div>
-              ) : (
-                <div className="text-center py-4">
-                  <p className="text-muted-foreground text-sm mb-3">
-                    Nenhum relatório encontrado
-                  </p>
-                  <Button variant="outline" size="sm" asChild>
-                    <Link to={`/app/reports/new?player=${player.id}`}>
-                      <FileText className="w-4 h-4" />
-                      Criar Relatório
-                    </Link>
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                    )}
+                    {player.birth_date && (
+                      <div className="flex items-center gap-3">
+                        <Calendar className="w-4 h-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Nascimento</p>
+                          <p className="font-medium">
+                            {new Date(player.birth_date).toLocaleDateString("pt-BR")}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-3">
+                      <Flag className="w-4 h-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Nacionalidade</p>
+                        <p className="font-medium">{player.nationality}</p>
+                      </div>
+                    </div>
+                    {player.current_club && (
+                      <div className="flex items-center gap-3">
+                        <MapPin className="w-4 h-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Clube Atual</p>
+                          <p className="font-medium">{player.current_club}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
-          {/* Metadata */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Metadados</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground space-y-2">
-              <p>
-                <strong>ID:</strong>{" "}
-                <code className="text-xs bg-secondary px-1 py-0.5 rounded">{player.id}</code>
-              </p>
-              <p>
-                <strong>Slug:</strong> {player.slug}
-              </p>
-              <p>
-                <strong>Criado em:</strong>{" "}
-                {new Date(player.created_at).toLocaleDateString("pt-BR")}
-              </p>
-              <p>
-                <strong>Atualizado em:</strong>{" "}
-                {new Date(player.updated_at).toLocaleDateString("pt-BR")}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+                  {player.bio_public && (
+                    <>
+                      <Separator className="my-4" />
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-2">Biografia</p>
+                        <p className="text-sm">{player.bio_public}</p>
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Video */}
+              {player.highlight_video_url && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Play className="w-5 h-5" />
+                      Vídeo de Destaque
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="aspect-video rounded-lg overflow-hidden">
+                      <iframe
+                        src={player.highlight_video_url}
+                        title="Player Highlights"
+                        className="w-full h-full"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Internal Evaluation (visible only to Admin/Scout) */}
+              {canViewPrivate && (
+                <InternalEvaluationSection data={player} />
+              )}
+            </div>
+
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* Recent Reports */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="w-5 h-5" />
+                    Relatórios Recentes
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {reports.length > 0 ? (
+                    <div className="space-y-3">
+                      {reports.map((report) => (
+                        <Link
+                          key={report.id}
+                          to={`/app/reports/${report.id}`}
+                          className="block p-3 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors"
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm font-medium">
+                              {report.competition?.name || "Competição"}
+                            </span>
+                            <Badge variant="outline">{report.final_score.toFixed(1)}</Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(report.match_date).toLocaleDateString("pt-BR")}
+                          </p>
+                        </Link>
+                      ))}
+                      <Button variant="ghost" className="w-full" asChild>
+                        <Link to={`/app/reports?player=${player.id}`}>
+                          Ver todos os relatórios
+                        </Link>
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="text-center py-4">
+                      <p className="text-muted-foreground text-sm mb-3">
+                        Nenhum relatório encontrado
+                      </p>
+                      <Button variant="outline" size="sm" asChild>
+                        <Link to={`/app/reports/new?player=${player.id}`}>
+                          <FileText className="w-4 h-4" />
+                          Criar Relatório
+                        </Link>
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Metadata */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">Metadados</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm text-muted-foreground space-y-2">
+                  <p>
+                    <strong>ID:</strong>{" "}
+                    <code className="text-xs bg-secondary px-1 py-0.5 rounded">{player.id}</code>
+                  </p>
+                  <p>
+                    <strong>Slug:</strong> {player.slug}
+                  </p>
+                  <p>
+                    <strong>Criado em:</strong>{" "}
+                    {new Date(player.created_at).toLocaleDateString("pt-BR")}
+                  </p>
+                  <p>
+                    <strong>Atualizado em:</strong>{" "}
+                    {new Date(player.updated_at).toLocaleDateString("pt-BR")}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* Physical Tab */}
+        <TabsContent value="physical">
+          <PhysicalDataSection data={player} />
+        </TabsContent>
+
+        {/* Technical Tab */}
+        <TabsContent value="technical">
+          <TechnicalProfileSection data={player} />
+        </TabsContent>
+
+        {/* Medical Tab */}
+        <TabsContent value="medical">
+          <InjuryHistorySection 
+            injuries={injuries} 
+            physicalStatus={player.physical_status}
+            medicalNotes={player.medical_notes}
+          />
+        </TabsContent>
+
+        {/* Contract Tab */}
+        <TabsContent value="contract">
+          <ContractSection data={player} />
+        </TabsContent>
+      </Tabs>
 
       <DeletePlayerDialog
         open={deleteDialogOpen}
