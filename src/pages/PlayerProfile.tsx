@@ -1,6 +1,7 @@
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { RatingStars } from "@/components/players/RatingStars";
 import { 
   ArrowLeft, 
   MapPin, 
@@ -9,33 +10,72 @@ import {
   User, 
   Flag,
   Play,
-  MessageCircle 
+  MessageCircle,
+  Loader2
 } from "lucide-react";
 
-// Mock data - will be replaced with real data from Supabase
-const mockPlayer = {
-  id: "1",
-  slug: "gabriel-santos",
-  name: "Gabriel Santos",
-  position: "Meia Atacante",
-  secondaryPositions: ["Ponta Direita", "Segundo Volante"],
-  age: 22,
-  birthYear: 2002,
-  nationality: "Brasil",
-  currentClub: "EC Bahia",
-  height: 178,
-  dominantFoot: "Direito",
-  imageUrl: "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=800&h=1000&fit=crop",
-  rating: 4,
-  bio: "Gabriel Santos é um meio-campista versátil com excelente visão de jogo e capacidade técnica refinada. Destaca-se pela criatividade e precisão nos passes decisivos, sendo peça fundamental na construção ofensiva do EC Bahia. Com passagens pelas seleções de base do Brasil, demonstra potencial para atuar em ligas europeias de primeiro nível.",
-  highlightVideoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-};
+interface Player {
+  id: string;
+  slug: string;
+  full_name: string;
+  position: string;
+  secondary_positions: string[];
+  age: number | null;
+  birth_date: string | null;
+  nationality: string;
+  current_club: string | null;
+  height: number | null;
+  dominant_foot: string | null;
+  photo_url: string | null;
+  bio_public: string | null;
+  highlight_video_url: string | null;
+}
 
 const PlayerProfile = () => {
   const { slug } = useParams();
+  const [player, setPlayer] = useState<Player | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // In production, fetch player data based on slug
-  const player = mockPlayer;
+  useEffect(() => {
+    const fetchPlayer = async () => {
+      if (!slug) return;
+
+      const { data, error } = await supabase
+        .from("players")
+        .select("*")
+        .eq("slug", slug)
+        .eq("is_public", true)
+        .maybeSingle();
+
+      if (data) {
+        setPlayer(data);
+      }
+      setLoading(false);
+    };
+
+    fetchPlayer();
+  }, [slug]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!player) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Atleta não encontrado</h1>
+          <Link to="/players">
+            <Button variant="outline">Voltar para atletas</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen py-8">
@@ -54,17 +94,12 @@ const PlayerProfile = () => {
           <div className="relative">
             <div className="aspect-[3/4] rounded-2xl overflow-hidden glass-card">
               <img
-                src={player.imageUrl}
-                alt={player.name}
+                src={player.photo_url || "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=800&h=1000&fit=crop"}
+                alt={player.full_name}
                 className="w-full h-full object-cover"
               />
               {/* Gradient Overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-transparent to-transparent" />
-              
-              {/* Rating Badge */}
-              <div className="absolute top-4 right-4 glass-card px-3 py-2">
-                <RatingStars rating={player.rating} size="md" />
-              </div>
             </div>
           </div>
 
@@ -74,40 +109,48 @@ const PlayerProfile = () => {
             <span className="position-badge w-fit mb-4">{player.position}</span>
 
             {/* Name */}
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">{player.name}</h1>
+            <h1 className="text-4xl md:text-5xl font-bold mb-4">{player.full_name}</h1>
 
             {/* Secondary Positions */}
-            <div className="flex flex-wrap gap-2 mb-6">
-              {player.secondaryPositions.map((pos) => (
-                <span key={pos} className="stat-badge">{pos}</span>
-              ))}
-            </div>
+            {player.secondary_positions && player.secondary_positions.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-6">
+                {player.secondary_positions.map((pos) => (
+                  <span key={pos} className="stat-badge">{pos}</span>
+                ))}
+              </div>
+            )}
 
             {/* Stats Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
-              <div className="glass-card p-4">
-                <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                  <Calendar className="w-4 h-4" />
-                  <span className="text-xs">Idade</span>
+              {player.age && (
+                <div className="glass-card p-4">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                    <Calendar className="w-4 h-4" />
+                    <span className="text-xs">Idade</span>
+                  </div>
+                  <p className="text-lg font-semibold">{player.age} anos</p>
                 </div>
-                <p className="text-lg font-semibold">{player.age} anos</p>
-              </div>
+              )}
               
-              <div className="glass-card p-4">
-                <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                  <Ruler className="w-4 h-4" />
-                  <span className="text-xs">Altura</span>
+              {player.height && (
+                <div className="glass-card p-4">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                    <Ruler className="w-4 h-4" />
+                    <span className="text-xs">Altura</span>
+                  </div>
+                  <p className="text-lg font-semibold">{player.height} cm</p>
                 </div>
-                <p className="text-lg font-semibold">{player.height} cm</p>
-              </div>
+              )}
               
-              <div className="glass-card p-4">
-                <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                  <User className="w-4 h-4" />
-                  <span className="text-xs">Pé Dominante</span>
+              {player.dominant_foot && (
+                <div className="glass-card p-4">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                    <User className="w-4 h-4" />
+                    <span className="text-xs">Pé Dominante</span>
+                  </div>
+                  <p className="text-lg font-semibold">{player.dominant_foot}</p>
                 </div>
-                <p className="text-lg font-semibold">{player.dominantFoot}</p>
-              </div>
+              )}
               
               <div className="glass-card p-4">
                 <div className="flex items-center gap-2 text-muted-foreground mb-1">
@@ -117,20 +160,24 @@ const PlayerProfile = () => {
                 <p className="text-lg font-semibold">{player.nationality}</p>
               </div>
               
-              <div className="glass-card p-4 col-span-2">
-                <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                  <MapPin className="w-4 h-4" />
-                  <span className="text-xs">Clube Atual</span>
+              {player.current_club && (
+                <div className="glass-card p-4 col-span-2">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                    <MapPin className="w-4 h-4" />
+                    <span className="text-xs">Clube Atual</span>
+                  </div>
+                  <p className="text-lg font-semibold">{player.current_club}</p>
                 </div>
-                <p className="text-lg font-semibold">{player.currentClub}</p>
-              </div>
+              )}
             </div>
 
             {/* Bio */}
-            <div className="mb-8">
-              <h2 className="text-lg font-semibold mb-3">Sobre o Atleta</h2>
-              <p className="text-muted-foreground leading-relaxed">{player.bio}</p>
-            </div>
+            {player.bio_public && (
+              <div className="mb-8">
+                <h2 className="text-lg font-semibold mb-3">Sobre o Atleta</h2>
+                <p className="text-muted-foreground leading-relaxed">{player.bio_public}</p>
+              </div>
+            )}
 
             {/* CTA */}
             <div className="mt-auto">
@@ -145,7 +192,7 @@ const PlayerProfile = () => {
         </div>
 
         {/* Video Section */}
-        {player.highlightVideoUrl && (
+        {player.highlight_video_url && (
           <section className="mt-16">
             <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
               <Play className="w-6 h-6 text-primary" />
@@ -154,7 +201,7 @@ const PlayerProfile = () => {
             <div className="glass-card overflow-hidden rounded-2xl">
               <div className="aspect-video">
                 <iframe
-                  src={player.highlightVideoUrl}
+                  src={player.highlight_video_url}
                   title="Player Highlights"
                   className="w-full h-full"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"

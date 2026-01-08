@@ -21,6 +21,7 @@ import Dashboard from "./pages/app/Dashboard";
 import AppPlayers from "./pages/app/AppPlayers";
 import ScoutingReports from "./pages/app/ScoutingReports";
 import NewScoutingReport from "./pages/app/NewScoutingReport";
+import ReportDetail from "./pages/app/ReportDetail";
 import Competitions from "./pages/app/Competitions";
 import CompetitionsImport from "./pages/app/CompetitionsImport";
 
@@ -50,6 +51,7 @@ const App = () => (
             <Route path="players" element={<AppPlayers />} />
             <Route path="reports" element={<ScoutingReports />} />
             <Route path="reports/new" element={<NewScoutingReport />} />
+            <Route path="reports/:id" element={<ReportDetail />} />
             <Route path="competitions" element={<Competitions />} />
             <Route path="competitions/import" element={<CompetitionsImport />} />
           </Route>
