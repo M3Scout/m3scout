@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,44 +16,66 @@ import {
   MessageCircle
 } from "lucide-react";
 import { toast } from "sonner";
+import { submitLead } from "@/lib/leads";
+
+// Validation schema
+const contactSchema = z.object({
+  name: z.string().trim().min(1, "Nome é obrigatório").max(100, "Nome muito longo"),
+  email: z.string().trim().email("E-mail inválido").max(255, "E-mail muito longo"),
+  phone: z.string().trim().max(20, "Telefone muito longo").optional(),
+  organization: z.string().trim().max(100, "Nome muito longo").optional(),
+  subject: z.string().trim().min(1, "Assunto é obrigatório").max(200, "Assunto muito longo"),
+  message: z.string().trim().min(1, "Mensagem é obrigatória").max(2000, "Mensagem muito longa"),
+});
+
+type ContactFormData = z.infer<typeof contactSchema>;
 
 const Contact = () => {
   const [searchParams] = useSearchParams();
   const playerSlug = searchParams.get("player");
   
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    organization: "",
-    subject: playerSlug ? `Interesse no atleta: ${playerSlug}` : "",
-    message: playerSlug 
-      ? `Olá, gostaria de receber mais informações sobre o atleta ${playerSlug}.` 
-      : "",
-  });
-  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<ContactFormData>({
+    resolver: zodResolver(contactSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      phone: "",
+      organization: "",
+      subject: playerSlug ? `Interesse no atleta: ${playerSlug}` : "",
+      message: playerSlug 
+        ? `Olá, gostaria de receber mais informações sobre o atleta ${playerSlug}.` 
+        : "",
+    },
+  });
+
+  const onSubmit = async (data: ContactFormData) => {
     setIsSubmitting(true);
     
-    // Simulate form submission
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    
-    setIsSubmitting(false);
-    setIsSubmitted(true);
-    toast.success("Mensagem enviada com sucesso!");
-  };
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    setFormData((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
+    try {
+      await submitLead({
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        organization: data.organization,
+        subject: data.subject,
+        message: data.message,
+        playerSlug: playerSlug || undefined,
+      });
+      
+      setIsSubmitted(true);
+      toast.success("Mensagem enviada com sucesso!");
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao enviar mensagem");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (isSubmitted) {
@@ -137,43 +162,37 @@ const Contact = () => {
 
           {/* Contact Form */}
           <div className="lg:col-span-2">
-            <form onSubmit={handleSubmit} className="glass-card p-6 md:p-8">
+            <form onSubmit={handleSubmit(onSubmit)} className="glass-card p-6 md:p-8">
               <div className="grid sm:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="name">Nome Completo *</Label>
                   <Input
                     id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
+                    {...register("name")}
                     className="input-dark"
                     placeholder="Seu nome"
                   />
+                  {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="email">E-mail *</Label>
                   <Input
                     id="email"
-                    name="email"
                     type="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
+                    {...register("email")}
                     className="input-dark"
                     placeholder="seu@email.com"
                   />
+                  {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="phone">Telefone</Label>
                   <Input
                     id="phone"
-                    name="phone"
                     type="tel"
-                    value={formData.phone}
-                    onChange={handleChange}
+                    {...register("phone")}
                     className="input-dark"
                     placeholder="+55 (00) 00000-0000"
                   />
@@ -183,9 +202,7 @@ const Contact = () => {
                   <Label htmlFor="organization">Clube / Organização</Label>
                   <Input
                     id="organization"
-                    name="organization"
-                    value={formData.organization}
-                    onChange={handleChange}
+                    {...register("organization")}
                     className="input-dark"
                     placeholder="Nome do clube ou empresa"
                   />
@@ -195,26 +212,22 @@ const Contact = () => {
                   <Label htmlFor="subject">Assunto *</Label>
                   <Input
                     id="subject"
-                    name="subject"
-                    value={formData.subject}
-                    onChange={handleChange}
-                    required
+                    {...register("subject")}
                     className="input-dark"
                     placeholder="Qual o motivo do contato?"
                   />
+                  {errors.subject && <p className="text-sm text-destructive">{errors.subject.message}</p>}
                 </div>
 
                 <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="message">Mensagem *</Label>
                   <Textarea
                     id="message"
-                    name="message"
-                    value={formData.message}
-                    onChange={handleChange}
-                    required
+                    {...register("message")}
                     className="input-dark min-h-[150px]"
                     placeholder="Escreva sua mensagem..."
                   />
+                  {errors.message && <p className="text-sm text-destructive">{errors.message.message}</p>}
                 </div>
               </div>
 
