@@ -143,87 +143,206 @@ export type Database = {
         }
         Relationships: []
       }
+      player_injuries: {
+        Row: {
+          created_at: string
+          id: string
+          injury_type: string
+          notes: string | null
+          player_id: string
+          return_date: string | null
+          severity: string
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          injury_type: string
+          notes?: string | null
+          player_id: string
+          return_date?: string | null
+          severity?: string
+          start_date: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          injury_type?: string
+          notes?: string | null
+          player_id?: string
+          return_date?: string | null
+          severity?: string
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_injuries_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       players: {
         Row: {
           age: number | null
           agent_contact: string | null
           agent_name: string | null
+          areas_to_develop: string[] | null
           bio_public: string | null
           birth_date: string | null
+          body_fat_percentage: number | null
           contract_end: string | null
           contract_notes: string | null
+          contract_start: string | null
+          contract_status: string | null
           country: string | null
           created_at: string
           created_by: string | null
           current_club: string | null
           dominant_foot: string | null
+          estimated_level: string | null
           full_name: string
           height: number | null
           highlight_video_url: string | null
           id: string
+          internal_evaluation_notes: string | null
           internal_notes: string | null
           is_public: boolean | null
+          last_physical_evaluation: string | null
+          max_speed: number | null
+          medical_notes: string | null
+          muscle_mass: number | null
           nationality: string
+          overall_rating: number | null
+          passports: string[] | null
           photo_url: string | null
+          physical_status: string | null
+          play_style: string | null
+          playing_height_preference: string | null
           position: string
+          potential_rating: number | null
+          primary_tactical_role: string | null
+          ready_to_compete: boolean | null
+          release_clause: string | null
           salary_info: string | null
           secondary_positions: string[] | null
+          secondary_tactical_role: string | null
           slug: string
+          sprint_30m: number | null
+          strengths: string[] | null
           updated_at: string
+          vo2_max: number | null
+          weight: number | null
+          wingspan: number | null
         }
         Insert: {
           age?: number | null
           agent_contact?: string | null
           agent_name?: string | null
+          areas_to_develop?: string[] | null
           bio_public?: string | null
           birth_date?: string | null
+          body_fat_percentage?: number | null
           contract_end?: string | null
           contract_notes?: string | null
+          contract_start?: string | null
+          contract_status?: string | null
           country?: string | null
           created_at?: string
           created_by?: string | null
           current_club?: string | null
           dominant_foot?: string | null
+          estimated_level?: string | null
           full_name: string
           height?: number | null
           highlight_video_url?: string | null
           id?: string
+          internal_evaluation_notes?: string | null
           internal_notes?: string | null
           is_public?: boolean | null
+          last_physical_evaluation?: string | null
+          max_speed?: number | null
+          medical_notes?: string | null
+          muscle_mass?: number | null
           nationality: string
+          overall_rating?: number | null
+          passports?: string[] | null
           photo_url?: string | null
+          physical_status?: string | null
+          play_style?: string | null
+          playing_height_preference?: string | null
           position: string
+          potential_rating?: number | null
+          primary_tactical_role?: string | null
+          ready_to_compete?: boolean | null
+          release_clause?: string | null
           salary_info?: string | null
           secondary_positions?: string[] | null
+          secondary_tactical_role?: string | null
           slug: string
+          sprint_30m?: number | null
+          strengths?: string[] | null
           updated_at?: string
+          vo2_max?: number | null
+          weight?: number | null
+          wingspan?: number | null
         }
         Update: {
           age?: number | null
           agent_contact?: string | null
           agent_name?: string | null
+          areas_to_develop?: string[] | null
           bio_public?: string | null
           birth_date?: string | null
+          body_fat_percentage?: number | null
           contract_end?: string | null
           contract_notes?: string | null
+          contract_start?: string | null
+          contract_status?: string | null
           country?: string | null
           created_at?: string
           created_by?: string | null
           current_club?: string | null
           dominant_foot?: string | null
+          estimated_level?: string | null
           full_name?: string
           height?: number | null
           highlight_video_url?: string | null
           id?: string
+          internal_evaluation_notes?: string | null
           internal_notes?: string | null
           is_public?: boolean | null
+          last_physical_evaluation?: string | null
+          max_speed?: number | null
+          medical_notes?: string | null
+          muscle_mass?: number | null
           nationality?: string
+          overall_rating?: number | null
+          passports?: string[] | null
           photo_url?: string | null
+          physical_status?: string | null
+          play_style?: string | null
+          playing_height_preference?: string | null
           position?: string
+          potential_rating?: number | null
+          primary_tactical_role?: string | null
+          ready_to_compete?: boolean | null
+          release_clause?: string | null
           salary_info?: string | null
           secondary_positions?: string[] | null
+          secondary_tactical_role?: string | null
           slug?: string
+          sprint_30m?: number | null
+          strengths?: string[] | null
           updated_at?: string
+          vo2_max?: number | null
+          weight?: number | null
+          wingspan?: number | null
         }
         Relationships: []
       }
