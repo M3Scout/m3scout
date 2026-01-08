@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -11,15 +12,17 @@ import {
   Eye,
   FileText,
   Edit,
-  Loader2
+  Loader2,
+  Trash2
 } from "lucide-react";
-import { RatingStars } from "@/components/players/RatingStars";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { DeletePlayerDialog } from "@/components/players/DeletePlayerDialog";
 
 interface Player {
   id: string;
@@ -33,29 +36,41 @@ interface Player {
 }
 
 const AppPlayers = () => {
+  const { isAdmin } = useAuth();
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [playerToDelete, setPlayerToDelete] = useState<{ id: string; full_name: string } | null>(null);
+
+  const fetchPlayers = async () => {
+    const { data, error } = await supabase
+      .from("players")
+      .select("id, full_name, position, age, nationality, current_club, contract_end, is_public")
+      .order("full_name");
+
+    if (data) {
+      setPlayers(data);
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
-    const fetchPlayers = async () => {
-      const { data, error } = await supabase
-        .from("players")
-        .select("id, full_name, position, age, nationality, current_club, contract_end, is_public")
-        .order("full_name");
-
-      if (data) {
-        setPlayers(data);
-      }
-      setLoading(false);
-    };
-
     fetchPlayers();
   }, []);
 
   const filteredPlayers = players.filter((player) =>
     player.full_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleDeleteClick = (player: Player) => {
+    setPlayerToDelete({ id: player.id, full_name: player.full_name });
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteSuccess = () => {
+    fetchPlayers();
+  };
 
   return (
     <div className="space-y-6">
@@ -184,6 +199,18 @@ const AppPlayers = () => {
                               Novo Relatório
                             </Link>
                           </DropdownMenuItem>
+                          {isAdmin && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="text-destructive focus:text-destructive"
+                                onClick={() => handleDeleteClick(player)}
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Excluir
+                              </DropdownMenuItem>
+                            </>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </td>
@@ -194,6 +221,13 @@ const AppPlayers = () => {
           </div>
         </div>
       )}
+
+      <DeletePlayerDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        player={playerToDelete}
+        onSuccess={handleDeleteSuccess}
+      />
     </div>
   );
 };
