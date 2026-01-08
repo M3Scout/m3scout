@@ -10,6 +10,7 @@ import {
   ChevronLeft,
   Menu,
   X,
+  MessageSquare,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ const navItems = [
   { href: "/app/players", icon: Users, label: "Atletas" },
   { href: "/app/reports", icon: FileText, label: "Relatórios" },
   { href: "/app/competitions", icon: Trophy, label: "Competições" },
+  { href: "/app/leads", icon: MessageSquare, label: "Leads" },
   { href: "/app/settings", icon: Settings, label: "Configurações" },
 ];
 
