@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -9,9 +9,12 @@ import {
   LogOut,
   ChevronLeft,
   Menu,
+  X,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 const navItems = [
   { href: "/app", icon: LayoutDashboard, label: "Dashboard" },
@@ -23,11 +26,20 @@ const navItems = [
 
 export function AppSidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { signOut, user } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isActive = (href: string) => {
     if (href === "/app") return location.pathname === "/app";
     return location.pathname.startsWith(href);
+  };
+
+  const handleLogout = async () => {
+    await signOut();
+    toast.success("Você saiu do sistema");
+    navigate("/app/auth");
   };
 
   return (
@@ -40,13 +52,59 @@ export function AppSidebar() {
           </div>
           <span className="font-semibold">M3 Agency</span>
         </Link>
-        <Button variant="ghost" size="icon">
-          <Menu className="w-5 h-5" />
+        <Button 
+          variant="ghost" 
+          size="icon"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        >
+          {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </Button>
       </header>
 
+      {/* Mobile Menu Overlay */}
+      {mobileMenuOpen && (
+        <div 
+          className="lg:hidden fixed inset-0 z-40 bg-background/80 backdrop-blur-sm"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Mobile Menu */}
+      <nav
+        className={cn(
+          "lg:hidden fixed top-16 left-0 right-0 z-40 bg-card border-b border-border/50 transition-all duration-300",
+          mobileMenuOpen ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 pointer-events-none"
+        )}
+      >
+        <div className="p-4 space-y-2">
+          {navItems.map((item) => (
+            <Link
+              key={item.href}
+              to={item.href}
+              onClick={() => setMobileMenuOpen(false)}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
+                isActive(item.href)
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+              )}
+            >
+              <item.icon className="w-5 h-5 shrink-0" />
+              <span className="font-medium">{item.label}</span>
+            </Link>
+          ))}
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+          >
+            <LogOut className="w-5 h-5 shrink-0" />
+            <span className="font-medium">Sair</span>
+          </button>
+        </div>
+      </nav>
+
       {/* Desktop Sidebar */}
-      <aside 
+      <aside
         className={cn(
           "hidden lg:flex flex-col fixed left-0 top-0 bottom-0 z-40 border-r border-border/50 bg-card/50 backdrop-blur-xl transition-all duration-300",
           isCollapsed ? "w-20" : "w-64"
@@ -64,10 +122,12 @@ export function AppSidebar() {
             onClick={() => setIsCollapsed(!isCollapsed)}
             className="p-2 text-muted-foreground hover:text-foreground transition-colors"
           >
-            <ChevronLeft className={cn(
-              "w-4 h-4 transition-transform",
-              isCollapsed && "rotate-180"
-            )} />
+            <ChevronLeft
+              className={cn(
+                "w-4 h-4 transition-transform",
+                isCollapsed && "rotate-180"
+              )}
+            />
           </button>
         </div>
 
@@ -79,8 +139,8 @@ export function AppSidebar() {
               to={item.href}
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
-                isActive(item.href) 
-                  ? "bg-primary/10 text-primary" 
+                isActive(item.href)
+                  ? "bg-primary/10 text-primary"
                   : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
               )}
             >
@@ -92,7 +152,13 @@ export function AppSidebar() {
 
         {/* Footer */}
         <div className="p-4 border-t border-border/50">
+          {!isCollapsed && user && (
+            <div className="px-3 py-2 mb-2 text-sm text-muted-foreground truncate">
+              {user.email}
+            </div>
+          )}
           <button
+            onClick={handleLogout}
             className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
           >
             <LogOut className="w-5 h-5 shrink-0" />

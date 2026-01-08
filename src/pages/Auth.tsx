@@ -1,31 +1,115 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, ArrowLeft } from "lucide-react";
+import { Eye, EyeOff, ArrowLeft, Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
+import { z } from "zod";
+
+const emailSchema = z.string().email("E-mail inválido");
+const passwordSchema = z.string().min(6, "Senha deve ter no mínimo 6 caracteres");
 
 const Auth = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user, signIn, signUp, loading: authLoading } = useAuth();
+  
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
     name: "",
   });
+  const [errors, setErrors] = useState<{ email?: string; password?: string; name?: string }>({});
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user && !authLoading) {
+      const from = (location.state as any)?.from?.pathname || "/app";
+      navigate(from, { replace: true });
+    }
+  }, [user, authLoading, navigate, location]);
+
+  const validateForm = () => {
+    const newErrors: typeof errors = {};
+    
+    const emailResult = emailSchema.safeParse(formData.email);
+    if (!emailResult.success) {
+      newErrors.email = emailResult.error.errors[0].message;
+    }
+    
+    const passwordResult = passwordSchema.safeParse(formData.password);
+    if (!passwordResult.success) {
+      newErrors.password = passwordResult.error.errors[0].message;
+    }
+    
+    if (!isLogin && !formData.name.trim()) {
+      newErrors.name = "Nome é obrigatório";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Will be implemented with Supabase auth
-    console.log("Auth submit:", formData);
+    
+    if (!validateForm()) return;
+    
+    setLoading(true);
+    
+    try {
+      if (isLogin) {
+        const { error } = await signIn(formData.email, formData.password);
+        if (error) {
+          if (error.message.includes("Invalid login credentials")) {
+            toast.error("E-mail ou senha incorretos");
+          } else {
+            toast.error(error.message);
+          }
+          return;
+        }
+        toast.success("Login realizado com sucesso!");
+      } else {
+        const { error } = await signUp(formData.email, formData.password, formData.name);
+        if (error) {
+          if (error.message.includes("User already registered")) {
+            toast.error("Este e-mail já está cadastrado");
+          } else {
+            toast.error(error.message);
+          }
+          return;
+        }
+        toast.success("Conta criada com sucesso! Você já pode acessar o sistema.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value,
+      [name]: value,
     }));
+    // Clear error when typing
+    if (errors[name as keyof typeof errors]) {
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
@@ -123,7 +207,8 @@ const Auth = () => {
               </div>
             </div>
 
-            <Button type="submit" variant="hero" className="w-full">
+            <Button type="submit" variant="hero" className="w-full" disabled={loading}>
+              {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {isLogin ? "Entrar" : "Criar Conta"}
             </Button>
           </form>

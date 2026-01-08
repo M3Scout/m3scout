@@ -67,9 +67,11 @@ const AppPlayers = () => {
             Gerencie todos os atletas da agência
           </p>
         </div>
-        <Button variant="gradient">
-          <Plus className="w-4 h-4" />
-          Novo Atleta
+        <Button variant="gradient" asChild>
+          <Link to="/app/players/new">
+            <Plus className="w-4 h-4" />
+            Novo Atleta
+          </Link>
         </Button>
       </div>
 
