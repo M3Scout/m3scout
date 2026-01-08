@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      brazil_state_tiers: {
+        Row: {
+          base_coefficient: number
+          created_at: string
+          id: string
+          notes: string | null
+          state: string
+          state_name: string | null
+          tier: number
+          tier_label: string | null
+          updated_at: string
+        }
+        Insert: {
+          base_coefficient?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          state: string
+          state_name?: string | null
+          tier: number
+          tier_label?: string | null
+          updated_at?: string
+        }
+        Update: {
+          base_coefficient?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          state?: string
+          state_name?: string | null
+          tier?: number
+          tier_label?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       competitions: {
         Row: {
           base_coefficient: number
