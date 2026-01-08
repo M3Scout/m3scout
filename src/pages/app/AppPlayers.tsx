@@ -33,7 +33,9 @@ import {
   ArrowDown,
   User,
   MapPin,
-  Calendar
+  Calendar,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -66,6 +68,8 @@ type SortField = "full_name" | "position" | "current_club" | "avg_score" | "cont
 type SortDirection = "asc" | "desc";
 type ViewMode = "table" | "grid";
 
+const ITEMS_PER_PAGE = 12;
+
 const AppPlayers = () => {
   const { isAdmin } = useAuth();
   const [players, setPlayers] = useState<Player[]>([]);
@@ -75,6 +79,7 @@ const AppPlayers = () => {
   const [playerToDelete, setPlayerToDelete] = useState<{ id: string; full_name: string } | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("table");
+  const [currentPage, setCurrentPage] = useState(1);
   
   // Sorting
   const [sortField, setSortField] = useState<SortField>("full_name");
@@ -190,6 +195,18 @@ const AppPlayers = () => {
     });
   }, [players, searchQuery, positionFilter, nationalityFilter, clubFilter, statusFilter, sortField, sortDirection]);
 
+  // Pagination
+  const totalPages = Math.ceil(filteredAndSortedPlayers.length / ITEMS_PER_PAGE);
+  const paginatedPlayers = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredAndSortedPlayers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredAndSortedPlayers, currentPage]);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, positionFilter, nationalityFilter, clubFilter, statusFilter]);
+
   const activeFiltersCount = [positionFilter, nationalityFilter, clubFilter, statusFilter].filter(
     (f) => f !== "all"
   ).length;
@@ -224,6 +241,29 @@ const AppPlayers = () => {
 
   const handleDeleteSuccess = () => {
     fetchPlayers();
+  };
+
+  const goToPage = (page: number) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+  };
+
+  const getPageNumbers = () => {
+    const pages: (number | "ellipsis")[] = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (currentPage > 3) pages.push("ellipsis");
+      
+      const start = Math.max(2, currentPage - 1);
+      const end = Math.min(totalPages - 1, currentPage + 1);
+      
+      for (let i = start; i <= end; i++) pages.push(i);
+      
+      if (currentPage < totalPages - 2) pages.push("ellipsis");
+      pages.push(totalPages);
+    }
+    return pages;
   };
 
   return (
@@ -449,7 +489,7 @@ const AppPlayers = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredAndSortedPlayers.map((player) => (
+                {paginatedPlayers.map((player) => (
                   <tr 
                     key={player.id}
                     className="border-b border-border/30 hover:bg-secondary/30 transition-colors"
@@ -542,7 +582,7 @@ const AppPlayers = () => {
       ) : (
         /* Grid/Cards View */
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filteredAndSortedPlayers.map((player) => (
+          {paginatedPlayers.map((player) => (
             <Card key={player.id} className="group overflow-hidden hover:ring-2 hover:ring-primary/50 transition-all">
               <Link to={`/app/players/${player.id}`}>
                 <div className="aspect-[4/3] relative bg-secondary/50 overflow-hidden">
@@ -646,6 +686,52 @@ const AppPlayers = () => {
               </CardContent>
             </Card>
           ))}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
+          <p className="text-sm text-muted-foreground">
+            Mostrando {((currentPage - 1) * ITEMS_PER_PAGE) + 1} a {Math.min(currentPage * ITEMS_PER_PAGE, filteredAndSortedPlayers.length)} de {filteredAndSortedPlayers.length} atletas
+          </p>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => goToPage(currentPage - 1)}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            
+            {getPageNumbers().map((page, index) =>
+              page === "ellipsis" ? (
+                <span key={`ellipsis-${index}`} className="px-2 text-muted-foreground">
+                  ...
+                </span>
+              ) : (
+                <Button
+                  key={page}
+                  variant={currentPage === page ? "default" : "outline"}
+                  size="icon"
+                  onClick={() => goToPage(page)}
+                  className="w-9"
+                >
+                  {page}
+                </Button>
+              )
+            )}
+            
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => goToPage(currentPage + 1)}
+              disabled={currentPage === totalPages}
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
       )}
 
