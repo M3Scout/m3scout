@@ -3,6 +3,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/hooks/useAuth";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 // Layouts
 import { PublicLayout } from "@/components/layout/PublicLayout";
@@ -19,6 +21,7 @@ import NotFound from "./pages/NotFound";
 // App Pages
 import Dashboard from "./pages/app/Dashboard";
 import AppPlayers from "./pages/app/AppPlayers";
+import NewPlayer from "./pages/app/NewPlayer";
 import ScoutingReports from "./pages/app/ScoutingReports";
 import NewScoutingReport from "./pages/app/NewScoutingReport";
 import ReportDetail from "./pages/app/ReportDetail";
@@ -29,38 +32,48 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          {/* Public Routes */}
-          <Route element={<PublicLayout />}>
-            <Route path="/" element={<Index />} />
-            <Route path="/players" element={<Players />} />
-            <Route path="/players/:slug" element={<PlayerProfile />} />
-            <Route path="/contact" element={<Contact />} />
-          </Route>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            {/* Public Routes */}
+            <Route element={<PublicLayout />}>
+              <Route path="/" element={<Index />} />
+              <Route path="/players" element={<Players />} />
+              <Route path="/players/:slug" element={<PlayerProfile />} />
+              <Route path="/contact" element={<Contact />} />
+            </Route>
 
-          {/* Auth Route */}
-          <Route path="/app/auth" element={<Auth />} />
+            {/* Auth Route */}
+            <Route path="/app/auth" element={<Auth />} />
 
-          {/* Protected App Routes */}
-          <Route path="/app" element={<AppLayout />}>
-            <Route index element={<Dashboard />} />
-            <Route path="players" element={<AppPlayers />} />
-            <Route path="reports" element={<ScoutingReports />} />
-            <Route path="reports/new" element={<NewScoutingReport />} />
-            <Route path="reports/:id" element={<ReportDetail />} />
-            <Route path="competitions" element={<Competitions />} />
-            <Route path="competitions/import" element={<CompetitionsImport />} />
-          </Route>
+            {/* Protected App Routes */}
+            <Route
+              path="/app"
+              element={
+                <ProtectedRoute>
+                  <AppLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<Dashboard />} />
+              <Route path="players" element={<AppPlayers />} />
+              <Route path="players/new" element={<NewPlayer />} />
+              <Route path="reports" element={<ScoutingReports />} />
+              <Route path="reports/new" element={<NewScoutingReport />} />
+              <Route path="reports/:id" element={<ReportDetail />} />
+              <Route path="competitions" element={<Competitions />} />
+              <Route path="competitions/import" element={<CompetitionsImport />} />
+            </Route>
 
-          {/* Catch-all */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+            {/* Catch-all */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 
