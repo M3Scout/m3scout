@@ -101,6 +101,7 @@ interface Player {
   // Auto Rating
   auto_rating: number | null;
   rating_updated_at: string | null;
+  auto_rating_details: Record<string, unknown> | null;
   // Market Value
   market_value: number | null;
   market_value_currency: string | null;
@@ -412,6 +413,7 @@ const PlayerDetail = () => {
                 overallRating={player.overall_rating}
                 potentialRating={player.potential_rating}
                 ratingUpdatedAt={player.rating_updated_at}
+                ratingDetails={player.auto_rating_details as any}
               />
 
               {/* Market Value */}

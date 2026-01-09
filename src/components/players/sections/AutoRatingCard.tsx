@@ -1,10 +1,57 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Star, Clock } from "lucide-react";
+import { Star, Clock, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { RatingBreakdownModal } from "@/components/players/RatingBreakdownModal";
+
+interface RatingDetails {
+  calculated_at: string;
+  season_year: number;
+  position_group: string;
+  weights: {
+    competition: number;
+    production: number;
+    defensive: number;
+    discipline: number;
+    age: number;
+  };
+  scores: {
+    competition_level: number;
+    production: number;
+    defensive_actions: number;
+    discipline: number;
+    age_potential: number;
+    overall_0_100: number;
+    rating_0_5: number;
+  };
+  metrics: {
+    total_matches: number;
+    total_minutes: number;
+    max_competition_coefficient: number;
+    goals_per_90: number;
+    assists_per_90: number;
+    tackles_per_90: number;
+    interceptions_per_90: number;
+    recoveries_per_90: number;
+    cards_per_90: number;
+  };
+  per_competition: Array<{
+    competition_id: string;
+    competition_name: string;
+    final_coefficient: number;
+    matches: number;
+    minutes: number;
+    goals: number;
+    assists: number;
+    goals_per_90: number;
+    assists_per_90: number;
+  }>;
+  reliability: "low" | "medium" | "high";
+}
 
 interface AutoRatingCardProps {
   rating: number | null;
   updatedAt: string | null;
+  details?: RatingDetails | null;
 }
 
 function getRatingColor(rating: number): string {
@@ -21,7 +68,7 @@ function getRatingBgColor(rating: number): string {
   return "bg-destructive/10";
 }
 
-export function AutoRatingCard({ rating, updatedAt }: AutoRatingCardProps) {
+export function AutoRatingCard({ rating, updatedAt, details }: AutoRatingCardProps) {
   if (rating === null || rating === undefined) {
     return (
       <Card>
@@ -58,10 +105,24 @@ export function AutoRatingCard({ rating, updatedAt }: AutoRatingCardProps) {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Star className="w-5 h-5" />
-          Nota Automática
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Star className="w-5 h-5" />
+            Nota Automática
+          </CardTitle>
+          {details && (
+            <RatingBreakdownModal
+              details={details}
+              rating={rating}
+              trigger={
+                <button className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors">
+                  <Info className="w-3 h-3" />
+                  Detalhes
+                </button>
+              }
+            />
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         <div className="flex items-center gap-4">
