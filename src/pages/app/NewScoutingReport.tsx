@@ -59,7 +59,8 @@ interface Competition {
   name: string;
   country: string;
   computed_coefficient: number;
-  is_unique?: boolean;
+  has_phases: boolean;
+  visibility_score: number | null;
 }
 
 interface CompetitionPhase {
@@ -121,7 +122,12 @@ const NewScoutingReport = () => {
     const fetchData = async () => {
       const [playersRes, competitionsRes, phasesRes] = await Promise.all([
         supabase.from("players").select("id, full_name, position").order("full_name"),
-        supabase.from("competitions").select("id, name, country, computed_coefficient, is_unique").eq("is_active", true).order("name"),
+        supabase.from("competitions")
+          .select("id, name, country, computed_coefficient, has_phases, visibility_score")
+          .eq("is_active", true)
+          .gt("visibility_score", 0) // Only visible competitions
+          .order("visibility_score", { ascending: false })
+          .order("name"),
         supabase.from("competition_phases").select("*").order("phase_order"),
       ]);
 
@@ -145,8 +151,8 @@ const NewScoutingReport = () => {
     setSelectedPhase(phase || null);
   };
 
-  // Get available phases for selected competition
-  const availablePhases = selectedCompetition?.is_unique 
+  // Get available phases for selected competition (only if has_phases = true)
+  const availablePhases = selectedCompetition?.has_phases 
     ? competitionPhases.filter(p => p.competition_id === selectedCompetition.id)
     : [];
 
