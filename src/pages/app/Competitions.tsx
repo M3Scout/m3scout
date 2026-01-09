@@ -38,6 +38,7 @@ import {
   Eye,
   Filter,
   X,
+  Copy,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -118,6 +119,11 @@ const Competitions = () => {
   // Single delete dialog
   const [deleteEntry, setDeleteEntry] = useState<Competition | null>(null);
   const [deleteSingleOpen, setDeleteSingleOpen] = useState(false);
+  
+  // Deduplication dialog
+  const [dedupeDialogOpen, setDedupeDialogOpen] = useState(false);
+  const [duplicates, setDuplicates] = useState<{ key: string; competitions: Competition[]; canonical: Competition }[]>([]);
+  const [isDeduping, setIsDeduping] = useState(false);
   
   // Create/Edit dialog
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -409,6 +415,88 @@ const Competitions = () => {
     }
   };
 
+  // Find duplicates based on country + type + state + division + name
+  const findDuplicates = () => {
+    const grouped = new Map<string, Competition[]>();
+    
+    competitions.forEach((comp) => {
+      const key = `${comp.country}|${comp.type}|${comp.state || ''}|${comp.division || ''}|${comp.name}`;
+      const existing = grouped.get(key) || [];
+      existing.push(comp);
+      grouped.set(key, existing);
+    });
+    
+    const dupes: { key: string; competitions: Competition[]; canonical: Competition }[] = [];
+    
+    grouped.forEach((comps, key) => {
+      if (comps.length > 1) {
+        // Sort by created_at to pick the oldest as canonical (if available), otherwise first
+        const sorted = [...comps].sort((a, b) => a.id.localeCompare(b.id));
+        dupes.push({
+          key,
+          competitions: comps,
+          canonical: sorted[0],
+        });
+      }
+    });
+    
+    setDuplicates(dupes);
+    setDedupeDialogOpen(true);
+  };
+
+  // Remove duplicates - migrate player_stats to canonical, delete duplicates
+  const handleDeduplicate = async () => {
+    if (duplicates.length === 0) return;
+    
+    setIsDeduping(true);
+    
+    try {
+      for (const group of duplicates) {
+        const duplicateIds = group.competitions
+          .filter(c => c.id !== group.canonical.id)
+          .map(c => c.id);
+        
+        // Migrate player_stats to canonical competition
+        const { error: statsError } = await supabase
+          .from("player_stats")
+          .update({ competition_id: group.canonical.id })
+          .in("competition_id", duplicateIds);
+        
+        if (statsError) {
+          console.error("Error migrating stats:", statsError);
+        }
+        
+        // Migrate scouting_reports to canonical competition
+        const { error: reportsError } = await supabase
+          .from("scouting_reports")
+          .update({ competition_id: group.canonical.id })
+          .in("competition_id", duplicateIds);
+        
+        if (reportsError) {
+          console.error("Error migrating reports:", reportsError);
+        }
+        
+        // Delete duplicate competitions
+        const { error: deleteError } = await supabase
+          .from("competitions")
+          .delete()
+          .in("id", duplicateIds);
+        
+        if (deleteError) throw deleteError;
+      }
+      
+      toast.success(`${duplicates.length} grupos de duplicados removidos!`);
+      setDedupeDialogOpen(false);
+      setDuplicates([]);
+      fetchCompetitions();
+    } catch (error: any) {
+      console.error("Error deduplicating:", error);
+      toast.error(error.message || "Erro ao remover duplicados");
+    } finally {
+      setIsDeduping(false);
+    }
+  };
+
   const isConfirmationValid = confirmationInput === CONFIRMATION_TEXT;
 
   return (
@@ -475,6 +563,15 @@ const Competitions = () => {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
+          )}
+          {isAdmin && competitions.length > 0 && (
+            <Button 
+              variant="outline" 
+              onClick={findDuplicates}
+            >
+              <Copy className="w-4 h-4" />
+              Remover Duplicados
+            </Button>
           )}
           <Link to="/app/competitions/import">
             <Button variant="outline">
@@ -959,6 +1056,59 @@ const Competitions = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Deduplication Dialog */}
+      <Dialog open={dedupeDialogOpen} onOpenChange={setDedupeDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Copy className="w-5 h-5" />
+              Remover Duplicados
+            </DialogTitle>
+            <DialogDescription>
+              {duplicates.length === 0 
+                ? "Nenhum duplicado encontrado. Todas as competições são únicas."
+                : `Encontrados ${duplicates.length} grupos de competições duplicadas.`
+              }
+            </DialogDescription>
+          </DialogHeader>
+
+          {duplicates.length > 0 && (
+            <div className="space-y-4 py-4">
+              <p className="text-sm text-muted-foreground">
+                Registros serão migrados para a competição canônica (primeiro registro) e os duplicados serão removidos.
+              </p>
+              <div className="space-y-3 max-h-[300px] overflow-y-auto">
+                {duplicates.map((group, idx) => (
+                  <div key={idx} className="glass-card p-3 space-y-2">
+                    <p className="font-medium text-sm">
+                      {group.canonical.name}
+                      {group.canonical.state && ` (${group.canonical.state})`}
+                      {group.canonical.division && ` - ${group.canonical.division}`}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      <strong>{group.competitions.length}</strong> registros encontrados. 
+                      Mantendo: <span className="text-primary">{group.canonical.id.slice(0, 8)}...</span>
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDedupeDialogOpen(false)}>
+              {duplicates.length === 0 ? "Fechar" : "Cancelar"}
+            </Button>
+            {duplicates.length > 0 && (
+              <Button onClick={handleDeduplicate} disabled={isDeduping}>
+                {isDeduping && <Loader2 className="w-4 h-4 animate-spin" />}
+                Remover {duplicates.reduce((acc, g) => acc + g.competitions.length - 1, 0)} Duplicados
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
