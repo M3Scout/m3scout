@@ -191,6 +191,7 @@ export type Database = {
         Row: {
           created_at: string
           currency: string
+          deleted_at: string | null
           id: string
           note: string | null
           player_id: string
@@ -201,6 +202,7 @@ export type Database = {
         Insert: {
           created_at?: string
           currency?: string
+          deleted_at?: string | null
           id?: string
           note?: string | null
           player_id: string
@@ -211,6 +213,7 @@ export type Database = {
         Update: {
           created_at?: string
           currency?: string
+          deleted_at?: string | null
           id?: string
           note?: string | null
           player_id?: string
@@ -691,6 +694,10 @@ export type Database = {
           player_id: string
           player_name: string
         }[]
+      }
+      recalculate_player_market_value_summary: {
+        Args: { p_player_id: string }
+        Returns: undefined
       }
       update_player_auto_rating: {
         Args: { p_player_id: string }
