@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Upload, User, Shield, FileText, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { extractYouTubeVideoId } from "@/lib/utils";
 
 const positions = [
   "Goleiro",
@@ -364,11 +365,21 @@ export default function NewPlayer() {
                 <Label htmlFor="highlight_video_url">Link do Vídeo de Destaque</Label>
                 <Input
                   id="highlight_video_url"
-                  type="url"
                   value={formData.highlight_video_url}
                   onChange={(e) => handleChange("highlight_video_url", e.target.value)}
-                  placeholder="https://youtube.com/..."
+                  placeholder="https://youtube.com/watch?v=... ou youtu.be/..."
                 />
+                {formData.highlight_video_url && (
+                  extractYouTubeVideoId(formData.highlight_video_url) ? (
+                    <p className="text-xs text-emerald-500">
+                      ✓ Vídeo detectado: {extractYouTubeVideoId(formData.highlight_video_url)}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-destructive">
+                      ✗ URL inválida. Use um link do YouTube ou ID do vídeo.
+                    </p>
+                  )
+                )}
               </div>
 
               <div className="space-y-2">

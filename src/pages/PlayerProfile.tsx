@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { getYouTubeEmbedUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -248,25 +249,29 @@ const PlayerProfile = () => {
         </section>
 
         {/* Video Section */}
-        {player.highlight_video_url && (
-          <section className="mt-16">
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
-              <Play className="w-6 h-6 text-primary" />
-              Vídeo de Highlights
-            </h2>
-            <div className="glass-card overflow-hidden rounded-2xl">
-              <div className="aspect-video">
-                <iframe
-                  src={player.highlight_video_url}
-                  title="Player Highlights"
-                  className="w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
+        {player.highlight_video_url && (() => {
+          const embedUrl = getYouTubeEmbedUrl(player.highlight_video_url);
+          if (!embedUrl) return null;
+          return (
+            <section className="mt-16">
+              <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
+                <Play className="w-6 h-6 text-primary" />
+                Vídeo de Highlights
+              </h2>
+              <div className="glass-card overflow-hidden rounded-2xl">
+                <div className="aspect-video">
+                  <iframe
+                    src={embedUrl}
+                    title="Player Highlights"
+                    className="w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
               </div>
-            </div>
-          </section>
-        )}
+            </section>
+          );
+        })()}
       </div>
     </div>
   );
