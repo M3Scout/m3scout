@@ -1,8 +1,12 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Star, TrendingUp, Clock, Info } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Star, TrendingUp, Clock, Info, RefreshCw, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RatingBreakdownModal } from "@/components/players/RatingBreakdownModal";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface RatingDetails {
   calculated_at: string;
@@ -55,6 +59,9 @@ interface OverallRatingCardProps {
   potentialRating: number | null;
   ratingUpdatedAt: string | null;
   ratingDetails?: RatingDetails | null;
+  playerId?: string;
+  isAdmin?: boolean;
+  onRatingRecalculated?: () => void;
 }
 
 function getRatingColor(rating: number): string {
@@ -85,12 +92,37 @@ export function OverallRatingCard({
   potentialRating,
   ratingUpdatedAt,
   ratingDetails,
+  playerId,
+  isAdmin,
+  onRatingRecalculated,
 }: OverallRatingCardProps) {
+  const [recalculating, setRecalculating] = useState(false);
   const displayRating = autoRating ?? overallRating;
   
   const formattedDate = ratingUpdatedAt
     ? new Date(ratingUpdatedAt).toLocaleDateString("pt-BR")
     : null;
+
+  const handleRecalculate = async () => {
+    if (!playerId) return;
+    
+    setRecalculating(true);
+    try {
+      const { error } = await supabase.rpc("update_player_auto_rating", {
+        p_player_id: playerId,
+      });
+
+      if (error) throw error;
+
+      toast.success("Nota recalculada com sucesso!");
+      onRatingRecalculated?.();
+    } catch (error) {
+      console.error("Error recalculating rating:", error);
+      toast.error("Erro ao recalcular nota");
+    } finally {
+      setRecalculating(false);
+    }
+  };
 
   return (
     <Card>
@@ -100,18 +132,36 @@ export function OverallRatingCard({
             <Star className="w-5 h-5 text-primary" />
             Avaliação Geral
           </CardTitle>
-          {autoRating !== null && ratingDetails && (
-            <RatingBreakdownModal
-              details={ratingDetails}
-              rating={autoRating}
-              trigger={
-                <button className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors">
-                  <Info className="w-3 h-3" />
-                  Como é calculada?
-                </button>
-              }
-            />
-          )}
+          <div className="flex items-center gap-2">
+            {isAdmin && playerId && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleRecalculate}
+                disabled={recalculating}
+                className="h-7 px-2 text-xs"
+              >
+                {recalculating ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-3 h-3" />
+                )}
+                <span className="ml-1 hidden sm:inline">Recalcular</span>
+              </Button>
+            )}
+            {autoRating !== null && ratingDetails && (
+              <RatingBreakdownModal
+                details={ratingDetails}
+                rating={autoRating}
+                trigger={
+                  <button className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors">
+                    <Info className="w-3 h-3" />
+                    Detalhes
+                  </button>
+                }
+              />
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent>

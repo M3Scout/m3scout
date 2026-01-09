@@ -414,6 +414,9 @@ const PlayerDetail = () => {
                 potentialRating={player.potential_rating}
                 ratingUpdatedAt={player.rating_updated_at}
                 ratingDetails={player.auto_rating_details as any}
+                playerId={player.id}
+                isAdmin={isAdmin}
+                onRatingRecalculated={refetchPlayer}
               />
 
               {/* Market Value */}
