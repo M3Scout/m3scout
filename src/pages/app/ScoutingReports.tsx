@@ -21,6 +21,7 @@ interface ScoutingReportListItem {
   final_score: number;
   rating: number;
   created_at: string;
+  scout_id: string;
   players: {
     full_name: string;
     position: string;
@@ -28,18 +29,18 @@ interface ScoutingReportListItem {
   competitions: {
     name: string;
   } | null;
-  profiles: {
-    full_name: string;
-  } | null;
 }
 
 const ScoutingReports = () => {
   const [reports, setReports] = useState<ScoutingReportListItem[]>([]);
+  const [scoutNames, setScoutNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const fetchReports = async () => {
+      console.log("Fetching scouting reports...");
+      
       const { data, error } = await supabase
         .from("scouting_reports")
         .select(`
@@ -48,15 +49,41 @@ const ScoutingReports = () => {
           final_score,
           rating,
           created_at,
+          scout_id,
           players (full_name, position),
-          competitions (name),
-          profiles:scout_id (full_name)
+          competitions (name)
         `)
         .order("created_at", { ascending: false });
 
-      if (data) {
-        setReports(data as any);
+      console.log("Reports query result:", { data, error, count: data?.length });
+
+      if (error) {
+        console.error("Error fetching reports:", error);
+        setLoading(false);
+        return;
       }
+
+      if (data && data.length > 0) {
+        setReports(data as ScoutingReportListItem[]);
+        
+        // Fetch scout names separately
+        const scoutIds = [...new Set(data.map(r => r.scout_id))];
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, full_name")
+          .in("user_id", scoutIds);
+        
+        if (profiles) {
+          const namesMap: Record<string, string> = {};
+          profiles.forEach(p => {
+            namesMap[p.user_id] = p.full_name || "Scout";
+          });
+          setScoutNames(namesMap);
+        }
+      } else {
+        setReports([]);
+      }
+      
       setLoading(false);
     };
 
@@ -137,7 +164,7 @@ const ScoutingReports = () => {
                       </span>
                       <span className="flex items-center gap-1">
                         <User className="w-4 h-4" />
-                        {report.profiles?.full_name || "Scout"}
+                        {scoutNames[report.scout_id] || "Scout"}
                       </span>
                     </div>
                   </div>
