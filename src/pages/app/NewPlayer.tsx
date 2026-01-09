@@ -13,6 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Upload, User, Shield, FileText, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { extractYouTubeVideoId } from "@/lib/utils";
+import { ImageCropperModal } from "@/components/players/ImageCropperModal";
 
 const positions = [
   "Goleiro",
@@ -41,12 +42,17 @@ const nationalities = [
   "Alemanha",
 ];
 
+const MAX_FILE_SIZE = 8 * 1024 * 1024; // 8MB
+const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
 export default function NewPlayer() {
   const navigate = useNavigate();
   const { user, isAdmin, isScout } = useAuth();
   const [loading, setLoading] = useState(false);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [rawImageSrc, setRawImageSrc] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     // Public fields
@@ -87,14 +93,41 @@ export default function NewPlayer() {
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setPhotoFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhotoPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    // Validate file type
+    if (!ACCEPTED_TYPES.includes(file.type)) {
+      toast.error("Formato inválido. Use JPG, PNG ou WebP.");
+      return;
     }
+
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error("Arquivo muito grande. Máximo 8MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setRawImageSrc(reader.result as string);
+      setCropperOpen(true);
+    };
+    reader.readAsDataURL(file);
+    
+    // Clear input so same file can be selected again
+    e.target.value = "";
+  };
+
+  const handleCropComplete = (croppedBlob: Blob) => {
+    // Create a File from Blob for upload
+    const croppedFile = new File([croppedBlob], "avatar.jpg", { type: "image/jpeg" });
+    setPhotoFile(croppedFile);
+    
+    // Create preview URL
+    const previewUrl = URL.createObjectURL(croppedBlob);
+    setPhotoPreview(previewUrl);
+    
+    toast.success("Foto ajustada com sucesso!");
   };
 
   const generateSlug = (name: string) => {
@@ -231,12 +264,12 @@ export default function NewPlayer() {
                 <div className="w-full">
                   <Input
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/webp"
                     onChange={handlePhotoChange}
                     className="cursor-pointer"
                   />
                   <p className="text-xs text-muted-foreground mt-2 text-center">
-                    JPG, PNG ou WebP. Máx 5MB.
+                    JPG, PNG ou WebP. Máx 8MB.
                   </p>
                 </div>
               </div>
@@ -505,6 +538,16 @@ export default function NewPlayer() {
           </Button>
         </div>
       </form>
+
+      {/* Image Cropper Modal */}
+      {rawImageSrc && (
+        <ImageCropperModal
+          open={cropperOpen}
+          onClose={() => setCropperOpen(false)}
+          imageSrc={rawImageSrc}
+          onCropComplete={handleCropComplete}
+        />
+      )}
     </div>
   );
 }

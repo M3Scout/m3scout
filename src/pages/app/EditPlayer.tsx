@@ -30,6 +30,10 @@ import {
 import { toast } from "sonner";
 import { extractYouTubeVideoId } from "@/lib/utils";
 import { DeletePlayerDialog } from "@/components/players/DeletePlayerDialog";
+import { ImageCropperModal } from "@/components/players/ImageCropperModal";
+
+const MAX_FILE_SIZE = 8 * 1024 * 1024; // 8MB
+const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 const positions = [
   "Goleiro", "Lateral Direito", "Lateral Esquerdo", "Zagueiro", "Volante",
@@ -142,6 +146,8 @@ export default function EditPlayer() {
   const [playerName, setPlayerName] = useState("");
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [newTag, setNewTag] = useState("");
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [rawImageSrc, setRawImageSrc] = useState<string | null>(null);
 
   const canEdit = isAdmin || isScout;
 
@@ -240,12 +246,41 @@ export default function EditPlayer() {
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setPhotoFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setPhotoPreview(reader.result as string);
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    // Validate file type
+    if (!ACCEPTED_TYPES.includes(file.type)) {
+      toast.error("Formato inválido. Use JPG, PNG ou WebP.");
+      return;
     }
+
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error("Arquivo muito grande. Máximo 8MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setRawImageSrc(reader.result as string);
+      setCropperOpen(true);
+    };
+    reader.readAsDataURL(file);
+    
+    // Clear input so same file can be selected again
+    e.target.value = "";
+  };
+
+  const handleCropComplete = (croppedBlob: Blob) => {
+    // Create a File from Blob for upload
+    const croppedFile = new File([croppedBlob], "avatar.jpg", { type: "image/jpeg" });
+    setPhotoFile(croppedFile);
+    
+    // Create preview URL
+    const previewUrl = URL.createObjectURL(croppedBlob);
+    setPhotoPreview(previewUrl);
+    
+    toast.success("Foto ajustada com sucesso!");
   };
 
   const generateSlug = (name: string) => {
@@ -510,7 +545,7 @@ export default function EditPlayer() {
                         <User className="w-16 h-16 text-muted-foreground" />
                       )}
                     </div>
-                    <Input type="file" accept="image/*" onChange={handlePhotoChange} className="cursor-pointer" />
+                    <Input type="file" accept="image/jpeg,image/png,image/webp" onChange={handlePhotoChange} className="cursor-pointer" />
                   </div>
                 </CardContent>
               </Card>
@@ -897,6 +932,16 @@ export default function EditPlayer() {
         player={id ? { id, full_name: playerName } : null}
         onSuccess={() => navigate("/app/players")}
       />
+
+      {/* Image Cropper Modal */}
+      {rawImageSrc && (
+        <ImageCropperModal
+          open={cropperOpen}
+          onClose={() => setCropperOpen(false)}
+          imageSrc={rawImageSrc}
+          onCropComplete={handleCropComplete}
+        />
+      )}
     </div>
   );
 }
