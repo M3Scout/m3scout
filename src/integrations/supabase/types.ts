@@ -94,6 +94,7 @@ export type Database = {
           created_at: string
           display_name: string | null
           division: string | null
+          has_phases: boolean
           id: string
           is_active: boolean | null
           is_unique: boolean | null
@@ -112,6 +113,7 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           division?: string | null
+          has_phases?: boolean
           id?: string
           is_active?: boolean | null
           is_unique?: boolean | null
@@ -130,6 +132,7 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           division?: string | null
+          has_phases?: boolean
           id?: string
           is_active?: boolean | null
           is_unique?: boolean | null
