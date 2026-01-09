@@ -68,7 +68,7 @@ type SortField = "full_name" | "position" | "current_club" | "avg_score" | "cont
 type SortDirection = "asc" | "desc";
 type ViewMode = "table" | "grid";
 
-const ITEMS_PER_PAGE = 12;
+const PAGE_SIZE_OPTIONS = [12, 24, 48];
 
 const AppPlayers = () => {
   const { isAdmin } = useAuth();
@@ -80,6 +80,7 @@ const AppPlayers = () => {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("table");
   const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(12);
   
   // Sorting
   const [sortField, setSortField] = useState<SortField>("full_name");
@@ -196,11 +197,11 @@ const AppPlayers = () => {
   }, [players, searchQuery, positionFilter, nationalityFilter, clubFilter, statusFilter, sortField, sortDirection]);
 
   // Pagination
-  const totalPages = Math.ceil(filteredAndSortedPlayers.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(filteredAndSortedPlayers.length / itemsPerPage);
   const paginatedPlayers = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredAndSortedPlayers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [filteredAndSortedPlayers, currentPage]);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredAndSortedPlayers.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredAndSortedPlayers, currentPage, itemsPerPage]);
 
   // Reset to first page when filters change
   useEffect(() => {
@@ -692,9 +693,32 @@ const AppPlayers = () => {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
-          <p className="text-sm text-muted-foreground">
-            Mostrando {((currentPage - 1) * ITEMS_PER_PAGE) + 1} a {Math.min(currentPage * ITEMS_PER_PAGE, filteredAndSortedPlayers.length)} de {filteredAndSortedPlayers.length} atletas
-          </p>
+          <div className="flex items-center gap-4">
+            <p className="text-sm text-muted-foreground">
+              Mostrando {((currentPage - 1) * itemsPerPage) + 1} a {Math.min(currentPage * itemsPerPage, filteredAndSortedPlayers.length)} de {filteredAndSortedPlayers.length} atletas
+            </p>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Itens:</span>
+              <Select
+                value={String(itemsPerPage)}
+                onValueChange={(value) => {
+                  setItemsPerPage(Number(value));
+                  setCurrentPage(1);
+                }}
+              >
+                <SelectTrigger className="w-[70px] h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PAGE_SIZE_OPTIONS.map((size) => (
+                    <SelectItem key={size} value={String(size)}>
+                      {size}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
           <div className="flex items-center gap-1">
             <Button
               variant="outline"

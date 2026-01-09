@@ -3,6 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { PlayerCard } from "@/components/players/PlayerCard";
 import { PlayerFilters } from "@/components/players/PlayerFilters";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Player {
@@ -17,7 +24,7 @@ interface Player {
   photo_url: string | null;
 }
 
-const ITEMS_PER_PAGE = 12;
+const PAGE_SIZE_OPTIONS = [12, 24, 48];
 
 const Players = () => {
   const [players, setPlayers] = useState<Player[]>([]);
@@ -26,6 +33,7 @@ const Players = () => {
   const [positionFilter, setPositionFilter] = useState("todos");
   const [nationalityFilter, setNationalityFilter] = useState("todos");
   const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(12);
 
   useEffect(() => {
     const fetchPlayers = async () => {
@@ -57,11 +65,11 @@ const Players = () => {
   }, [players, searchQuery, positionFilter, nationalityFilter]);
 
   // Pagination
-  const totalPages = Math.ceil(filteredPlayers.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(filteredPlayers.length / itemsPerPage);
   const paginatedPlayers = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredPlayers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [filteredPlayers, currentPage]);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredPlayers.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredPlayers, currentPage, itemsPerPage]);
 
   // Reset to first page when filters change
   useEffect(() => {
@@ -157,9 +165,32 @@ const Players = () => {
             {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8">
-                <p className="text-sm text-muted-foreground">
-                  Mostrando {((currentPage - 1) * ITEMS_PER_PAGE) + 1} a {Math.min(currentPage * ITEMS_PER_PAGE, filteredPlayers.length)} de {filteredPlayers.length} atletas
-                </p>
+                <div className="flex items-center gap-4">
+                  <p className="text-sm text-muted-foreground">
+                    Mostrando {((currentPage - 1) * itemsPerPage) + 1} a {Math.min(currentPage * itemsPerPage, filteredPlayers.length)} de {filteredPlayers.length} atletas
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Itens:</span>
+                    <Select
+                      value={String(itemsPerPage)}
+                      onValueChange={(value) => {
+                        setItemsPerPage(Number(value));
+                        setCurrentPage(1);
+                      }}
+                    >
+                      <SelectTrigger className="w-[70px] h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PAGE_SIZE_OPTIONS.map((size) => (
+                          <SelectItem key={size} value={String(size)}>
+                            {size}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
                 <div className="flex items-center gap-1">
                   <Button
                     variant="outline"
