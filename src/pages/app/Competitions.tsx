@@ -5,16 +5,39 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Slider } from "@/components/ui/slider";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { 
   Search, 
   Upload, 
   Trophy,
-  MoreVertical,
+  MoreHorizontal,
   Edit,
   Trash2,
   Loader2,
   MapPin,
-  AlertTriangle
+  AlertTriangle,
+  Plus,
+  Globe,
+  Eye,
+  Filter,
+  X,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -38,13 +61,14 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
 interface Competition {
   id: string;
   name: string;
+  display_name: string | null;
+  competition_code: string | null;
   country: string;
   state: string | null;
   type: string;
@@ -54,7 +78,22 @@ interface Competition {
   computed_coefficient: number;
   visibility_score: number | null;
   is_active: boolean;
+  is_unique: boolean | null;
 }
+
+const COMPETITION_TYPES = [
+  { value: "league", label: "Liga" },
+  { value: "cup", label: "Copa" },
+  { value: "state_league", label: "Estadual" },
+  { value: "continental", label: "Continental" },
+];
+
+const DIVISIONS = ["A1", "A2", "A3", "A4", "Serie A", "Serie B", "Serie C", "Serie D"];
+
+const BRAZILIAN_STATES = [
+  "AC", "AL", "AM", "AP", "BA", "CE", "DF", "ES", "GO", "MA", "MG", "MS", "MT",
+  "PA", "PB", "PE", "PI", "PR", "RJ", "RN", "RO", "RR", "RS", "SC", "SE", "SP", "TO",
+];
 
 const CONFIRMATION_TEXT = "EXCLUIR TUDO";
 
@@ -65,9 +104,37 @@ const Competitions = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [stateFilter, setStateFilter] = useState("all");
+  const [countryFilter, setCountryFilter] = useState("all");
+  const [divisionFilter, setDivisionFilter] = useState("all");
+  const [visibilityFilter, setVisibilityFilter] = useState<[number, number]>([0, 100]);
+  const [showFilters, setShowFilters] = useState(false);
+  
+  // Delete all dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [confirmationInput, setConfirmationInput] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Single delete dialog
+  const [deleteEntry, setDeleteEntry] = useState<Competition | null>(null);
+  const [deleteSingleOpen, setDeleteSingleOpen] = useState(false);
+  
+  // Create/Edit dialog
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingCompetition, setEditingCompetition] = useState<Competition | null>(null);
+  const [saving, setSaving] = useState(false);
+  
+  // Form state
+  const [formData, setFormData] = useState({
+    name: "",
+    display_name: "",
+    country: "Brasil",
+    state: "",
+    type: "league",
+    division: "",
+    base_coefficient: 1.0,
+    visibility_score: 50,
+    is_active: true,
+  });
 
   useEffect(() => {
     fetchCompetitions();
@@ -78,15 +145,27 @@ const Competitions = () => {
     const { data, error } = await supabase
       .from("competitions")
       .select("*")
+      .order("country")
       .order("name");
 
     if (data) {
       setCompetitions(data);
     }
+    if (error) {
+      console.error("Error fetching competitions:", error);
+    }
     setLoading(false);
   };
 
-  // Get unique states for filter
+  // Get unique values for filters
+  const uniqueCountries = useMemo(() => {
+    const countries = new Set<string>();
+    competitions.forEach((comp) => {
+      if (comp.country) countries.add(comp.country);
+    });
+    return Array.from(countries).sort();
+  }, [competitions]);
+
   const uniqueStates = useMemo(() => {
     const states = new Set<string>();
     competitions.forEach((comp) => {
@@ -95,45 +174,173 @@ const Competitions = () => {
     return Array.from(states).sort();
   }, [competitions]);
 
+  const uniqueDivisions = useMemo(() => {
+    const divisions = new Set<string>();
+    competitions.forEach((comp) => {
+      if (comp.division) divisions.add(comp.division);
+    });
+    return Array.from(divisions).sort();
+  }, [competitions]);
+
   const filteredCompetitions = useMemo(() => {
     return competitions.filter((comp) => {
       const matchesSearch = 
         comp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (comp.display_name && comp.display_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (comp.state && comp.state.toLowerCase().includes(searchQuery.toLowerCase()));
       const matchesType = typeFilter === "all" || comp.type === typeFilter;
       const matchesState = stateFilter === "all" || comp.state === stateFilter;
-      return matchesSearch && matchesType && matchesState;
+      const matchesCountry = countryFilter === "all" || comp.country === countryFilter;
+      const matchesDivision = divisionFilter === "all" || comp.division === divisionFilter;
+      const matchesVisibility = 
+        (comp.visibility_score ?? 50) >= visibilityFilter[0] && 
+        (comp.visibility_score ?? 50) <= visibilityFilter[1];
+      return matchesSearch && matchesType && matchesState && matchesCountry && matchesDivision && matchesVisibility;
     });
-  }, [competitions, searchQuery, typeFilter, stateFilter]);
+  }, [competitions, searchQuery, typeFilter, stateFilter, countryFilter, divisionFilter, visibilityFilter]);
 
   const getTypeLabel = (type: string) => {
-    const labels: Record<string, string> = {
-      league: "Liga",
-      cup: "Copa",
-      state_league: "Estadual",
-      continental: "Continental",
-    };
-    return labels[type] || type;
+    const found = COMPETITION_TYPES.find(t => t.value === type);
+    return found?.label || type;
   };
 
   const getTypeColor = (type: string) => {
     const colors: Record<string, string> = {
-      league: "bg-primary/20 text-primary",
-      cup: "bg-accent/20 text-accent",
-      state_league: "bg-emerald-500/20 text-emerald-400",
-      continental: "bg-purple-500/20 text-purple-400",
+      league: "bg-primary/20 text-primary border-primary/30",
+      cup: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+      state_league: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+      continental: "bg-purple-500/20 text-purple-400 border-purple-500/30",
     };
-    return colors[type] || "bg-muted text-muted-foreground";
+    return colors[type] || "bg-muted text-muted-foreground border-border";
   };
 
   const clearFilters = () => {
     setSearchQuery("");
     setTypeFilter("all");
     setStateFilter("all");
+    setCountryFilter("all");
+    setDivisionFilter("all");
+    setVisibilityFilter([0, 100]);
   };
 
-  const hasActiveFilters = searchQuery || typeFilter !== "all" || stateFilter !== "all";
+  const hasActiveFilters = searchQuery || typeFilter !== "all" || stateFilter !== "all" || 
+    countryFilter !== "all" || divisionFilter !== "all" || 
+    visibilityFilter[0] !== 0 || visibilityFilter[1] !== 100;
 
+  // Open create dialog
+  const handleCreate = () => {
+    setEditingCompetition(null);
+    setFormData({
+      name: "",
+      display_name: "",
+      country: "Brasil",
+      state: "",
+      type: "league",
+      division: "",
+      base_coefficient: 1.0,
+      visibility_score: 50,
+      is_active: true,
+    });
+    setDialogOpen(true);
+  };
+
+  // Open edit dialog
+  const handleEdit = (comp: Competition) => {
+    setEditingCompetition(comp);
+    setFormData({
+      name: comp.name,
+      display_name: comp.display_name || "",
+      country: comp.country,
+      state: comp.state || "",
+      type: comp.type,
+      division: comp.division || "",
+      base_coefficient: Number(comp.base_coefficient),
+      visibility_score: comp.visibility_score ?? 50,
+      is_active: comp.is_active,
+    });
+    setDialogOpen(true);
+  };
+
+  // Save competition (create or update)
+  const handleSave = async () => {
+    if (!formData.name.trim()) {
+      toast.error("Nome é obrigatório");
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      // Calculate computed coefficient based on base + visibility
+      const visibilityBonus = ((formData.visibility_score - 50) / 100) * 0.2;
+      const computed_coefficient = Math.round((formData.base_coefficient + visibilityBonus) * 100) / 100;
+
+      const competitionData = {
+        name: formData.name.trim(),
+        display_name: formData.display_name.trim() || null,
+        country: formData.country,
+        state: formData.state || null,
+        type: formData.type as "league" | "cup" | "state_league" | "continental",
+        division: formData.division || null,
+        base_coefficient: formData.base_coefficient,
+        computed_coefficient,
+        visibility_score: formData.visibility_score,
+        is_active: formData.is_active,
+      };
+
+      if (editingCompetition) {
+        const { error } = await supabase
+          .from("competitions")
+          .update(competitionData)
+          .eq("id", editingCompetition.id);
+
+        if (error) throw error;
+        toast.success("Competição atualizada!");
+      } else {
+        const { error } = await supabase
+          .from("competitions")
+          .insert([competitionData]);
+
+        if (error) throw error;
+        toast.success("Competição criada!");
+      }
+
+      setDialogOpen(false);
+      fetchCompetitions();
+    } catch (error: any) {
+      console.error("Error saving competition:", error);
+      toast.error(error.message || "Erro ao salvar competição");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Delete single competition
+  const handleDeleteSingle = async () => {
+    if (!deleteEntry) return;
+
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("competitions")
+        .delete()
+        .eq("id", deleteEntry.id);
+
+      if (error) throw error;
+
+      toast.success("Competição excluída!");
+      setDeleteSingleOpen(false);
+      setDeleteEntry(null);
+      fetchCompetitions();
+    } catch (error: any) {
+      console.error("Error deleting competition:", error);
+      toast.error(error.message || "Erro ao excluir competição");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Delete all competitions
   const handleDeleteAll = async () => {
     if (confirmationInput !== CONFIRMATION_TEXT) {
       toast.error("Texto de confirmação incorreto");
@@ -143,7 +350,6 @@ const Competitions = () => {
     setIsDeleting(true);
 
     try {
-      // First, delete all scouting reports (they have FK to competitions)
       const { error: reportsError } = await supabase
         .from("scouting_reports")
         .delete()
@@ -151,7 +357,6 @@ const Competitions = () => {
 
       if (reportsError) throw reportsError;
 
-      // Then, delete all competitions
       const { error: competitionsError } = await supabase
         .from("competitions")
         .delete()
@@ -162,7 +367,7 @@ const Competitions = () => {
       setCompetitions([]);
       setDeleteDialogOpen(false);
       setConfirmationInput("");
-      toast.success("Todas as competições e relatórios vinculados foram removidos.");
+      toast.success("Todas as competições foram removidas.");
     } catch (error: any) {
       console.error("Error deleting competitions:", error);
       toast.error(error.message || "Erro ao excluir competições");
@@ -179,23 +384,24 @@ const Competitions = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3">
-            <Trophy className="w-8 h-8 text-accent" />
+            <Trophy className="w-8 h-8 text-primary" />
             Competições
           </h1>
           <p className="text-muted-foreground">
             Gerencie competições e seus coeficientes
           </p>
         </div>
-        <div className="flex gap-2">
-          {/* Delete All Button - Admin Only */}
+        <div className="flex gap-2 flex-wrap">
           {isAdmin && competitions.length > 0 && (
             <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="default">
-                  <Trash2 className="w-4 h-4" />
-                  Excluir Todas
-                </Button>
-              </AlertDialogTrigger>
+              <Button 
+                variant="outline" 
+                className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                onClick={() => setDeleteDialogOpen(true)}
+              >
+                <Trash2 className="w-4 h-4" />
+                Excluir Todas
+              </Button>
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle className="flex items-center gap-2 text-destructive">
@@ -204,19 +410,15 @@ const Competitions = () => {
                   </AlertDialogTitle>
                   <AlertDialogDescription className="space-y-4">
                     <p>
-                      Esta ação irá <strong>remover permanentemente</strong> todas as{" "}
+                      Esta ação irá remover permanentemente todas as{" "}
                       <strong>{competitions.length} competições</strong> e{" "}
-                      <strong>todos os relatórios de scouting vinculados</strong>.
-                    </p>
-                    <p className="text-destructive font-medium">
-                      ⚠️ Esta ação NÃO pode ser desfeita!
+                      <strong>todos os relatórios vinculados</strong>.
                     </p>
                     <div className="space-y-2 pt-2">
-                      <Label htmlFor="confirmation">
+                      <Label>
                         Digite <strong>{CONFIRMATION_TEXT}</strong> para confirmar:
                       </Label>
                       <Input
-                        id="confirmation"
                         value={confirmationInput}
                         onChange={(e) => setConfirmationInput(e.target.value)}
                         placeholder={CONFIRMATION_TEXT}
@@ -234,106 +436,161 @@ const Competitions = () => {
                     onClick={handleDeleteAll}
                     disabled={!isConfirmationValid || isDeleting}
                   >
-                    {isDeleting ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Excluindo...
-                      </>
-                    ) : (
-                      <>
-                        <Trash2 className="w-4 h-4" />
-                        Excluir Todas
-                      </>
-                    )}
+                    {isDeleting && <Loader2 className="w-4 h-4 animate-spin" />}
+                    Excluir Todas
                   </Button>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
           )}
           <Link to="/app/competitions/import">
-            <Button variant="gradient">
+            <Button variant="outline">
               <Upload className="w-4 h-4" />
               Importar CSV
             </Button>
           </Link>
+          {isAdmin && (
+            <Button onClick={handleCreate}>
+              <Plus className="w-4 h-4" />
+              Nova Competição
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder="Buscar por nome ou estado..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 input-dark"
-          />
-        </div>
-        <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-full md:w-[180px] input-dark">
-            <SelectValue placeholder="Tipo" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os tipos</SelectItem>
-            <SelectItem value="league">Liga</SelectItem>
-            <SelectItem value="cup">Copa</SelectItem>
-            <SelectItem value="state_league">Estadual</SelectItem>
-            <SelectItem value="continental">Continental</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={stateFilter} onValueChange={setStateFilter}>
-          <SelectTrigger className="w-full md:w-[180px] input-dark">
-            <MapPin className="w-4 h-4 mr-2" />
-            <SelectValue placeholder="Estado" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os estados</SelectItem>
-            {uniqueStates.map((state) => (
-              <SelectItem key={state} value={state}>
-                {state}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {hasActiveFilters && (
-          <Button variant="ghost" onClick={clearFilters} className="shrink-0">
-            Limpar filtros
+      {/* Search and Filters */}
+      <div className="space-y-4">
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Buscar por nome, estado..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Button 
+            variant="outline" 
+            onClick={() => setShowFilters(!showFilters)}
+            className={showFilters ? "bg-secondary" : ""}
+          >
+            <Filter className="w-4 h-4" />
+            Filtros
+            {hasActiveFilters && (
+              <Badge variant="secondary" className="ml-2 h-5 px-1.5">
+                {[typeFilter !== "all", stateFilter !== "all", countryFilter !== "all", 
+                  divisionFilter !== "all", visibilityFilter[0] !== 0 || visibilityFilter[1] !== 100]
+                  .filter(Boolean).length}
+              </Badge>
+            )}
           </Button>
+          {hasActiveFilters && (
+            <Button variant="ghost" onClick={clearFilters}>
+              <X className="w-4 h-4" />
+              Limpar
+            </Button>
+          )}
+        </div>
+
+        {/* Advanced Filters */}
+        {showFilters && (
+          <div className="glass-card p-4 grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">País</Label>
+              <Select value={countryFilter} onValueChange={setCountryFilter}>
+                <SelectTrigger>
+                  <Globe className="w-4 h-4 mr-2 text-muted-foreground" />
+                  <SelectValue placeholder="Todos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  {uniqueCountries.map((country) => (
+                    <SelectItem key={country} value={country}>{country}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Tipo</Label>
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  {COMPETITION_TYPES.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Estado</Label>
+              <Select value={stateFilter} onValueChange={setStateFilter}>
+                <SelectTrigger>
+                  <MapPin className="w-4 h-4 mr-2 text-muted-foreground" />
+                  <SelectValue placeholder="Todos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  {uniqueStates.map((state) => (
+                    <SelectItem key={state} value={state}>{state}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Divisão</Label>
+              <Select value={divisionFilter} onValueChange={setDivisionFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  {uniqueDivisions.map((div) => (
+                    <SelectItem key={div} value={div}>{div}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">
+                Visibilidade: {visibilityFilter[0]} - {visibilityFilter[1]}
+              </Label>
+              <div className="pt-2 px-1">
+                <Slider
+                  value={visibilityFilter}
+                  onValueChange={(v) => setVisibilityFilter(v as [number, number])}
+                  min={0}
+                  max={100}
+                  step={10}
+                />
+              </div>
+            </div>
+          </div>
         )}
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <div className="glass-card p-4 text-center">
-          <p className="text-2xl font-bold text-foreground">{competitions.length}</p>
+          <p className="text-2xl font-bold">{competitions.length}</p>
           <p className="text-sm text-muted-foreground">Total</p>
         </div>
-        <div className="glass-card p-4 text-center">
-          <p className="text-2xl font-bold text-primary">
-            {competitions.filter(c => c.type === 'league').length}
-          </p>
-          <p className="text-sm text-muted-foreground">Ligas</p>
-        </div>
-        <div className="glass-card p-4 text-center">
-          <p className="text-2xl font-bold text-accent">
-            {competitions.filter(c => c.type === 'cup').length}
-          </p>
-          <p className="text-sm text-muted-foreground">Copas</p>
-        </div>
-        <div className="glass-card p-4 text-center">
-          <p className="text-2xl font-bold text-emerald-400">
-            {competitions.filter(c => c.type === 'state_league').length}
-          </p>
-          <p className="text-sm text-muted-foreground">Estaduais</p>
-        </div>
-        <div className="glass-card p-4 text-center">
-          <p className="text-2xl font-bold text-purple-400">
-            {competitions.filter(c => c.type === 'continental').length}
-          </p>
-          <p className="text-sm text-muted-foreground">Continentais</p>
-        </div>
+        {COMPETITION_TYPES.map((type) => (
+          <div key={type.value} className="glass-card p-4 text-center">
+            <p className={`text-2xl font-bold ${
+              type.value === "league" ? "text-primary" :
+              type.value === "cup" ? "text-amber-400" :
+              type.value === "state_league" ? "text-emerald-400" : "text-purple-400"
+            }`}>
+              {competitions.filter(c => c.type === type.value).length}
+            </p>
+            <p className="text-sm text-muted-foreground">{type.label}s</p>
+          </div>
+        ))}
       </div>
 
       {/* Results count */}
@@ -357,116 +614,304 @@ const Competitions = () => {
           <p className="text-muted-foreground mb-6">
             {hasActiveFilters 
               ? "Tente ajustar os filtros de busca."
-              : "Importe um arquivo CSV para adicionar competições."
+              : "Crie uma nova competição ou importe um arquivo CSV."
             }
           </p>
-          {hasActiveFilters ? (
-            <Button variant="outline" onClick={clearFilters}>
-              Limpar filtros
-            </Button>
-          ) : (
-            <Link to="/app/competitions/import">
-              <Button variant="gradient">
-                <Upload className="w-4 h-4" />
-                Importar CSV
-              </Button>
-            </Link>
-          )}
+          <div className="flex gap-2 justify-center">
+            {hasActiveFilters ? (
+              <Button variant="outline" onClick={clearFilters}>Limpar filtros</Button>
+            ) : (
+              <>
+                <Button onClick={handleCreate}>
+                  <Plus className="w-4 h-4" />
+                  Nova Competição
+                </Button>
+                <Link to="/app/competitions/import">
+                  <Button variant="outline">
+                    <Upload className="w-4 h-4" />
+                    Importar CSV
+                  </Button>
+                </Link>
+              </>
+            )}
+          </div>
         </div>
       ) : (
         <div className="glass-card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border/50">
-                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">
-                    Competição
-                  </th>
-                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">
-                    Tipo
-                  </th>
-                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">
-                    Estado
-                  </th>
-                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">
-                    Divisão / Fase
-                  </th>
-                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">
-                    Coeficiente
-                  </th>
-                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">
-                    Status
-                  </th>
-                  <th className="text-right p-4 text-sm font-medium text-muted-foreground">
-                    Ações
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>País</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Divisão</TableHead>
+                  <TableHead className="text-center">Base Coef.</TableHead>
+                  <TableHead className="text-center">Computed</TableHead>
+                  <TableHead className="text-center">
+                    <Eye className="w-4 h-4 inline" />
+                  </TableHead>
+                  <TableHead className="text-center">Status</TableHead>
+                  <TableHead className="w-12"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {filteredCompetitions.map((comp) => (
-                  <tr 
-                    key={comp.id}
-                    className="border-b border-border/30 hover:bg-secondary/30 transition-colors"
-                  >
-                    <td className="p-4">
-                      <div>
-                        <p className="font-medium">{comp.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {comp.country}
-                        </p>
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(comp.type)}`}>
+                  <TableRow key={comp.id}>
+                    <TableCell className="font-medium">{comp.country}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={getTypeColor(comp.type)}>
                         {getTypeLabel(comp.type)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div>
+                        <p className="font-medium">{comp.display_name || comp.name}</p>
+                        {comp.display_name && comp.name !== comp.display_name && (
+                          <p className="text-xs text-muted-foreground truncate max-w-[200px]">
+                            {comp.name}
+                          </p>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {comp.state || "—"}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {comp.division || "—"}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <span className="font-mono text-sm">
+                        {Number(comp.base_coefficient).toFixed(2)}
                       </span>
-                    </td>
-                    <td className="p-4 text-muted-foreground">
-                      {comp.state || '-'}
-                    </td>
-                    <td className="p-4 text-muted-foreground">
-                      {comp.division || '-'}{comp.phase && ` / ${comp.phase}`}
-                    </td>
-                    <td className="p-4">
-                      <span className="text-lg font-bold text-accent">
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <span className="font-bold text-primary">
                         ×{Number(comp.computed_coefficient).toFixed(2)}
                       </span>
-                    </td>
-                    <td className="p-4">
-                      <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
-                        comp.is_active 
-                          ? "bg-primary/20 text-primary" 
-                          : "bg-muted text-muted-foreground"
-                      }`}>
-                        {comp.is_active ? "Ativa" : "Inativa"}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <span className="text-sm text-muted-foreground">
+                        {comp.visibility_score ?? 50}
                       </span>
-                    </td>
-                    <td className="p-4 text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreVertical className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
-                            <Edit className="w-4 h-4 mr-2" />
-                            Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive">
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Excluir
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </td>
-                  </tr>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant={comp.is_active ? "default" : "secondary"}>
+                        {comp.is_active ? "Ativa" : "Inativa"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {isAdmin && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEdit(comp)}>
+                              <Edit className="w-4 h-4 mr-2" />
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => {
+                                setDeleteEntry(comp);
+                                setDeleteSingleOpen(true);
+                              }}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </div>
       )}
+
+      {/* Create/Edit Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>
+              {editingCompetition ? "Editar Competição" : "Nova Competição"}
+            </DialogTitle>
+            <DialogDescription>
+              {editingCompetition 
+                ? "Atualize os dados da competição." 
+                : "Preencha os dados para criar uma nova competição."
+              }
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2 space-y-2">
+                <Label>Nome *</Label>
+                <Input
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Brasil – Campeonato X"
+                />
+              </div>
+
+              <div className="col-span-2 space-y-2">
+                <Label>Nome de Exibição</Label>
+                <Input
+                  value={formData.display_name}
+                  onChange={(e) => setFormData({ ...formData, display_name: e.target.value })}
+                  placeholder="Campeonato X"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>País</Label>
+                <Input
+                  value={formData.country}
+                  onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                  placeholder="Brasil"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Tipo</Label>
+                <Select 
+                  value={formData.type} 
+                  onValueChange={(v) => setFormData({ ...formData, type: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {COMPETITION_TYPES.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {formData.type === "state_league" && (
+                <div className="space-y-2">
+                  <Label>Estado (UF)</Label>
+                  <Select 
+                    value={formData.state} 
+                    onValueChange={(v) => setFormData({ ...formData, state: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {BRAZILIAN_STATES.map((state) => (
+                        <SelectItem key={state} value={state}>{state}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label>Divisão</Label>
+                <Select 
+                  value={formData.division} 
+                  onValueChange={(v) => setFormData({ ...formData, division: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Nenhuma</SelectItem>
+                    {DIVISIONS.map((div) => (
+                      <SelectItem key={div} value={div}>{div}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Coeficiente Base</Label>
+                <Input
+                  type="number"
+                  step="0.05"
+                  min="0.5"
+                  max="2.0"
+                  value={formData.base_coefficient}
+                  onChange={(e) => setFormData({ ...formData, base_coefficient: parseFloat(e.target.value) || 1.0 })}
+                />
+              </div>
+
+              <div className="col-span-2 space-y-2">
+                <Label>Visibilidade: {formData.visibility_score}</Label>
+                <Slider
+                  value={[formData.visibility_score]}
+                  onValueChange={([v]) => setFormData({ ...formData, visibility_score: v })}
+                  min={0}
+                  max={100}
+                  step={5}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Impacta o coeficiente final. Maior visibilidade = maior peso.
+                </p>
+              </div>
+
+              <div className="col-span-2 flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id="is_active"
+                  checked={formData.is_active}
+                  onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                  className="w-4 h-4"
+                />
+                <Label htmlFor="is_active" className="cursor-pointer">
+                  Competição ativa
+                </Label>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+              {editingCompetition ? "Salvar" : "Criar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Single Dialog */}
+      <AlertDialog open={deleteSingleOpen} onOpenChange={setDeleteSingleOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir competição?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir <strong>{deleteEntry?.name}</strong>?
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <Button 
+              variant="destructive" 
+              onClick={handleDeleteSingle}
+              disabled={isDeleting}
+            >
+              {isDeleting && <Loader2 className="w-4 h-4 animate-spin" />}
+              Excluir
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
