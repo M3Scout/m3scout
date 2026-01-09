@@ -11,6 +11,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { calculatePlayerRating } from "@/lib/playerRating";
+import { type AggregatedStats } from "@/lib/playerStats";
 
 interface Player {
   id: string;
@@ -22,6 +24,7 @@ interface Player {
   nationality: string;
   current_club: string | null;
   photo_url: string | null;
+  autoRating?: number | null;
 }
 
 const PAGE_SIZE_OPTIONS = [12, 24, 48];
@@ -37,15 +40,88 @@ const Players = () => {
 
   useEffect(() => {
     const fetchPlayers = async () => {
+      const currentYear = new Date().getFullYear();
+      
       const { data, error } = await supabase
         .from("players")
         .select("id, slug, full_name, position, secondary_positions, age, nationality, current_club, photo_url")
         .eq("is_public", true)
         .order("full_name");
 
-      if (data) {
-        setPlayers(data);
+      if (!data) {
+        setLoading(false);
+        return;
       }
+
+      // Fetch player stats for rating calculation
+      const playerIds = data.map(p => p.id);
+      const { data: statsData } = await supabase
+        .from("player_stats")
+        .select("player_id, season_year, matches, minutes, goals, assists, yellow_cards, red_cards, tackles, interceptions, recoveries, competition_id, competitions(computed_coefficient)")
+        .eq("season_year", currentYear)
+        .in("player_id", playerIds);
+
+      // Group stats by player
+      const statsByPlayer: Record<string, { stats: AggregatedStats; maxCoef: number }> = {};
+      statsData?.forEach((stat) => {
+        const playerId = stat.player_id;
+        const coef = (stat.competitions as any)?.computed_coefficient || 1.0;
+        
+        if (!statsByPlayer[playerId]) {
+          statsByPlayer[playerId] = {
+            stats: {
+              season_year: currentYear,
+              total_matches: 0,
+              total_minutes: 0,
+              total_goals: 0,
+              total_assists: 0,
+              total_yellow_cards: 0,
+              total_red_cards: 0,
+              total_tackles: 0,
+              total_interceptions: 0,
+              total_recoveries: 0,
+              competitions_count: 0,
+            },
+            maxCoef: coef,
+          };
+        }
+        
+        const agg = statsByPlayer[playerId];
+        agg.stats.total_matches += stat.matches || 0;
+        agg.stats.total_minutes += stat.minutes || 0;
+        agg.stats.total_goals += stat.goals || 0;
+        agg.stats.total_assists += stat.assists || 0;
+        agg.stats.total_yellow_cards += stat.yellow_cards || 0;
+        agg.stats.total_red_cards += stat.red_cards || 0;
+        agg.stats.total_tackles += stat.tackles || 0;
+        agg.stats.total_interceptions += stat.interceptions || 0;
+        agg.stats.total_recoveries += stat.recoveries || 0;
+        agg.stats.competitions_count += 1;
+        agg.maxCoef = Math.max(agg.maxCoef, coef);
+      });
+
+      // Calculate ratings
+      const playersWithRatings = data.map((player) => {
+        let autoRating: number | null = null;
+        
+        const playerStats = statsByPlayer[player.id];
+        if (playerStats && playerStats.stats.total_minutes > 0) {
+          const breakdown = calculatePlayerRating({
+            age: player.age,
+            position: player.position,
+            competitionCoefficient: playerStats.maxCoef,
+            stats: playerStats.stats,
+          });
+          autoRating = breakdown.rating0_5;
+        }
+
+        return {
+          ...player,
+          autoRating,
+        };
+      });
+
+      setPlayers(playersWithRatings);
       setLoading(false);
     };
 
@@ -157,6 +233,7 @@ const Players = () => {
                     nationality={player.nationality}
                     currentClub={player.current_club || ""}
                     imageUrl={player.photo_url || "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=400&h=600&fit=crop"}
+                    autoRating={player.autoRating}
                   />
                 </div>
               ))}
