@@ -187,6 +187,75 @@ export type Database = {
           },
         ]
       }
+      player_stats: {
+        Row: {
+          assists: number
+          competition_id: string | null
+          created_at: string
+          goals: number
+          id: string
+          interceptions: number
+          matches: number
+          minutes: number
+          player_id: string
+          recoveries: number
+          red_cards: number
+          season_year: number
+          tackles: number
+          updated_at: string
+          yellow_cards: number
+        }
+        Insert: {
+          assists?: number
+          competition_id?: string | null
+          created_at?: string
+          goals?: number
+          id?: string
+          interceptions?: number
+          matches?: number
+          minutes?: number
+          player_id: string
+          recoveries?: number
+          red_cards?: number
+          season_year?: number
+          tackles?: number
+          updated_at?: string
+          yellow_cards?: number
+        }
+        Update: {
+          assists?: number
+          competition_id?: string | null
+          created_at?: string
+          goals?: number
+          id?: string
+          interceptions?: number
+          matches?: number
+          minutes?: number
+          player_id?: string
+          recoveries?: number
+          red_cards?: number
+          season_year?: number
+          tackles?: number
+          updated_at?: string
+          yellow_cards?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_stats_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_stats_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       players: {
         Row: {
           age: number | null
