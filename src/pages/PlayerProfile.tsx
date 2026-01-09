@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   ArrowLeft, 
   MapPin, 
@@ -11,8 +13,12 @@ import {
   Flag,
   Play,
   MessageCircle,
-  Loader2
+  Loader2,
+  BarChart3,
+  Star,
+  Target,
 } from "lucide-react";
+import { PublicStatsSection } from "@/components/players/sections/PublicStatsSection";
 
 interface Player {
   id: string;
@@ -29,6 +35,10 @@ interface Player {
   photo_url: string | null;
   bio_public: string | null;
   highlight_video_url: string | null;
+  auto_rating: number | null;
+  primary_tactical_role: string | null;
+  play_style: string | null;
+  strengths: string[] | null;
 }
 
 const PlayerProfile = () => {
@@ -98,7 +108,6 @@ const PlayerProfile = () => {
                 alt={player.full_name}
                 className="w-full h-full object-cover"
               />
-              {/* Gradient Overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-transparent to-transparent" />
             </div>
           </div>
@@ -110,6 +119,19 @@ const PlayerProfile = () => {
 
             {/* Name */}
             <h1 className="text-4xl md:text-5xl font-bold mb-4">{player.full_name}</h1>
+
+            {/* Rating */}
+            {player.auto_rating !== null && (
+              <div className="flex items-center gap-2 mb-4">
+                <div className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary/10">
+                  <Star className="w-5 h-5 text-primary fill-primary" />
+                  <span className="text-xl font-bold text-primary">
+                    {player.auto_rating.toFixed(1)}
+                  </span>
+                  <span className="text-sm text-muted-foreground">/5.0</span>
+                </div>
+              </div>
+            )}
 
             {/* Secondary Positions */}
             {player.secondary_positions && player.secondary_positions.length > 0 && (
@@ -171,6 +193,35 @@ const PlayerProfile = () => {
               )}
             </div>
 
+            {/* Tactical Info */}
+            {(player.primary_tactical_role || player.play_style) && (
+              <div className="glass-card p-4 mb-6">
+                <div className="flex items-center gap-2 text-muted-foreground mb-3">
+                  <Target className="w-4 h-4" />
+                  <span className="text-sm font-medium">Perfil Tático</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {player.primary_tactical_role && (
+                    <Badge variant="outline" className="border-primary/50">
+                      {player.primary_tactical_role}
+                    </Badge>
+                  )}
+                  {player.play_style && (
+                    <Badge variant="secondary">{player.play_style}</Badge>
+                  )}
+                </div>
+                {player.strengths && player.strengths.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-3">
+                    {player.strengths.slice(0, 4).map((s) => (
+                      <Badge key={s} className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-xs">
+                        {s}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Bio */}
             {player.bio_public && (
               <div className="mb-8">
@@ -190,6 +241,11 @@ const PlayerProfile = () => {
             </div>
           </div>
         </div>
+
+        {/* Stats Section - Public */}
+        <section className="mt-16">
+          <PublicStatsSection playerId={player.id} />
+        </section>
 
         {/* Video Section */}
         {player.highlight_video_url && (

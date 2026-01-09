@@ -187,6 +187,44 @@ export type Database = {
           },
         ]
       }
+      player_market_value_history: {
+        Row: {
+          created_at: string
+          currency: string
+          id: string
+          note: string | null
+          player_id: string
+          recorded_at: string
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          id?: string
+          note?: string | null
+          player_id: string
+          recorded_at?: string
+          value: number
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          id?: string
+          note?: string | null
+          player_id?: string
+          recorded_at?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_market_value_history_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_rating_history: {
         Row: {
           created_at: string
@@ -318,6 +356,9 @@ export type Database = {
           is_archived: boolean | null
           is_public: boolean | null
           last_physical_evaluation: string | null
+          market_value: number | null
+          market_value_currency: string | null
+          market_value_trend: string | null
           max_speed: number | null
           medical_notes: string | null
           muscle_mass: number | null
@@ -374,6 +415,9 @@ export type Database = {
           is_archived?: boolean | null
           is_public?: boolean | null
           last_physical_evaluation?: string | null
+          market_value?: number | null
+          market_value_currency?: string | null
+          market_value_trend?: string | null
           max_speed?: number | null
           medical_notes?: string | null
           muscle_mass?: number | null
@@ -430,6 +474,9 @@ export type Database = {
           is_archived?: boolean | null
           is_public?: boolean | null
           last_physical_evaluation?: string | null
+          market_value?: number | null
+          market_value_currency?: string | null
+          market_value_trend?: string | null
           max_speed?: number | null
           medical_notes?: string | null
           muscle_mass?: number | null
@@ -644,6 +691,15 @@ export type Database = {
       }
       update_player_auto_rating: {
         Args: { p_player_id: string }
+        Returns: undefined
+      }
+      update_player_market_value: {
+        Args: {
+          p_currency?: string
+          p_note?: string
+          p_player_id: string
+          p_value: number
+        }
         Returns: undefined
       }
     }
