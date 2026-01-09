@@ -4,7 +4,6 @@ import {
   FileText, 
   TrendingUp, 
   AlertCircle,
-  ArrowUpRight,
   Clock,
   Loader2
 } from "lucide-react";
@@ -12,6 +11,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
+import { PlayerRankingCard } from "@/components/dashboard/PlayerRankingCard";
 
 interface DashboardStats {
   totalPlayers: number;
@@ -340,6 +340,9 @@ const Dashboard = () => {
           )}
         </div>
       </div>
+
+      {/* Player Ranking */}
+      <PlayerRankingCard />
 
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Recent Reports */}
