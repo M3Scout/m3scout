@@ -1,30 +1,28 @@
 import { Badge } from "@/components/ui/badge";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Star, TrendingUp, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Star, AlertCircle, TrendingUp, CheckCircle2 } from "lucide-react";
 import {
   type RatingBreakdown,
   getReliabilityLabel,
   getReliabilityVariant,
-  RATING_WEIGHTS,
 } from "@/lib/playerRating";
+import { RatingBreakdownModal } from "./RatingBreakdownModal";
 
 interface PlayerRatingBadgeProps {
   rating: number;
   breakdown?: RatingBreakdown;
+  ratingDetails?: any;
   showReliability?: boolean;
   size?: "sm" | "md" | "lg";
+  clickable?: boolean;
 }
 
 export function PlayerRatingBadge({
   rating,
   breakdown,
+  ratingDetails,
   showReliability = true,
   size = "md",
+  clickable = true,
 }: PlayerRatingBadgeProps) {
   const sizeClasses = {
     sm: "text-xs px-2 py-0.5",
@@ -51,8 +49,8 @@ export function PlayerRatingBadge({
     high: <CheckCircle2 className="w-3 h-3" />,
   }[breakdown.reliability] : null;
 
-  const content = (
-    <div className="flex items-center gap-2">
+  const badgeContent = (
+    <div className={`flex items-center gap-2 ${clickable && ratingDetails ? "cursor-pointer hover:opacity-80 transition-opacity" : ""}`}>
       <Badge
         variant="outline"
         className={`${sizeClasses[size]} ${getRatingColor(rating)} font-semibold`}
@@ -69,75 +67,16 @@ export function PlayerRatingBadge({
     </div>
   );
 
-  if (!breakdown) {
-    return content;
+  // If we have rating details and it's clickable, wrap in modal
+  if (clickable && ratingDetails) {
+    return (
+      <RatingBreakdownModal
+        details={ratingDetails}
+        rating={rating}
+        trigger={badgeContent}
+      />
+    );
   }
 
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div className="inline-flex cursor-help">{content}</div>
-        </TooltipTrigger>
-        <TooltipContent side="bottom" className="w-72 p-4">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between border-b pb-2">
-              <span className="font-semibold">Nota Automática</span>
-              <span className="text-lg font-bold">{rating.toFixed(1)}/5</span>
-            </div>
-
-            <p className="text-xs text-muted-foreground">
-              Calculado por: idade + nível da competição + performance
-            </p>
-
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">
-                  Nível Competição ({(RATING_WEIGHTS.competitionLevel * 100).toFixed(0)}%)
-                </span>
-                <span className="font-medium">{breakdown.competitionLevelScore.toFixed(1)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">
-                  Produção ({(RATING_WEIGHTS.production * 100).toFixed(0)}%)
-                </span>
-                <span className="font-medium">{breakdown.productionScore.toFixed(1)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">
-                  Ações Defensivas ({(RATING_WEIGHTS.defensiveActions * 100).toFixed(0)}%)
-                </span>
-                <span className="font-medium">{breakdown.defensiveActionsScore.toFixed(1)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">
-                  Disciplina ({(RATING_WEIGHTS.discipline * 100).toFixed(0)}%)
-                </span>
-                <span className="font-medium">{breakdown.disciplineScore.toFixed(1)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">
-                  Potencial Idade ({(RATING_WEIGHTS.agePotential * 100).toFixed(0)}%)
-                </span>
-                <span className="font-medium">{breakdown.agePotentialScore.toFixed(1)}</span>
-              </div>
-            </div>
-
-            <div className="pt-2 border-t flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">Overall (0-100)</span>
-              <span className="font-semibold">{breakdown.overall0_100.toFixed(1)}</span>
-            </div>
-
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              {reliabilityIcon}
-              <span>
-                Confiabilidade: <strong>{getReliabilityLabel(breakdown.reliability)}</strong>
-                {breakdown.reliability === "low" && " (poucos dados)"}
-              </span>
-            </div>
-          </div>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
+  return badgeContent;
 }
