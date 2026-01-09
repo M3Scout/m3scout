@@ -28,6 +28,7 @@ import {
   Plus 
 } from "lucide-react";
 import { toast } from "sonner";
+import { extractYouTubeVideoId } from "@/lib/utils";
 import { DeletePlayerDialog } from "@/components/players/DeletePlayerDialog";
 
 const positions = [
@@ -559,7 +560,22 @@ export default function EditPlayer() {
 
                   <div className="space-y-2">
                     <Label>Link do Vídeo de Destaque</Label>
-                    <Input type="url" value={formData.highlight_video_url} onChange={(e) => handleChange("highlight_video_url", e.target.value)} />
+                    <Input 
+                      value={formData.highlight_video_url} 
+                      onChange={(e) => handleChange("highlight_video_url", e.target.value)} 
+                      placeholder="https://youtube.com/watch?v=... ou youtu.be/..."
+                    />
+                    {formData.highlight_video_url && (
+                      extractYouTubeVideoId(formData.highlight_video_url) ? (
+                        <p className="text-xs text-emerald-500">
+                          ✓ Vídeo detectado: {extractYouTubeVideoId(formData.highlight_video_url)}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-destructive">
+                          ✗ URL inválida. Use um link do YouTube ou ID do vídeo.
+                        </p>
+                      )
+                    )}
                   </div>
 
                   <div className="space-y-2">

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { getYouTubeEmbedUrl } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -371,27 +372,31 @@ const PlayerDetail = () => {
               <SeasonSummaryCard playerId={player.id} />
 
               {/* Video */}
-              {player.highlight_video_url && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Play className="w-5 h-5" />
-                      Vídeo de Destaque
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="aspect-video rounded-lg overflow-hidden">
-                      <iframe
-                        src={player.highlight_video_url}
-                        title="Player Highlights"
-                        className="w-full h-full"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+              {player.highlight_video_url && (() => {
+                const embedUrl = getYouTubeEmbedUrl(player.highlight_video_url);
+                if (!embedUrl) return null;
+                return (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Play className="w-5 h-5" />
+                        Vídeo de Destaque
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="aspect-video rounded-lg overflow-hidden">
+                        <iframe
+                          src={embedUrl}
+                          title="Player Highlights"
+                          className="w-full h-full"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })()}
 
               {/* Internal Evaluation (visible only to Admin/Scout) */}
               {canViewPrivate && (
