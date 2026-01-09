@@ -39,7 +39,14 @@ import {
   Filter,
   X,
   Copy,
+  HelpCircle,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -777,10 +784,43 @@ const Competitions = () => {
                   <TableHead>Nome</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Divisão</TableHead>
-                  <TableHead className="text-center">Base Coef.</TableHead>
-                  <TableHead className="text-center">Computed</TableHead>
+                <TableHead className="text-center">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger className="flex items-center gap-1 justify-center">
+                          Base Coef.
+                          <HelpCircle className="w-3 h-3 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p>Valor definido manualmente que representa a força da competição. Série A = 1.00, Libertadores = 1.30</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </TableHead>
                   <TableHead className="text-center">
-                    <Eye className="w-4 h-4 inline" />
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger className="flex items-center gap-1 justify-center">
+                          Computed
+                          <HelpCircle className="w-3 h-3 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p>Valor calculado automaticamente. Igual ao base_coefficient. O peso da fase é aplicado nos relatórios de scouting.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </TableHead>
+                  <TableHead className="text-center">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Eye className="w-4 h-4" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Visibilidade (0 = oculto, 100 = máximo)</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </TableHead>
                   <TableHead className="text-center">Status</TableHead>
                   <TableHead className="w-12"></TableHead>
@@ -812,18 +852,42 @@ const Competitions = () => {
                       {comp.division || "—"}
                     </TableCell>
                     <TableCell className="text-center">
-                      <span className="font-mono text-sm">
-                        {Number(comp.base_coefficient).toFixed(2)}
-                      </span>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <span className="font-mono text-sm">
+                              {Number(comp.base_coefficient).toFixed(2)}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Coeficiente base definido manualmente</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </TableCell>
                     <TableCell className="text-center">
-                      <span className="font-bold text-primary">
-                        ×{Number(comp.computed_coefficient).toFixed(2)}
-                      </span>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <span className="font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
+                              ×{Number(comp.computed_coefficient).toFixed(2)}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Coeficiente calculado automaticamente</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </TableCell>
                     <TableCell className="text-center">
-                      <span className="text-sm text-muted-foreground">
-                        {comp.visibility_score ?? 50}
+                      <span className={`text-sm ${(comp.visibility_score ?? 50) === 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                        {(comp.visibility_score ?? 50) === 0 ? (
+                          <Badge variant="outline" className="text-destructive border-destructive/30">
+                            Oculto
+                          </Badge>
+                        ) : (
+                          comp.visibility_score ?? 50
+                        )}
                       </span>
                     </TableCell>
                     <TableCell className="text-center">
@@ -967,7 +1031,27 @@ const Competitions = () => {
               </div>
 
               <div className="space-y-2">
-                <Label>Coeficiente Base (0.05 - 2.50)</Label>
+                <div className="flex items-center gap-2">
+                  <Label>Coeficiente Base</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <HelpCircle className="w-4 h-4 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="font-semibold mb-1">Valores de Referência:</p>
+                        <ul className="text-xs space-y-0.5">
+                          <li>Libertadores: 1.30</li>
+                          <li>Série A: 1.00</li>
+                          <li>Copa do Brasil: 0.85</li>
+                          <li>Série B: 0.60</li>
+                          <li>SP A1: 0.55</li>
+                          <li>Outros estados A1: 0.35</li>
+                        </ul>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
                 <Input
                   type="number"
                   step="0.05"
@@ -975,14 +1059,54 @@ const Competitions = () => {
                   max="2.50"
                   value={formData.base_coefficient}
                   onChange={(e) => setFormData({ ...formData, base_coefficient: parseFloat(e.target.value) || 1.0 })}
+                  placeholder="0.05 - 2.50"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Coeficiente calculado será igual ao base
+                  Define a força da competição (0.05 - 2.50)
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Label className="text-muted-foreground">Coeficiente Calculado</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <HelpCircle className="w-4 h-4 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>Valor calculado automaticamente. Igual ao base_coefficient. O peso da fase é aplicado separadamente nos relatórios.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <Input
+                  type="text"
+                  value={`×${formData.base_coefficient.toFixed(2)}`}
+                  readOnly
+                  disabled
+                  className="bg-muted/50 text-muted-foreground font-mono cursor-not-allowed"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Calculado automaticamente (somente leitura)
                 </p>
               </div>
 
               <div className="col-span-2 space-y-2">
-                <Label>Visibilidade: {formData.visibility_score}</Label>
+                <div className="flex items-center gap-2">
+                  <Label>Visibilidade: {formData.visibility_score}</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <HelpCircle className="w-4 h-4 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p><strong>0:</strong> Oculto dos dropdowns públicos</p>
+                        <p><strong>1-100:</strong> Visível, ordenado por prioridade</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
                 <Slider
                   value={[formData.visibility_score]}
                   onValueChange={([v]) => setFormData({ ...formData, visibility_score: v })}
@@ -990,6 +1114,10 @@ const Competitions = () => {
                   max={100}
                   step={5}
                 />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Oculto</span>
+                  <span>Máxima visibilidade</span>
+                </div>
               </div>
 
               <div className="col-span-2 flex items-center gap-6">
