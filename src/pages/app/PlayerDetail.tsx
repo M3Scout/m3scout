@@ -42,6 +42,7 @@ import { TacticalProfileCard } from "@/components/players/sections/TacticalProfi
 import { SeasonSummaryCard } from "@/components/players/sections/SeasonSummaryCard";
 import { OverallRatingCard } from "@/components/players/sections/OverallRatingCard";
 import { MarketValueSection } from "@/components/players/sections/MarketValueSection";
+import { MarketValueTab } from "@/components/players/sections/MarketValueTab";
 
 interface Player {
   id: string;
@@ -300,7 +301,7 @@ const PlayerDetail = () => {
 
       {/* Main Content with Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 h-auto">
+        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7 h-auto">
           <TabsTrigger value="overview" className="gap-2">
             <User className="w-4 h-4" />
             <span className="hidden sm:inline">Visão Geral</span>
@@ -308,6 +309,10 @@ const PlayerDetail = () => {
           <TabsTrigger value="stats" className="gap-2">
             <BarChart3 className="w-4 h-4" />
             <span className="hidden sm:inline">Estatísticas</span>
+          </TabsTrigger>
+          <TabsTrigger value="market" className="gap-2">
+            <DollarSign className="w-4 h-4" />
+            <span className="hidden sm:inline">Valor de Mercado</span>
           </TabsTrigger>
           <TabsTrigger value="physical" className="gap-2">
             <Activity className="w-4 h-4" />
@@ -500,6 +505,17 @@ const PlayerDetail = () => {
           <PlayerStatsSection 
             playerId={player.id} 
             onStatsChange={refetchPlayer}
+          />
+        </TabsContent>
+
+        {/* Market Value Tab */}
+        <TabsContent value="market">
+          <MarketValueTab
+            playerId={player.id}
+            marketValue={player.market_value}
+            marketValueCurrency={player.market_value_currency}
+            marketValueTrend={player.market_value_trend}
+            onValueChange={refetchPlayer}
           />
         </TabsContent>
 

@@ -195,6 +195,7 @@ export type Database = {
           note: string | null
           player_id: string
           recorded_at: string
+          source: string | null
           value: number
         }
         Insert: {
@@ -204,6 +205,7 @@ export type Database = {
           note?: string | null
           player_id: string
           recorded_at?: string
+          source?: string | null
           value: number
         }
         Update: {
@@ -213,6 +215,7 @@ export type Database = {
           note?: string | null
           player_id?: string
           recorded_at?: string
+          source?: string | null
           value?: number
         }
         Relationships: [
@@ -693,15 +696,27 @@ export type Database = {
         Args: { p_player_id: string }
         Returns: undefined
       }
-      update_player_market_value: {
-        Args: {
-          p_currency?: string
-          p_note?: string
-          p_player_id: string
-          p_value: number
-        }
-        Returns: undefined
-      }
+      update_player_market_value:
+        | {
+            Args: {
+              p_currency?: string
+              p_note?: string
+              p_player_id: string
+              p_value: number
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_currency?: string
+              p_note?: string
+              p_player_id: string
+              p_recorded_at?: string
+              p_source?: string
+              p_value: number
+            }
+            Returns: undefined
+          }
     }
     Enums: {
       app_role: "admin" | "scout" | "member" | "partner"
