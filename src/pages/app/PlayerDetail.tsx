@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -24,6 +24,7 @@ import {
   Target,
   Stethoscope,
   FileText as ContractIcon,
+  BarChart3,
 } from "lucide-react";
 import { DeletePlayerDialog } from "@/components/players/DeletePlayerDialog";
 import { PhysicalDataSection } from "@/components/players/sections/PhysicalDataSection";
@@ -31,6 +32,10 @@ import { TechnicalProfileSection } from "@/components/players/sections/Technical
 import { InjuryHistorySection } from "@/components/players/sections/InjuryHistorySection";
 import { ContractSection } from "@/components/players/sections/ContractSection";
 import { InternalEvaluationSection } from "@/components/players/sections/InternalEvaluationSection";
+import { PlayerStatsSection } from "@/components/players/sections/PlayerStatsSection";
+import { PlayerRatingBadge } from "@/components/players/PlayerRatingBadge";
+import { calculatePlayerRating, type RatingBreakdown } from "@/lib/playerRating";
+import { type AggregatedStats } from "@/lib/playerStats";
 
 interface Player {
   id: string;
@@ -118,8 +123,29 @@ const PlayerDetail = () => {
   const [reports, setReports] = useState<ScoutingReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  
+  // Stats for rating calculation
+  const [aggregatedStats, setAggregatedStats] = useState<AggregatedStats | null>(null);
+  const [competitionCoefficient, setCompetitionCoefficient] = useState(1.0);
 
   const canViewPrivate = isAdmin || isScout;
+
+  // Calculate player rating when stats or player changes
+  const ratingBreakdown = useMemo<RatingBreakdown | null>(() => {
+    if (!player || !aggregatedStats) return null;
+    
+    return calculatePlayerRating({
+      age: player.age,
+      position: player.position,
+      competitionCoefficient,
+      stats: aggregatedStats,
+    });
+  }, [player, aggregatedStats, competitionCoefficient]);
+
+  const handleStatsChange = (stats: AggregatedStats | null, coefficient: number) => {
+    setAggregatedStats(stats);
+    setCompetitionCoefficient(coefficient);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -228,6 +254,16 @@ const PlayerDetail = () => {
                   </Badge>
                 ))}
               </div>
+              {/* Player Rating */}
+              {ratingBreakdown && (
+                <div className="mt-2">
+                  <PlayerRatingBadge
+                    rating={ratingBreakdown.rating0_5}
+                    breakdown={ratingBreakdown}
+                    size="md"
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -260,10 +296,14 @@ const PlayerDetail = () => {
 
       {/* Main Content with Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 h-auto">
+        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 h-auto">
           <TabsTrigger value="overview" className="gap-2">
             <User className="w-4 h-4" />
             <span className="hidden sm:inline">Visão Geral</span>
+          </TabsTrigger>
+          <TabsTrigger value="stats" className="gap-2">
+            <BarChart3 className="w-4 h-4" />
+            <span className="hidden sm:inline">Estatísticas</span>
           </TabsTrigger>
           <TabsTrigger value="physical" className="gap-2">
             <Activity className="w-4 h-4" />
@@ -453,6 +493,14 @@ const PlayerDetail = () => {
               </Card>
             </div>
           </div>
+        </TabsContent>
+
+        {/* Stats Tab */}
+        <TabsContent value="stats">
+          <PlayerStatsSection 
+            playerId={player.id} 
+            onStatsChange={handleStatsChange}
+          />
         </TabsContent>
 
         {/* Physical Tab */}
