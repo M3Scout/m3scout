@@ -35,7 +35,10 @@ import {
   MapPin,
   Calendar,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Archive,
+  ArchiveRestore,
+  GitCompare,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -51,6 +54,9 @@ import {
 } from "@/components/ui/collapsible";
 import { DeletePlayerDialog } from "@/components/players/DeletePlayerDialog";
 import { PlayerRatingBadge } from "@/components/players/PlayerRatingBadge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 interface Player {
   id: string;
@@ -64,6 +70,7 @@ interface Player {
   avg_score?: number | null;
   photo_url?: string | null;
   auto_rating?: number | null;
+  is_archived?: boolean | null;
 }
 
 type SortField = "full_name" | "position" | "current_club" | "avg_score" | "auto_rating" | "contract_end" | "is_public";
@@ -93,13 +100,21 @@ const AppPlayers = () => {
   const [nationalityFilter, setNationalityFilter] = useState<string>("all");
   const [clubFilter, setClubFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [showArchived, setShowArchived] = useState(false);
 
   const fetchPlayers = async () => {
     // Fetch players with auto_rating from database
-    const { data: playersData, error: playersError } = await supabase
+    let query = supabase
       .from("players")
-      .select("id, full_name, position, age, nationality, current_club, contract_end, is_public, photo_url, auto_rating")
+      .select("id, full_name, position, age, nationality, current_club, contract_end, is_public, photo_url, auto_rating, is_archived")
       .order("full_name");
+
+    // Filter archived by default
+    if (!showArchived) {
+      query = query.or("is_archived.eq.false,is_archived.is.null");
+    }
+
+    const { data: playersData, error: playersError } = await query;
 
     if (playersError || !playersData) {
       setLoading(false);
@@ -133,7 +148,7 @@ const AppPlayers = () => {
 
   useEffect(() => {
     fetchPlayers();
-  }, []);
+  }, [showArchived]);
 
   // Extract unique values for filter options
   const filterOptions = useMemo(() => {
@@ -246,6 +261,25 @@ const AppPlayers = () => {
     setDeleteDialogOpen(true);
   };
 
+  const handleArchivePlayer = async (player: Player) => {
+    const isArchived = player.is_archived;
+    const { error } = await supabase
+      .from("players")
+      .update({
+        is_archived: !isArchived,
+        archived_at: isArchived ? null : new Date().toISOString(),
+      })
+      .eq("id", player.id);
+
+    if (error) {
+      toast.error("Erro ao atualizar atleta");
+      return;
+    }
+
+    toast.success(isArchived ? "Atleta restaurado!" : "Atleta arquivado!");
+    fetchPlayers();
+  };
+
   const handleDeleteSuccess = () => {
     fetchPlayers();
   };
@@ -283,12 +317,20 @@ const AppPlayers = () => {
             Gerencie todos os atletas da agência
           </p>
         </div>
-        <Button variant="gradient" asChild>
-          <Link to="/app/players/new">
-            <Plus className="w-4 h-4" />
-            Novo Atleta
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" asChild>
+            <Link to="/app/compare">
+              <GitCompare className="w-4 h-4" />
+              Comparar
+            </Link>
+          </Button>
+          <Button variant="gradient" asChild>
+            <Link to="/app/players/new">
+              <Plus className="w-4 h-4" />
+              Novo Atleta
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Search and Filters */}
@@ -414,6 +456,18 @@ const AppPlayers = () => {
                   </Select>
                 </div>
               </div>
+
+              {/* Show Archived Toggle */}
+              <div className="flex items-center gap-2 pt-2 border-t border-border/50">
+                <Switch
+                  id="show-archived"
+                  checked={showArchived}
+                  onCheckedChange={setShowArchived}
+                />
+                <Label htmlFor="show-archived" className="text-sm cursor-pointer">
+                  Mostrar arquivados
+                </Label>
+              </div>
             </div>
           </CollapsibleContent>
         </Collapsible>
@@ -422,6 +476,7 @@ const AppPlayers = () => {
       {/* Results count */}
       <p className="text-sm text-muted-foreground">
         {filteredAndSortedPlayers.length} atleta{filteredAndSortedPlayers.length !== 1 ? "s" : ""} encontrado{filteredAndSortedPlayers.length !== 1 ? "s" : ""}
+        {showArchived && " (incluindo arquivados)"}
       </p>
 
       {/* Content */}
@@ -551,13 +606,20 @@ const AppPlayers = () => {
                         : '-'}
                     </td>
                     <td className="p-4">
-                      <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
-                        player.is_public 
-                          ? "bg-primary/20 text-primary" 
-                          : "bg-muted text-muted-foreground"
-                      }`}>
-                        {player.is_public ? "Público" : "Privado"}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
+                          player.is_public 
+                            ? "bg-primary/20 text-primary" 
+                            : "bg-muted text-muted-foreground"
+                        }`}>
+                          {player.is_public ? "Público" : "Privado"}
+                        </span>
+                        {player.is_archived && (
+                          <span className="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-amber-500/20 text-amber-600">
+                            Arquivado
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="p-4 text-right">
                       <DropdownMenu>
@@ -585,17 +647,30 @@ const AppPlayers = () => {
                               Novo Relatório
                             </Link>
                           </DropdownMenuItem>
-                          {isAdmin && (
-                            <>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                className="text-destructive focus:text-destructive"
-                                onClick={() => handleDeleteClick(player)}
-                              >
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Excluir
-                              </DropdownMenuItem>
-                            </>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => handleArchivePlayer(player)}
+                          >
+                            {player.is_archived ? (
+                              <>
+                                <ArchiveRestore className="w-4 h-4 mr-2" />
+                                Restaurar
+                              </>
+                            ) : (
+                              <>
+                                <Archive className="w-4 h-4 mr-2" />
+                                Arquivar
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                          {isAdmin && player.is_archived && (
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => handleDeleteClick(player)}
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Excluir Permanentemente
+                            </DropdownMenuItem>
                           )}
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -698,17 +773,30 @@ const AppPlayers = () => {
                           Novo Relatório
                         </Link>
                       </DropdownMenuItem>
-                      {isAdmin && (
-                        <>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => handleDeleteClick(player)}
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Excluir
-                          </DropdownMenuItem>
-                        </>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => handleArchivePlayer(player)}
+                      >
+                        {player.is_archived ? (
+                          <>
+                            <ArchiveRestore className="w-4 h-4 mr-2" />
+                            Restaurar
+                          </>
+                        ) : (
+                          <>
+                            <Archive className="w-4 h-4 mr-2" />
+                            Arquivar
+                          </>
+                        )}
+                      </DropdownMenuItem>
+                      {isAdmin && player.is_archived && (
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => handleDeleteClick(player)}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Excluir Permanentemente
+                        </DropdownMenuItem>
                       )}
                     </DropdownMenuContent>
                   </DropdownMenu>

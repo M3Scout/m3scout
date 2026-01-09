@@ -32,6 +32,7 @@ import Competitions from "./pages/app/Competitions";
 import CompetitionsImport from "./pages/app/CompetitionsImport";
 import Leads from "./pages/app/Leads";
 import Settings from "./pages/app/Settings";
+import ComparePlayers from "./pages/app/ComparePlayers";
 
 const queryClient = new QueryClient();
 
@@ -68,6 +69,7 @@ const App = () => (
               <Route path="players/new" element={<NewPlayer />} />
               <Route path="players/:id" element={<PlayerDetail />} />
               <Route path="players/:id/edit" element={<EditPlayer />} />
+              <Route path="compare" element={<ComparePlayers />} />
               <Route path="reports" element={<ScoutingReports />} />
               <Route path="reports/new" element={<NewScoutingReport />} />
               <Route path="reports/:id" element={<ReportDetail />} />
