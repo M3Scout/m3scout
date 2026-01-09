@@ -1,7 +1,13 @@
 import { Link } from "react-router-dom";
-import { MapPin, Calendar } from "lucide-react";
+import { MapPin, Calendar, Star } from "lucide-react";
 import { RatingStars } from "./RatingStars";
 import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface PlayerCardProps {
   id: string;
@@ -15,6 +21,8 @@ interface PlayerCardProps {
   imageUrl: string;
   rating?: number;
   isPublic?: boolean;
+  // New: automatic rating (0-5)
+  autoRating?: number | null;
 }
 
 export function PlayerCard({
@@ -28,8 +36,16 @@ export function PlayerCard({
   imageUrl,
   rating = 0,
   isPublic = true,
+  autoRating,
 }: PlayerCardProps) {
   const href = isPublic ? `/players/${slug}` : `/app/players/${slug}`;
+
+  const getRatingColor = (rating: number): string => {
+    if (rating >= 4.0) return "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
+    if (rating >= 3.0) return "bg-blue-500/20 text-blue-400 border-blue-500/30";
+    if (rating >= 2.0) return "bg-amber-500/20 text-amber-400 border-amber-500/30";
+    return "bg-red-500/20 text-red-400 border-red-500/30";
+  };
 
   return (
     <Link to={href} className="group block">
@@ -49,8 +65,30 @@ export function PlayerCard({
             <span className="position-badge">{position}</span>
           </div>
 
-          {/* Rating */}
-          {rating > 0 && (
+          {/* Auto Rating Badge (0-5) */}
+          {autoRating !== null && autoRating !== undefined && (
+            <div className="absolute top-3 right-3">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className={cn(
+                      "glass-card px-2 py-1 flex items-center gap-1 border cursor-help",
+                      getRatingColor(autoRating)
+                    )}>
+                      <Star className="w-3 h-3 fill-current" />
+                      <span className="text-sm font-semibold">{autoRating.toFixed(1)}</span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Nota automática baseada em estatísticas</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          )}
+
+          {/* Legacy Rating Stars (if no auto rating) */}
+          {rating > 0 && !autoRating && (
             <div className="absolute top-3 right-3">
               <div className="glass-card px-2 py-1">
                 <RatingStars rating={rating} size="sm" />

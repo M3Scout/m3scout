@@ -50,6 +50,9 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { DeletePlayerDialog } from "@/components/players/DeletePlayerDialog";
+import { PlayerRatingBadge } from "@/components/players/PlayerRatingBadge";
+import { calculatePlayerRating, type RatingBreakdown } from "@/lib/playerRating";
+import { type AggregatedStats } from "@/lib/playerStats";
 
 interface Player {
   id: string;
@@ -62,9 +65,12 @@ interface Player {
   is_public: boolean;
   avg_score?: number | null;
   photo_url?: string | null;
+  // New: calculated rating
+  rating_0_5?: number | null;
+  rating_breakdown?: RatingBreakdown | null;
 }
 
-type SortField = "full_name" | "position" | "current_club" | "avg_score" | "contract_end" | "is_public";
+type SortField = "full_name" | "position" | "current_club" | "avg_score" | "rating_0_5" | "contract_end" | "is_public";
 type SortDirection = "asc" | "desc";
 type ViewMode = "table" | "grid";
 
@@ -93,6 +99,8 @@ const AppPlayers = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const fetchPlayers = async () => {
+    const currentYear = new Date().getFullYear();
+    
     // Fetch players with photo_url
     const { data: playersData, error: playersError } = await supabase
       .from("players")
@@ -104,10 +112,16 @@ const AppPlayers = () => {
       return;
     }
 
-    // Fetch average scores for all players
+    // Fetch average scores for all players (from scouting reports)
     const { data: scoresData } = await supabase
       .from("scouting_reports")
       .select("player_id, final_score");
+
+    // Fetch player stats for rating calculation
+    const { data: statsData } = await supabase
+      .from("player_stats")
+      .select("player_id, season_year, matches, minutes, goals, assists, yellow_cards, red_cards, tackles, interceptions, recoveries, competition_id, competitions(computed_coefficient)")
+      .eq("season_year", currentYear);
 
     // Calculate average scores per player
     const scoresByPlayer: Record<string, number[]> = {};
@@ -118,12 +132,72 @@ const AppPlayers = () => {
       scoresByPlayer[report.player_id].push(report.final_score);
     });
 
-    const playersWithScores = playersData.map((player) => ({
-      ...player,
-      avg_score: scoresByPlayer[player.id]
+    // Group stats by player and calculate aggregated stats
+    const statsByPlayer: Record<string, { stats: AggregatedStats; maxCoef: number }> = {};
+    statsData?.forEach((stat) => {
+      const playerId = stat.player_id;
+      const coef = (stat.competitions as any)?.computed_coefficient || 1.0;
+      
+      if (!statsByPlayer[playerId]) {
+        statsByPlayer[playerId] = {
+          stats: {
+            season_year: currentYear,
+            total_matches: 0,
+            total_minutes: 0,
+            total_goals: 0,
+            total_assists: 0,
+            total_yellow_cards: 0,
+            total_red_cards: 0,
+            total_tackles: 0,
+            total_interceptions: 0,
+            total_recoveries: 0,
+            competitions_count: 0,
+          },
+          maxCoef: coef,
+        };
+      }
+      
+      const agg = statsByPlayer[playerId];
+      agg.stats.total_matches += stat.matches || 0;
+      agg.stats.total_minutes += stat.minutes || 0;
+      agg.stats.total_goals += stat.goals || 0;
+      agg.stats.total_assists += stat.assists || 0;
+      agg.stats.total_yellow_cards += stat.yellow_cards || 0;
+      agg.stats.total_red_cards += stat.red_cards || 0;
+      agg.stats.total_tackles += stat.tackles || 0;
+      agg.stats.total_interceptions += stat.interceptions || 0;
+      agg.stats.total_recoveries += stat.recoveries || 0;
+      agg.stats.competitions_count += 1;
+      agg.maxCoef = Math.max(agg.maxCoef, coef);
+    });
+
+    const playersWithScores = playersData.map((player) => {
+      const avgScore = scoresByPlayer[player.id]
         ? scoresByPlayer[player.id].reduce((a, b) => a + b, 0) / scoresByPlayer[player.id].length
-        : null,
-    }));
+        : null;
+
+      // Calculate rating if stats exist
+      let rating_0_5: number | null = null;
+      let rating_breakdown: RatingBreakdown | null = null;
+      
+      const playerStats = statsByPlayer[player.id];
+      if (playerStats && playerStats.stats.total_minutes > 0) {
+        rating_breakdown = calculatePlayerRating({
+          age: player.age,
+          position: player.position,
+          competitionCoefficient: playerStats.maxCoef,
+          stats: playerStats.stats,
+        });
+        rating_0_5 = rating_breakdown.rating0_5;
+      }
+
+      return {
+        ...player,
+        avg_score: avgScore,
+        rating_0_5,
+        rating_breakdown,
+      };
+    });
 
     setPlayers(playersWithScores);
     setLoading(false);
@@ -177,6 +251,10 @@ const AppPlayers = () => {
         case "avg_score":
           aValue = a.avg_score ?? -1;
           bValue = b.avg_score ?? -1;
+          break;
+        case "rating_0_5":
+          aValue = a.rating_0_5 ?? -1;
+          bValue = b.rating_0_5 ?? -1;
           break;
         case "contract_end":
           aValue = a.contract_end ? new Date(a.contract_end).getTime() : 0;
@@ -459,6 +537,15 @@ const AppPlayers = () => {
                   </th>
                   <th 
                     className="text-left p-4 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
+                    onClick={() => handleSort("rating_0_5")}
+                  >
+                    <span className="flex items-center">
+                      Nota
+                      <SortIcon field="rating_0_5" />
+                    </span>
+                  </th>
+                  <th 
+                    className="text-left p-4 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
                     onClick={() => handleSort("avg_score")}
                   >
                     <span className="flex items-center">
@@ -508,6 +595,18 @@ const AppPlayers = () => {
                     </td>
                     <td className="p-4 text-muted-foreground">
                       {player.current_club || '-'}
+                    </td>
+                    <td className="p-4">
+                      {player.rating_0_5 !== null && player.rating_0_5 !== undefined && player.rating_breakdown ? (
+                        <PlayerRatingBadge
+                          rating={player.rating_0_5}
+                          breakdown={player.rating_breakdown}
+                          showReliability={false}
+                          size="sm"
+                        />
+                      ) : (
+                        <span className="text-muted-foreground text-sm">-</span>
+                      )}
                     </td>
                     <td className="p-4">
                       {player.avg_score !== null && player.avg_score !== undefined ? (
@@ -608,11 +707,15 @@ const AppPlayers = () => {
                       {player.is_public ? "Público" : "Privado"}
                     </span>
                   </div>
-                  {/* Score Badge */}
-                  {player.avg_score !== null && player.avg_score !== undefined && (
-                    <div className="absolute top-2 left-2 flex items-center gap-1 bg-background/90 backdrop-blur-sm px-2 py-1 rounded-full">
-                      <Star className="w-3 h-3 text-primary fill-primary" />
-                      <span className="text-xs font-medium">{player.avg_score.toFixed(1)}</span>
+                  {/* Rating Badge */}
+                  {player.rating_0_5 !== null && player.rating_0_5 !== undefined && player.rating_breakdown && (
+                    <div className="absolute top-2 left-2">
+                      <PlayerRatingBadge
+                        rating={player.rating_0_5}
+                        breakdown={player.rating_breakdown}
+                        showReliability={false}
+                        size="sm"
+                      />
                     </div>
                   )}
                   {/* Position Badge */}
