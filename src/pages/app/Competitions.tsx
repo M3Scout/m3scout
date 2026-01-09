@@ -40,6 +40,7 @@ import {
   X,
   Copy,
   HelpCircle,
+  RefreshCw,
 } from "lucide-react";
 import {
   Tooltip,
@@ -84,11 +85,20 @@ interface Competition {
   phase: string | null;
   base_coefficient: number;
   computed_coefficient: number;
+  final_coefficient: number;
+  tier: string;
   visibility_score: number | null;
   is_active: boolean;
   is_unique: boolean | null;
   has_phases: boolean;
 }
+
+const TIER_COLORS: Record<string, string> = {
+  S: "bg-amber-500/20 text-amber-400 border-amber-500/50",
+  A: "bg-primary/20 text-primary border-primary/50",
+  B: "bg-emerald-500/20 text-emerald-400 border-emerald-500/50",
+  C: "bg-muted text-muted-foreground border-border",
+};
 
 const COMPETITION_TYPES = [
   { value: "league", label: "Liga" },
@@ -131,6 +141,9 @@ const Competitions = () => {
   const [dedupeDialogOpen, setDedupeDialogOpen] = useState(false);
   const [duplicates, setDuplicates] = useState<{ key: string; competitions: Competition[]; canonical: Competition }[]>([]);
   const [isDeduping, setIsDeduping] = useState(false);
+  
+  // Recalculate state
+  const [isRecalculating, setIsRecalculating] = useState(false);
   
   // Create/Edit dialog
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -504,6 +517,25 @@ const Competitions = () => {
     }
   };
 
+  // Recalculate all coefficients and tiers
+  const handleRecalculateAll = async () => {
+    setIsRecalculating(true);
+    
+    try {
+      const { data, error } = await supabase.rpc('recalculate_all_competition_coefficients');
+      
+      if (error) throw error;
+      
+      toast.success(`${data?.length || 0} competições recalculadas!`);
+      fetchCompetitions();
+    } catch (error: any) {
+      console.error("Error recalculating:", error);
+      toast.error(error.message || "Erro ao recalcular coeficientes");
+    } finally {
+      setIsRecalculating(false);
+    }
+  };
+
   const isConfirmationValid = confirmationInput === CONFIRMATION_TEXT;
 
   return (
@@ -578,6 +610,20 @@ const Competitions = () => {
             >
               <Copy className="w-4 h-4" />
               Remover Duplicados
+            </Button>
+          )}
+          {isAdmin && competitions.length > 0 && (
+            <Button 
+              variant="outline" 
+              onClick={handleRecalculateAll}
+              disabled={isRecalculating}
+            >
+              {isRecalculating ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <RefreshCw className="w-4 h-4" />
+              )}
+              Recalcular Coeficientes
             </Button>
           )}
           <Link to="/app/competitions/import">
@@ -788,11 +834,17 @@ const Competitions = () => {
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger className="flex items-center gap-1 justify-center">
-                          Base Coef.
+                          Tier
                           <HelpCircle className="w-3 h-3 text-muted-foreground" />
                         </TooltipTrigger>
                         <TooltipContent className="max-w-xs">
-                          <p>Valor definido manualmente que representa a força da competição. Série A = 1.00, Libertadores = 1.30</p>
+                          <p className="font-semibold mb-1">Classificação automática:</p>
+                          <ul className="text-xs space-y-0.5">
+                            <li><span className="text-amber-400">S:</span> ≥ 1.10</li>
+                            <li><span className="text-primary">A:</span> 0.80 – 1.09</li>
+                            <li><span className="text-emerald-400">B:</span> 0.45 – 0.79</li>
+                            <li><span className="text-muted-foreground">C:</span> &lt; 0.45</li>
+                          </ul>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
@@ -801,11 +853,27 @@ const Competitions = () => {
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger className="flex items-center gap-1 justify-center">
-                          Computed
+                          Base
                           <HelpCircle className="w-3 h-3 text-muted-foreground" />
                         </TooltipTrigger>
                         <TooltipContent className="max-w-xs">
-                          <p>Valor calculado automaticamente. Igual ao base_coefficient. O peso da fase é aplicado nos relatórios de scouting.</p>
+                          <p>Coeficiente base definido manualmente.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </TableHead>
+                  <TableHead className="text-center">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger className="flex items-center gap-1 justify-center">
+                          Final
+                          <HelpCircle className="w-3 h-3 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p className="mb-1">Coeficiente final usado em rankings e pontuações.</p>
+                          <p className="text-xs text-muted-foreground">
+                            Para partidas com fase, aplica-se: final × phase_weight
+                          </p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
@@ -852,29 +920,30 @@ const Competitions = () => {
                       {comp.division || "—"}
                     </TableCell>
                     <TableCell className="text-center">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <span className="font-mono text-sm">
-                              {Number(comp.base_coefficient).toFixed(2)}
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Coeficiente base definido manualmente</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                      <Badge variant="outline" className={TIER_COLORS[comp.tier] || TIER_COLORS.C}>
+                        Tier {comp.tier}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <span className="font-mono text-sm text-muted-foreground">
+                        {Number(comp.base_coefficient).toFixed(2)}
+                      </span>
                     </TableCell>
                     <TableCell className="text-center">
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger>
                             <span className="font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
-                              ×{Number(comp.computed_coefficient).toFixed(2)}
+                              ×{Number(comp.final_coefficient).toFixed(2)}
                             </span>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>Coeficiente calculado automaticamente</p>
+                            <p>Coeficiente final (usado em rankings)</p>
+                            {comp.has_phases && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Para partidas com fase: × phase_weight
+                              </p>
+                            )}
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
@@ -1068,27 +1137,50 @@ const Competitions = () => {
 
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <Label className="text-muted-foreground">Coeficiente Calculado</Label>
+                  <Label className="text-muted-foreground">Coeficiente Final & Tier</Label>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger>
                         <HelpCircle className="w-4 h-4 text-muted-foreground" />
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs">
-                        <p>Valor calculado automaticamente. Igual ao base_coefficient. O peso da fase é aplicado separadamente nos relatórios.</p>
+                        <p className="mb-2">Calculados automaticamente a partir do base.</p>
+                        <p className="font-semibold mb-1">Classificação:</p>
+                        <ul className="text-xs space-y-0.5">
+                          <li><span className="text-amber-400">S:</span> ≥ 1.10</li>
+                          <li><span className="text-primary">A:</span> 0.80 – 1.09</li>
+                          <li><span className="text-emerald-400">B:</span> 0.45 – 0.79</li>
+                          <li><span className="text-muted-foreground">C:</span> &lt; 0.45</li>
+                        </ul>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                 </div>
-                <Input
-                  type="text"
-                  value={`×${formData.base_coefficient.toFixed(2)}`}
-                  readOnly
-                  disabled
-                  className="bg-muted/50 text-muted-foreground font-mono cursor-not-allowed"
-                />
+                <div className="flex items-center gap-3">
+                  <Input
+                    type="text"
+                    value={`×${formData.base_coefficient.toFixed(2)}`}
+                    readOnly
+                    disabled
+                    className="bg-muted/50 text-muted-foreground font-mono cursor-not-allowed flex-1"
+                  />
+                  <Badge 
+                    variant="outline" 
+                    className={TIER_COLORS[
+                      formData.base_coefficient >= 1.10 ? 'S' :
+                      formData.base_coefficient >= 0.80 ? 'A' :
+                      formData.base_coefficient >= 0.45 ? 'B' : 'C'
+                    ]}
+                  >
+                    Tier {
+                      formData.base_coefficient >= 1.10 ? 'S' :
+                      formData.base_coefficient >= 0.80 ? 'A' :
+                      formData.base_coefficient >= 0.45 ? 'B' : 'C'
+                    }
+                  </Badge>
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  Calculado automaticamente (somente leitura)
+                  Somente leitura — calculado ao salvar
                 </p>
               </div>
 

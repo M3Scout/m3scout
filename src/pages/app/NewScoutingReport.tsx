@@ -58,7 +58,7 @@ interface Competition {
   id: string;
   name: string;
   country: string;
-  computed_coefficient: number;
+  final_coefficient: number;
   has_phases: boolean;
   visibility_score: number | null;
 }
@@ -87,10 +87,10 @@ const NewScoutingReport = () => {
     impact: "",
   });
 
-  // Apply phase weight if selected, otherwise use competition coefficient
+  // Apply phase weight if selected, otherwise use final_coefficient
   const effectiveCoefficient = selectedPhase 
-    ? selectedCompetition?.computed_coefficient * selectedPhase.phase_weight 
-    : selectedCompetition?.computed_coefficient || 1.0;
+    ? (selectedCompetition?.final_coefficient || 1.0) * selectedPhase.phase_weight 
+    : selectedCompetition?.final_coefficient || 1.0;
 
   const {
     scores,
@@ -123,7 +123,7 @@ const NewScoutingReport = () => {
       const [playersRes, competitionsRes, phasesRes] = await Promise.all([
         supabase.from("players").select("id, full_name, position").order("full_name"),
         supabase.from("competitions")
-          .select("id, name, country, computed_coefficient, has_phases, visibility_score")
+          .select("id, name, country, final_coefficient, has_phases, visibility_score")
           .eq("is_active", true)
           .gt("visibility_score", 0) // Only visible competitions
           .order("visibility_score", { ascending: false })
@@ -307,7 +307,7 @@ const NewScoutingReport = () => {
               )}
               {selectedCompetition && (
                 <p className="text-xs text-primary">
-                  Coeficiente base: ×{selectedCompetition.computed_coefficient.toFixed(2)}
+                  Coeficiente final: ×{selectedCompetition.final_coefficient.toFixed(2)}
                   {selectedPhase && ` × ${selectedPhase.phase_weight.toFixed(2)} (${selectedPhase.phase_name}) = ×${effectiveCoefficient.toFixed(2)}`}
                 </p>
               )}

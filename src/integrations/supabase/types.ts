@@ -94,6 +94,7 @@ export type Database = {
           created_at: string
           display_name: string | null
           division: string | null
+          final_coefficient: number
           has_phases: boolean
           id: string
           is_active: boolean | null
@@ -101,6 +102,7 @@ export type Database = {
           name: string
           phase: string | null
           state: string | null
+          tier: string
           type: Database["public"]["Enums"]["competition_type"]
           updated_at: string
           visibility_score: number | null
@@ -113,6 +115,7 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           division?: string | null
+          final_coefficient?: number
           has_phases?: boolean
           id?: string
           is_active?: boolean | null
@@ -120,6 +123,7 @@ export type Database = {
           name: string
           phase?: string | null
           state?: string | null
+          tier?: string
           type: Database["public"]["Enums"]["competition_type"]
           updated_at?: string
           visibility_score?: number | null
@@ -132,6 +136,7 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           division?: string | null
+          final_coefficient?: number
           has_phases?: boolean
           id?: string
           is_active?: boolean | null
@@ -139,6 +144,7 @@ export type Database = {
           name?: string
           phase?: string | null
           state?: string | null
+          tier?: string
           type?: Database["public"]["Enums"]["competition_type"]
           updated_at?: string
           visibility_score?: number | null
@@ -743,6 +749,16 @@ export type Database = {
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_internal_user: { Args: { _user_id: string }; Returns: boolean }
+      recalculate_all_competition_coefficients: {
+        Args: never
+        Returns: {
+          competition_id: string
+          competition_name: string
+          new_final: number
+          new_tier: string
+          old_final: number
+        }[]
+      }
       recalculate_all_player_ratings: {
         Args: never
         Returns: {
