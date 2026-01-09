@@ -21,6 +21,30 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   DollarSign,
   TrendingUp,
   TrendingDown,
@@ -32,13 +56,14 @@ import {
   Clock,
   FileText,
   Database,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   Tooltip,
@@ -144,6 +169,21 @@ export function MarketValueTab({
   const [formNote, setFormNote] = useState<string>("");
   const [formSource, setFormSource] = useState<string>("");
 
+  // Edit/Delete state
+  const [editEntry, setEditEntry] = useState<ValueHistoryEntry | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteEntry, setDeleteEntry] = useState<ValueHistoryEntry | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
+  const [deleteSaving, setDeleteSaving] = useState(false);
+
+  // Edit form state
+  const [editFormValue, setEditFormValue] = useState<string>("");
+  const [editFormCurrency, setEditFormCurrency] = useState<string>("EUR");
+  const [editFormDate, setEditFormDate] = useState<string>("");
+  const [editFormNote, setEditFormNote] = useState<string>("");
+  const [editFormSource, setEditFormSource] = useState<string>("");
+
   // Computed values
   const [highestValue, setHighestValue] = useState<{ value: number; currency: string; date: string } | null>(null);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
@@ -158,6 +198,7 @@ export function MarketValueTab({
       .from("player_market_value_history")
       .select("*")
       .eq("player_id", playerId)
+      .is("deleted_at", null)
       .order("recorded_at", { ascending: true });
 
     if (data && data.length > 0) {
@@ -222,6 +263,96 @@ export function MarketValueTab({
     setFormNote("");
     setFormSource("");
     setFormDate(new Date().toISOString().split("T")[0]);
+    
+    // Recalculate summary
+    await supabase.rpc("recalculate_player_market_value_summary", { p_player_id: playerId });
+    
+    fetchHistory();
+    onValueChange?.();
+  };
+
+  // Open edit dialog
+  const handleEditClick = (entry: ValueHistoryEntry) => {
+    setEditEntry(entry);
+    setEditFormValue(entry.value.toString());
+    setEditFormCurrency(entry.currency);
+    setEditFormDate(new Date(entry.recorded_at).toISOString().split("T")[0]);
+    setEditFormNote(entry.note || "");
+    setEditFormSource(entry.source || "");
+    setEditDialogOpen(true);
+  };
+
+  // Save edit
+  const handleEditSave = async () => {
+    if (!editEntry) return;
+
+    const value = parseFloat(editFormValue);
+    if (isNaN(value) || value < 0) {
+      toast.error("Valor inválido");
+      return;
+    }
+
+    setEditSaving(true);
+
+    const { error } = await supabase
+      .from("player_market_value_history")
+      .update({
+        value,
+        currency: editFormCurrency,
+        recorded_at: new Date(editFormDate).toISOString(),
+        note: editFormNote || null,
+        source: editFormSource || null,
+      })
+      .eq("id", editEntry.id);
+
+    if (error) {
+      toast.error("Erro ao editar entrada", { description: error.message });
+      setEditSaving(false);
+      return;
+    }
+
+    // Recalculate summary
+    await supabase.rpc("recalculate_player_market_value_summary", { p_player_id: playerId });
+
+    toast.success("Entrada atualizada!");
+    setEditDialogOpen(false);
+    setEditEntry(null);
+    setEditSaving(false);
+    
+    fetchHistory();
+    onValueChange?.();
+  };
+
+  // Open delete dialog
+  const handleDeleteClick = (entry: ValueHistoryEntry) => {
+    setDeleteEntry(entry);
+    setDeleteDialogOpen(true);
+  };
+
+  // Confirm delete (soft delete)
+  const handleDeleteConfirm = async () => {
+    if (!deleteEntry) return;
+
+    setDeleteSaving(true);
+
+    const { error } = await supabase
+      .from("player_market_value_history")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", deleteEntry.id);
+
+    if (error) {
+      toast.error("Erro ao excluir entrada", { description: error.message });
+      setDeleteSaving(false);
+      return;
+    }
+
+    // Recalculate summary
+    await supabase.rpc("recalculate_player_market_value_summary", { p_player_id: playerId });
+
+    toast.success("Entrada excluída!");
+    setDeleteDialogOpen(false);
+    setDeleteEntry(null);
+    setDeleteSaving(false);
     
     fetchHistory();
     onValueChange?.();
@@ -538,6 +669,7 @@ export function MarketValueTab({
                     <TableHead>Moeda</TableHead>
                     <TableHead>Fonte</TableHead>
                     <TableHead>Nota</TableHead>
+                    {canEdit && <TableHead className="w-12"></TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -563,6 +695,30 @@ export function MarketValueTab({
                       <TableCell className="text-muted-foreground max-w-xs truncate">
                         {entry.note || "—"}
                       </TableCell>
+                      {canEdit && (
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleEditClick(entry)}>
+                                <Pencil className="h-4 w-4 mr-2" />
+                                Editar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => handleDeleteClick(entry)}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Excluir
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -571,6 +727,113 @@ export function MarketValueTab({
           </CardContent>
         </Card>
       )}
+
+      {/* Edit Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Entrada</DialogTitle>
+            <DialogDescription>
+              Atualize os dados desta entrada do histórico de valor de mercado.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Valor</Label>
+              <Input
+                type="number"
+                min={0}
+                step="0.01"
+                value={editFormValue}
+                onChange={(e) => setEditFormValue(e.target.value)}
+                className="bg-secondary/50"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Moeda</Label>
+              <Select value={editFormCurrency} onValueChange={setEditFormCurrency}>
+                <SelectTrigger className="bg-secondary/50">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CURRENCIES.map((curr) => (
+                    <SelectItem key={curr.value} value={curr.value}>
+                      {curr.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Data</Label>
+              <Input
+                type="date"
+                value={editFormDate}
+                onChange={(e) => setEditFormDate(e.target.value)}
+                className="bg-secondary/50"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Fonte (opcional)</Label>
+              <Input
+                placeholder="Ex: Transfermarkt, Scout"
+                value={editFormSource}
+                onChange={(e) => setEditFormSource(e.target.value)}
+                className="bg-secondary/50"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Nota (opcional)</Label>
+              <Textarea
+                placeholder="Observações..."
+                value={editFormNote}
+                onChange={(e) => setEditFormNote(e.target.value)}
+                rows={2}
+                className="bg-secondary/50"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleEditSave} disabled={editSaving}>
+              {editSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação irá excluir a entrada de valor de mercado de{" "}
+              <span className="font-semibold text-foreground">
+                {deleteEntry && formatFullValue(deleteEntry.value, deleteEntry.currency)}
+              </span>{" "}
+              do dia{" "}
+              <span className="font-semibold text-foreground">
+                {deleteEntry && new Date(deleteEntry.recorded_at).toLocaleDateString("pt-BR")}
+              </span>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={deleteSaving}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
