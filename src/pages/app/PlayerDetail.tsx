@@ -25,6 +25,7 @@ import {
   Stethoscope,
   FileText as ContractIcon,
   BarChart3,
+  DollarSign,
 } from "lucide-react";
 import { DeletePlayerDialog } from "@/components/players/DeletePlayerDialog";
 import { PhysicalDataSection } from "@/components/players/sections/PhysicalDataSection";
@@ -34,9 +35,13 @@ import { ContractSection } from "@/components/players/sections/ContractSection";
 import { InternalEvaluationSection } from "@/components/players/sections/InternalEvaluationSection";
 import { PlayerStatsSection } from "@/components/players/sections/PlayerStatsSection";
 import { PlayerRatingBadge } from "@/components/players/PlayerRatingBadge";
-import { AutoRatingCard } from "@/components/players/sections/AutoRatingCard";
-import { SeasonStatsCard } from "@/components/players/sections/SeasonStatsCard";
 import { RatingEvolutionChart } from "@/components/players/sections/RatingEvolutionChart";
+import { PersonalDataCard } from "@/components/players/sections/PersonalDataCard";
+import { ContractInfoCard } from "@/components/players/sections/ContractInfoCard";
+import { TacticalProfileCard } from "@/components/players/sections/TacticalProfileCard";
+import { SeasonSummaryCard } from "@/components/players/sections/SeasonSummaryCard";
+import { OverallRatingCard } from "@/components/players/sections/OverallRatingCard";
+import { MarketValueSection } from "@/components/players/sections/MarketValueSection";
 
 interface Player {
   id: string;
@@ -94,6 +99,10 @@ interface Player {
   // Auto Rating
   auto_rating: number | null;
   rating_updated_at: string | null;
+  // Market Value
+  market_value: number | null;
+  market_value_currency: string | null;
+  market_value_trend: string | null;
   // Metadata
   created_at: string;
   updated_at: string;
@@ -322,65 +331,39 @@ const PlayerDetail = () => {
         <TabsContent value="overview">
           <div className="grid gap-6 lg:grid-cols-3">
             <div className="lg:col-span-2 space-y-6">
-              {/* Basic Info Card */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="w-5 h-5" />
-                    Informações Básicas
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {player.age && (
-                      <div className="flex items-center gap-3">
-                        <Calendar className="w-4 h-4 text-muted-foreground" />
-                        <div>
-                          <p className="text-xs text-muted-foreground">Idade</p>
-                          <p className="font-medium">{player.age} anos</p>
-                        </div>
-                      </div>
-                    )}
-                    {player.birth_date && (
-                      <div className="flex items-center gap-3">
-                        <Calendar className="w-4 h-4 text-muted-foreground" />
-                        <div>
-                          <p className="text-xs text-muted-foreground">Nascimento</p>
-                          <p className="font-medium">
-                            {new Date(player.birth_date).toLocaleDateString("pt-BR")}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-3">
-                      <Flag className="w-4 h-4 text-muted-foreground" />
-                      <div>
-                        <p className="text-xs text-muted-foreground">Nacionalidade</p>
-                        <p className="font-medium">{player.nationality}</p>
-                      </div>
-                    </div>
-                    {player.current_club && (
-                      <div className="flex items-center gap-3">
-                        <MapPin className="w-4 h-4 text-muted-foreground" />
-                        <div>
-                          <p className="text-xs text-muted-foreground">Clube Atual</p>
-                          <p className="font-medium">{player.current_club}</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+              {/* Personal Data */}
+              <PersonalDataCard
+                fullName={player.full_name}
+                age={player.age}
+                birthDate={player.birth_date}
+                height={player.height}
+                dominantFoot={player.dominant_foot}
+                nationality={player.nationality}
+              />
 
-                  {player.bio_public && (
-                    <>
-                      <Separator className="my-4" />
-                      <div>
-                        <p className="text-sm text-muted-foreground mb-2">Biografia</p>
-                        <p className="text-sm">{player.bio_public}</p>
-                      </div>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
+              {/* Contract Info */}
+              <ContractInfoCard
+                currentClub={player.current_club}
+                country={player.country}
+                agentName={player.agent_name}
+                agentContact={player.agent_contact}
+                contractEnd={player.contract_end}
+                contractStatus={player.contract_status}
+              />
+
+              {/* Tactical Profile */}
+              <TacticalProfileCard
+                position={player.position}
+                secondaryPositions={player.secondary_positions}
+                primaryTacticalRole={player.primary_tactical_role}
+                secondaryTacticalRole={player.secondary_tactical_role}
+                playStyle={player.play_style}
+                strengths={player.strengths}
+                areasToDevelope={player.areas_to_develop}
+              />
+
+              {/* Season Summary */}
+              <SeasonSummaryCard playerId={player.id} />
 
               {/* Video */}
               {player.highlight_video_url && (
@@ -413,16 +396,21 @@ const PlayerDetail = () => {
 
             {/* Sidebar */}
             <div className="space-y-6">
-              {/* Auto Rating Card */}
-              <AutoRatingCard
-                rating={player.auto_rating}
-                updatedAt={player.rating_updated_at}
+              {/* Overall Rating Card */}
+              <OverallRatingCard
+                autoRating={player.auto_rating}
+                overallRating={player.overall_rating}
+                potentialRating={player.potential_rating}
+                ratingUpdatedAt={player.rating_updated_at}
               />
 
-              {/* Season Stats Card */}
-              <SeasonStatsCard
+              {/* Market Value */}
+              <MarketValueSection
                 playerId={player.id}
-                onStatsChange={refetchPlayer}
+                marketValue={player.market_value}
+                marketValueCurrency={player.market_value_currency}
+                marketValueTrend={player.market_value_trend}
+                onValueChange={refetchPlayer}
               />
 
               {/* Rating Evolution Chart */}
