@@ -1069,7 +1069,7 @@ const Competitions = () => {
 
               {formData.type === "state_league" && (
                 <div className="space-y-2">
-                  <Label>Estado (UF)</Label>
+                  <Label>Estado (UF) <span className="text-destructive">*</span></Label>
                   <Select 
                     value={formData.state || "NONE"} 
                     onValueChange={(v) => setFormData({ ...formData, state: v === "NONE" ? "" : v })}
