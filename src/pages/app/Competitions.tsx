@@ -79,6 +79,7 @@ interface Competition {
   visibility_score: number | null;
   is_active: boolean;
   is_unique: boolean | null;
+  has_phases: boolean;
 }
 
 const COMPETITION_TYPES = [
@@ -134,6 +135,7 @@ const Competitions = () => {
     base_coefficient: 1.0,
     visibility_score: 50,
     is_active: true,
+    has_phases: false,
   });
 
   useEffect(() => {
@@ -240,6 +242,7 @@ const Competitions = () => {
       base_coefficient: 1.0,
       visibility_score: 50,
       is_active: true,
+      has_phases: false,
     });
     setDialogOpen(true);
   };
@@ -257,24 +260,54 @@ const Competitions = () => {
       base_coefficient: Number(comp.base_coefficient),
       visibility_score: comp.visibility_score ?? 50,
       is_active: comp.is_active,
+      has_phases: comp.has_phases ?? false,
     });
     setDialogOpen(true);
   };
 
+  // Validate form based on rules
+  const validateForm = (): string | null => {
+    if (!formData.name.trim()) return "Nome é obrigatório";
+    
+    // base_coefficient range: 0.05 – 2.50
+    if (formData.base_coefficient < 0.05 || formData.base_coefficient > 2.50) {
+      return "Coeficiente base deve estar entre 0.05 e 2.50";
+    }
+    
+    // visibility_score range: 0 – 100
+    if (formData.visibility_score < 0 || formData.visibility_score > 100) {
+      return "Visibilidade deve estar entre 0 e 100";
+    }
+    
+    // State division validation
+    if (formData.type === "state_league" && formData.country === "Brasil" && formData.division) {
+      if (formData.state === "SP") {
+        if (!["A1", "A2", "A3", "A4"].includes(formData.division)) {
+          return "São Paulo permite apenas divisões A1, A2, A3 ou A4";
+        }
+      } else {
+        if (!["A1", "A2"].includes(formData.division)) {
+          return "Estados fora de SP permitem apenas divisões A1 ou A2";
+        }
+      }
+    }
+    
+    return null;
+  };
+
   // Save competition (create or update)
   const handleSave = async () => {
-    if (!formData.name.trim()) {
-      toast.error("Nome é obrigatório");
+    const validationError = validateForm();
+    if (validationError) {
+      toast.error(validationError);
       return;
     }
 
     setSaving(true);
 
     try {
-      // Calculate computed coefficient based on base + visibility
-      const visibilityBonus = ((formData.visibility_score - 50) / 100) * 0.2;
-      const computed_coefficient = Math.round((formData.base_coefficient + visibilityBonus) * 100) / 100;
-
+      // computed_coefficient is auto-calculated by trigger (equals base_coefficient)
+      // Phase weight is applied at scouting report level, not here
       const competitionData = {
         name: formData.name.trim(),
         display_name: formData.display_name.trim() || null,
@@ -283,9 +316,9 @@ const Competitions = () => {
         type: formData.type as "league" | "cup" | "state_league" | "continental",
         division: formData.division || null,
         base_coefficient: formData.base_coefficient,
-        computed_coefficient,
         visibility_score: formData.visibility_score,
         is_active: formData.is_active,
+        has_phases: formData.has_phases,
       };
 
       if (editingCompetition) {
@@ -837,15 +870,18 @@ const Competitions = () => {
               </div>
 
               <div className="space-y-2">
-                <Label>Coeficiente Base</Label>
+                <Label>Coeficiente Base (0.05 - 2.50)</Label>
                 <Input
                   type="number"
                   step="0.05"
-                  min="0.5"
-                  max="2.0"
+                  min="0.05"
+                  max="2.50"
                   value={formData.base_coefficient}
                   onChange={(e) => setFormData({ ...formData, base_coefficient: parseFloat(e.target.value) || 1.0 })}
                 />
+                <p className="text-xs text-muted-foreground">
+                  Coeficiente calculado será igual ao base
+                </p>
               </div>
 
               <div className="col-span-2 space-y-2">
@@ -857,22 +893,33 @@ const Competitions = () => {
                   max={100}
                   step={5}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Impacta o coeficiente final. Maior visibilidade = maior peso.
-                </p>
               </div>
 
-              <div className="col-span-2 flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  id="is_active"
-                  checked={formData.is_active}
-                  onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                  className="w-4 h-4"
-                />
-                <Label htmlFor="is_active" className="cursor-pointer">
-                  Competição ativa
-                </Label>
+              <div className="col-span-2 flex items-center gap-6">
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    id="is_active"
+                    checked={formData.is_active}
+                    onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                    className="w-4 h-4"
+                  />
+                  <Label htmlFor="is_active" className="cursor-pointer">
+                    Ativa
+                  </Label>
+                </div>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    id="has_phases"
+                    checked={formData.has_phases}
+                    onChange={(e) => setFormData({ ...formData, has_phases: e.target.checked })}
+                    className="w-4 h-4"
+                  />
+                  <Label htmlFor="has_phases" className="cursor-pointer">
+                    Possui fases (mata-mata)
+                  </Label>
+                </div>
               </div>
             </div>
           </div>
