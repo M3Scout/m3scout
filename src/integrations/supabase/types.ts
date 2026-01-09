@@ -187,6 +187,38 @@ export type Database = {
           },
         ]
       }
+      player_rating_history: {
+        Row: {
+          created_at: string
+          id: string
+          player_id: string
+          rating: number
+          recorded_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          player_id: string
+          rating: number
+          recorded_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          player_id?: string
+          rating?: number
+          recorded_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_rating_history_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_stats: {
         Row: {
           assists: number
@@ -601,6 +633,15 @@ export type Database = {
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_internal_user: { Args: { _user_id: string }; Returns: boolean }
+      recalculate_all_player_ratings: {
+        Args: never
+        Returns: {
+          new_rating: number
+          old_rating: number
+          player_id: string
+          player_name: string
+        }[]
+      }
       update_player_auto_rating: {
         Args: { p_player_id: string }
         Returns: undefined

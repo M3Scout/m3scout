@@ -19,7 +19,9 @@ import {
   Mail,
   Calendar,
   Camera,
-  Trash2
+  Trash2,
+  RefreshCw,
+  Database,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -29,6 +31,7 @@ export default function Settings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [recalculating, setRecalculating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [profile, setProfile] = useState<{
     full_name: string | null;
@@ -165,6 +168,44 @@ export default function Settings() {
       toast.error("Erro ao remover foto");
     } finally {
       setUploadingAvatar(false);
+    }
+  };
+
+  const handleRecalculateRatings = async () => {
+    setRecalculating(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Sessão expirada. Faça login novamente.");
+        return;
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/recalculate-ratings`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Erro ao recalcular");
+      }
+
+      toast.success(
+        `Recálculo concluído: ${result.summary.total_players} atletas, ${result.summary.ratings_changed} alterados, ${result.summary.new_ratings} novos`
+      );
+    } catch (error: unknown) {
+      console.error("Error recalculating:", error);
+      const errorMessage = error instanceof Error ? error.message : "Erro ao recalcular notas";
+      toast.error(errorMessage);
+    } finally {
+      setRecalculating(false);
     }
   };
 
@@ -365,6 +406,41 @@ export default function Settings() {
               </p>
             </CardContent>
           </Card>
+
+          {/* Admin Tools */}
+          {isAdmin && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Database className="h-5 w-5" />
+                  Ferramentas Admin
+                </CardTitle>
+                <CardDescription>
+                  Operações administrativas
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Recalcula a nota automática de todos os atletas ativos com base nas estatísticas atuais.
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={handleRecalculateRatings}
+                    disabled={recalculating}
+                    className="w-full"
+                  >
+                    {recalculating ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-4 w-4" />
+                    )}
+                    Recalcular Notas
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>
