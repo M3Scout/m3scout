@@ -7,8 +7,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Info,
   Trophy,
@@ -18,6 +18,8 @@ import {
   Clock,
   Star,
   TrendingUp,
+  Calculator,
+  Lightbulb,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -62,6 +64,11 @@ interface RatingDetails {
     assists: number;
     goals_per_90: number;
     assists_per_90: number;
+    tackles?: number;
+    interceptions?: number;
+    recoveries?: number;
+    yellow_cards?: number;
+    red_cards?: number;
   }>;
   reliability: "low" | "medium" | "high";
 }
@@ -116,7 +123,35 @@ function getPositionGroupLabel(group: string): string {
 
 export function RatingBreakdownModal({ details, rating, trigger }: RatingBreakdownModalProps) {
   if (!details) {
-    return null;
+    return (
+      <Dialog>
+        <DialogTrigger asChild>
+          {trigger || (
+            <Button variant="ghost" size="sm" className="gap-1">
+              <Info className="w-4 h-4" />
+              Como é calculada?
+            </Button>
+          )}
+        </DialogTrigger>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Star className="w-5 h-5 text-primary" />
+              Nota Automática
+            </DialogTitle>
+          </DialogHeader>
+          <div className="text-center py-8">
+            <AlertTriangle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground mb-4">
+              Detalhes indisponíveis. Recalcule a nota para ver o breakdown.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              A nota será recalculada automaticamente quando houver estatísticas disponíveis.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
   }
 
   const scoreItems = [
@@ -132,14 +167,14 @@ export function RatingBreakdownModal({ details, rating, trigger }: RatingBreakdo
       score: details.scores.production,
       weight: details.weights.production,
       icon: Target,
-      description: `${details.metrics.goals_per_90} gols/90 | ${details.metrics.assists_per_90} assist/90`,
+      description: `${details.metrics.goals_per_90.toFixed(2)} gols/90 | ${details.metrics.assists_per_90.toFixed(2)} assist/90`,
     },
     {
       label: "Ações Defensivas",
       score: details.scores.defensive_actions,
       weight: details.weights.defensive,
       icon: Shield,
-      description: `${details.metrics.tackles_per_90} desarmes | ${details.metrics.interceptions_per_90} interceptações`,
+      description: `${details.metrics.tackles_per_90.toFixed(2)} desarmes | ${details.metrics.interceptions_per_90.toFixed(2)} interc.`,
     },
     {
       label: "Disciplina",
@@ -157,6 +192,20 @@ export function RatingBreakdownModal({ details, rating, trigger }: RatingBreakdo
     },
   ];
 
+  // Calculate G+A per 90 and contribution per competition
+  const competitionsWithGc90 = details.per_competition?.map(comp => {
+    const minutes90 = comp.minutes / 90;
+    const gc90 = minutes90 > 0 ? ((comp.goals + comp.assists) / minutes90) : 0;
+    const minutesFactor = Math.min(1, comp.minutes / 900); // Target 900 minutes
+    const contribution = gc90 * comp.final_coefficient * minutesFactor;
+    return {
+      ...comp,
+      gc90,
+      minutesFactor,
+      contribution,
+    };
+  }) || [];
+
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -167,122 +216,204 @@ export function RatingBreakdownModal({ details, rating, trigger }: RatingBreakdo
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Star className="w-5 h-5 text-primary" />
-            Nota Automática - Detalhes
+            <Calculator className="w-5 h-5 text-primary" />
+            Como essa nota foi calculada
           </DialogTitle>
         </DialogHeader>
 
-        {/* Rating Summary */}
-        <div className="flex items-center justify-between p-4 rounded-lg bg-secondary/30">
-          <div>
-            <p className="text-sm text-muted-foreground">Nota Final</p>
-            <p className="text-3xl font-bold text-primary">{rating.toFixed(1)}</p>
-            <p className="text-xs text-muted-foreground">/5.0</p>
-          </div>
-          <div className="text-right">
-            <p className="text-sm text-muted-foreground">Score Geral</p>
-            <p className={cn("text-2xl font-semibold", getScoreColor(details.scores.overall_0_100))}>
-              {details.scores.overall_0_100.toFixed(0)}
-            </p>
-            <p className="text-xs text-muted-foreground">/100</p>
-          </div>
-          <div className="text-right">
-            <Badge variant={getReliabilityVariant(details.reliability)}>
-              Confiab. {getReliabilityLabel(details.reliability)}
-            </Badge>
-          </div>
-        </div>
+        {/* Summary Card */}
+        <Card className="bg-secondary/30 border-primary/20">
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Nota Final</p>
+                <div className="flex items-baseline gap-1">
+                  <Star className="w-6 h-6 text-primary fill-primary" />
+                  <span className="text-4xl font-bold text-primary">{rating.toFixed(1)}</span>
+                  <span className="text-lg text-muted-foreground">/5</span>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-muted-foreground">Performance Index</p>
+                <span className={cn("text-2xl font-semibold", getScoreColor(details.scores.overall_0_100))}>
+                  {details.scores.overall_0_100.toFixed(0)}
+                </span>
+                <span className="text-sm text-muted-foreground">/100</span>
+              </div>
+              <div className="text-right">
+                <Badge variant={getReliabilityVariant(details.reliability)} className="text-sm">
+                  Confiab. {getReliabilityLabel(details.reliability)}
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Sample Info */}
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+        <div className="flex items-center gap-4 text-sm text-muted-foreground px-1">
           <div className="flex items-center gap-1">
             <Clock className="w-4 h-4" />
             Temporada {details.season_year}
           </div>
           <div>
-            {details.metrics.total_matches} jogos | {details.metrics.total_minutes} min
+            {details.metrics.total_matches} jogos | {details.metrics.total_minutes} minutos
+          </div>
+          <div className="ml-auto text-xs">
+            Atualizado em:{" "}
+            {new Date(details.calculated_at).toLocaleString("pt-BR", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
           </div>
         </div>
 
         <Separator />
 
         {/* Score Components */}
-        <div className="space-y-4">
-          <h4 className="font-medium">Componentes da Nota</h4>
-          {scoreItems.map((item) => (
-            <div key={item.label} className="space-y-1">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <item.icon className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">{item.label}</span>
-                  <span className="text-xs text-muted-foreground">
-                    ({(item.weight * 100).toFixed(0)}%)
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Target className="w-4 h-4" />
+              Componentes da Nota
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {scoreItems.map((item) => (
+              <div key={item.label} className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <item.icon className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">{item.label}</span>
+                    <span className="text-xs text-muted-foreground">
+                      (peso: {(item.weight * 100).toFixed(0)}%)
+                    </span>
+                  </div>
+                  <span className={cn("text-sm font-semibold", getScoreColor(item.score))}>
+                    {item.score.toFixed(0)}/100
                   </span>
                 </div>
-                <span className={cn("text-sm font-semibold", getScoreColor(item.score))}>
-                  {item.score.toFixed(0)}
-                </span>
-              </div>
-              <div className="relative h-2 rounded-full bg-secondary overflow-hidden">
-                <div
-                  className={cn("absolute inset-y-0 left-0 rounded-full transition-all", getScoreBarColor(item.score))}
-                  style={{ width: `${item.score}%` }}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">{item.description}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Per Competition */}
-        {details.per_competition && details.per_competition.length > 0 && (
-          <>
-            <Separator />
-            <div className="space-y-3">
-              <h4 className="font-medium">Por Competição</h4>
-              {details.per_competition.map((comp, idx) => (
-                <div
-                  key={comp.competition_id || idx}
-                  className="p-3 rounded-lg bg-secondary/20 space-y-1"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">{comp.competition_name}</span>
-                    <Badge variant="outline">Coef. {comp.final_coefficient?.toFixed(2) || "—"}</Badge>
-                  </div>
-                  <div className="grid grid-cols-4 gap-2 text-xs text-muted-foreground">
-                    <div>
-                      <span className="font-medium text-foreground">{comp.matches}</span> jogos
-                    </div>
-                    <div>
-                      <span className="font-medium text-foreground">{comp.minutes}</span> min
-                    </div>
-                    <div>
-                      <span className="font-medium text-foreground">{comp.goals}</span> gols
-                    </div>
-                    <div>
-                      <span className="font-medium text-foreground">{comp.assists}</span> assist
-                    </div>
-                  </div>
+                <div className="relative h-2 rounded-full bg-secondary overflow-hidden">
+                  <div
+                    className={cn("absolute inset-y-0 left-0 rounded-full transition-all", getScoreBarColor(item.score))}
+                    style={{ width: `${item.score}%` }}
+                  />
                 </div>
-              ))}
-            </div>
-          </>
+                <p className="text-xs text-muted-foreground">{item.description}</p>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        {/* Per Competition Breakdown */}
+        {competitionsWithGc90.length > 0 && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Trophy className="w-4 h-4" />
+                Breakdown por Competição
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border/50">
+                      <th className="text-left py-2 px-1 font-medium text-muted-foreground">Competição</th>
+                      <th className="text-center py-2 px-1 font-medium text-muted-foreground">Coef.</th>
+                      <th className="text-center py-2 px-1 font-medium text-muted-foreground">Min</th>
+                      <th className="text-center py-2 px-1 font-medium text-muted-foreground">G</th>
+                      <th className="text-center py-2 px-1 font-medium text-muted-foreground">A</th>
+                      <th className="text-center py-2 px-1 font-medium text-muted-foreground">G+A/90</th>
+                      <th className="text-center py-2 px-1 font-medium text-muted-foreground">Fator Min</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {competitionsWithGc90.map((comp, idx) => (
+                      <tr key={comp.competition_id || idx} className="border-b border-border/30">
+                        <td className="py-2 px-1 font-medium max-w-[150px] truncate" title={comp.competition_name}>
+                          {comp.competition_name}
+                        </td>
+                        <td className="py-2 px-1 text-center">
+                          <Badge variant="outline" className="text-xs">
+                            {comp.final_coefficient.toFixed(2)}
+                          </Badge>
+                        </td>
+                        <td className="py-2 px-1 text-center text-muted-foreground">{comp.minutes}</td>
+                        <td className="py-2 px-1 text-center font-medium">{comp.goals}</td>
+                        <td className="py-2 px-1 text-center font-medium">{comp.assists}</td>
+                        <td className="py-2 px-1 text-center">
+                          <span className={cn("font-semibold", comp.gc90 >= 0.5 ? "text-emerald-500" : "text-muted-foreground")}>
+                            {comp.gc90.toFixed(2)}
+                          </span>
+                        </td>
+                        <td className="py-2 px-1 text-center text-muted-foreground">
+                          {(comp.minutesFactor * 100).toFixed(0)}%
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
         )}
 
-        {/* Last Update */}
-        <div className="text-xs text-muted-foreground text-center pt-2">
-          Calculado em:{" "}
-          {new Date(details.calculated_at).toLocaleString("pt-BR", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
-        </div>
+        {/* Discipline/Penalties */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4" />
+              Penalidades & Disciplina
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="text-muted-foreground">Cartões por 90 min:</span>
+                <span className="ml-2 font-medium">{details.metrics.cards_per_90.toFixed(2)}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Score Disciplina:</span>
+                <span className={cn("ml-2 font-medium", getScoreColor(details.scores.discipline))}>
+                  {details.scores.discipline}/100
+                </span>
+              </div>
+            </div>
+            {details.metrics.cards_per_90 > 0.3 && (
+              <p className="text-xs text-amber-500 mt-2">
+                ⚠️ Taxa de cartões acima da média (-{((0.3 - details.metrics.cards_per_90) * -20).toFixed(0)} pontos)
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Formula Explanation */}
+        <Card className="bg-muted/30">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Lightbulb className="w-4 h-4" />
+              Como funciona o cálculo
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Calculamos <strong>G+A por 90 minutos</strong>, ponderamos pela <strong>força da competição</strong> (coeficiente), 
+              ajustamos pela <strong>quantidade de minutos jogados</strong> (amostra de confiança) e aplicamos 
+              <strong> penalidades por cartões</strong>. Consideramos também <strong>ações defensivas</strong> (desarmes, 
+              interceptações, recuperações). Por fim, normalizamos para uma escala de <strong>0 a 5</strong> e 
+              aplicamos um pequeno <strong>bônus por idade</strong> (jogadores mais jovens têm maior potencial).
+            </p>
+            <div className="mt-3 p-2 rounded bg-background/50 text-xs font-mono">
+              Nota = (CompScore×30% + ProdScore×35% + DefScore×20% + DiscScore×10% + AgeScore×5%) ÷ 20
+            </div>
+          </CardContent>
+        </Card>
       </DialogContent>
     </Dialog>
   );

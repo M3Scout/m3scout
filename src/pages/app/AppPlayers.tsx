@@ -70,6 +70,7 @@ interface Player {
   avg_score?: number | null;
   photo_url?: string | null;
   auto_rating?: number | null;
+  auto_rating_details?: any;
   is_archived?: boolean | null;
 }
 
@@ -103,10 +104,10 @@ const AppPlayers = () => {
   const [showArchived, setShowArchived] = useState(false);
 
   const fetchPlayers = async () => {
-    // Fetch players with auto_rating from database
+    // Fetch players with auto_rating and details from database
     let query = supabase
       .from("players")
-      .select("id, full_name, position, age, nationality, current_club, contract_end, is_public, photo_url, auto_rating, is_archived")
+      .select("id, full_name, position, age, nationality, current_club, contract_end, is_public, photo_url, auto_rating, auto_rating_details, is_archived")
       .order("full_name");
 
     // Filter archived by default
@@ -583,6 +584,7 @@ const AppPlayers = () => {
                       {player.auto_rating !== null && player.auto_rating !== undefined ? (
                         <PlayerRatingBadge
                           rating={player.auto_rating}
+                          ratingDetails={player.auto_rating_details}
                           showReliability={false}
                           size="sm"
                         />
@@ -711,9 +713,10 @@ const AppPlayers = () => {
                   </div>
                   {/* Rating Badge */}
                   {player.auto_rating !== null && player.auto_rating !== undefined && (
-                    <div className="absolute top-2 left-2">
+                    <div className="absolute top-2 left-2" onClick={(e) => e.preventDefault()}>
                       <PlayerRatingBadge
                         rating={player.auto_rating}
+                        ratingDetails={player.auto_rating_details}
                         showReliability={false}
                         size="sm"
                       />
