@@ -262,6 +262,7 @@ export type Database = {
           agent_contact: string | null
           agent_name: string | null
           areas_to_develop: string[] | null
+          auto_rating: number | null
           bio_public: string | null
           birth_date: string | null
           body_fat_percentage: number | null
@@ -296,6 +297,7 @@ export type Database = {
           position: string
           potential_rating: number | null
           primary_tactical_role: string | null
+          rating_updated_at: string | null
           ready_to_compete: boolean | null
           release_clause: string | null
           salary_info: string | null
@@ -314,6 +316,7 @@ export type Database = {
           agent_contact?: string | null
           agent_name?: string | null
           areas_to_develop?: string[] | null
+          auto_rating?: number | null
           bio_public?: string | null
           birth_date?: string | null
           body_fat_percentage?: number | null
@@ -348,6 +351,7 @@ export type Database = {
           position: string
           potential_rating?: number | null
           primary_tactical_role?: string | null
+          rating_updated_at?: string | null
           ready_to_compete?: boolean | null
           release_clause?: string | null
           salary_info?: string | null
@@ -366,6 +370,7 @@ export type Database = {
           agent_contact?: string | null
           agent_name?: string | null
           areas_to_develop?: string[] | null
+          auto_rating?: number | null
           bio_public?: string | null
           birth_date?: string | null
           body_fat_percentage?: number | null
@@ -400,6 +405,7 @@ export type Database = {
           position?: string
           potential_rating?: number | null
           primary_tactical_role?: string | null
+          rating_updated_at?: string | null
           ready_to_compete?: boolean | null
           release_clause?: string | null
           salary_info?: string | null
@@ -576,6 +582,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_athlete_auto_rating: {
+        Args: { p_player_id: string }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -585,6 +595,10 @@ export type Database = {
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_internal_user: { Args: { _user_id: string }; Returns: boolean }
+      update_player_auto_rating: {
+        Args: { p_player_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "scout" | "member" | "partner"
