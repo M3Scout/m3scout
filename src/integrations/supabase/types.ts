@@ -50,6 +50,41 @@ export type Database = {
         }
         Relationships: []
       }
+      competition_phases: {
+        Row: {
+          competition_id: string
+          created_at: string
+          id: string
+          phase_name: string
+          phase_order: number
+          phase_weight: number
+        }
+        Insert: {
+          competition_id: string
+          created_at?: string
+          id?: string
+          phase_name: string
+          phase_order: number
+          phase_weight?: number
+        }
+        Update: {
+          competition_id?: string
+          created_at?: string
+          id?: string
+          phase_name?: string
+          phase_order?: number
+          phase_weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_phases_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       competitions: {
         Row: {
           base_coefficient: number
@@ -61,6 +96,7 @@ export type Database = {
           division: string | null
           id: string
           is_active: boolean | null
+          is_unique: boolean | null
           name: string
           phase: string | null
           state: string | null
@@ -78,6 +114,7 @@ export type Database = {
           division?: string | null
           id?: string
           is_active?: boolean | null
+          is_unique?: boolean | null
           name: string
           phase?: string | null
           state?: string | null
@@ -95,6 +132,7 @@ export type Database = {
           division?: string | null
           id?: string
           is_active?: boolean | null
+          is_unique?: boolean | null
           name?: string
           phase?: string | null
           state?: string | null
@@ -562,6 +600,7 @@ export type Database = {
           mental_notes: string | null
           mental_score: number
           opponent: string | null
+          phase_id: string | null
           physical_notes: string | null
           physical_score: number
           player_id: string
@@ -592,6 +631,7 @@ export type Database = {
           mental_notes?: string | null
           mental_score: number
           opponent?: string | null
+          phase_id?: string | null
           physical_notes?: string | null
           physical_score: number
           player_id: string
@@ -622,6 +662,7 @@ export type Database = {
           mental_notes?: string | null
           mental_score?: number
           opponent?: string | null
+          phase_id?: string | null
           physical_notes?: string | null
           physical_score?: number
           player_id?: string
@@ -642,6 +683,13 @@ export type Database = {
             columns: ["competition_id"]
             isOneToOne: false
             referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scouting_reports_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "competition_phases"
             referencedColumns: ["id"]
           },
           {
