@@ -11,6 +11,7 @@ import {
   Menu,
   X,
   MessageSquare,
+  GitCompare,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ import { toast } from "sonner";
 const navItems = [
   { href: "/app", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/app/players", icon: Users, label: "Atletas" },
+  { href: "/app/compare", icon: GitCompare, label: "Comparar" },
   { href: "/app/reports", icon: FileText, label: "Relatórios" },
   { href: "/app/competitions", icon: Trophy, label: "Competições" },
   { href: "/app/leads", icon: MessageSquare, label: "Leads" },

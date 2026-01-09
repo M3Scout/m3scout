@@ -261,6 +261,7 @@ export type Database = {
           age: number | null
           agent_contact: string | null
           agent_name: string | null
+          archived_at: string | null
           areas_to_develop: string[] | null
           auto_rating: number | null
           bio_public: string | null
@@ -282,6 +283,7 @@ export type Database = {
           id: string
           internal_evaluation_notes: string | null
           internal_notes: string | null
+          is_archived: boolean | null
           is_public: boolean | null
           last_physical_evaluation: string | null
           max_speed: number | null
@@ -315,6 +317,7 @@ export type Database = {
           age?: number | null
           agent_contact?: string | null
           agent_name?: string | null
+          archived_at?: string | null
           areas_to_develop?: string[] | null
           auto_rating?: number | null
           bio_public?: string | null
@@ -336,6 +339,7 @@ export type Database = {
           id?: string
           internal_evaluation_notes?: string | null
           internal_notes?: string | null
+          is_archived?: boolean | null
           is_public?: boolean | null
           last_physical_evaluation?: string | null
           max_speed?: number | null
@@ -369,6 +373,7 @@ export type Database = {
           age?: number | null
           agent_contact?: string | null
           agent_name?: string | null
+          archived_at?: string | null
           areas_to_develop?: string[] | null
           auto_rating?: number | null
           bio_public?: string | null
@@ -390,6 +395,7 @@ export type Database = {
           id?: string
           internal_evaluation_notes?: string | null
           internal_notes?: string | null
+          is_archived?: boolean | null
           is_public?: boolean | null
           last_physical_evaluation?: string | null
           max_speed?: number | null
