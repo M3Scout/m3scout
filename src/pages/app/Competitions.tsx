@@ -305,6 +305,11 @@ const Competitions = () => {
       return "Visibilidade deve estar entre 0 e 100";
     }
     
+    // State is required for state_league type
+    if (formData.type === "state_league" && !formData.state) {
+      return "Estado é obrigatório para campeonatos estaduais";
+    }
+    
     // State division validation
     if (formData.type === "state_league" && formData.country === "Brasil" && formData.division) {
       if (formData.state === "SP") {
