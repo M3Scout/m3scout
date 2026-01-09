@@ -53,9 +53,11 @@ export type Database = {
       competitions: {
         Row: {
           base_coefficient: number
+          competition_code: string | null
           computed_coefficient: number
           country: string
           created_at: string
+          display_name: string | null
           division: string | null
           id: string
           is_active: boolean | null
@@ -68,9 +70,11 @@ export type Database = {
         }
         Insert: {
           base_coefficient?: number
+          competition_code?: string | null
           computed_coefficient?: number
           country: string
           created_at?: string
+          display_name?: string | null
           division?: string | null
           id?: string
           is_active?: boolean | null
@@ -83,9 +87,11 @@ export type Database = {
         }
         Update: {
           base_coefficient?: number
+          competition_code?: string | null
           computed_coefficient?: number
           country?: string
           created_at?: string
+          display_name?: string | null
           division?: string | null
           id?: string
           is_active?: boolean | null
