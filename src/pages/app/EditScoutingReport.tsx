@@ -56,6 +56,15 @@ interface Competition {
   name: string;
   country: string;
   computed_coefficient: number;
+  is_unique?: boolean;
+}
+
+interface CompetitionPhase {
+  id: string;
+  competition_id: string;
+  phase_name: string;
+  phase_order: number;
+  phase_weight: number;
 }
 
 const EditScoutingReport = () => {
@@ -65,7 +74,9 @@ const EditScoutingReport = () => {
   const [loading, setLoading] = useState(true);
   const [players, setPlayers] = useState<Player[]>([]);
   const [competitions, setCompetitions] = useState<Competition[]>([]);
+  const [competitionPhases, setCompetitionPhases] = useState<CompetitionPhase[]>([]);
   const [selectedCompetition, setSelectedCompetition] = useState<Competition | null>(null);
+  const [selectedPhase, setSelectedPhase] = useState<CompetitionPhase | null>(null);
   const [categoryNotes, setCategoryNotes] = useState({
     technical: "",
     tactical: "",
@@ -73,6 +84,11 @@ const EditScoutingReport = () => {
     mental: "",
     impact: "",
   });
+
+  // Apply phase weight if selected, otherwise use competition coefficient
+  const effectiveCoefficient = selectedPhase 
+    ? selectedCompetition?.computed_coefficient * selectedPhase.phase_weight 
+    : selectedCompetition?.computed_coefficient || 1.0;
 
   const {
     scores,
@@ -84,7 +100,7 @@ const EditScoutingReport = () => {
     setConsistencyModifier,
     breakdown,
   } = useScoreCalculation({
-    competitionCoefficient: selectedCompetition?.computed_coefficient || 1.0,
+    competitionCoefficient: effectiveCoefficient,
   });
 
   const {
@@ -102,14 +118,16 @@ const EditScoutingReport = () => {
       if (!id) return;
 
       // Fetch players and competitions
-      const [playersRes, competitionsRes, reportRes] = await Promise.all([
+      const [playersRes, competitionsRes, phasesRes, reportRes] = await Promise.all([
         supabase.from("players").select("id, full_name, position").order("full_name"),
-        supabase.from("competitions").select("id, name, country, computed_coefficient").eq("is_active", true).order("name"),
+        supabase.from("competitions").select("id, name, country, computed_coefficient, is_unique").eq("is_active", true).order("name"),
+        supabase.from("competition_phases").select("*").order("phase_order"),
         supabase.from("scouting_reports").select("*").eq("id", id).maybeSingle(),
       ]);
 
       if (playersRes.data) setPlayers(playersRes.data);
       if (competitionsRes.data) setCompetitions(competitionsRes.data);
+      if (phasesRes.data) setCompetitionPhases(phasesRes.data);
 
       if (!reportRes.data) {
         toast.error("Relatório não encontrado");
@@ -154,6 +172,12 @@ const EditScoutingReport = () => {
       const comp = competitionsRes.data?.find((c) => c.id === report.competition_id);
       setSelectedCompetition(comp || null);
 
+      // Set phase if exists
+      if (report.phase_id && phasesRes.data) {
+        const phase = phasesRes.data.find((p) => p.id === report.phase_id);
+        setSelectedPhase(phase || null);
+      }
+
       setLoading(false);
     };
 
@@ -164,7 +188,18 @@ const EditScoutingReport = () => {
     setValue("competitionId", competitionId);
     const competition = competitions.find((c) => c.id === competitionId);
     setSelectedCompetition(competition || null);
+    setSelectedPhase(null); // Reset phase when competition changes
   };
+
+  const handlePhaseChange = (phaseId: string) => {
+    const phase = competitionPhases.find((p) => p.id === phaseId);
+    setSelectedPhase(phase || null);
+  };
+
+  // Get available phases for selected competition
+  const availablePhases = selectedCompetition?.is_unique 
+    ? competitionPhases.filter(p => p.competition_id === selectedCompetition.id)
+    : [];
 
   const onSubmit = async (data: ReportFormData) => {
     setIsSubmitting(true);
@@ -176,6 +211,7 @@ const EditScoutingReport = () => {
         match_date: data.matchDate,
         opponent: data.opponent || null,
         match_notes: data.matchNotes || null,
+        phase_id: selectedPhase?.id || null,
         
         technical_score: scores.technical,
         tactical_score: scores.tactical,
@@ -190,7 +226,7 @@ const EditScoutingReport = () => {
         impact_notes: categoryNotes.impact || null,
         
         base_score: breakdown.baseScore,
-        competition_coefficient: breakdown.competitionCoefficient,
+        competition_coefficient: effectiveCoefficient,
         adjusted_score: breakdown.adjustedScore,
         potential_bonus: potentialBonus,
         consistency_modifier: consistencyModifier,
@@ -316,7 +352,7 @@ const EditScoutingReport = () => {
                 <SelectContent>
                   {competitions.map((comp) => (
                     <SelectItem key={comp.id} value={comp.id}>
-                      {comp.name} ({comp.country}) - Coef: {comp.computed_coefficient}
+                      {comp.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -326,10 +362,36 @@ const EditScoutingReport = () => {
               )}
               {selectedCompetition && (
                 <p className="text-xs text-primary">
-                  Coeficiente: ×{selectedCompetition.computed_coefficient.toFixed(2)}
+                  Coeficiente base: ×{selectedCompetition.computed_coefficient.toFixed(2)}
+                  {selectedPhase && ` × ${selectedPhase.phase_weight.toFixed(2)} (${selectedPhase.phase_name}) = ×${effectiveCoefficient.toFixed(2)}`}
                 </p>
               )}
             </div>
+
+            {/* Phase Selector - Only shown for competitions with phases */}
+            {availablePhases.length > 0 && (
+              <div className="space-y-2">
+                <Label>Fase da Competição</Label>
+                <Select 
+                  onValueChange={handlePhaseChange}
+                  defaultValue={selectedPhase?.id}
+                >
+                  <SelectTrigger className="input-dark">
+                    <SelectValue placeholder="Selecione a fase (opcional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availablePhases.map((phase) => (
+                      <SelectItem key={phase.id} value={phase.id}>
+                        {phase.phase_name} (×{phase.phase_weight.toFixed(2)})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Fases posteriores têm maior peso na avaliação
+                </p>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="matchDate">Data da Partida *</Label>
