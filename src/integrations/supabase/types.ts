@@ -393,6 +393,7 @@ export type Database = {
           archived_at: string | null
           areas_to_develop: string[] | null
           auto_rating: number | null
+          auto_rating_details: Json | null
           bio_public: string | null
           birth_date: string | null
           body_fat_percentage: number | null
@@ -452,6 +453,7 @@ export type Database = {
           archived_at?: string | null
           areas_to_develop?: string[] | null
           auto_rating?: number | null
+          auto_rating_details?: Json | null
           bio_public?: string | null
           birth_date?: string | null
           body_fat_percentage?: number | null
@@ -511,6 +513,7 @@ export type Database = {
           archived_at?: string | null
           areas_to_develop?: string[] | null
           auto_rating?: number | null
+          auto_rating_details?: Json | null
           bio_public?: string | null
           birth_date?: string | null
           body_fat_percentage?: number | null
