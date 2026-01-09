@@ -17,6 +17,7 @@ import PlayerProfile from "./pages/PlayerProfile";
 import Contact from "./pages/Contact";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import CompetitionRankingPublic from "./pages/CompetitionRankingPublic";
 
 // App Pages
 import Dashboard from "./pages/app/Dashboard";
@@ -30,6 +31,7 @@ import EditScoutingReport from "./pages/app/EditScoutingReport";
 import ReportDetail from "./pages/app/ReportDetail";
 import Competitions from "./pages/app/Competitions";
 import CompetitionsImport from "./pages/app/CompetitionsImport";
+import CompetitionRanking from "./pages/app/CompetitionRanking";
 import Leads from "./pages/app/Leads";
 import Settings from "./pages/app/Settings";
 import ComparePlayers from "./pages/app/ComparePlayers";
@@ -49,6 +51,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/players" element={<Players />} />
               <Route path="/players/:slug" element={<PlayerProfile />} />
+              <Route path="/competitions" element={<CompetitionRankingPublic />} />
               <Route path="/contact" element={<Contact />} />
             </Route>
 
@@ -76,6 +79,7 @@ const App = () => (
               <Route path="reports/:id/edit" element={<EditScoutingReport />} />
               <Route path="competitions" element={<Competitions />} />
               <Route path="competitions/import" element={<CompetitionsImport />} />
+              <Route path="competitions/ranking" element={<CompetitionRanking />} />
               <Route path="leads" element={<Leads />} />
               <Route path="settings" element={<Settings />} />
             </Route>

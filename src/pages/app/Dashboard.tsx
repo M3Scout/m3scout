@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
 import { PlayerRankingCard } from "@/components/dashboard/PlayerRankingCard";
+import CompetitionUsageWidget from "@/components/competitions/CompetitionUsageWidget";
+import { useAuth } from "@/hooks/useAuth";
 
 interface DashboardStats {
   totalPlayers: number;
@@ -56,6 +58,7 @@ const POSITION_COLORS = [
 ];
 
 const Dashboard = () => {
+  const { isAdmin } = useAuth();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats>({
     totalPlayers: 0,
@@ -343,6 +346,9 @@ const Dashboard = () => {
 
       {/* Player Ranking */}
       <PlayerRankingCard />
+
+      {/* Competition Usage Analytics - Admin only */}
+      {isAdmin && <CompetitionUsageWidget />}
 
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Recent Reports */}
