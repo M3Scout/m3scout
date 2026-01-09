@@ -94,26 +94,42 @@ const ReportDetail = () => {
   const { id } = useParams();
   const [report, setReport] = useState<ReportDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchReport = async () => {
-      if (!id) return;
-
-      const { data, error } = await supabase
-        .from("scouting_reports")
-        .select(`
-          *,
-          players (id, full_name, position, photo_url, current_club, nationality),
-          competitions (name, country, division, phase),
-          profiles:scout_id (full_name)
-        `)
-        .eq("id", id)
-        .maybeSingle();
-
-      if (data) {
-        setReport(data as any);
+      if (!id) {
+        setError("ID do relatório não fornecido");
+        setLoading(false);
+        return;
       }
-      setLoading(false);
+
+      try {
+        const { data, error: queryError } = await supabase
+          .from("scouting_reports")
+          .select(`
+            *,
+            players (id, full_name, position, photo_url, current_club, nationality),
+            competitions (name, country, division, phase),
+            profiles:scout_id (full_name)
+          `)
+          .eq("id", id)
+          .maybeSingle();
+
+        if (queryError) {
+          console.error("Error fetching report:", queryError);
+          setError(queryError.message);
+        } else if (data) {
+          setReport(data as any);
+        } else {
+          setError("Relatório não encontrado ou sem permissão de acesso");
+        }
+      } catch (err: any) {
+        console.error("Exception fetching report:", err);
+        setError(err.message || "Erro desconhecido");
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchReport();
@@ -127,14 +143,24 @@ const ReportDetail = () => {
     );
   }
 
-  if (!report) {
+  if (!report || error) {
     return (
       <div className="text-center py-16">
         <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
         <h2 className="text-xl font-semibold mb-2">Relatório não encontrado</h2>
-        <Link to="/app/reports">
-          <Button variant="outline">Voltar para relatórios</Button>
-        </Link>
+        {error && (
+          <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
+            {error}
+          </p>
+        )}
+        <div className="flex gap-3 justify-center">
+          <Link to="/app/reports">
+            <Button variant="outline">Ver lista de relatórios</Button>
+          </Link>
+          <Button variant="ghost" onClick={() => window.location.reload()}>
+            Tentar novamente
+          </Button>
+        </div>
       </div>
     );
   }
