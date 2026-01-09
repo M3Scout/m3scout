@@ -36,6 +36,7 @@ import { PlayerStatsSection } from "@/components/players/sections/PlayerStatsSec
 import { PlayerRatingBadge } from "@/components/players/PlayerRatingBadge";
 import { AutoRatingCard } from "@/components/players/sections/AutoRatingCard";
 import { SeasonStatsCard } from "@/components/players/sections/SeasonStatsCard";
+import { RatingEvolutionChart } from "@/components/players/sections/RatingEvolutionChart";
 
 interface Player {
   id: string;
@@ -424,7 +425,11 @@ const PlayerDetail = () => {
                 onStatsChange={refetchPlayer}
               />
 
-
+              {/* Rating Evolution Chart */}
+              <RatingEvolutionChart
+                playerId={player.id}
+                currentRating={player.auto_rating}
+              />
               {/* Recent Reports */}
               <Card>
                 <CardHeader>
