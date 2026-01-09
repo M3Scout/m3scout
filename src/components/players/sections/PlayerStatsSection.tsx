@@ -66,7 +66,7 @@ interface Competition {
 
 interface PlayerStatsSectionProps {
   playerId: string;
-  onStatsChange?: (aggregated: AggregatedStats | null, coefficient: number) => void;
+  onStatsChange?: () => void;
 }
 
 interface StatsWithCompetition extends PlayerStats {
@@ -121,48 +121,12 @@ export function PlayerStatsSection({ playerId, onStatsChange }: PlayerStatsSecti
 
     if (statsRes.data) {
       setStats(statsRes.data as StatsWithCompetition[]);
-      // Notify parent of aggregated stats
-      notifyStatsChange(statsRes.data as StatsWithCompetition[]);
     }
     if (competitionsRes.data) {
       setCompetitions(competitionsRes.data);
     }
 
     setLoading(false);
-  };
-
-  const notifyStatsChange = (allStats: StatsWithCompetition[]) => {
-    if (!onStatsChange) return;
-
-    // Get current year stats
-    const currentYearStats = allStats.filter(s => s.season_year === currentYear);
-    
-    if (currentYearStats.length === 0) {
-      onStatsChange(null, 1.0);
-      return;
-    }
-
-    // Find highest competition coefficient
-    const maxCoef = Math.max(
-      ...currentYearStats.map(s => s.competitions?.computed_coefficient || 1.0)
-    );
-
-    // Aggregate stats
-    const aggregated: AggregatedStats = {
-      season_year: currentYear,
-      total_matches: currentYearStats.reduce((sum, s) => sum + (s.matches || 0), 0),
-      total_minutes: currentYearStats.reduce((sum, s) => sum + (s.minutes || 0), 0),
-      total_goals: currentYearStats.reduce((sum, s) => sum + (s.goals || 0), 0),
-      total_assists: currentYearStats.reduce((sum, s) => sum + (s.assists || 0), 0),
-      total_yellow_cards: currentYearStats.reduce((sum, s) => sum + (s.yellow_cards || 0), 0),
-      total_red_cards: currentYearStats.reduce((sum, s) => sum + (s.red_cards || 0), 0),
-      total_tackles: currentYearStats.reduce((sum, s) => sum + (s.tackles || 0), 0),
-      total_interceptions: currentYearStats.reduce((sum, s) => sum + (s.interceptions || 0), 0),
-      total_recoveries: currentYearStats.reduce((sum, s) => sum + (s.recoveries || 0), 0),
-      competitions_count: currentYearStats.length,
-    };
-
-    onStatsChange(aggregated, maxCoef);
   };
 
   const resetForm = () => {
@@ -234,6 +198,8 @@ export function PlayerStatsSection({ playerId, onStatsChange }: PlayerStatsSecti
     setDialogOpen(false);
     resetForm();
     fetchData();
+    // Notify parent that stats changed (triggers auto_rating refresh)
+    onStatsChange?.();
   };
 
   const handleDelete = async () => {
@@ -250,6 +216,8 @@ export function PlayerStatsSection({ playerId, onStatsChange }: PlayerStatsSecti
     setDeleteDialogOpen(false);
     setStatsToDelete(null);
     fetchData();
+    // Notify parent that stats changed
+    onStatsChange?.();
   };
 
   const handleInputChange = (field: string, value: number | string) => {

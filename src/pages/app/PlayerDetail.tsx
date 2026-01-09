@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -34,8 +34,6 @@ import { ContractSection } from "@/components/players/sections/ContractSection";
 import { InternalEvaluationSection } from "@/components/players/sections/InternalEvaluationSection";
 import { PlayerStatsSection } from "@/components/players/sections/PlayerStatsSection";
 import { PlayerRatingBadge } from "@/components/players/PlayerRatingBadge";
-import { calculatePlayerRating, type RatingBreakdown } from "@/lib/playerRating";
-import { type AggregatedStats } from "@/lib/playerStats";
 
 interface Player {
   id: string;
@@ -90,6 +88,9 @@ interface Player {
   estimated_level: string | null;
   internal_evaluation_notes: string | null;
   internal_notes: string | null;
+  // Auto Rating
+  auto_rating: number | null;
+  rating_updated_at: string | null;
   // Metadata
   created_at: string;
   updated_at: string;
@@ -123,28 +124,20 @@ const PlayerDetail = () => {
   const [reports, setReports] = useState<ScoutingReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  
-  // Stats for rating calculation
-  const [aggregatedStats, setAggregatedStats] = useState<AggregatedStats | null>(null);
-  const [competitionCoefficient, setCompetitionCoefficient] = useState(1.0);
 
   const canViewPrivate = isAdmin || isScout;
 
-  // Calculate player rating when stats or player changes
-  const ratingBreakdown = useMemo<RatingBreakdown | null>(() => {
-    if (!player || !aggregatedStats) return null;
-    
-    return calculatePlayerRating({
-      age: player.age,
-      position: player.position,
-      competitionCoefficient,
-      stats: aggregatedStats,
-    });
-  }, [player, aggregatedStats, competitionCoefficient]);
-
-  const handleStatsChange = (stats: AggregatedStats | null, coefficient: number) => {
-    setAggregatedStats(stats);
-    setCompetitionCoefficient(coefficient);
+  // Refetch player to get updated auto_rating after stats change
+  const refetchPlayer = async () => {
+    if (!id) return;
+    const { data } = await supabase
+      .from("players")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
+    if (data) {
+      setPlayer(data as Player);
+    }
   };
 
   useEffect(() => {
@@ -255,11 +248,10 @@ const PlayerDetail = () => {
                 ))}
               </div>
               {/* Player Rating */}
-              {ratingBreakdown && (
+              {player.auto_rating !== null && player.auto_rating !== undefined && (
                 <div className="mt-2">
                   <PlayerRatingBadge
-                    rating={ratingBreakdown.rating0_5}
-                    breakdown={ratingBreakdown}
+                    rating={player.auto_rating}
                     size="md"
                   />
                 </div>
@@ -499,7 +491,7 @@ const PlayerDetail = () => {
         <TabsContent value="stats">
           <PlayerStatsSection 
             playerId={player.id} 
-            onStatsChange={handleStatsChange}
+            onStatsChange={refetchPlayer}
           />
         </TabsContent>
 

@@ -51,8 +51,6 @@ import {
 } from "@/components/ui/collapsible";
 import { DeletePlayerDialog } from "@/components/players/DeletePlayerDialog";
 import { PlayerRatingBadge } from "@/components/players/PlayerRatingBadge";
-import { calculatePlayerRating, type RatingBreakdown } from "@/lib/playerRating";
-import { type AggregatedStats } from "@/lib/playerStats";
 
 interface Player {
   id: string;
@@ -65,12 +63,10 @@ interface Player {
   is_public: boolean;
   avg_score?: number | null;
   photo_url?: string | null;
-  // New: calculated rating
-  rating_0_5?: number | null;
-  rating_breakdown?: RatingBreakdown | null;
+  auto_rating?: number | null;
 }
 
-type SortField = "full_name" | "position" | "current_club" | "avg_score" | "rating_0_5" | "contract_end" | "is_public";
+type SortField = "full_name" | "position" | "current_club" | "avg_score" | "auto_rating" | "contract_end" | "is_public";
 type SortDirection = "asc" | "desc";
 type ViewMode = "table" | "grid";
 
@@ -99,12 +95,10 @@ const AppPlayers = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const fetchPlayers = async () => {
-    const currentYear = new Date().getFullYear();
-    
-    // Fetch players with photo_url
+    // Fetch players with auto_rating from database
     const { data: playersData, error: playersError } = await supabase
       .from("players")
-      .select("id, full_name, position, age, nationality, current_club, contract_end, is_public, photo_url")
+      .select("id, full_name, position, age, nationality, current_club, contract_end, is_public, photo_url, auto_rating")
       .order("full_name");
 
     if (playersError || !playersData) {
@@ -117,12 +111,6 @@ const AppPlayers = () => {
       .from("scouting_reports")
       .select("player_id, final_score");
 
-    // Fetch player stats for rating calculation
-    const { data: statsData } = await supabase
-      .from("player_stats")
-      .select("player_id, season_year, matches, minutes, goals, assists, yellow_cards, red_cards, tackles, interceptions, recoveries, competition_id, competitions(computed_coefficient)")
-      .eq("season_year", currentYear);
-
     // Calculate average scores per player
     const scoresByPlayer: Record<string, number[]> = {};
     scoresData?.forEach((report) => {
@@ -132,72 +120,12 @@ const AppPlayers = () => {
       scoresByPlayer[report.player_id].push(report.final_score);
     });
 
-    // Group stats by player and calculate aggregated stats
-    const statsByPlayer: Record<string, { stats: AggregatedStats; maxCoef: number }> = {};
-    statsData?.forEach((stat) => {
-      const playerId = stat.player_id;
-      const coef = (stat.competitions as any)?.computed_coefficient || 1.0;
-      
-      if (!statsByPlayer[playerId]) {
-        statsByPlayer[playerId] = {
-          stats: {
-            season_year: currentYear,
-            total_matches: 0,
-            total_minutes: 0,
-            total_goals: 0,
-            total_assists: 0,
-            total_yellow_cards: 0,
-            total_red_cards: 0,
-            total_tackles: 0,
-            total_interceptions: 0,
-            total_recoveries: 0,
-            competitions_count: 0,
-          },
-          maxCoef: coef,
-        };
-      }
-      
-      const agg = statsByPlayer[playerId];
-      agg.stats.total_matches += stat.matches || 0;
-      agg.stats.total_minutes += stat.minutes || 0;
-      agg.stats.total_goals += stat.goals || 0;
-      agg.stats.total_assists += stat.assists || 0;
-      agg.stats.total_yellow_cards += stat.yellow_cards || 0;
-      agg.stats.total_red_cards += stat.red_cards || 0;
-      agg.stats.total_tackles += stat.tackles || 0;
-      agg.stats.total_interceptions += stat.interceptions || 0;
-      agg.stats.total_recoveries += stat.recoveries || 0;
-      agg.stats.competitions_count += 1;
-      agg.maxCoef = Math.max(agg.maxCoef, coef);
-    });
-
-    const playersWithScores = playersData.map((player) => {
-      const avgScore = scoresByPlayer[player.id]
+    const playersWithScores = playersData.map((player) => ({
+      ...player,
+      avg_score: scoresByPlayer[player.id]
         ? scoresByPlayer[player.id].reduce((a, b) => a + b, 0) / scoresByPlayer[player.id].length
-        : null;
-
-      // Calculate rating if stats exist
-      let rating_0_5: number | null = null;
-      let rating_breakdown: RatingBreakdown | null = null;
-      
-      const playerStats = statsByPlayer[player.id];
-      if (playerStats && playerStats.stats.total_minutes > 0) {
-        rating_breakdown = calculatePlayerRating({
-          age: player.age,
-          position: player.position,
-          competitionCoefficient: playerStats.maxCoef,
-          stats: playerStats.stats,
-        });
-        rating_0_5 = rating_breakdown.rating0_5;
-      }
-
-      return {
-        ...player,
-        avg_score: avgScore,
-        rating_0_5,
-        rating_breakdown,
-      };
-    });
+        : null,
+    }));
 
     setPlayers(playersWithScores);
     setLoading(false);
@@ -252,9 +180,9 @@ const AppPlayers = () => {
           aValue = a.avg_score ?? -1;
           bValue = b.avg_score ?? -1;
           break;
-        case "rating_0_5":
-          aValue = a.rating_0_5 ?? -1;
-          bValue = b.rating_0_5 ?? -1;
+        case "auto_rating":
+          aValue = a.auto_rating ?? -1;
+          bValue = b.auto_rating ?? -1;
           break;
         case "contract_end":
           aValue = a.contract_end ? new Date(a.contract_end).getTime() : 0;
@@ -537,11 +465,11 @@ const AppPlayers = () => {
                   </th>
                   <th 
                     className="text-left p-4 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
-                    onClick={() => handleSort("rating_0_5")}
+                    onClick={() => handleSort("auto_rating")}
                   >
                     <span className="flex items-center">
                       Nota
-                      <SortIcon field="rating_0_5" />
+                      <SortIcon field="auto_rating" />
                     </span>
                   </th>
                   <th 
@@ -597,10 +525,9 @@ const AppPlayers = () => {
                       {player.current_club || '-'}
                     </td>
                     <td className="p-4">
-                      {player.rating_0_5 !== null && player.rating_0_5 !== undefined && player.rating_breakdown ? (
+                      {player.auto_rating !== null && player.auto_rating !== undefined ? (
                         <PlayerRatingBadge
-                          rating={player.rating_0_5}
-                          breakdown={player.rating_breakdown}
+                          rating={player.auto_rating}
                           showReliability={false}
                           size="sm"
                         />
@@ -708,11 +635,10 @@ const AppPlayers = () => {
                     </span>
                   </div>
                   {/* Rating Badge */}
-                  {player.rating_0_5 !== null && player.rating_0_5 !== undefined && player.rating_breakdown && (
+                  {player.auto_rating !== null && player.auto_rating !== undefined && (
                     <div className="absolute top-2 left-2">
                       <PlayerRatingBadge
-                        rating={player.rating_0_5}
-                        breakdown={player.rating_breakdown}
+                        rating={player.auto_rating}
                         showReliability={false}
                         size="sm"
                       />
