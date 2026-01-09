@@ -1066,13 +1066,14 @@ const Competitions = () => {
                 <div className="space-y-2">
                   <Label>Estado (UF)</Label>
                   <Select 
-                    value={formData.state} 
-                    onValueChange={(v) => setFormData({ ...formData, state: v })}
+                    value={formData.state || "NONE"} 
+                    onValueChange={(v) => setFormData({ ...formData, state: v === "NONE" ? "" : v })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="NONE">Selecione...</SelectItem>
                       {BRAZILIAN_STATES.map((state) => (
                         <SelectItem key={state} value={state}>{state}</SelectItem>
                       ))}
@@ -1084,14 +1085,14 @@ const Competitions = () => {
               <div className="space-y-2">
                 <Label>Divisão</Label>
                 <Select 
-                  value={formData.division} 
-                  onValueChange={(v) => setFormData({ ...formData, division: v })}
+                  value={formData.division || "NONE"} 
+                  onValueChange={(v) => setFormData({ ...formData, division: v === "NONE" ? "" : v })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Nenhuma</SelectItem>
+                    <SelectItem value="NONE">Nenhuma</SelectItem>
                     {DIVISIONS.map((div) => (
                       <SelectItem key={div} value={div}>{div}</SelectItem>
                     ))}
