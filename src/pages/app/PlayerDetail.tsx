@@ -34,6 +34,8 @@ import { ContractSection } from "@/components/players/sections/ContractSection";
 import { InternalEvaluationSection } from "@/components/players/sections/InternalEvaluationSection";
 import { PlayerStatsSection } from "@/components/players/sections/PlayerStatsSection";
 import { PlayerRatingBadge } from "@/components/players/PlayerRatingBadge";
+import { AutoRatingCard } from "@/components/players/sections/AutoRatingCard";
+import { SeasonStatsCard } from "@/components/players/sections/SeasonStatsCard";
 
 interface Player {
   id: string;
@@ -410,6 +412,19 @@ const PlayerDetail = () => {
 
             {/* Sidebar */}
             <div className="space-y-6">
+              {/* Auto Rating Card */}
+              <AutoRatingCard
+                rating={player.auto_rating}
+                updatedAt={player.rating_updated_at}
+              />
+
+              {/* Season Stats Card */}
+              <SeasonStatsCard
+                playerId={player.id}
+                onStatsChange={refetchPlayer}
+              />
+
+
               {/* Recent Reports */}
               <Card>
                 <CardHeader>
