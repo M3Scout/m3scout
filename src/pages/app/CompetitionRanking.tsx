@@ -391,11 +391,11 @@ const CompetitionRanking = () => {
                   </TableCell>
                   {isAdmin && (
                     <TableCell className="text-center text-sm text-muted-foreground">
-                      {comp.base_coefficient.toFixed(2)}
+                      {Number.isFinite(comp.base_coefficient) ? comp.base_coefficient.toFixed(2) : "—"}
                     </TableCell>
                   )}
                   <TableCell className="text-center font-mono font-medium">
-                    ×{comp.final_coefficient.toFixed(2)}
+                    ×{Number.isFinite(comp.final_coefficient) ? comp.final_coefficient.toFixed(2) : "—"}
                   </TableCell>
                   {isAdmin && (
                     <TableCell className="text-center">

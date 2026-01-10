@@ -96,17 +96,20 @@ const CURRENCIES = [
   { value: "BRL", label: "BRL (R$)", symbol: "R$" },
 ];
 
-function formatValue(value: number, currency: string): string {
+function formatValue(value: number | null | undefined, currency: string): string {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "—";
+  
   const curr = CURRENCIES.find((c) => c.value === currency);
   const symbol = curr?.symbol || "";
   
-  if (value >= 1000000) {
-    return `${symbol}${(value / 1000000).toFixed(2)}M`;
+  if (n >= 1000000) {
+    return `${symbol}${(n / 1000000).toFixed(2)}M`;
   }
-  if (value >= 1000) {
-    return `${symbol}${(value / 1000).toFixed(0)}K`;
+  if (n >= 1000) {
+    return `${symbol}${(n / 1000).toFixed(0)}K`;
   }
-  return `${symbol}${value.toLocaleString()}`;
+  return `${symbol}${n.toLocaleString()}`;
 }
 
 function formatFullValue(value: number, currency: string): string {

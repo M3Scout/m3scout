@@ -316,7 +316,7 @@ const CompetitionsImport = () => {
 
           {competitionsFile && (
             <p className="text-sm text-muted-foreground">
-              Arquivo selecionado: {competitionsFile.name} ({(competitionsFile.size / 1024).toFixed(1)} KB)
+              Arquivo selecionado: {competitionsFile.name} ({Number.isFinite(competitionsFile.size) ? (competitionsFile.size / 1024).toFixed(1) : "—"} KB)
             </p>
           )}
 
@@ -368,7 +368,7 @@ const CompetitionsImport = () => {
 
           {stateTiersFile && (
             <p className="text-sm text-muted-foreground">
-              Arquivo selecionado: {stateTiersFile.name} ({(stateTiersFile.size / 1024).toFixed(1)} KB)
+              Arquivo selecionado: {stateTiersFile.name} ({Number.isFinite(stateTiersFile.size) ? (stateTiersFile.size / 1024).toFixed(1) : "—"} KB)
             </p>
           )}
 

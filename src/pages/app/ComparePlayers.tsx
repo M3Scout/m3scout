@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PlayerRatingBadge } from "@/components/players/PlayerRatingBadge";
+import { formatFixed } from "@/lib/formatters";
 
 interface Player {
   id: string;
@@ -411,7 +412,7 @@ const ComparePlayers = () => {
               <StatRow
                 label="Nota Automática"
                 icon={Star}
-                getValue={(p) => p.auto_rating?.toFixed(1) ?? null}
+                getValue={(p) => p.auto_rating !== null ? formatFixed(p.auto_rating, 1) : null}
                 metric="auto_rating"
               />
               <StatRow

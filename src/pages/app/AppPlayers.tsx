@@ -39,6 +39,8 @@ import {
   Archive,
   ArchiveRestore,
   GitCompare,
+  AlertTriangle,
+  RefreshCw,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -87,6 +89,7 @@ const AppPlayers = () => {
   const { isAdmin } = useAuth();
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [playerToDelete, setPlayerToDelete] = useState<{ id: string; full_name: string } | null>(null);
@@ -107,6 +110,8 @@ const AppPlayers = () => {
   const [showArchived, setShowArchived] = useState(false);
 
   const fetchPlayers = async () => {
+    setLoading(true);
+    setFetchError(null);
     try {
       // Fetch players with auto_rating and details from database
       let query = supabase
@@ -123,6 +128,7 @@ const AppPlayers = () => {
 
       if (playersError) {
         console.error("Error fetching players:", playersError);
+        setFetchError("Não foi possível carregar os atletas. Verifique sua conexão e tente novamente.");
         setLoading(false);
         return;
       }
@@ -158,6 +164,7 @@ const AppPlayers = () => {
       setPlayers(playersWithScores);
     } catch (error) {
       console.error("Unexpected error fetching players:", error);
+      setFetchError("Ocorreu um erro inesperado ao carregar os atletas.");
     } finally {
       setLoading(false);
     }
@@ -500,6 +507,23 @@ const AppPlayers = () => {
       {/* Content */}
       {loading ? (
         <PlayersListSkeleton viewMode={viewMode} count={itemsPerPage} />
+      ) : fetchError ? (
+        /* Error State */
+        <div className="glass-card p-12 text-center">
+          <div className="flex flex-col items-center gap-4 max-w-md mx-auto">
+            <div className="w-20 h-20 rounded-full bg-destructive/10 flex items-center justify-center">
+              <AlertTriangle className="w-10 h-10 text-destructive" />
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold mb-2">Erro ao carregar atletas</h3>
+              <p className="text-muted-foreground">{fetchError}</p>
+            </div>
+            <Button variant="outline" onClick={fetchPlayers} className="mt-2">
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Tentar Novamente
+            </Button>
+          </div>
+        </div>
       ) : players.length === 0 ? (
         /* Empty State - No players in database */
         <div className="glass-card p-12 text-center">

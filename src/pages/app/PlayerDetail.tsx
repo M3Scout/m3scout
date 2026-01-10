@@ -454,7 +454,7 @@ const PlayerDetail = () => {
                             <span className="text-sm font-medium">
                               {report.competition?.name || "Competição"}
                             </span>
-                            <Badge variant="outline">{report.final_score.toFixed(1)}</Badge>
+                            <Badge variant="outline">{Number.isFinite(report.final_score) ? report.final_score.toFixed(1) : "—"}</Badge>
                           </div>
                           <p className="text-xs text-muted-foreground">
                             {new Date(report.match_date).toLocaleDateString("pt-BR")}

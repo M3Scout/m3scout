@@ -297,7 +297,7 @@ const CompetitionRankingPublic = () => {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-center font-mono font-medium">
-                    ×{comp.final_coefficient.toFixed(2)}
+                    ×{Number.isFinite(comp.final_coefficient) ? comp.final_coefficient.toFixed(2) : "—"}
                   </TableCell>
                 </TableRow>
               ))
