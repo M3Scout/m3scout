@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Eye, Star, TrendingUp, CheckCircle, XCircle, Trophy } from "lucide-react";
+import { formatFixed } from "@/lib/formatters";
 
 interface EvaluationData {
   overall_rating?: number | null;
@@ -33,7 +34,7 @@ const RatingDisplay = ({
       <div className="flex items-center gap-2">
         {value !== null && value !== undefined ? (
           <>
-            <span className="text-xl font-bold">{value.toFixed(1)}</span>
+            <span className="text-xl font-bold">{formatFixed(value, 1)}</span>
             <span className="text-muted-foreground">/10</span>
           </>
         ) : (

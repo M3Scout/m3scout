@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Star, TrendingUp, Clock, Info, RefreshCw, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatFixed } from "@/lib/formatters";
 import { RatingBreakdownModal } from "@/components/players/RatingBreakdownModal";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -175,7 +176,7 @@ export function OverallRatingCard({
               )}
             >
               <span className={cn("text-3xl font-bold", getRatingColor(displayRating))}>
-                {displayRating.toFixed(1)}
+                {formatFixed(displayRating, 1)}
               </span>
               <span className="text-xs text-muted-foreground">/5.0</span>
             </div>
@@ -220,7 +221,7 @@ export function OverallRatingCard({
               <div className="flex items-center gap-2 text-sm">
                 <TrendingUp className="w-3 h-3 text-muted-foreground" />
                 <span className="text-muted-foreground">Potencial:</span>
-                <span className="font-medium text-amber-400">{potentialRating.toFixed(1)}</span>
+                <span className="font-medium text-amber-400">{formatFixed(potentialRating, 1)}</span>
               </div>
             )}
 
@@ -229,7 +230,7 @@ export function OverallRatingCard({
               <div className="flex items-center gap-2 text-sm">
                 <Star className="w-3 h-3 text-muted-foreground" />
                 <span className="text-muted-foreground">Scout:</span>
-                <span className="font-medium">{overallRating.toFixed(1)}</span>
+                <span className="font-medium">{formatFixed(overallRating, 1)}</span>
               </div>
             )}
 

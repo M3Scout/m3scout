@@ -19,6 +19,7 @@ import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { Loader2, RotateCcw, ZoomIn } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { formatFixed } from "@/lib/formatters";
 
 interface ImageCropperModalProps {
   open: boolean;
@@ -176,7 +177,7 @@ export function ImageCropperModal({
             <ZoomIn className="w-4 h-4 text-muted-foreground" />
             <Label className="text-sm">Zoom</Label>
             <span className="text-xs text-muted-foreground ml-auto">
-              {zoom.toFixed(1)}x
+              {formatFixed(zoom, 1)}x
             </span>
           </div>
           <Slider

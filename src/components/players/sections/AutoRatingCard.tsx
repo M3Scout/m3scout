@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Star, Clock, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatFixed } from "@/lib/formatters";
 import { RatingBreakdownModal } from "@/components/players/RatingBreakdownModal";
 
 interface RatingDetails {
@@ -140,7 +141,7 @@ export function AutoRatingCard({ rating, updatedAt, details }: AutoRatingCardPro
                   getRatingColor(rating)
                 )}
               >
-                {rating.toFixed(1)}
+                {formatFixed(rating, 1)}
               </span>
               <p className="text-xs text-muted-foreground">/5.0</p>
             </div>

@@ -20,6 +20,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { formatFixed } from "@/lib/formatters";
 
 interface PublicStatsSectionProps {
   playerId: string;
@@ -110,7 +111,7 @@ export function PublicStatsSection({ playerId }: PublicStatsSectionProps) {
 
   const calculatePer90 = (value: number, minutes: number): string => {
     if (minutes < 90) return "—";
-    return ((value / minutes) * 90).toFixed(2);
+    return formatFixed((value / minutes) * 90, 2);
   };
 
   if (loading) {

@@ -14,6 +14,7 @@ import {
 } from "recharts";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { formatFixed } from "@/lib/formatters";
 
 interface RatingHistoryEntry {
   id: string;
@@ -101,7 +102,7 @@ export function RatingEvolutionChart({ playerId, currentRating }: RatingEvolutio
         <div className="bg-popover border border-border rounded-lg p-3 shadow-lg">
           <p className="text-sm text-muted-foreground">{payload[0].payload.fullDate}</p>
           <p className="text-lg font-bold text-primary">
-            {payload[0].value.toFixed(1)}
+            {formatFixed(payload[0].value, 1)}
           </p>
         </div>
       );
@@ -120,7 +121,7 @@ export function RatingEvolutionChart({ playerId, currentRating }: RatingEvolutio
           <TrendIcon className="w-4 h-4" />
           <span>
             {trend > 0 ? "+" : ""}
-            {trend.toFixed(1)}
+            {formatFixed(trend, 1)}
           </span>
         </div>
       </CardHeader>
@@ -155,10 +156,10 @@ export function RatingEvolutionChart({ playerId, currentRating }: RatingEvolutio
         </div>
         <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
           <span>
-            Primeira nota: <strong className="text-foreground">{Number(firstRating).toFixed(1)}</strong>
+            Primeira nota: <strong className="text-foreground">{formatFixed(firstRating, 1)}</strong>
           </span>
           <span>
-            Última nota: <strong className="text-foreground">{Number(lastRating).toFixed(1)}</strong>
+            Última nota: <strong className="text-foreground">{formatFixed(lastRating, 1)}</strong>
           </span>
         </div>
       </CardContent>
