@@ -438,7 +438,7 @@ export function PlayerStatsSection({ playerId, onStatsChange }: PlayerStatsSecti
           )}
         </CardHeader>
         <CardContent>
-          {stats.length === 0 ? (
+          {(stats?.length ?? 0) === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-50" />
               <p>Nenhuma estatística registrada</p>

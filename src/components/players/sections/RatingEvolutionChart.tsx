@@ -43,8 +43,10 @@ export function RatingEvolutionChart({ playerId, currentRating }: RatingEvolutio
       .eq("player_id", playerId)
       .order("recorded_at", { ascending: true });
 
-    if (data) {
+    if (Array.isArray(data)) {
       setHistory(data);
+    } else {
+      setHistory([]);
     }
     setLoading(false);
   };
@@ -60,7 +62,8 @@ export function RatingEvolutionChart({ playerId, currentRating }: RatingEvolutio
   }
 
   // If no history, show message
-  if (history.length === 0) {
+  const safeHistory = Array.isArray(history) ? history : [];
+  if (safeHistory.length === 0) {
     return (
       <Card>
         <CardHeader>
@@ -81,15 +84,15 @@ export function RatingEvolutionChart({ playerId, currentRating }: RatingEvolutio
   }
 
   // Prepare chart data
-  const chartData = history.map((entry) => ({
+  const chartData = safeHistory.map((entry) => ({
     date: format(new Date(entry.recorded_at), "dd/MM", { locale: ptBR }),
     fullDate: format(new Date(entry.recorded_at), "dd/MM/yyyy HH:mm", { locale: ptBR }),
     rating: Number(entry.rating),
   }));
 
   // Calculate trend
-  const firstRating = history[0]?.rating;
-  const lastRating = history[history.length - 1]?.rating;
+  const firstRating = safeHistory[0]?.rating ?? 0;
+  const lastRating = safeHistory.length > 0 ? (safeHistory[safeHistory.length - 1]?.rating ?? 0) : 0;
   const trend = lastRating - firstRating;
 
   const TrendIcon = trend > 0 ? TrendingUp : trend < 0 ? TrendingDown : Minus;

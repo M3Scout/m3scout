@@ -24,8 +24,8 @@ const InfoItem = ({ label, value }: { label: string; value: string | null | unde
 );
 
 export const TechnicalProfileSection = ({ data }: TechnicalProfileSectionProps) => {
-  const hasStrengths = data.strengths && data.strengths.length > 0;
-  const hasAreasToImprove = data.areas_to_develop && data.areas_to_develop.length > 0;
+  const hasStrengths = Array.isArray(data?.strengths) && data.strengths.length > 0;
+  const hasAreasToImprove = Array.isArray(data?.areas_to_develop) && data.areas_to_develop.length > 0;
 
   return (
     <Card>

@@ -30,7 +30,7 @@ export function SeasonSummaryCard({ playerId }: SeasonSummaryCardProps) {
         .eq("player_id", playerId)
         .eq("season_year", currentYear);
 
-      if (data && data.length > 0) {
+      if (Array.isArray(data) && data.length > 0) {
         const aggregated = data.reduce(
           (acc, s) => ({
             matches: acc.matches + (s.matches || 0),

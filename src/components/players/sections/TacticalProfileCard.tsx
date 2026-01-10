@@ -79,7 +79,7 @@ export function TacticalProfileCard({
         )}
 
         {/* Strengths */}
-        {strengths && strengths.length > 0 && (
+        {Array.isArray(strengths) && strengths.length > 0 && (
           <div className="space-y-2">
             <p className="text-xs text-muted-foreground font-medium">Pontos Fortes</p>
             <div className="flex flex-wrap gap-1.5">
@@ -96,7 +96,7 @@ export function TacticalProfileCard({
         )}
 
         {/* Areas to Develop */}
-        {areasToDevelope && areasToDevelope.length > 0 && (
+        {Array.isArray(areasToDevelope) && areasToDevelope.length > 0 && (
           <div className="space-y-2">
             <p className="text-xs text-muted-foreground font-medium">A Desenvolver</p>
             <div className="flex flex-wrap gap-1.5">

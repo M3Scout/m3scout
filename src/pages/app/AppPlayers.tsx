@@ -119,7 +119,9 @@ const AppPlayers = () => {
   const safePlayers = useMemo(() => (Array.isArray(players) ? players : []), [players]);
 
   // Debug (para identificar variável que está vindo indefinida e causando crash com `.length`)
-  console.log("players type", typeof players, "isArray", Array.isArray(players), players);
+  console.log("[AppPlayers DEBUG] players:", typeof players, Array.isArray(players), "length:", Array.isArray(players) ? players.length : "N/A");
+  console.log("[AppPlayers DEBUG] filters:", { positionFilter, nationalityFilter, clubFilter, statusFilter, showArchived });
+  console.log("[AppPlayers DEBUG] searchQuery:", typeof searchQuery, `"${searchQuery}"`);
 
   const fetchPlayers = async () => {
     setLoading(true);
@@ -986,7 +988,7 @@ const AppPlayers = () => {
                 Carregar mais
               </Button>
               <p className="text-xs text-muted-foreground">
-                Mostrando {paginatedPlayers.length} de {filteredCount} atletas
+                Mostrando {paginatedPlayers?.length ?? 0} de {filteredCount} atletas
               </p>
             </div>
           )}
