@@ -461,7 +461,7 @@ export function PlayerStatsSection({ playerId, onStatsChange }: PlayerStatsSecti
                   <h4 className="font-semibold mb-3 flex items-center gap-2">
                     <Badge variant="outline">{season}</Badge>
                     <span className="text-sm text-muted-foreground">
-                      ({statsBySeason[season].length} competição{statsBySeason[season].length > 1 ? "ões" : ""})
+                      ({safeArray(statsBySeason[season]).length} competição{safeArray(statsBySeason[season]).length > 1 ? "ões" : ""})
                     </span>
                   </h4>
                   <div className="border rounded-lg overflow-hidden">
@@ -529,31 +529,31 @@ export function PlayerStatsSection({ playerId, onStatsChange }: PlayerStatsSecti
                         <TableRow className="bg-muted/50 font-semibold">
                           <TableCell>Total</TableCell>
                           <TableCell className="text-center">
-                            {statsBySeason[season].reduce((sum, s) => sum + s.matches, 0)}
+                            {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.matches || 0), 0)}
                           </TableCell>
                           <TableCell className="text-center">
-                            {statsBySeason[season].reduce((sum, s) => sum + s.minutes, 0)}
+                            {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.minutes || 0), 0)}
                           </TableCell>
                           <TableCell className="text-center text-primary">
-                            {statsBySeason[season].reduce((sum, s) => sum + s.goals, 0)}
+                            {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.goals || 0), 0)}
                           </TableCell>
                           <TableCell className="text-center">
-                            {statsBySeason[season].reduce((sum, s) => sum + s.assists, 0)}
+                            {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.assists || 0), 0)}
                           </TableCell>
                           <TableCell className="text-center">
-                            {statsBySeason[season].reduce((sum, s) => sum + s.yellow_cards, 0)}
+                            {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.yellow_cards || 0), 0)}
                           </TableCell>
                           <TableCell className="text-center">
-                            {statsBySeason[season].reduce((sum, s) => sum + s.red_cards, 0)}
+                            {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.red_cards || 0), 0)}
                           </TableCell>
                           <TableCell className="text-center">
-                            {statsBySeason[season].reduce((sum, s) => sum + s.tackles, 0)}
+                            {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.tackles || 0), 0)}
                           </TableCell>
                           <TableCell className="text-center">
-                            {statsBySeason[season].reduce((sum, s) => sum + s.interceptions, 0)}
+                            {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.interceptions || 0), 0)}
                           </TableCell>
                           <TableCell className="text-center">
-                            {statsBySeason[season].reduce((sum, s) => sum + s.recoveries, 0)}
+                            {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.recoveries || 0), 0)}
                           </TableCell>
                           {canEdit && <TableCell></TableCell>}
                         </TableRow>
