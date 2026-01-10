@@ -21,7 +21,7 @@ import {
   Calculator,
   Lightbulb,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, safeArray } from "@/lib/utils";
 
 interface RatingDetails {
   calculated_at: string;
@@ -284,7 +284,7 @@ export function RatingBreakdownModal({ details, rating, trigger }: RatingBreakdo
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {scoreItems.map((item) => (
+            {safeArray(scoreItems).map((item) => (
               <div key={item.label} className="space-y-1">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -334,7 +334,7 @@ export function RatingBreakdownModal({ details, rating, trigger }: RatingBreakdo
                     </tr>
                   </thead>
                   <tbody>
-                    {competitionsWithGc90.map((comp, idx) => (
+                    {safeArray(competitionsWithGc90).map((comp, idx) => (
                       <tr key={comp.competition_id || idx} className="border-b border-border/30">
                         <td className="py-2 px-1 font-medium max-w-[150px] truncate" title={comp.competition_name}>
                           {comp.competition_name}

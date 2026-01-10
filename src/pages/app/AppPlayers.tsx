@@ -64,6 +64,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { formatFixed } from "@/lib/formatters";
 import { PlayersListSkeleton } from "@/components/players/PlayersListSkeleton";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
+import { safeArray } from "@/lib/utils";
 
 interface Player {
   id: string;
@@ -205,9 +206,9 @@ const AppPlayers = () => {
   // Extract unique values for filter options with null safety
   const filterOptions = useMemo(() => {
     const base = safePlayers;
-    const positions = [...new Set(base.map((p) => p.position).filter(Boolean))].sort() as string[];
-    const nationalities = [...new Set(base.map((p) => p.nationality).filter(Boolean))].sort() as string[];
-    const clubs = [...new Set(base.map((p) => p.current_club).filter(Boolean))].sort() as string[];
+    const positions = [...new Set(safeArray(base).map((p) => p.position).filter(Boolean))].sort() as string[];
+    const nationalities = [...new Set(safeArray(base).map((p) => p.nationality).filter(Boolean))].sort() as string[];
+    const clubs = [...new Set(safeArray(base).map((p) => p.current_club).filter(Boolean))].sort() as string[];
     return { positions, nationalities, clubs };
   }, [safePlayers]);
 
@@ -489,7 +490,7 @@ const AppPlayers = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todas</SelectItem>
-                      {filterOptions.positions.map((pos) => (
+                      {safeArray(filterOptions.positions).map((pos) => (
                         <SelectItem key={pos} value={pos}>
                           {pos}
                         </SelectItem>
@@ -506,7 +507,7 @@ const AppPlayers = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todas</SelectItem>
-                      {filterOptions.nationalities.map((nat) => (
+                      {safeArray(filterOptions.nationalities).map((nat) => (
                         <SelectItem key={nat} value={nat}>
                           {nat}
                         </SelectItem>
@@ -523,7 +524,7 @@ const AppPlayers = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todos</SelectItem>
-                      {filterOptions.clubs.map((club) => (
+                      {safeArray(filterOptions.clubs).map((club) => (
                         <SelectItem key={club} value={club}>
                           {club}
                         </SelectItem>
@@ -718,7 +719,7 @@ const AppPlayers = () => {
                 </tr>
               </thead>
               <tbody>
-                {paginatedPlayers.map((player) => (
+                {safeArray(paginatedPlayers).map((player) => (
                   <tr 
                     key={player.id}
                     className="border-b border-border/30 hover:bg-secondary/30 transition-colors"
@@ -843,7 +844,7 @@ const AppPlayers = () => {
       ) : (
         /* Grid/Cards View */
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {paginatedPlayers.map((player) => (
+          {safeArray(paginatedPlayers).map((player) => (
             <Card key={player.id} className="group overflow-hidden hover:ring-2 hover:ring-primary/50 transition-all">
               <Link to={`/app/players/${player.id}`}>
                 <div className="aspect-[4/3] relative bg-secondary/50 overflow-hidden">
@@ -1022,7 +1023,7 @@ const AppPlayers = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {PAGE_SIZE_OPTIONS.map((size) => (
+                  {safeArray(PAGE_SIZE_OPTIONS).map((size) => (
                     <SelectItem key={size} value={String(size)}>
                       {size}
                     </SelectItem>
@@ -1041,7 +1042,7 @@ const AppPlayers = () => {
               <ChevronLeft className="w-4 h-4" />
             </Button>
             
-            {getPageNumbers().map((page, index) =>
+            {safeArray(getPageNumbers()).map((page, index) =>
               page === "ellipsis" ? (
                 <span key={`ellipsis-${index}`} className="px-2 text-muted-foreground">
                   ...

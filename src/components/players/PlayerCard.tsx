@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { MapPin, Calendar, Star } from "lucide-react";
 import { RatingStars } from "./RatingStars";
-import { cn } from "@/lib/utils";
+import { cn, safeArray } from "@/lib/utils";
 import { formatFixed } from "@/lib/formatters";
 import {
   Tooltip,
@@ -106,7 +106,7 @@ export function PlayerCard({
             </h3>
             
             <div className="flex flex-wrap gap-1 mb-2">
-              {secondaryPositions.slice(0, 2).map((pos) => (
+              {safeArray(secondaryPositions).slice(0, 2).map((pos) => (
                 <span key={pos} className="stat-badge text-[10px]">
                   {pos}
                 </span>

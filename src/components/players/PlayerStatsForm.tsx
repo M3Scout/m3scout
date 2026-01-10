@@ -20,6 +20,7 @@ import {
   Crosshair
 } from "lucide-react";
 import { toast } from "sonner";
+import { safeArray } from "@/lib/utils";
 
 interface Competition {
   id: string;
@@ -281,7 +282,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
             </Button>
           </div>
         ) : (
-          stats.map((stat) => (
+          safeArray(stats).map((stat) => (
             <Collapsible 
               key={stat.id} 
               open={expandedRows.has(stat.id)} 
@@ -333,7 +334,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
                         >
                           <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                           <SelectContent>
-                            {competitions.map(c => (
+                            {safeArray(competitions).map(c => (
                               <SelectItem key={c.id} value={c.id}>
                                 {c.display_name || c.name} (coef: {c.final_coefficient})
                               </SelectItem>

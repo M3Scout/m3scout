@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatFixed } from "@/lib/formatters";
+import { safeArray } from "@/lib/utils";
 
 interface PublicStatsSectionProps {
   playerId: string;
@@ -316,7 +317,7 @@ export function PublicStatsSection({ playerId }: PublicStatsSectionProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {careerStats.map((season) => (
+                  {safeArray(careerStats).map((season) => (
                     <TableRow key={season.season_year}>
                       <TableCell className="font-medium">
                         {season.season_year}

@@ -38,6 +38,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { safeArray } from "@/lib/utils";
 import {
   LineChart,
   Line,
@@ -191,7 +192,7 @@ export function MarketValueSection({
     onValueChange?.();
   };
 
-  const chartData = history.map((entry) => ({
+  const chartData = safeArray(history).map((entry) => ({
     date: new Date(entry.recorded_at).toLocaleDateString("pt-BR", {
       month: "short",
       year: "2-digit",
@@ -312,7 +313,7 @@ export function MarketValueSection({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {[...history].reverse().slice(0, 5).map((entry) => (
+                  {[...safeArray(history)].reverse().slice(0, 5).map((entry) => (
                     <TableRow key={entry.id}>
                       <TableCell className="text-xs py-2">
                         {new Date(entry.recorded_at).toLocaleDateString("pt-BR")}
@@ -365,7 +366,7 @@ export function MarketValueSection({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {CURRENCIES.map((curr) => (
+                    {safeArray(CURRENCIES).map((curr) => (
                       <SelectItem key={curr.value} value={curr.value}>
                         {curr.label}
                       </SelectItem>
