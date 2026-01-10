@@ -28,12 +28,13 @@ import {
   Activity,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { 
-  RatingBreakdownV2, 
+import {
+  RatingBreakdownV2,
   CompetitionBreakdown,
-  getReliabilityLabelV2, 
+  getReliabilityLabelV2,
   getReliabilityVariantV2,
 } from "@/lib/playerRatingV2";
+import { formatFixed } from "@/lib/formatters";
 
 interface RatingBreakdownModalV2Props {
   details: RatingBreakdownV2 | null;
@@ -81,7 +82,7 @@ function StatBreakdownCard({
           <div className="flex items-center gap-3">
             <div className="text-right">
               <span className={cn("text-sm font-semibold", getScoreColor(competition.competition_score))}>
-                {competition.competition_score.toFixed(1)}
+                {formatFixed(competition.competition_score, 1)}
               </span>
               <span className="text-xs text-muted-foreground">/100</span>
             </div>
@@ -100,7 +101,7 @@ function StatBreakdownCard({
           <div className="grid grid-cols-4 gap-2 text-xs text-center">
             <div>
               <p className="text-muted-foreground">Coeficiente</p>
-              <Badge variant="outline" className="mt-1">{competition.final_coefficient.toFixed(2)}</Badge>
+              <Badge variant="outline" className="mt-1">{formatFixed(competition.final_coefficient, 2)}</Badge>
             </div>
             <div>
               <p className="text-muted-foreground">Minutos</p>
@@ -108,11 +109,11 @@ function StatBreakdownCard({
             </div>
             <div>
               <p className="text-muted-foreground">Peso Recência</p>
-              <p className="font-medium">{(competition.recency_weight * 100).toFixed(0)}%</p>
+              <p className="font-medium">{formatFixed(competition.recency_weight * 100, 0)}%</p>
             </div>
             <div>
               <p className="text-muted-foreground">Fator Minutos</p>
-              <p className="font-medium">{(competition.minutes_factor * 100).toFixed(0)}%</p>
+              <p className="font-medium">{formatFixed(competition.minutes_factor * 100, 0)}%</p>
             </div>
           </div>
           
@@ -129,13 +130,13 @@ function StatBreakdownCard({
               <div key={stat.stat} className="space-y-1">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">
-                    {stat.label} 
+                    {stat.label}
                     <span className="text-muted-foreground/60 ml-1">
-                      ({stat.adjusted_weight.toFixed(0)}%)
+                      ({formatFixed(stat.adjusted_weight, 0)}%)
                     </span>
                   </span>
                   <span className={cn("font-medium", getScoreColor(stat.score))}>
-                    {stat.score.toFixed(0)}
+                    {formatFixed(stat.score, 0)}
                   </span>
                 </div>
                 <div className="relative h-1.5 rounded-full bg-secondary overflow-hidden">
@@ -168,13 +169,13 @@ function StatBreakdownCard({
             <div className="text-xs">
               <span className="text-muted-foreground">Stats Posição (70%):</span>
               <span className={cn("ml-2 font-medium", getScoreColor(competition.position_stats_score))}>
-                {competition.position_stats_score.toFixed(1)}
+                {formatFixed(competition.position_stats_score, 1)}
               </span>
             </div>
             <div className="text-xs">
               <span className="text-muted-foreground">Nível Comp. (30%):</span>
               <span className={cn("ml-2 font-medium", getScoreColor(competition.competition_level_score))}>
-                {competition.competition_level_score.toFixed(1)}
+                {formatFixed(competition.competition_level_score, 1)}
               </span>
             </div>
           </div>
@@ -182,10 +183,10 @@ function StatBreakdownCard({
           {/* Final contribution */}
           <div className="flex items-center justify-between bg-background/50 p-2 rounded text-xs">
             <span className="text-muted-foreground">
-              Contribuição Final (peso {(competition.combined_weight * 100).toFixed(0)}%):
+              Contribuição Final (peso {formatFixed(competition.combined_weight * 100, 0)}%):
             </span>
             <span className={cn("font-semibold", getScoreColor(competition.competition_score))}>
-              {competition.weighted_contribution.toFixed(1)} pontos
+              {formatFixed(competition.weighted_contribution, 1)} pontos
             </span>
           </div>
         </CardContent>
@@ -267,14 +268,14 @@ export function RatingBreakdownModalV2({ details, rating, trigger }: RatingBreak
                 <p className="text-sm text-muted-foreground">Nota Final</p>
                 <div className="flex items-baseline gap-1">
                   <Star className="w-6 h-6 text-primary fill-primary" />
-                  <span className="text-4xl font-bold text-primary">{rating.toFixed(1)}</span>
+                  <span className="text-4xl font-bold text-primary">{formatFixed(rating, 1)}</span>
                   <span className="text-lg text-muted-foreground">/5</span>
                 </div>
               </div>
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">Índice</p>
                 <span className={cn("text-2xl font-semibold", getScoreColor(details.final_score_100))}>
-                  {details.final_score_100.toFixed(0)}
+                  {formatFixed(details.final_score_100, 0)}
                 </span>
                 <span className="text-sm text-muted-foreground">/100</span>
               </div>
@@ -362,18 +363,18 @@ export function RatingBreakdownModalV2({ details, rating, trigger }: RatingBreak
                               </td>
                               <td className="py-2 px-1 text-center">
                                 <Badge variant="outline" className="text-xs">
-                                  {comp.final_coefficient.toFixed(2)}
+                                  {formatFixed(comp.final_coefficient, 2)}
                                 </Badge>
                               </td>
                               <td className="py-2 px-1 text-center text-muted-foreground">{comp.minutes}</td>
                               <td className="py-2 px-1 text-center font-medium">{comp.goals}</td>
                               <td className="py-2 px-1 text-center font-medium">{comp.assists}</td>
                               <td className="py-2 px-1 text-center text-muted-foreground">
-                                {(comp.combined_weight * 100).toFixed(0)}%
+                                {formatFixed(comp.combined_weight * 100, 0)}%
                               </td>
                               <td className="py-2 px-1 text-center">
                                 <span className={cn("font-semibold", getScoreColor(comp.competition_score))}>
-                                  {comp.competition_score.toFixed(0)}
+                                  {formatFixed(comp.competition_score, 0)}
                                 </span>
                               </td>
                             </tr>

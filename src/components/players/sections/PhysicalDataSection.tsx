@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Activity, Scale, Ruler, Zap, Timer, Heart, Calendar } from "lucide-react";
+import { formatFixed } from "@/lib/formatters";
 
 interface PhysicalData {
   weight?: number | null;
@@ -44,7 +45,7 @@ const DataItem = ({
       <p className="font-medium">
         {value !== null && value !== undefined ? (
           <>
-            {typeof value === 'number' ? value.toFixed(1) : value}
+            {typeof value === "number" ? formatFixed(value, 1) : value}
             {unit && <span className="text-muted-foreground text-sm ml-1">{unit}</span>}
           </>
         ) : (

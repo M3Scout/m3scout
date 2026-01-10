@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BarChart3, Target, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { formatFixed } from "@/lib/formatters";
 
 interface SeasonSummaryCardProps {
   playerId: string;
@@ -76,8 +77,9 @@ export function SeasonSummaryCard({ playerId }: SeasonSummaryCardProps) {
   }
 
   const goalParticipation = stats.goals + stats.assists;
-  const goalsPerMatch = stats.matches > 0 ? (stats.goals / stats.matches).toFixed(2) : "0.00";
-  const participationPerMatch = stats.matches > 0 ? (goalParticipation / stats.matches).toFixed(2) : "0.00";
+  const goalsPerMatch = stats.matches > 0 ? formatFixed(stats.goals / stats.matches, 2, "0.00") : "0.00";
+  const participationPerMatch =
+    stats.matches > 0 ? formatFixed(goalParticipation / stats.matches, 2, "0.00") : "0.00";
 
   return (
     <Card>

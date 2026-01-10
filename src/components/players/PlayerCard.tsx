@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { MapPin, Calendar, Star } from "lucide-react";
 import { RatingStars } from "./RatingStars";
 import { cn } from "@/lib/utils";
+import { formatFixed } from "@/lib/formatters";
 import {
   Tooltip,
   TooltipContent,
@@ -71,12 +72,14 @@ export function PlayerCard({
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className={cn(
-                      "glass-card px-2 py-1 flex items-center gap-1 border cursor-help",
-                      getRatingColor(autoRating)
-                    )}>
+                    <div
+                      className={cn(
+                        "glass-card px-2 py-1 flex items-center gap-1 border cursor-help",
+                        getRatingColor(autoRating)
+                      )}
+                    >
                       <Star className="w-3 h-3 fill-current" />
-                      <span className="text-sm font-semibold">{autoRating.toFixed(1)}</span>
+                      <span className="text-sm font-semibold">{formatFixed(autoRating, 1)}</span>
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>

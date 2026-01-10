@@ -4,12 +4,23 @@
  */
 
 /**
- * Safely format a number with fixed decimals
- * Returns "—" (dash) if value is not a finite number
+ * Safely format a number with fixed decimals.
+ * Returns fallback (default "—") if value is null/undefined/NaN/not finite.
+ */
+export const formatFixed = (
+  value: unknown,
+  decimals: number = 1,
+  fallback: string = "—"
+): string => {
+  const n = Number(value);
+  return Number.isFinite(n) ? n.toFixed(decimals) : fallback;
+};
+
+/**
+ * Backwards-compatible alias.
  */
 export const formatNumber = (value: unknown, decimals: number = 1): string => {
-  const n = Number(value);
-  return Number.isFinite(n) ? n.toFixed(decimals) : "—";
+  return formatFixed(value, decimals);
 };
 
 /**

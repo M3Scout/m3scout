@@ -58,7 +58,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { formatNumber } from "@/lib/formatters";
+import { formatFixed } from "@/lib/formatters";
 import { PlayersListSkeleton } from "@/components/players/PlayersListSkeleton";
 
 interface Player {
@@ -651,7 +651,7 @@ const AppPlayers = () => {
                       {player.avg_score !== null && player.avg_score !== undefined && Number.isFinite(player.avg_score) ? (
                         <div className="flex items-center gap-1.5">
                           <Star className="w-4 h-4 text-primary fill-primary" />
-                          <span className="font-medium">{formatNumber(player.avg_score, 1)}</span>
+                          <span className="font-medium">{formatFixed(player.avg_score, 1)}</span>
                         </div>
                       ) : (
                         <span className="text-muted-foreground">—</span>
