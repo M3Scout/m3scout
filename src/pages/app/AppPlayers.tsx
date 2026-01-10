@@ -59,6 +59,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { formatNumber } from "@/lib/formatters";
+import { PlayersListSkeleton } from "@/components/players/PlayersListSkeleton";
 
 interface Player {
   id: string;
@@ -498,9 +499,7 @@ const AppPlayers = () => {
 
       {/* Content */}
       {loading ? (
-        <div className="flex items-center justify-center py-16">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        </div>
+        <PlayersListSkeleton viewMode={viewMode} count={itemsPerPage} />
       ) : players.length === 0 ? (
         /* Empty State - No players in database */
         <div className="glass-card p-12 text-center">
