@@ -2,9 +2,10 @@ import { Badge } from "@/components/ui/badge";
 import { Star, AlertCircle, TrendingUp, CheckCircle2 } from "lucide-react";
 import { RatingBreakdownModalV2 } from "./RatingBreakdownModalV2";
 import { RatingBreakdownV2, getReliabilityLabelV2, getReliabilityVariantV2 } from "@/lib/playerRatingV2";
+import { formatRating } from "@/lib/formatters";
 
 interface PlayerRatingBadgeProps {
-  rating: number;
+  rating: number | null | undefined;
   ratingDetails?: RatingBreakdownV2 | null;
   showReliability?: boolean;
   size?: "sm" | "md" | "lg";
@@ -18,6 +19,12 @@ export function PlayerRatingBadge({
   size = "md",
   clickable = true,
 }: PlayerRatingBadgeProps) {
+  // Safe guard: if rating is not a valid number, don't render
+  const safeRating = Number(rating);
+  if (!Number.isFinite(safeRating)) {
+    return <span className="text-muted-foreground text-sm">—</span>;
+  }
+
   const sizeClasses = {
     sm: "text-xs px-2 py-0.5",
     md: "text-sm px-3 py-1",
@@ -48,10 +55,10 @@ export function PlayerRatingBadge({
     <div className={`flex items-center gap-2 ${clickable && ratingDetails ? "cursor-pointer hover:opacity-80 transition-opacity" : ""}`}>
       <Badge
         variant="outline"
-        className={`${sizeClasses[size]} ${getRatingColor(rating)} font-semibold`}
+        className={`${sizeClasses[size]} ${getRatingColor(safeRating)} font-semibold`}
       >
         <Star className={`${starSize[size]} mr-1 fill-current`} />
-        {rating.toFixed(1)}/5
+        {formatRating(safeRating)}/5
       </Badge>
       {showReliability && reliability && (
         <Badge variant={getReliabilityVariantV2(reliability)} className="text-xs">
@@ -67,7 +74,7 @@ export function PlayerRatingBadge({
     return (
       <RatingBreakdownModalV2
         details={ratingDetails}
-        rating={rating}
+        rating={safeRating}
         trigger={badgeContent}
       />
     );
