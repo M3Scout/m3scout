@@ -1,16 +1,11 @@
 import { Badge } from "@/components/ui/badge";
 import { Star, AlertCircle, TrendingUp, CheckCircle2 } from "lucide-react";
-import {
-  type RatingBreakdown,
-  getReliabilityLabel,
-  getReliabilityVariant,
-} from "@/lib/playerRating";
-import { RatingBreakdownModal } from "./RatingBreakdownModal";
+import { RatingBreakdownModalV2 } from "./RatingBreakdownModalV2";
+import { RatingBreakdownV2, getReliabilityLabelV2, getReliabilityVariantV2 } from "@/lib/playerRatingV2";
 
 interface PlayerRatingBadgeProps {
   rating: number;
-  breakdown?: RatingBreakdown;
-  ratingDetails?: any;
+  ratingDetails?: RatingBreakdownV2 | null;
   showReliability?: boolean;
   size?: "sm" | "md" | "lg";
   clickable?: boolean;
@@ -18,7 +13,6 @@ interface PlayerRatingBadgeProps {
 
 export function PlayerRatingBadge({
   rating,
-  breakdown,
   ratingDetails,
   showReliability = true,
   size = "md",
@@ -43,11 +37,12 @@ export function PlayerRatingBadge({
     return "bg-red-500/20 text-red-600 border-red-500/30";
   };
 
-  const reliabilityIcon = breakdown ? {
+  const reliability = ratingDetails?.reliability;
+  const reliabilityIcon = reliability ? {
     low: <AlertCircle className="w-3 h-3" />,
     medium: <TrendingUp className="w-3 h-3" />,
     high: <CheckCircle2 className="w-3 h-3" />,
-  }[breakdown.reliability] : null;
+  }[reliability] : null;
 
   const badgeContent = (
     <div className={`flex items-center gap-2 ${clickable && ratingDetails ? "cursor-pointer hover:opacity-80 transition-opacity" : ""}`}>
@@ -58,10 +53,10 @@ export function PlayerRatingBadge({
         <Star className={`${starSize[size]} mr-1 fill-current`} />
         {rating.toFixed(1)}/5
       </Badge>
-      {showReliability && breakdown && (
-        <Badge variant={getReliabilityVariant(breakdown.reliability)} className="text-xs">
+      {showReliability && reliability && (
+        <Badge variant={getReliabilityVariantV2(reliability)} className="text-xs">
           {reliabilityIcon}
-          <span className="ml-1">{getReliabilityLabel(breakdown.reliability)}</span>
+          <span className="ml-1">{getReliabilityLabelV2(reliability)}</span>
         </Badge>
       )}
     </div>
@@ -70,7 +65,7 @@ export function PlayerRatingBadge({
   // If we have rating details and it's clickable, wrap in modal
   if (clickable && ratingDetails) {
     return (
-      <RatingBreakdownModal
+      <RatingBreakdownModalV2
         details={ratingDetails}
         rating={rating}
         trigger={badgeContent}
