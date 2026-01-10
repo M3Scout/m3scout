@@ -332,7 +332,7 @@ const ReportDetail = () => {
                     ]}
                   />
                   <Bar dataKey="score" radius={[0, 4, 4, 0]}>
-                    {barData.map((entry, index) => (
+                    {safeArray(barData).map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Bar>
@@ -345,7 +345,7 @@ const ReportDetail = () => {
           <div className="glass-card p-6">
             <h3 className="text-lg font-semibold mb-4">Detalhamento por Categoria</h3>
             <div className="space-y-4">
-              {categoryConfig.map((cat) => {
+              {safeArray(categoryConfig).map((cat) => {
                 const score = report[`${cat.key}_score` as keyof ReportDetail] as number;
                 const notes = report[`${cat.key}_notes` as keyof ReportDetail] as string | null;
                 const Icon = cat.icon;
