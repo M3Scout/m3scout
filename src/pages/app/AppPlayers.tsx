@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -41,6 +41,7 @@ import {
   GitCompare,
   AlertTriangle,
   RefreshCw,
+  ChevronsDown,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -62,6 +63,7 @@ import { toast } from "sonner";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { formatFixed } from "@/lib/formatters";
 import { PlayersListSkeleton } from "@/components/players/PlayersListSkeleton";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 
 interface Player {
   id: string;
@@ -82,8 +84,10 @@ interface Player {
 type SortField = "full_name" | "position" | "current_club" | "avg_score" | "auto_rating" | "contract_end" | "is_public";
 type SortDirection = "asc" | "desc";
 type ViewMode = "table" | "grid";
+type PaginationMode = "pages" | "infinite";
 
 const PAGE_SIZE_OPTIONS = [12, 24, 48];
+const INFINITE_SCROLL_PAGE_SIZE = 24;
 
 const AppPlayers = () => {
   const { isAdmin } = useAuth();
@@ -95,8 +99,11 @@ const AppPlayers = () => {
   const [playerToDelete, setPlayerToDelete] = useState<{ id: string; full_name: string } | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("table");
+  const [paginationMode, setPaginationMode] = useState<PaginationMode>("pages");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
+  const [visibleCount, setVisibleCount] = useState(INFINITE_SCROLL_PAGE_SIZE);
+  const [loadingMore, setLoadingMore] = useState(false);
   
   // Sorting
   const [sortField, setSortField] = useState<SortField>("full_name");
@@ -265,18 +272,49 @@ const AppPlayers = () => {
 
   const filteredCount = Array.isArray(filteredAndSortedPlayers) ? filteredAndSortedPlayers.length : 0;
 
-  // Pagination
+  // Pagination (traditional pages)
   const totalPages = Math.ceil(filteredCount / itemsPerPage);
   const paginatedPlayers = useMemo(() => {
     const list = Array.isArray(filteredAndSortedPlayers) ? filteredAndSortedPlayers : [];
+    if (paginationMode === "infinite") {
+      return list.slice(0, visibleCount);
+    }
     const startIndex = (currentPage - 1) * itemsPerPage;
     return list.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredAndSortedPlayers, currentPage, itemsPerPage]);
+  }, [filteredAndSortedPlayers, currentPage, itemsPerPage, paginationMode, visibleCount]);
 
-  // Reset to first page when filters change
+  // Infinite scroll
+  const hasMore = paginationMode === "infinite" && visibleCount < filteredCount;
+
+  const handleLoadMore = useCallback(() => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    // Simulate small delay for smoother UX
+    setTimeout(() => {
+      setVisibleCount((prev) => Math.min(prev + INFINITE_SCROLL_PAGE_SIZE, filteredCount));
+      setLoadingMore(false);
+    }, 200);
+  }, [loadingMore, hasMore, filteredCount]);
+
+  const { sentinelRef } = useInfiniteScroll({
+    onLoadMore: handleLoadMore,
+    hasMore,
+    isLoading: loadingMore,
+    enabled: paginationMode === "infinite",
+  });
+
+  // Reset pagination when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, positionFilter, nationalityFilter, clubFilter, statusFilter]);
+    setVisibleCount(INFINITE_SCROLL_PAGE_SIZE);
+  }, [searchQuery, positionFilter, nationalityFilter, clubFilter, statusFilter, paginationMode]);
+
+  // Reset visible count when pagination mode changes
+  useEffect(() => {
+    if (paginationMode === "infinite") {
+      setVisibleCount(INFINITE_SCROLL_PAGE_SIZE);
+    }
+  }, [paginationMode]);
 
   const activeFiltersCount = [positionFilter, nationalityFilter, clubFilter, statusFilter].filter(
     (f) => f !== "all"
@@ -508,15 +546,28 @@ const AppPlayers = () => {
               </div>
 
               {/* Show Archived Toggle */}
-              <div className="flex items-center gap-2 pt-2 border-t border-border/50">
-                <Switch
-                  id="show-archived"
-                  checked={showArchived}
-                  onCheckedChange={setShowArchived}
-                />
-                <Label htmlFor="show-archived" className="text-sm cursor-pointer">
-                  Mostrar arquivados
-                </Label>
+              <div className="flex flex-wrap items-center gap-4 pt-2 border-t border-border/50">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="show-archived"
+                    checked={showArchived}
+                    onCheckedChange={setShowArchived}
+                  />
+                  <Label htmlFor="show-archived" className="text-sm cursor-pointer">
+                    Mostrar arquivados
+                  </Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="infinite-scroll"
+                    checked={paginationMode === "infinite"}
+                    onCheckedChange={(checked) => setPaginationMode(checked ? "infinite" : "pages")}
+                  />
+                  <Label htmlFor="infinite-scroll" className="text-sm cursor-pointer flex items-center gap-1">
+                    <ChevronsDown className="w-3 h-3" />
+                    Scroll infinito
+                  </Label>
+                </div>
               </div>
             </div>
           </CollapsibleContent>
@@ -914,8 +965,43 @@ const AppPlayers = () => {
         </div>
       )}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
+      {/* Infinite Scroll Sentinel & Load More */}
+      {paginationMode === "infinite" && filteredCount > 0 && (
+        <>
+          {/* Sentinel element for auto-loading */}
+          <div ref={sentinelRef} className="h-4" />
+          
+          {/* Loading indicator */}
+          {loadingMore && (
+            <div className="flex justify-center py-4">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            </div>
+          )}
+          
+          {/* Load More Button (fallback) */}
+          {hasMore && !loadingMore && (
+            <div className="flex flex-col items-center gap-2 py-4">
+              <Button variant="outline" onClick={handleLoadMore}>
+                <ChevronsDown className="w-4 h-4 mr-2" />
+                Carregar mais
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                Mostrando {paginatedPlayers.length} de {filteredCount} atletas
+              </p>
+            </div>
+          )}
+          
+          {/* End of list indicator */}
+          {!hasMore && filteredCount > INFINITE_SCROLL_PAGE_SIZE && (
+            <div className="text-center py-4 text-sm text-muted-foreground">
+              Todos os {filteredCount} atletas carregados
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Traditional Pagination */}
+      {paginationMode === "pages" && totalPages > 1 && (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
           <div className="flex items-center gap-4">
             <p className="text-sm text-muted-foreground">
