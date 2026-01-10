@@ -6,6 +6,20 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
+ * Safely returns an array. If the input is not an array, returns an empty array.
+ * Use this helper to protect against `.length` or `.map()` on undefined/null values.
+ * 
+ * @example
+ * safeArray(undefined) // []
+ * safeArray(null) // []
+ * safeArray([1, 2, 3]) // [1, 2, 3]
+ * safeArray("string") // []
+ */
+export function safeArray<T>(value: T[] | null | undefined): T[] {
+  return Array.isArray(value) ? value : [];
+}
+
+/**
  * Extracts YouTube video ID from various URL formats
  * Supports:
  * - Full URL: https://www.youtube.com/watch?v=VIDEO_ID
