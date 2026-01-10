@@ -10,7 +10,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Upload, User, Shield, FileText, Loader2 } from "lucide-react";
+import { ArrowLeft, Upload, User, Shield, FileText, Loader2, BarChart3, Info } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { extractYouTubeVideoId } from "@/lib/utils";
 import { ImageCropperModal } from "@/components/players/ImageCropperModal";
@@ -184,7 +185,7 @@ export default function NewPlayer() {
 
       const slug = generateSlug(formData.full_name);
 
-      const { error } = await supabase.from("players").insert({
+      const { data: newPlayer, error } = await supabase.from("players").insert({
         full_name: formData.full_name,
         slug,
         position: formData.position,
@@ -207,12 +208,13 @@ export default function NewPlayer() {
         agent_name: formData.agent_name || null,
         agent_contact: formData.agent_contact || null,
         created_by: user?.id,
-      });
+      }).select("id").single();
 
       if (error) throw error;
 
-      toast.success("Atleta cadastrado com sucesso!");
-      navigate("/app/players");
+      toast.success("Atleta cadastrado! Redirecionando para adicionar estatísticas...");
+      // Redirect to edit page so user can add stats
+      navigate(`/app/players/${newPlayer.id}/edit`);
     } catch (error: any) {
       console.error("Error creating player:", error);
       toast.error(error.message || "Erro ao cadastrar atleta");
@@ -520,6 +522,14 @@ export default function NewPlayer() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Stats Info */}
+        <Alert>
+          <BarChart3 className="h-4 w-4" />
+          <AlertDescription>
+            <strong>Estatísticas:</strong> Após cadastrar o atleta, você será redirecionado para a página de edição onde poderá adicionar estatísticas por temporada e competição.
+          </AlertDescription>
+        </Alert>
 
         <Separator />
 
