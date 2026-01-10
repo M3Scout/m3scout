@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { safeArray } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -694,7 +695,7 @@ const Competitions = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
-                  {uniqueCountries.map((country) => (
+                  {safeArray(uniqueCountries).map((country) => (
                     <SelectItem key={country} value={country}>{country}</SelectItem>
                   ))}
                 </SelectContent>
@@ -708,7 +709,7 @@ const Competitions = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
-                  {COMPETITION_TYPES.map((type) => (
+                  {safeArray(COMPETITION_TYPES).map((type) => (
                     <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
                   ))}
                 </SelectContent>
@@ -723,7 +724,7 @@ const Competitions = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
-                  {uniqueStates.map((state) => (
+                  {safeArray(uniqueStates).map((state) => (
                     <SelectItem key={state} value={state}>{state}</SelectItem>
                   ))}
                 </SelectContent>
@@ -737,7 +738,7 @@ const Competitions = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas</SelectItem>
-                  {uniqueDivisions.map((div) => (
+                  {safeArray(uniqueDivisions).map((div) => (
                     <SelectItem key={div} value={div}>{div}</SelectItem>
                   ))}
                 </SelectContent>
@@ -767,7 +768,7 @@ const Competitions = () => {
           <p className="text-2xl font-bold">{competitions.length}</p>
           <p className="text-sm text-muted-foreground">Total</p>
         </div>
-        {COMPETITION_TYPES.map((type) => (
+        {safeArray(COMPETITION_TYPES).map((type) => (
           <div key={type.value} className="glass-card p-4 text-center">
             <p className={`text-2xl font-bold ${
               type.value === "league" ? "text-primary" :
@@ -900,7 +901,7 @@ const Competitions = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredCompetitions.map((comp) => (
+                {safeArray(filteredCompetitions).map((comp) => (
                   <TableRow key={comp.id}>
                     <TableCell className="font-medium">{comp.country}</TableCell>
                     <TableCell>
@@ -1058,7 +1059,7 @@ const Competitions = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {COMPETITION_TYPES.map((type) => (
+                    {safeArray(COMPETITION_TYPES).map((type) => (
                       <SelectItem key={type.value} value={type.value}>
                         {type.label}
                       </SelectItem>
@@ -1079,7 +1080,7 @@ const Competitions = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="NONE">Selecione...</SelectItem>
-                      {BRAZILIAN_STATES.map((state) => (
+                      {safeArray(BRAZILIAN_STATES).map((state) => (
                         <SelectItem key={state} value={state}>{state}</SelectItem>
                       ))}
                     </SelectContent>
@@ -1098,7 +1099,7 @@ const Competitions = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="NONE">Nenhuma</SelectItem>
-                    {DIVISIONS.map((div) => (
+                    {safeArray(DIVISIONS).map((div) => (
                       <SelectItem key={div} value={div}>{div}</SelectItem>
                     ))}
                   </SelectContent>
@@ -1305,7 +1306,7 @@ const Competitions = () => {
                 Registros serão migrados para a competição canônica (primeiro registro) e os duplicados serão removidos.
               </p>
               <div className="space-y-3 max-h-[300px] overflow-y-auto">
-                {duplicates.map((group, idx) => (
+                {safeArray(duplicates).map((group, idx) => (
                   <div key={idx} className="glass-card p-3 space-y-2">
                     <p className="font-medium text-sm">
                       {group.canonical.name}

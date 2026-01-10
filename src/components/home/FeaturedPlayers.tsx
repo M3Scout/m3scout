@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { PlayerCard } from "@/components/players/PlayerCard";
 import { ArrowRight, Loader2 } from "lucide-react";
+import { safeArray } from "@/lib/utils";
 
 interface Player {
   id: string;
@@ -68,7 +69,7 @@ export function FeaturedPlayers() {
           </div>
         ) : players.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {players.map((player, index) => (
+            {safeArray(players).map((player, index) => (
               <div 
                 key={player.id} 
                 className="animate-slide-up"

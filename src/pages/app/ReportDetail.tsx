@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { cn } from "@/lib/utils";
+import { cn, safeArray } from "@/lib/utils";
 import { getScoreColor, getRatingLabel, CATEGORY_WEIGHTS, ScoreBreakdown } from "@/lib/scoring";
 import {
   RadarChart,
@@ -165,13 +165,13 @@ const ReportDetail = () => {
     );
   }
 
-  const radarData = categoryConfig.map((cat) => ({
+  const radarData = safeArray(categoryConfig).map((cat) => ({
     category: cat.label,
     score: report[`${cat.key}_score` as keyof ReportDetail] as number,
     fullMark: 100,
   }));
 
-  const barData = categoryConfig.map((cat) => ({
+  const barData = safeArray(categoryConfig).map((cat) => ({
     name: cat.label,
     score: report[`${cat.key}_score` as keyof ReportDetail] as number,
     weight: CATEGORY_WEIGHTS[cat.key as keyof typeof CATEGORY_WEIGHTS] * 100,

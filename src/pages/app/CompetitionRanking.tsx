@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Search, Trophy, Filter, X, Eye, EyeOff, HelpCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { safeArray } from "@/lib/utils";
 
 interface Competition {
   id: string;
