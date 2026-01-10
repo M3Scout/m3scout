@@ -57,6 +57,8 @@ import { PlayerRatingBadge } from "@/components/players/PlayerRatingBadge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { formatNumber } from "@/lib/formatters";
 
 interface Player {
   id: string;
@@ -322,6 +324,7 @@ const AppPlayers = () => {
   };
 
   return (
+    <ErrorBoundary fallbackMessage="Não foi possível carregar a lista de atletas. Por favor, tente novamente.">
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -631,7 +634,7 @@ const AppPlayers = () => {
                       <span className="position-badge">{player.position || "N/A"}</span>
                     </td>
                     <td className="p-4 text-muted-foreground">
-                      {player.current_club || '-'}
+                      {player.current_club || '—'}
                     </td>
                     <td className="p-4">
                       {player.auto_rating !== null && player.auto_rating !== undefined ? (
@@ -642,23 +645,23 @@ const AppPlayers = () => {
                           size="sm"
                         />
                       ) : (
-                        <span className="text-muted-foreground text-sm">-</span>
+                        <span className="text-muted-foreground text-sm">—</span>
                       )}
                     </td>
                     <td className="p-4">
-                      {player.avg_score !== null && player.avg_score !== undefined ? (
+                      {player.avg_score !== null && player.avg_score !== undefined && Number.isFinite(player.avg_score) ? (
                         <div className="flex items-center gap-1.5">
                           <Star className="w-4 h-4 text-primary fill-primary" />
-                          <span className="font-medium">{player.avg_score.toFixed(1)}</span>
+                          <span className="font-medium">{formatNumber(player.avg_score, 1)}</span>
                         </div>
                       ) : (
-                        <span className="text-muted-foreground">-</span>
+                        <span className="text-muted-foreground">—</span>
                       )}
                     </td>
                     <td className="p-4 text-muted-foreground">
                       {player.contract_end 
                         ? new Date(player.contract_end).toLocaleDateString("pt-BR") 
-                        : '-'}
+                        : '—'}
                     </td>
                     <td className="p-4">
                       <div className="flex items-center gap-2">
@@ -939,6 +942,7 @@ const AppPlayers = () => {
         onSuccess={handleDeleteSuccess}
       />
     </div>
+    </ErrorBoundary>
   );
 };
 
