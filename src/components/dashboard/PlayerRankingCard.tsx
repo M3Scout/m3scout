@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { formatFixed } from "@/lib/formatters";
 
 interface RankedPlayer {
   id: string;
@@ -166,7 +167,7 @@ export const PlayerRankingCard = () => {
                   className={`${getRatingBgColor(player.auto_rating)} border-0 font-semibold`}
                 >
                   <Star className="w-3 h-3 mr-1 fill-current" />
-                  {player.auto_rating?.toFixed(1) || "-"}
+                  {formatFixed(player.auto_rating, 1, "-")}
                 </Badge>
                 <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
               </div>

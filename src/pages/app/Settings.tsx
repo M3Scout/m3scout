@@ -8,6 +8,17 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { 
   Settings as SettingsIcon, 
@@ -22,6 +33,8 @@ import {
   Trash2,
   RefreshCw,
   Database,
+  CheckCircle,
+  AlertTriangle,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -32,6 +45,11 @@ export default function Settings() {
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [recalculating, setRecalculating] = useState(false);
+  const [recalculateResult, setRecalculateResult] = useState<{
+    total_players: number;
+    ratings_changed: number;
+    new_ratings: number;
+  } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [profile, setProfile] = useState<{
     full_name: string | null;
@@ -173,6 +191,7 @@ export default function Settings() {
 
   const handleRecalculateRatings = async () => {
     setRecalculating(true);
+    setRecalculateResult(null);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -197,8 +216,9 @@ export default function Settings() {
         throw new Error(result.error || "Erro ao recalcular");
       }
 
+      setRecalculateResult(result.summary);
       toast.success(
-        `Recálculo concluído: ${result.summary.total_players} atletas, ${result.summary.ratings_changed} alterados, ${result.summary.new_ratings} novos`
+        `Recálculo concluído: ${result.summary.total_players} atletas processados`
       );
     } catch (error: unknown) {
       console.error("Error recalculating:", error);
@@ -420,23 +440,80 @@ export default function Settings() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Recalcula a nota automática de todos os atletas ativos com base nas estatísticas atuais.
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Recalcula a nota automática (V2) de todos os atletas ativos com base nas estatísticas atuais.
                   </p>
-                  <Button
-                    variant="outline"
-                    onClick={handleRecalculateRatings}
-                    disabled={recalculating}
-                    className="w-full"
-                  >
-                    {recalculating ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <RefreshCw className="h-4 w-4" />
-                    )}
-                    Recalcular Notas
-                  </Button>
+                  
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        disabled={recalculating}
+                        className="w-full"
+                      >
+                        {recalculating ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Recalculando...
+                          </>
+                        ) : (
+                          <>
+                            <RefreshCw className="h-4 w-4" />
+                            Recalcular Notas (V2)
+                          </>
+                        )}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle className="flex items-center gap-2">
+                          <AlertTriangle className="h-5 w-5 text-amber-500" />
+                          Confirmar Recálculo
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="space-y-2">
+                          <p>
+                            Esta ação irá recalcular a nota automática de <strong>todos os atletas ativos</strong> usando o algoritmo V2.
+                          </p>
+                          <p>
+                            O processo pode levar alguns segundos dependendo da quantidade de atletas.
+                          </p>
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleRecalculateRatings}>
+                          Continuar
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+
+                  {/* Result feedback */}
+                  {recalculateResult && (
+                    <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                      <div className="flex items-center gap-2 mb-2">
+                        <CheckCircle className="h-4 w-4 text-emerald-500" />
+                        <span className="text-sm font-medium text-emerald-500">
+                          Recálculo Concluído
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div>
+                          <p className="text-lg font-bold">{recalculateResult.total_players}</p>
+                          <p className="text-xs text-muted-foreground">Total</p>
+                        </div>
+                        <div>
+                          <p className="text-lg font-bold text-primary">{recalculateResult.ratings_changed}</p>
+                          <p className="text-xs text-muted-foreground">Alterados</p>
+                        </div>
+                        <div>
+                          <p className="text-lg font-bold text-accent">{recalculateResult.new_ratings}</p>
+                          <p className="text-xs text-muted-foreground">Novos</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

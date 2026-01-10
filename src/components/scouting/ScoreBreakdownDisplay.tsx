@@ -14,6 +14,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { formatFixed } from "@/lib/formatters";
 
 interface ScoreBreakdownDisplayProps {
   breakdown: ScoreBreakdown;
@@ -61,7 +62,7 @@ export function ScoreBreakdownDisplay({
             </div>
           </div>
           <span className="text-xl font-bold">
-            {breakdown.baseScore.toFixed(1)}
+            {formatFixed(breakdown.baseScore, 1)}
           </span>
         </div>
 
@@ -77,7 +78,7 @@ export function ScoreBreakdownDisplay({
             </div>
           </div>
           <span className="text-xl font-bold text-accent">
-            ×{breakdown.competitionCoefficient.toFixed(2)}
+            ×{formatFixed(breakdown.competitionCoefficient, 2)}
           </span>
         </div>
 
@@ -93,7 +94,7 @@ export function ScoreBreakdownDisplay({
             </div>
           </div>
           <span className="text-xl font-bold text-primary">
-            {breakdown.adjustedScore.toFixed(1)}
+            {formatFixed(breakdown.adjustedScore, 1)}
           </span>
         </div>
 
@@ -124,7 +125,7 @@ export function ScoreBreakdownDisplay({
             <p className="text-sm text-muted-foreground mb-1">Score Final</p>
             <div className="flex items-baseline gap-2">
               <span className={cn("text-4xl font-bold", getScoreColor(breakdown.finalScore))}>
-                {breakdown.finalScore.toFixed(1)}
+                {formatFixed(breakdown.finalScore, 1)}
               </span>
               <span className="text-muted-foreground">/100</span>
             </div>
@@ -147,10 +148,10 @@ export function ScoreBreakdownDisplay({
             Por que essa nota?
           </h4>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            O score de <strong>{breakdown.baseScore.toFixed(1)}</strong> foi calculado 
+            O score de <strong>{formatFixed(breakdown.baseScore, 1)}</strong> foi calculado 
             usando a média ponderada das 5 categorias (Técnico 25%, Tático 25%, Físico 20%, 
             Mental 20%, Impacto 10%). Esse score foi então multiplicado pelo coeficiente 
-            da competição (<strong>×{breakdown.competitionCoefficient.toFixed(2)}</strong>) 
+            da competição (<strong>×{formatFixed(breakdown.competitionCoefficient, 2)}</strong>) 
             para refletir o nível de exigência do campeonato
             {(breakdown.potentialBonus > 0 || breakdown.consistencyModifier !== 0) && (
               <>, com modificadores de potencial e consistência adicionados</>

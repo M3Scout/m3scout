@@ -70,17 +70,20 @@ const CURRENCIES = [
   { value: "BRL", label: "R$ BRL", symbol: "R$" },
 ];
 
-function formatValue(value: number, currency: string): string {
+function formatValue(value: number | null | undefined, currency: string): string {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "—";
+  
   const curr = CURRENCIES.find((c) => c.value === currency);
   const symbol = curr?.symbol || "";
   
-  if (value >= 1000000) {
-    return `${symbol} ${(value / 1000000).toFixed(1)}M`;
+  if (n >= 1000000) {
+    return `${symbol} ${(n / 1000000).toFixed(1)}M`;
   }
-  if (value >= 1000) {
-    return `${symbol} ${(value / 1000).toFixed(0)}K`;
+  if (n >= 1000) {
+    return `${symbol} ${(n / 1000).toFixed(0)}K`;
   }
-  return `${symbol} ${value.toLocaleString()}`;
+  return `${symbol} ${n.toLocaleString()}`;
 }
 
 function getTrendIcon(trend: string | null) {

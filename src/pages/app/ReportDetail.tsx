@@ -264,7 +264,7 @@ const ReportDetail = () => {
           </div>
           <div className="text-center sm:text-right">
             <div className={cn("text-5xl font-bold mb-2", getScoreColor(Number(report.final_score)))}>
-              {Number(report.final_score).toFixed(1)}
+              {Number.isFinite(Number(report.final_score)) ? Number(report.final_score).toFixed(1) : "—"}
             </div>
             <RatingStars rating={report.rating} size="lg" />
             <p className="text-sm font-medium text-accent mt-1">

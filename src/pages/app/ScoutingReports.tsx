@@ -171,7 +171,7 @@ const ScoutingReports = () => {
                   <div className="flex items-center gap-6">
                     <div className="text-right">
                       <p className="text-2xl font-bold text-primary">
-                        {Number(report.final_score).toFixed(1)}
+                        {Number.isFinite(Number(report.final_score)) ? Number(report.final_score).toFixed(1) : "—"}
                       </p>
                       <p className="text-xs text-muted-foreground">Score Final</p>
                     </div>

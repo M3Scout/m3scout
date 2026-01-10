@@ -931,7 +931,7 @@ const Competitions = () => {
                     </TableCell>
                     <TableCell className="text-center">
                       <span className="font-mono text-sm text-muted-foreground">
-                        {Number(comp.base_coefficient).toFixed(2)}
+                        {Number.isFinite(Number(comp.base_coefficient)) ? Number(comp.base_coefficient).toFixed(2) : "—"}
                       </span>
                     </TableCell>
                     <TableCell className="text-center">
@@ -939,7 +939,7 @@ const Competitions = () => {
                         <Tooltip>
                           <TooltipTrigger>
                             <span className="font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
-                              ×{Number(comp.final_coefficient).toFixed(2)}
+                              ×{Number.isFinite(Number(comp.final_coefficient)) ? Number(comp.final_coefficient).toFixed(2) : "—"}
                             </span>
                           </TooltipTrigger>
                           <TooltipContent>
@@ -1165,7 +1165,7 @@ const Competitions = () => {
                 <div className="flex items-center gap-3">
                   <Input
                     type="text"
-                    value={`×${formData.base_coefficient.toFixed(2)}`}
+                    value={`×${Number.isFinite(formData.base_coefficient) ? formData.base_coefficient.toFixed(2) : "0.00"}`}
                     readOnly
                     disabled
                     className="bg-muted/50 text-muted-foreground font-mono cursor-not-allowed flex-1"
