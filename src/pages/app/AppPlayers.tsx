@@ -61,7 +61,7 @@ import { toast } from "sonner";
 interface Player {
   id: string;
   full_name: string;
-  position: string;
+  position: string | null;
   age: number | null;
   nationality: string;
   current_club: string | null;
@@ -104,68 +104,81 @@ const AppPlayers = () => {
   const [showArchived, setShowArchived] = useState(false);
 
   const fetchPlayers = async () => {
-    // Fetch players with auto_rating and details from database
-    let query = supabase
-      .from("players")
-      .select("id, full_name, position, age, nationality, current_club, contract_end, is_public, photo_url, auto_rating, auto_rating_details, is_archived")
-      .order("full_name");
+    try {
+      // Fetch players with auto_rating and details from database
+      let query = supabase
+        .from("players")
+        .select("id, full_name, position, age, nationality, current_club, contract_end, is_public, photo_url, auto_rating, auto_rating_details, is_archived")
+        .order("full_name");
 
-    // Filter archived by default
-    if (!showArchived) {
-      query = query.or("is_archived.eq.false,is_archived.is.null");
-    }
-
-    const { data: playersData, error: playersError } = await query;
-
-    if (playersError || !playersData) {
-      setLoading(false);
-      return;
-    }
-
-    // Fetch average scores for all players (from scouting reports)
-    const { data: scoresData } = await supabase
-      .from("scouting_reports")
-      .select("player_id, final_score");
-
-    // Calculate average scores per player
-    const scoresByPlayer: Record<string, number[]> = {};
-    scoresData?.forEach((report) => {
-      if (!scoresByPlayer[report.player_id]) {
-        scoresByPlayer[report.player_id] = [];
+      // Filter archived by default
+      if (!showArchived) {
+        query = query.or("is_archived.eq.false,is_archived.is.null");
       }
-      scoresByPlayer[report.player_id].push(report.final_score);
-    });
 
-    const playersWithScores = playersData.map((player) => ({
-      ...player,
-      avg_score: scoresByPlayer[player.id]
-        ? scoresByPlayer[player.id].reduce((a, b) => a + b, 0) / scoresByPlayer[player.id].length
-        : null,
-    }));
+      const { data: playersData, error: playersError } = await query;
 
-    setPlayers(playersWithScores);
-    setLoading(false);
+      if (playersError) {
+        console.error("Error fetching players:", playersError);
+        setLoading(false);
+        return;
+      }
+
+      // Use empty array as fallback if no data
+      const safePlayersData = playersData || [];
+
+      // Fetch average scores for all players (from scouting reports) - non-blocking
+      let scoresByPlayer: Record<string, number[]> = {};
+      try {
+        const { data: scoresData } = await supabase
+          .from("scouting_reports")
+          .select("player_id, final_score");
+
+        // Calculate average scores per player
+        scoresData?.forEach((report) => {
+          if (!scoresByPlayer[report.player_id]) {
+            scoresByPlayer[report.player_id] = [];
+          }
+          scoresByPlayer[report.player_id].push(report.final_score);
+        });
+      } catch (e) {
+        console.error("Error fetching scores (non-blocking):", e);
+      }
+
+      const playersWithScores = safePlayersData.map((player) => ({
+        ...player,
+        avg_score: scoresByPlayer[player.id]
+          ? scoresByPlayer[player.id].reduce((a, b) => a + b, 0) / scoresByPlayer[player.id].length
+          : null,
+      }));
+
+      setPlayers(playersWithScores);
+    } catch (error) {
+      console.error("Unexpected error fetching players:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     fetchPlayers();
   }, [showArchived]);
 
-  // Extract unique values for filter options
+  // Extract unique values for filter options with null safety
   const filterOptions = useMemo(() => {
-    const positions = [...new Set(players.map((p) => p.position))].sort();
-    const nationalities = [...new Set(players.map((p) => p.nationality))].sort();
+    const positions = [...new Set(players.map((p) => p.position).filter(Boolean))].sort() as string[];
+    const nationalities = [...new Set(players.map((p) => p.nationality).filter(Boolean))].sort() as string[];
     const clubs = [...new Set(players.map((p) => p.current_club).filter(Boolean))].sort() as string[];
     return { positions, nationalities, clubs };
   }, [players]);
 
   const filteredAndSortedPlayers = useMemo(() => {
-    // Filter
+    // Filter with safe null checks
     const filtered = players.filter((player) => {
-      const matchesSearch = player.full_name.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesPosition = positionFilter === "all" || player.position === positionFilter;
-      const matchesNationality = nationalityFilter === "all" || player.nationality === nationalityFilter;
-      const matchesClub = clubFilter === "all" || player.current_club === clubFilter;
+      const matchesSearch = (player.full_name || "").toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesPosition = positionFilter === "all" || (player.position || "") === positionFilter;
+      const matchesNationality = nationalityFilter === "all" || (player.nationality || "") === nationalityFilter;
+      const matchesClub = clubFilter === "all" || (player.current_club || "") === clubFilter;
       const matchesStatus =
         statusFilter === "all" ||
         (statusFilter === "public" && player.is_public) ||
@@ -174,19 +187,19 @@ const AppPlayers = () => {
       return matchesSearch && matchesPosition && matchesNationality && matchesClub && matchesStatus;
     });
 
-    // Sort
+    // Sort with safe null checks
     return filtered.sort((a, b) => {
       let aValue: any;
       let bValue: any;
 
       switch (sortField) {
         case "full_name":
-          aValue = a.full_name.toLowerCase();
-          bValue = b.full_name.toLowerCase();
+          aValue = (a.full_name || "").toLowerCase();
+          bValue = (b.full_name || "").toLowerCase();
           break;
         case "position":
-          aValue = a.position.toLowerCase();
-          bValue = b.position.toLowerCase();
+          aValue = (a.position || "").toLowerCase();
+          bValue = (b.position || "").toLowerCase();
           break;
         case "current_club":
           aValue = (a.current_club || "").toLowerCase();
@@ -575,7 +588,7 @@ const AppPlayers = () => {
                       </div>
                     </td>
                     <td className="p-4">
-                      <span className="position-badge">{player.position}</span>
+                      <span className="position-badge">{player.position || "N/A"}</span>
                     </td>
                     <td className="p-4 text-muted-foreground">
                       {player.current_club || '-'}
@@ -724,7 +737,7 @@ const AppPlayers = () => {
                   )}
                   {/* Position Badge */}
                   <div className="absolute bottom-2 left-2">
-                    <span className="position-badge text-xs">{player.position}</span>
+                    <span className="position-badge text-xs">{player.position || "N/A"}</span>
                   </div>
                 </div>
               </Link>
