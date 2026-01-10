@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Stethoscope, Calendar, AlertCircle, CheckCircle, Clock } from "lucide-react";
+import { safeArray } from "@/lib/utils";
 
 interface Injury {
   id: string;
@@ -102,7 +103,7 @@ export const InjuryHistorySection = ({ injuries, physicalStatus, medicalNotes }:
         {(injuries?.length ?? 0) > 0 ? (
           <div className="space-y-3">
             <h4 className="text-sm font-medium text-muted-foreground">Lesões Anteriores</h4>
-            {injuries.map((injury) => (
+            {safeArray(injuries).map((injury) => (
               <div key={injury.id} className="p-3 rounded-lg border border-border/50 space-y-2">
                 <div className="flex items-start justify-between gap-2">
                   <p className="font-medium">{injury.injury_type}</p>

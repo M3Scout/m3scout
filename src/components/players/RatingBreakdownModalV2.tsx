@@ -27,7 +27,7 @@ import {
   Percent,
   Activity,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, safeArray } from "@/lib/utils";
 import {
   RatingBreakdownV2,
   CompetitionBreakdown,
@@ -127,7 +127,7 @@ function StatBreakdownCard({
               Estatísticas por Posição (peso ajustado)
             </p>
             
-            {availableStats.map((stat) => (
+            {safeArray(availableStats).map((stat) => (
               <div key={stat.stat} className="space-y-1">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">
@@ -155,7 +155,7 @@ function StatBreakdownCard({
                   Estatísticas não disponíveis (peso redistribuído):
                 </p>
                 <div className="flex flex-wrap gap-1">
-                  {unavailableStats.map((stat) => (
+                  {safeArray(unavailableStats).map((stat) => (
                     <Badge key={stat.stat} variant="secondary" className="text-xs opacity-60">
                       {stat.label}
                     </Badge>
@@ -357,7 +357,7 @@ export function RatingBreakdownModalV2({ details, rating, trigger }: RatingBreak
                           </tr>
                         </thead>
                         <tbody>
-                          {(details?.competitions ?? []).map((comp) => (
+                          {safeArray(details?.competitions ?? []).map((comp) => (
                             <tr key={comp.competition_id} className="border-b border-border/30">
                               <td className="py-2 px-1 max-w-[120px] truncate" title={comp.competition_name}>
                                 {comp.competition_name}
@@ -390,7 +390,7 @@ export function RatingBreakdownModalV2({ details, rating, trigger }: RatingBreak
                 <p className="text-xs text-muted-foreground px-1">
                   Clique em uma competição para ver o breakdown detalhado:
                 </p>
-                {(details?.competitions ?? []).map((comp) => (
+                {safeArray(details?.competitions ?? []).map((comp) => (
                   <StatBreakdownCard
                     key={comp.competition_id}
                     competition={comp}
@@ -415,7 +415,7 @@ export function RatingBreakdownModalV2({ details, rating, trigger }: RatingBreak
                 </p>
               </CardHeader>
               <CardContent className="space-y-3">
-                {details.stat_weights.map((weight) => (
+                {safeArray(details.stat_weights).map((weight) => (
                   <div key={weight.key} className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-sm">{weight.label}</span>
