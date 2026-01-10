@@ -25,8 +25,10 @@ import {
   FileText,
   Eye,
   X,
-  Plus 
+  Plus,
+  BarChart3
 } from "lucide-react";
+import { PlayerStatsForm } from "@/components/players/PlayerStatsForm";
 import { toast } from "sonner";
 import { extractYouTubeVideoId } from "@/lib/utils";
 import { DeletePlayerDialog } from "@/components/players/DeletePlayerDialog";
@@ -490,7 +492,7 @@ export default function EditPlayer() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <Tabs defaultValue="basic" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 h-auto">
+          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7 h-auto">
             <TabsTrigger value="basic" className="gap-2">
               <User className="w-4 h-4" />
               <span className="hidden sm:inline">Básico</span>
@@ -502,6 +504,10 @@ export default function EditPlayer() {
             <TabsTrigger value="technical" className="gap-2">
               <Target className="w-4 h-4" />
               <span className="hidden sm:inline">Técnico</span>
+            </TabsTrigger>
+            <TabsTrigger value="stats" className="gap-2">
+              <BarChart3 className="w-4 h-4" />
+              <span className="hidden sm:inline">Estatísticas</span>
             </TabsTrigger>
             <TabsTrigger value="medical" className="gap-2">
               <Stethoscope className="w-4 h-4" />
@@ -750,6 +756,11 @@ export default function EditPlayer() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Stats Tab */}
+          <TabsContent value="stats">
+            {id && <PlayerStatsForm playerId={id} playerPosition={formData.position} />}
           </TabsContent>
 
           {/* Medical Tab */}
