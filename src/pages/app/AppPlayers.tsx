@@ -109,14 +109,22 @@ const AppPlayers = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [showArchived, setShowArchived] = useState(false);
 
+  const safePlayers = useMemo(() => (Array.isArray(players) ? players : []), [players]);
+
+  // Debug (para identificar variável que está vindo indefinida e causando crash com `.length`)
+  console.log("players type", typeof players, "isArray", Array.isArray(players), players);
+
   const fetchPlayers = async () => {
     setLoading(true);
     setFetchError(null);
+
     try {
       // Fetch players with auto_rating and details from database
       let query = supabase
         .from("players")
-        .select("id, full_name, position, age, nationality, current_club, contract_end, is_public, photo_url, auto_rating, auto_rating_details, is_archived")
+        .select(
+          "id, full_name, position, age, nationality, current_club, contract_end, is_public, photo_url, auto_rating, auto_rating_details, is_archived"
+        )
         .order("full_name");
 
       // Filter archived by default
@@ -128,42 +136,53 @@ const AppPlayers = () => {
 
       if (playersError) {
         console.error("Error fetching players:", playersError);
-        setFetchError("Não foi possível carregar os atletas. Verifique sua conexão e tente novamente.");
-        setLoading(false);
+        setPlayers([]);
+        setFetchError(
+          "Não foi possível carregar os atletas. Verifique sua conexão e tente novamente."
+        );
         return;
       }
 
-      // Use empty array as fallback if no data
-      const safePlayersData = playersData || [];
+      // Normalize to array (never let `players` become undefined/null)
+      const safePlayersData = Array.isArray(playersData) ? playersData : [];
 
       // Fetch average scores for all players (from scouting reports) - non-blocking
-      let scoresByPlayer: Record<string, number[]> = {};
+      const scoresByPlayer: Record<string, number[]> = {};
       try {
         const { data: scoresData } = await supabase
           .from("scouting_reports")
           .select("player_id, final_score");
 
-        // Calculate average scores per player
-        scoresData?.forEach((report) => {
-          if (!scoresByPlayer[report.player_id]) {
-            scoresByPlayer[report.player_id] = [];
-          }
-          scoresByPlayer[report.player_id].push(report.final_score);
-        });
+        if (Array.isArray(scoresData)) {
+          // Calculate average scores per player
+          scoresData.forEach((report) => {
+            if (!scoresByPlayer[report.player_id]) {
+              scoresByPlayer[report.player_id] = [];
+            }
+            scoresByPlayer[report.player_id].push(report.final_score);
+          });
+        }
       } catch (e) {
         console.error("Error fetching scores (non-blocking):", e);
       }
 
-      const playersWithScores = safePlayersData.map((player) => ({
-        ...player,
-        avg_score: scoresByPlayer[player.id]
-          ? scoresByPlayer[player.id].reduce((a, b) => a + b, 0) / scoresByPlayer[player.id].length
-          : null,
-      }));
+      const playersWithScores = safePlayersData.map((player) => {
+        const scores = scoresByPlayer[player.id];
+        const avgScore =
+          Array.isArray(scores) && scores.length > 0
+            ? scores.reduce((a, b) => a + b, 0) / scores.length
+            : null;
 
-      setPlayers(playersWithScores);
+        return {
+          ...player,
+          avg_score: avgScore,
+        };
+      });
+
+      setPlayers(Array.isArray(playersWithScores) ? playersWithScores : []);
     } catch (error) {
       console.error("Unexpected error fetching players:", error);
+      setPlayers([]);
       setFetchError("Ocorreu um erro inesperado ao carregar os atletas.");
     } finally {
       setLoading(false);
@@ -176,15 +195,18 @@ const AppPlayers = () => {
 
   // Extract unique values for filter options with null safety
   const filterOptions = useMemo(() => {
-    const positions = [...new Set(players.map((p) => p.position).filter(Boolean))].sort() as string[];
-    const nationalities = [...new Set(players.map((p) => p.nationality).filter(Boolean))].sort() as string[];
-    const clubs = [...new Set(players.map((p) => p.current_club).filter(Boolean))].sort() as string[];
+    const base = safePlayers;
+    const positions = [...new Set(base.map((p) => p.position).filter(Boolean))].sort() as string[];
+    const nationalities = [...new Set(base.map((p) => p.nationality).filter(Boolean))].sort() as string[];
+    const clubs = [...new Set(base.map((p) => p.current_club).filter(Boolean))].sort() as string[];
     return { positions, nationalities, clubs };
-  }, [players]);
+  }, [safePlayers]);
 
   const filteredAndSortedPlayers = useMemo(() => {
+    const base = safePlayers;
+
     // Filter with safe null checks
-    const filtered = players.filter((player) => {
+    const filtered = base.filter((player) => {
       const matchesSearch = (player.full_name || "").toLowerCase().includes(searchQuery.toLowerCase());
       const matchesPosition = positionFilter === "all" || (player.position || "") === positionFilter;
       const matchesNationality = nationalityFilter === "all" || (player.nationality || "") === nationalityFilter;
@@ -239,13 +261,16 @@ const AppPlayers = () => {
       if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
       return 0;
     });
-  }, [players, searchQuery, positionFilter, nationalityFilter, clubFilter, statusFilter, sortField, sortDirection]);
+  }, [safePlayers, searchQuery, positionFilter, nationalityFilter, clubFilter, statusFilter, sortField, sortDirection]);
+
+  const filteredCount = Array.isArray(filteredAndSortedPlayers) ? filteredAndSortedPlayers.length : 0;
 
   // Pagination
-  const totalPages = Math.ceil(filteredAndSortedPlayers.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredCount / itemsPerPage);
   const paginatedPlayers = useMemo(() => {
+    const list = Array.isArray(filteredAndSortedPlayers) ? filteredAndSortedPlayers : [];
     const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredAndSortedPlayers.slice(startIndex, startIndex + itemsPerPage);
+    return list.slice(startIndex, startIndex + itemsPerPage);
   }, [filteredAndSortedPlayers, currentPage, itemsPerPage]);
 
   // Reset to first page when filters change
@@ -500,7 +525,7 @@ const AppPlayers = () => {
 
       {/* Results count */}
       <p className="text-sm text-muted-foreground">
-        {filteredAndSortedPlayers.length} atleta{filteredAndSortedPlayers.length !== 1 ? "s" : ""} encontrado{filteredAndSortedPlayers.length !== 1 ? "s" : ""}
+        {filteredCount} atleta{filteredCount !== 1 ? "s" : ""} encontrado{filteredCount !== 1 ? "s" : ""}
         {showArchived && " (incluindo arquivados)"}
       </p>
 
@@ -524,7 +549,7 @@ const AppPlayers = () => {
             </Button>
           </div>
         </div>
-      ) : players.length === 0 ? (
+      ) : (!Array.isArray(safePlayers) ? 0 : safePlayers.length) === 0 ? (
         /* Empty State - No players in database */
         <div className="glass-card p-12 text-center">
           <div className="flex flex-col items-center gap-4 max-w-md mx-auto">
@@ -545,7 +570,7 @@ const AppPlayers = () => {
             </Button>
           </div>
         </div>
-      ) : filteredAndSortedPlayers.length === 0 ? (
+      ) : filteredCount === 0 ? (
         /* Empty State - No results after filtering */
         <div className="glass-card p-12 text-center">
           <div className="flex flex-col items-center gap-4 max-w-md mx-auto">
@@ -894,7 +919,7 @@ const AppPlayers = () => {
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
           <div className="flex items-center gap-4">
             <p className="text-sm text-muted-foreground">
-              Mostrando {((currentPage - 1) * itemsPerPage) + 1} a {Math.min(currentPage * itemsPerPage, filteredAndSortedPlayers.length)} de {filteredAndSortedPlayers.length} atletas
+              Mostrando {((currentPage - 1) * itemsPerPage) + 1} a {Math.min(currentPage * itemsPerPage, filteredCount)} de {filteredCount} atletas
             </p>
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">Itens:</span>
