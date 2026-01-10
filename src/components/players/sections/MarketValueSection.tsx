@@ -263,7 +263,7 @@ export function MarketValueSection({
         )}
 
         {/* Chart */}
-        {!loading && history.length >= 2 && (
+        {!loading && (history?.length ?? 0) >= 2 && (
           <div className="h-40">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}>
@@ -296,7 +296,7 @@ export function MarketValueSection({
         )}
 
         {/* History Table */}
-        {!loading && history.length > 0 && (
+        {!loading && (history?.length ?? 0) > 0 && (
           <div className="space-y-2">
             <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
               <History className="w-3 h-3" />

@@ -61,7 +61,7 @@ export function PublicStatsSection({ playerId }: PublicStatsSectionProps) {
         return;
       }
 
-      if (data && data.length > 0) {
+      if (Array.isArray(data) && data.length > 0) {
         // Aggregate by season
         const statsBySeason = data.reduce((acc, stat) => {
           const year = stat.season_year;
@@ -124,7 +124,8 @@ export function PublicStatsSection({ playerId }: PublicStatsSectionProps) {
     );
   }
 
-  if (careerStats.length === 0) {
+  const safeCareerStats = Array.isArray(careerStats) ? careerStats : [];
+  if (safeCareerStats.length === 0) {
     return (
       <Card>
         <CardHeader>

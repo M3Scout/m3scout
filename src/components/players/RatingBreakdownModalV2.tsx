@@ -65,8 +65,9 @@ function StatBreakdownCard({
   isExpanded: boolean;
   onToggle: () => void;
 }) {
-  const availableStats = competition.stat_breakdown.filter(s => s.available);
-  const unavailableStats = competition.stat_breakdown.filter(s => !s.available);
+  const statBreakdown = Array.isArray(competition.stat_breakdown) ? competition.stat_breakdown : [];
+  const availableStats = statBreakdown.filter(s => s.available);
+  const unavailableStats = statBreakdown.filter(s => !s.available);
   
   return (
     <Card className="bg-secondary/20 border-border/50">
@@ -148,7 +149,7 @@ function StatBreakdownCard({
               </div>
             ))}
             
-            {unavailableStats.length > 0 && (
+            {(unavailableStats?.length ?? 0) > 0 && (
               <div className="mt-3 pt-2 border-t border-border/50">
                 <p className="text-xs text-muted-foreground mb-1">
                   Estatísticas não disponíveis (peso redistribuído):
@@ -322,7 +323,7 @@ export function RatingBreakdownModalV2({ details, rating, trigger }: RatingBreak
 
           {/* Competitions Tab */}
           <TabsContent value="competitions" className="space-y-3 mt-4">
-            {details.competitions.length === 0 ? (
+            {(details?.competitions?.length ?? 0) === 0 ? (
               <Card className="bg-secondary/20">
                 <CardContent className="py-8 text-center">
                   <AlertTriangle className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
@@ -356,7 +357,7 @@ export function RatingBreakdownModalV2({ details, rating, trigger }: RatingBreak
                           </tr>
                         </thead>
                         <tbody>
-                          {details.competitions.map((comp) => (
+                          {(details?.competitions ?? []).map((comp) => (
                             <tr key={comp.competition_id} className="border-b border-border/30">
                               <td className="py-2 px-1 max-w-[120px] truncate" title={comp.competition_name}>
                                 {comp.competition_name}
@@ -389,7 +390,7 @@ export function RatingBreakdownModalV2({ details, rating, trigger }: RatingBreak
                 <p className="text-xs text-muted-foreground px-1">
                   Clique em uma competição para ver o breakdown detalhado:
                 </p>
-                {details.competitions.map((comp) => (
+                {(details?.competitions ?? []).map((comp) => (
                   <StatBreakdownCard
                     key={comp.competition_id}
                     competition={comp}

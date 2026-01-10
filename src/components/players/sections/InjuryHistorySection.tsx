@@ -99,7 +99,7 @@ export const InjuryHistorySection = ({ injuries, physicalStatus, medicalNotes }:
         </div>
 
         {/* Injuries List */}
-        {injuries.length > 0 ? (
+        {(injuries?.length ?? 0) > 0 ? (
           <div className="space-y-3">
             <h4 className="text-sm font-medium text-muted-foreground">Lesões Anteriores</h4>
             {injuries.map((injury) => (

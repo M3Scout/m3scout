@@ -72,7 +72,7 @@ const InfoItem = ({
 );
 
 export const ContractSection = ({ data }: ContractSectionProps) => {
-  const hasPassports = data.passports && data.passports.length > 0;
+  const hasPassports = Array.isArray(data?.passports) && data.passports.length > 0;
 
   return (
     <Card>

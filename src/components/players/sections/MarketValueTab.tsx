@@ -204,7 +204,7 @@ export function MarketValueTab({
       .is("deleted_at", null)
       .order("recorded_at", { ascending: true });
 
-    if (data && data.length > 0) {
+    if (Array.isArray(data) && data.length > 0) {
       setHistory(data);
       
       // Calculate highest value
@@ -218,8 +218,9 @@ export function MarketValueTab({
       });
       
       // Get last updated
-      const latest = data[data.length - 1];
-      setLastUpdated(latest.recorded_at);
+      const lastIndex = data.length > 0 ? data.length - 1 : 0;
+      const latest = data[lastIndex];
+      setLastUpdated(latest?.recorded_at ?? null);
     } else {
       setHistory([]);
       setHighestValue(null);
@@ -587,7 +588,7 @@ export function MarketValueTab({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {chartData.length >= 2 ? (
+              {(chartData?.length ?? 0) >= 2 ? (
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={chartData}>
@@ -629,7 +630,7 @@ export function MarketValueTab({
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
-              ) : chartData.length === 1 ? (
+              ) : (chartData?.length ?? 0) === 1 ? (
                 <div className="flex items-center justify-center h-40 text-center">
                   <div>
                     <p className="text-muted-foreground mb-2">Apenas 1 registro</p>
@@ -654,7 +655,7 @@ export function MarketValueTab({
       </div>
 
       {/* History Table */}
-      {history.length > 0 && (
+      {(history?.length ?? 0) > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">

@@ -115,7 +115,7 @@ export function SeasonStatsCard({ playerId, onStatsChange }: SeasonStatsCardProp
         .eq("player_id", playerId)
         .eq("season_year", currentYear);
 
-      if (allStats && allStats.length > 0) {
+      if (Array.isArray(allStats) && allStats.length > 0) {
         const aggregated = allStats.reduce(
           (acc, s) => ({
             matches: acc.matches + s.matches,

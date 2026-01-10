@@ -271,7 +271,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {stats.length === 0 ? (
+        {(stats?.length ?? 0) === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <BarChart3 className="w-12 h-12 mx-auto mb-2 opacity-50" />
             <p>Nenhuma estatística registrada</p>
@@ -492,7 +492,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
           ))
         )}
 
-        {stats.length > 0 && (
+        {(stats?.length ?? 0) > 0 && (
           <div className="flex justify-end pt-2">
             <Button type="button" onClick={saveStats} disabled={saving}>
               {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}

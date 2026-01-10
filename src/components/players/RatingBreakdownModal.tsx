@@ -311,7 +311,7 @@ export function RatingBreakdownModal({ details, rating, trigger }: RatingBreakdo
         </Card>
 
         {/* Per Competition Breakdown */}
-        {competitionsWithGc90.length > 0 && (
+        {(competitionsWithGc90?.length ?? 0) > 0 && (
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
