@@ -498,6 +498,46 @@ const AppPlayers = () => {
         <div className="flex items-center justify-center py-16">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
+      ) : players.length === 0 ? (
+        /* Empty State - No players in database */
+        <div className="glass-card p-12 text-center">
+          <div className="flex flex-col items-center gap-4 max-w-md mx-auto">
+            <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
+              <User className="w-10 h-10 text-primary" />
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold mb-2">Nenhum atleta cadastrado</h3>
+              <p className="text-muted-foreground">
+                Comece cadastrando seu primeiro atleta para gerenciar seu elenco, acompanhar estatísticas e gerar relatórios de scouting.
+              </p>
+            </div>
+            <Button variant="gradient" asChild className="mt-2">
+              <Link to="/app/players/new">
+                <Plus className="w-4 h-4 mr-2" />
+                Cadastrar Primeiro Atleta
+              </Link>
+            </Button>
+          </div>
+        </div>
+      ) : filteredAndSortedPlayers.length === 0 ? (
+        /* Empty State - No results after filtering */
+        <div className="glass-card p-12 text-center">
+          <div className="flex flex-col items-center gap-4 max-w-md mx-auto">
+            <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center">
+              <Search className="w-10 h-10 text-muted-foreground" />
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold mb-2">Nenhum resultado encontrado</h3>
+              <p className="text-muted-foreground">
+                Não encontramos atletas com os filtros aplicados. Tente ajustar sua busca ou limpar os filtros.
+              </p>
+            </div>
+            <Button variant="outline" onClick={clearFilters} className="mt-2">
+              <X className="w-4 h-4 mr-2" />
+              Limpar Filtros
+            </Button>
+          </div>
+        </div>
       ) : viewMode === "table" ? (
         /* Table View */
         <div className="glass-card overflow-hidden">
