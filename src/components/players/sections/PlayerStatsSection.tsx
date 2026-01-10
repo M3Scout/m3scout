@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { safeArray } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -281,7 +282,7 @@ export function PlayerStatsSection({ playerId, onStatsChange }: PlayerStatsSecti
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {seasonOptions.map((year) => (
+                          {safeArray(seasonOptions).map((year) => (
                             <SelectItem key={year} value={year.toString()}>
                               {year}
                             </SelectItem>
@@ -299,7 +300,7 @@ export function PlayerStatsSection({ playerId, onStatsChange }: PlayerStatsSecti
                           <SelectValue placeholder="Selecione..." />
                         </SelectTrigger>
                         <SelectContent>
-                          {competitions.map((comp) => (
+                          {safeArray(competitions).map((comp) => (
                             <SelectItem key={comp.id} value={comp.id}>
                               {comp.name}
                             </SelectItem>
@@ -455,7 +456,7 @@ export function PlayerStatsSection({ playerId, onStatsChange }: PlayerStatsSecti
             </div>
           ) : (
             <div className="space-y-6">
-              {sortedSeasons.map((season) => (
+              {safeArray(sortedSeasons).map((season) => (
                 <div key={season}>
                   <h4 className="font-semibold mb-3 flex items-center gap-2">
                     <Badge variant="outline">{season}</Badge>
@@ -481,7 +482,7 @@ export function PlayerStatsSection({ playerId, onStatsChange }: PlayerStatsSecti
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {statsBySeason[season].map((stat) => (
+                        {safeArray(statsBySeason[season]).map((stat) => (
                           <TableRow key={stat.id}>
                             <TableCell className="font-medium">
                               {stat.competitions?.name || "Sem competição"}
