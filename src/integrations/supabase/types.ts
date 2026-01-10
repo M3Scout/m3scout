@@ -318,53 +318,95 @@ export type Database = {
       }
       player_stats: {
         Row: {
+          accurate_passes: number
+          aerial_duels_won: number
           assists: number
+          chances_created: number
+          clean_sheets: number
           competition_id: string | null
           created_at: string
+          duels_won: number
+          errors_leading_to_goal: number
           goals: number
+          goals_conceded: number
           id: string
           interceptions: number
+          key_passes: number
           matches: number
           minutes: number
+          penalties_saved: number
           player_id: string
           recoveries: number
           red_cards: number
+          saves: number
           season_year: number
+          shots: number
+          shots_on_target: number
           tackles: number
+          total_duels: number
+          total_passes: number
           updated_at: string
           yellow_cards: number
         }
         Insert: {
+          accurate_passes?: number
+          aerial_duels_won?: number
           assists?: number
+          chances_created?: number
+          clean_sheets?: number
           competition_id?: string | null
           created_at?: string
+          duels_won?: number
+          errors_leading_to_goal?: number
           goals?: number
+          goals_conceded?: number
           id?: string
           interceptions?: number
+          key_passes?: number
           matches?: number
           minutes?: number
+          penalties_saved?: number
           player_id: string
           recoveries?: number
           red_cards?: number
+          saves?: number
           season_year?: number
+          shots?: number
+          shots_on_target?: number
           tackles?: number
+          total_duels?: number
+          total_passes?: number
           updated_at?: string
           yellow_cards?: number
         }
         Update: {
+          accurate_passes?: number
+          aerial_duels_won?: number
           assists?: number
+          chances_created?: number
+          clean_sheets?: number
           competition_id?: string | null
           created_at?: string
+          duels_won?: number
+          errors_leading_to_goal?: number
           goals?: number
+          goals_conceded?: number
           id?: string
           interceptions?: number
+          key_passes?: number
           matches?: number
           minutes?: number
+          penalties_saved?: number
           player_id?: string
           recoveries?: number
           red_cards?: number
+          saves?: number
           season_year?: number
+          shots?: number
+          shots_on_target?: number
           tackles?: number
+          total_duels?: number
+          total_passes?: number
           updated_at?: string
           yellow_cards?: number
         }
