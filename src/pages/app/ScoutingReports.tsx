@@ -14,6 +14,7 @@ import {
 import { RatingStars } from "@/components/players/RatingStars";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { safeArray } from "@/lib/utils";
 
 interface ScoutingReportListItem {
   id: string;
@@ -145,7 +146,7 @@ const ScoutingReports = () => {
         </div>
       ) : (
         <div className="space-y-4">
-          {filteredReports.map((report) => (
+          {safeArray(filteredReports).map((report) => (
             <Link key={report.id} to={`/app/reports/${report.id}`}>
               <div className="glass-card-hover p-4 md:p-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

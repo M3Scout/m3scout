@@ -29,6 +29,7 @@ import {
   Sparkles,
   Activity
 } from "lucide-react";
+import { safeArray } from "@/lib/utils";
 import { Link } from "react-router-dom";
 import { CategoryScoreInput } from "@/components/scouting/CategoryScoreInput";
 import { ScoreBreakdownDisplay } from "@/components/scouting/ScoreBreakdownDisplay";

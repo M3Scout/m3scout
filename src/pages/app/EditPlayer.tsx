@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 import { PlayerStatsForm } from "@/components/players/PlayerStatsForm";
 import { toast } from "sonner";
-import { extractYouTubeVideoId } from "@/lib/utils";
+import { extractYouTubeVideoId, safeArray } from "@/lib/utils";
 import { DeletePlayerDialog } from "@/components/players/DeletePlayerDialog";
 import { ImageCropperModal } from "@/components/players/ImageCropperModal";
 
@@ -436,7 +436,7 @@ export default function EditPlayer() {
       <div className="space-y-2">
         <Label>{label}</Label>
         <div className="flex flex-wrap gap-2 mb-2">
-          {formData[field].map((tag) => (
+          {safeArray(formData[field]).map((tag) => (
             <Badge key={tag} variant="outline" className={colorClasses[color]}>
               {tag}
               <button type="button" onClick={() => removeTag(field, tag)} className="ml-1">
@@ -449,7 +449,7 @@ export default function EditPlayer() {
           <Select onValueChange={(val) => addTag(field, val)}>
             <SelectTrigger><SelectValue placeholder="Adicionar..." /></SelectTrigger>
             <SelectContent>
-              {options.filter((o) => !formData[field].includes(o)).map((opt) => (
+              {safeArray(options).filter((o) => !safeArray(formData[field]).includes(o)).map((opt) => (
                 <SelectItem key={opt} value={opt}>{opt}</SelectItem>
               ))}
             </SelectContent>
@@ -572,7 +572,7 @@ export default function EditPlayer() {
                       <Select value={formData.position} onValueChange={(val) => handleChange("position", val)}>
                         <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                         <SelectContent>
-                          {positions.map((pos) => <SelectItem key={pos} value={pos}>{pos}</SelectItem>)}
+                          {safeArray(positions).map((pos) => <SelectItem key={pos} value={pos}>{pos}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </div>
@@ -581,7 +581,7 @@ export default function EditPlayer() {
                       <Select value={formData.nationality} onValueChange={(val) => handleChange("nationality", val)}>
                         <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                         <SelectContent>
-                          {nationalities.map((nat) => <SelectItem key={nat} value={nat}>{nat}</SelectItem>)}
+                          {safeArray(nationalities).map((nat) => <SelectItem key={nat} value={nat}>{nat}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </div>
@@ -724,7 +724,7 @@ export default function EditPlayer() {
                     <Select value={formData.play_style} onValueChange={(val) => handleChange("play_style", val)}>
                       <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                       <SelectContent>
-                        {playStyles.map((style) => <SelectItem key={style} value={style}>{style}</SelectItem>)}
+                        {safeArray(playStyles).map((style) => <SelectItem key={style} value={style}>{style}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -733,7 +733,7 @@ export default function EditPlayer() {
                     <Select value={formData.primary_tactical_role} onValueChange={(val) => handleChange("primary_tactical_role", val)}>
                       <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                       <SelectContent>
-                        {tacticalRoles.map((role) => <SelectItem key={role} value={role}>{role}</SelectItem>)}
+                        {safeArray(tacticalRoles).map((role) => <SelectItem key={role} value={role}>{role}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -742,7 +742,7 @@ export default function EditPlayer() {
                     <Select value={formData.secondary_tactical_role} onValueChange={(val) => handleChange("secondary_tactical_role", val)}>
                       <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                       <SelectContent>
-                        {tacticalRoles.map((role) => <SelectItem key={role} value={role}>{role}</SelectItem>)}
+                        {safeArray(tacticalRoles).map((role) => <SelectItem key={role} value={role}>{role}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -897,7 +897,7 @@ export default function EditPlayer() {
                       <Select value={formData.estimated_level} onValueChange={(val) => handleChange("estimated_level", val)}>
                         <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                         <SelectContent>
-                          {estimatedLevels.map((level) => <SelectItem key={level} value={level}>{level}</SelectItem>)}
+                          {safeArray(estimatedLevels).map((level) => <SelectItem key={level} value={level}>{level}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </div>

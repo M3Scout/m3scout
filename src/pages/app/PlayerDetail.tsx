@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { getYouTubeEmbedUrl } from "@/lib/utils";
+import { getYouTubeEmbedUrl, safeArray } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -256,7 +256,7 @@ const PlayerDetail = () => {
               </div>
               <div className="flex flex-wrap items-center gap-2 text-muted-foreground">
                 <Badge variant="outline">{player.position}</Badge>
-                {player.secondary_positions?.map((pos) => (
+                {safeArray(player.secondary_positions).map((pos) => (
                   <Badge key={pos} variant="outline" className="opacity-70">
                     {pos}
                   </Badge>
@@ -444,7 +444,7 @@ const PlayerDetail = () => {
                 <CardContent>
                   {reports.length > 0 ? (
                     <div className="space-y-3">
-                      {reports.map((report) => (
+                      {safeArray(reports).map((report) => (
                         <Link
                           key={report.id}
                           to={`/app/reports/${report.id}`}

@@ -14,6 +14,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, 
 import { PlayerRankingCard } from "@/components/dashboard/PlayerRankingCard";
 import CompetitionUsageWidget from "@/components/competitions/CompetitionUsageWidget";
 import { useAuth } from "@/hooks/useAuth";
+import { safeArray } from "@/lib/utils";
 
 interface DashboardStats {
   totalPlayers: number;
@@ -244,7 +245,7 @@ const Dashboard = () => {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {statsCards.map((stat) => (
+        {safeArray(statsCards).map((stat) => (
           <div key={stat.label} className="glass-card p-6">
             <div className="flex items-start justify-between mb-4">
               <div className={`w-10 h-10 rounded-lg ${stat.bgColor} flex items-center justify-center`}>
@@ -280,7 +281,7 @@ const Dashboard = () => {
                     label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
                     labelLine={false}
                   >
-                    {positionData.map((_, index) => (
+                    {safeArray(positionData).map((_, index) => (
                       <Cell 
                         key={`cell-${index}`} 
                         fill={POSITION_COLORS[index % POSITION_COLORS.length]} 
@@ -363,7 +364,7 @@ const Dashboard = () => {
           </div>
           {recentReports.length > 0 ? (
             <div className="space-y-4">
-              {recentReports.map((report) => (
+              {safeArray(recentReports).map((report) => (
                 <Link 
                   key={report.id}
                   to={`/app/reports/${report.id}`}
@@ -409,7 +410,7 @@ const Dashboard = () => {
           </div>
           {recentLeads.length > 0 ? (
             <div className="space-y-4">
-              {recentLeads.map((lead) => (
+              {safeArray(recentLeads).map((lead) => (
                 <div 
                   key={lead.id}
                   className="flex items-center justify-between p-4 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors"

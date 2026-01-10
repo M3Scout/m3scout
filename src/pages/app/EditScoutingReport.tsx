@@ -28,6 +28,7 @@ import {
   TrendingUp,
   Sparkles
 } from "lucide-react";
+import { safeArray } from "@/lib/utils";
 import { CategoryScoreInput } from "@/components/scouting/CategoryScoreInput";
 import { ScoreBreakdownDisplay } from "@/components/scouting/ScoreBreakdownDisplay";
 import { useScoreCalculation } from "@/hooks/useScoreCalculation";

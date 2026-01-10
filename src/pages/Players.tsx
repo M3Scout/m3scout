@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { safeArray } from "@/lib/utils";
 
 interface Player {
   id: string;
@@ -143,7 +144,7 @@ const Players = () => {
         ) : filteredPlayers.length > 0 ? (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {paginatedPlayers.map((player, index) => (
+              {safeArray(paginatedPlayers).map((player, index) => (
                 <div 
                   key={player.id}
                   className="animate-scale-in"
@@ -185,7 +186,7 @@ const Players = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {PAGE_SIZE_OPTIONS.map((size) => (
+                        {safeArray(PAGE_SIZE_OPTIONS).map((size) => (
                           <SelectItem key={size} value={String(size)}>
                             {size}
                           </SelectItem>
@@ -204,7 +205,7 @@ const Players = () => {
                     <ChevronLeft className="w-4 h-4" />
                   </Button>
                   
-                  {getPageNumbers().map((page, index) =>
+                  {safeArray(getPageNumbers()).map((page, index) =>
                     page === "ellipsis" ? (
                       <span key={`ellipsis-${index}`} className="px-2 text-muted-foreground">
                         ...

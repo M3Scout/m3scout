@@ -8,6 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { safeArray } from "@/lib/utils";
 
 interface PlayerFiltersProps {
   searchQuery: string;
@@ -70,7 +71,7 @@ export function PlayerFilters({
           <SelectValue placeholder="Posição" />
         </SelectTrigger>
         <SelectContent>
-          {positions.map((pos) => (
+          {safeArray(positions).map((pos) => (
             <SelectItem key={pos} value={pos.toLowerCase()}>
               {pos}
             </SelectItem>
@@ -84,7 +85,7 @@ export function PlayerFilters({
           <SelectValue placeholder="Nacionalidade" />
         </SelectTrigger>
         <SelectContent>
-          {nationalities.map((nat) => (
+          {safeArray(nationalities).map((nat) => (
             <SelectItem key={nat} value={nat.toLowerCase()}>
               {nat}
             </SelectItem>

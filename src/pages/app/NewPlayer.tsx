@@ -13,7 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Upload, User, Shield, FileText, Loader2, BarChart3, Info } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
-import { extractYouTubeVideoId } from "@/lib/utils";
+import { extractYouTubeVideoId, safeArray } from "@/lib/utils";
 import { ImageCropperModal } from "@/components/players/ImageCropperModal";
 
 const positions = [
@@ -309,7 +309,7 @@ export default function NewPlayer() {
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
                     <SelectContent>
-                      {positions.map((pos) => (
+                      {safeArray(positions).map((pos) => (
                         <SelectItem key={pos} value={pos}>
                           {pos}
                         </SelectItem>
@@ -328,7 +328,7 @@ export default function NewPlayer() {
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
                     <SelectContent>
-                      {nationalities.map((nat) => (
+                      {safeArray(nationalities).map((nat) => (
                         <SelectItem key={nat} value={nat}>
                           {nat}
                         </SelectItem>

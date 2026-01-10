@@ -31,7 +31,7 @@ import {
   Check,
   ChevronsUpDown,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, safeArray } from "@/lib/utils";
 import { PlayerRatingBadge } from "@/components/players/PlayerRatingBadge";
 import { formatFixed } from "@/lib/formatters";
 
@@ -235,7 +235,7 @@ const ComparePlayers = () => {
 
     return (
       <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${selectedPlayers.length}, 1fr)` }}>
-        {selectedPlayers.map((player) => {
+        {safeArray(selectedPlayers).map((player) => {
           const value = getValue(player);
           const isBest = bestId === player.id;
 
@@ -348,7 +348,7 @@ const ComparePlayers = () => {
                     <CommandList>
                       <CommandEmpty>Nenhum atleta encontrado.</CommandEmpty>
                       <CommandGroup>
-                        {availablePlayers.map((player) => (
+                        {safeArray(availablePlayers).map((player) => (
                           <CommandItem
                             key={player.id}
                             value={player.full_name}
@@ -425,7 +425,7 @@ const ComparePlayers = () => {
                 className="grid gap-4"
                 style={{ gridTemplateColumns: `repeat(${selectedPlayers.length}, 1fr)` }}
               >
-                {selectedPlayers.map((player) => (
+                {safeArray(selectedPlayers).map((player) => (
                   <div key={player.id} className="p-3 rounded-lg bg-secondary/30 text-center">
                     <p className="text-sm font-medium truncate">
                       {player.current_club || "-"}
@@ -438,7 +438,7 @@ const ComparePlayers = () => {
                 className="grid gap-4"
                 style={{ gridTemplateColumns: `repeat(${selectedPlayers.length}, 1fr)` }}
               >
-                {selectedPlayers.map((player) => (
+                {safeArray(selectedPlayers).map((player) => (
                   <div key={player.id} className="p-3 rounded-lg bg-secondary/30 text-center">
                     <Badge variant="outline">{player.position}</Badge>
                     <p className="text-xs text-muted-foreground mt-1">Posição</p>
