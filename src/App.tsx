@@ -15,6 +15,8 @@ import Index from "./pages/Index";
 import Players from "./pages/Players";
 import PlayerProfile from "./pages/PlayerProfile";
 import Contact from "./pages/Contact";
+import Sobre from "./pages/Sobre";
+import Imprensa from "./pages/Imprensa";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import CompetitionRankingPublic from "./pages/CompetitionRankingPublic";
@@ -46,13 +48,17 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            {/* Public Routes */}
+{/* Public Routes */}
             <Route element={<PublicLayout />}>
               <Route path="/" element={<Index />} />
+              <Route path="/sobre" element={<Sobre />} />
               <Route path="/players" element={<Players />} />
+              <Route path="/atletas" element={<Players />} />
               <Route path="/players/:slug" element={<PlayerProfile />} />
+              <Route path="/imprensa" element={<Imprensa />} />
               <Route path="/competitions" element={<CompetitionRankingPublic />} />
               <Route path="/contact" element={<Contact />} />
+              <Route path="/contato" element={<Contact />} />
             </Route>
 
             {/* Auth Route */}
