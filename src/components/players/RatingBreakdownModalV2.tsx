@@ -71,30 +71,188 @@ function getScoreLevel(score: number): { label: string; description: string } {
   return { label: "Baixo", description: "Área de melhoria identificada" };
 }
 
-// Stat group descriptions for tooltips
-const STAT_DESCRIPTIONS: Record<string, string> = {
-  minutes_games: "Regularidade e tempo de jogo. Quanto mais minutos, maior a consistência.",
-  goals_per_90: "Eficiência ofensiva. Média de gols marcados a cada 90 minutos.",
-  ga_per_90: "Participações diretas em gol (G+A) por 90 minutos. Mede impacto ofensivo total.",
-  tackles: "Capacidade defensiva. Desarmes bem-sucedidos por 90 minutos.",
-  interceptions: "Leitura de jogo. Interceptações realizadas por 90 minutos.",
-  recoveries: "Recuperações de bola. Indica pressão e intensidade defensiva.",
-  discipline: "Cartões por 90 min. Menor = melhor. Vermelho conta 3x amarelo.",
-  saves: "Defesas realizadas pelo goleiro. Total de finalizações defendidas.",
-  goals_conceded: "Gols sofridos. Menor = melhor. Indica solidez defensiva.",
-  errors: "Erros que resultaram em gol. Menor = melhor.",
-  accurate_passes: "Passes certos totais. Indica qualidade na construção.",
-  aerial_duels: "Duelos aéreos vencidos. Importante para saídas e cruzamentos.",
-  duels_won: "Duelos vencidos no geral (aéreos + chão).",
-  key_passes: "Passes decisivos que criaram chances de gol.",
-  chances_created: "Oportunidades de gol criadas para companheiros.",
-  shots: "Finalizações por 90 minutos. Indica presença ofensiva.",
-  shots_on_target: "Finalizações no gol por 90 min. Mede precisão.",
-  pass_accuracy: "Percentual de passes certos. Indica qualidade técnica.",
-  penalties_saved: "Pênaltis defendidos. Métrica específica de goleiros.",
-  offensive_involvement: "Envolvimento em jogadas ofensivas (gols + assists + finalizações).",
-  key_pass_accuracy: "Precisão em passes decisivos.",
+// Detailed stat info with group, description, and specific low-score feedback
+interface StatInfo {
+  group: string;
+  groupIcon: string;
+  description: string;
+  lowFeedback: string;
+  highFeedback: string;
+}
+
+const STAT_INFO: Record<string, StatInfo> = {
+  // Regularidade
+  minutes_games: {
+    group: "Regularidade",
+    groupIcon: "⏱️",
+    description: "Tempo de jogo e consistência. Jogadores com mais minutos demonstram confiança do treinador.",
+    lowFeedback: "Poucos minutos jogados — falta de ritmo de jogo ou pouca confiança do técnico.",
+    highFeedback: "Jogador titular absoluto com alta regularidade.",
+  },
+  
+  // Finalização (Atacantes)
+  goals_per_90: {
+    group: "Finalização",
+    groupIcon: "⚽",
+    description: "Eficiência goleadora. Média de gols marcados a cada 90 minutos jogados.",
+    lowFeedback: "Baixa média de gols — dificuldade em converter chances ou pouca presença na área.",
+    highFeedback: "Finalizador letal com alta taxa de conversão.",
+  },
+  shots: {
+    group: "Finalização",
+    groupIcon: "⚽",
+    description: "Volume de finalizações por 90 minutos. Indica presença ofensiva e busca pelo gol.",
+    lowFeedback: "Poucas finalizações — baixa participação em jogadas de conclusão.",
+    highFeedback: "Alta presença ofensiva com muitas tentativas de gol.",
+  },
+  shots_on_target: {
+    group: "Finalização",
+    groupIcon: "🎯",
+    description: "Finalizações certas no gol. Mede precisão nas conclusões.",
+    lowFeedback: "Baixa precisão nas finalizações — chutes fora do alvo ou bloqueados.",
+    highFeedback: "Excelente precisão de finalização.",
+  },
+  
+  // Participação Ofensiva
+  ga_per_90: {
+    group: "Participação Ofensiva",
+    groupIcon: "📈",
+    description: "Gols + Assistências por 90 minutos. Mede impacto direto no placar.",
+    lowFeedback: "Baixa participação em gols — poucas assistências e finalizações convertidas.",
+    highFeedback: "Alto impacto ofensivo com participação constante em gols.",
+  },
+  offensive_involvement: {
+    group: "Participação Ofensiva",
+    groupIcon: "📈",
+    description: "Envolvimento geral em jogadas ofensivas (gols, passes decisivos, finalizações).",
+    lowFeedback: "Baixo envolvimento ofensivo — pouca participação nas jogadas de ataque.",
+    highFeedback: "Protagonista das ações ofensivas da equipe.",
+  },
+  
+  // Passe & Construção
+  accurate_passes: {
+    group: "Passe & Construção",
+    groupIcon: "🎯",
+    description: "Volume de passes certos. Indica qualidade na posse e circulação de bola.",
+    lowFeedback: "Poucos passes certos — dificuldade na construção ou pouco envolvimento no jogo.",
+    highFeedback: "Peça fundamental na construção e circulação de bola.",
+  },
+  pass_accuracy: {
+    group: "Passe & Construção",
+    groupIcon: "🎯",
+    description: "Percentual de acerto nos passes. Indica qualidade técnica e tomada de decisão.",
+    lowFeedback: "Baixa precisão de passes — muitos erros de passe prejudicando a construção.",
+    highFeedback: "Alta precisão técnica nos passes.",
+  },
+  key_passes: {
+    group: "Criação de Jogadas",
+    groupIcon: "✨",
+    description: "Passes decisivos que geraram chances de gol. Mede capacidade de criar para os companheiros.",
+    lowFeedback: "Poucos passes decisivos — dificuldade em criar oportunidades de gol.",
+    highFeedback: "Criador consistente de chances de gol.",
+  },
+  key_pass_accuracy: {
+    group: "Criação de Jogadas",
+    groupIcon: "✨",
+    description: "Precisão nos passes decisivos. Qualidade nas bolas que geram chances.",
+    lowFeedback: "Baixa precisão em passes decisivos — passes mal calibrados em momentos chave.",
+    highFeedback: "Alta qualidade nos passes que decidem jogadas.",
+  },
+  chances_created: {
+    group: "Criação de Jogadas",
+    groupIcon: "✨",
+    description: "Oportunidades de gol criadas para companheiros. Mede visão de jogo e criatividade.",
+    lowFeedback: "Poucas chances criadas — falta de criatividade ou visão de jogo limitada.",
+    highFeedback: "Motor criativo da equipe com ótima visão de jogo.",
+  },
+  
+  // Defesa & Duelos
+  tackles: {
+    group: "Defesa & Duelos",
+    groupIcon: "🛡️",
+    description: "Desarmes bem-sucedidos por 90 minutos. Indica capacidade de recuperar a bola.",
+    lowFeedback: "Poucos desarmes — dificuldade em recuperar a bola ou posicionamento defensivo ruim.",
+    highFeedback: "Excelente na marcação e recuperação de bola.",
+  },
+  interceptions: {
+    group: "Defesa & Duelos",
+    groupIcon: "🛡️",
+    description: "Interceptações por 90 minutos. Mede leitura de jogo e antecipação.",
+    lowFeedback: "Poucas interceptações — falta de leitura de jogo ou posicionamento inadequado.",
+    highFeedback: "Ótima leitura de jogo e antecipação defensiva.",
+  },
+  recoveries: {
+    group: "Intensidade Defensiva",
+    groupIcon: "🔄",
+    description: "Recuperações de bola. Indica pressão, intensidade e esforço defensivo.",
+    lowFeedback: "Poucas recuperações — baixa intensidade ou pouca pressão na marcação.",
+    highFeedback: "Alta intensidade e esforço na recuperação de bola.",
+  },
+  duels_won: {
+    group: "Defesa & Duelos",
+    groupIcon: "💪",
+    description: "Duelos vencidos (aéreos e no chão). Mede força física e determinação.",
+    lowFeedback: "Baixa taxa de duelos vencidos — dificuldade em disputas físicas.",
+    highFeedback: "Dominante nos duelos individuais.",
+  },
+  aerial_duels: {
+    group: "Jogo Aéreo",
+    groupIcon: "🦅",
+    description: "Duelos aéreos vencidos. Importante para defesa e ataque em bolas altas.",
+    lowFeedback: "Dificuldade no jogo aéreo — perde muitas disputas de cabeça.",
+    highFeedback: "Dominante no jogo aéreo.",
+  },
+  
+  // Disciplina
+  discipline: {
+    group: "Disciplina",
+    groupIcon: "📋",
+    description: "Cartões por 90 min (vermelho = 3x amarelo). Menor valor = melhor.",
+    lowFeedback: "Muitos cartões — jogo imprudente ou dificuldade em controlar temperamento.",
+    highFeedback: "Jogo limpo e controlado emocionalmente.",
+  },
+  
+  // Goleiro - Defesas
+  saves: {
+    group: "Defesas (GK)",
+    groupIcon: "🧤",
+    description: "Total de defesas realizadas. Mede capacidade de evitar gols.",
+    lowFeedback: "Poucas defesas — pode indicar pouca exigência ou dificuldade nas finalizações.",
+    highFeedback: "Goleiro decisivo com alto volume de defesas.",
+  },
+  goals_conceded: {
+    group: "Solidez Defensiva (GK)",
+    groupIcon: "🚫",
+    description: "Gols sofridos. Menor valor = melhor. Indica segurança do goleiro.",
+    lowFeedback: "Muitos gols sofridos — vazamentos frequentes comprometendo o resultado.",
+    highFeedback: "Goleiro seguro com poucos gols sofridos.",
+  },
+  errors: {
+    group: "Erros Graves (GK)",
+    groupIcon: "⚠️",
+    description: "Erros que resultaram em gol. Menor valor = melhor.",
+    lowFeedback: "Erros decisivos — falhas que resultaram em gols adversários.",
+    highFeedback: "Goleiro confiável sem erros graves.",
+  },
+  penalties_saved: {
+    group: "Pênaltis (GK)",
+    groupIcon: "🎯",
+    description: "Pênaltis defendidos. Habilidade específica em cobranças.",
+    lowFeedback: "Poucos pênaltis defendidos — pode melhorar na leitura de cobranças.",
+    highFeedback: "Especialista em defesas de pênalti.",
+  },
 };
+
+// Fallback for stats not in STAT_INFO
+function getStatInfo(statKey: string, label: string): StatInfo {
+  return STAT_INFO[statKey] || {
+    group: "Desempenho Geral",
+    groupIcon: "📊",
+    description: `Estatística: ${label}`,
+    lowFeedback: `Desempenho abaixo do esperado em ${label.toLowerCase()}.`,
+    highFeedback: `Excelente desempenho em ${label.toLowerCase()}.`,
+  };
+}
 
 function StatScoreLegend() {
   return (
@@ -217,7 +375,9 @@ function StatBreakdownCard({
             <TooltipProvider delayDuration={200}>
               {safeArray(availableStats).map((stat) => {
                 const scoreLevel = getScoreLevel(stat.score);
-                const description = STAT_DESCRIPTIONS[stat.stat] || "Estatística de desempenho do jogador.";
+                const statInfo = getStatInfo(stat.stat, stat.label);
+                const isLow = stat.score < 40;
+                const isHigh = stat.score >= 80;
                 
                 return (
                   <Tooltip key={stat.stat}>
@@ -225,9 +385,13 @@ function StatBreakdownCard({
                       <div className="space-y-1 cursor-help hover:bg-muted/30 rounded-md p-1.5 -mx-1.5 transition-colors">
                         <div className="flex items-center justify-between text-xs">
                           <div className="flex items-center gap-1.5">
+                            <span className="mr-1">{statInfo.groupIcon}</span>
                             <span className="font-medium text-foreground">
                               {stat.label}
                             </span>
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 text-muted-foreground">
+                              {statInfo.group}
+                            </Badge>
                             <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
                               {formatFixed(stat.adjusted_weight, 0)}%
                             </Badge>
@@ -246,14 +410,19 @@ function StatBreakdownCard({
                         </div>
                       </div>
                     </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-xs">
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="font-medium">{stat.label}</span>
+                    <TooltipContent side="top" className="max-w-sm">
+                      <div className="space-y-2">
+                        {/* Header with group */}
+                        <div className="flex items-center gap-2 pb-1 border-b border-border/50">
+                          <span className="text-base">{statInfo.groupIcon}</span>
+                          <div>
+                            <p className="font-semibold text-sm">{statInfo.group}</p>
+                            <p className="text-xs text-muted-foreground">{stat.label}</p>
+                          </div>
                           <Badge 
                             variant="outline" 
                             className={cn(
-                              "text-xs",
+                              "text-xs ml-auto",
                               stat.score >= 80 && "border-emerald-500 text-emerald-500",
                               stat.score >= 60 && stat.score < 80 && "border-primary text-primary",
                               stat.score >= 40 && stat.score < 60 && "border-amber-500 text-amber-500",
@@ -263,20 +432,48 @@ function StatBreakdownCard({
                             {scoreLevel.label}
                           </Badge>
                         </div>
-                        <p className="text-xs text-muted-foreground">{description}</p>
-                        <div className="text-xs pt-1 border-t border-border/50">
-                          <span className="text-muted-foreground">Nota: </span>
-                          <span className={cn("font-semibold", getScoreColor(stat.score))}>
-                            {formatFixed(stat.score, 0)}/100
-                          </span>
-                          <span className="text-muted-foreground"> · Peso: </span>
-                          <span className="font-medium">{formatFixed(stat.adjusted_weight, 0)}%</span>
+                        
+                        {/* Description */}
+                        <p className="text-xs text-muted-foreground">{statInfo.description}</p>
+                        
+                        {/* Stats */}
+                        <div className="flex items-center justify-between text-xs bg-muted/30 rounded px-2 py-1">
+                          <div>
+                            <span className="text-muted-foreground">Nota: </span>
+                            <span className={cn("font-bold", getScoreColor(stat.score))}>
+                              {formatFixed(stat.score, 0)}/100
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Peso: </span>
+                            <span className="font-semibold">{formatFixed(stat.adjusted_weight, 0)}%</span>
+                          </div>
                         </div>
-                        {stat.score < 40 && (
-                          <p className="text-xs text-destructive/80 pt-1 flex items-center gap-1">
-                            <AlertTriangle className="w-3 h-3" />
-                            Área de atenção que pode ser melhorada
-                          </p>
+                        
+                        {/* Specific feedback for low scores */}
+                        {isLow && (
+                          <div className="bg-destructive/10 border border-destructive/30 rounded-md p-2">
+                            <p className="text-xs font-medium text-destructive flex items-center gap-1 mb-1">
+                              <AlertTriangle className="w-3 h-3" />
+                              Ponto de Atenção
+                            </p>
+                            <p className="text-xs text-destructive/90">
+                              {statInfo.lowFeedback}
+                            </p>
+                          </div>
+                        )}
+                        
+                        {/* Specific feedback for high scores */}
+                        {isHigh && (
+                          <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-md p-2">
+                            <p className="text-xs font-medium text-emerald-600 flex items-center gap-1 mb-1">
+                              <Star className="w-3 h-3" />
+                              Ponto Forte
+                            </p>
+                            <p className="text-xs text-emerald-600/90">
+                              {statInfo.highFeedback}
+                            </p>
+                          </div>
                         )}
                       </div>
                     </TooltipContent>
@@ -291,20 +488,28 @@ function StatBreakdownCard({
                   Estatísticas não disponíveis (peso redistribuído):
                 </p>
                 <div className="flex flex-wrap gap-1">
-                  {safeArray(unavailableStats).map((stat) => (
-                    <TooltipProvider key={stat.stat}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Badge variant="secondary" className="text-xs opacity-60 cursor-help">
-                            {stat.label}
-                          </Badge>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="text-xs">{STAT_DESCRIPTIONS[stat.stat] || "Estatística não registrada para esta competição."}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  ))}
+                  {safeArray(unavailableStats).map((stat) => {
+                    const statInfo = getStatInfo(stat.stat, stat.label);
+                    return (
+                      <TooltipProvider key={stat.stat}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge variant="secondary" className="text-xs opacity-60 cursor-help">
+                              <span className="mr-1">{statInfo.groupIcon}</span>
+                              {stat.label}
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <div className="space-y-1">
+                              <p className="font-medium text-xs">{statInfo.group}</p>
+                              <p className="text-xs text-muted-foreground">{statInfo.description}</p>
+                              <p className="text-xs text-amber-500">Dados não disponíveis para esta competição.</p>
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    );
+                  })}
                 </div>
               </div>
             )}
