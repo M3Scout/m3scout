@@ -233,11 +233,13 @@ function roundToHalf(value: number): number {
 
 /**
  * Calculate competition level score (0-100)
- * coefficient 0.75 → 0, coefficient 1.30 → 100
+ * Aligned with new tier thresholds:
+ * - coefficient 0.50 → 0 (minimum expected)
+ * - coefficient 2.00 → 100 (Tier S territory)
  */
 function calculateCompetitionLevelScore(coefficient: number): number {
-  const minCoef = 0.75;
-  const maxCoef = 1.30;
+  const minCoef = 0.50;
+  const maxCoef = 2.00;
   const normalized = (coefficient - minCoef) / (maxCoef - minCoef);
   return clamp(normalized * 100, 0, 100);
 }
