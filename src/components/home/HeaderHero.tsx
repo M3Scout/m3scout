@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Menu, X, ChevronDown } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import heroStadium from "@/assets/hero-stadium.jpg";
 
@@ -14,13 +14,25 @@ const navLinks = [
 export function HeaderHero() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [scrollY, setScrollY] = useState(0);
+  const heroRef = useRef<HTMLElement>(null);
   const location = useLocation();
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
+      const currentScrollY = window.scrollY;
+      setIsScrolled(currentScrollY > 50);
+      
+      // Only update parallax when hero is visible
+      if (heroRef.current) {
+        const heroHeight = heroRef.current.offsetHeight;
+        if (currentScrollY <= heroHeight) {
+          setScrollY(currentScrollY);
+        }
+      }
     };
-    window.addEventListener("scroll", handleScroll);
+    
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -36,12 +48,20 @@ export function HeaderHero() {
     });
   };
 
+  // Calculate parallax values
+  const parallaxOffset = scrollY * 0.5; // Background moves at 50% of scroll speed
+  const contentOpacity = Math.max(0, 1 - scrollY / 600); // Fade out content
+  const contentTranslate = scrollY * 0.3; // Content moves slightly up
+
   return (
-    <section className="relative h-screen w-full overflow-hidden">
-      {/* Background Image */}
+    <section ref={heroRef} className="relative h-screen w-full overflow-hidden">
+      {/* Background Image with Parallax */}
       <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${heroStadium})` }}
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat will-change-transform"
+        style={{ 
+          backgroundImage: `url(${heroStadium})`,
+          transform: `translateY(${parallaxOffset}px) scale(1.1)`,
+        }}
       />
 
       {/* Dark Overlay - Gradient from top and bottom */}
@@ -133,8 +153,14 @@ export function HeaderHero() {
         </div>
       </div>
 
-      {/* Hero Content - Left Aligned */}
-      <div className="relative z-10 flex h-full items-center">
+      {/* Hero Content - Left Aligned with Parallax */}
+      <div 
+        className="relative z-10 flex h-full items-center will-change-transform"
+        style={{
+          opacity: contentOpacity,
+          transform: `translateY(${contentTranslate}px)`,
+        }}
+      >
         <div className="mx-auto max-w-7xl px-6 lg:px-8 w-full">
           <div className="max-w-3xl">
             {/* Small tag */}
