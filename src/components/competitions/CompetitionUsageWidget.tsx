@@ -311,12 +311,12 @@ const CompetitionUsageWidget = () => {
                 type="number"
                 step="0.05"
                 min="0.05"
-                max="2.50"
+                max="5.00"
                 value={editBaseCoef}
                 onChange={(e) => setEditBaseCoef(parseFloat(e.target.value) || 0.05)}
                 className="mt-1"
               />
-              <p className="text-xs text-muted-foreground mt-1">0.05 – 2.50</p>
+              <p className="text-xs text-muted-foreground mt-1">0.05 – 5.00</p>
             </div>
 
             <div>
