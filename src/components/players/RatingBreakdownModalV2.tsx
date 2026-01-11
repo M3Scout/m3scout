@@ -98,23 +98,27 @@ function StatBreakdownCard({
       
       {isExpanded && (
         <CardContent className="pt-2 space-y-4">
-          {/* Competition Info */}
-          <div className="grid grid-cols-4 gap-2 text-xs text-center">
+          {/* Competition Info - V2 with year-based weighting */}
+          <div className="grid grid-cols-5 gap-2 text-xs text-center">
             <div>
-              <p className="text-muted-foreground">Coeficiente</p>
-              <Badge variant="outline" className="mt-1">{formatFixed(competition.final_coefficient, 2)}</Badge>
+              <p className="text-muted-foreground">Ano</p>
+              <Badge variant="outline" className="mt-1">{competition.season_year}</Badge>
             </div>
             <div>
               <p className="text-muted-foreground">Minutos</p>
               <p className="font-medium">{competition.minutes}</p>
             </div>
             <div>
-              <p className="text-muted-foreground">Peso Recência</p>
-              <p className="font-medium">{formatFixed(competition.recency_weight * 100, 0)}%</p>
+              <p className="text-muted-foreground">Peso Ano</p>
+              <p className="font-medium">{formatFixed((competition.year_weight ?? competition.recency_weight) * 100, 0)}%</p>
             </div>
             <div>
-              <p className="text-muted-foreground">Fator Minutos</p>
-              <p className="font-medium">{formatFixed(competition.minutes_factor * 100, 0)}%</p>
+              <p className="text-muted-foreground">Peso no Ano</p>
+              <p className="font-medium">{formatFixed((competition.in_year_weight ?? competition.minutes_factor) * 100, 0)}%</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Peso Final</p>
+              <p className="font-medium">{formatFixed((competition.final_weight ?? competition.combined_weight) * 100, 0)}%</p>
             </div>
           </div>
           
@@ -348,34 +352,48 @@ export function RatingBreakdownModalV2({ details, rating, trigger }: RatingBreak
                         <thead>
                           <tr className="border-b border-border/50">
                             <th className="text-left py-2 px-1">Competição</th>
-                            <th className="text-center py-2 px-1">Coef.</th>
+                            <th className="text-center py-2 px-1">Ano</th>
                             <th className="text-center py-2 px-1">Min</th>
                             <th className="text-center py-2 px-1">G</th>
                             <th className="text-center py-2 px-1">A</th>
-                            <th className="text-center py-2 px-1">Peso</th>
+                            <th className="text-center py-2 px-1" title="Peso do Ano (60% ou 40%)">Ano%</th>
+                            <th className="text-center py-2 px-1" title="Peso dentro do Ano (por minutos)">NoAno%</th>
+                            <th className="text-center py-2 px-1" title="Peso Final (Ano × NoAno)">Peso</th>
                             <th className="text-center py-2 px-1">Score</th>
+                            <th className="text-center py-2 px-1" title="Contribuição = Score × Peso">Contrib</th>
                           </tr>
                         </thead>
                         <tbody>
                           {safeArray(details?.competitions ?? []).map((comp) => (
                             <tr key={comp.competition_id} className="border-b border-border/30">
-                              <td className="py-2 px-1 max-w-[120px] truncate" title={comp.competition_name}>
-                                {comp.competition_name}
+                              <td className="py-2 px-1 max-w-[100px] truncate" title={comp.competition_name}>
+                                {comp.competition_name ?? "Sem competição"}
                               </td>
                               <td className="py-2 px-1 text-center">
                                 <Badge variant="outline" className="text-xs">
-                                  {formatFixed(comp.final_coefficient, 2)}
+                                  {comp.season_year}
                                 </Badge>
                               </td>
                               <td className="py-2 px-1 text-center text-muted-foreground">{comp.minutes}</td>
                               <td className="py-2 px-1 text-center font-medium">{comp.goals}</td>
                               <td className="py-2 px-1 text-center font-medium">{comp.assists}</td>
                               <td className="py-2 px-1 text-center text-muted-foreground">
-                                {formatFixed(comp.combined_weight * 100, 0)}%
+                                {formatFixed((comp.year_weight ?? comp.recency_weight) * 100, 0)}%
+                              </td>
+                              <td className="py-2 px-1 text-center text-muted-foreground">
+                                {formatFixed((comp.in_year_weight ?? comp.minutes_factor) * 100, 0)}%
+                              </td>
+                              <td className="py-2 px-1 text-center text-primary font-medium">
+                                {formatFixed((comp.final_weight ?? comp.combined_weight) * 100, 0)}%
                               </td>
                               <td className="py-2 px-1 text-center">
                                 <span className={cn("font-semibold", getScoreColor(comp.competition_score))}>
                                   {formatFixed(comp.competition_score, 0)}
+                                </span>
+                              </td>
+                              <td className="py-2 px-1 text-center">
+                                <span className={cn("font-medium", getScoreColor(comp.competition_score))}>
+                                  {formatFixed(comp.weighted_contribution, 1)}
                                 </span>
                               </td>
                             </tr>
@@ -452,7 +470,36 @@ export function RatingBreakdownModalV2({ details, rating, trigger }: RatingBreak
               <CardContent className="space-y-4">
                 <div className="space-y-3 text-sm text-muted-foreground">
                   <div>
-                    <p className="font-medium text-foreground mb-1">1. Nível da Competição</p>
+                    <p className="font-medium text-foreground mb-1">1. Seleção de Anos</p>
+                    <p>Considera apenas os <strong>2 anos mais recentes</strong> com estatísticas registradas.</p>
+                  </div>
+
+                  <div>
+                    <p className="font-medium text-foreground mb-1">2. Peso por Ano (Recência)</p>
+                    <ul className="text-xs list-disc ml-4 mt-1">
+                      <li>Ano mais recente: <strong>60%</strong></li>
+                      <li>Segundo ano: <strong>40%</strong></li>
+                      <li>Se apenas 1 ano: <strong>100%</strong></li>
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <p className="font-medium text-foreground mb-1">3. Peso Dentro do Ano (por Minutos)</p>
+                    <p>Dentro de cada ano, cada competição recebe peso proporcional aos minutos jogados:</p>
+                    <code className="text-xs bg-background/50 px-2 py-1 rounded block mt-1">
+                      peso_no_ano = minutos_comp / total_minutos_do_ano
+                    </code>
+                  </div>
+                  
+                  <div>
+                    <p className="font-medium text-foreground mb-1">4. Peso Final</p>
+                    <code className="text-xs bg-background/50 px-2 py-1 rounded block mt-1">
+                      peso_final = peso_ano × peso_no_ano
+                    </code>
+                  </div>
+                  
+                  <div>
+                    <p className="font-medium text-foreground mb-1">5. Nível da Competição</p>
                     <p>Cada competição tem um coeficiente (0.75–1.30). Convertemos para 0–100:</p>
                     <code className="text-xs bg-background/50 px-2 py-1 rounded block mt-1">
                       score_nivel = ((coef - 0.75) / 0.55) × 100
@@ -460,41 +507,17 @@ export function RatingBreakdownModalV2({ details, rating, trigger }: RatingBreak
                   </div>
                   
                   <div>
-                    <p className="font-medium text-foreground mb-1">2. Peso de Recência</p>
-                    <p>Competições mais recentes têm mais peso:</p>
-                    <ul className="text-xs list-disc ml-4 mt-1">
-                      <li>Mais recente: 50%</li>
-                      <li>Segunda: 30%</li>
-                      <li>Demais: dividem 20%</li>
-                    </ul>
-                  </div>
-                  
-                  <div>
-                    <p className="font-medium text-foreground mb-1">3. Fator de Minutos</p>
-                    <p>Mais minutos = maior confiança:</p>
-                    <ul className="text-xs list-disc ml-4 mt-1">
-                      <li>≥1800 min: 100%</li>
-                      <li>900-1799: 80%</li>
-                      <li>450-899: 60%</li>
-                      <li>1-449: 35%</li>
-                    </ul>
-                  </div>
-                  
-                  <div>
-                    <p className="font-medium text-foreground mb-1">4. Estatísticas por Posição</p>
-                    <p>Cada posição tem pesos diferentes. Exemplo para atacantes: gols/90 vale 28%, para zagueiros: desarmes valem 16%.</p>
-                  </div>
-                  
-                  <div>
-                    <p className="font-medium text-foreground mb-1">5. Estatísticas Faltando</p>
-                    <p>Se uma estatística não está disponível, seu peso é redistribuído entre as demais, garantindo que não resulte em nota zero.</p>
+                    <p className="font-medium text-foreground mb-1">6. Estatísticas por Posição</p>
+                    <p>Cada posição tem pesos diferentes. Exemplo: atacantes valorizam gols/90 (28%), zagueiros valorizam desarmes (16%).</p>
                   </div>
                 </div>
                 
                 <div className="p-3 rounded bg-background/50 text-xs font-mono space-y-1">
+                  <p className="text-muted-foreground mb-2"># Fórmula Final:</p>
                   <p>score_comp = (stats_posição × 70%) + (nível_comp × 30%)</p>
-                  <p>peso_final = recência × fator_minutos</p>
-                  <p>nota_100 = Σ(score_comp × peso) / Σ(peso)</p>
+                  <p>peso_final = peso_ano × (minutos / total_minutos_ano)</p>
+                  <p>contribuição = score_comp × peso_final</p>
+                  <p>nota_100 = Σ(contribuição) / Σ(peso_final)</p>
                   <p>nota_0_5 = arredondar(nota_100 / 20, 0.5)</p>
                 </div>
               </CardContent>

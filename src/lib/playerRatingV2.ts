@@ -178,10 +178,14 @@ export interface CompetitionBreakdown {
   tackles: number;
   interceptions: number;
   recoveries: number;
-  // Calculated
-  recency_weight: number;
-  minutes_factor: number;
-  combined_weight: number;
+  // Calculated - V2 Year-based weighting
+  year_weight: number;        // 0.60 or 0.40 (or 1.0 if single year)
+  in_year_weight: number;     // minutes_i / total_minutes_in_year
+  final_weight: number;       // year_weight * in_year_weight
+  // Legacy fields for compatibility
+  recency_weight: number;     // Same as year_weight for UI compatibility
+  minutes_factor: number;     // Legacy, now represents in_year_weight
+  combined_weight: number;    // Same as final_weight for UI compatibility
   competition_level_score: number;
   position_stats_score: number;
   stat_breakdown: Array<{
@@ -508,29 +512,73 @@ export function calculatePlayerRatingV2(input: RatingInputV2): RatingBreakdownV2
     };
   }
   
-  // Sort competitions by season year descending (most recent first)
-  const sortedCompetitions = [...input.competitions].sort((a, b) => b.season_year - a.season_year);
+  // ==================== V2 YEAR-BASED WEIGHTING ====================
+  // 1. Get distinct years and sort descending
+  const yearsSet = new Set(input.competitions.map(c => c.season_year));
+  const sortedYears = Array.from(yearsSet).sort((a, b) => b - a);
   
-  // Calculate recency weights
-  const recencyWeights = calculateRecencyWeights(sortedCompetitions.length);
+  // 2. Take only the 2 most recent years
+  const year1 = sortedYears[0]; // Most recent
+  const year2 = sortedYears.length > 1 ? sortedYears[1] : null;
+  
+  // 3. Calculate year base weights (60/40 or 100%)
+  const year1Weight = year2 !== null ? 0.60 : 1.0;
+  const year2Weight = year2 !== null ? 0.40 : 0;
+  
+  // 4. Group competitions by year and calculate total minutes per year
+  const year1Comps = input.competitions.filter(c => c.season_year === year1);
+  const year2Comps = year2 !== null ? input.competitions.filter(c => c.season_year === year2) : [];
+  
+  const year1TotalMinutes = year1Comps.reduce((sum, c) => sum + c.minutes, 0);
+  const year2TotalMinutes = year2Comps.reduce((sum, c) => sum + c.minutes, 0);
+  
+  // 5. Create a map for each competition's weights
+  const competitionWeights = new Map<string, { yearWeight: number; inYearWeight: number; finalWeight: number }>();
+  
+  for (const comp of year1Comps) {
+    const inYearWeight = year1TotalMinutes > 0 ? comp.minutes / year1TotalMinutes : 1 / year1Comps.length;
+    competitionWeights.set(comp.competition_id, {
+      yearWeight: year1Weight,
+      inYearWeight,
+      finalWeight: year1Weight * inYearWeight,
+    });
+  }
+  
+  for (const comp of year2Comps) {
+    const inYearWeight = year2TotalMinutes > 0 ? comp.minutes / year2TotalMinutes : 1 / year2Comps.length;
+    competitionWeights.set(comp.competition_id, {
+      yearWeight: year2Weight,
+      inYearWeight,
+      finalWeight: year2Weight * inYearWeight,
+    });
+  }
+  
+  // 6. Only include competitions from the 2 most recent years
+  const relevantCompetitions = [...year1Comps, ...year2Comps];
+  
+  // Sort by year desc, then by minutes desc within year
+  relevantCompetitions.sort((a, b) => {
+    if (b.season_year !== a.season_year) return b.season_year - a.season_year;
+    return b.minutes - a.minutes;
+  });
   
   // Process each competition
   const competitionBreakdowns: CompetitionBreakdown[] = [];
   let totalMinutes = 0;
   let totalMatches = 0;
   
-  for (let i = 0; i < sortedCompetitions.length; i++) {
-    const comp = sortedCompetitions[i];
-    const recencyWeight = recencyWeights[i];
-    const minutesFactor = calculateMinutesFactor(comp.minutes);
-    const combinedWeight = recencyWeight * minutesFactor;
+  for (const comp of relevantCompetitions) {
+    const weights = competitionWeights.get(comp.competition_id)!;
+    const yearWeight = weights.yearWeight;
+    const inYearWeight = weights.inYearWeight;
+    const finalWeight = weights.finalWeight;
     
     const competitionLevelScore = calculateCompetitionLevelScore(comp.final_coefficient);
     const { score: positionStatsScore, breakdown: statBreakdown } = calculatePositionStatsScore(comp, positionGroup);
     
     // Score for this competition: 70% position stats + 30% competition level
     const competitionScore = (positionStatsScore * 0.70) + (competitionLevelScore * 0.30);
-    const weightedContribution = competitionScore * combinedWeight;
+    const weightedContribution = competitionScore * finalWeight;
     
     competitionBreakdowns.push({
       competition_id: comp.competition_id,
@@ -548,9 +596,14 @@ export function calculatePlayerRatingV2(input: RatingInputV2): RatingBreakdownV2
       tackles: comp.tackles,
       interceptions: comp.interceptions,
       recoveries: comp.recoveries,
-      recency_weight: recencyWeight,
-      minutes_factor: minutesFactor,
-      combined_weight: combinedWeight,
+      // V2 Year-based weighting
+      year_weight: yearWeight,
+      in_year_weight: inYearWeight,
+      final_weight: finalWeight,
+      // Legacy fields for UI compatibility
+      recency_weight: yearWeight,
+      minutes_factor: inYearWeight,
+      combined_weight: finalWeight,
       competition_level_score: competitionLevelScore,
       position_stats_score: positionStatsScore,
       stat_breakdown: statBreakdown,
@@ -563,7 +616,7 @@ export function calculatePlayerRatingV2(input: RatingInputV2): RatingBreakdownV2
   }
   
   // Calculate final score
-  const totalWeight = competitionBreakdowns.reduce((sum, c) => sum + c.combined_weight, 0);
+  const totalWeight = competitionBreakdowns.reduce((sum, c) => sum + c.final_weight, 0);
   const totalContribution = competitionBreakdowns.reduce((sum, c) => sum + c.weighted_contribution, 0);
   
   const finalScore100 = totalWeight > 0 ? totalContribution / totalWeight : 50;
@@ -579,7 +632,7 @@ export function calculatePlayerRatingV2(input: RatingInputV2): RatingBreakdownV2
     age: input.age,
     total_matches: totalMatches,
     total_minutes: totalMinutes,
-    total_competitions: sortedCompetitions.length,
+    total_competitions: relevantCompetitions.length,
     competitions: competitionBreakdowns,
     final_score_100: Math.round(finalScore100 * 10) / 10,
     final_rating_0_5: clamp(finalRating05, 0, 5),
