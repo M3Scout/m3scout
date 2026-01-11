@@ -40,8 +40,11 @@ export function adaptAutoRatingDetailsToV2(details: unknown): RatingBreakdownV2 
   const competitions: CompetitionBreakdown[] = safeArray(d.competitions)
     .filter(Boolean)
     .map((c: any): CompetitionBreakdown => {
-      const combinedWeight = Number(c?.combined_weight) || 0;
-      const competitionScore = Number(c?.final_score) || 0;
+      // Support both old field names and new V2 field names
+      const yearWeight = Number(c?.year_weight ?? c?.recency_weight) || 0;
+      const inYearWeight = Number(c?.in_year_weight ?? c?.minutes_factor) || 0;
+      const finalWeight = Number(c?.final_weight ?? c?.combined_weight) || 0;
+      const competitionScore = Number(c?.final_score ?? c?.competition_score) || 0;
 
       return {
         competition_id: String(c?.competition_id ?? "unknown"),
@@ -57,9 +60,14 @@ export function adaptAutoRatingDetailsToV2(details: unknown): RatingBreakdownV2 
         tackles: Number(c?.tackles) || 0,
         interceptions: Number(c?.interceptions) || 0,
         recoveries: Number(c?.recoveries) || 0,
-        recency_weight: Number(c?.recency_weight) || 0,
-        minutes_factor: Number(c?.minutes_factor) || 0,
-        combined_weight: combinedWeight,
+        // V2 Year-based weighting fields
+        year_weight: yearWeight,
+        in_year_weight: inYearWeight,
+        final_weight: finalWeight,
+        // Legacy fields for UI compatibility
+        recency_weight: yearWeight,
+        minutes_factor: inYearWeight,
+        combined_weight: finalWeight,
         competition_level_score: Number(c?.competition_level_score) || 0,
         position_stats_score: Number(c?.position_stats_score) || 0,
         stat_breakdown: safeArray(c?.stat_breakdown)
@@ -74,7 +82,7 @@ export function adaptAutoRatingDetailsToV2(details: unknown): RatingBreakdownV2 
             available: Boolean(s?.available),
           })),
         competition_score: competitionScore,
-        weighted_contribution: competitionScore * combinedWeight,
+        weighted_contribution: competitionScore * finalWeight,
       };
     });
 
