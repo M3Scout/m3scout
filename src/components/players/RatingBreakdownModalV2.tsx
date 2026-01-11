@@ -42,6 +42,7 @@ import {
   getReliabilityVariantV2,
 } from "@/lib/playerRatingV2";
 import { formatFixed } from "@/lib/formatters";
+import { StatsRadarChart } from "./StatsRadarChart";
 
 interface RatingBreakdownModalV2Props {
   details: RatingBreakdownV2 | null;
@@ -458,12 +459,58 @@ export function RatingBreakdownModalV2({ details, rating, trigger }: RatingBreak
 
         <Separator />
 
-        <Tabs defaultValue="competitions" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs defaultValue="radar" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="radar">Radar</TabsTrigger>
             <TabsTrigger value="competitions">Competições</TabsTrigger>
-            <TabsTrigger value="weights">Pesos por Posição</TabsTrigger>
-            <TabsTrigger value="formula">Como Funciona</TabsTrigger>
+            <TabsTrigger value="weights">Pesos</TabsTrigger>
+            <TabsTrigger value="formula">Fórmula</TabsTrigger>
           </TabsList>
+
+          {/* Radar Tab */}
+          <TabsContent value="radar" className="mt-4">
+            {(() => {
+              // Aggregate all stat breakdowns from competitions
+              const allStats = safeArray(details?.competitions ?? []).flatMap(c => 
+                safeArray(c.stat_breakdown).filter(s => s.available)
+              );
+              
+              // Group and average by stat
+              const statMap = new Map<string, { total: number; count: number; label: string; weight: number }>();
+              allStats.forEach(s => {
+                const existing = statMap.get(s.stat);
+                if (existing) {
+                  existing.total += s.score;
+                  existing.count += 1;
+                } else {
+                  statMap.set(s.stat, { 
+                    total: s.score, 
+                    count: 1, 
+                    label: s.label,
+                    weight: s.adjusted_weight,
+                  });
+                }
+              });
+              
+              const aggregatedStats = Array.from(statMap.entries()).map(([stat, data]) => ({
+                stat,
+                label: data.label,
+                value: 0,
+                score: data.total / data.count,
+                weight: data.weight,
+                adjusted_weight: data.weight,
+                available: true,
+              }));
+              
+              return (
+                <StatsRadarChart
+                  statBreakdown={aggregatedStats}
+                  positionGroup={details.position_group}
+                  positionGroupLabel={details.position_group_label}
+                />
+              );
+            })()}
+          </TabsContent>
 
           {/* Competitions Tab */}
           <TabsContent value="competitions" className="space-y-3 mt-4">
