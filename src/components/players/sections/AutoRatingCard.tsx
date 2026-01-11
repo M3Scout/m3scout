@@ -2,57 +2,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Star, Clock, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatFixed } from "@/lib/formatters";
-import { RatingBreakdownModal } from "@/components/players/RatingBreakdownModal";
-
-interface RatingDetails {
-  calculated_at: string;
-  season_year: number;
-  position_group: string;
-  weights: {
-    competition: number;
-    production: number;
-    defensive: number;
-    discipline: number;
-    age: number;
-  };
-  scores: {
-    competition_level: number;
-    production: number;
-    defensive_actions: number;
-    discipline: number;
-    age_potential: number;
-    overall_0_100: number;
-    rating_0_5: number;
-  };
-  metrics: {
-    total_matches: number;
-    total_minutes: number;
-    max_competition_coefficient: number;
-    goals_per_90: number;
-    assists_per_90: number;
-    tackles_per_90: number;
-    interceptions_per_90: number;
-    recoveries_per_90: number;
-    cards_per_90: number;
-  };
-  per_competition: Array<{
-    competition_id: string;
-    competition_name: string;
-    final_coefficient: number;
-    matches: number;
-    minutes: number;
-    goals: number;
-    assists: number;
-    goals_per_90: number;
-    assists_per_90: number;
-  }>;
-  reliability: "low" | "medium" | "high";
-}
+import { RatingBreakdownModalV2 } from "@/components/players/RatingBreakdownModalV2";
+import { adaptAutoRatingDetailsToV2 } from "@/lib/autoRatingDetailsAdapter";
 
 interface AutoRatingCardProps {
   rating: number | null;
   updatedAt: string | null;
-  details?: RatingDetails | null;
+  details?: unknown;
 }
 
 function getRatingColor(rating: number): string {
@@ -70,6 +26,8 @@ function getRatingBgColor(rating: number): string {
 }
 
 export function AutoRatingCard({ rating, updatedAt, details }: AutoRatingCardProps) {
+  const breakdownDetails = adaptAutoRatingDetailsToV2(details);
+
   if (rating === null || rating === undefined) {
     return (
       <Card>
@@ -111,9 +69,9 @@ export function AutoRatingCard({ rating, updatedAt, details }: AutoRatingCardPro
             <Star className="w-5 h-5" />
             Nota Automática
           </CardTitle>
-          {details && (
-            <RatingBreakdownModal
-              details={details}
+          {breakdownDetails && (
+            <RatingBreakdownModalV2
+              details={breakdownDetails}
               rating={rating}
               trigger={
                 <button className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors">
