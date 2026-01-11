@@ -45,6 +45,7 @@ const TIER_COLORS: Record<string, string> = {
   A: "bg-primary/20 text-primary border-primary/50",
   B: "bg-emerald-500/20 text-emerald-400 border-emerald-500/50",
   C: "bg-muted text-muted-foreground border-border",
+  D: "bg-destructive/20 text-destructive border-destructive/50",
 };
 
 const CompetitionUsageWidget = () => {
