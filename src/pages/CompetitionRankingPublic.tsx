@@ -46,6 +46,7 @@ const TIER_COLORS: Record<string, string> = {
   A: "bg-primary/20 text-primary border-primary/50",
   B: "bg-emerald-500/20 text-emerald-400 border-emerald-500/50",
   C: "bg-muted text-muted-foreground border-border",
+  D: "bg-destructive/20 text-destructive border-destructive/50",
 };
 
 const COMPETITION_TYPES = [
@@ -143,13 +144,14 @@ const CompetitionRankingPublic = () => {
             <TooltipContent side="left" className="max-w-xs">
               <p className="font-semibold mb-1">Sistema de Tiers</p>
               <p className="text-sm text-muted-foreground mb-2">
-                Competições são classificadas automaticamente baseado no coeficiente de dificuldade.
+                Competições são classificadas automaticamente baseado no coeficiente final.
               </p>
-              <p className="text-sm">
-                <span className="text-amber-400 font-medium">S:</span> Elite |{" "}
-                <span className="text-primary font-medium">A:</span> Alto |{" "}
-                <span className="text-emerald-400 font-medium">B:</span> Médio |{" "}
-                <span className="text-muted-foreground font-medium">C:</span> Base
+              <p className="text-sm space-y-1">
+                <span className="block"><span className="text-amber-400 font-medium">S:</span> Elite (≥1.90)</span>
+                <span className="block"><span className="text-primary font-medium">A:</span> Alto (1.60-1.89)</span>
+                <span className="block"><span className="text-emerald-400 font-medium">B:</span> Médio (1.30-1.59)</span>
+                <span className="block"><span className="text-muted-foreground font-medium">C:</span> Base (1.00-1.29)</span>
+                <span className="block"><span className="text-destructive font-medium">D:</span> Inferior (&lt;1.00)</span>
               </p>
             </TooltipContent>
           </Tooltip>
@@ -226,6 +228,7 @@ const CompetitionRankingPublic = () => {
                   <SelectItem value="A">Tier A</SelectItem>
                   <SelectItem value="B">Tier B</SelectItem>
                   <SelectItem value="C">Tier C</SelectItem>
+                  <SelectItem value="D">Tier D</SelectItem>
                 </SelectContent>
               </Select>
             </div>
