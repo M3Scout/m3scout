@@ -296,9 +296,9 @@ const Competitions = () => {
   const validateForm = (): string | null => {
     if (!formData.name.trim()) return "Nome é obrigatório";
     
-    // base_coefficient range: 0.05 – 2.50
-    if (formData.base_coefficient < 0.05 || formData.base_coefficient > 2.50) {
-      return "Coeficiente base deve estar entre 0.05 e 2.50";
+    // base_coefficient range: 0.05 – 5.00
+    if (formData.base_coefficient < 0.05 || formData.base_coefficient > 5.00) {
+      return "Coeficiente base deve estar entre 0.05 e 5.00";
     }
     
     // visibility_score range: 0 – 100
@@ -1132,13 +1132,13 @@ const Competitions = () => {
                   type="number"
                   step="0.05"
                   min="0.05"
-                  max="2.50"
+                  max="5.00"
                   value={formData.base_coefficient}
                   onChange={(e) => setFormData({ ...formData, base_coefficient: parseFloat(e.target.value) || 1.0 })}
-                  placeholder="0.05 - 2.50"
+                  placeholder="0.05 - 5.00"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Define a força da competição (0.05 - 2.50)
+                  Define a força da competição (0.05 – 5.00)
                 </p>
               </div>
 
