@@ -1,4 +1,4 @@
-import { HeroSection } from "@/components/home/HeroSection";
+import { HeaderHero } from "@/components/home/HeaderHero";
 import { FeaturedPlayers } from "@/components/home/FeaturedPlayers";
 import { AboutSection } from "@/components/home/AboutSection";
 import { CTASection } from "@/components/home/CTASection";
@@ -6,7 +6,7 @@ import { CTASection } from "@/components/home/CTASection";
 const Index = () => {
   return (
     <>
-      <HeroSection />
+      <HeaderHero />
       <FeaturedPlayers />
       <AboutSection />
       <CTASection />
