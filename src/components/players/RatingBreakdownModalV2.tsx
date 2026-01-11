@@ -13,6 +13,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Info,
   Trophy,
   Target,
@@ -26,6 +32,7 @@ import {
   ChevronUp,
   Percent,
   Activity,
+  HelpCircle,
 } from "lucide-react";
 import { cn, safeArray } from "@/lib/utils";
 import {
@@ -54,6 +61,62 @@ function getScoreBarColor(score: number): string {
   if (score >= 60) return "bg-primary";
   if (score >= 40) return "bg-amber-500";
   return "bg-destructive";
+}
+
+function getScoreLevel(score: number): { label: string; description: string } {
+  if (score >= 80) return { label: "Alto", description: "Desempenho excelente nesta métrica" };
+  if (score >= 60) return { label: "Bom", description: "Desempenho acima da média" };
+  if (score >= 40) return { label: "Médio", description: "Desempenho dentro da média" };
+  return { label: "Baixo", description: "Área de melhoria identificada" };
+}
+
+// Stat group descriptions for tooltips
+const STAT_DESCRIPTIONS: Record<string, string> = {
+  minutes_games: "Regularidade e tempo de jogo. Quanto mais minutos, maior a consistência.",
+  goals_per_90: "Eficiência ofensiva. Média de gols marcados a cada 90 minutos.",
+  ga_per_90: "Participações diretas em gol (G+A) por 90 minutos. Mede impacto ofensivo total.",
+  tackles: "Capacidade defensiva. Desarmes bem-sucedidos por 90 minutos.",
+  interceptions: "Leitura de jogo. Interceptações realizadas por 90 minutos.",
+  recoveries: "Recuperações de bola. Indica pressão e intensidade defensiva.",
+  discipline: "Cartões por 90 min. Menor = melhor. Vermelho conta 3x amarelo.",
+  saves: "Defesas realizadas pelo goleiro. Total de finalizações defendidas.",
+  goals_conceded: "Gols sofridos. Menor = melhor. Indica solidez defensiva.",
+  errors: "Erros que resultaram em gol. Menor = melhor.",
+  accurate_passes: "Passes certos totais. Indica qualidade na construção.",
+  aerial_duels: "Duelos aéreos vencidos. Importante para saídas e cruzamentos.",
+  duels_won: "Duelos vencidos no geral (aéreos + chão).",
+  key_passes: "Passes decisivos que criaram chances de gol.",
+  chances_created: "Oportunidades de gol criadas para companheiros.",
+  shots: "Finalizações por 90 minutos. Indica presença ofensiva.",
+  shots_on_target: "Finalizações no gol por 90 min. Mede precisão.",
+  pass_accuracy: "Percentual de passes certos. Indica qualidade técnica.",
+  penalties_saved: "Pênaltis defendidos. Métrica específica de goleiros.",
+  offensive_involvement: "Envolvimento em jogadas ofensivas (gols + assists + finalizações).",
+  key_pass_accuracy: "Precisão em passes decisivos.",
+};
+
+function StatScoreLegend() {
+  return (
+    <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mb-3 p-2 bg-muted/30 rounded-md">
+      <span className="font-medium">Legenda:</span>
+      <div className="flex items-center gap-1">
+        <div className="w-3 h-3 rounded-full bg-emerald-500" />
+        <span>Alto (80+)</span>
+      </div>
+      <div className="flex items-center gap-1">
+        <div className="w-3 h-3 rounded-full bg-primary" />
+        <span>Bom (60-79)</span>
+      </div>
+      <div className="flex items-center gap-1">
+        <div className="w-3 h-3 rounded-full bg-amber-500" />
+        <span>Médio (40-59)</span>
+      </div>
+      <div className="flex items-center gap-1">
+        <div className="w-3 h-3 rounded-full bg-destructive" />
+        <span>Baixo (&lt;40)</span>
+      </div>
+    </div>
+  );
 }
 
 function StatBreakdownCard({ 
@@ -125,33 +188,101 @@ function StatBreakdownCard({
           <Separator />
           
           {/* Stats breakdown */}
-          <div className="space-y-2">
-            <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-              <Activity className="w-3 h-3" />
-              Estatísticas por Posição (peso ajustado)
-            </p>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                <Activity className="w-3 h-3" />
+                Estatísticas por Posição (peso ajustado)
+              </p>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent side="left" className="max-w-xs">
+                    <p className="text-xs">
+                      Cada estatística tem um peso diferente baseado na posição do jogador. 
+                      A nota final considera apenas estatísticas disponíveis, redistribuindo os pesos.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             
-            {safeArray(availableStats).map((stat) => (
-              <div key={stat.stat} className="space-y-1">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">
-                    {stat.label}
-                    <span className="text-muted-foreground/60 ml-1">
-                      ({formatFixed(stat.adjusted_weight, 0)}%)
-                    </span>
-                  </span>
-                  <span className={cn("font-medium", getScoreColor(stat.score))}>
-                    {formatFixed(stat.score, 0)}
-                  </span>
-                </div>
-                <div className="relative h-1.5 rounded-full bg-secondary overflow-hidden">
-                  <div
-                    className={cn("absolute inset-y-0 left-0 rounded-full", getScoreBarColor(stat.score))}
-                    style={{ width: `${stat.score}%` }}
-                  />
-                </div>
-              </div>
-            ))}
+            {/* Color Legend */}
+            <StatScoreLegend />
+            
+            {/* Stats bars with tooltips */}
+            <TooltipProvider delayDuration={200}>
+              {safeArray(availableStats).map((stat) => {
+                const scoreLevel = getScoreLevel(stat.score);
+                const description = STAT_DESCRIPTIONS[stat.stat] || "Estatística de desempenho do jogador.";
+                
+                return (
+                  <Tooltip key={stat.stat}>
+                    <TooltipTrigger asChild>
+                      <div className="space-y-1 cursor-help hover:bg-muted/30 rounded-md p-1.5 -mx-1.5 transition-colors">
+                        <div className="flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-medium text-foreground">
+                              {stat.label}
+                            </span>
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
+                              {formatFixed(stat.adjusted_weight, 0)}%
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={cn("font-semibold tabular-nums", getScoreColor(stat.score))}>
+                              {formatFixed(stat.score, 0)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="relative h-2 rounded-full bg-secondary overflow-hidden">
+                          <div
+                            className={cn("absolute inset-y-0 left-0 rounded-full transition-all", getScoreBarColor(stat.score))}
+                            style={{ width: `${stat.score}%` }}
+                          />
+                        </div>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs">
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="font-medium">{stat.label}</span>
+                          <Badge 
+                            variant="outline" 
+                            className={cn(
+                              "text-xs",
+                              stat.score >= 80 && "border-emerald-500 text-emerald-500",
+                              stat.score >= 60 && stat.score < 80 && "border-primary text-primary",
+                              stat.score >= 40 && stat.score < 60 && "border-amber-500 text-amber-500",
+                              stat.score < 40 && "border-destructive text-destructive"
+                            )}
+                          >
+                            {scoreLevel.label}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{description}</p>
+                        <div className="text-xs pt-1 border-t border-border/50">
+                          <span className="text-muted-foreground">Nota: </span>
+                          <span className={cn("font-semibold", getScoreColor(stat.score))}>
+                            {formatFixed(stat.score, 0)}/100
+                          </span>
+                          <span className="text-muted-foreground"> · Peso: </span>
+                          <span className="font-medium">{formatFixed(stat.adjusted_weight, 0)}%</span>
+                        </div>
+                        {stat.score < 40 && (
+                          <p className="text-xs text-destructive/80 pt-1 flex items-center gap-1">
+                            <AlertTriangle className="w-3 h-3" />
+                            Área de atenção que pode ser melhorada
+                          </p>
+                        )}
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              })}
+            </TooltipProvider>
             
             {(unavailableStats?.length ?? 0) > 0 && (
               <div className="mt-3 pt-2 border-t border-border/50">
@@ -160,9 +291,18 @@ function StatBreakdownCard({
                 </p>
                 <div className="flex flex-wrap gap-1">
                   {safeArray(unavailableStats).map((stat) => (
-                    <Badge key={stat.stat} variant="secondary" className="text-xs opacity-60">
-                      {stat.label}
-                    </Badge>
+                    <TooltipProvider key={stat.stat}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Badge variant="secondary" className="text-xs opacity-60 cursor-help">
+                            {stat.label}
+                          </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="text-xs">{STAT_DESCRIPTIONS[stat.stat] || "Estatística não registrada para esta competição."}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   ))}
                 </div>
               </div>
