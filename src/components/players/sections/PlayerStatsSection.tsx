@@ -58,6 +58,7 @@ import {
   type PlayerStats,
   type AggregatedStats,
 } from "@/lib/playerStats";
+import { isGoalkeeper } from "@/lib/positionUtils";
 
 interface Competition {
   id: string;
@@ -67,6 +68,7 @@ interface Competition {
 
 interface PlayerStatsSectionProps {
   playerId: string;
+  playerPosition?: string;
   onStatsChange?: () => void;
 }
 
@@ -80,9 +82,10 @@ interface StatsWithCompetition extends PlayerStats {
 const currentYear = new Date().getFullYear();
 const seasonOptions = Array.from({ length: 10 }, (_, i) => currentYear - i);
 
-export function PlayerStatsSection({ playerId, onStatsChange }: PlayerStatsSectionProps) {
+export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: PlayerStatsSectionProps) {
   const { isAdmin, isScout } = useAuth();
   const canEdit = isAdmin || isScout;
+  const isGK = isGoalkeeper(playerPosition);
 
   const [stats, setStats] = useState<StatsWithCompetition[]>([]);
   const [competitions, setCompetitions] = useState<Competition[]>([]);
@@ -93,7 +96,7 @@ export function PlayerStatsSection({ playerId, onStatsChange }: PlayerStatsSecti
   const [selectedStats, setSelectedStats] = useState<StatsWithCompetition | null>(null);
   const [statsToDelete, setStatsToDelete] = useState<string | null>(null);
 
-  // Form state
+  // Form state - includes goalkeeper stats
   const [formData, setFormData] = useState({
     season_year: currentYear,
     competition_id: "",
@@ -106,6 +109,12 @@ export function PlayerStatsSection({ playerId, onStatsChange }: PlayerStatsSecti
     tackles: 0,
     interceptions: 0,
     recoveries: 0,
+    // Goalkeeper-specific stats
+    saves: 0,
+    goals_conceded: 0,
+    clean_sheets: 0,
+    penalties_saved: 0,
+    errors_leading_to_goal: 0,
   });
 
   useEffect(() => {
@@ -143,6 +152,12 @@ export function PlayerStatsSection({ playerId, onStatsChange }: PlayerStatsSecti
       tackles: 0,
       interceptions: 0,
       recoveries: 0,
+      // Goalkeeper-specific stats
+      saves: 0,
+      goals_conceded: 0,
+      clean_sheets: 0,
+      penalties_saved: 0,
+      errors_leading_to_goal: 0,
     });
     setSelectedStats(null);
   };
@@ -162,6 +177,12 @@ export function PlayerStatsSection({ playerId, onStatsChange }: PlayerStatsSecti
         tackles: stat.tackles,
         interceptions: stat.interceptions,
         recoveries: stat.recoveries,
+        // Goalkeeper-specific stats
+        saves: stat.saves || 0,
+        goals_conceded: stat.goals_conceded || 0,
+        clean_sheets: stat.clean_sheets || 0,
+        penalties_saved: stat.penalties_saved || 0,
+        errors_leading_to_goal: stat.errors_leading_to_goal || 0,
       });
     } else {
       resetForm();
@@ -187,7 +208,7 @@ export function PlayerStatsSection({ playerId, onStatsChange }: PlayerStatsSecti
     const { data, error } = await upsertPlayerStats({
       player_id: playerId,
       season_year: formData.season_year,
-      competition_id: formData.competition_id, // Now validated as required
+      competition_id: formData.competition_id,
       matches: formData.matches,
       minutes: formData.minutes,
       goals: formData.goals,
@@ -197,6 +218,12 @@ export function PlayerStatsSection({ playerId, onStatsChange }: PlayerStatsSecti
       tackles: formData.tackles,
       interceptions: formData.interceptions,
       recoveries: formData.recoveries,
+      // Goalkeeper-specific stats
+      saves: formData.saves,
+      goals_conceded: formData.goals_conceded,
+      clean_sheets: formData.clean_sheets,
+      penalties_saved: formData.penalties_saved,
+      errors_leading_to_goal: formData.errors_leading_to_goal,
     });
 
     setSaving(false);
@@ -434,6 +461,63 @@ export function PlayerStatsSection({ playerId, onStatsChange }: PlayerStatsSecti
                     </div>
                   </div>
 
+                  {/* Goalkeeper-specific Stats */}
+                  {isGK && (
+                    <div className="space-y-4 p-4 bg-primary/5 rounded-lg border border-primary/20">
+                      <h4 className="font-medium flex items-center gap-2 text-primary">
+                        <Shield className="w-4 h-4" />
+                        Estatísticas de Goleiro
+                      </h4>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <Label>Defesas</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            value={formData.saves}
+                            onChange={(e) => handleInputChange("saves", parseInt(e.target.value) || 0)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Gols Sofridos</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            value={formData.goals_conceded}
+                            onChange={(e) => handleInputChange("goals_conceded", parseInt(e.target.value) || 0)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Clean Sheets</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            value={formData.clean_sheets}
+                            onChange={(e) => handleInputChange("clean_sheets", parseInt(e.target.value) || 0)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Pênaltis Defendidos</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            value={formData.penalties_saved}
+                            onChange={(e) => handleInputChange("penalties_saved", parseInt(e.target.value) || 0)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Erros p/ Gol</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            value={formData.errors_leading_to_goal}
+                            onChange={(e) => handleInputChange("errors_leading_to_goal", parseInt(e.target.value) || 0)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Actions */}
                   <div className="flex justify-end gap-3">
                     <Button
@@ -479,20 +563,32 @@ export function PlayerStatsSection({ playerId, onStatsChange }: PlayerStatsSecti
                       ({safeArray(statsBySeason[season]).length} competição{safeArray(statsBySeason[season]).length > 1 ? "ões" : ""})
                     </span>
                   </h4>
-                  <div className="border rounded-lg overflow-hidden">
+                  <div className="border rounded-lg overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow>
                           <TableHead>Competição</TableHead>
                           <TableHead className="text-center">J</TableHead>
                           <TableHead className="text-center">Min</TableHead>
-                          <TableHead className="text-center">G</TableHead>
-                          <TableHead className="text-center">A</TableHead>
-                          <TableHead className="text-center">🟨</TableHead>
-                          <TableHead className="text-center">🟥</TableHead>
-                          <TableHead className="text-center">Des</TableHead>
-                          <TableHead className="text-center">Int</TableHead>
-                          <TableHead className="text-center">Rec</TableHead>
+                          {isGK ? (
+                            <>
+                              <TableHead className="text-center">Def</TableHead>
+                              <TableHead className="text-center">GS</TableHead>
+                              <TableHead className="text-center">CS</TableHead>
+                              <TableHead className="text-center">PD</TableHead>
+                              <TableHead className="text-center">Err</TableHead>
+                            </>
+                          ) : (
+                            <>
+                              <TableHead className="text-center">G</TableHead>
+                              <TableHead className="text-center">A</TableHead>
+                              <TableHead className="text-center">🟨</TableHead>
+                              <TableHead className="text-center">🟥</TableHead>
+                              <TableHead className="text-center">Des</TableHead>
+                              <TableHead className="text-center">Int</TableHead>
+                              <TableHead className="text-center">Rec</TableHead>
+                            </>
+                          )}
                           {canEdit && <TableHead className="w-20"></TableHead>}
                         </TableRow>
                       </TableHeader>
@@ -504,15 +600,29 @@ export function PlayerStatsSection({ playerId, onStatsChange }: PlayerStatsSecti
                             </TableCell>
                             <TableCell className="text-center">{stat.matches}</TableCell>
                             <TableCell className="text-center">{stat.minutes}</TableCell>
-                            <TableCell className="text-center font-semibold text-primary">
-                              {stat.goals}
-                            </TableCell>
-                            <TableCell className="text-center">{stat.assists}</TableCell>
-                            <TableCell className="text-center">{stat.yellow_cards}</TableCell>
-                            <TableCell className="text-center">{stat.red_cards}</TableCell>
-                            <TableCell className="text-center">{stat.tackles}</TableCell>
-                            <TableCell className="text-center">{stat.interceptions}</TableCell>
-                            <TableCell className="text-center">{stat.recoveries}</TableCell>
+                            {isGK ? (
+                              <>
+                                <TableCell className="text-center font-semibold text-primary">
+                                  {stat.saves || 0}
+                                </TableCell>
+                                <TableCell className="text-center">{stat.goals_conceded || 0}</TableCell>
+                                <TableCell className="text-center text-emerald-500">{stat.clean_sheets || 0}</TableCell>
+                                <TableCell className="text-center">{stat.penalties_saved || 0}</TableCell>
+                                <TableCell className="text-center text-destructive">{stat.errors_leading_to_goal || 0}</TableCell>
+                              </>
+                            ) : (
+                              <>
+                                <TableCell className="text-center font-semibold text-primary">
+                                  {stat.goals}
+                                </TableCell>
+                                <TableCell className="text-center">{stat.assists}</TableCell>
+                                <TableCell className="text-center">{stat.yellow_cards}</TableCell>
+                                <TableCell className="text-center">{stat.red_cards}</TableCell>
+                                <TableCell className="text-center">{stat.tackles}</TableCell>
+                                <TableCell className="text-center">{stat.interceptions}</TableCell>
+                                <TableCell className="text-center">{stat.recoveries}</TableCell>
+                              </>
+                            )}
                             {canEdit && (
                               <TableCell>
                                 <div className="flex gap-1">
@@ -549,27 +659,49 @@ export function PlayerStatsSection({ playerId, onStatsChange }: PlayerStatsSecti
                           <TableCell className="text-center">
                             {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.minutes || 0), 0)}
                           </TableCell>
-                          <TableCell className="text-center text-primary">
-                            {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.goals || 0), 0)}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.assists || 0), 0)}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.yellow_cards || 0), 0)}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.red_cards || 0), 0)}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.tackles || 0), 0)}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.interceptions || 0), 0)}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.recoveries || 0), 0)}
-                          </TableCell>
+                          {isGK ? (
+                            <>
+                              <TableCell className="text-center text-primary">
+                                {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.saves || 0), 0)}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.goals_conceded || 0), 0)}
+                              </TableCell>
+                              <TableCell className="text-center text-emerald-500">
+                                {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.clean_sheets || 0), 0)}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.penalties_saved || 0), 0)}
+                              </TableCell>
+                              <TableCell className="text-center text-destructive">
+                                {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.errors_leading_to_goal || 0), 0)}
+                              </TableCell>
+                            </>
+                          ) : (
+                            <>
+                              <TableCell className="text-center text-primary">
+                                {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.goals || 0), 0)}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.assists || 0), 0)}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.yellow_cards || 0), 0)}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.red_cards || 0), 0)}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.tackles || 0), 0)}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.interceptions || 0), 0)}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.recoveries || 0), 0)}
+                              </TableCell>
+                            </>
+                          )}
                           {canEdit && <TableCell></TableCell>}
                         </TableRow>
                       </TableBody>

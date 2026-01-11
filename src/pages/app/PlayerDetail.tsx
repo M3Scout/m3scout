@@ -513,7 +513,8 @@ const PlayerDetail = () => {
         {/* Stats Tab */}
         <TabsContent value="stats">
           <PlayerStatsSection 
-            playerId={player.id} 
+            playerId={player.id}
+            playerPosition={player.position}
             onStatsChange={refetchPlayer}
           />
         </TabsContent>
