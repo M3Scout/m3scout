@@ -171,12 +171,23 @@ export function PlayerStatsSection({ playerId, onStatsChange }: PlayerStatsSecti
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate required fields
+    if (!formData.season_year || formData.season_year < 1900) {
+      toast.error("Temporada inválida", { description: "Por favor, informe um ano de temporada válido." });
+      return;
+    }
+    if (!formData.competition_id) {
+      toast.error("Competição obrigatória", { description: "Por favor, selecione uma competição." });
+      return;
+    }
+
     setSaving(true);
 
     const { data, error } = await upsertPlayerStats({
       player_id: playerId,
       season_year: formData.season_year,
-      competition_id: formData.competition_id || null,
+      competition_id: formData.competition_id, // Now validated as required
       matches: formData.matches,
       minutes: formData.minutes,
       goals: formData.goals,
@@ -291,13 +302,14 @@ export function PlayerStatsSection({ playerId, onStatsChange }: PlayerStatsSecti
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label>Competição</Label>
+                      <Label>Competição *</Label>
                       <Select
                         value={formData.competition_id}
                         onValueChange={(v) => handleInputChange("competition_id", v)}
+                        required
                       >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione..." />
+                        <SelectTrigger className={!formData.competition_id ? "border-destructive/50" : ""}>
+                          <SelectValue placeholder="Selecione uma competição..." />
                         </SelectTrigger>
                         <SelectContent>
                           {safeArray(competitions).map((comp) => (
@@ -307,6 +319,9 @@ export function PlayerStatsSection({ playerId, onStatsChange }: PlayerStatsSecti
                           ))}
                         </SelectContent>
                       </Select>
+                      {!formData.competition_id && (
+                        <p className="text-xs text-destructive">Competição é obrigatória</p>
+                      )}
                     </div>
                   </div>
 

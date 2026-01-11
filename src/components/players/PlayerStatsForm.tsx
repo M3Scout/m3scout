@@ -171,13 +171,25 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
   };
 
   const saveStats = async () => {
+    // Validate all stats before saving
+    for (const stat of stats) {
+      if (!stat.season_year || stat.season_year < 1900) {
+        toast.error("Temporada inválida", { description: "Por favor, informe um ano de temporada válido." });
+        return;
+      }
+      if (!stat.competition_id) {
+        toast.error("Competição obrigatória", { description: "Por favor, selecione uma competição para cada registro de estatísticas." });
+        return;
+      }
+    }
+
     setSaving(true);
     try {
       for (const stat of stats) {
         const data = {
           player_id: playerId,
           season_year: stat.season_year,
-          competition_id: stat.competition_id || null,
+          competition_id: stat.competition_id, // Already validated as required
           matches: stat.matches,
           minutes: stat.minutes,
           goals: stat.goals,
@@ -327,12 +339,14 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
                         />
                       </div>
                       <div className="space-y-1 sm:col-span-3">
-                        <Label className="text-xs">Competição</Label>
+                        <Label className="text-xs">Competição *</Label>
                         <Select 
                           value={stat.competition_id || ""} 
                           onValueChange={(val) => updateStatField(stat.id, "competition_id", val || null)}
                         >
-                          <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                          <SelectTrigger className={!stat.competition_id ? "border-destructive/50" : ""}>
+                            <SelectValue placeholder="Selecione uma competição..." />
+                          </SelectTrigger>
                           <SelectContent>
                             {safeArray(competitions).map(c => (
                               <SelectItem key={c.id} value={c.id}>
@@ -341,6 +355,9 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
                             ))}
                           </SelectContent>
                         </Select>
+                        {!stat.competition_id && (
+                          <p className="text-xs text-destructive">Competição é obrigatória</p>
+                        )}
                       </div>
                     </div>
 
