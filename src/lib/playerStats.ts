@@ -22,22 +22,44 @@ export interface PlayerStats {
   tackles: number;
   interceptions: number;
   recoveries: number;
+  clearances: number;
   // Goalkeeper-specific stats
   saves: number;
+  saves_inside_box: number;
   goals_conceded: number;
   clean_sheets: number;
   penalties_saved: number;
   errors_leading_to_goal: number;
-  // Additional stats
-  aerial_duels_won: number;
+  punches: number;
+  successful_runs_out: number;
+  total_runs_out: number;
+  high_claims: number;
+  // Passing stats
   accurate_passes: number;
   total_passes: number;
-  duels_won: number;
-  total_duels: number;
-  chances_created: number;
   key_passes: number;
+  chances_created: number;
+  long_passes_accurate: number;
+  long_passes_total: number;
+  // Shooting stats
   shots: number;
   shots_on_target: number;
+  shots_blocked: number;
+  offsides: number;
+  // Duel stats
+  duels_won: number;
+  total_duels: number;
+  aerial_duels_won: number;
+  aerial_duels_total: number;
+  ground_duels_won: number;
+  ground_duels_total: number;
+  // Ball control & discipline
+  successful_dribbles: number;
+  total_dribbles: number;
+  possession_lost: number;
+  fouls_drawn: number;
+  fouls_committed: number;
+  times_dribbled_past: number;
   // Metadata
   created_at: string;
   updated_at: string;
@@ -58,22 +80,44 @@ export interface PlayerStatsInput {
   tackles?: number;
   interceptions?: number;
   recoveries?: number;
+  clearances?: number;
   // Goalkeeper-specific stats
   saves?: number;
+  saves_inside_box?: number;
   goals_conceded?: number;
   clean_sheets?: number;
   penalties_saved?: number;
   errors_leading_to_goal?: number;
-  // Additional stats
-  aerial_duels_won?: number;
+  punches?: number;
+  successful_runs_out?: number;
+  total_runs_out?: number;
+  high_claims?: number;
+  // Passing stats
   accurate_passes?: number;
   total_passes?: number;
-  duels_won?: number;
-  total_duels?: number;
-  chances_created?: number;
   key_passes?: number;
+  chances_created?: number;
+  long_passes_accurate?: number;
+  long_passes_total?: number;
+  // Shooting stats
   shots?: number;
   shots_on_target?: number;
+  shots_blocked?: number;
+  offsides?: number;
+  // Duel stats
+  duels_won?: number;
+  total_duels?: number;
+  aerial_duels_won?: number;
+  aerial_duels_total?: number;
+  ground_duels_won?: number;
+  ground_duels_total?: number;
+  // Ball control & discipline
+  successful_dribbles?: number;
+  total_dribbles?: number;
+  possession_lost?: number;
+  fouls_drawn?: number;
+  fouls_committed?: number;
+  times_dribbled_past?: number;
 }
 
 export interface AggregatedStats {
@@ -89,22 +133,44 @@ export interface AggregatedStats {
   total_tackles: number;
   total_interceptions: number;
   total_recoveries: number;
+  total_clearances: number;
   // Goalkeeper-specific stats
   total_saves: number;
+  total_saves_inside_box: number;
   total_goals_conceded: number;
   total_clean_sheets: number;
   total_penalties_saved: number;
   total_errors_leading_to_goal: number;
-  // Additional stats
-  total_aerial_duels_won: number;
+  total_punches: number;
+  total_successful_runs_out: number;
+  total_runs_out: number;
+  total_high_claims: number;
+  // Passing stats
   total_accurate_passes: number;
   total_passes: number;
-  total_duels_won: number;
-  total_duels: number;
-  total_chances_created: number;
   total_key_passes: number;
+  total_chances_created: number;
+  total_long_passes_accurate: number;
+  total_long_passes: number;
+  // Shooting stats
   total_shots: number;
   total_shots_on_target: number;
+  total_shots_blocked: number;
+  total_offsides: number;
+  // Duel stats
+  total_duels_won: number;
+  total_duels: number;
+  total_aerial_duels_won: number;
+  total_aerial_duels: number;
+  total_ground_duels_won: number;
+  total_ground_duels: number;
+  // Ball control & discipline
+  total_successful_dribbles: number;
+  total_dribbles: number;
+  total_possession_lost: number;
+  total_fouls_drawn: number;
+  total_fouls_committed: number;
+  total_times_dribbled_past: number;
   // Metadata
   competitions_count: number;
 }
@@ -253,22 +319,44 @@ export async function getAggregatedPlayerStats(
       total_tackles: data.reduce((sum, s) => sum + (s.tackles || 0), 0),
       total_interceptions: data.reduce((sum, s) => sum + (s.interceptions || 0), 0),
       total_recoveries: data.reduce((sum, s) => sum + (s.recoveries || 0), 0),
+      total_clearances: data.reduce((sum, s) => sum + (s.clearances || 0), 0),
       // Goalkeeper-specific stats
       total_saves: data.reduce((sum, s) => sum + (s.saves || 0), 0),
+      total_saves_inside_box: data.reduce((sum, s) => sum + (s.saves_inside_box || 0), 0),
       total_goals_conceded: data.reduce((sum, s) => sum + (s.goals_conceded || 0), 0),
       total_clean_sheets: data.reduce((sum, s) => sum + (s.clean_sheets || 0), 0),
       total_penalties_saved: data.reduce((sum, s) => sum + (s.penalties_saved || 0), 0),
       total_errors_leading_to_goal: data.reduce((sum, s) => sum + (s.errors_leading_to_goal || 0), 0),
-      // Additional stats
-      total_aerial_duels_won: data.reduce((sum, s) => sum + (s.aerial_duels_won || 0), 0),
+      total_punches: data.reduce((sum, s) => sum + (s.punches || 0), 0),
+      total_successful_runs_out: data.reduce((sum, s) => sum + (s.successful_runs_out || 0), 0),
+      total_runs_out: data.reduce((sum, s) => sum + (s.total_runs_out || 0), 0),
+      total_high_claims: data.reduce((sum, s) => sum + (s.high_claims || 0), 0),
+      // Passing stats
       total_accurate_passes: data.reduce((sum, s) => sum + (s.accurate_passes || 0), 0),
       total_passes: data.reduce((sum, s) => sum + (s.total_passes || 0), 0),
-      total_duels_won: data.reduce((sum, s) => sum + (s.duels_won || 0), 0),
-      total_duels: data.reduce((sum, s) => sum + (s.total_duels || 0), 0),
-      total_chances_created: data.reduce((sum, s) => sum + (s.chances_created || 0), 0),
       total_key_passes: data.reduce((sum, s) => sum + (s.key_passes || 0), 0),
+      total_chances_created: data.reduce((sum, s) => sum + (s.chances_created || 0), 0),
+      total_long_passes_accurate: data.reduce((sum, s) => sum + (s.long_passes_accurate || 0), 0),
+      total_long_passes: data.reduce((sum, s) => sum + (s.long_passes_total || 0), 0),
+      // Shooting stats
       total_shots: data.reduce((sum, s) => sum + (s.shots || 0), 0),
       total_shots_on_target: data.reduce((sum, s) => sum + (s.shots_on_target || 0), 0),
+      total_shots_blocked: data.reduce((sum, s) => sum + (s.shots_blocked || 0), 0),
+      total_offsides: data.reduce((sum, s) => sum + (s.offsides || 0), 0),
+      // Duel stats
+      total_duels_won: data.reduce((sum, s) => sum + (s.duels_won || 0), 0),
+      total_duels: data.reduce((sum, s) => sum + (s.total_duels || 0), 0),
+      total_aerial_duels_won: data.reduce((sum, s) => sum + (s.aerial_duels_won || 0), 0),
+      total_aerial_duels: data.reduce((sum, s) => sum + (s.aerial_duels_total || 0), 0),
+      total_ground_duels_won: data.reduce((sum, s) => sum + (s.ground_duels_won || 0), 0),
+      total_ground_duels: data.reduce((sum, s) => sum + (s.ground_duels_total || 0), 0),
+      // Ball control & discipline
+      total_successful_dribbles: data.reduce((sum, s) => sum + (s.successful_dribbles || 0), 0),
+      total_dribbles: data.reduce((sum, s) => sum + (s.total_dribbles || 0), 0),
+      total_possession_lost: data.reduce((sum, s) => sum + (s.possession_lost || 0), 0),
+      total_fouls_drawn: data.reduce((sum, s) => sum + (s.fouls_drawn || 0), 0),
+      total_fouls_committed: data.reduce((sum, s) => sum + (s.fouls_committed || 0), 0),
+      total_times_dribbled_past: data.reduce((sum, s) => sum + (s.times_dribbled_past || 0), 0),
       // Metadata
       competitions_count: data.length,
     };
@@ -285,29 +373,56 @@ export async function getAggregatedPlayerStats(
 function createEmptyAggregatedStats(seasonYear: number): AggregatedStats {
   return {
     season_year: seasonYear,
+    // General stats
     total_matches: 0,
     total_minutes: 0,
     total_goals: 0,
     total_assists: 0,
     total_yellow_cards: 0,
     total_red_cards: 0,
+    // Defensive stats
     total_tackles: 0,
     total_interceptions: 0,
     total_recoveries: 0,
+    total_clearances: 0,
+    // Goalkeeper-specific stats
     total_saves: 0,
+    total_saves_inside_box: 0,
     total_goals_conceded: 0,
     total_clean_sheets: 0,
     total_penalties_saved: 0,
     total_errors_leading_to_goal: 0,
-    total_aerial_duels_won: 0,
+    total_punches: 0,
+    total_successful_runs_out: 0,
+    total_runs_out: 0,
+    total_high_claims: 0,
+    // Passing stats
     total_accurate_passes: 0,
     total_passes: 0,
-    total_duels_won: 0,
-    total_duels: 0,
-    total_chances_created: 0,
     total_key_passes: 0,
+    total_chances_created: 0,
+    total_long_passes_accurate: 0,
+    total_long_passes: 0,
+    // Shooting stats
     total_shots: 0,
     total_shots_on_target: 0,
+    total_shots_blocked: 0,
+    total_offsides: 0,
+    // Duel stats
+    total_duels_won: 0,
+    total_duels: 0,
+    total_aerial_duels_won: 0,
+    total_aerial_duels: 0,
+    total_ground_duels_won: 0,
+    total_ground_duels: 0,
+    // Ball control & discipline
+    total_successful_dribbles: 0,
+    total_dribbles: 0,
+    total_possession_lost: 0,
+    total_fouls_drawn: 0,
+    total_fouls_committed: 0,
+    total_times_dribbled_past: 0,
+    // Metadata
     competitions_count: 0,
   };
 }
@@ -382,22 +497,44 @@ export async function getCareerAggregatedStats(
           total_tackles: stats.reduce((sum, s) => sum + (s.tackles || 0), 0),
           total_interceptions: stats.reduce((sum, s) => sum + (s.interceptions || 0), 0),
           total_recoveries: stats.reduce((sum, s) => sum + (s.recoveries || 0), 0),
+          total_clearances: stats.reduce((sum, s) => sum + (s.clearances || 0), 0),
           // Goalkeeper-specific stats
           total_saves: stats.reduce((sum, s) => sum + (s.saves || 0), 0),
+          total_saves_inside_box: stats.reduce((sum, s) => sum + (s.saves_inside_box || 0), 0),
           total_goals_conceded: stats.reduce((sum, s) => sum + (s.goals_conceded || 0), 0),
           total_clean_sheets: stats.reduce((sum, s) => sum + (s.clean_sheets || 0), 0),
           total_penalties_saved: stats.reduce((sum, s) => sum + (s.penalties_saved || 0), 0),
           total_errors_leading_to_goal: stats.reduce((sum, s) => sum + (s.errors_leading_to_goal || 0), 0),
-          // Additional stats
-          total_aerial_duels_won: stats.reduce((sum, s) => sum + (s.aerial_duels_won || 0), 0),
+          total_punches: stats.reduce((sum, s) => sum + (s.punches || 0), 0),
+          total_successful_runs_out: stats.reduce((sum, s) => sum + (s.successful_runs_out || 0), 0),
+          total_runs_out: stats.reduce((sum, s) => sum + (s.total_runs_out || 0), 0),
+          total_high_claims: stats.reduce((sum, s) => sum + (s.high_claims || 0), 0),
+          // Passing stats
           total_accurate_passes: stats.reduce((sum, s) => sum + (s.accurate_passes || 0), 0),
           total_passes: stats.reduce((sum, s) => sum + (s.total_passes || 0), 0),
-          total_duels_won: stats.reduce((sum, s) => sum + (s.duels_won || 0), 0),
-          total_duels: stats.reduce((sum, s) => sum + (s.total_duels || 0), 0),
-          total_chances_created: stats.reduce((sum, s) => sum + (s.chances_created || 0), 0),
           total_key_passes: stats.reduce((sum, s) => sum + (s.key_passes || 0), 0),
+          total_chances_created: stats.reduce((sum, s) => sum + (s.chances_created || 0), 0),
+          total_long_passes_accurate: stats.reduce((sum, s) => sum + (s.long_passes_accurate || 0), 0),
+          total_long_passes: stats.reduce((sum, s) => sum + (s.long_passes_total || 0), 0),
+          // Shooting stats
           total_shots: stats.reduce((sum, s) => sum + (s.shots || 0), 0),
           total_shots_on_target: stats.reduce((sum, s) => sum + (s.shots_on_target || 0), 0),
+          total_shots_blocked: stats.reduce((sum, s) => sum + (s.shots_blocked || 0), 0),
+          total_offsides: stats.reduce((sum, s) => sum + (s.offsides || 0), 0),
+          // Duel stats
+          total_duels_won: stats.reduce((sum, s) => sum + (s.duels_won || 0), 0),
+          total_duels: stats.reduce((sum, s) => sum + (s.total_duels || 0), 0),
+          total_aerial_duels_won: stats.reduce((sum, s) => sum + (s.aerial_duels_won || 0), 0),
+          total_aerial_duels: stats.reduce((sum, s) => sum + (s.aerial_duels_total || 0), 0),
+          total_ground_duels_won: stats.reduce((sum, s) => sum + (s.ground_duels_won || 0), 0),
+          total_ground_duels: stats.reduce((sum, s) => sum + (s.ground_duels_total || 0), 0),
+          // Ball control & discipline
+          total_successful_dribbles: stats.reduce((sum, s) => sum + (s.successful_dribbles || 0), 0),
+          total_dribbles: stats.reduce((sum, s) => sum + (s.total_dribbles || 0), 0),
+          total_possession_lost: stats.reduce((sum, s) => sum + (s.possession_lost || 0), 0),
+          total_fouls_drawn: stats.reduce((sum, s) => sum + (s.fouls_drawn || 0), 0),
+          total_fouls_committed: stats.reduce((sum, s) => sum + (s.fouls_committed || 0), 0),
+          total_times_dribbled_past: stats.reduce((sum, s) => sum + (s.times_dribbled_past || 0), 0),
           // Metadata
           competitions_count: stats.length,
         });
