@@ -319,94 +319,151 @@ export type Database = {
       player_stats: {
         Row: {
           accurate_passes: number
+          aerial_duels_total: number
           aerial_duels_won: number
           assists: number
           chances_created: number
           clean_sheets: number
+          clearances: number
           competition_id: string | null
           created_at: string
           duels_won: number
           errors_leading_to_goal: number
+          fouls_committed: number
+          fouls_drawn: number
           goals: number
           goals_conceded: number
+          ground_duels_total: number
+          ground_duels_won: number
+          high_claims: number
           id: string
           interceptions: number
           key_passes: number
+          long_passes_accurate: number
+          long_passes_total: number
           matches: number
           minutes: number
+          offsides: number
           penalties_saved: number
           player_id: string
+          possession_lost: number
+          punches: number
           recoveries: number
           red_cards: number
           saves: number
+          saves_inside_box: number
           season_year: number
           shots: number
+          shots_blocked: number
           shots_on_target: number
+          successful_dribbles: number
+          successful_runs_out: number
           tackles: number
+          times_dribbled_past: number
+          total_dribbles: number
           total_duels: number
           total_passes: number
+          total_runs_out: number
           updated_at: string
           yellow_cards: number
         }
         Insert: {
           accurate_passes?: number
+          aerial_duels_total?: number
           aerial_duels_won?: number
           assists?: number
           chances_created?: number
           clean_sheets?: number
+          clearances?: number
           competition_id?: string | null
           created_at?: string
           duels_won?: number
           errors_leading_to_goal?: number
+          fouls_committed?: number
+          fouls_drawn?: number
           goals?: number
           goals_conceded?: number
+          ground_duels_total?: number
+          ground_duels_won?: number
+          high_claims?: number
           id?: string
           interceptions?: number
           key_passes?: number
+          long_passes_accurate?: number
+          long_passes_total?: number
           matches?: number
           minutes?: number
+          offsides?: number
           penalties_saved?: number
           player_id: string
+          possession_lost?: number
+          punches?: number
           recoveries?: number
           red_cards?: number
           saves?: number
+          saves_inside_box?: number
           season_year?: number
           shots?: number
+          shots_blocked?: number
           shots_on_target?: number
+          successful_dribbles?: number
+          successful_runs_out?: number
           tackles?: number
+          times_dribbled_past?: number
+          total_dribbles?: number
           total_duels?: number
           total_passes?: number
+          total_runs_out?: number
           updated_at?: string
           yellow_cards?: number
         }
         Update: {
           accurate_passes?: number
+          aerial_duels_total?: number
           aerial_duels_won?: number
           assists?: number
           chances_created?: number
           clean_sheets?: number
+          clearances?: number
           competition_id?: string | null
           created_at?: string
           duels_won?: number
           errors_leading_to_goal?: number
+          fouls_committed?: number
+          fouls_drawn?: number
           goals?: number
           goals_conceded?: number
+          ground_duels_total?: number
+          ground_duels_won?: number
+          high_claims?: number
           id?: string
           interceptions?: number
           key_passes?: number
+          long_passes_accurate?: number
+          long_passes_total?: number
           matches?: number
           minutes?: number
+          offsides?: number
           penalties_saved?: number
           player_id?: string
+          possession_lost?: number
+          punches?: number
           recoveries?: number
           red_cards?: number
           saves?: number
+          saves_inside_box?: number
           season_year?: number
           shots?: number
+          shots_blocked?: number
           shots_on_target?: number
+          successful_dribbles?: number
+          successful_runs_out?: number
           tackles?: number
+          times_dribbled_past?: number
+          total_dribbles?: number
           total_duels?: number
           total_passes?: number
+          total_runs_out?: number
           updated_at?: string
           yellow_cards?: number
         }
