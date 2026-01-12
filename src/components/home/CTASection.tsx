@@ -1,42 +1,118 @@
 import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { MessageCircle, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { cn } from "@/lib/utils";
 
 export function CTASection() {
-  return (
-    <section className="py-20 md:py-32 relative overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-background to-accent/5" />
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary/20 rounded-full blur-3xl" />
+  const [isInView, setIsInView] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
 
-      <div className="container mx-auto px-4 relative z-10">
-        <div className="glass-card p-8 md:p-12 lg:p-16 text-center max-w-4xl mx-auto">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-6">
-            <MessageCircle className="w-8 h-8 text-primary" />
+  useEffect(() => {
+    const element = sectionRef.current;
+    if (!element) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsInView(true);
+          observer.unobserve(element);
+        }
+      },
+      { threshold: 0.2 }
+    );
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <section ref={sectionRef} className="py-24 md:py-32 lg:py-40 bg-black">
+      <div className="mx-auto max-w-6xl px-6 lg:px-8">
+        <div className="max-w-4xl">
+          {/* Small Label */}
+          <div 
+            className={cn(
+              "mb-8 transition-all duration-700 ease-out",
+              isInView 
+                ? "opacity-100 translate-y-0" 
+                : "opacity-0 translate-y-4"
+            )}
+          >
+            <span className="text-xs font-medium uppercase tracking-[0.3em] text-white/40">
+              Entre em contato
+            </span>
           </div>
-          
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
+
+          {/* Main Headline */}
+          <h2 
+            className={cn(
+              "text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light text-white leading-[1.2] tracking-tight mb-8 transition-all duration-1000 ease-out",
+              isInView 
+                ? "opacity-100 translate-y-0" 
+                : "opacity-0 translate-y-8"
+            )}
+            style={{ transitionDelay: "150ms" }}
+          >
             Interessado em um de nossos{" "}
-            <span className="gradient-text">atletas</span>?
+            <span 
+              className="italic font-normal"
+              style={{ color: "#e52421" }}
+            >
+              atletas
+            </span>
+            ?
           </h2>
-          
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
+
+          {/* Divider Line */}
+          <div 
+            className={cn(
+              "w-full h-px bg-white/20 mb-10 transition-all duration-700 ease-out origin-left",
+              isInView 
+                ? "opacity-100 scale-x-100" 
+                : "opacity-0 scale-x-0"
+            )}
+            style={{ transitionDelay: "400ms" }}
+          />
+
+          {/* Body Text */}
+          <p 
+            className={cn(
+              "text-base md:text-lg text-white/50 leading-relaxed max-w-2xl mb-12 transition-all duration-700 ease-out",
+              isInView 
+                ? "opacity-100 translate-y-0" 
+                : "opacity-0 translate-y-6"
+            )}
+            style={{ transitionDelay: "550ms" }}
+          >
             Entre em contato conosco para saber mais sobre qualquer atleta do nosso 
             portfólio. Teremos prazer em apresentar informações detalhadas e discutir 
             possíveis oportunidades.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/contact">
-              <Button variant="hero" size="lg">
-                Falar com a M3
-                <ArrowRight className="w-5 h-5" />
-              </Button>
+          {/* Editorial CTAs */}
+          <div 
+            className={cn(
+              "flex flex-col sm:flex-row gap-8 transition-all duration-700 ease-out",
+              isInView 
+                ? "opacity-100 translate-y-0" 
+                : "opacity-0 translate-y-4"
+            )}
+            style={{ transitionDelay: "700ms" }}
+          >
+            <Link
+              to="/contact"
+              className="group inline-flex items-center gap-3 text-sm font-medium uppercase tracking-[0.2em] text-white hover:text-[#e52421] transition-colors duration-300"
+            >
+              <span>Falar com a M3</span>
+              <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
             </Link>
-            <Link to="/players">
-              <Button variant="heroOutline" size="lg">
-                Ver Atletas
-              </Button>
+            
+            <Link
+              to="/players"
+              className="group inline-flex items-center gap-3 text-sm font-medium uppercase tracking-[0.2em] text-white/50 hover:text-white transition-colors duration-300"
+            >
+              <span>Ver Atletas</span>
+              <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
             </Link>
           </div>
         </div>
