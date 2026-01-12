@@ -127,13 +127,26 @@ export function StatsRadarChart({ statBreakdown, positionGroup, positionGroupLab
   // Prepare data for radar chart - only available stats
   const availableStats = safeArray(statBreakdown).filter(s => s.available);
   
-  const radarData = availableStats.map(stat => ({
-    stat: stat.label,
-    fullLabel: stat.label,
-    jogador: Math.round(stat.score),
-    media: benchmarks[stat.stat] || 50,
-    weight: stat.adjusted_weight,
-  }));
+  // Build radar data WITH polarity and effectiveDelta for tooltip consistency
+  const radarData = availableStats.map(stat => {
+    const benchmark = benchmarks[stat.stat] || 50;
+    const rawDiff = stat.score - benchmark;
+    const polarity = LOWER_IS_BETTER_STATS.has(stat.stat) ? "lower_is_better" : "higher_is_better";
+    const effectiveDelta = polarity === "lower_is_better" ? -rawDiff : rawDiff;
+    const bucket = effectiveDelta >= 10 ? "strength" : effectiveDelta <= -10 ? "attention" : "neutral";
+    
+    return {
+      stat: stat.label,
+      statKey: stat.stat,
+      fullLabel: stat.label,
+      jogador: Math.round(stat.score),
+      media: benchmark,
+      weight: stat.adjusted_weight,
+      polarity,
+      effectiveDelta: Math.round(effectiveDelta),
+      bucket,
+    };
+  });
 
   // Calculate summary statistics
   const totalPlayerScore = availableStats.reduce((sum, s) => sum + s.score * s.adjusted_weight, 0);
@@ -286,12 +299,65 @@ export function StatsRadarChart({ statBreakdown, positionGroup, positionGroupLab
                   content={({ active, payload }) => {
                     if (active && payload && payload.length) {
                       const data = payload[0].payload;
-                      const diff = data.jogador - data.media;
-                      const comparison = getComparisonLabel(data.jogador, data.media);
+                      const { effectiveDelta, bucket, polarity } = data;
+                      
+                      // Tooltip label and color based on bucket (same source of truth as bar colors)
+                      const getBucketInfo = () => {
+                        if (bucket === "strength") {
+                          return {
+                            label: "Ponto Forte",
+                            message: "Contribui positivamente para o desempenho",
+                            color: "text-emerald-500",
+                            icon: "↑",
+                          };
+                        }
+                        if (bucket === "attention") {
+                          return {
+                            label: "Ponto de Atenção",
+                            message: "Área que pode ser melhorada",
+                            color: "text-destructive",
+                            icon: "↓",
+                          };
+                        }
+                        return {
+                          label: "Na Média",
+                          message: "Dentro do esperado para a posição",
+                          color: "text-muted-foreground",
+                          icon: "–",
+                        };
+                      };
+                      
+                      const bucketInfo = getBucketInfo();
+
+                      // DEV: Log tooltip data for verification
+                      if (import.meta.env.DEV) {
+                        console.log("[TOOLTIP]", {
+                          metric: data.statKey,
+                          label: data.fullLabel,
+                          player: data.jogador,
+                          avg: data.media,
+                          polarity,
+                          effectiveDelta,
+                          bucket,
+                          tooltipLabel: bucketInfo.label,
+                        });
+                      }
+
                       return (
-                        <div className="bg-popover border border-border rounded-lg p-3 shadow-lg">
-                          <p className="font-medium text-sm mb-2">{data.fullLabel}</p>
-                          <div className="space-y-1 text-xs">
+                        <div className="bg-popover border border-border rounded-lg p-3 shadow-lg max-w-[220px]">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className={cn("text-lg", bucketInfo.color)}>{bucketInfo.icon}</span>
+                            <p className="font-medium text-sm">{data.fullLabel}</p>
+                          </div>
+                          <div className={cn("text-xs font-semibold mb-2 px-2 py-1 rounded", 
+                            bucket === "strength" ? "bg-emerald-500/10 text-emerald-500" :
+                            bucket === "attention" ? "bg-destructive/10 text-destructive" :
+                            "bg-muted text-muted-foreground"
+                          )}>
+                            {bucketInfo.label}
+                          </div>
+                          <p className="text-xs text-muted-foreground mb-2">{bucketInfo.message}</p>
+                          <div className="space-y-1 text-xs border-t border-border/50 pt-2">
                             <div className="flex justify-between gap-4">
                               <span className="text-muted-foreground">Jogador:</span>
                               <span className="font-semibold text-primary">{data.jogador}</span>
@@ -300,12 +366,17 @@ export function StatsRadarChart({ statBreakdown, positionGroup, positionGroupLab
                               <span className="text-muted-foreground">Média posição:</span>
                               <span className="font-medium">{data.media}</span>
                             </div>
-                            <div className="flex justify-between gap-4 pt-1 border-t border-border/50">
-                              <span className="text-muted-foreground">Diferença:</span>
-                              <span className={cn("font-semibold", comparison.color)}>
-                                {diff >= 0 ? "+" : ""}{diff}
+                            <div className="flex justify-between gap-4">
+                              <span className="text-muted-foreground">Delta efetivo:</span>
+                              <span className={cn("font-semibold", bucketInfo.color)}>
+                                {effectiveDelta >= 0 ? "+" : ""}{effectiveDelta}
                               </span>
                             </div>
+                            {polarity === "lower_is_better" && (
+                              <div className="text-[10px] text-muted-foreground italic pt-1">
+                                (menor é melhor)
+                              </div>
+                            )}
                             <div className="flex justify-between gap-4">
                               <span className="text-muted-foreground">Peso:</span>
                               <span className="font-medium">{Math.round(data.weight)}%</span>
