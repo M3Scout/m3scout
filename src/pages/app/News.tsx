@@ -3,16 +3,7 @@ import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,7 +14,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Search, Edit, Trash2, Eye, EyeOff } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Eye, EyeOff, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -98,137 +89,135 @@ const News = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      {/* Header */}
+      <header className="admin-header animate-fade-in">
         <div>
-          <h1 className="text-2xl font-bold">Notícias</h1>
-          <p className="text-muted-foreground">
-            Gerencie as notícias da Sala de Imprensa
-          </p>
+          <h1 className="admin-title">Notícias</h1>
+          <p className="admin-subtitle">Gerencie o conteúdo da Sala de Imprensa</p>
         </div>
-        <Button asChild>
-          <Link to="/app/news/new">
-            <Plus className="w-4 h-4 mr-2" />
+        <Link to="/app/news/new">
+          <Button className="bg-primary hover:bg-primary/90 text-white gap-2">
+            <Plus className="w-4 h-4" />
             Nova Notícia
-          </Link>
-        </Button>
-      </div>
+          </Button>
+        </Link>
+      </header>
 
       {/* Search */}
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+      <div className="relative max-w-sm animate-fade-in delay-75">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
         <Input
           placeholder="Buscar notícias..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="pl-10"
+          className="pl-10 bg-zinc-900/50 border-zinc-800 text-white placeholder:text-zinc-600 focus-visible:ring-primary/30 focus-visible:border-zinc-700"
         />
       </div>
 
-      {/* Table */}
-      <div className="border rounded-lg">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Título</TableHead>
-              <TableHead>Categoria</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Data Publicação</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-8">
-                  Carregando...
-                </TableCell>
-              </TableRow>
-            ) : filteredArticles?.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                  Nenhuma notícia encontrada
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredArticles?.map((article) => (
-                <TableRow key={article.id}>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">{article.title}</p>
-                      <p className="text-sm text-muted-foreground truncate max-w-xs">
-                        /imprensa/{article.slug}
+      {/* News List */}
+      <div className="admin-card animate-fade-in delay-100">
+        <div className="admin-card-body p-0">
+          {isLoading ? (
+            <div className="py-12 text-center text-zinc-500">Carregando...</div>
+          ) : filteredArticles?.length === 0 ? (
+            <div className="py-12 text-center text-zinc-500">
+              Nenhuma notícia encontrada
+            </div>
+          ) : (
+            <div className="divide-y divide-zinc-800/50">
+              {filteredArticles?.map((article, index) => (
+                <div 
+                  key={article.id}
+                  className="flex items-center gap-4 p-4 hover:bg-zinc-800/30 transition-colors"
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-1">
+                      <p className="text-sm font-medium text-white truncate">
+                        {article.title}
                       </p>
+                      <span className={
+                        article.status === "published" 
+                          ? "admin-badge-success" 
+                          : "admin-badge-default"
+                      }>
+                        {article.status === "published" ? "Publicado" : "Rascunho"}
+                      </span>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{article.category}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={article.status === "published" ? "default" : "secondary"}
+                    <div className="flex items-center gap-3 text-xs text-zinc-500">
+                      <span>/imprensa/{article.slug}</span>
+                      <span>•</span>
+                      <span>{article.category}</span>
+                      <span>•</span>
+                      <span>
+                        {format(new Date(article.publish_date), "dd MMM yyyy", {
+                          locale: ptBR,
+                        })}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() =>
+                        toggleStatusMutation.mutate({
+                          id: article.id,
+                          newStatus: article.status === "published" ? "draft" : "published",
+                        })
+                      }
+                      className="w-8 h-8 text-zinc-500 hover:text-white hover:bg-zinc-800"
+                      title={article.status === "published" ? "Despublicar" : "Publicar"}
                     >
-                      {article.status === "published" ? "Publicado" : "Rascunho"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {format(new Date(article.publish_date), "dd MMM yyyy", {
-                      locale: ptBR,
-                    })}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() =>
-                          toggleStatusMutation.mutate({
-                            id: article.id,
-                            newStatus: article.status === "published" ? "draft" : "published",
-                          })
-                        }
-                        title={article.status === "published" ? "Despublicar" : "Publicar"}
-                      >
-                        {article.status === "published" ? (
-                          <EyeOff className="w-4 h-4" />
-                        ) : (
-                          <Eye className="w-4 h-4" />
-                        )}
-                      </Button>
-                      <Button variant="ghost" size="icon" asChild>
-                        <Link to={`/app/news/${article.id}/edit`}>
-                          <Edit className="w-4 h-4" />
-                        </Link>
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setDeleteId(article.id)}
-                      >
-                        <Trash2 className="w-4 h-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+                      {article.status === "published" ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      asChild
+                      className="w-8 h-8 text-zinc-500 hover:text-white hover:bg-zinc-800"
+                    >
+                      <Link to={`/app/news/${article.id}/edit`}>
+                        <Edit className="w-4 h-4" />
+                      </Link>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setDeleteId(article.id)}
+                      className="w-8 h-8 text-zinc-500 hover:text-red-400 hover:bg-red-500/10"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Delete Dialog */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-zinc-900 border-zinc-800">
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir notícia?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-white">Excluir notícia?</AlertDialogTitle>
+            <AlertDialogDescription className="text-zinc-400">
               Esta ação não pode ser desfeita. A notícia será removida permanentemente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel className="bg-zinc-800 border-zinc-700 text-white hover:bg-zinc-700">
+              Cancelar
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteId && deleteMutation.mutate(deleteId)}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-red-600 text-white hover:bg-red-700"
             >
               Excluir
             </AlertDialogAction>
