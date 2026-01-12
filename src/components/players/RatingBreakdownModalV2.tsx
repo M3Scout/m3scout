@@ -245,25 +245,78 @@ const STAT_INFO: Record<string, StatInfo> = {
 
 // Fallback for stats not in STAT_INFO
 const safeLower = (v: unknown): string => {
-  if (typeof v === "string") return v.toLowerCase();
+  if (typeof v === "string" && v.trim() && v !== "—" && v !== "---") return v.toLowerCase();
   if (typeof v === "number" || typeof v === "boolean") return String(v).toLowerCase();
   return "";
 };
 
+// Human-readable stat name mapping for unknown stats
+const STAT_NAME_MAP: Record<string, string> = {
+  minutes_games: "Minutos/Jogos",
+  ga_per_90: "G+A por 90 min",
+  goals_per_90: "Gols por 90 min",
+  assists_per_90: "Assistências por 90 min",
+  key_pass_accuracy: "Precisão de Passes-Chave",
+  pass_accuracy: "Precisão de Passes",
+  offensive_involvement: "Envolvimento Ofensivo",
+  shots_on_target: "Finalizações no Alvo",
+  chances_created: "Chances Criadas",
+  key_passes: "Passes-Chave",
+  accurate_passes: "Passes Certos",
+  tackles: "Desarmes",
+  interceptions: "Interceptações",
+  recoveries: "Recuperações de Bola",
+  duels_won: "Duelos Vencidos",
+  aerial_duels: "Duelos Aéreos",
+  discipline: "Disciplina",
+  saves: "Defesas",
+  goals_conceded: "Gols Sofridos",
+  errors: "Erros Graves",
+  penalties_saved: "Pênaltis Defendidos",
+  shots: "Finalizações",
+  goals: "Gols",
+  assists: "Assistências",
+};
+
+function getHumanStatName(statKey: string, providedLabel: unknown): string {
+  // 1. If providedLabel is a valid non-placeholder string, use it
+  if (typeof providedLabel === "string" && providedLabel.trim() && providedLabel !== "—" && providedLabel !== "---" && providedLabel !== "unknown") {
+    return providedLabel;
+  }
+  // 2. Try our manual mapping
+  if (STAT_NAME_MAP[statKey]) {
+    return STAT_NAME_MAP[statKey];
+  }
+  // 3. Convert snake_case to Title Case as last resort
+  if (statKey && statKey !== "unknown") {
+    return statKey
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+  // 4. Ultimate fallback
+  return "Estatística não identificada";
+}
+
 function getStatInfo(statKey: string, label: unknown): StatInfo {
-  const labelText = typeof label === "string" && label.trim() ? label : "—";
-  const labelLower = safeLower(labelText) || "esta estatística";
+  const humanLabel = getHumanStatName(statKey, label);
+  const labelLower = safeLower(humanLabel) || "esta estatística";
 
   if (import.meta.env.DEV && typeof label !== "string") {
     console.debug("[RatingBreakdownModalV2] getStatInfo label not string:", label, "statKey:", statKey);
   }
 
-  return STAT_INFO[statKey] || {
+  // If we have it in STAT_INFO, return it directly
+  if (STAT_INFO[statKey]) {
+    return STAT_INFO[statKey];
+  }
+
+  // Build a dynamic fallback with meaningful copy
+  return {
     group: "Desempenho Geral",
     groupIcon: "📊",
-    description: `Estatística: ${labelText}`,
-    lowFeedback: `Desempenho abaixo do esperado em ${labelLower}.`,
-    highFeedback: `Excelente desempenho em ${labelLower}.`,
+    description: `Mede o desempenho em ${humanLabel}.`,
+    lowFeedback: `Desempenho abaixo do esperado em ${humanLabel}.`,
+    highFeedback: `Excelente desempenho em ${humanLabel}.`,
   };
 }
 
@@ -389,8 +442,10 @@ function StatBreakdownCard({
               {safeArray(availableStats).map((stat) => {
                 const scoreLevel = getScoreLevel(stat.score);
                 const statInfo = getStatInfo(stat.stat, stat.label);
+                const humanLabel = getHumanStatName(stat.stat, stat.label);
                 const isLow = stat.score < 40;
                 const isHigh = stat.score >= 80;
+                const playerValue = stat.value !== undefined && stat.value !== null ? stat.value : null;
                 
                 return (
                   <Tooltip key={stat.stat}>
@@ -400,7 +455,7 @@ function StatBreakdownCard({
                           <div className="flex items-center gap-1.5">
                             <span className="mr-1">{statInfo.groupIcon}</span>
                             <span className="font-medium text-foreground">
-                              {stat.label}
+                              {humanLabel}
                             </span>
                             <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 text-muted-foreground">
                               {statInfo.group}
@@ -429,8 +484,8 @@ function StatBreakdownCard({
                         <div className="flex items-center gap-2 pb-1 border-b border-border/50">
                           <span className="text-base">{statInfo.groupIcon}</span>
                           <div>
-                            <p className="font-semibold text-sm">{statInfo.group}</p>
-                            <p className="text-xs text-muted-foreground">{stat.label}</p>
+                            <p className="font-semibold text-sm">{humanLabel}</p>
+                            <p className="text-xs text-muted-foreground">{statInfo.group}</p>
                           </div>
                           <Badge 
                             variant="outline" 
@@ -461,6 +516,12 @@ function StatBreakdownCard({
                             <span className="text-muted-foreground">Peso: </span>
                             <span className="font-semibold">{formatFixed(stat.adjusted_weight, 0)}%</span>
                           </div>
+                          {playerValue !== null && (
+                            <div>
+                              <span className="text-muted-foreground">Valor: </span>
+                              <span className="font-semibold">{playerValue}</span>
+                            </div>
+                          )}
                         </div>
                         
                         {/* Specific feedback for low scores */}
@@ -471,7 +532,7 @@ function StatBreakdownCard({
                               Ponto de Atenção
                             </p>
                             <p className="text-xs text-destructive/90">
-                              {statInfo.lowFeedback}
+                              Abaixo do esperado em <strong>{humanLabel}</strong>{playerValue !== null ? ` (${playerValue})` : ""}.
                             </p>
                           </div>
                         )}
@@ -484,7 +545,7 @@ function StatBreakdownCard({
                               Ponto Forte
                             </p>
                             <p className="text-xs text-emerald-600/90">
-                              {statInfo.highFeedback}
+                              Excelente em <strong>{humanLabel}</strong>{playerValue !== null ? ` (${playerValue})` : ""}.
                             </p>
                           </div>
                         )}
@@ -503,18 +564,19 @@ function StatBreakdownCard({
                 <div className="flex flex-wrap gap-1">
                   {safeArray(unavailableStats).map((stat) => {
                     const statInfo = getStatInfo(stat.stat, stat.label);
+                    const humanLabel = getHumanStatName(stat.stat, stat.label);
                     return (
                       <TooltipProvider key={stat.stat}>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Badge variant="secondary" className="text-xs opacity-60 cursor-help">
                               <span className="mr-1">{statInfo.groupIcon}</span>
-                              {stat.label}
+                              {humanLabel}
                             </Badge>
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs">
                             <div className="space-y-1">
-                              <p className="font-medium text-xs">{statInfo.group}</p>
+                              <p className="font-medium text-xs">{humanLabel}</p>
                               <p className="text-xs text-muted-foreground">{statInfo.description}</p>
                               <p className="text-xs text-amber-500">Dados não disponíveis para esta competição.</p>
                             </div>
@@ -694,43 +756,90 @@ export function RatingBreakdownModalV2({ details, rating, trigger }: RatingBreak
               );
               
               // Group and average by stat
-              const statMap = new Map<string, { total: number; count: number; label: string; weight: number }>();
+              const statMap = new Map<string, { total: number; count: number; label: string; weight: number; value: number }>();
               allStats.forEach((s) => {
                 const statKey = String((s as any)?.stat ?? "unknown");
-                const label = String((s as any)?.label ?? statKey);
+                const providedLabel = (s as any)?.label;
+                const humanLabel = getHumanStatName(statKey, providedLabel);
                 const score = Number((s as any)?.score) || 0;
                 const weight = Number((s as any)?.adjusted_weight ?? (s as any)?.weight) || 0;
+                const value = Number((s as any)?.value) || 0;
 
                 const existing = statMap.get(statKey);
                 if (existing) {
                   existing.total += score;
                   existing.count += 1;
+                  existing.value += value;
                 } else {
                   statMap.set(statKey, {
                     total: score,
                     count: 1,
-                    label,
+                    label: humanLabel,
                     weight,
+                    value,
                   });
                 }
               });
 
               const aggregatedStats = Array.from(statMap.entries()).map(([stat, data]) => ({
                 stat,
-                label: data.label || stat,
-                value: 0,
+                label: data.label || getHumanStatName(stat, stat),
+                value: data.value / data.count,
                 score: data.total / data.count,
                 weight: data.weight,
                 adjusted_weight: data.weight,
                 available: true,
               }));
               
+              // Compute strengths (top 2 high-scoring) and weaknesses (bottom 2 low-scoring)
+              const sortedByScore = [...aggregatedStats].sort((a, b) => b.score - a.score);
+              const strengths = sortedByScore.filter(s => s.score >= 60).slice(0, 2);
+              const weaknesses = sortedByScore.filter(s => s.score < 40).slice(-2).reverse();
+              
               return (
-                <StatsRadarChart
-                  statBreakdown={aggregatedStats}
-                  positionGroup={details.position_group}
-                  positionGroupLabel={details.position_group_label}
-                />
+                <div className="space-y-4">
+                  {/* Summary: Top Strengths and Weaknesses */}
+                  {(strengths.length > 0 || weaknesses.length > 0) && (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3">
+                        <p className="text-xs font-medium text-emerald-600 flex items-center gap-1 mb-2">
+                          <Star className="w-3 h-3" />
+                          Pontos Fortes
+                        </p>
+                        {strengths.length > 0 ? (
+                          <ul className="text-xs text-emerald-700 space-y-1">
+                            {strengths.map(s => (
+                              <li key={s.stat}>• <strong>{s.label}</strong> ({formatFixed(s.score, 0)})</li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">Nenhum destaque positivo</p>
+                        )}
+                      </div>
+                      <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
+                        <p className="text-xs font-medium text-destructive flex items-center gap-1 mb-2">
+                          <AlertTriangle className="w-3 h-3" />
+                          Pontos de Atenção
+                        </p>
+                        {weaknesses.length > 0 ? (
+                          <ul className="text-xs text-destructive space-y-1">
+                            {weaknesses.map(s => (
+                              <li key={s.stat}>• <strong>{s.label}</strong> ({formatFixed(s.score, 0)})</li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">Nenhuma área crítica</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
+                  <StatsRadarChart
+                    statBreakdown={aggregatedStats}
+                    positionGroup={details.position_group}
+                    positionGroupLabel={details.position_group_label}
+                  />
+                </div>
               );
             })()}
           </TabsContent>
