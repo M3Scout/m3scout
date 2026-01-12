@@ -1,49 +1,83 @@
 import { useState, useRef, useEffect } from "react";
-import { Instagram, Youtube, Linkedin, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { Instagram, Youtube, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+
+// TikTok icon component (not available in lucide-react)
+const TikTokIcon = ({ size = 20, className = "" }: { size?: number; className?: string }) => (
+  <svg 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round"
+    className={className}
+  >
+    <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
+  </svg>
+);
+
+// Social media configuration
+// TODO: Update YouTube and TikTok URLs when available
+const socialConfig = {
+  instagram: {
+    handle: "@_m3agency",
+    url: "https://instagram.com/_m3agency",
+  },
+  youtube: {
+    // TODO: Replace with actual M3 Agency YouTube channel URL
+    url: "https://youtube.com/@m3agency",
+  },
+  tiktok: {
+    // TODO: Replace with actual M3 Agency TikTok profile URL
+    url: "https://tiktok.com/@m3agency",
+  },
+};
 
 // Fallback mock posts - used when API is not configured or fails
 const fallbackPosts = [
   {
     id: "1",
     imageUrl: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=400&h=400&fit=crop",
-    permalink: "https://instagram.com/m3agency",
+    permalink: socialConfig.instagram.url,
   },
   {
     id: "2",
     imageUrl: "https://images.unsplash.com/photo-1560272564-c83b66b1ad12?w=400&h=400&fit=crop",
-    permalink: "https://instagram.com/m3agency",
+    permalink: socialConfig.instagram.url,
   },
   {
     id: "3",
     imageUrl: "https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=400&h=400&fit=crop",
-    permalink: "https://instagram.com/m3agency",
+    permalink: socialConfig.instagram.url,
   },
   {
     id: "4",
     imageUrl: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=400&h=400&fit=crop",
-    permalink: "https://instagram.com/m3agency",
+    permalink: socialConfig.instagram.url,
   },
   {
     id: "5",
     imageUrl: "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=400&h=400&fit=crop",
-    permalink: "https://instagram.com/m3agency",
+    permalink: socialConfig.instagram.url,
   },
   {
     id: "6",
     imageUrl: "https://images.unsplash.com/photo-1517466787929-bc90951d0974?w=400&h=400&fit=crop",
-    permalink: "https://instagram.com/m3agency",
+    permalink: socialConfig.instagram.url,
   },
   {
     id: "7",
     imageUrl: "https://images.unsplash.com/photo-1600679472829-3044539ce8ed?w=400&h=400&fit=crop",
-    permalink: "https://instagram.com/m3agency",
+    permalink: socialConfig.instagram.url,
   },
   {
     id: "8",
     imageUrl: "https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=400&h=400&fit=crop",
-    permalink: "https://instagram.com/m3agency",
+    permalink: socialConfig.instagram.url,
   },
 ];
 
@@ -110,43 +144,45 @@ export function InstagramFeedSection() {
   };
 
   const socialLinks = [
-    { icon: Instagram, href: "https://instagram.com/m3agency", label: "Instagram" },
-    { icon: Youtube, href: "https://youtube.com/@m3agency", label: "YouTube" },
-    { icon: Linkedin, href: "https://linkedin.com/company/m3agency", label: "LinkedIn" },
+    { icon: Instagram, href: socialConfig.instagram.url, label: "Instagram" },
+    { icon: Youtube, href: socialConfig.youtube.url, label: "YouTube" },
+    { icon: TikTokIcon, href: socialConfig.tiktok.url, label: "TikTok" },
   ];
 
   return (
-    <section className="py-16 md:py-24 bg-[#f8f7f4]">
+    <section className="py-20 md:py-28 bg-[#f8f7f4]">
       {/* Header */}
-      <div className="mx-auto max-w-[1280px] px-6 lg:px-10 mb-10">
+      <div className="mx-auto max-w-[1280px] px-6 lg:px-10 mb-12">
         <div className="flex items-center justify-between">
-          {/* Left: Title */}
-          <div className="flex items-center gap-4">
-            <h2 className="text-sm md:text-base font-medium uppercase tracking-[0.2em] text-neutral-900">
+          {/* Left: Title + Handle */}
+          <div className="flex items-baseline gap-3 md:gap-4">
+            <h2 className="text-xs sm:text-sm md:text-base font-medium uppercase tracking-[0.25em] text-neutral-900">
               Siga a M3 Agency
             </h2>
             <a
-              href="https://instagram.com/m3agency"
+              href={socialConfig.instagram.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs md:text-sm font-normal uppercase tracking-[0.15em] text-neutral-500 hover:text-neutral-900 transition-colors"
+              className="text-xs sm:text-sm font-normal text-neutral-400 hover:text-neutral-700 transition-colors duration-200"
             >
-              @m3agency
+              {socialConfig.instagram.handle}
             </a>
           </div>
 
-          {/* Right: Social Icons */}
-          <div className="flex items-center gap-4">
+          {/* Right: Social Icons (Instagram, YouTube, TikTok) */}
+          <div className="flex items-center gap-2 md:gap-3">
             {socialLinks.map((social) => (
               <a
                 key={social.label}
                 href={social.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 flex items-center justify-center text-neutral-500 hover:text-neutral-900 transition-colors"
+                className="group w-10 h-10 md:w-11 md:h-11 flex items-center justify-center text-neutral-400 hover:text-neutral-900 transition-all duration-200"
                 aria-label={social.label}
               >
-                <social.icon size={20} />
+                <social.icon size={18} className="md:w-5 md:h-5" />
+                {/* Subtle underline on hover */}
+                <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-0 h-px bg-neutral-900 group-hover:w-4 transition-all duration-200" />
               </a>
             ))}
           </div>
