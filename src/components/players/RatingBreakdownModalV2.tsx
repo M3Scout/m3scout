@@ -276,7 +276,77 @@ const STAT_NAME_MAP: Record<string, string> = {
   shots: "Finalizações",
   goals: "Gols",
   assists: "Assistências",
+  clean_sheets: "Clean Sheets",
 };
+
+// ==================== POSITION-BASED STAT CLASSIFICATION ====================
+// Explicitly defines which stats are POSITIVE (high score = good) and which are
+// NEGATIVE (high score = concerning, or inverse stats where LOW = bad)
+
+type StatClassification = "positive" | "negative" | "neutral";
+
+interface PositionStatClassification {
+  positiveStats: string[];  // Stats where HIGH score = strong point
+  negativeStats: string[];  // Stats that indicate issues or inverse metrics
+}
+
+const POSITION_STAT_CLASSIFICATIONS: Record<string, PositionStatClassification> = {
+  goalkeeper: {
+    positiveStats: ["saves", "clean_sheets", "penalties_saved", "aerial_duels", "accurate_passes"],
+    negativeStats: ["goals_conceded", "errors", "discipline"],
+  },
+  center_back: {
+    positiveStats: ["tackles", "interceptions", "duels_won", "aerial_duels", "recoveries", "accurate_passes"],
+    negativeStats: ["errors", "discipline", "goals_conceded"],
+  },
+  defensive_mid: {
+    positiveStats: ["tackles", "interceptions", "recoveries", "accurate_passes", "pass_accuracy", "duels_won"],
+    negativeStats: ["discipline", "errors"],
+  },
+  midfielder: {
+    positiveStats: ["key_passes", "chances_created", "assists", "ga_per_90", "accurate_passes", "pass_accuracy", "key_pass_accuracy"],
+    negativeStats: ["discipline", "possession_lost"],
+  },
+  forward: {
+    positiveStats: ["goals", "goals_per_90", "assists", "ga_per_90", "shots", "shots_on_target", "offensive_involvement"],
+    negativeStats: ["discipline"],
+  },
+};
+
+function getStatClassificationForPosition(
+  statKey: string,
+  positionGroup: string
+): StatClassification {
+  const classification = POSITION_STAT_CLASSIFICATIONS[positionGroup] || POSITION_STAT_CLASSIFICATIONS.midfielder;
+  
+  if (classification.positiveStats.includes(statKey)) return "positive";
+  if (classification.negativeStats.includes(statKey)) return "negative";
+  return "neutral";
+}
+
+function getPositionStatsBreakdown(
+  stats: Array<{ stat: string; label: string; score: number; available: boolean }>,
+  positionGroup: string
+): { positiveStats: typeof stats; negativeStats: typeof stats; neutralStats: typeof stats } {
+  const classification = POSITION_STAT_CLASSIFICATIONS[positionGroup] || POSITION_STAT_CLASSIFICATIONS.midfielder;
+  const availableStats = stats.filter(s => s.available);
+  
+  const positiveStats = availableStats.filter(s => 
+    classification.positiveStats.includes(s.stat) && s.score >= 60
+  ).sort((a, b) => b.score - a.score);
+  
+  const negativeStats = availableStats.filter(s => 
+    (classification.negativeStats.includes(s.stat) && s.score < 60) ||
+    (classification.positiveStats.includes(s.stat) && s.score < 40)
+  ).sort((a, b) => a.score - b.score);
+  
+  const neutralStats = availableStats.filter(s => 
+    !positiveStats.some(p => p.stat === s.stat) && 
+    !negativeStats.some(n => n.stat === s.stat)
+  );
+  
+  return { positiveStats, negativeStats, neutralStats };
+}
 
 function getHumanStatName(statKey: string, providedLabel: unknown): string {
   // 1. If providedLabel is a valid non-placeholder string, use it
@@ -347,15 +417,20 @@ function StatScoreLegend() {
 function StatBreakdownCard({ 
   competition, 
   isExpanded, 
-  onToggle 
+  onToggle,
+  positionGroup,
 }: { 
   competition: CompetitionBreakdown; 
   isExpanded: boolean;
   onToggle: () => void;
+  positionGroup: string;
 }) {
   const statBreakdown = Array.isArray(competition.stat_breakdown) ? competition.stat_breakdown : [];
   const availableStats = statBreakdown.filter(s => s.available);
   const unavailableStats = statBreakdown.filter(s => !s.available);
+  
+  // Get position-based breakdown for summary
+  const { positiveStats, negativeStats } = getPositionStatsBreakdown(statBreakdown, positionGroup);
   
   return (
     <Card className="bg-secondary/20 border-border/50">
@@ -434,6 +509,42 @@ function StatBreakdownCard({
               </TooltipProvider>
             </div>
             
+            {/* Position-based Summary */}
+            {(positiveStats.length > 0 || negativeStats.length > 0) && (
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-2">
+                  <p className="text-[10px] font-medium text-emerald-600 flex items-center gap-1 mb-1">
+                    <Star className="w-3 h-3" />
+                    Pontos Fortes
+                  </p>
+                  {positiveStats.length > 0 ? (
+                    <ul className="text-[10px] text-emerald-700 space-y-0.5">
+                      {positiveStats.slice(0, 3).map(s => (
+                        <li key={s.stat}>• {getHumanStatName(s.stat, s.label)} ({formatFixed(s.score, 0)})</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-[10px] text-muted-foreground">Nenhum destaque</p>
+                  )}
+                </div>
+                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-2">
+                  <p className="text-[10px] font-medium text-destructive flex items-center gap-1 mb-1">
+                    <AlertTriangle className="w-3 h-3" />
+                    Atenção
+                  </p>
+                  {negativeStats.length > 0 ? (
+                    <ul className="text-[10px] text-destructive space-y-0.5">
+                      {negativeStats.slice(0, 3).map(s => (
+                        <li key={s.stat}>• {getHumanStatName(s.stat, s.label)} ({formatFixed(s.score, 0)})</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-[10px] text-muted-foreground">Nenhuma área crítica</p>
+                  )}
+                </div>
+              </div>
+            )}
+            
             {/* Color Legend */}
             <StatScoreLegend />
             
@@ -443,9 +554,17 @@ function StatBreakdownCard({
                 const scoreLevel = getScoreLevel(stat.score);
                 const statInfo = getStatInfo(stat.stat, stat.label);
                 const humanLabel = getHumanStatName(stat.stat, stat.label);
+                const statClassification = getStatClassificationForPosition(stat.stat, positionGroup);
                 const isLow = stat.score < 40;
                 const isHigh = stat.score >= 80;
+                const isMedium = stat.score >= 40 && stat.score < 60;
                 const playerValue = stat.value !== undefined && stat.value !== null ? stat.value : null;
+                
+                // Determine if this is a positive contributor (high score in positive stat OR low score in inverse/negative stat)
+                const isPositiveContributor = (statClassification === "positive" && stat.score >= 60) ||
+                                              (statClassification === "negative" && stat.score >= 60); // inverse stat high = good
+                const isNegativeContributor = (statClassification === "positive" && stat.score < 40) ||
+                                              (statClassification === "negative" && stat.score < 40);
                 
                 return (
                   <Tooltip key={stat.stat}>
@@ -480,7 +599,7 @@ function StatBreakdownCard({
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-sm">
                       <div className="space-y-2">
-                        {/* Header with group */}
+                        {/* Header with group and classification */}
                         <div className="flex items-center gap-2 pb-1 border-b border-border/50">
                           <span className="text-base">{statInfo.groupIcon}</span>
                           <div>
@@ -504,7 +623,7 @@ function StatBreakdownCard({
                         {/* Description */}
                         <p className="text-xs text-muted-foreground">{statInfo.description}</p>
                         
-                        {/* Stats */}
+                        {/* Stats with value */}
                         <div className="flex items-center justify-between text-xs bg-muted/30 rounded px-2 py-1">
                           <div>
                             <span className="text-muted-foreground">Nota: </span>
@@ -524,28 +643,42 @@ function StatBreakdownCard({
                           )}
                         </div>
                         
-                        {/* Specific feedback for low scores */}
-                        {isLow && (
+                        {/* Position-based feedback */}
+                        {isNegativeContributor && (
                           <div className="bg-destructive/10 border border-destructive/30 rounded-md p-2">
                             <p className="text-xs font-medium text-destructive flex items-center gap-1 mb-1">
                               <AlertTriangle className="w-3 h-3" />
-                              Ponto de Atenção
+                              Ponto de Atenção: {humanLabel}
                             </p>
                             <p className="text-xs text-destructive/90">
-                              Abaixo do esperado em <strong>{humanLabel}</strong>{playerValue !== null ? ` (${playerValue})` : ""}.
+                              {statClassification === "positive" 
+                                ? `Desempenho abaixo do esperado em ${humanLabel}${playerValue !== null ? ` (${playerValue})` : ""}. Esta estatística é importante para a posição.`
+                                : `${humanLabel} está impactando negativamente${playerValue !== null ? ` (${playerValue})` : ""}. Área que precisa de atenção.`
+                              }
                             </p>
                           </div>
                         )}
                         
-                        {/* Specific feedback for high scores */}
-                        {isHigh && (
+                        {isPositiveContributor && (
                           <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-md p-2">
                             <p className="text-xs font-medium text-emerald-600 flex items-center gap-1 mb-1">
                               <Star className="w-3 h-3" />
-                              Ponto Forte
+                              Ponto Forte: {humanLabel}
                             </p>
                             <p className="text-xs text-emerald-600/90">
-                              Excelente em <strong>{humanLabel}</strong>{playerValue !== null ? ` (${playerValue})` : ""}.
+                              {statClassification === "positive"
+                                ? `Excelente desempenho em ${humanLabel}${playerValue !== null ? ` (${playerValue})` : ""}. Estatística chave para a posição.`
+                                : `${humanLabel} bem controlado${playerValue !== null ? ` (${playerValue})` : ""}. Contribui positivamente para a nota.`
+                              }
+                            </p>
+                          </div>
+                        )}
+                        
+                        {/* Medium score feedback */}
+                        {isMedium && !isPositiveContributor && !isNegativeContributor && (
+                          <div className="bg-amber-500/10 border border-amber-500/30 rounded-md p-2">
+                            <p className="text-xs text-amber-600">
+                              Desempenho médio em <strong>{humanLabel}</strong>{playerValue !== null ? ` (${playerValue})` : ""}. Dentro da média esperada.
                             </p>
                           </div>
                         )}
@@ -791,10 +924,11 @@ export function RatingBreakdownModalV2({ details, rating, trigger }: RatingBreak
                 available: true,
               }));
               
-              // Compute strengths (top 2 high-scoring) and weaknesses (bottom 2 low-scoring)
-              const sortedByScore = [...aggregatedStats].sort((a, b) => b.score - a.score);
-              const strengths = sortedByScore.filter(s => s.score >= 60).slice(0, 2);
-              const weaknesses = sortedByScore.filter(s => s.score < 40).slice(-2).reverse();
+              // Use position-based classification for strengths/weaknesses
+              const { positiveStats: strengths, negativeStats: weaknesses } = getPositionStatsBreakdown(
+                aggregatedStats,
+                details.position_group
+              );
               
               return (
                 <div className="space-y-4">
@@ -808,8 +942,8 @@ export function RatingBreakdownModalV2({ details, rating, trigger }: RatingBreak
                         </p>
                         {strengths.length > 0 ? (
                           <ul className="text-xs text-emerald-700 space-y-1">
-                            {strengths.map(s => (
-                              <li key={s.stat}>• <strong>{s.label}</strong> ({formatFixed(s.score, 0)})</li>
+                            {strengths.slice(0, 3).map(s => (
+                              <li key={s.stat}>• <strong>{getHumanStatName(s.stat, s.label)}</strong> ({formatFixed(s.score, 0)})</li>
                             ))}
                           </ul>
                         ) : (
@@ -823,8 +957,8 @@ export function RatingBreakdownModalV2({ details, rating, trigger }: RatingBreak
                         </p>
                         {weaknesses.length > 0 ? (
                           <ul className="text-xs text-destructive space-y-1">
-                            {weaknesses.map(s => (
-                              <li key={s.stat}>• <strong>{s.label}</strong> ({formatFixed(s.score, 0)})</li>
+                            {weaknesses.slice(0, 3).map(s => (
+                              <li key={s.stat}>• <strong>{getHumanStatName(s.stat, s.label)}</strong> ({formatFixed(s.score, 0)})</li>
                             ))}
                           </ul>
                         ) : (
@@ -933,6 +1067,7 @@ export function RatingBreakdownModalV2({ details, rating, trigger }: RatingBreak
                     competition={comp}
                     isExpanded={expandedCompetitions.has(comp.competition_id)}
                     onToggle={() => toggleCompetition(comp.competition_id)}
+                    positionGroup={details.position_group}
                   />
                 ))}
               </>
