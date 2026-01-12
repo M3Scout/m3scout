@@ -30,6 +30,32 @@ interface StatsRadarChartProps {
   positionGroupLabel: string;
 }
 
+// Polarity metadata: which metrics have "lower is better" semantics
+const LOWER_IS_BETTER_STATS = new Set([
+  // Cards & discipline
+  "yellow_cards",
+  "red_cards",
+  "cards",
+  "discipline", // if high cards = low discipline score, this may not apply
+  // Fouls
+  "fouls_committed",
+  "fouls",
+  // Turnovers / possession loss
+  "turnovers",
+  "lost_possession",
+  "possession_lost",
+  // Errors
+  "errors_leading_to_shot",
+  "errors_leading_to_goal",
+  "errors_led_to_goal",
+  "errors",
+  // Goalkeeper
+  "goals_conceded",
+  "ga_per_90",
+  // Dribbled past
+  "times_dribbled_past",
+]);
+
 // Position benchmarks (average scores for each stat by position group)
 // These represent the "average player" in each position (score ~50-60)
 const POSITION_BENCHMARKS: Record<PositionGroupV2, Record<string, number>> = {
@@ -120,14 +146,41 @@ export function StatsRadarChart({ statBreakdown, positionGroup, positionGroupLab
   const overallComparison = getComparisonLabel(avgPlayerScore, avgBenchmarkScore);
   const OverallIcon = overallComparison.icon;
 
-  // Find strengths and weaknesses
-  const statsWithDiff = availableStats.map(s => ({
-    ...s,
-    diff: s.score - (benchmarks[s.stat] || 50),
-  }));
+  // Find strengths and weaknesses WITH POLARITY AWARENESS
+  const statsWithDiff = availableStats.map(s => {
+    const benchmark = benchmarks[s.stat] || 50;
+    const rawDiff = s.score - benchmark;
+    const polarity = LOWER_IS_BETTER_STATS.has(s.stat) ? "lower_is_better" : "higher_is_better";
+    // For "lower is better" stats, invert the effective delta
+    // If player score is HIGH on a "lower is better" stat, that's BAD (negative effectiveDelta)
+    const effectiveDelta = polarity === "lower_is_better" ? -rawDiff : rawDiff;
+
+    // DEV: Log polarity calculation for verification
+    if (import.meta.env.DEV) {
+      console.log("[POLARITY]", {
+        metric: s.stat,
+        label: s.label,
+        player: Math.round(s.score),
+        avg: benchmark,
+        polarity,
+        rawDiff: Math.round(rawDiff),
+        effectiveDelta: Math.round(effectiveDelta),
+        bucket: effectiveDelta >= 10 ? "strength" : effectiveDelta <= -10 ? "weakness" : "neutral",
+      });
+    }
+
+    return {
+      ...s,
+      rawDiff,
+      polarity,
+      effectiveDelta,
+    };
+  });
   
-  const strengths = statsWithDiff.filter(s => s.diff >= 10).sort((a, b) => b.diff - a.diff).slice(0, 3);
-  const weaknesses = statsWithDiff.filter(s => s.diff <= -10).sort((a, b) => a.diff - b.diff).slice(0, 3);
+  // Strengths: effectiveDelta >= 10 (player is better than average, considering polarity)
+  const strengths = statsWithDiff.filter(s => s.effectiveDelta >= 10).sort((a, b) => b.effectiveDelta - a.effectiveDelta).slice(0, 3);
+  // Weaknesses: effectiveDelta <= -10 (player is worse than average, considering polarity)
+  const weaknesses = statsWithDiff.filter(s => s.effectiveDelta <= -10).sort((a, b) => a.effectiveDelta - b.effectiveDelta).slice(0, 3);
 
   if (radarData.length < 3) {
     return (
@@ -288,7 +341,7 @@ export function StatsRadarChart({ statBreakdown, positionGroup, positionGroupLab
                 <div key={s.stat} className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground truncate flex-1">{s.label}</span>
                   <Badge variant="outline" className="border-emerald-500/50 text-emerald-500 ml-2">
-                    +{Math.round(s.diff)}
+                    +{Math.round(s.effectiveDelta)}
                   </Badge>
                 </div>
               ))
@@ -312,7 +365,7 @@ export function StatsRadarChart({ statBreakdown, positionGroup, positionGroupLab
                 <div key={s.stat} className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground truncate flex-1">{s.label}</span>
                   <Badge variant="outline" className="border-destructive/50 text-destructive ml-2">
-                    {Math.round(s.diff)}
+                    {Math.round(s.effectiveDelta)}
                   </Badge>
                 </div>
               ))
