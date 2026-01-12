@@ -1,5 +1,4 @@
 import { Newspaper, Calendar, ExternalLink, Image, FileText, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 const newsItems = [
   {
@@ -52,101 +51,97 @@ const pressKitItems = [
 const Imprensa = () => {
   return (
     <div className="min-h-screen bg-[#0B0B0D]">
-      {/* Hero Section */}
-      <section className="py-24 md:py-32">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-500/10 mb-8">
-              <Newspaper className="w-7 h-7 text-emerald-400" />
-            </div>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 tracking-tight">
-              Sala de <span className="text-emerald-400">Imprensa</span>
-            </h1>
-            <p className="text-lg md:text-xl text-gray-400 leading-relaxed max-w-2xl mx-auto">
-              Acompanhe as últimas notícias e novidades da M3 Agency e de nossos atletas.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Press Kit Section */}
-      <section className="py-16 md:py-20 border-t border-white/[0.06]">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">
-              Press Kit
-            </h2>
-            <p className="text-gray-400">
-              Materiais oficiais para imprensa e parceiros.
-            </p>
-          </div>
+      {/* Main Container - consistent for all sections */}
+      <div className="w-full max-w-[1100px] mx-auto px-6 md:px-8">
+        
+        {/* Hero Section */}
+        <section className="pt-32 pb-12 md:pb-14">
+          {/* Eyebrow */}
+          <p className="text-[10px] uppercase tracking-[0.25em] text-zinc-600 mb-4">
+            Imprensa
+          </p>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
+          {/* Title */}
+          <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight mb-5">
+            Sala de{" "}
+            <span className="text-emerald-400">Imprensa</span>
+          </h1>
+          
+          {/* Subtitle */}
+          <p className="text-lg md:text-xl text-zinc-400 max-w-2xl leading-relaxed">
+            Acompanhe as últimas notícias e novidades da M3 Agency e de nossos atletas.
+          </p>
+        </section>
+
+        {/* Divider */}
+        <hr className="border-t border-zinc-800" />
+
+        {/* Press Kit Section */}
+        <section className="py-12 md:py-14">
+          <p className="text-[10px] uppercase tracking-[0.25em] text-zinc-600 mb-6">
+            Press Kit
+          </p>
+          
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {pressKitItems.map((item) => (
-              <div
+              <a
                 key={item.id}
-                className="group bg-white/[0.02] border border-white/[0.06] rounded-2xl p-6 transition-all duration-300 hover:bg-white/[0.04] hover:border-emerald-500/20 hover:-translate-y-1"
+                href={item.driveUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group block bg-zinc-900/50 border border-zinc-800 rounded-xl p-5 transition-all duration-300 hover:border-emerald-500/30 hover:-translate-y-0.5"
               >
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-emerald-500/10 mb-5">
-                  <item.icon className="w-6 h-6 text-emerald-400" />
+                <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center mb-4 group-hover:bg-emerald-500/10 transition-colors">
+                  <item.icon className="w-5 h-5 text-zinc-400 group-hover:text-emerald-400 transition-colors" />
                 </div>
                 
-                <h3 className="text-lg font-semibold text-white mb-2">
+                <h3 className="text-white font-medium mb-1">
                   {item.title}
                 </h3>
                 
-                <p className="text-gray-400 text-sm mb-5 leading-relaxed">
+                <p className="text-zinc-500 text-sm mb-4">
                   {item.description}
                 </p>
                 
-                <a
-                  href={item.driveUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
-                >
+                <span className="inline-flex items-center gap-2 text-sm text-emerald-400 group-hover:text-emerald-300 transition-colors">
                   Acessar no Drive
-                  <ExternalLink className="w-4 h-4" />
-                </a>
-              </div>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </span>
+              </a>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* News Section */}
-      <section className="py-20 md:py-28 border-t border-white/[0.06]">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-14">
-            <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">
-              Últimas Notícias
-            </h2>
-            <p className="text-gray-400">
-              Acompanhe as novidades da M3 Agency e de nossos atletas.
-            </p>
-          </div>
+        {/* Divider */}
+        <hr className="border-t border-zinc-800" />
+
+        {/* News Section */}
+        <section className="py-12 md:py-14">
+          <p className="text-[10px] uppercase tracking-[0.25em] text-zinc-600 mb-6">
+            Últimas Notícias
+          </p>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {newsItems.map((item) => (
               <article 
                 key={item.id} 
-                className="group bg-white/[0.02] border border-white/[0.06] rounded-2xl p-6 transition-all duration-300 hover:bg-white/[0.04] hover:border-emerald-500/20 hover:-translate-y-1"
+                className="group bg-zinc-900/50 border border-zinc-800 rounded-xl p-5 transition-all duration-300 hover:border-emerald-500/30 hover:-translate-y-0.5"
               >
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <Calendar className="w-4 h-4" />
+                  <div className="flex items-center gap-1.5 text-xs text-zinc-500">
+                    <Calendar className="w-3.5 h-3.5" />
                     <span>{item.date}</span>
                   </div>
-                  <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-full text-xs font-medium">
+                  <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded text-[10px] font-medium uppercase tracking-wide">
                     {item.category}
                   </span>
                 </div>
                 
-                <h3 className="text-lg font-semibold text-white mb-3 group-hover:text-emerald-400 transition-colors leading-snug">
+                <h3 className="text-white font-medium mb-3 group-hover:text-emerald-400 transition-colors leading-snug">
                   {item.title}
                 </h3>
                 
-                <p className="text-gray-400 text-sm mb-5 leading-relaxed">
+                <p className="text-zinc-500 text-sm mb-4 leading-relaxed">
                   {item.excerpt}
                 </p>
                 
@@ -155,35 +150,50 @@ const Imprensa = () => {
                   className="inline-flex items-center gap-2 text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
                 >
                   Ler mais
-                  <ExternalLink className="w-4 h-4" />
+                  <ExternalLink className="w-3.5 h-3.5" />
                 </a>
               </article>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Press Contact */}
-      <section className="py-16 md:py-24">
-        <div className="container mx-auto px-4">
-          <div className="max-w-2xl mx-auto text-center bg-white/[0.02] border border-white/[0.06] rounded-3xl p-10 md:p-14">
-            <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
-              Contato para Imprensa
-            </h2>
-            <p className="text-gray-400 mb-8 leading-relaxed">
+        {/* Divider */}
+        <hr className="border-t border-zinc-800" />
+
+        {/* Press Contact Section */}
+        <section className="py-12 md:py-14">
+          <p className="text-[10px] uppercase tracking-[0.25em] text-zinc-600 mb-6">
+            Contato para Imprensa
+          </p>
+          
+          <div className="max-w-xl">
+            <p className="text-zinc-400 mb-6 leading-relaxed">
               Para solicitações de entrevistas, materiais de imprensa ou informações 
               sobre nossos atletas, entre em contato com nossa assessoria.
             </p>
-            <Button 
-              size="lg" 
-              className="bg-emerald-500 hover:bg-emerald-600 text-white gap-2 rounded-xl px-8"
+            
+            <a 
+              href="mailto:imprensa@m3agency.com"
+              className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium py-3 px-6 rounded-lg transition-colors"
             >
               Falar com Assessoria
               <ExternalLink className="w-4 h-4" />
-            </Button>
+            </a>
           </div>
-        </div>
-      </section>
+        </section>
+
+        {/* Signature Section */}
+        <section className="pt-12 pb-16 md:pb-20 border-t border-zinc-800">
+          <p className="text-xl md:text-2xl">
+            <span className="text-white font-bold">M3 Agency.</span>
+            {" "}
+            <span className="text-emerald-400">Conectando talentos.</span>
+            {" "}
+            <span className="text-white font-bold">Construindo caminhos.</span>
+          </p>
+        </section>
+
+      </div>
     </div>
   );
 };
