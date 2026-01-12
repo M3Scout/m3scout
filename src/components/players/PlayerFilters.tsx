@@ -1,6 +1,5 @@
-import { Search, Filter, ChevronDown } from "lucide-react";
+import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -55,24 +54,28 @@ export function PlayerFilters({
     <div className="flex flex-col md:flex-row gap-4">
       {/* Search */}
       <div className="relative flex-1">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
         <Input
           type="text"
           placeholder="Buscar atleta por nome..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-10 input-dark"
+          className="pl-11 h-12 bg-transparent border-zinc-800 text-white placeholder:text-zinc-500 rounded-none focus-visible:ring-0 focus-visible:border-zinc-600"
         />
       </div>
 
       {/* Position Filter */}
       <Select value={positionFilter} onValueChange={onPositionChange}>
-        <SelectTrigger className="w-full md:w-[180px] input-dark">
+        <SelectTrigger className="w-full md:w-[200px] h-12 bg-transparent border-zinc-800 text-white rounded-none focus:ring-0 focus:border-zinc-600">
           <SelectValue placeholder="Posição" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="bg-zinc-950 border-zinc-800 rounded-none">
           {safeArray(positions).map((pos) => (
-            <SelectItem key={pos} value={pos.toLowerCase()}>
+            <SelectItem 
+              key={pos} 
+              value={pos.toLowerCase()}
+              className="text-white focus:bg-zinc-800 focus:text-white rounded-none"
+            >
               {pos}
             </SelectItem>
           ))}
@@ -81,12 +84,16 @@ export function PlayerFilters({
 
       {/* Nationality Filter */}
       <Select value={nationalityFilter} onValueChange={onNationalityChange}>
-        <SelectTrigger className="w-full md:w-[180px] input-dark">
+        <SelectTrigger className="w-full md:w-[200px] h-12 bg-transparent border-zinc-800 text-white rounded-none focus:ring-0 focus:border-zinc-600">
           <SelectValue placeholder="Nacionalidade" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="bg-zinc-950 border-zinc-800 rounded-none">
           {safeArray(nationalities).map((nat) => (
-            <SelectItem key={nat} value={nat.toLowerCase()}>
+            <SelectItem 
+              key={nat} 
+              value={nat.toLowerCase()}
+              className="text-white focus:bg-zinc-800 focus:text-white rounded-none"
+            >
               {nat}
             </SelectItem>
           ))}
