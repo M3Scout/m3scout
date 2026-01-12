@@ -197,6 +197,18 @@ export function AttributePentagonRadar({ attributes, loading = false }: Attribut
                   cy="50%"
                   outerRadius={70}
                 >
+                  {/* SVG Defs for drop shadow filter */}
+                  <defs>
+                    <filter id="radarShadow" x="-20%" y="-20%" width="140%" height="140%">
+                      <feDropShadow 
+                        dx="0" 
+                        dy="2" 
+                        stdDeviation="4" 
+                        floodColor="#22c55e" 
+                        floodOpacity="0.3"
+                      />
+                    </filter>
+                  </defs>
                   {/* Very subtle grid lines - NOT the background */}
                   <PolarGrid
                     stroke="#d1d5db"
@@ -210,7 +222,7 @@ export function AttributePentagonRadar({ attributes, loading = false }: Attribut
                     tick={false}
                     axisLine={false}
                   />
-                  {/* Green data polygon - prominent */}
+                  {/* Green data polygon - prominent with drop shadow */}
                   <Radar
                     name="Atributos"
                     dataKey="value"
@@ -218,6 +230,7 @@ export function AttributePentagonRadar({ attributes, loading = false }: Attribut
                     fill="#22c55e"
                     fillOpacity={0.35}
                     strokeWidth={2.5}
+                    style={{ filter: "url(#radarShadow)" }}
                   />
                 </RadarChart>
               </ResponsiveContainer>
