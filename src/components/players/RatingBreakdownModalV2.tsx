@@ -42,6 +42,7 @@ import {
   CompetitionBreakdown,
   getReliabilityLabelV2,
   getReliabilityVariantV2,
+  calculatePlayerRatingV2,
 } from "@/lib/playerRatingV2";
 import type { ExtendedRatingBreakdownV2, ExtendedCompetitionBreakdown } from "@/lib/autoRatingDetailsAdapter";
 import { formatFixed } from "@/lib/formatters";
