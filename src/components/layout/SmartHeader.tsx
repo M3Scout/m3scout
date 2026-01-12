@@ -20,7 +20,7 @@ export function SmartHeader({ variant = "default" }: SmartHeaderProps) {
   const [isVisible, setIsVisible] = useState(true);
   const [isAtTop, setIsAtTop] = useState(true);
   const lastScrollY = useRef(0);
-  const scrollThreshold = 5; // Minimum scroll to trigger hide/show
+  const scrollThreshold = 8; // Minimum scroll to trigger hide/show (prevents jitter)
   const location = useLocation();
 
   useEffect(() => {
@@ -33,7 +33,7 @@ export function SmartHeader({ variant = "default" }: SmartHeaderProps) {
       
       // Only trigger hide/show if scroll difference exceeds threshold
       if (Math.abs(scrollDiff) > scrollThreshold) {
-        if (scrollDiff > 0 && currentScrollY > 100) {
+        if (scrollDiff > 0 && currentScrollY > 120) {
           // Scrolling down & past header height
           setIsVisible(false);
         } else {
@@ -64,42 +64,47 @@ export function SmartHeader({ variant = "default" }: SmartHeaderProps) {
     <>
       <header
         className={cn(
-          "fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-in-out",
+          "fixed top-0 left-0 right-0 z-50",
+          "transition-transform duration-[240ms] ease-in-out",
           isVisible ? "translate-y-0" : "-translate-y-full",
           isTransparent 
             ? "bg-transparent" 
-            : "bg-black/95 backdrop-blur-sm border-b border-white/5"
+            : "bg-black/98 backdrop-blur-[6px] border-b border-white/[0.06]"
         )}
       >
-        <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <div className="flex h-14 items-center justify-between">
-            {/* Logo */}
+        {/* Desktop: 96px height with 28px vertical padding */}
+        {/* Mobile: 76px height with 20px vertical padding */}
+        <div className="mx-auto max-w-[1280px] px-6 lg:px-10">
+          <div className="flex h-[76px] md:h-[96px] items-center justify-between py-5 md:py-7">
+            {/* Logo - slightly larger, vertically centered */}
             <Link 
               to="/" 
-              className="flex items-center gap-2 text-white hover:opacity-80 transition-opacity"
+              className="flex items-center gap-3 text-white hover:opacity-90 transition-opacity duration-200"
             >
-              <div className="flex h-8 w-8 items-center justify-center bg-white text-black text-xs font-black tracking-tight">
+              <div className="flex h-10 w-10 md:h-11 md:w-11 items-center justify-center bg-white text-black text-sm md:text-base font-black tracking-tight">
                 M3
               </div>
-              <span className="text-sm font-medium tracking-wider uppercase hidden sm:inline">
+              <span className="text-sm md:text-[15px] font-medium tracking-[0.12em] uppercase hidden sm:inline">
                 Agency
               </span>
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center gap-8">
+            <nav className="hidden lg:flex items-center gap-8 xl:gap-10">
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
                   to={link.href}
                   className={cn(
-                    "relative text-[11px] font-medium uppercase tracking-[0.15em] text-white/70 hover:text-white transition-colors duration-200",
+                    "relative min-h-[44px] flex items-center px-2 xl:px-3",
+                    "text-[13px] font-normal uppercase tracking-[0.16em]",
+                    "text-white/65 hover:text-white transition-colors duration-200",
                     isActive(link.href) && "text-white"
                   )}
                 >
                   {link.label}
                   {isActive(link.href) && (
-                    <span className="absolute -bottom-1 left-0 w-full h-px bg-white/50" />
+                    <span className="absolute bottom-2 left-2 right-2 h-px bg-white/40" />
                   )}
                 </Link>
               ))}
@@ -107,11 +112,11 @@ export function SmartHeader({ variant = "default" }: SmartHeaderProps) {
 
             {/* Mobile Menu Button */}
             <button
-              className="lg:hidden p-2 text-white/70 hover:text-white transition-colors"
+              className="lg:hidden min-h-[44px] min-w-[44px] flex items-center justify-center text-white/70 hover:text-white transition-colors duration-200"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+              aria-label={isMenuOpen ? "Fechar menu" : "Abrir menu"}
             >
-              {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
+              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>
         </div>
@@ -126,14 +131,17 @@ export function SmartHeader({ variant = "default" }: SmartHeaderProps) {
             : "opacity-0 pointer-events-none"
         )}
       >
-        <div className="flex flex-col items-center justify-center h-full">
-          <nav className="flex flex-col items-center gap-8">
+        {/* Account for header height on mobile */}
+        <div className="flex flex-col items-center justify-center h-full pt-[76px]">
+          <nav className="flex flex-col items-center gap-6">
             {navLinks.map((link, index) => (
               <Link
                 key={link.href}
                 to={link.href}
                 className={cn(
-                  "text-lg font-medium uppercase tracking-[0.2em] text-white/70 hover:text-white transition-all duration-300",
+                  "min-h-[44px] flex items-center px-4",
+                  "text-base font-normal uppercase tracking-[0.18em]",
+                  "text-white/60 hover:text-white transition-all duration-300",
                   isMenuOpen && "animate-fade-in",
                   isActive(link.href) && "text-white"
                 )}
@@ -147,7 +155,12 @@ export function SmartHeader({ variant = "default" }: SmartHeaderProps) {
             {/* Mobile CTA */}
             <Link
               to="/app"
-              className="mt-8 px-8 py-3 border border-white/30 text-white/70 hover:text-white hover:border-white/60 text-xs uppercase tracking-[0.2em] transition-all duration-300"
+              className={cn(
+                "mt-6 min-h-[44px] flex items-center px-8",
+                "border border-white/25 hover:border-white/50",
+                "text-xs font-normal uppercase tracking-[0.18em]",
+                "text-white/60 hover:text-white transition-all duration-300"
+              )}
               onClick={() => setIsMenuOpen(false)}
             >
               Área Restrita
