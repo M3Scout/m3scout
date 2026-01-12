@@ -1,28 +1,18 @@
+import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Newspaper, Calendar, ExternalLink, Image, FileText, Sparkles } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
-const newsItems = [
-  {
-    id: 1,
-    title: "M3 Agency fecha parceria com clubes europeus",
-    date: "10 Jan 2026",
-    excerpt: "A agência expandiu sua rede de contatos internacionais, firmando parcerias estratégicas com importantes clubes da Europa.",
-    category: "Parcerias",
-  },
-  {
-    id: 2,
-    title: "Atleta representado pela M3 é convocado para Seleção",
-    date: "05 Jan 2026",
-    excerpt: "Mais um atleta do nosso elenco recebe convocação para defender as cores da Seleção Brasileira.",
-    category: "Atletas",
-  },
-  {
-    id: 3,
-    title: "M3 Agency completa 5 anos de atuação no mercado",
-    date: "28 Dez 2025",
-    excerpt: "Celebramos nossa trajetória de sucesso com mais de 50 transferências realizadas e 150 atletas representados.",
-    category: "Institucional",
-  },
-];
+type NewsArticle = {
+  id: string;
+  title: string;
+  slug: string;
+  category: string;
+  excerpt: string | null;
+  publish_date: string;
+};
 
 const pressKitItems = [
   {
@@ -49,6 +39,21 @@ const pressKitItems = [
 ];
 
 const Imprensa = () => {
+  const { data: articles, isLoading } = useQuery({
+    queryKey: ["public-news"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("news_articles")
+        .select("id, title, slug, category, excerpt, publish_date")
+        .eq("status", "published")
+        .order("publish_date", { ascending: false })
+        .limit(9);
+      
+      if (error) throw error;
+      return data as NewsArticle[];
+    },
+  });
+
   return (
     <div className="min-h-screen bg-[#0B0B0D]">
       {/* Main Container - consistent for all sections */}
@@ -121,40 +126,61 @@ const Imprensa = () => {
             Últimas Notícias
           </p>
           
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {newsItems.map((item) => (
-              <article 
-                key={item.id} 
-                className="group bg-zinc-900/50 border border-zinc-800 rounded-xl p-5 transition-all duration-300 hover:border-[#e52421]/30 hover:-translate-y-0.5"
-              >
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="flex items-center gap-1.5 text-xs text-zinc-500">
-                    <Calendar className="w-3.5 h-3.5" />
-                    <span>{item.date}</span>
-                  </div>
-                  <span className="px-2 py-0.5 bg-[#e52421]/10 text-[#e52421] rounded text-[10px] font-medium uppercase tracking-wide">
-                    {item.category}
-                  </span>
+          {isLoading ? (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-5 animate-pulse">
+                  <div className="h-4 bg-zinc-800 rounded w-1/2 mb-4" />
+                  <div className="h-5 bg-zinc-800 rounded w-full mb-3" />
+                  <div className="h-4 bg-zinc-800 rounded w-3/4" />
                 </div>
-                
-                <h3 className="text-white font-medium mb-3 group-hover:text-[#e52421] transition-colors leading-snug">
-                  {item.title}
-                </h3>
-                
-                <p className="text-zinc-500 text-sm mb-4 leading-relaxed">
-                  {item.excerpt}
-                </p>
-                
-                <a 
-                  href="#"
-                  className="inline-flex items-center gap-2 text-sm text-[#e52421] hover:text-[#ff3b38] transition-colors"
+              ))}
+            </div>
+          ) : articles?.length === 0 ? (
+            <div className="text-center py-12">
+              <Newspaper className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
+              <p className="text-zinc-500">Nenhuma notícia publicada ainda.</p>
+            </div>
+          ) : (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {articles?.map((article) => (
+                <Link 
+                  key={article.id}
+                  to={`/imprensa/${article.slug}`}
+                  className="group bg-zinc-900/50 border border-zinc-800 rounded-xl p-5 transition-all duration-300 hover:border-[#e52421]/30 hover:-translate-y-0.5"
                 >
-                  Ler mais
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </a>
-              </article>
-            ))}
-          </div>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="flex items-center gap-1.5 text-xs text-zinc-500">
+                      <Calendar className="w-3.5 h-3.5" />
+                      <span>
+                        {format(new Date(article.publish_date), "dd MMM yyyy", {
+                          locale: ptBR,
+                        })}
+                      </span>
+                    </div>
+                    <span className="px-2 py-0.5 bg-[#e52421]/10 text-[#e52421] rounded text-[10px] font-medium uppercase tracking-wide">
+                      {article.category}
+                    </span>
+                  </div>
+                  
+                  <h3 className="text-white font-medium mb-3 group-hover:text-[#e52421] transition-colors leading-snug">
+                    {article.title}
+                  </h3>
+                  
+                  {article.excerpt && (
+                    <p className="text-zinc-500 text-sm mb-4 leading-relaxed line-clamp-2">
+                      {article.excerpt}
+                    </p>
+                  )}
+                  
+                  <span className="inline-flex items-center gap-2 text-sm text-[#e52421] group-hover:text-[#ff3b38] transition-colors">
+                    Ler mais
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </span>
+                </Link>
+              ))}
+            </div>
+          )}
         </section>
 
         {/* Signature Section */}

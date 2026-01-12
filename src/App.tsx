@@ -17,6 +17,7 @@ import PlayerProfile from "./pages/PlayerProfile";
 import Contact from "./pages/Contact";
 import Sobre from "./pages/Sobre";
 import Imprensa from "./pages/Imprensa";
+import NewsDetail from "./pages/NewsDetail";
 import RepresentacaoTalentos from "./pages/RepresentacaoTalentos";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -38,6 +39,8 @@ import CompetitionRanking from "./pages/app/CompetitionRanking";
 import Leads from "./pages/app/Leads";
 import Settings from "./pages/app/Settings";
 import ComparePlayers from "./pages/app/ComparePlayers";
+import News from "./pages/app/News";
+import NewsForm from "./pages/app/NewsForm";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +61,7 @@ const App = () => (
               <Route path="/atletas" element={<Players />} />
               <Route path="/players/:slug" element={<PlayerProfile />} />
               <Route path="/imprensa" element={<Imprensa />} />
+              <Route path="/imprensa/:slug" element={<NewsDetail />} />
               <Route path="/competitions" element={<CompetitionRankingPublic />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/contato" element={<Contact />} />
@@ -89,6 +93,9 @@ const App = () => (
               <Route path="competitions/import" element={<CompetitionsImport />} />
               <Route path="competitions/ranking" element={<CompetitionRanking />} />
               <Route path="leads" element={<Leads />} />
+              <Route path="news" element={<News />} />
+              <Route path="news/new" element={<NewsForm />} />
+              <Route path="news/:id/edit" element={<NewsForm />} />
               <Route path="settings" element={<Settings />} />
             </Route>
 
