@@ -2,3 +2,6 @@ project_id = "httxbfcvzknyncprzcuy"
 
 [functions.instagram-feed]
 verify_jwt = false
+
+[functions.instagram-refresh-token]
+verify_jwt = false
