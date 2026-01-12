@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PlayerCard } from "@/components/players/PlayerCard";
+import { FeaturedPlayerCard } from "@/components/players/FeaturedPlayerCard";
 import { PlayerFilters } from "@/components/players/PlayerFilters";
 import {
   Select,
@@ -26,6 +27,7 @@ interface Player {
 }
 
 const PAGE_SIZE_OPTIONS = [12, 24, 48];
+const FEATURED_COUNT = 2; // Number of featured athletes to show
 
 const Players = () => {
   const [players, setPlayers] = useState<Player[]>([]);
@@ -157,26 +159,48 @@ const Players = () => {
           <>
             {/* Athletes Grid */}
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4 lg:gap-7 2xl:grid-cols-5">
-              {safeArray(paginatedPlayers).map((player, index) => (
-                <div 
-                  key={player.id}
-                  className="animate-fade-in"
-                  style={{ animationDelay: `${index * 30}ms` }}
-                >
-                  <PlayerCard
-                    id={player.id}
-                    slug={player.slug}
-                    name={player.full_name}
-                    position={player.position}
-                    secondaryPositions={player.secondary_positions || []}
-                    age={player.age || 0}
-                    nationality={player.nationality}
-                    currentClub={player.current_club || ""}
-                    imageUrl={player.photo_url || "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=400&h=600&fit=crop"}
-                    autoRating={player.auto_rating}
-                  />
-                </div>
-              ))}
+              {safeArray(paginatedPlayers).map((player, index) => {
+                // Show featured cards only on first page for top-rated players
+                const isFeatured = currentPage === 1 && index < FEATURED_COUNT && (player.auto_rating ?? 0) >= 3.5;
+                
+                if (isFeatured) {
+                  return (
+                    <FeaturedPlayerCard
+                      key={player.id}
+                      id={player.id}
+                      slug={player.slug}
+                      name={player.full_name}
+                      position={player.position}
+                      age={player.age || 0}
+                      nationality={player.nationality}
+                      currentClub={player.current_club || ""}
+                      imageUrl={player.photo_url || "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=400&h=600&fit=crop"}
+                      autoRating={player.auto_rating}
+                    />
+                  );
+                }
+                
+                return (
+                  <div 
+                    key={player.id}
+                    className="animate-fade-in"
+                    style={{ animationDelay: `${index * 30}ms` }}
+                  >
+                    <PlayerCard
+                      id={player.id}
+                      slug={player.slug}
+                      name={player.full_name}
+                      position={player.position}
+                      secondaryPositions={player.secondary_positions || []}
+                      age={player.age || 0}
+                      nationality={player.nationality}
+                      currentClub={player.current_club || ""}
+                      imageUrl={player.photo_url || "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=400&h=600&fit=crop"}
+                      autoRating={player.auto_rating}
+                    />
+                  </div>
+                );
+              })}
             </div>
 
             {/* Pagination */}
