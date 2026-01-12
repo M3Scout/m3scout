@@ -1,7 +1,7 @@
 import { HeaderHero } from "@/components/home/HeaderHero";
 import { FeaturedPlayers } from "@/components/home/FeaturedPlayers";
 import { AboutSection } from "@/components/home/AboutSection";
-import { CTASection } from "@/components/home/CTASection";
+import { InstagramFeedSection } from "@/components/home/InstagramFeedSection";
 
 const Index = () => {
   return (
@@ -9,7 +9,7 @@ const Index = () => {
       <HeaderHero />
       <FeaturedPlayers />
       <AboutSection />
-      <CTASection />
+      <InstagramFeedSection />
     </>
   );
 };
