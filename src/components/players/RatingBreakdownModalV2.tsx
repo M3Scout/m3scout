@@ -43,18 +43,29 @@ import {
   getReliabilityLabelV2,
   getReliabilityVariantV2,
 } from "@/lib/playerRatingV2";
+import type { ExtendedRatingBreakdownV2, ExtendedCompetitionBreakdown } from "@/lib/autoRatingDetailsAdapter";
 import { formatFixed } from "@/lib/formatters";
 import { StatsRadarChart } from "./StatsRadarChart";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface RatingBreakdownModalV2Props {
-  details: RatingBreakdownV2 | null;
+  details: RatingBreakdownV2 | ExtendedRatingBreakdownV2 | null;
   rating: number;
   trigger?: React.ReactNode;
   playerId?: string;
   isAdmin?: boolean;
   onRecalculated?: () => void;
+}
+
+// Helper to check if details have computation flags
+function hasComputationFlags(details: RatingBreakdownV2 | ExtendedRatingBreakdownV2): details is ExtendedRatingBreakdownV2 {
+  return 'has_data' in details && 'computed' in details;
+}
+
+// Helper to check if competition has computation flags
+function competitionHasFlags(comp: CompetitionBreakdown | ExtendedCompetitionBreakdown): comp is ExtendedCompetitionBreakdown {
+  return 'has_data' in comp && 'computed' in comp;
 }
 
 function getScoreColor(score: number): string {
@@ -471,11 +482,13 @@ function StatBreakdownCard({
   onToggle,
   positionGroup,
 }: { 
-  competition: CompetitionBreakdown; 
+  competition: CompetitionBreakdown | ExtendedCompetitionBreakdown; 
   isExpanded: boolean;
   onToggle: () => void;
   positionGroup: string;
 }) {
+  // Check if this competition was actually computed
+  const isComputed = competitionHasFlags(competition) ? competition.computed : safeNumber(competition.minutes) > 0;
   const statBreakdown = Array.isArray(competition.stat_breakdown) ? competition.stat_breakdown : [];
   const availableStats = statBreakdown.filter(s => s.available);
   const unavailableStats = statBreakdown.filter(s => !s.available);
@@ -496,7 +509,7 @@ function StatBreakdownCard({
           </div>
             <div className="flex items-center gap-3">
             <div className="text-right">
-              {safeNumber(competition.competition_score) > 0 ? (
+              {isComputed ? (
                 <>
                   <span className={cn("text-sm font-semibold", getScoreColor(safeNumber(competition.competition_score)))}>
                     {formatFixed(safeNumber(competition.competition_score), 1)}
@@ -951,16 +964,20 @@ export function RatingBreakdownModalV2({
               </div>
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">Índice</p>
-                {safeNumber(details.final_score_100) > 0 ? (
-                  <>
-                    <span className={cn("text-2xl font-semibold", getScoreColor(safeNumber(details.final_score_100)))}>
-                      {formatFixed(safeNumber(details.final_score_100), 0)}
-                    </span>
-                    <span className="text-sm text-muted-foreground">/100</span>
-                  </>
-                ) : (
-                  <span className="text-lg text-muted-foreground">Sem dados</span>
-                )}
+                {(() => {
+                  const isComputed = hasComputationFlags(details) ? details.computed : safeNumber(details.final_score_100) > 0;
+                  if (isComputed) {
+                    return (
+                      <>
+                        <span className={cn("text-2xl font-semibold", getScoreColor(safeNumber(details.final_score_100)))}>
+                          {formatFixed(safeNumber(details.final_score_100), 0)}
+                        </span>
+                        <span className="text-sm text-muted-foreground">/100</span>
+                      </>
+                    );
+                  }
+                  return <span className="text-lg text-muted-foreground">Sem dados</span>;
+                })()}
               </div>
               <div className="text-right">
                 <Badge variant={getReliabilityVariantV2(details.reliability)} className="text-sm mb-1">
@@ -1141,7 +1158,9 @@ export function RatingBreakdownModalV2({
                           </tr>
                         </thead>
                         <tbody>
-                          {safeArray(details?.competitions ?? []).map((comp) => (
+                          {safeArray(details?.competitions ?? []).map((comp) => {
+                            const isComputed = competitionHasFlags(comp) ? comp.computed : safeNumber(comp.minutes) > 0;
+                            return (
                             <tr key={comp.competition_id} className="border-b border-border/30">
                               <td className="py-2 px-1 max-w-[100px] truncate" title={comp.competition_name}>
                                 {comp.competition_name ?? "Sem competição"}
@@ -1164,25 +1183,26 @@ export function RatingBreakdownModalV2({
                                 {formatFixed((comp.final_weight ?? comp.combined_weight) * 100, 0)}%
                               </td>
                               <td className="py-2 px-1 text-center">
-                                {safeNumber(comp.competition_score) > 0 ? (
+                                {isComputed ? (
                                   <span className={cn("font-semibold", getScoreColor(safeNumber(comp.competition_score)))}>
                                     {formatFixed(safeNumber(comp.competition_score), 0)}
                                   </span>
                                 ) : (
-                                  <span className="text-muted-foreground">0</span>
+                                  <span className="text-muted-foreground">N/D</span>
                                 )}
                               </td>
                               <td className="py-2 px-1 text-center">
-                                {safeNumber(comp.weighted_contribution) > 0 ? (
+                                {isComputed ? (
                                   <span className={cn("font-medium", getScoreColor(safeNumber(comp.competition_score)))}>
                                     {formatFixed(safeNumber(comp.weighted_contribution), 1)}
                                   </span>
                                 ) : (
-                                  <span className="text-muted-foreground">0</span>
+                                  <span className="text-muted-foreground">N/D</span>
                                 )}
                               </td>
                             </tr>
-                          ))}
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
