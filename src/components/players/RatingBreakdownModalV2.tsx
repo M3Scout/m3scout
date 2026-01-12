@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -42,7 +42,6 @@ import {
   CompetitionBreakdown,
   getReliabilityLabelV2,
   getReliabilityVariantV2,
-  calculatePlayerRatingV2,
 } from "@/lib/playerRatingV2";
 import type { ExtendedRatingBreakdownV2, ExtendedCompetitionBreakdown } from "@/lib/autoRatingDetailsAdapter";
 import { formatFixed } from "@/lib/formatters";
@@ -397,9 +396,9 @@ const STAT_NAME_MAP: Record<string, string> = {
   // Creativity
   chances_created: "Chances Criadas",
   chances_created_90: "Chances Criadas/90",
-  key_passes: "Passes-Chave",
-  key_passes_90: "Passes-Chave/90",
-  key_pass_accuracy: "Precisão Passes-Chave",
+  key_passes: "Passes Decisivos",
+  key_passes_90: "Passes Decisivos/90",
+  key_pass_accuracy: "Precisão Passes Decisivos",
   offensive_involvement: "Envolvimento Ofensivo",
   
   // Passing
@@ -640,22 +639,181 @@ function StatBreakdownCard({
   isExpanded, 
   onToggle,
   positionGroup,
+  playerId,
 }: { 
   competition: CompetitionBreakdown | ExtendedCompetitionBreakdown; 
   isExpanded: boolean;
   onToggle: () => void;
   positionGroup: string;
+  playerId?: string;
 }) {
+  const compId = String((competition as any)?.competition_id ?? "");
+  const seasonYear = Number((competition as any)?.season_year);
+
   // Check if this competition was actually computed
-  const isComputed = competitionHasFlags(competition) ? competition.computed : safeNumber(competition.minutes) > 0;
-  const statBreakdown = Array.isArray(competition.stat_breakdown) ? competition.stat_breakdown : [];
-  
+  const isComputed = competitionHasFlags(competition)
+    ? competition.computed
+    : safeNumber((competition as any).minutes) > 0;
+
+  // Fetch the exact saved stats source when a competition is expanded.
+  // This is the SAME table the edit form writes into: public.player_stats.
+  const [statsRow, setStatsRow] = useState<any | null | undefined>(undefined);
+  const [statsReason, setStatsReason] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    if (!isExpanded) return;
+
+    // Always log selection (mandatory)
+    console.log("[BREAKDOWN] selected competition/year", {
+      playerId,
+      competitionId: compId,
+      year: seasonYear,
+      positionGroup,
+    });
+
+    if (!playerId) {
+      setStatsRow(null);
+      setStatsReason("missing_playerId");
+      console.warn("[BREAKDOWN] missing_stats_source: missing_playerId");
+      return;
+    }
+
+    if (!compId || !Number.isFinite(seasonYear)) {
+      setStatsRow(null);
+      setStatsReason("comp_year_not_found");
+      console.warn("[BREAKDOWN] comp_year_not_found", { compId, seasonYear });
+      return;
+    }
+
+    // Fetch only once per expansion (avoid spamming)
+    if (statsRow !== undefined) return;
+
+    (async () => {
+      const { data, error } = await supabase
+        .from("player_stats")
+        .select(
+          "matches, minutes, goals, assists, yellow_cards, red_cards, key_passes, chances_created, shots, shots_on_target"
+        )
+        .eq("player_id", playerId)
+        .eq("competition_id", compId)
+        .eq("season_year", seasonYear)
+        .maybeSingle();
+
+      console.log("[BREAKDOWN] stats query result", { error, data });
+
+      if (error) {
+        setStatsRow(null);
+        setStatsReason("missing_stats_source");
+        console.error("[BREAKDOWN] missing_stats_source", error);
+        return;
+      }
+
+      if (!data) {
+        setStatsRow(null);
+        setStatsReason("missing_stats_source");
+        console.warn("[BREAKDOWN] missing_stats_source: no row returned", {
+          playerId,
+          competitionId: compId,
+          year: seasonYear,
+          hint:
+            "mismatch competitionId OR mismatch year type OR wrong filter field OR query not executed",
+        });
+        return;
+      }
+
+      // Raw stats payload (mandatory)
+      console.log("[BREAKDOWN] raw stats for comp/year", data);
+      setStatsRow(data);
+      setStatsReason(null);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isExpanded, playerId, compId, seasonYear, positionGroup]);
+
+  const STAT_CAPS: Record<string, { cap: number; inverse?: boolean }> = {
+    matches: { cap: 60 },
+    minutes: { cap: 4000 },
+    goals: { cap: 30 },
+    assists: { cap: 20 },
+    key_passes: { cap: 120 },
+    chances_created: { cap: 60 },
+    shots: { cap: 150 },
+    shots_on_target: { cap: 80 },
+    yellow_cards: { cap: 15, inverse: true },
+    red_cards: { cap: 5, inverse: true },
+  };
+
+  const scoreFromValue = (statKey: string, value: number): number => {
+    const meta = STAT_CAPS[statKey];
+    const cap = meta?.cap ?? Math.max(1, value);
+    const base = cap > 0 ? (value / cap) * 100 : 0;
+    const normalized = meta?.inverse ? 100 - base : base;
+    return Math.min(100, Math.max(0, normalized));
+  };
+
+  const mappedStats = statsRow
+    ? [
+        { stat_key: "goals", label: "Gols", value_raw: statsRow.goals },
+        { stat_key: "assists", label: "Assistências", value_raw: statsRow.assists },
+        { stat_key: "key_passes", label: "Passes Decisivos", value_raw: statsRow.key_passes },
+        { stat_key: "chances_created", label: "Chances Criadas", value_raw: statsRow.chances_created },
+        { stat_key: "shots", label: "Chutes", value_raw: statsRow.shots },
+        { stat_key: "shots_on_target", label: "Chutes no Gol", value_raw: statsRow.shots_on_target },
+        { stat_key: "yellow_cards", label: "Amarelos", value_raw: statsRow.yellow_cards },
+        { stat_key: "red_cards", label: "Vermelhos", value_raw: statsRow.red_cards },
+        { stat_key: "minutes", label: "Minutos", value_raw: statsRow.minutes },
+        { stat_key: "matches", label: "Jogos", value_raw: statsRow.matches },
+      ]
+    : [];
+
+  // After mapping (mandatory)
+  if (import.meta.env.DEV && statsRow) {
+    console.log("[BREAKDOWN] mapped stats", mappedStats);
+  }
+
+  const breakdownRowsFromStatsRow = mappedStats.map((s) => {
+    const value = Number(s.value_raw ?? 0);
+    const weightPct = mappedStats.length > 0 ? 100 / mappedStats.length : 0;
+    return {
+      stat: s.stat_key,
+      label: s.label,
+      value,
+      score: scoreFromValue(s.stat_key, value),
+      weight: weightPct,
+      adjusted_weight: weightPct,
+      available: true,
+    };
+  });
+
+  // If we have a saved stats row, ALWAYS render using it (no dependency on auto_rating_details).
+  const statBreakdown = statsRow
+    ? breakdownRowsFromStatsRow
+    : Array.isArray((competition as any).stat_breakdown)
+      ? (competition as any).stat_breakdown
+      : [];
+
+  // DEV: Reason logging
+  if (import.meta.env.DEV && isExpanded) {
+    if (statsRow === null) {
+      console.warn("[BREAKDOWN] reason", statsReason ?? "missing_stats_source");
+    }
+    if (statsRow && breakdownRowsFromStatsRow.length === 0) {
+      console.warn("[BREAKDOWN] reason", "stat_key_mapping_missing");
+    }
+  }
+
+  // DEV: rows to render (mandatory)
+  if (import.meta.env.DEV && isExpanded) {
+    console.log("[BREAKDOWN] rows to render", statBreakdown);
+  }
+
   // DEV: Log raw breakdown to trace rendering
   if (import.meta.env.DEV && statBreakdown.length > 0) {
     console.debug("[StatBreakdownCard] Breakdown data:", {
-      competition: competition.competition_name,
+      competition: (competition as any).competition_name,
+      source: statsRow ? "player_stats" : "details.stat_breakdown",
       count: statBreakdown.length,
-      sample: statBreakdown.slice(0, 2).map(s => ({
+      sample: statBreakdown.slice(0, 2).map((s: any) => ({
         stat: s.stat,
         label: s.label,
         score: s.score,
@@ -664,30 +822,30 @@ function StatBreakdownCard({
       })),
     });
   }
-  
+
   // Filter stats: keep those with valid keys that are NOT empty/unknown
   // CRITICAL: Check if stat is a valid string identifier
-  const validStats = statBreakdown.filter(s => {
+  const validStats = statBreakdown.filter((s: any) => {
     const key = String(s.stat || "").trim();
     return key.length > 0 && key !== "unknown";
   });
-  
+
   // Split into available (has data) and unavailable (no data)
-  const availableStats = validStats.filter(s => s.available);
-  const unavailableStats = validStats.filter(s => !s.available);
-  
+  const availableStats = validStats.filter((s: any) => s.available);
+  const unavailableStats = validStats.filter((s: any) => !s.available);
+
   // DEV: Debug logging if no valid stats found
   if (import.meta.env.DEV && statBreakdown.length > 0 && validStats.length === 0) {
     console.error("[StatBreakdownCard] All stats filtered out!", {
       raw: statBreakdown.slice(0, 3),
-      competition: competition.competition_name,
+      competition: (competition as any).competition_name,
     });
   }
-  
+
   // DEV: Log when we have valid stats but none are available
   if (import.meta.env.DEV && validStats.length > 0 && availableStats.length === 0) {
     console.warn("[StatBreakdownCard] Valid stats exist but none are available:", {
-      validStats: validStats.slice(0, 3).map(s => ({
+      validStats: validStats.slice(0, 3).map((s: any) => ({
         stat: s.stat,
         available: s.available,
         adjusted_weight: s.adjusted_weight,
@@ -695,7 +853,7 @@ function StatBreakdownCard({
       })),
     });
   }
-  
+
   // Get position-based breakdown for summary
   const { positiveStats, negativeStats } = getPositionStatsBreakdown(availableStats, positionGroup);
   
