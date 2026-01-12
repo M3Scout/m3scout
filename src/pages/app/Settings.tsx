@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useTheme } from "next-themes";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,9 +36,63 @@ import {
   Database,
   CheckCircle,
   AlertTriangle,
+  Moon,
+  Sun,
+  Monitor,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+
+function ThemeCard() {
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
+
+  const themes = [
+    { value: "dark", label: "Escuro", icon: Moon },
+    { value: "light", label: "Claro", icon: Sun },
+    { value: "system", label: "Sistema", icon: Monitor },
+  ];
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Moon className="h-5 w-5" />
+          Aparência
+        </CardTitle>
+        <CardDescription>
+          Escolha o tema do painel
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-3 gap-2">
+          {themes.map(({ value, label, icon: Icon }) => (
+            <button
+              key={value}
+              onClick={() => setTheme(value)}
+              className={`
+                flex flex-col items-center gap-2 p-3 rounded-lg border transition-all duration-200
+                ${theme === value 
+                  ? "border-primary bg-primary/10 text-primary" 
+                  : "border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:border-zinc-700 hover:text-zinc-300"
+                }
+              `}
+            >
+              <Icon className="h-5 w-5" />
+              <span className="text-xs font-medium">{label}</span>
+            </button>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function Settings() {
   const { user, isAdmin, isScout } = useAuth();
@@ -409,6 +464,8 @@ export default function Settings() {
               </div>
             </CardContent>
           </Card>
+
+          <ThemeCard />
 
           <Card>
             <CardHeader>
