@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useAuth } from "@/hooks/useAuth";
 import { safeArray } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -1247,4 +1248,10 @@ const Competitions = () => {
   );
 };
 
-export default Competitions;
+const CompetitionsPage = () => (
+  <ErrorBoundary fallbackMessage="Erro ao carregar competições. Por favor, tente novamente.">
+    <Competitions />
+  </ErrorBoundary>
+);
+
+export default CompetitionsPage;

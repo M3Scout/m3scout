@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -421,5 +422,10 @@ const CompetitionRanking = () => {
     </div>
   );
 };
+const CompetitionRankingPage = () => (
+  <ErrorBoundary fallbackMessage="Erro ao carregar ranking de competições. Por favor, tente novamente.">
+    <CompetitionRanking />
+  </ErrorBoundary>
+);
 
-export default CompetitionRanking;
+export default CompetitionRankingPage;
