@@ -1,14 +1,13 @@
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Lock } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
   { href: "/sobre", label: "SOBRE" },
   { href: "/atletas", label: "REPRESENTAÇÃO DE TALENTOS" },
-  { href: "/marketing", label: "MARKETING" },
-  { href: "/eventos", label: "EVENTOS AO VIVO" },
-  { href: "/vendas", label: "VENDAS" },
+  { href: "/imprensa", label: "IMPRENSA" },
+  { href: "/contato", label: "CONTATO" },
 ];
 
 interface SmartHeaderProps {
@@ -20,7 +19,7 @@ export function SmartHeader({ variant = "default" }: SmartHeaderProps) {
   const [isVisible, setIsVisible] = useState(true);
   const [isAtTop, setIsAtTop] = useState(true);
   const lastScrollY = useRef(0);
-  const scrollThreshold = 8; // Minimum scroll to trigger hide/show (prevents jitter)
+  const scrollThreshold = 8;
   const location = useLocation();
 
   useEffect(() => {
@@ -28,16 +27,12 @@ export function SmartHeader({ variant = "default" }: SmartHeaderProps) {
       const currentScrollY = window.scrollY;
       const scrollDiff = currentScrollY - lastScrollY.current;
       
-      // Check if at top
       setIsAtTop(currentScrollY < 10);
       
-      // Only trigger hide/show if scroll difference exceeds threshold
       if (Math.abs(scrollDiff) > scrollThreshold) {
         if (scrollDiff > 0 && currentScrollY > 120) {
-          // Scrolling down & past header height
           setIsVisible(false);
         } else {
-          // Scrolling up
           setIsVisible(true);
         }
         lastScrollY.current = currentScrollY;
@@ -48,7 +43,6 @@ export function SmartHeader({ variant = "default" }: SmartHeaderProps) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Close mobile menu on route change
   useEffect(() => {
     setIsMenuOpen(false);
   }, [location.pathname]);
@@ -58,9 +52,7 @@ export function SmartHeader({ variant = "default" }: SmartHeaderProps) {
     return location.pathname.startsWith(href);
   };
 
-  // Only transparent when at very top AND variant is transparent
   const showTransparent = variant === "transparent" && isAtTop;
-  // Solid black when scrolled (regardless of scroll direction)
   const isScrolled = !isAtTop;
 
   return (
@@ -77,11 +69,9 @@ export function SmartHeader({ variant = "default" }: SmartHeaderProps) {
         )}
         style={!showTransparent ? { backgroundColor: "#000" } : undefined}
       >
-        {/* Desktop: 96px height with 28px vertical padding */}
-        {/* Mobile: 76px height with 20px vertical padding */}
         <div className="mx-auto max-w-[1280px] px-6 lg:px-10">
           <div className="flex h-[76px] md:h-[96px] items-center justify-between py-5 md:py-7">
-            {/* Logo - slightly larger, vertically centered */}
+            {/* Logo */}
             <Link 
               to="/" 
               className="flex items-center gap-3 text-white hover:opacity-90 transition-opacity duration-200"
@@ -95,14 +85,14 @@ export function SmartHeader({ variant = "default" }: SmartHeaderProps) {
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center gap-8 xl:gap-10">
+            <nav className="hidden lg:flex items-center gap-6 xl:gap-8">
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
                   to={link.href}
                   className={cn(
-                    "relative min-h-[44px] flex items-center px-2 xl:px-3",
-                    "text-[13px] font-normal uppercase tracking-[0.16em]",
+                    "relative min-h-[44px] flex items-center px-2",
+                    "text-[12px] font-normal uppercase tracking-[0.14em]",
                     "text-white/65 hover:text-white transition-colors duration-200",
                     isActive(link.href) && "text-white"
                   )}
@@ -113,6 +103,19 @@ export function SmartHeader({ variant = "default" }: SmartHeaderProps) {
                   )}
                 </Link>
               ))}
+              
+              {/* ÁREA RESTRITA - Desktop */}
+              <Link
+                to="/app/auth"
+                className={cn(
+                  "min-h-[44px] flex items-center px-5",
+                  "border border-[#C0001A] rounded-sm",
+                  "text-[11px] font-semibold uppercase tracking-[0.14em]",
+                  "text-white hover:bg-[#C0001A] transition-colors duration-200"
+                )}
+              >
+                ÁREA RESTRITA
+              </Link>
             </nav>
 
             {/* Mobile Menu Button */}
@@ -136,7 +139,6 @@ export function SmartHeader({ variant = "default" }: SmartHeaderProps) {
             : "opacity-0 pointer-events-none"
         )}
       >
-        {/* Account for header height on mobile */}
         <div className="flex flex-col items-center justify-center h-full pt-[76px]">
           <nav className="flex flex-col items-center gap-6">
             {navLinks.map((link, index) => (
@@ -157,18 +159,19 @@ export function SmartHeader({ variant = "default" }: SmartHeaderProps) {
               </Link>
             ))}
             
-            {/* Mobile CTA */}
+            {/* ÁREA RESTRITA - Mobile */}
             <Link
-              to="/app"
+              to="/app/auth"
               className={cn(
-                "mt-6 min-h-[44px] flex items-center px-8",
-                "border border-white/25 hover:border-white/50",
-                "text-xs font-normal uppercase tracking-[0.18em]",
-                "text-white/60 hover:text-white transition-all duration-300"
+                "mt-6 min-h-[44px] flex items-center justify-center gap-2 px-8",
+                "border border-[#C0001A] rounded-sm",
+                "text-xs font-semibold uppercase tracking-[0.18em]",
+                "text-white hover:bg-[#C0001A] transition-all duration-300"
               )}
               onClick={() => setIsMenuOpen(false)}
             >
-              Área Restrita
+              <Lock size={14} />
+              ÁREA RESTRITA
             </Link>
           </nav>
         </div>
