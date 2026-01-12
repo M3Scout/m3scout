@@ -71,6 +71,23 @@ const ATTRIBUTE_CONFIG = [
   },
 ];
 
+// Generate pentagon points for SVG polygon
+// Starts at top vertex and goes clockwise (matching Recharts radar orientation)
+function getPentagonPoints(radius: number): string {
+  const points: string[] = [];
+  const startAngle = -90; // Start at top (12 o'clock position)
+  
+  for (let i = 0; i < 5; i++) {
+    const angle = startAngle + (i * 72); // 72 degrees between each vertex
+    const rad = (angle * Math.PI) / 180;
+    const x = radius * Math.cos(rad);
+    const y = radius * Math.sin(rad);
+    points.push(`${x.toFixed(2)},${y.toFixed(2)}`);
+  }
+  
+  return points.join(" ");
+}
+
 export function AttributePentagonRadar({ attributes, loading = false }: AttributePentagonRadarProps) {
   const [infoOpen, setInfoOpen] = useState(false);
 
@@ -152,36 +169,54 @@ export function AttributePentagonRadar({ attributes, loading = false }: Attribut
             </div>
           </div>
         ) : (
-          <div className="relative h-[280px] w-full">
+          <div className="relative h-[280px] w-full flex items-center justify-center">
+            {/* Solid Pentagon Background - positioned behind radar */}
+            <svg
+              className="absolute"
+              width="220"
+              height="220"
+              viewBox="-110 -110 220 220"
+            >
+              {/* Pentagon background - light gray fill, no stroke */}
+              <polygon
+                points={getPentagonPoints(100)}
+                fill="#F2F4F7"
+                stroke="none"
+              />
+            </svg>
+
             {/* Radar Chart */}
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart
-                data={radarData}
-                margin={{ top: 30, right: 50, bottom: 30, left: 50 }}
-              >
-                {/* Pentagon grid with subtle gray */}
-                <PolarGrid
-                  stroke="#e5e7eb"
-                  strokeWidth={1}
-                  gridType="polygon"
-                />
-                {/* Axis labels hidden - we render custom labels */}
-                <PolarAngleAxis
-                  dataKey="attribute"
-                  tick={false}
-                  axisLine={false}
-                />
-                {/* Data polygon - green fill with green outline */}
-                <Radar
-                  name="Atributos"
-                  dataKey="value"
-                  stroke="#22c55e"
-                  fill="#22c55e"
-                  fillOpacity={0.25}
-                  strokeWidth={2}
-                />
-              </RadarChart>
-            </ResponsiveContainer>
+            <div className="absolute inset-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart
+                  data={radarData}
+                  margin={{ top: 30, right: 50, bottom: 30, left: 50 }}
+                >
+                  {/* Pentagon grid - very subtle internal lines */}
+                  <PolarGrid
+                    stroke="#e0e2e6"
+                    strokeWidth={0.5}
+                    strokeOpacity={0.5}
+                    gridType="polygon"
+                  />
+                  {/* Axis labels hidden - we render custom labels */}
+                  <PolarAngleAxis
+                    dataKey="attribute"
+                    tick={false}
+                    axisLine={false}
+                  />
+                  {/* Data polygon - green fill with green outline */}
+                  <Radar
+                    name="Atributos"
+                    dataKey="value"
+                    stroke="#22c55e"
+                    fill="#22c55e"
+                    fillOpacity={0.3}
+                    strokeWidth={2.5}
+                  />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
 
             {/* Custom Labels with Value Badges - positioned around pentagon */}
             <AttributeLabel
