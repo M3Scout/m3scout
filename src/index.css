@@ -94,21 +94,21 @@
 }
 
 @layer components {
-  /* Admin Panel Components */
+  /* Admin Panel - Command Center Aesthetic */
   .admin-panel {
     @apply bg-[hsl(222,47%,5%)] min-h-screen;
   }
 
   .admin-header {
-    @apply flex items-center justify-between pb-6 border-b border-zinc-800/50 mb-8;
+    @apply flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-zinc-800/40 mb-6;
   }
 
   .admin-title {
-    @apply text-xl font-semibold text-white tracking-tight;
+    @apply text-lg font-semibold text-white tracking-tight;
   }
 
   .admin-subtitle {
-    @apply text-sm text-zinc-500 mt-1;
+    @apply text-xs text-zinc-500 mt-0.5 tracking-wide;
   }
 
   .admin-section {
@@ -116,20 +116,20 @@
   }
 
   .admin-section-title {
-    @apply text-[10px] uppercase tracking-[0.2em] text-zinc-600 mb-4;
+    @apply text-[10px] uppercase tracking-[0.2em] text-zinc-600 font-medium mb-3;
   }
 
   /* Admin Card - Premium minimal style */
   .admin-card {
-    @apply bg-zinc-900/40 border border-zinc-800/50 rounded-xl transition-all duration-200;
+    @apply bg-zinc-900/40 border border-zinc-800/40 rounded-xl transition-all duration-150;
   }
 
   .admin-card:hover {
-    @apply border-zinc-700/50;
+    @apply border-zinc-700/40;
   }
 
   .admin-card-header {
-    @apply px-5 py-4 border-b border-zinc-800/30;
+    @apply px-5 py-3.5 border-b border-zinc-800/30;
   }
 
   .admin-card-body {
@@ -142,24 +142,24 @@
   }
 
   .admin-stat-value {
-    @apply text-2xl font-semibold text-white tabular-nums;
+    @apply text-2xl font-semibold text-white tabular-nums tracking-tight;
   }
 
   .admin-stat-label {
-    @apply text-xs text-zinc-500 mt-1;
+    @apply text-[10px] text-zinc-500 mt-1 uppercase tracking-wider;
   }
 
   .admin-stat-icon {
     @apply w-8 h-8 rounded-lg flex items-center justify-center;
   }
 
-  /* Admin Table Row */
+  /* Admin Table Row - Enhanced interactions */
   .admin-row {
-    @apply flex items-center justify-between p-3 rounded-lg bg-zinc-900/30 border border-transparent transition-all duration-200;
+    @apply flex items-center justify-between p-3 rounded-lg bg-zinc-900/20 border border-transparent transition-all duration-100;
   }
 
   .admin-row:hover {
-    @apply bg-zinc-800/40 border-zinc-700/30;
+    @apply bg-zinc-800/50 border-zinc-700/30;
   }
 
   .admin-row-clickable {
@@ -167,28 +167,37 @@
   }
 
   .admin-row-clickable:hover {
-    @apply bg-zinc-800/50 border-primary/20;
+    @apply bg-zinc-800/60 border-primary/20 shadow-sm;
+    box-shadow: 0 0 0 1px hsl(var(--primary) / 0.1);
   }
 
-  /* Admin Table - Premium minimal */
+  .admin-row-clickable:active {
+    @apply scale-[0.995] transition-transform duration-75;
+  }
+
+  /* Admin Table - Refined command center style */
   .admin-table {
     @apply w-full;
   }
 
   .admin-table thead {
-    @apply border-b border-zinc-800/50;
+    @apply border-b border-zinc-800/40;
   }
 
   .admin-table th {
-    @apply text-[11px] uppercase tracking-wider text-zinc-500 font-medium px-4 py-3 text-left;
+    @apply text-[10px] uppercase tracking-[0.12em] text-zinc-500 font-medium px-4 py-3 text-left select-none;
   }
 
   .admin-table tbody tr {
-    @apply border-b border-zinc-800/30 transition-colors duration-150;
+    @apply border-b border-zinc-800/20 transition-colors duration-75;
   }
 
   .admin-table tbody tr:hover {
-    @apply bg-zinc-800/30;
+    @apply bg-zinc-800/40;
+  }
+
+  .admin-table tbody tr:active {
+    @apply bg-zinc-800/60;
   }
 
   .admin-table td {
@@ -253,13 +262,22 @@
     @apply text-sm font-medium;
   }
 
-  /* Admin Button */
+  /* Admin Button - Solid and confident */
   .admin-btn {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200;
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-100 select-none;
+  }
+
+  .admin-btn:active {
+    @apply scale-[0.97] transition-transform duration-75;
   }
 
   .admin-btn-primary {
-    @apply admin-btn bg-primary text-white hover:bg-primary/90;
+    @apply admin-btn bg-primary text-white hover:bg-primary/90 shadow-sm;
+    box-shadow: 0 1px 2px hsl(var(--primary) / 0.3);
+  }
+
+  .admin-btn-primary:hover {
+    box-shadow: 0 2px 8px hsl(var(--primary) / 0.4);
   }
 
   .admin-btn-ghost {
@@ -267,29 +285,56 @@
   }
 
   .admin-btn-outline {
-    @apply admin-btn border border-zinc-700 text-zinc-300 hover:border-zinc-600 hover:bg-zinc-800/50;
+    @apply admin-btn border border-zinc-800 text-zinc-300 hover:border-zinc-600 hover:bg-zinc-800/40 hover:text-white;
   }
 
-  /* Admin Input */
+  /* Admin Input - Clean and focused */
   .admin-input {
-    @apply bg-zinc-900/50 border border-zinc-800 rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-zinc-600 focus:border-zinc-700 focus:ring-1 focus:ring-zinc-700 transition-colors;
+    @apply bg-zinc-900/60 border border-zinc-800/60 rounded-lg px-3.5 py-2 text-sm text-white placeholder:text-zinc-600 focus:border-zinc-600 focus:ring-1 focus:ring-zinc-600/50 focus:bg-zinc-900/80 transition-all duration-100;
   }
 
-  /* Admin Empty State */
+  .admin-input:hover {
+    @apply border-zinc-700/60 bg-zinc-900/80;
+  }
+
+  /* Admin Empty State - Intentional and minimal */
   .admin-empty {
-    @apply flex flex-col items-center justify-center py-16 text-center;
+    @apply flex flex-col items-center justify-center py-12 text-center;
   }
 
   .admin-empty-icon {
-    @apply w-12 h-12 text-zinc-700 mb-4;
+    @apply w-10 h-10 text-zinc-700 mb-3;
   }
 
   .admin-empty-title {
-    @apply text-sm font-medium text-zinc-400 mb-1;
+    @apply text-sm font-medium text-zinc-400 mb-0.5;
   }
 
   .admin-empty-desc {
-    @apply text-xs text-zinc-600;
+    @apply text-xs text-zinc-600 max-w-xs;
+  }
+
+  /* Admin Skeleton - Fast loading states */
+  .admin-skeleton {
+    @apply bg-zinc-800/50 rounded;
+    animation: admin-pulse 1.2s ease-in-out infinite;
+  }
+
+  @keyframes admin-pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.7; }
+  }
+
+  .admin-skeleton-text {
+    @apply admin-skeleton h-3.5 rounded-sm;
+  }
+
+  .admin-skeleton-heading {
+    @apply admin-skeleton h-5 rounded-sm;
+  }
+
+  .admin-skeleton-avatar {
+    @apply admin-skeleton rounded-lg;
   }
 
   /* Legacy components - keep for compatibility */
