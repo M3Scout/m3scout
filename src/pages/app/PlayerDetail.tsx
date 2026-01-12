@@ -44,6 +44,7 @@ import { SeasonSummaryCard } from "@/components/players/sections/SeasonSummaryCa
 import { OverallRatingCard } from "@/components/players/sections/OverallRatingCard";
 import { MarketValueSection } from "@/components/players/sections/MarketValueSection";
 import { MarketValueTab } from "@/components/players/sections/MarketValueTab";
+import { DataQualityPanel } from "@/components/players/DataQualityPanel";
 
 interface Player {
   id: string;
@@ -432,6 +433,12 @@ const PlayerDetail = () => {
               <RatingEvolutionChart
                 playerId={player.id}
                 currentRating={player.auto_rating}
+              />
+
+              {/* Data Quality Panel */}
+              <DataQualityPanel
+                playerId={player.id}
+                position={player.position}
               />
               {/* Recent Reports */}
               <Card>
