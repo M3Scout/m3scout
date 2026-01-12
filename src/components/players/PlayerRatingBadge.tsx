@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Star, AlertCircle, TrendingUp, CheckCircle2 } from "lucide-react";
-import { RatingBreakdownModalV2 } from "./RatingBreakdownModalV2";
+import { SafeRatingBreakdownModalV2 } from "./SafeRatingBreakdownModalV2";
 import { RatingBreakdownV2, getReliabilityLabelV2, getReliabilityVariantV2 } from "@/lib/playerRatingV2";
 import { formatRating } from "@/lib/formatters";
 
@@ -72,7 +72,7 @@ export function PlayerRatingBadge({
   // If we have rating details and it's clickable, wrap in modal
   if (clickable && ratingDetails) {
     return (
-      <RatingBreakdownModalV2
+      <SafeRatingBreakdownModalV2
         details={ratingDetails}
         rating={safeRating}
         trigger={badgeContent}

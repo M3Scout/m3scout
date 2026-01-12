@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Star, TrendingUp, Clock, Info, RefreshCw, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatFixed } from "@/lib/formatters";
-import { RatingBreakdownModalV2 } from "@/components/players/RatingBreakdownModalV2";
+import { SafeRatingBreakdownModalV2 } from "@/components/players/SafeRatingBreakdownModalV2";
 import { adaptAutoRatingDetailsToV2 } from "@/lib/autoRatingDetailsAdapter";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -108,7 +108,7 @@ export function OverallRatingCard({
               </Button>
             )}
             {autoRating !== null && breakdownDetails && (
-              <RatingBreakdownModalV2
+              <SafeRatingBreakdownModalV2
                 details={breakdownDetails}
                 rating={autoRating}
                 trigger={

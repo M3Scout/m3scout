@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Star, Clock, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatFixed } from "@/lib/formatters";
-import { RatingBreakdownModalV2 } from "@/components/players/RatingBreakdownModalV2";
+import { SafeRatingBreakdownModalV2 } from "@/components/players/SafeRatingBreakdownModalV2";
 import { adaptAutoRatingDetailsToV2 } from "@/lib/autoRatingDetailsAdapter";
 
 interface AutoRatingCardProps {
@@ -70,7 +70,7 @@ export function AutoRatingCard({ rating, updatedAt, details }: AutoRatingCardPro
             Nota Automática
           </CardTitle>
           {breakdownDetails && (
-            <RatingBreakdownModalV2
+            <SafeRatingBreakdownModalV2
               details={breakdownDetails}
               rating={rating}
               trigger={

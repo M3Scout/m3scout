@@ -409,7 +409,7 @@ const AppPlayers = () => {
   };
 
   return (
-    <ErrorBoundary fallbackMessage="Não foi possível carregar a lista de atletas. Por favor, tente novamente.">
+    <ErrorBoundary fallbackMessage="Não foi possível carregar os detalhes da competição.">
     <div className="space-y-6">
       {/* Header */}
       <header className="admin-header animate-fade-in">
