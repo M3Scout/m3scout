@@ -260,7 +260,7 @@ const PlayerProfile = () => {
               <div className="mt-auto pt-6">
                 <Link to={`/contact?player=${player.slug}`}>
                   <Button 
-                    className="w-full sm:w-auto bg-[#e52421] hover:bg-[#c91f1c] text-white font-medium px-8 py-3 h-auto"
+                    className="w-full sm:w-auto bg-[#e52421] hover:bg-[#c91f1c] active:bg-[#b01b19] text-white font-medium px-8 py-3 h-auto shadow-none hover:shadow-none focus:shadow-none rounded-none border-none"
                   >
                     <MessageCircle className="w-4 h-4 mr-2" />
                     Falar com a M3 sobre este atleta
