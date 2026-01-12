@@ -648,21 +648,49 @@ function StatBreakdownCard({
   const isComputed = competitionHasFlags(competition) ? competition.computed : safeNumber(competition.minutes) > 0;
   const statBreakdown = Array.isArray(competition.stat_breakdown) ? competition.stat_breakdown : [];
   
-  // Filter stats: keep those with valid keys and that are available
-  // A stat is valid if it has a stat key that is not empty/unknown
+  // DEV: Log raw breakdown to trace rendering
+  if (import.meta.env.DEV && statBreakdown.length > 0) {
+    console.debug("[StatBreakdownCard] Breakdown data:", {
+      competition: competition.competition_name,
+      count: statBreakdown.length,
+      sample: statBreakdown.slice(0, 2).map(s => ({
+        stat: s.stat,
+        label: s.label,
+        score: s.score,
+        available: s.available,
+        adjusted_weight: s.adjusted_weight,
+      })),
+    });
+  }
+  
+  // Filter stats: keep those with valid keys that are NOT empty/unknown
+  // CRITICAL: Check if stat is a valid string identifier
   const validStats = statBreakdown.filter(s => {
-    const key = s.stat || "";
-    return key && key !== "unknown" && key !== "" && key.length > 0;
+    const key = String(s.stat || "").trim();
+    return key.length > 0 && key !== "unknown";
   });
   
+  // Split into available (has data) and unavailable (no data)
   const availableStats = validStats.filter(s => s.available);
   const unavailableStats = validStats.filter(s => !s.available);
   
-  // DEV: Debug logging to verify stat_breakdown contains proper keys
+  // DEV: Debug logging if no valid stats found
   if (import.meta.env.DEV && statBreakdown.length > 0 && validStats.length === 0) {
     console.error("[StatBreakdownCard] All stats filtered out!", {
       raw: statBreakdown.slice(0, 3),
       competition: competition.competition_name,
+    });
+  }
+  
+  // DEV: Log when we have valid stats but none are available
+  if (import.meta.env.DEV && validStats.length > 0 && availableStats.length === 0) {
+    console.warn("[StatBreakdownCard] Valid stats exist but none are available:", {
+      validStats: validStats.slice(0, 3).map(s => ({
+        stat: s.stat,
+        available: s.available,
+        adjusted_weight: s.adjusted_weight,
+        score: s.score,
+      })),
     });
   }
   

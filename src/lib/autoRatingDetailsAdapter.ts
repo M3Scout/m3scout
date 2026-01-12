@@ -182,13 +182,30 @@ export function adaptAutoRatingDetailsToV2(details: unknown): ExtendedRatingBrea
       
       // Parse stat breakdown and map stat keys properly
       const rawStatBreakdown = safeArray(c?.stat_breakdown).filter(Boolean);
+      
+      // DEV: Log raw breakdown to trace key extraction
+      if (import.meta.env.DEV && rawStatBreakdown.length > 0) {
+        console.debug("[autoRatingDetailsAdapter] Raw stat_breakdown sample:", {
+          competition: c?.competition_name,
+          firstStat: rawStatBreakdown[0],
+          statKeys: rawStatBreakdown.map((s: any) => ({
+            stat_key: s?.stat_key,
+            stat: s?.stat,
+            name: s?.name,
+            key: s?.key,
+          })),
+        });
+      }
+      
       const statBreakdown = rawStatBreakdown.map((s: any) => {
         // Extract stat key - prioritize canonical keys over legacy 'name'
         // Priority: stat_key > stat > key > name
-        const rawKey = s?.stat_key ?? s?.stat ?? s?.key ?? s?.name ?? "";
-        const statKey = typeof rawKey === "string" && rawKey.length > 0 ? rawKey : "unknown";
+        // CRITICAL: Also check 'stat' field which may already be populated
+        const candidates = [s?.stat_key, s?.stat, s?.key, s?.name];
+        const rawKey = candidates.find((k) => typeof k === "string" && k.length > 0 && k !== "unknown") ?? "";
+        const statKey = rawKey || "unknown";
         
-        // Extract label - prioritize provided labels
+        // Extract label - prioritize provided labels, then fallback to computed label
         const providedLabel = s?.stat_label ?? s?.label;
         const statLabel = getStatLabel(statKey, providedLabel);
         
@@ -199,11 +216,12 @@ export function adaptAutoRatingDetailsToV2(details: unknown): ExtendedRatingBrea
         // A stat is "available" if:
         // 1. Explicitly marked as available, OR
         // 2. Has adjusted_weight > 0 (meaning it contributed to score), OR
-        // 3. Has value > 0 (data exists)
-        const hasValue = safeNumber(s?.value ?? s?.value_raw, 0) > 0 || score > 0;
+        // 3. Has value_raw > 0 (data exists) OR score > 0
+        const rawValue = safeNumber(s?.value_raw ?? s?.value, 0);
+        const hasValue = rawValue > 0 || score > 0;
         const isAvailable = Boolean(s?.available) || weightPct > 0 || hasValue;
         
-        // Debug in dev mode
+        // Debug in dev mode - only log truly unknown keys
         if (import.meta.env.DEV && statKey === "unknown") {
           console.warn("[autoRatingDetailsAdapter] Missing stat key in breakdown:", s);
         }
