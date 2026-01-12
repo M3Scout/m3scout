@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   RadarChart,
   PolarGrid,
@@ -8,6 +8,7 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -16,20 +17,25 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Info } from "lucide-react";
+import { Info, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-export interface AttributeScores {
-  ata: number; // Ataque (0-100)
-  tec: number; // Técnica (0-100)
-  tat: number; // Tático (0-100)
-  def: number; // Defesa (0-100)
-  cri: number; // Criatividade (0-100)
-}
+import { 
+  computeRadarAttributes, 
+  type PlayerStatRow, 
+  type RadarResult,
+  type ConfidenceLevel,
+  type AttributeScores 
+} from "@/lib/attributeRadar";
 
 interface AttributePentagonRadarProps {
-  attributes: AttributeScores | null;
+  // Option 1: Pre-computed attributes (legacy)
+  attributes?: AttributeScores | null;
+  // Option 2: Raw stats for computation
+  statsRows?: PlayerStatRow[];
+  playerPosition?: string;
+  // Common
   loading?: boolean;
+  showConfidence?: boolean;
 }
 
 // Attribute definitions with labels and descriptions
@@ -45,31 +51,39 @@ const ATTRIBUTE_CONFIG = [
     key: "tec",
     label: "TÉC",
     fullLabel: "Técnica",
-    description: "Habilidade técnica: passes precisos, dribles bem-sucedidos, controle de bola e qualidade nos cruzamentos.",
+    description: "Habilidade técnica: passes precisos, precisão de chute, disciplina e qualidade nos passes.",
     color: "#71717a", // Gray
   },
   {
     key: "tat",
     label: "TÁT",
     fullLabel: "Tático",
-    description: "Inteligência tática: posicionamento, leitura de jogo, recuperação de bola e contribuição defensiva.",
+    description: "Inteligência tática: disponibilidade, tempo de jogo, disciplina (menos cartões).",
     color: "#71717a", // Gray
   },
   {
     key: "def",
     label: "DEF",
     fullLabel: "Defesa",
-    description: "Capacidade defensiva: desarmes, interceptações, duelos aéreos e terrestres vencidos.",
+    description: "Capacidade defensiva: desarmes, interceptações, recuperações e duelos vencidos.",
     color: "#71717a", // Gray
   },
   {
     key: "cri",
     label: "CRI",
     fullLabel: "Criatividade",
-    description: "Capacidade criativa: passes decisivos, chances criadas, assistências e dribles em situações de perigo.",
+    description: "Capacidade criativa: passes decisivos, chances criadas, assistências e dribles.",
     color: "#71717a", // Gray
   },
 ];
+
+// Confidence level labels in Portuguese
+const CONFIDENCE_LABELS: Record<ConfidenceLevel, { label: string; color: string }> = {
+  none: { label: "Sem dados", color: "text-muted-foreground" },
+  low: { label: "Confiança baixa", color: "text-amber-600" },
+  medium: { label: "Confiança média", color: "text-blue-600" },
+  high: { label: "Confiança alta", color: "text-emerald-600" },
+};
 
 // Generate pentagon points for SVG polygon
 // Starts at top vertex and goes clockwise (matching Recharts radar orientation)
@@ -88,24 +102,64 @@ function getPentagonPoints(radius: number): string {
   return points.join(" ");
 }
 
-export function AttributePentagonRadar({ attributes, loading = false }: AttributePentagonRadarProps) {
+export function AttributePentagonRadar({ 
+  attributes, 
+  statsRows,
+  playerPosition = "Meia",
+  loading = false,
+  showConfidence = true,
+}: AttributePentagonRadarProps) {
   const [infoOpen, setInfoOpen] = useState(false);
+
+  // Compute radar from raw stats if provided, otherwise use pre-computed attributes
+  const radarResult = useMemo<RadarResult | null>(() => {
+    if (statsRows && statsRows.length > 0) {
+      return computeRadarAttributes(statsRows, playerPosition, { logOnce: true });
+    }
+    return null;
+  }, [statsRows, playerPosition]);
+
+  // Determine final attributes to display
+  const displayAttributes = useMemo<AttributeScores | null>(() => {
+    if (radarResult && radarResult.confidence !== "none") {
+      return {
+        ata: radarResult.ata ?? 0,
+        tec: radarResult.tec ?? 0,
+        tat: radarResult.tat ?? 0,
+        def: radarResult.def ?? 0,
+        cri: radarResult.cri ?? 0,
+      };
+    }
+    return attributes ?? null;
+  }, [radarResult, attributes]);
+
+  const confidence = radarResult?.confidence ?? "high";
 
   // Transform attributes to radar data format
   const radarData = ATTRIBUTE_CONFIG.map((attr) => ({
     attribute: attr.label,
-    value: attributes?.[attr.key as keyof AttributeScores] ?? 0,
+    value: displayAttributes?.[attr.key as keyof AttributeScores] ?? 0,
     fullMark: 100,
   }));
 
-  const hasData = attributes && Object.values(attributes).some(v => v > 0);
+  const hasData = displayAttributes && Object.values(displayAttributes).some(v => v > 0);
 
   return (
     <Card className="bg-white shadow-md border-0">
       <CardHeader className="pb-2 flex flex-row items-center justify-between">
-        <CardTitle className="text-sm font-medium text-gray-900">
-          Visão geral dos atributos
-        </CardTitle>
+        <div className="flex items-center gap-2">
+          <CardTitle className="text-sm font-medium text-gray-900">
+            Visão geral dos atributos
+          </CardTitle>
+          {showConfidence && radarResult && confidence !== "high" && (
+            <Badge 
+              variant="outline" 
+              className={cn("text-[10px] px-1.5 py-0", CONFIDENCE_LABELS[confidence].color)}
+            >
+              {CONFIDENCE_LABELS[confidence].label}
+            </Badge>
+          )}
+        </div>
         <Dialog open={infoOpen} onOpenChange={setInfoOpen}>
           <DialogTrigger asChild>
             <Button
@@ -120,7 +174,7 @@ export function AttributePentagonRadar({ attributes, loading = false }: Attribut
             <DialogHeader>
               <DialogTitle>Atributos do Jogador</DialogTitle>
               <DialogDescription>
-                Cada atributo representa uma área do desempenho do jogador, calculado com base nas estatísticas agregadas.
+                Cada atributo representa uma área do desempenho do jogador, calculado com base nas estatísticas agregadas por 90 minutos.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 mt-4">
@@ -140,6 +194,15 @@ export function AttributePentagonRadar({ attributes, loading = false }: Attribut
                   </div>
                 </div>
               ))}
+              {radarResult && (
+                <div className="pt-4 border-t">
+                  <p className="text-xs text-muted-foreground">
+                    <strong>Confiança:</strong> Baseada nos minutos jogados. 
+                    Jogadores com mais de 900 minutos têm confiança alta. 
+                    Valores são ajustados (shrinkage) para amostras menores.
+                  </p>
+                </div>
+              )}
             </div>
           </DialogContent>
         </Dialog>
@@ -151,7 +214,13 @@ export function AttributePentagonRadar({ attributes, loading = false }: Attribut
           </div>
         ) : !hasData ? (
           <div className="h-[280px] flex flex-col items-center justify-center text-center px-4">
-            <p className="text-muted-foreground text-sm mb-2">Sem dados suficientes</p>
+            <AlertCircle className="w-8 h-8 text-muted-foreground/50 mb-2" />
+            <p className="text-muted-foreground text-sm mb-2">
+              {radarResult?.confidence === "none" 
+                ? "Sem dados suficientes (menos de 180 min)"
+                : "Sem dados suficientes"
+              }
+            </p>
             <div className="flex gap-3">
               {ATTRIBUTE_CONFIG.map((attr) => (
                 <div key={attr.key} className="text-center">
@@ -239,27 +308,27 @@ export function AttributePentagonRadar({ attributes, loading = false }: Attribut
             {/* Custom Labels with Value Badges - positioned around pentagon */}
             <AttributeLabel
               attr={ATTRIBUTE_CONFIG[0]}
-              value={attributes?.ata ?? 0}
+              value={displayAttributes?.ata ?? 0}
               position="top"
             />
             <AttributeLabel
               attr={ATTRIBUTE_CONFIG[1]}
-              value={attributes?.tec ?? 0}
+              value={displayAttributes?.tec ?? 0}
               position="top-right"
             />
             <AttributeLabel
               attr={ATTRIBUTE_CONFIG[2]}
-              value={attributes?.tat ?? 0}
+              value={displayAttributes?.tat ?? 0}
               position="bottom-right"
             />
             <AttributeLabel
               attr={ATTRIBUTE_CONFIG[3]}
-              value={attributes?.def ?? 0}
+              value={displayAttributes?.def ?? 0}
               position="bottom-left"
             />
             <AttributeLabel
               attr={ATTRIBUTE_CONFIG[4]}
-              value={attributes?.cri ?? 0}
+              value={displayAttributes?.cri ?? 0}
               position="top-left"
             />
           </div>
@@ -292,6 +361,7 @@ function AttributeLabel({ attr, value, position }: AttributeLabelProps) {
         "absolute flex items-center gap-1.5",
         positionClasses[position]
       )}
+      style={{ zIndex: 2 }}
     >
       {/* Value Badge */}
       <div
@@ -307,3 +377,6 @@ function AttributeLabel({ attr, value, position }: AttributeLabelProps) {
     </div>
   );
 }
+
+// Re-export types for convenience
+export type { AttributeScores, RadarResult, ConfidenceLevel, PlayerStatRow };
