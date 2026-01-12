@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PlayerCard } from "@/components/players/PlayerCard";
 import { PlayerFilters } from "@/components/players/PlayerFilters";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -39,7 +38,6 @@ const Players = () => {
 
   useEffect(() => {
     const fetchPlayers = async () => {
-      // Fetch players with auto_rating from database
       const { data, error } = await supabase
         .from("players")
         .select("id, slug, full_name, position, secondary_positions, age, nationality, current_club, photo_url, auto_rating")
@@ -104,21 +102,35 @@ const Players = () => {
   };
 
   return (
-    <div className="min-h-screen py-8">
-      <div className="container mx-auto px-4">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold mb-4">
-            Nossos <span className="gradient-text">Atletas</span>
+    <div className="min-h-screen bg-black">
+      {/* Main Container */}
+      <div className="w-full max-w-[1400px] mx-auto px-6 md:px-8">
+        
+        {/* Header Section */}
+        <section className="pt-32 pb-12">
+          {/* Eyebrow */}
+          <p className="text-xs uppercase tracking-[0.3em] text-zinc-500 mb-3">
+            Portfólio
+          </p>
+          
+          {/* Title */}
+          <h1 className="font-serif text-4xl md:text-5xl text-white leading-tight mb-4">
+            Nossos{" "}
+            <span className="text-[#e52421] italic">Atletas</span>
           </h1>
-          <p className="text-muted-foreground max-w-2xl">
+          
+          {/* Subtitle */}
+          <p className="text-zinc-400 text-lg max-w-2xl">
             Explore nosso portfólio completo de atletas. Use os filtros para encontrar 
             o perfil ideal para suas necessidades.
           </p>
-        </div>
+        </section>
+
+        {/* Divider */}
+        <hr className="border-t border-zinc-800 mb-8" />
 
         {/* Filters */}
-        <div className="mb-8">
+        <section className="mb-8">
           <PlayerFilters
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
@@ -127,28 +139,29 @@ const Players = () => {
             nationalityFilter={nationalityFilter}
             onNationalityChange={setNationalityFilter}
           />
-        </div>
+        </section>
 
         {/* Results Count */}
-        <div className="mb-6">
-          <p className="text-sm text-muted-foreground">
+        <div className="mb-8">
+          <p className="text-sm text-zinc-500">
             {filteredPlayers.length} atleta{filteredPlayers.length !== 1 ? "s" : ""} encontrado{filteredPlayers.length !== 1 ? "s" : ""}
           </p>
         </div>
 
         {/* Loading State */}
         {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <div className="flex items-center justify-center py-24">
+            <Loader2 className="w-8 h-8 animate-spin text-zinc-500" />
           </div>
         ) : filteredPlayers.length > 0 ? (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {/* Athletes Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-5 gap-6 md:gap-7">
               {safeArray(paginatedPlayers).map((player, index) => (
                 <div 
                   key={player.id}
-                  className="animate-scale-in"
-                  style={{ animationDelay: `${index * 50}ms` }}
+                  className="animate-fade-in"
+                  style={{ animationDelay: `${index * 30}ms` }}
                 >
                   <PlayerCard
                     id={player.id}
@@ -168,13 +181,14 @@ const Players = () => {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8">
-                <div className="flex items-center gap-4">
-                  <p className="text-sm text-muted-foreground">
-                    Mostrando {((currentPage - 1) * itemsPerPage) + 1} a {Math.min(currentPage * itemsPerPage, filteredPlayers.length)} de {filteredPlayers.length} atletas
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-6 py-16 border-t border-zinc-800 mt-12">
+                {/* Info & Items per page */}
+                <div className="flex items-center gap-6">
+                  <p className="text-sm text-zinc-500">
+                    Mostrando {((currentPage - 1) * itemsPerPage) + 1}–{Math.min(currentPage * itemsPerPage, filteredPlayers.length)} de {filteredPlayers.length}
                   </p>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">Itens:</span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-zinc-600">Itens:</span>
                     <Select
                       value={String(itemsPerPage)}
                       onValueChange={(value) => {
@@ -182,12 +196,16 @@ const Players = () => {
                         setCurrentPage(1);
                       }}
                     >
-                      <SelectTrigger className="w-[70px] h-8">
+                      <SelectTrigger className="w-[70px] h-9 bg-transparent border-zinc-800 text-white rounded-none focus:ring-0">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-zinc-950 border-zinc-800 rounded-none">
                         {safeArray(PAGE_SIZE_OPTIONS).map((size) => (
-                          <SelectItem key={size} value={String(size)}>
+                          <SelectItem 
+                            key={size} 
+                            value={String(size)}
+                            className="text-white focus:bg-zinc-800 focus:text-white rounded-none"
+                          >
                             {size}
                           </SelectItem>
                         ))}
@@ -195,51 +213,56 @@ const Players = () => {
                     </Select>
                   </div>
                 </div>
+
+                {/* Page Numbers */}
                 <div className="flex items-center gap-1">
-                  <Button
-                    variant="outline"
-                    size="icon"
+                  <button
                     onClick={() => goToPage(currentPage - 1)}
                     disabled={currentPage === 1}
+                    className="w-10 h-10 flex items-center justify-center border border-zinc-800 text-white disabled:opacity-30 disabled:cursor-not-allowed hover:border-zinc-600 transition-colors"
                   >
                     <ChevronLeft className="w-4 h-4" />
-                  </Button>
+                  </button>
                   
                   {safeArray(getPageNumbers()).map((page, index) =>
                     page === "ellipsis" ? (
-                      <span key={`ellipsis-${index}`} className="px-2 text-muted-foreground">
-                        ...
+                      <span key={`ellipsis-${index}`} className="px-3 text-zinc-600">
+                        …
                       </span>
                     ) : (
-                      <Button
+                      <button
                         key={page}
-                        variant={currentPage === page ? "default" : "outline"}
-                        size="icon"
                         onClick={() => goToPage(page)}
-                        className="w-9"
+                        className={`w-10 h-10 flex items-center justify-center border text-sm font-medium transition-colors ${
+                          currentPage === page
+                            ? "bg-white text-black border-white"
+                            : "border-zinc-800 text-white hover:border-zinc-600"
+                        }`}
                       >
                         {page}
-                      </Button>
+                      </button>
                     )
                   )}
                   
-                  <Button
-                    variant="outline"
-                    size="icon"
+                  <button
                     onClick={() => goToPage(currentPage + 1)}
                     disabled={currentPage === totalPages}
+                    className="w-10 h-10 flex items-center justify-center border border-zinc-800 text-white disabled:opacity-30 disabled:cursor-not-allowed hover:border-zinc-600 transition-colors"
                   >
                     <ChevronRight className="w-4 h-4" />
-                  </Button>
+                  </button>
                 </div>
               </div>
             )}
           </>
         ) : (
-          <div className="text-center py-16">
-            <p className="text-muted-foreground">Nenhum atleta encontrado com os filtros selecionados.</p>
+          <div className="text-center py-24">
+            <p className="text-zinc-500">Nenhum atleta encontrado com os filtros selecionados.</p>
           </div>
         )}
+
+        {/* Bottom spacing */}
+        <div className="pb-16" />
       </div>
     </div>
   );

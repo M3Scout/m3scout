@@ -1,14 +1,5 @@
 import { Link } from "react-router-dom";
-import { MapPin, Calendar, Star } from "lucide-react";
-import { RatingStars } from "./RatingStars";
-import { cn, safeArray } from "@/lib/utils";
 import { formatFixed } from "@/lib/formatters";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 interface PlayerCardProps {
   id: string;
@@ -22,7 +13,6 @@ interface PlayerCardProps {
   imageUrl: string;
   rating?: number;
   isPublic?: boolean;
-  // New: automatic rating (0-5)
   autoRating?: number | null;
 }
 
@@ -30,102 +20,68 @@ export function PlayerCard({
   slug,
   name,
   position,
-  secondaryPositions = [],
   age,
   nationality,
   currentClub,
   imageUrl,
-  rating = 0,
   isPublic = true,
   autoRating,
 }: PlayerCardProps) {
   const href = isPublic ? `/players/${slug}` : `/app/players/${slug}`;
 
-  const getRatingColor = (rating: number): string => {
-    if (rating >= 4.0) return "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
-    if (rating >= 3.0) return "bg-blue-500/20 text-blue-400 border-blue-500/30";
-    if (rating >= 2.0) return "bg-amber-500/20 text-amber-400 border-amber-500/30";
-    return "bg-red-500/20 text-red-400 border-red-500/30";
-  };
+  // Rating display logic: highlight in red if >= 4.0
+  const isHighRating = autoRating !== null && autoRating !== undefined && autoRating >= 4.0;
 
   return (
     <Link to={href} className="group block">
-      <article className="glass-card-hover overflow-hidden">
+      <article className="relative bg-zinc-950 overflow-hidden">
         {/* Image Container */}
-        <div className="relative aspect-[3/4] overflow-hidden bg-secondary">
+        <div className="relative aspect-[3/4] overflow-hidden">
           <img
             src={imageUrl}
             alt={name}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
           />
-          {/* Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
           
-          {/* Position Badge */}
-          <div className="absolute top-3 left-3">
-            <span className="position-badge">{position}</span>
+          {/* Gradient Overlay - bottom fade for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-80" />
+          
+          {/* Position Tag - Top Left */}
+          <div className="absolute top-4 left-4">
+            <span className="inline-block bg-black/90 text-white text-[10px] font-medium uppercase tracking-[0.15em] px-3 py-1.5">
+              {position}
+            </span>
           </div>
 
-          {/* Auto Rating Badge (0-5) */}
+          {/* Rating Badge - Top Right */}
           {autoRating !== null && autoRating !== undefined && (
-            <div className="absolute top-3 right-3">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div
-                      className={cn(
-                        "glass-card px-2 py-1 flex items-center gap-1 border cursor-help",
-                        getRatingColor(autoRating)
-                      )}
-                    >
-                      <Star className="w-3 h-3 fill-current" />
-                      <span className="text-sm font-semibold">{formatFixed(autoRating, 1)}</span>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Nota automática baseada em estatísticas</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+            <div className="absolute top-4 right-4">
+              <span 
+                className={`inline-block text-sm font-medium px-2.5 py-1 border ${
+                  isHighRating 
+                    ? "text-[#e52421] border-[#e52421]/50" 
+                    : "text-white border-white/30"
+                }`}
+              >
+                {formatFixed(autoRating, 1)}
+              </span>
             </div>
           )}
 
-          {/* Legacy Rating Stars (if no auto rating) */}
-          {rating > 0 && !autoRating && (
-            <div className="absolute top-3 right-3">
-              <div className="glass-card px-2 py-1">
-                <RatingStars rating={rating} size="sm" />
-              </div>
-            </div>
-          )}
-
-          {/* Player Info Overlay */}
-          <div className="absolute bottom-0 left-0 right-0 p-4">
-            <h3 className="text-lg font-semibold mb-1 group-hover:text-primary transition-colors">
+          {/* Player Info - Bottom */}
+          <div className="absolute bottom-0 left-0 right-0 p-5">
+            {/* Name */}
+            <h3 className="text-white text-lg font-semibold tracking-tight mb-2 transition-opacity duration-300 group-hover:opacity-100 opacity-95">
               {name}
             </h3>
             
-            <div className="flex flex-wrap gap-1 mb-2">
-              {safeArray(secondaryPositions).slice(0, 2).map((pos) => (
-                <span key={pos} className="stat-badge text-[10px]">
-                  {pos}
-                </span>
-              ))}
-            </div>
-
-            <div className="flex items-center gap-3 text-sm text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <Calendar className="w-3 h-3" />
-                {age} anos
-              </span>
-              <span className="flex items-center gap-1">
-                <MapPin className="w-3 h-3" />
-                {nationality}
-              </span>
-            </div>
-
-            <p className="mt-2 text-sm text-muted-foreground truncate">
-              {currentClub}
+            {/* Meta Info Line */}
+            <p className="text-zinc-400 text-sm">
+              {age > 0 && <span>{age} anos</span>}
+              {age > 0 && nationality && <span className="mx-1.5">·</span>}
+              {nationality && <span>{nationality}</span>}
+              {(age > 0 || nationality) && currentClub && <span className="mx-1.5">·</span>}
+              {currentClub && <span>{currentClub}</span>}
             </p>
           </div>
         </div>
