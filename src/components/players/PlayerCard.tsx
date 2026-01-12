@@ -71,7 +71,7 @@ export function PlayerCard({
           {/* === DESKTOP LAYOUT: Score Badge (Top Right) === */}
           {autoRating !== null && autoRating !== undefined && (
             <div className="hidden sm:block absolute top-4 right-4">
-              <ScoreDisplay score={autoRating} variant="circle" size="sm" />
+              <ScoreDisplay score={autoRating} variant="badge" size="sm" />
             </div>
           )}
 
