@@ -823,16 +823,27 @@ function StatBreakdownCard({
     });
   }
 
+  // Type for breakdown rows
+  type BreakdownRow = {
+    stat: string;
+    label: string;
+    value: number;
+    score: number;
+    weight: number;
+    adjusted_weight: number;
+    available: boolean;
+  };
+
   // Filter stats: keep those with valid keys that are NOT empty/unknown
   // CRITICAL: Check if stat is a valid string identifier
-  const validStats = statBreakdown.filter((s: any) => {
+  const validStats: BreakdownRow[] = (statBreakdown as BreakdownRow[]).filter((s) => {
     const key = String(s.stat || "").trim();
     return key.length > 0 && key !== "unknown";
   });
 
   // Split into available (has data) and unavailable (no data)
-  const availableStats = validStats.filter((s: any) => s.available);
-  const unavailableStats = validStats.filter((s: any) => !s.available);
+  const availableStats: BreakdownRow[] = validStats.filter((s) => s.available);
+  const unavailableStats: BreakdownRow[] = validStats.filter((s) => !s.available);
 
   // DEV: Debug logging if no valid stats found
   if (import.meta.env.DEV && statBreakdown.length > 0 && validStats.length === 0) {
@@ -845,7 +856,7 @@ function StatBreakdownCard({
   // DEV: Log when we have valid stats but none are available
   if (import.meta.env.DEV && validStats.length > 0 && availableStats.length === 0) {
     console.warn("[StatBreakdownCard] Valid stats exist but none are available:", {
-      validStats: validStats.slice(0, 3).map((s: any) => ({
+      validStats: validStats.slice(0, 3).map((s) => ({
         stat: s.stat,
         available: s.available,
         adjusted_weight: s.adjusted_weight,
@@ -1609,6 +1620,7 @@ export function RatingBreakdownModalV2({
                     isExpanded={expandedCompetitions.has(comp.competition_id)}
                     onToggle={() => toggleCompetition(comp.competition_id)}
                     positionGroup={details.position_group}
+                    playerId={playerId}
                   />
                 ))}
               </>
