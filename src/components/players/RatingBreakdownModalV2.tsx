@@ -373,7 +373,13 @@ const STAT_NAME_MAP: Record<string, string> = {
   matches: "Jogos",
   minutes: "Minutos",
   
-  // Goal involvement - raw and per-90
+  // Goal involvement - raw and per-90 (canonical keys from DB)
+  goal_contributions: "Participações em Gol",  // Canonical key for G+A
+  cards: "Cartões",  // Canonical key for discipline
+  gk_saves: "Defesas",  // Canonical GK key
+  gk_goals_conceded: "Gols Sofridos",  // Canonical GK key
+  gk_penalties_saved: "Pênaltis Defendidos",  // Canonical GK key
+  gk_errors_led_to_goal: "Erros que Resultam em Gol",  // Canonical GK key
   goals: "Gols",
   goals_per_90: "Gols/90",
   assists: "Assistências",
@@ -483,24 +489,24 @@ interface PositionStatClassification {
 
 const POSITION_STAT_CLASSIFICATIONS: Record<string, PositionStatClassification> = {
   goalkeeper: {
-    positiveStats: ["saves", "saves_per_90", "saves_90", "clean_sheets", "penalties_saved", "aerial_duels", "aerial_duels_90", "accurate_passes", "accurate_passes_90"],
-    negativeStats: ["goals_conceded", "goals_conceded_inv", "errors", "errors_inv", "discipline"],
+    positiveStats: ["saves", "saves_per_90", "saves_90", "gk_saves", "clean_sheets", "penalties_saved", "gk_penalties_saved", "aerial_duels", "aerial_duels_90", "accurate_passes", "accurate_passes_90", "minutes_games", "minutes"],
+    negativeStats: ["goals_conceded", "goals_conceded_inv", "gk_goals_conceded", "errors", "errors_inv", "gk_errors_led_to_goal", "discipline", "cards"],
   },
   center_back: {
-    positiveStats: ["tackles", "tackles_90", "interceptions", "interceptions_90", "duels_won", "duels_won_pct", "aerial_duels", "aerial_duels_90", "recoveries", "recoveries_90", "accurate_passes", "accurate_passes_90"],
-    negativeStats: ["errors", "errors_inv", "discipline", "goals_conceded", "goals_conceded_inv"],
+    positiveStats: ["tackles", "tackles_90", "interceptions", "interceptions_90", "duels_won", "duels_won_pct", "aerial_duels", "aerial_duels_90", "recoveries", "recoveries_90", "accurate_passes", "accurate_passes_90", "minutes_games", "minutes", "goal_contributions", "ga_per_90"],
+    negativeStats: ["errors", "errors_inv", "discipline", "cards", "goals_conceded", "goals_conceded_inv"],
   },
   defensive_mid: {
-    positiveStats: ["tackles", "tackles_90", "interceptions", "interceptions_90", "recoveries", "recoveries_90", "accurate_passes", "accurate_passes_90", "pass_accuracy", "duels_won", "duels_won_pct"],
-    negativeStats: ["discipline", "errors", "errors_inv"],
+    positiveStats: ["tackles", "tackles_90", "interceptions", "interceptions_90", "recoveries", "recoveries_90", "accurate_passes", "accurate_passes_90", "pass_accuracy", "duels_won", "duels_won_pct", "minutes_games", "minutes", "goal_contributions", "ga_per_90"],
+    negativeStats: ["discipline", "cards", "errors", "errors_inv"],
   },
   midfielder: {
-    positiveStats: ["key_passes", "key_passes_90", "chances_created", "chances_created_90", "assists", "ga_per_90", "accurate_passes", "accurate_passes_90", "pass_accuracy", "key_pass_accuracy"],
-    negativeStats: ["discipline", "possession_lost"],
+    positiveStats: ["key_passes", "key_passes_90", "chances_created", "chances_created_90", "assists", "ga_per_90", "goal_contributions", "accurate_passes", "accurate_passes_90", "pass_accuracy", "key_pass_accuracy", "shots", "shots_90", "minutes_games", "minutes"],
+    negativeStats: ["discipline", "cards", "possession_lost"],
   },
   forward: {
-    positiveStats: ["goals", "goals_per_90", "assists", "ga_per_90", "shots", "shots_90", "shots_on_target", "shots_on_target_90", "offensive_involvement", "chances_created", "chances_created_90"],
-    negativeStats: ["discipline"],
+    positiveStats: ["goals", "goals_per_90", "assists", "ga_per_90", "goal_contributions", "shots", "shots_90", "shots_on_target", "shots_on_target_90", "offensive_involvement", "chances_created", "chances_created_90", "minutes_games", "minutes"],
+    negativeStats: ["discipline", "cards"],
   },
 };
 
@@ -641,22 +647,27 @@ function StatBreakdownCard({
   // Check if this competition was actually computed
   const isComputed = competitionHasFlags(competition) ? competition.computed : safeNumber(competition.minutes) > 0;
   const statBreakdown = Array.isArray(competition.stat_breakdown) ? competition.stat_breakdown : [];
-  // Filter out stats with missing keys to prevent "Estatística não identificada"
-  const validStats = statBreakdown.filter(s => s.stat && s.stat !== "unknown" && s.stat !== "");
+  
+  // Filter stats: keep those with valid keys and that are available
+  // A stat is valid if it has a stat key that is not empty/unknown
+  const validStats = statBreakdown.filter(s => {
+    const key = s.stat || "";
+    return key && key !== "unknown" && key !== "" && key.length > 0;
+  });
+  
   const availableStats = validStats.filter(s => s.available);
   const unavailableStats = validStats.filter(s => !s.available);
   
   // DEV: Debug logging to verify stat_breakdown contains proper keys
-  if (import.meta.env.DEV && statBreakdown.length > 0) {
-    const missingKeyRows = statBreakdown.filter(s => !s.stat || s.stat === "unknown" || s.stat === "");
-    if (missingKeyRows.length > 0) {
-      console.error("[StatBreakdownCard] Missing stat_key in breakdown rows (filtered out):", missingKeyRows.length, "of", statBreakdown.length);
-      console.log("[StatBreakdownCard] Valid stats:", validStats.map(s => s.stat));
-    }
+  if (import.meta.env.DEV && statBreakdown.length > 0 && validStats.length === 0) {
+    console.error("[StatBreakdownCard] All stats filtered out!", {
+      raw: statBreakdown.slice(0, 3),
+      competition: competition.competition_name,
+    });
   }
   
   // Get position-based breakdown for summary
-  const { positiveStats, negativeStats } = getPositionStatsBreakdown(validStats, positionGroup);
+  const { positiveStats, negativeStats } = getPositionStatsBreakdown(availableStats, positionGroup);
   
   return (
     <Card className="bg-secondary/20 border-border/50">
@@ -778,7 +789,18 @@ function StatBreakdownCard({
             )}
             
             {/* Color Legend */}
-            <StatScoreLegend />
+            {availableStats.length > 0 && <StatScoreLegend />}
+            
+            {/* Fallback when no stats available */}
+            {availableStats.length === 0 && (
+              <div className="text-center py-4 text-muted-foreground">
+                <AlertTriangle className="w-6 h-6 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Sem estatísticas detalhadas para esta competição.</p>
+                <p className="text-xs mt-1 opacity-70">
+                  Adicione mais estatísticas para ver o breakdown completo.
+                </p>
+              </div>
+            )}
             
             {/* Stats bars with tooltips */}
             <TooltipProvider delayDuration={200}>

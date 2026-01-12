@@ -57,6 +57,16 @@ export function OverallRatingCard({
   const displayRating = autoRating ?? overallRating;
   const breakdownDetails = adaptAutoRatingDetailsToV2(ratingDetails);
 
+  // DEV: Debug log to verify breakdown data
+  if (import.meta.env.DEV && ratingDetails) {
+    console.log("[OverallRatingCard] Raw ratingDetails:", ratingDetails);
+    console.log("[OverallRatingCard] Adapted breakdownDetails:", breakdownDetails);
+    if (breakdownDetails?.competitions?.[0]) {
+      console.log("[OverallRatingCard] First competition stat_breakdown:", 
+        breakdownDetails.competitions[0].stat_breakdown);
+    }
+  }
+
   const formattedDate = ratingUpdatedAt
     ? new Date(ratingUpdatedAt).toLocaleDateString("pt-BR")
     : null;
