@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from "react";
-import { Instagram, Youtube, Linkedin, ChevronLeft, ChevronRight } from "lucide-react";
+import { Instagram, Youtube, Linkedin, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
-// Fallback mock posts - replace with real Instagram feed when API is configured
-const mockPosts = [
+// Fallback mock posts - used when API is not configured or fails
+const fallbackPosts = [
   {
     id: "1",
     imageUrl: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=400&h=400&fit=crop",
@@ -53,10 +54,35 @@ interface InstagramPost {
 }
 
 export function InstagramFeedSection() {
-  const [posts] = useState<InstagramPost[]>(mockPosts);
+  const [posts, setPosts] = useState<InstagramPost[]>(fallbackPosts);
+  const [loading, setLoading] = useState(true);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
   const carouselRef = useRef<HTMLDivElement>(null);
+
+  // Fetch Instagram posts from edge function
+  useEffect(() => {
+    const fetchInstagramPosts = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('instagram-feed');
+        
+        if (error) {
+          console.error('Error fetching Instagram feed:', error);
+          return;
+        }
+
+        if (data?.posts && data.posts.length > 0) {
+          setPosts(data.posts);
+        }
+      } catch (err) {
+        console.error('Failed to fetch Instagram feed:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInstagramPosts();
+  }, []);
 
   const checkScrollButtons = () => {
     if (!carouselRef.current) return;
@@ -72,7 +98,7 @@ export function InstagramFeedSection() {
       carousel.addEventListener("scroll", checkScrollButtons);
       return () => carousel.removeEventListener("scroll", checkScrollButtons);
     }
-  }, []);
+  }, [posts]);
 
   const scroll = (direction: "left" | "right") => {
     if (!carouselRef.current) return;
@@ -129,6 +155,13 @@ export function InstagramFeedSection() {
 
       {/* Carousel Container */}
       <div className="relative">
+        {/* Loading State */}
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-[#f8f7f4]/80 z-20">
+            <Loader2 className="w-6 h-6 animate-spin text-neutral-400" />
+          </div>
+        )}
+
         {/* Left Arrow */}
         <button
           onClick={() => scroll("left")}
