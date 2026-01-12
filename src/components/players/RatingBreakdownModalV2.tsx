@@ -405,26 +405,42 @@ function getPositionStatsBreakdown(
 }
 
 function getHumanStatName(statKey: string, providedLabel: unknown): string {
+  // Normalize the key
+  const normalizedKey = (statKey || "").trim().toLowerCase();
+  
   // 1. Try our manual mapping first (most reliable)
+  if (normalizedKey && STAT_NAME_MAP[normalizedKey]) {
+    return STAT_NAME_MAP[normalizedKey];
+  }
+  // Also try original case
   if (statKey && STAT_NAME_MAP[statKey]) {
     return STAT_NAME_MAP[statKey];
   }
+  
   // 2. If providedLabel is a valid non-placeholder string, use it
   if (typeof providedLabel === "string" && providedLabel.trim() && 
       providedLabel !== "—" && providedLabel !== "---" && 
       providedLabel !== "unknown" && providedLabel !== "Desconhecido" &&
-      providedLabel !== "Estatística não identificada") {
+      providedLabel !== "Estatística não identificada" &&
+      providedLabel !== "") {
     return providedLabel;
   }
-  // 3. Convert snake_case to Title Case as last resort (but only if we have a key)
+  
+  // 3. Convert snake_case to Title Case (always do this if we have a key)
   if (statKey && statKey !== "unknown" && statKey.length > 0) {
-    return statKey
+    const titleCase = statKey
       .replace(/_/g, " ")
       .replace(/\b\w/g, (c) => c.toUpperCase());
+    // DEV: Log unknown stat keys so we can add them to the mapping
+    if (import.meta.env.DEV) {
+      console.warn(`[getHumanStatName] Unknown stat key: "${statKey}" -> displaying as "${titleCase}". Consider adding to STAT_NAME_MAP.`);
+    }
+    return titleCase;
   }
-  // 4. Ultimate fallback - show raw key if available
-  if (statKey && statKey !== "unknown") {
-    return `Stat: ${statKey}`;
+  
+  // 4. Ultimate fallback - never show "não identificada", show generic label
+  if (import.meta.env.DEV) {
+    console.error("[getHumanStatName] Called with empty/unknown stat key:", statKey, "label:", providedLabel);
   }
   return "Estatística";
 }
@@ -490,11 +506,22 @@ function StatBreakdownCard({
   // Check if this competition was actually computed
   const isComputed = competitionHasFlags(competition) ? competition.computed : safeNumber(competition.minutes) > 0;
   const statBreakdown = Array.isArray(competition.stat_breakdown) ? competition.stat_breakdown : [];
-  const availableStats = statBreakdown.filter(s => s.available);
-  const unavailableStats = statBreakdown.filter(s => !s.available);
+  // Filter out stats with missing keys to prevent "Estatística não identificada"
+  const validStats = statBreakdown.filter(s => s.stat && s.stat !== "unknown" && s.stat !== "");
+  const availableStats = validStats.filter(s => s.available);
+  const unavailableStats = validStats.filter(s => !s.available);
+  
+  // DEV: Debug logging to verify stat_breakdown contains proper keys
+  if (import.meta.env.DEV && statBreakdown.length > 0) {
+    const missingKeyRows = statBreakdown.filter(s => !s.stat || s.stat === "unknown" || s.stat === "");
+    if (missingKeyRows.length > 0) {
+      console.error("[StatBreakdownCard] Missing stat_key in breakdown rows (filtered out):", missingKeyRows.length, "of", statBreakdown.length);
+      console.log("[StatBreakdownCard] Valid stats:", validStats.map(s => s.stat));
+    }
+  }
   
   // Get position-based breakdown for summary
-  const { positiveStats, negativeStats } = getPositionStatsBreakdown(statBreakdown, positionGroup);
+  const { positiveStats, negativeStats } = getPositionStatsBreakdown(validStats, positionGroup);
   
   return (
     <Card className="bg-secondary/20 border-border/50">
@@ -1029,6 +1056,18 @@ export function RatingBreakdownModalV2({
                 safeArray(c.stat_breakdown).filter(s => s.available)
               );
               
+              // DEV: Debug logging for stat breakdown analysis
+              if (import.meta.env.DEV && allStats.length > 0) {
+                const unknownStats = allStats.filter(s => !s.stat || s.stat === "unknown" || s.stat === "");
+                if (unknownStats.length > 0) {
+                  console.error("[Radar Tab] Stats with missing keys:", unknownStats);
+                }
+                // Log first athlete's breakdown for debugging
+                console.log("[Radar Tab] First competition stat_breakdown sample:", 
+                  details?.competitions?.[0]?.stat_breakdown?.slice(0, 3)
+                );
+              }
+              
               // Group and average by stat
               const statMap = new Map<string, { total: number; count: number; label: string; weight: number; value: number }>();
               allStats.forEach((s) => {
@@ -1038,6 +1077,11 @@ export function RatingBreakdownModalV2({
                 const score = Number((s as any)?.score) || 0;
                 const weight = Number((s as any)?.adjusted_weight ?? (s as any)?.weight) || 0;
                 const value = Number((s as any)?.value) || 0;
+
+                // Skip stats with unknown keys
+                if (statKey === "unknown" || statKey === "") {
+                  return;
+                }
 
                 const existing = statMap.get(statKey);
                 if (existing) {
