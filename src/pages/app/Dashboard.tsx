@@ -4,9 +4,8 @@ import {
   FileText, 
   TrendingUp, 
   AlertCircle,
-  Clock,
-  Loader2,
-  ChevronRight
+  ChevronRight,
+  Trophy
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -16,6 +15,7 @@ import { PlayerRankingCard } from "@/components/dashboard/PlayerRankingCard";
 import CompetitionUsageWidget from "@/components/competitions/CompetitionUsageWidget";
 import { useAuth } from "@/hooks/useAuth";
 import { safeArray } from "@/lib/utils";
+import { AdminSkeletonDashboard } from "@/components/admin/AdminSkeleton";
 
 interface DashboardStats {
   totalPlayers: number;
@@ -163,11 +163,7 @@ const Dashboard = () => {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <Loader2 className="w-5 h-5 animate-spin text-zinc-600" />
-      </div>
-    );
+    return <AdminSkeletonDashboard />;
   }
 
   return (

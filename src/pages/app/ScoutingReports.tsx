@@ -7,15 +7,12 @@ import {
   Search, 
   Plus, 
   FileText, 
-  Calendar,
-  User,
-  Trophy,
-  Loader2,
   ChevronRight
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { safeArray } from "@/lib/utils";
+import { AdminSkeletonTable } from "@/components/admin/AdminSkeleton";
 
 interface ScoutingReportListItem {
   id: string;
@@ -134,9 +131,7 @@ const ScoutingReports = () => {
 
       {/* Reports List */}
       {loading ? (
-        <div className="flex items-center justify-center py-16">
-          <Loader2 className="w-5 h-5 animate-spin text-zinc-600" />
-        </div>
+        <AdminSkeletonTable rows={8} />
       ) : filteredReports.length === 0 ? (
         <div className="admin-card animate-fade-in">
           <div className="admin-empty py-16">

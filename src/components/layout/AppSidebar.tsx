@@ -53,149 +53,177 @@ export function AppSidebar() {
 
   return (
     <>
-      {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 h-16 border-b border-zinc-800/50 bg-[hsl(222,47%,5%)]/95 backdrop-blur-sm flex items-center justify-between px-4">
-        <Link to="/app" className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary font-bold text-white text-sm">
+      {/* Mobile Header - Minimal */}
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 h-14 border-b border-zinc-800/30 bg-[hsl(222,47%,4%)]/98 backdrop-blur-md flex items-center justify-between px-4">
+        <Link to="/app" className="flex items-center gap-2.5">
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary font-bold text-white text-xs">
             M3
           </div>
-          <span className="font-semibold text-white">M3 Agency</span>
+          <span className="text-sm font-semibold text-white tracking-tight">M3 Agency</span>
         </Link>
-        <Button 
-          variant="ghost" 
-          size="icon"
+        <button 
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="text-zinc-400 hover:text-white hover:bg-zinc-800"
+          className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
         >
           {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </Button>
+        </button>
       </header>
 
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
         <div 
-          className="lg:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+          className="lg:hidden fixed inset-0 z-40 bg-black/70 backdrop-blur-sm"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
 
-      {/* Mobile Menu */}
+      {/* Mobile Menu - Command Center Style */}
       <nav
         className={cn(
-          "lg:hidden fixed top-16 left-0 right-0 z-40 bg-[hsl(222,47%,6%)] border-b border-zinc-800/50 transition-all duration-200",
-          mobileMenuOpen ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 pointer-events-none"
+          "lg:hidden fixed top-14 left-0 right-0 z-40 bg-[hsl(222,47%,5%)] border-b border-zinc-800/30 transition-all duration-150",
+          mobileMenuOpen ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-1 pointer-events-none"
         )}
       >
-        <div className="p-3 space-y-1">
+        <div className="p-2 space-y-0.5">
           {[...navItems, ...bottomNavItems].map((item) => (
             <Link
               key={item.href}
               to={item.href}
               onClick={() => setMobileMenuOpen(false)}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150",
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-100",
                 isActive(item.href)
                   ? "bg-primary/10 text-primary"
-                  : "text-zinc-400 hover:text-white hover:bg-zinc-800/50"
+                  : "text-zinc-400 hover:text-white hover:bg-zinc-800/40 active:bg-zinc-800/60"
               )}
             >
-              <item.icon className="w-[18px] h-[18px] shrink-0" />
-              <span className="text-sm font-medium">{item.label}</span>
+              <item.icon className={cn(
+                "w-4 h-4 shrink-0",
+                isActive(item.href) ? "text-primary" : ""
+              )} />
+              <span className="text-sm">{item.label}</span>
             </Link>
           ))}
+          <div className="h-px bg-zinc-800/40 my-1.5" />
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800/50 transition-colors"
+            className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-zinc-500 hover:text-white hover:bg-zinc-800/40 active:bg-zinc-800/60 transition-colors"
           >
-            <LogOut className="w-[18px] h-[18px] shrink-0" />
-            <span className="text-sm font-medium">Sair</span>
+            <LogOut className="w-4 h-4 shrink-0" />
+            <span className="text-sm">Sair</span>
           </button>
         </div>
       </nav>
 
-      {/* Desktop Sidebar */}
+      {/* Desktop Sidebar - Professional Command Center */}
       <aside
         className={cn(
-          "hidden lg:flex flex-col fixed left-0 top-0 bottom-0 z-40 border-r border-zinc-800/50 bg-[hsl(222,47%,5%)] transition-all duration-200",
-          isCollapsed ? "w-16" : "w-60"
+          "hidden lg:flex flex-col fixed left-0 top-0 bottom-0 z-40 border-r border-zinc-800/30 bg-[hsl(222,47%,4%)] transition-all duration-150",
+          isCollapsed ? "w-[60px]" : "w-56"
         )}
       >
-        {/* Logo */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-zinc-800/30">
-          <Link to="/app" className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary font-bold text-white text-sm">
+        {/* Logo Section */}
+        <div className="h-14 flex items-center justify-between px-3 border-b border-zinc-800/20">
+          <Link to="/app" className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary font-bold text-white text-sm shrink-0">
               M3
             </div>
-            {!isCollapsed && <span className="font-semibold text-white">M3 Agency</span>}
+            {!isCollapsed && <span className="text-sm font-semibold text-white tracking-tight">M3 Agency</span>}
           </Link>
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-1.5 text-zinc-500 hover:text-white transition-colors rounded-md hover:bg-zinc-800/50"
+            className={cn(
+              "w-6 h-6 flex items-center justify-center text-zinc-600 hover:text-zinc-300 transition-colors rounded",
+              isCollapsed && "mx-auto"
+            )}
           >
             <ChevronLeft
               className={cn(
-                "w-4 h-4 transition-transform duration-200",
+                "w-3.5 h-3.5 transition-transform duration-150",
                 isCollapsed && "rotate-180"
               )}
             />
           </button>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 p-3 space-y-1">
+        {/* Navigation - Clean and focused */}
+        <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
           {navItems.map((item) => (
             <Link
               key={item.href}
               to={item.href}
               className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-150 group",
+                "flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all duration-100 group relative",
                 isActive(item.href)
-                  ? "bg-primary/10 text-primary"
-                  : "text-zinc-400 hover:text-white hover:bg-zinc-800/40"
+                  ? "bg-primary/15 text-white"
+                  : "text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/40 active:bg-zinc-800/60"
               )}
             >
+              {/* Active indicator */}
+              {isActive(item.href) && (
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-primary rounded-r" />
+              )}
               <item.icon className={cn(
-                "w-[18px] h-[18px] shrink-0 transition-colors",
-                isActive(item.href) ? "text-primary" : "text-zinc-500 group-hover:text-zinc-300"
+                "w-4 h-4 shrink-0 transition-colors",
+                isActive(item.href) ? "text-primary" : "text-zinc-600 group-hover:text-zinc-400"
               )} />
-              {!isCollapsed && <span className="text-sm font-medium">{item.label}</span>}
+              {!isCollapsed && (
+                <span className={cn(
+                  "text-sm transition-colors",
+                  isActive(item.href) ? "font-medium" : ""
+                )}>
+                  {item.label}
+                </span>
+              )}
             </Link>
           ))}
         </nav>
 
-        {/* Bottom Section */}
-        <div className="p-3 border-t border-zinc-800/30 space-y-1">
+        {/* Bottom Section - Subtle */}
+        <div className="p-2 border-t border-zinc-800/20 space-y-0.5">
           {bottomNavItems.map((item) => (
             <Link
               key={item.href}
               to={item.href}
               className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-150 group",
+                "flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all duration-100 group relative",
                 isActive(item.href)
-                  ? "bg-primary/10 text-primary"
-                  : "text-zinc-400 hover:text-white hover:bg-zinc-800/40"
+                  ? "bg-primary/15 text-white"
+                  : "text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/40 active:bg-zinc-800/60"
               )}
             >
+              {isActive(item.href) && (
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-primary rounded-r" />
+              )}
               <item.icon className={cn(
-                "w-[18px] h-[18px] shrink-0 transition-colors",
-                isActive(item.href) ? "text-primary" : "text-zinc-500 group-hover:text-zinc-300"
+                "w-4 h-4 shrink-0 transition-colors",
+                isActive(item.href) ? "text-primary" : "text-zinc-600 group-hover:text-zinc-400"
               )} />
-              {!isCollapsed && <span className="text-sm font-medium">{item.label}</span>}
+              {!isCollapsed && (
+                <span className={cn(
+                  "text-sm transition-colors",
+                  isActive(item.href) ? "font-medium" : ""
+                )}>
+                  {item.label}
+                </span>
+              )}
             </Link>
           ))}
           
+          {/* User email - very subtle */}
           {!isCollapsed && user && (
-            <div className="px-3 py-2 text-xs text-zinc-600 truncate">
+            <div className="px-2.5 py-1.5 text-[10px] text-zinc-700 truncate">
               {user.email}
             </div>
           )}
           
+          {/* Logout button */}
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-zinc-500 hover:text-white hover:bg-zinc-800/40 transition-colors group"
+            className="flex items-center gap-2.5 px-2.5 py-2 w-full rounded-lg text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800/40 active:bg-zinc-800/60 transition-all duration-100 group"
           >
-            <LogOut className="w-[18px] h-[18px] shrink-0 text-zinc-600 group-hover:text-zinc-400" />
-            {!isCollapsed && <span className="text-sm font-medium">Sair</span>}
+            <LogOut className="w-4 h-4 shrink-0 text-zinc-700 group-hover:text-zinc-500" />
+            {!isCollapsed && <span className="text-sm">Sair</span>}
           </button>
         </div>
       </aside>
