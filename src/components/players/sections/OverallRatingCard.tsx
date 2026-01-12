@@ -111,6 +111,9 @@ export function OverallRatingCard({
               <SafeRatingBreakdownModalV2
                 details={breakdownDetails}
                 rating={autoRating}
+                playerId={playerId}
+                isAdmin={isAdmin}
+                onRecalculated={onRatingRecalculated}
                 trigger={
                   <button className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors">
                     <Info className="w-3 h-3" />
