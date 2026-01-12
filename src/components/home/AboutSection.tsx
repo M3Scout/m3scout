@@ -38,15 +38,19 @@ export function AboutSection() {
                 : "opacity-0 translate-y-8"
             )}
           >
-            <p className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light text-neutral-900 leading-[1.2] tracking-tight">
-              "Conectando talentos ao próximo nível do futebol,{" "}
+            <p 
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl leading-[1.2] tracking-tight"
+              style={{ fontFamily: '"Times New Roman", Times, serif' }}
+            >
+              "<span 
+                className="italic font-normal"
+                style={{ color: "#e52421" }}
+              >Conectando talentos</span>{" "}
+              <span className="font-bold not-italic text-neutral-900">ao próximo nível do futebol,</span>{" "}
               <span 
                 className="italic font-normal"
                 style={{ color: "#e52421" }}
-              >
-                hoje.
-              </span>
-              "
+              >hoje.</span>"
             </p>
           </blockquote>
 
