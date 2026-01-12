@@ -219,7 +219,8 @@ const CompetitionsImport = () => {
     }
   };
 
-  const mapCompetitionType = (type: string): string => {
+  const mapCompetitionType = (type: string | null | undefined): string => {
+    if (!type) return 'league';
     const typeMap: Record<string, string> = {
       'league': 'league',
       'liga': 'league',

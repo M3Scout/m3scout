@@ -40,7 +40,7 @@ export function adaptAutoRatingDetailsToV2(details: unknown): RatingBreakdownV2 
   const competitions: CompetitionBreakdown[] = safeArray(d.competitions)
     .filter(Boolean)
     .map((c: any): CompetitionBreakdown => {
-      // Support both old field names and new V2 field names
+      // Support both old field names and new V2 field names with defensive checks
       const yearWeight = Number(c?.year_weight ?? c?.recency_weight) || 0;
       const inYearWeight = Number(c?.in_year_weight ?? c?.minutes_factor) || 0;
       const finalWeight = Number(c?.final_weight ?? c?.combined_weight) || 0;
@@ -48,7 +48,7 @@ export function adaptAutoRatingDetailsToV2(details: unknown): RatingBreakdownV2 
 
       return {
         competition_id: String(c?.competition_id ?? "unknown"),
-        competition_name: String(c?.competition_name ?? "Sem competição"),
+        competition_name: String(c?.competition_name ?? c?.name ?? "Sem competição"),
         season_year: Number(c?.season_year ?? d.season_year ?? new Date().getFullYear()),
         final_coefficient: Number(c?.final_coefficient) || 1,
         matches: Number(c?.matches) || 0,
@@ -74,7 +74,7 @@ export function adaptAutoRatingDetailsToV2(details: unknown): RatingBreakdownV2 
           .filter(Boolean)
           .map((s: any) => ({
             stat: String(s?.stat ?? s?.name ?? "unknown"),
-            label: String(s?.label ?? s?.name ?? "unknown"),
+            label: String(s?.label ?? s?.name ?? "Desconhecido"),
             value: Number(s?.value) || 0,
             score: Number(s?.score) || 0,
             weight: Number(s?.weight) || 0,

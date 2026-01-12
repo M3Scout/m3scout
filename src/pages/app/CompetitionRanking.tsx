@@ -118,9 +118,10 @@ const CompetitionRanking = () => {
       // Public: only visibility > 0
       if (!isAdmin && (comp.visibility_score ?? 0) <= 0) return false;
 
+      const searchLower = (searchQuery || "").toLowerCase();
       const matchesSearch =
-        comp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (comp.display_name?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
+        (comp.name || "").toLowerCase().includes(searchLower) ||
+        ((comp.display_name || "").toLowerCase().includes(searchLower));
       const matchesCountry = countryFilter === "all" || comp.country === countryFilter;
       const matchesType = typeFilter === "all" || comp.type === typeFilter;
       const matchesState = stateFilter === "all" || comp.state === stateFilter;
