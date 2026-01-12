@@ -133,15 +133,26 @@ export function adaptAutoRatingDetailsToV2(details: unknown): ExtendedRatingBrea
         combined_weight: finalWeight,
         competition_level_score: competitionLevelScore,
         position_stats_score: positionStatsScore,
-        stat_breakdown: statBreakdown.map((s: any) => ({
-          stat: String(s?.stat ?? s?.key ?? s?.name ?? "unknown"),
-          label: String(s?.label ?? s?.name ?? ""),
-          value: safeNumber(s?.value, 0),
-          score: safeNumber(s?.score, 50),
-          weight: safeNumber(s?.weight, 0),
-          adjusted_weight: safeNumber(s?.adjusted_weight, safeNumber(s?.weight, 0)),
-          available: Boolean(s?.available ?? (safeNumber(s?.score, 0) > 0)),
-        })),
+        stat_breakdown: statBreakdown.map((s: any) => {
+          // Extract stat key from multiple possible field names
+          const statKey = String(s?.stat ?? s?.key ?? s?.stat_key ?? s?.name ?? "");
+          const statLabel = String(s?.label ?? s?.stat_label ?? s?.name ?? "");
+          
+          // Dev validation: warn if stat key is missing
+          if (import.meta.env.DEV && (!statKey || statKey === "unknown")) {
+            console.warn("[autoRatingDetailsAdapter] Missing stat_key in breakdown row:", s);
+          }
+          
+          return {
+            stat: statKey || "unknown",
+            label: statLabel,
+            value: safeNumber(s?.value ?? s?.value_raw, 0),
+            score: safeNumber(s?.score ?? s?.score_0_100, 50),
+            weight: safeNumber(s?.weight ?? s?.weight_pct, 0),
+            adjusted_weight: safeNumber(s?.adjusted_weight ?? s?.weight ?? s?.weight_pct, 0),
+            available: Boolean(s?.available ?? (safeNumber(s?.score ?? s?.score_0_100, 0) > 0)),
+          };
+        }),
         competition_score: computedScore,
         weighted_contribution: weightedContribution,
         // Computation flags
