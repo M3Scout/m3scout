@@ -1,21 +1,5 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  BarChart3,
-  TrendingUp,
-  Calendar,
-  Target,
-  Shield,
   Clock,
   Loader2,
 } from "lucide-react";
@@ -42,14 +26,16 @@ interface SeasonStats {
 
 const currentYear = new Date().getFullYear();
 
+type TabValue = "current" | "per90" | "career";
+
 export function PublicStatsSection({ playerId }: PublicStatsSectionProps) {
   const [currentSeasonStats, setCurrentSeasonStats] = useState<SeasonStats | null>(null);
   const [careerStats, setCareerStats] = useState<SeasonStats[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<TabValue>("current");
 
   useEffect(() => {
     const fetchStats = async () => {
-      // Fetch all stats for the player
       const { data, error } = await supabase
         .from("player_stats")
         .select("*")
@@ -63,7 +49,6 @@ export function PublicStatsSection({ playerId }: PublicStatsSectionProps) {
       }
 
       if (Array.isArray(data) && data.length > 0) {
-        // Aggregate by season
         const statsBySeason = data.reduce((acc, stat) => {
           const year = stat.season_year;
           if (!acc[year]) {
@@ -117,309 +102,286 @@ export function PublicStatsSection({ playerId }: PublicStatsSectionProps) {
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-primary" />
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-center py-16">
+        <Loader2 className="w-5 h-5 animate-spin text-zinc-500" />
+      </div>
     );
   }
 
   const safeCareerStats = Array.isArray(careerStats) ? careerStats : [];
   if (safeCareerStats.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-primary" />
-            Estatísticas
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-center text-muted-foreground py-8">
-            Sem estatísticas disponíveis
-          </p>
-        </CardContent>
-      </Card>
+      <div>
+        <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 mb-4">Estatísticas</p>
+        <div className="h-px bg-zinc-900 mb-8" />
+        <p className="text-center text-zinc-600 text-sm py-12">
+          Sem estatísticas disponíveis
+        </p>
+      </div>
     );
   }
 
+  const tabs: { value: TabValue; label: string; shortLabel: string }[] = [
+    { value: "current", label: "Temporada Atual", shortLabel: String(currentYear) },
+    { value: "per90", label: "Por 90 min", shortLabel: "P/90" },
+    { value: "career", label: "Carreira", shortLabel: "Carreira" },
+  ];
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <BarChart3 className="w-5 h-5 text-primary" />
-          Estatísticas
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Tabs defaultValue="current" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="current" className="gap-2">
-              <Calendar className="w-4 h-4" />
-              <span className="hidden sm:inline">Temporada Atual</span>
-              <span className="sm:hidden">{currentYear}</span>
-            </TabsTrigger>
-            <TabsTrigger value="per90" className="gap-2">
-              <TrendingUp className="w-4 h-4" />
-              <span className="hidden sm:inline">Por 90 min</span>
-              <span className="sm:hidden">P/90</span>
-            </TabsTrigger>
-            <TabsTrigger value="career" className="gap-2">
-              <Clock className="w-4 h-4" />
-              <span className="hidden sm:inline">Carreira</span>
-              <span className="sm:hidden">Carreira</span>
-            </TabsTrigger>
-          </TabsList>
+    <div>
+      {/* Section Title */}
+      <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 mb-4">Estatísticas</p>
+      <div className="h-px bg-zinc-900 mb-8" />
 
-          {/* Current Season Tab */}
-          <TabsContent value="current">
-            {currentSeasonStats ? (
-              <div className="space-y-4">
-                <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
-                  <StatBox
-                    label="Jogos"
-                    value={currentSeasonStats.matches}
-                    icon={<Target className="w-4 h-4" />}
-                  />
-                  <StatBox
-                    label="Minutos"
-                    value={currentSeasonStats.minutes}
-                    icon={<Clock className="w-4 h-4" />}
-                  />
-                  <StatBox
-                    label="Gols"
-                    value={currentSeasonStats.goals}
-                    highlight
-                  />
-                  <StatBox
-                    label="Assistências"
-                    value={currentSeasonStats.assists}
-                  />
-                  <StatBox
-                    label="G+A"
-                    value={currentSeasonStats.goals + currentSeasonStats.assists}
-                    highlight
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <StatBox
-                    label="Desarmes"
-                    value={currentSeasonStats.tackles}
-                    icon={<Shield className="w-4 h-4" />}
-                    small
-                  />
-                  <StatBox
-                    label="Interceptações"
-                    value={currentSeasonStats.interceptions}
-                    small
-                  />
-                  <StatBox
-                    label="Recuperações"
-                    value={currentSeasonStats.recoveries}
-                    small
-                  />
-                  <div className="flex gap-2">
-                    <StatBox
-                      label="Amarelos"
-                      value={currentSeasonStats.yellow_cards}
-                      variant="warning"
-                      small
-                    />
-                    <StatBox
-                      label="Vermelhos"
-                      value={currentSeasonStats.red_cards}
-                      variant="danger"
-                      small
-                    />
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <p className="text-center text-muted-foreground py-8">
-                Sem dados para {currentYear}
-              </p>
+      {/* Minimal Tabs */}
+      <div className="flex gap-6 mb-8 border-b border-zinc-900">
+        {tabs.map((tab) => (
+          <button
+            key={tab.value}
+            onClick={() => setActiveTab(tab.value)}
+            className={`pb-3 text-sm font-medium transition-colors relative ${
+              activeTab === tab.value
+                ? "text-white"
+                : "text-zinc-600 hover:text-zinc-400"
+            }`}
+          >
+            <span className="hidden sm:inline">{tab.label}</span>
+            <span className="sm:hidden">{tab.shortLabel}</span>
+            {activeTab === tab.value && (
+              <span className="absolute bottom-0 left-0 right-0 h-px bg-[#e52421]" />
             )}
-          </TabsContent>
+          </button>
+        ))}
+      </div>
 
-          {/* Per 90 Tab */}
-          <TabsContent value="per90">
-            {currentSeasonStats && currentSeasonStats.minutes >= 90 ? (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <StatBox
-                    label="Gols/90"
-                    value={calculatePer90(currentSeasonStats.goals, currentSeasonStats.minutes)}
-                    highlight
-                  />
-                  <StatBox
-                    label="Assist./90"
-                    value={calculatePer90(currentSeasonStats.assists, currentSeasonStats.minutes)}
-                  />
-                  <StatBox
-                    label="G+A/90"
-                    value={calculatePer90(
-                      currentSeasonStats.goals + currentSeasonStats.assists,
-                      currentSeasonStats.minutes
-                    )}
-                    highlight
-                  />
-                  <StatBox
-                    label="Min/Gol"
-                    value={
-                      currentSeasonStats.goals > 0
-                        ? Math.round(currentSeasonStats.minutes / currentSeasonStats.goals)
-                        : "—"
-                    }
-                  />
-                </div>
+      {/* Tab Content */}
+      {activeTab === "current" && (
+        <>
+          {currentSeasonStats ? (
+            <div className="space-y-8">
+              {/* Primary Stats */}
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-4 sm:gap-6">
+                <StatRow label="Jogos" value={currentSeasonStats.matches} />
+                <StatRow label="Minutos" value={currentSeasonStats.minutes} />
+                <StatRow label="Gols" value={currentSeasonStats.goals} highlight />
+                <StatRow label="Assistências" value={currentSeasonStats.assists} />
+                <StatRow 
+                  label="G+A" 
+                  value={currentSeasonStats.goals + currentSeasonStats.assists} 
+                  highlight 
+                />
+              </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  <StatBox
-                    label="Desarmes/90"
-                    value={calculatePer90(currentSeasonStats.tackles, currentSeasonStats.minutes)}
-                    icon={<Shield className="w-4 h-4" />}
-                    small
+              {/* Secondary Stats */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 pt-6 border-t border-zinc-900">
+                <StatRow label="Desarmes" value={currentSeasonStats.tackles} small />
+                <StatRow label="Interceptações" value={currentSeasonStats.interceptions} small />
+                <StatRow label="Recuperações" value={currentSeasonStats.recoveries} small />
+                <div className="flex gap-6">
+                  <StatRow 
+                    label="Amarelos" 
+                    value={currentSeasonStats.yellow_cards} 
+                    variant="warning" 
+                    small 
                   />
-                  <StatBox
-                    label="Intercep./90"
-                    value={calculatePer90(currentSeasonStats.interceptions, currentSeasonStats.minutes)}
-                    small
-                  />
-                  <StatBox
-                    label="Recup./90"
-                    value={calculatePer90(currentSeasonStats.recoveries, currentSeasonStats.minutes)}
-                    small
+                  <StatRow 
+                    label="Vermelhos" 
+                    value={currentSeasonStats.red_cards} 
+                    variant="danger" 
+                    small 
                   />
                 </div>
               </div>
-            ) : (
-              <p className="text-center text-muted-foreground py-8">
-                Mínimo de 90 minutos necessário
-              </p>
-            )}
-          </TabsContent>
-
-          {/* Career Tab */}
-          <TabsContent value="career">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Temporada</TableHead>
-                    <TableHead className="text-center">J</TableHead>
-                    <TableHead className="text-center">Min</TableHead>
-                    <TableHead className="text-center">G</TableHead>
-                    <TableHead className="text-center">A</TableHead>
-                    <TableHead className="text-center">G+A</TableHead>
-                    <TableHead className="text-center hidden sm:table-cell">Cartões</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {safeArray(careerStats).map((season) => (
-                    <TableRow key={season.season_year}>
-                      <TableCell className="font-medium">
-                        {season.season_year}
-                        {season.season_year === currentYear && (
-                          <Badge variant="secondary" className="ml-2 text-xs">
-                            Atual
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-center">{season.matches}</TableCell>
-                      <TableCell className="text-center">{season.minutes}</TableCell>
-                      <TableCell className="text-center font-medium text-primary">
-                        {season.goals}
-                      </TableCell>
-                      <TableCell className="text-center">{season.assists}</TableCell>
-                      <TableCell className="text-center font-medium">
-                        {season.goals + season.assists}
-                      </TableCell>
-                      <TableCell className="text-center hidden sm:table-cell">
-                        <span className="text-amber-500">{season.yellow_cards}</span>
-                        {" / "}
-                        <span className="text-destructive">{season.red_cards}</span>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
             </div>
+          ) : (
+            <EmptyState message={`Sem dados para ${currentYear}`} />
+          )}
+        </>
+      )}
 
-            {/* Career Totals */}
-            <div className="mt-4 pt-4 border-t border-border">
-              <div className="grid grid-cols-4 gap-3">
-                <StatBox
-                  label="Total Jogos"
-                  value={careerStats.reduce((sum, s) => sum + s.matches, 0)}
-                  small
+      {activeTab === "per90" && (
+        <>
+          {currentSeasonStats && currentSeasonStats.minutes >= 90 ? (
+            <div className="space-y-8">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
+                <StatRow 
+                  label="Gols/90" 
+                  value={calculatePer90(currentSeasonStats.goals, currentSeasonStats.minutes)} 
+                  highlight 
                 />
-                <StatBox
-                  label="Total Gols"
-                  value={careerStats.reduce((sum, s) => sum + s.goals, 0)}
-                  highlight
-                  small
+                <StatRow 
+                  label="Assist./90" 
+                  value={calculatePer90(currentSeasonStats.assists, currentSeasonStats.minutes)} 
                 />
-                <StatBox
-                  label="Total Assist."
-                  value={careerStats.reduce((sum, s) => sum + s.assists, 0)}
-                  small
+                <StatRow 
+                  label="G+A/90" 
+                  value={calculatePer90(
+                    currentSeasonStats.goals + currentSeasonStats.assists,
+                    currentSeasonStats.minutes
+                  )} 
+                  highlight 
                 />
-                <StatBox
-                  label="Total G+A"
-                  value={careerStats.reduce((sum, s) => sum + s.goals + s.assists, 0)}
-                  highlight
-                  small
+                <StatRow 
+                  label="Min/Gol" 
+                  value={
+                    currentSeasonStats.goals > 0
+                      ? Math.round(currentSeasonStats.minutes / currentSeasonStats.goals)
+                      : "—"
+                  } 
+                />
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6 pt-6 border-t border-zinc-900">
+                <StatRow 
+                  label="Desarmes/90" 
+                  value={calculatePer90(currentSeasonStats.tackles, currentSeasonStats.minutes)} 
+                  small 
+                />
+                <StatRow 
+                  label="Intercep./90" 
+                  value={calculatePer90(currentSeasonStats.interceptions, currentSeasonStats.minutes)} 
+                  small 
+                />
+                <StatRow 
+                  label="Recup./90" 
+                  value={calculatePer90(currentSeasonStats.recoveries, currentSeasonStats.minutes)} 
+                  small 
                 />
               </div>
             </div>
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
+          ) : (
+            <EmptyState message="Mínimo de 90 minutos necessário" />
+          )}
+        </>
+      )}
+
+      {activeTab === "career" && (
+        <div className="space-y-8">
+          {/* Career Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-zinc-900">
+                  <th className="text-left text-[10px] uppercase tracking-widest text-zinc-600 pb-3 font-medium">
+                    Temporada
+                  </th>
+                  <th className="text-center text-[10px] uppercase tracking-widest text-zinc-600 pb-3 font-medium">
+                    J
+                  </th>
+                  <th className="text-center text-[10px] uppercase tracking-widest text-zinc-600 pb-3 font-medium">
+                    Min
+                  </th>
+                  <th className="text-center text-[10px] uppercase tracking-widest text-zinc-600 pb-3 font-medium">
+                    G
+                  </th>
+                  <th className="text-center text-[10px] uppercase tracking-widest text-zinc-600 pb-3 font-medium">
+                    A
+                  </th>
+                  <th className="text-center text-[10px] uppercase tracking-widest text-zinc-600 pb-3 font-medium">
+                    G+A
+                  </th>
+                  <th className="text-center text-[10px] uppercase tracking-widest text-zinc-600 pb-3 font-medium hidden sm:table-cell">
+                    Cartões
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {safeArray(careerStats).map((season) => (
+                  <tr key={season.season_year} className="border-b border-zinc-900/50">
+                    <td className="py-3 text-white text-sm font-medium">
+                      {season.season_year}
+                      {season.season_year === currentYear && (
+                        <span className="ml-2 text-[9px] uppercase tracking-widest text-zinc-500 border border-zinc-800 px-1.5 py-0.5">
+                          Atual
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-3 text-center text-zinc-400 text-sm">{season.matches}</td>
+                    <td className="py-3 text-center text-zinc-400 text-sm">{season.minutes}</td>
+                    <td className="py-3 text-center text-white text-sm font-medium">{season.goals}</td>
+                    <td className="py-3 text-center text-zinc-400 text-sm">{season.assists}</td>
+                    <td className="py-3 text-center text-white text-sm font-medium">
+                      {season.goals + season.assists}
+                    </td>
+                    <td className="py-3 text-center text-sm hidden sm:table-cell">
+                      <span className="text-amber-500">{season.yellow_cards}</span>
+                      <span className="text-zinc-700 mx-1">/</span>
+                      <span className="text-red-500">{season.red_cards}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Career Totals */}
+          <div className="pt-6 border-t border-zinc-900">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 mb-4">Totais</p>
+            <div className="grid grid-cols-4 gap-4 sm:gap-6">
+              <StatRow 
+                label="Jogos" 
+                value={careerStats.reduce((sum, s) => sum + s.matches, 0)} 
+                small 
+              />
+              <StatRow 
+                label="Gols" 
+                value={careerStats.reduce((sum, s) => sum + s.goals, 0)} 
+                highlight 
+                small 
+              />
+              <StatRow 
+                label="Assist." 
+                value={careerStats.reduce((sum, s) => sum + s.assists, 0)} 
+                small 
+              />
+              <StatRow 
+                label="G+A" 
+                value={careerStats.reduce((sum, s) => sum + s.goals + s.assists, 0)} 
+                highlight 
+                small 
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
-interface StatBoxProps {
+/* ========== MINIMAL STAT ROW ========== */
+interface StatRowProps {
   label: string;
   value: number | string;
-  icon?: React.ReactNode;
   highlight?: boolean;
   variant?: "default" | "warning" | "danger";
   small?: boolean;
 }
 
-function StatBox({ label, value, icon, highlight, variant, small }: StatBoxProps) {
-  const bgClass =
-    variant === "warning"
-      ? "bg-amber-500/10"
-      : variant === "danger"
-      ? "bg-destructive/10"
-      : highlight
-      ? "bg-primary/10"
-      : "bg-secondary/30";
-
-  const textClass =
+function StatRow({ label, value, highlight, variant, small }: StatRowProps) {
+  const valueClass =
     variant === "warning"
       ? "text-amber-500"
       : variant === "danger"
-      ? "text-destructive"
+      ? "text-red-500"
       : highlight
-      ? "text-primary"
-      : "";
+      ? "text-white"
+      : "text-zinc-300";
 
   return (
-    <div className={`text-center p-3 rounded-lg ${bgClass}`}>
-      {icon && (
-        <div className="flex justify-center mb-1 text-muted-foreground">
-          {icon}
-        </div>
-      )}
-      <p className={`font-bold ${small ? "text-lg" : "text-2xl"} ${textClass}`}>
+    <div>
+      <p className={`font-semibold tabular-nums ${small ? "text-lg" : "text-2xl"} ${valueClass}`}>
         {value}
       </p>
-      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="text-[10px] uppercase tracking-widest text-zinc-600 mt-1">{label}</p>
     </div>
+  );
+}
+
+/* ========== EMPTY STATE ========== */
+function EmptyState({ message }: { message: string }) {
+  return (
+    <p className="text-center text-zinc-600 text-sm py-12">
+      {message}
+    </p>
   );
 }
