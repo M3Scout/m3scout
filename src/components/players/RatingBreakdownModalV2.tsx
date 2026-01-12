@@ -579,11 +579,12 @@ function getHumanStatName(statKey: string, providedLabel: unknown): string {
     return titleCase;
   }
   
-  // 4. Ultimate fallback - never show "não identificada", show generic label
+  // 4. Ultimate fallback - never show "não identificada".
+  // If we have any key at all, show the raw key.
   if (import.meta.env.DEV) {
     console.error("[getHumanStatName] Called with empty/unknown stat key:", statKey, "label:", providedLabel);
   }
-  return "Estatística";
+  return statKey && statKey !== "unknown" ? statKey : "unknown";
 }
 
 function getStatInfo(statKey: string, label: unknown): StatInfo {
