@@ -169,49 +169,54 @@ export function AttributePentagonRadar({ attributes, loading = false }: Attribut
             </div>
           </div>
         ) : (
-          <div className="relative h-[280px] w-full flex items-center justify-center">
-            {/* Solid Pentagon Background - positioned behind radar */}
-            <svg
-              className="absolute"
-              width="220"
-              height="220"
-              viewBox="-110 -110 220 220"
-            >
-              {/* Pentagon background - light gray fill, no stroke */}
-              <polygon
-                points={getPentagonPoints(100)}
-                fill="#F2F4F7"
-                stroke="none"
-              />
-            </svg>
+          <div className="relative h-[280px] w-full">
+            {/* Layer 1: Solid Pentagon Background - FIXED, static, behind everything */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ zIndex: 0 }}>
+              <svg
+                width="180"
+                height="180"
+                viewBox="-100 -100 200 200"
+                className="overflow-visible"
+              >
+                {/* Perfect regular pentagon - light gray fill, no stroke */}
+                <polygon
+                  points={getPentagonPoints(90)}
+                  fill="#F2F4F7"
+                  stroke="none"
+                />
+              </svg>
+            </div>
 
-            {/* Radar Chart */}
-            <div className="absolute inset-0">
+            {/* Layer 2: Radar Chart - on top of pentagon background */}
+            <div className="absolute inset-0" style={{ zIndex: 1 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <RadarChart
                   data={radarData}
                   margin={{ top: 30, right: 50, bottom: 30, left: 50 }}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={70}
                 >
-                  {/* Pentagon grid - very subtle internal lines */}
+                  {/* Very subtle grid lines - NOT the background */}
                   <PolarGrid
-                    stroke="#e0e2e6"
+                    stroke="#d1d5db"
                     strokeWidth={0.5}
-                    strokeOpacity={0.5}
+                    strokeOpacity={0.4}
                     gridType="polygon"
                   />
-                  {/* Axis labels hidden - we render custom labels */}
+                  {/* Hide axis labels - we render custom */}
                   <PolarAngleAxis
                     dataKey="attribute"
                     tick={false}
                     axisLine={false}
                   />
-                  {/* Data polygon - green fill with green outline */}
+                  {/* Green data polygon - prominent */}
                   <Radar
                     name="Atributos"
                     dataKey="value"
                     stroke="#22c55e"
                     fill="#22c55e"
-                    fillOpacity={0.3}
+                    fillOpacity={0.35}
                     strokeWidth={2.5}
                   />
                 </RadarChart>
