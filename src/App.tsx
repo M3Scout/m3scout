@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { ThemeProvider } from "next-themes";
 
 // Layouts
 import { PublicLayout } from "@/components/layout/PublicLayout";
@@ -45,67 +46,69 @@ import NewsForm from "./pages/app/NewsForm";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-{/* Public Routes */}
-            <Route element={<PublicLayout />}>
-              <Route path="/" element={<Index />} />
-              <Route path="/sobre" element={<Sobre />} />
-              <Route path="/representacao-de-talentos" element={<RepresentacaoTalentos />} />
-              <Route path="/players" element={<Players />} />
-              <Route path="/atletas" element={<Players />} />
-              <Route path="/players/:slug" element={<PlayerProfile />} />
-              <Route path="/imprensa" element={<Imprensa />} />
-              <Route path="/imprensa/:slug" element={<NewsDetail />} />
-              <Route path="/competitions" element={<CompetitionRankingPublic />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/contato" element={<Contact />} />
-            </Route>
+  <ThemeProvider attribute="class" defaultTheme="dark" storageKey="m3-admin-theme">
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              {/* Public Routes */}
+              <Route element={<PublicLayout />}>
+                <Route path="/" element={<Index />} />
+                <Route path="/sobre" element={<Sobre />} />
+                <Route path="/representacao-de-talentos" element={<RepresentacaoTalentos />} />
+                <Route path="/players" element={<Players />} />
+                <Route path="/atletas" element={<Players />} />
+                <Route path="/players/:slug" element={<PlayerProfile />} />
+                <Route path="/imprensa" element={<Imprensa />} />
+                <Route path="/imprensa/:slug" element={<NewsDetail />} />
+                <Route path="/competitions" element={<CompetitionRankingPublic />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/contato" element={<Contact />} />
+              </Route>
 
-            {/* Auth Route */}
-            <Route path="/app/auth" element={<Auth />} />
+              {/* Auth Route */}
+              <Route path="/app/auth" element={<Auth />} />
 
-            {/* Protected App Routes */}
-            <Route
-              path="/app"
-              element={
-                <ProtectedRoute>
-                  <AppLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<Dashboard />} />
-              <Route path="players" element={<AppPlayers />} />
-              <Route path="players/new" element={<NewPlayer />} />
-              <Route path="players/:id" element={<PlayerDetail />} />
-              <Route path="players/:id/edit" element={<EditPlayer />} />
-              <Route path="compare" element={<ComparePlayers />} />
-              <Route path="reports" element={<ScoutingReports />} />
-              <Route path="reports/new" element={<NewScoutingReport />} />
-              <Route path="reports/:id" element={<ReportDetail />} />
-              <Route path="reports/:id/edit" element={<EditScoutingReport />} />
-              <Route path="competitions" element={<Competitions />} />
-              <Route path="competitions/import" element={<CompetitionsImport />} />
-              <Route path="competitions/ranking" element={<CompetitionRanking />} />
-              <Route path="leads" element={<Leads />} />
-              <Route path="news" element={<News />} />
-              <Route path="news/new" element={<NewsForm />} />
-              <Route path="news/:id/edit" element={<NewsForm />} />
-              <Route path="settings" element={<Settings />} />
-            </Route>
+              {/* Protected App Routes */}
+              <Route
+                path="/app"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<Dashboard />} />
+                <Route path="players" element={<AppPlayers />} />
+                <Route path="players/new" element={<NewPlayer />} />
+                <Route path="players/:id" element={<PlayerDetail />} />
+                <Route path="players/:id/edit" element={<EditPlayer />} />
+                <Route path="compare" element={<ComparePlayers />} />
+                <Route path="reports" element={<ScoutingReports />} />
+                <Route path="reports/new" element={<NewScoutingReport />} />
+                <Route path="reports/:id" element={<ReportDetail />} />
+                <Route path="reports/:id/edit" element={<EditScoutingReport />} />
+                <Route path="competitions" element={<Competitions />} />
+                <Route path="competitions/import" element={<CompetitionsImport />} />
+                <Route path="competitions/ranking" element={<CompetitionRanking />} />
+                <Route path="leads" element={<Leads />} />
+                <Route path="news" element={<News />} />
+                <Route path="news/new" element={<NewsForm />} />
+                <Route path="news/:id/edit" element={<NewsForm />} />
+                <Route path="settings" element={<Settings />} />
+              </Route>
 
-            {/* Catch-all */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
+              {/* Catch-all */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  </ThemeProvider>
 );
 
 export default App;
