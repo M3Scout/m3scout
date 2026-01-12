@@ -1,8 +1,94 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowRight, Loader2 } from "lucide-react";
-import { safeArray } from "@/lib/utils";
+import { safeArray, cn } from "@/lib/utils";
+
+// Custom hook for intersection observer
+function useInView(options?: IntersectionObserverInit) {
+  const ref = useRef<HTMLElement>(null);
+  const [isInView, setIsInView] = useState(false);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setIsInView(true);
+        observer.unobserve(element); // Only trigger once
+      }
+    }, { threshold: 0.1, ...options });
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [options]);
+
+  return { ref, isInView };
+}
+
+// Individual card component with its own observer
+function PlayerCard({ player, index }: { player: Player; index: number }) {
+  const { ref, isInView } = useInView();
+  
+  const getPositionLabel = (position: string) => {
+    return positionLabels[position] || position;
+  };
+
+  return (
+    <Link
+      key={player.id}
+      to={`/players/${player.slug}`}
+      className="group block"
+      ref={ref as React.RefObject<HTMLAnchorElement>}
+    >
+      <article 
+        className={cn(
+          "relative overflow-hidden bg-neutral-900 transition-all duration-700",
+          isInView 
+            ? "opacity-100 translate-y-0" 
+            : "opacity-0 translate-y-12"
+        )}
+        style={{ transitionDelay: `${index * 100}ms` }}
+      >
+        {/* Image Container */}
+        <div className="relative aspect-[3/4] overflow-hidden">
+          <img
+            src={player.photo_url || "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=400&h=600&fit=crop"}
+            alt={player.full_name}
+            loading="lazy"
+            className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
+          />
+          
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          
+          <div className="absolute top-0 left-0">
+            <span className="inline-block bg-white text-black text-[10px] md:text-xs font-bold uppercase tracking-wider px-3 py-1.5">
+              {getPositionLabel(player.position)}
+            </span>
+          </div>
+        </div>
+
+        {/* Info Section */}
+        <div className="bg-neutral-900 p-4 md:p-5 border-t border-white/5">
+          <h3 className="text-white font-semibold text-base md:text-lg tracking-wide uppercase mb-2 group-hover:text-white/90 transition-colors">
+            {player.full_name}
+          </h3>
+          
+          <p className="text-white/50 text-xs md:text-sm uppercase tracking-wider mb-1">
+            {player.age ? `${player.age} anos` : "—"} • {player.nationality}
+          </p>
+          
+          {player.current_club && (
+            <p className="text-white/40 text-xs uppercase tracking-wider">
+              {player.current_club}
+            </p>
+          )}
+        </div>
+      </article>
+    </Link>
+  );
+}
 
 interface Player {
   id: string;
@@ -95,60 +181,7 @@ export function FeaturedPlayers() {
         ) : players.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
             {safeArray(players).map((player, index) => (
-              <Link
-                key={player.id}
-                to={`/players/${player.slug}`}
-                className="group block"
-                style={{ 
-                  animationDelay: `${index * 100}ms`,
-                  animation: 'fadeInUp 0.6s ease-out forwards',
-                  opacity: 0,
-                }}
-              >
-                {/* Card - No rounded corners */}
-                <article className="relative overflow-hidden bg-neutral-900">
-                  {/* Image Container */}
-                  <div className="relative aspect-[3/4] overflow-hidden">
-                    {/* Player Image */}
-                    <img
-                      src={player.photo_url || "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=400&h=600&fit=crop"}
-                      alt={player.full_name}
-                      loading="lazy"
-                      className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
-                    />
-                    
-                    {/* Subtle gradient overlay on hover */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                    
-                    {/* Position Tag - Top left, minimal style */}
-                    <div className="absolute top-0 left-0">
-                      <span className="inline-block bg-white text-black text-[10px] md:text-xs font-bold uppercase tracking-wider px-3 py-1.5">
-                        {getPositionLabel(player.position)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Info Section - Below image, dark solid background */}
-                  <div className="bg-neutral-900 p-4 md:p-5 border-t border-white/5">
-                    {/* Player Name */}
-                    <h3 className="text-white font-semibold text-base md:text-lg tracking-wide uppercase mb-2 group-hover:text-white/90 transition-colors">
-                      {player.full_name}
-                    </h3>
-                    
-                    {/* Age and Nationality */}
-                    <p className="text-white/50 text-xs md:text-sm uppercase tracking-wider mb-1">
-                      {player.age ? `${player.age} anos` : "—"} • {player.nationality}
-                    </p>
-                    
-                    {/* Current Club */}
-                    {player.current_club && (
-                      <p className="text-white/40 text-xs uppercase tracking-wider">
-                        {player.current_club}
-                      </p>
-                    )}
-                  </div>
-                </article>
-              </Link>
+              <PlayerCard key={player.id} player={player} index={index} />
             ))}
           </div>
         ) : (
@@ -159,20 +192,6 @@ export function FeaturedPlayers() {
           </div>
         )}
       </div>
-
-      {/* Custom animation keyframes */}
-      <style>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
     </section>
   );
 }
