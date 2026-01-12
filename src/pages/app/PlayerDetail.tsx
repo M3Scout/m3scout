@@ -45,6 +45,7 @@ import { OverallRatingCard } from "@/components/players/sections/OverallRatingCa
 import { MarketValueSection } from "@/components/players/sections/MarketValueSection";
 import { MarketValueTab } from "@/components/players/sections/MarketValueTab";
 import { DataQualityPanel } from "@/components/players/DataQualityPanel";
+import { PlayerAttributeRadarSection } from "@/components/players/sections/PlayerAttributeRadarSection";
 
 interface Player {
   id: string;
@@ -434,6 +435,12 @@ const PlayerDetail = () => {
                 playerId={player.id}
                 isAdmin={isAdmin}
                 onRatingRecalculated={refetchPlayer}
+              />
+
+              {/* SofaScore-style Attribute Radar */}
+              <PlayerAttributeRadarSection
+                playerId={player.id}
+                playerPosition={player.position}
               />
 
               {/* Market Value */}
