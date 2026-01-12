@@ -5,12 +5,14 @@ import {
   TrendingUp, 
   AlertCircle,
   Clock,
-  Loader2
+  Loader2,
+  ArrowUpRight,
+  ChevronRight
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { PlayerRankingCard } from "@/components/dashboard/PlayerRankingCard";
 import CompetitionUsageWidget from "@/components/competitions/CompetitionUsageWidget";
 import { useAuth } from "@/hooks/useAuth";
@@ -47,17 +49,6 @@ interface RecentLead {
   status: string;
 }
 
-const POSITION_COLORS = [
-  "hsl(var(--primary))",
-  "hsl(var(--accent))",
-  "hsl(142, 76%, 36%)",
-  "hsl(38, 92%, 50%)",
-  "hsl(262, 83%, 58%)",
-  "hsl(199, 89%, 48%)",
-  "hsl(0, 84%, 60%)",
-  "hsl(45, 93%, 47%)",
-];
-
 const Dashboard = () => {
   const { isAdmin } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -75,7 +66,6 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        // Fetch stats in parallel
         const [
           playersResult,
           reportsResult,
@@ -85,21 +75,15 @@ const Dashboard = () => {
           recentReportsResult,
           recentLeadsResult,
         ] = await Promise.all([
-          // Total players
           supabase.from("players").select("id", { count: "exact", head: true }),
-          // Total reports
           supabase.from("scouting_reports").select("id", { count: "exact", head: true }),
-          // Total leads
           supabase.from("leads").select("id", { count: "exact", head: true }),
-          // Expiring contracts (next 90 days)
           supabase
             .from("players")
             .select("id", { count: "exact", head: true })
             .gte("contract_end", new Date().toISOString().split("T")[0])
             .lte("contract_end", new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]),
-          // Position distribution
           supabase.from("players").select("position"),
-          // Recent reports with joins
           supabase
             .from("scouting_reports")
             .select(`
@@ -112,16 +96,14 @@ const Dashboard = () => {
               profiles!inner(full_name)
             `)
             .order("created_at", { ascending: false })
-            .limit(5),
-          // Recent leads
+            .limit(4),
           supabase
             .from("leads")
             .select("id, name, subject, created_at, status")
             .order("created_at", { ascending: false })
-            .limit(5),
+            .limit(4),
         ]);
 
-        // Calculate reports this month
         const firstDayOfMonth = new Date();
         firstDayOfMonth.setDate(1);
         firstDayOfMonth.setHours(0, 0, 0, 0);
@@ -131,7 +113,6 @@ const Dashboard = () => {
           .select("id", { count: "exact", head: true })
           .gte("created_at", firstDayOfMonth.toISOString());
 
-        // Set stats
         setStats({
           totalPlayers: playersResult.count || 0,
           totalReports: reportsResult.count || 0,
@@ -140,23 +121,21 @@ const Dashboard = () => {
           expiringContracts: contractsResult.count || 0,
         });
 
-        // Process position data
         if (positionsResult.data) {
           const positionCounts: Record<string, number> = {};
           positionsResult.data.forEach((p) => {
-            const pos = p.position || "Não definido";
+            const pos = p.position || "N/D";
             positionCounts[pos] = (positionCounts[pos] || 0) + 1;
           });
           
           const sortedPositions = Object.entries(positionCounts)
             .map(([name, value]) => ({ name, value }))
             .sort((a, b) => b.value - a.value)
-            .slice(0, 8);
+            .slice(0, 6);
           
           setPositionData(sortedPositions);
         }
 
-        // Process recent reports
         if (recentReportsResult.data) {
           const reports = recentReportsResult.data.map((r: any) => ({
             id: r.id,
@@ -170,7 +149,6 @@ const Dashboard = () => {
           setRecentReports(reports);
         }
 
-        // Process recent leads
         if (recentLeadsResult.data) {
           setRecentLeads(recentLeadsResult.data);
         }
@@ -185,42 +163,10 @@ const Dashboard = () => {
     fetchDashboardData();
   }, []);
 
-  const statsCards = [
-    {
-      label: "Total de Atletas",
-      value: stats.totalPlayers.toString(),
-      icon: Users,
-      color: "text-primary",
-      bgColor: "bg-primary/10",
-    },
-    {
-      label: "Relatórios este mês",
-      value: stats.reportsThisMonth.toString(),
-      icon: FileText,
-      color: "text-accent",
-      bgColor: "bg-accent/10",
-    },
-    {
-      label: "Total de Relatórios",
-      value: stats.totalReports.toString(),
-      icon: TrendingUp,
-      color: "text-emerald-500",
-      bgColor: "bg-emerald-500/10",
-    },
-    {
-      label: "Contratos a Vencer",
-      value: stats.expiringContracts.toString(),
-      icon: AlertCircle,
-      color: "text-amber-500",
-      bgColor: "bg-amber-500/10",
-      subtitle: "próximos 90 dias",
-    },
-  ];
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <Loader2 className="w-6 h-6 animate-spin text-zinc-500" />
       </div>
     );
   }
@@ -228,221 +174,217 @@ const Dashboard = () => {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <header className="admin-header animate-fade-in">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Visão geral da plataforma de scouting
-          </p>
+          <h1 className="admin-title">Dashboard</h1>
+          <p className="admin-subtitle">Visão geral da plataforma</p>
         </div>
         <Link to="/app/reports/new">
-          <Button variant="gradient">
+          <Button className="bg-primary hover:bg-primary/90 text-white gap-2">
             <FileText className="w-4 h-4" />
             Novo Relatório
           </Button>
         </Link>
-      </div>
+      </header>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {safeArray(statsCards).map((stat) => (
-          <div key={stat.label} className="glass-card p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div className={`w-10 h-10 rounded-lg ${stat.bgColor} flex items-center justify-center`}>
-                <stat.icon className={`w-5 h-5 ${stat.color}`} />
-              </div>
-              {stat.subtitle && (
-                <span className="text-xs text-muted-foreground">{stat.subtitle}</span>
-              )}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger-children">
+        <div className="admin-card p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="admin-stat-icon bg-primary/10">
+              <Users className="w-4 h-4 text-primary" />
             </div>
-            <p className="text-3xl font-bold mb-1">{stat.value}</p>
-            <p className="text-sm text-muted-foreground">{stat.label}</p>
           </div>
-        ))}
-      </div>
-
-      {/* Charts Row */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Position Distribution - Pie Chart */}
-        <div className="glass-card p-6">
-          <h2 className="text-lg font-semibold mb-4">Distribuição por Posição</h2>
-          {positionData.length > 0 ? (
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={positionData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={90}
-                    paddingAngle={2}
-                    dataKey="value"
-                    label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                    labelLine={false}
-                  >
-                    {safeArray(positionData).map((_, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={POSITION_COLORS[index % POSITION_COLORS.length]} 
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: "hsl(var(--card))", 
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "8px"
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <div className="h-64 flex items-center justify-center text-muted-foreground">
-              Nenhum atleta cadastrado
-            </div>
-          )}
+          <p className="admin-stat-value">{stats.totalPlayers}</p>
+          <p className="admin-stat-label">Atletas</p>
         </div>
 
-        {/* Position Distribution - Bar Chart */}
-        <div className="glass-card p-6">
-          <h2 className="text-lg font-semibold mb-4">Atletas por Posição</h2>
-          {positionData.length > 0 ? (
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={positionData} layout="vertical">
-                  <XAxis type="number" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                  <YAxis 
-                    type="category" 
-                    dataKey="name" 
-                    stroke="hsl(var(--muted-foreground))" 
-                    fontSize={11}
-                    width={100}
-                    tickLine={false}
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: "hsl(var(--card))", 
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "8px"
-                    }}
-                    formatter={(value: number) => [`${value} atletas`, "Total"]}
-                  />
-                  <Bar 
-                    dataKey="value" 
-                    fill="hsl(var(--primary))" 
-                    radius={[0, 4, 4, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+        <div className="admin-card p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="admin-stat-icon bg-zinc-800">
+              <FileText className="w-4 h-4 text-zinc-400" />
+            </div>
+            <span className="text-[10px] text-zinc-600 uppercase tracking-wide">Este mês</span>
+          </div>
+          <p className="admin-stat-value">{stats.reportsThisMonth}</p>
+          <p className="admin-stat-label">Relatórios</p>
+        </div>
+
+        <div className="admin-card p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="admin-stat-icon bg-zinc-800">
+              <TrendingUp className="w-4 h-4 text-zinc-400" />
+            </div>
+            <span className="text-[10px] text-zinc-600 uppercase tracking-wide">Total</span>
+          </div>
+          <p className="admin-stat-value">{stats.totalReports}</p>
+          <p className="admin-stat-label">Relatórios</p>
+        </div>
+
+        <div className="admin-card p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="admin-stat-icon bg-amber-500/10">
+              <AlertCircle className="w-4 h-4 text-amber-500" />
+            </div>
+            <span className="text-[10px] text-zinc-600 uppercase tracking-wide">90 dias</span>
+          </div>
+          <p className="admin-stat-value">{stats.expiringContracts}</p>
+          <p className="admin-stat-label">Contratos a Vencer</p>
+        </div>
+      </div>
+
+      {/* Main Content Grid */}
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Position Distribution Chart */}
+        <div className="lg:col-span-2 admin-card animate-fade-in delay-100">
+          <div className="admin-card-header flex items-center justify-between">
+            <h2 className="text-sm font-medium text-white">Distribuição por Posição</h2>
+          </div>
+          <div className="admin-card-body">
+            {positionData.length > 0 ? (
+              <div className="h-[220px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={positionData} layout="vertical" margin={{ left: 0, right: 16 }}>
+                    <XAxis 
+                      type="number" 
+                      stroke="#52525b" 
+                      fontSize={11} 
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis 
+                      type="category" 
+                      dataKey="name" 
+                      stroke="#52525b" 
+                      fontSize={11}
+                      width={80}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: "#18181b", 
+                        border: "1px solid #27272a",
+                        borderRadius: "8px",
+                        fontSize: "12px"
+                      }}
+                      formatter={(value: number) => [`${value}`, "Atletas"]}
+                    />
+                    <Bar 
+                      dataKey="value" 
+                      fill="hsl(var(--primary))" 
+                      radius={[0, 4, 4, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="h-[220px] flex items-center justify-center text-zinc-600 text-sm">
+                Nenhum atleta cadastrado
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Recent Leads */}
+        <div className="admin-card animate-fade-in delay-150">
+          <div className="admin-card-header flex items-center justify-between">
+            <h2 className="text-sm font-medium text-white">Leads Recentes</h2>
+            <Link to="/app/leads" className="text-xs text-zinc-500 hover:text-white transition-colors flex items-center gap-1">
+              Ver todos
+              <ChevronRight className="w-3 h-3" />
+            </Link>
+          </div>
+          <div className="admin-card-body space-y-2">
+            {recentLeads.length > 0 ? (
+              safeArray(recentLeads).map((lead) => (
+                <div 
+                  key={lead.id}
+                  className="admin-row"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-white font-medium truncate">{lead.name}</p>
+                    <p className="text-xs text-zinc-500 truncate">{lead.subject}</p>
+                  </div>
+                  <span className={
+                    lead.status === "new" 
+                      ? "admin-badge-primary" 
+                      : "admin-badge-default"
+                  }>
+                    {lead.status === "new" ? "Novo" : "Contatado"}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <div className="py-8 text-center text-zinc-600 text-sm">
+                Nenhum lead recebido
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Reports */}
+      <div className="admin-card animate-fade-in delay-200">
+        <div className="admin-card-header flex items-center justify-between">
+          <h2 className="text-sm font-medium text-white">Relatórios Recentes</h2>
+          <Link to="/app/reports" className="text-xs text-zinc-500 hover:text-white transition-colors flex items-center gap-1">
+            Ver todos
+            <ChevronRight className="w-3 h-3" />
+          </Link>
+        </div>
+        <div className="admin-card-body">
+          {recentReports.length > 0 ? (
+            <div className="space-y-2">
+              {safeArray(recentReports).map((report) => (
+                <Link 
+                  key={report.id}
+                  to={`/app/reports/${report.id}`}
+                  className="admin-row-clickable"
+                >
+                  <div className="flex items-center gap-4 flex-1 min-w-0">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <span className="text-sm font-semibold text-primary">
+                        {report.final_score.toFixed(1)}
+                      </span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm text-white font-medium truncate">{report.player_name}</p>
+                      <p className="text-xs text-zinc-500 truncate">{report.competition_name}</p>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="flex items-center gap-1 text-xs text-zinc-500">
+                      <Clock className="w-3 h-3" />
+                      {new Date(report.match_date).toLocaleDateString("pt-BR")}
+                    </div>
+                    <p className="text-xs text-zinc-600 mt-0.5">
+                      {report.scout_name}
+                    </p>
+                  </div>
+                  <ArrowUpRight className="w-4 h-4 text-zinc-600 ml-2 shrink-0" />
+                </Link>
+              ))}
             </div>
           ) : (
-            <div className="h-64 flex items-center justify-center text-muted-foreground">
-              Nenhum atleta cadastrado
+            <div className="py-8 text-center text-zinc-600 text-sm">
+              Nenhum relatório criado
             </div>
           )}
         </div>
       </div>
 
       {/* Player Ranking */}
-      <PlayerRankingCard />
+      <div className="animate-fade-in delay-300">
+        <PlayerRankingCard />
+      </div>
 
       {/* Competition Usage Analytics - Admin only */}
-      {isAdmin && <CompetitionUsageWidget />}
-
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Recent Reports */}
-        <div className="glass-card p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold">Relatórios Recentes</h2>
-            <Link to="/app/reports">
-              <Button variant="ghost" size="sm">
-                Ver Todos
-              </Button>
-            </Link>
-          </div>
-          {recentReports.length > 0 ? (
-            <div className="space-y-4">
-              {safeArray(recentReports).map((report) => (
-                <Link 
-                  key={report.id}
-                  to={`/app/reports/${report.id}`}
-                  className="flex items-center justify-between p-4 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors block"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium">{report.player_name}</p>
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary font-medium">
-                        {report.final_score.toFixed(1)}
-                      </span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {report.competition_name}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                      <Clock className="w-3 h-3" />
-                      {new Date(report.match_date).toLocaleDateString("pt-BR")}
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      por {report.scout_name}
-                    </p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <div className="py-8 text-center text-muted-foreground">
-              Nenhum relatório criado ainda
-            </div>
-          )}
+      {isAdmin && (
+        <div className="animate-fade-in delay-400">
+          <CompetitionUsageWidget />
         </div>
-
-        {/* Recent Leads */}
-        <div className="glass-card p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold">Leads Recentes</h2>
-            <Button variant="ghost" size="sm" disabled>
-              Ver Todos
-            </Button>
-          </div>
-          {recentLeads.length > 0 ? (
-            <div className="space-y-4">
-              {safeArray(recentLeads).map((lead) => (
-                <div 
-                  key={lead.id}
-                  className="flex items-center justify-between p-4 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors"
-                >
-                  <div className="flex-1">
-                    <p className="font-medium">{lead.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {lead.subject}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
-                      lead.status === "new" 
-                        ? "bg-accent/20 text-accent" 
-                        : "bg-primary/20 text-primary"
-                    }`}>
-                      {lead.status === "new" ? "Novo" : "Contatado"}
-                    </span>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {new Date(lead.created_at).toLocaleDateString("pt-BR")}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="py-8 text-center text-muted-foreground">
-              Nenhum lead recebido ainda
-            </div>
-          )}
-        </div>
-      </div>
+      )}
     </div>
   );
 };

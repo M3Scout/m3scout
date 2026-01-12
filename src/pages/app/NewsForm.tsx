@@ -67,7 +67,6 @@ const NewsForm = () => {
 
   const [slugEdited, setSlugEdited] = useState(false);
 
-  // Fetch existing article if editing
   const { data: article, isLoading } = useQuery({
     queryKey: ["news-article", id],
     queryFn: async () => {
@@ -166,44 +165,59 @@ const NewsForm = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <p className="text-muted-foreground">Carregando...</p>
+        <p className="text-zinc-500">Carregando...</p>
       </div>
     );
   }
 
-  return (
-    <div className="space-y-6 max-w-4xl">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/app/news")}>
-          <ArrowLeft className="w-4 h-4" />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold">
-            {isEditing ? "Editar Notícia" : "Nova Notícia"}
-          </h1>
-          <p className="text-muted-foreground">
-            {isEditing ? "Atualize os dados da notícia" : "Preencha os dados para criar uma nova notícia"}
-          </p>
-        </div>
-      </div>
+  const inputClasses = "bg-zinc-900/50 border-zinc-800 text-white placeholder:text-zinc-600 focus-visible:ring-primary/30 focus-visible:border-zinc-700";
 
-      <form onSubmit={(e) => handleSubmit(e)} className="space-y-6">
+  return (
+    <div className="space-y-6 max-w-3xl">
+      {/* Header */}
+      <header className="admin-header animate-fade-in">
+        <div className="flex items-center gap-4">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => navigate("/app/news")}
+            className="w-8 h-8 text-zinc-500 hover:text-white hover:bg-zinc-800"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+          <div>
+            <h1 className="admin-title">
+              {isEditing ? "Editar Notícia" : "Nova Notícia"}
+            </h1>
+            <p className="admin-subtitle">
+              {isEditing ? "Atualize os dados da notícia" : "Preencha os dados para criar"}
+            </p>
+          </div>
+        </div>
+      </header>
+
+      <form onSubmit={(e) => handleSubmit(e)} className="space-y-6 animate-fade-in delay-75">
         {/* Title */}
         <div className="space-y-2">
-          <Label htmlFor="title">Título *</Label>
+          <Label htmlFor="title" className="text-xs uppercase tracking-wide text-zinc-500">
+            Título *
+          </Label>
           <Input
             id="title"
             value={formData.title}
             onChange={(e) => handleTitleChange(e.target.value)}
             placeholder="Título da notícia"
+            className={inputClasses}
           />
         </div>
 
         {/* Slug */}
         <div className="space-y-2">
-          <Label htmlFor="slug">Slug (URL)</Label>
+          <Label htmlFor="slug" className="text-xs uppercase tracking-wide text-zinc-500">
+            Slug (URL)
+          </Label>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">/imprensa/</span>
+            <span className="text-sm text-zinc-600">/imprensa/</span>
             <Input
               id="slug"
               value={formData.slug}
@@ -212,26 +226,33 @@ const NewsForm = () => {
                 setSlugEdited(true);
               }}
               placeholder="slug-da-noticia"
+              className={inputClasses}
             />
           </div>
         </div>
 
-        {/* Category & Status */}
+        {/* Category & Publish Date */}
         <div className="grid sm:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label>Categoria *</Label>
+            <Label className="text-xs uppercase tracking-wide text-zinc-500">
+              Categoria *
+            </Label>
             <Select
               value={formData.category}
               onValueChange={(value) =>
                 setFormData((prev) => ({ ...prev, category: value }))
               }
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione uma categoria" />
+              <SelectTrigger className={inputClasses}>
+                <SelectValue placeholder="Selecione" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-zinc-900 border-zinc-800">
                 {categories.map((cat) => (
-                  <SelectItem key={cat} value={cat}>
+                  <SelectItem 
+                    key={cat} 
+                    value={cat}
+                    className="text-white focus:bg-zinc-800 focus:text-white"
+                  >
                     {cat}
                   </SelectItem>
                 ))}
@@ -240,20 +261,25 @@ const NewsForm = () => {
           </div>
 
           <div className="space-y-2">
-            <Label>Data de Publicação</Label>
+            <Label className="text-xs uppercase tracking-wide text-zinc-500">
+              Data de Publicação
+            </Label>
             <Input
               type="datetime-local"
               value={formData.publish_date}
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, publish_date: e.target.value }))
               }
+              className={inputClasses}
             />
           </div>
         </div>
 
         {/* Featured Image */}
         <div className="space-y-2">
-          <Label htmlFor="featured_image_url">URL da Imagem Destaque</Label>
+          <Label htmlFor="featured_image_url" className="text-xs uppercase tracking-wide text-zinc-500">
+            URL da Imagem Destaque
+          </Label>
           <Input
             id="featured_image_url"
             value={formData.featured_image_url}
@@ -261,12 +287,15 @@ const NewsForm = () => {
               setFormData((prev) => ({ ...prev, featured_image_url: e.target.value }))
             }
             placeholder="https://exemplo.com/imagem.jpg"
+            className={inputClasses}
           />
         </div>
 
         {/* Excerpt */}
         <div className="space-y-2">
-          <Label htmlFor="excerpt">Resumo / Chamada</Label>
+          <Label htmlFor="excerpt" className="text-xs uppercase tracking-wide text-zinc-500">
+            Resumo / Chamada
+          </Label>
           <Textarea
             id="excerpt"
             value={formData.excerpt}
@@ -275,30 +304,35 @@ const NewsForm = () => {
             }
             placeholder="Breve descrição para os cards de listagem"
             rows={2}
+            className={inputClasses + " resize-none"}
           />
         </div>
 
         {/* Content */}
         <div className="space-y-2">
-          <Label htmlFor="content">Conteúdo *</Label>
+          <Label htmlFor="content" className="text-xs uppercase tracking-wide text-zinc-500">
+            Conteúdo *
+          </Label>
           <Textarea
             id="content"
             value={formData.content}
             onChange={(e) =>
               setFormData((prev) => ({ ...prev, content: e.target.value }))
             }
-            placeholder="Conteúdo completo da notícia (suporta texto simples)"
+            placeholder="Conteúdo completo da notícia"
             rows={12}
+            className={inputClasses + " resize-none"}
           />
         </div>
 
         {/* Actions */}
-        <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
+        <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-zinc-800">
           <Button
             type="button"
             variant="outline"
             onClick={(e) => handleSubmit(e, "draft")}
             disabled={saveMutation.isPending}
+            className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white"
           >
             <Save className="w-4 h-4 mr-2" />
             Salvar Rascunho
@@ -307,9 +341,10 @@ const NewsForm = () => {
             type="button"
             onClick={(e) => handleSubmit(e, "published")}
             disabled={saveMutation.isPending}
+            className="bg-primary hover:bg-primary/90 text-white"
           >
             <Eye className="w-4 h-4 mr-2" />
-            {formData.status === "published" ? "Atualizar Publicação" : "Publicar"}
+            {formData.status === "published" ? "Atualizar" : "Publicar"}
           </Button>
         </div>
       </form>

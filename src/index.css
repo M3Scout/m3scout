@@ -15,7 +15,7 @@
     --popover: 222 47% 8%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 160 84% 39%;
+    --primary: 0 72% 51%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 222 30% 14%;
@@ -32,39 +32,49 @@
 
     --border: 222 30% 18%;
     --input: 222 30% 14%;
-    --ring: 160 84% 39%;
+    --ring: 0 72% 51%;
 
     --radius: 0.75rem;
 
+    /* M3 Brand Colors */
+    --m3-red: 0 72% 51%;
+    --m3-red-light: 0 72% 60%;
+    --m3-red-dark: 0 72% 42%;
+    
+    /* Status Colors */
+    --status-success: 142 76% 36%;
+    --status-warning: 38 92% 50%;
+    --status-info: 199 89% 48%;
+    
     /* Custom tokens */
     --gold: 45 93% 58%;
     --gold-foreground: 222 47% 6%;
-    --emerald: 160 84% 39%;
-    --emerald-light: 160 70% 50%;
+    --emerald: 142 76% 36%;
+    --emerald-light: 142 70% 50%;
     --navy: 222 47% 6%;
     --navy-light: 222 47% 12%;
     
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(160 84% 39%), hsl(160 70% 50%));
+    --gradient-primary: linear-gradient(135deg, hsl(0 72% 51%), hsl(0 72% 42%));
     --gradient-gold: linear-gradient(135deg, hsl(45 93% 58%), hsl(38 92% 50%));
     --gradient-dark: linear-gradient(180deg, hsl(222 47% 8%), hsl(222 47% 4%));
     --gradient-card: linear-gradient(135deg, hsl(222 47% 10% / 0.8), hsl(222 47% 6% / 0.6));
-    --gradient-hero: linear-gradient(180deg, hsl(222 47% 6%) 0%, hsl(222 47% 4%) 50%, hsl(160 84% 10% / 0.3) 100%);
+    --gradient-hero: linear-gradient(180deg, hsl(222 47% 6%) 0%, hsl(222 47% 4%) 50%, hsl(0 72% 10% / 0.3) 100%);
     
     /* Shadows */
-    --shadow-glow: 0 0 40px -10px hsl(160 84% 39% / 0.4);
+    --shadow-glow: 0 0 40px -10px hsl(0 72% 51% / 0.4);
     --shadow-gold: 0 0 30px -5px hsl(45 93% 58% / 0.3);
     --shadow-card: 0 8px 32px -8px hsl(0 0% 0% / 0.5);
     --shadow-elevated: 0 20px 60px -15px hsl(0 0% 0% / 0.7);
 
-    --sidebar-background: 222 47% 6%;
+    --sidebar-background: 222 47% 5%;
     --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 160 84% 39%;
+    --sidebar-primary: 0 72% 51%;
     --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 222 30% 14%;
+    --sidebar-accent: 222 30% 12%;
     --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 222 30% 18%;
-    --sidebar-ring: 160 84% 39%;
+    --sidebar-border: 222 30% 14%;
+    --sidebar-ring: 0 72% 51%;
   }
 }
 
@@ -84,6 +94,121 @@
 }
 
 @layer components {
+  /* Admin Panel Components */
+  .admin-panel {
+    @apply bg-[hsl(222,47%,5%)] min-h-screen;
+  }
+
+  .admin-header {
+    @apply flex items-center justify-between pb-6 border-b border-zinc-800/50 mb-8;
+  }
+
+  .admin-title {
+    @apply text-xl font-semibold text-white tracking-tight;
+  }
+
+  .admin-subtitle {
+    @apply text-sm text-zinc-500 mt-1;
+  }
+
+  .admin-section {
+    @apply animate-fade-in;
+  }
+
+  .admin-section-title {
+    @apply text-[10px] uppercase tracking-[0.2em] text-zinc-600 mb-4;
+  }
+
+  /* Admin Card - Premium minimal style */
+  .admin-card {
+    @apply bg-zinc-900/40 border border-zinc-800/50 rounded-xl transition-all duration-200;
+  }
+
+  .admin-card:hover {
+    @apply border-zinc-700/50;
+  }
+
+  .admin-card-header {
+    @apply px-5 py-4 border-b border-zinc-800/30;
+  }
+
+  .admin-card-body {
+    @apply px-5 py-4;
+  }
+
+  /* Admin Stat - Compact number display */
+  .admin-stat {
+    @apply admin-card;
+  }
+
+  .admin-stat-value {
+    @apply text-2xl font-semibold text-white tabular-nums;
+  }
+
+  .admin-stat-label {
+    @apply text-xs text-zinc-500 mt-1;
+  }
+
+  .admin-stat-icon {
+    @apply w-8 h-8 rounded-lg flex items-center justify-center;
+  }
+
+  /* Admin Table Row */
+  .admin-row {
+    @apply flex items-center justify-between p-4 rounded-lg bg-zinc-900/30 border border-transparent transition-all duration-200;
+  }
+
+  .admin-row:hover {
+    @apply bg-zinc-800/40 border-zinc-700/30;
+  }
+
+  .admin-row-clickable {
+    @apply admin-row cursor-pointer;
+  }
+
+  .admin-row-clickable:hover {
+    @apply bg-zinc-800/50 border-primary/20;
+  }
+
+  /* Admin Badge */
+  .admin-badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide;
+  }
+
+  .admin-badge-default {
+    @apply admin-badge bg-zinc-800 text-zinc-400;
+  }
+
+  .admin-badge-primary {
+    @apply admin-badge bg-primary/15 text-primary;
+  }
+
+  .admin-badge-success {
+    @apply admin-badge bg-emerald-500/15 text-emerald-400;
+  }
+
+  .admin-badge-warning {
+    @apply admin-badge bg-amber-500/15 text-amber-400;
+  }
+
+  /* Admin Button */
+  .admin-btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200;
+  }
+
+  .admin-btn-primary {
+    @apply admin-btn bg-primary text-white hover:bg-primary/90;
+  }
+
+  .admin-btn-ghost {
+    @apply admin-btn text-zinc-400 hover:text-white hover:bg-zinc-800;
+  }
+
+  .admin-btn-outline {
+    @apply admin-btn border border-zinc-700 text-zinc-300 hover:border-zinc-600 hover:bg-zinc-800/50;
+  }
+
+  /* Legacy components - keep for compatibility */
   .glass-card {
     @apply bg-card/60 backdrop-blur-xl border border-border/50 rounded-xl;
     box-shadow: var(--shadow-card);
@@ -174,7 +299,7 @@
   .btn-primary::before {
     @apply absolute inset-0 opacity-0 transition-opacity duration-300;
     content: '';
-    background: linear-gradient(135deg, hsl(160 70% 50%), hsl(160 84% 45%));
+    background: linear-gradient(135deg, hsl(0 72% 55%), hsl(0 72% 48%));
   }
 
   .btn-primary:hover::before {
@@ -193,26 +318,32 @@
   }
 
   .animate-fade-in {
-    animation: fadeIn 0.5s ease-out forwards;
+    animation: fadeIn 0.4s ease-out forwards;
   }
 
   .animate-slide-up {
-    animation: slideUp 0.6s ease-out forwards;
+    animation: slideUp 0.5s ease-out forwards;
   }
 
   .animate-scale-in {
-    animation: scaleIn 0.4s ease-out forwards;
+    animation: scaleIn 0.3s ease-out forwards;
   }
 
   @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from { 
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to { 
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   @keyframes slideUp {
     from { 
       opacity: 0;
-      transform: translateY(20px);
+      transform: translateY(16px);
     }
     to { 
       opacity: 1;
@@ -223,7 +354,7 @@
   @keyframes scaleIn {
     from {
       opacity: 0;
-      transform: scale(0.95);
+      transform: scale(0.98);
     }
     to {
       opacity: 1;
@@ -231,8 +362,21 @@
     }
   }
 
+  .delay-75 { animation-delay: 75ms; }
   .delay-100 { animation-delay: 100ms; }
+  .delay-150 { animation-delay: 150ms; }
   .delay-200 { animation-delay: 200ms; }
   .delay-300 { animation-delay: 300ms; }
   .delay-400 { animation-delay: 400ms; }
+
+  /* Stagger children */
+  .stagger-children > * {
+    @apply opacity-0 animate-fade-in;
+  }
+  .stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+  .stagger-children > *:nth-child(2) { animation-delay: 50ms; }
+  .stagger-children > *:nth-child(3) { animation-delay: 100ms; }
+  .stagger-children > *:nth-child(4) { animation-delay: 150ms; }
+  .stagger-children > *:nth-child(5) { animation-delay: 200ms; }
+  .stagger-children > *:nth-child(6) { animation-delay: 250ms; }
 }
