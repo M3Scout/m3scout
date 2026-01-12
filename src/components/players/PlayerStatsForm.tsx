@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { 
   Plus, 
   Trash2, 
@@ -17,7 +19,12 @@ import {
   ChevronDown,
   Shield,
   Target,
-  Crosshair
+  Crosshair,
+  Sparkles,
+  AlertTriangle,
+  Info,
+  Zap,
+  Brain
 } from "lucide-react";
 import { toast } from "sonner";
 import { safeArray } from "@/lib/utils";
@@ -50,17 +57,38 @@ interface PlayerStat {
   penalties_saved: number;
   errors_leading_to_goal: number;
   aerial_duels_won: number;
+  aerial_duels_total: number;
   // Passing
   accurate_passes: number;
   total_passes: number;
   // Duels
   duels_won: number;
   total_duels: number;
+  ground_duels_won: number;
+  ground_duels_total: number;
   // Offensive
   chances_created: number;
   key_passes: number;
   shots: number;
   shots_on_target: number;
+  shots_blocked: number;
+  // Additional GK
+  saves_inside_box: number;
+  punches: number;
+  high_claims: number;
+  successful_runs_out: number;
+  total_runs_out: number;
+  // Other
+  fouls_committed: number;
+  fouls_drawn: number;
+  offsides: number;
+  clearances: number;
+  times_dribbled_past: number;
+  possession_lost: number;
+  long_passes_accurate: number;
+  long_passes_total: number;
+  successful_dribbles: number;
+  total_dribbles: number;
 }
 
 const emptyStatRow: Omit<PlayerStat, "id" | "player_id"> = {
@@ -81,19 +109,96 @@ const emptyStatRow: Omit<PlayerStat, "id" | "player_id"> = {
   penalties_saved: 0,
   errors_leading_to_goal: 0,
   aerial_duels_won: 0,
+  aerial_duels_total: 0,
   accurate_passes: 0,
   total_passes: 0,
   duels_won: 0,
   total_duels: 0,
+  ground_duels_won: 0,
+  ground_duels_total: 0,
   chances_created: 0,
   key_passes: 0,
   shots: 0,
   shots_on_target: 0,
+  shots_blocked: 0,
+  saves_inside_box: 0,
+  punches: 0,
+  high_claims: 0,
+  successful_runs_out: 0,
+  total_runs_out: 0,
+  fouls_committed: 0,
+  fouls_drawn: 0,
+  offsides: 0,
+  clearances: 0,
+  times_dribbled_past: 0,
+  possession_lost: 0,
+  long_passes_accurate: 0,
+  long_passes_total: 0,
+  successful_dribbles: 0,
+  total_dribbles: 0,
 };
 
 interface PlayerStatsFormProps {
   playerId: string;
   playerPosition: string;
+}
+
+// Stat input with tooltip
+interface StatInputProps {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+  tooltip?: string;
+  warning?: string;
+  min?: number;
+  step?: number;
+}
+
+function StatInput({ label, value, onChange, tooltip, warning, min = 0, step = 1 }: StatInputProps) {
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center gap-1">
+        <Label className="text-xs text-muted-foreground">{label}</Label>
+        {tooltip && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Info className="w-3 h-3 text-muted-foreground/60 cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-xs text-xs">
+                {tooltip}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+      </div>
+      <Input 
+        type="number" 
+        min={min}
+        step={step}
+        value={value} 
+        onChange={(e) => onChange(parseInt(e.target.value) || 0)}
+        placeholder="0"
+        className={warning ? "border-amber-400" : ""}
+      />
+      {warning && (
+        <p className="text-[10px] text-amber-600 flex items-center gap-1">
+          <AlertTriangle className="w-3 h-3" />
+          {warning}
+        </p>
+      )}
+    </div>
+  );
+}
+
+// Summary badge component
+function SummaryBadge({ label, value, highlight = false }: { label: string; value: number | string; highlight?: boolean }) {
+  return (
+    <div className={`text-center px-2 py-1 rounded ${highlight ? 'bg-primary/10 text-primary' : 'bg-muted'}`}>
+      <div className={`text-sm font-semibold ${highlight ? 'text-primary' : ''}`}>{value}</div>
+      <div className="text-[10px] text-muted-foreground uppercase">{label}</div>
+    </div>
+  );
 }
 
 export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormProps) {
@@ -103,9 +208,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
   const [saving, setSaving] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
-  const isGoalkeeper = playerPosition === "Goleiro";
-  const isDefender = ["Zagueiro", "Lateral Direito", "Lateral Esquerdo", "Volante"].includes(playerPosition);
-  const isForward = ["Atacante", "Centroavante", "Ponta Direita", "Ponta Esquerda", "Segundo Atacante"].includes(playerPosition);
+  const isGoalkeeper = playerPosition === "Goleiro" || playerPosition === "GK";
 
   useEffect(() => {
     fetchData();
@@ -151,7 +254,18 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
   };
 
   const updateStatField = (id: string, field: keyof PlayerStat, value: any) => {
-    setStats(stats.map(s => s.id === id ? { ...s, [field]: value } : s));
+    setStats(currentStats => currentStats.map(s => {
+      if (s.id !== id) return s;
+      
+      const updated = { ...s, [field]: value };
+      
+      // Auto-correct: shots_on_target > shots → adjust shots
+      if (field === "shots_on_target" && value > s.shots) {
+        updated.shots = value;
+      }
+      
+      return updated;
+    }));
   };
 
   const deleteStatRow = async (id: string) => {
@@ -189,7 +303,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
         const data = {
           player_id: playerId,
           season_year: stat.season_year,
-          competition_id: stat.competition_id, // Already validated as required
+          competition_id: stat.competition_id,
           matches: stat.matches,
           minutes: stat.minutes,
           goals: stat.goals,
@@ -205,14 +319,33 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
           penalties_saved: stat.penalties_saved,
           errors_leading_to_goal: stat.errors_leading_to_goal,
           aerial_duels_won: stat.aerial_duels_won,
+          aerial_duels_total: stat.aerial_duels_total,
           accurate_passes: stat.accurate_passes,
           total_passes: stat.total_passes,
           duels_won: stat.duels_won,
           total_duels: stat.total_duels,
+          ground_duels_won: stat.ground_duels_won,
+          ground_duels_total: stat.ground_duels_total,
           chances_created: stat.chances_created,
           key_passes: stat.key_passes,
           shots: stat.shots,
           shots_on_target: stat.shots_on_target,
+          shots_blocked: stat.shots_blocked,
+          saves_inside_box: stat.saves_inside_box,
+          punches: stat.punches,
+          high_claims: stat.high_claims,
+          successful_runs_out: stat.successful_runs_out,
+          total_runs_out: stat.total_runs_out,
+          fouls_committed: stat.fouls_committed,
+          fouls_drawn: stat.fouls_drawn,
+          offsides: stat.offsides,
+          clearances: stat.clearances,
+          times_dribbled_past: stat.times_dribbled_past,
+          possession_lost: stat.possession_lost,
+          long_passes_accurate: stat.long_passes_accurate,
+          long_passes_total: stat.long_passes_total,
+          successful_dribbles: stat.successful_dribbles,
+          total_dribbles: stat.total_dribbles,
         };
 
         if (stat.id.startsWith("new-")) {
@@ -248,6 +381,18 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
     if (!compId) return "Sem competição";
     const comp = competitions.find(c => c.id === compId);
     return comp?.display_name || comp?.name || "Desconhecida";
+  };
+
+  // Validation warnings
+  const getValidationWarnings = (stat: PlayerStat) => {
+    const warnings: string[] = [];
+    if (stat.minutes === 0 && stat.matches > 0) {
+      warnings.push("Jogos > 0 mas minutos = 0");
+    }
+    if (stat.shots_on_target > stat.shots) {
+      warnings.push("Chutes no gol > chutes totais (ajustado automaticamente)");
+    }
+    return warnings;
   };
 
   if (loading) {
@@ -294,220 +439,395 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
             </Button>
           </div>
         ) : (
-          safeArray(stats).map((stat) => (
-            <Collapsible 
-              key={stat.id} 
-              open={expandedRows.has(stat.id)} 
-              onOpenChange={() => toggleRow(stat.id)}
-            >
-              <div className="border rounded-lg">
-                <CollapsibleTrigger asChild>
-                  <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <Badge variant="outline">{stat.season_year}</Badge>
-                      <span className="font-medium">{getCompetitionName(stat.competition_id)}</span>
-                      <span className="text-sm text-muted-foreground">
-                        {stat.matches} jogos • {stat.minutes} min • {stat.goals}G {stat.assists}A
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button 
-                        type="button" 
-                        variant="ghost" 
-                        size="icon"
-                        onClick={(e) => { e.stopPropagation(); deleteStatRow(stat.id); }}
-                      >
-                        <Trash2 className="w-4 h-4 text-destructive" />
-                      </Button>
-                      <ChevronDown className={`w-4 h-4 transition-transform ${expandedRows.has(stat.id) ? 'rotate-180' : ''}`} />
-                    </div>
-                  </div>
-                </CollapsibleTrigger>
-                
-                <CollapsibleContent>
-                  <div className="p-4 pt-0 space-y-6">
-                    <Separator />
-                    
-                    {/* Basic Info Row */}
-                    <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">
-                      <div className="space-y-1">
-                        <Label className="text-xs">Temporada</Label>
-                        <Input 
-                          type="number" 
-                          value={stat.season_year} 
-                          onChange={(e) => updateStatField(stat.id, "season_year", parseInt(e.target.value) || new Date().getFullYear())}
-                        />
-                      </div>
-                      <div className="space-y-1 sm:col-span-3">
-                        <Label className="text-xs">Competição *</Label>
-                        <Select 
-                          value={stat.competition_id || ""} 
-                          onValueChange={(val) => updateStatField(stat.id, "competition_id", val || null)}
-                        >
-                          <SelectTrigger className={!stat.competition_id ? "border-destructive/50" : ""}>
-                            <SelectValue placeholder="Selecione uma competição..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {safeArray(competitions).map(c => (
-                              <SelectItem key={c.id} value={c.id}>
-                                {c.display_name || c.name} (coef: {c.final_coefficient})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {!stat.competition_id && (
-                          <p className="text-xs text-destructive">Competição é obrigatória</p>
+          safeArray(stats).map((stat) => {
+            const warnings = getValidationWarnings(stat);
+            
+            return (
+              <Collapsible 
+                key={stat.id} 
+                open={expandedRows.has(stat.id)} 
+                onOpenChange={() => toggleRow(stat.id)}
+              >
+                <div className="border rounded-lg">
+                  <CollapsibleTrigger asChild>
+                    <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 transition-colors">
+                      <div className="flex items-center gap-4 flex-wrap">
+                        <Badge variant="outline">{stat.season_year}</Badge>
+                        <span className="font-medium">{getCompetitionName(stat.competition_id)}</span>
+                        <span className="text-sm text-muted-foreground">
+                          {stat.matches} jogos • {stat.minutes} min • {stat.goals}G {stat.assists}A
+                        </span>
+                        {warnings.length > 0 && (
+                          <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50">
+                            <AlertTriangle className="w-3 h-3 mr-1" />
+                            {warnings.length} aviso(s)
+                          </Badge>
                         )}
                       </div>
-                    </div>
-
-                    {/* General Stats */}
-                    <div>
-                      <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
-                        <Target className="w-4 h-4" />
-                        Estatísticas Gerais
-                      </h4>
-                      <div className="grid gap-3 grid-cols-3 sm:grid-cols-6">
-                        <div className="space-y-1">
-                          <Label className="text-xs">Jogos</Label>
-                          <Input type="number" min="0" value={stat.matches} onChange={(e) => updateStatField(stat.id, "matches", parseInt(e.target.value) || 0)} />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">Minutos</Label>
-                          <Input type="number" min="0" value={stat.minutes} onChange={(e) => updateStatField(stat.id, "minutes", parseInt(e.target.value) || 0)} />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">Gols</Label>
-                          <Input type="number" min="0" value={stat.goals} onChange={(e) => updateStatField(stat.id, "goals", parseInt(e.target.value) || 0)} />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">Assists</Label>
-                          <Input type="number" min="0" value={stat.assists} onChange={(e) => updateStatField(stat.id, "assists", parseInt(e.target.value) || 0)} />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">Amarelos</Label>
-                          <Input type="number" min="0" value={stat.yellow_cards} onChange={(e) => updateStatField(stat.id, "yellow_cards", parseInt(e.target.value) || 0)} />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">Vermelhos</Label>
-                          <Input type="number" min="0" value={stat.red_cards} onChange={(e) => updateStatField(stat.id, "red_cards", parseInt(e.target.value) || 0)} />
-                        </div>
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={(e) => { e.stopPropagation(); deleteStatRow(stat.id); }}
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                        <ChevronDown className={`w-4 h-4 transition-transform ${expandedRows.has(stat.id) ? 'rotate-180' : ''}`} />
                       </div>
                     </div>
+                  </CollapsibleTrigger>
+                  
+                  <CollapsibleContent>
+                    <div className="p-4 pt-0 space-y-6">
+                      <Separator />
 
-                    {/* Defensive Stats */}
-                    <div>
-                      <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
-                        <Shield className="w-4 h-4" />
-                        Ações Defensivas
-                      </h4>
-                      <div className="grid gap-3 grid-cols-3 sm:grid-cols-6">
-                        <div className="space-y-1">
-                          <Label className="text-xs">Desarmes</Label>
-                          <Input type="number" min="0" value={stat.tackles} onChange={(e) => updateStatField(stat.id, "tackles", parseInt(e.target.value) || 0)} />
+                      {/* Validation Warnings */}
+                      {warnings.length > 0 && (
+                        <Alert variant="default" className="border-amber-300 bg-amber-50">
+                          <AlertTriangle className="h-4 w-4 text-amber-600" />
+                          <AlertDescription className="text-amber-800">
+                            {warnings.map((w, i) => (
+                              <div key={i}>{w}</div>
+                            ))}
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                      
+                      {/* Quick Summary */}
+                      <div className="bg-muted/30 rounded-lg p-3">
+                        <div className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
+                          <Zap className="w-3 h-3" />
+                          Resumo Automático
                         </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">Interceptações</Label>
-                          <Input type="number" min="0" value={stat.interceptions} onChange={(e) => updateStatField(stat.id, "interceptions", parseInt(e.target.value) || 0)} />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">Recuperações</Label>
-                          <Input type="number" min="0" value={stat.recoveries} onChange={(e) => updateStatField(stat.id, "recoveries", parseInt(e.target.value) || 0)} />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">Duelos Ganhos</Label>
-                          <Input type="number" min="0" value={stat.duels_won} onChange={(e) => updateStatField(stat.id, "duels_won", parseInt(e.target.value) || 0)} />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">Duelos Totais</Label>
-                          <Input type="number" min="0" value={stat.total_duels} onChange={(e) => updateStatField(stat.id, "total_duels", parseInt(e.target.value) || 0)} />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">Duelos Aéreos</Label>
-                          <Input type="number" min="0" value={stat.aerial_duels_won} onChange={(e) => updateStatField(stat.id, "aerial_duels_won", parseInt(e.target.value) || 0)} />
+                        <div className="flex flex-wrap gap-2">
+                          <SummaryBadge label="Jogos" value={stat.matches} />
+                          <SummaryBadge label="Min" value={stat.minutes} />
+                          <SummaryBadge label="Gols" value={stat.goals} highlight />
+                          <SummaryBadge label="Assist" value={stat.assists} highlight />
+                          <SummaryBadge label="Chutes" value={stat.shots} />
+                          <SummaryBadge label="No Gol" value={stat.shots_on_target} />
+                          <SummaryBadge label="P.Dec" value={stat.key_passes} />
+                          <SummaryBadge label="Chances" value={stat.chances_created} />
+                          <SummaryBadge label="Amar" value={stat.yellow_cards} />
+                          <SummaryBadge label="Verm" value={stat.red_cards} />
                         </div>
                       </div>
+
+                      {/* === SEÇÃO: GERAIS === */}
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 text-sm font-medium">
+                          <Target className="w-4 h-4 text-muted-foreground" />
+                          Gerais
+                        </div>
+                        <p className="text-xs text-muted-foreground -mt-2">Informações básicas da temporada/competição</p>
+                        
+                        <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">
+                          <div className="space-y-1">
+                            <Label className="text-xs text-muted-foreground">Temporada</Label>
+                            <Input 
+                              type="number" 
+                              value={stat.season_year} 
+                              onChange={(e) => updateStatField(stat.id, "season_year", parseInt(e.target.value) || new Date().getFullYear())}
+                            />
+                          </div>
+                          <div className="space-y-1 sm:col-span-3">
+                            <Label className="text-xs text-muted-foreground">Competição *</Label>
+                            <Select 
+                              value={stat.competition_id || ""} 
+                              onValueChange={(val) => updateStatField(stat.id, "competition_id", val || null)}
+                            >
+                              <SelectTrigger className={!stat.competition_id ? "border-destructive/50" : ""}>
+                                <SelectValue placeholder="Selecione uma competição..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {safeArray(competitions).map(c => (
+                                  <SelectItem key={c.id} value={c.id}>
+                                    {c.display_name || c.name} (coef: {c.final_coefficient})
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {!stat.competition_id && (
+                              <p className="text-xs text-destructive">Competição é obrigatória</p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="grid gap-3 grid-cols-2 sm:grid-cols-3">
+                          <StatInput 
+                            label="Jogos" 
+                            value={stat.matches} 
+                            onChange={(v) => updateStatField(stat.id, "matches", v)}
+                            tooltip="Total de partidas disputadas"
+                          />
+                          <StatInput 
+                            label="Minutos" 
+                            value={stat.minutes} 
+                            onChange={(v) => updateStatField(stat.id, "minutes", v)}
+                            tooltip="Total de minutos em campo"
+                            warning={stat.minutes === 0 && stat.matches > 0 ? "Sem minutos registrados" : undefined}
+                          />
+                        </div>
+                      </div>
+
+                      {/* === SEÇÃO: ATAQUE (ATA) === */}
+                      {!isGoalkeeper && (
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2 text-sm font-medium">
+                            <Crosshair className="w-4 h-4 text-orange-500" />
+                            <span className="text-orange-600">ATAQUE (ATA)</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground -mt-2">Gols, finalizações e participações ofensivas</p>
+                          
+                          <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
+                            <StatInput 
+                              label="Gols" 
+                              value={stat.goals} 
+                              onChange={(v) => updateStatField(stat.id, "goals", v)}
+                              tooltip="Gols marcados na temporada"
+                            />
+                            <StatInput 
+                              label="Assistências" 
+                              value={stat.assists} 
+                              onChange={(v) => updateStatField(stat.id, "assists", v)}
+                              tooltip="Passes para gol"
+                            />
+                            <StatInput 
+                              label="Chutes" 
+                              value={stat.shots} 
+                              onChange={(v) => updateStatField(stat.id, "shots", v)}
+                              tooltip="Total de finalizações"
+                            />
+                            <StatInput 
+                              label="Chutes no Gol" 
+                              value={stat.shots_on_target} 
+                              onChange={(v) => updateStatField(stat.id, "shots_on_target", v)}
+                              tooltip="Finalizações no alvo"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* === SEÇÃO: CRIATIVIDADE (CRI) === */}
+                      {!isGoalkeeper && (
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2 text-sm font-medium">
+                            <Sparkles className="w-4 h-4 text-purple-500" />
+                            <span className="text-purple-600">CRIATIVIDADE (CRI)</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground -mt-2">Passes decisivos, chances criadas e dribles</p>
+                          
+                          <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
+                            <StatInput 
+                              label="Passes Decisivos" 
+                              value={stat.key_passes} 
+                              onChange={(v) => updateStatField(stat.id, "key_passes", v)}
+                              tooltip="Passes que geraram finalizações"
+                            />
+                            <StatInput 
+                              label="Chances Criadas" 
+                              value={stat.chances_created} 
+                              onChange={(v) => updateStatField(stat.id, "chances_created", v)}
+                              tooltip="Oportunidades de gol criadas"
+                            />
+                            <StatInput 
+                              label="Dribles Certos" 
+                              value={stat.successful_dribbles} 
+                              onChange={(v) => updateStatField(stat.id, "successful_dribbles", v)}
+                              tooltip="Dribles bem sucedidos"
+                            />
+                            <StatInput 
+                              label="Dribles Totais" 
+                              value={stat.total_dribbles} 
+                              onChange={(v) => updateStatField(stat.id, "total_dribbles", v)}
+                              tooltip="Total de tentativas de drible"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* === SEÇÃO: DEFESA (DEF) === */}
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 text-sm font-medium">
+                          <Shield className="w-4 h-4 text-blue-500" />
+                          <span className="text-blue-600">DEFESA (DEF)</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground -mt-2">Desarmes, interceptações e duelos</p>
+                        
+                        <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
+                          <StatInput 
+                            label="Desarmes" 
+                            value={stat.tackles} 
+                            onChange={(v) => updateStatField(stat.id, "tackles", v)}
+                            tooltip="Bolas recuperadas com carrinho ou bloqueio"
+                          />
+                          <StatInput 
+                            label="Interceptações" 
+                            value={stat.interceptions} 
+                            onChange={(v) => updateStatField(stat.id, "interceptions", v)}
+                            tooltip="Passes adversários interceptados"
+                          />
+                          <StatInput 
+                            label="Recuperações" 
+                            value={stat.recoveries} 
+                            onChange={(v) => updateStatField(stat.id, "recoveries", v)}
+                            tooltip="Bolas recuperadas"
+                          />
+                          <StatInput 
+                            label="Duelos Ganhos" 
+                            value={stat.duels_won} 
+                            onChange={(v) => updateStatField(stat.id, "duels_won", v)}
+                            tooltip="Disputas vencidas (corpo a corpo)"
+                          />
+                          <StatInput 
+                            label="Duelos Totais" 
+                            value={stat.total_duels} 
+                            onChange={(v) => updateStatField(stat.id, "total_duels", v)}
+                            tooltip="Total de disputas"
+                          />
+                          <StatInput 
+                            label="Duelos Aéreos Ganhos" 
+                            value={stat.aerial_duels_won} 
+                            onChange={(v) => updateStatField(stat.id, "aerial_duels_won", v)}
+                            tooltip="Disputas aéreas vencidas"
+                          />
+                          <StatInput 
+                            label="Cortes" 
+                            value={stat.clearances} 
+                            onChange={(v) => updateStatField(stat.id, "clearances", v)}
+                            tooltip="Afastamentos de perigo"
+                          />
+                        </div>
+                      </div>
+
+                      {/* === SEÇÃO: DISCIPLINA & TÁTICA (TÁT) === */}
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 text-sm font-medium">
+                          <Brain className="w-4 h-4 text-emerald-500" />
+                          <span className="text-emerald-600">DISCIPLINA & TÁTICA (TÁT)</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground -mt-2">Cartões, faltas e passes</p>
+                        
+                        <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
+                          <StatInput 
+                            label="Amarelos" 
+                            value={stat.yellow_cards} 
+                            onChange={(v) => updateStatField(stat.id, "yellow_cards", v)}
+                            tooltip="Cartões amarelos recebidos"
+                          />
+                          <StatInput 
+                            label="Vermelhos" 
+                            value={stat.red_cards} 
+                            onChange={(v) => updateStatField(stat.id, "red_cards", v)}
+                            tooltip="Cartões vermelhos recebidos"
+                          />
+                          <StatInput 
+                            label="Faltas Cometidas" 
+                            value={stat.fouls_committed} 
+                            onChange={(v) => updateStatField(stat.id, "fouls_committed", v)}
+                            tooltip="Infrações cometidas"
+                          />
+                          <StatInput 
+                            label="Faltas Sofridas" 
+                            value={stat.fouls_drawn} 
+                            onChange={(v) => updateStatField(stat.id, "fouls_drawn", v)}
+                            tooltip="Faltas recebidas"
+                          />
+                          <StatInput 
+                            label="Passes Certos" 
+                            value={stat.accurate_passes} 
+                            onChange={(v) => updateStatField(stat.id, "accurate_passes", v)}
+                            tooltip="Passes completados"
+                          />
+                          <StatInput 
+                            label="Passes Totais" 
+                            value={stat.total_passes} 
+                            onChange={(v) => updateStatField(stat.id, "total_passes", v)}
+                            tooltip="Total de passes tentados"
+                          />
+                          <StatInput 
+                            label="Bolas Perdidas" 
+                            value={stat.possession_lost} 
+                            onChange={(v) => updateStatField(stat.id, "possession_lost", v)}
+                            tooltip="Posses de bola perdidas"
+                          />
+                        </div>
+                      </div>
+
+                      {/* === SEÇÃO: GOLEIRO (GK ONLY) === */}
+                      {isGoalkeeper && (
+                        <div className="space-y-3 p-4 bg-primary/5 rounded-lg border border-primary/10">
+                          <div className="flex items-center gap-2 text-sm font-medium">
+                            <Shield className="w-4 h-4 text-primary" />
+                            <span className="text-primary">GOLEIRO</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground -mt-2">Estatísticas específicas de goleiro</p>
+                          
+                          <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
+                            <StatInput 
+                              label="Defesas" 
+                              value={stat.saves} 
+                              onChange={(v) => updateStatField(stat.id, "saves", v)}
+                              tooltip="Chutes defendidos"
+                            />
+                            <StatInput 
+                              label="Gols Sofridos" 
+                              value={stat.goals_conceded} 
+                              onChange={(v) => updateStatField(stat.id, "goals_conceded", v)}
+                              tooltip="Gols tomados"
+                            />
+                            <StatInput 
+                              label="Clean Sheets" 
+                              value={stat.clean_sheets} 
+                              onChange={(v) => updateStatField(stat.id, "clean_sheets", v)}
+                              tooltip="Jogos sem sofrer gol"
+                            />
+                            <StatInput 
+                              label="Pênaltis Defendidos" 
+                              value={stat.penalties_saved} 
+                              onChange={(v) => updateStatField(stat.id, "penalties_saved", v)}
+                              tooltip="Pênaltis defendidos"
+                            />
+                            <StatInput 
+                              label="Erros p/ Gol" 
+                              value={stat.errors_leading_to_goal} 
+                              onChange={(v) => updateStatField(stat.id, "errors_leading_to_goal", v)}
+                              tooltip="Erros que resultaram em gol adversário"
+                            />
+                            <StatInput 
+                              label="Defesas na Área" 
+                              value={stat.saves_inside_box} 
+                              onChange={(v) => updateStatField(stat.id, "saves_inside_box", v)}
+                              tooltip="Defesas dentro da área"
+                            />
+                            <StatInput 
+                              label="Socos" 
+                              value={stat.punches} 
+                              onChange={(v) => updateStatField(stat.id, "punches", v)}
+                              tooltip="Defesas com soco"
+                            />
+                            <StatInput 
+                              label="Bolas Altas" 
+                              value={stat.high_claims} 
+                              onChange={(v) => updateStatField(stat.id, "high_claims", v)}
+                              tooltip="Cruzamentos interceptados"
+                            />
+                            <StatInput 
+                              label="Saídas do Gol" 
+                              value={stat.successful_runs_out} 
+                              onChange={(v) => updateStatField(stat.id, "successful_runs_out", v)}
+                              tooltip="Saídas bem sucedidas"
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
-
-                    {/* Passing Stats */}
-                    <div>
-                      <h4 className="text-sm font-medium mb-3">Passes</h4>
-                      <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
-                        <div className="space-y-1">
-                          <Label className="text-xs">Passes Certos</Label>
-                          <Input type="number" min="0" value={stat.accurate_passes} onChange={(e) => updateStatField(stat.id, "accurate_passes", parseInt(e.target.value) || 0)} />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">Passes Totais</Label>
-                          <Input type="number" min="0" value={stat.total_passes} onChange={(e) => updateStatField(stat.id, "total_passes", parseInt(e.target.value) || 0)} />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">Passes Decisivos</Label>
-                          <Input type="number" min="0" value={stat.key_passes} onChange={(e) => updateStatField(stat.id, "key_passes", parseInt(e.target.value) || 0)} />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">Chances Criadas</Label>
-                          <Input type="number" min="0" value={stat.chances_created} onChange={(e) => updateStatField(stat.id, "chances_created", parseInt(e.target.value) || 0)} />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Offensive Stats (mainly for forwards/midfielders) */}
-                    {!isGoalkeeper && (
-                      <div>
-                        <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
-                          <Crosshair className="w-4 h-4" />
-                          Finalizações
-                        </h4>
-                        <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
-                          <div className="space-y-1">
-                            <Label className="text-xs">Chutes</Label>
-                            <Input type="number" min="0" value={stat.shots} onChange={(e) => updateStatField(stat.id, "shots", parseInt(e.target.value) || 0)} />
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs">Chutes no Gol</Label>
-                            <Input type="number" min="0" value={stat.shots_on_target} onChange={(e) => updateStatField(stat.id, "shots_on_target", parseInt(e.target.value) || 0)} />
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Goalkeeper Stats */}
-                    {isGoalkeeper && (
-                      <div className="p-4 bg-primary/5 rounded-lg border border-primary/10">
-                        <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
-                          <Shield className="w-4 h-4 text-primary" />
-                          Estatísticas de Goleiro
-                        </h4>
-                        <div className="grid gap-3 grid-cols-2 sm:grid-cols-5">
-                          <div className="space-y-1">
-                            <Label className="text-xs">Defesas</Label>
-                            <Input type="number" min="0" value={stat.saves} onChange={(e) => updateStatField(stat.id, "saves", parseInt(e.target.value) || 0)} />
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs">Gols Sofridos</Label>
-                            <Input type="number" min="0" value={stat.goals_conceded} onChange={(e) => updateStatField(stat.id, "goals_conceded", parseInt(e.target.value) || 0)} />
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs">Clean Sheets</Label>
-                            <Input type="number" min="0" value={stat.clean_sheets} onChange={(e) => updateStatField(stat.id, "clean_sheets", parseInt(e.target.value) || 0)} />
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs">Pênaltis Salvos</Label>
-                            <Input type="number" min="0" value={stat.penalties_saved} onChange={(e) => updateStatField(stat.id, "penalties_saved", parseInt(e.target.value) || 0)} />
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs">Erros p/ Gol</Label>
-                            <Input type="number" min="0" value={stat.errors_leading_to_goal} onChange={(e) => updateStatField(stat.id, "errors_leading_to_goal", parseInt(e.target.value) || 0)} />
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </CollapsibleContent>
-              </div>
-            </Collapsible>
-          ))
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
+            );
+          })
         )}
 
         {(stats?.length ?? 0) > 0 && (
