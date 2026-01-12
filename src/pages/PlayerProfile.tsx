@@ -3,8 +3,6 @@ import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getYouTubeEmbedUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   ArrowLeft, 
   MapPin, 
@@ -15,11 +13,10 @@ import {
   Play,
   MessageCircle,
   Loader2,
-  BarChart3,
-  Star,
-  Target,
 } from "lucide-react";
 import { PublicStatsSection } from "@/components/players/sections/PublicStatsSection";
+import { ScoreDisplay } from "@/components/players/ScoreDisplay";
+import { formatFixed } from "@/lib/formatters";
 
 interface Player {
   id: string;
@@ -70,7 +67,7 @@ const PlayerProfile = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <Loader2 className="w-8 h-8 animate-spin text-[#e52421]" />
       </div>
     );
   }
@@ -79,7 +76,7 @@ const PlayerProfile = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Atleta não encontrado</h1>
+          <h1 className="text-2xl font-bold text-white mb-4">Atleta não encontrado</h1>
           <Link to="/players">
             <Button variant="outline">Voltar para atletas</Button>
           </Link>
@@ -89,189 +86,220 @@ const PlayerProfile = () => {
   }
 
   return (
-    <div className="min-h-screen py-8">
-      <div className="container mx-auto px-4">
-        {/* Back Button */}
-        <Link 
-          to="/players" 
-          className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-8"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Voltar para atletas
-        </Link>
+    <div className="min-h-screen bg-black">
+      {/* Safe top offset for header - 80px header + 16px spacing */}
+      <div className="pt-24 md:pt-28 lg:pt-32 pb-16 md:pb-20 lg:pb-24">
+        {/* Centered container with max-width */}
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
+          
+          {/* Back Button */}
+          <Link 
+            to="/players" 
+            className="inline-flex items-center gap-2 text-zinc-500 hover:text-white transition-colors mb-8 md:mb-12"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span className="text-sm tracking-wide">Voltar para atletas</span>
+          </Link>
 
-        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
-          {/* Image Section */}
-          <div className="relative">
-            <div className="aspect-[3/4] rounded-2xl overflow-hidden glass-card">
-              <img
-                src={player.photo_url || "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=800&h=1000&fit=crop"}
-                alt={player.full_name}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-transparent to-transparent" />
-            </div>
-          </div>
-
-          {/* Info Section */}
-          <div className="flex flex-col">
-            {/* Position */}
-            <span className="position-badge w-fit mb-4">{player.position}</span>
-
-            {/* Name */}
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">{player.full_name}</h1>
-
-            {/* Rating */}
-            {player.auto_rating !== null && (
-              <div className="flex items-center gap-2 mb-4">
-                <div className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary/10">
-                  <Star className="w-5 h-5 text-primary fill-primary" />
-                  <span className="text-xl font-bold text-primary">
-                    {player.auto_rating.toFixed(1)}
-                  </span>
-                  <span className="text-sm text-muted-foreground">/5.0</span>
-                </div>
+          {/* Main Grid - Two columns on desktop */}
+          <div className="grid lg:grid-cols-[1fr,1.1fr] gap-8 lg:gap-16 xl:gap-20">
+            
+            {/* ========== IMAGE COLUMN (LEFT) ========== */}
+            <div className="relative">
+              <div className="aspect-[3/4] overflow-hidden bg-zinc-950">
+                <img
+                  src={player.photo_url || "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=800&h=1000&fit=crop"}
+                  alt={player.full_name}
+                  className="w-full h-full object-cover"
+                />
+                {/* Subtle bottom fade */}
+                <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black to-transparent" />
               </div>
-            )}
-
-            {/* Secondary Positions */}
-            {player.secondary_positions && player.secondary_positions.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-6">
-                {player.secondary_positions.map((pos) => (
-                  <span key={pos} className="stat-badge">{pos}</span>
-                ))}
-              </div>
-            )}
-
-            {/* Stats Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
-              {player.age && (
-                <div className="glass-card p-4">
-                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                    <Calendar className="w-4 h-4" />
-                    <span className="text-xs">Idade</span>
-                  </div>
-                  <p className="text-lg font-semibold">{player.age} anos</p>
-                </div>
-              )}
-              
-              {player.height && (
-                <div className="glass-card p-4">
-                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                    <Ruler className="w-4 h-4" />
-                    <span className="text-xs">Altura</span>
-                  </div>
-                  <p className="text-lg font-semibold">{player.height} cm</p>
-                </div>
-              )}
-              
-              {player.dominant_foot && (
-                <div className="glass-card p-4">
-                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                    <User className="w-4 h-4" />
-                    <span className="text-xs">Pé Dominante</span>
-                  </div>
-                  <p className="text-lg font-semibold">{player.dominant_foot}</p>
-                </div>
-              )}
-              
-              <div className="glass-card p-4">
-                <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                  <Flag className="w-4 h-4" />
-                  <span className="text-xs">Nacionalidade</span>
-                </div>
-                <p className="text-lg font-semibold">{player.nationality}</p>
-              </div>
-              
-              {player.current_club && (
-                <div className="glass-card p-4 col-span-2">
-                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                    <MapPin className="w-4 h-4" />
-                    <span className="text-xs">Clube Atual</span>
-                  </div>
-                  <p className="text-lg font-semibold">{player.current_club}</p>
-                </div>
-              )}
             </div>
 
-            {/* Tactical Info */}
-            {(player.primary_tactical_role || player.play_style) && (
-              <div className="glass-card p-4 mb-6">
-                <div className="flex items-center gap-2 text-muted-foreground mb-3">
-                  <Target className="w-4 h-4" />
-                  <span className="text-sm font-medium">Perfil Tático</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {player.primary_tactical_role && (
-                    <Badge variant="outline" className="border-primary/50">
-                      {player.primary_tactical_role}
-                    </Badge>
+            {/* ========== INFO COLUMN (RIGHT) ========== */}
+            <div className="flex flex-col lg:py-4">
+              
+              {/* --- A) HEADER BLOCK --- */}
+              <div className="mb-10 md:mb-12">
+                {/* Position Tag */}
+                <span className="inline-block text-[10px] font-medium uppercase tracking-[0.2em] text-zinc-500 mb-3">
+                  {player.position}
+                </span>
+                
+                {/* Name + Score Row */}
+                <div className="flex items-start justify-between gap-4 mb-4">
+                  <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight leading-tight">
+                    {player.full_name}
+                  </h1>
+                  
+                  {/* Score Badge */}
+                  {player.auto_rating !== null && (
+                    <div className="flex-shrink-0">
+                      <ScoreDisplay score={player.auto_rating} size="lg" />
+                    </div>
                   )}
-                  {player.play_style && (
-                    <Badge variant="secondary">{player.play_style}</Badge>
-                  )}
                 </div>
-                {player.strengths && player.strengths.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-3">
-                    {player.strengths.slice(0, 4).map((s) => (
-                      <Badge key={s} className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-xs">
-                        {s}
-                      </Badge>
+
+                {/* Secondary Positions */}
+                {player.secondary_positions && player.secondary_positions.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    {player.secondary_positions.map((pos) => (
+                      <span 
+                        key={pos} 
+                        className="text-[10px] uppercase tracking-widest text-zinc-600 border border-zinc-800 px-2 py-1"
+                      >
+                        {pos}
+                      </span>
                     ))}
                   </div>
                 )}
               </div>
-            )}
 
-            {/* Bio */}
-            {player.bio_public && (
-              <div className="mb-8">
-                <h2 className="text-lg font-semibold mb-3">Sobre o Atleta</h2>
-                <p className="text-muted-foreground leading-relaxed">{player.bio_public}</p>
-              </div>
-            )}
-
-            {/* CTA */}
-            <div className="mt-auto">
-              <Link to={`/contact?player=${player.slug}`}>
-                <Button variant="hero" size="lg" className="w-full sm:w-auto">
-                  <MessageCircle className="w-5 h-5" />
-                  Falar com a M3 sobre este atleta
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        {/* Stats Section - Public */}
-        <section className="mt-16">
-          <PublicStatsSection playerId={player.id} />
-        </section>
-
-        {/* Video Section */}
-        {player.highlight_video_url && (() => {
-          const embedUrl = getYouTubeEmbedUrl(player.highlight_video_url);
-          if (!embedUrl) return null;
-          return (
-            <section className="mt-16">
-              <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
-                <Play className="w-6 h-6 text-primary" />
-                Vídeo de Highlights
-              </h2>
-              <div className="glass-card overflow-hidden rounded-2xl">
-                <div className="aspect-video">
-                  <iframe
-                    src={embedUrl}
-                    title="Player Highlights"
-                    className="w-full h-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
+              {/* --- B) QUICK INFO GRID --- */}
+              <div className="mb-10 md:mb-12">
+                <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 mb-4">Informações</p>
+                
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-5">
+                  {player.age && (
+                    <div>
+                      <div className="flex items-center gap-1.5 text-zinc-600 mb-1">
+                        <Calendar className="w-3.5 h-3.5" />
+                        <span className="text-[10px] uppercase tracking-widest">Idade</span>
+                      </div>
+                      <p className="text-white text-lg font-medium">{player.age} anos</p>
+                    </div>
+                  )}
+                  
+                  {player.height && (
+                    <div>
+                      <div className="flex items-center gap-1.5 text-zinc-600 mb-1">
+                        <Ruler className="w-3.5 h-3.5" />
+                        <span className="text-[10px] uppercase tracking-widest">Altura</span>
+                      </div>
+                      <p className="text-white text-lg font-medium">{player.height} cm</p>
+                    </div>
+                  )}
+                  
+                  {player.dominant_foot && (
+                    <div>
+                      <div className="flex items-center gap-1.5 text-zinc-600 mb-1">
+                        <User className="w-3.5 h-3.5" />
+                        <span className="text-[10px] uppercase tracking-widest">Pé</span>
+                      </div>
+                      <p className="text-white text-lg font-medium capitalize">{player.dominant_foot}</p>
+                    </div>
+                  )}
+                  
+                  <div>
+                    <div className="flex items-center gap-1.5 text-zinc-600 mb-1">
+                      <Flag className="w-3.5 h-3.5" />
+                      <span className="text-[10px] uppercase tracking-widest">País</span>
+                    </div>
+                    <p className="text-white text-lg font-medium">{player.nationality}</p>
+                  </div>
+                  
+                  {player.current_club && (
+                    <div className="col-span-2">
+                      <div className="flex items-center gap-1.5 text-zinc-600 mb-1">
+                        <MapPin className="w-3.5 h-3.5" />
+                        <span className="text-[10px] uppercase tracking-widest">Clube</span>
+                      </div>
+                      <p className="text-white text-lg font-medium">{player.current_club}</p>
+                    </div>
+                  )}
                 </div>
               </div>
-            </section>
-          );
-        })()}
+
+              {/* --- C) TACTICAL PROFILE --- */}
+              {(player.primary_tactical_role || player.play_style || (player.strengths && player.strengths.length > 0)) && (
+                <div className="mb-10 md:mb-12">
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 mb-4">Perfil Tático</p>
+                  
+                  {/* Roles */}
+                  {(player.primary_tactical_role || player.play_style) && (
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {player.primary_tactical_role && (
+                        <span className="text-xs text-white border border-zinc-700 px-3 py-1.5">
+                          {player.primary_tactical_role}
+                        </span>
+                      )}
+                      {player.play_style && (
+                        <span className="text-xs text-zinc-400 border border-zinc-800 px-3 py-1.5">
+                          {player.play_style}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Strengths */}
+                  {player.strengths && player.strengths.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-4">
+                      {player.strengths.slice(0, 5).map((s) => (
+                        <span 
+                          key={s} 
+                          className="text-[11px] text-emerald-400/80 bg-emerald-500/10 px-2.5 py-1"
+                        >
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* --- D) BIO --- */}
+              {player.bio_public && (
+                <div className="mb-10 md:mb-12">
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 mb-4">Sobre</p>
+                  <p className="text-zinc-400 text-sm leading-relaxed">{player.bio_public}</p>
+                </div>
+              )}
+
+              {/* --- E) CTA --- */}
+              <div className="mt-auto pt-6">
+                <Link to={`/contact?player=${player.slug}`}>
+                  <Button 
+                    className="w-full sm:w-auto bg-[#e52421] hover:bg-[#c91f1c] text-white font-medium px-8 py-3 h-auto"
+                  >
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    Falar com a M3 sobre este atleta
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* ========== STATS SECTION ========== */}
+          <section className="mt-16 md:mt-20 lg:mt-24 pt-12 border-t border-zinc-900">
+            <PublicStatsSection playerId={player.id} />
+          </section>
+
+          {/* ========== VIDEO SECTION ========== */}
+          {player.highlight_video_url && (() => {
+            const embedUrl = getYouTubeEmbedUrl(player.highlight_video_url);
+            if (!embedUrl) return null;
+            return (
+              <section className="mt-16 md:mt-20 lg:mt-24">
+                <div className="flex items-center gap-3 mb-6">
+                  <Play className="w-5 h-5 text-[#e52421]" />
+                  <h2 className="text-xl font-semibold text-white">Vídeo de Highlights</h2>
+                </div>
+                <div className="overflow-hidden bg-zinc-950 border border-zinc-900">
+                  <div className="aspect-video">
+                    <iframe
+                      src={embedUrl}
+                      title="Player Highlights"
+                      className="w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </div>
+                </div>
+              </section>
+            );
+          })()}
+        </div>
       </div>
     </div>
   );
