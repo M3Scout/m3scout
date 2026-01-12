@@ -6,13 +6,12 @@ import {
   AlertCircle,
   Clock,
   Loader2,
-  ArrowUpRight,
   ChevronRight
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { PlayerRankingCard } from "@/components/dashboard/PlayerRankingCard";
 import CompetitionUsageWidget from "@/components/competitions/CompetitionUsageWidget";
 import { useAuth } from "@/hooks/useAuth";
@@ -96,12 +95,12 @@ const Dashboard = () => {
               profiles!inner(full_name)
             `)
             .order("created_at", { ascending: false })
-            .limit(4),
+            .limit(5),
           supabase
             .from("leads")
             .select("id, name, subject, created_at, status")
             .order("created_at", { ascending: false })
-            .limit(4),
+            .limit(5),
         ]);
 
         const firstDayOfMonth = new Date();
@@ -131,7 +130,7 @@ const Dashboard = () => {
           const sortedPositions = Object.entries(positionCounts)
             .map(([name, value]) => ({ name, value }))
             .sort((a, b) => b.value - a.value)
-            .slice(0, 6);
+            .slice(0, 5);
           
           setPositionData(sortedPositions);
         }
@@ -166,7 +165,7 @@ const Dashboard = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <Loader2 className="w-6 h-6 animate-spin text-zinc-500" />
+        <Loader2 className="w-5 h-5 animate-spin text-zinc-600" />
       </div>
     );
   }
@@ -180,84 +179,65 @@ const Dashboard = () => {
           <p className="admin-subtitle">Visão geral da plataforma</p>
         </div>
         <Link to="/app/reports/new">
-          <Button className="bg-primary hover:bg-primary/90 text-white gap-2">
+          <Button className="admin-btn-primary">
             <FileText className="w-4 h-4" />
             Novo Relatório
           </Button>
         </Link>
       </header>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger-children">
-        <div className="admin-card p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div className="admin-stat-icon bg-primary/10">
-              <Users className="w-4 h-4 text-primary" />
+      {/* Key Metrics - Condensed Overview */}
+      <div className="admin-card p-6 animate-fade-in">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="space-y-1">
+            <p className="text-3xl font-semibold text-white tabular-nums">{stats.totalPlayers}</p>
+            <p className="text-xs text-zinc-500 uppercase tracking-wider">Atletas</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-3xl font-semibold text-white tabular-nums">{stats.reportsThisMonth}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-xs text-zinc-500 uppercase tracking-wider">Relatórios</p>
+              <span className="text-[10px] text-zinc-600">este mês</span>
             </div>
           </div>
-          <p className="admin-stat-value">{stats.totalPlayers}</p>
-          <p className="admin-stat-label">Atletas</p>
-        </div>
-
-        <div className="admin-card p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div className="admin-stat-icon bg-zinc-800">
-              <FileText className="w-4 h-4 text-zinc-400" />
-            </div>
-            <span className="text-[10px] text-zinc-600 uppercase tracking-wide">Este mês</span>
+          <div className="space-y-1">
+            <p className="text-3xl font-semibold text-white tabular-nums">{stats.totalLeads}</p>
+            <p className="text-xs text-zinc-500 uppercase tracking-wider">Leads</p>
           </div>
-          <p className="admin-stat-value">{stats.reportsThisMonth}</p>
-          <p className="admin-stat-label">Relatórios</p>
-        </div>
-
-        <div className="admin-card p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div className="admin-stat-icon bg-zinc-800">
-              <TrendingUp className="w-4 h-4 text-zinc-400" />
+          <div className="space-y-1">
+            <p className={`text-3xl font-semibold tabular-nums ${stats.expiringContracts > 0 ? 'text-amber-400' : 'text-white'}`}>
+              {stats.expiringContracts}
+            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-xs text-zinc-500 uppercase tracking-wider">Contratos</p>
+              <span className="text-[10px] text-zinc-600">90 dias</span>
             </div>
-            <span className="text-[10px] text-zinc-600 uppercase tracking-wide">Total</span>
           </div>
-          <p className="admin-stat-value">{stats.totalReports}</p>
-          <p className="admin-stat-label">Relatórios</p>
-        </div>
-
-        <div className="admin-card p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div className="admin-stat-icon bg-amber-500/10">
-              <AlertCircle className="w-4 h-4 text-amber-500" />
-            </div>
-            <span className="text-[10px] text-zinc-600 uppercase tracking-wide">90 dias</span>
-          </div>
-          <p className="admin-stat-value">{stats.expiringContracts}</p>
-          <p className="admin-stat-label">Contratos a Vencer</p>
         </div>
       </div>
 
-      {/* Main Content Grid */}
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Position Distribution Chart */}
+      {/* Main Grid */}
+      <div className="grid lg:grid-cols-5 gap-6">
+        {/* Position Chart - Minimal */}
         <div className="lg:col-span-2 admin-card animate-fade-in delay-100">
-          <div className="admin-card-header flex items-center justify-between">
-            <h2 className="text-sm font-medium text-white">Distribuição por Posição</h2>
+          <div className="admin-card-header">
+            <h2 className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Posições</h2>
           </div>
           <div className="admin-card-body">
             {positionData.length > 0 ? (
-              <div className="h-[220px]">
+              <div className="h-[180px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={positionData} layout="vertical" margin={{ left: 0, right: 16 }}>
+                  <BarChart data={positionData} layout="vertical" margin={{ left: 0, right: 8, top: 0, bottom: 0 }}>
                     <XAxis 
                       type="number" 
-                      stroke="#52525b" 
-                      fontSize={11} 
-                      tickLine={false}
-                      axisLine={false}
+                      hide
                     />
                     <YAxis 
                       type="category" 
                       dataKey="name" 
                       stroke="#52525b" 
                       fontSize={11}
-                      width={80}
+                      width={50}
                       tickLine={false}
                       axisLine={false}
                     />
@@ -266,120 +246,143 @@ const Dashboard = () => {
                         backgroundColor: "#18181b", 
                         border: "1px solid #27272a",
                         borderRadius: "8px",
-                        fontSize: "12px"
+                        fontSize: "11px"
                       }}
-                      formatter={(value: number) => [`${value}`, "Atletas"]}
+                      formatter={(value: number) => [`${value}`, ""]}
+                      labelStyle={{ color: "#a1a1aa" }}
                     />
                     <Bar 
                       dataKey="value" 
-                      fill="hsl(var(--primary))" 
                       radius={[0, 4, 4, 0]}
-                    />
+                    >
+                      {positionData.map((_, index) => (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={index === 0 ? "hsl(var(--primary))" : "#3f3f46"} 
+                        />
+                      ))}
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             ) : (
-              <div className="h-[220px] flex items-center justify-center text-zinc-600 text-sm">
-                Nenhum atleta cadastrado
+              <div className="admin-empty h-[180px]">
+                <p className="admin-empty-desc">Nenhum dado</p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Recent Leads */}
-        <div className="admin-card animate-fade-in delay-150">
+        {/* Recent Reports - Editorial Style */}
+        <div className="lg:col-span-3 admin-card animate-fade-in delay-150">
           <div className="admin-card-header flex items-center justify-between">
-            <h2 className="text-sm font-medium text-white">Leads Recentes</h2>
-            <Link to="/app/leads" className="text-xs text-zinc-500 hover:text-white transition-colors flex items-center gap-1">
+            <h2 className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Relatórios Recentes</h2>
+            <Link to="/app/reports" className="text-[10px] text-zinc-600 hover:text-zinc-400 transition-colors flex items-center gap-0.5">
               Ver todos
               <ChevronRight className="w-3 h-3" />
             </Link>
           </div>
-          <div className="admin-card-body space-y-2">
+          <div className="divide-y divide-zinc-800/50">
+            {recentReports.length > 0 ? (
+              safeArray(recentReports).map((report) => (
+                <Link 
+                  key={report.id}
+                  to={`/app/reports/${report.id}`}
+                  className="flex items-center gap-4 px-5 py-3 hover:bg-zinc-800/30 transition-colors"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-zinc-800/50 flex items-center justify-center shrink-0">
+                    <span className="admin-score-lg text-sm">
+                      {report.final_score.toFixed(1)}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-white font-medium truncate">{report.player_name}</p>
+                    <p className="text-[11px] text-zinc-600 truncate">{report.competition_name}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-[11px] text-zinc-500 tabular-nums">
+                      {new Date(report.match_date).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+                    </p>
+                  </div>
+                </Link>
+              ))
+            ) : (
+              <div className="admin-empty">
+                <FileText className="admin-empty-icon" />
+                <p className="admin-empty-desc">Nenhum relatório</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Secondary Grid */}
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Recent Leads */}
+        <div className="admin-card animate-fade-in delay-200">
+          <div className="admin-card-header flex items-center justify-between">
+            <h2 className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Leads Recentes</h2>
+            <Link to="/app/leads" className="text-[10px] text-zinc-600 hover:text-zinc-400 transition-colors flex items-center gap-0.5">
+              Ver todos
+              <ChevronRight className="w-3 h-3" />
+            </Link>
+          </div>
+          <div className="divide-y divide-zinc-800/50">
             {recentLeads.length > 0 ? (
-              safeArray(recentLeads).map((lead) => (
+              safeArray(recentLeads).slice(0, 4).map((lead) => (
                 <div 
                   key={lead.id}
-                  className="admin-row"
+                  className="flex items-center justify-between px-5 py-3"
                 >
-                  <div className="flex-1 min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm text-white font-medium truncate">{lead.name}</p>
-                    <p className="text-xs text-zinc-500 truncate">{lead.subject}</p>
+                    <p className="text-[11px] text-zinc-600 truncate">{lead.subject}</p>
                   </div>
-                  <span className={
-                    lead.status === "new" 
-                      ? "admin-badge-primary" 
-                      : "admin-badge-default"
-                  }>
+                  <span className={lead.status === "new" ? "admin-badge-primary" : "admin-badge-default"}>
                     {lead.status === "new" ? "Novo" : "Contatado"}
                   </span>
                 </div>
               ))
             ) : (
-              <div className="py-8 text-center text-zinc-600 text-sm">
-                Nenhum lead recebido
+              <div className="admin-empty">
+                <p className="admin-empty-desc">Nenhum lead</p>
               </div>
             )}
           </div>
         </div>
-      </div>
 
-      {/* Recent Reports */}
-      <div className="admin-card animate-fade-in delay-200">
-        <div className="admin-card-header flex items-center justify-between">
-          <h2 className="text-sm font-medium text-white">Relatórios Recentes</h2>
-          <Link to="/app/reports" className="text-xs text-zinc-500 hover:text-white transition-colors flex items-center gap-1">
-            Ver todos
-            <ChevronRight className="w-3 h-3" />
-          </Link>
-        </div>
-        <div className="admin-card-body">
-          {recentReports.length > 0 ? (
-            <div className="space-y-2">
-              {safeArray(recentReports).map((report) => (
-                <Link 
-                  key={report.id}
-                  to={`/app/reports/${report.id}`}
-                  className="admin-row-clickable"
-                >
-                  <div className="flex items-center gap-4 flex-1 min-w-0">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <span className="text-sm font-semibold text-primary">
-                        {report.final_score.toFixed(1)}
-                      </span>
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm text-white font-medium truncate">{report.player_name}</p>
-                      <p className="text-xs text-zinc-500 truncate">{report.competition_name}</p>
-                    </div>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <div className="flex items-center gap-1 text-xs text-zinc-500">
-                      <Clock className="w-3 h-3" />
-                      {new Date(report.match_date).toLocaleDateString("pt-BR")}
-                    </div>
-                    <p className="text-xs text-zinc-600 mt-0.5">
-                      {report.scout_name}
-                    </p>
-                  </div>
-                  <ArrowUpRight className="w-4 h-4 text-zinc-600 ml-2 shrink-0" />
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <div className="py-8 text-center text-zinc-600 text-sm">
-              Nenhum relatório criado
-            </div>
-          )}
+        {/* Quick Actions */}
+        <div className="admin-card animate-fade-in delay-250">
+          <div className="admin-card-header">
+            <h2 className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Ações Rápidas</h2>
+          </div>
+          <div className="admin-card-body grid grid-cols-2 gap-3">
+            <Link to="/app/players/new" className="admin-btn-outline text-center py-4">
+              <Users className="w-4 h-4 mx-auto mb-1" />
+              <span className="text-xs">Novo Atleta</span>
+            </Link>
+            <Link to="/app/reports/new" className="admin-btn-outline text-center py-4">
+              <FileText className="w-4 h-4 mx-auto mb-1" />
+              <span className="text-xs">Novo Relatório</span>
+            </Link>
+            <Link to="/app/players" className="admin-btn-outline text-center py-4">
+              <TrendingUp className="w-4 h-4 mx-auto mb-1" />
+              <span className="text-xs">Ver Atletas</span>
+            </Link>
+            <Link to="/app/competitions" className="admin-btn-outline text-center py-4">
+              <AlertCircle className="w-4 h-4 mx-auto mb-1" />
+              <span className="text-xs">Competições</span>
+            </Link>
+          </div>
         </div>
       </div>
 
-      {/* Player Ranking */}
+      {/* Player Ranking - Compact */}
       <div className="animate-fade-in delay-300">
         <PlayerRankingCard />
       </div>
 
-      {/* Competition Usage Analytics - Admin only */}
+      {/* Competition Usage - Admin only */}
       {isAdmin && (
         <div className="animate-fade-in delay-400">
           <CompetitionUsageWidget />

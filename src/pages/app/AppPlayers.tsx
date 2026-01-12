@@ -412,52 +412,50 @@ const AppPlayers = () => {
     <ErrorBoundary fallbackMessage="Não foi possível carregar a lista de atletas. Por favor, tente novamente.">
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <header className="admin-header animate-fade-in">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Atletas</h1>
-          <p className="text-muted-foreground">
-            Gerencie todos os atletas da agência
-          </p>
+          <h1 className="admin-title">Atletas</h1>
+          <p className="admin-subtitle">Gerencie todos os atletas da agência</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" asChild>
+          <Button variant="outline" asChild className="admin-btn-outline">
             <Link to="/app/compare">
               <GitCompare className="w-4 h-4" />
               Comparar
             </Link>
           </Button>
-          <Button variant="gradient" asChild>
+          <Button className="admin-btn-primary" asChild>
             <Link to="/app/players/new">
               <Plus className="w-4 h-4" />
               Novo Atleta
             </Link>
           </Button>
         </div>
-      </div>
+      </header>
 
-      {/* Search and Filters */}
-      <div className="space-y-4">
+      {/* Search and Controls */}
+      <div className="space-y-4 animate-fade-in delay-75">
         <div className="flex flex-col md:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
             <Input
               type="text"
               placeholder="Buscar atleta..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 input-dark"
+              className="admin-input pl-10"
             />
           </div>
           <div className="flex gap-2">
             <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
               <CollapsibleTrigger asChild>
-                <Button variant="outline" className="relative">
+                <Button variant="outline" className="admin-btn-outline relative">
                   <Filter className="w-4 h-4" />
                   Filtros
                   {activeFiltersCount > 0 && (
-                    <Badge className="ml-2 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                    <span className="ml-2 w-5 h-5 rounded-full bg-primary text-white text-[10px] flex items-center justify-center">
                       {activeFiltersCount}
-                    </Badge>
+                    </span>
                   )}
                 </Button>
               </CollapsibleTrigger>
@@ -467,15 +465,15 @@ const AppPlayers = () => {
               type="single"
               value={viewMode}
               onValueChange={(value) => value && setViewMode(value as ViewMode)}
-              className="border rounded-md"
+              className="border border-zinc-800 rounded-lg bg-zinc-900/50"
             >
-              <ToggleGroupItem value="table" aria-label="Visualização em tabela" className="px-3">
+              <ToggleGroupItem value="table" aria-label="Visualização em tabela" className="px-3 data-[state=on]:bg-zinc-800 data-[state=on]:text-white">
                 <LayoutList className="w-4 h-4" />
               </ToggleGroupItem>
-              <ToggleGroupItem value="grid" aria-label="Visualização em cards" className="px-3">
+              <ToggleGroupItem value="grid" aria-label="Visualização em cards" className="px-3 data-[state=on]:bg-zinc-800 data-[state=on]:text-white">
                 <LayoutGrid className="w-4 h-4" />
               </ToggleGroupItem>
-              <ToggleGroupItem value="scouting" aria-label="Modo Scouting" className="px-3">
+              <ToggleGroupItem value="scouting" aria-label="Modo Scouting" className="px-3 data-[state=on]:bg-zinc-800 data-[state=on]:text-white">
                 <ClipboardList className="w-4 h-4" />
               </ToggleGroupItem>
             </ToggleGroup>
@@ -485,9 +483,9 @@ const AppPlayers = () => {
         {/* Advanced Filters */}
         <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
           <CollapsibleContent>
-            <div className="glass-card p-4 space-y-4">
+            <div className="admin-card p-4 space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-medium">Filtros Avançados</h3>
+                <h3 className="text-sm font-medium text-white">Filtros Avançados</h3>
                 {activeFiltersCount > 0 && (
                   <Button variant="ghost" size="sm" onClick={clearFilters}>
                     <X className="w-4 h-4 mr-1" />
@@ -592,7 +590,7 @@ const AppPlayers = () => {
       </div>
 
       {/* Results count */}
-      <p className="text-sm text-muted-foreground">
+      <p className="text-xs text-zinc-500 animate-fade-in">
         {filteredCount} atleta{filteredCount !== 1 ? "s" : ""} encontrado{filteredCount !== 1 ? "s" : ""}
         {showArchived && " (incluindo arquivados)"}
       </p>
@@ -658,14 +656,14 @@ const AppPlayers = () => {
           </div>
         </div>
       ) : viewMode === "table" ? (
-        /* Table View */
-        <div className="glass-card overflow-hidden">
+        /* Table View - M3 Admin Design */
+        <div className="admin-card overflow-hidden animate-fade-in delay-100">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="admin-table">
               <thead>
-                <tr className="border-b border-border/50">
+                <tr>
                   <th 
-                    className="text-left p-4 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
+                    className="cursor-pointer hover:text-white transition-colors"
                     onClick={() => handleSort("full_name")}
                   >
                     <span className="flex items-center">
@@ -674,7 +672,7 @@ const AppPlayers = () => {
                     </span>
                   </th>
                   <th 
-                    className="text-left p-4 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
+                    className="cursor-pointer hover:text-white transition-colors"
                     onClick={() => handleSort("position")}
                   >
                     <span className="flex items-center">
@@ -683,7 +681,7 @@ const AppPlayers = () => {
                     </span>
                   </th>
                   <th 
-                    className="text-left p-4 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
+                    className="cursor-pointer hover:text-white transition-colors"
                     onClick={() => handleSort("current_club")}
                   >
                     <span className="flex items-center">
@@ -692,7 +690,7 @@ const AppPlayers = () => {
                     </span>
                   </th>
                   <th 
-                    className="text-left p-4 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
+                    className="cursor-pointer hover:text-white transition-colors"
                     onClick={() => handleSort("auto_rating")}
                   >
                     <span className="flex items-center">
@@ -701,16 +699,16 @@ const AppPlayers = () => {
                     </span>
                   </th>
                   <th 
-                    className="text-left p-4 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
+                    className="cursor-pointer hover:text-white transition-colors"
                     onClick={() => handleSort("avg_score")}
                   >
                     <span className="flex items-center">
-                      Média Score
+                      Média
                       <SortIcon field="avg_score" />
                     </span>
                   </th>
                   <th 
-                    className="text-left p-4 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
+                    className="cursor-pointer hover:text-white transition-colors"
                     onClick={() => handleSort("contract_end")}
                   >
                     <span className="flex items-center">
@@ -719,7 +717,7 @@ const AppPlayers = () => {
                     </span>
                   </th>
                   <th 
-                    className="text-left p-4 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
+                    className="cursor-pointer hover:text-white transition-colors"
                     onClick={() => handleSort("is_public")}
                   >
                     <span className="flex items-center">
@@ -727,32 +725,27 @@ const AppPlayers = () => {
                       <SortIcon field="is_public" />
                     </span>
                   </th>
-                  <th className="text-right p-4 text-sm font-medium text-muted-foreground">
-                    Ações
-                  </th>
+                  <th className="text-right">Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {safeArray(paginatedPlayers).map((player) => (
-                  <tr 
-                    key={player.id}
-                    className="border-b border-border/30 hover:bg-secondary/30 transition-colors"
-                  >
-                    <td className="p-4">
+                  <tr key={player.id}>
+                    <td>
                       <div>
-                        <p className="font-medium">{player.full_name}</p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="admin-table-cell-primary">{player.full_name}</p>
+                        <p className="text-[11px] text-zinc-600">
                           {player.age ? `${player.age} anos` : ''}{player.age && player.nationality ? ' • ' : ''}{player.nationality}
                         </p>
                       </div>
                     </td>
-                    <td className="p-4">
-                      <span className="position-badge">{player.position || "N/A"}</span>
+                    <td>
+                      <span className="admin-badge-primary">{player.position || "N/A"}</span>
                     </td>
-                    <td className="p-4 text-muted-foreground">
+                    <td className="admin-table-cell-muted">
                       {player.current_club || '—'}
                     </td>
-                    <td className="p-4">
+                    <td>
                       {player.auto_rating !== null && player.auto_rating !== undefined ? (
                         <PlayerRatingBadge
                           rating={player.auto_rating}
@@ -761,41 +754,38 @@ const AppPlayers = () => {
                           size="sm"
                         />
                       ) : (
-                        <span className="text-muted-foreground text-sm">—</span>
+                        <span className="text-zinc-600 text-sm">—</span>
                       )}
                     </td>
-                    <td className="p-4">
+                    <td>
                       {player.avg_score !== null && player.avg_score !== undefined && Number.isFinite(player.avg_score) ? (
-                        <div className="flex items-center gap-1.5">
-                          <Star className="w-4 h-4 text-primary fill-primary" />
-                          <span className="font-medium">{formatFixed(player.avg_score, 1)}</span>
-                        </div>
+                        <span className="font-semibold text-white tabular-nums">{formatFixed(player.avg_score, 1)}</span>
                       ) : (
-                        <span className="text-muted-foreground">—</span>
+                        <span className="text-zinc-600">—</span>
                       )}
                     </td>
-                    <td className="p-4 text-muted-foreground">
+                    <td className="admin-table-cell-muted tabular-nums">
                       {player.contract_end 
                         ? new Date(player.contract_end).toLocaleDateString("pt-BR") 
                         : '—'}
                     </td>
-                    <td className="p-4">
-                      <div className="flex items-center gap-2">
-                        <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
+                    <td>
+                      <div className="flex items-center gap-1.5">
+                        <span className={
                           player.is_public 
-                            ? "bg-primary/20 text-primary" 
-                            : "bg-muted text-muted-foreground"
-                        }`}>
+                            ? "admin-badge-success" 
+                            : "admin-badge-default"
+                        }>
                           {player.is_public ? "Público" : "Privado"}
                         </span>
                         {player.is_archived && (
-                          <span className="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-amber-500/20 text-amber-600">
+                          <span className="admin-badge-warning">
                             Arquivado
                           </span>
                         )}
                       </div>
                     </td>
-                    <td className="p-4 text-right">
+                    <td className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon">

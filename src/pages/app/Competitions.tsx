@@ -95,10 +95,10 @@ interface Competition {
 }
 
 const TIER_COLORS: Record<string, string> = {
-  S: "bg-amber-500/20 text-amber-400 border-amber-500/50",
-  A: "bg-primary/20 text-primary border-primary/50",
-  B: "bg-emerald-500/20 text-emerald-400 border-emerald-500/50",
-  C: "bg-muted text-muted-foreground border-border",
+  S: "admin-badge-tier-s",
+  A: "admin-badge-tier-a",
+  B: "admin-badge-tier-b",
+  C: "admin-badge-tier-c",
 };
 
 const COMPETITION_TYPES = [
@@ -235,12 +235,12 @@ const Competitions = () => {
 
   const getTypeColor = (type: string) => {
     const colors: Record<string, string> = {
-      league: "bg-primary/20 text-primary border-primary/30",
-      cup: "bg-amber-500/20 text-amber-400 border-amber-500/30",
-      state_league: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
-      continental: "bg-purple-500/20 text-purple-400 border-purple-500/30",
+      league: "admin-badge-primary",
+      cup: "admin-badge-warning",
+      state_league: "admin-badge-success",
+      continental: "admin-badge-default",
     };
-    return colors[type] || "bg-muted text-muted-foreground border-border";
+    return colors[type] || "admin-badge-default";
   };
 
   const clearFilters = () => {
@@ -648,35 +648,35 @@ const Competitions = () => {
       </div>
 
       {/* Search and Filters */}
-      <div className="space-y-4">
+      <div className="space-y-4 animate-fade-in delay-75">
         <div className="flex flex-col md:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
             <Input
               type="text"
               placeholder="Buscar por nome, estado..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="admin-input pl-10"
             />
           </div>
           <Button 
             variant="outline" 
             onClick={() => setShowFilters(!showFilters)}
-            className={showFilters ? "bg-secondary" : ""}
+            className={`admin-btn-outline ${showFilters ? "bg-zinc-800" : ""}`}
           >
             <Filter className="w-4 h-4" />
             Filtros
             {hasActiveFilters && (
-              <Badge variant="secondary" className="ml-2 h-5 px-1.5">
+              <span className="ml-2 w-5 h-5 rounded-full bg-primary text-white text-[10px] flex items-center justify-center">
                 {[typeFilter !== "all", stateFilter !== "all", countryFilter !== "all", 
                   divisionFilter !== "all", visibilityFilter[0] !== 0 || visibilityFilter[1] !== 100]
                   .filter(Boolean).length}
-              </Badge>
+              </span>
             )}
           </Button>
           {hasActiveFilters && (
-            <Button variant="ghost" onClick={clearFilters}>
+            <Button variant="ghost" onClick={clearFilters} className="admin-btn-ghost">
               <X className="w-4 h-4" />
               Limpar
             </Button>
@@ -685,12 +685,12 @@ const Competitions = () => {
 
         {/* Advanced Filters */}
         {showFilters && (
-          <div className="glass-card p-4 grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="admin-card p-4 grid grid-cols-2 md:grid-cols-5 gap-4">
             <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">País</Label>
+              <Label className="text-[10px] uppercase tracking-wider text-zinc-500">País</Label>
               <Select value={countryFilter} onValueChange={setCountryFilter}>
-                <SelectTrigger>
-                  <Globe className="w-4 h-4 mr-2 text-muted-foreground" />
+                <SelectTrigger className="admin-input">
+                  <Globe className="w-4 h-4 mr-2 text-zinc-600" />
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
@@ -702,9 +702,9 @@ const Competitions = () => {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Tipo</Label>
+              <Label className="text-[10px] uppercase tracking-wider text-zinc-500">Tipo</Label>
               <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger>
+                <SelectTrigger className="admin-input">
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
@@ -716,10 +716,10 @@ const Competitions = () => {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Estado</Label>
+              <Label className="text-[10px] uppercase tracking-wider text-zinc-500">Estado</Label>
               <Select value={stateFilter} onValueChange={setStateFilter}>
-                <SelectTrigger>
-                  <MapPin className="w-4 h-4 mr-2 text-muted-foreground" />
+                <SelectTrigger className="admin-input">
+                  <MapPin className="w-4 h-4 mr-2 text-zinc-600" />
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
@@ -731,9 +731,9 @@ const Competitions = () => {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Divisão</Label>
+              <Label className="text-[10px] uppercase tracking-wider text-zinc-500">Divisão</Label>
               <Select value={divisionFilter} onValueChange={setDivisionFilter}>
-                <SelectTrigger>
+                <SelectTrigger className="admin-input">
                   <SelectValue placeholder="Todas" />
                 </SelectTrigger>
                 <SelectContent>
@@ -745,7 +745,7 @@ const Competitions = () => {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">
+              <Label className="text-[10px] uppercase tracking-wider text-zinc-500">
                 Visibilidade: {visibilityFilter[0]} - {visibilityFilter[1]}
               </Label>
               <div className="pt-2 px-1">
@@ -762,219 +762,125 @@ const Competitions = () => {
         )}
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <div className="glass-card p-4 text-center">
-          <p className="text-2xl font-bold">{competitions.length}</p>
-          <p className="text-sm text-muted-foreground">Total</p>
-        </div>
-        {safeArray(COMPETITION_TYPES).map((type) => (
-          <div key={type.value} className="glass-card p-4 text-center">
-            <p className={`text-2xl font-bold ${
-              type.value === "league" ? "text-primary" :
-              type.value === "cup" ? "text-amber-400" :
-              type.value === "state_league" ? "text-emerald-400" : "text-purple-400"
-            }`}>
-              {competitions.filter(c => c.type === type.value).length}
-            </p>
-            <p className="text-sm text-muted-foreground">{type.label}s</p>
-          </div>
-        ))}
-      </div>
-
       {/* Results count */}
       {hasActiveFilters && (
-        <p className="text-sm text-muted-foreground">
+        <p className="text-xs text-zinc-500 animate-fade-in">
           Mostrando {filteredCompetitions.length} de {competitions.length} competições
         </p>
       )}
 
       {/* Table */}
       {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="w-5 h-5 animate-spin text-zinc-600" />
         </div>
       ) : filteredCompetitions.length === 0 ? (
-        <div className="glass-card p-12 text-center">
-          <Trophy className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">
-            {hasActiveFilters ? "Nenhuma competição encontrada" : "Nenhuma competição cadastrada"}
-          </h3>
-          <p className="text-muted-foreground mb-6">
-            {hasActiveFilters 
-              ? "Tente ajustar os filtros de busca."
-              : "Crie uma nova competição ou importe um arquivo CSV."
-            }
-          </p>
-          <div className="flex gap-2 justify-center">
-            {hasActiveFilters ? (
-              <Button variant="outline" onClick={clearFilters}>Limpar filtros</Button>
-            ) : (
-              <>
-                <Button onClick={handleCreate}>
-                  <Plus className="w-4 h-4" />
-                  Nova Competição
-                </Button>
-                <Link to="/app/competitions/import">
-                  <Button variant="outline">
-                    <Upload className="w-4 h-4" />
-                    Importar CSV
+        <div className="admin-card animate-fade-in">
+          <div className="admin-empty py-16">
+            <Trophy className="admin-empty-icon" />
+            <p className="admin-empty-title">
+              {hasActiveFilters ? "Nenhuma competição encontrada" : "Nenhuma competição cadastrada"}
+            </p>
+            <p className="admin-empty-desc mb-4">
+              {hasActiveFilters 
+                ? "Tente ajustar os filtros de busca."
+                : "Crie uma nova competição ou importe um arquivo CSV."
+              }
+            </p>
+            <div className="flex gap-2 justify-center">
+              {hasActiveFilters ? (
+                <Button variant="outline" onClick={clearFilters} className="admin-btn-outline">Limpar filtros</Button>
+              ) : (
+                <>
+                  <Button onClick={handleCreate} className="admin-btn-primary">
+                    <Plus className="w-4 h-4" />
+                    Nova Competição
                   </Button>
-                </Link>
-              </>
-            )}
+                  <Link to="/app/competitions/import">
+                    <Button variant="outline" className="admin-btn-outline">
+                      <Upload className="w-4 h-4" />
+                      Importar CSV
+                    </Button>
+                  </Link>
+                </>
+              )}
+            </div>
           </div>
         </div>
       ) : (
-        <div className="glass-card overflow-hidden">
+        <div className="admin-card overflow-hidden animate-fade-in delay-100">
           <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>País</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Divisão</TableHead>
-                <TableHead className="text-center">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger className="flex items-center gap-1 justify-center">
-                          Tier
-                          <HelpCircle className="w-3 h-3 text-muted-foreground" />
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs">
-                          <p className="font-semibold mb-1">Classificação automática:</p>
-                          <ul className="text-xs space-y-0.5">
-                            <li><span className="text-amber-400">S:</span> ≥ 1.10</li>
-                            <li><span className="text-primary">A:</span> 0.80 – 1.09</li>
-                            <li><span className="text-emerald-400">B:</span> 0.45 – 0.79</li>
-                            <li><span className="text-muted-foreground">C:</span> &lt; 0.45</li>
-                          </ul>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </TableHead>
-                  <TableHead className="text-center">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger className="flex items-center gap-1 justify-center">
-                          Base
-                          <HelpCircle className="w-3 h-3 text-muted-foreground" />
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs">
-                          <p>Coeficiente base definido manualmente.</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </TableHead>
-                  <TableHead className="text-center">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger className="flex items-center gap-1 justify-center">
-                          Final
-                          <HelpCircle className="w-3 h-3 text-muted-foreground" />
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs">
-                          <p className="mb-1">Coeficiente final usado em rankings e pontuações.</p>
-                          <p className="text-xs text-muted-foreground">
-                            Para partidas com fase, aplica-se: final × phase_weight
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </TableHead>
-                  <TableHead className="text-center">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <Eye className="w-4 h-4" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Visibilidade (0 = oculto, 100 = máximo)</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </TableHead>
-                  <TableHead className="text-center">Status</TableHead>
-                  <TableHead className="w-12"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>País</th>
+                  <th>Tipo</th>
+                  <th>Nome</th>
+                  <th>Estado</th>
+                  <th>Divisão</th>
+                  <th className="text-center">Tier</th>
+                  <th className="text-center">Base</th>
+                  <th className="text-center">Final</th>
+                  <th className="text-center">Vis.</th>
+                  <th className="text-center">Status</th>
+                  <th className="w-12"></th>
+                </tr>
+              </thead>
+              <tbody>
                 {safeArray(filteredCompetitions).map((comp) => (
-                  <TableRow key={comp.id}>
-                    <TableCell className="font-medium">{comp.country}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={getTypeColor(comp.type)}>
+                  <tr key={comp.id}>
+                    <td className="admin-table-cell-muted">{comp.country}</td>
+                    <td>
+                      <span className={getTypeColor(comp.type)}>
                         {getTypeLabel(comp.type)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
+                      </span>
+                    </td>
+                    <td>
                       <div>
-                        <p className="font-medium">{comp.display_name || comp.name}</p>
+                        <p className="admin-table-cell-primary">{comp.display_name || comp.name}</p>
                         {comp.display_name && comp.name !== comp.display_name && (
-                          <p className="text-xs text-muted-foreground truncate max-w-[200px]">
+                          <p className="text-[10px] text-zinc-600 truncate max-w-[180px]">
                             {comp.name}
                           </p>
                         )}
                       </div>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
+                    </td>
+                    <td className="admin-table-cell-muted">
                       {comp.state || "—"}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
+                    </td>
+                    <td className="admin-table-cell-muted">
                       {comp.division || "—"}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant="outline" className={TIER_COLORS[comp.tier] || TIER_COLORS.C}>
-                        Tier {comp.tier}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <span className="font-mono text-sm text-muted-foreground">
+                    </td>
+                    <td className="text-center">
+                      <span className={TIER_COLORS[comp.tier] || TIER_COLORS.C}>
+                        {comp.tier}
+                      </span>
+                    </td>
+                    <td className="text-center">
+                      <span className="font-mono text-xs text-zinc-500 tabular-nums">
                         {Number.isFinite(Number(comp.base_coefficient)) ? Number(comp.base_coefficient).toFixed(2) : "—"}
                       </span>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <span className="font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
-                              ×{Number.isFinite(Number(comp.final_coefficient)) ? Number(comp.final_coefficient).toFixed(2) : "—"}
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Coeficiente final (usado em rankings)</p>
-                            {comp.has_phases && (
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Para partidas com fase: × phase_weight
-                              </p>
-                            )}
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <span className={`text-sm ${(comp.visibility_score ?? 50) === 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
-                        {(comp.visibility_score ?? 50) === 0 ? (
-                          <Badge variant="outline" className="text-destructive border-destructive/30">
-                            Oculto
-                          </Badge>
-                        ) : (
-                          comp.visibility_score ?? 50
-                        )}
+                    </td>
+                    <td className="text-center">
+                      <span className="font-semibold text-primary tabular-nums">
+                        ×{Number.isFinite(Number(comp.final_coefficient)) ? Number(comp.final_coefficient).toFixed(2) : "—"}
                       </span>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant={comp.is_active ? "default" : "secondary"}>
+                    </td>
+                    <td className="text-center">
+                      <span className={`text-xs tabular-nums ${(comp.visibility_score ?? 50) === 0 ? 'text-destructive' : 'text-zinc-500'}`}>
+                        {(comp.visibility_score ?? 50) === 0 ? "0" : comp.visibility_score ?? 50}
+                      </span>
+                    </td>
+                    <td className="text-center">
+                      <span className={comp.is_active ? "admin-badge-success" : "admin-badge-default"}>
                         {comp.is_active ? "Ativa" : "Inativa"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
+                      </span>
+                    </td>
+                    <td>
                       {isAdmin && (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-zinc-500 hover:text-white">
                               <MoreHorizontal className="w-4 h-4" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -996,11 +902,11 @@ const Competitions = () => {
                           </DropdownMenuContent>
                         </DropdownMenu>
                       )}
-                    </TableCell>
-                  </TableRow>
+                    </td>
+                  </tr>
                 ))}
-              </TableBody>
-            </Table>
+              </tbody>
+            </table>
           </div>
         </div>
       )}

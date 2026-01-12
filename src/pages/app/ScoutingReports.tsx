@@ -9,9 +9,10 @@ import {
   FileText, 
   Calendar,
   User,
-  Trophy
+  Trophy,
+  Loader2,
+  ChevronRight
 } from "lucide-react";
-import { RatingStars } from "@/components/players/RatingStars";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { safeArray } from "@/lib/utils";
@@ -95,95 +96,117 @@ const ScoutingReports = () => {
     report.players?.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Get score color based on value
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return "text-primary";
+    if (score >= 60) return "text-white";
+    if (score >= 40) return "text-zinc-400";
+    return "text-zinc-500";
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <header className="admin-header animate-fade-in">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Relatórios de Scouting</h1>
-          <p className="text-muted-foreground">
-            Gerencie todos os relatórios de avaliação
-          </p>
+          <h1 className="admin-title">Relatórios</h1>
+          <p className="admin-subtitle">Avaliações de scouting</p>
         </div>
         <Link to="/app/reports/new">
-          <Button variant="gradient">
+          <Button className="admin-btn-primary">
             <Plus className="w-4 h-4" />
             Novo Relatório
           </Button>
         </Link>
-      </div>
+      </header>
 
       {/* Search */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+      <div className="relative max-w-md animate-fade-in delay-75">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
         <Input
           type="text"
           placeholder="Buscar por atleta..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10 input-dark"
+          className="admin-input pl-10"
         />
       </div>
 
       {/* Reports List */}
       {loading ? (
-        <div className="text-center py-12 text-muted-foreground">
-          Carregando relatórios...
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="w-5 h-5 animate-spin text-zinc-600" />
         </div>
       ) : filteredReports.length === 0 ? (
-        <div className="glass-card p-12 text-center">
-          <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">Nenhum relatório encontrado</h3>
-          <p className="text-muted-foreground mb-6">
-            Comece criando o primeiro relatório de scouting.
-          </p>
-          <Link to="/app/reports/new">
-            <Button variant="gradient">
-              <Plus className="w-4 h-4" />
-              Criar Relatório
-            </Button>
-          </Link>
+        <div className="admin-card animate-fade-in">
+          <div className="admin-empty py-16">
+            <FileText className="admin-empty-icon" />
+            <p className="admin-empty-title">Nenhum relatório encontrado</p>
+            <p className="admin-empty-desc mb-4">
+              {searchQuery ? "Tente ajustar sua busca" : "Comece criando o primeiro relatório"}
+            </p>
+            {!searchQuery && (
+              <Link to="/app/reports/new">
+                <Button className="admin-btn-primary">
+                  <Plus className="w-4 h-4" />
+                  Criar Relatório
+                </Button>
+              </Link>
+            )}
+          </div>
         </div>
       ) : (
-        <div className="space-y-4">
-          {safeArray(filteredReports).map((report) => (
-            <Link key={report.id} to={`/app/reports/${report.id}`}>
-              <div className="glass-card-hover p-4 md:p-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold mb-1">
-                      {report.players?.full_name || "Atleta desconhecido"}
-                    </h3>
-                    <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Trophy className="w-4 h-4" />
-                        {report.competitions?.name || "Competição"}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
-                        {format(new Date(report.match_date), "dd MMM yyyy", { locale: ptBR })}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <User className="w-4 h-4" />
-                        {scoutNames[report.scout_id] || "Scout"}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-6">
-                    <div className="text-right">
-                      <p className="text-2xl font-bold text-primary">
-                        {Number.isFinite(Number(report.final_score)) ? Number(report.final_score).toFixed(1) : "—"}
-                      </p>
-                      <p className="text-xs text-muted-foreground">Score Final</p>
-                    </div>
+        <div className="admin-card overflow-hidden animate-fade-in delay-100">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>Score</th>
+                <th>Atleta</th>
+                <th>Competição</th>
+                <th>Data</th>
+                <th>Scout</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {safeArray(filteredReports).map((report) => (
+                <tr key={report.id}>
+                  <td>
+                    <span className={`text-xl font-bold tabular-nums ${getScoreColor(report.final_score)}`}>
+                      {Number.isFinite(Number(report.final_score)) ? Number(report.final_score).toFixed(1) : "—"}
+                    </span>
+                  </td>
+                  <td>
                     <div>
-                      <RatingStars rating={report.rating} size="md" />
+                      <p className="admin-table-cell-primary">
+                        {report.players?.full_name || "Atleta desconhecido"}
+                      </p>
+                      {report.players?.position && (
+                        <p className="text-[11px] text-zinc-600">{report.players.position}</p>
+                      )}
                     </div>
-                  </div>
-                </div>
-              </div>
-            </Link>
-          ))}
+                  </td>
+                  <td className="admin-table-cell-muted">
+                    {report.competitions?.name || "—"}
+                  </td>
+                  <td className="admin-table-cell-muted tabular-nums">
+                    {format(new Date(report.match_date), "dd MMM yyyy", { locale: ptBR })}
+                  </td>
+                  <td className="admin-table-cell-muted">
+                    {scoutNames[report.scout_id] || "—"}
+                  </td>
+                  <td className="text-right">
+                    <Link 
+                      to={`/app/reports/${report.id}`}
+                      className="text-zinc-500 hover:text-white transition-colors"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
