@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { formatFixed } from "@/lib/formatters";
+import { ScoreDisplay } from "./ScoreDisplay";
 
 interface PlayerCardProps {
   id: string;
@@ -29,9 +29,6 @@ export function PlayerCard({
 }: PlayerCardProps) {
   const href = isPublic ? `/players/${slug}` : `/app/players/${slug}`;
 
-  // Rating display logic: highlight in red if >= 4.0
-  const isHighRating = autoRating !== null && autoRating !== undefined && autoRating >= 4.0;
-
   return (
     <Link to={href} className="group block">
       <article className="relative bg-zinc-950 overflow-hidden">
@@ -54,13 +51,7 @@ export function PlayerCard({
                 {position}
               </span>
               {autoRating !== null && autoRating !== undefined && (
-                <span 
-                  className={`text-xs font-medium ${
-                    isHighRating ? "text-[#e52421]" : "text-white"
-                  }`}
-                >
-                  {formatFixed(autoRating, 1)}
-                </span>
+                <ScoreDisplay score={autoRating} variant="bar" size="sm" />
               )}
             </div>
             
@@ -77,18 +68,10 @@ export function PlayerCard({
             </span>
           </div>
 
-          {/* === DESKTOP LAYOUT: Rating Badge (Top Right) === */}
+          {/* === DESKTOP LAYOUT: Score Badge (Top Right) === */}
           {autoRating !== null && autoRating !== undefined && (
             <div className="hidden sm:block absolute top-4 right-4">
-              <span 
-                className={`inline-block text-sm font-medium px-2.5 py-1 border ${
-                  isHighRating 
-                    ? "text-[#e52421] border-[#e52421]/50" 
-                    : "text-white border-white/30"
-                }`}
-              >
-                {formatFixed(autoRating, 1)}
-              </span>
+              <ScoreDisplay score={autoRating} variant="circle" size="sm" />
             </div>
           )}
 
