@@ -25,7 +25,6 @@ import {
   Loader2,
   Trash2,
   X,
-  Star,
   LayoutGrid,
   LayoutList,
   ArrowUpDown,
@@ -42,6 +41,8 @@ import {
   AlertTriangle,
   RefreshCw,
   ChevronsDown,
+  ClipboardList,
+  Star,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -57,6 +58,7 @@ import {
 } from "@/components/ui/collapsible";
 import { DeletePlayerDialog } from "@/components/players/DeletePlayerDialog";
 import { PlayerRatingBadge } from "@/components/players/PlayerRatingBadge";
+import { ScoutingPlayerCard } from "@/components/players/ScoutingPlayerCard";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -68,23 +70,32 @@ import { safeArray } from "@/lib/utils";
 
 interface Player {
   id: string;
+  slug?: string;
   full_name: string;
   position: string | null;
+  secondary_positions?: string[] | null;
   age: number | null;
   nationality: string;
   current_club: string | null;
   contract_end: string | null;
+  contract_status?: string | null;
   is_public: boolean;
   avg_score?: number | null;
   photo_url?: string | null;
   auto_rating?: number | null;
   auto_rating_details?: any;
   is_archived?: boolean | null;
+  height?: number | null;
+  weight?: number | null;
+  dominant_foot?: string | null;
+  estimated_level?: string | null;
+  overall_rating?: number | null;
+  potential_rating?: number | null;
 }
 
 type SortField = "full_name" | "position" | "current_club" | "avg_score" | "auto_rating" | "contract_end" | "is_public";
 type SortDirection = "asc" | "desc";
-type ViewMode = "table" | "grid";
+type ViewMode = "table" | "grid" | "scouting";
 type PaginationMode = "pages" | "infinite";
 
 const PAGE_SIZE_OPTIONS = [12, 24, 48];
@@ -133,7 +144,7 @@ const AppPlayers = () => {
       let query = supabase
         .from("players")
         .select(
-          "id, full_name, position, age, nationality, current_club, contract_end, is_public, photo_url, auto_rating, auto_rating_details, is_archived"
+          "id, slug, full_name, position, secondary_positions, age, nationality, current_club, contract_end, contract_status, is_public, photo_url, auto_rating, auto_rating_details, is_archived, height, weight, dominant_foot, estimated_level, overall_rating, potential_rating"
         )
         .order("full_name");
 
@@ -463,6 +474,9 @@ const AppPlayers = () => {
               </ToggleGroupItem>
               <ToggleGroupItem value="grid" aria-label="Visualização em cards" className="px-3">
                 <LayoutGrid className="w-4 h-4" />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="scouting" aria-label="Modo Scouting" className="px-3">
+                <ClipboardList className="w-4 h-4" />
               </ToggleGroupItem>
             </ToggleGroup>
           </div>
@@ -840,6 +854,33 @@ const AppPlayers = () => {
               </tbody>
             </table>
           </div>
+        </div>
+      ) : viewMode === "scouting" ? (
+        /* Scouting Mode View */
+        <div className="grid gap-4 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2">
+          {safeArray(paginatedPlayers).map((player) => (
+            <ScoutingPlayerCard
+              key={player.id}
+              id={player.id}
+              slug={player.slug || player.id}
+              name={player.full_name}
+              position={player.position || "N/A"}
+              secondaryPositions={player.secondary_positions || []}
+              age={player.age || 0}
+              nationality={player.nationality}
+              currentClub={player.current_club || ""}
+              imageUrl={player.photo_url || "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=400&h=600&fit=crop"}
+              autoRating={player.auto_rating}
+              height={player.height}
+              weight={player.weight}
+              dominantFoot={player.dominant_foot}
+              contractStatus={player.contract_status}
+              contractEnd={player.contract_end}
+              estimatedLevel={player.estimated_level}
+              overallRating={player.overall_rating}
+              potentialRating={player.potential_rating}
+            />
+          ))}
         </div>
       ) : (
         /* Grid/Cards View */

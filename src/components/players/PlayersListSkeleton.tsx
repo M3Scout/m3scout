@@ -2,12 +2,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 
 interface PlayersListSkeletonProps {
-  viewMode: "table" | "grid";
+  viewMode: "table" | "grid" | "scouting";
   count?: number;
 }
 
 export function PlayersListSkeleton({ viewMode, count = 12 }: PlayersListSkeletonProps) {
-  if (viewMode === "grid") {
+  if (viewMode === "grid" || viewMode === "scouting") {
     return (
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {Array.from({ length: count }).map((_, i) => (
