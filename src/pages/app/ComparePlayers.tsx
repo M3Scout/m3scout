@@ -34,6 +34,8 @@ import {
 import { cn, safeArray } from "@/lib/utils";
 import { PlayerRatingBadge } from "@/components/players/PlayerRatingBadge";
 import { formatFixed } from "@/lib/formatters";
+import { ComparisonRadarOverlay } from "@/components/players/ComparisonRadarOverlay";
+import type { PlayerStatRow } from "@/lib/attributeRadar";
 
 interface Player {
   id: string;
@@ -61,8 +63,31 @@ interface PlayerStats {
   recoveries: number;
 }
 
+interface FullPlayerStats extends PlayerStats {
+  shots: number;
+  shots_on_target: number;
+  key_passes: number;
+  chances_created: number;
+  duels_won: number;
+  total_duels: number;
+  accurate_passes: number;
+  total_passes: number;
+  successful_dribbles: number;
+  total_dribbles: number;
+  clearances: number;
+  aerial_duels_won: number;
+  aerial_duels_total: number;
+  ground_duels_won: number;
+  ground_duels_total: number;
+  saves: number;
+  goals_conceded: number;
+  clean_sheets: number;
+  penalties_saved: number;
+  errors_leading_to_goal: number;
+}
+
 interface PlayerWithStats extends Player {
-  stats: PlayerStats[];
+  stats: FullPlayerStats[];
   aggregatedStats: {
     matches: number;
     minutes: number;
@@ -102,14 +127,13 @@ const ComparePlayers = () => {
     setLoading(false);
   };
 
-  const fetchPlayerStats = async (playerId: string): Promise<PlayerStats[]> => {
+  const fetchPlayerStats = async (playerId: string): Promise<FullPlayerStats[]> => {
     const { data } = await supabase
       .from("player_stats")
       .select("*")
-      .eq("player_id", playerId)
-      .eq("season_year", currentYear);
+      .eq("player_id", playerId);
 
-    return data || [];
+    return (data as FullPlayerStats[]) || [];
   };
 
   const handleSelectPlayer = async (player: Player, slotIndex: number) => {
@@ -400,6 +424,46 @@ const ComparePlayers = () => {
       {/* Comparison Content */}
       {selectedPlayers.length >= 2 && (
         <div className="space-y-6">
+          {/* Radar Overlay Comparison */}
+          <ComparisonRadarOverlay
+            players={selectedPlayers.map((p) => ({
+              id: p.id,
+              name: p.full_name,
+              position: p.position,
+              statsRows: p.stats.map((s) => ({
+                matches: s.matches,
+                minutes: s.minutes,
+                goals: s.goals,
+                assists: s.assists,
+                shots: s.shots ?? 0,
+                shots_on_target: s.shots_on_target ?? 0,
+                key_passes: s.key_passes ?? 0,
+                chances_created: s.chances_created ?? 0,
+                tackles: s.tackles,
+                interceptions: s.interceptions,
+                recoveries: s.recoveries,
+                duels_won: s.duels_won ?? 0,
+                total_duels: s.total_duels ?? 0,
+                yellow_cards: s.yellow_cards,
+                red_cards: s.red_cards,
+                accurate_passes: s.accurate_passes ?? 0,
+                total_passes: s.total_passes ?? 0,
+                successful_dribbles: s.successful_dribbles ?? 0,
+                total_dribbles: s.total_dribbles ?? 0,
+                clearances: s.clearances ?? 0,
+                aerial_duels_won: s.aerial_duels_won ?? 0,
+                aerial_duels_total: s.aerial_duels_total ?? 0,
+                ground_duels_won: s.ground_duels_won ?? 0,
+                ground_duels_total: s.ground_duels_total ?? 0,
+                saves: s.saves ?? 0,
+                goals_conceded: s.goals_conceded ?? 0,
+                clean_sheets: s.clean_sheets ?? 0,
+                penalties_saved: s.penalties_saved ?? 0,
+                errors_leading_to_goal: s.errors_leading_to_goal ?? 0,
+              })),
+            }))}
+            loading={loadingStats}
+          />
           {/* Basic Info */}
           <Card>
             <CardHeader>
