@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import {
-  Clock,
   Loader2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,21 +23,43 @@ interface SeasonStats {
   recoveries: number;
 }
 
+interface CompetitionStats {
+  competition_id: string;
+  competition_name: string;
+  competition_type: string;
+  matches: number;
+  minutes: number;
+  goals: number;
+  assists: number;
+  yellow_cards: number;
+  red_cards: number;
+}
+
 const currentYear = new Date().getFullYear();
 
-type TabValue = "current" | "per90" | "career";
+type TabValue = "current" | "per90" | "competition" | "career";
 
 export function PublicStatsSection({ playerId }: PublicStatsSectionProps) {
   const [currentSeasonStats, setCurrentSeasonStats] = useState<SeasonStats | null>(null);
   const [careerStats, setCareerStats] = useState<SeasonStats[]>([]);
+  const [competitionStats, setCompetitionStats] = useState<CompetitionStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabValue>("current");
 
   useEffect(() => {
     const fetchStats = async () => {
+      // Fetch stats with competition info
       const { data, error } = await supabase
         .from("player_stats")
-        .select("*")
+        .select(`
+          *,
+          competitions:competition_id (
+            id,
+            name,
+            display_name,
+            type
+          )
+        `)
         .eq("player_id", playerId)
         .order("season_year", { ascending: false });
 
@@ -49,6 +70,7 @@ export function PublicStatsSection({ playerId }: PublicStatsSectionProps) {
       }
 
       if (Array.isArray(data) && data.length > 0) {
+        // Aggregate by season
         const statsBySeason = data.reduce((acc, stat) => {
           const year = stat.season_year;
           if (!acc[year]) {
@@ -87,6 +109,43 @@ export function PublicStatsSection({ playerId }: PublicStatsSectionProps) {
         if (current) {
           setCurrentSeasonStats(current);
         }
+
+        // Aggregate by competition (all time)
+        const statsByCompetition = data.reduce((acc, stat) => {
+          const compId = stat.competition_id;
+          if (!compId) return acc;
+          
+          const competition = stat.competitions as { id: string; name: string; display_name: string | null; type: string } | null;
+          const compName = competition?.display_name || competition?.name || "Competição";
+          const compType = competition?.type || "league";
+          
+          if (!acc[compId]) {
+            acc[compId] = {
+              competition_id: compId,
+              competition_name: compName,
+              competition_type: compType,
+              matches: 0,
+              minutes: 0,
+              goals: 0,
+              assists: 0,
+              yellow_cards: 0,
+              red_cards: 0,
+            };
+          }
+          acc[compId].matches += stat.matches || 0;
+          acc[compId].minutes += stat.minutes || 0;
+          acc[compId].goals += stat.goals || 0;
+          acc[compId].assists += stat.assists || 0;
+          acc[compId].yellow_cards += stat.yellow_cards || 0;
+          acc[compId].red_cards += stat.red_cards || 0;
+          return acc;
+        }, {} as Record<string, CompetitionStats>);
+
+        // Sort by goals+assists descending
+        const competitions = Object.values(statsByCompetition).sort(
+          (a, b) => (b.goals + b.assists) - (a.goals + a.assists)
+        );
+        setCompetitionStats(competitions);
       }
 
       setLoading(false);
@@ -98,6 +157,16 @@ export function PublicStatsSection({ playerId }: PublicStatsSectionProps) {
   const calculatePer90 = (value: number, minutes: number): string => {
     if (minutes < 90) return "—";
     return formatFixed((value / minutes) * 90, 2);
+  };
+
+  const getCompetitionTypeLabel = (type: string): string => {
+    const typeMap: Record<string, string> = {
+      league: "Liga",
+      cup: "Copa",
+      state_league: "Estadual",
+      continental: "Continental",
+    };
+    return typeMap[type] || type;
   };
 
   if (loading) {
@@ -124,6 +193,7 @@ export function PublicStatsSection({ playerId }: PublicStatsSectionProps) {
   const tabs: { value: TabValue; label: string; shortLabel: string }[] = [
     { value: "current", label: "Temporada Atual", shortLabel: String(currentYear) },
     { value: "per90", label: "Por 90 min", shortLabel: "P/90" },
+    { value: "competition", label: "Por Competição", shortLabel: "Comp." },
     { value: "career", label: "Carreira", shortLabel: "Carreira" },
   ];
 
@@ -134,12 +204,12 @@ export function PublicStatsSection({ playerId }: PublicStatsSectionProps) {
       <div className="h-px bg-zinc-900 mb-8" />
 
       {/* Minimal Tabs */}
-      <div className="flex gap-6 mb-8 border-b border-zinc-900">
+      <div className="flex gap-4 sm:gap-6 mb-8 border-b border-zinc-900 overflow-x-auto">
         {tabs.map((tab) => (
           <button
             key={tab.value}
             onClick={() => setActiveTab(tab.value)}
-            className={`pb-3 text-sm font-medium transition-colors relative ${
+            className={`pb-3 text-sm font-medium transition-colors relative whitespace-nowrap ${
               activeTab === tab.value
                 ? "text-white"
                 : "text-zinc-600 hover:text-zinc-400"
@@ -251,6 +321,98 @@ export function PublicStatsSection({ playerId }: PublicStatsSectionProps) {
             </div>
           ) : (
             <EmptyState message="Mínimo de 90 minutos necessário" />
+          )}
+        </>
+      )}
+
+      {activeTab === "competition" && (
+        <>
+          {competitionStats.length > 0 ? (
+            <div className="space-y-8">
+              {/* Competition Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-zinc-900">
+                      <th className="text-left text-[10px] uppercase tracking-widest text-zinc-600 pb-3 font-medium">
+                        Competição
+                      </th>
+                      <th className="text-center text-[10px] uppercase tracking-widest text-zinc-600 pb-3 font-medium">
+                        J
+                      </th>
+                      <th className="text-center text-[10px] uppercase tracking-widest text-zinc-600 pb-3 font-medium hidden sm:table-cell">
+                        Min
+                      </th>
+                      <th className="text-center text-[10px] uppercase tracking-widest text-zinc-600 pb-3 font-medium">
+                        G
+                      </th>
+                      <th className="text-center text-[10px] uppercase tracking-widest text-zinc-600 pb-3 font-medium">
+                        A
+                      </th>
+                      <th className="text-center text-[10px] uppercase tracking-widest text-zinc-600 pb-3 font-medium">
+                        G+A
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {competitionStats.map((comp) => (
+                      <tr key={comp.competition_id} className="border-b border-zinc-900/50">
+                        <td className="py-3 pr-4">
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-white text-sm font-medium truncate max-w-[180px] sm:max-w-none">
+                              {comp.competition_name}
+                            </span>
+                            <span className="text-[9px] uppercase tracking-widest text-zinc-600">
+                              {getCompetitionTypeLabel(comp.competition_type)}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3 text-center text-zinc-400 text-sm">{comp.matches}</td>
+                        <td className="py-3 text-center text-zinc-400 text-sm hidden sm:table-cell">{comp.minutes}</td>
+                        <td className="py-3 text-center text-white text-sm font-medium">{comp.goals}</td>
+                        <td className="py-3 text-center text-zinc-400 text-sm">{comp.assists}</td>
+                        <td className="py-3 text-center text-white text-sm font-medium">
+                          {comp.goals + comp.assists}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Competition Totals */}
+              <div className="pt-6 border-t border-zinc-900">
+                <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 mb-4">
+                  Total em {competitionStats.length} competiç{competitionStats.length === 1 ? "ão" : "ões"}
+                </p>
+                <div className="grid grid-cols-4 gap-4 sm:gap-6">
+                  <StatRow 
+                    label="Jogos" 
+                    value={competitionStats.reduce((sum, c) => sum + c.matches, 0)} 
+                    small 
+                  />
+                  <StatRow 
+                    label="Gols" 
+                    value={competitionStats.reduce((sum, c) => sum + c.goals, 0)} 
+                    highlight 
+                    small 
+                  />
+                  <StatRow 
+                    label="Assist." 
+                    value={competitionStats.reduce((sum, c) => sum + c.assists, 0)} 
+                    small 
+                  />
+                  <StatRow 
+                    label="G+A" 
+                    value={competitionStats.reduce((sum, c) => sum + c.goals + c.assists, 0)} 
+                    highlight 
+                    small 
+                  />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <EmptyState message="Sem dados de competições" />
           )}
         </>
       )}
