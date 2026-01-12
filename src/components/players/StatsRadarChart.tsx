@@ -1,9 +1,10 @@
+import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { cn, safeArray } from "@/lib/utils";
 import { PositionGroupV2 } from "@/lib/playerRatingV2";
-import { AttributePentagonRadar } from "./AttributePentagonRadar";
+import { AttributePentagonRadar, type PlayerStatRow } from "./AttributePentagonRadar";
 import { computeAttributeRadar } from "@/lib/attributeRadar";
 
 interface StatBreakdownItem {
@@ -17,9 +18,13 @@ interface StatBreakdownItem {
 }
 
 interface StatsRadarChartProps {
-  statBreakdown: StatBreakdownItem[];
-  positionGroup: PositionGroupV2;
-  positionGroupLabel: string;
+  // Legacy: stat breakdown from rating details
+  statBreakdown?: StatBreakdownItem[];
+  positionGroup?: PositionGroupV2;
+  positionGroupLabel?: string;
+  // New: raw stats rows for direct calculation
+  statsRows?: PlayerStatRow[];
+  playerPosition?: string;
 }
 
 // Polarity metadata: which metrics have "lower is better" semantics
@@ -103,93 +108,127 @@ const POSITION_BENCHMARKS: Record<PositionGroupV2, Record<string, number>> = {
   },
 };
 
-export function StatsRadarChart({ statBreakdown, positionGroup, positionGroupLabel }: StatsRadarChartProps) {
-  const benchmarks = POSITION_BENCHMARKS[positionGroup] || {};
+export function StatsRadarChart({ 
+  statBreakdown, 
+  positionGroup, 
+  positionGroupLabel,
+  statsRows,
+  playerPosition,
+}: StatsRadarChartProps) {
+  const benchmarks = positionGroup ? (POSITION_BENCHMARKS[positionGroup] || {}) : {};
   
-  // Prepare stats
+  // Prepare stats for legacy mode
   const availableStats = safeArray(statBreakdown).filter(s => s.available);
   
-  // Compute pentagon attribute scores
-  const attributeScores = computeAttributeRadar(statBreakdown, positionGroup);
+  // Compute pentagon attribute scores (legacy mode)
+  const legacyAttributeScores = useMemo(() => {
+    if (statBreakdown && positionGroup) {
+      return computeAttributeRadar(statBreakdown, positionGroup);
+    }
+    return null;
+  }, [statBreakdown, positionGroup]);
 
-  // Find strengths and weaknesses WITH POLARITY AWARENESS
-  const statsWithDiff = availableStats.map(s => {
-    const benchmark = benchmarks[s.stat] || 50;
-    const rawDiff = s.score - benchmark;
-    const polarity = LOWER_IS_BETTER_STATS.has(s.stat) ? "lower_is_better" : "higher_is_better";
-    const effectiveDelta = polarity === "lower_is_better" ? -rawDiff : rawDiff;
+  // Find strengths and weaknesses WITH POLARITY AWARENESS (legacy mode)
+  const { strengths, weaknesses } = useMemo(() => {
+    if (availableStats.length === 0) {
+      return { strengths: [], weaknesses: [] };
+    }
 
-    return {
-      ...s,
-      rawDiff,
-      polarity,
-      effectiveDelta,
-    };
-  });
-  
-  // Strengths: effectiveDelta >= 10
-  const strengths = statsWithDiff.filter(s => s.effectiveDelta >= 10).sort((a, b) => b.effectiveDelta - a.effectiveDelta).slice(0, 3);
-  // Weaknesses: effectiveDelta <= -10
-  const weaknesses = statsWithDiff.filter(s => s.effectiveDelta <= -10).sort((a, b) => a.effectiveDelta - b.effectiveDelta).slice(0, 3);
+    const statsWithDiff = availableStats.map(s => {
+      const benchmark = benchmarks[s.stat] || 50;
+      const rawDiff = s.score - benchmark;
+      const polarity = LOWER_IS_BETTER_STATS.has(s.stat) ? "lower_is_better" : "higher_is_better";
+      const effectiveDelta = polarity === "lower_is_better" ? -rawDiff : rawDiff;
+
+      return {
+        ...s,
+        rawDiff,
+        polarity,
+        effectiveDelta,
+      };
+    });
+    
+    // Strengths: effectiveDelta >= 10
+    const strengths = statsWithDiff
+      .filter(s => s.effectiveDelta >= 10)
+      .sort((a, b) => b.effectiveDelta - a.effectiveDelta)
+      .slice(0, 3);
+    
+    // Weaknesses: effectiveDelta <= -10
+    const weaknesses = statsWithDiff
+      .filter(s => s.effectiveDelta <= -10)
+      .sort((a, b) => a.effectiveDelta - b.effectiveDelta)
+      .slice(0, 3);
+
+    return { strengths, weaknesses };
+  }, [availableStats, benchmarks]);
+
+  // Determine if we're using new mode (raw stats) or legacy mode (statBreakdown)
+  const useRawStats = Boolean(statsRows && statsRows.length > 0);
 
   return (
     <div className="space-y-4">
       {/* SofaScore-style Pentagon Radar */}
       <AttributePentagonRadar 
-        attributes={attributeScores}
+        attributes={!useRawStats ? legacyAttributeScores : undefined}
+        statsRows={useRawStats ? statsRows : undefined}
+        playerPosition={playerPosition}
         loading={false}
+        showConfidence={true}
       />
 
-      {/* Strengths and Weaknesses */}
-      <div className="grid grid-cols-2 gap-3">
-        {/* Strengths */}
-        <Card className="bg-emerald-500/5 border-emerald-500/20">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2 text-emerald-500">
-              <TrendingUp className="w-4 h-4" />
-              Pontos Fortes
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {strengths.length === 0 ? (
-              <p className="text-xs text-muted-foreground">Nenhum destaque positivo</p>
-            ) : (
-              strengths.map(s => (
-                <div key={s.stat} className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground truncate flex-1">{s.label}</span>
-                  <Badge variant="outline" className="border-emerald-500/50 text-emerald-500 ml-2">
-                    +{Math.round(s.effectiveDelta)}
-                  </Badge>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
+      {/* Strengths and Weaknesses (only show in legacy mode with statBreakdown) */}
+      {statBreakdown && statBreakdown.length > 0 && (
+        <div className="grid grid-cols-2 gap-3">
+          {/* Strengths */}
+          <Card className="bg-emerald-500/5 border-emerald-500/20">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2 text-emerald-500">
+                <TrendingUp className="w-4 h-4" />
+                Pontos Fortes
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {strengths.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Nenhum destaque positivo</p>
+              ) : (
+                strengths.map(s => (
+                  <div key={s.stat} className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground truncate flex-1">{s.label}</span>
+                    <Badge variant="outline" className="border-emerald-500/50 text-emerald-500 ml-2">
+                      +{Math.round(s.effectiveDelta)}
+                    </Badge>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
 
-        {/* Weaknesses */}
-        <Card className="bg-destructive/5 border-destructive/20">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2 text-destructive">
-              <TrendingDown className="w-4 h-4" />
-              Áreas de Melhoria
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {weaknesses.length === 0 ? (
-              <p className="text-xs text-muted-foreground">Nenhuma área crítica</p>
-            ) : (
-              weaknesses.map(s => (
-                <div key={s.stat} className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground truncate flex-1">{s.label}</span>
-                  <Badge variant="outline" className="border-destructive/50 text-destructive ml-2">
-                    {Math.round(s.effectiveDelta)}
-                  </Badge>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-      </div>
+          {/* Weaknesses */}
+          <Card className="bg-destructive/5 border-destructive/20">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2 text-destructive">
+                <TrendingDown className="w-4 h-4" />
+                Áreas de Melhoria
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {weaknesses.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Nenhuma área crítica</p>
+              ) : (
+                weaknesses.map(s => (
+                  <div key={s.stat} className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground truncate flex-1">{s.label}</span>
+                    <Badge variant="outline" className="border-destructive/50 text-destructive ml-2">
+                      {Math.round(s.effectiveDelta)}
+                    </Badge>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
