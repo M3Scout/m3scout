@@ -42,7 +42,8 @@ export function AboutSection() {
               className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl leading-[1.2] tracking-tight"
               style={{ fontFamily: '"Times New Roman", Times, serif' }}
             >
-              "<span 
+              <span className="text-neutral-900 font-bold not-italic">"</span>
+              <span 
                 className="italic font-normal"
                 style={{ color: "#e52421" }}
               >Conectando talentos</span>{" "}
@@ -50,7 +51,8 @@ export function AboutSection() {
               <span 
                 className="italic font-normal"
                 style={{ color: "#e52421" }}
-              >hoje.</span>"
+              >hoje.</span>
+              <span className="text-neutral-900 font-bold not-italic">"</span>
             </p>
           </blockquote>
 
