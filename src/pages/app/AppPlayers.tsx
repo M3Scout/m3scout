@@ -59,6 +59,7 @@ import {
 import { DeletePlayerDialog } from "@/components/players/DeletePlayerDialog";
 import { PlayerRatingBadge } from "@/components/players/PlayerRatingBadge";
 import { ScoutingPlayerCard } from "@/components/players/ScoutingPlayerCard";
+import { BulkRecalculateButton } from "@/components/players/BulkRecalculateButton";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -418,6 +419,9 @@ const AppPlayers = () => {
           <p className="admin-subtitle">Gerencie todos os atletas da agência</p>
         </div>
         <div className="flex gap-2">
+          {isAdmin && (
+            <BulkRecalculateButton onComplete={fetchPlayers} />
+          )}
           <Button variant="outline" asChild className="admin-btn-outline">
             <Link to="/app/compare">
               <GitCompare className="w-4 h-4" />
