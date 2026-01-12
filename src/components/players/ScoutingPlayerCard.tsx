@@ -100,7 +100,7 @@ export function ScoutingPlayerCard({
                   {name}
                 </h3>
                 {autoRating !== null && autoRating !== undefined && (
-                  <ScoreDisplay score={autoRating} variant="circle" size="sm" />
+                  <ScoreDisplay score={autoRating} variant="badge" size="sm" />
                 )}
               </div>
 

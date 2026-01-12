@@ -3,37 +3,36 @@ import { formatFixed } from "@/lib/formatters";
 interface ScoreDisplayProps {
   score: number;
   maxScore?: number;
-  variant?: "circle" | "bar";
+  variant?: "badge" | "bar";
   size?: "sm" | "md" | "lg";
 }
 
 /**
  * Editorial score display component
- * - Circle variant: thin outline with number inside
+ * - Badge variant: solid red background with white number
  * - Bar variant: horizontal micro-bar with proportional fill
  */
 export function ScoreDisplay({ 
   score, 
   maxScore = 5, 
-  variant = "circle",
+  variant = "badge",
   size = "md" 
 }: ScoreDisplayProps) {
   const percentage = (score / maxScore) * 100;
-  const isHighScore = score >= maxScore * 0.8; // 80%+ is considered high
   
   const sizeClasses = {
     sm: {
-      circle: "w-10 h-10 text-xs",
+      badge: "px-2 py-1 text-xs",
       bar: "h-[3px] w-12",
       text: "text-xs",
     },
     md: {
-      circle: "w-12 h-12 text-sm",
+      badge: "px-3 py-1.5 text-sm",
       bar: "h-1 w-16",
       text: "text-sm",
     },
     lg: {
-      circle: "w-14 h-14 text-base",
+      badge: "px-4 py-2 text-base",
       bar: "h-1 w-20",
       text: "text-base",
     },
@@ -44,9 +43,7 @@ export function ScoreDisplay({
       <div className="flex items-center gap-2">
         {/* Score Value */}
         <span 
-          className={`font-medium tabular-nums ${sizeClasses[size].text} ${
-            isHighScore ? "text-[#e52421]" : "text-white"
-          }`}
+          className={`font-semibold tabular-nums ${sizeClasses[size].text} text-white`}
         >
           {formatFixed(score, 1)}
         </span>
@@ -55,9 +52,7 @@ export function ScoreDisplay({
         <div className="flex flex-col gap-1">
           <div className={`${sizeClasses[size].bar} bg-zinc-800 relative overflow-hidden`}>
             <div 
-              className={`absolute inset-y-0 left-0 ${
-                isHighScore ? "bg-[#e52421]" : "bg-zinc-400"
-              }`}
+              className="absolute inset-y-0 left-0 bg-[#e52421]"
               style={{ width: `${percentage}%` }}
             />
           </div>
@@ -66,16 +61,12 @@ export function ScoreDisplay({
     );
   }
 
-  // Circle variant (default)
+  // Badge variant (default) - solid red background, white text
   return (
     <div 
-      className={`${sizeClasses[size].circle} flex items-center justify-center border ${
-        isHighScore 
-          ? "border-[#e52421] text-[#e52421]" 
-          : "border-zinc-600 text-white"
-      }`}
+      className={`${sizeClasses[size].badge} bg-[#e52421] inline-flex items-center justify-center`}
     >
-      <span className="font-medium tabular-nums">
+      <span className="font-semibold tabular-nums text-white">
         {formatFixed(score, 1)}
       </span>
     </div>
@@ -96,20 +87,13 @@ export function LabeledScore({
   maxScore = 5, 
   label = "Avaliação" 
 }: LabeledScoreProps) {
-  const isHighScore = score >= maxScore * 0.8;
   const percentage = (score / maxScore) * 100;
   
   return (
     <div className="flex items-center gap-3">
-      {/* Score Circle */}
-      <div 
-        className={`w-11 h-11 flex items-center justify-center border ${
-          isHighScore 
-            ? "border-[#e52421] text-[#e52421]" 
-            : "border-zinc-600 text-white"
-        }`}
-      >
-        <span className="text-sm font-medium tabular-nums">
+      {/* Score Badge */}
+      <div className="px-3 py-1.5 bg-[#e52421] inline-flex items-center justify-center">
+        <span className="text-sm font-semibold tabular-nums text-white">
           {formatFixed(score, 1)}
         </span>
       </div>
@@ -121,7 +105,7 @@ export function LabeledScore({
         </p>
         <div className="h-[2px] bg-zinc-800 w-full max-w-[80px]">
           <div 
-            className={`h-full ${isHighScore ? "bg-[#e52421]" : "bg-zinc-500"}`}
+            className="h-full bg-[#e52421]"
             style={{ width: `${percentage}%` }}
           />
         </div>
