@@ -9,6 +9,9 @@ interface AutoRatingCardProps {
   rating: number | null;
   updatedAt: string | null;
   details?: unknown;
+  playerId?: string;
+  isAdmin?: boolean;
+  onRatingRecalculated?: () => void;
 }
 
 function getRatingColor(rating: number): string {
@@ -25,7 +28,14 @@ function getRatingBgColor(rating: number): string {
   return "bg-destructive/10";
 }
 
-export function AutoRatingCard({ rating, updatedAt, details }: AutoRatingCardProps) {
+export function AutoRatingCard({ 
+  rating, 
+  updatedAt, 
+  details,
+  playerId,
+  isAdmin,
+  onRatingRecalculated,
+}: AutoRatingCardProps) {
   const breakdownDetails = adaptAutoRatingDetailsToV2(details);
 
   if (rating === null || rating === undefined) {
@@ -73,6 +83,9 @@ export function AutoRatingCard({ rating, updatedAt, details }: AutoRatingCardPro
             <SafeRatingBreakdownModalV2
               details={breakdownDetails}
               rating={rating}
+              playerId={playerId}
+              isAdmin={isAdmin}
+              onRecalculated={onRatingRecalculated}
               trigger={
                 <button className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors">
                   <Info className="w-3 h-3" />

@@ -33,6 +33,8 @@ import {
   Percent,
   Activity,
   HelpCircle,
+  RefreshCw,
+  Loader2,
 } from "lucide-react";
 import { cn, safeArray } from "@/lib/utils";
 import {
@@ -43,11 +45,16 @@ import {
 } from "@/lib/playerRatingV2";
 import { formatFixed } from "@/lib/formatters";
 import { StatsRadarChart } from "./StatsRadarChart";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface RatingBreakdownModalV2Props {
   details: RatingBreakdownV2 | null;
   rating: number;
   trigger?: React.ReactNode;
+  playerId?: string;
+  isAdmin?: boolean;
+  onRecalculated?: () => void;
 }
 
 function getScoreColor(score: number): string {
@@ -804,8 +811,16 @@ function StatBreakdownCard({
   );
 }
 
-export function RatingBreakdownModalV2({ details, rating, trigger }: RatingBreakdownModalV2Props) {
+export function RatingBreakdownModalV2({ 
+  details, 
+  rating, 
+  trigger,
+  playerId,
+  isAdmin,
+  onRecalculated,
+}: RatingBreakdownModalV2Props) {
   const [expandedCompetitions, setExpandedCompetitions] = useState<Set<string>>(new Set());
+  const [recalculating, setRecalculating] = useState(false);
   
   const toggleCompetition = (id: string) => {
     setExpandedCompetitions(prev => {
@@ -817,6 +832,27 @@ export function RatingBreakdownModalV2({ details, rating, trigger }: RatingBreak
       }
       return next;
     });
+  };
+
+  const handleRecalculate = async () => {
+    if (!playerId) return;
+
+    setRecalculating(true);
+    try {
+      const { error } = await supabase.rpc("update_player_auto_rating", {
+        p_player_id: playerId,
+      });
+
+      if (error) throw error;
+
+      toast.success("Nota recalculada com sucesso!");
+      onRecalculated?.();
+    } catch (error) {
+      console.error("Error recalculating rating:", error);
+      toast.error("Erro ao recalcular nota");
+    } finally {
+      setRecalculating(false);
+    }
   };
   
   if (!details) {
@@ -842,7 +878,21 @@ export function RatingBreakdownModalV2({ details, rating, trigger }: RatingBreak
             <p className="text-muted-foreground mb-4">
               Detalhes indisponíveis. Recalcule a nota para ver o breakdown.
             </p>
-            <p className="text-xs text-muted-foreground">
+            {isAdmin && playerId && (
+              <Button
+                onClick={handleRecalculate}
+                disabled={recalculating}
+                className="mt-2"
+              >
+                {recalculating ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : (
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                )}
+                Recalcular Nota
+              </Button>
+            )}
+            <p className="text-xs text-muted-foreground mt-4">
               A nota será recalculada automaticamente quando houver estatísticas disponíveis.
             </p>
           </div>
@@ -863,10 +913,28 @@ export function RatingBreakdownModalV2({ details, rating, trigger }: RatingBreak
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Calculator className="w-5 h-5 text-primary" />
-            Como essa nota foi calculada
-          </DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="flex items-center gap-2">
+              <Calculator className="w-5 h-5 text-primary" />
+              Como essa nota foi calculada
+            </DialogTitle>
+            {isAdmin && playerId && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRecalculate}
+                disabled={recalculating}
+                className="ml-4"
+              >
+                {recalculating ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                ) : (
+                  <RefreshCw className="w-4 h-4 mr-1" />
+                )}
+                Recalcular
+              </Button>
+            )}
+          </div>
         </DialogHeader>
 
         {/* Summary Card */}

@@ -10,6 +10,9 @@ interface PlayerRatingBadgeProps {
   showReliability?: boolean;
   size?: "sm" | "md" | "lg";
   clickable?: boolean;
+  playerId?: string;
+  isAdmin?: boolean;
+  onRecalculated?: () => void;
 }
 
 export function PlayerRatingBadge({
@@ -18,6 +21,9 @@ export function PlayerRatingBadge({
   showReliability = true,
   size = "md",
   clickable = true,
+  playerId,
+  isAdmin,
+  onRecalculated,
 }: PlayerRatingBadgeProps) {
   // Safe guard: if rating is not a valid number, don't render
   const safeRating = Number(rating);
@@ -75,6 +81,9 @@ export function PlayerRatingBadge({
       <SafeRatingBreakdownModalV2
         details={ratingDetails}
         rating={safeRating}
+        playerId={playerId}
+        isAdmin={isAdmin}
+        onRecalculated={onRecalculated}
         trigger={badgeContent}
       />
     );
