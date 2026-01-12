@@ -17,6 +17,7 @@ import PlayerProfile from "./pages/PlayerProfile";
 import Contact from "./pages/Contact";
 import Sobre from "./pages/Sobre";
 import Imprensa from "./pages/Imprensa";
+import RepresentacaoTalentos from "./pages/RepresentacaoTalentos";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import CompetitionRankingPublic from "./pages/CompetitionRankingPublic";
@@ -52,6 +53,7 @@ const App = () => (
             <Route element={<PublicLayout />}>
               <Route path="/" element={<Index />} />
               <Route path="/sobre" element={<Sobre />} />
+              <Route path="/representacao-de-talentos" element={<RepresentacaoTalentos />} />
               <Route path="/players" element={<Players />} />
               <Route path="/atletas" element={<Players />} />
               <Route path="/players/:slug" element={<PlayerProfile />} />
