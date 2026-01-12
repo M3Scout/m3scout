@@ -58,19 +58,24 @@ export function SmartHeader({ variant = "default" }: SmartHeaderProps) {
     return location.pathname.startsWith(href);
   };
 
-  const isTransparent = variant === "transparent" && isAtTop;
+  // Only transparent when at very top AND variant is transparent
+  const showTransparent = variant === "transparent" && isAtTop;
+  // Solid black when scrolled (regardless of scroll direction)
+  const isScrolled = !isAtTop;
 
   return (
     <>
       <header
         className={cn(
           "fixed top-0 left-0 right-0 z-50",
-          "transition-transform duration-[240ms] ease-in-out",
+          "transition-all duration-[240ms] ease-in-out",
           isVisible ? "translate-y-0" : "-translate-y-full",
-          isTransparent 
+          showTransparent 
             ? "bg-transparent" 
-            : "bg-black/98 backdrop-blur-[6px] border-b border-white/[0.06]"
+            : "bg-black border-b border-white/[0.06]",
+          isScrolled && "backdrop-blur-[6px]"
         )}
+        style={!showTransparent ? { backgroundColor: "#000" } : undefined}
       >
         {/* Desktop: 96px height with 28px vertical padding */}
         {/* Mobile: 76px height with 20px vertical padding */}
