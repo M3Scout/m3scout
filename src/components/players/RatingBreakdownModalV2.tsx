@@ -244,13 +244,26 @@ const STAT_INFO: Record<string, StatInfo> = {
 };
 
 // Fallback for stats not in STAT_INFO
-function getStatInfo(statKey: string, label: string): StatInfo {
+const safeLower = (v: unknown): string => {
+  if (typeof v === "string") return v.toLowerCase();
+  if (typeof v === "number" || typeof v === "boolean") return String(v).toLowerCase();
+  return "";
+};
+
+function getStatInfo(statKey: string, label: unknown): StatInfo {
+  const labelText = typeof label === "string" && label.trim() ? label : "—";
+  const labelLower = safeLower(labelText) || "esta estatística";
+
+  if (import.meta.env.DEV && typeof label !== "string") {
+    console.debug("[RatingBreakdownModalV2] getStatInfo label not string:", label, "statKey:", statKey);
+  }
+
   return STAT_INFO[statKey] || {
     group: "Desempenho Geral",
     groupIcon: "📊",
-    description: `Estatística: ${label}`,
-    lowFeedback: `Desempenho abaixo do esperado em ${label.toLowerCase()}.`,
-    highFeedback: `Excelente desempenho em ${label.toLowerCase()}.`,
+    description: `Estatística: ${labelText}`,
+    lowFeedback: `Desempenho abaixo do esperado em ${labelLower}.`,
+    highFeedback: `Excelente desempenho em ${labelLower}.`,
   };
 }
 
@@ -682,24 +695,29 @@ export function RatingBreakdownModalV2({ details, rating, trigger }: RatingBreak
               
               // Group and average by stat
               const statMap = new Map<string, { total: number; count: number; label: string; weight: number }>();
-              allStats.forEach(s => {
-                const existing = statMap.get(s.stat);
+              allStats.forEach((s) => {
+                const statKey = String((s as any)?.stat ?? "unknown");
+                const label = String((s as any)?.label ?? statKey);
+                const score = Number((s as any)?.score) || 0;
+                const weight = Number((s as any)?.adjusted_weight ?? (s as any)?.weight) || 0;
+
+                const existing = statMap.get(statKey);
                 if (existing) {
-                  existing.total += s.score;
+                  existing.total += score;
                   existing.count += 1;
                 } else {
-                  statMap.set(s.stat, { 
-                    total: s.score, 
-                    count: 1, 
-                    label: s.label,
-                    weight: s.adjusted_weight,
+                  statMap.set(statKey, {
+                    total: score,
+                    count: 1,
+                    label,
+                    weight,
                   });
                 }
               });
-              
+
               const aggregatedStats = Array.from(statMap.entries()).map(([stat, data]) => ({
                 stat,
-                label: data.label,
+                label: data.label || stat,
                 value: 0,
                 score: data.total / data.count,
                 weight: data.weight,

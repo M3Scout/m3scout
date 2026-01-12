@@ -323,7 +323,7 @@ export function StatsRadarChart({ statBreakdown, positionGroup, positionGroupLab
 
       {/* Legend explanation */}
       <p className="text-xs text-muted-foreground text-center">
-        A área tracejada representa a média esperada para um jogador da posição {positionGroupLabel.toLowerCase()}.
+        A área tracejada representa a média esperada para um jogador da posição {typeof positionGroupLabel === "string" ? positionGroupLabel.toLowerCase() : "—"}.
         A área colorida representa o desempenho real do jogador.
       </p>
     </div>
