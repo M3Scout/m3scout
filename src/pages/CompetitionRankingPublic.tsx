@@ -96,9 +96,10 @@ const CompetitionRankingPublic = () => {
 
   const filteredCompetitions = useMemo(() => {
     return competitions.filter((comp) => {
+      const searchLower = (searchQuery || "").toLowerCase();
       const matchesSearch =
-        comp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (comp.display_name?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
+        (comp.name || "").toLowerCase().includes(searchLower) ||
+        ((comp.display_name || "").toLowerCase().includes(searchLower));
       const matchesCountry = countryFilter === "all" || comp.country === countryFilter;
       const matchesType = typeFilter === "all" || comp.type === typeFilter;
       const matchesTier = tierFilter === "all" || comp.tier === tierFilter;

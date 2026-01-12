@@ -213,10 +213,11 @@ const Competitions = () => {
 
   const filteredCompetitions = useMemo(() => {
     return competitions.filter((comp) => {
+      const searchLower = (searchQuery || "").toLowerCase();
       const matchesSearch = 
-        comp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (comp.display_name && comp.display_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (comp.state && comp.state.toLowerCase().includes(searchQuery.toLowerCase()));
+        (comp.name || "").toLowerCase().includes(searchLower) ||
+        ((comp.display_name || "").toLowerCase().includes(searchLower)) ||
+        ((comp.state || "").toLowerCase().includes(searchLower));
       const matchesType = typeFilter === "all" || comp.type === typeFilter;
       const matchesState = stateFilter === "all" || comp.state === stateFilter;
       const matchesCountry = countryFilter === "all" || comp.country === countryFilter;
