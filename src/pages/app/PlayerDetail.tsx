@@ -179,6 +179,22 @@ const PlayerDetail = () => {
           .limit(5),
       ]);
 
+      if (import.meta.env.DEV) {
+        console.log("[BREAKDOWN] fetched payload", {
+          playerId: id,
+          hasAutoRatingDetails: Boolean(playerRes.data?.auto_rating_details),
+          autoRating: playerRes.data?.auto_rating,
+          position: playerRes.data?.position,
+          competitionsInDetails: Array.isArray((playerRes.data as any)?.auto_rating_details?.competitions)
+            ? (playerRes.data as any).auto_rating_details.competitions.map((c: any) => ({
+                competition_id: c?.competition_id,
+                season_year: c?.season_year,
+                stat_breakdown_len: Array.isArray(c?.stat_breakdown) ? c.stat_breakdown.length : 0,
+              }))
+            : [],
+        });
+      }
+
       if (playerRes.data) {
         setPlayer(playerRes.data as Player);
       }

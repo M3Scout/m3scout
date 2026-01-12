@@ -102,17 +102,52 @@ function getStatLabel(statKey: string, providedLabel?: string): string {
   if (providedLabel && providedLabel.trim() && providedLabel.trim().length > 0) {
     return providedLabel;
   }
-  
+
   // 2. Check mapping
   const mappedLabel = STAT_KEY_LABELS[statKey];
   if (mappedLabel) return mappedLabel;
-  
+
   // 3. Convert snake_case to Title Case
   if (statKey && statKey.length > 0 && statKey !== "unknown") {
     return snakeToTitleCase(statKey);
   }
-  
+
   return "Estatística";
+}
+
+function extractStatKeyFromBreakdownRow(s: any): string {
+  const candidates = [s?.stat_key, s?.stat, s?.key, s?.name];
+  const rawKey = candidates.find((k) => typeof k === "string" && k.trim().length > 0 && k !== "unknown") ?? "";
+  return rawKey || "unknown";
+}
+
+function normalizeStatBreakdownRow(s: any) {
+  const statKey = extractStatKeyFromBreakdownRow(s);
+  const statLabel = getStatLabel(statKey, s?.stat_label ?? s?.label);
+
+  const score = safeNumber(s?.subscore_100 ?? s?.score ?? s?.score_0_100, 0);
+  const weightPct = safeNumber(s?.weight_pct ?? s?.adjusted_weight ?? 0);
+
+  // CRITICAL: value_raw == 0 is still valid information.
+  // So we consider a stat "available" if the raw value exists (even 0).
+  const hasRawValueField =
+    s &&
+    typeof s === "object" &&
+    ((s.value_raw !== undefined && s.value_raw !== null) ||
+      (s.value !== undefined && s.value !== null));
+
+  const isAvailable = Boolean(s?.available) || weightPct > 0 || hasRawValueField;
+
+  return {
+    stat: statKey,
+    label: statLabel,
+    value: safeNumber(s?.value ?? s?.value_raw, 0),
+    score,
+    weight: safeNumber(s?.weight ?? s?.weight_pct, 0),
+    adjusted_weight: weightPct,
+    available: isAvailable,
+    max: safeNumber(s?.max, 100),
+  };
 }
 
 /**
@@ -135,17 +170,29 @@ export function adaptAutoRatingDetailsToV2(details: unknown): ExtendedRatingBrea
     // Extend with computation flags
     const hasData = d.total_minutes > 0 || d.total_matches > 0 || d.competitions.length > 0;
     const computed = hasData && d.final_score_100 !== undefined;
+
     return {
       ...d,
       has_data: hasData,
       computed: computed,
       reason_no_data: hasData ? undefined : "no_stats_available",
-      competitions: (d.competitions || []).map((c: any) => ({
-        ...c,
-        has_data: safeNumber(c.minutes) > 0 || safeNumber(c.matches) > 0,
-        computed: safeNumber(c.minutes) > 0,
-        reason_no_data: safeNumber(c.minutes) > 0 ? undefined : "no_minutes",
-      })),
+      competitions: (d.competitions || []).map((c: any) => {
+        const minutes = safeNumber(c?.minutes, 0);
+        const matches = safeNumber(c?.matches, 0);
+
+        // IMPORTANT: Some records still carry the DB-shaped stat_breakdown rows
+        // (stat_key/stat_label/subscore_100/weight_pct/value_raw).
+        // Normalize them so the UI always has { stat, label, value, score, adjusted_weight, available }.
+        const normalizedBreakdown = safeArray(c?.stat_breakdown).filter(Boolean).map(normalizeStatBreakdownRow);
+
+        return {
+          ...c,
+          stat_breakdown: normalizedBreakdown,
+          has_data: minutes > 0 || matches > 0,
+          computed: minutes > 0,
+          reason_no_data: minutes > 0 ? undefined : "no_minutes",
+        };
+      }),
     } as ExtendedRatingBreakdownV2;
   }
 
@@ -182,80 +229,35 @@ export function adaptAutoRatingDetailsToV2(details: unknown): ExtendedRatingBrea
       
       // Parse stat breakdown and map stat keys properly
       const rawStatBreakdown = safeArray(c?.stat_breakdown).filter(Boolean);
-      
+
       // DEV: Log raw breakdown to trace key extraction
       if (import.meta.env.DEV && rawStatBreakdown.length > 0) {
-        console.debug("[autoRatingDetailsAdapter] Raw stat_breakdown sample:", {
+        console.debug("[BREAKDOWN] raw stats for comp/year", {
           competition: c?.competition_name,
-          firstStat: rawStatBreakdown[0],
-          statKeys: rawStatBreakdown.map((s: any) => ({
-            stat_key: s?.stat_key,
-            stat: s?.stat,
-            name: s?.name,
-            key: s?.key,
-          })),
+          season_year: c?.season_year,
+          sample: rawStatBreakdown.slice(0, 3),
         });
       }
-      
-      const statBreakdown = rawStatBreakdown.map((s: any) => {
-        // Extract stat key - prioritize canonical keys over legacy 'name'
-        // Priority: stat_key > stat > key > name
-        // CRITICAL: Also check 'stat' field which may already be populated
-        const candidates = [s?.stat_key, s?.stat, s?.key, s?.name];
-        const rawKey = candidates.find((k) => typeof k === "string" && k.length > 0 && k !== "unknown") ?? "";
-        const statKey = rawKey || "unknown";
-        
-        // Extract label - prioritize provided labels, then fallback to computed label
-        const providedLabel = s?.stat_label ?? s?.label;
-        const statLabel = getStatLabel(statKey, providedLabel);
-        
-        // Get scores - support both old and new field names
-        const score = safeNumber(s?.subscore_100 ?? s?.score ?? s?.score_0_100, 0);
-        const weightPct = safeNumber(s?.weight_pct ?? s?.adjusted_weight ?? 0);
-        
-        // A stat is "available" if:
-        // 1. Explicitly marked as available, OR
-        // 2. Has adjusted_weight > 0 (meaning it contributed to score), OR
-        // 3. Has value_raw > 0 (data exists) OR score > 0
-        const rawValue = safeNumber(s?.value_raw ?? s?.value, 0);
-        const hasValue = rawValue > 0 || score > 0;
-        const isAvailable = Boolean(s?.available) || weightPct > 0 || hasValue;
-        
-        // Debug in dev mode - only log truly unknown keys
-        if (import.meta.env.DEV && statKey === "unknown") {
-          console.warn("[autoRatingDetailsAdapter] Missing stat key in breakdown:", s);
-        }
-        
-        return {
-          stat: statKey,  // CRITICAL: This is what the UI uses
-          label: statLabel,
-          value: safeNumber(s?.value ?? s?.value_raw, 0),
-          score: score,
-          weight: safeNumber(s?.weight ?? s?.weight_pct, 0),
-          adjusted_weight: weightPct,
-          available: isAvailable,
-          // Keep raw data for debugging
-          max: safeNumber(s?.max, 100),
-        };
-      });
-      
+
+      const statBreakdown = rawStatBreakdown.map(normalizeStatBreakdownRow);
+
       // Competition is computed if:
       // 1. Has minutes > 0, AND
       // 2. Has at least one available stat with adjusted_weight > 0, OR
       // 3. position_stats_score > 0 or competition_level_score > 0
-      const availableStats = statBreakdown.filter(s => s.available && s.adjusted_weight > 0);
+      const availableStats = statBreakdown.filter((s) => s.available && s.adjusted_weight > 0);
       const computed = hasData && (
-        availableStats.length > 0 || 
-        positionStatsScore > 0 || 
+        availableStats.length > 0 ||
+        positionStatsScore > 0 ||
         competitionLevelScore > 0
       );
-      
+
       // Use the stored final_score, or calculate from components
       const rawCompetitionScore = safeNumber(c?.final_score ?? c?.competition_score, 0);
-      const computedScore = computed 
+      const computedScore = computed
         ? (rawCompetitionScore > 0 ? rawCompetitionScore : (positionStatsScore * 0.70 + competitionLevelScore * 0.30))
         : 0;
-      
+
       // Weighted contribution
       const weightedContribution = computed ? computedScore * (finalWeight > 0 ? finalWeight : 1) : 0;
 
