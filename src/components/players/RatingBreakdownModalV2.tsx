@@ -250,7 +250,7 @@ const safeLower = (v: unknown): string => {
   return "";
 };
 
-// Human-readable stat name mapping for unknown stats
+// Human-readable stat name mapping for all stats
 const STAT_NAME_MAP: Record<string, string> = {
   minutes_games: "Minutos/Jogos",
   ga_per_90: "G+A por 90 min",
@@ -272,12 +272,50 @@ const STAT_NAME_MAP: Record<string, string> = {
   saves: "Defesas",
   goals_conceded: "Gols Sofridos",
   errors: "Erros Graves",
+  errors_leading_to_goal: "Erros que Resultam em Gol",
   penalties_saved: "Pênaltis Defendidos",
   shots: "Finalizações",
   goals: "Gols",
   assists: "Assistências",
   clean_sheets: "Clean Sheets",
+  // Additional stats from player_stats table
+  matches: "Jogos",
+  minutes: "Minutos",
+  yellow_cards: "Cartões Amarelos",
+  red_cards: "Cartões Vermelhos",
+  fouls_committed: "Faltas Cometidas",
+  fouls_drawn: "Faltas Sofridas",
+  offsides: "Impedimentos",
+  clearances: "Afastamentos",
+  ground_duels_won: "Duelos no Chão Vencidos",
+  ground_duels_total: "Total de Duelos no Chão",
+  aerial_duels_won: "Duelos Aéreos Vencidos",
+  aerial_duels_total: "Total de Duelos Aéreos",
+  total_duels: "Total de Duelos",
+  total_passes: "Total de Passes",
+  long_passes_accurate: "Lançamentos Certos",
+  long_passes_total: "Total de Lançamentos",
+  successful_dribbles: "Dribles Bem-sucedidos",
+  total_dribbles: "Total de Dribles",
+  possession_lost: "Posses Perdidas",
+  times_dribbled_past: "Vezes Driblado",
+  shots_blocked: "Chutes Bloqueados",
+  saves_inside_box: "Defesas na Área",
+  punches: "Socos",
+  high_claims: "Cruzamentos Dominados",
+  successful_runs_out: "Saídas do Gol Bem-sucedidas",
+  total_runs_out: "Total de Saídas do Gol",
 };
+
+// Helper to safely get numeric value with fallback
+function safeNumber(value: unknown, fallback: number = 0): number {
+  if (typeof value === "number" && !isNaN(value)) return value;
+  if (typeof value === "string") {
+    const parsed = parseFloat(value);
+    if (!isNaN(parsed)) return parsed;
+  }
+  return fallback;
+}
 
 // ==================== POSITION-BASED STAT CLASSIFICATION ====================
 // Explicitly defines which stats are POSITIVE (high score = good) and which are
@@ -349,22 +387,28 @@ function getPositionStatsBreakdown(
 }
 
 function getHumanStatName(statKey: string, providedLabel: unknown): string {
-  // 1. If providedLabel is a valid non-placeholder string, use it
-  if (typeof providedLabel === "string" && providedLabel.trim() && providedLabel !== "—" && providedLabel !== "---" && providedLabel !== "unknown") {
-    return providedLabel;
-  }
-  // 2. Try our manual mapping
-  if (STAT_NAME_MAP[statKey]) {
+  // 1. Try our manual mapping first (most reliable)
+  if (statKey && STAT_NAME_MAP[statKey]) {
     return STAT_NAME_MAP[statKey];
   }
-  // 3. Convert snake_case to Title Case as last resort
-  if (statKey && statKey !== "unknown") {
+  // 2. If providedLabel is a valid non-placeholder string, use it
+  if (typeof providedLabel === "string" && providedLabel.trim() && 
+      providedLabel !== "—" && providedLabel !== "---" && 
+      providedLabel !== "unknown" && providedLabel !== "Desconhecido" &&
+      providedLabel !== "Estatística não identificada") {
+    return providedLabel;
+  }
+  // 3. Convert snake_case to Title Case as last resort (but only if we have a key)
+  if (statKey && statKey !== "unknown" && statKey.length > 0) {
     return statKey
       .replace(/_/g, " ")
       .replace(/\b\w/g, (c) => c.toUpperCase());
   }
-  // 4. Ultimate fallback
-  return "Estatística não identificada";
+  // 4. Ultimate fallback - show raw key if available
+  if (statKey && statKey !== "unknown") {
+    return `Stat: ${statKey}`;
+  }
+  return "Estatística";
 }
 
 function getStatInfo(statKey: string, label: unknown): StatInfo {
@@ -443,12 +487,18 @@ function StatBreakdownCard({
               {competition.season_year}
             </Badge>
           </div>
-          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3">
             <div className="text-right">
-              <span className={cn("text-sm font-semibold", getScoreColor(competition.competition_score))}>
-                {formatFixed(competition.competition_score, 1)}
-              </span>
-              <span className="text-xs text-muted-foreground">/100</span>
+              {safeNumber(competition.competition_score) > 0 ? (
+                <>
+                  <span className={cn("text-sm font-semibold", getScoreColor(safeNumber(competition.competition_score)))}>
+                    {formatFixed(safeNumber(competition.competition_score), 1)}
+                  </span>
+                  <span className="text-xs text-muted-foreground">/100</span>
+                </>
+              ) : (
+                <span className="text-sm text-muted-foreground">N/D</span>
+              )}
             </div>
             {isExpanded ? (
               <ChevronUp className="w-4 h-4 text-muted-foreground" />
@@ -833,10 +883,16 @@ export function RatingBreakdownModalV2({ details, rating, trigger }: RatingBreak
               </div>
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">Índice</p>
-                <span className={cn("text-2xl font-semibold", getScoreColor(details.final_score_100))}>
-                  {formatFixed(details.final_score_100, 0)}
-                </span>
-                <span className="text-sm text-muted-foreground">/100</span>
+                {safeNumber(details.final_score_100) > 0 ? (
+                  <>
+                    <span className={cn("text-2xl font-semibold", getScoreColor(safeNumber(details.final_score_100)))}>
+                      {formatFixed(safeNumber(details.final_score_100), 0)}
+                    </span>
+                    <span className="text-sm text-muted-foreground">/100</span>
+                  </>
+                ) : (
+                  <span className="text-lg text-muted-foreground">Sem dados</span>
+                )}
               </div>
               <div className="text-right">
                 <Badge variant={getReliabilityVariantV2(details.reliability)} className="text-sm mb-1">
@@ -1040,14 +1096,22 @@ export function RatingBreakdownModalV2({ details, rating, trigger }: RatingBreak
                                 {formatFixed((comp.final_weight ?? comp.combined_weight) * 100, 0)}%
                               </td>
                               <td className="py-2 px-1 text-center">
-                                <span className={cn("font-semibold", getScoreColor(comp.competition_score))}>
-                                  {formatFixed(comp.competition_score, 0)}
-                                </span>
+                                {safeNumber(comp.competition_score) > 0 ? (
+                                  <span className={cn("font-semibold", getScoreColor(safeNumber(comp.competition_score)))}>
+                                    {formatFixed(safeNumber(comp.competition_score), 0)}
+                                  </span>
+                                ) : (
+                                  <span className="text-muted-foreground">0</span>
+                                )}
                               </td>
                               <td className="py-2 px-1 text-center">
-                                <span className={cn("font-medium", getScoreColor(comp.competition_score))}>
-                                  {formatFixed(comp.weighted_contribution, 1)}
-                                </span>
+                                {safeNumber(comp.weighted_contribution) > 0 ? (
+                                  <span className={cn("font-medium", getScoreColor(safeNumber(comp.competition_score)))}>
+                                    {formatFixed(safeNumber(comp.weighted_contribution), 1)}
+                                  </span>
+                                ) : (
+                                  <span className="text-muted-foreground">0</span>
+                                )}
                               </td>
                             </tr>
                           ))}
