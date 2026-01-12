@@ -114,16 +114,25 @@ const Imprensa = () => {
         </div>
       </section>
 
-      {/* News Grid */}
-      <section className="py-16 md:py-24">
+      {/* News Section */}
+      <section className="py-20 md:py-28 border-t border-white/[0.06]">
         <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+          <div className="text-center mb-14">
+            <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">
+              Últimas Notícias
+            </h2>
+            <p className="text-gray-400">
+              Acompanhe as novidades da M3 Agency e de nossos atletas.
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {newsItems.map((item) => (
               <article 
                 key={item.id} 
-                className="group bg-white/[0.02] border border-white/[0.06] rounded-2xl p-6 md:p-8 transition-all duration-300 hover:bg-white/[0.04] hover:border-emerald-500/20"
+                className="group bg-white/[0.02] border border-white/[0.06] rounded-2xl p-6 transition-all duration-300 hover:bg-white/[0.04] hover:border-emerald-500/20 hover:-translate-y-1"
               >
-                <div className="flex items-center gap-3 mb-5">
+                <div className="flex items-center gap-3 mb-4">
                   <div className="flex items-center gap-2 text-sm text-gray-500">
                     <Calendar className="w-4 h-4" />
                     <span>{item.date}</span>
@@ -133,22 +142,21 @@ const Imprensa = () => {
                   </span>
                 </div>
                 
-                <h2 className="text-xl font-semibold text-white mb-4 group-hover:text-emerald-400 transition-colors">
+                <h3 className="text-lg font-semibold text-white mb-3 group-hover:text-emerald-400 transition-colors leading-snug">
                   {item.title}
-                </h2>
+                </h3>
                 
-                <p className="text-gray-400 mb-6 leading-relaxed">
+                <p className="text-gray-400 text-sm mb-5 leading-relaxed">
                   {item.excerpt}
                 </p>
                 
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="text-gray-400 hover:text-emerald-400 hover:bg-emerald-500/10 gap-2 px-0"
+                <a 
+                  href="#"
+                  className="inline-flex items-center gap-2 text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
                 >
                   Ler mais
                   <ExternalLink className="w-4 h-4" />
-                </Button>
+                </a>
               </article>
             ))}
           </div>
