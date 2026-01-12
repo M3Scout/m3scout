@@ -123,10 +123,24 @@ const STAT_INFO: Record<string, StatInfo> = {
     lowFeedback: "Poucas finalizações — baixa participação em jogadas de conclusão.",
     highFeedback: "Alta presença ofensiva com muitas tentativas de gol.",
   },
+  shots_90: {
+    group: "Finalização",
+    groupIcon: "⚽",
+    description: "Volume de finalizações por 90 minutos. Indica presença ofensiva e busca pelo gol.",
+    lowFeedback: "Poucas finalizações — baixa participação em jogadas de conclusão.",
+    highFeedback: "Alta presença ofensiva com muitas tentativas de gol.",
+  },
   shots_on_target: {
     group: "Finalização",
     groupIcon: "🎯",
     description: "Finalizações certas no gol. Mede precisão nas conclusões.",
+    lowFeedback: "Baixa precisão nas finalizações — chutes fora do alvo ou bloqueados.",
+    highFeedback: "Excelente precisão de finalização.",
+  },
+  shots_on_target_90: {
+    group: "Finalização",
+    groupIcon: "🎯",
+    description: "Finalizações certas no gol por 90 minutos. Mede precisão nas conclusões.",
     lowFeedback: "Baixa precisão nas finalizações — chutes fora do alvo ou bloqueados.",
     highFeedback: "Excelente precisão de finalização.",
   },
@@ -155,6 +169,13 @@ const STAT_INFO: Record<string, StatInfo> = {
     lowFeedback: "Poucos passes certos — dificuldade na construção ou pouco envolvimento no jogo.",
     highFeedback: "Peça fundamental na construção e circulação de bola.",
   },
+  accurate_passes_90: {
+    group: "Passe & Construção",
+    groupIcon: "🎯",
+    description: "Volume de passes certos por 90 minutos. Indica qualidade na posse e circulação de bola.",
+    lowFeedback: "Poucos passes certos — dificuldade na construção ou pouco envolvimento no jogo.",
+    highFeedback: "Peça fundamental na construção e circulação de bola.",
+  },
   pass_accuracy: {
     group: "Passe & Construção",
     groupIcon: "🎯",
@@ -166,6 +187,13 @@ const STAT_INFO: Record<string, StatInfo> = {
     group: "Criação de Jogadas",
     groupIcon: "✨",
     description: "Passes decisivos que geraram chances de gol. Mede capacidade de criar para os companheiros.",
+    lowFeedback: "Poucos passes decisivos — dificuldade em criar oportunidades de gol.",
+    highFeedback: "Criador consistente de chances de gol.",
+  },
+  key_passes_90: {
+    group: "Criação de Jogadas",
+    groupIcon: "✨",
+    description: "Passes decisivos por 90 minutos. Mede capacidade de criar para os companheiros.",
     lowFeedback: "Poucos passes decisivos — dificuldade em criar oportunidades de gol.",
     highFeedback: "Criador consistente de chances de gol.",
   },
@@ -183,6 +211,13 @@ const STAT_INFO: Record<string, StatInfo> = {
     lowFeedback: "Poucas chances criadas — falta de criatividade ou visão de jogo limitada.",
     highFeedback: "Motor criativo da equipe com ótima visão de jogo.",
   },
+  chances_created_90: {
+    group: "Criação de Jogadas",
+    groupIcon: "✨",
+    description: "Oportunidades de gol criadas por 90 minutos. Mede visão de jogo e criatividade.",
+    lowFeedback: "Poucas chances criadas — falta de criatividade ou visão de jogo limitada.",
+    highFeedback: "Motor criativo da equipe com ótima visão de jogo.",
+  },
   
   // Defesa & Duelos
   tackles: {
@@ -192,7 +227,21 @@ const STAT_INFO: Record<string, StatInfo> = {
     lowFeedback: "Poucos desarmes — dificuldade em recuperar a bola ou posicionamento defensivo ruim.",
     highFeedback: "Excelente na marcação e recuperação de bola.",
   },
+  tackles_90: {
+    group: "Defesa & Duelos",
+    groupIcon: "🛡️",
+    description: "Desarmes por 90 minutos. Indica capacidade de recuperar a bola.",
+    lowFeedback: "Poucos desarmes — dificuldade em recuperar a bola ou posicionamento defensivo ruim.",
+    highFeedback: "Excelente na marcação e recuperação de bola.",
+  },
   interceptions: {
+    group: "Defesa & Duelos",
+    groupIcon: "🛡️",
+    description: "Interceptações por 90 minutos. Mede leitura de jogo e antecipação.",
+    lowFeedback: "Poucas interceptações — falta de leitura de jogo ou posicionamento inadequado.",
+    highFeedback: "Ótima leitura de jogo e antecipação defensiva.",
+  },
+  interceptions_90: {
     group: "Defesa & Duelos",
     groupIcon: "🛡️",
     description: "Interceptações por 90 minutos. Mede leitura de jogo e antecipação.",
@@ -206,6 +255,13 @@ const STAT_INFO: Record<string, StatInfo> = {
     lowFeedback: "Poucas recuperações — baixa intensidade ou pouca pressão na marcação.",
     highFeedback: "Alta intensidade e esforço na recuperação de bola.",
   },
+  recoveries_90: {
+    group: "Intensidade Defensiva",
+    groupIcon: "🔄",
+    description: "Recuperações de bola por 90 minutos. Indica pressão, intensidade e esforço defensivo.",
+    lowFeedback: "Poucas recuperações — baixa intensidade ou pouca pressão na marcação.",
+    highFeedback: "Alta intensidade e esforço na recuperação de bola.",
+  },
   duels_won: {
     group: "Defesa & Duelos",
     groupIcon: "💪",
@@ -213,10 +269,24 @@ const STAT_INFO: Record<string, StatInfo> = {
     lowFeedback: "Baixa taxa de duelos vencidos — dificuldade em disputas físicas.",
     highFeedback: "Dominante nos duelos individuais.",
   },
+  duels_won_pct: {
+    group: "Defesa & Duelos",
+    groupIcon: "💪",
+    description: "Percentual de duelos vencidos. Mede força física e determinação.",
+    lowFeedback: "Baixa taxa de duelos vencidos — dificuldade em disputas físicas.",
+    highFeedback: "Dominante nos duelos individuais.",
+  },
   aerial_duels: {
     group: "Jogo Aéreo",
     groupIcon: "🦅",
     description: "Duelos aéreos vencidos. Importante para defesa e ataque em bolas altas.",
+    lowFeedback: "Dificuldade no jogo aéreo — perde muitas disputas de cabeça.",
+    highFeedback: "Dominante no jogo aéreo.",
+  },
+  aerial_duels_90: {
+    group: "Jogo Aéreo",
+    groupIcon: "🦅",
+    description: "Duelos aéreos vencidos por 90 minutos. Importante para defesa e ataque em bolas altas.",
     lowFeedback: "Dificuldade no jogo aéreo — perde muitas disputas de cabeça.",
     highFeedback: "Dominante no jogo aéreo.",
   },
@@ -238,6 +308,20 @@ const STAT_INFO: Record<string, StatInfo> = {
     lowFeedback: "Poucas defesas — pode indicar pouca exigência ou dificuldade nas finalizações.",
     highFeedback: "Goleiro decisivo com alto volume de defesas.",
   },
+  saves_per_90: {
+    group: "Defesas (GK)",
+    groupIcon: "🧤",
+    description: "Defesas por 90 minutos. Mede capacidade de evitar gols.",
+    lowFeedback: "Poucas defesas — pode indicar pouca exigência ou dificuldade nas finalizações.",
+    highFeedback: "Goleiro decisivo com alto volume de defesas.",
+  },
+  saves_90: {
+    group: "Defesas (GK)",
+    groupIcon: "🧤",
+    description: "Defesas por 90 minutos. Mede capacidade de evitar gols.",
+    lowFeedback: "Poucas defesas — pode indicar pouca exigência ou dificuldade nas finalizações.",
+    highFeedback: "Goleiro decisivo com alto volume de defesas.",
+  },
   goals_conceded: {
     group: "Solidez Defensiva (GK)",
     groupIcon: "🚫",
@@ -245,10 +329,24 @@ const STAT_INFO: Record<string, StatInfo> = {
     lowFeedback: "Muitos gols sofridos — vazamentos frequentes comprometendo o resultado.",
     highFeedback: "Goleiro seguro com poucos gols sofridos.",
   },
+  goals_conceded_inv: {
+    group: "Solidez Defensiva (GK)",
+    groupIcon: "🚫",
+    description: "Gols sofridos (invertido). Maior score = menos gols = melhor.",
+    lowFeedback: "Muitos gols sofridos — vazamentos frequentes comprometendo o resultado.",
+    highFeedback: "Goleiro seguro com poucos gols sofridos.",
+  },
   errors: {
     group: "Erros Graves (GK)",
     groupIcon: "⚠️",
     description: "Erros que resultaram em gol. Menor valor = melhor.",
+    lowFeedback: "Erros decisivos — falhas que resultaram em gols adversários.",
+    highFeedback: "Goleiro confiável sem erros graves.",
+  },
+  errors_inv: {
+    group: "Erros Graves (GK)",
+    groupIcon: "⚠️",
+    description: "Erros (invertido). Maior score = menos erros = melhor.",
     lowFeedback: "Erros decisivos — falhas que resultaram em gols adversários.",
     highFeedback: "Goleiro confiável sem erros graves.",
   },
@@ -268,60 +366,97 @@ const safeLower = (v: unknown): string => {
   return "";
 };
 
-// Human-readable stat name mapping for all stats
+// Human-readable stat name mapping for all stats (includes DB field names and per-90 variants)
 const STAT_NAME_MAP: Record<string, string> = {
+  // Core stats
   minutes_games: "Minutos/Jogos",
-  ga_per_90: "G+A por 90 min",
-  goals_per_90: "Gols por 90 min",
-  assists_per_90: "Assistências por 90 min",
-  key_pass_accuracy: "Precisão de Passes-Chave",
-  pass_accuracy: "Precisão de Passes",
-  offensive_involvement: "Envolvimento Ofensivo",
-  shots_on_target: "Finalizações no Alvo",
-  chances_created: "Chances Criadas",
-  key_passes: "Passes-Chave",
-  accurate_passes: "Passes Certos",
-  tackles: "Desarmes",
-  interceptions: "Interceptações",
-  recoveries: "Recuperações de Bola",
-  duels_won: "Duelos Vencidos",
-  aerial_duels: "Duelos Aéreos",
-  discipline: "Disciplina",
-  saves: "Defesas",
-  goals_conceded: "Gols Sofridos",
-  errors: "Erros Graves",
-  errors_leading_to_goal: "Erros que Resultam em Gol",
-  penalties_saved: "Pênaltis Defendidos",
-  shots: "Finalizações",
-  goals: "Gols",
-  assists: "Assistências",
-  clean_sheets: "Clean Sheets",
-  // Additional stats from player_stats table
   matches: "Jogos",
   minutes: "Minutos",
+  
+  // Goal involvement - raw and per-90
+  goals: "Gols",
+  goals_per_90: "Gols/90",
+  assists: "Assistências",
+  assists_per_90: "Assistências/90",
+  ga_per_90: "G+A/90",
+  
+  // Finishing
+  shots: "Finalizações",
+  shots_90: "Finalizações/90",
+  shots_on_target: "Finalizações no Alvo",
+  shots_on_target_90: "Finalizações no Alvo/90",
+  shots_blocked: "Chutes Bloqueados",
+  
+  // Creativity
+  chances_created: "Chances Criadas",
+  chances_created_90: "Chances Criadas/90",
+  key_passes: "Passes-Chave",
+  key_passes_90: "Passes-Chave/90",
+  key_pass_accuracy: "Precisão Passes-Chave",
+  offensive_involvement: "Envolvimento Ofensivo",
+  
+  // Passing
+  accurate_passes: "Passes Certos",
+  accurate_passes_90: "Passes Certos/90",
+  total_passes: "Total de Passes",
+  pass_accuracy: "Precisão de Passes",
+  long_passes_accurate: "Lançamentos Certos",
+  long_passes_total: "Total de Lançamentos",
+  
+  // Defensive
+  tackles: "Desarmes",
+  tackles_90: "Desarmes/90",
+  interceptions: "Interceptações",
+  interceptions_90: "Interceptações/90",
+  recoveries: "Recuperações",
+  recoveries_90: "Recuperações/90",
+  reco: "Recuperações/90", // Alias used in some DB outputs
+  clearances: "Afastamentos",
+  
+  // Duels
+  duels_won: "Duelos Vencidos",
+  duels_won_pct: "Duelos Vencidos (%)",
+  total_duels: "Total de Duelos",
+  ground_duels_won: "Duelos no Chão Vencidos",
+  ground_duels_total: "Total de Duelos no Chão",
+  aerial_duels: "Duelos Aéreos",
+  aerial_duels_90: "Duelos Aéreos/90",
+  aerial_duels_won: "Duelos Aéreos Vencidos",
+  aerial_duels_total: "Total de Duelos Aéreos",
+  
+  // Dribbling
+  successful_dribbles: "Dribles Bem-sucedidos",
+  total_dribbles: "Total de Dribles",
+  times_dribbled_past: "Vezes Driblado",
+  
+  // Discipline
+  discipline: "Disciplina",
   yellow_cards: "Cartões Amarelos",
   red_cards: "Cartões Vermelhos",
   fouls_committed: "Faltas Cometidas",
   fouls_drawn: "Faltas Sofridas",
-  offsides: "Impedimentos",
-  clearances: "Afastamentos",
-  ground_duels_won: "Duelos no Chão Vencidos",
-  ground_duels_total: "Total de Duelos no Chão",
-  aerial_duels_won: "Duelos Aéreos Vencidos",
-  aerial_duels_total: "Total de Duelos Aéreos",
-  total_duels: "Total de Duelos",
-  total_passes: "Total de Passes",
-  long_passes_accurate: "Lançamentos Certos",
-  long_passes_total: "Total de Lançamentos",
-  successful_dribbles: "Dribles Bem-sucedidos",
-  total_dribbles: "Total de Dribles",
+  cards_90: "Cartões/90",
+  
+  // Possession
   possession_lost: "Posses Perdidas",
-  times_dribbled_past: "Vezes Driblado",
-  shots_blocked: "Chutes Bloqueados",
+  offsides: "Impedimentos",
+  
+  // Goalkeeper - raw and per-90
+  saves: "Defesas",
+  saves_90: "Defesas/90",
+  saves_per_90: "Defesas/90",
   saves_inside_box: "Defesas na Área",
+  goals_conceded: "Gols Sofridos",
+  goals_conceded_90: "Gols Sofridos/90",
+  goals_conceded_inv: "Gols Sofridos (inv)",
+  clean_sheets: "Clean Sheets",
+  penalties_saved: "Pênaltis Defendidos",
+  errors: "Erros Graves",
+  errors_inv: "Erros (inv)",
+  errors_leading_to_goal: "Erros que Resultam em Gol",
   punches: "Socos",
   high_claims: "Cruzamentos Dominados",
-  successful_runs_out: "Saídas do Gol Bem-sucedidas",
+  successful_runs_out: "Saídas do Gol",
   total_runs_out: "Total de Saídas do Gol",
 };
 
@@ -348,23 +483,23 @@ interface PositionStatClassification {
 
 const POSITION_STAT_CLASSIFICATIONS: Record<string, PositionStatClassification> = {
   goalkeeper: {
-    positiveStats: ["saves", "clean_sheets", "penalties_saved", "aerial_duels", "accurate_passes"],
-    negativeStats: ["goals_conceded", "errors", "discipline"],
+    positiveStats: ["saves", "saves_per_90", "saves_90", "clean_sheets", "penalties_saved", "aerial_duels", "aerial_duels_90", "accurate_passes", "accurate_passes_90"],
+    negativeStats: ["goals_conceded", "goals_conceded_inv", "errors", "errors_inv", "discipline"],
   },
   center_back: {
-    positiveStats: ["tackles", "interceptions", "duels_won", "aerial_duels", "recoveries", "accurate_passes"],
-    negativeStats: ["errors", "discipline", "goals_conceded"],
+    positiveStats: ["tackles", "tackles_90", "interceptions", "interceptions_90", "duels_won", "duels_won_pct", "aerial_duels", "aerial_duels_90", "recoveries", "recoveries_90", "accurate_passes", "accurate_passes_90"],
+    negativeStats: ["errors", "errors_inv", "discipline", "goals_conceded", "goals_conceded_inv"],
   },
   defensive_mid: {
-    positiveStats: ["tackles", "interceptions", "recoveries", "accurate_passes", "pass_accuracy", "duels_won"],
-    negativeStats: ["discipline", "errors"],
+    positiveStats: ["tackles", "tackles_90", "interceptions", "interceptions_90", "recoveries", "recoveries_90", "accurate_passes", "accurate_passes_90", "pass_accuracy", "duels_won", "duels_won_pct"],
+    negativeStats: ["discipline", "errors", "errors_inv"],
   },
   midfielder: {
-    positiveStats: ["key_passes", "chances_created", "assists", "ga_per_90", "accurate_passes", "pass_accuracy", "key_pass_accuracy"],
+    positiveStats: ["key_passes", "key_passes_90", "chances_created", "chances_created_90", "assists", "ga_per_90", "accurate_passes", "accurate_passes_90", "pass_accuracy", "key_pass_accuracy"],
     negativeStats: ["discipline", "possession_lost"],
   },
   forward: {
-    positiveStats: ["goals", "goals_per_90", "assists", "ga_per_90", "shots", "shots_on_target", "offensive_involvement"],
+    positiveStats: ["goals", "goals_per_90", "assists", "ga_per_90", "shots", "shots_90", "shots_on_target", "shots_on_target_90", "offensive_involvement", "chances_created", "chances_created_90"],
     negativeStats: ["discipline"],
   },
 };

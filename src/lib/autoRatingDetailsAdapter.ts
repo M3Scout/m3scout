@@ -25,6 +25,96 @@ export interface ExtendedRatingBreakdownV2 extends RatingBreakdownV2 {
   competitions: ExtendedCompetitionBreakdown[];
 }
 
+// Comprehensive stat key to Portuguese label mapping
+const STAT_KEY_LABELS: Record<string, string> = {
+  // Goalkeeper
+  'saves': 'Defesas',
+  'saves_per_90': 'Defesas/90',
+  'saves_90': 'Defesas/90',
+  'goals_conceded': 'Gols Sofridos',
+  'goals_conceded_inv': 'Gols Sofridos (inv)',
+  'goals_conceded_90': 'Gols Sofridos/90',
+  'clean_sheets': 'Clean Sheets',
+  'penalties_saved': 'Pênaltis Defendidos',
+  'errors': 'Erros',
+  'errors_inv': 'Erros (inv)',
+  'errors_leading_to_goal': 'Erros que Resultam em Gol',
+  'aerial_duels': 'Duelos Aéreos',
+  'aerial_duels_90': 'Duelos Aéreos/90',
+  'high_claims': 'Saídas de Gol',
+  'punches': 'Socos',
+  
+  // Defensive
+  'tackles': 'Desarmes',
+  'tackles_90': 'Desarmes/90',
+  'interceptions': 'Interceptações',
+  'interceptions_90': 'Interceptações/90',
+  'recoveries': 'Recuperações',
+  'recoveries_90': 'Recuperações/90',
+  'clearances': 'Cortes',
+  'duels_won': 'Duelos Vencidos',
+  'duels_won_pct': 'Duelos Vencidos (%)',
+  'ground_duels_won': 'Duelos Terrestres Vencidos',
+  
+  // Passing
+  'accurate_passes': 'Passes Certos',
+  'accurate_passes_90': 'Passes Certos/90',
+  'pass_accuracy': 'Precisão de Passes',
+  'key_passes': 'Passes Decisivos',
+  'key_passes_90': 'Passes Decisivos/90',
+  'key_pass_accuracy': 'Precisão Passes Decisivos',
+  'chances_created': 'Chances Criadas',
+  'chances_created_90': 'Chances Criadas/90',
+  'long_passes_accurate': 'Passes Longos Certos',
+  
+  // Attacking
+  'goals': 'Gols',
+  'goals_per_90': 'Gols/90',
+  'assists': 'Assistências',
+  'ga_per_90': 'G+A/90',
+  'shots': 'Finalizações',
+  'shots_90': 'Finalizações/90',
+  'shots_on_target': 'Finalizações no Gol',
+  'shots_on_target_90': 'Finalizações no Gol/90',
+  'successful_dribbles': 'Dribles Bem-Sucedidos',
+  'offensive_involvement': 'Envolvimento Ofensivo',
+  
+  // Discipline / General
+  'discipline': 'Disciplina',
+  'minutes_games': 'Minutos/Jogos',
+  'yellow_cards': 'Cartões Amarelos',
+  'red_cards': 'Cartões Vermelhos',
+  'fouls_committed': 'Faltas Cometidas',
+  'fouls_drawn': 'Faltas Sofridas',
+};
+
+// Convert snake_case to Title Case for fallback
+function snakeToTitleCase(str: string): string {
+  return str
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
+// Get human-readable stat label
+function getStatLabel(statKey: string, providedLabel?: string): string {
+  // 1. Check provided label first
+  if (providedLabel && providedLabel.trim() && providedLabel.trim().length > 0) {
+    return providedLabel;
+  }
+  
+  // 2. Check mapping
+  const mappedLabel = STAT_KEY_LABELS[statKey];
+  if (mappedLabel) return mappedLabel;
+  
+  // 3. Convert snake_case to Title Case
+  if (statKey && statKey.length > 0 && statKey !== "unknown") {
+    return snakeToTitleCase(statKey);
+  }
+  
+  return "Estatística";
+}
+
 /**
  * Adapts the auto_rating_details JSON stored in the database into the UI-friendly RatingBreakdownV2 shape.
  *
@@ -53,7 +143,7 @@ export function adaptAutoRatingDetailsToV2(details: unknown): ExtendedRatingBrea
       competitions: (d.competitions || []).map((c: any) => ({
         ...c,
         has_data: safeNumber(c.minutes) > 0 || safeNumber(c.matches) > 0,
-        computed: safeNumber(c.competition_score) !== undefined && safeNumber(c.minutes) > 0,
+        computed: safeNumber(c.minutes) > 0,
         reason_no_data: safeNumber(c.minutes) > 0 ? undefined : "no_minutes",
       })),
     } as ExtendedRatingBreakdownV2;
@@ -82,31 +172,58 @@ export function adaptAutoRatingDetailsToV2(details: unknown): ExtendedRatingBrea
       const yearWeight = safeNumber(c?.year_weight ?? c?.recency_weight, 0);
       const inYearWeight = safeNumber(c?.in_year_weight ?? c?.minutes_factor, 0);
       const finalWeight = safeNumber(c?.final_weight ?? c?.combined_weight, 0);
-      const competitionScore = safeNumber(c?.final_score ?? c?.competition_score, 0);
       const positionStatsScore = safeNumber(c?.position_stats_score, 0);
       const competitionLevelScore = safeNumber(c?.competition_level_score, 0);
       const minutes = safeNumber(c?.minutes, 0);
       const matches = safeNumber(c?.matches, 0);
       
-      // Determine if this competition has actual data
+      // CRITICAL: Check if data exists and scores were computed
       const hasData = minutes > 0 || matches > 0;
       
-      // Check if stat_breakdown has any available stats with scores
-      const statBreakdown = safeArray(c?.stat_breakdown).filter(Boolean);
-      const availableStatsWithScores = statBreakdown.filter(
-        (s: any) => Boolean(s?.available) && safeNumber(s?.score, -1) >= 0
+      // Parse stat breakdown and map stat keys properly
+      const rawStatBreakdown = safeArray(c?.stat_breakdown).filter(Boolean);
+      const statBreakdown = rawStatBreakdown.map((s: any) => {
+        // Extract stat key from multiple possible field names (DB uses 'name', UI uses 'stat')
+        const statKey = String(s?.name ?? s?.stat ?? s?.key ?? s?.stat_key ?? "unknown");
+        const providedLabel = s?.label ?? s?.stat_label;
+        const statLabel = getStatLabel(statKey, providedLabel);
+        
+        // A stat is "available" if:
+        // 1. Explicitly marked as available, OR
+        // 2. Has adjusted_weight > 0 (meaning it contributed to score), OR
+        // 3. Has a score > 0
+        const isAvailable = Boolean(s?.available) || 
+          safeNumber(s?.adjusted_weight, 0) > 0;
+        
+        return {
+          stat: statKey,
+          label: statLabel,
+          value: safeNumber(s?.value ?? s?.value_raw, 0),
+          score: safeNumber(s?.score ?? s?.score_0_100, 0),
+          weight: safeNumber(s?.weight ?? s?.weight_pct, 0),
+          adjusted_weight: safeNumber(s?.adjusted_weight ?? 0),
+          available: isAvailable,
+        };
+      });
+      
+      // Competition is computed if:
+      // 1. Has minutes > 0, AND
+      // 2. Has at least one available stat with adjusted_weight > 0, OR
+      // 3. position_stats_score > 0 or competition_level_score > 0
+      const availableStats = statBreakdown.filter(s => s.available && s.adjusted_weight > 0);
+      const computed = hasData && (
+        availableStats.length > 0 || 
+        positionStatsScore > 0 || 
+        competitionLevelScore > 0
       );
-      const hasValidStatBreakdown = availableStatsWithScores.length > 0;
       
-      // Computed = has minutes AND has at least some stat breakdown
-      const computed = hasData && (hasValidStatBreakdown || positionStatsScore > 0 || competitionLevelScore > 0);
-      
-      // If competition_score is 0 but we have component scores, compute it
+      // Use the stored final_score, or calculate from components
+      const rawCompetitionScore = safeNumber(c?.final_score ?? c?.competition_score, 0);
       const computedScore = computed 
-        ? (competitionScore > 0 ? competitionScore : (positionStatsScore * 0.70 + competitionLevelScore * 0.30))
+        ? (rawCompetitionScore > 0 ? rawCompetitionScore : (positionStatsScore * 0.70 + competitionLevelScore * 0.30))
         : 0;
       
-      // Calculate weighted contribution only if computed
+      // Weighted contribution
       const weightedContribution = computed ? computedScore * (finalWeight > 0 ? finalWeight : 1) : 0;
 
       return {
@@ -133,54 +250,39 @@ export function adaptAutoRatingDetailsToV2(details: unknown): ExtendedRatingBrea
         combined_weight: finalWeight,
         competition_level_score: competitionLevelScore,
         position_stats_score: positionStatsScore,
-        stat_breakdown: statBreakdown.map((s: any) => {
-          // Extract stat key from multiple possible field names
-          const statKey = String(s?.stat ?? s?.key ?? s?.stat_key ?? s?.name ?? "");
-          const statLabel = String(s?.label ?? s?.stat_label ?? s?.name ?? "");
-          
-          // Dev validation: warn if stat key is missing
-          if (import.meta.env.DEV && (!statKey || statKey === "unknown")) {
-            console.warn("[autoRatingDetailsAdapter] Missing stat_key in breakdown row:", s);
-          }
-          
-          return {
-            stat: statKey || "unknown",
-            label: statLabel,
-            value: safeNumber(s?.value ?? s?.value_raw, 0),
-            score: safeNumber(s?.score ?? s?.score_0_100, 50),
-            weight: safeNumber(s?.weight ?? s?.weight_pct, 0),
-            adjusted_weight: safeNumber(s?.adjusted_weight ?? s?.weight ?? s?.weight_pct, 0),
-            available: Boolean(s?.available ?? (safeNumber(s?.score ?? s?.score_0_100, 0) > 0)),
-          };
-        }),
+        stat_breakdown: statBreakdown,
         competition_score: computedScore,
         weighted_contribution: weightedContribution,
         // Computation flags
         has_data: hasData,
         computed: computed,
-        reason_no_data: !hasData ? "no_minutes" : (!computed ? "missing_stat_mapping" : undefined),
+        reason_no_data: !hasData ? "no_minutes" : (!computed ? "missing_stat_data" : undefined),
       };
     });
 
-  // Calculate final score from competitions if scores.final_index_100 is missing or 0
-  const rawFinalScore = safeNumber(d.scores?.final_index_100, 0);
+  // Calculate overall computation status
   const computedCompetitions = competitions.filter(c => c.computed);
+  const hasData = computedCompetitions.length > 0;
   
+  // Get final scores from the stored data
+  const rawFinalScore = safeNumber(d.scores?.final_index_100, 0);
+  const rawRating = safeNumber(d.scores?.rating_0_5, 0);
+  
+  // Final score: use stored if > 0, otherwise recalculate from competitions
   let finalScore100 = rawFinalScore;
-  let hasData = computedCompetitions.length > 0;
-  let computed = hasData && (rawFinalScore > 0 || computedCompetitions.some(c => c.competition_score > 0));
-  
   if (finalScore100 === 0 && computedCompetitions.length > 0) {
     const totalWeight = computedCompetitions.reduce((sum, c) => sum + c.final_weight, 0);
     const totalContribution = computedCompetitions.reduce((sum, c) => sum + c.weighted_contribution, 0);
     if (totalWeight > 0) {
       finalScore100 = totalContribution / totalWeight;
-      computed = true;
     }
   }
   
-  const rawRating = safeNumber(d.scores?.rating_0_5, 0);
+  // Rating: use stored if > 0, otherwise calculate from final score
   const finalRating05 = rawRating > 0 ? rawRating : Math.round((finalScore100 / 20) * 2) / 2;
+  
+  // Overall computed status
+  const computed = hasData && (finalScore100 > 0 || rawRating > 0);
 
   return {
     calculated_at: String(d.calculated_at ?? new Date().toISOString()),
@@ -192,8 +294,8 @@ export function adaptAutoRatingDetailsToV2(details: unknown): ExtendedRatingBrea
     total_minutes: safeNumber(d.total_minutes, 0),
     total_competitions: competitions.length,
     competitions,
-    final_score_100: computed ? Math.round(finalScore100 * 10) / 10 : 0,
-    final_rating_0_5: computed ? finalRating05 : 0,
+    final_score_100: Math.round(finalScore100 * 10) / 10,
+    final_rating_0_5: finalRating05,
     reliability: d.reliability || "low",
     stat_weights: safeArray(d.stat_weights),
     // Computation flags
