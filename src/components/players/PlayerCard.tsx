@@ -36,26 +36,50 @@ export function PlayerCard({
     <Link to={href} className="group block">
       <article className="relative bg-zinc-950 overflow-hidden">
         {/* Image Container */}
-        <div className="relative aspect-[3/4] overflow-hidden">
+        <div className="relative aspect-[4/5] sm:aspect-[3/4] overflow-hidden">
           <img
             src={imageUrl}
             alt={name}
-            className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+            className="w-full h-full object-cover sm:transition-transform sm:duration-500 sm:ease-out sm:group-hover:scale-[1.03]"
           />
           
           {/* Gradient Overlay - bottom fade for text readability */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-80" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-90 sm:opacity-80" />
           
-          {/* Position Tag - Top Left */}
-          <div className="absolute top-4 left-4">
+          {/* === MOBILE LAYOUT: Overlay Info === */}
+          <div className="sm:hidden absolute bottom-0 left-0 right-0 p-4">
+            {/* Top row: Position + Score */}
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-zinc-400">
+                {position}
+              </span>
+              {autoRating !== null && autoRating !== undefined && (
+                <span 
+                  className={`text-xs font-medium ${
+                    isHighRating ? "text-[#e52421]" : "text-white"
+                  }`}
+                >
+                  {formatFixed(autoRating, 1)}
+                </span>
+              )}
+            </div>
+            
+            {/* Name */}
+            <h3 className="text-white text-base font-semibold tracking-tight leading-tight">
+              {name}
+            </h3>
+          </div>
+          
+          {/* === DESKTOP LAYOUT: Position Tag (Top Left) === */}
+          <div className="hidden sm:block absolute top-4 left-4">
             <span className="inline-block bg-black/90 text-white text-[10px] font-medium uppercase tracking-[0.15em] px-3 py-1.5">
               {position}
             </span>
           </div>
 
-          {/* Rating Badge - Top Right */}
+          {/* === DESKTOP LAYOUT: Rating Badge (Top Right) === */}
           {autoRating !== null && autoRating !== undefined && (
-            <div className="absolute top-4 right-4">
+            <div className="hidden sm:block absolute top-4 right-4">
               <span 
                 className={`inline-block text-sm font-medium px-2.5 py-1 border ${
                   isHighRating 
@@ -68,14 +92,12 @@ export function PlayerCard({
             </div>
           )}
 
-          {/* Player Info - Bottom */}
-          <div className="absolute bottom-0 left-0 right-0 p-5">
-            {/* Name */}
+          {/* === DESKTOP LAYOUT: Player Info (Bottom) === */}
+          <div className="hidden sm:block absolute bottom-0 left-0 right-0 p-5">
             <h3 className="text-white text-lg font-semibold tracking-tight mb-2 transition-opacity duration-300 group-hover:opacity-100 opacity-95">
               {name}
             </h3>
             
-            {/* Meta Info Line */}
             <p className="text-zinc-400 text-sm">
               {age > 0 && <span>{age} anos</span>}
               {age > 0 && nationality && <span className="mx-1.5">·</span>}
@@ -84,6 +106,17 @@ export function PlayerCard({
               {currentClub && <span>{currentClub}</span>}
             </p>
           </div>
+        </div>
+
+        {/* === MOBILE LAYOUT: Meta Row (Below Image) === */}
+        <div className="sm:hidden px-4 py-3 bg-zinc-950 border-t border-zinc-900">
+          <p className="text-zinc-500 text-xs leading-relaxed">
+            {age > 0 && <span>{age} anos</span>}
+            {age > 0 && nationality && <span className="mx-1.5">·</span>}
+            {nationality && <span>{nationality}</span>}
+            {(age > 0 || nationality) && currentClub && <span className="mx-1.5">·</span>}
+            {currentClub && <span className="truncate">{currentClub}</span>}
+          </p>
         </div>
       </article>
     </Link>

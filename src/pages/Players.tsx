@@ -156,7 +156,7 @@ const Players = () => {
         ) : filteredPlayers.length > 0 ? (
           <>
             {/* Athletes Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-5 gap-6 md:gap-7">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4 lg:gap-7 2xl:grid-cols-5">
               {safeArray(paginatedPlayers).map((player, index) => (
                 <div 
                   key={player.id}
