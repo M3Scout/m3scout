@@ -77,6 +77,8 @@ export default {
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
+        serif: ['"Times New Roman"', 'Times', 'serif'],
+        gotham: ['Gotham-Book', 'Gotham', 'Arial', 'sans-serif'],
       },
       keyframes: {
         "accordion-down": {
