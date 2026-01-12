@@ -183,26 +183,41 @@ export function adaptAutoRatingDetailsToV2(details: unknown): ExtendedRatingBrea
       // Parse stat breakdown and map stat keys properly
       const rawStatBreakdown = safeArray(c?.stat_breakdown).filter(Boolean);
       const statBreakdown = rawStatBreakdown.map((s: any) => {
-        // Extract stat key from multiple possible field names (DB uses 'name', UI uses 'stat')
-        const statKey = String(s?.name ?? s?.stat ?? s?.key ?? s?.stat_key ?? "unknown");
-        const providedLabel = s?.label ?? s?.stat_label;
+        // Extract stat key - prioritize canonical keys over legacy 'name'
+        // Priority: stat_key > stat > key > name
+        const rawKey = s?.stat_key ?? s?.stat ?? s?.key ?? s?.name ?? "";
+        const statKey = typeof rawKey === "string" && rawKey.length > 0 ? rawKey : "unknown";
+        
+        // Extract label - prioritize provided labels
+        const providedLabel = s?.stat_label ?? s?.label;
         const statLabel = getStatLabel(statKey, providedLabel);
+        
+        // Get scores - support both old and new field names
+        const score = safeNumber(s?.subscore_100 ?? s?.score ?? s?.score_0_100, 0);
+        const weightPct = safeNumber(s?.weight_pct ?? s?.adjusted_weight ?? 0);
         
         // A stat is "available" if:
         // 1. Explicitly marked as available, OR
         // 2. Has adjusted_weight > 0 (meaning it contributed to score), OR
-        // 3. Has a score > 0
-        const isAvailable = Boolean(s?.available) || 
-          safeNumber(s?.adjusted_weight, 0) > 0;
+        // 3. Has value > 0 (data exists)
+        const hasValue = safeNumber(s?.value ?? s?.value_raw, 0) > 0 || score > 0;
+        const isAvailable = Boolean(s?.available) || weightPct > 0 || hasValue;
+        
+        // Debug in dev mode
+        if (import.meta.env.DEV && statKey === "unknown") {
+          console.warn("[autoRatingDetailsAdapter] Missing stat key in breakdown:", s);
+        }
         
         return {
-          stat: statKey,
+          stat: statKey,  // CRITICAL: This is what the UI uses
           label: statLabel,
           value: safeNumber(s?.value ?? s?.value_raw, 0),
-          score: safeNumber(s?.score ?? s?.score_0_100, 0),
+          score: score,
           weight: safeNumber(s?.weight ?? s?.weight_pct, 0),
-          adjusted_weight: safeNumber(s?.adjusted_weight ?? 0),
+          adjusted_weight: weightPct,
           available: isAvailable,
+          // Keep raw data for debugging
+          max: safeNumber(s?.max, 100),
         };
       });
       
