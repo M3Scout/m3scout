@@ -15,18 +15,19 @@ interface AutoRatingCardProps {
   onRatingRecalculated?: () => void;
 }
 
+// Rating color: 4+ = green, 3+ = blue, 2+ = amber, <2 = red
 function getRatingColor(rating: number): string {
   if (rating >= 4.0) return "text-emerald-500";
-  if (rating >= 3.0) return "text-primary";
+  if (rating >= 3.0) return "text-blue-500";
   if (rating >= 2.0) return "text-amber-500";
-  return "text-destructive";
+  return "text-red-500";
 }
 
 function getRatingBgColor(rating: number): string {
   if (rating >= 4.0) return "bg-emerald-500/10";
-  if (rating >= 3.0) return "bg-primary/10";
+  if (rating >= 3.0) return "bg-blue-500/10";
   if (rating >= 2.0) return "bg-amber-500/10";
-  return "bg-destructive/10";
+  return "bg-red-500/10";
 }
 
 export function AutoRatingCard({ 
