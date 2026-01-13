@@ -105,13 +105,13 @@ const ReportDetail = () => {
       }
 
       try {
+        // First, fetch the report with player and competition data
         const { data, error: queryError } = await supabase
           .from("scouting_reports")
           .select(`
             *,
             players (id, full_name, position, photo_url, current_club, nationality),
-            competitions (name, country, division, phase),
-            profiles:scout_id (full_name)
+            competitions (name, country, division, phase)
           `)
           .eq("id", id)
           .maybeSingle();
@@ -119,11 +119,31 @@ const ReportDetail = () => {
         if (queryError) {
           console.error("Error fetching report:", queryError);
           setError(queryError.message);
-        } else if (data) {
-          setReport(data as any);
-        } else {
-          setError("Relatório não encontrado ou sem permissão de acesso");
+          setLoading(false);
+          return;
         }
+        
+        if (!data) {
+          setError("Relatório não encontrado ou sem permissão de acesso");
+          setLoading(false);
+          return;
+        }
+
+        // Fetch scout profile separately to avoid FK relationship issues
+        let scoutProfile = null;
+        if (data.scout_id) {
+          const { data: profileData } = await supabase
+            .from("profiles")
+            .select("full_name")
+            .eq("user_id", data.scout_id)
+            .maybeSingle();
+          scoutProfile = profileData;
+        }
+
+        setReport({
+          ...data,
+          profiles: scoutProfile,
+        } as any);
       } catch (err: any) {
         console.error("Exception fetching report:", err);
         setError(err.message || "Erro desconhecido");
