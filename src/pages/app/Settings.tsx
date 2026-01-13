@@ -42,6 +42,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { recalculateAllAttributeScores } from "@/lib/attributeScores";
+import { BulkRecalculateGKButton } from "@/components/players/BulkRecalculateGKButton";
 import { ptBR } from "date-fns/locale";
 
 function ThemeCard() {
@@ -654,6 +655,16 @@ export default function Settings() {
                         </div>
                       </div>
                     )}
+                  </div>
+
+                  <Separator />
+
+                  {/* Recalculate GK Radars */}
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                      Recalcula os radares de goleiros (DEF/ANT/TAT/DIS/AER) com normalização por percentil.
+                    </p>
+                    <BulkRecalculateGKButton />
                   </div>
                 </CardContent>
               </Card>

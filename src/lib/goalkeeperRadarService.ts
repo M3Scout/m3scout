@@ -20,6 +20,7 @@ import {
 
 interface GKPlayer {
   id: string;
+  full_name: string;
   position: string;
   auto_rating_details: Record<string, unknown> | null;
 }
@@ -66,7 +67,7 @@ interface GKStatsRow {
 async function fetchAllGoalkeepers(): Promise<GKPlayer[]> {
   const { data, error } = await supabase
     .from("players")
-    .select("id, position, auto_rating_details")
+    .select("id, full_name, position, auto_rating_details")
     .or("position.ilike.%goleiro%,position.ilike.%gk%,position.ilike.%goalkeeper%")
     .eq("is_archived", false);
 
@@ -296,14 +297,28 @@ export async function calculateAndSaveGKRadar(
 }
 
 /**
+ * Progress callback for bulk recalculation
+ */
+type RecalculateProgressCallback = (
+  current: number,
+  total: number,
+  playerName: string,
+  success: boolean,
+  error?: string
+) => void;
+
+/**
  * Recalculate GK radar for all goalkeepers
  */
-export async function recalculateAllGKRadars(): Promise<{
+export async function recalculateAllGKRadars(
+  onProgress?: RecalculateProgressCallback
+): Promise<{
   success: number;
   failed: number;
   skipped: number;
+  processed: number;
 }> {
-  const stats = { success: 0, failed: 0, skipped: 0 };
+  const stats = { success: 0, failed: 0, skipped: 0, processed: 0 };
 
   try {
     // Fetch all goalkeepers
@@ -321,12 +336,16 @@ export async function recalculateAllGKRadars(): Promise<{
     console.log(`[GK_RADAR] Built percentile data for ${percentileData.length} GKs`);
 
     // Process each goalkeeper
-    for (const gk of goalkeepers) {
+    for (let i = 0; i < goalkeepers.length; i++) {
+      const gk = goalkeepers[i];
+      stats.processed++;
+      
       try {
         const playerStats = allGKStats.get(gk.id);
         
         if (!playerStats || playerStats.length === 0) {
           stats.skipped++;
+          onProgress?.(i + 1, goalkeepers.length, gk.full_name, true);
           continue;
         }
 
@@ -368,15 +387,19 @@ export async function recalculateAllGKRadars(): Promise<{
           if (error) {
             console.error(`[GK_RADAR] Error saving for ${gk.id}:`, error);
             stats.failed++;
+            onProgress?.(i + 1, goalkeepers.length, gk.full_name, false, error.message);
           } else {
             stats.success++;
+            onProgress?.(i + 1, goalkeepers.length, gk.full_name, true);
           }
         } else {
           stats.skipped++;
+          onProgress?.(i + 1, goalkeepers.length, gk.full_name, true);
         }
       } catch (err) {
         console.error(`[GK_RADAR] Error processing ${gk.id}:`, err);
         stats.failed++;
+        onProgress?.(i + 1, goalkeepers.length, gk.full_name, false, String(err));
       }
     }
 
