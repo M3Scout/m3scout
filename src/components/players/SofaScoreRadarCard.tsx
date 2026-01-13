@@ -64,12 +64,14 @@ interface AggregatedScores {
   totalMinutes: number;
 }
 
+// Vertex positions for the pentagon (percentage based positioning)
+// Each vertex: label position + badge offset
 const ATTRIBUTE_CONFIG = [
-  { key: "ata", label: "ATA", fullLabel: "Ataque", description: "Gols, assistências, finalizações", angle: 90 },
-  { key: "tec", label: "TÉC", fullLabel: "Técnica", description: "Precisão de passes, dribles, controle", angle: 18 },
-  { key: "tat", label: "TÁT", fullLabel: "Tática", description: "Disciplina, posicionamento, consistência", angle: 306 },
-  { key: "def", label: "DEF", fullLabel: "Defesa", description: "Desarmes, interceptações, recuperações", angle: 234 },
-  { key: "cri", label: "CRI", fullLabel: "Criatividade", description: "Passes decisivos, chances criadas", angle: 162 },
+  { key: "ata", label: "ATA", fullLabel: "Ataque", description: "Gols, assistências, finalizações", angle: 90, labelPos: { x: 50, y: 4 }, badgeOffset: { x: 0, y: 14 } },
+  { key: "tec", label: "TÉC", fullLabel: "Técnica", description: "Precisão de passes, dribles, controle", angle: 18, labelPos: { x: 92, y: 36 }, badgeOffset: { x: -4, y: 12 } },
+  { key: "tat", label: "TÁT", fullLabel: "Tática", description: "Disciplina, posicionamento, consistência", angle: 306, labelPos: { x: 78, y: 88 }, badgeOffset: { x: -4, y: -10 } },
+  { key: "def", label: "DEF", fullLabel: "Defesa", description: "Desarmes, interceptações, recuperações", angle: 234, labelPos: { x: 22, y: 88 }, badgeOffset: { x: 4, y: -10 } },
+  { key: "cri", label: "CRI", fullLabel: "Criatividade", description: "Passes decisivos, chances criadas", angle: 162, labelPos: { x: 8, y: 36 }, badgeOffset: { x: 4, y: 12 } },
 ];
 
 function clamp(value: number, min: number, max: number): number {
@@ -375,75 +377,66 @@ export function SofaScoreRadarCard({
   }
 
   return (
-    <Card className={cn("bg-white dark:bg-zinc-900/50 border shadow-sm", className)}>
-      <CardHeader className="pb-2">
+    <Card className={cn("bg-zinc-900 border-zinc-800 shadow-lg", className)}>
+      <CardHeader className="py-2 px-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base font-semibold text-foreground">
-            Visão geral dos atributos
+          <CardTitle className="text-sm font-semibold text-zinc-100">
+            Atributos
           </CardTitle>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5">
             <Dialog open={infoOpen} onOpenChange={setInfoOpen}>
               <DialogTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7">
-                  <Info className="h-4 w-4 text-muted-foreground" />
+                <Button variant="ghost" size="icon" className="h-6 w-6">
+                  <Info className="h-3.5 w-3.5 text-zinc-500" />
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="bg-zinc-900 border-zinc-800">
                 <DialogHeader>
-                  <DialogTitle>Como são calculados os atributos</DialogTitle>
+                  <DialogTitle className="text-zinc-100">Como são calculados os atributos</DialogTitle>
                 </DialogHeader>
-                <div className="space-y-4 text-sm">
-                  <p className="text-muted-foreground">
-                    Os atributos são calculados com base nas estatísticas por 90 minutos,
-                    normalizados em uma escala de 0-100.
+                <div className="space-y-3 text-sm">
+                  <p className="text-zinc-400 text-xs">
+                    Atributos calculados por estatísticas a cada 90 minutos, escala 0-100.
                   </p>
                   {ATTRIBUTE_CONFIG.map((attr) => (
-                    <div key={attr.key} className="border-b pb-2">
-                      <div className="flex items-center gap-2 font-medium">
-                        <Badge variant="outline" className="text-xs">
-                          {attr.label}
-                        </Badge>
+                    <div key={attr.key} className="border-b border-zinc-800 pb-2">
+                      <div className="flex items-center gap-2 font-medium text-zinc-200">
+                        <span className="text-xs font-bold text-orange-500">{attr.label}</span>
                         {attr.fullLabel}
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {attr.description}
-                      </p>
+                      <p className="text-xs text-zinc-500 mt-0.5">{attr.description}</p>
                     </div>
                   ))}
-                  <div className="bg-muted/50 rounded-lg p-3 text-xs">
-                    <strong>Confiança:</strong> Baseada nos minutos jogados. Quanto mais
-                    minutos, mais confiável é a avaliação.
-                  </div>
                 </div>
               </DialogContent>
             </Dialog>
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7"
+              className="h-6 w-6"
               onClick={handleRecalculate}
               disabled={recalculating}
             >
-              <RefreshCw className={cn("h-4 w-4 text-muted-foreground", recalculating && "animate-spin")} />
+              <RefreshCw className={cn("h-3.5 w-3.5 text-zinc-500", recalculating && "animate-spin")} />
             </Button>
           </div>
         </div>
       </CardHeader>
 
-      <CardContent className="pt-0 space-y-4">
-        {/* Filters */}
+      <CardContent className="px-2 pb-2 pt-0">
+        {/* Compact Filters */}
         {showFilters && (
-          <div className="flex gap-2">
+          <div className="flex gap-1.5 mb-2">
             <Select value={selectedYear} onValueChange={(v) => {
               setSelectedYear(v);
               setSelectedCompetition("all");
             }}>
-              <SelectTrigger className="h-8 text-xs flex-1">
+              <SelectTrigger className="h-7 text-[11px] flex-1 bg-zinc-800 border-zinc-700 text-zinc-300">
                 <SelectValue placeholder="Ano" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-zinc-800 border-zinc-700">
                 {yearOptions.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                  <SelectItem key={opt.value} value={opt.value} className="text-xs text-zinc-300">
                     {opt.label}
                   </SelectItem>
                 ))}
@@ -451,12 +444,12 @@ export function SofaScoreRadarCard({
             </Select>
 
             <Select value={selectedCompetition} onValueChange={setSelectedCompetition}>
-              <SelectTrigger className="h-8 text-xs flex-1">
-                <SelectValue placeholder="Competição" />
+              <SelectTrigger className="h-7 text-[11px] flex-1 bg-zinc-800 border-zinc-700 text-zinc-300">
+                <SelectValue placeholder="Comp." />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-zinc-800 border-zinc-700">
                 {competitionOptions.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                  <SelectItem key={opt.value} value={opt.value} className="text-xs text-zinc-300">
                     {opt.label}
                   </SelectItem>
                 ))}
@@ -465,154 +458,159 @@ export function SofaScoreRadarCard({
           </div>
         )}
 
-        {/* Low minutes warning */}
+        {/* Low minutes warning - compact */}
         {showLowMinutesWarning && (
-          <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-500/10 rounded-md px-2 py-1">
+          <div className="flex items-center gap-1 text-[10px] text-amber-500 mb-1">
             <AlertCircle className="h-3 w-3" />
-            <span>Poucos minutos ({Math.round(aggregatedScores?.totalMinutes || 0)})</span>
+            <span>Poucos min. ({Math.round(aggregatedScores?.totalMinutes || 0)})</span>
           </div>
         )}
 
-        {/* Radar Chart */}
+        {/* Compact Radar Chart with Labels + Badges */}
         {aggregatedScores ? (
-          <div className="relative h-[260px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart data={chartData} cx="50%" cy="50%" outerRadius="65%">
-                <PolarGrid
-                  stroke="hsl(var(--muted-foreground) / 0.2)"
-                  strokeDasharray="3 3"
-                />
-                <PolarAngleAxis
-                  dataKey="attribute"
-                  tick={({ x, y, payload }) => (
-                    <text
-                      x={x}
-                      y={y}
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                      className="text-[11px] font-medium fill-muted-foreground"
-                    >
-                      {payload.value}
-                    </text>
-                  )}
-                />
-                <Radar
-                  name="Atributos"
-                  dataKey="value"
-                  stroke="hsl(0 84% 60%)"
-                  fill="hsl(0 84% 60%)"
-                  fillOpacity={0.25}
-                  strokeWidth={2}
-                />
-              </RadarChart>
-            </ResponsiveContainer>
+          <div className="relative" style={{ height: "200px" }}>
+            {/* Pentagon radar - takes 80% center area */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-[80%] h-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart data={chartData} cx="50%" cy="50%" outerRadius="78%">
+                    <PolarGrid
+                      stroke="rgba(113, 113, 122, 0.3)"
+                      strokeWidth={1}
+                    />
+                    <PolarAngleAxis
+                      dataKey="attribute"
+                      tick={false}
+                    />
+                    <Radar
+                      name="Atributos"
+                      dataKey="value"
+                      stroke="#f97316"
+                      fill="#f97316"
+                      fillOpacity={0.3}
+                      strokeWidth={2}
+                    />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
 
-            {/* Attribute value badges */}
+            {/* Labels + Badges at vertices - positioned tightly */}
             {ATTRIBUTE_CONFIG.map((attr) => {
-              const angleRad = (attr.angle - 90) * (Math.PI / 180);
-              const radius = 44;
-              const x = 50 + radius * Math.cos(angleRad);
-              const y = 50 + radius * Math.sin(angleRad);
               const value = Math.round(
                 aggregatedScores[attr.key as keyof AggregatedScores] as number
               );
+              
+              // Get badge color based on value
+              const getBadgeColor = (v: number) => {
+                if (v >= 70) return "bg-emerald-600 text-white";
+                if (v >= 50) return "bg-orange-500 text-white";
+                if (v >= 30) return "bg-amber-500 text-zinc-900";
+                return "bg-red-500 text-white";
+              };
 
               return (
                 <div
                   key={attr.key}
-                  className="absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-                  style={{ left: `${x}%`, top: `${y}%` }}
+                  className="absolute transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-0.5 pointer-events-none"
+                  style={{ 
+                    left: `${attr.labelPos.x}%`, 
+                    top: `${attr.labelPos.y}%` 
+                  }}
                 >
-                  <Badge
-                    variant={attr.key === "ata" ? "default" : "secondary"}
+                  {/* Label */}
+                  <span className="text-[10px] font-bold text-zinc-400 tracking-wide">
+                    {attr.label}
+                  </span>
+                  {/* Value badge - square style */}
+                  <div
                     className={cn(
-                      "text-xs font-bold shadow-sm",
-                      attr.key === "ata" && "bg-orange-500 hover:bg-orange-500 text-white"
+                      "min-w-[28px] h-[20px] flex items-center justify-center",
+                      "text-[11px] font-bold rounded-sm shadow-md",
+                      getBadgeColor(value)
                     )}
                   >
                     {value}
-                  </Badge>
+                  </div>
                 </div>
               );
             })}
           </div>
         ) : hasAnyStats ? (
-          // Show default values when filter yields no data but stats exist
-          <div className="relative h-[260px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart 
-                data={ATTRIBUTE_CONFIG.map((attr) => ({
-                  attribute: attr.label,
-                  value: 50,
-                  fullMark: 100,
-                }))} 
-                cx="50%" 
-                cy="50%" 
-                outerRadius="65%"
-              >
-                <PolarGrid
-                  stroke="hsl(var(--muted-foreground) / 0.2)"
-                  strokeDasharray="3 3"
-                />
-                <PolarAngleAxis
-                  dataKey="attribute"
-                  tick={({ x, y, payload }) => (
-                    <text
-                      x={x}
-                      y={y}
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                      className="text-[11px] font-medium fill-muted-foreground"
-                    >
-                      {payload.value}
-                    </text>
-                  )}
-                />
-                <Radar
-                  name="Atributos"
-                  dataKey="value"
-                  stroke="hsl(var(--muted-foreground) / 0.4)"
-                  fill="hsl(var(--muted-foreground) / 0.1)"
-                  fillOpacity={0.25}
-                  strokeWidth={2}
-                />
-              </RadarChart>
-            </ResponsiveContainer>
+          // Fallback: Show placeholder when filter yields no data
+          <div className="relative" style={{ height: "200px" }}>
             <div className="absolute inset-0 flex items-center justify-center">
-              <Badge variant="outline" className="text-xs text-muted-foreground">
+              <div className="w-[80%] h-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart 
+                    data={ATTRIBUTE_CONFIG.map((attr) => ({
+                      attribute: attr.label,
+                      value: 50,
+                      fullMark: 100,
+                    }))} 
+                    cx="50%" 
+                    cy="50%" 
+                    outerRadius="78%"
+                  >
+                    <PolarGrid stroke="rgba(113, 113, 122, 0.2)" strokeWidth={1} />
+                    <PolarAngleAxis dataKey="attribute" tick={false} />
+                    <Radar
+                      name="Atributos"
+                      dataKey="value"
+                      stroke="rgba(113, 113, 122, 0.4)"
+                      fill="rgba(113, 113, 122, 0.1)"
+                      fillOpacity={0.25}
+                      strokeWidth={2}
+                    />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+            {/* Labels at vertices */}
+            {ATTRIBUTE_CONFIG.map((attr) => (
+              <div
+                key={attr.key}
+                className="absolute transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-0.5 pointer-events-none"
+                style={{ left: `${attr.labelPos.x}%`, top: `${attr.labelPos.y}%` }}
+              >
+                <span className="text-[10px] font-bold text-zinc-500 tracking-wide">{attr.label}</span>
+                <div className="min-w-[28px] h-[20px] flex items-center justify-center text-[11px] font-bold rounded-sm bg-zinc-700 text-zinc-400">
+                  —
+                </div>
+              </div>
+            ))}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <span className="text-[10px] text-zinc-500 bg-zinc-800/90 px-2 py-1 rounded">
                 Ajuste o filtro
-              </Badge>
+              </span>
             </div>
           </div>
         ) : (
-          <div className="py-8 text-center">
-            <AlertCircle className="w-8 h-8 mx-auto mb-2 text-muted-foreground opacity-50" />
-            <p className="text-muted-foreground text-sm">
-              Sem dados disponíveis.
-            </p>
+          <div className="py-6 text-center">
+            <AlertCircle className="w-6 h-6 mx-auto mb-1 text-zinc-600" />
+            <p className="text-zinc-500 text-xs">Sem dados disponíveis.</p>
           </div>
         )}
 
-        {/* Confidence indicator */}
+        {/* Compact confidence indicator */}
         {aggregatedScores && (
-          <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+          <div className="flex items-center justify-center gap-1.5 text-[10px] text-zinc-500 mt-1">
             <span>Confiança:</span>
-            <Badge
-              variant="outline"
+            <span
               className={cn(
-                "text-[10px]",
-                confidenceLevel === "high" && "border-emerald-500/50 text-emerald-600",
-                confidenceLevel === "medium" && "border-blue-500/50 text-blue-600",
-                confidenceLevel === "low" && "border-amber-500/50 text-amber-600",
-                confidenceLevel === "none" && "border-muted text-muted-foreground"
+                "font-semibold",
+                confidenceLevel === "high" && "text-emerald-500",
+                confidenceLevel === "medium" && "text-blue-400",
+                confidenceLevel === "low" && "text-amber-500",
+                confidenceLevel === "none" && "text-zinc-500"
               )}
             >
               {confidenceLevel === "high" && "Alta"}
               {confidenceLevel === "medium" && "Média"}
               {confidenceLevel === "low" && "Baixa"}
-              {confidenceLevel === "none" && "Sem dados"}
-            </Badge>
-            <span className="text-[10px]">
+              {confidenceLevel === "none" && "—"}
+            </span>
+            <span className="text-zinc-600">
               ({Math.round(aggregatedScores.totalMinutes)} min)
             </span>
           </div>
