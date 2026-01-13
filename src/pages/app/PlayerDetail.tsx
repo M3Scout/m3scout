@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getYouTubeEmbedUrl, safeArray } from "@/lib/utils";
+import { isGoalkeeper } from "@/lib/positionUtils";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,6 +36,7 @@ import { InjuryHistorySection } from "@/components/players/sections/InjuryHistor
 import { ContractSection } from "@/components/players/sections/ContractSection";
 import { InternalEvaluationSection } from "@/components/players/sections/InternalEvaluationSection";
 import { PlayerStatsSection } from "@/components/players/sections/PlayerStatsSection";
+import { GoalkeeperStatsSection } from "@/components/players/sections/GoalkeeperStatsSection";
 import { PlayerRatingBadge } from "@/components/players/PlayerRatingBadge";
 import { RatingEvolutionChart } from "@/components/players/sections/RatingEvolutionChart";
 import { PersonalDataCard } from "@/components/players/sections/PersonalDataCard";
@@ -545,12 +547,16 @@ const PlayerDetail = () => {
         </TabsContent>
 
         {/* Stats Tab */}
-        <TabsContent value="stats">
+        <TabsContent value="stats" className="space-y-6">
           <PlayerStatsSection 
             playerId={player.id}
             playerPosition={player.position}
             onStatsChange={refetchPlayer}
           />
+          {/* GK detailed stats section (only for goalkeepers) */}
+          {isGoalkeeper(player.position) && (
+            <GoalkeeperStatsSection playerId={player.id} />
+          )}
         </TabsContent>
 
         {/* Market Value Tab */}
