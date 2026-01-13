@@ -79,7 +79,7 @@ export function AutoRatingCard({
             <Star className="w-5 h-5" />
             Nota Automática
           </CardTitle>
-          {breakdownDetails && (
+          {breakdownDetails && playerId && (
             <SafeRatingBreakdownModalV2
               details={breakdownDetails}
               rating={rating}

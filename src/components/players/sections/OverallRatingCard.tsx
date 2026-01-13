@@ -107,7 +107,7 @@ export function OverallRatingCard({
                 <span className="ml-1 hidden sm:inline">Recalcular</span>
               </Button>
             )}
-            {autoRating !== null && breakdownDetails && (
+            {autoRating !== null && breakdownDetails && playerId && (
               <SafeRatingBreakdownModalV2
                 details={breakdownDetails}
                 rating={autoRating}
