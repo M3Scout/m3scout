@@ -67,7 +67,7 @@ import {
   type AggregatedStats,
 } from "@/lib/playerStats";
 import { isGoalkeeper } from "@/lib/positionUtils";
-import { CompetitionStatsSummary } from "@/components/players/stats/CompetitionStatsSummary";
+import { CompetitionStatsSummary, SeasonEvolutionChart } from "@/components/players/stats";
 
 interface Competition {
   id: string;
@@ -706,6 +706,9 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
                   )}
                 </div>
               </div>
+
+              {/* Season Evolution Chart */}
+              <SeasonEvolutionChart stats={stats} isGoalkeeper={isGK} />
 
               {/* Expand/Collapse All Button */}
               <div className="flex items-center justify-between">
