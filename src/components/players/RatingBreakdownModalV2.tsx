@@ -88,7 +88,7 @@ function getScoreLevel(score: number): { label: string; description: string } {
   if (score >= 80) return { label: "Alto", description: "Desempenho excelente nesta métrica" };
   if (score >= 60) return { label: "Bom", description: "Desempenho acima da média" };
   if (score >= 40) return { label: "Médio", description: "Desempenho dentro da média" };
-  return { label: "Baixo", description: "Área de melhoria identificada" };
+  return { label: "Ruim", description: "Área de melhoria identificada" };
 }
 
 // Detailed stat info with group, description, and specific low-score feedback
@@ -618,19 +618,19 @@ function StatScoreLegend() {
       <span className="font-medium">Legenda:</span>
       <div className="flex items-center gap-1">
         <div className="w-3 h-3 rounded-full bg-emerald-500" />
-        <span>Alto (80+)</span>
+        <span className="text-emerald-500">Alto (80+)</span>
       </div>
       <div className="flex items-center gap-1">
         <div className="w-3 h-3 rounded-full bg-primary" />
-        <span>Bom (60-79)</span>
+        <span className="text-primary">Bom (60-79)</span>
       </div>
       <div className="flex items-center gap-1">
         <div className="w-3 h-3 rounded-full bg-amber-500" />
-        <span>Médio (40-59)</span>
+        <span className="text-amber-500">Médio (40-59)</span>
       </div>
       <div className="flex items-center gap-1">
         <div className="w-3 h-3 rounded-full bg-destructive" />
-        <span>Baixo (&lt;40)</span>
+        <span className="text-destructive">Ruim (&lt;40)</span>
       </div>
     </div>
   );
