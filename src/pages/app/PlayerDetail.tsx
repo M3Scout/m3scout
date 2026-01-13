@@ -46,7 +46,7 @@ import { MarketValueSection } from "@/components/players/sections/MarketValueSec
 import { MarketValueTab } from "@/components/players/sections/MarketValueTab";
 import { DataQualityPanel } from "@/components/players/DataQualityPanel";
 import { PlayerAttributeRadarSection } from "@/components/players/sections/PlayerAttributeRadarSection";
-import { SofaScoreRadarCard } from "@/components/players/SofaScoreRadarCard";
+import { UnifiedRadarCard } from "@/components/players/UnifiedRadarCard";
 
 interface Player {
   id: string;
@@ -438,8 +438,8 @@ const PlayerDetail = () => {
                 onRatingRecalculated={refetchPlayer}
               />
 
-              {/* SofaScore-style Attribute Radar (uses DB scores with filters) */}
-              <SofaScoreRadarCard playerId={player.id} playerPosition={player.position} showFilters={true} />
+              {/* Attribute Radar - automatically switches for GK */}
+              <UnifiedRadarCard playerId={player.id} playerPosition={player.position} showFilters={true} />
 
               {/* Strengths/Weaknesses Section */}
               <PlayerAttributeRadarSection
