@@ -22,6 +22,7 @@ import {
   Lightbulb,
 } from "lucide-react";
 import { cn, safeArray } from "@/lib/utils";
+import { getScoreColor, getScoreBarColor } from "@/lib/scoring";
 
 interface RatingDetails {
   calculated_at: string;
@@ -77,20 +78,6 @@ interface RatingBreakdownModalProps {
   details: RatingDetails | null;
   rating: number;
   trigger?: React.ReactNode;
-}
-
-function getScoreColor(score: number): string {
-  if (score >= 80) return "text-emerald-500";
-  if (score >= 60) return "text-primary";
-  if (score >= 40) return "text-amber-500";
-  return "text-destructive";
-}
-
-function getScoreBarColor(score: number): string {
-  if (score >= 80) return "bg-emerald-500";
-  if (score >= 60) return "bg-primary";
-  if (score >= 40) return "bg-amber-500";
-  return "bg-destructive";
 }
 
 function getReliabilityLabel(reliability: string): string {
