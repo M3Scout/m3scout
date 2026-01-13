@@ -613,16 +613,16 @@ function StatScoreLegend({ showTrendLegend = false }: { showTrendLegend?: boolea
         <span className="text-emerald-500">Alto (80+)</span>
       </div>
       <div className="flex items-center gap-1">
-        <div className="w-3 h-3 rounded-full bg-primary" />
-        <span className="text-primary">Bom (60-79)</span>
+        <div className="w-3 h-3 rounded-full bg-blue-500" />
+        <span className="text-blue-500">Bom (60-79)</span>
       </div>
       <div className="flex items-center gap-1">
         <div className="w-3 h-3 rounded-full bg-amber-500" />
         <span className="text-amber-500">Médio (40-59)</span>
       </div>
       <div className="flex items-center gap-1">
-        <div className="w-3 h-3 rounded-full bg-destructive" />
-        <span className="text-destructive">Ruim (&lt;40)</span>
+        <div className="w-3 h-3 rounded-full bg-red-500" />
+        <span className="text-red-500">Ruim (&lt;40)</span>
       </div>
       {showTrendLegend && (
         <>
@@ -632,8 +632,8 @@ function StatScoreLegend({ showTrendLegend = false }: { showTrendLegend?: boolea
             <span className="text-emerald-500">Melhora</span>
           </div>
           <div className="flex items-center gap-1">
-            <TrendingDown className="w-3 h-3 text-destructive" />
-            <span className="text-destructive">Queda</span>
+            <TrendingDown className="w-3 h-3 text-red-500" />
+            <span className="text-red-500">Queda</span>
           </div>
         </>
       )}

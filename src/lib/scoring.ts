@@ -87,16 +87,16 @@ export function getRatingLabel(rating: number): string {
 /**
  * Get color class for score display
  * Unified color classification:
- * - Alto (80+): Verde
- * - Bom (60-79): Azul (primary)
- * - Médio (40-59): Amarelo
- * - Ruim (<40): Vermelho
+ * - Alto (80+): Verde (emerald)
+ * - Bom (60-79): Azul (blue)
+ * - Médio (40-59): Amarelo (amber)
+ * - Ruim (<40): Vermelho (red/destructive)
  */
 export function getScoreColor(score: number): string {
   if (score >= 80) return "text-emerald-500";
-  if (score >= 60) return "text-primary";
+  if (score >= 60) return "text-blue-500";
   if (score >= 40) return "text-amber-500";
-  return "text-destructive";
+  return "text-red-500";
 }
 
 /**
@@ -104,9 +104,9 @@ export function getScoreColor(score: number): string {
  */
 export function getScoreBarColor(score: number): string {
   if (score >= 80) return "bg-emerald-500";
-  if (score >= 60) return "bg-primary";
+  if (score >= 60) return "bg-blue-500";
   if (score >= 40) return "bg-amber-500";
-  return "bg-destructive";
+  return "bg-red-500";
 }
 
 /**
@@ -124,9 +124,9 @@ export function getScoreLevel(score: number): { label: string; description: stri
  */
 export function getScoreBadgeColor(score: number): string {
   if (score >= 80) return "border-emerald-500 text-emerald-500";
-  if (score >= 60) return "border-primary text-primary";
+  if (score >= 60) return "border-blue-500 text-blue-500";
   if (score >= 40) return "border-amber-500 text-amber-500";
-  return "border-destructive text-destructive";
+  return "border-red-500 text-red-500";
 }
 
 /**
