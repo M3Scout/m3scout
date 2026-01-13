@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -35,6 +35,9 @@ import {
   HelpCircle,
   RefreshCw,
   Loader2,
+  TrendingUp,
+  TrendingDown,
+  Minus,
 } from "lucide-react";
 import { cn, safeArray } from "@/lib/utils";
 import {
@@ -53,8 +56,10 @@ import {
 } from "@/lib/scoring";
 import { StatsRadarChart } from "./StatsRadarChart";
 import { UnifiedRadarCard } from "./UnifiedRadarCard";
+import { StatTrendIndicator } from "./StatTrendIndicator";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import type { TrendDirection } from "@/hooks/useStatTrend";
 
 interface RatingBreakdownModalV2Props {
   details: RatingBreakdownV2 | ExtendedRatingBreakdownV2 | null;
@@ -599,7 +604,7 @@ function getStatInfo(statKey: string, label: unknown): StatInfo {
   };
 }
 
-function StatScoreLegend() {
+function StatScoreLegend({ showTrendLegend = false }: { showTrendLegend?: boolean }) {
   return (
     <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mb-3 p-2 bg-muted/30 rounded-md">
       <span className="font-medium">Legenda:</span>
@@ -619,6 +624,19 @@ function StatScoreLegend() {
         <div className="w-3 h-3 rounded-full bg-destructive" />
         <span className="text-destructive">Ruim (&lt;40)</span>
       </div>
+      {showTrendLegend && (
+        <>
+          <span className="text-muted-foreground/50">|</span>
+          <div className="flex items-center gap-1">
+            <TrendingUp className="w-3 h-3 text-emerald-500" />
+            <span className="text-emerald-500">Melhora</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <TrendingDown className="w-3 h-3 text-destructive" />
+            <span className="text-destructive">Queda</span>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -647,6 +665,7 @@ function StatBreakdownCard({
   // Fetch the exact saved stats source when a competition is expanded.
   // This is the SAME table the edit form writes into: public.player_stats.
   const [statsRow, setStatsRow] = useState<any | null | undefined>(undefined);
+  const [prevStatsRow, setPrevStatsRow] = useState<any | null>(null);
   const [statsReason, setStatsReason] = useState<string | null>(null);
 
   useEffect(() => {
@@ -674,6 +693,7 @@ function StatBreakdownCard({
     if (statsRow !== undefined) return;
 
     (async () => {
+      // Fetch current season stats
       const { data, error } = await supabase
         .from("player_stats")
         .select("*")
@@ -709,6 +729,21 @@ function StatBreakdownCard({
       console.log("[BREAKDOWN] raw stats for comp/year", data);
       setStatsRow(data);
       setStatsReason(null);
+      
+      // Fetch previous season stats for trend calculation
+      const prevYear = seasonYear - 1;
+      const { data: prevData } = await supabase
+        .from("player_stats")
+        .select("*")
+        .eq("player_id", playerId)
+        .eq("competition_id", compId)
+        .eq("season_year", prevYear)
+        .maybeSingle();
+      
+      if (prevData) {
+        console.log("[BREAKDOWN] previous season stats:", prevData);
+        setPrevStatsRow(prevData);
+      }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isExpanded, playerId, compId, seasonYear, positionGroup]);
@@ -906,6 +941,33 @@ function StatBreakdownCard({
   const positiveStats = allStats.filter((s) => s.score >= 60).sort((a, b) => b.score - a.score);
   const negativeStats = allStats.filter((s) => s.score < 40).sort((a, b) => a.score - b.score);
   
+  // Calculate trends by comparing current vs previous season stats
+  const statTrends = useMemo(() => {
+    if (!statsRow || !prevStatsRow) return {};
+    
+    const trends: Record<string, { direction: TrendDirection; percentChange: number | null; previousValue: number | null }> = {};
+    
+    for (const stat of allStats) {
+      const currentValue = Number(statsRow[stat.stat] ?? 0);
+      const previousValue = Number(prevStatsRow[stat.stat] ?? 0);
+      
+      if (previousValue === 0 && currentValue === 0) {
+        trends[stat.stat] = { direction: 'stable', percentChange: 0, previousValue: 0 };
+      } else if (previousValue === 0) {
+        trends[stat.stat] = { direction: 'up', percentChange: 100, previousValue: 0 };
+      } else {
+        const percentChange = ((currentValue - previousValue) / previousValue) * 100;
+        let direction: TrendDirection = 'stable';
+        if (percentChange >= 10) direction = 'up';
+        else if (percentChange <= -10) direction = 'down';
+        
+        trends[stat.stat] = { direction, percentChange, previousValue };
+      }
+    }
+    
+    return trends;
+  }, [statsRow, prevStatsRow, allStats]);
+  
   return (
     <Card className="bg-secondary/20 border-border/50">
       <CardHeader className="pb-2 cursor-pointer" onClick={onToggle}>
@@ -1026,7 +1088,7 @@ function StatBreakdownCard({
             )}
             
             {/* Color Legend */}
-            {availableStats.length > 0 && <StatScoreLegend />}
+            {availableStats.length > 0 && <StatScoreLegend showTrendLegend={!!prevStatsRow} />}
             
             {/* Fallback when no stats available */}
             {availableStats.length === 0 && (
@@ -1052,6 +1114,10 @@ function StatBreakdownCard({
                 const playerValue = stat.value_raw ?? stat.value ?? null;
                 const per90Value = stat.value_per90;
                 
+                // Get trend data for this stat
+                const trend = statTrends[stat.stat];
+                const hasTrend = trend && prevStatsRow;
+                
                 // Determine if this is a positive contributor (high score in positive stat OR low score in inverse/negative stat)
                 const isPositiveContributor = (statClassification === "positive" && stat.score >= 60) ||
                                               (statClassification === "negative" && stat.score >= 60); // inverse stat high = good
@@ -1076,6 +1142,17 @@ function StatBreakdownCard({
                             </Badge>
                           </div>
                           <div className="flex items-center gap-2">
+                            {/* Trend indicator */}
+                            {hasTrend && trend.direction !== 'stable' && (
+                              <StatTrendIndicator
+                                direction={trend.direction}
+                                percentChange={trend.percentChange}
+                                previousValue={trend.previousValue}
+                                currentValue={playerValue ?? undefined}
+                                isInverse={stat.inverse}
+                                size="sm"
+                              />
+                            )}
                             <span className={cn("font-semibold tabular-nums", getScoreColor(stat.score))}>
                               {formatFixed(stat.score, 0)}
                             </span>
@@ -1134,6 +1211,35 @@ function StatBreakdownCard({
                             </div>
                           )}
                         </div>
+                        
+                        {/* Trend info in tooltip */}
+                        {hasTrend && trend.direction !== 'stable' && (
+                          <div className={cn(
+                            "flex items-center gap-2 text-xs rounded px-2 py-1 border",
+                            trend.direction === 'up' && !stat.inverse && "bg-emerald-500/10 border-emerald-500/30",
+                            trend.direction === 'down' && !stat.inverse && "bg-destructive/10 border-destructive/30",
+                            trend.direction === 'up' && stat.inverse && "bg-destructive/10 border-destructive/30",
+                            trend.direction === 'down' && stat.inverse && "bg-emerald-500/10 border-emerald-500/30",
+                          )}>
+                            {trend.direction === 'up' ? (
+                              <TrendingUp className="w-3 h-3" />
+                            ) : (
+                              <TrendingDown className="w-3 h-3" />
+                            )}
+                            <span>
+                              {trend.percentChange !== null && (
+                                <>
+                                  {trend.percentChange > 0 ? '+' : ''}{formatFixed(trend.percentChange, 0)}% vs temporada anterior
+                                </>
+                              )}
+                            </span>
+                            {trend.previousValue !== null && (
+                              <span className="text-muted-foreground ml-auto">
+                                ({formatFixed(trend.previousValue, 0)} → {playerValue})
+                              </span>
+                            )}
+                          </div>
+                        )}
                         
                         {/* Position-based feedback */}
                         {isNegativeContributor && (
