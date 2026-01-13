@@ -55,6 +55,7 @@ interface RatingBreakdownModalV2Props {
   rating: number;
   trigger?: React.ReactNode;
   playerId: string; // REQUIRED - must always be passed
+  playerPosition?: string; // Player position for radar calculation
   isAdmin?: boolean;
   onRecalculated?: () => void;
 }
@@ -1269,6 +1270,7 @@ export function RatingBreakdownModalV2({
   rating, 
   trigger,
   playerId,
+  playerPosition,
   isAdmin,
   onRecalculated,
 }: RatingBreakdownModalV2Props) {
@@ -1465,7 +1467,7 @@ export function RatingBreakdownModalV2({
 
           {/* Radar Tab - SofaScore Style */}
           <TabsContent value="radar" className="mt-4">
-            <SofaScoreRadarCard playerId={playerId} showFilters={true} />
+            <SofaScoreRadarCard playerId={playerId} playerPosition={playerPosition} showFilters={true} />
           </TabsContent>
 
           {/* Competitions Tab */}

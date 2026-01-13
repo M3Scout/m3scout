@@ -439,7 +439,7 @@ const PlayerDetail = () => {
               />
 
               {/* SofaScore-style Attribute Radar (uses DB scores with filters) */}
-              <SofaScoreRadarCard playerId={player.id} showFilters={true} />
+              <SofaScoreRadarCard playerId={player.id} playerPosition={player.position} showFilters={true} />
 
               {/* Strengths/Weaknesses Section */}
               <PlayerAttributeRadarSection
