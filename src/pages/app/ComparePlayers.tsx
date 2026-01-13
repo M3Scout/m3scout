@@ -342,7 +342,7 @@ const ComparePlayers = () => {
                   <p className="text-xs text-muted-foreground">{player.position}</p>
                   {player.auto_rating !== null && (
                     <div className="mt-2">
-                      <PlayerRatingBadge rating={player.auto_rating} size="sm" />
+                      <PlayerRatingBadge rating={player.auto_rating} playerPosition={player.position} size="sm" />
                     </div>
                   )}
                 </CardContent>
