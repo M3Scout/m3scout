@@ -45,6 +45,12 @@ import {
 } from "@/lib/playerRatingV2";
 import type { ExtendedRatingBreakdownV2, ExtendedCompetitionBreakdown } from "@/lib/autoRatingDetailsAdapter";
 import { formatFixed } from "@/lib/formatters";
+import { 
+  getScoreColor, 
+  getScoreBarColor, 
+  getScoreLevel, 
+  getScoreBadgeColor 
+} from "@/lib/scoring";
 import { StatsRadarChart } from "./StatsRadarChart";
 import { UnifiedRadarCard } from "./UnifiedRadarCard";
 import { supabase } from "@/integrations/supabase/client";
@@ -70,26 +76,7 @@ function competitionHasFlags(comp: CompetitionBreakdown | ExtendedCompetitionBre
   return 'has_data' in comp && 'computed' in comp;
 }
 
-function getScoreColor(score: number): string {
-  if (score >= 80) return "text-emerald-500";
-  if (score >= 60) return "text-primary";
-  if (score >= 40) return "text-amber-500";
-  return "text-destructive";
-}
 
-function getScoreBarColor(score: number): string {
-  if (score >= 80) return "bg-emerald-500";
-  if (score >= 60) return "bg-primary";
-  if (score >= 40) return "bg-amber-500";
-  return "bg-destructive";
-}
-
-function getScoreLevel(score: number): { label: string; description: string } {
-  if (score >= 80) return { label: "Alto", description: "Desempenho excelente nesta métrica" };
-  if (score >= 60) return { label: "Bom", description: "Desempenho acima da média" };
-  if (score >= 40) return { label: "Médio", description: "Desempenho dentro da média" };
-  return { label: "Ruim", description: "Área de melhoria identificada" };
-}
 
 // Detailed stat info with group, description, and specific low-score feedback
 interface StatInfo {
@@ -1113,13 +1100,7 @@ function StatBreakdownCard({
                           </div>
                           <Badge 
                             variant="outline" 
-                            className={cn(
-                              "text-xs ml-auto",
-                              stat.score >= 80 && "border-emerald-500 text-emerald-500",
-                              stat.score >= 60 && stat.score < 80 && "border-primary text-primary",
-                              stat.score >= 40 && stat.score < 60 && "border-amber-500 text-amber-500",
-                              stat.score < 40 && "border-destructive text-destructive"
-                            )}
+                            className={cn("text-xs ml-auto", getScoreBadgeColor(stat.score))}
                           >
                             {scoreLevel.label}
                           </Badge>
