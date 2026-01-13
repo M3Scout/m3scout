@@ -47,7 +47,7 @@ import { OverallRatingCard } from "@/components/players/sections/OverallRatingCa
 import { MarketValueSection } from "@/components/players/sections/MarketValueSection";
 import { MarketValueTab } from "@/components/players/sections/MarketValueTab";
 import { DataQualityPanel } from "@/components/players/DataQualityPanel";
-import { PlayerAttributeRadarSection } from "@/components/players/sections/PlayerAttributeRadarSection";
+
 import { UnifiedRadarCard } from "@/components/players/UnifiedRadarCard";
 
 interface Player {
@@ -442,12 +442,6 @@ const PlayerDetail = () => {
 
               {/* Attribute Radar - automatically switches for GK */}
               <UnifiedRadarCard playerId={player.id} playerPosition={player.position} showFilters={true} />
-
-              {/* Strengths/Weaknesses Section */}
-              <PlayerAttributeRadarSection
-                playerId={player.id}
-                playerPosition={player.position}
-              />
 
               {/* Market Value */}
               <MarketValueSection
