@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import logoM3 from "@/assets/logo-m3.png";
+import logoM3Icon from "@/assets/logo-m3-icon.png";
 
 const navItems = [
   { href: "/app", icon: LayoutDashboard, label: "Dashboard" },
@@ -123,11 +124,19 @@ export function AppSidebar() {
         {/* Logo Section */}
         <div className="h-14 flex items-center justify-between px-3 border-b border-zinc-800/20">
           <Link to="/app" className="flex items-center">
-            <img 
-              src={logoM3} 
-              alt="M3 Agency" 
-              className={cn("h-8 w-auto transition-all", isCollapsed && "h-6")}
-            />
+            {isCollapsed ? (
+              <img 
+                src={logoM3Icon} 
+                alt="M3 Agency" 
+                className="h-8 w-8 rounded-lg"
+              />
+            ) : (
+              <img 
+                src={logoM3} 
+                alt="M3 Agency" 
+                className="h-8 w-auto"
+              />
+            )}
           </Link>
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
