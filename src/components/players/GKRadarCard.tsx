@@ -45,8 +45,8 @@ import {
   GKStatRow, 
   GKRadarScores,
   GK_RADAR_LABELS,
-  gkRadarToDetails 
 } from "@/lib/goalkeeperRadar";
+import { calculateAndSaveGKRadar } from "@/lib/goalkeeperRadarService";
 
 interface GKRadarCardProps {
   playerId: string;
@@ -261,39 +261,23 @@ export function GKRadarCard({
     }));
   }, [displayScores]);
 
-  // Handle recalculate
+  // Handle recalculate with percentile normalization
   const handleRecalculate = async () => {
     if (rawStats.length === 0) return;
     
     setLoading(true);
     try {
-      const result = computeGKRadar(rawStats);
+      // Use the service to calculate with percentile and save
+      const result = await calculateAndSaveGKRadar(playerId, true);
       
-      // Update player auto_rating_details with gk_radar
-      const { data: player } = await supabase
-        .from("players")
-        .select("auto_rating_details")
-        .eq("id", playerId)
-        .maybeSingle();
-
-      const existingDetails = (player?.auto_rating_details as Record<string, unknown>) || {};
-      const gkDetails = gkRadarToDetails(result);
-      const newDetails = {
-        ...existingDetails,
-        ...gkDetails,
-      };
-
-      await supabase
-        .from("players")
-        .update({ auto_rating_details: newDetails as any })
-        .eq("id", playerId);
-
-      setGkRadarData({
-        scores: result.scores,
-        confidence: result.confidence,
-        minutes_used: result.minutes_used,
-      });
-      setAnimationKey(prev => prev + 1);
+      if (result?.scores) {
+        setGkRadarData({
+          scores: result.scores,
+          confidence: result.confidence,
+          minutes_used: result.minutes_used,
+        });
+        setAnimationKey(prev => prev + 1);
+      }
     } catch (err) {
       console.error("Error recalculating GK radar:", err);
     } finally {
