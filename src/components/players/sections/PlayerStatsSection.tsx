@@ -28,6 +28,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -47,6 +52,7 @@ import {
   Clock,
   Target,
   Shield,
+  ChevronDown,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -59,6 +65,7 @@ import {
   type AggregatedStats,
 } from "@/lib/playerStats";
 import { isGoalkeeper } from "@/lib/positionUtils";
+import { CompetitionStatsSummary } from "@/components/players/stats/CompetitionStatsSummary";
 
 interface Competition {
   id: string;
@@ -95,6 +102,20 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedStats, setSelectedStats] = useState<StatsWithCompetition | null>(null);
   const [statsToDelete, setStatsToDelete] = useState<string | null>(null);
+  const [expandedStats, setExpandedStats] = useState<Set<string>>(new Set());
+
+  // Toggle expanded state for a stat row
+  const toggleStatExpanded = (statId: string) => {
+    setExpandedStats(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(statId)) {
+        newSet.delete(statId);
+      } else {
+        newSet.add(statId);
+      }
+      return newSet;
+    });
+  };
 
   // Form state - includes goalkeeper stats
   const [formData, setFormData] = useState({
@@ -594,61 +615,89 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
                       </TableHeader>
                       <TableBody>
                         {safeArray(statsBySeason[season]).map((stat) => (
-                          <TableRow key={stat.id}>
-                            <TableCell className="font-medium">
-                              {stat.competitions?.name || "Sem competição"}
-                            </TableCell>
-                            <TableCell className="text-center">{stat.matches}</TableCell>
-                            <TableCell className="text-center">{stat.minutes}</TableCell>
-                            {isGK ? (
-                              <>
-                                <TableCell className="text-center font-semibold text-primary">
-                                  {stat.saves || 0}
-                                </TableCell>
-                                <TableCell className="text-center">{stat.goals_conceded || 0}</TableCell>
-                                <TableCell className="text-center text-emerald-500">{stat.clean_sheets || 0}</TableCell>
-                                <TableCell className="text-center">{stat.penalties_saved || 0}</TableCell>
-                                <TableCell className="text-center text-destructive">{stat.errors_leading_to_goal || 0}</TableCell>
-                              </>
-                            ) : (
-                              <>
-                                <TableCell className="text-center font-semibold text-primary">
-                                  {stat.goals}
-                                </TableCell>
-                                <TableCell className="text-center">{stat.assists}</TableCell>
-                                <TableCell className="text-center">{stat.yellow_cards}</TableCell>
-                                <TableCell className="text-center">{stat.red_cards}</TableCell>
-                                <TableCell className="text-center">{stat.tackles}</TableCell>
-                                <TableCell className="text-center">{stat.interceptions}</TableCell>
-                                <TableCell className="text-center">{stat.recoveries}</TableCell>
-                              </>
-                            )}
-                            {canEdit && (
-                              <TableCell>
-                                <div className="flex gap-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleOpenDialog(stat)}
-                                  >
-                                    <Pencil className="w-4 h-4" />
-                                  </Button>
-                                  {isAdmin && (
+                          <>
+                            <TableRow 
+                              key={stat.id} 
+                              className="cursor-pointer hover:bg-muted/50 transition-colors"
+                              onClick={() => toggleStatExpanded(stat.id)}
+                            >
+                              <TableCell className="font-medium">
+                                <div className="flex items-center gap-2">
+                                  <ChevronDown 
+                                    className={`w-4 h-4 text-muted-foreground transition-transform ${
+                                      expandedStats.has(stat.id) ? 'rotate-180' : ''
+                                    }`} 
+                                  />
+                                  {stat.competitions?.name || "Sem competição"}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-center">{stat.matches}</TableCell>
+                              <TableCell className="text-center">{stat.minutes}</TableCell>
+                              {isGK ? (
+                                <>
+                                  <TableCell className="text-center font-semibold text-blue-500">
+                                    {stat.saves || 0}
+                                  </TableCell>
+                                  <TableCell className="text-center">{stat.goals_conceded || 0}</TableCell>
+                                  <TableCell className="text-center text-emerald-500">{stat.clean_sheets || 0}</TableCell>
+                                  <TableCell className="text-center">{stat.penalties_saved || 0}</TableCell>
+                                  <TableCell className="text-center text-red-500">{stat.errors_leading_to_goal || 0}</TableCell>
+                                </>
+                              ) : (
+                                <>
+                                  <TableCell className="text-center font-semibold text-blue-500">
+                                    {stat.goals}
+                                  </TableCell>
+                                  <TableCell className="text-center">{stat.assists}</TableCell>
+                                  <TableCell className="text-center">{stat.yellow_cards}</TableCell>
+                                  <TableCell className="text-center">{stat.red_cards}</TableCell>
+                                  <TableCell className="text-center">{stat.tackles}</TableCell>
+                                  <TableCell className="text-center">{stat.interceptions}</TableCell>
+                                  <TableCell className="text-center">{stat.recoveries}</TableCell>
+                                </>
+                              )}
+                              {canEdit && (
+                                <TableCell>
+                                  <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      onClick={() => {
-                                        setStatsToDelete(stat.id);
-                                        setDeleteDialogOpen(true);
-                                      }}
+                                      onClick={() => handleOpenDialog(stat)}
                                     >
-                                      <Trash2 className="w-4 h-4 text-destructive" />
+                                      <Pencil className="w-4 h-4" />
                                     </Button>
-                                  )}
-                                </div>
-                              </TableCell>
+                                    {isAdmin && (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => {
+                                          setStatsToDelete(stat.id);
+                                          setDeleteDialogOpen(true);
+                                        }}
+                                      >
+                                        <Trash2 className="w-4 h-4 text-red-500" />
+                                      </Button>
+                                    )}
+                                  </div>
+                                </TableCell>
+                              )}
+                            </TableRow>
+                            {/* Expanded row with full stats */}
+                            {expandedStats.has(stat.id) && (
+                              <TableRow key={`${stat.id}-expanded`}>
+                                <TableCell 
+                                  colSpan={isGK ? (canEdit ? 9 : 8) : (canEdit ? 11 : 10)}
+                                  className="bg-muted/30 p-4"
+                                >
+                                  <CompetitionStatsSummary
+                                    stats={stat as PlayerStats}
+                                    playerPosition={playerPosition}
+                                    competitionName={stat.competitions?.name}
+                                  />
+                                </TableCell>
+                              </TableRow>
                             )}
-                          </TableRow>
+                          </>
                         ))}
                         {/* Totals row */}
                         <TableRow className="bg-muted/50 font-semibold">
@@ -661,7 +710,7 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
                           </TableCell>
                           {isGK ? (
                             <>
-                              <TableCell className="text-center text-primary">
+                              <TableCell className="text-center text-blue-500">
                                 {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.saves || 0), 0)}
                               </TableCell>
                               <TableCell className="text-center">
@@ -673,13 +722,13 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
                               <TableCell className="text-center">
                                 {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.penalties_saved || 0), 0)}
                               </TableCell>
-                              <TableCell className="text-center text-destructive">
+                              <TableCell className="text-center text-red-500">
                                 {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.errors_leading_to_goal || 0), 0)}
                               </TableCell>
                             </>
                           ) : (
                             <>
-                              <TableCell className="text-center text-primary">
+                              <TableCell className="text-center text-blue-500">
                                 {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.goals || 0), 0)}
                               </TableCell>
                               <TableCell className="text-center">
