@@ -17,6 +17,13 @@ interface GoalkeeperStatsData {
   goals_conceded: number;
   clean_sheets: number;
   errors_leading_to_goal: number;
+  // Extended GK stats
+  shots_on_target_against?: number;
+  penalty_faced?: number;
+  claims?: number;
+  crosses_faced?: number;
+  crosses_stopped?: number;
+  errors_leading_to_shot?: number;
   // Aerial & Presence
   punches: number;
   successful_runs_out: number;
@@ -51,6 +58,16 @@ export function GoalkeeperStats({ stats }: GoalkeeperStatsProps) {
   const safe = (val: number | undefined | null): number => 
     typeof val === "number" && !isNaN(val) ? val : 0;
 
+  // Calculate save percentage
+  const shotsAgainst = safe(stats.shots_on_target_against);
+  const saves = safe(stats.saves);
+  const goalsConc = safe(stats.goals_conceded);
+  
+  // Use shots_on_target_against if available, otherwise fallback
+  const savePct = shotsAgainst > 0 
+    ? Math.round((saves / shotsAgainst) * 100)
+    : (saves + goalsConc > 0 ? Math.round((saves / (saves + goalsConc)) * 100) : 0);
+
   return (
     <div className="space-y-6">
       {/* A) Goalkeeping Defense */}
@@ -75,8 +92,18 @@ export function GoalkeeperStats({ stats }: GoalkeeperStatsProps) {
           value={safe(stats.saves_inside_box)} 
         />
         <StatCard 
+          label="% Defesas" 
+          value={savePct}
+          variant="success"
+        />
+        <StatCard 
+          label="Chutes Sofridos" 
+          value={shotsAgainst || undefined}
+        />
+        <StatCard 
           label="Pênaltis Defendidos" 
           value={safe(stats.penalties_saved)} 
+          total={safe(stats.penalty_faced) || undefined}
           variant="success"
         />
         <StatCard 
@@ -94,16 +121,25 @@ export function GoalkeeperStats({ stats }: GoalkeeperStatsProps) {
           value={safe(stats.errors_leading_to_goal)} 
           variant={safe(stats.errors_leading_to_goal) > 0 ? "danger" : "default"}
         />
+        <StatCard 
+          label="Erros p/ Finalização" 
+          value={safe(stats.errors_leading_to_shot)} 
+          variant={safe(stats.errors_leading_to_shot) > 0 ? "warning" : "default"}
+        />
       </StatGroup>
 
       {/* B) Aerial Play & Presence */}
       <StatGroup title="Jogo Aéreo e Presença" icon={<Target className="w-4 h-4" />}>
         <StatCard 
+          label="Saídas (Claims)" 
+          value={safe(stats.claims)} 
+        />
+        <StatCard 
           label="Socos" 
           value={safe(stats.punches)} 
         />
         <StatCard 
-          label="Saídas" 
+          label="Saídas do Gol" 
           value={safe(stats.successful_runs_out)} 
           total={safe(stats.total_runs_out) || undefined}
           showPercentage={safe(stats.total_runs_out) > 0}
@@ -111,6 +147,16 @@ export function GoalkeeperStats({ stats }: GoalkeeperStatsProps) {
         <StatCard 
           label="Bolas Aéreas Afastadas" 
           value={safe(stats.high_claims)} 
+        />
+        <StatCard 
+          label="Cruzamentos Enfrentados" 
+          value={safe(stats.crosses_faced)} 
+        />
+        <StatCard 
+          label="Cruzamentos Interceptados" 
+          value={safe(stats.crosses_stopped)} 
+          total={safe(stats.crosses_faced) || undefined}
+          showPercentage={safe(stats.crosses_faced) > 0}
         />
       </StatGroup>
 
