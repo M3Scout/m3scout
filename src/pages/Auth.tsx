@@ -7,6 +7,7 @@ import { Eye, EyeOff, ArrowLeft, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { z } from "zod";
+import logoM3 from "@/assets/logo-m3.png";
 
 const emailSchema = z.string().email("E-mail inválido");
 const passwordSchema = z.string().min(6, "Senha deve ter no mínimo 6 caracteres");
@@ -130,11 +131,8 @@ const Auth = () => {
         {/* Card */}
         <div className="glass-card p-8">
           {/* Logo */}
-          <div className="flex items-center gap-3 mb-8">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary font-bold text-primary-foreground">
-              M3
-            </div>
-            <span className="text-lg font-semibold">M3 Agency</span>
+          <div className="flex items-center mb-8">
+            <img src={logoM3} alt="M3 Agency" className="h-10 w-auto" />
           </div>
 
           {/* Header */}

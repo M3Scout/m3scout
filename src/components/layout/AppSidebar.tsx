@@ -18,6 +18,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import logoM3 from "@/assets/logo-m3.png";
 
 const navItems = [
   { href: "/app", icon: LayoutDashboard, label: "Dashboard" },
@@ -55,11 +56,8 @@ export function AppSidebar() {
     <>
       {/* Mobile Header - Minimal */}
       <header className="lg:hidden fixed top-0 left-0 right-0 z-50 h-14 border-b border-zinc-800/30 bg-[hsl(222,47%,4%)]/98 backdrop-blur-md flex items-center justify-between px-4">
-        <Link to="/app" className="flex items-center gap-2.5">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary font-bold text-white text-xs">
-            M3
-          </div>
-          <span className="text-sm font-semibold text-white tracking-tight">M3 Agency</span>
+        <Link to="/app" className="flex items-center">
+          <img src={logoM3} alt="M3 Agency" className="h-7 w-auto" />
         </Link>
         <button 
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -124,11 +122,12 @@ export function AppSidebar() {
       >
         {/* Logo Section */}
         <div className="h-14 flex items-center justify-between px-3 border-b border-zinc-800/20">
-          <Link to="/app" className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary font-bold text-white text-sm shrink-0">
-              M3
-            </div>
-            {!isCollapsed && <span className="text-sm font-semibold text-white tracking-tight">M3 Agency</span>}
+          <Link to="/app" className="flex items-center">
+            <img 
+              src={logoM3} 
+              alt="M3 Agency" 
+              className={cn("h-8 w-auto transition-all", isCollapsed && "h-6")}
+            />
           </Link>
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}

@@ -2,7 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Menu, X, Lock } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-
+import logoM3 from "@/assets/logo-m3.png";
 export function PublicHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
@@ -24,13 +24,12 @@ export function PublicHeader() {
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 flex-shrink-0">
-            <div className="flex h-9 w-9 items-center justify-center bg-[#e52421] text-white font-bold text-sm">
-              M3
-            </div>
-            <span className="text-white text-sm font-medium tracking-wide hidden sm:block">
-              M3 AGENCY
-            </span>
+          <Link to="/" className="flex items-center flex-shrink-0">
+            <img 
+              src={logoM3} 
+              alt="M3 Agency" 
+              className="h-8 sm:h-9 w-auto"
+            />
           </Link>
 
           {/* Desktop Navigation - Centered */}
