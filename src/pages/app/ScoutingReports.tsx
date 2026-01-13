@@ -93,12 +93,12 @@ const ScoutingReports = () => {
     report.players?.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Get score color based on value
+  // Get score color based on value - using unified color system
   const getScoreColor = (score: number) => {
-    if (score >= 80) return "text-primary";
-    if (score >= 60) return "text-white";
-    if (score >= 40) return "text-zinc-400";
-    return "text-zinc-500";
+    if (score >= 80) return "text-emerald-500";
+    if (score >= 60) return "text-blue-500";
+    if (score >= 40) return "text-amber-500";
+    return "text-red-500";
   };
 
   return (

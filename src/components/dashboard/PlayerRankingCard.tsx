@@ -49,10 +49,11 @@ const getMedalColor = (rank: number) => {
   }
 };
 
+// Rating color: 4.5+ = green, 4+ = blue, 3+ = amber, <3 = muted
 const getRatingBgColor = (rating: number | null) => {
   if (!rating) return "bg-muted";
   if (rating >= 4.5) return "bg-emerald-500/20 text-emerald-500";
-  if (rating >= 4.0) return "bg-primary/20 text-primary";
+  if (rating >= 4.0) return "bg-blue-500/20 text-blue-500";
   if (rating >= 3.0) return "bg-amber-500/20 text-amber-500";
   return "bg-muted text-muted-foreground";
 };
