@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,9 +32,11 @@ import {
   getConfidenceLevelFromValue,
   type AttributeScoresData,
 } from "@/lib/attributeScores";
+import { computeRadarAttributes, type PlayerStatRow } from "@/lib/attributeRadar";
 
 interface SofaScoreRadarCardProps {
   playerId: string;
+  playerPosition?: string;
   showFilters?: boolean;
   className?: string;
 }
@@ -42,6 +44,14 @@ interface SofaScoreRadarCardProps {
 interface FilterOption {
   value: string;
   label: string;
+}
+
+interface StatsRowWithName {
+  season_year: number;
+  competition_id: string;
+  competition_name: string;
+  minutes: number;
+  rawStats?: PlayerStatRow;
 }
 
 interface AggregatedScores {
@@ -68,13 +78,15 @@ function clamp(value: number, min: number, max: number): number {
 
 export function SofaScoreRadarCard({
   playerId,
+  playerPosition = "Atacante",
   showFilters = true,
   className,
 }: SofaScoreRadarCardProps) {
   const [loading, setLoading] = useState(true);
   const [recalculating, setRecalculating] = useState(false);
   const [scores, setScores] = useState<AttributeScoresData[]>([]);
-  const [statsRows, setStatsRows] = useState<{ season_year: number; competition_id: string; competition_name: string; minutes: number }[]>([]);
+  const [statsRows, setStatsRows] = useState<StatsRowWithName[]>([]);
+  const [rawStats, setRawStats] = useState<PlayerStatRow[]>([]);
   const [infoOpen, setInfoOpen] = useState(false);
   
   // Filters
@@ -88,45 +100,61 @@ export function SofaScoreRadarCard({
 
   const fetchData = async () => {
     setLoading(true);
+    console.log("[RADAR] Fetching data for player:", playerId);
+    
     try {
       // Fetch attribute scores
       const scoresData = await fetchPlayerAllAttributeScores(playerId);
       setScores(scoresData);
+      console.log("[RADAR] Fetched scores:", scoresData.length, "rows");
 
-      // Fetch stats rows for filter options
-      const { data: statsData } = await supabase
+      // Fetch ALL stats rows with full data for local calculation fallback
+      const { data: statsData, error } = await supabase
         .from("player_stats")
         .select(`
-          season_year,
-          competition_id,
-          minutes,
+          *,
           competitions:competition_id(name)
         `)
         .eq("player_id", playerId)
-        .not("competition_id", "is", null)
-        .gt("minutes", 0);
+        .not("competition_id", "is", null);
+
+      if (error) {
+        console.error("[RADAR] Error fetching stats:", error);
+      }
 
       if (statsData) {
-        const mapped = statsData.map((row) => ({
-          season_year: row.season_year,
-          competition_id: row.competition_id as string,
-          competition_name: (row.competitions as any)?.name || "Competição",
-          minutes: row.minutes,
-        }));
+        // Store raw stats for local calculation
+        const rawStatsRows = statsData.map((row) => row as unknown as PlayerStatRow);
+        setRawStats(rawStatsRows);
+        
+        // Map for UI
+        const mapped = statsData
+          .filter((row) => row.minutes > 0)
+          .map((row) => ({
+            season_year: row.season_year,
+            competition_id: row.competition_id as string,
+            competition_name: (row.competitions as any)?.name || "Competição",
+            minutes: row.minutes,
+            rawStats: row as unknown as PlayerStatRow,
+          }));
         setStatsRows(mapped);
+        console.log("[RADAR] Stats rows with minutes > 0:", mapped.length);
 
-        // Calculate missing scores
-        await ensureMissingScores(mapped, scoresData);
+        // Calculate missing scores in background
+        if (scoresData.length === 0 && mapped.length > 0) {
+          console.log("[RADAR] No persisted scores, calculating...");
+          await ensureMissingScores(mapped, scoresData);
+        }
       }
     } catch (error) {
-      console.error("Error fetching radar data:", error);
+      console.error("[RADAR] Error fetching radar data:", error);
     } finally {
       setLoading(false);
     }
   };
 
   const ensureMissingScores = async (
-    stats: typeof statsRows,
+    stats: StatsRowWithName[],
     existingScores: AttributeScoresData[]
   ) => {
     const existingSet = new Set(
@@ -178,54 +206,109 @@ export function SofaScoreRadarCard({
   }, [statsRows, selectedYear]);
 
   // Calculate aggregated scores based on filters
+  // Uses persisted scores when available, falls back to local calculation
   const aggregatedScores = useMemo<AggregatedScores | null>(() => {
-    if (scores.length === 0) return null;
-
-    // Filter scores based on selection
-    let filtered = scores;
-
+    // Filter stats rows based on selection
+    let filteredStats = statsRows;
+    
     if (selectedYear !== "all") {
-      filtered = filtered.filter((s) => String(s.season_year) === selectedYear);
+      filteredStats = filteredStats.filter((s) => String(s.season_year) === selectedYear);
     }
-
+    
     if (selectedCompetition !== "all") {
-      filtered = filtered.filter((s) => s.competition_id === selectedCompetition);
+      filteredStats = filteredStats.filter((s) => s.competition_id === selectedCompetition);
+    }
+    
+    // If we have no stats at all with the filter, return null
+    if (filteredStats.length === 0) {
+      console.log("[RADAR] No stats match filter, checking raw stats fallback");
+      // Try local calculation if we have raw stats
+      if (rawStats.length > 0) {
+        const result = computeRadarAttributes(rawStats, playerPosition);
+        if (result.ata !== null) {
+          return {
+            ata: result.ata ?? 50,
+            tec: result.tec ?? 50,
+            def: result.def ?? 50,
+            tat: result.tat ?? 50,
+            cri: result.cri ?? 50,
+            confidence: result.confidence === "high" ? 1 : result.confidence === "medium" ? 0.7 : 0.35,
+            totalMinutes: rawStats.reduce((sum, r) => sum + (r.minutes || 0), 0),
+          };
+        }
+      }
+      return null;
     }
 
-    if (filtered.length === 0) return null;
-
-    // Weighted average by minutes (from details or confidence)
-    let totalMinutes = 0;
-    let weightedAta = 0;
-    let weightedTec = 0;
-    let weightedDef = 0;
-    let weightedTat = 0;
-    let weightedCri = 0;
-
-    for (const row of filtered) {
-      const details = row.details as { minutes?: number } | null;
-      const minutes = details?.minutes ?? (row.attr_confidence ?? 0.5) * 900;
-      
-      totalMinutes += minutes;
-      weightedAta += (row.ata_score_100 ?? 50) * minutes;
-      weightedTec += (row.tec_score_100 ?? 50) * minutes;
-      weightedDef += (row.def_score_100 ?? 50) * minutes;
-      weightedTat += (row.tat_score_100 ?? 50) * minutes;
-      weightedCri += (row.cri_score_100 ?? 50) * minutes;
+    // Try to use persisted scores first
+    let filteredScores = scores;
+    
+    if (selectedYear !== "all") {
+      filteredScores = filteredScores.filter((s) => String(s.season_year) === selectedYear);
+    }
+    
+    if (selectedCompetition !== "all") {
+      filteredScores = filteredScores.filter((s) => s.competition_id === selectedCompetition);
     }
 
-    if (totalMinutes <= 0) return null;
+    // If we have persisted scores, use weighted average
+    if (filteredScores.length > 0) {
+      let totalMinutes = 0;
+      let weightedAta = 0;
+      let weightedTec = 0;
+      let weightedDef = 0;
+      let weightedTat = 0;
+      let weightedCri = 0;
 
+      for (const row of filteredScores) {
+        const details = row.details as { minutes?: number } | null;
+        const minutes = details?.minutes ?? (row.attr_confidence ?? 0.5) * 900;
+        
+        totalMinutes += minutes;
+        weightedAta += (row.ata_score_100 ?? 50) * minutes;
+        weightedTec += (row.tec_score_100 ?? 50) * minutes;
+        weightedDef += (row.def_score_100 ?? 50) * minutes;
+        weightedTat += (row.tat_score_100 ?? 50) * minutes;
+        weightedCri += (row.cri_score_100 ?? 50) * minutes;
+      }
+
+      if (totalMinutes > 0) {
+        return {
+          ata: weightedAta / totalMinutes,
+          tec: weightedTec / totalMinutes,
+          def: weightedDef / totalMinutes,
+          tat: weightedTat / totalMinutes,
+          cri: weightedCri / totalMinutes,
+          confidence: clamp(totalMinutes / 900, 0, 1),
+          totalMinutes,
+        };
+      }
+    }
+
+    // Fallback: Calculate locally from raw stats matching filter
+    console.log("[RADAR] No persisted scores, calculating locally");
+    const matchingRawStats = rawStats.filter((r) => {
+      const matchYear = selectedYear === "all" || String(r.season_year) === selectedYear;
+      const matchComp = selectedCompetition === "all" || r.competition_id === selectedCompetition;
+      return matchYear && matchComp && (r.minutes || 0) > 0;
+    });
+
+    if (matchingRawStats.length === 0) return null;
+
+    const result = computeRadarAttributes(matchingRawStats, playerPosition);
+    const totalMinutes = matchingRawStats.reduce((sum, r) => sum + (r.minutes || 0), 0);
+
+    // Return calculated scores even if confidence is low
     return {
-      ata: weightedAta / totalMinutes,
-      tec: weightedTec / totalMinutes,
-      def: weightedDef / totalMinutes,
-      tat: weightedTat / totalMinutes,
-      cri: weightedCri / totalMinutes,
+      ata: result.ata ?? 50,
+      tec: result.tec ?? 50,
+      def: result.def ?? 50,
+      tat: result.tat ?? 50,
+      cri: result.cri ?? 50,
       confidence: clamp(totalMinutes / 900, 0, 1),
       totalMinutes,
     };
-  }, [scores, selectedYear, selectedCompetition]);
+  }, [scores, statsRows, rawStats, selectedYear, selectedCompetition, playerPosition]);
 
   const handleRecalculate = async () => {
     setRecalculating(true);
@@ -272,8 +355,10 @@ export function SofaScoreRadarCard({
     );
   }
 
-  // No data at all
-  if (statsRows.length === 0) {
+  // Only show empty state if there are truly no stats at all
+  const hasAnyStats = statsRows.length > 0 || rawStats.length > 0 || scores.length > 0;
+  
+  if (!hasAnyStats) {
     return (
       <Card className={cn("bg-card", className)}>
         <CardHeader className="pb-2">
@@ -282,7 +367,7 @@ export function SofaScoreRadarCard({
         <CardContent className="py-8 text-center">
           <AlertCircle className="w-8 h-8 mx-auto mb-2 text-muted-foreground opacity-50" />
           <p className="text-muted-foreground text-sm">
-            Nenhuma estatística registrada com minutos jogados.
+            Nenhuma estatística registrada.
           </p>
         </CardContent>
       </Card>
@@ -451,11 +536,59 @@ export function SofaScoreRadarCard({
               );
             })}
           </div>
+        ) : hasAnyStats ? (
+          // Show default values when filter yields no data but stats exist
+          <div className="relative h-[260px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <RadarChart 
+                data={ATTRIBUTE_CONFIG.map((attr) => ({
+                  attribute: attr.label,
+                  value: 50,
+                  fullMark: 100,
+                }))} 
+                cx="50%" 
+                cy="50%" 
+                outerRadius="65%"
+              >
+                <PolarGrid
+                  stroke="hsl(var(--muted-foreground) / 0.2)"
+                  strokeDasharray="3 3"
+                />
+                <PolarAngleAxis
+                  dataKey="attribute"
+                  tick={({ x, y, payload }) => (
+                    <text
+                      x={x}
+                      y={y}
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      className="text-[11px] font-medium fill-muted-foreground"
+                    >
+                      {payload.value}
+                    </text>
+                  )}
+                />
+                <Radar
+                  name="Atributos"
+                  dataKey="value"
+                  stroke="hsl(var(--muted-foreground) / 0.4)"
+                  fill="hsl(var(--muted-foreground) / 0.1)"
+                  fillOpacity={0.25}
+                  strokeWidth={2}
+                />
+              </RadarChart>
+            </ResponsiveContainer>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Badge variant="outline" className="text-xs text-muted-foreground">
+                Ajuste o filtro
+              </Badge>
+            </div>
+          </div>
         ) : (
           <div className="py-8 text-center">
             <AlertCircle className="w-8 h-8 mx-auto mb-2 text-muted-foreground opacity-50" />
             <p className="text-muted-foreground text-sm">
-              Sem dados para o filtro selecionado.
+              Sem dados disponíveis.
             </p>
           </div>
         )}

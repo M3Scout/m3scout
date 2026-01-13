@@ -100,7 +100,7 @@ export interface RadarContext {
 }
 
 // ============================================================================
-// NORMALIZATION CONFIG (V1)
+// NORMALIZATION CONFIG (V2 - Spec Aligned)
 // ============================================================================
 
 interface MetricConfig {
@@ -109,91 +109,103 @@ interface MetricConfig {
   invert?: boolean; // Lower is better
 }
 
+// Per-90 caps for normalization to 0-100
 const METRIC_CONFIGS: Record<string, MetricConfig> = {
-  // Attack
-  goals_p90: { floor: 0.05, target: 0.55 },
-  assists_p90: { floor: 0.05, target: 0.35 },
-  shots_p90: { floor: 0.5, target: 3.5 },
-  shots_on_target_p90: { floor: 0.2, target: 1.8 },
+  // ATA (Ataque) - gols, assists, shots, shots_on_target
+  goals_p90: { floor: 0, target: 0.7 },
+  assists_p90: { floor: 0, target: 0.4 },
+  shots_p90: { floor: 0, target: 4.0 },
+  shots_on_target_p90: { floor: 0, target: 2.0 },
   
-  // Creativity
-  key_passes_p90: { floor: 0.1, target: 2.2 },
-  chances_created_p90: { floor: 0.1, target: 2.0 },
-  dribbles_success_rate: { floor: 0.30, target: 0.65 },
+  // CRI (Criatividade) - key_passes, chances_created, dribbles_completed
+  key_passes_p90: { floor: 0, target: 2.5 },
+  chances_created_p90: { floor: 0, target: 2.5 },
+  dribble_success_rate: { floor: 0.20, target: 0.70 },
   
-  // Defense
-  tackles_p90: { floor: 0.2, target: 4.0 },
-  interceptions_p90: { floor: 0.1, target: 2.5 },
-  recoveries_p90: { floor: 0.2, target: 6.0 },
-  duels_win_rate: { floor: 0.35, target: 0.65 },
-  clearances_p90: { floor: 0.1, target: 3.0 },
+  // DEF (Defesa) - tackles, interceptions, recoveries, duels_won, clearances
+  tackles_p90: { floor: 0, target: 5.0 },
+  interceptions_p90: { floor: 0, target: 3.0 },
+  recoveries_p90: { floor: 0, target: 8.0 },
+  duels_win_rate: { floor: 0.30, target: 0.70 },
+  clearances_p90: { floor: 0, target: 4.0 },
   
-  // Technique
-  shot_accuracy: { floor: 0.10, target: 0.55 },
-  pass_accuracy: { floor: 0.60, target: 0.92 },
+  // TÉC (Técnica) - passes_completed, pass_accuracy, ball_control
+  pass_accuracy: { floor: 0.55, target: 0.90 },
+  passes_p90: { floor: 10, target: 60 },
+  ball_control: { floor: 0.20, target: 0.70 }, // dribbles_completed / dribbles_total
   
-  // Discipline & Tactics
-  cards_p90: { floor: 0.05, target: 0.70, invert: true }, // Lower is better
-  minutes_per_match: { floor: 30, target: 85 },
-  availability_rate: { floor: 0.40, target: 0.95 },
-  fouls_p90: { floor: 0.3, target: 2.5, invert: true }, // Lower is better
+  // TÁT (Disciplina/Tática) - yellow_cards (inv), red_cards (inv), fouls_committed (inv), fouls_drawn, turnovers (inv)
+  yellow_cards_p90: { floor: 0, target: 0.5, invert: true },
+  red_cards_p90: { floor: 0, target: 0.15, invert: true },
+  fouls_committed_p90: { floor: 0, target: 2.5, invert: true },
+  fouls_drawn_p90: { floor: 0, target: 3.0 },
+  possession_lost_p90: { floor: 0, target: 15, invert: true },
   
-  // Goalkeeper
-  saves_p90: { floor: 0.5, target: 4.0 },
-  goals_conceded_p90: { floor: 0.3, target: 1.8, invert: true }, // Lower is better
-  clean_sheet_rate: { floor: 0.10, target: 0.45 },
-  penalties_saved_rate: { floor: 0, target: 0.30 },
-  errors_p90: { floor: 0, target: 0.15, invert: true }, // Lower is better
+  // Goalkeeper specific
+  saves_p90: { floor: 0, target: 5.0 },
+  goals_conceded_p90: { floor: 0, target: 2.0, invert: true },
+  clean_sheet_rate: { floor: 0, target: 0.50 },
+  penalties_saved_rate: { floor: 0, target: 0.35 },
+  errors_p90: { floor: 0, target: 0.2, invert: true },
+  
+  // Availability / Consistency
+  minutes_per_match: { floor: 20, target: 85 },
+  availability_rate: { floor: 0.30, target: 0.95 },
 };
 
 // ============================================================================
-// ATTRIBUTE WEIGHT CONFIG (V1)
+// ATTRIBUTE WEIGHT CONFIG (V2 - Spec Aligned)
 // ============================================================================
 
-// Standard outfield weights
+// Standard outfield weights matching spec formula
 const OUTFIELD_WEIGHTS = {
   ata: {
-    goals_p90: 0.45,
-    assists_p90: 0.20,
-    shots_on_target_p90: 0.20,
+    goals_p90: 0.40,
+    assists_p90: 0.25,
     shots_p90: 0.15,
+    shots_on_target_p90: 0.20,
   },
   cri: {
-    chances_created_p90: 0.45,
-    key_passes_p90: 0.35,
-    assists_p90: 0.20,
+    key_passes_p90: 0.40,
+    chances_created_p90: 0.35,
+    dribble_success_rate: 0.25,
   },
   tec: {
-    shot_accuracy: 0.40,
-    key_passes_p90: 0.30,
-    discipline_score: 0.30,
+    pass_accuracy: 0.45,
+    passes_p90: 0.25,
+    ball_control: 0.30,
   },
   def: {
-    tackles_p90: 0.30,
-    interceptions_p90: 0.25,
+    tackles_p90: 0.25,
+    interceptions_p90: 0.20,
     recoveries_p90: 0.20,
-    duels_win_rate: 0.25,
+    duels_win_rate: 0.20,
+    clearances_p90: 0.15,
   },
   tat: {
-    minutes_per_match: 0.30,
-    availability_rate: 0.30,
-    cards_p90: 0.40,
+    yellow_cards_p90: 0.20,
+    red_cards_p90: 0.20,
+    fouls_committed_p90: 0.20,
+    fouls_drawn_p90: 0.15,
+    possession_lost_p90: 0.25,
   },
 };
 
 // Goalkeeper-specific weights
 const GOALKEEPER_WEIGHTS = {
   ata: {
-    assists_p90: 1.0, // GK rarely has attack, just use assists if any
+    assists_p90: 0.50,
+    key_passes_p90: 0.50,
   },
   cri: {
-    assists_p90: 0.50,
-    key_passes_p90: 0.50, // Distribution
+    assists_p90: 0.40,
+    key_passes_p90: 0.40,
+    passes_p90: 0.20,
   },
   tec: {
-    saves_p90: 0.50,
-    pass_accuracy: 0.30,
-    errors_p90: 0.20,
+    saves_p90: 0.40,
+    pass_accuracy: 0.35,
+    errors_p90: 0.25,
   },
   def: {
     goals_conceded_p90: 0.40,
@@ -201,9 +213,10 @@ const GOALKEEPER_WEIGHTS = {
     penalties_saved_rate: 0.25,
   },
   tat: {
-    minutes_per_match: 0.30,
-    availability_rate: 0.40,
-    cards_p90: 0.30,
+    minutes_per_match: 0.35,
+    availability_rate: 0.35,
+    yellow_cards_p90: 0.15,
+    red_cards_p90: 0.15,
   },
 };
 
@@ -390,61 +403,88 @@ function aggregateStats(statsRows: PlayerStatRow[]): PlayerStatRow {
 function calculateRates(stats: PlayerStatRow): Record<string, number> {
   const { matches, minutes } = stats;
   
-  // Per-90 rates
+  // Per-90 rates (ATA)
   const goals_p90 = per90(stats.goals, minutes);
   const assists_p90 = per90(stats.assists, minutes);
   const shots_p90 = per90(stats.shots, minutes);
   const shots_on_target_p90 = per90(stats.shots_on_target, minutes);
+  
+  // Per-90 rates (CRI)
   const key_passes_p90 = per90(stats.key_passes, minutes);
   const chances_created_p90 = per90(stats.chances_created, minutes);
+  
+  // Per-90 rates (DEF)
   const tackles_p90 = per90(stats.tackles, minutes);
   const interceptions_p90 = per90(stats.interceptions, minutes);
   const recoveries_p90 = per90(stats.recoveries, minutes);
   const clearances_p90 = per90(stats.clearances || 0, minutes);
-  const fouls_p90 = per90(stats.fouls_committed || 0, minutes);
   
-  // Cards per 90 (red counts double)
-  const cards_p90 = per90(stats.yellow_cards + 2 * stats.red_cards, minutes);
+  // Per-90 rates (TÁT)
+  const yellow_cards_p90 = per90(stats.yellow_cards, minutes);
+  const red_cards_p90 = per90(stats.red_cards, minutes);
+  const fouls_committed_p90 = per90(stats.fouls_committed || 0, minutes);
+  const fouls_drawn_p90 = per90(stats.fouls_drawn || 0, minutes);
+  const possession_lost_p90 = per90(stats.possession_lost || 0, minutes);
+  
+  // Per-90 rates (TÉC & other)
+  const passes_p90 = per90(stats.total_passes, minutes);
   
   // GK rates
   const saves_p90 = per90(stats.saves, minutes);
   const goals_conceded_p90 = per90(stats.goals_conceded, minutes);
   const errors_p90 = per90(stats.errors_leading_to_goal, minutes);
   
-  // Ratios
-  const shot_accuracy = ratio(stats.shots_on_target, stats.shots);
-  const pass_accuracy = ratio(stats.accurate_passes, stats.total_passes);
-  const duels_win_rate = ratio(stats.duels_won, stats.total_duels);
-  const dribbles_success_rate = ratio(stats.successful_dribbles || 0, stats.total_dribbles || 0);
-  const clean_sheet_rate = ratio(stats.clean_sheets, matches);
-  const penalties_saved_rate = ratio(stats.penalties_saved, matches); // Approximation
+  // Ratios (CRI)
+  const dribble_success_rate = ratio(stats.successful_dribbles || 0, stats.total_dribbles || 0, 0.5);
+  
+  // Ratios (DEF)
+  const duels_win_rate = ratio(stats.duels_won, stats.total_duels, 0.5);
+  
+  // Ratios (TÉC)
+  const pass_accuracy = ratio(stats.accurate_passes, stats.total_passes, 0.7);
+  const ball_control = ratio(stats.successful_dribbles || 0, stats.total_dribbles || 0, 0.5);
+  
+  // GK ratios
+  const clean_sheet_rate = ratio(stats.clean_sheets, matches, 0);
+  const penalties_saved_rate = ratio(stats.penalties_saved, matches, 0);
   
   // Availability metrics
-  const minutes_per_match = ratio(minutes, matches);
-  const availability_rate = clamp(ratio(minutes, matches * 90), 0, 1);
+  const minutes_per_match = ratio(minutes, matches, 45);
+  const availability_rate = clamp(ratio(minutes, matches * 90, 0.5), 0, 1);
   
   return {
+    // ATA
     goals_p90,
     assists_p90,
     shots_p90,
     shots_on_target_p90,
+    // CRI
     key_passes_p90,
     chances_created_p90,
+    dribble_success_rate,
+    // DEF
     tackles_p90,
     interceptions_p90,
     recoveries_p90,
     clearances_p90,
-    fouls_p90,
-    cards_p90,
+    duels_win_rate,
+    // TÉC
+    passes_p90,
+    pass_accuracy,
+    ball_control,
+    // TÁT
+    yellow_cards_p90,
+    red_cards_p90,
+    fouls_committed_p90,
+    fouls_drawn_p90,
+    possession_lost_p90,
+    // GK
     saves_p90,
     goals_conceded_p90,
     errors_p90,
-    shot_accuracy,
-    pass_accuracy,
-    duels_win_rate,
-    dribbles_success_rate,
     clean_sheet_rate,
     penalties_saved_rate,
+    // Availability
     minutes_per_match,
     availability_rate,
   };
