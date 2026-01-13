@@ -46,7 +46,7 @@ import {
 import type { ExtendedRatingBreakdownV2, ExtendedCompetitionBreakdown } from "@/lib/autoRatingDetailsAdapter";
 import { formatFixed } from "@/lib/formatters";
 import { StatsRadarChart } from "./StatsRadarChart";
-import { SofaScoreRadarCard } from "./SofaScoreRadarCard";
+import { UnifiedRadarCard } from "./UnifiedRadarCard";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -1465,9 +1465,9 @@ export function RatingBreakdownModalV2({
             <TabsTrigger value="formula">Fórmula</TabsTrigger>
           </TabsList>
 
-          {/* Radar Tab - SofaScore Style */}
+          {/* Radar Tab - Unified (switches between GK and outfield) */}
           <TabsContent value="radar" className="mt-4">
-            <SofaScoreRadarCard playerId={playerId} playerPosition={playerPosition} showFilters={true} />
+            <UnifiedRadarCard playerId={playerId} playerPosition={playerPosition} showFilters={true} />
           </TabsContent>
 
           {/* Competitions Tab */}
