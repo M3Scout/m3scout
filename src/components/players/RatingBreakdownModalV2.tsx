@@ -46,6 +46,7 @@ import {
 import type { ExtendedRatingBreakdownV2, ExtendedCompetitionBreakdown } from "@/lib/autoRatingDetailsAdapter";
 import { formatFixed } from "@/lib/formatters";
 import { StatsRadarChart } from "./StatsRadarChart";
+import { SofaScoreRadarCard } from "./SofaScoreRadarCard";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -1404,119 +1405,16 @@ export function RatingBreakdownModalV2({
             <TabsTrigger value="formula">Fórmula</TabsTrigger>
           </TabsList>
 
-          {/* Radar Tab */}
+          {/* Radar Tab - SofaScore Style */}
           <TabsContent value="radar" className="mt-4">
-            {(() => {
-              // Aggregate all stat breakdowns from competitions
-              const allStats = safeArray(details?.competitions ?? []).flatMap(c => 
-                safeArray(c.stat_breakdown).filter(s => s.available)
-              );
-              
-              // DEV: Debug logging for stat breakdown analysis
-              if (import.meta.env.DEV && allStats.length > 0) {
-                const unknownStats = allStats.filter(s => !s.stat || s.stat === "unknown" || s.stat === "");
-                if (unknownStats.length > 0) {
-                  console.error("[Radar Tab] Stats with missing keys:", unknownStats);
-                }
-                // Log first athlete's breakdown for debugging
-                console.log("[Radar Tab] First competition stat_breakdown sample:", 
-                  details?.competitions?.[0]?.stat_breakdown?.slice(0, 3)
-                );
-              }
-              
-              // Group and average by stat
-              const statMap = new Map<string, { total: number; count: number; label: string; weight: number; value: number }>();
-              allStats.forEach((s) => {
-                const statKey = String((s as any)?.stat ?? "unknown");
-                const providedLabel = (s as any)?.label;
-                const humanLabel = getHumanStatName(statKey, providedLabel);
-                const score = Number((s as any)?.score) || 0;
-                const weight = Number((s as any)?.adjusted_weight ?? (s as any)?.weight) || 0;
-                const value = Number((s as any)?.value) || 0;
-
-                // Skip stats with unknown keys
-                if (statKey === "unknown" || statKey === "") {
-                  return;
-                }
-
-                const existing = statMap.get(statKey);
-                if (existing) {
-                  existing.total += score;
-                  existing.count += 1;
-                  existing.value += value;
-                } else {
-                  statMap.set(statKey, {
-                    total: score,
-                    count: 1,
-                    label: humanLabel,
-                    weight,
-                    value,
-                  });
-                }
-              });
-
-              const aggregatedStats = Array.from(statMap.entries()).map(([stat, data]) => ({
-                stat,
-                label: data.label || getHumanStatName(stat, stat),
-                value: data.value / data.count,
-                score: data.total / data.count,
-                weight: data.weight,
-                adjusted_weight: data.weight,
-                available: true,
-              }));
-              
-              // Use position-based classification for strengths/weaknesses
-              const { positiveStats: strengths, negativeStats: weaknesses } = getPositionStatsBreakdown(
-                aggregatedStats,
-                details.position_group
-              );
-              
-              return (
-                <div className="space-y-4">
-                  {/* Summary: Top Strengths and Weaknesses */}
-                  {(strengths.length > 0 || weaknesses.length > 0) && (
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3">
-                        <p className="text-xs font-medium text-emerald-600 flex items-center gap-1 mb-2">
-                          <Star className="w-3 h-3" />
-                          Pontos Fortes
-                        </p>
-                        {strengths.length > 0 ? (
-                          <ul className="text-xs text-emerald-700 space-y-1">
-                            {strengths.slice(0, 3).map(s => (
-                              <li key={s.stat}>• <strong>{getHumanStatName(s.stat, s.label)}</strong> ({formatFixed(s.score, 0)})</li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="text-xs text-muted-foreground">Nenhum destaque positivo</p>
-                        )}
-                      </div>
-                      <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
-                        <p className="text-xs font-medium text-destructive flex items-center gap-1 mb-2">
-                          <AlertTriangle className="w-3 h-3" />
-                          Pontos de Atenção
-                        </p>
-                        {weaknesses.length > 0 ? (
-                          <ul className="text-xs text-destructive space-y-1">
-                            {weaknesses.slice(0, 3).map(s => (
-                              <li key={s.stat}>• <strong>{getHumanStatName(s.stat, s.label)}</strong> ({formatFixed(s.score, 0)})</li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="text-xs text-muted-foreground">Nenhuma área crítica</p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  
-                  <StatsRadarChart
-                    statBreakdown={aggregatedStats}
-                    positionGroup={details.position_group}
-                    positionGroupLabel={details.position_group_label}
-                  />
-                </div>
-              );
-            })()}
+            {playerId ? (
+              <SofaScoreRadarCard playerId={playerId} showFilters={true} />
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <AlertTriangle className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p>ID do jogador não disponível para carregar o radar.</p>
+              </div>
+            )}
           </TabsContent>
 
           {/* Competitions Tab */}
