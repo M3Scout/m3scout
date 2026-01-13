@@ -458,12 +458,16 @@ export type Database = {
           aerial_duels_won: number
           assists: number
           chances_created: number
+          claims: number
           clean_sheets: number
           clearances: number
           competition_id: string | null
           created_at: string
+          crosses_faced: number
+          crosses_stopped: number
           duels_won: number
           errors_leading_to_goal: number
+          errors_leading_to_shot: number
           fouls_committed: number
           fouls_drawn: number
           goals: number
@@ -480,6 +484,7 @@ export type Database = {
           minutes: number
           offsides: number
           penalties_saved: number
+          penalty_faced: number
           player_id: string
           possession_lost: number
           punches: number
@@ -491,6 +496,7 @@ export type Database = {
           shots: number
           shots_blocked: number
           shots_on_target: number
+          shots_on_target_against: number
           successful_dribbles: number
           successful_runs_out: number
           tackles: number
@@ -508,12 +514,16 @@ export type Database = {
           aerial_duels_won?: number
           assists?: number
           chances_created?: number
+          claims?: number
           clean_sheets?: number
           clearances?: number
           competition_id?: string | null
           created_at?: string
+          crosses_faced?: number
+          crosses_stopped?: number
           duels_won?: number
           errors_leading_to_goal?: number
+          errors_leading_to_shot?: number
           fouls_committed?: number
           fouls_drawn?: number
           goals?: number
@@ -530,6 +540,7 @@ export type Database = {
           minutes?: number
           offsides?: number
           penalties_saved?: number
+          penalty_faced?: number
           player_id: string
           possession_lost?: number
           punches?: number
@@ -541,6 +552,7 @@ export type Database = {
           shots?: number
           shots_blocked?: number
           shots_on_target?: number
+          shots_on_target_against?: number
           successful_dribbles?: number
           successful_runs_out?: number
           tackles?: number
@@ -558,12 +570,16 @@ export type Database = {
           aerial_duels_won?: number
           assists?: number
           chances_created?: number
+          claims?: number
           clean_sheets?: number
           clearances?: number
           competition_id?: string | null
           created_at?: string
+          crosses_faced?: number
+          crosses_stopped?: number
           duels_won?: number
           errors_leading_to_goal?: number
+          errors_leading_to_shot?: number
           fouls_committed?: number
           fouls_drawn?: number
           goals?: number
@@ -580,6 +596,7 @@ export type Database = {
           minutes?: number
           offsides?: number
           penalties_saved?: number
+          penalty_faced?: number
           player_id?: string
           possession_lost?: number
           punches?: number
@@ -591,6 +608,7 @@ export type Database = {
           shots?: number
           shots_blocked?: number
           shots_on_target?: number
+          shots_on_target_against?: number
           successful_dribbles?: number
           successful_runs_out?: number
           tackles?: number
