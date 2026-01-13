@@ -53,6 +53,8 @@ import {
   Target,
   Shield,
   ChevronDown,
+  ChevronsUpDown,
+  TrendingUp,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -295,6 +297,64 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
   const sortedSeasons = Object.keys(statsBySeason)
     .map(Number)
     .sort((a, b) => b - a);
+
+  // Toggle all expanded/collapsed
+  const allStatsIds = stats.map(s => s.id);
+  const allExpanded = allStatsIds.length > 0 && allStatsIds.every(id => expandedStats.has(id));
+  
+  const toggleAllExpanded = () => {
+    if (allExpanded) {
+      setExpandedStats(new Set());
+    } else {
+      setExpandedStats(new Set(allStatsIds));
+    }
+  };
+
+  // Career totals aggregation
+  const careerTotals = stats.reduce((acc, stat) => {
+    acc.matches += stat.matches || 0;
+    acc.minutes += stat.minutes || 0;
+    acc.goals += stat.goals || 0;
+    acc.assists += stat.assists || 0;
+    acc.yellow_cards += stat.yellow_cards || 0;
+    acc.red_cards += stat.red_cards || 0;
+    acc.tackles += stat.tackles || 0;
+    acc.interceptions += stat.interceptions || 0;
+    acc.recoveries += stat.recoveries || 0;
+    acc.clearances += stat.clearances || 0;
+    acc.shots += stat.shots || 0;
+    acc.shots_on_target += stat.shots_on_target || 0;
+    acc.key_passes += stat.key_passes || 0;
+    acc.chances_created += stat.chances_created || 0;
+    acc.successful_dribbles += stat.successful_dribbles || 0;
+    acc.total_dribbles += stat.total_dribbles || 0;
+    acc.accurate_passes += stat.accurate_passes || 0;
+    acc.total_passes += stat.total_passes || 0;
+    acc.ground_duels_won += stat.ground_duels_won || 0;
+    acc.ground_duels_total += stat.ground_duels_total || 0;
+    acc.aerial_duels_won += stat.aerial_duels_won || 0;
+    acc.aerial_duels_total += stat.aerial_duels_total || 0;
+    acc.fouls_committed += stat.fouls_committed || 0;
+    acc.fouls_drawn += stat.fouls_drawn || 0;
+    // GK stats
+    acc.saves += stat.saves || 0;
+    acc.goals_conceded += stat.goals_conceded || 0;
+    acc.clean_sheets += stat.clean_sheets || 0;
+    acc.penalties_saved += stat.penalties_saved || 0;
+    acc.errors_leading_to_goal += stat.errors_leading_to_goal || 0;
+    return acc;
+  }, {
+    matches: 0, minutes: 0, goals: 0, assists: 0, yellow_cards: 0, red_cards: 0,
+    tackles: 0, interceptions: 0, recoveries: 0, clearances: 0,
+    shots: 0, shots_on_target: 0, key_passes: 0, chances_created: 0,
+    successful_dribbles: 0, total_dribbles: 0, accurate_passes: 0, total_passes: 0,
+    ground_duels_won: 0, ground_duels_total: 0, aerial_duels_won: 0, aerial_duels_total: 0,
+    fouls_committed: 0, fouls_drawn: 0,
+    saves: 0, goals_conceded: 0, clean_sheets: 0, penalties_saved: 0, errors_leading_to_goal: 0,
+  });
+
+  const uniqueSeasons = sortedSeasons.length;
+  const uniqueCompetitions = new Set(stats.map(s => s.competition_id)).size;
 
   if (loading) {
     return (
@@ -576,6 +636,91 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
             </div>
           ) : (
             <div className="space-y-6">
+              {/* Career Summary Card */}
+              <div className="bg-gradient-to-r from-muted/50 to-muted/30 rounded-lg p-4 border">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-blue-500" />
+                    Resumo de Carreira
+                  </h4>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Badge variant="outline">{uniqueSeasons} temporada{uniqueSeasons > 1 ? 's' : ''}</Badge>
+                    <Badge variant="secondary">{uniqueCompetitions} competição{uniqueCompetitions > 1 ? 'ões' : ''}</Badge>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
+                  <div className="text-center px-3 py-2 rounded-lg bg-background border">
+                    <div className="text-lg font-bold tabular-nums">{careerTotals.matches}</div>
+                    <div className="text-[10px] text-muted-foreground uppercase">Jogos</div>
+                  </div>
+                  <div className="text-center px-3 py-2 rounded-lg bg-background border">
+                    <div className="text-lg font-bold tabular-nums">{careerTotals.minutes}</div>
+                    <div className="text-[10px] text-muted-foreground uppercase">Minutos</div>
+                  </div>
+                  {isGK ? (
+                    <>
+                      <div className="text-center px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                        <div className="text-lg font-bold tabular-nums text-emerald-600">{careerTotals.saves}</div>
+                        <div className="text-[10px] text-muted-foreground uppercase">Defesas</div>
+                      </div>
+                      <div className="text-center px-3 py-2 rounded-lg bg-background border">
+                        <div className="text-lg font-bold tabular-nums">{careerTotals.goals_conceded}</div>
+                        <div className="text-[10px] text-muted-foreground uppercase">Gols Sofr</div>
+                      </div>
+                      <div className="text-center px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                        <div className="text-lg font-bold tabular-nums text-emerald-600">{careerTotals.clean_sheets}</div>
+                        <div className="text-[10px] text-muted-foreground uppercase">Clean Sheets</div>
+                      </div>
+                      <div className="text-center px-3 py-2 rounded-lg bg-background border">
+                        <div className="text-lg font-bold tabular-nums">{careerTotals.penalties_saved}</div>
+                        <div className="text-[10px] text-muted-foreground uppercase">Pên Def</div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-center px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                        <div className="text-lg font-bold tabular-nums text-emerald-600">{careerTotals.goals}</div>
+                        <div className="text-[10px] text-muted-foreground uppercase">Gols</div>
+                      </div>
+                      <div className="text-center px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                        <div className="text-lg font-bold tabular-nums text-blue-600">{careerTotals.assists}</div>
+                        <div className="text-[10px] text-muted-foreground uppercase">Assist</div>
+                      </div>
+                      <div className="text-center px-3 py-2 rounded-lg bg-background border">
+                        <div className="text-lg font-bold tabular-nums">{careerTotals.shots}</div>
+                        <div className="text-[10px] text-muted-foreground uppercase">Chutes</div>
+                      </div>
+                      <div className="text-center px-3 py-2 rounded-lg bg-background border">
+                        <div className="text-lg font-bold tabular-nums">{careerTotals.key_passes}</div>
+                        <div className="text-[10px] text-muted-foreground uppercase">P. Decisivos</div>
+                      </div>
+                      <div className="text-center px-3 py-2 rounded-lg bg-background border">
+                        <div className="text-lg font-bold tabular-nums">{careerTotals.tackles}</div>
+                        <div className="text-[10px] text-muted-foreground uppercase">Desarmes</div>
+                      </div>
+                      <div className="text-center px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                        <div className="text-lg font-bold tabular-nums text-amber-600">{careerTotals.yellow_cards}</div>
+                        <div className="text-[10px] text-muted-foreground uppercase">Amarelos</div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Expand/Collapse All Button */}
+              <div className="flex items-center justify-between">
+                <h4 className="font-semibold text-sm text-muted-foreground">Detalhes por Temporada</h4>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={toggleAllExpanded}
+                  className="text-xs"
+                >
+                  <ChevronsUpDown className="w-4 h-4 mr-1" />
+                  {allExpanded ? 'Recolher Todas' : 'Expandir Todas'}
+                </Button>
+              </div>
+
               {safeArray(sortedSeasons).map((season) => (
                 <div key={season}>
                   <h4 className="font-semibold mb-3 flex items-center gap-2">
