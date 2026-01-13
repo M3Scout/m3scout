@@ -667,6 +667,7 @@ function StatBreakdownCard({
   const [statsRow, setStatsRow] = useState<any | null | undefined>(undefined);
   const [prevStatsRow, setPrevStatsRow] = useState<any | null>(null);
   const [statsReason, setStatsReason] = useState<string | null>(null);
+  const [trendFilter, setTrendFilter] = useState<'all' | 'up' | 'down'>('all');
 
   useEffect(() => {
     // Only fetch when expanded
@@ -968,6 +969,49 @@ function StatBreakdownCard({
     return trends;
   }, [statsRow, prevStatsRow, allStats]);
   
+  // Filter stats by trend when filter is active
+  const filteredStats = useMemo(() => {
+    if (trendFilter === 'all' || !prevStatsRow) {
+      return availableStats;
+    }
+    
+    return availableStats.filter(stat => {
+      const trend = statTrends[stat.stat];
+      if (!trend) return false;
+      
+      // For inverse stats, flip the meaning
+      if (stat.inverse) {
+        if (trendFilter === 'up') return trend.direction === 'down'; // down in value = improvement
+        if (trendFilter === 'down') return trend.direction === 'up'; // up in value = decline
+      }
+      
+      return trend.direction === trendFilter;
+    });
+  }, [availableStats, trendFilter, statTrends, prevStatsRow]);
+  
+  // Count stats by trend for filter badges
+  const trendCounts = useMemo(() => {
+    if (!prevStatsRow) return { up: 0, down: 0 };
+    
+    let up = 0;
+    let down = 0;
+    
+    for (const stat of availableStats) {
+      const trend = statTrends[stat.stat];
+      if (!trend || trend.direction === 'stable') continue;
+      
+      // For inverse stats, flip the meaning
+      const isImprovement = stat.inverse 
+        ? trend.direction === 'down' 
+        : trend.direction === 'up';
+      
+      if (isImprovement) up++;
+      else down++;
+    }
+    
+    return { up, down };
+  }, [availableStats, statTrends, prevStatsRow]);
+  
   return (
     <Card className="bg-secondary/20 border-border/50">
       <CardHeader className="pb-2 cursor-pointer" onClick={onToggle}>
@@ -1090,6 +1134,49 @@ function StatBreakdownCard({
             {/* Color Legend */}
             {availableStats.length > 0 && <StatScoreLegend showTrendLegend={!!prevStatsRow} />}
             
+            {/* Trend Filter - only show when we have previous season data */}
+            {prevStatsRow && availableStats.length > 0 && (
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xs text-muted-foreground">Filtrar por tendência:</span>
+                <div className="flex gap-1">
+                  <Button
+                    variant={trendFilter === 'all' ? 'default' : 'outline'}
+                    size="sm"
+                    className="h-6 text-[10px] px-2"
+                    onClick={() => setTrendFilter('all')}
+                  >
+                    Todas ({availableStats.length})
+                  </Button>
+                  <Button
+                    variant={trendFilter === 'up' ? 'default' : 'outline'}
+                    size="sm"
+                    className={cn(
+                      "h-6 text-[10px] px-2 gap-1",
+                      trendFilter === 'up' && "bg-emerald-500 hover:bg-emerald-600"
+                    )}
+                    onClick={() => setTrendFilter('up')}
+                    disabled={trendCounts.up === 0}
+                  >
+                    <TrendingUp className="w-3 h-3" />
+                    Melhora ({trendCounts.up})
+                  </Button>
+                  <Button
+                    variant={trendFilter === 'down' ? 'default' : 'outline'}
+                    size="sm"
+                    className={cn(
+                      "h-6 text-[10px] px-2 gap-1",
+                      trendFilter === 'down' && "bg-destructive hover:bg-destructive/90"
+                    )}
+                    onClick={() => setTrendFilter('down')}
+                    disabled={trendCounts.down === 0}
+                  >
+                    <TrendingDown className="w-3 h-3" />
+                    Queda ({trendCounts.down})
+                  </Button>
+                </div>
+              </div>
+            )}
+            
             {/* Fallback when no stats available */}
             {availableStats.length === 0 && (
               <div className="text-center py-4 text-muted-foreground">
@@ -1101,9 +1188,27 @@ function StatBreakdownCard({
               </div>
             )}
             
+            {/* Empty state for filtered results */}
+            {filteredStats.length === 0 && availableStats.length > 0 && trendFilter !== 'all' && (
+              <div className="text-center py-4 text-muted-foreground">
+                <Minus className="w-6 h-6 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">
+                  Nenhuma métrica com {trendFilter === 'up' ? 'melhora' : 'queda'} encontrada.
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mt-2 text-xs"
+                  onClick={() => setTrendFilter('all')}
+                >
+                  Ver todas as métricas
+                </Button>
+              </div>
+            )}
+            
             {/* Stats bars with tooltips */}
             <TooltipProvider delayDuration={200}>
-              {availableStats.map((stat: BreakdownRow) => {
+              {filteredStats.map((stat: BreakdownRow) => {
                 const scoreLevel = getScoreLevel(stat.score);
                 const statInfo = getStatInfo(stat.stat, stat.label);
                 const humanLabel = getHumanStatName(stat.stat, stat.label);
