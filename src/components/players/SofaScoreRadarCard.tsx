@@ -64,14 +64,14 @@ interface AggregatedScores {
   totalMinutes: number;
 }
 
-// Vertex positions for the pentagon (percentage based positioning)
-// Each vertex: label position + badge offset
+// Vertex positions for pentagon - SofaScore style (tight to vertices)
+// Positioned with absolute anchors: ATA top, TÉC right, TÁT bottom-right, DEF bottom-left, CRI left
 const ATTRIBUTE_CONFIG = [
-  { key: "ata", label: "ATA", fullLabel: "Ataque", description: "Gols, assistências, finalizações", angle: 90, labelPos: { x: 50, y: 4 }, badgeOffset: { x: 0, y: 14 } },
-  { key: "tec", label: "TÉC", fullLabel: "Técnica", description: "Precisão de passes, dribles, controle", angle: 18, labelPos: { x: 92, y: 36 }, badgeOffset: { x: -4, y: 12 } },
-  { key: "tat", label: "TÁT", fullLabel: "Tática", description: "Disciplina, posicionamento, consistência", angle: 306, labelPos: { x: 78, y: 88 }, badgeOffset: { x: -4, y: -10 } },
-  { key: "def", label: "DEF", fullLabel: "Defesa", description: "Desarmes, interceptações, recuperações", angle: 234, labelPos: { x: 22, y: 88 }, badgeOffset: { x: 4, y: -10 } },
-  { key: "cri", label: "CRI", fullLabel: "Criatividade", description: "Passes decisivos, chances criadas", angle: 162, labelPos: { x: 8, y: 36 }, badgeOffset: { x: 4, y: 12 } },
+  { key: "ata", label: "ATA", fullLabel: "Ataque", description: "Gols, assistências, finalizações", pos: { top: "2%", left: "50%" } },
+  { key: "tec", label: "TÉC", fullLabel: "Técnica", description: "Precisão de passes, dribles, controle", pos: { top: "32%", right: "2%" } },
+  { key: "tat", label: "TÁT", fullLabel: "Tática", description: "Disciplina, posicionamento, consistência", pos: { bottom: "6%", right: "12%" } },
+  { key: "def", label: "DEF", fullLabel: "Defesa", description: "Desarmes, interceptações, recuperações", pos: { bottom: "6%", left: "12%" } },
+  { key: "cri", label: "CRI", fullLabel: "Criatividade", description: "Passes decisivos, chances criadas", pos: { top: "32%", left: "2%" } },
 ];
 
 function clamp(value: number, min: number, max: number): number {
@@ -377,61 +377,60 @@ export function SofaScoreRadarCard({
   }
 
   return (
-    <Card className={cn("bg-zinc-900 border-zinc-800 shadow-lg", className)}>
-      <CardHeader className="py-2 px-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-semibold text-zinc-100">
-            Atributos
-          </CardTitle>
-          <div className="flex items-center gap-0.5">
-            <Dialog open={infoOpen} onOpenChange={setInfoOpen}>
-              <DialogTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-6 w-6">
-                  <Info className="h-3.5 w-3.5 text-zinc-500" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="bg-zinc-900 border-zinc-800">
-                <DialogHeader>
-                  <DialogTitle className="text-zinc-100">Como são calculados os atributos</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-3 text-sm">
-                  <p className="text-zinc-400 text-xs">
-                    Atributos calculados por estatísticas a cada 90 minutos, escala 0-100.
-                  </p>
-                  {ATTRIBUTE_CONFIG.map((attr) => (
-                    <div key={attr.key} className="border-b border-zinc-800 pb-2">
-                      <div className="flex items-center gap-2 font-medium text-zinc-200">
-                        <span className="text-xs font-bold text-orange-500">{attr.label}</span>
-                        {attr.fullLabel}
-                      </div>
-                      <p className="text-xs text-zinc-500 mt-0.5">{attr.description}</p>
+    <Card className={cn("bg-zinc-900 border-zinc-800 shadow-lg overflow-hidden", className)}>
+      {/* Compact header - title left, info right */}
+      <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-800/50">
+        <span className="text-xs font-semibold text-zinc-100">
+          Visão geral dos atributos
+        </span>
+        <div className="flex items-center gap-0.5">
+          <Dialog open={infoOpen} onOpenChange={setInfoOpen}>
+            <DialogTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-5 w-5 hover:bg-zinc-800">
+                <Info className="h-3 w-3 text-zinc-500" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="bg-zinc-900 border-zinc-800">
+              <DialogHeader>
+                <DialogTitle className="text-zinc-100">Como são calculados os atributos</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3 text-sm">
+                <p className="text-zinc-400 text-xs">
+                  Atributos calculados por estatísticas a cada 90 minutos, escala 0-100.
+                </p>
+                {ATTRIBUTE_CONFIG.map((attr) => (
+                  <div key={attr.key} className="border-b border-zinc-800 pb-2">
+                    <div className="flex items-center gap-2 font-medium text-zinc-200">
+                      <span className="text-xs font-bold text-orange-500">{attr.label}</span>
+                      {attr.fullLabel}
                     </div>
-                  ))}
-                </div>
-              </DialogContent>
-            </Dialog>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6"
-              onClick={handleRecalculate}
-              disabled={recalculating}
-            >
-              <RefreshCw className={cn("h-3.5 w-3.5 text-zinc-500", recalculating && "animate-spin")} />
-            </Button>
-          </div>
+                    <p className="text-xs text-zinc-500 mt-0.5">{attr.description}</p>
+                  </div>
+                ))}
+              </div>
+            </DialogContent>
+          </Dialog>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-5 w-5 hover:bg-zinc-800"
+            onClick={handleRecalculate}
+            disabled={recalculating}
+          >
+            <RefreshCw className={cn("h-3 w-3 text-zinc-500", recalculating && "animate-spin")} />
+          </Button>
         </div>
-      </CardHeader>
+      </div>
 
-      <CardContent className="px-2 pb-2 pt-0">
-        {/* Compact Filters */}
+      <CardContent className="p-0">
+        {/* Compact Filters - inline */}
         {showFilters && (
-          <div className="flex gap-1.5 mb-2">
+          <div className="flex gap-1.5 px-2 py-1.5 bg-zinc-800/40">
             <Select value={selectedYear} onValueChange={(v) => {
               setSelectedYear(v);
               setSelectedCompetition("all");
             }}>
-              <SelectTrigger className="h-7 text-[11px] flex-1 bg-zinc-800 border-zinc-700 text-zinc-300">
+              <SelectTrigger className="h-6 text-[10px] flex-1 bg-zinc-800 border-zinc-700 text-zinc-300 px-2">
                 <SelectValue placeholder="Ano" />
               </SelectTrigger>
               <SelectContent className="bg-zinc-800 border-zinc-700">
@@ -444,7 +443,7 @@ export function SofaScoreRadarCard({
             </Select>
 
             <Select value={selectedCompetition} onValueChange={setSelectedCompetition}>
-              <SelectTrigger className="h-7 text-[11px] flex-1 bg-zinc-800 border-zinc-700 text-zinc-300">
+              <SelectTrigger className="h-6 text-[10px] flex-1 bg-zinc-800 border-zinc-700 text-zinc-300 px-2">
                 <SelectValue placeholder="Comp." />
               </SelectTrigger>
               <SelectContent className="bg-zinc-800 border-zinc-700">
@@ -458,76 +457,76 @@ export function SofaScoreRadarCard({
           </div>
         )}
 
-        {/* Low minutes warning - compact */}
+        {/* Low minutes warning - inline compact */}
         {showLowMinutesWarning && (
-          <div className="flex items-center gap-1 text-[10px] text-amber-500 mb-1">
-            <AlertCircle className="h-3 w-3" />
+          <div className="flex items-center justify-center gap-1 text-[9px] text-amber-500 py-0.5 bg-amber-500/10">
+            <AlertCircle className="h-2.5 w-2.5" />
             <span>Poucos min. ({Math.round(aggregatedScores?.totalMinutes || 0)})</span>
           </div>
         )}
 
-        {/* Compact Radar Chart with Labels + Badges */}
+        {/* SofaScore-style Radar with tight labels+badges */}
         {aggregatedScores ? (
-          <div className="relative" style={{ height: "200px" }}>
-            {/* Pentagon radar - takes 80% center area */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-[80%] h-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart data={chartData} cx="50%" cy="50%" outerRadius="78%">
-                    <PolarGrid
-                      stroke="rgba(113, 113, 122, 0.3)"
-                      strokeWidth={1}
-                    />
-                    <PolarAngleAxis
-                      dataKey="attribute"
-                      tick={false}
-                    />
-                    <Radar
-                      name="Atributos"
-                      dataKey="value"
-                      stroke="#f97316"
-                      fill="#f97316"
-                      fillOpacity={0.3}
-                      strokeWidth={2}
-                    />
-                  </RadarChart>
-                </ResponsiveContainer>
-              </div>
+          <div className="relative mx-auto" style={{ width: "100%", aspectRatio: "1 / 0.9" }}>
+            {/* Pentagon radar - centered, fills container */}
+            <div className="absolute inset-0 flex items-center justify-center pt-2 pb-4 px-6">
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart data={chartData} cx="50%" cy="50%" outerRadius="72%">
+                  <PolarGrid
+                    stroke="rgba(82, 82, 91, 0.5)"
+                    strokeWidth={1}
+                    gridType="polygon"
+                  />
+                  <PolarAngleAxis
+                    dataKey="attribute"
+                    tick={false}
+                  />
+                  <Radar
+                    name="Atributos"
+                    dataKey="value"
+                    stroke="#f97316"
+                    fill="#f97316"
+                    fillOpacity={0.25}
+                    strokeWidth={2.5}
+                  />
+                </RadarChart>
+              </ResponsiveContainer>
             </div>
 
-            {/* Labels + Badges at vertices - positioned tightly */}
+            {/* Labels + Badges - absolute positioned at vertices */}
             {ATTRIBUTE_CONFIG.map((attr) => {
               const value = Math.round(
                 aggregatedScores[attr.key as keyof AggregatedScores] as number
               );
               
-              // Get badge color based on value
-              const getBadgeColor = (v: number) => {
-                if (v >= 70) return "bg-emerald-600 text-white";
-                if (v >= 50) return "bg-orange-500 text-white";
-                if (v >= 30) return "bg-amber-500 text-zinc-900";
-                return "bg-red-500 text-white";
+              // Badge color based on score
+              const getBadgeStyle = (v: number) => {
+                if (v >= 70) return "bg-emerald-500 text-white shadow-emerald-500/30";
+                if (v >= 50) return "bg-orange-500 text-white shadow-orange-500/30";
+                if (v >= 30) return "bg-amber-500 text-zinc-900 shadow-amber-500/30";
+                return "bg-red-500 text-white shadow-red-500/30";
               };
 
               return (
                 <div
                   key={attr.key}
-                  className="absolute transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-0.5 pointer-events-none"
+                  className="absolute flex flex-col items-center gap-0 pointer-events-none"
                   style={{ 
-                    left: `${attr.labelPos.x}%`, 
-                    top: `${attr.labelPos.y}%` 
+                    ...attr.pos,
+                    transform: attr.pos.left === "50%" ? "translateX(-50%)" : 
+                               attr.pos.right ? "translateX(0)" : "translateX(0)"
                   }}
                 >
-                  {/* Label */}
-                  <span className="text-[10px] font-bold text-zinc-400 tracking-wide">
+                  {/* Label - small, muted */}
+                  <span className="text-[9px] font-semibold text-zinc-500 uppercase tracking-wider leading-none">
                     {attr.label}
                   </span>
-                  {/* Value badge - square style */}
+                  {/* Value badge - compact square */}
                   <div
                     className={cn(
-                      "min-w-[28px] h-[20px] flex items-center justify-center",
-                      "text-[11px] font-bold rounded-sm shadow-md",
-                      getBadgeColor(value)
+                      "min-w-[24px] h-[18px] flex items-center justify-center mt-0.5",
+                      "text-[10px] font-bold rounded shadow-md",
+                      getBadgeStyle(value)
                     )}
                   >
                     {value}
@@ -538,70 +537,71 @@ export function SofaScoreRadarCard({
           </div>
         ) : hasAnyStats ? (
           // Fallback: Show placeholder when filter yields no data
-          <div className="relative" style={{ height: "200px" }}>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-[80%] h-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart 
-                    data={ATTRIBUTE_CONFIG.map((attr) => ({
-                      attribute: attr.label,
-                      value: 50,
-                      fullMark: 100,
-                    }))} 
-                    cx="50%" 
-                    cy="50%" 
-                    outerRadius="78%"
-                  >
-                    <PolarGrid stroke="rgba(113, 113, 122, 0.2)" strokeWidth={1} />
-                    <PolarAngleAxis dataKey="attribute" tick={false} />
-                    <Radar
-                      name="Atributos"
-                      dataKey="value"
-                      stroke="rgba(113, 113, 122, 0.4)"
-                      fill="rgba(113, 113, 122, 0.1)"
-                      fillOpacity={0.25}
-                      strokeWidth={2}
-                    />
-                  </RadarChart>
-                </ResponsiveContainer>
-              </div>
+          <div className="relative mx-auto" style={{ width: "100%", aspectRatio: "1 / 0.9" }}>
+            <div className="absolute inset-0 flex items-center justify-center pt-2 pb-4 px-6">
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart 
+                  data={ATTRIBUTE_CONFIG.map((attr) => ({
+                    attribute: attr.label,
+                    value: 50,
+                    fullMark: 100,
+                  }))} 
+                  cx="50%" 
+                  cy="50%" 
+                  outerRadius="72%"
+                >
+                  <PolarGrid stroke="rgba(82, 82, 91, 0.3)" strokeWidth={1} gridType="polygon" />
+                  <PolarAngleAxis dataKey="attribute" tick={false} />
+                  <Radar
+                    name="Atributos"
+                    dataKey="value"
+                    stroke="rgba(82, 82, 91, 0.5)"
+                    fill="rgba(82, 82, 91, 0.15)"
+                    fillOpacity={0.2}
+                    strokeWidth={2}
+                  />
+                </RadarChart>
+              </ResponsiveContainer>
             </div>
-            {/* Labels at vertices */}
+            {/* Labels at vertices - muted */}
             {ATTRIBUTE_CONFIG.map((attr) => (
               <div
                 key={attr.key}
-                className="absolute transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-0.5 pointer-events-none"
-                style={{ left: `${attr.labelPos.x}%`, top: `${attr.labelPos.y}%` }}
+                className="absolute flex flex-col items-center gap-0 pointer-events-none"
+                style={{ 
+                  ...attr.pos,
+                  transform: attr.pos.left === "50%" ? "translateX(-50%)" : "translateX(0)"
+                }}
               >
-                <span className="text-[10px] font-bold text-zinc-500 tracking-wide">{attr.label}</span>
-                <div className="min-w-[28px] h-[20px] flex items-center justify-center text-[11px] font-bold rounded-sm bg-zinc-700 text-zinc-400">
+                <span className="text-[9px] font-semibold text-zinc-600 uppercase tracking-wider leading-none">{attr.label}</span>
+                <div className="min-w-[24px] h-[18px] flex items-center justify-center mt-0.5 text-[10px] font-bold rounded bg-zinc-700 text-zinc-500 shadow">
                   —
                 </div>
               </div>
             ))}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <span className="text-[10px] text-zinc-500 bg-zinc-800/90 px-2 py-1 rounded">
+              <span className="text-[9px] text-zinc-500 bg-zinc-800/95 px-2 py-1 rounded-sm border border-zinc-700">
                 Ajuste o filtro
               </span>
             </div>
           </div>
         ) : (
-          <div className="py-6 text-center">
-            <AlertCircle className="w-6 h-6 mx-auto mb-1 text-zinc-600" />
-            <p className="text-zinc-500 text-xs">Sem dados disponíveis.</p>
+          <div className="py-4 text-center">
+            <AlertCircle className="w-5 h-5 mx-auto mb-1 text-zinc-600" />
+            <p className="text-zinc-500 text-[10px]">Sem dados disponíveis.</p>
           </div>
         )}
 
-        {/* Compact confidence indicator */}
+        {/* Compact confidence footer */}
         {aggregatedScores && (
-          <div className="flex items-center justify-center gap-1.5 text-[10px] text-zinc-500 mt-1">
-            <span>Confiança:</span>
+          <div className="flex items-center justify-center gap-1 py-1.5 text-[9px] text-zinc-500 border-t border-zinc-800/50">
+            <span className="text-zinc-600">Confiança:</span>
             <span
               className={cn(
                 "font-semibold",
-                confidenceLevel === "high" && "text-emerald-500",
+                confidenceLevel === "high" && "text-emerald-400",
                 confidenceLevel === "medium" && "text-blue-400",
-                confidenceLevel === "low" && "text-amber-500",
+                confidenceLevel === "low" && "text-amber-400",
                 confidenceLevel === "none" && "text-zinc-500"
               )}
             >
@@ -611,7 +611,7 @@ export function SofaScoreRadarCard({
               {confidenceLevel === "none" && "—"}
             </span>
             <span className="text-zinc-600">
-              ({Math.round(aggregatedScores.totalMinutes)} min)
+              • {Math.round(aggregatedScores.totalMinutes)} min
             </span>
           </div>
         )}
