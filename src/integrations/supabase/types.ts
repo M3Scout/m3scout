@@ -855,6 +855,7 @@ export type Database = {
           competition_id: string
           consistency_modifier: number | null
           created_at: string
+          deleted_at: string | null
           final_score: number
           id: string
           impact_notes: string | null
@@ -886,6 +887,7 @@ export type Database = {
           competition_id: string
           consistency_modifier?: number | null
           created_at?: string
+          deleted_at?: string | null
           final_score: number
           id?: string
           impact_notes?: string | null
@@ -917,6 +919,7 @@ export type Database = {
           competition_id?: string
           consistency_modifier?: number | null
           created_at?: string
+          deleted_at?: string | null
           final_score?: number
           id?: string
           impact_notes?: string | null

@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { RatingStars } from "@/components/players/RatingStars";
 import { ScoreBreakdownDisplay } from "@/components/scouting/ScoreBreakdownDisplay";
+import { DeleteReportDialog } from "@/components/scouting/DeleteReportDialog";
+import { useAuth } from "@/hooks/useAuth";
 import { 
   ArrowLeft, 
   Calendar, 
@@ -63,6 +65,7 @@ interface ReportDetail {
   summary: string | null;
   recommendation: string | null;
   created_at: string;
+  scout_id: string;
   players: {
     id: string;
     full_name: string;
@@ -92,9 +95,14 @@ const categoryConfig = [
 
 const ReportDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { user, isAdmin } = useAuth();
   const [report, setReport] = useState<ReportDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Check if current user can delete this report
+  const canDelete = report && (isAdmin || report.scout_id === user?.id);
 
   useEffect(() => {
     const fetchReport = async () => {
@@ -255,6 +263,12 @@ const ReportDetail = () => {
               Editar
             </Button>
           </Link>
+          {canDelete && (
+            <DeleteReportDialog
+              reportId={report.id}
+              onDeleted={() => navigate("/app/reports")}
+            />
+          )}
         </div>
       </div>
 
