@@ -754,6 +754,7 @@ const AppPlayers = () => {
                         <PlayerRatingBadge
                           rating={player.auto_rating}
                           ratingDetails={player.auto_rating_details}
+                          playerPosition={player.position}
                           showReliability={false}
                           size="sm"
                         />
@@ -910,6 +911,7 @@ const AppPlayers = () => {
                       <PlayerRatingBadge
                         rating={player.auto_rating}
                         ratingDetails={player.auto_rating_details}
+                        playerPosition={player.position}
                         showReliability={false}
                         size="sm"
                       />

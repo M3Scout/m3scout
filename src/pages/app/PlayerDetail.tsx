@@ -288,6 +288,7 @@ const PlayerDetail = () => {
                 <div className="mt-2">
                   <PlayerRatingBadge
                     rating={player.auto_rating}
+                    playerPosition={player.position}
                     size="md"
                   />
                 </div>
@@ -436,6 +437,7 @@ const PlayerDetail = () => {
                 ratingUpdatedAt={player.rating_updated_at}
                 ratingDetails={player.auto_rating_details as any}
                 playerId={player.id}
+                playerPosition={player.position}
                 isAdmin={isAdmin}
                 onRatingRecalculated={refetchPlayer}
               />

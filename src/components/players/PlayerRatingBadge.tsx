@@ -11,6 +11,7 @@ interface PlayerRatingBadgeProps {
   size?: "sm" | "md" | "lg";
   clickable?: boolean;
   playerId?: string;
+  playerPosition?: string;
   isAdmin?: boolean;
   onRecalculated?: () => void;
 }
@@ -22,6 +23,7 @@ export function PlayerRatingBadge({
   size = "md",
   clickable = true,
   playerId,
+  playerPosition,
   isAdmin,
   onRecalculated,
 }: PlayerRatingBadgeProps) {
@@ -82,6 +84,7 @@ export function PlayerRatingBadge({
         details={ratingDetails}
         rating={safeRating}
         playerId={playerId}
+        playerPosition={playerPosition}
         isAdmin={isAdmin}
         onRecalculated={onRecalculated}
         trigger={badgeContent}

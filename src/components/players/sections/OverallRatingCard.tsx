@@ -17,6 +17,7 @@ interface OverallRatingCardProps {
   ratingUpdatedAt: string | null;
   ratingDetails?: unknown;
   playerId?: string;
+  playerPosition?: string;
   isAdmin?: boolean;
   onRatingRecalculated?: () => void;
 }
@@ -50,6 +51,7 @@ export function OverallRatingCard({
   ratingUpdatedAt,
   ratingDetails,
   playerId,
+  playerPosition,
   isAdmin,
   onRatingRecalculated,
 }: OverallRatingCardProps) {
@@ -112,6 +114,7 @@ export function OverallRatingCard({
                 details={breakdownDetails}
                 rating={autoRating}
                 playerId={playerId}
+                playerPosition={playerPosition}
                 isAdmin={isAdmin}
                 onRecalculated={onRatingRecalculated}
                 trigger={
