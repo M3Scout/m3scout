@@ -155,3 +155,114 @@ export function getPositionGroup(position: string | null | undefined): PositionG
   if (!position) return 'midfielder';
   return POSITION_TO_GROUP[position.toLowerCase().trim()] || 'midfielder';
 }
+
+// =====================================================
+// RADAR CONFIG UTILITY
+// =====================================================
+
+/**
+ * GK Radar axis labels
+ */
+export const GK_RADAR_AXES = ['DEF', 'ANT', 'TAT', 'DIS', 'AER'] as const;
+
+/**
+ * Outfield Radar axis labels
+ */
+export const OUTFIELD_RADAR_AXES = ['ATA', 'TÉC', 'DEF', 'TÁT', 'CRI'] as const;
+
+/**
+ * Radar configuration type
+ */
+export interface RadarConfig {
+  type: 'GK' | 'OUTFIELD';
+  title: string;
+  labels: readonly string[];
+  values: Record<string, number> | null;
+}
+
+/**
+ * Player data interface for radar config
+ */
+interface PlayerRadarData {
+  position?: string | null;
+  auto_rating_details?: {
+    gk_radar?: {
+      DEF?: number;
+      ANT?: number;
+      TAT?: number;
+      DIS?: number;
+      AER?: number;
+    };
+    radar?: {
+      ATA?: number;
+      TÉC?: number;
+      DEF?: number;
+      TÁT?: number;
+      CRI?: number;
+    };
+  } | null;
+}
+
+/**
+ * Get unified radar configuration based on player position and data
+ * 
+ * This is the SINGLE SOURCE OF TRUTH for determining which radar type to use.
+ * Use this function everywhere to ensure consistency between:
+ * - Player Overview page
+ * - Rating details modal
+ * - Comparison views
+ * 
+ * @param player - Player object with position and auto_rating_details
+ * @returns RadarConfig with type, title, labels, and values
+ * 
+ * @example
+ * const radar = getRadarConfig(player);
+ * if (radar.type === 'GK') {
+ *   // Render GK radar with DEF/ANT/TAT/DIS/AER
+ * } else {
+ *   // Render outfield radar with ATA/TÉC/DEF/TÁT/CRI
+ * }
+ */
+export function getRadarConfig(player: PlayerRadarData | null | undefined): RadarConfig {
+  const isGK = isGoalkeeper(player?.position);
+  
+  if (isGK) {
+    const gkRadar = player?.auto_rating_details?.gk_radar;
+    
+    return {
+      type: 'GK',
+      title: 'Radar do Goleiro',
+      labels: GK_RADAR_AXES,
+      values: gkRadar && typeof gkRadar.DEF === 'number' ? {
+        DEF: gkRadar.DEF ?? 0,
+        ANT: gkRadar.ANT ?? 0,
+        TAT: gkRadar.TAT ?? 0,
+        DIS: gkRadar.DIS ?? 0,
+        AER: gkRadar.AER ?? 0,
+      } : null,
+    };
+  }
+  
+  // Outfield player
+  const outfieldRadar = player?.auto_rating_details?.radar;
+  
+  return {
+    type: 'OUTFIELD',
+    title: 'Visão geral dos atributos',
+    labels: OUTFIELD_RADAR_AXES,
+    values: outfieldRadar && typeof outfieldRadar.ATA === 'number' ? {
+      ATA: outfieldRadar.ATA ?? 0,
+      'TÉC': outfieldRadar['TÉC'] ?? 0,
+      DEF: outfieldRadar.DEF ?? 0,
+      'TÁT': outfieldRadar['TÁT'] ?? 0,
+      CRI: outfieldRadar.CRI ?? 0,
+    } : null,
+  };
+}
+
+/**
+ * Check if radar has valid values to display
+ */
+export function hasRadarValues(config: RadarConfig): boolean {
+  return config.values !== null && Object.values(config.values).some(v => v > 0);
+}
