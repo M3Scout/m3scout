@@ -34,11 +34,26 @@ import {
 } from "@/lib/attributeScores";
 import { computeRadarAttributes, type PlayerStatRow } from "@/lib/attributeRadar";
 
+// Scores data structure for comparison support
+export interface RadarScoresData {
+  ata: number | null;
+  tec: number | null;
+  def: number | null;
+  tat: number | null;
+  cri: number | null;
+  confidence: number;
+  totalMinutes: number;
+}
+
 interface SofaScoreRadarCardProps {
   playerId: string;
   playerPosition?: string;
   showFilters?: boolean;
   className?: string;
+  // Comparison support - prepared for future implementation
+  comparisonScores?: RadarScoresData | null;
+  comparisonLabel?: string;
+  comparisonColor?: string;
 }
 
 interface FilterOption {
@@ -55,23 +70,24 @@ interface StatsRowWithName {
 }
 
 interface AggregatedScores {
-  ata: number;
-  tec: number;
-  def: number;
-  tat: number;
-  cri: number;
+  ata: number | null;
+  tec: number | null;
+  def: number | null;
+  tat: number | null;
+  cri: number | null;
   confidence: number;
   totalMinutes: number;
 }
 
 // Vertex positions for pentagon - SofaScore style (tight to vertices)
+// Responsive positions: desktop vs mobile adjustments handled via CSS
 // Positioned with absolute anchors: ATA top, TÉC right, TÁT bottom-right, DEF bottom-left, CRI left
 const ATTRIBUTE_CONFIG = [
-  { key: "ata", label: "ATA", fullLabel: "Ataque", description: "Gols, assistências, finalizações", pos: { top: "2%", left: "50%" } },
-  { key: "tec", label: "TÉC", fullLabel: "Técnica", description: "Precisão de passes, dribles, controle", pos: { top: "32%", right: "2%" } },
-  { key: "tat", label: "TÁT", fullLabel: "Tática", description: "Disciplina, posicionamento, consistência", pos: { bottom: "6%", right: "12%" } },
-  { key: "def", label: "DEF", fullLabel: "Defesa", description: "Desarmes, interceptações, recuperações", pos: { bottom: "6%", left: "12%" } },
-  { key: "cri", label: "CRI", fullLabel: "Criatividade", description: "Passes decisivos, chances criadas", pos: { top: "32%", left: "2%" } },
+  { key: "ata", label: "ATA", fullLabel: "Ataque", description: "Gols, assistências, finalizações", pos: { top: "1%", left: "50%" }, mobilePos: { top: "0%", left: "50%" } },
+  { key: "tec", label: "TÉC", fullLabel: "Técnica", description: "Precisão de passes, dribles, controle", pos: { top: "30%", right: "3%" }, mobilePos: { top: "28%", right: "1%" } },
+  { key: "tat", label: "TÁT", fullLabel: "Tática", description: "Disciplina, posicionamento, consistência", pos: { bottom: "8%", right: "10%" }, mobilePos: { bottom: "6%", right: "6%" } },
+  { key: "def", label: "DEF", fullLabel: "Defesa", description: "Desarmes, interceptações, recuperações", pos: { bottom: "8%", left: "10%" }, mobilePos: { bottom: "6%", left: "6%" } },
+  { key: "cri", label: "CRI", fullLabel: "Criatividade", description: "Passes decisivos, chances criadas", pos: { top: "30%", left: "3%" }, mobilePos: { top: "28%", left: "1%" } },
 ];
 
 function clamp(value: number, min: number, max: number): number {
@@ -83,6 +99,10 @@ export function SofaScoreRadarCard({
   playerPosition = "Atacante",
   showFilters = true,
   className,
+  // Comparison props - prepared for future use
+  comparisonScores,
+  comparisonLabel = "Comparar",
+  comparisonColor = "#3b82f6", // blue-500
 }: SofaScoreRadarCardProps) {
   const [loading, setLoading] = useState(true);
   const [recalculating, setRecalculating] = useState(false);
@@ -229,11 +249,11 @@ export function SofaScoreRadarCard({
         const result = computeRadarAttributes(rawStats, playerPosition);
         if (result.ata !== null) {
           return {
-            ata: result.ata ?? 50,
-            tec: result.tec ?? 50,
-            def: result.def ?? 50,
-            tat: result.tat ?? 50,
-            cri: result.cri ?? 50,
+            ata: result.ata,
+            tec: result.tec,
+            def: result.def,
+            tat: result.tat,
+            cri: result.cri,
             confidence: result.confidence === "high" ? 1 : result.confidence === "medium" ? 0.7 : 0.35,
             totalMinutes: rawStats.reduce((sum, r) => sum + (r.minutes || 0), 0),
           };
@@ -300,13 +320,13 @@ export function SofaScoreRadarCard({
     const result = computeRadarAttributes(matchingRawStats, playerPosition);
     const totalMinutes = matchingRawStats.reduce((sum, r) => sum + (r.minutes || 0), 0);
 
-    // Return calculated scores even if confidence is low
+    // Return calculated scores, preserving null for missing attributes
     return {
-      ata: result.ata ?? 50,
-      tec: result.tec ?? 50,
-      def: result.def ?? 50,
-      tat: result.tat ?? 50,
-      cri: result.cri ?? 50,
+      ata: result.ata,
+      tec: result.tec,
+      def: result.def,
+      tat: result.tat,
+      cri: result.cri,
       confidence: clamp(totalMinutes / 900, 0, 1),
       totalMinutes,
     };
@@ -330,16 +350,25 @@ export function SofaScoreRadarCard({
     }
   };
 
-  // Chart data
+  // Chart data - primary polygon (player A)
   const chartData = useMemo(() => {
-    if (!aggregatedScores) return [];
-    
-    return ATTRIBUTE_CONFIG.map((attr) => ({
-      attribute: attr.label,
-      value: Math.round(aggregatedScores[attr.key as keyof AggregatedScores] as number),
-      fullMark: 100,
-    }));
-  }, [aggregatedScores]);
+    return ATTRIBUTE_CONFIG.map((attr) => {
+      const rawValue = aggregatedScores?.[attr.key as keyof AggregatedScores];
+      const value = typeof rawValue === "number" ? Math.round(rawValue) : null;
+      // For comparison polygon (player B) - prepared for future
+      const compValue = comparisonScores?.[attr.key as keyof RadarScoresData];
+      const comparisonValue = typeof compValue === "number" ? Math.round(compValue) : null;
+      
+      return {
+        attribute: attr.label,
+        value: value ?? 0, // Radar needs 0 for null to render correctly
+        valueDisplay: value, // Actual display value (can be null for "N/D")
+        comparison: comparisonValue ?? 0,
+        comparisonDisplay: comparisonValue,
+        fullMark: 100,
+      };
+    });
+  }, [aggregatedScores, comparisonScores]);
 
   const confidenceLevel = aggregatedScores
     ? getConfidenceLevelFromValue(aggregatedScores.confidence)
@@ -360,16 +389,27 @@ export function SofaScoreRadarCard({
   // Only show empty state if there are truly no stats at all
   const hasAnyStats = statsRows.length > 0 || rawStats.length > 0 || scores.length > 0;
   
+  // Check if all values are null (no data to display)
+  const hasValidScores = aggregatedScores && (
+    aggregatedScores.ata !== null ||
+    aggregatedScores.tec !== null ||
+    aggregatedScores.def !== null ||
+    aggregatedScores.tat !== null ||
+    aggregatedScores.cri !== null
+  );
+  
   if (!hasAnyStats) {
     return (
-      <Card className={cn("bg-card", className)}>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base font-semibold">Visão geral dos atributos</CardTitle>
-        </CardHeader>
-        <CardContent className="py-8 text-center">
-          <AlertCircle className="w-8 h-8 mx-auto mb-2 text-muted-foreground opacity-50" />
-          <p className="text-muted-foreground text-sm">
-            Nenhuma estatística registrada.
+      <Card className={cn("bg-zinc-900 border-zinc-800 shadow-lg overflow-hidden", className)}>
+        <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-800/50">
+          <span className="text-xs font-semibold text-zinc-100">
+            Visão geral dos atributos
+          </span>
+        </div>
+        <CardContent className="py-6 text-center">
+          <AlertCircle className="w-6 h-6 mx-auto mb-2 text-zinc-600" />
+          <p className="text-zinc-500 text-xs">
+            Sem dados suficientes
           </p>
         </CardContent>
       </Card>
@@ -459,19 +499,22 @@ export function SofaScoreRadarCard({
 
         {/* Low minutes warning - inline compact */}
         {showLowMinutesWarning && (
-          <div className="flex items-center justify-center gap-1 text-[9px] text-amber-500 py-0.5 bg-amber-500/10">
-            <AlertCircle className="h-2.5 w-2.5" />
-            <span>Poucos min. ({Math.round(aggregatedScores?.totalMinutes || 0)})</span>
+          <div className="flex items-center justify-center gap-1 text-[8px] sm:text-[9px] text-amber-500 py-0.5 bg-amber-500/10">
+            <AlertCircle className="h-2.5 w-2.5 shrink-0" />
+            <span className="truncate">Poucos min. ({Math.round(aggregatedScores?.totalMinutes || 0)})</span>
           </div>
         )}
 
-        {/* SofaScore-style Radar with tight labels+badges */}
-        {aggregatedScores ? (
-          <div className="relative mx-auto" style={{ width: "100%", aspectRatio: "1 / 0.9" }}>
-            {/* Pentagon radar - centered, fills container */}
-            <div className="absolute inset-0 flex items-center justify-center pt-2 pb-4 px-6">
+        {/* SofaScore-style Radar - responsive container */}
+        {hasValidScores ? (
+          <div 
+            className="relative mx-auto w-full overflow-hidden"
+            style={{ aspectRatio: "1 / 0.85" }}
+          >
+            {/* Pentagon radar - centered, responsive sizing */}
+            <div className="absolute inset-0 flex items-center justify-center px-4 sm:px-6 py-2">
               <ResponsiveContainer width="100%" height="100%">
-                <RadarChart data={chartData} cx="50%" cy="50%" outerRadius="72%">
+                <RadarChart data={chartData} cx="50%" cy="50%" outerRadius="70%">
                   <PolarGrid
                     stroke="rgba(82, 82, 91, 0.5)"
                     strokeWidth={1}
@@ -481,6 +524,7 @@ export function SofaScoreRadarCard({
                     dataKey="attribute"
                     tick={false}
                   />
+                  {/* Primary polygon (Player A) */}
                   <Radar
                     name="Atributos"
                     dataKey="value"
@@ -489,56 +533,74 @@ export function SofaScoreRadarCard({
                     fillOpacity={0.25}
                     strokeWidth={2.5}
                   />
+                  {/* Secondary polygon (Player B) - prepared for comparison */}
+                  {comparisonScores && (
+                    <Radar
+                      name={comparisonLabel}
+                      dataKey="comparison"
+                      stroke={comparisonColor}
+                      fill={comparisonColor}
+                      fillOpacity={0.15}
+                      strokeWidth={2}
+                      strokeDasharray="4 2"
+                    />
+                  )}
                 </RadarChart>
               </ResponsiveContainer>
             </div>
 
-            {/* Labels + Badges - absolute positioned at vertices */}
+            {/* Labels + Badges - absolute positioned at vertices, responsive */}
             {ATTRIBUTE_CONFIG.map((attr) => {
-              const value = Math.round(
-                aggregatedScores[attr.key as keyof AggregatedScores] as number
-              );
+              const rawValue = aggregatedScores?.[attr.key as keyof AggregatedScores];
+              const value = typeof rawValue === "number" ? Math.round(rawValue) : null;
+              const displayValue = value !== null ? value : "N/D";
               
               // Badge color based on score
-              const getBadgeStyle = (v: number) => {
+              const getBadgeStyle = (v: number | null) => {
+                if (v === null) return "bg-zinc-700 text-zinc-400";
                 if (v >= 70) return "bg-emerald-500 text-white shadow-emerald-500/30";
                 if (v >= 50) return "bg-orange-500 text-white shadow-orange-500/30";
                 if (v >= 30) return "bg-amber-500 text-zinc-900 shadow-amber-500/30";
                 return "bg-red-500 text-white shadow-red-500/30";
               };
 
+              // Use responsive positioning
+              const position = attr.pos;
+
               return (
                 <div
                   key={attr.key}
                   className="absolute flex flex-col items-center gap-0 pointer-events-none"
                   style={{ 
-                    ...attr.pos,
-                    transform: attr.pos.left === "50%" ? "translateX(-50%)" : 
-                               attr.pos.right ? "translateX(0)" : "translateX(0)"
+                    ...position,
+                    transform: position.left === "50%" ? "translateX(-50%)" : "translateX(0)"
                   }}
                 >
-                  {/* Label - small, muted */}
-                  <span className="text-[9px] font-semibold text-zinc-500 uppercase tracking-wider leading-none">
+                  {/* Label - responsive text size */}
+                  <span className="text-[8px] sm:text-[9px] font-semibold text-zinc-500 uppercase tracking-wider leading-none">
                     {attr.label}
                   </span>
-                  {/* Value badge - compact square */}
+                  {/* Value badge - responsive sizing */}
                   <div
                     className={cn(
-                      "min-w-[24px] h-[18px] flex items-center justify-center mt-0.5",
-                      "text-[10px] font-bold rounded shadow-md",
+                      "min-w-[20px] sm:min-w-[24px] h-[16px] sm:h-[18px] flex items-center justify-center mt-0.5",
+                      "text-[9px] sm:text-[10px] font-bold rounded shadow-md",
                       getBadgeStyle(value)
                     )}
                   >
-                    {value}
+                    {displayValue}
                   </div>
                 </div>
               );
             })}
           </div>
         ) : hasAnyStats ? (
-          // Fallback: Show placeholder when filter yields no data
-          <div className="relative mx-auto" style={{ width: "100%", aspectRatio: "1 / 0.9" }}>
-            <div className="absolute inset-0 flex items-center justify-center pt-2 pb-4 px-6">
+          // Fallback: Show placeholder when filter yields no data or all null
+          <div 
+            className="relative mx-auto w-full overflow-hidden"
+            style={{ aspectRatio: "1 / 0.85" }}
+          >
+            <div className="absolute inset-0 flex items-center justify-center px-4 sm:px-6 py-2">
               <ResponsiveContainer width="100%" height="100%">
                 <RadarChart 
                   data={ATTRIBUTE_CONFIG.map((attr) => ({
@@ -548,7 +610,7 @@ export function SofaScoreRadarCard({
                   }))} 
                   cx="50%" 
                   cy="50%" 
-                  outerRadius="72%"
+                  outerRadius="70%"
                 >
                   <PolarGrid stroke="rgba(82, 82, 91, 0.3)" strokeWidth={1} gridType="polygon" />
                   <PolarAngleAxis dataKey="attribute" tick={false} />
@@ -563,7 +625,7 @@ export function SofaScoreRadarCard({
                 </RadarChart>
               </ResponsiveContainer>
             </div>
-            {/* Labels at vertices - muted */}
+            {/* Labels at vertices - muted, responsive */}
             {ATTRIBUTE_CONFIG.map((attr) => (
               <div
                 key={attr.key}
@@ -573,14 +635,14 @@ export function SofaScoreRadarCard({
                   transform: attr.pos.left === "50%" ? "translateX(-50%)" : "translateX(0)"
                 }}
               >
-                <span className="text-[9px] font-semibold text-zinc-600 uppercase tracking-wider leading-none">{attr.label}</span>
-                <div className="min-w-[24px] h-[18px] flex items-center justify-center mt-0.5 text-[10px] font-bold rounded bg-zinc-700 text-zinc-500 shadow">
-                  —
+                <span className="text-[8px] sm:text-[9px] font-semibold text-zinc-600 uppercase tracking-wider leading-none">{attr.label}</span>
+                <div className="min-w-[20px] sm:min-w-[24px] h-[16px] sm:h-[18px] flex items-center justify-center mt-0.5 text-[9px] sm:text-[10px] font-bold rounded bg-zinc-700 text-zinc-500 shadow">
+                  N/D
                 </div>
               </div>
             ))}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <span className="text-[9px] text-zinc-500 bg-zinc-800/95 px-2 py-1 rounded-sm border border-zinc-700">
+              <span className="text-[8px] sm:text-[9px] text-zinc-500 bg-zinc-800/95 px-2 py-1 rounded-sm border border-zinc-700">
                 Ajuste o filtro
               </span>
             </div>
@@ -588,13 +650,13 @@ export function SofaScoreRadarCard({
         ) : (
           <div className="py-4 text-center">
             <AlertCircle className="w-5 h-5 mx-auto mb-1 text-zinc-600" />
-            <p className="text-zinc-500 text-[10px]">Sem dados disponíveis.</p>
+            <p className="text-zinc-500 text-[10px]">Sem dados suficientes.</p>
           </div>
         )}
 
-        {/* Compact confidence footer */}
-        {aggregatedScores && (
-          <div className="flex items-center justify-center gap-1 py-1.5 text-[9px] text-zinc-500 border-t border-zinc-800/50">
+        {/* Compact confidence footer - responsive */}
+        {hasValidScores && aggregatedScores && (
+          <div className="flex items-center justify-center gap-1 py-1.5 text-[8px] sm:text-[9px] text-zinc-500 border-t border-zinc-800/50">
             <span className="text-zinc-600">Confiança:</span>
             <span
               className={cn(
@@ -613,6 +675,20 @@ export function SofaScoreRadarCard({
             <span className="text-zinc-600">
               • {Math.round(aggregatedScores.totalMinutes)} min
             </span>
+          </div>
+        )}
+
+        {/* Comparison legend - prepared for future use */}
+        {comparisonScores && (
+          <div className="flex items-center justify-center gap-3 py-1.5 text-[8px] sm:text-[9px] border-t border-zinc-800/50">
+            <div className="flex items-center gap-1">
+              <div className="w-2.5 h-2.5 rounded-sm bg-orange-500" />
+              <span className="text-zinc-400">Jogador</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: comparisonColor }} />
+              <span className="text-zinc-400">{comparisonLabel}</span>
+            </div>
           </div>
         )}
       </CardContent>
