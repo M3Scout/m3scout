@@ -46,6 +46,7 @@ import { MarketValueSection } from "@/components/players/sections/MarketValueSec
 import { MarketValueTab } from "@/components/players/sections/MarketValueTab";
 import { DataQualityPanel } from "@/components/players/DataQualityPanel";
 import { PlayerAttributeRadarSection } from "@/components/players/sections/PlayerAttributeRadarSection";
+import { PersistedAttributeRadar } from "@/components/players/PersistedAttributeRadar";
 
 interface Player {
   id: string;
@@ -437,7 +438,13 @@ const PlayerDetail = () => {
                 onRatingRecalculated={refetchPlayer}
               />
 
-              {/* SofaScore-style Attribute Radar */}
+              {/* Persisted Attribute Radar (uses DB scores) */}
+              <PersistedAttributeRadar
+                playerId={player.id}
+                showRecalculateButton={isAdmin || isScout}
+              />
+
+              {/* Detailed Stats Section (calculates on-the-fly for breakdown) */}
               <PlayerAttributeRadarSection
                 playerId={player.id}
                 playerPosition={player.position}
