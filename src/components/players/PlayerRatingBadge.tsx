@@ -75,8 +75,8 @@ export function PlayerRatingBadge({
     </div>
   );
 
-  // If we have rating details and it's clickable, wrap in modal
-  if (clickable && ratingDetails) {
+  // If we have rating details, playerId, and it's clickable, wrap in modal
+  if (clickable && ratingDetails && playerId) {
     return (
       <SafeRatingBreakdownModalV2
         details={ratingDetails}

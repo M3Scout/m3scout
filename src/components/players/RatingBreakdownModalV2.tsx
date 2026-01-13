@@ -54,7 +54,7 @@ interface RatingBreakdownModalV2Props {
   details: RatingBreakdownV2 | ExtendedRatingBreakdownV2 | null;
   rating: number;
   trigger?: React.ReactNode;
-  playerId?: string;
+  playerId: string; // REQUIRED - must always be passed
   isAdmin?: boolean;
   onRecalculated?: () => void;
 }
@@ -646,7 +646,7 @@ function StatBreakdownCard({
   isExpanded: boolean;
   onToggle: () => void;
   positionGroup: string;
-  playerId?: string;
+  playerId: string; // REQUIRED - must always be passed
 }) {
   const compId = String((competition as any)?.competition_id ?? "");
   const seasonYear = Number((competition as any)?.season_year);
@@ -662,28 +662,23 @@ function StatBreakdownCard({
   const [statsReason, setStatsReason] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!import.meta.env.DEV) return;
+    // Only fetch when expanded
     if (!isExpanded) return;
 
-    // Always log selection (mandatory)
-    console.log("[BREAKDOWN] selected competition/year", {
-      playerId,
-      competitionId: compId,
-      year: seasonYear,
-      positionGroup,
-    });
+    // Mandatory logs for debugging
+    console.log("[BREAKDOWN] query params:", { playerId, competitionId: compId, seasonYear });
 
     if (!playerId) {
       setStatsRow(null);
       setStatsReason("missing_playerId");
-      console.warn("[BREAKDOWN] missing_stats_source: missing_playerId");
+      console.warn("[BREAKDOWN] reason missing_playerId");
       return;
     }
 
     if (!compId || !Number.isFinite(seasonYear)) {
       setStatsRow(null);
       setStatsReason("comp_year_not_found");
-      console.warn("[BREAKDOWN] comp_year_not_found", { compId, seasonYear });
+      console.warn("[BREAKDOWN] reason comp_year_not_found", { compId, seasonYear });
       return;
     }
 
@@ -701,7 +696,8 @@ function StatBreakdownCard({
         .eq("season_year", seasonYear)
         .maybeSingle();
 
-      console.log("[BREAKDOWN] stats query result", { error, data });
+      // Mandatory log for statsRow
+      console.log("[BREAKDOWN] statsRow:", data);
 
       if (error) {
         setStatsRow(null);
@@ -1218,7 +1214,9 @@ export function RatingBreakdownModalV2({
 }: RatingBreakdownModalV2Props) {
   const [expandedCompetitions, setExpandedCompetitions] = useState<Set<string>>(new Set());
   const [recalculating, setRecalculating] = useState(false);
-  
+
+  // Mandatory log for debugging
+  console.log("[RADAR] modal playerId:", playerId);
   const toggleCompetition = (id: string) => {
     setExpandedCompetitions(prev => {
       const next = new Set(prev);
@@ -1407,14 +1405,7 @@ export function RatingBreakdownModalV2({
 
           {/* Radar Tab - SofaScore Style */}
           <TabsContent value="radar" className="mt-4">
-            {playerId ? (
-              <SofaScoreRadarCard playerId={playerId} showFilters={true} />
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <AlertTriangle className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p>ID do jogador não disponível para carregar o radar.</p>
-              </div>
-            )}
+            <SofaScoreRadarCard playerId={playerId} showFilters={true} />
           </TabsContent>
 
           {/* Competitions Tab */}
