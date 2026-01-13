@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Menu, X, Lock } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
+import logoM3 from "@/assets/logo-m3.png";
 
 const navLinks = [
   { href: "/sobre", label: "SOBRE" },
@@ -74,14 +75,13 @@ export function SmartHeader({ variant = "default" }: SmartHeaderProps) {
             {/* Logo */}
             <Link 
               to="/" 
-              className="flex items-center gap-3 text-white hover:opacity-90 transition-opacity duration-200"
+              className="flex items-center hover:opacity-90 transition-opacity duration-200"
             >
-              <div className="flex h-10 w-10 md:h-11 md:w-11 items-center justify-center bg-white text-black text-sm md:text-base font-black tracking-tight">
-                M3
-              </div>
-              <span className="text-sm md:text-[15px] font-medium tracking-[0.12em] uppercase hidden sm:inline">
-                Agency
-              </span>
+              <img 
+                src={logoM3} 
+                alt="M3 Agency" 
+                className="h-8 md:h-10 w-auto"
+              />
             </Link>
 
             {/* Desktop Navigation */}
