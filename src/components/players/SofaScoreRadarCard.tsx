@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -505,9 +506,12 @@ export function SofaScoreRadarCard({
           </div>
         )}
 
-        {/* SofaScore-style Radar - responsive container */}
+        {/* SofaScore-style Radar - responsive container with animation */}
         {hasValidScores ? (
-          <div 
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
             className="relative mx-auto w-full overflow-hidden"
             style={{ aspectRatio: "1 / 0.85" }}
           >
@@ -524,7 +528,7 @@ export function SofaScoreRadarCard({
                     dataKey="attribute"
                     tick={false}
                   />
-                  {/* Primary polygon (Player A) */}
+                  {/* Primary polygon (Player A) with animation */}
                   <Radar
                     name="Atributos"
                     dataKey="value"
@@ -532,8 +536,11 @@ export function SofaScoreRadarCard({
                     fill="#f97316"
                     fillOpacity={0.25}
                     strokeWidth={2.5}
+                    animationDuration={600}
+                    animationEasing="ease-out"
+                    animationBegin={0}
                   />
-                  {/* Secondary polygon (Player B) - prepared for comparison */}
+                  {/* Secondary polygon (Player B) - for comparison */}
                   {comparisonScores && (
                     <Radar
                       name={comparisonLabel}
@@ -543,57 +550,78 @@ export function SofaScoreRadarCard({
                       fillOpacity={0.15}
                       strokeWidth={2}
                       strokeDasharray="4 2"
+                      animationDuration={600}
+                      animationEasing="ease-out"
+                      animationBegin={150}
                     />
                   )}
                 </RadarChart>
               </ResponsiveContainer>
             </div>
 
-            {/* Labels + Badges - absolute positioned at vertices, responsive */}
-            {ATTRIBUTE_CONFIG.map((attr) => {
-              const rawValue = aggregatedScores?.[attr.key as keyof AggregatedScores];
-              const value = typeof rawValue === "number" ? Math.round(rawValue) : null;
-              const displayValue = value !== null ? value : "N/D";
-              
-              // Badge color based on score
-              const getBadgeStyle = (v: number | null) => {
-                if (v === null) return "bg-zinc-700 text-zinc-400";
-                if (v >= 70) return "bg-emerald-500 text-white shadow-emerald-500/30";
-                if (v >= 50) return "bg-orange-500 text-white shadow-orange-500/30";
-                if (v >= 30) return "bg-amber-500 text-zinc-900 shadow-amber-500/30";
-                return "bg-red-500 text-white shadow-red-500/30";
-              };
+            {/* Labels + Badges - absolute positioned at vertices, with staggered animation */}
+            <AnimatePresence>
+              {ATTRIBUTE_CONFIG.map((attr, index) => {
+                const rawValue = aggregatedScores?.[attr.key as keyof AggregatedScores];
+                const value = typeof rawValue === "number" ? Math.round(rawValue) : null;
+                const displayValue = value !== null ? value : "N/D";
+                
+                // Badge color based on score
+                const getBadgeStyle = (v: number | null) => {
+                  if (v === null) return "bg-zinc-700 text-zinc-400";
+                  if (v >= 70) return "bg-emerald-500 text-white shadow-emerald-500/30";
+                  if (v >= 50) return "bg-orange-500 text-white shadow-orange-500/30";
+                  if (v >= 30) return "bg-amber-500 text-zinc-900 shadow-amber-500/30";
+                  return "bg-red-500 text-white shadow-red-500/30";
+                };
 
-              // Use responsive positioning
-              const position = attr.pos;
+                // Use responsive positioning
+                const position = attr.pos;
 
-              return (
-                <div
-                  key={attr.key}
-                  className="absolute flex flex-col items-center gap-0 pointer-events-none"
-                  style={{ 
-                    ...position,
-                    transform: position.left === "50%" ? "translateX(-50%)" : "translateX(0)"
-                  }}
-                >
-                  {/* Label - responsive text size */}
-                  <span className="text-[8px] sm:text-[9px] font-semibold text-zinc-500 uppercase tracking-wider leading-none">
-                    {attr.label}
-                  </span>
-                  {/* Value badge - responsive sizing */}
-                  <div
-                    className={cn(
-                      "min-w-[20px] sm:min-w-[24px] h-[16px] sm:h-[18px] flex items-center justify-center mt-0.5",
-                      "text-[9px] sm:text-[10px] font-bold rounded shadow-md",
-                      getBadgeStyle(value)
-                    )}
+                return (
+                  <motion.div
+                    key={attr.key}
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ 
+                      delay: 0.2 + index * 0.08,
+                      duration: 0.3,
+                      ease: "easeOut"
+                    }}
+                    className="absolute flex flex-col items-center gap-0 pointer-events-none"
+                    style={{ 
+                      ...position,
+                      transform: position.left === "50%" ? "translateX(-50%)" : "translateX(0)"
+                    }}
                   >
-                    {displayValue}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                    {/* Label - responsive text size */}
+                    <span className="text-[8px] sm:text-[9px] font-semibold text-zinc-500 uppercase tracking-wider leading-none">
+                      {attr.label}
+                    </span>
+                    {/* Value badge - responsive sizing */}
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ 
+                        delay: 0.35 + index * 0.08,
+                        duration: 0.25,
+                        type: "spring",
+                        stiffness: 300,
+                        damping: 20
+                      }}
+                      className={cn(
+                        "min-w-[20px] sm:min-w-[24px] h-[16px] sm:h-[18px] flex items-center justify-center mt-0.5",
+                        "text-[9px] sm:text-[10px] font-bold rounded shadow-md",
+                        getBadgeStyle(value)
+                      )}
+                    >
+                      {displayValue}
+                    </motion.div>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+          </motion.div>
         ) : hasAnyStats ? (
           // Fallback: Show placeholder when filter yields no data or all null
           <div 
