@@ -41,6 +41,7 @@ import {
   Monitor,
 } from "lucide-react";
 import { format } from "date-fns";
+import { recalculateAllAttributeScores } from "@/lib/attributeScores";
 import { ptBR } from "date-fns/locale";
 
 function ThemeCard() {
@@ -100,10 +101,14 @@ export default function Settings() {
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [recalculating, setRecalculating] = useState(false);
+  const [recalculatingAttributes, setRecalculatingAttributes] = useState(false);
   const [recalculateResult, setRecalculateResult] = useState<{
     total_players: number;
     ratings_changed: number;
     new_ratings: number;
+  } | null>(null);
+  const [attributeRecalculateResult, setAttributeRecalculateResult] = useState<{
+    players_processed: number;
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [profile, setProfile] = useState<{
@@ -281,6 +286,25 @@ export default function Settings() {
       toast.error(errorMessage);
     } finally {
       setRecalculating(false);
+    }
+  };
+
+  const handleRecalculateAttributes = async () => {
+    setRecalculatingAttributes(true);
+    setAttributeRecalculateResult(null);
+    try {
+      const result = await recalculateAllAttributeScores();
+      if (result.success) {
+        setAttributeRecalculateResult({ players_processed: result.players.length });
+        toast.success(`Atributos recalculados para ${result.players.length} atletas`);
+      } else {
+        toast.error(result.error || "Erro ao recalcular atributos");
+      }
+    } catch (error) {
+      console.error("Error recalculating attributes:", error);
+      toast.error("Erro ao recalcular atributos");
+    } finally {
+      setRecalculatingAttributes(false);
     }
   };
 
@@ -569,14 +593,73 @@ export default function Settings() {
                           <p className="text-xs text-muted-foreground">Novos</p>
                         </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                      </div>
+                    )}
+                  </div>
+
+                  <Separator />
+
+                  {/* Recalculate Radar Attributes */}
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                      Recalcula os atributos do radar (ATA/TÉC/DEF/TÁT/CRI) de todos os atletas.
+                    </p>
+                    
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          disabled={recalculatingAttributes}
+                          className="w-full"
+                        >
+                          {recalculatingAttributes ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Recalculando...
+                            </>
+                          ) : (
+                            <>
+                              <RefreshCw className="h-4 w-4" />
+                              Recalcular Atributos (Radar)
+                            </>
+                          )}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle className="flex items-center gap-2">
+                            <AlertTriangle className="h-5 w-5 text-amber-500" />
+                            Confirmar Recálculo
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Esta ação irá recalcular os 5 atributos do radar para todos os atletas com estatísticas registradas.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleRecalculateAttributes}>
+                            Continuar
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+
+                    {attributeRecalculateResult && (
+                      <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="h-4 w-4 text-emerald-500" />
+                          <span className="text-sm font-medium text-emerald-500">
+                            {attributeRecalculateResult.players_processed} atletas processados
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
       </div>
-    </div>
-  );
-}
+    );
+  }

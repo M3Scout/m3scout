@@ -271,6 +271,66 @@ export type Database = {
         }
         Relationships: []
       }
+      player_attribute_scores: {
+        Row: {
+          ata_score_100: number | null
+          attr_confidence: number | null
+          competition_id: string
+          cri_score_100: number | null
+          def_score_100: number | null
+          details: Json | null
+          id: string
+          player_id: string
+          season_year: number
+          tat_score_100: number | null
+          tec_score_100: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          ata_score_100?: number | null
+          attr_confidence?: number | null
+          competition_id: string
+          cri_score_100?: number | null
+          def_score_100?: number | null
+          details?: Json | null
+          id?: string
+          player_id: string
+          season_year: number
+          tat_score_100?: number | null
+          tec_score_100?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          ata_score_100?: number | null
+          attr_confidence?: number | null
+          competition_id?: string
+          cri_score_100?: number | null
+          def_score_100?: number | null
+          details?: Json | null
+          id?: string
+          player_id?: string
+          season_year?: number
+          tat_score_100?: number | null
+          tec_score_100?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_attribute_scores_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_attribute_scores_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_injuries: {
         Row: {
           created_at: string
@@ -917,6 +977,14 @@ export type Database = {
         Args: { p_player_id: string }
         Returns: number
       }
+      calculate_player_attribute_scores: {
+        Args: {
+          p_competition_id: string
+          p_player_id: string
+          p_season_year: number
+        }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -926,6 +994,14 @@ export type Database = {
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_internal_user: { Args: { _user_id: string }; Returns: boolean }
+      recalculate_all_attribute_scores: {
+        Args: never
+        Returns: {
+          player_id: string
+          player_name: string
+          rows_processed: number
+        }[]
+      }
       recalculate_all_competition_coefficients: {
         Args: never
         Returns: {
@@ -943,6 +1019,14 @@ export type Database = {
           old_rating: number
           player_id: string
           player_name: string
+        }[]
+      }
+      recalculate_player_all_attributes: {
+        Args: { p_player_id: string }
+        Returns: {
+          competition_id: string
+          result: Json
+          season_year: number
         }[]
       }
       recalculate_player_market_value_summary: {
