@@ -688,9 +688,7 @@ function StatBreakdownCard({
     (async () => {
       const { data, error } = await supabase
         .from("player_stats")
-        .select(
-          "matches, minutes, goals, assists, yellow_cards, red_cards, key_passes, chances_created, shots, shots_on_target"
-        )
+        .select("*")
         .eq("player_id", playerId)
         .eq("competition_id", compId)
         .eq("season_year", seasonYear)
@@ -727,60 +725,151 @@ function StatBreakdownCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isExpanded, playerId, compId, seasonYear, positionGroup]);
 
-  const STAT_CAPS: Record<string, { cap: number; inverse?: boolean }> = {
-    matches: { cap: 60 },
-    minutes: { cap: 4000 },
-    goals: { cap: 30 },
-    assists: { cap: 20 },
-    key_passes: { cap: 120 },
-    chances_created: { cap: 60 },
-    shots: { cap: 150 },
-    shots_on_target: { cap: 80 },
-    yellow_cards: { cap: 15, inverse: true },
-    red_cards: { cap: 5, inverse: true },
+  // Full mapping of player_stats columns to breakdown rows
+  const minutes = Number(statsRow?.minutes ?? 0);
+  const per90Factor = minutes > 0 ? 90 / minutes : 0;
+
+  // Per90 caps for normalization (based on elite player benchmarks)
+  const PER90_CAPS: Record<string, { cap: number; inverse?: boolean; per90?: boolean }> = {
+    // Attack
+    goals: { cap: 0.9, per90: true },
+    assists: { cap: 0.6, per90: true },
+    shots: { cap: 4.5, per90: true },
+    shots_on_target: { cap: 2.0, per90: true },
+    // Creativity
+    key_passes: { cap: 3.0, per90: true },
+    chances_created: { cap: 2.5, per90: true },
+    successful_dribbles: { cap: 4.0, per90: true },
+    // Defense
+    tackles: { cap: 4.0, per90: true },
+    interceptions: { cap: 3.0, per90: true },
+    recoveries: { cap: 12.0, per90: true },
+    clearances: { cap: 6.0, per90: true },
+    duels_won: { cap: 8.0, per90: true },
+    aerial_duels_won: { cap: 3.0, per90: true },
+    // Discipline (inverse - lower is better)
+    yellow_cards: { cap: 0.35, per90: true, inverse: true },
+    red_cards: { cap: 0.08, per90: true, inverse: true },
+    fouls_committed: { cap: 3.0, per90: true, inverse: true },
+    possession_lost: { cap: 20.0, per90: true, inverse: true },
+    // Positive
+    fouls_drawn: { cap: 3.0, per90: true },
+    // GK
+    saves: { cap: 5.0, per90: true },
+    goals_conceded: { cap: 2.0, per90: true, inverse: true },
+    clean_sheets: { cap: 40, per90: false }, // total count
+    penalties_saved: { cap: 5, per90: false }, // total count
+    errors_leading_to_goal: { cap: 5, per90: false, inverse: true },
+    // General
+    matches: { cap: 50, per90: false },
+    minutes: { cap: 4000, per90: false },
+    accurate_passes: { cap: 50, per90: true },
+    total_passes: { cap: 70, per90: true },
   };
 
-  const scoreFromValue = (statKey: string, value: number): number => {
-    const meta = STAT_CAPS[statKey];
-    const cap = meta?.cap ?? Math.max(1, value);
-    const base = cap > 0 ? (value / cap) * 100 : 0;
-    const normalized = meta?.inverse ? 100 - base : base;
-    return Math.min(100, Math.max(0, normalized));
+  const scoreFromStatValue = (statKey: string, rawValue: number): { score: number; value_per90: number | null } => {
+    const meta = PER90_CAPS[statKey];
+    if (!meta) {
+      // Fallback: use raw value with simple normalization
+      const score = Math.min(100, Math.max(0, rawValue));
+      return { score, value_per90: null };
+    }
+    
+    let valueToScore = rawValue;
+    let value_per90: number | null = null;
+    
+    if (meta.per90 && minutes > 0) {
+      value_per90 = rawValue * per90Factor;
+      valueToScore = value_per90;
+    }
+    
+    const normalized = meta.cap > 0 ? (valueToScore / meta.cap) * 100 : 0;
+    const finalScore = meta.inverse ? 100 - normalized : normalized;
+    
+    return {
+      score: Math.min(100, Math.max(0, finalScore)),
+      value_per90,
+    };
   };
 
-  const mappedStats = statsRow
-    ? [
-        { stat_key: "goals", label: "Gols", value_raw: statsRow.goals },
-        { stat_key: "assists", label: "Assistências", value_raw: statsRow.assists },
-        { stat_key: "key_passes", label: "Passes Decisivos", value_raw: statsRow.key_passes },
-        { stat_key: "chances_created", label: "Chances Criadas", value_raw: statsRow.chances_created },
-        { stat_key: "shots", label: "Chutes", value_raw: statsRow.shots },
-        { stat_key: "shots_on_target", label: "Chutes no Gol", value_raw: statsRow.shots_on_target },
-        { stat_key: "yellow_cards", label: "Amarelos", value_raw: statsRow.yellow_cards },
-        { stat_key: "red_cards", label: "Vermelhos", value_raw: statsRow.red_cards },
-        { stat_key: "minutes", label: "Minutos", value_raw: statsRow.minutes },
-        { stat_key: "matches", label: "Jogos", value_raw: statsRow.matches },
-      ]
+  // Determine if GK position
+  const isGoalkeeper = positionGroup === "goalkeeper" || positionGroup === "GK";
+
+  // Build breakdown rows from statsRow
+  const breakdownRowsFromStatsRow: {
+    stat: string;
+    label: string;
+    category: string;
+    value_raw: number;
+    value_per90: number | null;
+    score: number;
+    weight: number;
+    adjusted_weight: number;
+    available: boolean;
+    inverse: boolean;
+  }[] = statsRow
+    ? (() => {
+        const rows: {
+          stat: string;
+          label: string;
+          category: string;
+          value_raw: number;
+          value_per90: number | null;
+          score: number;
+          weight: number;
+          adjusted_weight: number;
+          available: boolean;
+          inverse: boolean;
+        }[] = [];
+
+        // ATTACK
+        rows.push({ stat: "goals", label: "Gols", category: "Ataque", value_raw: statsRow.goals ?? 0, ...scoreFromStatValue("goals", statsRow.goals ?? 0), weight: 10, adjusted_weight: 10, available: true, inverse: false });
+        rows.push({ stat: "assists", label: "Assistências", category: "Ataque", value_raw: statsRow.assists ?? 0, ...scoreFromStatValue("assists", statsRow.assists ?? 0), weight: 8, adjusted_weight: 8, available: true, inverse: false });
+        rows.push({ stat: "shots", label: "Chutes", category: "Ataque", value_raw: statsRow.shots ?? 0, ...scoreFromStatValue("shots", statsRow.shots ?? 0), weight: 6, adjusted_weight: 6, available: true, inverse: false });
+        rows.push({ stat: "shots_on_target", label: "Chutes no Gol", category: "Ataque", value_raw: statsRow.shots_on_target ?? 0, ...scoreFromStatValue("shots_on_target", statsRow.shots_on_target ?? 0), weight: 6, adjusted_weight: 6, available: true, inverse: false });
+
+        // CREATIVITY
+        rows.push({ stat: "key_passes", label: "Passes Decisivos", category: "Criatividade", value_raw: statsRow.key_passes ?? 0, ...scoreFromStatValue("key_passes", statsRow.key_passes ?? 0), weight: 8, adjusted_weight: 8, available: true, inverse: false });
+        rows.push({ stat: "chances_created", label: "Chances Criadas", category: "Criatividade", value_raw: statsRow.chances_created ?? 0, ...scoreFromStatValue("chances_created", statsRow.chances_created ?? 0), weight: 7, adjusted_weight: 7, available: true, inverse: false });
+        rows.push({ stat: "successful_dribbles", label: "Dribles Certos", category: "Criatividade", value_raw: statsRow.successful_dribbles ?? 0, ...scoreFromStatValue("successful_dribbles", statsRow.successful_dribbles ?? 0), weight: 5, adjusted_weight: 5, available: true, inverse: false });
+
+        // DEFENSE
+        rows.push({ stat: "tackles", label: "Desarmes", category: "Defesa", value_raw: statsRow.tackles ?? 0, ...scoreFromStatValue("tackles", statsRow.tackles ?? 0), weight: 7, adjusted_weight: 7, available: true, inverse: false });
+        rows.push({ stat: "interceptions", label: "Interceptações", category: "Defesa", value_raw: statsRow.interceptions ?? 0, ...scoreFromStatValue("interceptions", statsRow.interceptions ?? 0), weight: 6, adjusted_weight: 6, available: true, inverse: false });
+        rows.push({ stat: "recoveries", label: "Recuperações", category: "Defesa", value_raw: statsRow.recoveries ?? 0, ...scoreFromStatValue("recoveries", statsRow.recoveries ?? 0), weight: 6, adjusted_weight: 6, available: true, inverse: false });
+        rows.push({ stat: "duels_won", label: "Duelos Ganhos", category: "Defesa", value_raw: statsRow.duels_won ?? 0, ...scoreFromStatValue("duels_won", statsRow.duels_won ?? 0), weight: 5, adjusted_weight: 5, available: true, inverse: false });
+        rows.push({ stat: "clearances", label: "Cortes", category: "Defesa", value_raw: statsRow.clearances ?? 0, ...scoreFromStatValue("clearances", statsRow.clearances ?? 0), weight: 4, adjusted_weight: 4, available: true, inverse: false });
+        rows.push({ stat: "aerial_duels_won", label: "Duelos Aéreos", category: "Defesa", value_raw: statsRow.aerial_duels_won ?? 0, ...scoreFromStatValue("aerial_duels_won", statsRow.aerial_duels_won ?? 0), weight: 4, adjusted_weight: 4, available: true, inverse: false });
+
+        // DISCIPLINE (inverse stats)
+        rows.push({ stat: "yellow_cards", label: "Amarelos", category: "Disciplina", value_raw: statsRow.yellow_cards ?? 0, ...scoreFromStatValue("yellow_cards", statsRow.yellow_cards ?? 0), weight: 4, adjusted_weight: 4, available: true, inverse: true });
+        rows.push({ stat: "red_cards", label: "Vermelhos", category: "Disciplina", value_raw: statsRow.red_cards ?? 0, ...scoreFromStatValue("red_cards", statsRow.red_cards ?? 0), weight: 5, adjusted_weight: 5, available: true, inverse: true });
+        rows.push({ stat: "fouls_committed", label: "Faltas Cometidas", category: "Disciplina", value_raw: statsRow.fouls_committed ?? 0, ...scoreFromStatValue("fouls_committed", statsRow.fouls_committed ?? 0), weight: 3, adjusted_weight: 3, available: true, inverse: true });
+        rows.push({ stat: "fouls_drawn", label: "Faltas Sofridas", category: "Tática", value_raw: statsRow.fouls_drawn ?? 0, ...scoreFromStatValue("fouls_drawn", statsRow.fouls_drawn ?? 0), weight: 3, adjusted_weight: 3, available: true, inverse: false });
+        rows.push({ stat: "possession_lost", label: "Bolas Perdidas", category: "Disciplina", value_raw: statsRow.possession_lost ?? 0, ...scoreFromStatValue("possession_lost", statsRow.possession_lost ?? 0), weight: 4, adjusted_weight: 4, available: true, inverse: true });
+
+        // PASSES
+        rows.push({ stat: "accurate_passes", label: "Passes Certos", category: "Passe", value_raw: statsRow.accurate_passes ?? 0, ...scoreFromStatValue("accurate_passes", statsRow.accurate_passes ?? 0), weight: 5, adjusted_weight: 5, available: true, inverse: false });
+
+        // GENERAL
+        rows.push({ stat: "minutes", label: "Minutos", category: "Geral", value_raw: statsRow.minutes ?? 0, ...scoreFromStatValue("minutes", statsRow.minutes ?? 0), weight: 5, adjusted_weight: 5, available: true, inverse: false });
+        rows.push({ stat: "matches", label: "Jogos", category: "Geral", value_raw: statsRow.matches ?? 0, ...scoreFromStatValue("matches", statsRow.matches ?? 0), weight: 3, adjusted_weight: 3, available: true, inverse: false });
+
+        // GK-specific stats (only for goalkeepers)
+        if (isGoalkeeper) {
+          rows.push({ stat: "saves", label: "Defesas", category: "Goleiro", value_raw: statsRow.saves ?? 0, ...scoreFromStatValue("saves", statsRow.saves ?? 0), weight: 10, adjusted_weight: 10, available: true, inverse: false });
+          rows.push({ stat: "goals_conceded", label: "Gols Sofridos", category: "Goleiro", value_raw: statsRow.goals_conceded ?? 0, ...scoreFromStatValue("goals_conceded", statsRow.goals_conceded ?? 0), weight: 10, adjusted_weight: 10, available: true, inverse: true });
+          rows.push({ stat: "clean_sheets", label: "Clean Sheets", category: "Goleiro", value_raw: statsRow.clean_sheets ?? 0, ...scoreFromStatValue("clean_sheets", statsRow.clean_sheets ?? 0), weight: 8, adjusted_weight: 8, available: true, inverse: false });
+          rows.push({ stat: "penalties_saved", label: "Pênaltis Salvos", category: "Goleiro", value_raw: statsRow.penalties_saved ?? 0, ...scoreFromStatValue("penalties_saved", statsRow.penalties_saved ?? 0), weight: 5, adjusted_weight: 5, available: true, inverse: false });
+          rows.push({ stat: "errors_leading_to_goal", label: "Erros p/ Gol", category: "Goleiro", value_raw: statsRow.errors_leading_to_goal ?? 0, ...scoreFromStatValue("errors_leading_to_goal", statsRow.errors_leading_to_goal ?? 0), weight: 6, adjusted_weight: 6, available: true, inverse: true });
+        }
+
+        return rows;
+      })()
     : [];
 
-  // After mapping (mandatory)
-  if (import.meta.env.DEV && statsRow) {
-    console.log("[BREAKDOWN] mapped stats", mappedStats);
-  }
-
-  const breakdownRowsFromStatsRow = mappedStats.map((s) => {
-    const value = Number(s.value_raw ?? 0);
-    const weightPct = mappedStats.length > 0 ? 100 / mappedStats.length : 0;
-    return {
-      stat: s.stat_key,
-      label: s.label,
-      value,
-      score: scoreFromValue(s.stat_key, value),
-      weight: weightPct,
-      adjusted_weight: weightPct,
-      available: true,
-    };
-  });
+  // Mandatory log for mapped rows
+  console.log("[BREAKDOWN] mapped rows:", breakdownRowsFromStatsRow);
 
   // If we have a saved stats row, ALWAYS render using it (no dependency on auto_rating_details).
   const statBreakdown = statsRow
@@ -790,7 +879,7 @@ function StatBreakdownCard({
       : [];
 
   // DEV: Reason logging
-  if (import.meta.env.DEV && isExpanded) {
+  if (isExpanded) {
     if (statsRow === null) {
       console.warn("[BREAKDOWN] reason", statsReason ?? "missing_stats_source");
     }
@@ -799,71 +888,35 @@ function StatBreakdownCard({
     }
   }
 
-  // DEV: rows to render (mandatory)
-  if (import.meta.env.DEV && isExpanded) {
-    console.log("[BREAKDOWN] rows to render", statBreakdown);
-  }
-
-  // DEV: Log raw breakdown to trace rendering
-  if (import.meta.env.DEV && statBreakdown.length > 0) {
-    console.debug("[StatBreakdownCard] Breakdown data:", {
-      competition: (competition as any).competition_name,
-      source: statsRow ? "player_stats" : "details.stat_breakdown",
-      count: statBreakdown.length,
-      sample: statBreakdown.slice(0, 2).map((s: any) => ({
-        stat: s.stat,
-        label: s.label,
-        score: s.score,
-        available: s.available,
-        adjusted_weight: s.adjusted_weight,
-      })),
-    });
-  }
-
   // Type for breakdown rows
   type BreakdownRow = {
     stat: string;
     label: string;
-    value: number;
+    category?: string;
+    value_raw?: number;
+    value_per90?: number | null;
+    value?: number;
     score: number;
     weight: number;
     adjusted_weight: number;
     available: boolean;
+    inverse?: boolean;
   };
 
-  // Filter stats: keep those with valid keys that are NOT empty/unknown
-  // CRITICAL: Check if stat is a valid string identifier
-  const validStats: BreakdownRow[] = (statBreakdown as BreakdownRow[]).filter((s) => {
+  // CRITICAL: DO NOT filter out stats with value 0 - they should show as red bars
+  // Only filter out truly invalid entries (missing stat key)
+  const allStats: BreakdownRow[] = (statBreakdown as BreakdownRow[]).filter((s) => {
     const key = String(s.stat || "").trim();
     return key.length > 0 && key !== "unknown";
   });
 
-  // Split into available (has data) and unavailable (no data)
-  const availableStats: BreakdownRow[] = validStats.filter((s) => s.available);
-  const unavailableStats: BreakdownRow[] = validStats.filter((s) => !s.available);
+  // For breakdown UI, ALL stats are "available" - we render them all, even with 0 values
+  const availableStats = allStats;
+  const unavailableStats: BreakdownRow[] = []; // We no longer hide stats
 
-  // DEV: Debug logging if no valid stats found
-  if (import.meta.env.DEV && statBreakdown.length > 0 && validStats.length === 0) {
-    console.error("[StatBreakdownCard] All stats filtered out!", {
-      raw: statBreakdown.slice(0, 3),
-      competition: (competition as any).competition_name,
-    });
-  }
-
-  // DEV: Log when we have valid stats but none are available
-  if (import.meta.env.DEV && validStats.length > 0 && availableStats.length === 0) {
-    console.warn("[StatBreakdownCard] Valid stats exist but none are available:", {
-      validStats: validStats.slice(0, 3).map((s) => ({
-        stat: s.stat,
-        available: s.available,
-        adjusted_weight: s.adjusted_weight,
-        score: s.score,
-      })),
-    });
-  }
-
-  // Get position-based breakdown for summary
-  const { positiveStats, negativeStats } = getPositionStatsBreakdown(availableStats, positionGroup);
+  // For position-based summary, get positive and negative contributors based on score
+  const positiveStats = allStats.filter((s) => s.score >= 60).sort((a, b) => b.score - a.score);
+  const negativeStats = allStats.filter((s) => s.score < 40).sort((a, b) => a.score - b.score);
   
   return (
     <Card className="bg-secondary/20 border-border/50">
@@ -1000,7 +1053,7 @@ function StatBreakdownCard({
             
             {/* Stats bars with tooltips */}
             <TooltipProvider delayDuration={200}>
-              {safeArray(availableStats).map((stat) => {
+              {availableStats.map((stat: BreakdownRow) => {
                 const scoreLevel = getScoreLevel(stat.score);
                 const statInfo = getStatInfo(stat.stat, stat.label);
                 const humanLabel = getHumanStatName(stat.stat, stat.label);
@@ -1008,7 +1061,8 @@ function StatBreakdownCard({
                 const isLow = stat.score < 40;
                 const isHigh = stat.score >= 80;
                 const isMedium = stat.score >= 40 && stat.score < 60;
-                const playerValue = stat.value !== undefined && stat.value !== null ? stat.value : null;
+                const playerValue = stat.value_raw ?? stat.value ?? null;
+                const per90Value = stat.value_per90;
                 
                 // Determine if this is a positive contributor (high score in positive stat OR low score in inverse/negative stat)
                 const isPositiveContributor = (statClassification === "positive" && stat.score >= 60) ||
@@ -1087,8 +1141,14 @@ function StatBreakdownCard({
                           </div>
                           {playerValue !== null && (
                             <div>
-                              <span className="text-muted-foreground">Valor: </span>
+                              <span className="text-muted-foreground">Total: </span>
                               <span className="font-semibold">{playerValue}</span>
+                            </div>
+                          )}
+                          {per90Value !== null && per90Value !== undefined && (
+                            <div>
+                              <span className="text-muted-foreground">p/90: </span>
+                              <span className="font-semibold">{formatFixed(per90Value, 2)}</span>
                             </div>
                           )}
                         </div>
@@ -1139,13 +1199,13 @@ function StatBreakdownCard({
               })}
             </TooltipProvider>
             
-            {(unavailableStats?.length ?? 0) > 0 && (
+            {unavailableStats.length > 0 && (
               <div className="mt-3 pt-2 border-t border-border/50">
                 <p className="text-xs text-muted-foreground mb-1">
                   Estatísticas não disponíveis (peso redistribuído):
                 </p>
                 <div className="flex flex-wrap gap-1">
-                  {safeArray(unavailableStats).map((stat) => {
+                  {unavailableStats.map((stat: BreakdownRow) => {
                     const statInfo = getStatInfo(stat.stat, stat.label);
                     const humanLabel = getHumanStatName(stat.stat, stat.label);
                     return (
