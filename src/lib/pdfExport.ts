@@ -9,38 +9,57 @@ export interface PdfExportOptions {
 
 /**
  * Export a DOM element to PDF with high-quality rendering
+ * Optimized for print-ready output with proper page breaks
  */
 export async function exportToPdf(
   element: HTMLElement,
   options: PdfExportOptions = {}
 ): Promise<void> {
-  const { filename = "report.pdf", scale = 2, onProgress } = options;
+  const { filename = "report.pdf", scale = 3, onProgress } = options;
 
   onProgress?.(10);
 
   // Create canvas from the element with high resolution
   const canvas = await html2canvas(element, {
-    scale: scale,
+    scale: scale, // Higher scale for crisp printing
     useCORS: true,
     allowTaint: true,
     backgroundColor: "#FFFFFF",
     logging: false,
-    imageTimeout: 15000,
-    onclone: (clonedDoc) => {
-      // Ensure all SVGs are properly rendered
-      const svgs = clonedDoc.querySelectorAll("svg");
+    imageTimeout: 30000,
+    removeContainer: true,
+    // Ensure proper rendering
+    onclone: (clonedDoc, clonedElement) => {
+      // Force white background on container
+      clonedElement.style.backgroundColor = "#FFFFFF";
+      clonedElement.style.overflow = "visible";
+      
+      // Ensure all SVGs are properly sized
+      const svgs = clonedElement.querySelectorAll("svg");
       svgs.forEach((svg) => {
-        svg.setAttribute("width", svg.getBoundingClientRect().width.toString());
-        svg.setAttribute("height", svg.getBoundingClientRect().height.toString());
+        const rect = svg.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) {
+          svg.setAttribute("width", rect.width.toString());
+          svg.setAttribute("height", rect.height.toString());
+        }
+      });
+      
+      // Ensure images are loaded
+      const images = clonedElement.querySelectorAll("img");
+      images.forEach((img) => {
+        img.crossOrigin = "anonymous";
       });
     },
   });
 
   onProgress?.(50);
 
-  // Calculate PDF dimensions (A4)
-  const imgWidth = 210; // A4 width in mm
-  const pageHeight = 297; // A4 height in mm
+  // A4 dimensions in mm
+  const a4Width = 210;
+  const a4Height = 297;
+  
+  // Calculate dimensions
+  const imgWidth = a4Width;
   const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
   // Create PDF
@@ -53,25 +72,31 @@ export async function exportToPdf(
 
   onProgress?.(70);
 
-  // Add the image to PDF
+  // Get image data at maximum quality
   const imgData = canvas.toDataURL("image/png", 1.0);
   
-  // Handle multi-page documents
-  let heightLeft = imgHeight;
-  let position = 0;
-  let pageNum = 1;
-
-  // First page
-  pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-  heightLeft -= pageHeight;
-
-  // Additional pages if needed
-  while (heightLeft > 0) {
-    position = -pageHeight * pageNum;
-    pdf.addPage();
-    pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight;
-    pageNum++;
+  // Calculate how many pages we need
+  const totalPages = Math.ceil(imgHeight / a4Height);
+  
+  for (let page = 0; page < totalPages; page++) {
+    if (page > 0) {
+      pdf.addPage();
+    }
+    
+    // Calculate the y offset for this page
+    const yOffset = -(page * a4Height);
+    
+    // Add the image with offset
+    pdf.addImage(
+      imgData, 
+      "PNG", 
+      0, 
+      yOffset, 
+      imgWidth, 
+      imgHeight,
+      undefined,
+      "FAST"
+    );
   }
 
   onProgress?.(90);
