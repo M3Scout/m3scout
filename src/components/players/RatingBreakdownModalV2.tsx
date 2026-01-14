@@ -1229,36 +1229,129 @@ function StatBreakdownCard({
             
             {/* Position-based Summary */}
             {(positiveStats.length > 0 || negativeStats.length > 0) && (
-              <div className="grid grid-cols-2 gap-2 mb-3">
-                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-2">
-                  <p className="text-[10px] font-medium text-emerald-600 flex items-center gap-1 mb-1">
-                    <Star className="w-3 h-3" />
-                    Pontos Fortes
-                  </p>
-                  {positiveStats.length > 0 ? (
-                    <ul className="text-[10px] text-emerald-700 space-y-0.5">
-                      {positiveStats.slice(0, 3).map(s => (
-                        <li key={s.stat}>• {getHumanStatName(s.stat, s.label)} ({formatFixed(s.score, 0)})</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-[10px] text-muted-foreground">Nenhum destaque</p>
-                  )}
+              <div className="space-y-2 mb-3">
+                {/* Position Group Badge */}
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="text-[10px] px-2 py-0.5">
+                    {getPositionProfileKey(positionGroup) === 'goalkeeper' && '🧤 Goleiro'}
+                    {getPositionProfileKey(positionGroup) === 'center_back' && '🛡️ Zagueiro'}
+                    {getPositionProfileKey(positionGroup) === 'lateral' && '⚡ Lateral'}
+                    {getPositionProfileKey(positionGroup) === 'defensive_mid' && '🔒 Volante'}
+                    {getPositionProfileKey(positionGroup) === 'midfielder' && '🎯 Meio-Campo'}
+                    {getPositionProfileKey(positionGroup) === 'forward' && '⚽ Atacante'}
+                  </Badge>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="w-3 h-3 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="max-w-xs">
+                        <p className="text-xs">
+                          Métricas selecionadas com base no perfil de <strong>{getPositionProfileKey(positionGroup) === 'goalkeeper' ? 'Goleiro' : getPositionProfileKey(positionGroup) === 'center_back' ? 'Zagueiro' : getPositionProfileKey(positionGroup) === 'lateral' ? 'Lateral' : getPositionProfileKey(positionGroup) === 'defensive_mid' ? 'Volante' : getPositionProfileKey(positionGroup) === 'midfielder' ? 'Meio-Campo' : 'Atacante'}</strong>. 
+                          Pontos Fortes: métricas-chave ≥70. Atenção: métricas-chave ≤30.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
-                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-2">
-                  <p className="text-[10px] font-medium text-destructive flex items-center gap-1 mb-1">
-                    <AlertTriangle className="w-3 h-3" />
-                    Atenção
-                  </p>
-                  {negativeStats.length > 0 ? (
-                    <ul className="text-[10px] text-destructive space-y-0.5">
-                      {negativeStats.slice(0, 3).map(s => (
-                        <li key={s.stat}>• {getHumanStatName(s.stat, s.label)} ({formatFixed(s.score, 0)})</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-[10px] text-muted-foreground">Nenhuma área crítica</p>
-                  )}
+                
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-2">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <p className="text-[10px] font-medium text-emerald-600 flex items-center gap-1 mb-1 cursor-help">
+                            <Star className="w-3 h-3" />
+                            Pontos Fortes
+                          </p>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs">
+                          <p className="text-xs">
+                            Top 3 métricas prioritárias para esta posição com score ≥70.
+                            Se não houver suficientes, métricas secundárias ≥85 são incluídas.
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    {positiveStats.length > 0 ? (
+                      <ul className="text-[10px] text-emerald-700 dark:text-emerald-400 space-y-0.5">
+                        {positiveStats.slice(0, 3).map(s => {
+                          const profile = POSITION_GROUP_PROFILES[getPositionProfileKey(positionGroup)] || POSITION_GROUP_PROFILES.midfielder;
+                          const isPrimary = profile.primaryMetrics.includes(s.stat);
+                          return (
+                            <TooltipProvider key={s.stat}>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <li className="cursor-help hover:text-emerald-600 dark:hover:text-emerald-300">
+                                    • {getHumanStatName(s.stat, s.label)} ({formatFixed(s.score, 0)})
+                                  </li>
+                                </TooltipTrigger>
+                                <TooltipContent side="right" className="max-w-xs">
+                                  <p className="text-xs">
+                                    <strong>{getHumanStatName(s.stat, s.label)}</strong>: Score {formatFixed(s.score, 0)}/100
+                                    <br />
+                                    {isPrimary ? 'Métrica primária' : 'Métrica secundária'} para esta posição.
+                                    {s.score >= 85 && ' Desempenho excepcional!'}
+                                    {s.score >= 70 && s.score < 85 && ' Acima da média.'}
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          );
+                        })}
+                      </ul>
+                    ) : (
+                      <p className="text-[10px] text-muted-foreground">Nenhum destaque</p>
+                    )}
+                  </div>
+                  <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-2">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <p className="text-[10px] font-medium text-destructive flex items-center gap-1 mb-1 cursor-help">
+                            <AlertTriangle className="w-3 h-3" />
+                            Atenção
+                          </p>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs">
+                          <p className="text-xs">
+                            Métricas prioritárias para esta posição com score ≤30.
+                            Métricas irrelevantes para a posição são ignoradas.
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    {negativeStats.length > 0 ? (
+                      <ul className="text-[10px] text-destructive space-y-0.5">
+                        {negativeStats.slice(0, 3).map(s => {
+                          const profile = POSITION_GROUP_PROFILES[getPositionProfileKey(positionGroup)] || POSITION_GROUP_PROFILES.midfielder;
+                          const isPrimary = profile.primaryMetrics.includes(s.stat);
+                          return (
+                            <TooltipProvider key={s.stat}>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <li className="cursor-help hover:text-destructive/80">
+                                    • {getHumanStatName(s.stat, s.label)} ({formatFixed(s.score, 0)})
+                                  </li>
+                                </TooltipTrigger>
+                                <TooltipContent side="right" className="max-w-xs">
+                                  <p className="text-xs">
+                                    <strong>{getHumanStatName(s.stat, s.label)}</strong>: Score {formatFixed(s.score, 0)}/100
+                                    <br />
+                                    {isPrimary ? 'Métrica primária' : 'Métrica secundária'} para esta posição.
+                                    {s.score <= 15 && ' Área crítica que precisa de desenvolvimento.'}
+                                    {s.score > 15 && s.score <= 30 && ' Abaixo do esperado para esta posição.'}
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          );
+                        })}
+                      </ul>
+                    ) : (
+                      <p className="text-[10px] text-muted-foreground">Nenhuma área crítica</p>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
