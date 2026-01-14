@@ -1,7 +1,7 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
-import { FileDown, Loader2, ChevronDown } from "lucide-react";
+import { FileDown, Loader2, ChevronDown, Check } from "lucide-react";
 import { toast } from "sonner";
 import { ScoutingReportPdfTemplate } from "./pdf/ScoutingReportPdfTemplate";
 import { exportToPdf, generateReportFilename } from "@/lib/pdfExport";
@@ -11,6 +11,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 
 interface ExportPdfButtonProps {
@@ -19,36 +21,70 @@ interface ExportPdfButtonProps {
   size?: "default" | "sm" | "lg" | "icon";
 }
 
+type QualityKey = "normal" | "high";
+
 type QualityOption = {
   label: string;
   description: string;
   scale: number;
 };
 
-const QUALITY_OPTIONS: Record<string, QualityOption> = {
+const QUALITY_OPTIONS: Record<QualityKey, QualityOption> = {
   normal: {
     label: "Normal",
-    description: "Mais rápido",
+    description: "Mais rápido (~3s)",
     scale: 2,
   },
   high: {
     label: "Alta Qualidade",
-    description: "Melhor para impressão",
+    description: "Melhor p/ impressão (~6s)",
     scale: 3,
   },
 };
+
+const STORAGE_KEY = "pdf-quality-preference";
+
+function getStoredQuality(): QualityKey {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored === "normal" || stored === "high") {
+      return stored;
+    }
+  } catch {
+    // localStorage not available
+  }
+  return "normal";
+}
+
+function setStoredQuality(quality: QualityKey): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, quality);
+  } catch {
+    // localStorage not available
+  }
+}
 
 export function ExportPdfButton({ report, variant = "outline", size = "sm" }: ExportPdfButtonProps) {
   const [isExporting, setIsExporting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [showTemplate, setShowTemplate] = useState(false);
+  const [preferredQuality, setPreferredQuality] = useState<QualityKey>("normal");
   const templateRef = useRef<HTMLDivElement>(null);
 
-  const handleExport = useCallback(async (quality: keyof typeof QUALITY_OPTIONS) => {
+  // Load preference from localStorage on mount
+  useEffect(() => {
+    setPreferredQuality(getStoredQuality());
+  }, []);
+
+  const handleExport = useCallback(async (quality: QualityKey) => {
     if (!report.players) {
       toast.error("Dados do jogador não disponíveis");
       return;
     }
+
+    // Save preference
+    setPreferredQuality(quality);
+    setStoredQuality(quality);
 
     const qualityConfig = QUALITY_OPTIONS[quality];
     setIsExporting(true);
@@ -56,7 +92,7 @@ export function ExportPdfButton({ report, variant = "outline", size = "sm" }: Ex
     setShowTemplate(true);
 
     // Wait for template to render
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 600));
 
     try {
       const templateElement = templateRef.current;
@@ -114,24 +150,38 @@ export function ExportPdfButton({ report, variant = "outline", size = "sm" }: Ex
             )}
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuContent align="end" className="w-52">
+          <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
+            Escolha a qualidade
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={() => handleExport("normal")}
-            className="flex flex-col items-start gap-0.5 cursor-pointer"
+            className="flex items-center justify-between cursor-pointer"
           >
-            <span className="font-medium">{QUALITY_OPTIONS.normal.label}</span>
-            <span className="text-xs text-muted-foreground">
-              {QUALITY_OPTIONS.normal.description}
-            </span>
+            <div className="flex flex-col items-start gap-0.5">
+              <span className="font-medium">{QUALITY_OPTIONS.normal.label}</span>
+              <span className="text-xs text-muted-foreground">
+                {QUALITY_OPTIONS.normal.description}
+              </span>
+            </div>
+            {preferredQuality === "normal" && (
+              <Check className="w-4 h-4 text-primary" />
+            )}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => handleExport("high")}
-            className="flex flex-col items-start gap-0.5 cursor-pointer"
+            className="flex items-center justify-between cursor-pointer"
           >
-            <span className="font-medium">{QUALITY_OPTIONS.high.label}</span>
-            <span className="text-xs text-muted-foreground">
-              {QUALITY_OPTIONS.high.description}
-            </span>
+            <div className="flex flex-col items-start gap-0.5">
+              <span className="font-medium">{QUALITY_OPTIONS.high.label}</span>
+              <span className="text-xs text-muted-foreground">
+                {QUALITY_OPTIONS.high.description}
+              </span>
+            </div>
+            {preferredQuality === "high" && (
+              <Check className="w-4 h-4 text-primary" />
+            )}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -145,7 +195,7 @@ export function ExportPdfButton({ report, variant = "outline", size = "sm" }: Ex
               left: "-9999px",
               top: 0,
               zIndex: -1,
-              overflow: "hidden",
+              overflow: "visible",
             }}
           >
             <ScoutingReportPdfTemplate ref={templateRef} report={report} />
