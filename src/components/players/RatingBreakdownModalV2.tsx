@@ -926,6 +926,8 @@ function StatScoreLegend({ showTrendLegend = false }: { showTrendLegend?: boolea
 }
 
 // Admin Debug Panel for viewing all metrics with classification
+type CategoryFilter = 'all' | 'primary' | 'secondary' | 'ignored' | 'other' | 'selected';
+
 function AdminMetricsDebugPanel({ 
   allStats,
   positionGroup,
@@ -938,34 +940,54 @@ function AdminMetricsDebugPanel({
   negativeStats: Array<{ stat: string; label: string; score: number; available: boolean }>;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
   const profileKey = getPositionProfileKey(positionGroup);
   const profile = POSITION_GROUP_PROFILES[profileKey] || POSITION_GROUP_PROFILES.midfielder;
   
   // Categorize all stats
-  const categorizedStats = allStats.map(stat => {
-    const isPrimary = profile.primaryMetrics.includes(stat.stat);
-    const isSecondary = profile.secondaryMetrics.includes(stat.stat);
-    const isIgnored = profile.ignoredMetrics.includes(stat.stat);
-    const isSelected = positiveStats.some(p => p.stat === stat.stat);
-    const isNegativeSelected = negativeStats.some(n => n.stat === stat.stat);
-    
-    return {
-      ...stat,
-      isPrimary,
-      isSecondary,
-      isIgnored,
-      isSelected,
-      isNegativeSelected,
-      category: isPrimary ? 'primary' : isSecondary ? 'secondary' : isIgnored ? 'ignored' : 'other',
-    };
-  }).sort((a, b) => {
-    // Sort by category first: primary, secondary, other, ignored
-    const categoryOrder = { primary: 0, secondary: 1, other: 2, ignored: 3 };
-    const catDiff = categoryOrder[a.category] - categoryOrder[b.category];
-    if (catDiff !== 0) return catDiff;
-    // Then by score descending
-    return b.score - a.score;
-  });
+  const categorizedStats = useMemo(() => {
+    return allStats.map(stat => {
+      const isPrimary = profile.primaryMetrics.includes(stat.stat);
+      const isSecondary = profile.secondaryMetrics.includes(stat.stat);
+      const isIgnored = profile.ignoredMetrics.includes(stat.stat);
+      const isSelected = positiveStats.some(p => p.stat === stat.stat);
+      const isNegativeSelected = negativeStats.some(n => n.stat === stat.stat);
+      
+      return {
+        ...stat,
+        isPrimary,
+        isSecondary,
+        isIgnored,
+        isSelected,
+        isNegativeSelected,
+        category: isPrimary ? 'primary' : isSecondary ? 'secondary' : isIgnored ? 'ignored' : 'other' as const,
+      };
+    }).sort((a, b) => {
+      // Sort by category first: primary, secondary, other, ignored
+      const categoryOrder = { primary: 0, secondary: 1, other: 2, ignored: 3 };
+      const catDiff = categoryOrder[a.category] - categoryOrder[b.category];
+      if (catDiff !== 0) return catDiff;
+      // Then by score descending
+      return b.score - a.score;
+    });
+  }, [allStats, profile, positiveStats, negativeStats]);
+  
+  // Count by category
+  const counts = useMemo(() => ({
+    all: categorizedStats.length,
+    primary: categorizedStats.filter(s => s.isPrimary).length,
+    secondary: categorizedStats.filter(s => s.isSecondary).length,
+    ignored: categorizedStats.filter(s => s.isIgnored).length,
+    other: categorizedStats.filter(s => !s.isPrimary && !s.isSecondary && !s.isIgnored).length,
+    selected: categorizedStats.filter(s => s.isSelected || s.isNegativeSelected).length,
+  }), [categorizedStats]);
+  
+  // Filter stats based on selected category
+  const filteredStats = useMemo(() => {
+    if (categoryFilter === 'all') return categorizedStats;
+    if (categoryFilter === 'selected') return categorizedStats.filter(s => s.isSelected || s.isNegativeSelected);
+    return categorizedStats.filter(s => s.category === categoryFilter);
+  }, [categorizedStats, categoryFilter]);
   
   return (
     <div className="border border-dashed border-amber-500/50 rounded-lg p-2 bg-amber-500/5">
@@ -1020,6 +1042,67 @@ function AdminMetricsDebugPanel({
             )}
           </div>
           
+          {/* Category Filters */}
+          <div className="flex flex-wrap gap-1">
+            <Button
+              variant={categoryFilter === 'all' ? 'default' : 'outline'}
+              size="sm"
+              className="h-6 text-[10px] px-2"
+              onClick={() => setCategoryFilter('all')}
+            >
+              Todas ({counts.all})
+            </Button>
+            <Button
+              variant={categoryFilter === 'primary' ? 'default' : 'outline'}
+              size="sm"
+              className={cn(
+                "h-6 text-[10px] px-2",
+                categoryFilter === 'primary' && "bg-emerald-500 hover:bg-emerald-600"
+              )}
+              onClick={() => setCategoryFilter('primary')}
+            >
+              Primárias ({counts.primary})
+            </Button>
+            <Button
+              variant={categoryFilter === 'secondary' ? 'default' : 'outline'}
+              size="sm"
+              className={cn(
+                "h-6 text-[10px] px-2",
+                categoryFilter === 'secondary' && "bg-blue-500 hover:bg-blue-600"
+              )}
+              onClick={() => setCategoryFilter('secondary')}
+            >
+              Secundárias ({counts.secondary})
+            </Button>
+            <Button
+              variant={categoryFilter === 'ignored' ? 'default' : 'outline'}
+              size="sm"
+              className="h-6 text-[10px] px-2"
+              onClick={() => setCategoryFilter('ignored')}
+            >
+              Ignoradas ({counts.ignored})
+            </Button>
+            <Button
+              variant={categoryFilter === 'other' ? 'default' : 'outline'}
+              size="sm"
+              className="h-6 text-[10px] px-2"
+              onClick={() => setCategoryFilter('other')}
+            >
+              Outras ({counts.other})
+            </Button>
+            <Button
+              variant={categoryFilter === 'selected' ? 'default' : 'outline'}
+              size="sm"
+              className={cn(
+                "h-6 text-[10px] px-2",
+                categoryFilter === 'selected' && "bg-amber-500 hover:bg-amber-600"
+              )}
+              onClick={() => setCategoryFilter('selected')}
+            >
+              Selecionadas ({counts.selected})
+            </Button>
+          </div>
+          
           {/* All Metrics Table */}
           <div className="max-h-64 overflow-y-auto">
             <table className="w-full text-[10px]">
@@ -1032,35 +1115,43 @@ function AdminMetricsDebugPanel({
                 </tr>
               </thead>
               <tbody>
-                {categorizedStats.map(stat => (
-                  <tr 
-                    key={stat.stat} 
-                    className={cn(
-                      "border-b border-border/50",
-                      stat.isSelected && "bg-emerald-500/10",
-                      stat.isNegativeSelected && "bg-red-500/10",
-                      stat.isIgnored && "opacity-50"
-                    )}
-                  >
-                    <td className="p-1 font-medium">
-                      {getHumanStatName(stat.stat, stat.label)}
-                      <span className="text-muted-foreground ml-1">({stat.stat})</span>
-                    </td>
-                    <td className={cn("p-1 text-center font-semibold tabular-nums", getScoreColor(stat.score))}>
-                      {formatFixed(stat.score, 0)}
-                    </td>
-                    <td className="p-1 text-center">
-                      {stat.isPrimary && <Badge variant="outline" className="text-emerald-600 border-emerald-500/50 text-[9px] px-1">Pri</Badge>}
-                      {stat.isSecondary && <Badge variant="outline" className="text-blue-600 border-blue-500/50 text-[9px] px-1">Sec</Badge>}
-                      {stat.isIgnored && <Badge variant="outline" className="text-muted-foreground text-[9px] px-1">Ign</Badge>}
-                      {!stat.isPrimary && !stat.isSecondary && !stat.isIgnored && <Badge variant="outline" className="text-muted-foreground text-[9px] px-1">—</Badge>}
-                    </td>
-                    <td className="p-1 text-center">
-                      {stat.isSelected && <Badge className="bg-emerald-500 text-[9px] px-1">✓ Forte</Badge>}
-                      {stat.isNegativeSelected && <Badge variant="destructive" className="text-[9px] px-1">⚠ Atenção</Badge>}
+                {filteredStats.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="p-3 text-center text-muted-foreground">
+                      Nenhuma métrica nesta categoria
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  filteredStats.map(stat => (
+                    <tr 
+                      key={stat.stat} 
+                      className={cn(
+                        "border-b border-border/50",
+                        stat.isSelected && "bg-emerald-500/10",
+                        stat.isNegativeSelected && "bg-red-500/10",
+                        stat.isIgnored && "opacity-50"
+                      )}
+                    >
+                      <td className="p-1 font-medium">
+                        {getHumanStatName(stat.stat, stat.label)}
+                        <span className="text-muted-foreground ml-1">({stat.stat})</span>
+                      </td>
+                      <td className={cn("p-1 text-center font-semibold tabular-nums", getScoreColor(stat.score))}>
+                        {formatFixed(stat.score, 0)}
+                      </td>
+                      <td className="p-1 text-center">
+                        {stat.isPrimary && <Badge variant="outline" className="text-emerald-600 border-emerald-500/50 text-[9px] px-1">Pri</Badge>}
+                        {stat.isSecondary && <Badge variant="outline" className="text-blue-600 border-blue-500/50 text-[9px] px-1">Sec</Badge>}
+                        {stat.isIgnored && <Badge variant="outline" className="text-muted-foreground text-[9px] px-1">Ign</Badge>}
+                        {!stat.isPrimary && !stat.isSecondary && !stat.isIgnored && <Badge variant="outline" className="text-muted-foreground text-[9px] px-1">—</Badge>}
+                      </td>
+                      <td className="p-1 text-center">
+                        {stat.isSelected && <Badge className="bg-emerald-500 text-[9px] px-1">✓ Forte</Badge>}
+                        {stat.isNegativeSelected && <Badge variant="destructive" className="text-[9px] px-1">⚠ Atenção</Badge>}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
