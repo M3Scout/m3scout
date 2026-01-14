@@ -21,33 +21,34 @@ interface ScoutingReportPdfTemplateProps {
   report: ScoutingReportData;
 }
 
-// Design tokens for PDF consistency
+// Design tokens for PDF consistency - REFINED
 const PDF_TOKENS = {
   // Page
-  pagePadding: "18mm",
+  pagePadding: "20mm",
   pageBackground: "#FFFFFF",
   
   // Cards
-  cardRadius: "14px",
-  cardBorder: "1px solid #E6E8EC",
-  cardShadow: "0 2px 6px rgba(0,0,0,0.06)",
+  cardRadius: "16px",
+  cardBorder: "1px solid #E2E5EA",
+  cardShadow: "0 4px 12px rgba(0,0,0,0.05)",
   cardBackground: "#FFFFFF",
-  cardBackgroundAlt: "#F8F9FB",
+  cardBackgroundAlt: "#F9FAFB",
   
   // Spacing
-  sectionGap: "20px",
-  cardPadding: "20px",
-  itemGap: "12px",
+  sectionGap: "24px",
+  cardPadding: "24px",
+  itemGap: "14px",
   
   // Typography
-  colorPrimary: "#111827",
-  colorSecondary: "#6B7280",
-  colorMuted: "#9CA3AF",
+  colorPrimary: "#0F172A",
+  colorSecondary: "#475569",
+  colorMuted: "#94A3B8",
   
   // Brand
   brandRed: "#E30613",
-  accentBlue: "#3b82f6",
-  accentAmber: "#f59e0b",
+  accentBlue: "#2563EB",
+  accentAmber: "#F59E0B",
+  accentGreen: "#10B981",
 };
 
 const categoryIcons = {
@@ -81,25 +82,27 @@ function RatingStarsPdf({ rating }: { rating: number }) {
   );
 }
 
-// M3 Logo SVG inline (red version)
-function M3LogoRed() {
+// M3 Logo SVG inline (red version) - Larger and cleaner
+function M3LogoRed({ size = 36 }: { size?: number }) {
   return (
     <svg
-      width="28"
-      height="28"
+      width={size}
+      height={size}
       viewBox="0 0 100 100"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
+      style={{ flexShrink: 0 }}
     >
-      <rect width="100" height="100" rx="16" fill={PDF_TOKENS.brandRed} />
+      <rect width="100" height="100" rx="18" fill={PDF_TOKENS.brandRed} />
       <text
         x="50"
-        y="68"
+        y="70"
         textAnchor="middle"
         fill="white"
-        fontFamily="system-ui, sans-serif"
-        fontSize="48"
-        fontWeight="800"
+        fontFamily="system-ui, -apple-system, sans-serif"
+        fontSize="50"
+        fontWeight="900"
+        letterSpacing="-2"
       >
         M3
       </text>
@@ -160,45 +163,63 @@ export const ScoutingReportPdfTemplate = forwardRef<HTMLDivElement, ScoutingRepo
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            paddingBottom: "16px",
-            borderBottom: `2px solid ${PDF_TOKENS.brandRed}`,
+            paddingBottom: "18px",
+            borderBottom: `3px solid ${PDF_TOKENS.brandRed}`,
             marginBottom: PDF_TOKENS.sectionGap,
             pageBreakInside: "avoid",
             breakInside: "avoid",
           }}
         >
           {/* Left: Logo + Title */}
-          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-            <M3LogoRed />
+          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            <M3LogoRed size={42} />
             <div>
               <h1 
                 style={{ 
-                  fontSize: "20pt", 
+                  fontSize: "22pt", 
                   fontWeight: 800, 
                   margin: 0, 
                   color: PDF_TOKENS.colorPrimary,
                   letterSpacing: "-0.5px",
+                  lineHeight: 1.1,
                 }}
               >
                 Relatório de Scouting
               </h1>
-              <p style={{ fontSize: "9pt", color: PDF_TOKENS.colorSecondary, margin: "2px 0 0 0" }}>
+              <p style={{ 
+                fontSize: "10pt", 
+                color: PDF_TOKENS.colorSecondary, 
+                margin: "4px 0 0 0",
+                fontWeight: 500,
+              }}>
                 Análise de Desempenho Profissional
               </p>
             </div>
           </div>
           
-          {/* Right: Meta info */}
-          <div style={{ textAlign: "right", fontSize: "9pt", color: PDF_TOKENS.colorSecondary }}>
-            <p style={{ margin: "3px 0" }}>
-              <strong style={{ color: PDF_TOKENS.colorPrimary }}>Data:</strong>{" "}
-              {format(new Date(report.match_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+          {/* Right: Meta info - Better structured */}
+          <div 
+            style={{ 
+              textAlign: "right", 
+              fontSize: "9pt", 
+              color: PDF_TOKENS.colorSecondary,
+              backgroundColor: PDF_TOKENS.cardBackgroundAlt,
+              padding: "12px 16px",
+              borderRadius: "12px",
+              border: PDF_TOKENS.cardBorder,
+            }}
+          >
+            <p style={{ margin: "4px 0", display: "flex", justifyContent: "flex-end", gap: "6px" }}>
+              <strong style={{ color: PDF_TOKENS.colorPrimary }}>Data:</strong>
+              <span>{format(new Date(report.match_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</span>
             </p>
-            <p style={{ margin: "3px 0" }}>
-              <strong style={{ color: PDF_TOKENS.colorPrimary }}>Competição:</strong> {competitionLabel}
+            <p style={{ margin: "4px 0", display: "flex", justifyContent: "flex-end", gap: "6px" }}>
+              <strong style={{ color: PDF_TOKENS.colorPrimary }}>Competição:</strong>
+              <span>{competitionLabel}</span>
             </p>
-            <p style={{ margin: "3px 0" }}>
-              <strong style={{ color: PDF_TOKENS.colorPrimary }}>Scout:</strong> {report.profiles?.full_name || "Scout"}
+            <p style={{ margin: "4px 0", display: "flex", justifyContent: "flex-end", gap: "6px" }}>
+              <strong style={{ color: PDF_TOKENS.colorPrimary }}>Scout:</strong>
+              <span>{report.profiles?.full_name || "Scout"}</span>
             </p>
           </div>
         </div>
@@ -207,103 +228,139 @@ export const ScoutingReportPdfTemplate = forwardRef<HTMLDivElement, ScoutingRepo
         <div
           style={{
             display: "flex",
-            alignItems: "center",
-            gap: "24px",
-            padding: PDF_TOKENS.cardPadding,
-            backgroundColor: PDF_TOKENS.cardBackgroundAlt,
+            alignItems: "stretch",
+            gap: "0",
+            backgroundColor: PDF_TOKENS.cardBackground,
             borderRadius: PDF_TOKENS.cardRadius,
             border: PDF_TOKENS.cardBorder,
             boxShadow: PDF_TOKENS.cardShadow,
             marginBottom: PDF_TOKENS.sectionGap,
             pageBreakInside: "avoid",
             breakInside: "avoid",
+            overflow: "hidden",
           }}
         >
-          {/* Photo */}
-          {report.players?.photo_url && (
-            <img
-              src={report.players.photo_url}
-              alt={report.players.full_name}
-              style={{
-                width: "88px",
-                height: "88px",
-                borderRadius: "12px",
-                objectFit: "cover",
-                border: "3px solid #E6E8EC",
-                flexShrink: 0,
-              }}
-            />
-          )}
-          
-          {/* Player Info */}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <h2 style={{ fontSize: "18pt", fontWeight: 700, margin: "0 0 8px 0", color: PDF_TOKENS.colorPrimary }}>
-              {report.players?.full_name}
-            </h2>
-            <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-              <span
-                style={{
-                  display: "inline-block",
-                  padding: "5px 14px",
-                  backgroundColor: PDF_TOKENS.accentBlue,
-                  color: "#fff",
-                  borderRadius: "20px",
-                  fontSize: "9pt",
-                  fontWeight: 600,
-                }}
-              >
-                {report.players?.position}
-              </span>
-              <span style={{ fontSize: "10pt", color: PDF_TOKENS.colorSecondary }}>
-                {report.players?.current_club} • {report.players?.nationality}
-              </span>
-            </div>
-            {report.opponent && (
-              <p style={{ fontSize: "9pt", color: PDF_TOKENS.colorSecondary, marginTop: "8px", marginBottom: 0 }}>
-                Partida contra: <strong style={{ color: PDF_TOKENS.colorPrimary }}>{report.opponent}</strong>
-              </p>
-            )}
-          </div>
-          
-          {/* Score Block - Fixed alignment */}
+          {/* Left section: Photo + Info */}
           <div 
             style={{ 
-              textAlign: "center", 
-              minWidth: "130px",
-              padding: "12px 16px",
-              backgroundColor: "#FFFFFF",
-              borderRadius: "12px",
-              border: PDF_TOKENS.cardBorder,
+              display: "flex", 
+              alignItems: "center", 
+              gap: "20px", 
+              flex: 1,
+              padding: PDF_TOKENS.cardPadding,
+              backgroundColor: PDF_TOKENS.cardBackgroundAlt,
+            }}
+          >
+            {/* Photo */}
+            {report.players?.photo_url && (
+              <img
+                src={report.players.photo_url}
+                alt={report.players.full_name}
+                style={{
+                  width: "96px",
+                  height: "96px",
+                  borderRadius: "14px",
+                  objectFit: "cover",
+                  border: "4px solid #FFFFFF",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                  flexShrink: 0,
+                }}
+              />
+            )}
+            
+            {/* Player Info */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h2 style={{ 
+                fontSize: "20pt", 
+                fontWeight: 800, 
+                margin: "0 0 10px 0", 
+                color: PDF_TOKENS.colorPrimary,
+                letterSpacing: "-0.3px",
+              }}>
+                {report.players?.full_name}
+              </h2>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                <span
+                  style={{
+                    display: "inline-block",
+                    padding: "6px 16px",
+                    backgroundColor: PDF_TOKENS.accentBlue,
+                    color: "#fff",
+                    borderRadius: "20px",
+                    fontSize: "9pt",
+                    fontWeight: 700,
+                    letterSpacing: "0.3px",
+                  }}
+                >
+                  {report.players?.position}
+                </span>
+                <span style={{ fontSize: "10pt", color: PDF_TOKENS.colorSecondary, fontWeight: 500 }}>
+                  {report.players?.current_club} • {report.players?.nationality}
+                </span>
+              </div>
+              {report.opponent && (
+                <p style={{ fontSize: "9pt", color: PDF_TOKENS.colorSecondary, marginTop: "10px", marginBottom: 0 }}>
+                  Partida contra: <strong style={{ color: PDF_TOKENS.colorPrimary }}>{report.opponent}</strong>
+                </p>
+              )}
+            </div>
+          </div>
+          
+          {/* Right section: Score Block - Fixed alignment */}
+          <div 
+            style={{ 
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              minWidth: "150px",
+              padding: "20px 28px",
+              backgroundColor: PDF_TOKENS.cardBackground,
+              borderLeft: `1px solid ${PDF_TOKENS.cardBorder.split(" ")[2]}`,
               flexShrink: 0,
             }}
           >
-            {/* Score with /100 aligned */}
-            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: "2px" }}>
+            {/* Score with /100 aligned properly */}
+            <div style={{ 
+              display: "flex", 
+              alignItems: "baseline", 
+              justifyContent: "center", 
+              gap: "3px",
+              marginBottom: "10px",
+            }}>
               <span
                 style={{
-                  fontSize: "36pt",
-                  fontWeight: 800,
+                  fontSize: "40pt",
+                  fontWeight: 900,
                   color: getScoreColorPdf(breakdown.finalScore),
                   lineHeight: 1,
+                  letterSpacing: "-2px",
                 }}
               >
                 {breakdown.finalScore.toFixed(1)}
               </span>
-              <span style={{ fontSize: "12pt", color: PDF_TOKENS.colorMuted, fontWeight: 500 }}>/100</span>
+              <span style={{ 
+                fontSize: "14pt", 
+                color: PDF_TOKENS.colorMuted, 
+                fontWeight: 600,
+                alignSelf: "flex-end",
+                marginBottom: "4px",
+              }}>/100</span>
             </div>
             
             {/* Stars centered */}
-            <div style={{ marginTop: "8px" }}>
+            <div style={{ marginBottom: "8px" }}>
               <RatingStarsPdf rating={breakdown.rating} />
             </div>
             
-            {/* Rating label */}
+            {/* Rating label - Better styled */}
             <div
               style={{
-                fontSize: "11pt",
-                fontWeight: 700,
-                color: PDF_TOKENS.accentAmber,
-                marginTop: "6px",
+                fontSize: "12pt",
+                fontWeight: 800,
+                color: getScoreColorPdf(breakdown.finalScore),
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
               }}
             >
               {getRatingLabel(breakdown.rating)}
@@ -334,29 +391,31 @@ export const ScoutingReportPdfTemplate = forwardRef<HTMLDivElement, ScoutingRepo
           >
             <h3
               style={{
-                fontSize: "13pt",
-                fontWeight: 700,
-                margin: "0 0 16px 0",
+                fontSize: "14pt",
+                fontWeight: 800,
+                margin: "0 0 18px 0",
                 color: PDF_TOKENS.colorPrimary,
+                letterSpacing: "-0.3px",
               }}
             >
               Perfil de Desempenho
             </h3>
-            <div style={{ width: "100%", height: "240px", display: "flex", justifyContent: "center", alignItems: "center" }}>
+            {/* Radar increased by ~15% */}
+            <div style={{ width: "100%", height: "280px", display: "flex", justifyContent: "center", alignItems: "center" }}>
               <RadarChart
-                width={300}
-                height={240}
+                width={340}
+                height={280}
                 data={radarData}
               >
-                <PolarGrid stroke="#E6E8EC" />
+                <PolarGrid stroke="#E2E5EA" strokeWidth={1} />
                 <PolarAngleAxis
                   dataKey="category"
-                  tick={{ fill: PDF_TOKENS.colorPrimary, fontSize: 10, fontWeight: 600 }}
+                  tick={{ fill: PDF_TOKENS.colorPrimary, fontSize: 11, fontWeight: 700 }}
                 />
                 <PolarRadiusAxis
                   angle={30}
                   domain={[0, 100]}
-                  tick={{ fill: PDF_TOKENS.colorMuted, fontSize: 8 }}
+                  tick={{ fill: PDF_TOKENS.colorMuted, fontSize: 9 }}
                 />
                 <Radar
                   name="Score"
@@ -384,10 +443,11 @@ export const ScoutingReportPdfTemplate = forwardRef<HTMLDivElement, ScoutingRepo
           >
             <h3
               style={{
-                fontSize: "13pt",
-                fontWeight: 700,
-                margin: "0 0 16px 0",
+                fontSize: "14pt",
+                fontWeight: 800,
+                margin: "0 0 18px 0",
                 color: PDF_TOKENS.colorPrimary,
+                letterSpacing: "-0.3px",
               }}
             >
               Breakdown da Pontuação
@@ -525,10 +585,11 @@ export const ScoutingReportPdfTemplate = forwardRef<HTMLDivElement, ScoutingRepo
         >
           <h3
             style={{
-              fontSize: "13pt",
-              fontWeight: 700,
-              margin: "0 0 16px 0",
+              fontSize: "14pt",
+              fontWeight: 800,
+              margin: "0 0 18px 0",
               color: PDF_TOKENS.colorPrimary,
+              letterSpacing: "-0.3px",
             }}
           >
             Scores por Categoria
@@ -571,10 +632,11 @@ export const ScoutingReportPdfTemplate = forwardRef<HTMLDivElement, ScoutingRepo
         >
           <h3
             style={{
-              fontSize: "13pt",
-              fontWeight: 700,
-              margin: "0 0 16px 0",
+              fontSize: "14pt",
+              fontWeight: 800,
+              margin: "0 0 18px 0",
               color: PDF_TOKENS.colorPrimary,
+              letterSpacing: "-0.3px",
               pageBreakInside: "avoid",
               breakInside: "avoid",
             }}
@@ -592,9 +654,10 @@ export const ScoutingReportPdfTemplate = forwardRef<HTMLDivElement, ScoutingRepo
                 <div
                   key={cat.key}
                   style={{
-                    padding: "14px 18px",
+                    padding: "16px 20px",
                     backgroundColor: PDF_TOKENS.cardBackgroundAlt,
-                    borderRadius: "10px",
+                    borderRadius: "12px",
+                    border: "1px solid #E8ECF0",
                     pageBreakInside: "avoid",
                     breakInside: "avoid",
                   }}
@@ -675,10 +738,11 @@ export const ScoutingReportPdfTemplate = forwardRef<HTMLDivElement, ScoutingRepo
               <div style={{ marginBottom: report.recommendation ? "18px" : 0 }}>
                 <h4
                   style={{
-                    fontSize: "12pt",
-                    fontWeight: 700,
+                    fontSize: "13pt",
+                    fontWeight: 800,
                     color: PDF_TOKENS.colorPrimary,
-                    margin: "0 0 10px 0",
+                    margin: "0 0 12px 0",
+                    letterSpacing: "-0.3px",
                   }}
                 >
                   Resumo
@@ -692,10 +756,11 @@ export const ScoutingReportPdfTemplate = forwardRef<HTMLDivElement, ScoutingRepo
               <div>
                 <h4
                   style={{
-                    fontSize: "12pt",
-                    fontWeight: 700,
+                    fontSize: "13pt",
+                    fontWeight: 800,
                     color: PDF_TOKENS.colorPrimary,
-                    margin: "0 0 10px 0",
+                    margin: "0 0 12px 0",
+                    letterSpacing: "-0.3px",
                   }}
                 >
                   Recomendação
@@ -724,10 +789,11 @@ export const ScoutingReportPdfTemplate = forwardRef<HTMLDivElement, ScoutingRepo
           >
             <h4
               style={{
-                fontSize: "12pt",
-                fontWeight: 700,
+                fontSize: "13pt",
+                fontWeight: 800,
                 color: PDF_TOKENS.colorPrimary,
-                margin: "0 0 10px 0",
+                margin: "0 0 12px 0",
+                letterSpacing: "-0.3px",
               }}
             >
               Observações da Partida
@@ -741,36 +807,36 @@ export const ScoutingReportPdfTemplate = forwardRef<HTMLDivElement, ScoutingRepo
         {/* ============ FOOTER ============ */}
         <div
           style={{
-            marginTop: "auto",
-            paddingTop: "16px",
-            borderTop: `1px solid #E6E8EC`,
+            marginTop: "32px",
+            paddingTop: "18px",
+            borderTop: `2px solid #E2E5EA`,
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            fontSize: "8pt",
+            fontSize: "9pt",
             color: PDF_TOKENS.colorMuted,
             pageBreakInside: "avoid",
             breakInside: "avoid",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <div
               style={{
-                width: "16px",
-                height: "16px",
+                width: "20px",
+                height: "20px",
                 backgroundColor: PDF_TOKENS.brandRed,
-                borderRadius: "3px",
+                borderRadius: "4px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 color: "#fff",
-                fontSize: "7pt",
-                fontWeight: 800,
+                fontSize: "8pt",
+                fontWeight: 900,
               }}
             >
               M3
             </div>
-            <span>M3 Scouting © {new Date().getFullYear()}</span>
+            <span style={{ fontWeight: 600 }}>M3 Scouting © {new Date().getFullYear()}</span>
           </div>
           <span>
             Relatório gerado em {format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
