@@ -671,7 +671,88 @@ function getPositionHighlights(
     };
   }
   
-  // Standard logic for other positions
+  // Special logic for FORWARD (Atacante)
+  if (profileKey === "forward") {
+    // Define offensive metric categories for diversity
+    const scoringMetrics = ["goals"]; // Direct goal scoring
+    const finishingMetrics = ["shots", "shots_on_target"]; // Shot volume and accuracy
+    const creationMetrics = ["assists", "chances_created"]; // Playmaking
+    const technicalMetrics = ["successful_dribbles"]; // Technical ability
+    
+    // Progressive threshold selection for Pontos Fortes
+    const selectForwardStrengths = (): typeof stats => {
+      const thresholds = [70, 60, 55]; // Progressive thresholds
+      let selected: typeof stats = [];
+      
+      // Priority order: goals first, then diverse mix
+      const priorityOrder = ["goals", "assists", "shots_on_target", "shots", "chances_created", "successful_dribbles"];
+      
+      for (const threshold of thresholds) {
+        if (selected.length >= 3) break;
+        
+        // Sort candidates by priority order, then by score
+        const candidates = primaryStats
+          .filter(s => s.score >= threshold && !selected.some(sel => sel.stat === s.stat))
+          .sort((a, b) => {
+            const priorityA = priorityOrder.indexOf(a.stat);
+            const priorityB = priorityOrder.indexOf(b.stat);
+            // If both in priority list, use priority order
+            if (priorityA !== -1 && priorityB !== -1) return priorityA - priorityB;
+            // Priority list items come first
+            if (priorityA !== -1) return -1;
+            if (priorityB !== -1) return 1;
+            // Otherwise sort by score
+            return b.score - a.score;
+          });
+        
+        for (const candidate of candidates) {
+          if (selected.length >= 3) break;
+          
+          // Check diversity - balanced representation
+          const inScoring = scoringMetrics.includes(candidate.stat);
+          const inFinishing = finishingMetrics.includes(candidate.stat);
+          const inCreation = creationMetrics.includes(candidate.stat);
+          
+          const scoringCount = selected.filter(s => scoringMetrics.includes(s.stat)).length;
+          const finishingCount = selected.filter(s => finishingMetrics.includes(s.stat)).length;
+          const creationCount = selected.filter(s => creationMetrics.includes(s.stat)).length;
+          
+          // Allow max 1 from scoring (goals is unique), max 2 from finishing, max 2 from creation
+          if (inScoring && scoringCount >= 1) continue;
+          if (inFinishing && finishingCount >= 2) continue;
+          if (inCreation && creationCount >= 2) continue;
+          
+          selected.push(candidate);
+        }
+      }
+      
+      // If still not enough, try secondary with >= 60
+      if (selected.length < 3) {
+        const secondaryCandidates = secondaryStats
+          .filter(s => s.score >= 60 && !selected.some(sel => sel.stat === s.stat))
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 3 - selected.length);
+        selected = [...selected, ...secondaryCandidates];
+      }
+      
+      return selected.slice(0, 3);
+    };
+    
+    // Atenção for forward: ONLY offensive primary metrics <= 30
+    // Defensive metrics NEVER appear
+    const offensiveMetrics = ["goals", "assists", "shots", "shots_on_target", "chances_created", "successful_dribbles"];
+    const negativeStats = primaryStats
+      .filter(s => offensiveMetrics.includes(s.stat) && s.score <= 30)
+      .sort((a, b) => a.score - b.score)
+      .slice(0, 3);
+    
+    return {
+      positiveStats: selectForwardStrengths(),
+      negativeStats
+    };
+  }
+  
+  // Standard logic for other positions (goalkeeper, center_back, lateral, defensive_mid)
   // Pontos Fortes: Primary >= 70, fallback to Secondary >= 85
   let positiveStats = primaryStats
     .filter(s => s.score >= 70)
@@ -844,18 +925,165 @@ function StatScoreLegend({ showTrendLegend = false }: { showTrendLegend?: boolea
   );
 }
 
-function StatBreakdownCard({ 
+// Admin Debug Panel for viewing all metrics with classification
+function AdminMetricsDebugPanel({ 
+  allStats,
+  positionGroup,
+  positiveStats,
+  negativeStats,
+}: { 
+  allStats: Array<{ stat: string; label: string; score: number; available: boolean }>;
+  positionGroup: string;
+  positiveStats: Array<{ stat: string; label: string; score: number; available: boolean }>;
+  negativeStats: Array<{ stat: string; label: string; score: number; available: boolean }>;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const profileKey = getPositionProfileKey(positionGroup);
+  const profile = POSITION_GROUP_PROFILES[profileKey] || POSITION_GROUP_PROFILES.midfielder;
+  
+  // Categorize all stats
+  const categorizedStats = allStats.map(stat => {
+    const isPrimary = profile.primaryMetrics.includes(stat.stat);
+    const isSecondary = profile.secondaryMetrics.includes(stat.stat);
+    const isIgnored = profile.ignoredMetrics.includes(stat.stat);
+    const isSelected = positiveStats.some(p => p.stat === stat.stat);
+    const isNegativeSelected = negativeStats.some(n => n.stat === stat.stat);
+    
+    return {
+      ...stat,
+      isPrimary,
+      isSecondary,
+      isIgnored,
+      isSelected,
+      isNegativeSelected,
+      category: isPrimary ? 'primary' : isSecondary ? 'secondary' : isIgnored ? 'ignored' : 'other',
+    };
+  }).sort((a, b) => {
+    // Sort by category first: primary, secondary, other, ignored
+    const categoryOrder = { primary: 0, secondary: 1, other: 2, ignored: 3 };
+    const catDiff = categoryOrder[a.category] - categoryOrder[b.category];
+    if (catDiff !== 0) return catDiff;
+    // Then by score descending
+    return b.score - a.score;
+  });
+  
+  return (
+    <div className="border border-dashed border-amber-500/50 rounded-lg p-2 bg-amber-500/5">
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-between w-full text-left"
+      >
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-amber-600 border-amber-500/50 text-[10px]">
+            🔧 Debug Admin
+          </Badge>
+          <span className="text-[10px] text-muted-foreground">
+            {allStats.length} métricas disponíveis
+          </span>
+        </div>
+        {isOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+      </button>
+      
+      {isOpen && (
+        <div className="mt-3 space-y-3">
+          {/* Profile Info */}
+          <div className="grid grid-cols-3 gap-2 text-[10px]">
+            <div className="bg-emerald-500/10 rounded p-2">
+              <p className="font-medium text-emerald-600 mb-1">Primárias ({profile.primaryMetrics.length})</p>
+              <p className="text-muted-foreground">{profile.primaryMetrics.join(', ')}</p>
+            </div>
+            <div className="bg-blue-500/10 rounded p-2">
+              <p className="font-medium text-blue-600 mb-1">Secundárias ({profile.secondaryMetrics.length})</p>
+              <p className="text-muted-foreground">{profile.secondaryMetrics.join(', ')}</p>
+            </div>
+            <div className="bg-muted/50 rounded p-2">
+              <p className="font-medium text-muted-foreground mb-1">Ignoradas ({profile.ignoredMetrics.length})</p>
+              <p className="text-muted-foreground/70">{profile.ignoredMetrics.join(', ')}</p>
+            </div>
+          </div>
+          
+          {/* Selection Rules */}
+          <div className="text-[10px] bg-muted/30 rounded p-2">
+            <p className="font-medium mb-1">Regras de Seleção ({profileKey === 'midfielder' || profileKey === 'forward' ? 'Thresholds Progressivos' : 'Padrão'}):</p>
+            {(profileKey === 'midfielder' || profileKey === 'forward') ? (
+              <ul className="text-muted-foreground space-y-0.5 ml-2">
+                <li>• Pontos Fortes: Primárias ≥70 → ≥60 → ≥55 (com diversidade)</li>
+                <li>• Atenção: Somente métricas ofensivas ≤30</li>
+                <li>• Máx 2 métricas do mesmo tipo por categoria</li>
+              </ul>
+            ) : (
+              <ul className="text-muted-foreground space-y-0.5 ml-2">
+                <li>• Pontos Fortes: Primárias ≥70, fallback Secundárias ≥85</li>
+                <li>• Atenção: Primárias ≤30, fallback Secundárias ≤15</li>
+                <li>• Métricas ignoradas nunca entram em Atenção</li>
+              </ul>
+            )}
+          </div>
+          
+          {/* All Metrics Table */}
+          <div className="max-h-64 overflow-y-auto">
+            <table className="w-full text-[10px]">
+              <thead className="sticky top-0 bg-background">
+                <tr className="border-b">
+                  <th className="text-left p-1">Métrica</th>
+                  <th className="text-center p-1">Score</th>
+                  <th className="text-center p-1">Categoria</th>
+                  <th className="text-center p-1">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {categorizedStats.map(stat => (
+                  <tr 
+                    key={stat.stat} 
+                    className={cn(
+                      "border-b border-border/50",
+                      stat.isSelected && "bg-emerald-500/10",
+                      stat.isNegativeSelected && "bg-red-500/10",
+                      stat.isIgnored && "opacity-50"
+                    )}
+                  >
+                    <td className="p-1 font-medium">
+                      {getHumanStatName(stat.stat, stat.label)}
+                      <span className="text-muted-foreground ml-1">({stat.stat})</span>
+                    </td>
+                    <td className={cn("p-1 text-center font-semibold tabular-nums", getScoreColor(stat.score))}>
+                      {formatFixed(stat.score, 0)}
+                    </td>
+                    <td className="p-1 text-center">
+                      {stat.isPrimary && <Badge variant="outline" className="text-emerald-600 border-emerald-500/50 text-[9px] px-1">Pri</Badge>}
+                      {stat.isSecondary && <Badge variant="outline" className="text-blue-600 border-blue-500/50 text-[9px] px-1">Sec</Badge>}
+                      {stat.isIgnored && <Badge variant="outline" className="text-muted-foreground text-[9px] px-1">Ign</Badge>}
+                      {!stat.isPrimary && !stat.isSecondary && !stat.isIgnored && <Badge variant="outline" className="text-muted-foreground text-[9px] px-1">—</Badge>}
+                    </td>
+                    <td className="p-1 text-center">
+                      {stat.isSelected && <Badge className="bg-emerald-500 text-[9px] px-1">✓ Forte</Badge>}
+                      {stat.isNegativeSelected && <Badge variant="destructive" className="text-[9px] px-1">⚠ Atenção</Badge>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StatBreakdownCard({
   competition, 
   isExpanded, 
   onToggle,
   positionGroup,
   playerId,
+  isAdmin = false,
 }: { 
   competition: CompetitionBreakdown | ExtendedCompetitionBreakdown; 
   isExpanded: boolean;
   onToggle: () => void;
   positionGroup: string;
   playerId: string; // REQUIRED - must always be passed
+  isAdmin?: boolean;
 }) {
   const compId = String((competition as any)?.competition_id ?? "");
   const seasonYear = Number((competition as any)?.season_year);
@@ -1424,6 +1652,16 @@ function StatBreakdownCard({
                   </div>
                 </div>
               </div>
+            )}
+            
+            {/* Admin Debug Panel - shows all metrics with classification */}
+            {isAdmin && allStats.length > 0 && (
+              <AdminMetricsDebugPanel 
+                allStats={allStats}
+                positionGroup={positionGroup}
+                positiveStats={positiveStats}
+                negativeStats={negativeStats}
+              />
             )}
             
             {/* Color Legend */}
@@ -2059,6 +2297,7 @@ export function RatingBreakdownModalV2({
                     onToggle={() => toggleCompetition(comp.competition_id)}
                     positionGroup={details.position_group}
                     playerId={playerId}
+                    isAdmin={isAdmin}
                   />
                 ))}
               </>
