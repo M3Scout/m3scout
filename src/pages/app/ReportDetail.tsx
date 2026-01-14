@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { RatingStars } from "@/components/players/RatingStars";
 import { ScoreBreakdownDisplay } from "@/components/scouting/ScoreBreakdownDisplay";
 import { DeleteReportDialog } from "@/components/scouting/DeleteReportDialog";
+import { ExportPdfButton } from "@/components/scouting/ExportPdfButton";
 import { useAuth } from "@/hooks/useAuth";
 import { 
   ArrowLeft, 
@@ -253,6 +254,7 @@ const ReportDetail = () => {
           </div>
         </div>
         <div className="flex gap-2">
+          <ExportPdfButton report={report as any} />
           <Button variant="outline" size="sm">
             <Share2 className="w-4 h-4" />
             Compartilhar
