@@ -857,8 +857,8 @@ const Competitions = () => {
                       {comp.division || "—"}
                     </td>
                     <td className="text-center">
-                      <span className={TIER_COLORS[comp.tier] || TIER_COLORS.C}>
-                        {comp.tier}
+                      <span className={getTierAdminBadgeClass(getTierFromCoefficient(comp.final_coefficient))}>
+                        {getTierFromCoefficient(comp.final_coefficient)}
                       </span>
                     </td>
                     <td className="text-center">
