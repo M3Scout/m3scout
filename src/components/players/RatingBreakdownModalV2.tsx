@@ -536,9 +536,10 @@ const POSITION_GROUP_PROFILES: Record<string, PositionGroupProfile> = {
     ignoredMetrics: ["clearances", "shots", "goals", "shots_on_target"],
   },
   midfielder: {
-    primaryMetrics: ["key_passes", "chances_created", "accurate_passes", "duels_won", "assists"],
-    secondaryMetrics: ["tackles", "interceptions", "shots"],
-    ignoredMetrics: ["clearances", "aerial_duels_won", "saves", "goals_conceded", "clean_sheets"],
+    // Offensive metrics prioritized for attacking midfielders
+    primaryMetrics: ["assists", "key_passes", "chances_created", "shots", "shots_on_target", "goals", "accurate_passes", "duels_won"],
+    secondaryMetrics: ["tackles", "interceptions"],
+    ignoredMetrics: ["clearances", "aerial_duels_won", "saves", "goals_conceded", "clean_sheets", "tackles", "interceptions", "recoveries"],
   },
   forward: {
     primaryMetrics: ["goals", "assists", "shots", "shots_on_target", "successful_dribbles", "chances_created"],
@@ -567,8 +568,8 @@ function getPositionProfileKey(positionGroup: string): string {
   if (normalized === "defensive_mid" || normalized === "dm" || normalized === "cdm" || normalized === "volante") {
     return "defensive_mid";
   }
-  // Midfielder / Meio campo
-  if (normalized === "midfielder" || normalized === "cm" || normalized === "cam" || normalized === "meio_campo" || normalized === "meia") {
+  // Midfielder / Meio campo / Meia Atacante
+  if (normalized === "midfielder" || normalized === "cm" || normalized === "cam" || normalized === "meio_campo" || normalized === "meia" || normalized === "meia atacante" || normalized === "meia-atacante" || normalized === "attacking_mid" || normalized === "am") {
     return "midfielder";
   }
   // Forward / Attacker
@@ -583,7 +584,12 @@ function getPositionProfileKey(positionGroup: string): string {
 /**
  * Gets position-aware highlights (Pontos Fortes / Atenção) based on the player's position group.
  * 
- * Rules:
+ * Rules for MIDFIELDER (Meia / Meia Atacante):
+ * - Pontos Fortes: Progressive thresholds (70 -> 60 -> 55) with diversity rules
+ * - Priority: 1 creation, 1 finishing, 1 direct production
+ * - Atenção: Only offensive primary metrics <= 30, defensive metrics NEVER included
+ * 
+ * Rules for other positions:
  * - Pontos Fortes: Top 3 primary metrics with score >= 70, fallback to secondary >= 85
  * - Atenção: Bottom 3 primary metrics with score <= 30, fallback to secondary <= 15
  * - Ignored metrics NEVER appear in Atenção
@@ -602,6 +608,70 @@ function getPositionHighlights(
   const secondaryStats = availableStats.filter(s => profile.secondaryMetrics.includes(s.stat));
   const ignoredSet = new Set(profile.ignoredMetrics);
   
+  // Special logic for MIDFIELDER (Meia / Meia Atacante)
+  if (profileKey === "midfielder") {
+    // Define offensive metric categories for diversity
+    const creationMetrics = ["assists", "key_passes", "chances_created"];
+    const finishingMetrics = ["shots", "shots_on_target"];
+    const productionMetrics = ["goals", "assists"]; // assists appears in both for flexibility
+    
+    // Progressive threshold selection for Pontos Fortes
+    const selectMidfielderStrengths = (): typeof stats => {
+      const thresholds = [70, 60, 55]; // Progressive thresholds
+      let selected: typeof stats = [];
+      
+      for (const threshold of thresholds) {
+        if (selected.length >= 3) break;
+        
+        const candidates = primaryStats
+          .filter(s => s.score >= threshold && !selected.some(sel => sel.stat === s.stat))
+          .sort((a, b) => b.score - a.score);
+        
+        for (const candidate of candidates) {
+          if (selected.length >= 3) break;
+          
+          // Check diversity - don't add 3 from same category
+          const inCreation = creationMetrics.includes(candidate.stat);
+          const inFinishing = finishingMetrics.includes(candidate.stat);
+          
+          const creationCount = selected.filter(s => creationMetrics.includes(s.stat)).length;
+          const finishingCount = selected.filter(s => finishingMetrics.includes(s.stat)).length;
+          
+          // Allow max 2 from same category
+          if (inCreation && creationCount >= 2) continue;
+          if (inFinishing && finishingCount >= 2) continue;
+          
+          selected.push(candidate);
+        }
+      }
+      
+      // If still not enough, try secondary with >= 70
+      if (selected.length < 3) {
+        const secondaryCandidates = secondaryStats
+          .filter(s => s.score >= 70 && !selected.some(sel => sel.stat === s.stat))
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 3 - selected.length);
+        selected = [...selected, ...secondaryCandidates];
+      }
+      
+      return selected.slice(0, 3);
+    };
+    
+    // Atenção for midfielder: ONLY offensive primary metrics <= 30
+    // Defensive metrics (tackles, interceptions, clearances, recoveries) NEVER appear
+    const offensiveMetrics = ["assists", "key_passes", "chances_created", "shots", "shots_on_target", "goals"];
+    const negativeStats = primaryStats
+      .filter(s => offensiveMetrics.includes(s.stat) && s.score <= 30)
+      .sort((a, b) => a.score - b.score)
+      .slice(0, 3);
+    
+    return {
+      positiveStats: selectMidfielderStrengths(),
+      negativeStats
+    };
+  }
+  
+  // Standard logic for other positions
   // Pontos Fortes: Primary >= 70, fallback to Secondary >= 85
   let positiveStats = primaryStats
     .filter(s => s.score >= 70)
