@@ -46,7 +46,7 @@ interface Competition {
   is_active: boolean;
 }
 
-import { TIER_COLORS, getTierThresholdsTooltip } from "@/lib/tierClassification";
+import { TIER_COLORS, getTierThresholdsTooltip, getTierFromCoefficient } from "@/lib/tierClassification";
 
 const COMPETITION_TYPES = [
   { value: "league", label: "Liga" },
@@ -122,7 +122,7 @@ const CompetitionRanking = () => {
       const matchesType = typeFilter === "all" || comp.type === typeFilter;
       const matchesState = stateFilter === "all" || comp.state === stateFilter;
       const matchesDivision = divisionFilter === "all" || comp.division === divisionFilter;
-      const matchesTier = tierFilter === "all" || comp.tier === tierFilter;
+      const matchesTier = tierFilter === "all" || getTierFromCoefficient(comp.final_coefficient) === tierFilter;
       const matchesVisibility =
         visibilityFilter === "all" ||
         (visibilityFilter === "visible" && (comp.visibility_score ?? 0) > 0) ||
@@ -382,8 +382,8 @@ const CompetitionRanking = () => {
                     )}
                   </TableCell>
                   <TableCell className="text-center">
-                    <Badge variant="outline" className={TIER_COLORS[comp.tier] || TIER_COLORS.C}>
-                      {comp.tier}
+                    <Badge variant="outline" className={TIER_COLORS[getTierFromCoefficient(comp.final_coefficient)] || TIER_COLORS.C}>
+                      {getTierFromCoefficient(comp.final_coefficient)}
                     </Badge>
                   </TableCell>
                   {isAdmin && (

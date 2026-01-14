@@ -42,7 +42,7 @@ interface Competition {
   visibility_score: number | null;
 }
 
-import { TIER_COLORS, getTierThresholdsTooltip } from "@/lib/tierClassification";
+import { TIER_COLORS, getTierThresholdsTooltip, getTierFromCoefficient } from "@/lib/tierClassification";
 
 const COMPETITION_TYPES = [
   { value: "league", label: "Liga" },
@@ -97,7 +97,7 @@ const CompetitionRankingPublic = () => {
         ((comp.display_name || "").toLowerCase().includes(searchLower));
       const matchesCountry = countryFilter === "all" || comp.country === countryFilter;
       const matchesType = typeFilter === "all" || comp.type === typeFilter;
-      const matchesTier = tierFilter === "all" || comp.tier === tierFilter;
+      const matchesTier = tierFilter === "all" || getTierFromCoefficient(comp.final_coefficient) === tierFilter;
 
       return matchesSearch && matchesCountry && matchesType && matchesTier;
     });
@@ -289,8 +289,8 @@ const CompetitionRankingPublic = () => {
                     )}
                   </TableCell>
                   <TableCell className="text-center">
-                    <Badge variant="outline" className={TIER_COLORS[comp.tier] || TIER_COLORS.C}>
-                      {comp.tier}
+                    <Badge variant="outline" className={TIER_COLORS[getTierFromCoefficient(comp.final_coefficient)] || TIER_COLORS.C}>
+                      {getTierFromCoefficient(comp.final_coefficient)}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-center font-mono font-medium">

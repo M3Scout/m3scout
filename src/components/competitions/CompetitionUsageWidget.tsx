@@ -40,7 +40,7 @@ interface CompetitionUsage {
   last_used_at: string | null;
 }
 
-import { TIER_COLORS } from "@/lib/tierClassification";
+import { TIER_COLORS, getTierFromCoefficient } from "@/lib/tierClassification";
 
 const CompetitionUsageWidget = () => {
   const [usageData, setUsageData] = useState<CompetitionUsage[]>([]);
@@ -236,8 +236,8 @@ const CompetitionUsageWidget = () => {
                         {comp.display_name || comp.name}
                       </TableCell>
                       <TableCell className="text-center">
-                        <Badge variant="outline" className={TIER_COLORS[comp.tier] || TIER_COLORS.C}>
-                          {comp.tier}
+                        <Badge variant="outline" className={TIER_COLORS[getTierFromCoefficient(comp.final_coefficient)] || TIER_COLORS.C}>
+                          {getTierFromCoefficient(comp.final_coefficient)}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-center font-mono text-sm">
