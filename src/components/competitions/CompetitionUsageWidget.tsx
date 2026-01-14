@@ -40,13 +40,7 @@ interface CompetitionUsage {
   last_used_at: string | null;
 }
 
-const TIER_COLORS: Record<string, string> = {
-  S: "bg-amber-500/20 text-amber-400 border-amber-500/50",
-  A: "bg-primary/20 text-primary border-primary/50",
-  B: "bg-emerald-500/20 text-emerald-400 border-emerald-500/50",
-  C: "bg-muted text-muted-foreground border-border",
-  D: "bg-destructive/20 text-destructive border-destructive/50",
-};
+import { TIER_COLORS } from "@/lib/tierClassification";
 
 const CompetitionUsageWidget = () => {
   const [usageData, setUsageData] = useState<CompetitionUsage[]>([]);

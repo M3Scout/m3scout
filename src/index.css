@@ -249,6 +249,10 @@
     @apply admin-badge bg-zinc-800/50 text-zinc-500 border border-zinc-700/30;
   }
 
+  .admin-badge-tier-d {
+    @apply admin-badge bg-destructive/15 text-destructive border border-destructive/30;
+  }
+
   /* Admin Score Display */
   .admin-score {
     @apply font-semibold text-white tabular-nums;

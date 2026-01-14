@@ -95,9 +95,12 @@ interface Competition {
   has_phases: boolean;
 }
 
+import { getTierFromCoefficient, getTierAdminBadgeClass, getTierThresholdsTooltip } from "@/lib/tierClassification";
+
 const TIER_COLORS: Record<string, string> = {
   S: "admin-badge-tier-s",
   A: "admin-badge-tier-a",
+  D: "admin-badge-tier-d",
   B: "admin-badge-tier-b",
   C: "admin-badge-tier-c",
 };
@@ -1062,10 +1065,9 @@ const Competitions = () => {
                         <p className="mb-2">Calculados automaticamente a partir do base.</p>
                         <p className="font-semibold mb-1">Classificação:</p>
                         <ul className="text-xs space-y-0.5">
-                          <li><span className="text-amber-400">S:</span> ≥ 1.10</li>
-                          <li><span className="text-primary">A:</span> 0.80 – 1.09</li>
-                          <li><span className="text-emerald-400">B:</span> 0.45 – 0.79</li>
-                          <li><span className="text-muted-foreground">C:</span> &lt; 0.45</li>
+                          {getTierThresholdsTooltip().map(({ tier, range, colorClass }) => (
+                            <li key={tier}><span className={colorClass}>{tier}:</span> {range}</li>
+                          ))}
                         </ul>
                       </TooltipContent>
                     </Tooltip>
@@ -1081,17 +1083,9 @@ const Competitions = () => {
                   />
                   <Badge 
                     variant="outline" 
-                    className={TIER_COLORS[
-                      formData.base_coefficient >= 1.10 ? 'S' :
-                      formData.base_coefficient >= 0.80 ? 'A' :
-                      formData.base_coefficient >= 0.45 ? 'B' : 'C'
-                    ]}
+                    className={getTierAdminBadgeClass(getTierFromCoefficient(formData.base_coefficient))}
                   >
-                    Tier {
-                      formData.base_coefficient >= 1.10 ? 'S' :
-                      formData.base_coefficient >= 0.80 ? 'A' :
-                      formData.base_coefficient >= 0.45 ? 'B' : 'C'
-                    }
+                    Tier {getTierFromCoefficient(formData.base_coefficient)}
                   </Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">

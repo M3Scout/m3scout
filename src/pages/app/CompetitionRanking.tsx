@@ -46,12 +46,7 @@ interface Competition {
   is_active: boolean;
 }
 
-const TIER_COLORS: Record<string, string> = {
-  S: "bg-amber-500/20 text-amber-400 border-amber-500/50",
-  A: "bg-primary/20 text-primary border-primary/50",
-  B: "bg-emerald-500/20 text-emerald-400 border-emerald-500/50",
-  C: "bg-muted text-muted-foreground border-border",
-};
+import { TIER_COLORS, getTierThresholdsTooltip } from "@/lib/tierClassification";
 
 const COMPETITION_TYPES = [
   { value: "league", label: "Liga" },
@@ -186,12 +181,11 @@ const CompetitionRanking = () => {
               <p className="text-sm text-muted-foreground">
                 Usado para ranking e scoring. Calculado automaticamente a partir do coeficiente base.
               </p>
-              <p className="text-sm mt-2">
-                <span className="font-medium">Tier S:</span> ≥ 1.10 |{" "}
-                <span className="font-medium">A:</span> 0.80-1.09 |{" "}
-                <span className="font-medium">B:</span> 0.45-0.79 |{" "}
-                <span className="font-medium">C:</span> {"<"} 0.45
-              </p>
+              <div className="text-sm mt-2 space-y-0.5">
+                {getTierThresholdsTooltip().map(({ tier, range, colorClass }) => (
+                  <p key={tier}><span className={`font-medium ${colorClass}`}>Tier {tier}:</span> {range}</p>
+                ))}
+              </div>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
