@@ -537,7 +537,8 @@ const POSITION_GROUP_PROFILES: Record<string, PositionGroupProfile> = {
   },
   midfielder: {
     // Offensive metrics prioritized for attacking midfielders
-    primaryMetrics: ["assists", "key_passes", "chances_created", "shots", "shots_on_target", "goals", "accurate_passes", "duels_won"],
+    // Includes successful_dribbles and possession_lost for "Atenção" Type 2 analysis
+    primaryMetrics: ["assists", "key_passes", "chances_created", "shots", "shots_on_target", "goals", "accurate_passes", "duels_won", "successful_dribbles", "possession_lost"],
     secondaryMetrics: ["tackles", "interceptions"],
     ignoredMetrics: ["clearances", "aerial_duels_won", "saves", "goals_conceded", "clean_sheets", "tackles", "interceptions", "recoveries"],
   },
@@ -657,17 +658,68 @@ function getPositionHighlights(
       return selected.slice(0, 3);
     };
     
-    // Atenção for midfielder: ONLY offensive primary metrics <= 30
+    // Atenção for midfielder: Progressive thresholds with type separation
+    // Type 1 (low offensive production): assists, goals, chances_created, key_passes -> threshold <= 40
+    // Type 2 (risk/possession loss): possession_lost, successful_dribbles (low), pass_accuracy (low) -> threshold <= 45
     // Defensive metrics (tackles, interceptions, clearances, recoveries) NEVER appear
-    const offensiveMetrics = ["assists", "key_passes", "chances_created", "shots", "shots_on_target", "goals"];
-    const negativeStats = primaryStats
-      .filter(s => offensiveMetrics.includes(s.stat) && s.score <= 30)
-      .sort((a, b) => a.score - b.score)
-      .slice(0, 3);
+    const selectMidfielderWeaknesses = (): typeof stats => {
+      const type1Metrics = ["assists", "goals", "chances_created", "key_passes"]; // Offensive production
+      const type2Metrics = ["successful_dribbles", "accurate_passes", "possession_lost"]; // Risk/possession
+      
+      let selected: typeof stats = [];
+      
+      // Phase 1: Type 1 with threshold <= 40
+      const type1Candidates = primaryStats
+        .filter(s => type1Metrics.includes(s.stat) && s.score <= 40)
+        .sort((a, b) => a.score - b.score);
+      
+      for (const candidate of type1Candidates) {
+        if (selected.length >= 3) break;
+        selected.push(candidate);
+      }
+      
+      // Phase 2: Add Type 2 with threshold <= 45 if needed
+      if (selected.length < 3) {
+        const type2Candidates = primaryStats
+          .filter(s => type2Metrics.includes(s.stat) && s.score <= 45 && !selected.some(sel => sel.stat === s.stat))
+          .sort((a, b) => a.score - b.score);
+        
+        for (const candidate of type2Candidates) {
+          if (selected.length >= 3) break;
+          selected.push(candidate);
+        }
+      }
+      
+      // Phase 3: Fallback - expand Type 1 to <= 45
+      if (selected.length < 3) {
+        const expandedType1 = primaryStats
+          .filter(s => type1Metrics.includes(s.stat) && s.score > 40 && s.score <= 45 && !selected.some(sel => sel.stat === s.stat))
+          .sort((a, b) => a.score - b.score);
+        
+        for (const candidate of expandedType1) {
+          if (selected.length >= 3) break;
+          selected.push(candidate);
+        }
+      }
+      
+      // Phase 4: Fallback - expand Type 2 to <= 50
+      if (selected.length < 3) {
+        const expandedType2 = primaryStats
+          .filter(s => type2Metrics.includes(s.stat) && s.score > 45 && s.score <= 50 && !selected.some(sel => sel.stat === s.stat))
+          .sort((a, b) => a.score - b.score);
+        
+        for (const candidate of expandedType2) {
+          if (selected.length >= 3) break;
+          selected.push(candidate);
+        }
+      }
+      
+      return selected.slice(0, 3);
+    };
     
     return {
       positiveStats: selectMidfielderStrengths(),
-      negativeStats
+      negativeStats: selectMidfielderWeaknesses()
     };
   }
   
@@ -738,17 +790,67 @@ function getPositionHighlights(
       return selected.slice(0, 3);
     };
     
-    // Atenção for forward: ONLY offensive primary metrics <= 30
-    // Defensive metrics NEVER appear
-    const offensiveMetrics = ["goals", "assists", "shots", "shots_on_target", "chances_created", "successful_dribbles"];
-    const negativeStats = primaryStats
-      .filter(s => offensiveMetrics.includes(s.stat) && s.score <= 30)
-      .sort((a, b) => a.score - b.score)
-      .slice(0, 3);
+    // Atenção for forward: Progressive thresholds with type separation
+    // Type 1 (low scoring/creation): goals, assists, shots, shots_on_target -> threshold <= 40
+    // Type 2 (technical/risk): successful_dribbles, chances_created -> threshold <= 45
+    const selectForwardWeaknesses = (): typeof stats => {
+      const type1Metrics = ["goals", "assists", "shots", "shots_on_target"]; // Scoring/finishing
+      const type2Metrics = ["successful_dribbles", "chances_created"]; // Technical/creation
+      
+      let selected: typeof stats = [];
+      
+      // Phase 1: Type 1 with threshold <= 40
+      const type1Candidates = primaryStats
+        .filter(s => type1Metrics.includes(s.stat) && s.score <= 40)
+        .sort((a, b) => a.score - b.score);
+      
+      for (const candidate of type1Candidates) {
+        if (selected.length >= 3) break;
+        selected.push(candidate);
+      }
+      
+      // Phase 2: Add Type 2 with threshold <= 45 if needed
+      if (selected.length < 3) {
+        const type2Candidates = primaryStats
+          .filter(s => type2Metrics.includes(s.stat) && s.score <= 45 && !selected.some(sel => sel.stat === s.stat))
+          .sort((a, b) => a.score - b.score);
+        
+        for (const candidate of type2Candidates) {
+          if (selected.length >= 3) break;
+          selected.push(candidate);
+        }
+      }
+      
+      // Phase 3: Fallback - expand Type 1 to <= 45
+      if (selected.length < 3) {
+        const expandedType1 = primaryStats
+          .filter(s => type1Metrics.includes(s.stat) && s.score > 40 && s.score <= 45 && !selected.some(sel => sel.stat === s.stat))
+          .sort((a, b) => a.score - b.score);
+        
+        for (const candidate of expandedType1) {
+          if (selected.length >= 3) break;
+          selected.push(candidate);
+        }
+      }
+      
+      // Phase 4: Fallback - expand Type 2 to <= 50
+      if (selected.length < 3) {
+        const expandedType2 = primaryStats
+          .filter(s => type2Metrics.includes(s.stat) && s.score > 45 && s.score <= 50 && !selected.some(sel => sel.stat === s.stat))
+          .sort((a, b) => a.score - b.score);
+        
+        for (const candidate of expandedType2) {
+          if (selected.length >= 3) break;
+          selected.push(candidate);
+        }
+      }
+      
+      return selected.slice(0, 3);
+    };
     
     return {
       positiveStats: selectForwardStrengths(),
-      negativeStats
+      negativeStats: selectForwardWeaknesses()
     };
   }
   
@@ -1030,8 +1132,12 @@ function AdminMetricsDebugPanel({
             {(profileKey === 'midfielder' || profileKey === 'forward') ? (
               <ul className="text-muted-foreground space-y-0.5 ml-2">
                 <li>• Pontos Fortes: Primárias ≥70 → ≥60 → ≥55 (com diversidade)</li>
-                <li>• Atenção: Somente métricas ofensivas ≤30</li>
+                <li className="font-medium text-amber-600">• Atenção (novo sistema progressivo):</li>
+                <li className="ml-3">- Tipo 1 (produção): assists, goals, chances, key_passes → ≤40</li>
+                <li className="ml-3">- Tipo 2 (risco): dribbles, passes, posse perdida → ≤45</li>
+                <li className="ml-3">- Fallback: Tipo1 ≤45, Tipo2 ≤50</li>
                 <li>• Máx 2 métricas do mesmo tipo por categoria</li>
+                <li>• Métricas defensivas NUNCA aparecem em Atenção</li>
               </ul>
             ) : (
               <ul className="text-muted-foreground space-y-0.5 ml-2">
