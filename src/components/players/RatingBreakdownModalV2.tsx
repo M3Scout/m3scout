@@ -504,6 +504,139 @@ const POSITION_STAT_CLASSIFICATIONS: Record<string, PositionStatClassification> 
   },
 };
 
+// ==================== POSITION GROUP PROFILES ====================
+// Defines which metrics are relevant for each position group for Pontos Fortes / Atenção
+
+interface PositionGroupProfile {
+  primaryMetrics: string[];   // Core metrics for this position - prioritized for highlights
+  secondaryMetrics: string[]; // Fallback metrics if primary is insufficient
+  ignoredMetrics: string[];   // Metrics that should NEVER appear in "Atenção" for this position
+}
+
+const POSITION_GROUP_PROFILES: Record<string, PositionGroupProfile> = {
+  goalkeeper: {
+    primaryMetrics: ["saves", "clean_sheets", "goals_conceded", "penalties_saved", "errors_leading_to_goal", "aerial_duels_won"],
+    secondaryMetrics: ["accurate_passes"],
+    ignoredMetrics: ["goals", "assists", "key_passes", "successful_dribbles", "tackles", "interceptions", "clearances", "shots", "shots_on_target", "chances_created"],
+  },
+  center_back: {
+    primaryMetrics: ["clearances", "interceptions", "tackles", "aerial_duels_won", "duels_won", "recoveries"],
+    secondaryMetrics: ["accurate_passes"],
+    ignoredMetrics: ["goals", "assists", "key_passes", "successful_dribbles", "shots", "shots_on_target", "chances_created"],
+  },
+  // Lateral (fullback)
+  lateral: {
+    primaryMetrics: ["tackles", "interceptions", "duels_won", "key_passes", "chances_created", "accurate_passes", "recoveries"],
+    secondaryMetrics: ["shots", "assists"],
+    ignoredMetrics: ["clearances", "aerial_duels_won"],
+  },
+  defensive_mid: {
+    primaryMetrics: ["tackles", "interceptions", "recoveries", "duels_won", "accurate_passes"],
+    secondaryMetrics: ["key_passes", "chances_created"],
+    ignoredMetrics: ["clearances", "shots", "goals", "shots_on_target"],
+  },
+  midfielder: {
+    primaryMetrics: ["key_passes", "chances_created", "accurate_passes", "duels_won", "assists"],
+    secondaryMetrics: ["tackles", "interceptions", "shots"],
+    ignoredMetrics: ["clearances", "aerial_duels_won", "saves", "goals_conceded", "clean_sheets"],
+  },
+  forward: {
+    primaryMetrics: ["goals", "assists", "shots", "shots_on_target", "successful_dribbles", "chances_created"],
+    secondaryMetrics: ["key_passes"],
+    ignoredMetrics: ["tackles", "interceptions", "clearances", "recoveries", "aerial_duels_won", "saves", "goals_conceded", "clean_sheets"],
+  },
+};
+
+// Map position group aliases to profile keys
+function getPositionProfileKey(positionGroup: string): string {
+  const normalized = positionGroup.toLowerCase().trim();
+  
+  // Goalkeeper
+  if (normalized === "goalkeeper" || normalized === "gk" || normalized === "goleiro") {
+    return "goalkeeper";
+  }
+  // Center back / Zagueiro
+  if (normalized === "center_back" || normalized === "cb" || normalized === "zagueiro") {
+    return "center_back";
+  }
+  // Fullback / Lateral
+  if (normalized === "lateral" || normalized === "fullback" || normalized === "lb" || normalized === "rb" || normalized === "wingback") {
+    return "lateral";
+  }
+  // Defensive mid / Volante
+  if (normalized === "defensive_mid" || normalized === "dm" || normalized === "cdm" || normalized === "volante") {
+    return "defensive_mid";
+  }
+  // Midfielder / Meio campo
+  if (normalized === "midfielder" || normalized === "cm" || normalized === "cam" || normalized === "meio_campo" || normalized === "meia") {
+    return "midfielder";
+  }
+  // Forward / Attacker
+  if (normalized === "forward" || normalized === "st" || normalized === "cf" || normalized === "lw" || normalized === "rw" || normalized === "atacante" || normalized === "ponta") {
+    return "forward";
+  }
+  
+  // Default fallback
+  return "midfielder";
+}
+
+/**
+ * Gets position-aware highlights (Pontos Fortes / Atenção) based on the player's position group.
+ * 
+ * Rules:
+ * - Pontos Fortes: Top 3 primary metrics with score >= 70, fallback to secondary >= 85
+ * - Atenção: Bottom 3 primary metrics with score <= 30, fallback to secondary <= 15
+ * - Ignored metrics NEVER appear in Atenção
+ */
+function getPositionHighlights(
+  stats: Array<{ stat: string; label: string; score: number; available: boolean }>,
+  positionGroup: string
+): { positiveStats: typeof stats; negativeStats: typeof stats } {
+  const profileKey = getPositionProfileKey(positionGroup);
+  const profile = POSITION_GROUP_PROFILES[profileKey] || POSITION_GROUP_PROFILES.midfielder;
+  
+  const availableStats = stats.filter(s => s.available);
+  
+  // Filter stats by category
+  const primaryStats = availableStats.filter(s => profile.primaryMetrics.includes(s.stat));
+  const secondaryStats = availableStats.filter(s => profile.secondaryMetrics.includes(s.stat));
+  const ignoredSet = new Set(profile.ignoredMetrics);
+  
+  // Pontos Fortes: Primary >= 70, fallback to Secondary >= 85
+  let positiveStats = primaryStats
+    .filter(s => s.score >= 70)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3);
+  
+  // Fill remaining slots with secondary metrics >= 85
+  if (positiveStats.length < 3) {
+    const remaining = 3 - positiveStats.length;
+    const secondaryPositive = secondaryStats
+      .filter(s => s.score >= 85 && !positiveStats.some(p => p.stat === s.stat))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, remaining);
+    positiveStats = [...positiveStats, ...secondaryPositive];
+  }
+  
+  // Atenção: Primary <= 30 (excluding ignored), fallback to Secondary <= 15
+  let negativeStats = primaryStats
+    .filter(s => s.score <= 30 && !ignoredSet.has(s.stat))
+    .sort((a, b) => a.score - b.score)
+    .slice(0, 3);
+  
+  // Fill remaining slots with secondary metrics <= 15 (also excluding ignored)
+  if (negativeStats.length < 3) {
+    const remaining = 3 - negativeStats.length;
+    const secondaryNegative = secondaryStats
+      .filter(s => s.score <= 15 && !ignoredSet.has(s.stat) && !negativeStats.some(n => n.stat === s.stat))
+      .sort((a, b) => a.score - b.score)
+      .slice(0, remaining);
+    negativeStats = [...negativeStats, ...secondaryNegative];
+  }
+  
+  return { positiveStats, negativeStats };
+}
+
 function getStatClassificationForPosition(
   statKey: string,
   positionGroup: string
@@ -938,9 +1071,8 @@ function StatBreakdownCard({
   const availableStats = allStats;
   const unavailableStats: BreakdownRow[] = []; // We no longer hide stats
 
-  // For position-based summary, get positive and negative contributors based on score
-  const positiveStats = allStats.filter((s) => s.score >= 60).sort((a, b) => b.score - a.score);
-  const negativeStats = allStats.filter((s) => s.score < 40).sort((a, b) => a.score - b.score);
+  // For position-based summary, get positive and negative contributors using position-aware profiles
+  const { positiveStats, negativeStats } = getPositionHighlights(allStats, positionGroup);
   
   // Calculate trends by comparing current vs previous season stats
   const statTrends = useMemo(() => {
