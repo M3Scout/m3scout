@@ -69,11 +69,11 @@ function getScoreColorPdf(score: number): string {
 
 function RatingStarsPdf({ rating }: { rating: number }) {
   return (
-    <div style={{ display: "flex", gap: "4px", justifyContent: "center", alignItems: "center" }}>
+    <div style={{ display: "flex", gap: "4px", justifyContent: "flex-start", alignItems: "center" }}>
       {[1, 2, 3, 4, 5].map((star) => (
         <Star
           key={star}
-          size={18}
+          size={16}
           fill={star <= rating ? "#D97706" : "transparent"}
           color={star <= rating ? "#D97706" : "#9CA3AF"}
           strokeWidth={2}
@@ -237,13 +237,13 @@ export const ScoutingReportPdfTemplate = forwardRef<HTMLDivElement, ScoutingRepo
           }}
         >
           {/* Left: Logo + Title */}
-          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             <img 
               src={logoM3Symbol} 
               alt="M3" 
               style={{ 
-                width: "48px", 
-                height: "48px", 
+                width: "64px", 
+                height: "64px", 
                 objectFit: "contain",
                 flexShrink: 0,
               }} 
@@ -251,7 +251,7 @@ export const ScoutingReportPdfTemplate = forwardRef<HTMLDivElement, ScoutingRepo
             <div>
               <h1 
                 style={{ 
-                  fontSize: "20pt", 
+                  fontSize: "22pt", 
                   fontWeight: 800, 
                   margin: 0, 
                   color: PDF_TOKENS.colorPrimary,
@@ -264,7 +264,7 @@ export const ScoutingReportPdfTemplate = forwardRef<HTMLDivElement, ScoutingRepo
               <p style={{ 
                 fontSize: "9pt", 
                 color: PDF_TOKENS.colorSecondary, 
-                margin: "3px 0 0 0",
+                margin: "4px 0 0 0",
                 fontWeight: 500,
               }}>
                 Análise de Desempenho Profissional
@@ -272,30 +272,35 @@ export const ScoutingReportPdfTemplate = forwardRef<HTMLDivElement, ScoutingRepo
             </div>
           </div>
           
-          {/* Right: Meta info */}
+          {/* Right: Meta info - LEFT ALIGNED content, VERTICALLY CENTERED */}
           <div 
             style={{ 
-              textAlign: "right", 
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-start",
               fontSize: "9pt", 
               color: PDF_TOKENS.colorSecondary,
               backgroundColor: PDF_TOKENS.cardBackgroundAlt,
-              padding: "10px 14px",
+              padding: "12px 16px",
               borderRadius: "10px",
               border: PDF_TOKENS.cardBorder,
+              minHeight: "70px",
             }}
           >
-            <p style={{ margin: "3px 0", display: "flex", justifyContent: "flex-end", gap: "6px" }}>
-              <strong style={{ color: PDF_TOKENS.colorPrimary }}>Data:</strong>
-              <span>{format(new Date(report.match_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</span>
-            </p>
-            <p style={{ margin: "3px 0", display: "flex", justifyContent: "flex-end", gap: "6px" }}>
-              <strong style={{ color: PDF_TOKENS.colorPrimary }}>Competição:</strong>
-              <span>{competitionLabel}</span>
-            </p>
-            <p style={{ margin: "3px 0", display: "flex", justifyContent: "flex-end", gap: "6px" }}>
-              <strong style={{ color: PDF_TOKENS.colorPrimary }}>Scout:</strong>
-              <span>{report.profiles?.full_name || "Scout"}</span>
-            </p>
+            <div style={{ textAlign: "left" }}>
+              <p style={{ margin: "2px 0", display: "flex", alignItems: "center", gap: "6px", lineHeight: 1.4 }}>
+                <strong style={{ color: PDF_TOKENS.colorPrimary }}>Data:</strong>
+                <span>{format(new Date(report.match_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</span>
+              </p>
+              <p style={{ margin: "2px 0", display: "flex", alignItems: "center", gap: "6px", lineHeight: 1.4 }}>
+                <strong style={{ color: PDF_TOKENS.colorPrimary }}>Competição:</strong>
+                <span>{competitionLabel}</span>
+              </p>
+              <p style={{ margin: "2px 0", display: "flex", alignItems: "center", gap: "6px", lineHeight: 1.4 }}>
+                <strong style={{ color: PDF_TOKENS.colorPrimary }}>Scout:</strong>
+                <span>{report.profiles?.full_name || "Scout"}</span>
+              </p>
+            </div>
           </div>
         </div>
 
@@ -351,18 +356,19 @@ export const ScoutingReportPdfTemplate = forwardRef<HTMLDivElement, ScoutingRepo
               }}>
                 <span
                   style={{
-                    display: "inline-flex",
+                    display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    height: "28px",
-                    padding: "0 14px",
+                    height: "32px",
+                    padding: "0 16px",
                     backgroundColor: PDF_TOKENS.accentBlue,
                     color: "#FFFFFF",
-                    borderRadius: "14px",
-                    fontSize: "9pt",
+                    borderRadius: "16px",
+                    fontSize: "10pt",
                     fontWeight: 700,
                     letterSpacing: "0.3px",
-                    lineHeight: "28px",
+                    lineHeight: 1,
+                    boxSizing: "border-box",
                   }}
                 >
                   {report.players?.position}
@@ -371,7 +377,9 @@ export const ScoutingReportPdfTemplate = forwardRef<HTMLDivElement, ScoutingRepo
                   fontSize: "10pt", 
                   color: PDF_TOKENS.colorSecondary, 
                   fontWeight: 600,
-                  lineHeight: "28px",
+                  lineHeight: "32px",
+                  display: "flex",
+                  alignItems: "center",
                 }}>
                   {report.players?.current_club} • {report.players?.nationality}
                 </span>
@@ -389,43 +397,42 @@ export const ScoutingReportPdfTemplate = forwardRef<HTMLDivElement, ScoutingRepo
             style={{ 
               display: "flex",
               flexDirection: "column",
-              alignItems: "center",
+              alignItems: "flex-start",
               justifyContent: "center",
-              minWidth: "140px",
-              padding: "20px 24px",
+              minWidth: "130px",
+              padding: "16px 20px",
               backgroundColor: PDF_TOKENS.cardBackground,
               borderLeft: "1.5px solid #D1D5DB",
               flexShrink: 0,
             }}
           >
-            {/* Score number */}
+            {/* Score number + /100 on same line */}
             <div style={{ 
               display: "flex", 
-              flexDirection: "column",
-              alignItems: "center", 
-              justifyContent: "center", 
+              alignItems: "baseline", 
+              justifyContent: "flex-start",
+              gap: "4px",
               marginBottom: "8px",
             }}>
               <span
                 style={{
-                  fontSize: "36pt",
+                  fontSize: "32pt",
                   fontWeight: 900,
                   color: getScoreColorPdf(breakdown.finalScore),
                   lineHeight: 1,
-                  letterSpacing: "-2px",
+                  letterSpacing: "-1.5px",
                 }}
               >
                 {breakdown.finalScore.toFixed(1)}
               </span>
               <span style={{ 
-                fontSize: "12pt", 
+                fontSize: "14pt", 
                 color: PDF_TOKENS.colorMuted, 
                 fontWeight: 600,
-                marginTop: "2px",
               }}>/100</span>
             </div>
             
-            {/* Stars - BELOW score, no overlap */}
+            {/* Stars - BELOW score, aligned to left (same start as 66.1) */}
             <div style={{ marginBottom: "6px" }}>
               <RatingStarsPdf rating={breakdown.rating} />
             </div>
@@ -433,7 +440,7 @@ export const ScoutingReportPdfTemplate = forwardRef<HTMLDivElement, ScoutingRepo
             {/* Rating label */}
             <div
               style={{
-                fontSize: "11pt",
+                fontSize: "10pt",
                 fontWeight: 800,
                 color: getScoreColorPdf(breakdown.finalScore),
                 textTransform: "uppercase",
@@ -548,24 +555,26 @@ export const ScoutingReportPdfTemplate = forwardRef<HTMLDivElement, ScoutingRepo
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  padding: "10px 12px",
+                  padding: "12px 14px",
                   backgroundColor: PDF_TOKENS.cardBackgroundAlt,
                   borderRadius: "8px",
                   border: "1px solid #E5E7EB",
+                  minHeight: "48px",
+                  boxSizing: "border-box",
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <Scale size={16} color={PDF_TOKENS.colorSecondary} />
-                  <div>
-                    <div style={{ fontSize: "9pt", fontWeight: 700, color: PDF_TOKENS.colorPrimary }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <Scale size={16} color={PDF_TOKENS.colorSecondary} style={{ flexShrink: 0 }} />
+                  <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                    <div style={{ fontSize: "9pt", fontWeight: 700, color: PDF_TOKENS.colorPrimary, lineHeight: 1.2 }}>
                       Score Base
                     </div>
-                    <div style={{ fontSize: "8pt", color: PDF_TOKENS.colorMuted }}>
+                    <div style={{ fontSize: "8pt", color: PDF_TOKENS.colorMuted, lineHeight: 1.2 }}>
                       Média ponderada
                     </div>
                   </div>
                 </div>
-                <span style={{ fontSize: "14pt", fontWeight: 800, color: PDF_TOKENS.colorPrimary }}>
+                <span style={{ fontSize: "14pt", fontWeight: 800, color: PDF_TOKENS.colorPrimary, alignSelf: "center" }}>
                   {breakdown.baseScore.toFixed(1)}
                 </span>
               </div>
@@ -576,24 +585,26 @@ export const ScoutingReportPdfTemplate = forwardRef<HTMLDivElement, ScoutingRepo
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  padding: "10px 12px",
+                  padding: "12px 14px",
                   backgroundColor: PDF_TOKENS.cardBackgroundAlt,
                   borderRadius: "8px",
                   border: "1px solid #E5E7EB",
+                  minHeight: "48px",
+                  boxSizing: "border-box",
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <Trophy size={16} color={PDF_TOKENS.accentAmber} />
-                  <div>
-                    <div style={{ fontSize: "9pt", fontWeight: 700, color: PDF_TOKENS.colorPrimary }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <Trophy size={16} color={PDF_TOKENS.accentAmber} style={{ flexShrink: 0 }} />
+                  <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                    <div style={{ fontSize: "9pt", fontWeight: 700, color: PDF_TOKENS.colorPrimary, lineHeight: 1.2 }}>
                       Coeficiente
                     </div>
-                    <div style={{ fontSize: "8pt", color: PDF_TOKENS.colorMuted }}>
+                    <div style={{ fontSize: "8pt", color: PDF_TOKENS.colorMuted, lineHeight: 1.2 }}>
                       Nível da competição
                     </div>
                   </div>
                 </div>
-                <span style={{ fontSize: "14pt", fontWeight: 800, color: PDF_TOKENS.accentAmber }}>
+                <span style={{ fontSize: "14pt", fontWeight: 800, color: PDF_TOKENS.accentAmber, alignSelf: "center" }}>
                   ×{breakdown.competitionCoefficient.toFixed(2)}
                 </span>
               </div>
@@ -604,24 +615,26 @@ export const ScoutingReportPdfTemplate = forwardRef<HTMLDivElement, ScoutingRepo
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  padding: "10px 12px",
+                  padding: "12px 14px",
                   backgroundColor: "#EFF6FF",
                   borderRadius: "8px",
                   borderLeft: `4px solid ${PDF_TOKENS.accentBlue}`,
+                  minHeight: "48px",
+                  boxSizing: "border-box",
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <TrendingUp size={16} color={PDF_TOKENS.accentBlue} />
-                  <div>
-                    <div style={{ fontSize: "9pt", fontWeight: 700, color: PDF_TOKENS.colorPrimary }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <TrendingUp size={16} color={PDF_TOKENS.accentBlue} style={{ flexShrink: 0 }} />
+                  <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                    <div style={{ fontSize: "9pt", fontWeight: 700, color: PDF_TOKENS.colorPrimary, lineHeight: 1.2 }}>
                       Score Ajustado
                     </div>
-                    <div style={{ fontSize: "8pt", color: PDF_TOKENS.colorMuted }}>
+                    <div style={{ fontSize: "8pt", color: PDF_TOKENS.colorMuted, lineHeight: 1.2 }}>
                       Base × Coef.
                     </div>
                   </div>
                 </div>
-                <span style={{ fontSize: "14pt", fontWeight: 800, color: PDF_TOKENS.accentBlue }}>
+                <span style={{ fontSize: "14pt", fontWeight: 800, color: PDF_TOKENS.accentBlue, alignSelf: "center" }}>
                   {breakdown.adjustedScore.toFixed(1)}
                 </span>
               </div>
@@ -633,26 +646,28 @@ export const ScoutingReportPdfTemplate = forwardRef<HTMLDivElement, ScoutingRepo
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    padding: "10px 12px",
+                    padding: "12px 14px",
                     backgroundColor: "#FFFBEB",
                     borderRadius: "8px",
                     border: "1px solid #FDE68A",
+                    minHeight: "48px",
+                    boxSizing: "border-box",
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <Sparkles size={16} color={PDF_TOKENS.accentAmber} />
-                    <div>
-                      <div style={{ fontSize: "9pt", fontWeight: 700, color: PDF_TOKENS.colorPrimary }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <Sparkles size={16} color={PDF_TOKENS.accentAmber} style={{ flexShrink: 0 }} />
+                    <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                      <div style={{ fontSize: "9pt", fontWeight: 700, color: PDF_TOKENS.colorPrimary, lineHeight: 1.2 }}>
                         Modificadores
                       </div>
-                      <div style={{ fontSize: "8pt", color: PDF_TOKENS.colorMuted }}>
+                      <div style={{ fontSize: "8pt", color: PDF_TOKENS.colorMuted, lineHeight: 1.2 }}>
                         Pot. +{breakdown.potentialBonus} | Cons.{" "}
                         {breakdown.consistencyModifier >= 0 ? "+" : ""}
                         {breakdown.consistencyModifier}
                       </div>
                     </div>
                   </div>
-                  <span style={{ fontSize: "14pt", fontWeight: 800, color: PDF_TOKENS.accentAmber }}>
+                  <span style={{ fontSize: "14pt", fontWeight: 800, color: PDF_TOKENS.accentAmber, alignSelf: "center" }}>
                     {breakdown.potentialBonus + breakdown.consistencyModifier >= 0 ? "+" : ""}
                     {breakdown.potentialBonus + breakdown.consistencyModifier}
                   </span>
@@ -714,7 +729,7 @@ export const ScoutingReportPdfTemplate = forwardRef<HTMLDivElement, ScoutingRepo
           </div>
         </div>
 
-        {/* ============ CATEGORY DETAILS ============ */}
+        {/* ============ CATEGORY DETAILS - FORCE PAGE 2 ============ */}
         <div
           style={{
             backgroundColor: PDF_TOKENS.cardBackground,
@@ -722,6 +737,8 @@ export const ScoutingReportPdfTemplate = forwardRef<HTMLDivElement, ScoutingRepo
             borderRadius: PDF_TOKENS.cardRadius,
             padding: PDF_TOKENS.cardPadding,
             marginBottom: PDF_TOKENS.sectionGap,
+            pageBreakBefore: "always",
+            breakBefore: "page",
           }}
         >
           <h3
