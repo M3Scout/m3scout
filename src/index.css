@@ -513,3 +513,77 @@
   .stagger-children > *:nth-child(5) { animation-delay: 200ms; }
   .stagger-children > *:nth-child(6) { animation-delay: 250ms; }
 }
+
+/* ============================================
+   PDF EXPORT STYLES
+   Applied during PDF export to ensure consistency
+   ============================================ */
+
+/* When body has exporting-pdf class, normalize rendering */
+body.exporting-pdf {
+  /* Disable smooth scrolling and animations during export */
+  scroll-behavior: auto !important;
+}
+
+body.exporting-pdf * {
+  /* Disable all transitions and animations during export */
+  transition: none !important;
+  animation: none !important;
+  /* Avoid fractional pixels */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* PDF template specific styles */
+.pdf-export {
+  /* Use fixed dimensions for A4 */
+  width: 210mm !important;
+  min-height: 297mm !important;
+  background-color: #FFFFFF !important;
+  color: #111827 !important;
+  
+  /* Reset any inherited transforms */
+  transform: none !important;
+  
+  /* Ensure consistent font rendering */
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+  
+  /* Box model */
+  box-sizing: border-box !important;
+  overflow: visible !important;
+}
+
+/* Ensure flex containers align properly in PDF */
+.pdf-export [style*="display: flex"],
+.pdf-export [style*="display:flex"] {
+  /* Force proper alignment calculation */
+  min-height: 0;
+}
+
+/* Page break control for PDF */
+.pdf-export .pdf-page-break-before {
+  page-break-before: always !important;
+  break-before: page !important;
+}
+
+.pdf-export .pdf-avoid-break {
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}
+
+/* Print styles */
+@media print {
+  body {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  .pdf-export {
+    width: 210mm !important;
+    margin: 0 !important;
+    padding: 16mm !important;
+    box-shadow: none !important;
+  }
+}

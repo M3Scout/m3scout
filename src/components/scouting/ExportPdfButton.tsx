@@ -107,8 +107,13 @@ export function ExportPdfButton({ report, variant = "outline", size = "sm" }: Ex
     setProgress(0);
     setShowTemplate(true);
 
-    // Wait longer for template to render and images to preload
-    await new Promise((resolve) => setTimeout(resolve, 1200));
+    // Wait for template to render, fonts and images to fully load
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+
+    // Also wait for document fonts
+    if (document.fonts && document.fonts.ready) {
+      await document.fonts.ready;
+    }
 
     try {
       const templateElement = templateRef.current;
@@ -244,7 +249,7 @@ export function ExportPdfButton({ report, variant = "outline", size = "sm" }: Ex
         qualityLabel={QUALITY_OPTIONS[previewQuality].label}
       />
 
-      {/* Hidden template for direct PDF generation */}
+      {/* Hidden template for direct PDF generation - uses same fixed styling */}
       {showTemplate &&
         createPortal(
           <div
@@ -254,9 +259,16 @@ export function ExportPdfButton({ report, variant = "outline", size = "sm" }: Ex
               top: 0,
               zIndex: -1,
               overflow: "visible",
+              backgroundColor: "#FFFFFF",
             }}
           >
-            <ScoutingReportPdfTemplate ref={templateRef} report={report} />
+            <div
+              style={{
+                backgroundColor: "#FFFFFF",
+              }}
+            >
+              <ScoutingReportPdfTemplate ref={templateRef} report={report} />
+            </div>
           </div>,
           document.body
         )}
