@@ -1,6 +1,7 @@
 import { useAuth } from "@/hooks/useAuth";
-import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import { Radio } from "lucide-react";
+import LiveMatchHistory from "./LiveMatchHistory";
 
 export default function LiveMatch() {
   const { isAdmin, isScout, loading } = useAuth();
@@ -26,9 +27,9 @@ export default function LiveMatch() {
     );
   }
 
-  // If at /app/live-match exactly, redirect to /app/live-match/new
+  // If at /app/live-match exactly, show history instead of redirecting
   if (location.pathname === "/app/live-match") {
-    return <Navigate to="/app/live-match/new" replace />;
+    return <LiveMatchHistory />;
   }
 
   return <Outlet />;
