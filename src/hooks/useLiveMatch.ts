@@ -61,6 +61,7 @@ export interface MatchPlayer {
   exited_minute: number | null;
   minutes_played: number | null;
   is_on_field: boolean;
+  notes: string | null;
   created_at: string;
   updated_at: string;
   player?: {
