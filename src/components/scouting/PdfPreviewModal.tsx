@@ -9,11 +9,24 @@ import {
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
-import { FileDown, Loader2, X, ZoomIn, ZoomOut, Eye, Image, Bug } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { FileDown, Loader2, X, ZoomIn, ZoomOut, Eye, Image, Bug, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { ScoutingReportPdfTemplate } from "./pdf/ScoutingReportPdfTemplate";
 import { exportToPdf, exportToPng, generateReportFilename, generateReportPngFilename } from "@/lib/pdfExport";
 import type { ScoutingReportData } from "@/types/scouting";
+
+const RESOLUTION_OPTIONS = [
+  { value: "1", label: "1x (794px)", description: "Rápido, menor tamanho" },
+  { value: "2", label: "2x (1588px)", description: "Recomendado" },
+  { value: "3", label: "3x (2382px)", description: "Alta qualidade" },
+] as const;
 
 interface PdfPreviewModalProps {
   report: ScoutingReportData;
@@ -37,6 +50,7 @@ export function PdfPreviewModal({
   const [zoom, setZoom] = useState(0.5);
   const [firstPageOnly, setFirstPageOnly] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
+  const [outputResolution, setOutputResolution] = useState<string>("2");
   const templateRef = useRef<HTMLDivElement>(null);
 
   const handleExport = useCallback(async () => {
@@ -64,13 +78,13 @@ export function PdfPreviewModal({
         // CRITICAL: Always use scale=1 for pixel-identical export.
         // Quality comes from outputResolution (upscaling), not html2canvas scale.
         scale: 1,
-        outputResolution: 2, // 2x for crisp output
+        outputResolution: parseInt(outputResolution, 10),
         onProgress: setProgress,
         firstPageOnly,
       });
 
       toast.success("PDF exportado com sucesso!", {
-        description: `${filename} (${qualityLabel})${firstPageOnly ? " - Página 1" : ""}`,
+        description: `${filename} (${outputResolution}x)${firstPageOnly ? " - Página 1" : ""}`,
       });
 
       onOpenChange(false);
@@ -83,7 +97,7 @@ export function PdfPreviewModal({
       setIsExporting(false);
       setProgress(0);
     }
-  }, [report, qualityScale, qualityLabel, onOpenChange, firstPageOnly]);
+  }, [report, qualityScale, qualityLabel, onOpenChange, firstPageOnly, outputResolution]);
 
   const handleExportPng = useCallback(async () => {
     if (!report.players) {
@@ -109,13 +123,13 @@ export function PdfPreviewModal({
         filename,
         // CRITICAL: Always use scale=1 for pixel-identical export.
         scale: 1,
-        outputResolution: 2, // 2x for crisp output
+        outputResolution: parseInt(outputResolution, 10),
         onProgress: setProgress,
         firstPageOnly,
       });
 
       toast.success("PNG exportado com sucesso!", {
-        description: `${filename}${firstPageOnly ? " - Página 1" : ""}`,
+        description: `${filename} (${outputResolution}x)${firstPageOnly ? " - Página 1" : ""}`,
       });
     } catch (error) {
       console.error("Erro ao exportar PNG:", error);
@@ -126,7 +140,7 @@ export function PdfPreviewModal({
       setIsExportingPng(false);
       setProgress(0);
     }
-  }, [report, qualityScale, firstPageOnly]);
+  }, [report, qualityScale, firstPageOnly, outputResolution]);
 
   const handleDebugExport = useCallback(async () => {
     if (!report.players) {
@@ -243,11 +257,29 @@ export function PdfPreviewModal({
         </ScrollArea>
 
         <DialogFooter className="px-6 py-4 border-t flex-shrink-0">
-          <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-4">
-              <p className="text-sm text-muted-foreground">
-                Qualidade: <span className="font-medium">{qualityLabel}</span>
-              </p>
+          <div className="flex items-center justify-between w-full flex-wrap gap-3">
+            <div className="flex items-center gap-4 flex-wrap">
+              {/* Resolution selector */}
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Resolução:</span>
+                <Select value={outputResolution} onValueChange={setOutputResolution}>
+                  <SelectTrigger className="w-[140px] h-8 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    {RESOLUTION_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        <div className="flex flex-col">
+                          <span>{opt.label}</span>
+                          <span className="text-xs text-muted-foreground">{opt.description}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
               <label className="flex items-center gap-2 cursor-pointer">
                 <Checkbox
                   checked={firstPageOnly}
