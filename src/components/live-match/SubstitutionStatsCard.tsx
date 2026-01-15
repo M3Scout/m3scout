@@ -1,9 +1,11 @@
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowRightLeft, Clock, ArrowDown, ArrowUp, Timer } from "lucide-react";
+import { ArrowRightLeft, Clock, ArrowDown, ArrowUp, Timer, Download } from "lucide-react";
+import { useExportPng } from "@/hooks/useExportPng";
 
 interface MatchPlayer {
   id: string;
@@ -149,21 +151,38 @@ export function SubstitutionStatsCard({
     };
   }, [substitutions, matchPlayers, playerTimeStats]);
 
+  const cardRef = useRef<HTMLDivElement>(null);
+  const { exportToPng, isExporting } = useExportPng({ filename: "substituicoes" });
+
   if (matchPlayers.length === 0) {
     return null;
   }
 
   return (
-    <Card>
+    <Card ref={cardRef} data-export-target>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <ArrowRightLeft className="h-5 w-5" />
-          Substituições e Tempo em Campo
-        </CardTitle>
-        <CardDescription>
-          {summaryStats.totalSubs} substituição{summaryStats.totalSubs !== 1 ? "ões" : ""} • 
-          {summaryStats.playersUsedCount} jogadores utilizados
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <ArrowRightLeft className="h-5 w-5" />
+              Substituições e Tempo em Campo
+            </CardTitle>
+            <CardDescription>
+              {summaryStats.totalSubs} substituição{summaryStats.totalSubs !== 1 ? "ões" : ""} • 
+              {summaryStats.playersUsedCount} jogadores utilizados
+            </CardDescription>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => exportToPng(cardRef.current)}
+            disabled={isExporting}
+            className="shrink-0"
+          >
+            <Download className="h-4 w-4 mr-1" />
+            {isExporting ? "..." : "PNG"}
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Summary Grid */}

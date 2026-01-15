@@ -1,7 +1,8 @@
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
@@ -9,7 +10,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Flame } from "lucide-react";
+import { Flame, Download } from "lucide-react";
+import { useExportPng } from "@/hooks/useExportPng";
 
 interface MatchPlayer {
   id: string;
@@ -152,6 +154,9 @@ export function PlayerActivityHeatmap({
     return "bg-green-500/50";
   };
 
+  const heatmapRef = useRef<HTMLDivElement>(null);
+  const { exportToPng, isExporting } = useExportPng({ filename: "mapa-atividade" });
+
   if (matchEvents.length === 0 || playerHeatmapData.length === 0) {
     return null;
   }
@@ -159,15 +164,29 @@ export function PlayerActivityHeatmap({
   const halfTimeInterval = Math.floor((matchDuration / 2) / INTERVAL_SIZE);
 
   return (
-    <Card>
+    <Card ref={heatmapRef} data-export-target>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Flame className="h-5 w-5" />
-          Mapa de Atividade
-        </CardTitle>
-        <CardDescription>
-          Intensidade de eventos por jogador a cada {INTERVAL_SIZE} minutos
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Flame className="h-5 w-5" />
+              Mapa de Atividade
+            </CardTitle>
+            <CardDescription>
+              Intensidade de eventos por jogador a cada {INTERVAL_SIZE} minutos
+            </CardDescription>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => exportToPng(heatmapRef.current)}
+            disabled={isExporting}
+            className="shrink-0"
+          >
+            <Download className="h-4 w-4 mr-1" />
+            {isExporting ? "..." : "PNG"}
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Legend */}
