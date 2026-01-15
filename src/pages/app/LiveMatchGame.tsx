@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useParams, Navigate, Link } from "react-router-dom";
 import { useLiveMatch, MatchEventType } from "@/hooks/useLiveMatch";
 import { MatchHeader } from "@/components/live-match/MatchHeader";
@@ -32,6 +32,9 @@ export default function LiveMatchGame() {
     deleteEvent,
     undoLastEvent,
     updateMatchStatus,
+    startGame,
+    playerEnterField,
+    playerExitField,
     substitutePlayer,
   } = useLiveMatch(matchId || "");
 
@@ -39,6 +42,11 @@ export default function LiveMatchGame() {
   const handleMinuteChange = useCallback((minute: number) => {
     setCurrentMinute(minute);
   }, []);
+
+  // Count starters for header display
+  const startersCount = useMemo(() => {
+    return matchPlayers.filter((mp) => mp.started).length;
+  }, [matchPlayers]);
 
   if (!matchId) {
     return <Navigate to="/app/live-match/new" replace />;
@@ -67,17 +75,30 @@ export default function LiveMatchGame() {
     addEvent.mutate({ playerId, eventType, minute: currentMinute || undefined });
   };
 
+  const handlePlayerEnter = (matchPlayerId: string, minute: number) => {
+    playerEnterField.mutate({ matchPlayerId, minute });
+  };
+
+  const handlePlayerExit = (matchPlayerId: string, minute: number) => {
+    playerExitField.mutate({ matchPlayerId, minute });
+  };
+
   const existingPlayerIds = matchPlayers.map((mp) => mp.player_id);
   const playersOnField = matchPlayers.filter((mp) => mp.is_on_field);
   const playersOffField = matchPlayers.filter((mp) => !mp.is_on_field);
+
+  const isDraft = match.status === "draft";
+  const isLive = match.status === "live";
 
   return (
     <div className="min-h-screen pb-20">
       <MatchHeader
         match={match}
         onStatusChange={(status) => updateMatchStatus.mutate(status)}
+        onStartGame={() => startGame.mutate()}
         onMinuteChange={handleMinuteChange}
-        isPending={updateMatchStatus.isPending}
+        isPending={updateMatchStatus.isPending || startGame.isPending}
+        startersCount={startersCount}
       />
 
       <div className="container py-4 space-y-4">
@@ -86,49 +107,76 @@ export default function LiveMatchGame() {
           <div className="flex items-center gap-2 flex-wrap">
             <Button onClick={() => setAddPlayerOpen(true)} size="sm">
               <UserPlus className="h-4 w-4 mr-1" />
-              Jogador
+              {isDraft ? "Escalação" : "Jogador"}
             </Button>
-            <Button 
-              onClick={() => setSubstitutionOpen(true)} 
-              variant="outline"
-              size="sm"
-              disabled={playersOnField.length === 0 || playersOffField.length === 0}
-            >
-              <ArrowRightLeft className="h-4 w-4 mr-1" />
-              Substituir
-            </Button>
-            <EventLogDrawer
-              events={matchEvents}
-              players={matchPlayers}
-              onDeleteEvent={(id) => deleteEvent.mutate(id)}
-            />
+            {/* Only show substitution button during live game */}
+            {isLive && (
+              <Button 
+                onClick={() => setSubstitutionOpen(true)} 
+                variant="outline"
+                size="sm"
+                disabled={playersOnField.length === 0 || playersOffField.length === 0}
+              >
+                <ArrowRightLeft className="h-4 w-4 mr-1" />
+                Substituir
+              </Button>
+            )}
+            {/* Only show event log after game starts */}
+            {!isDraft && (
+              <EventLogDrawer
+                events={matchEvents}
+                players={matchPlayers}
+                onDeleteEvent={(id) => deleteEvent.mutate(id)}
+              />
+            )}
           </div>
 
-          <div className="flex items-center gap-2">
-            <Switch
-              id="only-on-field"
-              checked={onlyOnField}
-              onCheckedChange={setOnlyOnField}
-            />
-            <Label htmlFor="only-on-field" className="text-sm">
-              Só em campo
-            </Label>
-          </div>
+          {/* Only show on-field filter after game starts */}
+          {!isDraft && (
+            <div className="flex items-center gap-2">
+              <Switch
+                id="only-on-field"
+                checked={onlyOnField}
+                onCheckedChange={setOnlyOnField}
+              />
+              <Label htmlFor="only-on-field" className="text-sm">
+                Só em campo
+              </Label>
+            </div>
+          )}
         </div>
 
         {/* Players count */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Users className="h-4 w-4" />
-          <span>
-            {filteredPlayers.length} jogador{filteredPlayers.length !== 1 ? "es" : ""}{" "}
-            {onlyOnField ? "em campo" : "no jogo"}
-          </span>
-          {playersOnField.length > 0 && (
-            <span className="text-xs">
-              ({playersOnField.length} em campo, {playersOffField.length} no banco)
+          {isDraft ? (
+            <span>
+              {matchPlayers.length} jogador{matchPlayers.length !== 1 ? "es" : ""} na escalação
+              {startersCount > 0 && (
+                <span className="ml-1">
+                  ({startersCount} titular{startersCount !== 1 ? "es" : ""})
+                </span>
+              )}
+            </span>
+          ) : (
+            <span>
+              {filteredPlayers.length} jogador{filteredPlayers.length !== 1 ? "es" : ""}{" "}
+              {onlyOnField ? "em campo" : "no jogo"}
+              {playersOnField.length > 0 && (
+                <span className="ml-1 text-xs">
+                  ({playersOnField.length} em campo, {playersOffField.length} no banco)
+                </span>
+              )}
             </span>
           )}
         </div>
+
+        {/* Pre-game info */}
+        {isDraft && matchPlayers.length > 0 && (
+          <div className="bg-muted/50 rounded-lg p-3 text-sm text-center">
+            <p>📋 <strong>Pré-jogo:</strong> Monte a escalação e clique em "Iniciar Jogo" quando estiver pronto</p>
+          </div>
+        )}
 
         {/* Player cards */}
         {filteredPlayers.length === 0 ? (
@@ -136,7 +184,7 @@ export default function LiveMatchGame() {
             <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p>Nenhum jogador adicionado</p>
             <p className="text-sm">
-              Clique em "Jogador" para começar
+              Clique em "{isDraft ? "Escalação" : "Jogador"}" para começar
             </p>
           </div>
         ) : (
@@ -145,9 +193,13 @@ export default function LiveMatchGame() {
               <PlayerStatCard
                 key={mp.id}
                 matchPlayer={mp}
+                matchStatus={match.status}
+                currentMinute={currentMinute}
                 eventCounts={playerEventCounts[mp.player_id] || ({} as Record<MatchEventType, number>)}
                 onAddEvent={(type) => handleAddEvent(mp.player_id, type)}
                 onUndo={() => undoLastEvent(mp.player_id)}
+                onPlayerEnter={(minute) => handlePlayerEnter(mp.id, minute)}
+                onPlayerExit={(minute) => handlePlayerExit(mp.id, minute)}
                 disabled={match.status === "applied"}
               />
             ))}
@@ -160,6 +212,7 @@ export default function LiveMatchGame() {
         open={addPlayerOpen}
         onOpenChange={setAddPlayerOpen}
         existingPlayerIds={existingPlayerIds}
+        matchStatus={match.status}
         onAddPlayer={(params) => addPlayer.mutate(params)}
         isPending={addPlayer.isPending}
       />

@@ -3,8 +3,8 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MatchPlayer, MatchEventType } from "@/hooks/useLiveMatch";
-import { Plus, Undo2, ChevronDown, ChevronUp } from "lucide-react";
+import { MatchPlayer, MatchEventType, MatchStatus } from "@/hooks/useLiveMatch";
+import { Plus, Undo2, ChevronDown, ChevronUp, LogIn, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Stat categories configuration with colors
@@ -90,16 +90,24 @@ const GOALKEEPER_STATS: { category: string; color: string; bgColor: string; stat
 interface PlayerStatCardProps {
   matchPlayer: MatchPlayer;
   eventCounts: Record<MatchEventType, number>;
+  matchStatus: MatchStatus;
+  currentMinute?: number;
   onAddEvent: (eventType: MatchEventType) => void;
   onUndo: () => void;
+  onPlayerEnter?: (minute: number) => void;
+  onPlayerExit?: (minute: number) => void;
   disabled?: boolean;
 }
 
 export function PlayerStatCard({
   matchPlayer,
   eventCounts,
+  matchStatus,
+  currentMinute = 0,
   onAddEvent,
   onUndo,
+  onPlayerEnter,
+  onPlayerExit,
   disabled,
 }: PlayerStatCardProps) {
   const [expanded, setExpanded] = useState(true);
@@ -108,16 +116,19 @@ export function PlayerStatCard({
   const isGK = matchPlayer.position_template === "goalkeeper";
   const stats = isGK ? GOALKEEPER_STATS : OUTFIELD_STATS;
   const player = matchPlayer.player;
+  const isLive = matchStatus === "live";
+  const isDraft = matchStatus === "draft";
 
   if (!player) return null;
 
-  // Swipe handling
+  // Swipe handling - only works during live game
   const handleTouchStart = (e: React.TouchEvent) => {
+    if (!isLive) return;
     touchStartX.current = e.touches[0].clientX;
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX.current === null) return;
+    if (!isLive || touchStartX.current === null) return;
     
     const deltaX = e.changedTouches[0].clientX - touchStartX.current;
     const threshold = 80;
@@ -139,11 +150,20 @@ export function PlayerStatCard({
   const totalGoals = getCount("goal");
   const totalAssists = getCount("assist");
 
+  // Handle player entry/exit
+  const handleEnterField = () => {
+    onPlayerEnter?.(currentMinute);
+  };
+
+  const handleExitField = () => {
+    onPlayerExit?.(currentMinute);
+  };
+
   return (
     <Card
       className={cn(
         "transition-all overflow-hidden",
-        !matchPlayer.is_on_field && "opacity-60",
+        !matchPlayer.is_on_field && !isDraft && "opacity-60",
         disabled && "pointer-events-none"
       )}
       onTouchStart={handleTouchStart}
@@ -169,9 +189,22 @@ export function PlayerStatCard({
                     Titular
                   </Badge>
                 )}
-                {!matchPlayer.is_on_field && (
-                  <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
-                    Fora
+                {/* Show on-field status only during/after live */}
+                {!isDraft && (
+                  matchPlayer.is_on_field ? (
+                    <Badge variant="default" className="text-[10px] px-1.5 py-0 bg-green-600">
+                      Em Campo
+                    </Badge>
+                  ) : (
+                    <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
+                      {matchPlayer.exited_minute !== null ? `Saiu ${matchPlayer.exited_minute}'` : "Banco"}
+                    </Badge>
+                  )
+                )}
+                {/* Show entered minute if substitute entered */}
+                {!isDraft && !matchPlayer.started && matchPlayer.entered_minute !== null && (
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-green-500/50 text-green-500">
+                    Entrou {matchPlayer.entered_minute}'
                   </Badge>
                 )}
               </div>
@@ -193,12 +226,44 @@ export function PlayerStatCard({
                 )}
               </div>
             )}
+            
+            {/* Entry/Exit buttons - only during live game */}
+            {isLive && (
+              <>
+                {!matchPlayer.is_on_field && matchPlayer.exited_minute === null && (
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="h-7 px-2 bg-green-600 hover:bg-green-700"
+                    onClick={handleEnterField}
+                    title="Entrou em campo"
+                  >
+                    <LogIn className="h-3 w-3 mr-1" />
+                    Entrar
+                  </Button>
+                )}
+                {matchPlayer.is_on_field && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 px-2 border-amber-500/50 text-amber-500 hover:bg-amber-500/10"
+                    onClick={handleExitField}
+                    title="Saiu de campo"
+                  >
+                    <LogOut className="h-3 w-3 mr-1" />
+                    Sair
+                  </Button>
+                )}
+              </>
+            )}
+
             <Button
               variant="ghost"
               size="icon"
               className="h-8 w-8"
               onClick={onUndo}
               title="Desfazer último"
+              disabled={isDraft}
             >
               <Undo2 className="h-4 w-4" />
             </Button>
@@ -220,35 +285,45 @@ export function PlayerStatCard({
 
       {expanded && (
         <CardContent className="pt-3 space-y-3">
-          {stats.map((category) => (
-            <div 
-              key={category.category}
-              className={cn(
-                "rounded-lg border p-2",
-                category.bgColor
-              )}
-            >
-              <p className={cn(
-                "text-xs font-semibold mb-2 uppercase tracking-wide",
-                category.color
-              )}>
-                {category.category}
-              </p>
-              <div className="grid grid-cols-4 gap-1.5">
-                {category.stats.map((stat) => (
-                  <StatButton
-                    key={stat.type}
-                    label={stat.label}
-                    count={getCount(stat.type)}
-                    onClick={() => onAddEvent(stat.type)}
-                    disabled={disabled}
-                    highlight={stat.type === "goal" || stat.type === "assist" || stat.type === "save"}
-                    categoryColor={category.color}
-                  />
-                ))}
+          {/* Pre-game message */}
+          {isDraft && (
+            <p className="text-xs text-muted-foreground text-center bg-muted/50 rounded-lg p-2">
+              📋 Inicie o jogo para registrar estatísticas
+            </p>
+          )}
+
+          {/* Stats - disabled during draft */}
+          <div className={cn(isDraft && "opacity-50 pointer-events-none")}>
+            {stats.map((category) => (
+              <div 
+                key={category.category}
+                className={cn(
+                  "rounded-lg border p-2 mb-2",
+                  category.bgColor
+                )}
+              >
+                <p className={cn(
+                  "text-xs font-semibold mb-2 uppercase tracking-wide",
+                  category.color
+                )}>
+                  {category.category}
+                </p>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {category.stats.map((stat) => (
+                    <StatButton
+                      key={stat.type}
+                      label={stat.label}
+                      count={getCount(stat.type)}
+                      onClick={() => onAddEvent(stat.type)}
+                      disabled={disabled || isDraft || !matchPlayer.is_on_field}
+                      highlight={stat.type === "goal" || stat.type === "assist" || stat.type === "save"}
+                      categoryColor={category.color}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </CardContent>
       )}
     </Card>
