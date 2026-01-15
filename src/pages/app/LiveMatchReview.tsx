@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { HalfStatsComparison } from "@/components/live-match/HalfStatsComparison";
+import { SubstitutionStatsCard } from "@/components/live-match/SubstitutionStatsCard";
 import { MatchSummaryPdfButton } from "@/components/live-match/MatchSummaryPdf";
 import {
   CheckCircle2,
@@ -499,6 +500,13 @@ export default function LiveMatchReview() {
           <HalfStatsComparison events={matchEvents} matchPlayers={matchPlayers} />
         </CardContent>
       </Card>
+
+      {/* Substitution Stats */}
+      <SubstitutionStatsCard
+        matchPlayers={matchPlayers}
+        matchEvents={matchEvents}
+        matchDuration={match.duration_minutes}
+      />
 
       {/* Inconsistencies */}
       {inconsistencies.length > 0 && (
