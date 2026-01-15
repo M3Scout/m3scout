@@ -13,10 +13,10 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { MatchEvent, MatchPlayer, MatchEventType } from "@/hooks/useLiveMatch";
-import { List, Trash2, Edit2, X, Check } from "lucide-react";
+import { List, Trash2, Edit2, X, Check, ArrowRightLeft } from "lucide-react";
 
 // Event type labels
-const EVENT_LABELS: Record<MatchEventType, string> = {
+const EVENT_LABELS: Record<MatchEventType | "substitution", string> = {
   goal: "Gol",
   assist: "Assistência",
   shot: "Chute",
@@ -48,6 +48,7 @@ const EVENT_LABELS: Record<MatchEventType, string> = {
   punch: "Soco",
   high_claim: "Bola Alta",
   sweeper_action: "Saída Gol",
+  substitution: "Substituição",
 };
 
 interface EventLogDrawerProps {
@@ -115,27 +116,50 @@ export function EventLogDrawer({
     return "--'";
   };
 
-  const renderEventItem = (event: MatchEvent) => (
-    <div
-      key={event.id}
-      className="flex items-center gap-3 p-3 rounded-lg border bg-card"
-    >
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="text-xs font-mono">
-            {getDisplayMinute(event)}
-          </Badge>
-          <span className="font-medium text-sm truncate">
-            {EVENT_LABELS[event.event_type]}
-          </span>
+  const renderEventItem = (event: MatchEvent) => {
+    const isSubstitution = event.event_type === "substitution";
+    
+    return (
+      <div
+        key={event.id}
+        className="flex items-center gap-3 p-3 rounded-lg border bg-card"
+      >
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="text-xs font-mono">
+              {getDisplayMinute(event)}
+            </Badge>
+            {isSubstitution ? (
+              <span className="flex items-center gap-1 font-medium text-sm">
+                <ArrowRightLeft className="h-3.5 w-3.5 text-amber-500" />
+                Substituição
+              </span>
+            ) : (
+              <span className="font-medium text-sm truncate">
+                {EVENT_LABELS[event.event_type]}
+              </span>
+            )}
+          </div>
+          {isSubstitution ? (
+            <div className="text-xs mt-1 space-y-0.5">
+              <p className="text-red-400">
+                ⬇️ {getPlayerName(event.player_id)} <span className="text-muted-foreground">sai</span>
+              </p>
+              {event.player_in_id && (
+                <p className="text-green-400">
+                  ⬆️ {getPlayerName(event.player_in_id)} <span className="text-muted-foreground">entra</span>
+                </p>
+              )}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground truncate mt-1">
+              {getPlayerName(event.player_id)}
+            </p>
+          )}
+          <p className="text-[10px] text-muted-foreground">
+            {format(new Date(event.created_at), "HH:mm:ss", { locale: ptBR })}
+          </p>
         </div>
-        <p className="text-xs text-muted-foreground truncate mt-1">
-          {getPlayerName(event.player_id)}
-        </p>
-        <p className="text-[10px] text-muted-foreground">
-          {format(new Date(event.created_at), "HH:mm:ss", { locale: ptBR })}
-        </p>
-      </div>
 
       {editingId === event.id ? (
         <div className="flex items-center gap-1">
@@ -190,6 +214,7 @@ export function EventLogDrawer({
       )}
     </div>
   );
+  };
 
   return (
     <Sheet>

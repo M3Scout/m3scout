@@ -79,8 +79,9 @@ export interface MatchEvent {
   id: string;
   match_id: string;
   player_id: string;
+  player_in_id: string | null; // For substitution events
   minute: number | null;
-  event_type: MatchEventType;
+  event_type: MatchEventType | "substitution";
   value: number;
   created_at: string;
   half: number | null;
@@ -645,6 +646,8 @@ export function useLiveMatch(matchId: string) {
       playerOutId: string;
       playerInId: string;
       minute: number;
+      half?: number;
+      displayMinute?: string;
     }) => {
       const playerOut = matchPlayers.find((mp) => mp.player_id === params.playerOutId);
       const playerIn = matchPlayers.find((mp) => mp.player_id === params.playerInId);
@@ -674,9 +677,27 @@ export function useLiveMatch(matchId: string) {
         .eq("id", playerIn.id);
 
       if (inError) throw inError;
+
+      // Create substitution event in the log
+      // player_id = player going out, player_in_id = player coming in
+      const { error: eventError } = await supabase
+        .from("match_events")
+        .insert({
+          match_id: matchId,
+          player_id: params.playerOutId,
+          player_in_id: params.playerInId,
+          event_type: "substitution",
+          minute: params.minute,
+          half: params.half ?? (match?.half || 1),
+          display_minute: params.displayMinute ?? `${params.minute}'`,
+          value: 1,
+        });
+
+      if (eventError) throw eventError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["match-players", matchId] });
+      queryClient.invalidateQueries({ queryKey: ["match-events", matchId] });
       toast.success("Substituição realizada");
     },
     onError: (error) => {

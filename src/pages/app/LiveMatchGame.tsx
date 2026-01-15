@@ -339,6 +339,8 @@ export default function LiveMatchGame() {
         onSubstitute={(params) => substitutePlayer.mutate(params)}
         isPending={substitutePlayer.isPending}
         currentMinute={currentMinute}
+        currentHalf={currentTimerInfo?.half}
+        displayMinute={currentTimerInfo?.displayString}
       />
     </div>
   );
