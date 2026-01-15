@@ -1,3 +1,4 @@
+import { ReactNode, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -19,6 +20,8 @@ interface PlayerHistoryComparisonProps {
   playerId: string;
   playerName: string;
   currentMatchId?: string;
+  triggerClassName?: string;
+  triggerContent?: ReactNode;
 }
 
 interface MatchHistory {
@@ -54,7 +57,10 @@ export function PlayerHistoryComparison({
   playerId,
   playerName,
   currentMatchId,
+  triggerClassName,
+  triggerContent,
 }: PlayerHistoryComparisonProps) {
+  const [open, setOpen] = useState(false);
   // Fetch player's match history
   const { data: matchHistory, isLoading } = useQuery({
     queryKey: ["player-match-history", playerId],
@@ -182,12 +188,21 @@ export function PlayerHistoryComparison({
     return "stable";
   };
 
+  // Custom trigger for dropdown menu usage
+  const trigger = triggerClassName && triggerContent ? (
+    <div className={triggerClassName} onClick={() => setOpen(true)}>
+      {triggerContent}
+    </div>
+  ) : (
+    <Button variant="ghost" size="icon" className="h-8 w-8" title="Histórico">
+      <BarChart3 className="h-4 w-4" />
+    </Button>
+  );
+
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-8 w-8" title="Histórico">
-          <BarChart3 className="h-4 w-4" />
-        </Button>
+        {trigger}
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg max-h-[80vh]">
         <DialogHeader>

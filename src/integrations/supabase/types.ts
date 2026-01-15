@@ -284,11 +284,14 @@ export type Database = {
           exited_minute: number | null
           id: string
           is_on_field: boolean
+          is_removed: boolean | null
           match_id: string
           minutes_played: number | null
           notes: string | null
           player_id: string
           position_template: Database["public"]["Enums"]["position_template"]
+          removed_at: string | null
+          removed_by: string | null
           started: boolean
           updated_at: string
         }
@@ -298,11 +301,14 @@ export type Database = {
           exited_minute?: number | null
           id?: string
           is_on_field?: boolean
+          is_removed?: boolean | null
           match_id: string
           minutes_played?: number | null
           notes?: string | null
           player_id: string
           position_template?: Database["public"]["Enums"]["position_template"]
+          removed_at?: string | null
+          removed_by?: string | null
           started?: boolean
           updated_at?: string
         }
@@ -312,11 +318,14 @@ export type Database = {
           exited_minute?: number | null
           id?: string
           is_on_field?: boolean
+          is_removed?: boolean | null
           match_id?: string
           minutes_played?: number | null
           notes?: string | null
           player_id?: string
           position_template?: Database["public"]["Enums"]["position_template"]
+          removed_at?: string | null
+          removed_by?: string | null
           started?: boolean
           updated_at?: string
         }

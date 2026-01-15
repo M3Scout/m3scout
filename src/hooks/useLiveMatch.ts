@@ -62,6 +62,9 @@ export interface MatchPlayer {
   minutes_played: number | null;
   is_on_field: boolean;
   notes: string | null;
+  is_removed: boolean;
+  removed_at: string | null;
+  removed_by: string | null;
   created_at: string;
   updated_at: string;
   player?: {
@@ -150,10 +153,11 @@ export function useLiveMatch(matchId: string) {
     },
   });
 
-  // Filtered players (only on field if toggle active)
+  // Filtered players (exclude removed, optionally only on field)
   const filteredPlayers = useMemo(() => {
-    if (!onlyOnField) return matchPlayers;
-    return matchPlayers.filter((mp) => mp.is_on_field);
+    const activePlayers = matchPlayers.filter((mp) => !mp.is_removed);
+    if (!onlyOnField) return activePlayers;
+    return activePlayers.filter((mp) => mp.is_on_field);
   }, [matchPlayers, onlyOnField]);
 
   // Compute event counts per player
