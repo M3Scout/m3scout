@@ -1,6 +1,7 @@
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   LineChart,
   Line,
@@ -13,7 +14,8 @@ import {
   Area,
   ComposedChart,
 } from "recharts";
-import { Activity } from "lucide-react";
+import { Activity, Download } from "lucide-react";
+import { useExportPng } from "@/hooks/useExportPng";
 
 interface MatchEvent {
   id: string;
@@ -40,6 +42,9 @@ export function EventDistributionChart({
   matchEvents,
   matchDuration,
 }: EventDistributionChartProps) {
+  const chartRef = useRef<HTMLDivElement>(null);
+  const { exportToPng, isExporting } = useExportPng({ filename: "distribuicao-eventos" });
+
   // Build data points for each minute
   const chartData = useMemo(() => {
     // Create array with all minutes
@@ -164,15 +169,29 @@ export function EventDistributionChart({
   const halfTimeMinute = Math.floor(matchDuration / 2);
 
   return (
-    <Card>
+    <Card ref={chartRef} data-export-target>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Activity className="h-5 w-5" />
-          Distribuição de Eventos
-        </CardTitle>
-        <CardDescription>
-          Intensidade do jogo ao longo do tempo
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5" />
+              Distribuição de Eventos
+            </CardTitle>
+            <CardDescription>
+              Intensidade do jogo ao longo do tempo
+            </CardDescription>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => exportToPng(chartRef.current)}
+            disabled={isExporting}
+            className="shrink-0"
+          >
+            <Download className="h-4 w-4 mr-1" />
+            {isExporting ? "..." : "PNG"}
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Summary badges */}
