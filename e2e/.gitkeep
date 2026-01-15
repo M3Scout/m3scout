@@ -1,0 +1,2 @@
+# Playwright E2E tests directory
+# Snapshots will be stored in e2e/*.spec.ts-snapshots/
