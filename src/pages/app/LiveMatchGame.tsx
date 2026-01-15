@@ -6,6 +6,7 @@ import { AddPlayerModal } from "@/components/live-match/AddPlayerModal";
 import { PlayerStatCard } from "@/components/live-match/PlayerStatCard";
 import { EventLogDrawer } from "@/components/live-match/EventLogDrawer";
 import { SubstitutionModal } from "@/components/live-match/SubstitutionModal";
+import { LiveMatchBigTimer } from "@/components/live-match/LiveMatchBigTimer";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -36,6 +37,7 @@ export default function LiveMatchGame() {
     playerEnterField,
     playerExitField,
     substitutePlayer,
+    removePlayer,
   } = useLiveMatch(matchId || "");
 
   // Handle minute change from timer
@@ -81,6 +83,10 @@ export default function LiveMatchGame() {
 
   const handlePlayerExit = (matchPlayerId: string, minute: number) => {
     playerExitField.mutate({ matchPlayerId, minute });
+  };
+
+  const handleRemovePlayer = (matchPlayerId: string) => {
+    removePlayer.mutate(matchPlayerId);
   };
 
   const existingPlayerIds = matchPlayers.map((mp) => mp.player_id);
@@ -178,6 +184,15 @@ export default function LiveMatchGame() {
           </div>
         )}
 
+        {/* Big Timer - visible during live and finished */}
+        {!isDraft && (
+          <LiveMatchBigTimer
+            durationMinutes={match.duration_minutes}
+            matchStatus={match.status}
+            onMinuteChange={handleMinuteChange}
+          />
+        )}
+
         {/* Player cards */}
         {filteredPlayers.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
@@ -200,6 +215,7 @@ export default function LiveMatchGame() {
                 onUndo={() => undoLastEvent(mp.player_id)}
                 onPlayerEnter={(minute) => handlePlayerEnter(mp.id, minute)}
                 onPlayerExit={(minute) => handlePlayerExit(mp.id, minute)}
+                onRemovePlayer={isDraft ? () => handleRemovePlayer(mp.id) : undefined}
                 disabled={match.status === "applied"}
               />
             ))}
