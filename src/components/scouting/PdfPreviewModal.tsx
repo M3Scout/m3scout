@@ -23,9 +23,9 @@ import { exportToPdf, exportToPng, generateReportFilename, generateReportPngFile
 import type { ScoutingReportData } from "@/types/scouting";
 
 const RESOLUTION_OPTIONS = [
-  { value: "1", label: "1x (794px)", description: "Rápido, menor tamanho" },
-  { value: "2", label: "2x (1588px)", description: "Recomendado" },
-  { value: "3", label: "3x (2382px)", description: "Alta qualidade" },
+  { value: "1", label: "1x (794px)", description: "~300KB", size: "~300KB" },
+  { value: "2", label: "2x (1588px)", description: "~1MB", size: "~1MB" },
+  { value: "3", label: "3x (2382px)", description: "~2.5MB", size: "~2.5MB" },
 ] as const;
 
 interface PdfPreviewModalProps {
