@@ -226,6 +226,161 @@ export type Database = {
         }
         Relationships: []
       }
+      match_events: {
+        Row: {
+          created_at: string
+          event_type: Database["public"]["Enums"]["match_event_type"]
+          id: string
+          match_id: string
+          minute: number | null
+          player_id: string
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          event_type: Database["public"]["Enums"]["match_event_type"]
+          id?: string
+          match_id: string
+          minute?: number | null
+          player_id: string
+          value?: number
+        }
+        Update: {
+          created_at?: string
+          event_type?: Database["public"]["Enums"]["match_event_type"]
+          id?: string
+          match_id?: string
+          minute?: number | null
+          player_id?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_events_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_events_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      match_players: {
+        Row: {
+          created_at: string
+          entered_minute: number | null
+          exited_minute: number | null
+          id: string
+          is_on_field: boolean
+          match_id: string
+          minutes_played: number | null
+          player_id: string
+          position_template: Database["public"]["Enums"]["position_template"]
+          started: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          entered_minute?: number | null
+          exited_minute?: number | null
+          id?: string
+          is_on_field?: boolean
+          match_id: string
+          minutes_played?: number | null
+          player_id: string
+          position_template?: Database["public"]["Enums"]["position_template"]
+          started?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          entered_minute?: number | null
+          exited_minute?: number | null
+          id?: string
+          is_on_field?: boolean
+          match_id?: string
+          minutes_played?: number | null
+          player_id?: string
+          position_template?: Database["public"]["Enums"]["position_template"]
+          started?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_players_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_players_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      matches: {
+        Row: {
+          competition_id: string | null
+          created_at: string
+          created_by: string
+          duration_minutes: number
+          id: string
+          match_date: string
+          notes: string | null
+          opponent_name: string
+          season_year: number
+          status: Database["public"]["Enums"]["match_status"]
+          updated_at: string
+          venue: string | null
+        }
+        Insert: {
+          competition_id?: string | null
+          created_at?: string
+          created_by: string
+          duration_minutes?: number
+          id?: string
+          match_date?: string
+          notes?: string | null
+          opponent_name: string
+          season_year?: number
+          status?: Database["public"]["Enums"]["match_status"]
+          updated_at?: string
+          venue?: string | null
+        }
+        Update: {
+          competition_id?: string | null
+          created_at?: string
+          created_by?: string
+          duration_minutes?: number
+          id?: string
+          match_date?: string
+          notes?: string | null
+          opponent_name?: string
+          season_year?: number
+          status?: Database["public"]["Enums"]["match_status"]
+          updated_at?: string
+          venue?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matches_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       news_articles: {
         Row: {
           category: string
@@ -1083,6 +1238,40 @@ export type Database = {
     Enums: {
       app_role: "admin" | "scout" | "member" | "partner"
       competition_type: "league" | "cup" | "state_league" | "continental"
+      match_event_type:
+        | "goal"
+        | "assist"
+        | "shot"
+        | "shot_on_target"
+        | "key_pass"
+        | "chance_created"
+        | "dribble_success"
+        | "dribble_attempt"
+        | "tackle"
+        | "interception"
+        | "recovery"
+        | "clearance"
+        | "duel_won"
+        | "duel_total"
+        | "aerial_duel_won"
+        | "yellow"
+        | "red"
+        | "foul_committed"
+        | "foul_suffered"
+        | "pass_success"
+        | "pass_total"
+        | "possession_lost"
+        | "save"
+        | "goal_conceded"
+        | "clean_sheet"
+        | "penalty_saved"
+        | "error_led_to_goal"
+        | "box_save"
+        | "punch"
+        | "high_claim"
+        | "sweeper_action"
+      match_status: "draft" | "live" | "finished" | "applied"
+      position_template: "outfield" | "goalkeeper"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1212,6 +1401,41 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "scout", "member", "partner"],
       competition_type: ["league", "cup", "state_league", "continental"],
+      match_event_type: [
+        "goal",
+        "assist",
+        "shot",
+        "shot_on_target",
+        "key_pass",
+        "chance_created",
+        "dribble_success",
+        "dribble_attempt",
+        "tackle",
+        "interception",
+        "recovery",
+        "clearance",
+        "duel_won",
+        "duel_total",
+        "aerial_duel_won",
+        "yellow",
+        "red",
+        "foul_committed",
+        "foul_suffered",
+        "pass_success",
+        "pass_total",
+        "possession_lost",
+        "save",
+        "goal_conceded",
+        "clean_sheet",
+        "penalty_saved",
+        "error_led_to_goal",
+        "box_save",
+        "punch",
+        "high_claim",
+        "sweeper_action",
+      ],
+      match_status: ["draft", "live", "finished", "applied"],
+      position_template: ["outfield", "goalkeeper"],
     },
   },
 } as const
