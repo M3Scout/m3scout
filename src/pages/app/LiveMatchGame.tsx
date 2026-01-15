@@ -119,6 +119,18 @@ export default function LiveMatchGame() {
     removePlayer.mutate(matchPlayerId);
   };
 
+  // Remove from match (soft delete - marks as removed)
+  const handleRemoveFromMatch = (mp: typeof matchPlayers[0]) => {
+    // If player is on field, exit them first
+    if (mp.is_on_field) {
+      playerExitField.mutate({ matchPlayerId: mp.id, minute: currentMinute });
+    }
+    // Mark as removed
+    updatePlayer.mutate({
+      matchPlayerId: mp.id,
+      updates: { is_removed: true, removed_at: new Date().toISOString() },
+    });
+  };
   const existingPlayerIds = matchPlayers.map((mp) => mp.player_id);
   const playersOnField = matchPlayers.filter((mp) => mp.is_on_field);
   const playersOffField = matchPlayers.filter((mp) => !mp.is_on_field);
@@ -266,7 +278,7 @@ export default function LiveMatchGame() {
                 onUndo={() => undoLastEvent(mp.player_id)}
                 onPlayerEnter={(minute) => handlePlayerEnter(mp.id, minute)}
                 onPlayerExit={(minute) => handlePlayerExit(mp.id, minute)}
-                onRemovePlayer={isDraft ? () => handleRemovePlayer(mp.id) : undefined}
+                onRemoveFromMatch={() => handleRemoveFromMatch(mp)}
                 onSaveNotes={async (notes) => {
                   await updatePlayer.mutateAsync({ matchPlayerId: mp.id, updates: { notes } });
                 }}
