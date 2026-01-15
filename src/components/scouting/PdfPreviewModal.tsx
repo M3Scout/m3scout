@@ -62,8 +62,9 @@ export function PdfPreviewModal({
       await exportToPdf(templateElement, {
         filename,
         // CRITICAL: Always use scale=1 for pixel-identical export.
-        // Ignore qualityScale - it should not affect layout.
+        // Quality comes from outputResolution (upscaling), not html2canvas scale.
         scale: 1,
+        outputResolution: 2, // 2x for crisp output
         onProgress: setProgress,
         firstPageOnly,
       });
@@ -108,6 +109,7 @@ export function PdfPreviewModal({
         filename,
         // CRITICAL: Always use scale=1 for pixel-identical export.
         scale: 1,
+        outputResolution: 2, // 2x for crisp output
         onProgress: setProgress,
         firstPageOnly,
       });
