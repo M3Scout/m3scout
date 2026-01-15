@@ -7,10 +7,15 @@ export interface PdfExportOptions {
   onProgress?: (progress: number) => void;
   /** If true, capture only the first A4 page (~1123px at 96dpi) for faster debug */
   firstPageOnly?: boolean;
+  /** If true, open the captured canvas in a new tab with debug overlay instead of downloading */
+  debugMode?: boolean;
 }
 
 // A4 page height in pixels at 96dpi
 const A4_PAGE_HEIGHT_PX = 1123;
+
+// Google Fonts URL for Inter (used by the app)
+const INTER_FONT_URL = "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap";
 
 
 /**
@@ -96,6 +101,26 @@ function nextFrame(): Promise<void> {
   return new Promise((resolve) => requestAnimationFrame(() => resolve()));
 }
 
+/**
+ * Inject Google Fonts stylesheet into a document (for font embedding in export).
+ */
+function injectFontStylesheet(doc: Document): HTMLLinkElement {
+  const link = doc.createElement("link");
+  link.rel = "stylesheet";
+  link.href = INTER_FONT_URL;
+  doc.head.appendChild(link);
+  return link;
+}
+
+/**
+ * Wait for fonts to be loaded on a specific document.
+ */
+async function waitForDocFonts(doc: Document): Promise<void> {
+  if (doc.fonts?.ready) {
+    await doc.fonts.ready;
+  }
+}
+
 function createExportWrapper(source: HTMLElement) {
   // A4 @ 96dpi ≈ 794px
   const wrapper = document.createElement("div");
@@ -122,11 +147,181 @@ function createExportWrapper(source: HTMLElement) {
   clone.style.display = "block";
   // Force white bg at root to avoid transparent results
   clone.style.backgroundColor = "#FFFFFF";
+  
+  // Ensure the clone uses the same font as the source (inherit from body)
+  // Do NOT override fontFamily, fontSize, or lineHeight here
 
   wrapper.appendChild(clone);
   document.body.appendChild(wrapper);
 
   return { wrapper, clone };
+}
+
+/**
+ * Open a debug window with the captured canvas and overlay showing measurements.
+ */
+function openDebugWindow(
+  canvas: HTMLCanvasElement,
+  typography: {
+    source: { fontFamily: string; fontSize: string; lineHeight: string };
+    clone: { fontFamily: string; fontSize: string; lineHeight: string };
+    matches: boolean;
+  },
+  scale: number
+): void {
+  const debugWindow = window.open("", "_blank", "width=1000,height=800");
+  if (!debugWindow) {
+    // eslint-disable-next-line no-console
+    console.error("Could not open debug window - popup blocker?");
+    return;
+  }
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Export Debug - Canvas Capture</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: 'Inter', system-ui, sans-serif; 
+      background: #1a1a2e; 
+      color: #eee; 
+      padding: 20px;
+    }
+    .header { 
+      background: #16213e; 
+      padding: 16px 20px; 
+      border-radius: 8px; 
+      margin-bottom: 20px;
+    }
+    .header h1 { font-size: 18px; margin-bottom: 8px; color: #00d9ff; }
+    .metrics { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .metric { 
+      background: #0f3460; 
+      padding: 12px 16px; 
+      border-radius: 6px; 
+    }
+    .metric-label { 
+      font-size: 11px; 
+      text-transform: uppercase; 
+      color: #7f8c9f; 
+      margin-bottom: 4px; 
+    }
+    .metric-value { 
+      font-size: 16px; 
+      font-weight: 600; 
+      color: #fff; 
+    }
+    .metric-value.match { color: #10b981; }
+    .metric-value.mismatch { color: #ef4444; }
+    .typography { 
+      background: #0f3460; 
+      padding: 16px; 
+      border-radius: 8px; 
+      margin-bottom: 20px;
+    }
+    .typography h2 { 
+      font-size: 14px; 
+      color: #00d9ff; 
+      margin-bottom: 12px; 
+    }
+    .typo-row { 
+      display: flex; 
+      gap: 20px; 
+      margin-bottom: 8px; 
+      font-size: 13px;
+    }
+    .typo-label { color: #7f8c9f; min-width: 100px; }
+    .typo-source { color: #a3e635; }
+    .typo-clone { color: #fbbf24; }
+    .canvas-container { 
+      background: #fff; 
+      border-radius: 8px; 
+      padding: 10px;
+      overflow: auto;
+      max-height: 60vh;
+    }
+    img { display: block; max-width: 100%; height: auto; }
+    .status { 
+      display: inline-block; 
+      padding: 4px 10px; 
+      border-radius: 4px; 
+      font-size: 12px; 
+      font-weight: 600;
+    }
+    .status.ok { background: #10b981; color: #fff; }
+    .status.fail { background: #ef4444; color: #fff; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🔍 Export Debug - Canvas Capture</h1>
+    <span class="status ${typography.matches ? "ok" : "fail"}">
+      Typography: ${typography.matches ? "✓ MATCH" : "✗ MISMATCH"}
+    </span>
+  </div>
+  
+  <div class="metrics">
+    <div class="metric">
+      <div class="metric-label">Canvas Width</div>
+      <div class="metric-value">${canvas.width}px</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Canvas Height</div>
+      <div class="metric-value">${canvas.height}px</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Scale</div>
+      <div class="metric-value">${scale}x</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Actual Width (÷scale)</div>
+      <div class="metric-value">${Math.round(canvas.width / scale)}px</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Actual Height (÷scale)</div>
+      <div class="metric-value">${Math.round(canvas.height / scale)}px</div>
+    </div>
+  </div>
+
+  <div class="typography">
+    <h2>Typography Comparison (Source vs Clone)</h2>
+    <div class="typo-row">
+      <span class="typo-label">fontFamily:</span>
+      <span class="typo-source">${typography.source.fontFamily}</span>
+      <span style="color:#555">→</span>
+      <span class="typo-clone ${typography.source.fontFamily === typography.clone.fontFamily ? "" : "mismatch"}">${typography.clone.fontFamily}</span>
+    </div>
+    <div class="typo-row">
+      <span class="typo-label">fontSize:</span>
+      <span class="typo-source">${typography.source.fontSize}</span>
+      <span style="color:#555">→</span>
+      <span class="typo-clone ${typography.source.fontSize === typography.clone.fontSize ? "" : "mismatch"}">${typography.clone.fontSize}</span>
+    </div>
+    <div class="typo-row">
+      <span class="typo-label">lineHeight:</span>
+      <span class="typo-source">${typography.source.lineHeight}</span>
+      <span style="color:#555">→</span>
+      <span class="typo-clone ${typography.source.lineHeight === typography.clone.lineHeight ? "" : "mismatch"}">${typography.clone.lineHeight}</span>
+    </div>
+  </div>
+
+  <div class="canvas-container">
+    <img src="${canvas.toDataURL("image/png", 1.0)}" alt="Captured Canvas" />
+  </div>
+</body>
+</html>
+  `.trim();
+
+  debugWindow.document.open();
+  debugWindow.document.write(html);
+  debugWindow.document.close();
 }
 
 /**
@@ -143,6 +338,7 @@ export async function exportToPdf(
     scale = 2,
     onProgress,
     firstPageOnly = false,
+    debugMode = false,
   } = options;
 
   onProgress?.(5);
@@ -260,6 +456,29 @@ export async function exportToPdf(
 
     onProgress?.(65);
 
+    // If debug mode, open canvas in new tab with overlay and exit early
+    if (debugMode) {
+      const typography = {
+        source: {
+          fontFamily: srcCs.fontFamily,
+          fontSize: srcCs.fontSize,
+          lineHeight: srcCs.lineHeight,
+        },
+        clone: {
+          fontFamily: cloneCs.fontFamily,
+          fontSize: cloneCs.fontSize,
+          lineHeight: cloneCs.lineHeight,
+        },
+        matches:
+          srcCs.fontFamily === cloneCs.fontFamily &&
+          srcCs.fontSize === cloneCs.fontSize &&
+          srcCs.lineHeight === cloneCs.lineHeight,
+      };
+      openDebugWindow(canvas, typography, scale);
+      onProgress?.(100);
+      return;
+    }
+
     // A4 dimensions in mm
     const a4Width = 210;
     const a4Height = 297;
@@ -300,9 +519,9 @@ export async function exportToPdf(
  */
 export async function exportToPng(
   element: HTMLElement,
-  options: { filename?: string; scale?: number; onProgress?: (progress: number) => void; firstPageOnly?: boolean } = {}
+  options: { filename?: string; scale?: number; onProgress?: (progress: number) => void; firstPageOnly?: boolean; debugMode?: boolean } = {}
 ): Promise<void> {
-  const { filename = "preview.png", scale = 2, onProgress, firstPageOnly = false } = options;
+  const { filename = "preview.png", scale = 2, onProgress, firstPageOnly = false, debugMode = false } = options;
 
   onProgress?.(5);
 
@@ -409,6 +628,29 @@ export async function exportToPng(
     console.log("[exportToPng] canvas dataUrl head", canvas.toDataURL("image/png", 0.2).slice(0, 80));
 
     onProgress?.(80);
+
+    // If debug mode, open canvas in new tab with overlay and exit early
+    if (debugMode) {
+      const typography = {
+        source: {
+          fontFamily: srcCs.fontFamily,
+          fontSize: srcCs.fontSize,
+          lineHeight: srcCs.lineHeight,
+        },
+        clone: {
+          fontFamily: cloneCs.fontFamily,
+          fontSize: cloneCs.fontSize,
+          lineHeight: cloneCs.lineHeight,
+        },
+        matches:
+          srcCs.fontFamily === cloneCs.fontFamily &&
+          srcCs.fontSize === cloneCs.fontSize &&
+          srcCs.lineHeight === cloneCs.lineHeight,
+      };
+      openDebugWindow(canvas, typography, scale);
+      onProgress?.(100);
+      return;
+    }
 
     // Download canvas as PNG
     const link = document.createElement("a");

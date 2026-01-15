@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
-import { FileDown, Loader2, X, ZoomIn, ZoomOut, Eye, Image } from "lucide-react";
+import { FileDown, Loader2, X, ZoomIn, ZoomOut, Eye, Image, Bug } from "lucide-react";
 import { toast } from "sonner";
 import { ScoutingReportPdfTemplate } from "./pdf/ScoutingReportPdfTemplate";
 import { exportToPdf, exportToPng, generateReportFilename, generateReportPngFilename } from "@/lib/pdfExport";
@@ -32,9 +32,11 @@ export function PdfPreviewModal({
 }: PdfPreviewModalProps) {
   const [isExporting, setIsExporting] = useState(false);
   const [isExportingPng, setIsExportingPng] = useState(false);
+  const [isDebugging, setIsDebugging] = useState(false);
   const [progress, setProgress] = useState(0);
   const [zoom, setZoom] = useState(0.5);
   const [firstPageOnly, setFirstPageOnly] = useState(false);
+  const [debugMode, setDebugMode] = useState(false);
   const templateRef = useRef<HTMLDivElement>(null);
 
   const handleExport = useCallback(async () => {
@@ -121,6 +123,42 @@ export function PdfPreviewModal({
     }
   }, [report, qualityScale, firstPageOnly]);
 
+  const handleDebugExport = useCallback(async () => {
+    if (!report.players) {
+      toast.error("Dados do jogador não disponíveis");
+      return;
+    }
+
+    setIsDebugging(true);
+    setProgress(0);
+
+    try {
+      const templateElement = templateRef.current;
+      if (!templateElement) {
+        throw new Error("Template não encontrado");
+      }
+
+      await exportToPng(templateElement, {
+        scale: qualityScale,
+        onProgress: setProgress,
+        firstPageOnly,
+        debugMode: true,
+      });
+
+      toast.success("Debug window aberta!", {
+        description: "Verifique a aba aberta para inspeção do canvas capturado.",
+      });
+    } catch (error) {
+      console.error("Erro ao abrir debug:", error);
+      toast.error("Erro ao abrir debug", {
+        description: "Verifique se pop-ups estão permitidos.",
+      });
+    } finally {
+      setIsDebugging(false);
+      setProgress(0);
+    }
+  }, [report, qualityScale, firstPageOnly]);
+
   const handleZoomIn = () => {
     setZoom((prev) => Math.min(prev + 0.1, 1));
   };
@@ -129,7 +167,7 @@ export function PdfPreviewModal({
     setZoom((prev) => Math.max(prev - 0.1, 0.3));
   };
 
-  const isProcessing = isExporting || isExportingPng;
+  const isProcessing = isExporting || isExportingPng || isDebugging;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -211,8 +249,34 @@ export function PdfPreviewModal({
                 />
                 <span className="text-sm text-muted-foreground">Só página 1</span>
               </label>
+              <label className="flex items-center gap-2 cursor-pointer" title="Debug Export: Abre o canvas capturado em nova aba com métricas de tipografia">
+                <Checkbox
+                  checked={debugMode}
+                  onCheckedChange={(checked) => setDebugMode(checked === true)}
+                />
+                <span className="text-sm text-muted-foreground">Debug</span>
+              </label>
             </div>
             <div className="flex gap-2">
+              {debugMode && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDebugExport}
+                  disabled={isProcessing}
+                  title="Abrir canvas capturado em nova aba com overlay de debug"
+                  className="border-amber-500/50 text-amber-600 hover:bg-amber-500/10"
+                >
+                  {isDebugging ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      <Bug className="w-4 h-4 mr-1.5" />
+                      Debug
+                    </>
+                  )}
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="sm"
