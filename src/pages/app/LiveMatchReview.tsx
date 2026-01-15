@@ -548,7 +548,22 @@ export default function LiveMatchReview() {
                   .filter(([_, v]) => (v ?? 0) > 0)
                   .sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0));
                 const isApplied = appliedPlayerIds.includes(mp.player_id);
-                const minutesPlayed = mp.minutes_played ?? match.duration_minutes;
+                
+                // Calculate minutes using the same logic as applyStats
+                const calculatedMinutes = calculateMinutesPlayed(mp, match.duration_minutes);
+                const isManualMinutes = mp.minutes_played !== null;
+                
+                // Determine how minutes were calculated for display
+                const getMinutesLabel = () => {
+                  if (isManualMinutes) return "manual";
+                  if (mp.started && mp.exited_minute === null) return "titular completo";
+                  if (mp.started && mp.exited_minute !== null) return `saiu ${mp.exited_minute}'`;
+                  if (!mp.started && mp.entered_minute !== null) {
+                    if (mp.exited_minute !== null) return `${mp.entered_minute}'-${mp.exited_minute}'`;
+                    return `entrou ${mp.entered_minute}'`;
+                  }
+                  return "";
+                };
 
                 return (
                   <div
@@ -570,9 +585,21 @@ export default function LiveMatchReview() {
                           <CheckCircle2 className="h-4 w-4 text-green-500" />
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        {mp.player.position} • {minutesPlayed} min
-                      </p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-xs text-muted-foreground">
+                          {mp.player.position}
+                        </span>
+                        <span className="text-xs text-muted-foreground">•</span>
+                        <Badge 
+                          variant={isManualMinutes ? "outline" : "secondary"} 
+                          className="text-[10px] px-1.5 py-0 h-4 font-medium"
+                        >
+                          {calculatedMinutes} min
+                        </Badge>
+                        <span className="text-[10px] text-muted-foreground italic">
+                          ({getMinutesLabel()})
+                        </span>
+                      </div>
                       <div className="flex flex-wrap gap-1 mt-2">
                         {statEntries.length === 0 ? (
                           <Badge variant="outline" className="text-xs">
