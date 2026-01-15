@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { HalfStatsComparison } from "@/components/live-match/HalfStatsComparison";
+import { MatchSummaryPdfButton } from "@/components/live-match/MatchSummaryPdf";
 import {
   CheckCircle2,
   AlertTriangle,
@@ -437,18 +438,28 @@ export default function LiveMatchReview() {
   return (
     <div className="container max-w-4xl py-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link to={`/app/live-match/${matchId}`}>
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold">Revisão do Jogo</h1>
-          <p className="text-muted-foreground">
-            {competitionName} • vs {match.opponent_name}
-          </p>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" asChild>
+            <Link to={`/app/live-match/${matchId}`}>
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold">Revisão do Jogo</h1>
+            <p className="text-muted-foreground">
+              {competitionName} • vs {match.opponent_name}
+            </p>
+          </div>
         </div>
+        
+        {/* PDF Export Button */}
+        <MatchSummaryPdfButton
+          match={match}
+          matchPlayers={matchPlayers}
+          matchEvents={matchEvents}
+          playerEventCounts={playerEventCounts}
+        />
       </div>
 
       {/* Summary card with stats by half */}
