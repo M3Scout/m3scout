@@ -91,8 +91,8 @@ export function ExportPdfButton({ report, variant = "outline", size = "sm" }: Ex
     setProgress(0);
     setShowTemplate(true);
 
-    // Wait for template to render
-    await new Promise((resolve) => setTimeout(resolve, 600));
+    // Wait longer for template to render and images to preload
+    await new Promise((resolve) => setTimeout(resolve, 1200));
 
     try {
       const templateElement = templateRef.current;
