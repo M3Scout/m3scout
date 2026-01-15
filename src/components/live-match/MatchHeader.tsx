@@ -2,9 +2,9 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Match, MatchStatus } from "@/hooks/useLiveMatch";
-import { MatchTimer } from "./MatchTimer";
 import { Radio, CheckCircle2, Pause, ArrowRight, Play, FileEdit } from "lucide-react";
 import { Link } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,82 +49,72 @@ export function MatchHeader({
     onStartGame?.();
   };
 
+  const isDraft = match.status === "draft";
+  const isLive = match.status === "live";
+  const isFinished = match.status === "finished";
+
   return (
     <>
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b">
-        <div className="container py-3">
-          <div className="flex flex-col gap-3">
-            {/* Top row: Status + Timer + Actions */}
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              <div className="flex items-center gap-3">
-                <Badge className={config.color}>
+      {/* Sticky header with safe-area padding for iOS */}
+      <div 
+        className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b"
+        style={{ paddingTop: "env(safe-area-inset-top)" }}
+      >
+        <div className="container py-2 sm:py-3">
+          <div className="flex flex-col gap-2 sm:gap-3">
+            {/* Row 1: Status + Starters + Actions - Responsive layout */}
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Status badge - always visible */}
+                <Badge className={cn(config.color, "h-7 sm:h-8 text-xs sm:text-sm")}>
                   {config.icon}
                   <span className="ml-1">{config.label}</span>
                 </Badge>
-                
-                {/* Timer - only for live or finished */}
-                {(match.status === "live" || match.status === "finished") && (
-                  <MatchTimer 
-                    durationMinutes={match.duration_minutes} 
-                    onMinuteChange={onMinuteChange}
-                  />
-                )}
 
                 {/* Starters count for draft */}
-                {match.status === "draft" && startersCount > 0 && (
-                  <Badge variant="outline" className="text-xs">
+                {isDraft && startersCount > 0 && (
+                  <Badge variant="outline" className="text-xs h-7 sm:h-8">
                     {startersCount} titular{startersCount !== 1 ? "es" : ""}
+                  </Badge>
+                )}
+
+                {/* Half indicator for live/finished */}
+                {(isLive || isFinished) && match.half && (
+                  <Badge 
+                    variant="secondary" 
+                    className={cn(
+                      "text-xs h-7 sm:h-8",
+                      match.half === 1 && "bg-blue-600 text-white",
+                      match.half === 2 && "bg-purple-600 text-white"
+                    )}
+                  >
+                    {match.half === 1 ? "1º Tempo" : "2º Tempo"}
                   </Badge>
                 )}
               </div>
 
-              {/* Actions */}
+              {/* Actions - 44px minimum touch targets */}
               <div className="flex items-center gap-2">
                 {/* Draft: Start Game button */}
-                {match.status === "draft" && (
+                {isDraft && (
                   <Button
                     size="sm"
                     onClick={() => setConfirmStartOpen(true)}
                     disabled={isPending || startersCount === 0}
-                    className="bg-green-600 hover:bg-green-700 shadow-[0_0_15px_rgba(34,197,94,0.4)]"
+                    className="h-10 sm:h-9 px-3 sm:px-4 bg-green-600 hover:bg-green-700 shadow-[0_0_15px_rgba(34,197,94,0.4)]"
                   >
                     <Play className="h-4 w-4 mr-1" />
-                    Iniciar Jogo
+                    <span className="hidden sm:inline">Iniciar Jogo</span>
+                    <span className="sm:hidden">Iniciar</span>
                   </Button>
                 )}
 
-                {/* Live: Finish button */}
-                {match.status === "live" && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onStatusChange("finished")}
-                    disabled={isPending}
-                  >
-                    <Pause className="h-4 w-4 mr-1" />
-                    Finalizar
-                  </Button>
-                )}
-
-                {/* Finished: Resume button */}
-                {match.status === "finished" && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onStatusChange("live")}
-                    disabled={isPending}
-                  >
-                    <Radio className="h-4 w-4 mr-1" />
-                    Retomar
-                  </Button>
-                )}
-
-                {/* Live/Finished: Review button */}
-                {(match.status === "live" || match.status === "finished") && (
+                {/* Live/Finished: Review button - BLUE glow, not red */}
+                {(isLive || isFinished) && (
                   <Button
                     variant="default"
                     size="sm"
-                    className="bg-primary hover:bg-primary/90 shadow-[0_0_15px_rgba(37,99,235,0.4)] hover:shadow-[0_0_20px_rgba(37,99,235,0.5)]"
+                    className="h-10 sm:h-9 px-3 sm:px-4 bg-blue-600 hover:bg-blue-700 shadow-[0_0_15px_rgba(59,130,246,0.4)] hover:shadow-[0_0_20px_rgba(59,130,246,0.5)]"
                     asChild
                   >
                     <Link to={`/app/live-match/${match.id}/review`}>
@@ -136,13 +126,13 @@ export function MatchHeader({
               </div>
             </div>
 
-            {/* Bottom row: Match info */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-lg font-bold">
+            {/* Row 2: Match info - Compact */}
+            <div className="flex items-center justify-between min-w-0">
+              <div className="min-w-0">
+                <h1 className="text-base sm:text-lg font-bold truncate">
                   vs {match.opponent_name}
                 </h1>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">
                   {competitionName} • {match.season_year}
                   {match.venue && ` • ${match.venue}`}
                 </p>
