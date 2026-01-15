@@ -40,6 +40,7 @@ export default function LiveMatchGame() {
     playerExitField,
     substitutePlayer,
     removePlayer,
+    updatePlayer,
     // Timer V2 mutations
     playPauseClock,
     resetClock,
@@ -259,12 +260,16 @@ export default function LiveMatchGame() {
                 matchPlayer={mp}
                 matchStatus={match.status}
                 currentMinute={currentMinute}
+                currentMatchId={matchId}
                 eventCounts={playerEventCounts[mp.player_id] || ({} as Record<MatchEventType, number>)}
                 onAddEvent={(type) => handleAddEvent(mp.player_id, type)}
                 onUndo={() => undoLastEvent(mp.player_id)}
                 onPlayerEnter={(minute) => handlePlayerEnter(mp.id, minute)}
                 onPlayerExit={(minute) => handlePlayerExit(mp.id, minute)}
                 onRemovePlayer={isDraft ? () => handleRemovePlayer(mp.id) : undefined}
+                onSaveNotes={async (notes) => {
+                  await updatePlayer.mutateAsync({ matchPlayerId: mp.id, updates: { notes } });
+                }}
                 disabled={match.status === "applied"}
               />
             ))}

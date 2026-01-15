@@ -286,6 +286,7 @@ export type Database = {
           is_on_field: boolean
           match_id: string
           minutes_played: number | null
+          notes: string | null
           player_id: string
           position_template: Database["public"]["Enums"]["position_template"]
           started: boolean
@@ -299,6 +300,7 @@ export type Database = {
           is_on_field?: boolean
           match_id: string
           minutes_played?: number | null
+          notes?: string | null
           player_id: string
           position_template?: Database["public"]["Enums"]["position_template"]
           started?: boolean
@@ -312,6 +314,7 @@ export type Database = {
           is_on_field?: boolean
           match_id?: string
           minutes_played?: number | null
+          notes?: string | null
           player_id?: string
           position_template?: Database["public"]["Enums"]["position_template"]
           started?: boolean

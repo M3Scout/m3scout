@@ -18,6 +18,8 @@ import { MatchPlayer, MatchEventType, MatchStatus } from "@/hooks/useLiveMatch";
 import { Plus, Undo2, ChevronDown, ChevronUp, LogIn, LogOut, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { playSound, getSoundForEvent } from "@/lib/sounds";
+import { PlayerNotesModal } from "./PlayerNotesModal";
+import { PlayerHistoryComparison } from "./PlayerHistoryComparison";
 
 // Stat categories configuration with colors
 const OUTFIELD_STATS: { category: string; color: string; bgColor: string; stats: { type: MatchEventType; label: string }[] }[] = [
@@ -104,11 +106,13 @@ interface PlayerStatCardProps {
   eventCounts: Record<MatchEventType, number>;
   matchStatus: MatchStatus;
   currentMinute?: number;
+  currentMatchId?: string;
   onAddEvent: (eventType: MatchEventType) => void;
   onUndo: () => void;
   onPlayerEnter?: (minute: number) => void;
   onPlayerExit?: (minute: number) => void;
   onRemovePlayer?: () => void;
+  onSaveNotes?: (notes: string) => Promise<void>;
   disabled?: boolean;
   soundEnabled?: boolean;
 }
@@ -118,11 +122,13 @@ export function PlayerStatCard({
   eventCounts,
   matchStatus,
   currentMinute = 0,
+  currentMatchId,
   onAddEvent,
   onUndo,
   onPlayerEnter,
   onPlayerExit,
   onRemovePlayer,
+  onSaveNotes,
   disabled,
   soundEnabled = true,
 }: PlayerStatCardProps) {
@@ -321,6 +327,22 @@ export function PlayerStatCard({
                 </AlertDialogContent>
               </AlertDialog>
             )}
+
+            {/* Notes button */}
+            {onSaveNotes && (
+              <PlayerNotesModal
+                matchPlayer={matchPlayer}
+                onSaveNotes={onSaveNotes}
+                disabled={disabled}
+              />
+            )}
+
+            {/* History comparison button */}
+            <PlayerHistoryComparison
+              playerId={matchPlayer.player_id}
+              playerName={player.full_name}
+              currentMatchId={currentMatchId}
+            />
 
             <Button
               variant="ghost"
