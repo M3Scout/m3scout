@@ -42,6 +42,10 @@ import Settings from "./pages/app/Settings";
 import ComparePlayers from "./pages/app/ComparePlayers";
 import News from "./pages/app/News";
 import NewsForm from "./pages/app/NewsForm";
+import LiveMatch from "./pages/app/LiveMatch";
+import LiveMatchNew from "./pages/app/LiveMatchNew";
+import LiveMatchGame from "./pages/app/LiveMatchGame";
+import LiveMatchReview from "./pages/app/LiveMatchReview";
 
 const queryClient = new QueryClient();
 
@@ -98,6 +102,11 @@ const App = () => (
                 <Route path="news" element={<News />} />
                 <Route path="news/new" element={<NewsForm />} />
                 <Route path="news/:id/edit" element={<NewsForm />} />
+                <Route path="live-match" element={<LiveMatch />}>
+                  <Route path="new" element={<LiveMatchNew />} />
+                  <Route path=":matchId" element={<LiveMatchGame />} />
+                  <Route path=":matchId/review" element={<LiveMatchReview />} />
+                </Route>
                 <Route path="settings" element={<Settings />} />
               </Route>
 

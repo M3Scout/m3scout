@@ -13,6 +13,7 @@ import {
   MessageSquare,
   GitCompare,
   Newspaper,
+  Radio,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ const navItems = [
   { href: "/app/players", icon: Users, label: "Atletas" },
   { href: "/app/compare", icon: GitCompare, label: "Comparar" },
   { href: "/app/reports", icon: FileText, label: "Relatórios" },
+  { href: "/app/live-match", icon: Radio, label: "Jogo Ao Vivo" },
   { href: "/app/competitions", icon: Trophy, label: "Competições" },
   { href: "/app/news", icon: Newspaper, label: "Notícias" },
   { href: "/app/leads", icon: MessageSquare, label: "Leads" },
