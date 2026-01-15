@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { HalfStatsComparison } from "@/components/live-match/HalfStatsComparison";
 import { SubstitutionStatsCard } from "@/components/live-match/SubstitutionStatsCard";
 import { EventDistributionChart } from "@/components/live-match/EventDistributionChart";
+import { PlayerActivityHeatmap } from "@/components/live-match/PlayerActivityHeatmap";
 import { MatchSummaryPdfButton } from "@/components/live-match/MatchSummaryPdf";
 import {
   CheckCircle2,
@@ -511,6 +512,13 @@ export default function LiveMatchReview() {
 
       {/* Event Distribution Chart */}
       <EventDistributionChart
+        matchEvents={matchEvents}
+        matchDuration={match.duration_minutes}
+      />
+
+      {/* Player Activity Heatmap */}
+      <PlayerActivityHeatmap
+        matchPlayers={matchPlayers}
         matchEvents={matchEvents}
         matchDuration={match.duration_minutes}
       />
