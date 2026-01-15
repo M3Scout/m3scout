@@ -214,6 +214,78 @@ export async function exportToPdf(
 }
 
 /**
+ * Export a DOM element to PNG image for debugging/comparison.
+ * Uses the same clone strategy as PDF export.
+ */
+export async function exportToPng(
+  element: HTMLElement,
+  options: { filename?: string; scale?: number; onProgress?: (progress: number) => void } = {}
+): Promise<void> {
+  const { filename = "preview.png", scale = 2, onProgress } = options;
+
+  onProgress?.(5);
+
+  await waitForFonts();
+  onProgress?.(10);
+
+  const { wrapper, clone } = createExportWrapper(element);
+
+  try {
+    await new Promise((r) => setTimeout(r, 50));
+
+    await waitForFonts();
+    await waitForImagesDecode(clone);
+    onProgress?.(20);
+
+    await preloadImages(clone);
+    onProgress?.(40);
+
+    const canvas = await html2canvas(clone, {
+      scale,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: "#FFFFFF",
+      logging: false,
+      imageTimeout: 30000,
+      removeContainer: true,
+      onclone: (_clonedDoc, clonedElement) => {
+        clonedElement.style.backgroundColor = "#FFFFFF";
+        clonedElement.style.overflow = "visible";
+        clonedElement.style.transform = "none";
+
+        const svgs = clonedElement.querySelectorAll("svg");
+        svgs.forEach((svg) => {
+          const rect = svg.getBoundingClientRect();
+          if (rect.width > 0 && rect.height > 0) {
+            svg.setAttribute("width", `${Math.round(rect.width)}`);
+            svg.setAttribute("height", `${Math.round(rect.height)}`);
+          }
+        });
+
+        const images = clonedElement.querySelectorAll("img");
+        images.forEach((img) => {
+          img.loading = "eager";
+          img.style.visibility = "visible";
+          img.style.opacity = "1";
+        });
+      },
+    });
+
+    onProgress?.(80);
+
+    // Download canvas as PNG
+    const link = document.createElement("a");
+    link.download = filename;
+    link.href = canvas.toDataURL("image/png", 1.0);
+    link.click();
+
+    onProgress?.(100);
+  } finally {
+    wrapper.remove();
+  }
+}
+
+/**
  * Generate a filename for the scouting report
  */
 export function generateReportFilename(
@@ -230,4 +302,23 @@ export function generateReportFilename(
   const formattedDate = new Date(date).toISOString().split("T")[0];
 
   return `relatorio_scouting_${sanitizedName}_${formattedDate}.pdf`;
+}
+
+/**
+ * Generate a PNG filename for the scouting report
+ */
+export function generateReportPngFilename(
+  playerName: string,
+  date: string
+): string {
+  const sanitizedName = playerName
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9\s]/g, "")
+    .replace(/\s+/g, "_")
+    .toLowerCase();
+
+  const formattedDate = new Date(date).toISOString().split("T")[0];
+
+  return `relatorio_scouting_${sanitizedName}_${formattedDate}.png`;
 }
