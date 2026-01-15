@@ -215,9 +215,8 @@ export const ScoutingReportPdfTemplate = forwardRef<HTMLDivElement, ScoutingRepo
           minHeight: "297mm",
           backgroundColor: PDF_TOKENS.pageBackground,
           color: PDF_TOKENS.colorPrimary,
-          fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
-          fontSize: "10pt",
-          lineHeight: 1.5,
+          // IMPORTANT: do not force typography here.
+          // The export must inherit the exact same fonts/sizes/line-heights as the preview.
           padding: PDF_TOKENS.pagePadding,
           boxSizing: "border-box",
           overflow: "visible",

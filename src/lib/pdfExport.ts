@@ -182,6 +182,27 @@ export async function exportToPdf(
     // eslint-disable-next-line no-console
     console.log("[exportToPdf] clone rect", rect, { captureWidth, captureHeight });
 
+    // Typography parity check (preview vs export clone)
+    const srcCs = getComputedStyle(element);
+    const cloneCs = getComputedStyle(clone);
+    // eslint-disable-next-line no-console
+    console.log("[exportToPdf] typography", {
+      source: {
+        fontFamily: srcCs.fontFamily,
+        fontSize: srcCs.fontSize,
+        lineHeight: srcCs.lineHeight,
+      },
+      clone: {
+        fontFamily: cloneCs.fontFamily,
+        fontSize: cloneCs.fontSize,
+        lineHeight: cloneCs.lineHeight,
+      },
+      matches:
+        srcCs.fontFamily === cloneCs.fontFamily &&
+        srcCs.fontSize === cloneCs.fontSize &&
+        srcCs.lineHeight === cloneCs.lineHeight,
+    });
+
     if (captureWidth <= 1 || captureHeight <= 1) {
       throw new Error("Elemento para export não foi renderizado (dimensões 0)");
     }
@@ -315,6 +336,27 @@ export async function exportToPng(
     console.log("[exportToPng] element", element);
     // eslint-disable-next-line no-console
     console.log("[exportToPng] clone rect", rect, { captureWidth, captureHeight });
+
+    // Typography parity check (preview vs export clone)
+    const srcCs = getComputedStyle(element);
+    const cloneCs = getComputedStyle(clone);
+    // eslint-disable-next-line no-console
+    console.log("[exportToPng] typography", {
+      source: {
+        fontFamily: srcCs.fontFamily,
+        fontSize: srcCs.fontSize,
+        lineHeight: srcCs.lineHeight,
+      },
+      clone: {
+        fontFamily: cloneCs.fontFamily,
+        fontSize: cloneCs.fontSize,
+        lineHeight: cloneCs.lineHeight,
+      },
+      matches:
+        srcCs.fontFamily === cloneCs.fontFamily &&
+        srcCs.fontSize === cloneCs.fontSize &&
+        srcCs.lineHeight === cloneCs.lineHeight,
+    });
 
     if (captureWidth <= 1 || captureHeight <= 1) {
       throw new Error("Elemento para export não foi renderizado (dimensões 0)");
