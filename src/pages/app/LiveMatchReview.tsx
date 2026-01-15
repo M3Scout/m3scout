@@ -266,16 +266,56 @@ export default function LiveMatchReview() {
     return issues;
   }, [match, matchPlayers, playerEventCounts]);
 
+  // Calculate minutes played for a player based on match data
+  const calculateMinutesPlayed = (
+    mp: typeof matchPlayers[0],
+    durationMinutes: number
+  ): number => {
+    // If minutes_played is already set manually, use it
+    if (mp.minutes_played !== null) {
+      return mp.minutes_played;
+    }
+
+    const started = mp.started;
+    const enteredMinute = mp.entered_minute;
+    const exitedMinute = mp.exited_minute;
+
+    if (started) {
+      // Started the game
+      if (exitedMinute !== null) {
+        // Was substituted out
+        return Math.max(0, exitedMinute);
+      }
+      // Played full match
+      return durationMinutes;
+    } else {
+      // Did not start
+      if (enteredMinute !== null) {
+        if (exitedMinute !== null) {
+          // Came in and went out
+          return Math.max(0, exitedMinute - enteredMinute);
+        }
+        // Came in and stayed until the end
+        return Math.max(0, durationMinutes - enteredMinute);
+      }
+      // Never entered (shouldn't happen normally, but safeguard)
+      return 0;
+    }
+  };
+
   // Apply stats mutation - now properly INCREMENTS existing stats
   const applyStats = useMutation({
     mutationFn: async () => {
       if (!match) throw new Error("Jogo não encontrado");
 
       const appliedIds: string[] = [];
+      const durationMinutes = match.duration_minutes;
 
       for (const mp of matchPlayers) {
         const counts = (playerEventCounts[mp.player_id] || {}) as Partial<Record<MatchEventType, number>>;
-        const minutesPlayed = mp.minutes_played ?? match.duration_minutes;
+        
+        // Calculate minutes played automatically
+        const minutesPlayed = calculateMinutesPlayed(mp, durationMinutes);
 
         // First, try to get existing stats
         const { data: existingStats } = await supabase
