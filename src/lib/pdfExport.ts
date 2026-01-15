@@ -153,6 +153,10 @@ export async function exportToPdf(
     await waitForImagesDecode(clone);
     onProgress?.(35);
 
+    const rect = clone.getBoundingClientRect();
+    const captureWidth = Math.max(1, Math.ceil(rect.width));
+    const captureHeight = Math.max(1, Math.ceil(rect.height));
+
     const canvas = await html2canvas(clone, {
       scale,
       useCORS: true,
@@ -161,6 +165,15 @@ export async function exportToPdf(
       logging: false,
       imageTimeout: 30000,
       removeContainer: true,
+
+      // Critical: lock the viewport and capture box to the report itself
+      width: captureWidth,
+      height: captureHeight,
+      windowWidth: captureWidth,
+      windowHeight: captureHeight,
+      scrollX: 0,
+      scrollY: 0,
+
       onclone: (_clonedDoc, clonedElement) => {
         // Force export-safe defaults without changing layout
         clonedElement.style.backgroundColor = "#FFFFFF";
@@ -172,10 +185,10 @@ export async function exportToPdf(
         // Ensure all SVGs have explicit dimensions (helps charts/icons)
         const svgs = clonedElement.querySelectorAll("svg");
         svgs.forEach((svg) => {
-          const rect = svg.getBoundingClientRect();
-          if (rect.width > 0 && rect.height > 0) {
-            svg.setAttribute("width", `${Math.round(rect.width)}`);
-            svg.setAttribute("height", `${Math.round(rect.height)}`);
+          const r = svg.getBoundingClientRect();
+          if (r.width > 0 && r.height > 0) {
+            svg.setAttribute("width", `${Math.round(r.width)}`);
+            svg.setAttribute("height", `${Math.round(r.height)}`);
           }
         });
 
@@ -255,6 +268,10 @@ export async function exportToPng(
     await waitForImagesDecode(clone);
     onProgress?.(40);
 
+    const rect = clone.getBoundingClientRect();
+    const captureWidth = Math.max(1, Math.ceil(rect.width));
+    const captureHeight = Math.max(1, Math.ceil(rect.height));
+
     const canvas = await html2canvas(clone, {
       scale,
       useCORS: true,
@@ -263,6 +280,15 @@ export async function exportToPng(
       logging: false,
       imageTimeout: 30000,
       removeContainer: true,
+
+      // Critical: lock the viewport and capture box to the report itself
+      width: captureWidth,
+      height: captureHeight,
+      windowWidth: captureWidth,
+      windowHeight: captureHeight,
+      scrollX: 0,
+      scrollY: 0,
+
       onclone: (_clonedDoc, clonedElement) => {
         clonedElement.style.backgroundColor = "#FFFFFF";
         clonedElement.style.overflow = "visible";
@@ -270,10 +296,10 @@ export async function exportToPng(
 
         const svgs = clonedElement.querySelectorAll("svg");
         svgs.forEach((svg) => {
-          const rect = svg.getBoundingClientRect();
-          if (rect.width > 0 && rect.height > 0) {
-            svg.setAttribute("width", `${Math.round(rect.width)}`);
-            svg.setAttribute("height", `${Math.round(rect.height)}`);
+          const r = svg.getBoundingClientRect();
+          if (r.width > 0 && r.height > 0) {
+            svg.setAttribute("width", `${Math.round(r.width)}`);
+            svg.setAttribute("height", `${Math.round(r.height)}`);
           }
         });
 
