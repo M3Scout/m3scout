@@ -5,7 +5,12 @@ export interface PdfExportOptions {
   filename?: string;
   scale?: number;
   onProgress?: (progress: number) => void;
+  /** If true, capture only the first A4 page (~1123px at 96dpi) for faster debug */
+  firstPageOnly?: boolean;
 }
+
+// A4 page height in pixels at 96dpi
+const A4_PAGE_HEIGHT_PX = 1123;
 
 
 /**
@@ -128,7 +133,7 @@ export async function exportToPdf(
   element: HTMLElement,
   options: PdfExportOptions = {}
 ): Promise<void> {
-  const { filename = "report.pdf", scale = 2, onProgress } = options;
+  const { filename = "report.pdf", scale = 2, onProgress, firstPageOnly = false } = options;
 
   onProgress?.(5);
 
@@ -155,7 +160,9 @@ export async function exportToPdf(
 
     const rect = clone.getBoundingClientRect();
     const captureWidth = Math.max(1, Math.ceil(rect.width));
-    const captureHeight = Math.max(1, Math.ceil(rect.height));
+    // If firstPageOnly, limit to A4 page height
+    const fullHeight = Math.max(1, Math.ceil(rect.height));
+    const captureHeight = firstPageOnly ? Math.min(fullHeight, A4_PAGE_HEIGHT_PX) : fullHeight;
 
     const canvas = await html2canvas(clone, {
       scale,
@@ -244,9 +251,9 @@ export async function exportToPdf(
  */
 export async function exportToPng(
   element: HTMLElement,
-  options: { filename?: string; scale?: number; onProgress?: (progress: number) => void } = {}
+  options: { filename?: string; scale?: number; onProgress?: (progress: number) => void; firstPageOnly?: boolean } = {}
 ): Promise<void> {
-  const { filename = "preview.png", scale = 2, onProgress } = options;
+  const { filename = "preview.png", scale = 2, onProgress, firstPageOnly = false } = options;
 
   onProgress?.(5);
 
@@ -270,7 +277,8 @@ export async function exportToPng(
 
     const rect = clone.getBoundingClientRect();
     const captureWidth = Math.max(1, Math.ceil(rect.width));
-    const captureHeight = Math.max(1, Math.ceil(rect.height));
+    const fullHeight = Math.max(1, Math.ceil(rect.height));
+    const captureHeight = firstPageOnly ? Math.min(fullHeight, A4_PAGE_HEIGHT_PX) : fullHeight;
 
     const canvas = await html2canvas(clone, {
       scale,

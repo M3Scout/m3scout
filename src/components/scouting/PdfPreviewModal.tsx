@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Checkbox } from "@/components/ui/checkbox";
 import { FileDown, Loader2, X, ZoomIn, ZoomOut, Eye, Image } from "lucide-react";
 import { toast } from "sonner";
 import { ScoutingReportPdfTemplate } from "./pdf/ScoutingReportPdfTemplate";
@@ -33,6 +34,7 @@ export function PdfPreviewModal({
   const [isExportingPng, setIsExportingPng] = useState(false);
   const [progress, setProgress] = useState(0);
   const [zoom, setZoom] = useState(0.5);
+  const [firstPageOnly, setFirstPageOnly] = useState(false);
   const templateRef = useRef<HTMLDivElement>(null);
 
   const handleExport = useCallback(async () => {
@@ -59,10 +61,11 @@ export function PdfPreviewModal({
         filename,
         scale: qualityScale,
         onProgress: setProgress,
+        firstPageOnly,
       });
 
       toast.success("PDF exportado com sucesso!", {
-        description: `${filename} (${qualityLabel})`,
+        description: `${filename} (${qualityLabel})${firstPageOnly ? " - Página 1" : ""}`,
       });
 
       onOpenChange(false);
@@ -75,7 +78,7 @@ export function PdfPreviewModal({
       setIsExporting(false);
       setProgress(0);
     }
-  }, [report, qualityScale, qualityLabel, onOpenChange]);
+  }, [report, qualityScale, qualityLabel, onOpenChange, firstPageOnly]);
 
   const handleExportPng = useCallback(async () => {
     if (!report.players) {
@@ -101,10 +104,11 @@ export function PdfPreviewModal({
         filename,
         scale: qualityScale,
         onProgress: setProgress,
+        firstPageOnly,
       });
 
       toast.success("PNG exportado com sucesso!", {
-        description: filename,
+        description: `${filename}${firstPageOnly ? " - Página 1" : ""}`,
       });
     } catch (error) {
       console.error("Erro ao exportar PNG:", error);
@@ -115,7 +119,7 @@ export function PdfPreviewModal({
       setIsExportingPng(false);
       setProgress(0);
     }
-  }, [report, qualityScale]);
+  }, [report, qualityScale, firstPageOnly]);
 
   const handleZoomIn = () => {
     setZoom((prev) => Math.min(prev + 0.1, 1));
@@ -196,9 +200,18 @@ export function PdfPreviewModal({
 
         <DialogFooter className="px-6 py-4 border-t flex-shrink-0">
           <div className="flex items-center justify-between w-full">
-            <p className="text-sm text-muted-foreground">
-              Qualidade: <span className="font-medium">{qualityLabel}</span>
-            </p>
+            <div className="flex items-center gap-4">
+              <p className="text-sm text-muted-foreground">
+                Qualidade: <span className="font-medium">{qualityLabel}</span>
+              </p>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Checkbox
+                  checked={firstPageOnly}
+                  onCheckedChange={(checked) => setFirstPageOnly(checked === true)}
+                />
+                <span className="text-sm text-muted-foreground">Só página 1</span>
+              </label>
+            </div>
             <div className="flex gap-2">
               <Button
                 variant="ghost"
