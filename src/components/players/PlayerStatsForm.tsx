@@ -36,106 +36,116 @@ interface Competition {
   final_coefficient: number;
 }
 
+// Type for numeric stat fields - can be number, null, or empty string for form handling
+type StatValue = number | null | "";
+
 interface PlayerStat {
   id: string;
   player_id: string;
   season_year: number;
   competition_id: string | null;
-  matches: number;
-  minutes: number;
-  goals: number;
-  assists: number;
-  yellow_cards: number;
-  red_cards: number;
-  tackles: number;
-  interceptions: number;
-  recoveries: number;
+  matches: StatValue;
+  minutes: StatValue;
+  goals: StatValue;
+  assists: StatValue;
+  yellow_cards: StatValue;
+  red_cards: StatValue;
+  tackles: StatValue;
+  interceptions: StatValue;
+  recoveries: StatValue;
   // GK specific
-  saves: number;
-  goals_conceded: number;
-  clean_sheets: number;
-  penalties_saved: number;
-  errors_leading_to_goal: number;
-  aerial_duels_won: number;
-  aerial_duels_total: number;
+  saves: StatValue;
+  goals_conceded: StatValue;
+  clean_sheets: StatValue;
+  penalties_saved: StatValue;
+  errors_leading_to_goal: StatValue;
+  aerial_duels_won: StatValue;
+  aerial_duels_total: StatValue;
   // Passing
-  accurate_passes: number;
-  total_passes: number;
+  accurate_passes: StatValue;
+  total_passes: StatValue;
   // Duels
-  duels_won: number;
-  total_duels: number;
-  ground_duels_won: number;
-  ground_duels_total: number;
+  duels_won: StatValue;
+  total_duels: StatValue;
+  ground_duels_won: StatValue;
+  ground_duels_total: StatValue;
   // Offensive
-  chances_created: number;
-  key_passes: number;
-  shots: number;
-  shots_on_target: number;
-  shots_blocked: number;
+  chances_created: StatValue;
+  key_passes: StatValue;
+  shots: StatValue;
+  shots_on_target: StatValue;
+  shots_blocked: StatValue;
   // Additional GK
-  saves_inside_box: number;
-  punches: number;
-  high_claims: number;
-  successful_runs_out: number;
-  total_runs_out: number;
+  saves_inside_box: StatValue;
+  punches: StatValue;
+  high_claims: StatValue;
+  successful_runs_out: StatValue;
+  total_runs_out: StatValue;
   // Other
-  fouls_committed: number;
-  fouls_drawn: number;
-  offsides: number;
-  clearances: number;
-  times_dribbled_past: number;
-  possession_lost: number;
-  long_passes_accurate: number;
-  long_passes_total: number;
-  successful_dribbles: number;
-  total_dribbles: number;
+  fouls_committed: StatValue;
+  fouls_drawn: StatValue;
+  offsides: StatValue;
+  clearances: StatValue;
+  times_dribbled_past: StatValue;
+  possession_lost: StatValue;
+  long_passes_accurate: StatValue;
+  long_passes_total: StatValue;
+  successful_dribbles: StatValue;
+  total_dribbles: StatValue;
 }
+
+// Helper to normalize stat value to number for saving
+const normalizeStatValue = (value: StatValue): number => {
+  if (value === null || value === "" || value === undefined) return 0;
+  const num = typeof value === "string" ? parseFloat(value) : value;
+  return isNaN(num) ? 0 : num;
+};
 
 const emptyStatRow: Omit<PlayerStat, "id" | "player_id"> = {
   season_year: new Date().getFullYear(),
   competition_id: null,
-  matches: 0,
-  minutes: 0,
-  goals: 0,
-  assists: 0,
-  yellow_cards: 0,
-  red_cards: 0,
-  tackles: 0,
-  interceptions: 0,
-  recoveries: 0,
-  saves: 0,
-  goals_conceded: 0,
-  clean_sheets: 0,
-  penalties_saved: 0,
-  errors_leading_to_goal: 0,
-  aerial_duels_won: 0,
-  aerial_duels_total: 0,
-  accurate_passes: 0,
-  total_passes: 0,
-  duels_won: 0,
-  total_duels: 0,
-  ground_duels_won: 0,
-  ground_duels_total: 0,
-  chances_created: 0,
-  key_passes: 0,
-  shots: 0,
-  shots_on_target: 0,
-  shots_blocked: 0,
-  saves_inside_box: 0,
-  punches: 0,
-  high_claims: 0,
-  successful_runs_out: 0,
-  total_runs_out: 0,
-  fouls_committed: 0,
-  fouls_drawn: 0,
-  offsides: 0,
-  clearances: 0,
-  times_dribbled_past: 0,
-  possession_lost: 0,
-  long_passes_accurate: 0,
-  long_passes_total: 0,
-  successful_dribbles: 0,
-  total_dribbles: 0,
+  matches: "",
+  minutes: "",
+  goals: "",
+  assists: "",
+  yellow_cards: "",
+  red_cards: "",
+  tackles: "",
+  interceptions: "",
+  recoveries: "",
+  saves: "",
+  goals_conceded: "",
+  clean_sheets: "",
+  penalties_saved: "",
+  errors_leading_to_goal: "",
+  aerial_duels_won: "",
+  aerial_duels_total: "",
+  accurate_passes: "",
+  total_passes: "",
+  duels_won: "",
+  total_duels: "",
+  ground_duels_won: "",
+  ground_duels_total: "",
+  chances_created: "",
+  key_passes: "",
+  shots: "",
+  shots_on_target: "",
+  shots_blocked: "",
+  saves_inside_box: "",
+  punches: "",
+  high_claims: "",
+  successful_runs_out: "",
+  total_runs_out: "",
+  fouls_committed: "",
+  fouls_drawn: "",
+  offsides: "",
+  clearances: "",
+  times_dribbled_past: "",
+  possession_lost: "",
+  long_passes_accurate: "",
+  long_passes_total: "",
+  successful_dribbles: "",
+  total_dribbles: "",
 };
 
 interface PlayerStatsFormProps {
@@ -143,11 +153,11 @@ interface PlayerStatsFormProps {
   playerPosition: string;
 }
 
-// Stat input with tooltip
+// Stat input with tooltip - supports empty values for better UX
 interface StatInputProps {
   label: string;
-  value: number;
-  onChange: (value: number) => void;
+  value: StatValue;
+  onChange: (value: StatValue) => void;
   tooltip?: string;
   warning?: string;
   min?: number;
@@ -155,6 +165,21 @@ interface StatInputProps {
 }
 
 function StatInput({ label, value, onChange, tooltip, warning, min = 0, step = 1 }: StatInputProps) {
+  // Display empty string when value is null, undefined, or empty string
+  const displayValue = value === null || value === undefined || value === "" ? "" : value;
+  
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value;
+    // If empty, keep as empty string (will be normalized to 0 on save)
+    if (rawValue === "") {
+      onChange("");
+      return;
+    }
+    // Parse the number
+    const parsed = step < 1 ? parseFloat(rawValue) : parseInt(rawValue, 10);
+    onChange(isNaN(parsed) ? "" : parsed);
+  };
+
   return (
     <div className="space-y-1">
       <div className="flex items-center gap-1">
@@ -176,8 +201,8 @@ function StatInput({ label, value, onChange, tooltip, warning, min = 0, step = 1
         type="number" 
         min={min}
         step={step}
-        value={value} 
-        onChange={(e) => onChange(parseInt(e.target.value) || 0)}
+        value={displayValue} 
+        onChange={handleChange}
         placeholder="0"
         className={warning ? "border-amber-400" : ""}
       />
@@ -191,11 +216,12 @@ function StatInput({ label, value, onChange, tooltip, warning, min = 0, step = 1
   );
 }
 
-// Summary badge component
-function SummaryBadge({ label, value, highlight = false }: { label: string; value: number | string; highlight?: boolean }) {
+// Summary badge component - handles StatValue type
+function SummaryBadge({ label, value, highlight = false }: { label: string; value: StatValue; highlight?: boolean }) {
+  const displayValue = value === null || value === undefined || value === "" ? 0 : value;
   return (
     <div className={`text-center px-2 py-1 rounded ${highlight ? 'bg-primary/10 text-primary' : 'bg-muted'}`}>
-      <div className={`text-sm font-semibold ${highlight ? 'text-primary' : ''}`}>{value}</div>
+      <div className={`text-sm font-semibold ${highlight ? 'text-primary' : ''}`}>{displayValue}</div>
       <div className="text-[10px] text-muted-foreground uppercase">{label}</div>
     </div>
   );
@@ -260,8 +286,12 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
       const updated = { ...s, [field]: value };
       
       // Auto-correct: shots_on_target > shots → adjust shots
-      if (field === "shots_on_target" && value > s.shots) {
-        updated.shots = value;
+      if (field === "shots_on_target") {
+        const shotsOnTarget = normalizeStatValue(value);
+        const shots = normalizeStatValue(s.shots);
+        if (shotsOnTarget > shots) {
+          updated.shots = value;
+        }
       }
       
       return updated;
@@ -304,48 +334,48 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
           player_id: playerId,
           season_year: stat.season_year,
           competition_id: stat.competition_id,
-          matches: stat.matches,
-          minutes: stat.minutes,
-          goals: stat.goals,
-          assists: stat.assists,
-          yellow_cards: stat.yellow_cards,
-          red_cards: stat.red_cards,
-          tackles: stat.tackles,
-          interceptions: stat.interceptions,
-          recoveries: stat.recoveries,
-          saves: stat.saves,
-          goals_conceded: stat.goals_conceded,
-          clean_sheets: stat.clean_sheets,
-          penalties_saved: stat.penalties_saved,
-          errors_leading_to_goal: stat.errors_leading_to_goal,
-          aerial_duels_won: stat.aerial_duels_won,
-          aerial_duels_total: stat.aerial_duels_total,
-          accurate_passes: stat.accurate_passes,
-          total_passes: stat.total_passes,
-          duels_won: stat.duels_won,
-          total_duels: stat.total_duels,
-          ground_duels_won: stat.ground_duels_won,
-          ground_duels_total: stat.ground_duels_total,
-          chances_created: stat.chances_created,
-          key_passes: stat.key_passes,
-          shots: stat.shots,
-          shots_on_target: stat.shots_on_target,
-          shots_blocked: stat.shots_blocked,
-          saves_inside_box: stat.saves_inside_box,
-          punches: stat.punches,
-          high_claims: stat.high_claims,
-          successful_runs_out: stat.successful_runs_out,
-          total_runs_out: stat.total_runs_out,
-          fouls_committed: stat.fouls_committed,
-          fouls_drawn: stat.fouls_drawn,
-          offsides: stat.offsides,
-          clearances: stat.clearances,
-          times_dribbled_past: stat.times_dribbled_past,
-          possession_lost: stat.possession_lost,
-          long_passes_accurate: stat.long_passes_accurate,
-          long_passes_total: stat.long_passes_total,
-          successful_dribbles: stat.successful_dribbles,
-          total_dribbles: stat.total_dribbles,
+          matches: normalizeStatValue(stat.matches),
+          minutes: normalizeStatValue(stat.minutes),
+          goals: normalizeStatValue(stat.goals),
+          assists: normalizeStatValue(stat.assists),
+          yellow_cards: normalizeStatValue(stat.yellow_cards),
+          red_cards: normalizeStatValue(stat.red_cards),
+          tackles: normalizeStatValue(stat.tackles),
+          interceptions: normalizeStatValue(stat.interceptions),
+          recoveries: normalizeStatValue(stat.recoveries),
+          saves: normalizeStatValue(stat.saves),
+          goals_conceded: normalizeStatValue(stat.goals_conceded),
+          clean_sheets: normalizeStatValue(stat.clean_sheets),
+          penalties_saved: normalizeStatValue(stat.penalties_saved),
+          errors_leading_to_goal: normalizeStatValue(stat.errors_leading_to_goal),
+          aerial_duels_won: normalizeStatValue(stat.aerial_duels_won),
+          aerial_duels_total: normalizeStatValue(stat.aerial_duels_total),
+          accurate_passes: normalizeStatValue(stat.accurate_passes),
+          total_passes: normalizeStatValue(stat.total_passes),
+          duels_won: normalizeStatValue(stat.duels_won),
+          total_duels: normalizeStatValue(stat.total_duels),
+          ground_duels_won: normalizeStatValue(stat.ground_duels_won),
+          ground_duels_total: normalizeStatValue(stat.ground_duels_total),
+          chances_created: normalizeStatValue(stat.chances_created),
+          key_passes: normalizeStatValue(stat.key_passes),
+          shots: normalizeStatValue(stat.shots),
+          shots_on_target: normalizeStatValue(stat.shots_on_target),
+          shots_blocked: normalizeStatValue(stat.shots_blocked),
+          saves_inside_box: normalizeStatValue(stat.saves_inside_box),
+          punches: normalizeStatValue(stat.punches),
+          high_claims: normalizeStatValue(stat.high_claims),
+          successful_runs_out: normalizeStatValue(stat.successful_runs_out),
+          total_runs_out: normalizeStatValue(stat.total_runs_out),
+          fouls_committed: normalizeStatValue(stat.fouls_committed),
+          fouls_drawn: normalizeStatValue(stat.fouls_drawn),
+          offsides: normalizeStatValue(stat.offsides),
+          clearances: normalizeStatValue(stat.clearances),
+          times_dribbled_past: normalizeStatValue(stat.times_dribbled_past),
+          possession_lost: normalizeStatValue(stat.possession_lost),
+          long_passes_accurate: normalizeStatValue(stat.long_passes_accurate),
+          long_passes_total: normalizeStatValue(stat.long_passes_total),
+          successful_dribbles: normalizeStatValue(stat.successful_dribbles),
+          total_dribbles: normalizeStatValue(stat.total_dribbles),
         };
 
         if (stat.id.startsWith("new-")) {
@@ -386,10 +416,15 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
   // Validation warnings
   const getValidationWarnings = (stat: PlayerStat) => {
     const warnings: string[] = [];
-    if (stat.minutes === 0 && stat.matches > 0) {
+    const minutes = normalizeStatValue(stat.minutes);
+    const matches = normalizeStatValue(stat.matches);
+    const shotsOnTarget = normalizeStatValue(stat.shots_on_target);
+    const shots = normalizeStatValue(stat.shots);
+    
+    if (minutes === 0 && matches > 0) {
       warnings.push("Jogos > 0 mas minutos = 0");
     }
-    if (stat.shots_on_target > stat.shots) {
+    if (shotsOnTarget > shots) {
       warnings.push("Chutes no gol > chutes totais (ajustado automaticamente)");
     }
     return warnings;
@@ -455,7 +490,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
                         <Badge variant="outline">{stat.season_year}</Badge>
                         <span className="font-medium">{getCompetitionName(stat.competition_id)}</span>
                         <span className="text-sm text-muted-foreground">
-                          {stat.matches} jogos • {stat.minutes} min • {stat.goals}G {stat.assists}A
+                          {normalizeStatValue(stat.matches)} jogos • {normalizeStatValue(stat.minutes)} min • {normalizeStatValue(stat.goals)}G {normalizeStatValue(stat.assists)}A
                         </span>
                         {warnings.length > 0 && (
                           <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50">
@@ -566,7 +601,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
                             value={stat.minutes} 
                             onChange={(v) => updateStatField(stat.id, "minutes", v)}
                             tooltip="Total de minutos em campo"
-                            warning={stat.minutes === 0 && stat.matches > 0 ? "Sem minutos registrados" : undefined}
+                            warning={normalizeStatValue(stat.minutes) === 0 && normalizeStatValue(stat.matches) > 0 ? "Sem minutos registrados" : undefined}
                           />
                         </div>
                       </div>
