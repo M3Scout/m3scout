@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MatchPlayer, MatchEventType, MatchStatus } from "@/hooks/useLiveMatch";
-import { Plus, Undo2, ChevronDown, ChevronUp, LogIn, LogOut } from "lucide-react";
+import { Plus, Undo2, ChevronDown, ChevronUp, LogIn, LogOut, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Stat categories configuration with colors
@@ -96,6 +96,7 @@ interface PlayerStatCardProps {
   onUndo: () => void;
   onPlayerEnter?: (minute: number) => void;
   onPlayerExit?: (minute: number) => void;
+  onRemovePlayer?: () => void;
   disabled?: boolean;
 }
 
@@ -108,6 +109,7 @@ export function PlayerStatCard({
   onUndo,
   onPlayerEnter,
   onPlayerExit,
+  onRemovePlayer,
   disabled,
 }: PlayerStatCardProps) {
   const [expanded, setExpanded] = useState(true);
@@ -255,6 +257,19 @@ export function PlayerStatCard({
                   </Button>
                 )}
               </>
+            )}
+
+            {/* Remove player button - only during draft (pre-game) */}
+            {isDraft && onRemovePlayer && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={onRemovePlayer}
+                title="Remover da escalação"
+              >
+                <X className="h-4 w-4" />
+              </Button>
             )}
 
             <Button
