@@ -7,44 +7,51 @@ export interface PdfExportOptions {
   onProgress?: (progress: number) => void;
 }
 
-// Fixed A4 width in pixels at 96dpi
-const A4_WIDTH_PX = 794;
 
 /**
- * Wait for all fonts to be loaded
+ * Wait for all fonts to finish loading to avoid layout shifts.
  */
 async function waitForFonts(): Promise<void> {
-  if (document.fonts && document.fonts.ready) {
+  if (document.fonts?.ready) {
     await document.fonts.ready;
   }
-  // Extra safety delay for font rendering
-  await new Promise((resolve) => setTimeout(resolve, 100));
 }
 
 /**
- * Wait for all images in an element to be fully loaded
+ * Best-effort wait for images decode/load.
  */
-async function waitForImages(element: HTMLElement): Promise<void> {
-  const images = element.querySelectorAll("img");
-  const imagePromises: Promise<void>[] = [];
+async function waitForImagesDecode(element: HTMLElement): Promise<void> {
+  const images = Array.from(element.querySelectorAll("img"));
 
-  images.forEach((img) => {
-    if (!img.complete) {
-      const promise = new Promise<void>((resolve) => {
-        img.onload = () => resolve();
-        img.onerror = () => resolve();
-        // Timeout fallback
-        setTimeout(resolve, 3000);
-      });
-      imagePromises.push(promise);
-    }
-  });
+  await Promise.all(
+    images.map(async (img) => {
+      try {
+        // decode() is best because it waits for decoding too (not only network)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const decodeFn = (img as any).decode as undefined | (() => Promise<void>);
+        if (decodeFn) {
+          await decodeFn.call(img);
+          return;
+        }
 
-  await Promise.all(imagePromises);
+        if (img.complete) return;
+
+        await new Promise<void>((resolve) => {
+          const done = () => resolve();
+          img.addEventListener("load", done, { once: true });
+          img.addEventListener("error", done, { once: true });
+          setTimeout(done, 5000);
+        });
+      } catch {
+        // ignore
+      }
+    })
+  );
 }
 
 /**
- * Preload all images in an element and convert to base64 for reliable PDF rendering
+ * Preload all images in an element and convert to base64 for reliable PDF rendering.
+ * IMPORTANT: Call this on the export CLONE, never on the visible preview.
  */
 async function preloadImages(element: HTMLElement): Promise<void> {
   const images = element.querySelectorAll("img");
@@ -80,9 +87,34 @@ async function preloadImages(element: HTMLElement): Promise<void> {
   await Promise.all(imagePromises);
 }
 
+function createExportWrapper(source: HTMLElement) {
+  // A4 @ 96dpi ≈ 794px
+  const wrapper = document.createElement("div");
+  wrapper.setAttribute("data-pdf-export-wrapper", "true");
+  wrapper.style.position = "fixed";
+  wrapper.style.left = "-10000px";
+  wrapper.style.top = "0";
+  wrapper.style.width = "794px";
+  wrapper.style.background = "#FFFFFF";
+  wrapper.style.pointerEvents = "none";
+  wrapper.style.opacity = "0";
+  wrapper.style.overflow = "visible";
+  wrapper.style.zIndex = "-1";
+
+  const clone = source.cloneNode(true) as HTMLElement;
+  // Ensure clone isn't affected by parent transforms
+  clone.style.transform = "none";
+
+  wrapper.appendChild(clone);
+  document.body.appendChild(wrapper);
+
+  return { wrapper, clone };
+}
+
 /**
- * Export a DOM element to PDF with high-quality rendering
- * Optimized for print-ready output with proper page breaks
+ * Export a DOM element to PDF with high-quality rendering.
+ * Strategy: clone the EXACT preview DOM into a fixed-width A4 wrapper (no transforms)
+ * to ensure the exported PDF matches the preview.
  */
 export async function exportToPdf(
   element: HTMLElement,
@@ -92,86 +124,68 @@ export async function exportToPdf(
 
   onProgress?.(5);
 
-  // Add exporting class to body for CSS overrides
-  document.body.classList.add("exporting-pdf");
+  // Ensure fonts are ready before cloning (prevents swapped font in clone)
+  await waitForFonts();
+  onProgress?.(10);
+
+  const { wrapper, clone } = createExportWrapper(element);
 
   try {
-    // Wait for fonts to be fully loaded
+    // Wait for the clone to be fully laid out
+    await new Promise((r) => setTimeout(r, 50));
+
     await waitForFonts();
-    onProgress?.(10);
+    await waitForImagesDecode(clone);
+    onProgress?.(20);
 
-    // Wait for images to load
-    await waitForImages(element);
-    onProgress?.(15);
+    await preloadImages(clone);
+    onProgress?.(35);
 
-    // Preload and convert images to base64
-    await preloadImages(element);
-    onProgress?.(25);
-
-    // Create canvas from the element with high resolution
-    const canvas = await html2canvas(element, {
-      scale: scale,
+    const canvas = await html2canvas(clone, {
+      scale,
       useCORS: true,
       allowTaint: true,
       backgroundColor: "#FFFFFF",
       logging: false,
       imageTimeout: 30000,
       removeContainer: true,
-      width: element.scrollWidth,
-      height: element.scrollHeight,
-      windowWidth: element.scrollWidth,
-      onclone: (clonedDoc, clonedElement) => {
-        // Force white background on container
+      onclone: (_clonedDoc, clonedElement) => {
+        // Force export-safe defaults without changing layout
         clonedElement.style.backgroundColor = "#FFFFFF";
         clonedElement.style.overflow = "visible";
-        
-        // Reset any transforms that might cause issues
+
+        // Avoid any transform inheritance
         clonedElement.style.transform = "none";
-        
-        // Ensure all SVGs are properly sized and have explicit dimensions
+
+        // Ensure all SVGs have explicit dimensions (helps charts/icons)
         const svgs = clonedElement.querySelectorAll("svg");
         svgs.forEach((svg) => {
           const rect = svg.getBoundingClientRect();
           if (rect.width > 0 && rect.height > 0) {
-            svg.setAttribute("width", Math.round(rect.width).toString());
-            svg.setAttribute("height", Math.round(rect.height).toString());
-            svg.style.overflow = "visible";
+            svg.setAttribute("width", `${Math.round(rect.width)}`);
+            svg.setAttribute("height", `${Math.round(rect.height)}`);
           }
         });
-        
-        // Ensure images have fixed dimensions and no lazy loading
+
+        // Ensure images are eager and visible
         const images = clonedElement.querySelectorAll("img");
         images.forEach((img) => {
-          img.crossOrigin = "anonymous";
           img.loading = "eager";
           img.style.visibility = "visible";
           img.style.opacity = "1";
         });
-
-        // Normalize line-height to avoid fractional pixel issues
-        const textElements = clonedElement.querySelectorAll("p, span, div, h1, h2, h3, h4, h5, h6");
-        textElements.forEach((el) => {
-          const element = el as HTMLElement;
-          const computedStyle = window.getComputedStyle(element);
-          const opacity = parseFloat(computedStyle.opacity);
-          if (opacity < 0.75) {
-            element.style.opacity = "0.85";
-          }
-        });
       },
     });
 
-    onProgress?.(60);
+    onProgress?.(65);
 
     // A4 dimensions in mm
     const a4Width = 210;
     const a4Height = 297;
-    
-    // Calculate dimensions
+
     const imgWidth = a4Width;
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-    // Create PDF
     const pdf = new jsPDF({
       orientation: "portrait",
       unit: "mm",
@@ -181,42 +195,21 @@ export async function exportToPdf(
 
     onProgress?.(75);
 
-    // Get image data at maximum quality
     const imgData = canvas.toDataURL("image/png", 1.0);
-    
-    // Calculate how many pages we need
     const totalPages = Math.ceil(imgHeight / a4Height);
-    
+
     for (let page = 0; page < totalPages; page++) {
-      if (page > 0) {
-        pdf.addPage();
-      }
-      
-      // Calculate the y offset for this page
+      if (page > 0) pdf.addPage();
+
       const yOffset = -(page * a4Height);
-      
-      // Add the image with offset
-      pdf.addImage(
-        imgData, 
-        "PNG", 
-        0, 
-        yOffset, 
-        imgWidth, 
-        imgHeight,
-        undefined,
-        "FAST"
-      );
+      pdf.addImage(imgData, "PNG", 0, yOffset, imgWidth, imgHeight, undefined, "FAST");
     }
 
     onProgress?.(95);
-
-    // Save the PDF
     pdf.save(filename);
-
     onProgress?.(100);
   } finally {
-    // Always remove exporting class
-    document.body.classList.remove("exporting-pdf");
+    wrapper.remove();
   }
 }
 

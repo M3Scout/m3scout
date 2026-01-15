@@ -44,21 +44,11 @@ export function PdfPreviewModal({
     setProgress(0);
 
     try {
-      // Use the SAME template element that's visible in the preview
+      // Export uses a CLONE of the preview DOM in a fixed A4 wrapper (implemented in exportToPdf)
       const templateElement = templateRef.current;
       if (!templateElement) {
         throw new Error("Template não encontrado");
       }
-
-      // Temporarily reset zoom transform for accurate capture
-      const previewWrapper = templateElement.parentElement;
-      const originalTransform = previewWrapper?.style.transform;
-      if (previewWrapper) {
-        previewWrapper.style.transform = "none";
-      }
-
-      // Small delay for the transform change to apply
-      await new Promise((resolve) => setTimeout(resolve, 100));
 
       const filename = generateReportFilename(
         report.players.full_name,
@@ -70,11 +60,6 @@ export function PdfPreviewModal({
         scale: qualityScale,
         onProgress: setProgress,
       });
-
-      // Restore original transform
-      if (previewWrapper && originalTransform !== undefined) {
-        previewWrapper.style.transform = originalTransform;
-      }
 
       toast.success("PDF exportado com sucesso!", {
         description: `${filename} (${qualityLabel})`,
