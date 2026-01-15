@@ -11,6 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { HalfStatsComparison } from "@/components/live-match/HalfStatsComparison";
 import {
   CheckCircle2,
   AlertTriangle,
@@ -450,7 +451,7 @@ export default function LiveMatchReview() {
         </div>
       </div>
 
-      {/* Summary card */}
+      {/* Summary card with stats by half */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -458,27 +459,33 @@ export default function LiveMatchReview() {
             Resumo
           </CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-4">
-          <div className="text-center p-4 rounded-lg bg-muted/50">
-            <p className="text-3xl font-bold">{matchPlayers.length}</p>
-            <p className="text-sm text-muted-foreground">Jogadores</p>
+        <CardContent className="space-y-4">
+          {/* Global summary */}
+          <div className="grid gap-4 sm:grid-cols-4">
+            <div className="text-center p-4 rounded-lg bg-muted/50">
+              <p className="text-3xl font-bold">{matchPlayers.length}</p>
+              <p className="text-sm text-muted-foreground">Jogadores</p>
+            </div>
+            <div className="text-center p-4 rounded-lg bg-muted/50">
+              <p className="text-3xl font-bold">{matchEvents.length}</p>
+              <p className="text-sm text-muted-foreground">Eventos</p>
+            </div>
+            <div className="text-center p-4 rounded-lg bg-green-500/10">
+              <p className="text-3xl font-bold text-green-400">
+                {matchEvents.filter((e) => e.event_type === "goal").length}
+              </p>
+              <p className="text-sm text-muted-foreground">Gols</p>
+            </div>
+            <div className="text-center p-4 rounded-lg bg-blue-500/10">
+              <p className="text-3xl font-bold text-blue-400">
+                {matchEvents.filter((e) => e.event_type === "assist").length}
+              </p>
+              <p className="text-sm text-muted-foreground">Assistências</p>
+            </div>
           </div>
-          <div className="text-center p-4 rounded-lg bg-muted/50">
-            <p className="text-3xl font-bold">{matchEvents.length}</p>
-            <p className="text-sm text-muted-foreground">Eventos</p>
-          </div>
-          <div className="text-center p-4 rounded-lg bg-green-500/10">
-            <p className="text-3xl font-bold text-green-400">
-              {matchEvents.filter((e) => e.event_type === "goal").length}
-            </p>
-            <p className="text-sm text-muted-foreground">Gols</p>
-          </div>
-          <div className="text-center p-4 rounded-lg bg-blue-500/10">
-            <p className="text-3xl font-bold text-blue-400">
-              {matchEvents.filter((e) => e.event_type === "assist").length}
-            </p>
-            <p className="text-sm text-muted-foreground">Assistências</p>
-          </div>
+
+          {/* Stats by half */}
+          <HalfStatsComparison events={matchEvents} matchPlayers={matchPlayers} />
         </CardContent>
       </Card>
 

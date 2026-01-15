@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -65,10 +65,29 @@ export function EventLogDrawer({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editMinute, setEditMinute] = useState("");
 
-  // Sort events by created_at descending
-  const sortedEvents = [...events].sort(
-    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  );
+  // Group and sort events by half
+  const { firstHalfEvents, secondHalfEvents } = useMemo(() => {
+    const first: MatchEvent[] = [];
+    const second: MatchEvent[] = [];
+
+    events.forEach((event) => {
+      if (event.half === 2) {
+        second.push(event);
+      } else {
+        // Default to 1st half if half is null or 1
+        first.push(event);
+      }
+    });
+
+    // Sort each by created_at descending (most recent first)
+    const sortByCreatedAt = (a: MatchEvent, b: MatchEvent) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+
+    return {
+      firstHalfEvents: first.sort(sortByCreatedAt),
+      secondHalfEvents: second.sort(sortByCreatedAt),
+    };
+  }, [events]);
 
   const getPlayerName = (playerId: string) => {
     const mp = players.find((p) => p.player_id === playerId);
@@ -85,6 +104,93 @@ export function EventLogDrawer({
     setEditMinute("");
   };
 
+  // Format display minute - use display_minute if available, otherwise fallback to minute
+  const getDisplayMinute = (event: MatchEvent) => {
+    if (event.display_minute) {
+      return event.display_minute;
+    }
+    if (event.minute != null) {
+      return `${event.minute}'`;
+    }
+    return "--'";
+  };
+
+  const renderEventItem = (event: MatchEvent) => (
+    <div
+      key={event.id}
+      className="flex items-center gap-3 p-3 rounded-lg border bg-card"
+    >
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary" className="text-xs font-mono">
+            {getDisplayMinute(event)}
+          </Badge>
+          <span className="font-medium text-sm truncate">
+            {EVENT_LABELS[event.event_type]}
+          </span>
+        </div>
+        <p className="text-xs text-muted-foreground truncate mt-1">
+          {getPlayerName(event.player_id)}
+        </p>
+        <p className="text-[10px] text-muted-foreground">
+          {format(new Date(event.created_at), "HH:mm:ss", { locale: ptBR })}
+        </p>
+      </div>
+
+      {editingId === event.id ? (
+        <div className="flex items-center gap-1">
+          <Input
+            type="number"
+            min={0}
+            max={120}
+            value={editMinute}
+            onChange={(e) => setEditMinute(e.target.value)}
+            className="w-16 h-8"
+            placeholder="Min"
+          />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={handleCancelEdit}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-green-600"
+            onClick={() => {
+              // TODO: Implement update
+              handleCancelEdit();
+            }}
+          >
+            <Check className="h-4 w-4" />
+          </Button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => handleStartEdit(event)}
+          >
+            <Edit2 className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-destructive"
+            onClick={() => onDeleteEvent(event.id)}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -99,87 +205,48 @@ export function EventLogDrawer({
         </SheetHeader>
 
         <ScrollArea className="h-[calc(100vh-100px)] mt-4">
-          {sortedEvents.length === 0 ? (
+          {events.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">
               Nenhum evento registrado
             </p>
           ) : (
-            <div className="space-y-2">
-              {sortedEvents.map((event) => (
-                <div
-                  key={event.id}
-                  className="flex items-center gap-3 p-3 rounded-lg border bg-card"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="text-xs">
-                        {event.minute != null ? `${event.minute}'` : "--'"}
-                      </Badge>
-                      <span className="font-medium text-sm truncate">
-                        {EVENT_LABELS[event.event_type]}
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground truncate mt-1">
-                      {getPlayerName(event.player_id)}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground">
-                      {format(new Date(event.created_at), "HH:mm:ss", { locale: ptBR })}
-                    </p>
+            <div className="space-y-4">
+              {/* 2nd Half - Show first if there are events */}
+              {secondHalfEvents.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 sticky top-0 bg-background/95 backdrop-blur py-2 z-10">
+                    <Badge
+                      variant="default"
+                      className="bg-primary text-primary-foreground"
+                    >
+                      2º TEMPO
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      {secondHalfEvents.length} evento
+                      {secondHalfEvents.length !== 1 ? "s" : ""}
+                    </span>
                   </div>
-
-                  {editingId === event.id ? (
-                    <div className="flex items-center gap-1">
-                      <Input
-                        type="number"
-                        min={0}
-                        max={120}
-                        value={editMinute}
-                        onChange={(e) => setEditMinute(e.target.value)}
-                        className="w-16 h-8"
-                        placeholder="Min"
-                      />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={handleCancelEdit}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-green-600"
-                        onClick={() => {
-                          // TODO: Implement update
-                          handleCancelEdit();
-                        }}
-                      >
-                        <Check className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => handleStartEdit(event)}
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive"
-                        onClick={() => onDeleteEvent(event.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  )}
+                  <div className="space-y-2">
+                    {secondHalfEvents.map(renderEventItem)}
+                  </div>
                 </div>
-              ))}
+              )}
+
+              {/* 1st Half */}
+              {firstHalfEvents.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 sticky top-0 bg-background/95 backdrop-blur py-2 z-10">
+                    <Badge variant="secondary">1º TEMPO</Badge>
+                    <span className="text-xs text-muted-foreground">
+                      {firstHalfEvents.length} evento
+                      {firstHalfEvents.length !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {firstHalfEvents.map(renderEventItem)}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </ScrollArea>

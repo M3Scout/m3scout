@@ -79,6 +79,8 @@ export interface MatchEvent {
   event_type: MatchEventType;
   value: number;
   created_at: string;
+  half: number | null;
+  display_minute: string | null;
 }
 
 // Local storage key for offline draft
