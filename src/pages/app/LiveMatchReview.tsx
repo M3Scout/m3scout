@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useParams, useNavigate, Navigate } from "react-router-dom";
+import { useParams, useNavigate, Navigate, Link } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLiveMatch, MatchEventType } from "@/hooks/useLiveMatch";
@@ -17,6 +17,8 @@ import {
   Upload,
   Users,
   TrendingUp,
+  ExternalLink,
+  Info,
 } from "lucide-react";
 
 // Map match events to player_stats columns
@@ -54,10 +56,45 @@ const EVENT_TO_STAT_COLUMN: Partial<Record<MatchEventType, string>> = {
   sweeper_action: "successful_runs_out",
 };
 
+// Event type labels for display
+const EVENT_LABELS: Partial<Record<MatchEventType, string>> = {
+  goal: "Gols",
+  assist: "Assistências",
+  shot: "Chutes",
+  shot_on_target: "Chutes no Gol",
+  key_pass: "Passes Decisivos",
+  chance_created: "Chances Criadas",
+  dribble_success: "Dribles Certos",
+  dribble_attempt: "Dribles Tentados",
+  tackle: "Desarmes",
+  interception: "Interceptações",
+  recovery: "Recuperações",
+  clearance: "Cortes",
+  duel_won: "Duelos Ganhos",
+  duel_total: "Duelos Totais",
+  aerial_duel_won: "Aéreos Ganhos",
+  yellow: "Amarelos",
+  red: "Vermelhos",
+  foul_committed: "Faltas Cometidas",
+  foul_suffered: "Faltas Sofridas",
+  pass_success: "Passes Certos",
+  pass_total: "Passes Totais",
+  possession_lost: "Bolas Perdidas",
+  save: "Defesas",
+  goal_conceded: "Gols Sofridos",
+  clean_sheet: "Clean Sheets",
+  penalty_saved: "Pênaltis Defendidos",
+  error_led_to_goal: "Erros→Gol",
+  box_save: "Defesas na Área",
+  punch: "Socos",
+  high_claim: "Bolas Altas",
+  sweeper_action: "Saídas do Gol",
+};
+
 interface Inconsistency {
   playerId: string;
   playerName: string;
-  type: "warning" | "error";
+  type: "warning" | "error" | "info";
   message: string;
 }
 
@@ -65,7 +102,7 @@ export default function LiveMatchReview() {
   const { matchId } = useParams<{ matchId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [applying, setApplying] = useState(false);
+  const [appliedPlayerIds, setAppliedPlayerIds] = useState<string[]>([]);
 
   const {
     match,
@@ -74,18 +111,21 @@ export default function LiveMatchReview() {
     playerEventCounts,
     isLoading,
     matchError,
-    updateMatchStatus,
     clearLocalDraft,
   } = useLiveMatch(matchId || "");
 
-  // Detect inconsistencies
+  // Detect inconsistencies (including GK-specific)
   const inconsistencies = useMemo<Inconsistency[]>(() => {
+    if (!match) return [];
     const issues: Inconsistency[] = [];
+    const duration = match.duration_minutes;
 
     matchPlayers.forEach((mp) => {
       if (!mp.player) return;
       const counts = (playerEventCounts[mp.player_id] || {}) as Partial<Record<MatchEventType, number>>;
+      const isGK = mp.position_template === "goalkeeper";
 
+      // Common checks
       // Shots on target > Shots
       const shots = counts.shot ?? 0;
       const shotsOnTarget = counts.shot_on_target ?? 0;
@@ -122,6 +162,17 @@ export default function LiveMatchReview() {
         });
       }
 
+      // Aerial duels won > total duels (warning only)
+      const aerialWon = counts.aerial_duel_won ?? 0;
+      if (aerialWon > duelsTotal && duelsTotal > 0) {
+        issues.push({
+          playerId: mp.player_id,
+          playerName: mp.player.full_name,
+          type: "info",
+          message: `Duelos aéreos ganhos (${aerialWon}) > Duelos totais (${duelsTotal})`,
+        });
+      }
+
       // Passes accurate > total
       const passesAcc = counts.pass_success ?? 0;
       const passesTotal = counts.pass_total ?? 0;
@@ -134,44 +185,122 @@ export default function LiveMatchReview() {
         });
       }
 
+      // Minutes checks
+      const minutesPlayed = mp.minutes_played ?? duration;
+      if (minutesPlayed > duration) {
+        issues.push({
+          playerId: mp.player_id,
+          playerName: mp.player.full_name,
+          type: "warning",
+          message: `Minutos jogados (${minutesPlayed}) > Duração do jogo (${duration})`,
+        });
+      }
+
+      // Entered/exited minute range check
+      if (mp.entered_minute !== null && (mp.entered_minute < 0 || mp.entered_minute > duration)) {
+        issues.push({
+          playerId: mp.player_id,
+          playerName: mp.player.full_name,
+          type: "warning",
+          message: `Minuto de entrada (${mp.entered_minute}) fora do intervalo 0-${duration}`,
+        });
+      }
+      if (mp.exited_minute !== null && (mp.exited_minute < 0 || mp.exited_minute > duration)) {
+        issues.push({
+          playerId: mp.player_id,
+          playerName: mp.player.full_name,
+          type: "warning",
+          message: `Minuto de saída (${mp.exited_minute}) fora do intervalo 0-${duration}`,
+        });
+      }
+
+      // GK-specific checks
+      if (isGK) {
+        const cleanSheets = counts.clean_sheet ?? 0;
+        const goalsConceded = counts.goal_conceded ?? 0;
+
+        // Clean sheet > 1 (can only have 1 per game)
+        if (cleanSheets > 1) {
+          issues.push({
+            playerId: mp.player_id,
+            playerName: mp.player.full_name,
+            type: "warning",
+            message: `Clean sheets (${cleanSheets}) > 1 por jogo`,
+          });
+        }
+
+        // Clean sheet marked but goals conceded > 0
+        if (cleanSheets > 0 && goalsConceded > 0) {
+          issues.push({
+            playerId: mp.player_id,
+            playerName: mp.player.full_name,
+            type: "error",
+            message: `Clean sheet marcado mas tem gols sofridos (${goalsConceded})`,
+          });
+        }
+
+        // Saves/goals ratio check (info only)
+        const saves = counts.save ?? 0;
+        if (saves === 0 && goalsConceded > 2) {
+          issues.push({
+            playerId: mp.player_id,
+            playerName: mp.player.full_name,
+            type: "info",
+            message: `${goalsConceded} gols sofridos sem nenhuma defesa registrada`,
+          });
+        }
+      }
+
       // Player has no events
       const totalEvents = Object.values(counts).reduce((a, b) => (a ?? 0) + (b ?? 0), 0);
       if (totalEvents === 0) {
         issues.push({
           playerId: mp.player_id,
           playerName: mp.player.full_name,
-          type: "warning",
+          type: "info",
           message: "Nenhuma estatística registrada",
         });
       }
     });
 
     return issues;
-  }, [matchPlayers, playerEventCounts]);
+  }, [match, matchPlayers, playerEventCounts]);
 
-  // Apply stats mutation
+  // Apply stats mutation - now properly INCREMENTS existing stats
   const applyStats = useMutation({
     mutationFn: async () => {
       if (!match) throw new Error("Jogo não encontrado");
 
-      // For each player, aggregate events and update player_stats
+      const appliedIds: string[] = [];
+
       for (const mp of matchPlayers) {
-        const counts = playerEventCounts[mp.player_id] || {};
-        
-        // Build update object with only mapped columns
-        const statsUpdate: Record<string, number> = {
-          matches: 1,
-          minutes: mp.minutes_played ?? match.duration_minutes,
+        const counts = (playerEventCounts[mp.player_id] || {}) as Partial<Record<MatchEventType, number>>;
+        const minutesPlayed = mp.minutes_played ?? match.duration_minutes;
+
+        // First, try to get existing stats
+        const { data: existingStats } = await supabase
+          .from("player_stats")
+          .select("*")
+          .eq("player_id", mp.player_id)
+          .eq("competition_id", match.competition_id)
+          .eq("season_year", match.season_year)
+          .maybeSingle();
+
+        // Build update object with incremented values
+        const statsData: Record<string, number> = {
+          matches: (existingStats?.matches ?? 0) + 1,
+          minutes: (existingStats?.minutes ?? 0) + minutesPlayed,
         };
 
         for (const [eventType, column] of Object.entries(EVENT_TO_STAT_COLUMN)) {
-          const value = counts[eventType as MatchEventType] || 0;
-          if (value > 0 && column) {
-            statsUpdate[column] = value;
+          const newValue = counts[eventType as MatchEventType] ?? 0;
+          if (column) {
+            const existingValue = existingStats?.[column as keyof typeof existingStats] ?? 0;
+            statsData[column] = (typeof existingValue === 'number' ? existingValue : 0) + newValue;
           }
         }
 
-        // Upsert player_stats
+        // Upsert with the new totals
         const { error: upsertError } = await supabase
           .from("player_stats")
           .upsert(
@@ -179,11 +308,10 @@ export default function LiveMatchReview() {
               player_id: mp.player_id,
               competition_id: match.competition_id,
               season_year: match.season_year,
-              ...statsUpdate,
+              ...statsData,
             },
             {
               onConflict: "player_id,competition_id,season_year",
-              ignoreDuplicates: false,
             }
           );
 
@@ -200,6 +328,8 @@ export default function LiveMatchReview() {
         } catch (rpcError) {
           console.warn("Rating recalc failed:", rpcError);
         }
+
+        appliedIds.push(mp.player_id);
       }
 
       // Update match status to applied
@@ -209,13 +339,17 @@ export default function LiveMatchReview() {
         .eq("id", match.id);
 
       if (statusError) throw statusError;
+
+      return appliedIds;
     },
-    onSuccess: () => {
+    onSuccess: (appliedIds) => {
+      setAppliedPlayerIds(appliedIds);
       clearLocalDraft();
       queryClient.invalidateQueries({ queryKey: ["match", matchId] });
       queryClient.invalidateQueries({ queryKey: ["players"] });
-      toast.success("Estatísticas aplicadas com sucesso!");
-      navigate("/app/live-match/new");
+      toast.success("Estatísticas aplicadas com sucesso!", {
+        description: `${appliedIds.length} jogadores atualizados`,
+      });
     },
     onError: (error) => {
       console.error("Apply stats error:", error);
@@ -240,7 +374,7 @@ export default function LiveMatchReview() {
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <h1 className="text-2xl font-bold">Jogo não encontrado</h1>
         <Button asChild>
-          <a href="/app/live-match/new">Criar novo jogo</a>
+          <Link to="/app/live-match/new">Criar novo jogo</Link>
         </Button>
       </div>
     );
@@ -248,15 +382,18 @@ export default function LiveMatchReview() {
 
   const competitionName = match.competition?.display_name || match.competition?.name || "Competição";
   const hasErrors = inconsistencies.some((i) => i.type === "error");
+  const warningCount = inconsistencies.filter((i) => i.type === "warning").length;
+  const errorCount = inconsistencies.filter((i) => i.type === "error").length;
+  const infoCount = inconsistencies.filter((i) => i.type === "info").length;
 
   return (
     <div className="container max-w-4xl py-6 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
-          <a href={`/app/live-match/${matchId}`}>
+          <Link to={`/app/live-match/${matchId}`}>
             <ArrowLeft className="h-5 w-5" />
-          </a>
+          </Link>
         </Button>
         <div>
           <h1 className="text-2xl font-bold">Revisão do Jogo</h1>
@@ -274,7 +411,7 @@ export default function LiveMatchReview() {
             Resumo
           </CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-3">
+        <CardContent className="grid gap-4 sm:grid-cols-4">
           <div className="text-center p-4 rounded-lg bg-muted/50">
             <p className="text-3xl font-bold">{matchPlayers.length}</p>
             <p className="text-sm text-muted-foreground">Jogadores</p>
@@ -283,11 +420,17 @@ export default function LiveMatchReview() {
             <p className="text-3xl font-bold">{matchEvents.length}</p>
             <p className="text-sm text-muted-foreground">Eventos</p>
           </div>
-          <div className="text-center p-4 rounded-lg bg-muted/50">
-            <p className="text-3xl font-bold">
+          <div className="text-center p-4 rounded-lg bg-green-500/10">
+            <p className="text-3xl font-bold text-green-400">
               {matchEvents.filter((e) => e.event_type === "goal").length}
             </p>
             <p className="text-sm text-muted-foreground">Gols</p>
+          </div>
+          <div className="text-center p-4 rounded-lg bg-blue-500/10">
+            <p className="text-3xl font-bold text-blue-400">
+              {matchEvents.filter((e) => e.event_type === "assist").length}
+            </p>
+            <p className="text-sm text-muted-foreground">Assistências</p>
           </div>
         </CardContent>
       </Card>
@@ -298,23 +441,44 @@ export default function LiveMatchReview() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-amber-500" />
-              Inconsistências ({inconsistencies.length})
+              Checklist de Inconsistências
             </CardTitle>
-            <CardDescription>
-              Revise estes avisos antes de aplicar as estatísticas
+            <CardDescription className="flex items-center gap-3">
+              {errorCount > 0 && (
+                <Badge variant="destructive" className="text-xs">
+                  {errorCount} erro{errorCount > 1 ? "s" : ""}
+                </Badge>
+              )}
+              {warningCount > 0 && (
+                <Badge variant="outline" className="text-xs border-amber-500 text-amber-500">
+                  {warningCount} aviso{warningCount > 1 ? "s" : ""}
+                </Badge>
+              )}
+              {infoCount > 0 && (
+                <Badge variant="outline" className="text-xs">
+                  {infoCount} info{infoCount > 1 ? "s" : ""}
+                </Badge>
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-[200px]">
+            <ScrollArea className="h-[250px]">
               <div className="space-y-2">
                 {inconsistencies.map((issue, idx) => (
                   <Alert
                     key={idx}
                     variant={issue.type === "error" ? "destructive" : "default"}
+                    className={issue.type === "info" ? "border-muted" : ""}
                   >
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle>{issue.playerName}</AlertTitle>
-                    <AlertDescription>{issue.message}</AlertDescription>
+                    {issue.type === "error" ? (
+                      <AlertTriangle className="h-4 w-4" />
+                    ) : issue.type === "warning" ? (
+                      <AlertTriangle className="h-4 w-4 text-amber-500" />
+                    ) : (
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    )}
+                    <AlertTitle className="text-sm">{issue.playerName}</AlertTitle>
+                    <AlertDescription className="text-xs">{issue.message}</AlertDescription>
                   </Alert>
                 ))}
               </div>
@@ -330,30 +494,44 @@ export default function LiveMatchReview() {
             <TrendingUp className="h-5 w-5" />
             Estatísticas por Jogador
           </CardTitle>
+          <CardDescription>
+            Valores que serão adicionados às estatísticas existentes
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <ScrollArea className="h-[400px]">
-            <div className="space-y-4">
+            <div className="space-y-3">
               {matchPlayers.map((mp) => {
                 if (!mp.player) return null;
                 const counts = (playerEventCounts[mp.player_id] || {}) as Partial<Record<MatchEventType, number>>;
-                const statEntries = Object.entries(counts).filter(([_, v]) => (v ?? 0) > 0);
+                const statEntries = Object.entries(counts)
+                  .filter(([_, v]) => (v ?? 0) > 0)
+                  .sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0));
+                const isApplied = appliedPlayerIds.includes(mp.player_id);
+                const minutesPlayed = mp.minutes_played ?? match.duration_minutes;
 
                 return (
                   <div
                     key={mp.id}
-                    className="flex items-start gap-3 p-3 rounded-lg border"
+                    className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${
+                      isApplied ? "border-green-500/50 bg-green-500/5" : ""
+                    }`}
                   >
-                    <Avatar className="h-10 w-10">
+                    <Avatar className="h-10 w-10 shrink-0">
                       <AvatarImage src={mp.player.photo_url || undefined} />
-                      <AvatarFallback>
+                      <AvatarFallback className="text-xs">
                         {mp.player.full_name.slice(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium">{mp.player.full_name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {mp.player.position}
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-sm">{mp.player.full_name}</p>
+                        {isApplied && (
+                          <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {mp.player.position} • {minutesPlayed} min
                       </p>
                       <div className="flex flex-wrap gap-1 mt-2">
                         {statEntries.length === 0 ? (
@@ -361,14 +539,33 @@ export default function LiveMatchReview() {
                             Sem estatísticas
                           </Badge>
                         ) : (
-                          statEntries.map(([type, value]: [string, number | undefined]) => (
-                            <Badge key={type} variant="secondary" className="text-xs">
-                              {type}: {value}
+                          statEntries.slice(0, 8).map(([type, value]) => (
+                            <Badge 
+                              key={type} 
+                              variant="secondary" 
+                              className="text-[10px] px-1.5 py-0"
+                            >
+                              {EVENT_LABELS[type as MatchEventType] || type}: +{value}
                             </Badge>
                           ))
                         )}
+                        {statEntries.length > 8 && (
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                            +{statEntries.length - 8} mais
+                          </Badge>
+                        )}
                       </div>
                     </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 shrink-0"
+                      asChild
+                    >
+                      <Link to={`/app/players/${mp.player_id}`} target="_blank">
+                        <ExternalLink className="h-4 w-4" />
+                      </Link>
+                    </Button>
                   </div>
                 );
               })}
@@ -378,12 +575,12 @@ export default function LiveMatchReview() {
       </Card>
 
       {/* Actions */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex flex-col sm:flex-row gap-3 sticky bottom-4 bg-background/95 backdrop-blur p-4 -mx-4 rounded-lg border shadow-lg">
         <Button variant="outline" asChild className="flex-1">
-          <a href={`/app/live-match/${matchId}`}>
+          <Link to={`/app/live-match/${matchId}`}>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar ao Jogo
-          </a>
+            Voltar e Corrigir
+          </Link>
         </Button>
 
         {match.status !== "applied" && (
@@ -391,9 +588,13 @@ export default function LiveMatchReview() {
             onClick={() => applyStats.mutate()}
             disabled={applyStats.isPending || hasErrors}
             className="flex-1 bg-green-600 hover:bg-green-700"
+            size="lg"
           >
             {applyStats.isPending ? (
-              "Aplicando..."
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                Aplicando...
+              </>
             ) : (
               <>
                 <Upload className="h-4 w-4 mr-2" />
@@ -404,12 +605,37 @@ export default function LiveMatchReview() {
         )}
 
         {match.status === "applied" && (
-          <div className="flex-1 flex items-center justify-center gap-2 p-3 rounded-lg bg-green-500/10 text-green-600">
+          <div className="flex-1 flex items-center justify-center gap-2 p-3 rounded-lg bg-green-500/10 text-green-500 border border-green-500/30">
             <CheckCircle2 className="h-5 w-5" />
-            Estatísticas já aplicadas
+            <span className="font-medium">Estatísticas Aplicadas!</span>
           </div>
         )}
       </div>
+
+      {/* Success message with links */}
+      {match.status === "applied" && appliedPlayerIds.length > 0 && (
+        <Card className="border-green-500/30 bg-green-500/5">
+          <CardContent className="py-4">
+            <p className="text-sm text-center text-muted-foreground mb-3">
+              Os ratings dos jogadores foram recalculados automaticamente.
+            </p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {matchPlayers.slice(0, 5).map((mp) => (
+                mp.player && (
+                  <Button key={mp.id} variant="outline" size="sm" asChild>
+                    <Link to={`/app/players/${mp.player_id}`}>
+                      Ver {mp.player.full_name.split(" ")[0]}
+                    </Link>
+                  </Button>
+                )
+              ))}
+              {matchPlayers.length > 5 && (
+                <Badge variant="outline">+{matchPlayers.length - 5} jogadores</Badge>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
