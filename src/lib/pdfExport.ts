@@ -3,6 +3,13 @@ import jsPDF from "jspdf";
 
 export interface PdfExportOptions {
   filename?: string;
+  /** 
+   * Canvas scale for html2canvas. 
+   * IMPORTANT: Use scale=1 for pixel-identical layout matching.
+   * Higher scales (2x, 3x) cause subtle layout shifts in flex/baseline alignment.
+   * For PDF quality, rely on PDF compression settings, not canvas scale.
+   * Default: 1 (pixel-identical to preview)
+   */
   scale?: number;
   onProgress?: (progress: number) => void;
   /** If true, capture only the first A4 page (~1123px at 96dpi) for faster debug */
@@ -343,7 +350,9 @@ export async function exportToPdf(
 ): Promise<void> {
   const {
     filename = "report.pdf",
-    scale = 2,
+    // CRITICAL: scale=1 ensures pixel-identical layout matching with preview.
+    // Higher scales (2x, 3x) cause subtle flex/baseline alignment shifts.
+    scale = 1,
     onProgress,
     firstPageOnly = false,
     debugMode = false,
@@ -529,7 +538,8 @@ export async function exportToPng(
   element: HTMLElement,
   options: { filename?: string; scale?: number; onProgress?: (progress: number) => void; firstPageOnly?: boolean; debugMode?: boolean } = {}
 ): Promise<void> {
-  const { filename = "preview.png", scale = 2, onProgress, firstPageOnly = false, debugMode = false } = options;
+  // CRITICAL: scale=1 ensures pixel-identical layout matching with preview.
+  const { filename = "preview.png", scale = 1, onProgress, firstPageOnly = false, debugMode = false } = options;
 
   onProgress?.(5);
 

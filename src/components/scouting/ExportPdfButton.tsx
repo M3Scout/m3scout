@@ -33,13 +33,16 @@ type QualityOption = {
 const QUALITY_OPTIONS: Record<QualityKey, QualityOption> = {
   normal: {
     label: "Normal",
-    description: "Mais rápido (~3s)",
-    scale: 2,
+    description: "Layout idêntico ao preview",
+    // CRITICAL: scale=1 ensures pixel-identical layout matching with preview.
+    // Higher scales cause subtle flex/baseline alignment shifts.
+    scale: 1,
   },
   high: {
-    label: "Alta Qualidade",
-    description: "Melhor p/ impressão (~6s)",
-    scale: 3,
+    label: "Alta Resolução",
+    description: "Melhor p/ impressão (1.5x)",
+    // Use 1.5x max for slightly higher resolution while minimizing layout shifts
+    scale: 1.5,
   },
 };
 
