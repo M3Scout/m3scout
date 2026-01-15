@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { useParams, useNavigate, Navigate, Link } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import {
   CheckCircle2,
@@ -19,6 +20,9 @@ import {
   TrendingUp,
   ExternalLink,
   Info,
+  Pencil,
+  Check,
+  X,
 } from "lucide-react";
 
 // Map match events to player_stats columns
@@ -103,6 +107,9 @@ export default function LiveMatchReview() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [appliedPlayerIds, setAppliedPlayerIds] = useState<string[]>([]);
+  const [manualMinutes, setManualMinutes] = useState<Record<string, number>>({});
+  const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState<string>("");
 
   const {
     match,
@@ -314,8 +321,8 @@ export default function LiveMatchReview() {
       for (const mp of matchPlayers) {
         const counts = (playerEventCounts[mp.player_id] || {}) as Partial<Record<MatchEventType, number>>;
         
-        // Calculate minutes played automatically
-        const minutesPlayed = calculateMinutesPlayed(mp, durationMinutes);
+        // Use manual minutes if set, otherwise calculate automatically
+        const minutesPlayed = manualMinutes[mp.player_id] ?? calculateMinutesPlayed(mp, durationMinutes);
 
         // First, try to get existing stats
         const { data: existingStats } = await supabase
@@ -548,14 +555,17 @@ export default function LiveMatchReview() {
                   .filter(([_, v]) => (v ?? 0) > 0)
                   .sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0));
                 const isApplied = appliedPlayerIds.includes(mp.player_id);
+                const isEditing = editingPlayerId === mp.player_id;
                 
-                // Calculate minutes using the same logic as applyStats
+                // Use manual minutes if set, otherwise calculate
+                const hasManualOverride = manualMinutes[mp.player_id] !== undefined;
                 const calculatedMinutes = calculateMinutesPlayed(mp, match.duration_minutes);
-                const isManualMinutes = mp.minutes_played !== null;
+                const displayMinutes = manualMinutes[mp.player_id] ?? calculatedMinutes;
                 
                 // Determine how minutes were calculated for display
                 const getMinutesLabel = () => {
-                  if (isManualMinutes) return "manual";
+                  if (hasManualOverride) return "editado";
+                  if (mp.minutes_played !== null) return "manual";
                   if (mp.started && mp.exited_minute === null) return "titular completo";
                   if (mp.started && mp.exited_minute !== null) return `saiu ${mp.exited_minute}'`;
                   if (!mp.started && mp.entered_minute !== null) {
@@ -563,6 +573,33 @@ export default function LiveMatchReview() {
                     return `entrou ${mp.entered_minute}'`;
                   }
                   return "";
+                };
+
+                const handleStartEdit = () => {
+                  setEditingPlayerId(mp.player_id);
+                  setEditValue(displayMinutes.toString());
+                };
+
+                const handleConfirmEdit = () => {
+                  const value = parseInt(editValue);
+                  if (!isNaN(value) && value >= 0 && value <= match.duration_minutes) {
+                    setManualMinutes(prev => ({ ...prev, [mp.player_id]: value }));
+                  }
+                  setEditingPlayerId(null);
+                  setEditValue("");
+                };
+
+                const handleCancelEdit = () => {
+                  setEditingPlayerId(null);
+                  setEditValue("");
+                };
+
+                const handleResetMinutes = () => {
+                  setManualMinutes(prev => {
+                    const next = { ...prev };
+                    delete next[mp.player_id];
+                    return next;
+                  });
                 };
 
                 return (
@@ -590,15 +627,68 @@ export default function LiveMatchReview() {
                           {mp.player.position}
                         </span>
                         <span className="text-xs text-muted-foreground">•</span>
-                        <Badge 
-                          variant={isManualMinutes ? "outline" : "secondary"} 
-                          className="text-[10px] px-1.5 py-0 h-4 font-medium"
-                        >
-                          {calculatedMinutes} min
-                        </Badge>
-                        <span className="text-[10px] text-muted-foreground italic">
-                          ({getMinutesLabel()})
-                        </span>
+                        
+                        {isEditing ? (
+                          <div className="flex items-center gap-1">
+                            <Input
+                              type="number"
+                              min={0}
+                              max={match.duration_minutes}
+                              value={editValue}
+                              onChange={(e) => setEditValue(e.target.value)}
+                              className="h-5 w-14 text-xs px-1 py-0"
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") handleConfirmEdit();
+                                if (e.key === "Escape") handleCancelEdit();
+                              }}
+                            />
+                            <span className="text-[10px] text-muted-foreground">min</span>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5"
+                              onClick={handleConfirmEdit}
+                            >
+                              <Check className="h-3 w-3 text-green-500" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5"
+                              onClick={handleCancelEdit}
+                            >
+                              <X className="h-3 w-3 text-muted-foreground" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <>
+                            <Badge 
+                              variant={hasManualOverride ? "default" : "secondary"} 
+                              className={`text-[10px] px-1.5 py-0 h-4 font-medium cursor-pointer hover:opacity-80 ${
+                                hasManualOverride ? "bg-primary" : ""
+                              }`}
+                              onClick={handleStartEdit}
+                            >
+                              {displayMinutes} min
+                              <Pencil className="h-2.5 w-2.5 ml-1" />
+                            </Badge>
+                            <span className="text-[10px] text-muted-foreground italic">
+                              ({getMinutesLabel()})
+                            </span>
+                            {hasManualOverride && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-4 w-4 ml-1"
+                                onClick={handleResetMinutes}
+                                title="Resetar para valor calculado"
+                              >
+                                <X className="h-2.5 w-2.5" />
+                              </Button>
+                            )}
+                          </>
+                        )}
                       </div>
                       <div className="flex flex-wrap gap-1 mt-2">
                         {statEntries.length === 0 ? (
