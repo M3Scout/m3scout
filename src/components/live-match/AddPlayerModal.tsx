@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -13,7 +13,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search, UserPlus, Check } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Search, UserPlus, Check, Plus } from "lucide-react";
 
 interface Player {
   id: string;
@@ -38,6 +39,8 @@ interface AddPlayerModalProps {
   isPending?: boolean;
 }
 
+const PAGE_SIZE = 30;
+
 export function AddPlayerModal({
   open,
   onOpenChange,
@@ -51,28 +54,52 @@ export function AddPlayerModal({
   const [enteredMinute, setEnteredMinute] = useState<string>("");
   const [exitedMinute, setExitedMinute] = useState<string>("");
   const [autoMinutes, setAutoMinutes] = useState(true);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
-  // Search players
-  const { data: players = [], isLoading } = useQuery({
-    queryKey: ["players-search", search],
+  // Reset visible count when modal opens
+  useEffect(() => {
+    if (open) {
+      setVisibleCount(PAGE_SIZE);
+    }
+  }, [open]);
+
+  // Fetch all players on mount (not search-dependent)
+  const { data: allPlayers = [], isLoading } = useQuery({
+    queryKey: ["players-all-for-match"],
     queryFn: async () => {
-      if (!search || search.length < 2) return [];
-      
       const { data, error } = await supabase
         .from("players")
         .select("id, full_name, photo_url, position, current_club")
         .or(`is_archived.is.null,is_archived.eq.false`)
-        .ilike("full_name", `%${search}%`)
         .order("full_name")
-        .limit(20);
+        .limit(500);
 
       if (error) throw error;
       return data as Player[];
     },
-    enabled: search.length >= 2,
+    enabled: open,
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
   });
 
-  const availablePlayers = players.filter(p => !existingPlayerIds.includes(p.id));
+  // Filter players based on search (local filter)
+  const filteredPlayers = useMemo(() => {
+    let result = allPlayers.filter(p => !existingPlayerIds.includes(p.id));
+    
+    if (search.trim()) {
+      const searchLower = search.toLowerCase();
+      result = result.filter(p => 
+        p.full_name.toLowerCase().includes(searchLower) ||
+        p.position.toLowerCase().includes(searchLower) ||
+        (p.current_club && p.current_club.toLowerCase().includes(searchLower))
+      );
+    }
+    
+    return result;
+  }, [allPlayers, existingPlayerIds, search]);
+
+  // Players to display (with pagination)
+  const displayedPlayers = filteredPlayers.slice(0, visibleCount);
+  const hasMore = filteredPlayers.length > visibleCount;
 
   const handleConfirm = () => {
     if (!selectedPlayer) return;
@@ -102,9 +129,24 @@ export function AddPlayerModal({
     onOpenChange(false);
   };
 
+  const handleLoadMore = () => {
+    setVisibleCount(prev => prev + PAGE_SIZE);
+  };
+
+  // Skeleton loader
+  const PlayerSkeleton = () => (
+    <div className="flex items-center gap-3 p-3">
+      <Skeleton className="h-10 w-10 rounded-full" />
+      <div className="flex-1 space-y-2">
+        <Skeleton className="h-4 w-32" />
+        <Skeleton className="h-3 w-24" />
+      </div>
+    </div>
+  );
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserPlus className="h-5 w-5" />
@@ -113,55 +155,69 @@ export function AddPlayerModal({
         </DialogHeader>
 
         {!selectedPlayer ? (
-          <div className="space-y-4">
+          <div className="flex flex-col gap-4 flex-1 min-h-0">
             {/* Search input */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar jogador..."
+                placeholder="Filtrar por nome, posição ou clube..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setVisibleCount(PAGE_SIZE);
+                }}
                 className="pl-10"
                 autoFocus
               />
             </div>
 
             {/* Results */}
-            <ScrollArea className="h-[300px]">
+            <ScrollArea className="flex-1 h-[350px] -mx-2 px-2">
               {isLoading ? (
-                <div className="flex items-center justify-center h-20">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+                <div className="space-y-1">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <PlayerSkeleton key={i} />
+                  ))}
                 </div>
-              ) : search.length < 2 ? (
+              ) : filteredPlayers.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">
-                  Digite ao menos 2 caracteres para buscar
-                </p>
-              ) : availablePlayers.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">
-                  Nenhum jogador encontrado
+                  {search ? "Nenhum jogador encontrado" : "Nenhum jogador disponível"}
                 </p>
               ) : (
-                <div className="space-y-2">
-                  {availablePlayers.map((player) => (
+                <div className="space-y-1">
+                  {displayedPlayers.map((player) => (
                     <button
                       key={player.id}
                       onClick={() => setSelectedPlayer(player)}
-                      className="w-full flex items-center gap-3 p-3 rounded-lg border hover:bg-accent transition-colors text-left"
+                      className="w-full flex items-center gap-3 p-3 rounded-lg border hover:bg-accent transition-colors text-left group"
                     >
                       <Avatar className="h-10 w-10">
                         <AvatarImage src={player.photo_url || undefined} />
-                        <AvatarFallback>
+                        <AvatarFallback className="text-xs">
                           {player.full_name.slice(0, 2).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{player.full_name}</p>
                         <p className="text-sm text-muted-foreground truncate">
-                          {player.position} • {player.current_club || "Sem clube"}
+                          <span className="font-semibold text-foreground/80">{player.position}</span>
+                          {player.current_club && ` • ${player.current_club}`}
                         </p>
                       </div>
+                      <Plus className="h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                     </button>
                   ))}
+                  
+                  {hasMore && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleLoadMore}
+                      className="w-full mt-2"
+                    >
+                      Carregar mais ({filteredPlayers.length - visibleCount} restantes)
+                    </Button>
+                  )}
                 </div>
               )}
             </ScrollArea>
