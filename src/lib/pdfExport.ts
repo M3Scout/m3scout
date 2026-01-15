@@ -141,6 +141,14 @@ function createExportWrapper(source: HTMLElement) {
   wrapper.style.overflow = "visible";
   wrapper.style.zIndex = "0";
   wrapper.style.transform = "none";
+  
+  // CRITICAL: Inherit the exact same font-family from the document body
+  // This ensures the export uses 'Inter' (or whatever font the app uses)
+  // instead of falling back to system-ui which causes layout mismatches.
+  const bodyCs = getComputedStyle(document.body);
+  wrapper.style.fontFamily = bodyCs.fontFamily;
+  wrapper.style.fontSize = bodyCs.fontSize;
+  wrapper.style.lineHeight = bodyCs.lineHeight;
 
   const clone = source.cloneNode(true) as HTMLElement;
   clone.style.transform = "none";
@@ -148,8 +156,8 @@ function createExportWrapper(source: HTMLElement) {
   // Force white bg at root to avoid transparent results
   clone.style.backgroundColor = "#FFFFFF";
   
-  // Ensure the clone uses the same font as the source (inherit from body)
-  // Do NOT override fontFamily, fontSize, or lineHeight here
+  // Ensure the clone inherits font from wrapper (which inherits from body)
+  // Do NOT override fontFamily, fontSize, or lineHeight on the clone
 
   wrapper.appendChild(clone);
   document.body.appendChild(wrapper);
