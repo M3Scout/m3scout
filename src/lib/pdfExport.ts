@@ -470,10 +470,6 @@ export async function buildExportCanvas(
       logoRects: collectLogoRects(clone),
     };
 
-    // Required logs (must match across Debug/PNG/PDF paths)
-    // eslint-disable-next-line no-console
-    console.log("[exportPipeline]", meta);
-
     if (captureWidth <= 1 || captureHeight <= 1) {
       throw new Error("Elemento para export não foi renderizado (dimensões 0)");
     }
@@ -566,18 +562,6 @@ export async function buildExportCanvas(
     });
 
     onProgress?.(80);
-
-    // eslint-disable-next-line no-console
-    console.log("[exportPipeline] canvas", {
-      runId,
-      mode,
-      width: canvas.width,
-      height: canvas.height,
-      effectiveScale,
-      layoutWidth: Math.round(canvas.width / effectiveScale),
-      layoutHeight: Math.round(canvas.height / effectiveScale),
-      dataUrlHead: canvas.toDataURL("image/png", 0.2).slice(0, 80),
-    });
 
     return { canvas, meta };
   } finally {
@@ -673,16 +657,6 @@ export async function exportToPdf(element: HTMLElement, options: PdfExportOption
     pdf.addImage(imgData, "PNG", 0, yOffset, imgWidth, imgHeight, undefined, "NONE");
   }
 
-  // eslint-disable-next-line no-console
-  console.log("[exportPipeline] pdf", {
-    runId: meta.runId,
-    pages: totalPages,
-    imgHeightMm: imgHeight,
-    baseResolution: `${baseCanvas.width}x${baseCanvas.height}`,
-    outputResolution: `${canvas.width}x${canvas.height}`,
-    multiplier: outputResolution,
-  });
-
   onProgress?.(95);
   pdf.save(filename);
   onProgress?.(100);
@@ -734,15 +708,6 @@ export async function exportToPng(
   link.download = filename;
   link.href = canvas.toDataURL("image/png", 1.0);
   link.click();
-
-  // eslint-disable-next-line no-console
-  console.log("[exportPipeline] png", {
-    runId: meta.runId,
-    filename,
-    baseResolution: `${baseCanvas.width}x${baseCanvas.height}`,
-    outputResolution: `${canvas.width}x${canvas.height}`,
-    multiplier: outputResolution,
-  });
 
   onProgress?.(100);
 }
