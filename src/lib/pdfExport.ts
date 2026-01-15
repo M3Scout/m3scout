@@ -101,22 +101,27 @@ function createExportWrapper(source: HTMLElement) {
   const wrapper = document.createElement("div");
   wrapper.setAttribute("data-pdf-export-wrapper", "true");
 
-  // Keep it in the viewport (better layout metrics), but invisible.
+  // IMPORTANT:
+  // - must be "visible" for html2canvas to render
+  // - must not be opacity:0 (would result in blank capture)
+  // We move it off-screen instead.
   wrapper.style.position = "fixed";
-  wrapper.style.left = "0";
+  wrapper.style.left = "-10000px";
   wrapper.style.top = "0";
   wrapper.style.width = "794px";
   wrapper.style.background = "#FFFFFF";
   wrapper.style.pointerEvents = "none";
-  wrapper.style.visibility = "hidden";
+  wrapper.style.visibility = "visible";
   wrapper.style.opacity = "1";
   wrapper.style.overflow = "visible";
-  wrapper.style.zIndex = "-1";
+  wrapper.style.zIndex = "0";
   wrapper.style.transform = "none";
 
   const clone = source.cloneNode(true) as HTMLElement;
   clone.style.transform = "none";
   clone.style.display = "block";
+  // Force white bg at root to avoid transparent results
+  clone.style.backgroundColor = "#FFFFFF";
 
   wrapper.appendChild(clone);
   document.body.appendChild(wrapper);
@@ -133,7 +138,12 @@ export async function exportToPdf(
   element: HTMLElement,
   options: PdfExportOptions = {}
 ): Promise<void> {
-  const { filename = "report.pdf", scale = 2, onProgress, firstPageOnly = false } = options;
+  const {
+    filename = "report.pdf",
+    scale = 2,
+    onProgress,
+    firstPageOnly = false,
+  } = options;
 
   onProgress?.(5);
 
@@ -162,14 +172,26 @@ export async function exportToPdf(
     const captureWidth = Math.max(1, Math.ceil(rect.width));
     // If firstPageOnly, limit to A4 page height
     const fullHeight = Math.max(1, Math.ceil(rect.height));
-    const captureHeight = firstPageOnly ? Math.min(fullHeight, A4_PAGE_HEIGHT_PX) : fullHeight;
+    const captureHeight = firstPageOnly
+      ? Math.min(fullHeight, A4_PAGE_HEIGHT_PX)
+      : fullHeight;
+
+    // Debug logs requested
+    // eslint-disable-next-line no-console
+    console.log("[exportToPdf] element", element);
+    // eslint-disable-next-line no-console
+    console.log("[exportToPdf] clone rect", rect, { captureWidth, captureHeight });
+
+    if (captureWidth <= 1 || captureHeight <= 1) {
+      throw new Error("Elemento para export não foi renderizado (dimensões 0)");
+    }
 
     const canvas = await html2canvas(clone, {
       scale,
       useCORS: true,
-      allowTaint: true,
-      backgroundColor: "#FFFFFF",
-      logging: false,
+      allowTaint: false,
+      backgroundColor: "#ffffff",
+      logging: true,
       imageTimeout: 30000,
       removeContainer: true,
 
@@ -208,6 +230,12 @@ export async function exportToPdf(
         });
       },
     });
+
+    // Debug: validate canvas isn't blank
+    // eslint-disable-next-line no-console
+    console.log("[exportToPdf] canvas", { width: canvas.width, height: canvas.height });
+    // eslint-disable-next-line no-console
+    console.log("[exportToPdf] canvas dataUrl head", canvas.toDataURL("image/png", 0.2).slice(0, 80));
 
     onProgress?.(65);
 
@@ -278,14 +306,26 @@ export async function exportToPng(
     const rect = clone.getBoundingClientRect();
     const captureWidth = Math.max(1, Math.ceil(rect.width));
     const fullHeight = Math.max(1, Math.ceil(rect.height));
-    const captureHeight = firstPageOnly ? Math.min(fullHeight, A4_PAGE_HEIGHT_PX) : fullHeight;
+    const captureHeight = firstPageOnly
+      ? Math.min(fullHeight, A4_PAGE_HEIGHT_PX)
+      : fullHeight;
+
+    // Debug logs requested
+    // eslint-disable-next-line no-console
+    console.log("[exportToPng] element", element);
+    // eslint-disable-next-line no-console
+    console.log("[exportToPng] clone rect", rect, { captureWidth, captureHeight });
+
+    if (captureWidth <= 1 || captureHeight <= 1) {
+      throw new Error("Elemento para export não foi renderizado (dimensões 0)");
+    }
 
     const canvas = await html2canvas(clone, {
       scale,
       useCORS: true,
-      allowTaint: true,
-      backgroundColor: "#FFFFFF",
-      logging: false,
+      allowTaint: false,
+      backgroundColor: "#ffffff",
+      logging: true,
       imageTimeout: 30000,
       removeContainer: true,
 
@@ -319,6 +359,12 @@ export async function exportToPng(
         });
       },
     });
+
+    // Debug: validate canvas isn't blank
+    // eslint-disable-next-line no-console
+    console.log("[exportToPng] canvas", { width: canvas.width, height: canvas.height });
+    // eslint-disable-next-line no-console
+    console.log("[exportToPng] canvas dataUrl head", canvas.toDataURL("image/png", 0.2).slice(0, 80));
 
     onProgress?.(80);
 
