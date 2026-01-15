@@ -10,15 +10,19 @@ import { LiveMatchBigTimer, TimerInfo } from "@/components/live-match/LiveMatchB
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { UserPlus, Users, ArrowRightLeft } from "lucide-react";
+import { UserPlus, Users, ArrowRightLeft, Minimize2, Maximize2 } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function LiveMatchGame() {
   const { matchId } = useParams<{ matchId: string }>();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [addPlayerOpen, setAddPlayerOpen] = useState(false);
   const [substitutionOpen, setSubstitutionOpen] = useState(false);
   const [currentMinute, setCurrentMinute] = useState(0);
   const [currentTimerInfo, setCurrentTimerInfo] = useState<TimerInfo | null>(null);
+  // Compact mode: default ON for mobile, OFF for desktop
+  const [compactMode, setCompactMode] = useState<boolean | undefined>(undefined); // undefined = auto
 
   const {
     match,
@@ -185,20 +189,44 @@ export default function LiveMatchGame() {
             )}
           </div>
 
-          {/* Only show on-field filter after game starts */}
-          {!isDraft && (
-            <div className="flex items-center gap-2">
-              <Switch
-                id="only-on-field"
-                checked={onlyOnField}
-                onCheckedChange={setOnlyOnField}
-              />
-              <Label htmlFor="only-on-field" className="text-xs sm:text-sm">
-                <span className="hidden sm:inline">Só em campo</span>
-                <span className="sm:hidden">Em campo</span>
-              </Label>
-            </div>
-          )}
+          {/* Filters and toggles */}
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Compact mode toggle */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 px-2 gap-1"
+              onClick={() => setCompactMode(prev => prev === undefined ? !isMobile : !prev)}
+              title={compactMode ?? isMobile ? "Modo expandido" : "Modo compacto"}
+            >
+              {(compactMode ?? isMobile) ? (
+                <>
+                  <Maximize2 className="h-4 w-4" />
+                  <span className="hidden sm:inline text-xs">Expandir</span>
+                </>
+              ) : (
+                <>
+                  <Minimize2 className="h-4 w-4" />
+                  <span className="hidden sm:inline text-xs">Compacto</span>
+                </>
+              )}
+            </Button>
+
+            {/* Only show on-field filter after game starts */}
+            {!isDraft && (
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="only-on-field"
+                  checked={onlyOnField}
+                  onCheckedChange={setOnlyOnField}
+                />
+                <Label htmlFor="only-on-field" className="text-xs sm:text-sm">
+                  <span className="hidden sm:inline">Só em campo</span>
+                  <span className="sm:hidden">Em campo</span>
+                </Label>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Players count - Compact */}
@@ -283,6 +311,7 @@ export default function LiveMatchGame() {
                   await updatePlayer.mutateAsync({ matchPlayerId: mp.id, updates: { notes } });
                 }}
                 disabled={match.status === "applied"}
+                compactMode={compactMode}
               />
             ))}
           </div>
