@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from "react";
 import { useParams, Navigate, Link } from "react-router-dom";
-import { useLiveMatch, MatchEventType } from "@/hooks/useLiveMatch";
+import { useLiveMatch, MatchEventType, ClockStatus } from "@/hooks/useLiveMatch";
 import { MatchHeader } from "@/components/live-match/MatchHeader";
 import { AddPlayerModal } from "@/components/live-match/AddPlayerModal";
 import { PlayerStatCard } from "@/components/live-match/PlayerStatCard";
@@ -38,6 +38,12 @@ export default function LiveMatchGame() {
     playerExitField,
     substitutePlayer,
     removePlayer,
+    // Timer V2 mutations
+    playPauseClock,
+    resetClock,
+    endFirstHalf,
+    startSecondHalf,
+    updateAddedTime,
   } = useLiveMatch(matchId || "");
 
   // Handle minute change from timer
@@ -185,11 +191,25 @@ export default function LiveMatchGame() {
         )}
 
         {/* Big Timer - visible during live and finished */}
-        {!isDraft && (
+        {!isDraft && match && (
           <LiveMatchBigTimer
             durationMinutes={match.duration_minutes}
             matchStatus={match.status}
+            timerState={{
+              half: (match.half || 1) as 1 | 2,
+              clockStatus: match.clock_status || "stopped",
+              halfStartTime: match.half_start_time,
+              elapsedSecondsInHalf: match.elapsed_seconds_in_half || 0,
+              addedTimeFirstHalf: match.added_time_first_half || 0,
+              addedTimeSecondHalf: match.added_time_second_half || 0,
+            }}
+            onPlayPause={() => playPauseClock.mutate()}
+            onReset={() => resetClock.mutate()}
+            onEndHalf={() => endFirstHalf.mutate()}
+            onStartSecondHalf={() => startSecondHalf.mutate()}
+            onUpdateAddedTime={(half, minutes) => updateAddedTime.mutate({ half, minutes })}
             onMinuteChange={handleMinuteChange}
+            isPending={playPauseClock.isPending || endFirstHalf.isPending || startSecondHalf.isPending}
           />
         )}
 

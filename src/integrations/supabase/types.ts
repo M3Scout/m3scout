@@ -330,12 +330,19 @@ export type Database = {
       }
       matches: {
         Row: {
+          added_time_first_half: number | null
+          added_time_second_half: number | null
+          clock_status: string | null
           competition_id: string | null
           created_at: string
           created_by: string
           duration_minutes: number
+          elapsed_seconds_in_half: number | null
+          half: number | null
+          half_start_time: string | null
           id: string
           match_date: string
+          match_start_time: string | null
           notes: string | null
           opponent_name: string
           season_year: number
@@ -344,12 +351,19 @@ export type Database = {
           venue: string | null
         }
         Insert: {
+          added_time_first_half?: number | null
+          added_time_second_half?: number | null
+          clock_status?: string | null
           competition_id?: string | null
           created_at?: string
           created_by: string
           duration_minutes?: number
+          elapsed_seconds_in_half?: number | null
+          half?: number | null
+          half_start_time?: string | null
           id?: string
           match_date?: string
+          match_start_time?: string | null
           notes?: string | null
           opponent_name: string
           season_year?: number
@@ -358,12 +372,19 @@ export type Database = {
           venue?: string | null
         }
         Update: {
+          added_time_first_half?: number | null
+          added_time_second_half?: number | null
+          clock_status?: string | null
           competition_id?: string | null
           created_at?: string
           created_by?: string
           duration_minutes?: number
+          elapsed_seconds_in_half?: number | null
+          half?: number | null
+          half_start_time?: string | null
           id?: string
           match_date?: string
+          match_start_time?: string | null
           notes?: string | null
           opponent_name?: string
           season_year?: number
