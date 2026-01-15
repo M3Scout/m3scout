@@ -3,9 +3,21 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { MatchPlayer, MatchEventType, MatchStatus } from "@/hooks/useLiveMatch";
 import { Plus, Undo2, ChevronDown, ChevronUp, LogIn, LogOut, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { playSound, getSoundForEvent } from "@/lib/sounds";
 
 // Stat categories configuration with colors
 const OUTFIELD_STATS: { category: string; color: string; bgColor: string; stats: { type: MatchEventType; label: string }[] }[] = [
@@ -98,6 +110,7 @@ interface PlayerStatCardProps {
   onPlayerExit?: (minute: number) => void;
   onRemovePlayer?: () => void;
   disabled?: boolean;
+  soundEnabled?: boolean;
 }
 
 export function PlayerStatCard({
@@ -111,9 +124,18 @@ export function PlayerStatCard({
   onPlayerExit,
   onRemovePlayer,
   disabled,
+  soundEnabled = true,
 }: PlayerStatCardProps) {
   const [expanded, setExpanded] = useState(true);
   const touchStartX = useRef<number | null>(null);
+
+  // Wrapper to play sound on event
+  const handleAddEventWithSound = (eventType: MatchEventType) => {
+    if (soundEnabled) {
+      playSound(getSoundForEvent(eventType));
+    }
+    onAddEvent(eventType);
+  };
 
   const isGK = matchPlayer.position_template === "goalkeeper";
   const stats = isGK ? GOALKEEPER_STATS : OUTFIELD_STATS;
@@ -137,7 +159,7 @@ export function PlayerStatCard({
 
     if (deltaX > threshold) {
       // Swipe right: add default stat (tackle for outfield, save for GK)
-      onAddEvent(isGK ? "save" : "tackle");
+      handleAddEventWithSound(isGK ? "save" : "tackle");
     } else if (deltaX < -threshold) {
       // Swipe left: undo
       onUndo();
@@ -152,12 +174,18 @@ export function PlayerStatCard({
   const totalGoals = getCount("goal");
   const totalAssists = getCount("assist");
 
-  // Handle player entry/exit
+  // Handle player entry/exit with sounds
   const handleEnterField = () => {
+    if (soundEnabled) {
+      playSound('enter');
+    }
     onPlayerEnter?.(currentMinute);
   };
 
   const handleExitField = () => {
+    if (soundEnabled) {
+      playSound('exit');
+    }
     onPlayerExit?.(currentMinute);
   };
 
@@ -259,17 +287,37 @@ export function PlayerStatCard({
               </>
             )}
 
-            {/* Remove player button - only during draft (pre-game) */}
+            {/* Remove player button - only during draft (pre-game) with confirmation */}
             {isDraft && onRemovePlayer && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                onClick={onRemovePlayer}
-                title="Remover da escalação"
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    title="Remover da escalação"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Remover jogador?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Tem certeza que deseja remover <strong>{player.full_name}</strong> da escalação?
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction 
+                      onClick={onRemovePlayer}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Remover
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             )}
 
             <Button
@@ -324,17 +372,17 @@ export function PlayerStatCard({
                   {category.category}
                 </p>
                 <div className="grid grid-cols-4 gap-1.5">
-                  {category.stats.map((stat) => (
-                    <StatButton
-                      key={stat.type}
-                      label={stat.label}
-                      count={getCount(stat.type)}
-                      onClick={() => onAddEvent(stat.type)}
-                      disabled={disabled || isDraft || !matchPlayer.is_on_field}
-                      highlight={stat.type === "goal" || stat.type === "assist" || stat.type === "save"}
-                      categoryColor={category.color}
-                    />
-                  ))}
+                    {category.stats.map((stat) => (
+                      <StatButton
+                        key={stat.type}
+                        label={stat.label}
+                        count={getCount(stat.type)}
+                        onClick={() => handleAddEventWithSound(stat.type)}
+                        disabled={disabled || isDraft || !matchPlayer.is_on_field}
+                        highlight={stat.type === "goal" || stat.type === "assist" || stat.type === "save"}
+                        categoryColor={category.color}
+                      />
+                    ))}
                 </div>
               </div>
             ))}
