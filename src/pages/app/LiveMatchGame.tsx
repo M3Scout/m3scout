@@ -136,8 +136,10 @@ export default function LiveMatchGame() {
     });
   };
   const existingPlayerIds = matchPlayers.map((mp) => mp.player_id);
-  const playersOnField = matchPlayers.filter((mp) => mp.is_on_field);
-  const playersOffField = matchPlayers.filter((mp) => !mp.is_on_field);
+  // Players on field: is_on_field = true AND not removed
+  const playersOnField = matchPlayers.filter((mp) => mp.is_on_field && !mp.is_removed);
+  // Players off field: is_on_field = false AND not removed AND has not exited (can still enter)
+  const playersOffField = matchPlayers.filter((mp) => !mp.is_on_field && !mp.is_removed && mp.exited_minute === null);
 
   const isDraft = match.status === "draft";
   const isLive = match.status === "live";
