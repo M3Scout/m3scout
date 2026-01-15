@@ -72,7 +72,7 @@ export function MatchHeader({ match, onStatusChange, onMinuteChange, isPending }
                 <Button
                   variant="default"
                   size="sm"
-                  className="bg-green-600 hover:bg-green-700"
+                  className="bg-primary hover:bg-primary/90 shadow-[0_0_15px_rgba(37,99,235,0.4)] hover:shadow-[0_0_20px_rgba(37,99,235,0.5)]"
                   asChild
                 >
                   <Link to={`/app/live-match/${match.id}/review`}>
