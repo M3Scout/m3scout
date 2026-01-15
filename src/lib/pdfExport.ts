@@ -69,6 +69,9 @@ async function waitForImagesDecode(element: HTMLElement): Promise<void> {
 /**
  * Preload all images in an element and convert to base64 for reliable PDF rendering.
  * IMPORTANT: Call this on the export CLONE, never on the visible preview.
+ * 
+ * This function preserves the DISPLAYED dimensions of each image (from CSS/attributes)
+ * rather than using the natural image dimensions, which could cause distortion.
  */
 async function preloadImages(element: HTMLElement): Promise<void> {
   const images = element.querySelectorAll("img");
@@ -77,16 +80,23 @@ async function preloadImages(element: HTMLElement): Promise<void> {
   images.forEach((img) => {
     if (img.src && !img.src.startsWith("data:")) {
       const promise = new Promise<void>((resolve) => {
+        // Capture the DISPLAYED dimensions before loading
+        const displayedWidth = img.offsetWidth || img.width || 100;
+        const displayedHeight = img.offsetHeight || img.height || 100;
+
         const testImg = new Image();
         testImg.crossOrigin = "anonymous";
         testImg.onload = () => {
           try {
+            // Use the DISPLAYED dimensions, not natural dimensions
+            // This prevents distortion when the CSS constrains the image
             const canvas = document.createElement("canvas");
-            canvas.width = testImg.width;
-            canvas.height = testImg.height;
+            canvas.width = displayedWidth;
+            canvas.height = displayedHeight;
             const ctx = canvas.getContext("2d");
             if (ctx) {
-              ctx.drawImage(testImg, 0, 0);
+              // Draw the image scaled to the displayed dimensions
+              ctx.drawImage(testImg, 0, 0, displayedWidth, displayedHeight);
               img.src = canvas.toDataURL("image/png");
             }
           } catch {
@@ -280,6 +290,9 @@ function openDebugWindow(
     <span class="status ${typography.matches ? "ok" : "fail"}">
       Typography: ${typography.matches ? "✓ MATCH" : "✗ MISMATCH"}
     </span>
+    <span class="status ${scale === 1 ? "ok" : "fail"}" style="margin-left: 8px;">
+      Scale: ${scale === 1 ? "✓ 1x (OK)" : `✗ ${scale}x (SHOULD BE 1x)`}
+    </span>
   </div>
   
   <div class="metrics">
@@ -293,14 +306,14 @@ function openDebugWindow(
     </div>
     <div class="metric">
       <div class="metric-label">Scale</div>
-      <div class="metric-value">${scale}x</div>
+      <div class="metric-value ${scale === 1 ? "match" : "mismatch"}">${scale}x ${scale === 1 ? "✓" : "✗"}</div>
     </div>
     <div class="metric">
-      <div class="metric-label">Actual Width (÷scale)</div>
-      <div class="metric-value">${Math.round(canvas.width / scale)}px</div>
+      <div class="metric-label">Layout Width (must be ~794px)</div>
+      <div class="metric-value ${Math.abs(Math.round(canvas.width / scale) - 794) < 10 ? "match" : "mismatch"}">${Math.round(canvas.width / scale)}px</div>
     </div>
     <div class="metric">
-      <div class="metric-label">Actual Height (÷scale)</div>
+      <div class="metric-label">Layout Height</div>
       <div class="metric-value">${Math.round(canvas.height / scale)}px</div>
     </div>
   </div>
