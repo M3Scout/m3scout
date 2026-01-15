@@ -1,12 +1,12 @@
 import { useState, useCallback, useMemo } from "react";
-import { useParams, Navigate, Link } from "react-router-dom";
-import { useLiveMatch, MatchEventType, ClockStatus } from "@/hooks/useLiveMatch";
+import { useParams, Navigate, Link, useNavigate } from "react-router-dom";
+import { useLiveMatch, MatchEventType } from "@/hooks/useLiveMatch";
 import { MatchHeader } from "@/components/live-match/MatchHeader";
 import { AddPlayerModal } from "@/components/live-match/AddPlayerModal";
 import { PlayerStatCard } from "@/components/live-match/PlayerStatCard";
 import { EventLogDrawer } from "@/components/live-match/EventLogDrawer";
 import { SubstitutionModal } from "@/components/live-match/SubstitutionModal";
-import { LiveMatchBigTimer } from "@/components/live-match/LiveMatchBigTimer";
+import { LiveMatchBigTimer, TimerInfo } from "@/components/live-match/LiveMatchBigTimer";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -14,9 +14,11 @@ import { UserPlus, Users, ArrowRightLeft } from "lucide-react";
 
 export default function LiveMatchGame() {
   const { matchId } = useParams<{ matchId: string }>();
+  const navigate = useNavigate();
   const [addPlayerOpen, setAddPlayerOpen] = useState(false);
   const [substitutionOpen, setSubstitutionOpen] = useState(false);
   const [currentMinute, setCurrentMinute] = useState(0);
+  const [currentTimerInfo, setCurrentTimerInfo] = useState<TimerInfo | null>(null);
 
   const {
     match,
@@ -44,12 +46,27 @@ export default function LiveMatchGame() {
     endFirstHalf,
     startSecondHalf,
     updateAddedTime,
+    finishGame,
   } = useLiveMatch(matchId || "");
 
   // Handle minute change from timer
   const handleMinuteChange = useCallback((minute: number) => {
     setCurrentMinute(minute);
   }, []);
+
+  // Handle timer info change (includes display string)
+  const handleTimerInfoChange = useCallback((info: TimerInfo) => {
+    setCurrentTimerInfo(info);
+  }, []);
+
+  // Handle finish game - navigate to review after finishing
+  const handleFinishGame = useCallback(() => {
+    finishGame.mutate(undefined, {
+      onSuccess: () => {
+        navigate(`/app/live-match/${matchId}/review`);
+      },
+    });
+  }, [finishGame, matchId, navigate]);
 
   // Count starters for header display
   const startersCount = useMemo(() => {
@@ -80,7 +97,13 @@ export default function LiveMatchGame() {
   }
 
   const handleAddEvent = (playerId: string, eventType: MatchEventType) => {
-    addEvent.mutate({ playerId, eventType, minute: currentMinute || undefined });
+    addEvent.mutate({ 
+      playerId, 
+      eventType, 
+      minute: currentMinute || undefined,
+      half: currentTimerInfo?.half,
+      displayMinute: currentTimerInfo?.displayString,
+    });
   };
 
   const handlePlayerEnter = (matchPlayerId: string, minute: number) => {
@@ -113,11 +136,15 @@ export default function LiveMatchGame() {
         startersCount={startersCount}
       />
 
-      <div className="container py-4 space-y-4">
-        {/* Controls */}
+      <div className="container py-3 sm:py-4 space-y-3 sm:space-y-4">
+        {/* Controls - Responsive with 44px touch targets */}
         <div className="flex flex-wrap items-center gap-2 justify-between">
           <div className="flex items-center gap-2 flex-wrap">
-            <Button onClick={() => setAddPlayerOpen(true)} size="sm">
+            <Button 
+              onClick={() => setAddPlayerOpen(true)} 
+              size="sm"
+              className="h-10 sm:h-9"
+            >
               <UserPlus className="h-4 w-4 mr-1" />
               {isDraft ? "Escalação" : "Jogador"}
             </Button>
@@ -127,10 +154,12 @@ export default function LiveMatchGame() {
                 onClick={() => setSubstitutionOpen(true)} 
                 variant="outline"
                 size="sm"
+                className="h-10 sm:h-9"
                 disabled={playersOnField.length === 0 || playersOffField.length === 0}
               >
                 <ArrowRightLeft className="h-4 w-4 mr-1" />
-                Substituir
+                <span className="hidden sm:inline">Substituir</span>
+                <span className="sm:hidden">Sub</span>
               </Button>
             )}
             {/* Only show event log after game starts */}
@@ -151,19 +180,20 @@ export default function LiveMatchGame() {
                 checked={onlyOnField}
                 onCheckedChange={setOnlyOnField}
               />
-              <Label htmlFor="only-on-field" className="text-sm">
-                Só em campo
+              <Label htmlFor="only-on-field" className="text-xs sm:text-sm">
+                <span className="hidden sm:inline">Só em campo</span>
+                <span className="sm:hidden">Em campo</span>
               </Label>
             </div>
           )}
         </div>
 
-        {/* Players count */}
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Users className="h-4 w-4" />
+        {/* Players count - Compact */}
+        <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+          <Users className="h-4 w-4 flex-shrink-0" />
           {isDraft ? (
             <span>
-              {matchPlayers.length} jogador{matchPlayers.length !== 1 ? "es" : ""} na escalação
+              {matchPlayers.length} jogador{matchPlayers.length !== 1 ? "es" : ""}
               {startersCount > 0 && (
                 <span className="ml-1">
                   ({startersCount} titular{startersCount !== 1 ? "es" : ""})
@@ -172,20 +202,17 @@ export default function LiveMatchGame() {
             </span>
           ) : (
             <span>
-              {filteredPlayers.length} jogador{filteredPlayers.length !== 1 ? "es" : ""}{" "}
-              {onlyOnField ? "em campo" : "no jogo"}
-              {playersOnField.length > 0 && (
-                <span className="ml-1 text-xs">
-                  ({playersOnField.length} em campo, {playersOffField.length} no banco)
-                </span>
-              )}
+              {filteredPlayers.length} {onlyOnField ? "em campo" : "no jogo"}
+              <span className="text-xs ml-1">
+                ({playersOnField.length} ⚽ / {playersOffField.length} 🪑)
+              </span>
             </span>
           )}
         </div>
 
         {/* Pre-game info */}
         {isDraft && matchPlayers.length > 0 && (
-          <div className="bg-muted/50 rounded-lg p-3 text-sm text-center">
+          <div className="bg-muted/50 rounded-lg p-3 text-xs sm:text-sm text-center">
             <p>📋 <strong>Pré-jogo:</strong> Monte a escalação e clique em "Iniciar Jogo" quando estiver pronto</p>
           </div>
         )}
@@ -208,22 +235,24 @@ export default function LiveMatchGame() {
             onEndHalf={() => endFirstHalf.mutate()}
             onStartSecondHalf={() => startSecondHalf.mutate()}
             onUpdateAddedTime={(half, minutes) => updateAddedTime.mutate({ half, minutes })}
+            onFinishGame={handleFinishGame}
             onMinuteChange={handleMinuteChange}
-            isPending={playPauseClock.isPending || endFirstHalf.isPending || startSecondHalf.isPending}
+            onTimerInfoChange={handleTimerInfoChange}
+            isPending={playPauseClock.isPending || endFirstHalf.isPending || startSecondHalf.isPending || finishGame.isPending}
           />
         )}
 
         {/* Player cards */}
         {filteredPlayers.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>Nenhum jogador adicionado</p>
-            <p className="text-sm">
+          <div className="text-center py-8 sm:py-12 text-muted-foreground">
+            <Users className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-4 opacity-50" />
+            <p className="text-sm sm:text-base">Nenhum jogador adicionado</p>
+            <p className="text-xs sm:text-sm">
               Clique em "{isDraft ? "Escalação" : "Jogador"}" para começar
             </p>
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
             {filteredPlayers.map((mp) => (
               <PlayerStatCard
                 key={mp.id}

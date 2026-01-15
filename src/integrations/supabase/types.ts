@@ -229,7 +229,9 @@ export type Database = {
       match_events: {
         Row: {
           created_at: string
+          display_minute: string | null
           event_type: Database["public"]["Enums"]["match_event_type"]
+          half: number | null
           id: string
           match_id: string
           minute: number | null
@@ -238,7 +240,9 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          display_minute?: string | null
           event_type: Database["public"]["Enums"]["match_event_type"]
+          half?: number | null
           id?: string
           match_id: string
           minute?: number | null
@@ -247,7 +251,9 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          display_minute?: string | null
           event_type?: Database["public"]["Enums"]["match_event_type"]
+          half?: number | null
           id?: string
           match_id?: string
           minute?: number | null

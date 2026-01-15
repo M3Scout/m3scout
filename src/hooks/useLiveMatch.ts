@@ -255,14 +255,39 @@ export function useLiveMatch(matchId: string) {
     },
   });
 
-  // Add event (increment stat)
+  // Add event (increment stat) - with half and display_minute
   const addEvent = useMutation({
     mutationFn: async (params: {
       playerId: string;
       eventType: MatchEventType;
       minute?: number;
       value?: number;
+      half?: 1 | 2;
+      displayMinute?: string;
     }) => {
+      // Get current match state for half info
+      const currentHalf = match?.half || 1;
+      const halfDuration = (match?.duration_minutes || 90) / 2;
+      const minuteInHalf = params.minute ? (currentHalf === 2 ? params.minute - halfDuration : params.minute) : 0;
+      
+      // Calculate display minute string
+      let displayMinute = params.displayMinute;
+      if (!displayMinute && params.minute !== undefined) {
+        if (currentHalf === 1) {
+          if (minuteInHalf <= halfDuration) {
+            displayMinute = `${params.minute}'`;
+          } else {
+            displayMinute = `45+${Math.floor(minuteInHalf - halfDuration + 1)}'`;
+          }
+        } else {
+          if (minuteInHalf <= halfDuration) {
+            displayMinute = `${params.minute}'`;
+          } else {
+            displayMinute = `90+${Math.floor(minuteInHalf - halfDuration + 1)}'`;
+          }
+        }
+      }
+
       const { data, error } = await supabase
         .from("match_events")
         .insert({
@@ -271,6 +296,8 @@ export function useLiveMatch(matchId: string) {
           event_type: params.eventType,
           minute: params.minute ?? null,
           value: params.value ?? 1,
+          half: params.half ?? currentHalf,
+          display_minute: displayMinute ?? null,
         })
         .select()
         .single();
@@ -527,6 +554,40 @@ export function useLiveMatch(matchId: string) {
     },
   });
 
+  // Finish game (only available in 2nd half)
+  const finishGame = useMutation({
+    mutationFn: async () => {
+      if (!match) throw new Error("Match not found");
+
+      // Accumulate remaining time and stop
+      const now = Date.now();
+      const start = match.half_start_time ? new Date(match.half_start_time).getTime() : now;
+      const additionalSeconds = match.clock_status === "running" 
+        ? Math.floor((now - start) / 1000) 
+        : 0;
+      const newElapsed = match.elapsed_seconds_in_half + additionalSeconds;
+
+      const { error } = await supabase
+        .from("matches")
+        .update({
+          status: "finished" as MatchStatus,
+          clock_status: "stopped" as ClockStatus,
+          elapsed_seconds_in_half: newElapsed,
+          half_start_time: null,
+        })
+        .eq("id", matchId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["match", matchId] });
+      toast.success("Jogo finalizado!");
+    },
+    onError: () => {
+      toast.error("Erro ao finalizar jogo");
+    },
+  });
+
   // Player enters field (for substitutes during live game)
   const playerEnterField = useMutation({
     mutationFn: async (params: { matchPlayerId: string; minute: number }) => {
@@ -685,6 +746,7 @@ export function useLiveMatch(matchId: string) {
     endFirstHalf,
     startSecondHalf,
     updateAddedTime,
+    finishGame,
 
     // Local draft
     checkLocalDraft,
