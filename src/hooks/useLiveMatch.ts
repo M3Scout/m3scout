@@ -323,6 +323,52 @@ export function useLiveMatch(matchId: string) {
     },
   });
 
+  // Substitution (player out, player in)
+  const substitutePlayer = useMutation({
+    mutationFn: async (params: {
+      playerOutId: string;
+      playerInId: string;
+      minute: number;
+    }) => {
+      const playerOut = matchPlayers.find((mp) => mp.player_id === params.playerOutId);
+      const playerIn = matchPlayers.find((mp) => mp.player_id === params.playerInId);
+
+      if (!playerOut || !playerIn) {
+        throw new Error("Jogadores não encontrados");
+      }
+
+      // Update player out: set is_on_field = false, exited_minute = minute
+      const { error: outError } = await supabase
+        .from("match_players")
+        .update({
+          is_on_field: false,
+          exited_minute: params.minute,
+        })
+        .eq("id", playerOut.id);
+
+      if (outError) throw outError;
+
+      // Update player in: set is_on_field = true, entered_minute = minute
+      const { error: inError } = await supabase
+        .from("match_players")
+        .update({
+          is_on_field: true,
+          entered_minute: params.minute,
+        })
+        .eq("id", playerIn.id);
+
+      if (inError) throw inError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["match-players", matchId] });
+      toast.success("Substituição realizada");
+    },
+    onError: (error) => {
+      console.error("Substitution error:", error);
+      toast.error("Erro na substituição");
+    },
+  });
+
   // Auto-save to localStorage
   useEffect(() => {
     if (!match || matchPlayers.length === 0) return;
@@ -381,6 +427,7 @@ export function useLiveMatch(matchId: string) {
     deleteEvent,
     undoLastEvent,
     updateMatchStatus,
+    substitutePlayer,
 
     // Local draft
     checkLocalDraft,
