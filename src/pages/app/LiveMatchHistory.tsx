@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -9,6 +10,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
+import {
   Radio,
   Plus,
   Calendar,
@@ -18,7 +30,7 @@ import {
   CheckCircle2,
   Pause,
   FileText,
-  Users,
+  Trash2,
 } from "lucide-react";
 
 type MatchStatus = "draft" | "live" | "finished" | "applied";
@@ -48,6 +60,8 @@ const statusConfig: Record<MatchStatus, { label: string; color: string; icon: Re
 
 export default function LiveMatchHistory() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [deleteMatch, setDeleteMatch] = useState<MatchWithCompetition | null>(null);
 
   const { data: matches = [], isLoading } = useQuery({
     queryKey: ["matches-history", user?.id],
@@ -76,6 +90,26 @@ export default function LiveMatchHistory() {
     enabled: !!user,
   });
 
+  const deleteMatchMutation = useMutation({
+    mutationFn: async (matchId: string) => {
+      const { error } = await supabase
+        .from("matches")
+        .delete()
+        .eq("id", matchId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["matches-history"] });
+      toast.success("Jogo excluído com sucesso");
+      setDeleteMatch(null);
+    },
+    onError: (error) => {
+      console.error("Delete match error:", error);
+      toast.error("Erro ao excluir jogo");
+    },
+  });
+
   // Group by status
   const liveMatches = matches.filter((m) => m.status === "live");
   const finishedMatches = matches.filter((m) => m.status === "finished");
@@ -87,6 +121,12 @@ export default function LiveMatchHistory() {
       return `/app/live-match/${match.id}/review`;
     }
     return `/app/live-match/${match.id}`;
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent, match: MatchWithCompetition) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDeleteMatch(match);
   };
 
   return (
@@ -146,7 +186,12 @@ export default function LiveMatchHistory() {
               <CardContent>
                 <div className="space-y-2">
                   {liveMatches.map((match) => (
-                    <MatchCard key={match.id} match={match} link={getMatchLink(match)} />
+                    <MatchCard 
+                      key={match.id} 
+                      match={match} 
+                      link={getMatchLink(match)} 
+                      onDelete={(e) => handleDeleteClick(e, match)}
+                    />
                   ))}
                 </div>
               </CardContent>
@@ -165,7 +210,12 @@ export default function LiveMatchHistory() {
               <CardContent>
                 <div className="space-y-2">
                   {finishedMatches.map((match) => (
-                    <MatchCard key={match.id} match={match} link={getMatchLink(match)} />
+                    <MatchCard 
+                      key={match.id} 
+                      match={match} 
+                      link={getMatchLink(match)} 
+                      onDelete={(e) => handleDeleteClick(e, match)}
+                    />
                   ))}
                 </div>
               </CardContent>
@@ -185,7 +235,12 @@ export default function LiveMatchHistory() {
                 <ScrollArea className="h-[300px]">
                   <div className="space-y-2">
                     {appliedMatches.map((match) => (
-                      <MatchCard key={match.id} match={match} link={getMatchLink(match)} />
+                      <MatchCard 
+                        key={match.id} 
+                        match={match} 
+                        link={getMatchLink(match)} 
+                        onDelete={(e) => handleDeleteClick(e, match)}
+                      />
                     ))}
                   </div>
                 </ScrollArea>
@@ -205,7 +260,12 @@ export default function LiveMatchHistory() {
               <CardContent>
                 <div className="space-y-2">
                   {draftMatches.map((match) => (
-                    <MatchCard key={match.id} match={match} link={getMatchLink(match)} />
+                    <MatchCard 
+                      key={match.id} 
+                      match={match} 
+                      link={getMatchLink(match)} 
+                      onDelete={(e) => handleDeleteClick(e, match)}
+                    />
                   ))}
                 </div>
               </CardContent>
@@ -213,51 +273,102 @@ export default function LiveMatchHistory() {
           )}
         </div>
       )}
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={!!deleteMatch} onOpenChange={() => setDeleteMatch(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir jogo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteMatch && (
+                <>
+                  Tem certeza que deseja excluir o jogo <strong>vs {deleteMatch.opponent_name}</strong>?
+                  {deleteMatch.status === "applied" && (
+                    <span className="block mt-2 text-amber-500">
+                      ⚠️ As estatísticas já aplicadas aos jogadores NÃO serão removidas.
+                    </span>
+                  )}
+                  <span className="block mt-2">
+                    Esta ação não pode ser desfeita.
+                  </span>
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteMatch && deleteMatchMutation.mutate(deleteMatch.id)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteMatchMutation.isPending}
+            >
+              {deleteMatchMutation.isPending ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
 
-function MatchCard({ match, link }: { match: MatchWithCompetition; link: string }) {
+interface MatchCardProps {
+  match: MatchWithCompetition;
+  link: string;
+  onDelete: (e: React.MouseEvent) => void;
+}
+
+function MatchCard({ match, link, onDelete }: MatchCardProps) {
   const config = statusConfig[match.status];
   const competitionName = match.competition?.display_name || match.competition?.name || "Competição";
 
   return (
-    <Link
-      to={link}
-      className="flex items-center gap-4 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
-    >
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
-          <Badge className={config.color} variant="secondary">
-            {config.icon}
-            <span className="ml-1">{config.label}</span>
-          </Badge>
-          <span className="text-xs text-muted-foreground">
-            {format(new Date(match.match_date), "dd MMM yyyy", { locale: ptBR })}
-          </span>
-        </div>
-        <p className="font-semibold truncate">vs {match.opponent_name}</p>
-        <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-          <span className="flex items-center gap-1">
-            <Trophy className="h-3 w-3" />
-            {competitionName}
-          </span>
-          <span className="flex items-center gap-1">
-            <Calendar className="h-3 w-3" />
-            {match.season_year}
-          </span>
-          {match.venue && (
-            <span className="flex items-center gap-1">
-              <MapPin className="h-3 w-3" />
-              {match.venue}
+    <div className="flex items-center gap-2 group">
+      <Link
+        to={link}
+        className="flex-1 flex items-center gap-4 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+      >
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <Badge className={config.color} variant="secondary">
+              {config.icon}
+              <span className="ml-1">{config.label}</span>
+            </Badge>
+            <span className="text-xs text-muted-foreground">
+              {format(new Date(match.match_date), "dd MMM yyyy", { locale: ptBR })}
             </span>
-          )}
-          <span className="flex items-center gap-1">
-            <Clock className="h-3 w-3" />
-            {match.duration_minutes}'
-          </span>
+          </div>
+          <p className="font-semibold truncate">vs {match.opponent_name}</p>
+          <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+            <span className="flex items-center gap-1">
+              <Trophy className="h-3 w-3" />
+              {competitionName}
+            </span>
+            <span className="flex items-center gap-1">
+              <Calendar className="h-3 w-3" />
+              {match.season_year}
+            </span>
+            {match.venue && (
+              <span className="flex items-center gap-1">
+                <MapPin className="h-3 w-3" />
+                {match.venue}
+              </span>
+            )}
+            <span className="flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              {match.duration_minutes}'
+            </span>
+          </div>
         </div>
-      </div>
-    </Link>
+      </Link>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-9 w-9 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+        onClick={onDelete}
+        title="Excluir jogo"
+      >
+        <Trash2 className="h-4 w-4" />
+      </Button>
+    </div>
   );
 }
