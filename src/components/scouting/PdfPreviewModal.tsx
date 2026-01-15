@@ -61,7 +61,9 @@ export function PdfPreviewModal({
 
       await exportToPdf(templateElement, {
         filename,
-        scale: qualityScale,
+        // CRITICAL: Always use scale=1 for pixel-identical export.
+        // Ignore qualityScale - it should not affect layout.
+        scale: 1,
         onProgress: setProgress,
         firstPageOnly,
       });
@@ -104,7 +106,8 @@ export function PdfPreviewModal({
 
       await exportToPng(templateElement, {
         filename,
-        scale: qualityScale,
+        // CRITICAL: Always use scale=1 for pixel-identical export.
+        scale: 1,
         onProgress: setProgress,
         firstPageOnly,
       });
@@ -139,7 +142,8 @@ export function PdfPreviewModal({
       }
 
       await exportToPng(templateElement, {
-        scale: qualityScale,
+        // CRITICAL: Always use scale=1 for pixel-identical export.
+        scale: 1,
         onProgress: setProgress,
         firstPageOnly,
         debugMode: true,

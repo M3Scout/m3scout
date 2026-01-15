@@ -30,19 +30,19 @@ type QualityOption = {
   scale: number;
 };
 
+// CRITICAL: All quality options MUST use scale=1 for pixel-identical export.
+// PDF quality comes from image resolution in the PDF, not from canvas scale.
+// Higher scales (1.5x, 2x, 3x) cause subtle flex/baseline alignment shifts.
 const QUALITY_OPTIONS: Record<QualityKey, QualityOption> = {
   normal: {
     label: "Normal",
     description: "Layout idêntico ao preview",
-    // CRITICAL: scale=1 ensures pixel-identical layout matching with preview.
-    // Higher scales cause subtle flex/baseline alignment shifts.
-    scale: 1,
+    scale: 1, // NEVER change this
   },
   high: {
     label: "Alta Resolução",
-    description: "Melhor p/ impressão (1.5x)",
-    // Use 1.5x max for slightly higher resolution while minimizing layout shifts
-    scale: 1.5,
+    description: "Layout idêntico ao preview",
+    scale: 1, // NEVER change this - use PDF DPI for quality, not canvas scale
   },
 };
 
