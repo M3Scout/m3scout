@@ -1,5 +1,4 @@
 import { useState, useRef, useCallback } from "react";
-import { createPortal } from "react-dom";
 import {
   Dialog,
   DialogContent,
@@ -34,8 +33,6 @@ export function PdfPreviewModal({
   const [progress, setProgress] = useState(0);
   const [zoom, setZoom] = useState(0.5);
   const templateRef = useRef<HTMLDivElement>(null);
-  const hiddenTemplateRef = useRef<HTMLDivElement>(null);
-  const [showHiddenTemplate, setShowHiddenTemplate] = useState(false);
 
   const handleExport = useCallback(async () => {
     if (!report.players) {
@@ -45,16 +42,23 @@ export function PdfPreviewModal({
 
     setIsExporting(true);
     setProgress(0);
-    setShowHiddenTemplate(true);
-
-    // Wait for hidden template to render
-    await new Promise((resolve) => setTimeout(resolve, 1200));
 
     try {
-      const templateElement = hiddenTemplateRef.current;
+      // Use the SAME template element that's visible in the preview
+      const templateElement = templateRef.current;
       if (!templateElement) {
         throw new Error("Template não encontrado");
       }
+
+      // Temporarily reset zoom transform for accurate capture
+      const previewWrapper = templateElement.parentElement;
+      const originalTransform = previewWrapper?.style.transform;
+      if (previewWrapper) {
+        previewWrapper.style.transform = "none";
+      }
+
+      // Small delay for the transform change to apply
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       const filename = generateReportFilename(
         report.players.full_name,
@@ -66,6 +70,11 @@ export function PdfPreviewModal({
         scale: qualityScale,
         onProgress: setProgress,
       });
+
+      // Restore original transform
+      if (previewWrapper && originalTransform !== undefined) {
+        previewWrapper.style.transform = originalTransform;
+      }
 
       toast.success("PDF exportado com sucesso!", {
         description: `${filename} (${qualityLabel})`,
@@ -79,7 +88,6 @@ export function PdfPreviewModal({
       });
     } finally {
       setIsExporting(false);
-      setShowHiddenTemplate(false);
       setProgress(0);
     }
   }, [report, qualityScale, qualityLabel, onOpenChange]);
@@ -93,122 +101,103 @@ export function PdfPreviewModal({
   };
 
   return (
-    <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 gap-0">
-          <DialogHeader className="px-6 py-4 border-b flex-shrink-0">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <Eye className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <DialogTitle className="text-lg font-semibold">
-                    Preview do Relatório
-                  </DialogTitle>
-                  <p className="text-sm text-muted-foreground">
-                    Verifique o layout antes de exportar
-                  </p>
-                </div>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 gap-0">
+        <DialogHeader className="px-6 py-4 border-b flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Eye className="w-5 h-5 text-primary" />
               </div>
-              {/* Zoom controls */}
-              <div className="flex items-center gap-2 mr-8">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={handleZoomOut}
-                  disabled={zoom <= 0.3}
-                >
-                  <ZoomOut className="w-4 h-4" />
-                </Button>
-                <span className="text-sm font-medium min-w-[3rem] text-center">
-                  {Math.round(zoom * 100)}%
-                </span>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={handleZoomIn}
-                  disabled={zoom >= 1}
-                >
-                  <ZoomIn className="w-4 h-4" />
-                </Button>
+              <div>
+                <DialogTitle className="text-lg font-semibold">
+                  Preview do Relatório
+                </DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                  Verifique o layout antes de exportar
+                </p>
               </div>
             </div>
-          </DialogHeader>
+            {/* Zoom controls */}
+            <div className="flex items-center gap-2 mr-8">
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                onClick={handleZoomOut}
+                disabled={zoom <= 0.3}
+              >
+                <ZoomOut className="w-4 h-4" />
+              </Button>
+              <span className="text-sm font-medium min-w-[3rem] text-center">
+                {Math.round(zoom * 100)}%
+              </span>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                onClick={handleZoomIn}
+                disabled={zoom >= 1}
+              >
+                <ZoomIn className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </DialogHeader>
 
-          {/* Preview area */}
-          <ScrollArea className="flex-1 bg-muted/30">
-            <div className="p-6 flex justify-center">
+        {/* Preview area - uses fixed A4 width container */}
+        <ScrollArea className="flex-1 bg-muted/30">
+          <div className="p-6 flex justify-center">
+            <div
+              style={{
+                transform: `scale(${zoom})`,
+                transformOrigin: "top center",
+                transition: "transform 0.2s ease",
+              }}
+            >
               <div
+                className="bg-white shadow-2xl rounded-lg overflow-hidden"
                 style={{
-                  transform: `scale(${zoom})`,
-                  transformOrigin: "top center",
-                  transition: "transform 0.2s ease",
+                  boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
                 }}
               >
-                <div
-                  className="bg-white shadow-2xl rounded-lg overflow-hidden"
-                  style={{
-                    boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
-                  }}
-                >
-                  <ScoutingReportPdfTemplate ref={templateRef} report={report} />
-                </div>
+                <ScoutingReportPdfTemplate ref={templateRef} report={report} />
               </div>
             </div>
-          </ScrollArea>
+          </div>
+        </ScrollArea>
 
-          <DialogFooter className="px-6 py-4 border-t flex-shrink-0">
-            <div className="flex items-center justify-between w-full">
-              <p className="text-sm text-muted-foreground">
-                Qualidade: <span className="font-medium">{qualityLabel}</span>
-              </p>
-              <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => onOpenChange(false)}
-                  disabled={isExporting}
-                >
-                  <X className="w-4 h-4 mr-2" />
-                  Cancelar
-                </Button>
-                <Button onClick={handleExport} disabled={isExporting}>
-                  {isExporting ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      {progress > 0 ? `${Math.round(progress)}%` : "Gerando..."}
-                    </>
-                  ) : (
-                    <>
-                      <FileDown className="w-4 h-4 mr-2" />
-                      Exportar PDF
-                    </>
-                  )}
-                </Button>
-              </div>
+        <DialogFooter className="px-6 py-4 border-t flex-shrink-0">
+          <div className="flex items-center justify-between w-full">
+            <p className="text-sm text-muted-foreground">
+              Qualidade: <span className="font-medium">{qualityLabel}</span>
+            </p>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={isExporting}
+              >
+                <X className="w-4 h-4 mr-2" />
+                Cancelar
+              </Button>
+              <Button onClick={handleExport} disabled={isExporting}>
+                {isExporting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    {progress > 0 ? `${Math.round(progress)}%` : "Gerando..."}
+                  </>
+                ) : (
+                  <>
+                    <FileDown className="w-4 h-4 mr-2" />
+                    Exportar PDF
+                  </>
+                )}
+              </Button>
             </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Hidden template for PDF generation (higher quality) */}
-      {showHiddenTemplate &&
-        createPortal(
-          <div
-            style={{
-              position: "fixed",
-              left: "-9999px",
-              top: 0,
-              zIndex: -1,
-              overflow: "visible",
-            }}
-          >
-            <ScoutingReportPdfTemplate ref={hiddenTemplateRef} report={report} />
-          </div>,
-          document.body
-        )}
-    </>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

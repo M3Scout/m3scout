@@ -7,6 +7,42 @@ export interface PdfExportOptions {
   onProgress?: (progress: number) => void;
 }
 
+// Fixed A4 width in pixels at 96dpi
+const A4_WIDTH_PX = 794;
+
+/**
+ * Wait for all fonts to be loaded
+ */
+async function waitForFonts(): Promise<void> {
+  if (document.fonts && document.fonts.ready) {
+    await document.fonts.ready;
+  }
+  // Extra safety delay for font rendering
+  await new Promise((resolve) => setTimeout(resolve, 100));
+}
+
+/**
+ * Wait for all images in an element to be fully loaded
+ */
+async function waitForImages(element: HTMLElement): Promise<void> {
+  const images = element.querySelectorAll("img");
+  const imagePromises: Promise<void>[] = [];
+
+  images.forEach((img) => {
+    if (!img.complete) {
+      const promise = new Promise<void>((resolve) => {
+        img.onload = () => resolve();
+        img.onerror = () => resolve();
+        // Timeout fallback
+        setTimeout(resolve, 3000);
+      });
+      imagePromises.push(promise);
+    }
+  });
+
+  await Promise.all(imagePromises);
+}
+
 /**
  * Preload all images in an element and convert to base64 for reliable PDF rendering
  */
@@ -52,120 +88,136 @@ export async function exportToPdf(
   element: HTMLElement,
   options: PdfExportOptions = {}
 ): Promise<void> {
-  const { filename = "report.pdf", scale = 3, onProgress } = options;
+  const { filename = "report.pdf", scale = 2, onProgress } = options;
 
   onProgress?.(5);
 
-  // Preload images first
-  await preloadImages(element);
+  // Add exporting class to body for CSS overrides
+  document.body.classList.add("exporting-pdf");
 
-  onProgress?.(15);
+  try {
+    // Wait for fonts to be fully loaded
+    await waitForFonts();
+    onProgress?.(10);
 
-  // Create canvas from the element with high resolution
-  const canvas = await html2canvas(element, {
-    scale: scale,
-    useCORS: true,
-    allowTaint: true,
-    backgroundColor: "#FFFFFF",
-    logging: false,
-    imageTimeout: 30000,
-    removeContainer: true,
-    onclone: (clonedDoc, clonedElement) => {
-      // Force white background on container
-      clonedElement.style.backgroundColor = "#FFFFFF";
-      clonedElement.style.overflow = "visible";
+    // Wait for images to load
+    await waitForImages(element);
+    onProgress?.(15);
+
+    // Preload and convert images to base64
+    await preloadImages(element);
+    onProgress?.(25);
+
+    // Create canvas from the element with high resolution
+    const canvas = await html2canvas(element, {
+      scale: scale,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: "#FFFFFF",
+      logging: false,
+      imageTimeout: 30000,
+      removeContainer: true,
+      width: element.scrollWidth,
+      height: element.scrollHeight,
+      windowWidth: element.scrollWidth,
+      onclone: (clonedDoc, clonedElement) => {
+        // Force white background on container
+        clonedElement.style.backgroundColor = "#FFFFFF";
+        clonedElement.style.overflow = "visible";
+        
+        // Reset any transforms that might cause issues
+        clonedElement.style.transform = "none";
+        
+        // Ensure all SVGs are properly sized and have explicit dimensions
+        const svgs = clonedElement.querySelectorAll("svg");
+        svgs.forEach((svg) => {
+          const rect = svg.getBoundingClientRect();
+          if (rect.width > 0 && rect.height > 0) {
+            svg.setAttribute("width", Math.round(rect.width).toString());
+            svg.setAttribute("height", Math.round(rect.height).toString());
+            svg.style.overflow = "visible";
+          }
+        });
+        
+        // Ensure images have fixed dimensions and no lazy loading
+        const images = clonedElement.querySelectorAll("img");
+        images.forEach((img) => {
+          img.crossOrigin = "anonymous";
+          img.loading = "eager";
+          img.style.visibility = "visible";
+          img.style.opacity = "1";
+        });
+
+        // Normalize line-height to avoid fractional pixel issues
+        const textElements = clonedElement.querySelectorAll("p, span, div, h1, h2, h3, h4, h5, h6");
+        textElements.forEach((el) => {
+          const element = el as HTMLElement;
+          const computedStyle = window.getComputedStyle(element);
+          const opacity = parseFloat(computedStyle.opacity);
+          if (opacity < 0.75) {
+            element.style.opacity = "0.85";
+          }
+        });
+      },
+    });
+
+    onProgress?.(60);
+
+    // A4 dimensions in mm
+    const a4Width = 210;
+    const a4Height = 297;
+    
+    // Calculate dimensions
+    const imgWidth = a4Width;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    // Create PDF
+    const pdf = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4",
+      compress: true,
+    });
+
+    onProgress?.(75);
+
+    // Get image data at maximum quality
+    const imgData = canvas.toDataURL("image/png", 1.0);
+    
+    // Calculate how many pages we need
+    const totalPages = Math.ceil(imgHeight / a4Height);
+    
+    for (let page = 0; page < totalPages; page++) {
+      if (page > 0) {
+        pdf.addPage();
+      }
       
-      // Add pdf-export class for specific styles
-      clonedElement.classList.add("pdf-export");
+      // Calculate the y offset for this page
+      const yOffset = -(page * a4Height);
       
-      // Ensure all SVGs are properly sized and have explicit dimensions
-      const svgs = clonedElement.querySelectorAll("svg");
-      svgs.forEach((svg) => {
-        const rect = svg.getBoundingClientRect();
-        if (rect.width > 0 && rect.height > 0) {
-          svg.setAttribute("width", rect.width.toString());
-          svg.setAttribute("height", rect.height.toString());
-          // Ensure SVG elements have proper stroke visibility
-          svg.style.overflow = "visible";
-        }
-      });
-      
-      // Ensure images have fixed dimensions and no lazy loading
-      const images = clonedElement.querySelectorAll("img");
-      images.forEach((img) => {
-        img.crossOrigin = "anonymous";
-        img.loading = "eager";
-        // Force image visibility
-        img.style.visibility = "visible";
-        img.style.opacity = "1";
-      });
-
-      // Ensure high contrast text
-      const textElements = clonedElement.querySelectorAll("p, span, div, h1, h2, h3, h4, h5, h6");
-      textElements.forEach((el) => {
-        const element = el as HTMLElement;
-        const computedStyle = window.getComputedStyle(element);
-        const opacity = parseFloat(computedStyle.opacity);
-        if (opacity < 0.75) {
-          element.style.opacity = "0.85";
-        }
-      });
-    },
-  });
-
-  onProgress?.(55);
-
-  // A4 dimensions in mm
-  const a4Width = 210;
-  const a4Height = 297;
-  
-  // Calculate dimensions
-  const imgWidth = a4Width;
-  const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-  // Create PDF
-  const pdf = new jsPDF({
-    orientation: "portrait",
-    unit: "mm",
-    format: "a4",
-    compress: true,
-  });
-
-  onProgress?.(70);
-
-  // Get image data at maximum quality
-  const imgData = canvas.toDataURL("image/png", 1.0);
-  
-  // Calculate how many pages we need
-  const totalPages = Math.ceil(imgHeight / a4Height);
-  
-  for (let page = 0; page < totalPages; page++) {
-    if (page > 0) {
-      pdf.addPage();
+      // Add the image with offset
+      pdf.addImage(
+        imgData, 
+        "PNG", 
+        0, 
+        yOffset, 
+        imgWidth, 
+        imgHeight,
+        undefined,
+        "FAST"
+      );
     }
-    
-    // Calculate the y offset for this page
-    const yOffset = -(page * a4Height);
-    
-    // Add the image with offset
-    pdf.addImage(
-      imgData, 
-      "PNG", 
-      0, 
-      yOffset, 
-      imgWidth, 
-      imgHeight,
-      undefined,
-      "FAST"
-    );
+
+    onProgress?.(95);
+
+    // Save the PDF
+    pdf.save(filename);
+
+    onProgress?.(100);
+  } finally {
+    // Always remove exporting class
+    document.body.classList.remove("exporting-pdf");
   }
-
-  onProgress?.(90);
-
-  // Save the PDF
-  pdf.save(filename);
-
-  onProgress?.(100);
 }
 
 /**
