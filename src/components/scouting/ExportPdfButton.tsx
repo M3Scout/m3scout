@@ -28,21 +28,24 @@ type QualityOption = {
   label: string;
   description: string;
   scale: number;
+  outputResolution: number; // Upscale multiplier for final output
 };
 
 // CRITICAL: All quality options MUST use scale=1 for pixel-identical export.
-// PDF quality comes from image resolution in the PDF, not from canvas scale.
-// Higher scales (1.5x, 2x, 3x) cause subtle flex/baseline alignment shifts.
+// PDF quality comes from outputResolution (upscaling), not from html2canvas scale.
+// Higher html2canvas scales (1.5x, 2x, 3x) cause subtle flex/baseline alignment shifts.
 const QUALITY_OPTIONS: Record<QualityKey, QualityOption> = {
   normal: {
     label: "Normal",
-    description: "Layout idêntico ao preview",
+    description: "Resolução padrão (2x)",
     scale: 1, // NEVER change this
+    outputResolution: 2, // 2x upscale = ~1588px wide
   },
   high: {
     label: "Alta Resolução",
-    description: "Layout idêntico ao preview",
-    scale: 1, // NEVER change this - use PDF DPI for quality, not canvas scale
+    description: "Para impressão (3x)",
+    scale: 1, // NEVER change this - use outputResolution for quality
+    outputResolution: 3, // 3x upscale = ~2382px wide
   },
 };
 
@@ -132,6 +135,7 @@ export function ExportPdfButton({ report, variant = "outline", size = "sm" }: Ex
       await exportToPdf(templateElement, {
         filename,
         scale: qualityConfig.scale,
+        outputResolution: qualityConfig.outputResolution,
         onProgress: setProgress,
       });
 

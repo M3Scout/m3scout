@@ -14,6 +14,15 @@ export interface PdfExportOptions {
   firstPageOnly?: boolean;
   /** If true, open the captured canvas in a new tab with debug overlay instead of downloading */
   debugMode?: boolean;
+  /**
+   * Output resolution multiplier for PNG/PDF (default: 2).
+   * This upscales the final image AFTER html2canvas renders at scale=1,
+   * preserving layout while improving quality.
+   * - 1 = same as capture (794px wide)
+   * - 2 = 2x resolution (~1588px wide) - recommended
+   * - 3 = 3x resolution (~2382px wide) - high quality print
+   */
+  outputResolution?: number;
 }
 
 type ExportMode = "png" | "pdf" | "debug";
@@ -496,6 +505,32 @@ export async function buildExportCanvas(
         clonedElement.style.overflow = "visible";
         clonedElement.style.transform = "none";
 
+        // ========== FIX POSITION PILLS (badges) ==========
+        // Lock all badge/pill elements to use flex centering, not baseline
+        const badges = clonedElement.querySelectorAll("span");
+        badges.forEach((span) => {
+          const cs = getComputedStyle(span);
+          // Detect pill-like elements (has background, border-radius, small height)
+          const hasBg = cs.backgroundColor !== "rgba(0, 0, 0, 0)" && cs.backgroundColor !== "transparent";
+          const hasRadius = parseFloat(cs.borderRadius) > 6;
+          const isSmall = parseFloat(cs.height) > 0 && parseFloat(cs.height) < 50;
+          
+          if (hasBg && hasRadius && isSmall) {
+            // Lock pill styles to match preview exactly
+            span.style.display = "inline-flex";
+            span.style.alignItems = "center";
+            span.style.justifyContent = "center";
+            span.style.lineHeight = "1";
+            span.style.verticalAlign = "middle";
+            span.style.boxSizing = "border-box";
+            // Preserve computed height
+            const height = Math.round(parseFloat(cs.height));
+            if (height > 0) {
+              span.style.height = `${height}px`;
+            }
+          }
+        });
+
         // Ensure SVGs have explicit dimensions (helps charts/icons)
         const svgs = clonedElement.querySelectorAll("svg");
         svgs.forEach((svg) => {
@@ -551,6 +586,34 @@ export async function buildExportCanvas(
 }
 
 /**
+ * Upscale a canvas to higher resolution while preserving the layout.
+ * This is the key to getting sharp PNG/PDF without changing html2canvas scale.
+ */
+function upscaleCanvas(sourceCanvas: HTMLCanvasElement, multiplier: number): HTMLCanvasElement {
+  if (multiplier <= 1) return sourceCanvas;
+
+  const outputCanvas = document.createElement("canvas");
+  outputCanvas.width = sourceCanvas.width * multiplier;
+  outputCanvas.height = sourceCanvas.height * multiplier;
+
+  const ctx = outputCanvas.getContext("2d");
+  if (!ctx) return sourceCanvas;
+
+  // Enable high-quality scaling
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+
+  // Scale and draw
+  ctx.setTransform(multiplier, 0, 0, multiplier, 0, 0);
+  ctx.drawImage(sourceCanvas, 0, 0);
+
+  // Reset transform
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+  return outputCanvas;
+}
+
+/**
  * Export a DOM element to PDF.
  * IMPORTANT: Uses the exact same buildExportCanvas pipeline as PNG/Debug.
  */
@@ -561,11 +624,12 @@ export async function exportToPdf(element: HTMLElement, options: PdfExportOption
     onProgress,
     firstPageOnly = false,
     debugMode = false,
+    outputResolution = 2, // Default 2x for crisp output
   } = options;
 
   const mode: ExportMode = debugMode ? "debug" : "pdf";
 
-  const { canvas, meta } = await buildExportCanvas(element, {
+  const { canvas: baseCanvas, meta } = await buildExportCanvas(element, {
     scale,
     onProgress,
     firstPageOnly,
@@ -573,17 +637,21 @@ export async function exportToPdf(element: HTMLElement, options: PdfExportOption
   });
 
   if (debugMode) {
-    openDebugWindow(canvas, meta);
+    openDebugWindow(baseCanvas, meta);
     onProgress?.(100);
     return;
   }
+
+  // Upscale for higher quality output
+  const canvas = upscaleCanvas(baseCanvas, outputResolution);
 
   // A4 dimensions in mm
   const a4Width = 210;
   const a4Height = 297;
 
   const imgWidth = a4Width;
-  const imgHeight = (canvas.height * imgWidth) / canvas.width;
+  // Use base canvas dimensions for aspect ratio (not upscaled)
+  const imgHeight = (baseCanvas.height * imgWidth) / baseCanvas.width;
 
   const pdf = new jsPDF({
     orientation: "portrait",
@@ -594,13 +662,15 @@ export async function exportToPdf(element: HTMLElement, options: PdfExportOption
 
   onProgress?.(85);
 
+  // Use high-quality PNG from upscaled canvas
   const imgData = canvas.toDataURL("image/png", 1.0);
   const totalPages = Math.ceil(imgHeight / a4Height);
 
   for (let page = 0; page < totalPages; page++) {
     if (page > 0) pdf.addPage();
     const yOffset = -(page * a4Height);
-    pdf.addImage(imgData, "PNG", 0, yOffset, imgWidth, imgHeight, undefined, "FAST");
+    // Use NONE compression for maximum quality
+    pdf.addImage(imgData, "PNG", 0, yOffset, imgWidth, imgHeight, undefined, "NONE");
   }
 
   // eslint-disable-next-line no-console
@@ -608,6 +678,9 @@ export async function exportToPdf(element: HTMLElement, options: PdfExportOption
     runId: meta.runId,
     pages: totalPages,
     imgHeightMm: imgHeight,
+    baseResolution: `${baseCanvas.width}x${baseCanvas.height}`,
+    outputResolution: `${canvas.width}x${canvas.height}`,
+    multiplier: outputResolution,
   });
 
   onProgress?.(95);
@@ -627,6 +700,7 @@ export async function exportToPng(
     onProgress?: (progress: number) => void;
     firstPageOnly?: boolean;
     debugMode?: boolean;
+    outputResolution?: number;
   } = {}
 ): Promise<void> {
   const {
@@ -635,11 +709,12 @@ export async function exportToPng(
     onProgress,
     firstPageOnly = false,
     debugMode = false,
+    outputResolution = 2, // Default 2x for crisp output
   } = options;
 
   const mode: ExportMode = debugMode ? "debug" : "png";
 
-  const { canvas, meta } = await buildExportCanvas(element, {
+  const { canvas: baseCanvas, meta } = await buildExportCanvas(element, {
     scale,
     onProgress,
     firstPageOnly,
@@ -647,10 +722,13 @@ export async function exportToPng(
   });
 
   if (debugMode) {
-    openDebugWindow(canvas, meta);
+    openDebugWindow(baseCanvas, meta);
     onProgress?.(100);
     return;
   }
+
+  // Upscale for higher quality output
+  const canvas = upscaleCanvas(baseCanvas, outputResolution);
 
   const link = document.createElement("a");
   link.download = filename;
@@ -658,7 +736,13 @@ export async function exportToPng(
   link.click();
 
   // eslint-disable-next-line no-console
-  console.log("[exportPipeline] png", { runId: meta.runId, filename });
+  console.log("[exportPipeline] png", {
+    runId: meta.runId,
+    filename,
+    baseResolution: `${baseCanvas.width}x${baseCanvas.height}`,
+    outputResolution: `${canvas.width}x${canvas.height}`,
+    multiplier: outputResolution,
+  });
 
   onProgress?.(100);
 }
