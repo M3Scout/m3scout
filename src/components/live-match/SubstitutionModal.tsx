@@ -31,9 +31,13 @@ interface SubstitutionModalProps {
     playerOutId: string;
     playerInId: string;
     minute: number;
+    half?: number;
+    displayMinute?: string;
   }) => void;
   isPending?: boolean;
   currentMinute?: number;
+  currentHalf?: number;
+  displayMinute?: string;
 }
 
 const MINUTE_PRESETS = [45, 60, 70, 80, 90];
@@ -46,6 +50,8 @@ export function SubstitutionModal({
   onSubstitute,
   isPending,
   currentMinute = 0,
+  currentHalf,
+  displayMinute,
 }: SubstitutionModalProps) {
   const isMobile = useIsMobile();
   const [playerOutId, setPlayerOutId] = useState<string | null>(null);
@@ -75,6 +81,8 @@ export function SubstitutionModal({
       playerOutId,
       playerInId,
       minute,
+      half: currentHalf,
+      displayMinute: displayMinute ?? `${minute}'`,
     });
 
     // Reset state

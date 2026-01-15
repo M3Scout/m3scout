@@ -236,6 +236,7 @@ export type Database = {
           match_id: string
           minute: number | null
           player_id: string
+          player_in_id: string | null
           value: number
         }
         Insert: {
@@ -247,6 +248,7 @@ export type Database = {
           match_id: string
           minute?: number | null
           player_id: string
+          player_in_id?: string | null
           value?: number
         }
         Update: {
@@ -258,6 +260,7 @@ export type Database = {
           match_id?: string
           minute?: number | null
           player_id?: string
+          player_in_id?: string | null
           value?: number
         }
         Relationships: [
@@ -271,6 +274,13 @@ export type Database = {
           {
             foreignKeyName: "match_events_player_id_fkey"
             columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_events_player_in_id_fkey"
+            columns: ["player_in_id"]
             isOneToOne: false
             referencedRelation: "players"
             referencedColumns: ["id"]
@@ -1309,6 +1319,7 @@ export type Database = {
         | "punch"
         | "high_claim"
         | "sweeper_action"
+        | "substitution"
       match_status: "draft" | "live" | "finished" | "applied"
       position_template: "outfield" | "goalkeeper"
     }
@@ -1472,6 +1483,7 @@ export const Constants = {
         "punch",
         "high_claim",
         "sweeper_action",
+        "substitution",
       ],
       match_status: ["draft", "live", "finished", "applied"],
       position_template: ["outfield", "goalkeeper"],
