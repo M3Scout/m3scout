@@ -8,10 +8,10 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { FileDown, Loader2, X, ZoomIn, ZoomOut, Eye } from "lucide-react";
+import { FileDown, Loader2, X, ZoomIn, ZoomOut, Eye, Image } from "lucide-react";
 import { toast } from "sonner";
 import { ScoutingReportPdfTemplate } from "./pdf/ScoutingReportPdfTemplate";
-import { exportToPdf, generateReportFilename } from "@/lib/pdfExport";
+import { exportToPdf, exportToPng, generateReportFilename, generateReportPngFilename } from "@/lib/pdfExport";
 import type { ScoutingReportData } from "@/types/scouting";
 
 interface PdfPreviewModalProps {
@@ -30,6 +30,7 @@ export function PdfPreviewModal({
   qualityLabel,
 }: PdfPreviewModalProps) {
   const [isExporting, setIsExporting] = useState(false);
+  const [isExportingPng, setIsExportingPng] = useState(false);
   const [progress, setProgress] = useState(0);
   const [zoom, setZoom] = useState(0.5);
   const templateRef = useRef<HTMLDivElement>(null);
@@ -44,7 +45,6 @@ export function PdfPreviewModal({
     setProgress(0);
 
     try {
-      // Export uses a CLONE of the preview DOM in a fixed A4 wrapper (implemented in exportToPdf)
       const templateElement = templateRef.current;
       if (!templateElement) {
         throw new Error("Template não encontrado");
@@ -77,6 +77,46 @@ export function PdfPreviewModal({
     }
   }, [report, qualityScale, qualityLabel, onOpenChange]);
 
+  const handleExportPng = useCallback(async () => {
+    if (!report.players) {
+      toast.error("Dados do jogador não disponíveis");
+      return;
+    }
+
+    setIsExportingPng(true);
+    setProgress(0);
+
+    try {
+      const templateElement = templateRef.current;
+      if (!templateElement) {
+        throw new Error("Template não encontrado");
+      }
+
+      const filename = generateReportPngFilename(
+        report.players.full_name,
+        report.match_date
+      );
+
+      await exportToPng(templateElement, {
+        filename,
+        scale: qualityScale,
+        onProgress: setProgress,
+      });
+
+      toast.success("PNG exportado com sucesso!", {
+        description: filename,
+      });
+    } catch (error) {
+      console.error("Erro ao exportar PNG:", error);
+      toast.error("Erro ao gerar PNG", {
+        description: "Tente novamente em alguns instantes",
+      });
+    } finally {
+      setIsExportingPng(false);
+      setProgress(0);
+    }
+  }, [report, qualityScale]);
+
   const handleZoomIn = () => {
     setZoom((prev) => Math.min(prev + 0.1, 1));
   };
@@ -84,6 +124,8 @@ export function PdfPreviewModal({
   const handleZoomOut = () => {
     setZoom((prev) => Math.max(prev - 0.1, 0.3));
   };
+
+  const isProcessing = isExporting || isExportingPng;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -157,16 +199,32 @@ export function PdfPreviewModal({
             <p className="text-sm text-muted-foreground">
               Qualidade: <span className="font-medium">{qualityLabel}</span>
             </p>
-            <div className="flex gap-3">
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleExportPng}
+                disabled={isProcessing}
+                title="Baixar PNG para comparação pixel-a-pixel"
+              >
+                {isExportingPng ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <Image className="w-4 h-4 mr-1.5" />
+                    PNG
+                  </>
+                )}
+              </Button>
               <Button
                 variant="outline"
                 onClick={() => onOpenChange(false)}
-                disabled={isExporting}
+                disabled={isProcessing}
               >
                 <X className="w-4 h-4 mr-2" />
                 Cancelar
               </Button>
-              <Button onClick={handleExport} disabled={isExporting}>
+              <Button onClick={handleExport} disabled={isProcessing}>
                 {isExporting ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
