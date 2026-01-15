@@ -87,23 +87,31 @@ async function preloadImages(element: HTMLElement): Promise<void> {
   await Promise.all(imagePromises);
 }
 
+function nextFrame(): Promise<void> {
+  return new Promise((resolve) => requestAnimationFrame(() => resolve()));
+}
+
 function createExportWrapper(source: HTMLElement) {
   // A4 @ 96dpi ≈ 794px
   const wrapper = document.createElement("div");
   wrapper.setAttribute("data-pdf-export-wrapper", "true");
+
+  // Keep it in the viewport (better layout metrics), but invisible.
   wrapper.style.position = "fixed";
-  wrapper.style.left = "-10000px";
+  wrapper.style.left = "0";
   wrapper.style.top = "0";
   wrapper.style.width = "794px";
   wrapper.style.background = "#FFFFFF";
   wrapper.style.pointerEvents = "none";
-  wrapper.style.opacity = "0";
+  wrapper.style.visibility = "hidden";
+  wrapper.style.opacity = "1";
   wrapper.style.overflow = "visible";
   wrapper.style.zIndex = "-1";
+  wrapper.style.transform = "none";
 
   const clone = source.cloneNode(true) as HTMLElement;
-  // Ensure clone isn't affected by parent transforms
   clone.style.transform = "none";
+  clone.style.display = "block";
 
   wrapper.appendChild(clone);
   document.body.appendChild(wrapper);
@@ -131,14 +139,18 @@ export async function exportToPdf(
   const { wrapper, clone } = createExportWrapper(element);
 
   try {
-    // Wait for the clone to be fully laid out
-    await new Promise((r) => setTimeout(r, 50));
+    // Wait for clone layout + charts/SVG text layout settle
+    await nextFrame();
+    await nextFrame();
 
     await waitForFonts();
     await waitForImagesDecode(clone);
     onProgress?.(20);
 
     await preloadImages(clone);
+    // Wait again after swapping to data URLs
+    await nextFrame();
+    await waitForImagesDecode(clone);
     onProgress?.(35);
 
     const canvas = await html2canvas(clone, {
@@ -231,13 +243,16 @@ export async function exportToPng(
   const { wrapper, clone } = createExportWrapper(element);
 
   try {
-    await new Promise((r) => setTimeout(r, 50));
+    await nextFrame();
+    await nextFrame();
 
     await waitForFonts();
     await waitForImagesDecode(clone);
     onProgress?.(20);
 
     await preloadImages(clone);
+    await nextFrame();
+    await waitForImagesDecode(clone);
     onProgress?.(40);
 
     const canvas = await html2canvas(clone, {
