@@ -14,7 +14,9 @@ import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import { Search, UserPlus, Check, Plus } from "lucide-react";
+import { MatchStatus } from "@/hooks/useLiveMatch";
 
 interface Player {
   id: string;
@@ -28,6 +30,7 @@ interface AddPlayerModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   existingPlayerIds: string[];
+  matchStatus: MatchStatus;
   onAddPlayer: (params: {
     playerId: string;
     playerPosition: string;
@@ -45,16 +48,18 @@ export function AddPlayerModal({
   open,
   onOpenChange,
   existingPlayerIds,
+  matchStatus,
   onAddPlayer,
   isPending,
 }: AddPlayerModalProps) {
   const [search, setSearch] = useState("");
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [started, setStarted] = useState(true);
-  const [enteredMinute, setEnteredMinute] = useState<string>("");
-  const [exitedMinute, setExitedMinute] = useState<string>("");
   const [autoMinutes, setAutoMinutes] = useState(true);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+  // Pre-game mode: only show starter/reserve toggle, no minutes
+  const isPreGame = matchStatus === "draft";
 
   // Reset visible count when modal opens
   useEffect(() => {
@@ -104,20 +109,20 @@ export function AddPlayerModal({
   const handleConfirm = () => {
     if (!selectedPlayer) return;
 
+    // In pre-game mode, we don't pass any minute data
     onAddPlayer({
       playerId: selectedPlayer.id,
       playerPosition: selectedPlayer.position,
       started,
-      enteredMinute: !started && enteredMinute ? parseInt(enteredMinute) : undefined,
-      exitedMinute: exitedMinute ? parseInt(exitedMinute) : undefined,
+      // No minutes in pre-game
+      enteredMinute: undefined,
+      exitedMinute: undefined,
       autoMinutes,
     });
 
     // Reset state
     setSelectedPlayer(null);
     setStarted(true);
-    setEnteredMinute("");
-    setExitedMinute("");
     setAutoMinutes(true);
     setSearch("");
     onOpenChange(false);
@@ -150,7 +155,7 @@ export function AddPlayerModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserPlus className="h-5 w-5" />
-            Adicionar Jogador
+            {isPreGame ? "Adicionar à Escalação" : "Adicionar Jogador"}
           </DialogTitle>
         </DialogHeader>
 
@@ -240,10 +245,21 @@ export function AddPlayerModal({
               </div>
             </div>
 
-            {/* Options */}
+            {/* Options - Simplified for pre-game */}
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="started">Titular</Label>
+              {/* Starter toggle */}
+              <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+                <div>
+                  <Label htmlFor="started" className="text-base font-medium">
+                    {started ? "Titular" : "Reserva"}
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    {started 
+                      ? "Começa jogando desde o início" 
+                      : "Começa no banco de reservas"
+                    }
+                  </p>
+                </div>
                 <Switch
                   id="started"
                   checked={started}
@@ -251,39 +267,26 @@ export function AddPlayerModal({
                 />
               </div>
 
-              {!started && (
-                <div className="space-y-2">
-                  <Label htmlFor="entered">Minuto de entrada</Label>
-                  <Input
-                    id="entered"
-                    type="number"
-                    min={0}
-                    max={120}
-                    placeholder="Ex: 46"
-                    value={enteredMinute}
-                    onChange={(e) => setEnteredMinute(e.target.value)}
-                  />
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <Label htmlFor="exited">Minuto de saída (opcional)</Label>
-                <Input
-                  id="exited"
-                  type="number"
-                  min={0}
-                  max={120}
-                  placeholder="Ex: 75"
-                  value={exitedMinute}
-                  onChange={(e) => setExitedMinute(e.target.value)}
-                />
+              {/* Preview badges */}
+              <div className="flex items-center gap-2">
+                <Badge variant={started ? "default" : "secondary"}>
+                  {started ? "Titular" : "Reserva"}
+                </Badge>
+                {!isPreGame && (
+                  <Badge variant="outline" className="text-xs">
+                    Minutos calculados ao aplicar
+                  </Badge>
+                )}
               </div>
 
-              <div className="flex items-center justify-between">
+              {/* Auto-minutes toggle */}
+              <div className="flex items-center justify-between p-3 rounded-lg border">
                 <div>
-                  <Label htmlFor="auto-minutes">Auto-minutos</Label>
+                  <Label htmlFor="auto-minutes" className="text-sm font-medium">
+                    Auto-minutos
+                  </Label>
                   <p className="text-xs text-muted-foreground">
-                    Calcula minutos automaticamente
+                    Calcula minutos automaticamente ao final
                   </p>
                 </div>
                 <Switch
@@ -292,6 +295,13 @@ export function AddPlayerModal({
                   onCheckedChange={setAutoMinutes}
                 />
               </div>
+
+              {/* Info for pre-game */}
+              {isPreGame && (
+                <p className="text-xs text-muted-foreground text-center bg-muted/50 rounded-lg p-2">
+                  💡 Minutos de entrada/saída são controlados durante o jogo ao vivo
+                </p>
+              )}
             </div>
 
             {/* Actions */}

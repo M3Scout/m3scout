@@ -159,6 +159,8 @@ export function useLiveMatch(matchId: string) {
   }, [matchEvents]);
 
   // Add player to match
+  // In pre-game (draft), we set is_on_field = false for everyone
+  // When game starts (startGame mutation), starters are set to is_on_field = true
   const addPlayer = useMutation({
     mutationFn: async (params: {
       playerId: string;
@@ -170,6 +172,8 @@ export function useLiveMatch(matchId: string) {
     }) => {
       const positionTemplate = getPositionTemplate(params.playerPosition);
       
+      // In pre-game, don't set any minutes or is_on_field
+      // These will be set when the game starts
       const { data, error } = await supabase
         .from("match_players")
         .insert({
@@ -177,9 +181,9 @@ export function useLiveMatch(matchId: string) {
           player_id: params.playerId,
           position_template: positionTemplate,
           started: params.started,
-          entered_minute: params.started ? 0 : (params.enteredMinute ?? null),
-          exited_minute: params.exitedMinute ?? null,
-          is_on_field: params.started || (params.enteredMinute !== undefined && params.exitedMinute === undefined),
+          entered_minute: null, // Will be set when game starts (0 for starters)
+          exited_minute: null,
+          is_on_field: false, // Will be set to true for starters when game starts
         })
         .select()
         .single();
@@ -323,6 +327,86 @@ export function useLiveMatch(matchId: string) {
     },
   });
 
+  // Start game - set status to live and update starters
+  const startGame = useMutation({
+    mutationFn: async () => {
+      // Update match status to live
+      const { error: statusError } = await supabase
+        .from("matches")
+        .update({ status: "live" as MatchStatus })
+        .eq("id", matchId);
+
+      if (statusError) throw statusError;
+
+      // Get all starters and set them on field with entered_minute = 0
+      const starters = matchPlayers.filter((mp) => mp.started);
+      
+      for (const starter of starters) {
+        const { error } = await supabase
+          .from("match_players")
+          .update({
+            is_on_field: true,
+            entered_minute: 0,
+          })
+          .eq("id", starter.id);
+
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["match", matchId] });
+      queryClient.invalidateQueries({ queryKey: ["match-players", matchId] });
+      toast.success("Jogo iniciado!");
+    },
+    onError: () => {
+      toast.error("Erro ao iniciar jogo");
+    },
+  });
+
+  // Player enters field (for substitutes during live game)
+  const playerEnterField = useMutation({
+    mutationFn: async (params: { matchPlayerId: string; minute: number }) => {
+      const { error } = await supabase
+        .from("match_players")
+        .update({
+          is_on_field: true,
+          entered_minute: params.minute,
+        })
+        .eq("id", params.matchPlayerId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["match-players", matchId] });
+      toast.success("Jogador entrou em campo");
+    },
+    onError: () => {
+      toast.error("Erro ao registrar entrada");
+    },
+  });
+
+  // Player exits field
+  const playerExitField = useMutation({
+    mutationFn: async (params: { matchPlayerId: string; minute: number }) => {
+      const { error } = await supabase
+        .from("match_players")
+        .update({
+          is_on_field: false,
+          exited_minute: params.minute,
+        })
+        .eq("id", params.matchPlayerId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["match-players", matchId] });
+      toast.success("Jogador saiu de campo");
+    },
+    onError: () => {
+      toast.error("Erro ao registrar saída");
+    },
+  });
+
   // Substitution (player out, player in)
   const substitutePlayer = useMutation({
     mutationFn: async (params: {
@@ -427,6 +511,9 @@ export function useLiveMatch(matchId: string) {
     deleteEvent,
     undoLastEvent,
     updateMatchStatus,
+    startGame,
+    playerEnterField,
+    playerExitField,
     substitutePlayer,
 
     // Local draft
