@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { HalfStatsComparison } from "@/components/live-match/HalfStatsComparison";
 import { SubstitutionStatsCard } from "@/components/live-match/SubstitutionStatsCard";
+import { EventDistributionChart } from "@/components/live-match/EventDistributionChart";
 import { MatchSummaryPdfButton } from "@/components/live-match/MatchSummaryPdf";
 import {
   CheckCircle2,
@@ -504,6 +505,12 @@ export default function LiveMatchReview() {
       {/* Substitution Stats */}
       <SubstitutionStatsCard
         matchPlayers={matchPlayers}
+        matchEvents={matchEvents}
+        matchDuration={match.duration_minutes}
+      />
+
+      {/* Event Distribution Chart */}
+      <EventDistributionChart
         matchEvents={matchEvents}
         matchDuration={match.duration_minutes}
       />
