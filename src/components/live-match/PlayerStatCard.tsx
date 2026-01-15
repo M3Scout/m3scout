@@ -267,19 +267,19 @@ export function PlayerStatCard({
                   <Badge variant="outline" className="text-[9px] px-1 py-0 h-4">
                     {positionAbbrev}
                   </Badge>
-                  {matchPlayer.started ? (
-                    <Badge variant="secondary" className="text-[9px] px-1 py-0 h-4">
-                      TIT
-                    </Badge>
-                  ) : !isDraft && matchPlayer.is_on_field ? (
+                  {/* Titular/Banco: always based on started field */}
+                  <Badge 
+                    variant={matchPlayer.started ? "secondary" : "destructive"} 
+                    className="text-[9px] px-1 py-0 h-4"
+                  >
+                    {matchPlayer.started ? "TIT" : "RES"}
+                  </Badge>
+                  {/* Em campo status: only show during live/finished */}
+                  {!isDraft && matchPlayer.is_on_field && (
                     <Badge className="text-[9px] px-1 py-0 h-4 bg-green-600">
                       Campo
                     </Badge>
-                  ) : !isDraft ? (
-                    <Badge variant="destructive" className="text-[9px] px-1 py-0 h-4">
-                      Banco
-                    </Badge>
-                  ) : null}
+                  )}
                   {/* Quick stats badges */}
                   {!isGK && totalGoals > 0 && (
                     <Badge className="text-[9px] px-1 py-0 h-4 bg-green-500/20 text-green-400 border-green-500/30">
@@ -491,23 +491,23 @@ export function PlayerStatCard({
                   <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                     {player.position}
                   </Badge>
-                  {matchPlayer.started && (
-                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                      Titular
+                  {/* Titular/Reserva: always based on started field */}
+                  <Badge 
+                    variant={matchPlayer.started ? "secondary" : "destructive"} 
+                    className="text-[10px] px-1.5 py-0"
+                  >
+                    {matchPlayer.started ? "Titular" : "Reserva"}
+                  </Badge>
+                  {/* Em campo status: only show during live/finished */}
+                  {!isDraft && matchPlayer.is_on_field && (
+                    <Badge variant="default" className="text-[10px] px-1.5 py-0 bg-green-600">
+                      Em Campo
                     </Badge>
                   )}
-                  {!isDraft && (
-                    matchPlayer.is_on_field ? (
-                      <Badge variant="default" className="text-[10px] px-1.5 py-0 bg-green-600">
-                        Em Campo
-                      </Badge>
-                    ) : (
-                      <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
-                        {matchPlayer.exited_minute !== null 
-                          ? `Saiu ${matchPlayer.exited_minute}' (${matchPlayer.exited_minute <= 45 ? '1ºT' : '2ºT'})`
-                          : "Banco"}
-                      </Badge>
-                    )
+                  {!isDraft && !matchPlayer.is_on_field && matchPlayer.exited_minute !== null && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-amber-500/50 text-amber-500">
+                      Saiu {matchPlayer.exited_minute}' ({matchPlayer.exited_minute <= 45 ? '1ºT' : '2ºT'})
+                    </Badge>
                   )}
                   {!isDraft && !matchPlayer.started && matchPlayer.entered_minute !== null && (
                     <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-green-500/50 text-green-500">
