@@ -1,10 +1,11 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
-import { FileDown, Loader2, ChevronDown, Check } from "lucide-react";
+import { FileDown, Loader2, ChevronDown, Check, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { ScoutingReportPdfTemplate } from "./pdf/ScoutingReportPdfTemplate";
 import { exportToPdf, generateReportFilename } from "@/lib/pdfExport";
+import { PdfPreviewModal } from "./PdfPreviewModal";
 import type { ScoutingReportData } from "@/types/scouting";
 import {
   DropdownMenu,
@@ -69,6 +70,8 @@ export function ExportPdfButton({ report, variant = "outline", size = "sm" }: Ex
   const [progress, setProgress] = useState(0);
   const [showTemplate, setShowTemplate] = useState(false);
   const [preferredQuality, setPreferredQuality] = useState<QualityKey>("normal");
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewQuality, setPreviewQuality] = useState<QualityKey>("normal");
   const templateRef = useRef<HTMLDivElement>(null);
 
   // Load preference from localStorage on mount
@@ -76,7 +79,20 @@ export function ExportPdfButton({ report, variant = "outline", size = "sm" }: Ex
     setPreferredQuality(getStoredQuality());
   }, []);
 
-  const handleExport = useCallback(async (quality: QualityKey) => {
+  const handleOpenPreview = useCallback((quality: QualityKey) => {
+    if (!report.players) {
+      toast.error("Dados do jogador não disponíveis");
+      return;
+    }
+
+    // Save preference
+    setPreferredQuality(quality);
+    setStoredQuality(quality);
+    setPreviewQuality(quality);
+    setShowPreview(true);
+  }, [report.players]);
+
+  const handleDirectExport = useCallback(async (quality: QualityKey) => {
     if (!report.players) {
       toast.error("Dados do jogador não disponíveis");
       return;
@@ -150,43 +166,85 @@ export function ExportPdfButton({ report, variant = "outline", size = "sm" }: Ex
             )}
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-52">
+        <DropdownMenuContent align="end" className="w-56">
+          {/* Preview options */}
           <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
-            Escolha a qualidade
+            Com preview
           </DropdownMenuLabel>
-          <DropdownMenuSeparator />
           <DropdownMenuItem
-            onClick={() => handleExport("normal")}
-            className="flex items-center justify-between cursor-pointer"
+            onClick={() => handleOpenPreview("normal")}
+            className="flex items-center gap-2 cursor-pointer"
           >
+            <Eye className="w-4 h-4 text-muted-foreground" />
+            <div className="flex flex-col items-start gap-0.5">
+              <span className="font-medium">Preview Normal</span>
+              <span className="text-xs text-muted-foreground">
+                Visualizar antes de exportar
+              </span>
+            </div>
+            {preferredQuality === "normal" && (
+              <Check className="w-4 h-4 text-primary ml-auto" />
+            )}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => handleOpenPreview("high")}
+            className="flex items-center gap-2 cursor-pointer"
+          >
+            <Eye className="w-4 h-4 text-muted-foreground" />
+            <div className="flex flex-col items-start gap-0.5">
+              <span className="font-medium">Preview Alta Qualidade</span>
+              <span className="text-xs text-muted-foreground">
+                Melhor p/ impressão
+              </span>
+            </div>
+            {preferredQuality === "high" && (
+              <Check className="w-4 h-4 text-primary ml-auto" />
+            )}
+          </DropdownMenuItem>
+
+          <DropdownMenuSeparator />
+
+          {/* Direct export options */}
+          <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
+            Exportar direto
+          </DropdownMenuLabel>
+          <DropdownMenuItem
+            onClick={() => handleDirectExport("normal")}
+            className="flex items-center gap-2 cursor-pointer"
+          >
+            <FileDown className="w-4 h-4 text-muted-foreground" />
             <div className="flex flex-col items-start gap-0.5">
               <span className="font-medium">{QUALITY_OPTIONS.normal.label}</span>
               <span className="text-xs text-muted-foreground">
                 {QUALITY_OPTIONS.normal.description}
               </span>
             </div>
-            {preferredQuality === "normal" && (
-              <Check className="w-4 h-4 text-primary" />
-            )}
           </DropdownMenuItem>
           <DropdownMenuItem
-            onClick={() => handleExport("high")}
-            className="flex items-center justify-between cursor-pointer"
+            onClick={() => handleDirectExport("high")}
+            className="flex items-center gap-2 cursor-pointer"
           >
+            <FileDown className="w-4 h-4 text-muted-foreground" />
             <div className="flex flex-col items-start gap-0.5">
               <span className="font-medium">{QUALITY_OPTIONS.high.label}</span>
               <span className="text-xs text-muted-foreground">
                 {QUALITY_OPTIONS.high.description}
               </span>
             </div>
-            {preferredQuality === "high" && (
-              <Check className="w-4 h-4 text-primary" />
-            )}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* Hidden template for PDF generation */}
+      {/* Preview Modal */}
+      <PdfPreviewModal
+        report={report}
+        open={showPreview}
+        onOpenChange={setShowPreview}
+        qualityScale={QUALITY_OPTIONS[previewQuality].scale}
+        qualityLabel={QUALITY_OPTIONS[previewQuality].label}
+      />
+
+      {/* Hidden template for direct PDF generation */}
       {showTemplate &&
         createPortal(
           <div
