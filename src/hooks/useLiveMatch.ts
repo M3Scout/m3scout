@@ -21,6 +21,8 @@ export type MatchEventType =
   | "penalty_saved" | "error_led_to_goal"
   | "box_save" | "punch" | "high_claim" | "sweeper_action";
 
+export type ClockStatus = "stopped" | "running" | "paused";
+
 export interface Match {
   id: string;
   created_by: string;
@@ -34,6 +36,14 @@ export interface Match {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  // Timer V2 fields
+  half: number;
+  clock_status: ClockStatus;
+  half_start_time: string | null;
+  elapsed_seconds_in_half: number;
+  added_time_first_half: number;
+  added_time_second_half: number;
+  match_start_time: string | null;
   competition?: {
     id: string;
     name: string;
@@ -327,13 +337,22 @@ export function useLiveMatch(matchId: string) {
     },
   });
 
-  // Start game - set status to live and update starters
+  // Start game - set status to live and update starters (Timer V2)
   const startGame = useMutation({
     mutationFn: async () => {
-      // Update match status to live
+      const now = new Date().toISOString();
+      
+      // Update match: status to live, initialize timer
       const { error: statusError } = await supabase
         .from("matches")
-        .update({ status: "live" as MatchStatus })
+        .update({ 
+          status: "live" as MatchStatus,
+          half: 1,
+          clock_status: "running" as ClockStatus,
+          match_start_time: now,
+          half_start_time: now,
+          elapsed_seconds_in_half: 0,
+        })
         .eq("id", matchId);
 
       if (statusError) throw statusError;
@@ -360,6 +379,151 @@ export function useLiveMatch(matchId: string) {
     },
     onError: () => {
       toast.error("Erro ao iniciar jogo");
+    },
+  });
+
+  // Play/Pause clock (Timer V2)
+  const playPauseClock = useMutation({
+    mutationFn: async () => {
+      if (!match) throw new Error("Match not found");
+
+      if (match.clock_status === "running") {
+        // Pause: accumulate elapsed time
+        const now = Date.now();
+        const start = match.half_start_time ? new Date(match.half_start_time).getTime() : now;
+        const additionalSeconds = Math.floor((now - start) / 1000);
+        const newElapsed = match.elapsed_seconds_in_half + additionalSeconds;
+
+        const { error } = await supabase
+          .from("matches")
+          .update({
+            clock_status: "paused" as ClockStatus,
+            elapsed_seconds_in_half: newElapsed,
+            half_start_time: null,
+          })
+          .eq("id", matchId);
+
+        if (error) throw error;
+      } else {
+        // Resume: set half_start_time to now
+        const { error } = await supabase
+          .from("matches")
+          .update({
+            clock_status: "running" as ClockStatus,
+            half_start_time: new Date().toISOString(),
+          })
+          .eq("id", matchId);
+
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["match", matchId] });
+    },
+    onError: () => {
+      toast.error("Erro ao atualizar relógio");
+    },
+  });
+
+  // Reset clock (only in draft)
+  const resetClock = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("matches")
+        .update({
+          half: 1,
+          clock_status: "stopped" as ClockStatus,
+          half_start_time: null,
+          elapsed_seconds_in_half: 0,
+          added_time_first_half: 0,
+          added_time_second_half: 0,
+        })
+        .eq("id", matchId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["match", matchId] });
+    },
+    onError: () => {
+      toast.error("Erro ao resetar relógio");
+    },
+  });
+
+  // End first half
+  const endFirstHalf = useMutation({
+    mutationFn: async () => {
+      if (!match) throw new Error("Match not found");
+
+      // Accumulate remaining time and stop
+      const now = Date.now();
+      const start = match.half_start_time ? new Date(match.half_start_time).getTime() : now;
+      const additionalSeconds = match.clock_status === "running" 
+        ? Math.floor((now - start) / 1000) 
+        : 0;
+      const newElapsed = match.elapsed_seconds_in_half + additionalSeconds;
+
+      const { error } = await supabase
+        .from("matches")
+        .update({
+          clock_status: "stopped" as ClockStatus,
+          elapsed_seconds_in_half: newElapsed,
+          half_start_time: null,
+        })
+        .eq("id", matchId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["match", matchId] });
+      toast.success("1º tempo encerrado!");
+    },
+    onError: () => {
+      toast.error("Erro ao encerrar 1º tempo");
+    },
+  });
+
+  // Start second half
+  const startSecondHalf = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("matches")
+        .update({
+          half: 2,
+          clock_status: "running" as ClockStatus,
+          half_start_time: new Date().toISOString(),
+          elapsed_seconds_in_half: 0,
+        })
+        .eq("id", matchId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["match", matchId] });
+      toast.success("2º tempo iniciado!");
+    },
+    onError: () => {
+      toast.error("Erro ao iniciar 2º tempo");
+    },
+  });
+
+  // Update added time
+  const updateAddedTime = useMutation({
+    mutationFn: async (params: { half: 1 | 2; minutes: number }) => {
+      const field = params.half === 1 ? "added_time_first_half" : "added_time_second_half";
+      
+      const { error } = await supabase
+        .from("matches")
+        .update({ [field]: params.minutes })
+        .eq("id", matchId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["match", matchId] });
+    },
+    onError: () => {
+      toast.error("Erro ao atualizar acréscimo");
     },
   });
 
@@ -515,6 +679,12 @@ export function useLiveMatch(matchId: string) {
     playerEnterField,
     playerExitField,
     substitutePlayer,
+    // Timer V2 mutations
+    playPauseClock,
+    resetClock,
+    endFirstHalf,
+    startSecondHalf,
+    updateAddedTime,
 
     // Local draft
     checkLocalDraft,
