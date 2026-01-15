@@ -227,14 +227,16 @@ export function PlayerStatCard({
                     </Badge>
                   ) : (
                     <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
-                      {matchPlayer.exited_minute !== null ? `Saiu ${matchPlayer.exited_minute}'` : "Banco"}
+                      {matchPlayer.exited_minute !== null 
+                        ? `Saiu ${matchPlayer.exited_minute}' (${matchPlayer.exited_minute <= 45 ? '1ºT' : '2ºT'})`
+                        : "Banco"}
                     </Badge>
                   )
                 )}
-                {/* Show entered minute if substitute entered */}
+                {/* Show entered minute with half indicator if substitute entered */}
                 {!isDraft && !matchPlayer.started && matchPlayer.entered_minute !== null && (
                   <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-green-500/50 text-green-500">
-                    Entrou {matchPlayer.entered_minute}'
+                    Entrou {matchPlayer.entered_minute}' ({matchPlayer.entered_minute <= 45 ? '1ºT' : '2ºT'})
                   </Badge>
                 )}
               </div>
