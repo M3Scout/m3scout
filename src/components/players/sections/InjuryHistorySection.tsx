@@ -21,6 +21,7 @@ import { EditInjuryModal } from "./EditInjuryModal";
 import { DeleteInjuryDialog } from "./DeleteInjuryDialog";
 import { InjuryEvolutionChart } from "./InjuryEvolutionChart";
 import { RecurrentInjuryAlert } from "./RecurrentInjuryAlert";
+import { ExportClinicalPdfButton } from "./ExportClinicalPdfButton";
 
 interface Injury {
   id: string;
@@ -31,12 +32,23 @@ interface Injury {
   notes: string | null;
 }
 
+interface PlayerInfo {
+  full_name: string;
+  position: string;
+  age?: number | null;
+  birth_date?: string | null;
+  nationality?: string;
+  current_club?: string | null;
+  photo_url?: string | null;
+}
+
 interface InjuryHistorySectionProps {
   injuries: Injury[];
   physicalStatus?: string | null;
   medicalNotes?: string | null;
   playerId?: string;
   onInjuryAdded?: () => void;
+  player?: PlayerInfo;
 }
 
 type StatusKey = "fit" | "apto" | "recovering" | "em_recuperacao" | "injured" | "lesionado" | "transition" | "transicao" | "retorno_progressivo";
@@ -392,10 +404,23 @@ export const InjuryHistorySection = ({
   physicalStatus, 
   medicalNotes,
   playerId,
-  onInjuryAdded 
+  onInjuryAdded,
+  player
 }: InjuryHistorySectionProps) => {
   return (
     <div className="space-y-6">
+      {/* Export PDF Button - só aparece se tiver dados do player */}
+      {player && (
+        <div className="flex justify-end">
+          <ExportClinicalPdfButton
+            player={player}
+            injuries={injuries}
+            physicalStatus={physicalStatus}
+            medicalNotes={medicalNotes}
+          />
+        </div>
+      )}
+      
       {/* Alerta de Lesões Recorrentes - aparece primeiro se houver */}
       <RecurrentInjuryAlert injuries={injuries} threshold={3} />
       

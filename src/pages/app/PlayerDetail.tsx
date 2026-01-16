@@ -583,6 +583,15 @@ const PlayerDetail = () => {
             medicalNotes={player.medical_notes}
             playerId={player.id}
             onInjuryAdded={refetchInjuries}
+            player={{
+              full_name: player.full_name,
+              position: player.position,
+              age: player.age,
+              birth_date: player.birth_date,
+              nationality: player.nationality,
+              current_club: player.current_club,
+              photo_url: player.photo_url,
+            }}
           />
         </TabsContent>
 
