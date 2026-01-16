@@ -42,6 +42,7 @@ import { ComparisonRadarOverlay } from "@/components/players/ComparisonRadarOver
 import { CompareHero } from "@/components/compare/CompareHero";
 import { ComparePlayerCard, CompareEmptySlot } from "@/components/compare/ComparePlayerCard";
 import { CompareStatRow, CompareStatBlock, CompareBarRow } from "@/components/compare/CompareStatBlock";
+import { SimilarPlayerSuggestions } from "@/components/compare/SimilarPlayerSuggestions";
 import type { PlayerStatRow } from "@/lib/attributeRadar";
 
 interface Player {
@@ -389,6 +390,15 @@ const ComparePlayers = () => {
           })}
         </AnimatePresence>
       </div>
+
+      {/* Smart Suggestions - Show when at least 1 player selected and less than 4 */}
+      {selectedPlayers.length >= 1 && selectedPlayers.length < 4 && (
+        <SimilarPlayerSuggestions
+          selectedPlayers={selectedPlayers}
+          allPlayers={allPlayers}
+          onSelectPlayer={(player) => handleSelectPlayer(player as Player, selectedPlayers.length)}
+        />
+      )}
 
       {loadingStats && (
         <motion.div
