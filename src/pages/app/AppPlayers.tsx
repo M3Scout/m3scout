@@ -21,6 +21,7 @@ import {
   Loader2,
   X,
   LayoutList,
+  LayoutGrid,
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
@@ -31,7 +32,6 @@ import {
   AlertTriangle,
   RefreshCw,
   ChevronsDown,
-  ClipboardList,
 } from "lucide-react";
 import {
   Collapsible,
@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/collapsible";
 import { DeletePlayerDialog } from "@/components/players/DeletePlayerDialog";
 import { ScoutingPlayerCard } from "@/components/players/ScoutingPlayerCard";
+import { PlayerRowCard, PlayerMobileCard } from "@/components/players/PlayerRowCard";
 import { PositionIdentityCard, PositionIdentityCardMobile } from "@/components/players/PositionIdentityCard";
 import { BulkRecalculateButton } from "@/components/players/BulkRecalculateButton";
 import { Switch } from "@/components/ui/switch";
@@ -469,11 +470,11 @@ const AppPlayers = () => {
               onValueChange={(value) => value && setViewMode(value as ViewMode)}
               className="border border-zinc-800 rounded-lg bg-zinc-900/50"
             >
-              <ToggleGroupItem value="table" aria-label="Visualização em tabela" className="px-3 rounded-r-none data-[state=on]:bg-zinc-800 data-[state=on]:text-white">
+              <ToggleGroupItem value="table" aria-label="Visualização em lista" className="px-3 rounded-r-none data-[state=on]:bg-zinc-800 data-[state=on]:text-white">
                 <LayoutList className="w-4 h-4" />
               </ToggleGroupItem>
-              <ToggleGroupItem value="scouting" aria-label="Modo Scouting" className="px-3 rounded-l-none data-[state=on]:bg-zinc-800 data-[state=on]:text-white">
-                <ClipboardList className="w-4 h-4" />
+              <ToggleGroupItem value="scouting" aria-label="Visualização em cards" className="px-3 rounded-l-none data-[state=on]:bg-zinc-800 data-[state=on]:text-white">
+                <LayoutGrid className="w-4 h-4" />
               </ToggleGroupItem>
             </ToggleGroup>
           </div>
@@ -655,7 +656,92 @@ const AppPlayers = () => {
           </div>
         </div>
       ) : viewMode === "table" ? (
-        /* Position Identity Cards - Premium Grid View */
+        /* LIST MODE - Compact rows, no position colors */
+        <div className="space-y-2 animate-fade-in delay-100">
+          {/* Sort Controls */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2 text-xs text-zinc-500">
+              <span>Ordenar por:</span>
+              <button 
+                onClick={() => handleSort("avg_score")}
+                className={`flex items-center gap-1 px-2 py-1 rounded hover:bg-zinc-800/50 transition-colors ${sortField === "avg_score" ? "text-primary" : ""}`}
+              >
+                Score <SortIcon field="avg_score" />
+              </button>
+              <button 
+                onClick={() => handleSort("auto_rating")}
+                className={`flex items-center gap-1 px-2 py-1 rounded hover:bg-zinc-800/50 transition-colors ${sortField === "auto_rating" ? "text-primary" : ""}`}
+              >
+                Nota Global <SortIcon field="auto_rating" />
+              </button>
+              <button 
+                onClick={() => handleSort("full_name")}
+                className={`flex items-center gap-1 px-2 py-1 rounded hover:bg-zinc-800/50 transition-colors ${sortField === "full_name" ? "text-primary" : ""}`}
+              >
+                Nome <SortIcon field="full_name" />
+              </button>
+              <button 
+                onClick={() => handleSort("position")}
+                className={`flex items-center gap-1 px-2 py-1 rounded hover:bg-zinc-800/50 transition-colors ${sortField === "position" ? "text-primary" : ""}`}
+              >
+                Posição <SortIcon field="position" />
+              </button>
+            </div>
+          </div>
+          
+          {/* List View - Compact Rows */}
+          {isMobile ? (
+            <div className="space-y-2">
+              {safeArray(paginatedPlayers).map((player) => (
+                <PlayerMobileCard
+                  key={player.id}
+                  id={player.id}
+                  fullName={player.full_name}
+                  position={player.position}
+                  age={player.age}
+                  nationality={player.nationality}
+                  currentClub={player.current_club}
+                  photoUrl={player.photo_url}
+                  autoRating={player.auto_rating}
+                  avgScore={player.avg_score}
+                  scoreTrend={player.score_trend}
+                  contractEnd={player.contract_end}
+                  isPublic={player.is_public}
+                  isArchived={player.is_archived}
+                  isAdmin={isAdmin}
+                  onArchive={() => handleArchivePlayer(player)}
+                  onDelete={() => handleDeleteClick(player)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              {safeArray(paginatedPlayers).map((player) => (
+                <PlayerRowCard
+                  key={player.id}
+                  id={player.id}
+                  fullName={player.full_name}
+                  position={player.position}
+                  age={player.age}
+                  nationality={player.nationality}
+                  currentClub={player.current_club}
+                  photoUrl={player.photo_url}
+                  autoRating={player.auto_rating}
+                  avgScore={player.avg_score}
+                  scoreTrend={player.score_trend}
+                  contractEnd={player.contract_end}
+                  isPublic={player.is_public}
+                  isArchived={player.is_archived}
+                  isAdmin={isAdmin}
+                  onArchive={() => handleArchivePlayer(player)}
+                  onDelete={() => handleDeleteClick(player)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        /* GRID MODE - Position Identity Cards with colors */
         <div className="space-y-4 animate-fade-in delay-100">
           {/* Sort Controls */}
           <div className="flex items-center justify-between mb-4">
@@ -688,7 +774,7 @@ const AppPlayers = () => {
             </div>
           </div>
           
-          {/* Position Identity Cards with Stagger Animation */}
+          {/* Grid View - Position Identity Cards with Stagger Animation */}
           {isMobile ? (
             <motion.div 
               className="space-y-3"
@@ -704,7 +790,7 @@ const AppPlayers = () => {
                 },
               }}
             >
-              {safeArray(paginatedPlayers).map((player, index) => (
+              {safeArray(paginatedPlayers).map((player) => (
                 <motion.div
                   key={player.id}
                   variants={{
@@ -759,7 +845,7 @@ const AppPlayers = () => {
                 },
               }}
             >
-              {safeArray(paginatedPlayers).map((player, index) => (
+              {safeArray(paginatedPlayers).map((player) => (
                 <motion.div
                   key={player.id}
                   variants={{
@@ -799,33 +885,6 @@ const AppPlayers = () => {
               ))}
             </motion.div>
           )}
-        </div>
-      ) : (
-        /* Scouting Mode View */
-        <div className="grid gap-4 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2">
-          {safeArray(paginatedPlayers).map((player) => (
-            <ScoutingPlayerCard
-              key={player.id}
-              id={player.id}
-              slug={player.slug || player.id}
-              name={player.full_name}
-              position={player.position || "N/A"}
-              secondaryPositions={player.secondary_positions || []}
-              age={player.age || 0}
-              nationality={player.nationality}
-              currentClub={player.current_club || ""}
-              imageUrl={player.photo_url || "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=400&h=600&fit=crop"}
-              autoRating={player.auto_rating}
-              height={player.height}
-              weight={player.weight}
-              dominantFoot={player.dominant_foot}
-              contractStatus={player.contract_status}
-              contractEnd={player.contract_end}
-              estimatedLevel={player.estimated_level}
-              overallRating={player.overall_rating}
-              potentialRating={player.potential_rating}
-            />
-          ))}
         </div>
       )}
 
