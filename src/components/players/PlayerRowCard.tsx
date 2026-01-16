@@ -15,7 +15,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { formatFixed } from "@/lib/formatters";
-import { getShortPosition } from "@/lib/positionColors";
+import { getShortPosition, getPositionColor } from "@/lib/positionColors";
 
 interface PlayerRowCardProps {
   id: string;
@@ -95,12 +95,15 @@ const getGlobalRatingColor = (rating: number): string => {
   return "text-red-400";
 };
 
-// Simple Position Badge - No colors, just neutral styling
+// Position Badge with subtle color styling
 const PositionBadge = ({ position }: { position: string | null }) => {
   const shortPos = getShortPosition(position);
+  const posColor = getPositionColor(position);
   
   return (
-    <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-1 rounded border bg-zinc-800 text-zinc-400 border-zinc-700">
+    <span 
+      className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-1 rounded border ${posColor.bgClass} ${posColor.textClass} ${posColor.borderClass}`}
+    >
       {shortPos}
     </span>
   );
@@ -136,13 +139,20 @@ export function PlayerRowCard({
 
   const defaultPhoto = "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=100&h=100&fit=crop";
 
+  const posColor = getPositionColor(position);
+
   return (
     <div
       onClick={handleRowClick}
-      className={`group flex items-center gap-3 p-3 bg-zinc-950 border border-zinc-900 hover:border-zinc-700 hover:bg-zinc-900/50 transition-all cursor-pointer rounded-lg ${isFiltered === false ? 'opacity-40' : ''}`}
+      className={`group relative flex items-center gap-3 p-3 pl-5 bg-zinc-950 border border-zinc-900 hover:border-zinc-700 hover:bg-zinc-900/50 transition-all cursor-pointer rounded-lg overflow-hidden ${isFiltered === false ? 'opacity-40' : ''}`}
     >
-      {/* Player Photo - Compact */}
-      <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 border border-zinc-800">
+      {/* Left Rail - Position Color Accent */}
+      <div 
+        className={`absolute left-0 top-0 bottom-0 w-[3px] ${posColor.accentClass} transition-all group-hover:shadow-[0_0_8px_0px] ${posColor.glowClass}`}
+      />
+
+      {/* Player Photo with Position Color Ring */}
+      <div className={`w-10 h-10 rounded-full overflow-hidden flex-shrink-0 ring-2 ${posColor.ringClass}`}>
         <img
           src={photoUrl || defaultPhoto}
           alt={fullName}
@@ -330,14 +340,21 @@ export function PlayerMobileCard({
 
   const defaultPhoto = "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=100&h=100&fit=crop";
 
+  const posColor = getPositionColor(position);
+
   return (
     <div
       onClick={handleCardClick}
-      className={`bg-zinc-950 border border-zinc-900 rounded-lg overflow-hidden cursor-pointer active:scale-[0.99] transition-transform ${isFiltered === false ? 'opacity-40' : ''}`}
+      className={`relative bg-zinc-950 border border-zinc-900 rounded-lg overflow-hidden cursor-pointer active:scale-[0.99] transition-transform ${isFiltered === false ? 'opacity-40' : ''}`}
     >
+      {/* Left Rail - Position Color Accent */}
+      <div 
+        className={`absolute left-0 top-0 bottom-0 w-[3px] ${posColor.accentClass}`}
+      />
+
       {/* Header with photo and main info */}
-      <div className="flex items-center gap-3 p-3">
-        <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border border-zinc-800">
+      <div className="flex items-center gap-3 p-3 pl-4">
+        <div className={`w-12 h-12 rounded-full overflow-hidden flex-shrink-0 ring-2 ${posColor.ringClass}`}>
           <img
             src={photoUrl || defaultPhoto}
             alt={fullName}
@@ -348,8 +365,8 @@ export function PlayerMobileCard({
         <div className="flex-1 min-w-0">
           <h3 className="text-white font-semibold text-sm truncate">{fullName}</h3>
           <div className="flex items-center gap-2 text-xs text-zinc-500">
-            {/* Position Badge - Neutral */}
-            <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider border bg-zinc-800 text-zinc-400 border-zinc-700">
+            {/* Position Badge - Colored */}
+            <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider border ${posColor.bgClass} ${posColor.textClass} ${posColor.borderClass}`}>
               {getShortPosition(position)}
             </span>
             {age && <span>{age} anos</span>}
