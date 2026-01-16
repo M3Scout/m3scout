@@ -59,7 +59,7 @@ export function AppSidebar() {
     <>
       {/* Mobile Header - Minimal */}
       <header className="lg:hidden fixed top-0 left-0 right-0 z-50 h-14 border-b border-zinc-800/30 bg-[hsl(222,47%,4%)]/98 backdrop-blur-md flex items-center justify-between px-4">
-        <Link to="/app" className="flex items-center">
+        <Link to="/" className="flex items-center hover:opacity-80 transition-opacity cursor-pointer">
           <img src={logoM3} alt="M3 Agency" className="h-7 w-auto" />
         </Link>
         <button 
@@ -125,7 +125,7 @@ export function AppSidebar() {
       >
         {/* Logo Section */}
         <div className="h-14 flex items-center justify-between px-3 border-b border-zinc-800/20">
-          <Link to="/app" className="flex items-center">
+          <Link to="/" className="flex items-center hover:opacity-80 transition-opacity cursor-pointer">
             {isCollapsed ? (
               <img 
                 src={logoM3Icon} 
