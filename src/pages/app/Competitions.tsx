@@ -45,7 +45,6 @@ import {
 } from "@/components/ui/select";
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -58,7 +57,6 @@ import { toast } from "sonner";
 // New components
 import { CompetitionFilters } from "@/components/competitions/CompetitionFilters";
 import { CompetitionRowCard, CompetitionMobileCard } from "@/components/competitions/CompetitionRowCard";
-import { TierBadge, CoefficientBar } from "@/components/competitions/CompetitionVisuals";
 import { getTierFromCoefficient, getTierAdminBadgeClass, getTierThresholdsTooltip } from "@/lib/tierClassification";
 
 interface Competition {
