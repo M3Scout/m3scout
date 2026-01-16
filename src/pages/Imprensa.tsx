@@ -157,22 +157,60 @@ const Imprensa = () => {
           </motion.div>
 
           {/* Press Kit Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
-            {pressKitItems.map((item, index) => (
+          <motion.div 
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5"
+            initial="hidden"
+            animate={pressKitInView ? "visible" : "hidden"}
+            variants={{
+              hidden: {},
+              visible: {
+                transition: {
+                  staggerChildren: 0.15,
+                  delayChildren: 0.1
+                }
+              }
+            }}
+          >
+            {pressKitItems.map((item) => (
               <motion.a
                 key={item.id}
                 href={item.driveUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                initial={{ opacity: 0, y: 20 }}
-                animate={pressKitInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
+                variants={{
+                  hidden: { 
+                    opacity: 0, 
+                    y: 30,
+                    scale: 0.95
+                  },
+                  visible: { 
+                    opacity: 1, 
+                    y: 0,
+                    scale: 1,
+                    transition: {
+                      type: "spring",
+                      stiffness: 100,
+                      damping: 15,
+                      mass: 0.8
+                    }
+                  }
+                }}
                 className="group relative block p-6 rounded-2xl bg-neutral-900/40 backdrop-blur-sm border border-neutral-800/50 transition-all duration-300 hover:border-neutral-700/60 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/20"
               >
                 {/* Icon */}
-                <div className="w-11 h-11 rounded-xl bg-neutral-800/60 flex items-center justify-center mb-5 group-hover:bg-[#e52421]/10 transition-colors duration-300">
+                <motion.div 
+                  className="w-11 h-11 rounded-xl bg-neutral-800/60 flex items-center justify-center mb-5 group-hover:bg-[#e52421]/10 transition-colors duration-300"
+                  variants={{
+                    hidden: { scale: 0.5, opacity: 0 },
+                    visible: { 
+                      scale: 1, 
+                      opacity: 1,
+                      transition: { delay: 0.1, type: "spring", stiffness: 200 }
+                    }
+                  }}
+                >
                   <item.icon className="w-5 h-5 text-neutral-500 group-hover:text-[#e52421] transition-colors duration-300" />
-                </div>
+                </motion.div>
                 
                 {/* Content */}
                 <h3 className="text-lg font-medium text-white mb-2 group-hover:text-white transition-colors">
@@ -193,7 +231,7 @@ const Imprensa = () => {
                 </span>
               </motion.a>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
