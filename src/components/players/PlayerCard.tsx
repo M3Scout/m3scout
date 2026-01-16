@@ -17,6 +17,7 @@ interface PlayerCardProps {
 }
 
 export function PlayerCard({
+  id,
   slug,
   name,
   position,
@@ -27,7 +28,8 @@ export function PlayerCard({
   isPublic = true,
   autoRating,
 }: PlayerCardProps) {
-  const href = isPublic ? `/players/${slug}` : `/app/players/${slug}`;
+  // Public routes use slug for SEO-friendly URLs, app routes use id for reliability
+  const href = isPublic ? `/players/${slug}` : `/app/players/${id}`;
 
   return (
     <Link to={href} className="group block">
