@@ -27,9 +27,10 @@ export function AboutSection() {
 
   return (
     <section ref={sectionRef} className="py-24 md:py-32 lg:py-40 bg-[#f8f7f4]">
-      <div className="mx-auto max-w-6xl px-6 lg:px-8">
-        {/* Editorial Quote */}
-        <div className="max-w-4xl">
+      {/* Single column container - aligned with InstagramFeedSection */}
+      <div className="mx-auto max-w-[1280px] px-6 lg:px-10">
+        <div className="max-w-3xl">
+          {/* Editorial Quote */}
           <blockquote 
             className={cn(
               "mb-12 transition-all duration-1000 ease-out",
