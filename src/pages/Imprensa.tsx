@@ -1,7 +1,18 @@
+import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Newspaper, Calendar, ExternalLink, Image, FileText, Sparkles } from "lucide-react";
+import { motion, useInView } from "framer-motion";
+import { 
+  Newspaper, 
+  Calendar, 
+  ArrowUpRight, 
+  Sparkles, 
+  Image, 
+  FileText,
+  ExternalLink,
+  Clock
+} from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -39,6 +50,20 @@ const pressKitItems = [
 ];
 
 const Imprensa = () => {
+  const pressKitRef = useRef<HTMLDivElement>(null);
+  const newsRef = useRef<HTMLDivElement>(null);
+  
+  const pressKitInView = useInView(pressKitRef, { once: true, margin: "-80px" });
+  const newsInView = useInView(newsRef, { once: true, margin: "-80px" });
+
+  // Fix scroll bug - always start at top
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    if ('scrollRestoration' in history) {
+      history.scrollRestoration = 'manual';
+    }
+  }, []);
+
   const { data: articles, isLoading } = useQuery({
     queryKey: ["public-news"],
     queryFn: async () => {
@@ -55,146 +80,264 @@ const Imprensa = () => {
   });
 
   return (
-    <div className="min-h-screen bg-[#0B0B0D]">
-      {/* Main Container - consistent for all sections */}
-      <div className="w-full max-w-[1100px] mx-auto px-6 md:px-8">
-        
-        {/* Hero Section */}
-        <section className="pt-32 pb-12 md:pb-14">
-          {/* Eyebrow */}
-          <p className="text-[10px] uppercase tracking-[0.25em] text-zinc-600 mb-4">
-            Imprensa
-          </p>
+    <div className="min-h-screen bg-[#0a0a0a]" style={{ fontFamily: "'Poppins', sans-serif" }}>
+      
+      {/* Subtle grain texture */}
+      <div 
+        className="fixed inset-0 opacity-[0.015] pointer-events-none z-0"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+        }}
+      />
+
+      {/* HERO SECTION */}
+      <section className="relative pt-32 pb-16 md:pt-40 md:pb-20">
+        <div className="relative z-10 mx-auto max-w-[1200px] px-6 md:px-12 lg:px-16">
           
+          {/* Badge */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="mb-8"
+          >
+            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#e52421]/30 bg-[#e52421]/5 text-[10px] uppercase tracking-[0.2em] text-[#e52421] font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#e52421]" />
+              Press
+            </span>
+          </motion.div>
+
           {/* Title */}
-          <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight mb-5">
+          <motion.h1 
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
+            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-semibold tracking-tight text-white mb-6"
+          >
             Sala de{" "}
             <span className="text-[#e52421]">Imprensa</span>
-          </h1>
-          
+          </motion.h1>
+
           {/* Subtitle */}
-          <p className="text-lg md:text-xl text-zinc-400 max-w-2xl leading-relaxed">
+          <motion.p 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+            className="text-lg md:text-xl text-neutral-400 font-light max-w-2xl leading-relaxed tracking-wide"
+          >
             Acompanhe as últimas notícias e novidades da M3 Agency e de nossos atletas.
-          </p>
-        </section>
+          </motion.p>
 
-        {/* Divider */}
-        <hr className="border-t border-zinc-800" />
+          {/* Subtle divider */}
+          <motion.div
+            initial={{ opacity: 0, scaleX: 0 }}
+            animate={{ opacity: 1, scaleX: 1 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            className="mt-12 w-20 h-px bg-gradient-to-r from-[#e52421]/60 to-transparent origin-left"
+          />
+        </div>
+      </section>
 
-        {/* Press Kit Section */}
-        <section className="py-12 md:py-14">
-          <p className="text-[10px] uppercase tracking-[0.25em] text-zinc-600 mb-6">
-            Press Kit
-          </p>
+      {/* PRESS KIT SECTION */}
+      <section className="py-16 md:py-20 lg:py-24">
+        <div className="mx-auto max-w-[1200px] px-6 md:px-12 lg:px-16">
           
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {pressKitItems.map((item) => (
-              <a
+          {/* Section Header */}
+          <motion.div 
+            ref={pressKitRef}
+            initial={{ opacity: 0 }}
+            animate={pressKitInView ? { opacity: 1 } : {}}
+            transition={{ duration: 0.5 }}
+            className="flex items-center gap-3 mb-10"
+          >
+            <span className="w-2 h-2 rounded-full bg-[#e52421]" />
+            <p className="text-[11px] uppercase tracking-[0.25em] text-neutral-500 font-medium">
+              Press Kit
+            </p>
+          </motion.div>
+
+          {/* Press Kit Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
+            {pressKitItems.map((item, index) => (
+              <motion.a
                 key={item.id}
                 href={item.driveUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group block bg-zinc-900/50 border border-zinc-800 rounded-xl p-5 transition-all duration-300 hover:border-[#e52421]/30 hover:-translate-y-0.5"
+                initial={{ opacity: 0, y: 20 }}
+                animate={pressKitInView ? { opacity: 1, y: 0 } : {}}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                className="group relative block p-6 rounded-2xl bg-neutral-900/40 backdrop-blur-sm border border-neutral-800/50 transition-all duration-300 hover:border-neutral-700/60 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/20"
               >
-                <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center mb-4 group-hover:bg-[#e52421]/10 transition-colors">
-                  <item.icon className="w-5 h-5 text-zinc-400 group-hover:text-[#e52421] transition-colors" />
+                {/* Icon */}
+                <div className="w-11 h-11 rounded-xl bg-neutral-800/60 flex items-center justify-center mb-5 group-hover:bg-[#e52421]/10 transition-colors duration-300">
+                  <item.icon className="w-5 h-5 text-neutral-500 group-hover:text-[#e52421] transition-colors duration-300" />
                 </div>
                 
-                <h3 className="text-white font-medium mb-1">
+                {/* Content */}
+                <h3 className="text-lg font-medium text-white mb-2 group-hover:text-white transition-colors">
                   {item.title}
                 </h3>
                 
-                <p className="text-zinc-500 text-sm mb-4">
+                <p className="text-sm text-neutral-500 leading-relaxed mb-5 line-clamp-2">
                   {item.description}
                 </p>
                 
-                <span className="inline-flex items-center gap-2 text-sm text-[#e52421] group-hover:text-[#ff3b38] transition-colors">
-                  Acessar no Drive
+                {/* CTA */}
+                <span className="inline-flex items-center gap-2 text-sm text-[#e52421] group-hover:gap-3 transition-all duration-300">
+                  <span className="relative">
+                    Acessar no Drive
+                    <span className="absolute left-0 bottom-0 w-0 h-px bg-[#e52421] group-hover:w-full transition-all duration-300" />
+                  </span>
                   <ExternalLink className="w-3.5 h-3.5" />
                 </span>
-              </a>
+              </motion.a>
             ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Divider */}
-        <hr className="border-t border-zinc-800" />
-
-        {/* News Section */}
-        <section className="py-12 md:py-14">
-          <p className="text-[10px] uppercase tracking-[0.25em] text-zinc-600 mb-6">
-            Últimas Notícias
-          </p>
+      {/* NEWS SECTION */}
+      <section className="py-16 md:py-20 lg:py-24 bg-[#0d0d0d]">
+        <div className="mx-auto max-w-[1200px] px-6 md:px-12 lg:px-16">
           
+          {/* Section Header */}
+          <motion.div 
+            ref={newsRef}
+            initial={{ opacity: 0 }}
+            animate={newsInView ? { opacity: 1 } : {}}
+            transition={{ duration: 0.5 }}
+            className="mb-10"
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <span className="w-2 h-2 rounded-full bg-[#e52421]" />
+              <p className="text-[11px] uppercase tracking-[0.25em] text-neutral-500 font-medium">
+                Últimas Notícias
+              </p>
+            </div>
+            <p className="text-neutral-600 text-sm font-light">
+              Atualizações e comunicados oficiais.
+            </p>
+          </motion.div>
+
+          {/* News Content */}
           {isLoading ? (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-5 animate-pulse">
-                  <div className="h-4 bg-zinc-800 rounded w-1/2 mb-4" />
-                  <div className="h-5 bg-zinc-800 rounded w-full mb-3" />
-                  <div className="h-4 bg-zinc-800 rounded w-3/4" />
+                <div 
+                  key={i} 
+                  className="p-6 rounded-2xl bg-neutral-900/40 border border-neutral-800/50"
+                >
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="h-5 w-20 bg-neutral-800 rounded animate-pulse" />
+                    <div className="h-5 w-16 bg-neutral-800 rounded animate-pulse" />
+                  </div>
+                  <div className="h-6 w-full bg-neutral-800 rounded animate-pulse mb-3" />
+                  <div className="h-4 w-3/4 bg-neutral-800 rounded animate-pulse mb-5" />
+                  <div className="h-4 w-20 bg-neutral-800 rounded animate-pulse" />
                 </div>
               ))}
             </div>
           ) : articles?.length === 0 ? (
-            <div className="text-center py-12">
-              <Newspaper className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
-              <p className="text-zinc-500">Nenhuma notícia publicada ainda.</p>
-            </div>
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={newsInView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.5 }}
+              className="flex flex-col items-center justify-center py-16 md:py-20"
+            >
+              <div className="w-14 h-14 rounded-2xl bg-neutral-900 flex items-center justify-center mb-5">
+                <Newspaper className="w-6 h-6 text-neutral-700" strokeWidth={1.5} />
+              </div>
+              <p className="text-neutral-400 text-lg font-light mb-2">
+                Sem publicações no momento.
+              </p>
+              <p className="text-neutral-600 text-sm mb-6">
+                Novas atualizações em breve.
+              </p>
+              <Link 
+                to="/contato"
+                className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full border border-neutral-800 text-sm text-neutral-400 hover:border-neutral-700 hover:text-white transition-all duration-300"
+              >
+                <span>Entrar em contato</span>
+                <ArrowUpRight className="w-4 h-4" />
+              </Link>
+            </motion.div>
           ) : (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {articles?.map((article) => (
-                <Link 
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
+              {articles?.map((article, index) => (
+                <motion.div
                   key={article.id}
-                  to={`/imprensa/${article.slug}`}
-                  className="group bg-zinc-900/50 border border-zinc-800 rounded-xl p-5 transition-all duration-300 hover:border-[#e52421]/30 hover:-translate-y-0.5"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={newsInView ? { opacity: 1, y: 0 } : {}}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
                 >
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="flex items-center gap-1.5 text-xs text-zinc-500">
-                      <Calendar className="w-3.5 h-3.5" />
-                      <span>
-                        {format(new Date(article.publish_date), "dd MMM yyyy", {
-                          locale: ptBR,
-                        })}
+                  <Link 
+                    to={`/imprensa/${article.slug}`}
+                    className="group block p-6 rounded-2xl bg-neutral-900/40 backdrop-blur-sm border border-neutral-800/50 transition-all duration-300 hover:border-neutral-700/60 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/20 h-full"
+                  >
+                    {/* Meta */}
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="flex items-center gap-1.5 text-xs text-neutral-500">
+                        <Calendar className="w-3.5 h-3.5" />
+                        <span>
+                          {format(new Date(article.publish_date), "dd MMM yyyy", {
+                            locale: ptBR,
+                          })}
+                        </span>
+                      </div>
+                      <span className="px-2 py-0.5 bg-[#e52421]/10 text-[#e52421] rounded text-[10px] font-medium uppercase tracking-wide">
+                        {article.category}
                       </span>
                     </div>
-                    <span className="px-2 py-0.5 bg-[#e52421]/10 text-[#e52421] rounded text-[10px] font-medium uppercase tracking-wide">
-                      {article.category}
+                    
+                    {/* Title */}
+                    <h3 className="text-base md:text-lg font-medium text-white mb-3 group-hover:text-white transition-colors leading-snug line-clamp-2">
+                      {article.title}
+                    </h3>
+                    
+                    {/* Excerpt */}
+                    {article.excerpt && (
+                      <p className="text-neutral-500 text-sm leading-relaxed line-clamp-2 mb-5">
+                        {article.excerpt}
+                      </p>
+                    )}
+                    
+                    {/* CTA */}
+                    <span className="inline-flex items-center gap-2 text-sm text-[#e52421] group-hover:gap-3 transition-all duration-300">
+                      <span className="relative">
+                        Ler mais
+                        <span className="absolute left-0 bottom-0 w-0 h-px bg-[#e52421] group-hover:w-full transition-all duration-300" />
+                      </span>
+                      <ArrowUpRight className="w-3.5 h-3.5" />
                     </span>
-                  </div>
-                  
-                  <h3 className="text-white font-medium mb-3 group-hover:text-[#e52421] transition-colors leading-snug">
-                    {article.title}
-                  </h3>
-                  
-                  {article.excerpt && (
-                    <p className="text-zinc-500 text-sm mb-4 leading-relaxed line-clamp-2">
-                      {article.excerpt}
-                    </p>
-                  )}
-                  
-                  <span className="inline-flex items-center gap-2 text-sm text-[#e52421] group-hover:text-[#ff3b38] transition-colors">
-                    Ler mais
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </span>
-                </Link>
+                  </Link>
+                </motion.div>
               ))}
             </div>
           )}
-        </section>
+        </div>
+      </section>
 
-        {/* Signature Section */}
-        <section className="pt-12 pb-16 md:pb-20 border-t border-zinc-800">
-          <p className="text-xl md:text-2xl">
-            <span className="text-white font-bold">M3 Agency.</span>
-            {" "}
-            <span className="text-[#e52421]">Conectando talentos.</span>
-            {" "}
-            <span className="text-white font-bold">Construindo caminhos.</span>
-          </p>
-        </section>
-
-      </div>
+      {/* SIGNATURE SECTION */}
+      <section className="py-20 md:py-24 lg:py-32 bg-[#0a0a0a]">
+        <div className="mx-auto max-w-[1200px] px-6 md:px-12 lg:px-16">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.6 }}
+            className="max-w-2xl"
+          >
+            <p className="text-xl sm:text-2xl md:text-3xl font-light leading-relaxed tracking-wide">
+              <span className="text-white font-medium">M3 Agency.</span>
+              {" "}
+              <span className="text-[#e52421]">Conectando talentos.</span>
+              {" "}
+              <span className="text-neutral-500">Construindo caminhos.</span>
+            </p>
+          </motion.div>
+        </div>
+      </section>
     </div>
   );
 };
