@@ -5,9 +5,12 @@ import heroStadium from "@/assets/hero-stadium.jpg";
 
 const Sobre = () => {
   const [scrollY, setScrollY] = useState(0);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [isHovering, setIsHovering] = useState(false);
   const conceptRef = useRef<HTMLDivElement>(null);
   const servicesRef = useRef<HTMLDivElement>(null);
   const manifestoRef = useRef<HTMLDivElement>(null);
+  const pageRef = useRef<HTMLDivElement>(null);
   
   const conceptInView = useInView(conceptRef, { once: true, margin: "-100px" });
   const servicesInView = useInView(servicesRef, { once: true, margin: "-100px" });
@@ -30,6 +33,15 @@ const Sobre = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Custom cursor tracking
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePosition({ x: e.clientX, y: e.clientY });
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
+
   const services = [
     {
       number: "01",
@@ -48,8 +60,59 @@ const Sobre = () => {
     }
   ];
 
+  // Word-by-word animation variants
+  const headlineWords1 = "Transformamos talento em direção.".split(" ");
+  const headlineWords2 = "Criamos caminhos reais no futebol de elite.".split(" ");
+
+  const wordVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: (i: number) => ({
+      opacity: 1,
+      y: 0,
+      transition: {
+        delay: 0.6 + i * 0.1,
+        duration: 0.5,
+        ease: "easeOut" as const
+      }
+    })
+  };
+
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
+    <div 
+      ref={pageRef}
+      className="min-h-screen bg-[#0a0a0a] cursor-none"
+      onMouseEnter={() => setIsHovering(false)}
+    >
+      {/* Custom Cursor */}
+      <motion.div
+        className="fixed top-0 left-0 w-4 h-4 rounded-full bg-[#e52421] pointer-events-none z-[9999] mix-blend-difference hidden md:block"
+        animate={{
+          x: mousePosition.x - 8,
+          y: mousePosition.y - 8,
+          scale: isHovering ? 2.5 : 1,
+        }}
+        transition={{
+          type: "spring",
+          stiffness: 500,
+          damping: 28,
+          mass: 0.5
+        }}
+      />
+      <motion.div
+        className="fixed top-0 left-0 w-10 h-10 rounded-full border border-white/20 pointer-events-none z-[9998] hidden md:block"
+        animate={{
+          x: mousePosition.x - 20,
+          y: mousePosition.y - 20,
+          scale: isHovering ? 1.5 : 1,
+        }}
+        transition={{
+          type: "spring",
+          stiffness: 200,
+          damping: 20,
+          mass: 0.8
+        }}
+      />
+
       {/* HERO SECTION - Full Screen */}
       <section className="relative h-screen w-full overflow-hidden">
         {/* Background Image with Parallax */}
@@ -81,52 +144,88 @@ const Sobre = () => {
         <div className="relative z-10 h-full flex items-center">
           <div className="mx-auto w-full max-w-[1400px] px-6 lg:px-12">
             <div className="max-w-4xl">
-              {/* M3 Agency Title */}
+              {/* M3 Agency Title - Letter by letter */}
               <motion.h1 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-                className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight text-white mb-6"
+                className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight text-white mb-6 overflow-hidden"
               >
-                <span className="text-[#e52421]">M3</span> Agency
+                <motion.span 
+                  className="text-[#e52421] inline-block"
+                  initial={{ opacity: 0, y: 40 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.7, delay: 0.1, ease: [0.25, 0.4, 0.25, 1] }}
+                >
+                  M3
+                </motion.span>
+                <motion.span 
+                  className="inline-block ml-4"
+                  initial={{ opacity: 0, y: 40 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.7, delay: 0.25, ease: [0.25, 0.4, 0.25, 1] }}
+                >
+                  Agency
+                </motion.span>
               </motion.h1>
 
               {/* Subtitle */}
               <motion.p 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.35 }}
-                className="text-lg sm:text-xl md:text-2xl text-neutral-400 mb-8 max-w-2xl"
+                transition={{ duration: 0.6, delay: 0.45 }}
+                className="text-lg sm:text-xl md:text-2xl text-neutral-400 mb-10 max-w-2xl"
               >
                 Scouting, estratégia e decisões de carreira no futebol profissional.
               </motion.p>
 
-              {/* Editorial Headline */}
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.5 }}
-                className="mb-12"
-              >
+              {/* Editorial Headline - Word by word */}
+              <div className="mb-12">
                 <p 
-                  className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl leading-[1.2] text-white/90 font-light"
+                  className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl leading-[1.25] text-white/90 font-light"
                   style={{ fontFamily: '"Times New Roman", Georgia, serif' }}
                 >
-                  Transformamos talento em direção.
-                  <br />
-                  <span className="text-white">Criamos caminhos reais no futebol de elite.</span>
+                  {/* First line */}
+                  <span className="block overflow-hidden">
+                    {headlineWords1.map((word, i) => (
+                      <motion.span
+                        key={i}
+                        custom={i}
+                        variants={wordVariants}
+                        initial="hidden"
+                        animate="visible"
+                        className="inline-block mr-[0.3em]"
+                      >
+                        {word}
+                      </motion.span>
+                    ))}
+                  </span>
+                  {/* Second line */}
+                  <span className="block overflow-hidden mt-2">
+                    {headlineWords2.map((word, i) => (
+                      <motion.span
+                        key={i}
+                        custom={i + headlineWords1.length}
+                        variants={wordVariants}
+                        initial="hidden"
+                        animate="visible"
+                        className="inline-block mr-[0.3em] text-white"
+                      >
+                        {word}
+                      </motion.span>
+                    ))}
+                  </span>
                 </p>
-              </motion.div>
+              </div>
 
               {/* CTA Button */}
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.65 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.6, delay: 1.8 }}
               >
                 <Link 
                   to="/contato"
-                  className="inline-flex items-center gap-3 text-sm tracking-wide text-neutral-300 hover:text-white transition-colors duration-300 group"
+                  className="inline-flex items-center gap-3 text-sm tracking-wide text-neutral-300 hover:text-white transition-colors duration-300 group cursor-none"
+                  onMouseEnter={() => setIsHovering(true)}
+                  onMouseLeave={() => setIsHovering(false)}
                 >
                   <span className="w-8 h-px bg-neutral-500 group-hover:w-12 group-hover:bg-[#e52421] transition-all duration-300" />
                   Falar com a M3
@@ -140,7 +239,7 @@ const Sobre = () => {
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 1 }}
+          transition={{ duration: 0.6, delay: 2 }}
           className="absolute bottom-10 left-1/2 -translate-x-1/2"
         >
           <div className="w-px h-16 bg-gradient-to-b from-transparent via-neutral-600 to-transparent animate-pulse" />
@@ -198,7 +297,9 @@ const Sobre = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={servicesInView ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.6, delay: index * 0.15 }}
-                className="group border-t border-neutral-800/60 py-10 md:py-14 lg:py-16 cursor-default"
+                className="group border-t border-neutral-800/60 py-10 md:py-14 lg:py-16"
+                onMouseEnter={() => setIsHovering(true)}
+                onMouseLeave={() => setIsHovering(false)}
               >
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 items-start">
                   {/* Number */}
