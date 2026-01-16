@@ -140,6 +140,15 @@ export function PremiumHero() {
           }}
         />
 
+        {/* Floating Particles */}
+        {!prefersReducedMotion && (
+          <div className="absolute inset-0">
+            {Array.from({ length: 30 }).map((_, i) => (
+              <Particle key={i} index={i} />
+            ))}
+          </div>
+        )}
+
         {/* Scan Line */}
         {!prefersReducedMotion && (
           <div
@@ -355,5 +364,31 @@ function StatRow({
         <p className="text-xs text-white/40">{label}</p>
       </div>
     </div>
+  );
+}
+
+function Particle({ index }: { index: number }) {
+  // Generate pseudo-random values based on index for consistent rendering
+  const seed = index * 7919; // Prime number for better distribution
+  const left = ((seed * 13) % 100);
+  const top = ((seed * 17) % 100);
+  const size = 2 + ((seed * 3) % 3);
+  const duration = 15 + ((seed * 11) % 20);
+  const delay = ((seed * 5) % 10);
+  const opacity = 0.1 + ((seed % 20) / 100);
+
+  return (
+    <div
+      className="absolute rounded-full bg-white animate-particle"
+      style={{
+        left: `${left}%`,
+        top: `${top}%`,
+        width: `${size}px`,
+        height: `${size}px`,
+        opacity: opacity,
+        animationDuration: `${duration}s`,
+        animationDelay: `${delay}s`,
+      }}
+    />
   );
 }

@@ -529,6 +529,30 @@
     animation: float-subtle 6s ease-in-out infinite;
   }
 
+  @keyframes particle {
+    0% {
+      transform: translateY(0) translateX(0);
+      opacity: 0;
+    }
+    10% {
+      opacity: 0.15;
+    }
+    50% {
+      transform: translateY(-30px) translateX(15px);
+    }
+    90% {
+      opacity: 0.15;
+    }
+    100% {
+      transform: translateY(-60px) translateX(-10px);
+      opacity: 0;
+    }
+  }
+
+  .animate-particle {
+    animation: particle linear infinite;
+  }
+
   .delay-75 { animation-delay: 75ms; }
   .delay-100 { animation-delay: 100ms; }
   .delay-150 { animation-delay: 150ms; }
