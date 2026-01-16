@@ -573,7 +573,7 @@ const PlayerDetail = () => {
 
         {/* Contract Tab */}
         <TabsContent value="contract">
-          <ContractSection data={player} />
+          <ContractSection data={player} playerId={player.id} />
         </TabsContent>
       </Tabs>
 
