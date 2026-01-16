@@ -1,30 +1,31 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { DeleteReportDialog } from "@/components/scouting/DeleteReportDialog";
+import { ReportCard, ReportCardSkeleton } from "@/components/scouting/ReportCard";
 import { useAuth } from "@/hooks/useAuth";
 import { 
   Search, 
   Plus, 
   FileText, 
-  MoreVertical,
-  Eye,
-  Edit,
-  Trash2
+  Users,
+  Trophy,
+  User,
+  LayoutGrid,
+  ClipboardList
 } from "lucide-react";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { safeArray } from "@/lib/utils";
-import { AdminSkeletonTable } from "@/components/admin/AdminSkeleton";
+import { cn, safeArray } from "@/lib/utils";
 
 interface ScoutingReportListItem {
   id: string;
@@ -33,14 +34,22 @@ interface ScoutingReportListItem {
   rating: number;
   created_at: string;
   scout_id: string;
+  player_id: string;
+  opponent?: string | null;
   players: {
     full_name: string;
     position: string;
+    age?: number | null;
+    photo_url?: string | null;
   } | null;
   competitions: {
+    id: string;
     name: string;
+    country?: string;
   } | null;
 }
+
+type GroupBy = "none" | "player" | "competition" | "scout";
 
 const ScoutingReports = () => {
   const { user, isAdmin } = useAuth();
@@ -49,10 +58,9 @@ const ScoutingReports = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<string | null>(null);
+  const [groupBy, setGroupBy] = useState<GroupBy>("none");
 
   const fetchReports = useCallback(async () => {
-    console.log("Fetching scouting reports...");
-    
     const { data, error } = await supabase
       .from("scouting_reports")
       .select(`
@@ -62,12 +70,13 @@ const ScoutingReports = () => {
         rating,
         created_at,
         scout_id,
-        players (full_name, position),
-        competitions (name)
+        player_id,
+        opponent,
+        players (full_name, position, age, photo_url),
+        competitions (id, name, country)
       `)
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
-
-    console.log("Reports query result:", { data, error, count: data?.length });
 
     if (error) {
       console.error("Error fetching reports:", error);
@@ -78,7 +87,7 @@ const ScoutingReports = () => {
     if (data && data.length > 0) {
       setReports(data as ScoutingReportListItem[]);
       
-      // Fetch scout names separately
+      // Fetch scout names
       const scoutIds = [...new Set(data.map(r => r.scout_id))];
       const { data: profiles } = await supabase
         .from("profiles")
@@ -112,157 +121,241 @@ const ScoutingReports = () => {
     fetchReports();
   };
 
-  const filteredReports = reports.filter((report) =>
-    report.players?.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filter reports by search
+  const filteredReports = useMemo(() => {
+    const query = searchQuery.toLowerCase();
+    return reports.filter((report) => 
+      report.players?.full_name?.toLowerCase().includes(query) ||
+      report.competitions?.name?.toLowerCase().includes(query) ||
+      scoutNames[report.scout_id]?.toLowerCase().includes(query)
+    );
+  }, [reports, searchQuery, scoutNames]);
 
-  // Get score color based on value - using unified color system
-  const getScoreColor = (score: number) => {
-    if (score >= 80) return "text-emerald-500";
-    if (score >= 60) return "text-blue-500";
-    if (score >= 40) return "text-amber-500";
-    return "text-red-500";
-  };
+  // Calculate insights for each report
+  const reportsWithInsights = useMemo(() => {
+    // Group reports by player to calculate insights
+    const byPlayer: Record<string, ScoutingReportListItem[]> = {};
+    filteredReports.forEach(r => {
+      if (!byPlayer[r.player_id]) byPlayer[r.player_id] = [];
+      byPlayer[r.player_id].push(r);
+    });
+
+    return filteredReports.map(report => {
+      const playerReports = byPlayer[report.player_id] || [];
+      
+      // Sort by date to find patterns
+      const sorted = [...playerReports].sort(
+        (a, b) => new Date(b.match_date).getTime() - new Date(a.match_date).getTime()
+      );
+      
+      let insight: "best" | "first" | "decline" | "strong_competition" | null = null;
+      
+      // Check if first report
+      if (playerReports.length === 1) {
+        insight = "first";
+      } else {
+        // Check if best score
+        const maxScore = Math.max(...playerReports.map(r => r.final_score));
+        if (report.final_score === maxScore && report.final_score >= 70) {
+          insight = "best";
+        }
+        
+        // Check for decline (current score lower than average)
+        const avgScore = playerReports.reduce((sum, r) => sum + r.final_score, 0) / playerReports.length;
+        if (!insight && sorted[0]?.id === report.id && report.final_score < avgScore - 10) {
+          insight = "decline";
+        }
+      }
+      
+      return { ...report, insight };
+    });
+  }, [filteredReports]);
+
+  // Group reports
+  const groupedReports = useMemo(() => {
+    if (groupBy === "none") {
+      return { "Todos os Relatórios": reportsWithInsights };
+    }
+
+    const groups: Record<string, typeof reportsWithInsights> = {};
+    
+    reportsWithInsights.forEach(report => {
+      let key = "Outros";
+      
+      if (groupBy === "player") {
+        key = report.players?.full_name || "Atleta desconhecido";
+      } else if (groupBy === "competition") {
+        key = report.competitions?.name || "Competição não definida";
+      } else if (groupBy === "scout") {
+        key = scoutNames[report.scout_id] || "Scout desconhecido";
+      }
+      
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(report);
+    });
+
+    // Sort groups by number of reports
+    return Object.fromEntries(
+      Object.entries(groups).sort((a, b) => b[1].length - a[1].length)
+    );
+  }, [reportsWithInsights, groupBy, scoutNames]);
+
+  const totalReports = filteredReports.length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-12">
       {/* Header */}
-      <header className="admin-header animate-fade-in">
+      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="admin-title">Relatórios</h1>
-          <p className="admin-subtitle">Avaliações de scouting</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-zinc-100">
+            Relatórios
+          </h1>
+          <p className="text-sm text-zinc-500 mt-1">
+            Avaliações técnicas e análises de scouting
+          </p>
         </div>
         <Link to="/app/reports/new">
-          <Button className="admin-btn-primary">
+          <Button className="bg-red-600 hover:bg-red-700 text-white gap-2">
             <Plus className="w-4 h-4" />
             Novo Relatório
           </Button>
         </Link>
       </header>
 
-      {/* Search */}
-      <div className="relative max-w-md animate-fade-in delay-75">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
-        <Input
-          type="text"
-          placeholder="Buscar por atleta..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="admin-input pl-10"
-        />
-      </div>
+      {/* Controls Bar */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col sm:flex-row gap-3 sm:items-center"
+      >
+        {/* Search */}
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+          <Input
+            type="text"
+            placeholder="Buscar atleta, competição ou scout..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 bg-zinc-900/60 border-zinc-800 focus:border-zinc-700"
+          />
+        </div>
+
+        {/* Grouping */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-zinc-500 hidden sm:inline">Agrupar:</span>
+          <Tabs value={groupBy} onValueChange={(v) => setGroupBy(v as GroupBy)}>
+            <TabsList className="bg-zinc-900/60 border border-zinc-800 h-9">
+              <TabsTrigger value="none" className="text-xs h-7 px-3 gap-1.5 data-[state=active]:bg-zinc-800">
+                <LayoutGrid className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Todos</span>
+              </TabsTrigger>
+              <TabsTrigger value="player" className="text-xs h-7 px-3 gap-1.5 data-[state=active]:bg-zinc-800">
+                <Users className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Atleta</span>
+              </TabsTrigger>
+              <TabsTrigger value="competition" className="text-xs h-7 px-3 gap-1.5 data-[state=active]:bg-zinc-800">
+                <Trophy className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Competição</span>
+              </TabsTrigger>
+              <TabsTrigger value="scout" className="text-xs h-7 px-3 gap-1.5 data-[state=active]:bg-zinc-800">
+                <User className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Scout</span>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+
+        {/* Count badge */}
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-800/60 border border-zinc-700/40">
+          <ClipboardList className="w-3.5 h-3.5 text-zinc-500" />
+          <span className="text-xs text-zinc-400 font-medium">
+            {totalReports} relatório{totalReports !== 1 ? "s" : ""}
+          </span>
+        </div>
+      </motion.div>
 
       {/* Reports List */}
       {loading ? (
-        <AdminSkeletonTable rows={8} />
-      ) : filteredReports.length === 0 ? (
-        <div className="admin-card animate-fade-in">
-          <div className="admin-empty py-16">
-            <FileText className="admin-empty-icon" />
-            <p className="admin-empty-title">Nenhum relatório encontrado</p>
-            <p className="admin-empty-desc mb-4">
-              {searchQuery ? "Tente ajustar sua busca" : "Comece criando o primeiro relatório"}
-            </p>
-            {!searchQuery && (
-              <Link to="/app/reports/new">
-                <Button className="admin-btn-primary">
-                  <Plus className="w-4 h-4" />
-                  Criar Relatório
-                </Button>
-              </Link>
-            )}
-          </div>
+        <div className="space-y-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <ReportCardSkeleton key={i} index={i} />
+          ))}
         </div>
+      ) : filteredReports.length === 0 ? (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center justify-center py-20 px-4"
+        >
+          <div className="w-16 h-16 rounded-2xl bg-zinc-800/60 flex items-center justify-center mb-4">
+            <FileText className="w-8 h-8 text-zinc-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-zinc-300 mb-1">
+            Nenhum relatório encontrado
+          </h3>
+          <p className="text-sm text-zinc-500 text-center max-w-sm mb-6">
+            {searchQuery 
+              ? "Tente ajustar sua busca ou limpar os filtros"
+              : "Comece criando o primeiro relatório de scouting"}
+          </p>
+          {!searchQuery && (
+            <Link to="/app/reports/new">
+              <Button className="bg-red-600 hover:bg-red-700 text-white gap-2">
+                <Plus className="w-4 h-4" />
+                Criar Relatório
+              </Button>
+            </Link>
+          )}
+        </motion.div>
       ) : (
-        <div className="admin-card overflow-hidden animate-fade-in delay-100">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Score</th>
-                <th>Atleta</th>
-                <th>Competição</th>
-                <th>Data</th>
-                <th>Scout</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {safeArray(filteredReports).map((report) => (
-                <tr key={report.id}>
-                  <td>
-                    <span className={`text-xl font-bold tabular-nums ${getScoreColor(report.final_score)}`}>
-                      {Number.isFinite(Number(report.final_score)) ? Number(report.final_score).toFixed(1) : "—"}
+        <div className="space-y-8">
+          <AnimatePresence mode="popLayout">
+            {Object.entries(groupedReports).map(([groupName, groupReports], groupIndex) => (
+              <motion.div
+                key={groupName}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ delay: groupIndex * 0.1 }}
+              >
+                {/* Group header (only show if grouped) */}
+                {groupBy !== "none" && (
+                  <div className="flex items-center gap-3 mb-4">
+                    <h2 className="text-lg font-semibold text-zinc-200">
+                      {groupName}
+                    </h2>
+                    <span className="text-xs text-zinc-500 bg-zinc-800/60 px-2 py-0.5 rounded-full">
+                      {groupReports.length} relatório{groupReports.length !== 1 ? "s" : ""}
                     </span>
-                  </td>
-                  <td>
-                    <div>
-                      <p className="admin-table-cell-primary">
-                        {report.players?.full_name || "Atleta desconhecido"}
-                      </p>
-                      {report.players?.position && (
-                        <p className="text-[11px] text-zinc-600">{report.players.position}</p>
-                      )}
+                  </div>
+                )}
+
+                {/* Reports grid */}
+                <div className="space-y-3">
+                  {safeArray(groupReports).map((report, i) => (
+                    <div key={report.id}>
+                      <ReportCard
+                        report={report}
+                        scoutName={scoutNames[report.scout_id] || "Scout"}
+                        canDelete={canDeleteReport(report.scout_id)}
+                        onDelete={() => setDeleteDialogOpen(report.id)}
+                        insight={report.insight}
+                        index={i}
+                      />
+                      <DeleteReportDialog
+                        reportId={report.id}
+                        onDeleted={handleReportDeleted}
+                        open={deleteDialogOpen === report.id}
+                        onOpenChange={(open) => {
+                          if (!open) setDeleteDialogOpen(null);
+                        }}
+                      />
                     </div>
-                  </td>
-                  <td className="admin-table-cell-muted">
-                    {report.competitions?.name || "—"}
-                  </td>
-                  <td className="admin-table-cell-muted tabular-nums">
-                    {format(new Date(report.match_date), "dd MMM yyyy", { locale: ptBR })}
-                  </td>
-                  <td className="admin-table-cell-muted">
-                    {scoutNames[report.scout_id] || "—"}
-                  </td>
-                  <td className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <MoreVertical className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                          <Link to={`/app/reports/${report.id}`} className="flex items-center gap-2">
-                            <Eye className="w-4 h-4" />
-                            Ver
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link to={`/app/reports/${report.id}/edit`} className="flex items-center gap-2">
-                            <Edit className="w-4 h-4" />
-                            Editar
-                          </Link>
-                        </DropdownMenuItem>
-                        {canDeleteReport(report.scout_id) && (
-                          <>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="text-destructive focus:text-destructive flex items-center gap-2"
-                              onSelect={(e) => {
-                                e.preventDefault();
-                                setDeleteDialogOpen(report.id);
-                              }}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                              Excluir
-                            </DropdownMenuItem>
-                          </>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                    <DeleteReportDialog
-                      reportId={report.id}
-                      onDeleted={handleReportDeleted}
-                      open={deleteDialogOpen === report.id}
-                      onOpenChange={(open) => {
-                        if (!open) setDeleteDialogOpen(null);
-                      }}
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  ))}
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
       )}
     </div>
