@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -687,59 +688,116 @@ const AppPlayers = () => {
             </div>
           </div>
           
-          {/* Position Identity Cards */}
+          {/* Position Identity Cards with Stagger Animation */}
           {isMobile ? (
-            <div className="space-y-3">
-              {safeArray(paginatedPlayers).map((player) => (
-                <PositionIdentityCardMobile
+            <motion.div 
+              className="space-y-3"
+              initial="hidden"
+              animate="visible"
+              variants={{
+                hidden: { opacity: 0 },
+                visible: {
+                  opacity: 1,
+                  transition: {
+                    staggerChildren: 0.05,
+                  },
+                },
+              }}
+            >
+              {safeArray(paginatedPlayers).map((player, index) => (
+                <motion.div
                   key={player.id}
-                  id={player.id}
-                  fullName={player.full_name}
-                  position={player.position}
-                  age={player.age}
-                  nationality={player.nationality}
-                  currentClub={player.current_club}
-                  photoUrl={player.photo_url}
-                  autoRating={player.auto_rating}
-                  height={player.height}
-                  dominantFoot={player.dominant_foot}
-                  contractEnd={player.contract_end}
-                  overallRating={player.overall_rating}
-                  potentialRating={player.potential_rating}
-                  isPublic={player.is_public}
-                  isArchived={player.is_archived}
-                  isAdmin={isAdmin}
-                  onArchive={() => handleArchivePlayer(player)}
-                  onDelete={() => handleDeleteClick(player)}
-                />
+                  variants={{
+                    hidden: { opacity: 0, y: 20, scale: 0.95 },
+                    visible: { 
+                      opacity: 1, 
+                      y: 0, 
+                      scale: 1,
+                      transition: {
+                        duration: 0.3,
+                        ease: [0.25, 0.46, 0.45, 0.94],
+                      },
+                    },
+                  }}
+                >
+                  <PositionIdentityCardMobile
+                    id={player.id}
+                    fullName={player.full_name}
+                    position={player.position}
+                    age={player.age}
+                    nationality={player.nationality}
+                    currentClub={player.current_club}
+                    photoUrl={player.photo_url}
+                    autoRating={player.auto_rating}
+                    height={player.height}
+                    dominantFoot={player.dominant_foot}
+                    contractEnd={player.contract_end}
+                    overallRating={player.overall_rating}
+                    potentialRating={player.potential_rating}
+                    isPublic={player.is_public}
+                    isArchived={player.is_archived}
+                    isAdmin={isAdmin}
+                    onArchive={() => handleArchivePlayer(player)}
+                    onDelete={() => handleDeleteClick(player)}
+                  />
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-              {safeArray(paginatedPlayers).map((player) => (
-                <PositionIdentityCard
+            <motion.div 
+              className="grid grid-cols-1 lg:grid-cols-2 gap-3"
+              initial="hidden"
+              animate="visible"
+              variants={{
+                hidden: { opacity: 0 },
+                visible: {
+                  opacity: 1,
+                  transition: {
+                    staggerChildren: 0.04,
+                    delayChildren: 0.1,
+                  },
+                },
+              }}
+            >
+              {safeArray(paginatedPlayers).map((player, index) => (
+                <motion.div
                   key={player.id}
-                  id={player.id}
-                  fullName={player.full_name}
-                  position={player.position}
-                  age={player.age}
-                  nationality={player.nationality}
-                  currentClub={player.current_club}
-                  photoUrl={player.photo_url}
-                  autoRating={player.auto_rating}
-                  height={player.height}
-                  dominantFoot={player.dominant_foot}
-                  contractEnd={player.contract_end}
-                  overallRating={player.overall_rating}
-                  potentialRating={player.potential_rating}
-                  isPublic={player.is_public}
-                  isArchived={player.is_archived}
-                  isAdmin={isAdmin}
-                  onArchive={() => handleArchivePlayer(player)}
-                  onDelete={() => handleDeleteClick(player)}
-                />
+                  variants={{
+                    hidden: { opacity: 0, y: 16, scale: 0.97 },
+                    visible: { 
+                      opacity: 1, 
+                      y: 0, 
+                      scale: 1,
+                      transition: {
+                        duration: 0.35,
+                        ease: [0.25, 0.46, 0.45, 0.94],
+                      },
+                    },
+                  }}
+                >
+                  <PositionIdentityCard
+                    id={player.id}
+                    fullName={player.full_name}
+                    position={player.position}
+                    age={player.age}
+                    nationality={player.nationality}
+                    currentClub={player.current_club}
+                    photoUrl={player.photo_url}
+                    autoRating={player.auto_rating}
+                    height={player.height}
+                    dominantFoot={player.dominant_foot}
+                    contractEnd={player.contract_end}
+                    overallRating={player.overall_rating}
+                    potentialRating={player.potential_rating}
+                    isPublic={player.is_public}
+                    isArchived={player.is_archived}
+                    isAdmin={isAdmin}
+                    onArchive={() => handleArchivePlayer(player)}
+                    onDelete={() => handleDeleteClick(player)}
+                  />
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           )}
         </div>
       ) : (
