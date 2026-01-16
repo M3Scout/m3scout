@@ -16,7 +16,7 @@ interface AthleteCardPremiumProps {
   scoutingMode?: boolean;
   dominantFoot?: string | null;
   height?: number | null;
-  currentLeague?: string | null;
+  totalMinutes?: number | null;
 }
 
 export function AthleteCardPremium({
@@ -31,7 +31,7 @@ export function AthleteCardPremium({
   scoutingMode = false,
   dominantFoot,
   height,
-  currentLeague,
+  totalMinutes,
 }: AthleteCardPremiumProps) {
   const href = isPublic ? `/players/${slug}` : `/app/players/${slug}`;
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -54,6 +54,12 @@ export function AthleteCardPremium({
       'ambos': 'A',
     };
     return footMap[foot.toLowerCase()] || foot.charAt(0).toUpperCase();
+  };
+
+  // Format minutes with pt-BR thousands separator
+  const formatMinutes = (mins: number | null | undefined) => {
+    if (!mins || mins === 0) return '—';
+    return mins.toLocaleString('pt-BR');
   };
 
   return (
@@ -105,7 +111,7 @@ export function AthleteCardPremium({
           <div className="absolute bottom-0 left-0 right-0 p-5">
             {/* Scouting Mode Chips with Animation */}
             <AnimatePresence>
-              {scoutingMode && (dominantFoot || height || currentLeague) && (
+              {scoutingMode && (dominantFoot || height || totalMinutes !== undefined) && (
                 <motion.div 
                   initial={{ opacity: 0, y: 10, height: 0 }}
                   animate={{ opacity: 1, y: 0, height: 'auto' }}
@@ -141,20 +147,19 @@ export function AthleteCardPremium({
                       {formatHeight(height)}
                     </motion.span>
                   )}
-                  {currentLeague && (
-                    <motion.span 
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.2, delay: 0.15 }}
-                      className="inline-flex items-center px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider text-white/70 rounded"
-                      style={{ 
-                        background: 'rgba(255, 255, 255, 0.05)',
-                        border: '1px solid rgba(255, 255, 255, 0.1)'
-                      }}
-                    >
-                      {currentLeague}
-                    </motion.span>
-                  )}
+                  {/* Minutes chip - always show in scouting mode */}
+                  <motion.span 
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.2, delay: 0.15 }}
+                    className="inline-flex items-center px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider text-white/70 rounded"
+                    style={{ 
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      border: '1px solid rgba(255, 255, 255, 0.1)'
+                    }}
+                  >
+                    MIN {formatMinutes(totalMinutes)}
+                  </motion.span>
                 </motion.div>
               )}
             </AnimatePresence>

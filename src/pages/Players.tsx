@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, ChevronLeft, ChevronRight, Eye } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, Eye, Calendar } from "lucide-react";
 import { safeArray } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Switch } from "@/components/ui/switch";
@@ -28,19 +28,28 @@ interface Player {
   // Scouting mode fields
   dominant_foot: string | null;
   height: number | null;
-  estimated_level: string | null;
+}
+
+interface PlayerMinutes {
+  player_id: string;
+  total_minutes: number;
 }
 
 const PAGE_SIZE_OPTIONS = [12, 24, 48];
 
+const currentYear = new Date().getFullYear();
+const availableYears = [currentYear, currentYear - 1, currentYear - 2];
+
 const Players = () => {
   const [players, setPlayers] = useState<Player[]>([]);
+  const [playerMinutes, setPlayerMinutes] = useState<Map<string, number>>(new Map());
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [positionFilter, setPositionFilter] = useState("todos");
   const [nationalityFilter, setNationalityFilter] = useState("todos");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
+  const [selectedYear, setSelectedYear] = useState(currentYear);
   const [scoutingMode, setScoutingMode] = useState(() => {
     const saved = localStorage.getItem('m3-scouting-mode');
     return saved === 'true';
@@ -59,11 +68,12 @@ const Players = () => {
     }
   }, []);
 
+  // Fetch players
   useEffect(() => {
     const fetchPlayers = async () => {
       const { data, error } = await supabase
         .from("players")
-        .select("id, slug, full_name, position, secondary_positions, age, nationality, current_club, photo_url, auto_rating, dominant_foot, height, estimated_level")
+        .select("id, slug, full_name, position, secondary_positions, age, nationality, current_club, photo_url, auto_rating, dominant_foot, height")
         .eq("is_public", true)
         .order("full_name");
 
@@ -75,6 +85,33 @@ const Players = () => {
 
     fetchPlayers();
   }, []);
+
+  // Fetch minutes for selected year
+  useEffect(() => {
+    const fetchMinutes = async () => {
+      if (players.length === 0) return;
+      
+      const playerIds = players.map(p => p.id);
+      
+      const { data, error } = await supabase
+        .from("player_stats")
+        .select("player_id, minutes")
+        .in("player_id", playerIds)
+        .eq("season_year", selectedYear);
+
+      if (data) {
+        // Aggregate minutes per player
+        const minutesMap = new Map<string, number>();
+        data.forEach((stat) => {
+          const current = minutesMap.get(stat.player_id) || 0;
+          minutesMap.set(stat.player_id, current + (stat.minutes || 0));
+        });
+        setPlayerMinutes(minutesMap);
+      }
+    };
+
+    fetchMinutes();
+  }, [players, selectedYear]);
 
   const filteredPlayers = useMemo(() => {
     return players.filter((player) => {
@@ -192,7 +229,7 @@ const Players = () => {
           />
         </motion.section>
 
-        {/* Results Count + Scouting Mode Toggle */}
+        {/* Results Count + Year Filter + Scouting Mode Toggle */}
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -203,23 +240,55 @@ const Players = () => {
             {filteredPlayers.length} atleta{filteredPlayers.length !== 1 ? "s" : ""} no portfólio
           </p>
           
-          {/* Scouting Mode Toggle */}
-          <div 
-            className="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200"
-            style={{
-              background: scoutingMode ? 'rgba(229, 36, 33, 0.08)' : 'rgba(255, 255, 255, 0.02)',
-              border: scoutingMode ? '1px solid rgba(229, 36, 33, 0.2)' : '1px solid rgba(255, 255, 255, 0.06)'
-            }}
-          >
-            <Eye className={`w-4 h-4 transition-colors duration-200 ${scoutingMode ? 'text-[#e52421]' : 'text-neutral-500'}`} />
-            <span className={`text-sm font-medium tracking-wide transition-colors duration-200 ${scoutingMode ? 'text-white' : 'text-neutral-400'}`}>
-              Modo Scouting
-            </span>
-            <Switch
-              checked={scoutingMode}
-              onCheckedChange={setScoutingMode}
-              className="data-[state=checked]:bg-[#e52421]"
-            />
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Year Filter */}
+            <div 
+              className="flex items-center gap-2 px-3 py-2 rounded-lg"
+              style={{
+                background: 'rgba(255, 255, 255, 0.02)',
+                border: '1px solid rgba(255, 255, 255, 0.06)'
+              }}
+            >
+              <Calendar className="w-4 h-4 text-neutral-500" />
+              <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
+                <SelectTrigger 
+                  className="w-[80px] h-8 bg-transparent border-0 text-white text-sm p-0 focus:ring-0"
+                  style={{ fontFamily: "'Poppins', sans-serif" }}
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-[#0f0f0f] border-white/10 rounded-lg">
+                  {availableYears.map((year) => (
+                    <SelectItem 
+                      key={year} 
+                      value={String(year)}
+                      className="text-white focus:bg-white/10 focus:text-white rounded-md"
+                    >
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Scouting Mode Toggle */}
+            <div 
+              className="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200"
+              style={{
+                background: scoutingMode ? 'rgba(229, 36, 33, 0.08)' : 'rgba(255, 255, 255, 0.02)',
+                border: scoutingMode ? '1px solid rgba(229, 36, 33, 0.2)' : '1px solid rgba(255, 255, 255, 0.06)'
+              }}
+            >
+              <Eye className={`w-4 h-4 transition-colors duration-200 ${scoutingMode ? 'text-[#e52421]' : 'text-neutral-500'}`} />
+              <span className={`text-sm font-medium tracking-wide transition-colors duration-200 ${scoutingMode ? 'text-white' : 'text-neutral-400'}`}>
+                Modo Scouting
+              </span>
+              <Switch
+                checked={scoutingMode}
+                onCheckedChange={setScoutingMode}
+                className="data-[state=checked]:bg-[#e52421]"
+              />
+            </div>
           </div>
         </motion.div>
 
@@ -255,7 +324,7 @@ const Players = () => {
                     scoutingMode={scoutingMode}
                     dominantFoot={player.dominant_foot}
                     height={player.height}
-                    currentLeague={player.estimated_level}
+                    totalMinutes={playerMinutes.get(player.id) || null}
                   />
                 </motion.div>
               ))}
