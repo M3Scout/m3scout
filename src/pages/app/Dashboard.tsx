@@ -231,15 +231,18 @@ const Dashboard = () => {
         />
       </motion.div>
 
-      {/* Insights + Top Players Grid */}
-      <motion.div variants={itemVariants} className="grid lg:grid-cols-3 gap-6">
+      {/* Insights + Top Players Grid - Shared container with equal heights */}
+      <motion.div 
+        variants={itemVariants} 
+        className="grid lg:grid-cols-3 gap-6 items-stretch"
+      >
         {/* Insights - New strategic section */}
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 flex">
           <InsightsCard />
         </div>
 
         {/* Top Players */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 flex">
           <TopPlayersCard />
         </div>
       </motion.div>

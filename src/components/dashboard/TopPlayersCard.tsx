@@ -110,10 +110,10 @@ export const TopPlayersCard = () => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.2 }}
-      className="rounded-xl border border-zinc-800/50 bg-gradient-to-br from-zinc-900 to-zinc-950 overflow-hidden"
+      className="w-full h-full flex flex-col rounded-xl border border-zinc-800/50 bg-gradient-to-br from-zinc-900 to-zinc-950 overflow-hidden"
     >
       {/* Header */}
-      <div className="px-5 py-4 border-b border-zinc-800/50 bg-zinc-900/50">
+      <div className="px-5 py-4 border-b border-zinc-800/50 bg-zinc-900/50 shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-red-600/10 flex items-center justify-center">
@@ -141,21 +141,21 @@ export const TopPlayersCard = () => {
         </div>
       </div>
 
-      {/* Content */}
-      <div className="p-3">
+      {/* Content - flex-1 to fill available height */}
+      <div className="p-3 flex-1 flex flex-col min-h-0">
         {loading ? (
-          <div className="space-y-2">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-14 bg-zinc-800/30 rounded-lg animate-pulse" />
+          <div className="flex flex-col justify-between h-full gap-1.5">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="flex-1 min-h-[56px] bg-zinc-800/30 rounded-lg animate-pulse" />
             ))}
           </div>
         ) : players.length > 0 ? (
-          <div className="space-y-1.5">
+          <div className="flex flex-col justify-between h-full gap-1.5">
             {players.map((player, index) => (
               <Link
                 key={player.id}
                 to={`/app/players/${player.id}`}
-                className={`group flex items-center gap-3 p-3 rounded-lg border transition-all duration-200 hover:scale-[1.01] ${getRankBg(index + 1)}`}
+                className={`group flex items-center gap-3 p-3 flex-1 min-h-[56px] rounded-lg border transition-all duration-200 hover:scale-[1.01] ${getRankBg(index + 1)}`}
               >
                 {/* Rank */}
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${
