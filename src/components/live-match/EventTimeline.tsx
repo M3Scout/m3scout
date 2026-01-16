@@ -65,18 +65,38 @@ interface EventTimelineProps {
   events: MatchEvent[];
   players: MatchPlayer[];
   onDeleteEvent: (eventId: string) => void;
+  onVoidEvent?: (eventId: string, reason?: string) => void;
+  matchStatus?: "draft" | "live" | "finished" | "applied";
 }
 
 export function EventTimeline({
   events,
   players,
   onDeleteEvent,
+  onVoidEvent,
+  matchStatus = "draft",
 }: EventTimelineProps) {
-  const { firstHalfEvents, secondHalfEvents } = useMemo(() => {
+  // Filter out voided events from the main view, but still show them with different style
+  const { firstHalfEvents, secondHalfEvents, draftEvents, voidedEvents } = useMemo(() => {
     const first: MatchEvent[] = [];
     const second: MatchEvent[] = [];
+    const draft: MatchEvent[] = [];
+    const voided: MatchEvent[] = [];
 
     events.forEach((event) => {
+      // Separate voided events
+      if (event.event_status === "voided") {
+        voided.push(event);
+        return;
+      }
+      
+      // Separate draft (pending) events
+      if (event.event_status === "draft") {
+        draft.push(event);
+        return;
+      }
+      
+      // Official events by half
       if (event.half === 2) {
         second.push(event);
       } else {
@@ -90,6 +110,8 @@ export function EventTimeline({
     return {
       firstHalfEvents: first.sort(sortByCreatedAt),
       secondHalfEvents: second.sort(sortByCreatedAt),
+      draftEvents: draft.sort(sortByCreatedAt),
+      voidedEvents: voided.sort(sortByCreatedAt),
     };
   }, [events]);
 
@@ -104,10 +126,12 @@ export function EventTimeline({
     return "--'";
   };
 
-  const renderEventItem = (event: MatchEvent, index: number) => {
+  const renderEventItem = (event: MatchEvent, index: number, section?: "draft" | "voided") => {
     const config = eventConfig[event.event_type] || eventConfig.pass_total;
     const isSubstitution = event.event_type === "substitution";
     const isHighlight = ["goal", "assist", "save", "yellow", "red"].includes(event.event_type);
+    const isDraft = event.event_status === "draft" || section === "draft";
+    const isVoided = event.event_status === "voided" || section === "voided";
 
     return (
       <motion.div
@@ -117,7 +141,9 @@ export function EventTimeline({
         transition={{ delay: index * 0.03 }}
         className={cn(
           "relative flex items-start gap-3 py-3",
-          index !== 0 && "border-t border-zinc-800/40"
+          index !== 0 && "border-t border-zinc-800/40",
+          isDraft && "opacity-60 bg-amber-500/5 -mx-2 px-2 rounded-lg",
+          isVoided && "opacity-40"
         )}
       >
         {/* Timeline dot */}
@@ -133,17 +159,38 @@ export function EventTimeline({
           <div className="flex items-center gap-2 mb-0.5">
             <Badge 
               variant="outline" 
-              className="h-5 px-1.5 text-[10px] font-mono border-zinc-700 text-zinc-400"
+              className={cn(
+                "h-5 px-1.5 text-[10px] font-mono border-zinc-700 text-zinc-400",
+                isDraft && "border-amber-500/50 text-amber-400"
+              )}
             >
-              {getDisplayMinute(event)}
+              {isDraft ? (
+                <span className="flex items-center gap-1">
+                  <Clock className="w-2.5 h-2.5" />
+                  Pendente
+                </span>
+              ) : isVoided ? (
+                <span className="line-through">Anulado</span>
+              ) : (
+                getDisplayMinute(event)
+              )}
             </Badge>
-            <span className={cn("text-sm font-medium", isHighlight && config.color)}>
+            <span className={cn(
+              "text-sm font-medium", 
+              isHighlight && config.color,
+              isVoided && "line-through text-zinc-600"
+            )}>
               {config.label}
             </span>
+            {isVoided && event.void_reason && (
+              <span className="text-[10px] text-zinc-600 italic">
+                ({event.void_reason})
+              </span>
+            )}
           </div>
 
           {isSubstitution ? (
-            <div className="text-xs space-y-0.5">
+            <div className={cn("text-xs space-y-0.5", isVoided && "line-through")}>
               <p className="text-red-400">
                 ⬇️ {getPlayerName(event.player_id)} <span className="text-zinc-500">sai</span>
               </p>
@@ -154,7 +201,7 @@ export function EventTimeline({
               )}
             </div>
           ) : (
-            <p className="text-xs text-zinc-400 truncate">
+            <p className={cn("text-xs text-zinc-400 truncate", isVoided && "line-through text-zinc-600")}>
               {getPlayerName(event.player_id)}
             </p>
           )}
@@ -236,8 +283,43 @@ export function EventTimeline({
             </div>
           ) : (
             <>
+              {/* Pending events section (pre-game) */}
+              {draftEvents.length > 0 && (
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-3 sticky top-0 bg-zinc-900 py-2 z-10">
+                    <Badge className="text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                      <Clock className="w-3 h-3 mr-1" />
+                      Pendentes
+                    </Badge>
+                    <span className="text-xs text-zinc-500">
+                      {draftEvents.length} evento{draftEvents.length !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+                  <div>
+                    {draftEvents.map((event, i) => renderEventItem(event, i, "draft"))}
+                  </div>
+                </div>
+              )}
+              
               {renderHalfSection(secondHalfEvents, 2)}
               {renderHalfSection(firstHalfEvents, 1)}
+              
+              {/* Voided events section */}
+              {voidedEvents.length > 0 && (
+                <div className="mb-6 mt-8 pt-4 border-t border-zinc-800">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Badge className="text-xs font-bold bg-zinc-700/60 text-zinc-500">
+                      Anulados
+                    </Badge>
+                    <span className="text-xs text-zinc-600">
+                      {voidedEvents.length} evento{voidedEvents.length !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+                  <div>
+                    {voidedEvents.map((event, i) => renderEventItem(event, i, "voided"))}
+                  </div>
+                </div>
+              )}
             </>
           )}
         </ScrollArea>

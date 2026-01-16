@@ -228,40 +228,55 @@ export type Database = {
       }
       match_events: {
         Row: {
+          count_in_stats: boolean
           created_at: string
           display_minute: string | null
+          event_status: string
           event_type: Database["public"]["Enums"]["match_event_type"]
+          game_time_seconds: number | null
           half: number | null
           id: string
           match_id: string
           minute: number | null
+          period: number | null
           player_id: string
           player_in_id: string | null
           value: number
+          void_reason: string | null
         }
         Insert: {
+          count_in_stats?: boolean
           created_at?: string
           display_minute?: string | null
+          event_status?: string
           event_type: Database["public"]["Enums"]["match_event_type"]
+          game_time_seconds?: number | null
           half?: number | null
           id?: string
           match_id: string
           minute?: number | null
+          period?: number | null
           player_id: string
           player_in_id?: string | null
           value?: number
+          void_reason?: string | null
         }
         Update: {
+          count_in_stats?: boolean
           created_at?: string
           display_minute?: string | null
+          event_status?: string
           event_type?: Database["public"]["Enums"]["match_event_type"]
+          game_time_seconds?: number | null
           half?: number | null
           id?: string
           match_id?: string
           minute?: number | null
+          period?: number | null
           player_id?: string
           player_in_id?: string | null
           value?: number
+          void_reason?: string | null
         }
         Relationships: [
           {
@@ -373,6 +388,7 @@ export type Database = {
           match_start_time: string | null
           notes: string | null
           opponent_name: string
+          pause_total_seconds: number
           season_year: number
           status: Database["public"]["Enums"]["match_status"]
           updated_at: string
@@ -394,6 +410,7 @@ export type Database = {
           match_start_time?: string | null
           notes?: string | null
           opponent_name: string
+          pause_total_seconds?: number
           season_year?: number
           status?: Database["public"]["Enums"]["match_status"]
           updated_at?: string
@@ -415,6 +432,7 @@ export type Database = {
           match_start_time?: string | null
           notes?: string | null
           opponent_name?: string
+          pause_total_seconds?: number
           season_year?: number
           status?: Database["public"]["Enums"]["match_status"]
           updated_at?: string
@@ -1319,6 +1337,27 @@ export type Database = {
         }
         Returns: Json
       }
+      create_live_event: {
+        Args: {
+          p_display_minute?: string
+          p_force_time_seconds?: number
+          p_game_id: string
+          p_half?: number
+          p_notes?: string
+          p_player_id: string
+          p_type: string
+        }
+        Returns: Json
+      }
+      edit_live_event_time: {
+        Args: { p_event_id: string; p_game_time_seconds: number }
+        Returns: Json
+      }
+      finish_live_game: { Args: { p_game_id: string }; Returns: Json }
+      get_live_game_clock_seconds: {
+        Args: { p_match_id: string }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1328,6 +1367,7 @@ export type Database = {
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_internal_user: { Args: { _user_id: string }; Returns: boolean }
+      pause_live_game: { Args: { p_game_id: string }; Returns: Json }
       recalculate_all_attribute_scores: {
         Args: never
         Returns: {
@@ -1367,6 +1407,9 @@ export type Database = {
         Args: { p_player_id: string }
         Returns: undefined
       }
+      resume_live_game: { Args: { p_game_id: string }; Returns: Json }
+      start_live_game: { Args: { p_game_id: string }; Returns: Json }
+      toggle_live_game_clock: { Args: { p_game_id: string }; Returns: Json }
       update_player_auto_rating: {
         Args: { p_player_id: string }
         Returns: undefined
@@ -1392,6 +1435,10 @@ export type Database = {
             }
             Returns: undefined
           }
+      void_live_event: {
+        Args: { p_event_id: string; p_reason?: string }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "scout" | "member" | "partner"

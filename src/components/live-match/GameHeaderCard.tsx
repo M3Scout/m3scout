@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Match, MatchStatus } from "@/hooks/useLiveMatch";
 import { 
   Radio, Play, ArrowLeft, Users, Trophy, 
-  MapPin, Calendar, FileEdit, CheckCircle2, Pause
+  MapPin, Calendar, FileEdit, CheckCircle2, Pause, Clock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -28,6 +28,7 @@ interface GameHeaderCardProps {
   isPending?: boolean;
   startersCount?: number;
   playersOnField?: number;
+  pendingEventsCount?: number;
 }
 
 const statusConfig: Record<MatchStatus, { 
@@ -68,6 +69,7 @@ export function GameHeaderCard({
   isPending,
   startersCount = 0,
   playersOnField = 0,
+  pendingEventsCount = 0,
 }: GameHeaderCardProps) {
   const [confirmStartOpen, setConfirmStartOpen] = useState(false);
   const config = statusConfig[match.status];
@@ -134,6 +136,16 @@ export function GameHeaderCard({
                     <span>{playersOnField} em campo</span>
                   )}
                 </Badge>
+
+                {/* Pending events badge */}
+                {isDraft && pendingEventsCount > 0 && (
+                  <Badge 
+                    className="h-7 gap-1 text-xs bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                  >
+                    <Clock className="w-3 h-3" />
+                    {pendingEventsCount} pendente{pendingEventsCount !== 1 ? "s" : ""}
+                  </Badge>
+                )}
               </div>
 
               {/* Start game button (draft only) */}

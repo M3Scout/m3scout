@@ -86,6 +86,12 @@ export interface MatchEvent {
   created_at: string;
   half: number | null;
   display_minute: string | null;
+  // New fields for event status tracking
+  event_status: "draft" | "official" | "voided";
+  count_in_stats: boolean;
+  game_time_seconds: number | null;
+  void_reason: string | null;
+  period: number;
 }
 
 // Local storage key for offline draft
@@ -161,11 +167,14 @@ export function useLiveMatch(matchId: string) {
     return activePlayers.filter((mp) => mp.is_on_field);
   }, [matchPlayers, onlyOnField]);
 
-  // Compute event counts per player
+  // Compute event counts per player (only counting official events)
   const playerEventCounts = useMemo(() => {
     const counts: Record<string, Record<MatchEventType, number>> = {};
     
     matchEvents.forEach((event) => {
+      // Only count official events that are marked to count in stats
+      if (event.event_status !== "official" || !event.count_in_stats) return;
+      
       if (!counts[event.player_id]) {
         counts[event.player_id] = {} as Record<MatchEventType, number>;
       }
@@ -174,6 +183,11 @@ export function useLiveMatch(matchId: string) {
     });
 
     return counts;
+  }, [matchEvents]);
+
+  // Get pending (draft) events count
+  const pendingEventsCount = useMemo(() => {
+    return matchEvents.filter(e => e.event_status === "draft").length;
   }, [matchEvents]);
 
   // Add player to match
@@ -263,7 +277,7 @@ export function useLiveMatch(matchId: string) {
     },
   });
 
-  // Add event (increment stat) - with half and display_minute
+  // Add event using RPC - handles draft vs official status automatically
   const addEvent = useMutation({
     mutationFn: async (params: {
       playerId: string;
@@ -273,51 +287,31 @@ export function useLiveMatch(matchId: string) {
       half?: 1 | 2;
       displayMinute?: string;
     }) => {
-      // Get current match state for half info
-      const currentHalf = match?.half || 1;
-      const halfDuration = (match?.duration_minutes || 90) / 2;
-      const minuteInHalf = params.minute ? (currentHalf === 2 ? params.minute - halfDuration : params.minute) : 0;
-      
-      // Calculate display minute string
-      let displayMinute = params.displayMinute;
-      if (!displayMinute && params.minute !== undefined) {
-        if (currentHalf === 1) {
-          if (minuteInHalf <= halfDuration) {
-            displayMinute = `${params.minute}'`;
-          } else {
-            displayMinute = `45+${Math.floor(minuteInHalf - halfDuration + 1)}'`;
-          }
-        } else {
-          if (minuteInHalf <= halfDuration) {
-            displayMinute = `${params.minute}'`;
-          } else {
-            displayMinute = `90+${Math.floor(minuteInHalf - halfDuration + 1)}'`;
-          }
-        }
-      }
-
-      const { data, error } = await supabase
-        .from("match_events")
-        .insert({
-          match_id: matchId,
-          player_id: params.playerId,
-          event_type: params.eventType,
-          minute: params.minute ?? null,
-          value: params.value ?? 1,
-          half: params.half ?? currentHalf,
-          display_minute: displayMinute ?? null,
-        })
-        .select()
-        .single();
+      const { data, error } = await supabase.rpc("create_live_event", {
+        p_game_id: matchId,
+        p_player_id: params.playerId,
+        p_type: params.eventType,
+        p_notes: null,
+        p_force_time_seconds: params.minute ? params.minute * 60 : null,
+        p_half: params.half || null,
+        p_display_minute: params.displayMinute || null,
+      });
 
       if (error) throw error;
-      return data;
+      return data as { event_status?: string; event_id?: string } | null;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["match-events", matchId] });
+      
+      // Show different toast based on event status
+      if (data?.event_status === "draft") {
+        toast.info("Evento registrado (pendente)", {
+          description: "Será oficializado quando o jogo iniciar",
+        });
+      }
     },
-    onError: () => {
-      toast.error("Erro ao registrar evento");
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao registrar evento");
     },
   });
 
@@ -372,48 +366,30 @@ export function useLiveMatch(matchId: string) {
     },
   });
 
-  // Start game - set status to live and update starters (Timer V2)
+  // Start game using RPC - transitions to live and officializes pending events
   const startGame = useMutation({
     mutationFn: async () => {
-      const now = new Date().toISOString();
-      
-      // Update match: status to live, initialize timer
-      const { error: statusError } = await supabase
-        .from("matches")
-        .update({ 
-          status: "live" as MatchStatus,
-          half: 1,
-          clock_status: "running" as ClockStatus,
-          match_start_time: now,
-          half_start_time: now,
-          elapsed_seconds_in_half: 0,
-        })
-        .eq("id", matchId);
+      const { data, error } = await supabase.rpc("start_live_game", {
+        p_game_id: matchId,
+      });
 
-      if (statusError) throw statusError;
-
-      // Get all starters and set them on field with entered_minute = 0
-      const starters = matchPlayers.filter((mp) => mp.started);
-      
-      for (const starter of starters) {
-        const { error } = await supabase
-          .from("match_players")
-          .update({
-            is_on_field: true,
-            entered_minute: 0,
-          })
-          .eq("id", starter.id);
-
-        if (error) throw error;
-      }
+      if (error) throw error;
+      return data as { events_officialized?: number; success?: boolean } | null;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["match", matchId] });
       queryClient.invalidateQueries({ queryKey: ["match-players", matchId] });
-      toast.success("Jogo iniciado!");
+      queryClient.invalidateQueries({ queryKey: ["match-events", matchId] });
+      
+      const eventsOfficialized = data?.events_officialized || 0;
+      if (eventsOfficialized > 0) {
+        toast.success(`Jogo iniciado! ${eventsOfficialized} evento(s) oficializado(s)`);
+      } else {
+        toast.success("Jogo iniciado!");
+      }
     },
-    onError: () => {
-      toast.error("Erro ao iniciar jogo");
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao iniciar jogo");
     },
   });
 
@@ -562,37 +538,43 @@ export function useLiveMatch(matchId: string) {
     },
   });
 
-  // Finish game (only available in 2nd half)
+  // Finish game using RPC
   const finishGame = useMutation({
     mutationFn: async () => {
-      if (!match) throw new Error("Match not found");
-
-      // Accumulate remaining time and stop
-      const now = Date.now();
-      const start = match.half_start_time ? new Date(match.half_start_time).getTime() : now;
-      const additionalSeconds = match.clock_status === "running" 
-        ? Math.floor((now - start) / 1000) 
-        : 0;
-      const newElapsed = match.elapsed_seconds_in_half + additionalSeconds;
-
-      const { error } = await supabase
-        .from("matches")
-        .update({
-          status: "finished" as MatchStatus,
-          clock_status: "stopped" as ClockStatus,
-          elapsed_seconds_in_half: newElapsed,
-          half_start_time: null,
-        })
-        .eq("id", matchId);
+      const { data, error } = await supabase.rpc("finish_live_game", {
+        p_game_id: matchId,
+      });
 
       if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["match", matchId] });
+      queryClient.invalidateQueries({ queryKey: ["match-players", matchId] });
       toast.success("Jogo finalizado!");
     },
-    onError: () => {
-      toast.error("Erro ao finalizar jogo");
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao finalizar jogo");
+    },
+  });
+
+  // Void event using RPC (instead of delete)
+  const voidEvent = useMutation({
+    mutationFn: async (params: { eventId: string; reason?: string }) => {
+      const { data, error } = await supabase.rpc("void_live_event", {
+        p_event_id: params.eventId,
+        p_reason: params.reason || null,
+      });
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["match-events", matchId] });
+      toast.success("Evento anulado");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao anular evento");
     },
   });
 
@@ -744,6 +726,7 @@ export function useLiveMatch(matchId: string) {
     matchEvents,
     filteredPlayers,
     playerEventCounts,
+    pendingEventsCount,
     
     // Loading states
     isLoading: matchLoading || playersLoading || eventsLoading,
@@ -762,6 +745,7 @@ export function useLiveMatch(matchId: string) {
     updatePlayer,
     addEvent,
     deleteEvent,
+    voidEvent,
     undoLastEvent,
     updateMatchStatus,
     startGame,
