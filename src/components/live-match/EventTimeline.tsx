@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -12,13 +12,21 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { MatchEvent, MatchPlayer, MatchEventType } from "@/hooks/useLiveMatch";
 import { 
   List, Trash2, Goal, HandHelping, Shield, Target, 
   CreditCard, Footprints, ArrowRightLeft, AlertTriangle,
-  Clock
+  Clock, MoreVertical, Pencil, XCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { EditEventTimeModal } from "./EditEventTimeModal";
+import { VoidEventDialog } from "./VoidEventDialog";
 
 // Event icon and color mapping
 const eventConfig: Record<MatchEventType | "substitution", {
@@ -65,8 +73,10 @@ interface EventTimelineProps {
   events: MatchEvent[];
   players: MatchPlayer[];
   onDeleteEvent: (eventId: string) => void;
-  onVoidEvent?: (eventId: string, reason?: string) => void;
+  onVoidEvent?: (eventId: string, reason?: string) => Promise<void>;
+  onEditEventTime?: (eventId: string, gameTimeSeconds: number) => Promise<void>;
   matchStatus?: "draft" | "live" | "finished" | "applied";
+  maxGameTimeSeconds?: number;
 }
 
 export function EventTimeline({
@@ -74,8 +84,13 @@ export function EventTimeline({
   players,
   onDeleteEvent,
   onVoidEvent,
+  onEditEventTime,
   matchStatus = "draft",
+  maxGameTimeSeconds,
 }: EventTimelineProps) {
+  const [editTimeModalOpen, setEditTimeModalOpen] = useState(false);
+  const [voidDialogOpen, setVoidDialogOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<MatchEvent | null>(null);
   // Filter out voided events from the main view, but still show them with different style
   const { firstHalfEvents, secondHalfEvents, draftEvents, voidedEvents } = useMemo(() => {
     const first: MatchEvent[] = [];
@@ -122,8 +137,34 @@ export function EventTimeline({
 
   const getDisplayMinute = (event: MatchEvent) => {
     if (event.display_minute) return event.display_minute;
+    if (event.game_time_seconds != null) {
+      const mins = Math.floor(event.game_time_seconds / 60);
+      return `${mins}'`;
+    }
     if (event.minute != null) return `${event.minute}'`;
     return "--'";
+  };
+
+  const openEditTimeModal = (event: MatchEvent) => {
+    setSelectedEvent(event);
+    setEditTimeModalOpen(true);
+  };
+
+  const openVoidDialog = (event: MatchEvent) => {
+    setSelectedEvent(event);
+    setVoidDialogOpen(true);
+  };
+
+  const handleEditTime = async (eventId: string, newGameTimeSeconds: number) => {
+    await onEditEventTime?.(eventId, newGameTimeSeconds);
+    setEditTimeModalOpen(false);
+    setSelectedEvent(null);
+  };
+
+  const handleVoidEvent = async (eventId: string, reason?: string) => {
+    await onVoidEvent?.(eventId, reason);
+    setVoidDialogOpen(false);
+    setSelectedEvent(null);
   };
 
   const renderEventItem = (event: MatchEvent, index: number, section?: "draft" | "voided") => {
@@ -211,15 +252,54 @@ export function EventTimeline({
           </p>
         </div>
 
-        {/* Delete button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 shrink-0 text-zinc-600 hover:text-red-400 hover:bg-red-500/10"
-          onClick={() => onDeleteEvent(event.id)}
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-        </Button>
+        {/* Action buttons */}
+        {!isVoided && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 shrink-0 text-zinc-500 hover:text-zinc-200 hover:bg-zinc-700/50"
+              >
+                <MoreVertical className="w-3.5 h-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-800">
+              {/* Edit time - only for official events in live/finished status */}
+              {event.event_status === "official" && onEditEventTime && (matchStatus === "live" || matchStatus === "finished") && (
+                <DropdownMenuItem 
+                  onClick={() => openEditTimeModal(event)}
+                  className="gap-2 text-blue-400 focus:text-blue-400 focus:bg-blue-500/10"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                  Editar tempo
+                </DropdownMenuItem>
+              )}
+              
+              {/* Void event - only for official events */}
+              {event.event_status === "official" && onVoidEvent && (
+                <DropdownMenuItem 
+                  onClick={() => openVoidDialog(event)}
+                  className="gap-2 text-amber-400 focus:text-amber-400 focus:bg-amber-500/10"
+                >
+                  <XCircle className="w-3.5 h-3.5" />
+                  Anular evento
+                </DropdownMenuItem>
+              )}
+              
+              {/* Delete - only for draft events */}
+              {event.event_status === "draft" && (
+                <DropdownMenuItem 
+                  onClick={() => onDeleteEvent(event.id)}
+                  className="gap-2 text-red-400 focus:text-red-400 focus:bg-red-500/10"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Excluir
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </motion.div>
     );
   };
@@ -250,80 +330,113 @@ export function EventTimeline({
   };
 
   return (
-    <Sheet>
-      <SheetTrigger asChild>
-        <Button 
-          variant="outline" 
-          size="sm"
-          className="gap-2 border-zinc-700 text-zinc-300 hover:bg-zinc-800"
-        >
-          <List className="w-4 h-4" />
-          <span className="hidden sm:inline">Timeline</span>
-          <Badge variant="secondary" className="h-5 px-1.5 text-[10px] bg-zinc-700">
-            {events.length}
-          </Badge>
-        </Button>
-      </SheetTrigger>
-      <SheetContent className="w-full sm:max-w-md bg-zinc-900 border-zinc-800">
-        <SheetHeader>
-          <SheetTitle className="flex items-center gap-2 text-zinc-100">
-            <Clock className="w-5 h-5 text-zinc-400" />
-            Timeline de Eventos
-          </SheetTitle>
-        </SheetHeader>
+    <>
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="gap-2 border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+          >
+            <List className="w-4 h-4" />
+            <span className="hidden sm:inline">Timeline</span>
+            <Badge variant="secondary" className="h-5 px-1.5 text-[10px] bg-zinc-700">
+              {events.length}
+            </Badge>
+          </Button>
+        </SheetTrigger>
+        <SheetContent className="w-full sm:max-w-md bg-zinc-900 border-zinc-800">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2 text-zinc-100">
+              <Clock className="w-5 h-5 text-zinc-400" />
+              Timeline de Eventos
+            </SheetTitle>
+          </SheetHeader>
 
-        <ScrollArea className="h-[calc(100vh-100px)] mt-4 pr-4">
-          {events.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="w-12 h-12 rounded-xl bg-zinc-800/60 flex items-center justify-center mb-3">
-                <List className="w-6 h-6 text-zinc-600" />
+          <ScrollArea className="h-[calc(100vh-100px)] mt-4 pr-4">
+            {events.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="w-12 h-12 rounded-xl bg-zinc-800/60 flex items-center justify-center mb-3">
+                  <List className="w-6 h-6 text-zinc-600" />
+                </div>
+                <p className="text-sm text-zinc-400">Nenhum evento registrado</p>
+                <p className="text-xs text-zinc-600 mt-1">Os eventos aparecerão aqui</p>
               </div>
-              <p className="text-sm text-zinc-400">Nenhum evento registrado</p>
-              <p className="text-xs text-zinc-600 mt-1">Os eventos aparecerão aqui</p>
-            </div>
-          ) : (
-            <>
-              {/* Pending events section (pre-game) */}
-              {draftEvents.length > 0 && (
-                <div className="mb-6">
-                  <div className="flex items-center gap-2 mb-3 sticky top-0 bg-zinc-900 py-2 z-10">
-                    <Badge className="text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                      <Clock className="w-3 h-3 mr-1" />
-                      Pendentes
-                    </Badge>
-                    <span className="text-xs text-zinc-500">
-                      {draftEvents.length} evento{draftEvents.length !== 1 ? "s" : ""}
-                    </span>
+            ) : (
+              <>
+                {/* Pending events section (pre-game) */}
+                {draftEvents.length > 0 && (
+                  <div className="mb-6">
+                    <div className="flex items-center gap-2 mb-3 sticky top-0 bg-zinc-900 py-2 z-10">
+                      <Badge className="text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                        <Clock className="w-3 h-3 mr-1" />
+                        Pendentes
+                      </Badge>
+                      <span className="text-xs text-zinc-500">
+                        {draftEvents.length} evento{draftEvents.length !== 1 ? "s" : ""}
+                      </span>
+                    </div>
+                    <div>
+                      {draftEvents.map((event, i) => renderEventItem(event, i, "draft"))}
+                    </div>
                   </div>
-                  <div>
-                    {draftEvents.map((event, i) => renderEventItem(event, i, "draft"))}
+                )}
+                
+                {renderHalfSection(secondHalfEvents, 2)}
+                {renderHalfSection(firstHalfEvents, 1)}
+                
+                {/* Voided events section */}
+                {voidedEvents.length > 0 && (
+                  <div className="mb-6 mt-8 pt-4 border-t border-zinc-800">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Badge className="text-xs font-bold bg-zinc-700/60 text-zinc-500">
+                        Anulados
+                      </Badge>
+                      <span className="text-xs text-zinc-600">
+                        {voidedEvents.length} evento{voidedEvents.length !== 1 ? "s" : ""}
+                      </span>
+                    </div>
+                    <div>
+                      {voidedEvents.map((event, i) => renderEventItem(event, i, "voided"))}
+                    </div>
                   </div>
-                </div>
-              )}
-              
-              {renderHalfSection(secondHalfEvents, 2)}
-              {renderHalfSection(firstHalfEvents, 1)}
-              
-              {/* Voided events section */}
-              {voidedEvents.length > 0 && (
-                <div className="mb-6 mt-8 pt-4 border-t border-zinc-800">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Badge className="text-xs font-bold bg-zinc-700/60 text-zinc-500">
-                      Anulados
-                    </Badge>
-                    <span className="text-xs text-zinc-600">
-                      {voidedEvents.length} evento{voidedEvents.length !== 1 ? "s" : ""}
-                    </span>
-                  </div>
-                  <div>
-                    {voidedEvents.map((event, i) => renderEventItem(event, i, "voided"))}
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </ScrollArea>
-      </SheetContent>
-    </Sheet>
+                )}
+              </>
+            )}
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
+
+      {/* Edit event time modal */}
+      {selectedEvent && (
+        <EditEventTimeModal
+          isOpen={editTimeModalOpen}
+          onClose={() => {
+            setEditTimeModalOpen(false);
+            setSelectedEvent(null);
+          }}
+          eventId={selectedEvent.id}
+          eventType={eventConfig[selectedEvent.event_type]?.label || selectedEvent.event_type}
+          currentGameTimeSeconds={selectedEvent.game_time_seconds}
+          maxGameTimeSeconds={maxGameTimeSeconds}
+          onSave={handleEditTime}
+        />
+      )}
+
+      {/* Void event dialog */}
+      {selectedEvent && (
+        <VoidEventDialog
+          isOpen={voidDialogOpen}
+          onClose={() => {
+            setVoidDialogOpen(false);
+            setSelectedEvent(null);
+          }}
+          eventId={selectedEvent.id}
+          eventType={eventConfig[selectedEvent.event_type]?.label || selectedEvent.event_type}
+          playerName={getPlayerName(selectedEvent.player_id)}
+          onConfirm={handleVoidEvent}
+        />
+      )}
+    </>
   );
 }

@@ -68,6 +68,7 @@ export default function LiveMatchGame() {
     addEvent,
     deleteEvent,
     voidEvent,
+    editEventTime,
     undoLastEvent,
     updateMatchStatus,
     startGame,
@@ -268,7 +269,12 @@ export default function LiveMatchGame() {
                 events={matchEvents}
                 players={matchPlayers}
                 onDeleteEvent={(id) => deleteEvent.mutate(id)}
-                onVoidEvent={(id, reason) => voidEvent.mutate({ eventId: id, reason })}
+                onVoidEvent={async (id, reason) => { 
+                  await voidEvent.mutateAsync({ eventId: id, reason }); 
+                }}
+                onEditEventTime={async (id, seconds) => {
+                  await editEventTime.mutateAsync({ eventId: id, gameTimeSeconds: seconds });
+                }}
                 matchStatus={match.status}
               />
             )}
@@ -363,6 +369,7 @@ export default function LiveMatchGame() {
                 key={mp.id}
                 matchPlayer={mp}
                 matchStatus={match.status}
+                clockStatus={match.clock_status as "stopped" | "running" | "paused"}
                 currentMinute={currentMinute}
                 eventCounts={playerEventCounts[mp.player_id] || ({} as Record<MatchEventType, number>)}
                 onAddEvent={(type) => handleAddEvent(mp.player_id, type)}
