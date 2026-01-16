@@ -409,23 +409,56 @@ const Dashboard = () => {
           <div className="admin-card-header">
             <h2 className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Ações Rápidas</h2>
           </div>
-          <div className="admin-card-body grid grid-cols-2 gap-3">
-            <Link to="/app/players/new" className="admin-btn-outline text-center py-4">
-              <Users className="w-4 h-4 mx-auto mb-1" />
-              <span className="text-xs">Novo Atleta</span>
-            </Link>
-            <Link to="/app/reports/new" className="admin-btn-outline text-center py-4">
-              <FileText className="w-4 h-4 mx-auto mb-1" />
-              <span className="text-xs">Novo Relatório</span>
-            </Link>
-            <Link to="/app/players" className="admin-btn-outline text-center py-4">
-              <TrendingUp className="w-4 h-4 mx-auto mb-1" />
-              <span className="text-xs">Ver Atletas</span>
-            </Link>
-            <Link to="/app/competitions" className="admin-btn-outline text-center py-4">
-              <AlertCircle className="w-4 h-4 mx-auto mb-1" />
-              <span className="text-xs">Competições</span>
-            </Link>
+          <div className="admin-card-body">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Link
+                to="/app/players/new"
+                className="group flex items-center gap-3 px-4 py-4 rounded-lg border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800/70 hover:border-zinc-700 transition-all duration-200 active:scale-[0.98]"
+              >
+                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-zinc-800 group-hover:bg-primary/10 transition-colors">
+                  <Users className="w-5 h-5 text-zinc-400 group-hover:text-primary transition-colors" />
+                </div>
+                <span className="text-sm font-medium text-zinc-300 group-hover:text-white transition-colors">
+                  Novo Atleta
+                </span>
+              </Link>
+
+              <Link
+                to="/app/reports/new"
+                className="group flex items-center gap-3 px-4 py-4 rounded-lg border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800/70 hover:border-zinc-700 transition-all duration-200 active:scale-[0.98]"
+              >
+                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-zinc-800 group-hover:bg-primary/10 transition-colors">
+                  <FileText className="w-5 h-5 text-zinc-400 group-hover:text-primary transition-colors" />
+                </div>
+                <span className="text-sm font-medium text-zinc-300 group-hover:text-white transition-colors">
+                  Novo Relatório
+                </span>
+              </Link>
+
+              <Link
+                to="/app/players"
+                className="group flex items-center gap-3 px-4 py-4 rounded-lg border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800/70 hover:border-zinc-700 transition-all duration-200 active:scale-[0.98]"
+              >
+                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-zinc-800 group-hover:bg-primary/10 transition-colors">
+                  <TrendingUp className="w-5 h-5 text-zinc-400 group-hover:text-primary transition-colors" />
+                </div>
+                <span className="text-sm font-medium text-zinc-300 group-hover:text-white transition-colors">
+                  Ver Atletas
+                </span>
+              </Link>
+
+              <Link
+                to="/app/competitions"
+                className="group flex items-center gap-3 px-4 py-4 rounded-lg border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800/70 hover:border-zinc-700 transition-all duration-200 active:scale-[0.98]"
+              >
+                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-zinc-800 group-hover:bg-primary/10 transition-colors">
+                  <AlertCircle className="w-5 h-5 text-zinc-400 group-hover:text-primary transition-colors" />
+                </div>
+                <span className="text-sm font-medium text-zinc-300 group-hover:text-white transition-colors">
+                  Competições
+                </span>
+              </Link>
+            </div>
           </div>
         </div>
       </div>
