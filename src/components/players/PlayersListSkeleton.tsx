@@ -1,10 +1,10 @@
 interface PlayersListSkeletonProps {
-  viewMode: "table" | "grid" | "scouting";
+  viewMode: "table" | "scouting";
   count?: number;
 }
 
 export function PlayersListSkeleton({ viewMode, count = 12 }: PlayersListSkeletonProps) {
-  if (viewMode === "grid" || viewMode === "scouting") {
+  if (viewMode === "scouting") {
     return (
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {Array.from({ length: count }).map((_, i) => (

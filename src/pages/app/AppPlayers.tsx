@@ -25,7 +25,7 @@ import {
   Loader2,
   Trash2,
   X,
-  LayoutGrid,
+  
   LayoutList,
   ArrowUpDown,
   ArrowUp,
@@ -96,7 +96,7 @@ interface Player {
 
 type SortField = "full_name" | "position" | "current_club" | "avg_score" | "auto_rating" | "contract_end" | "is_public";
 type SortDirection = "asc" | "desc";
-type ViewMode = "table" | "grid" | "scouting";
+type ViewMode = "table" | "scouting";
 type PaginationMode = "pages" | "infinite";
 
 const PAGE_SIZE_OPTIONS = [12, 24, 48];
@@ -471,13 +471,10 @@ const AppPlayers = () => {
               onValueChange={(value) => value && setViewMode(value as ViewMode)}
               className="border border-zinc-800 rounded-lg bg-zinc-900/50"
             >
-              <ToggleGroupItem value="table" aria-label="Visualização em tabela" className="px-3 data-[state=on]:bg-zinc-800 data-[state=on]:text-white">
+              <ToggleGroupItem value="table" aria-label="Visualização em tabela" className="px-3 rounded-r-none data-[state=on]:bg-zinc-800 data-[state=on]:text-white">
                 <LayoutList className="w-4 h-4" />
               </ToggleGroupItem>
-              <ToggleGroupItem value="grid" aria-label="Visualização em cards" className="px-3 data-[state=on]:bg-zinc-800 data-[state=on]:text-white">
-                <LayoutGrid className="w-4 h-4" />
-              </ToggleGroupItem>
-              <ToggleGroupItem value="scouting" aria-label="Modo Scouting" className="px-3 data-[state=on]:bg-zinc-800 data-[state=on]:text-white">
+              <ToggleGroupItem value="scouting" aria-label="Modo Scouting" className="px-3 rounded-l-none data-[state=on]:bg-zinc-800 data-[state=on]:text-white">
                 <ClipboardList className="w-4 h-4" />
               </ToggleGroupItem>
             </ToggleGroup>
@@ -850,7 +847,7 @@ const AppPlayers = () => {
             </table>
           </div>
         </div>
-      ) : viewMode === "scouting" ? (
+      ) : (
         /* Scouting Mode View */
         <div className="grid gap-4 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2">
           {safeArray(paginatedPlayers).map((player) => (
@@ -875,132 +872,6 @@ const AppPlayers = () => {
               overallRating={player.overall_rating}
               potentialRating={player.potential_rating}
             />
-          ))}
-        </div>
-      ) : (
-        /* Grid/Cards View */
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {safeArray(paginatedPlayers).map((player) => (
-            <Card key={player.id} className="group overflow-hidden hover:ring-2 hover:ring-primary/50 transition-all">
-              <Link to={`/app/players/${player.id}`}>
-                <div className="aspect-[4/3] relative bg-secondary/50 overflow-hidden">
-                  {player.photo_url ? (
-                    <img
-                      src={player.photo_url}
-                      alt={player.full_name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <User className="w-16 h-16 text-muted-foreground/50" />
-                    </div>
-                  )}
-                  {/* Status Badge */}
-                  <div className="absolute top-2 right-2">
-                    <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
-                      player.is_public 
-                        ? "bg-primary/90 text-primary-foreground" 
-                        : "bg-muted/90 text-muted-foreground"
-                    }`}>
-                      {player.is_public ? "Público" : "Privado"}
-                    </span>
-                  </div>
-                  {/* Rating Badge */}
-                  {player.auto_rating !== null && player.auto_rating !== undefined && (
-                    <div className="absolute top-2 left-2" onClick={(e) => e.preventDefault()}>
-                      <PlayerRatingBadge
-                        rating={player.auto_rating}
-                        ratingDetails={player.auto_rating_details}
-                        playerPosition={player.position}
-                        showReliability={false}
-                        size="sm"
-                      />
-                    </div>
-                  )}
-                  {/* Position Badge */}
-                  <div className="absolute bottom-2 left-2">
-                    <span className="position-badge text-xs">{player.position || "N/A"}</span>
-                  </div>
-                </div>
-              </Link>
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <Link to={`/app/players/${player.id}`}>
-                      <h3 className="font-semibold truncate hover:text-primary transition-colors">
-                        {player.full_name}
-                      </h3>
-                    </Link>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-sm text-muted-foreground">
-                      {player.age && (
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          {player.age} anos
-                        </span>
-                      )}
-                      {player.current_club && (
-                        <span className="flex items-center gap-1 truncate">
-                          <MapPin className="w-3 h-3 flex-shrink-0" />
-                          <span className="truncate">{player.current_club}</span>
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="flex-shrink-0 -mr-2">
-                        <MoreVertical className="w-4 h-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem asChild>
-                        <Link to={`/app/players/${player.id}`}>
-                          <Eye className="w-4 h-4 mr-2" />
-                          Ver Detalhes
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link to={`/app/players/${player.id}/edit`}>
-                          <Edit className="w-4 h-4 mr-2" />
-                          Editar
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link to={`/app/reports/new?player=${player.id}`}>
-                          <FileText className="w-4 h-4 mr-2" />
-                          Novo Relatório
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={() => handleArchivePlayer(player)}
-                      >
-                        {player.is_archived ? (
-                          <>
-                            <ArchiveRestore className="w-4 h-4 mr-2" />
-                            Restaurar
-                          </>
-                        ) : (
-                          <>
-                            <Archive className="w-4 h-4 mr-2" />
-                            Arquivar
-                          </>
-                        )}
-                      </DropdownMenuItem>
-                      {isAdmin && player.is_archived && (
-                        <DropdownMenuItem
-                          className="text-destructive focus:text-destructive"
-                          onClick={() => handleDeleteClick(player)}
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Excluir Permanentemente
-                        </DropdownMenuItem>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </CardContent>
-            </Card>
           ))}
         </div>
       )}
