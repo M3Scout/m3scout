@@ -554,7 +554,7 @@ const PlayerDetail = () => {
 
         {/* Physical Tab */}
         <TabsContent value="physical">
-          <PhysicalDataSection data={player} />
+          <PhysicalDataSection data={player} playerId={player.id} />
         </TabsContent>
 
         {/* Technical Tab */}

@@ -623,6 +623,59 @@ export type Database = {
           },
         ]
       }
+      player_physical_history: {
+        Row: {
+          body_fat_percentage: number | null
+          created_at: string
+          created_by: string | null
+          id: string
+          max_speed: number | null
+          muscle_mass: number | null
+          notes: string | null
+          player_id: string
+          recorded_at: string
+          sprint_30m: number | null
+          vo2_max: number | null
+          weight: number | null
+        }
+        Insert: {
+          body_fat_percentage?: number | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          max_speed?: number | null
+          muscle_mass?: number | null
+          notes?: string | null
+          player_id: string
+          recorded_at?: string
+          sprint_30m?: number | null
+          vo2_max?: number | null
+          weight?: number | null
+        }
+        Update: {
+          body_fat_percentage?: number | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          max_speed?: number | null
+          muscle_mass?: number | null
+          notes?: string | null
+          player_id?: string
+          recorded_at?: string
+          sprint_30m?: number | null
+          vo2_max?: number | null
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_physical_history_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_rating_history: {
         Row: {
           created_at: string

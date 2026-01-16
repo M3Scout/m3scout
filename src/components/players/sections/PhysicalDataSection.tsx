@@ -10,6 +10,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+import { PhysicalEvolutionChart } from "./PhysicalEvolutionChart";
+
 interface PhysicalData {
   weight?: number | null;
   body_fat_percentage?: number | null;
@@ -25,6 +27,7 @@ interface PhysicalData {
 
 interface PhysicalDataSectionProps {
   data: PhysicalData;
+  playerId?: string;
 }
 
 // Position-based ideal ranges for body fat percentage
@@ -617,7 +620,7 @@ const PhysicalRadarChart = ({ data }: { data: PhysicalData }) => {
   );
 };
 
-export const PhysicalDataSection = ({ data }: PhysicalDataSectionProps) => {
+export const PhysicalDataSection = ({ data, playerId }: PhysicalDataSectionProps) => {
   const bmi = calculateBMI(data.weight, data.height);
   
   // Calculate derived values for body composition
@@ -626,90 +629,107 @@ export const PhysicalDataSection = ({ data }: PhysicalDataSectionProps) => {
   const muscleMassPercentage = calculateMuscleMassPercentage(estimatedMuscleMass, data.weight);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Activity className="w-5 h-5 text-primary" />
-          Dados Físicos
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-8">
-        {/* Radar Chart - Performance vs Elite */}
-        <div>
-          <BlockTitle icon={TrendingUp} title="Performance vs Elite" />
-          <div className="rounded-xl bg-secondary/40 border border-border/30 p-4">
-            <PhysicalRadarChart data={data} />
-            <p className="text-xs text-muted-foreground text-center mt-2">
-              Comparação com benchmarks de atletas de elite (100% = nível elite)
-            </p>
-          </div>
-        </div>
+    <div className="space-y-6">
+      {/* Evolution Chart - Only show if playerId is provided */}
+      {playerId && (
+        <PhysicalEvolutionChart 
+          playerId={playerId} 
+          currentData={{
+            weight: data.weight,
+            body_fat_percentage: data.body_fat_percentage,
+            muscle_mass: data.muscle_mass,
+            max_speed: data.max_speed,
+            sprint_30m: data.sprint_30m,
+            vo2_max: data.vo2_max,
+          }}
+        />
+      )}
 
-        {/* Block A - Medidas Corporais */}
-        <div>
-          <BlockTitle icon={Ruler} title="Medidas Corporais" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <MetricCard icon={Ruler} label="Altura" value={data.height} unit="cm" metricKey="height" />
-            <MetricCard icon={Scale} label="Peso" value={data.weight} unit="kg" metricKey="weight" />
-            <MetricCard icon={Ruler} label="Envergadura" value={data.wingspan} unit="cm" metricKey="wingspan" />
-          </div>
-        </div>
-
-        {/* Block B - Composição Corporal (Position-based) */}
-        <div>
-          <BlockTitle icon={Dumbbell} title="Composição Corporal" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <BodyCompositionCard 
-              icon={Percent} 
-              label="% Gordura" 
-              value={data.body_fat_percentage} 
-              unit="%" 
-              position={data.position}
-              metricType="body_fat"
-            />
-            <BodyCompositionCard 
-              icon={Dumbbell} 
-              label="% Massa Muscular" 
-              value={muscleMassPercentage} 
-              unit="%" 
-              position={data.position}
-              metricType="muscle_mass"
-            />
-            <MetricCard icon={Target} label="IMC" value={bmi} unit="" metricKey="bmi" />
-          </div>
-          {/* Calculation info */}
-          {data.weight && data.body_fat_percentage && (
-            <div className="mt-3 p-3 rounded-lg bg-muted/30 border border-border/20">
-              <p className="text-[10px] text-muted-foreground">
-                <span className="font-medium">Cálculos:</span>{" "}
-                Peso magro = {formatFixed(leanMass, 1)} kg | 
-                Massa muscular estimada = {formatFixed(estimatedMuscleMass, 1)} kg ({formatFixed(muscleMassPercentage, 1)}% do peso)
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="w-5 h-5 text-primary" />
+            Dados Físicos
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-8">
+          {/* Radar Chart - Performance vs Elite */}
+          <div>
+            <BlockTitle icon={TrendingUp} title="Performance vs Elite" />
+            <div className="rounded-xl bg-secondary/40 border border-border/30 p-4">
+              <PhysicalRadarChart data={data} />
+              <p className="text-xs text-muted-foreground text-center mt-2">
+                Comparação com benchmarks de atletas de elite (100% = nível elite)
               </p>
             </div>
+          </div>
+
+          {/* Block A - Medidas Corporais */}
+          <div>
+            <BlockTitle icon={Ruler} title="Medidas Corporais" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <MetricCard icon={Ruler} label="Altura" value={data.height} unit="cm" metricKey="height" />
+              <MetricCard icon={Scale} label="Peso" value={data.weight} unit="kg" metricKey="weight" />
+              <MetricCard icon={Ruler} label="Envergadura" value={data.wingspan} unit="cm" metricKey="wingspan" />
+            </div>
+          </div>
+
+          {/* Block B - Composição Corporal (Position-based) */}
+          <div>
+            <BlockTitle icon={Dumbbell} title="Composição Corporal" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <BodyCompositionCard 
+                icon={Percent} 
+                label="% Gordura" 
+                value={data.body_fat_percentage} 
+                unit="%" 
+                position={data.position}
+                metricType="body_fat"
+              />
+              <BodyCompositionCard 
+                icon={Dumbbell} 
+                label="% Massa Muscular" 
+                value={muscleMassPercentage} 
+                unit="%" 
+                position={data.position}
+                metricType="muscle_mass"
+              />
+              <MetricCard icon={Target} label="IMC" value={bmi} unit="" metricKey="bmi" />
+            </div>
+            {/* Calculation info */}
+            {data.weight && data.body_fat_percentage && (
+              <div className="mt-3 p-3 rounded-lg bg-muted/30 border border-border/20">
+                <p className="text-[10px] text-muted-foreground">
+                  <span className="font-medium">Cálculos:</span>{" "}
+                  Peso magro = {formatFixed(leanMass, 1)} kg | 
+                  Massa muscular estimada = {formatFixed(estimatedMuscleMass, 1)} kg ({formatFixed(muscleMassPercentage, 1)}% do peso)
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Block C - Performance Física */}
+          <div>
+            <BlockTitle icon={Zap} title="Performance" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <MetricCard icon={Zap} label="Velocidade Máx." value={data.max_speed} unit="km/h" metricKey="max_speed" />
+              <MetricCard icon={Timer} label="Sprint 30m" value={data.sprint_30m} unit="s" metricKey="sprint_30m" />
+              <MetricCard icon={Heart} label="VO2 Máx" value={data.vo2_max} unit="ml/kg/min" metricKey="vo2_max" />
+            </div>
+          </div>
+
+          {/* Last evaluation footer */}
+          {data.last_physical_evaluation && (
+            <div className="pt-4 border-t border-border/50 flex items-center gap-2 text-sm text-muted-foreground">
+              <Calendar className="w-4 h-4" />
+              <span>Última avaliação:</span>
+              <span className="font-medium text-foreground">
+                {new Date(data.last_physical_evaluation).toLocaleDateString("pt-BR")}
+              </span>
+            </div>
           )}
-        </div>
-
-        {/* Block C - Performance Física */}
-        <div>
-          <BlockTitle icon={Zap} title="Performance" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <MetricCard icon={Zap} label="Velocidade Máx." value={data.max_speed} unit="km/h" metricKey="max_speed" />
-            <MetricCard icon={Timer} label="Sprint 30m" value={data.sprint_30m} unit="s" metricKey="sprint_30m" />
-            <MetricCard icon={Heart} label="VO2 Máx" value={data.vo2_max} unit="ml/kg/min" metricKey="vo2_max" />
-          </div>
-        </div>
-
-        {/* Last evaluation footer */}
-        {data.last_physical_evaluation && (
-          <div className="pt-4 border-t border-border/50 flex items-center gap-2 text-sm text-muted-foreground">
-            <Calendar className="w-4 h-4" />
-            <span>Última avaliação:</span>
-            <span className="font-medium text-foreground">
-              {new Date(data.last_physical_evaluation).toLocaleDateString("pt-BR")}
-            </span>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
