@@ -453,6 +453,53 @@ function VideoThumbnail({
   );
 }
 
+// Sticky Mobile CTA
+function StickyMobileCTA({ 
+  playerSlug, 
+  playerName,
+  visible 
+}: { 
+  playerSlug: string;
+  playerName: string;
+  visible: boolean;
+}) {
+  return (
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          initial={{ y: 100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 100, opacity: 0 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
+          className="fixed bottom-0 left-0 right-0 z-50 md:hidden"
+        >
+          {/* Gradient backdrop */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/95 to-transparent pointer-events-none" />
+          
+          <div className="relative px-4 py-4 pb-safe">
+            <Link to={`/contact?player=${playerSlug}`}>
+              <motion.button 
+                className="w-full group relative flex items-center justify-center gap-2 px-6 py-3.5 rounded-full font-medium text-white
+                  bg-gradient-to-r from-[#e52421] to-[#b51c1a] 
+                  shadow-lg shadow-[#e52421]/30
+                  active:scale-[0.98] transition-transform"
+                whileTap={{ scale: 0.98 }}
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span className="text-sm">Falar sobre {playerName.split(" ")[0]}</span>
+                <ChevronRight className="w-4 h-4" />
+                
+                {/* Glow */}
+                <div className="absolute inset-0 rounded-full bg-[#e52421]/20 blur-xl" />
+              </motion.button>
+            </Link>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 // =============== MAIN COMPONENT ===============
 
 const PlayerProfile = () => {
@@ -465,6 +512,18 @@ const PlayerProfile = () => {
   const [activeTab, setActiveTab] = useState<TabValue>("current");
   const [statsLoading, setStatsLoading] = useState(true);
   const [videoOpen, setVideoOpen] = useState(false);
+  const [showStickyCTA, setShowStickyCTA] = useState(false);
+
+  // Track scroll for sticky CTA
+  useEffect(() => {
+    const handleScroll = () => {
+      // Show after scrolling 300px
+      setShowStickyCTA(window.scrollY > 300);
+    };
+    
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // Fetch player
   useEffect(() => {
@@ -1098,8 +1157,19 @@ const PlayerProfile = () => {
             </Link>
           </motion.section>
 
+          {/* Spacer for sticky CTA on mobile */}
+          <div className="h-20 md:hidden" />
         </div>
       </div>
+
+      {/* Sticky Mobile CTA */}
+      {player && (
+        <StickyMobileCTA 
+          playerSlug={player.slug} 
+          playerName={player.full_name}
+          visible={showStickyCTA}
+        />
+      )}
     </div>
   );
 };
