@@ -6,8 +6,8 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import heroStadium from "@/assets/hero-stadium.jpg";
 
-// Animation stages for the 3-act headline
-type HeadlineStage = "hidden" | "scouting" | "que" | "vira" | "contrato" | "complete";
+// Simple animation stages for headline
+type HeadlineStage = "hidden" | "line1" | "line2" | "complete";
 
 export function CinematicHero() {
   const heroRef = useRef<HTMLElement>(null);
@@ -27,7 +27,7 @@ export function CinematicHero() {
     return () => mediaQuery.removeEventListener("change", handleChange);
   }, []);
 
-  // Orchestrate the 3-act headline animation
+  // Simple 2-line headline animation
   useEffect(() => {
     if (prefersReducedMotion) {
       setHeadlineStage("complete");
@@ -38,13 +38,11 @@ export function CinematicHero() {
 
     const timers: NodeJS.Timeout[] = [];
     
-    timers.push(setTimeout(() => setHeadlineStage("scouting"), 200));
-    timers.push(setTimeout(() => setHeadlineStage("que"), 400));
-    timers.push(setTimeout(() => setHeadlineStage("vira"), 550));
-    timers.push(setTimeout(() => setHeadlineStage("contrato"), 700));
-    timers.push(setTimeout(() => setHeadlineStage("complete"), 900));
-    timers.push(setTimeout(() => setShowSubheadline(true), 1000));
-    timers.push(setTimeout(() => setShowCtas(true), 1400));
+    timers.push(setTimeout(() => setHeadlineStage("line1"), 150));
+    timers.push(setTimeout(() => setHeadlineStage("line2"), 300));
+    timers.push(setTimeout(() => setHeadlineStage("complete"), 450));
+    timers.push(setTimeout(() => setShowSubheadline(true), 550));
+    timers.push(setTimeout(() => setShowCtas(true), 850));
 
     return () => timers.forEach(clearTimeout);
   }, [prefersReducedMotion]);
@@ -154,12 +152,9 @@ export function CinematicHero() {
         <Reticle position="top-[12%] left-[8%]" size={16} />
         <Reticle position="bottom-[18%] right-[12%]" size={20} isCircle />
 
-        {/* Technical Labels */}
+        {/* Technical Label - only Scouting Intel, removed Data Layer */}
         <div className="absolute top-[10%] right-[6%] text-[9px] tracking-[0.35em] text-white/15 font-mono uppercase">
           Scouting Intel
-        </div>
-        <div className="absolute bottom-[22%] left-[4%] text-[9px] tracking-[0.35em] text-white/12 font-mono uppercase">
-          Data Layer
         </div>
       </div>
 
@@ -178,51 +173,29 @@ export function CinematicHero() {
         <div className="grid lg:grid-cols-[1fr,auto] gap-12 lg:gap-16 items-center">
           {/* Left Content */}
           <div className="max-w-2xl">
-            {/* 3-Act Animated Headline */}
+            {/* Simple 2-line Animated Headline */}
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.05] tracking-tight mb-8">
-              <span className="block overflow-hidden">
-                <span
-                  className={cn(
-                    "inline-block transition-all duration-300",
-                    headlineStage === "hidden" && "opacity-0 tracking-[0.3em] translate-y-full",
-                    headlineStage === "scouting" && "opacity-100 tracking-[0.08em] translate-y-0 text-white",
-                    (headlineStage === "que" || headlineStage === "vira" || headlineStage === "contrato" || headlineStage === "complete") && "opacity-100 tracking-tight translate-y-0 text-white"
-                  )}
-                >
-                  SCOUTING
-                </span>{" "}
-                <span
-                  className={cn(
-                    "inline-block transition-all duration-200",
-                    (headlineStage === "hidden" || headlineStage === "scouting") && "opacity-0 translate-x-4",
-                    headlineStage === "que" && "opacity-100 translate-x-0 text-white",
-                    (headlineStage === "vira" || headlineStage === "contrato" || headlineStage === "complete") && "opacity-100 translate-x-0 text-white"
-                  )}
-                >
-                  QUE
-                </span>
+              {/* Line 1: SCOUTING QUE */}
+              <span
+                className={cn(
+                  "block text-white transition-all duration-300 ease-out",
+                  headlineStage === "hidden" && "opacity-0 translate-y-3",
+                  (headlineStage === "line1" || headlineStage === "line2" || headlineStage === "complete") && "opacity-100 translate-y-0"
+                )}
+              >
+                SCOUTING QUE
               </span>
-              <span className="block overflow-hidden">
-                <span
-                  className={cn(
-                    "inline-block transition-all duration-200",
-                    (headlineStage === "hidden" || headlineStage === "scouting" || headlineStage === "que") && "opacity-0 -translate-x-6",
-                    headlineStage === "vira" && "opacity-100 translate-x-0 text-white hero-glitch",
-                    (headlineStage === "contrato" || headlineStage === "complete") && "opacity-100 translate-x-0 text-white"
-                  )}
-                >
-                  VIRA
-                </span>{" "}
-                <span
-                  className={cn(
-                    "inline-block transition-all duration-300",
-                    (headlineStage === "hidden" || headlineStage === "scouting" || headlineStage === "que" || headlineStage === "vira") && "opacity-0 scale-95",
-                    headlineStage === "contrato" && "opacity-100 scale-100 text-[#e52421] hero-flash",
-                    headlineStage === "complete" && "opacity-100 scale-100 text-[#e52421]"
-                  )}
-                >
-                  CONTRATO.
-                </span>
+              {/* Line 2: VIRA CONTRATO. */}
+              <span
+                className={cn(
+                  "block transition-all duration-300 ease-out",
+                  (headlineStage === "hidden" || headlineStage === "line1") && "opacity-0 translate-y-3",
+                  (headlineStage === "line2" || headlineStage === "complete") && "opacity-100 translate-y-0"
+                )}
+                style={{ transitionDelay: headlineStage === "line1" ? "0ms" : "100ms" }}
+              >
+                <span className="text-white">VIRA </span>
+                <span className="text-[#e52421]">CONTRATO.</span>
               </span>
             </h1>
 
@@ -416,7 +389,7 @@ function Reticle({ position, size, isCircle }: { position: string; size: number;
   );
 }
 
-// Live Scouting Feed Component with Animated Counters
+// Live Scouting Feed Component with Real Data
 function LiveScoutingFeed({ prefersReducedMotion }: { prefersReducedMotion: boolean }) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -425,10 +398,11 @@ function LiveScoutingFeed({ prefersReducedMotion }: { prefersReducedMotion: bool
     players: 0,
     reports: 0,
     competitions: 0,
-    targetPlayers: 150,
-    targetReports: 500,
-    targetCompetitions: 25,
+    targetPlayers: 0,
+    targetReports: 0,
+    targetCompetitions: 0,
     isLoading: true,
+    hasError: false,
   });
 
   // Intersection Observer for viewport detection
@@ -447,37 +421,68 @@ function LiveScoutingFeed({ prefersReducedMotion }: { prefersReducedMotion: bool
     return () => observer.disconnect();
   }, []);
 
-  // Fetch real data
+  // Fetch real data from database
   useEffect(() => {
     async function fetchStats() {
       try {
-        const { count: playersCount } = await supabase
+        // Count public players (is_public = true and not archived)
+        const { count: playersCount, error: playersError } = await supabase
           .from("players")
-          .select("*", { count: "exact", head: true });
+          .select("*", { count: "exact", head: true })
+          .eq("is_public", true)
+          .or("is_archived.is.null,is_archived.eq.false");
 
-        const { count: competitionsCount } = await supabase
+        // Count all scouting reports (not deleted)
+        const { count: reportsCount, error: reportsError } = await supabase
+          .from("scouting_reports")
+          .select("*", { count: "exact", head: true })
+          .is("deleted_at", null);
+
+        // Count active competitions
+        const { count: competitionsCount, error: competitionsError } = await supabase
           .from("competitions")
-          .select("*", { count: "exact", head: true });
+          .select("*", { count: "exact", head: true })
+          .eq("is_active", true);
 
+        const hasAnyError = playersError || reportsError || competitionsError;
+
+        if (hasAnyError) {
+          console.error("Error fetching hero stats:", { playersError, reportsError, competitionsError });
+        }
+
+        setStats({
+          players: 0,
+          reports: 0,
+          competitions: 0,
+          targetPlayers: playersCount ?? 0,
+          targetReports: reportsCount ?? 0,
+          targetCompetitions: competitionsCount ?? 0,
+          isLoading: false,
+          hasError: !!hasAnyError,
+        });
+      } catch (error) {
+        console.error("Error fetching hero stats:", error);
         setStats((prev) => ({
           ...prev,
-          targetPlayers: playersCount || 150,
-          targetReports: 500,
-          targetCompetitions: competitionsCount || 25,
+          targetPlayers: 0,
+          targetReports: 0,
+          targetCompetitions: 0,
           isLoading: false,
+          hasError: true,
         }));
-      } catch (error) {
-        console.error("Error fetching stats:", error);
-        setStats((prev) => ({ ...prev, isLoading: false }));
       }
     }
     fetchStats();
   }, []);
 
-  // Animate counters when visible
+  // Only animate counters if we have valid data (no error, values > 0)
+  const shouldAnimate = isVisible && !stats.isLoading && !stats.hasError && 
+    (stats.targetPlayers > 0 || stats.targetReports > 0 || stats.targetCompetitions > 0);
+
+  // Animate counters when visible and data is valid
   useEffect(() => {
-    if (!isVisible || stats.isLoading || prefersReducedMotion) {
-      if (prefersReducedMotion) {
+    if (!shouldAnimate) {
+      if (prefersReducedMotion || stats.hasError) {
         setStats((prev) => ({
           ...prev,
           players: prev.targetPlayers,
@@ -488,8 +493,8 @@ function LiveScoutingFeed({ prefersReducedMotion }: { prefersReducedMotion: bool
       return;
     }
 
-    const duration = 1500;
-    const steps = 60;
+    const duration = 1200;
+    const steps = 50;
     const interval = duration / steps;
 
     let step = 0;
@@ -509,9 +514,9 @@ function LiveScoutingFeed({ prefersReducedMotion }: { prefersReducedMotion: bool
     }, interval);
 
     return () => clearInterval(timer);
-  }, [isVisible, stats.isLoading, stats.targetPlayers, stats.targetReports, stats.targetCompetitions, prefersReducedMotion]);
+  }, [shouldAnimate, stats.targetPlayers, stats.targetReports, stats.targetCompetitions, prefersReducedMotion, stats.hasError]);
 
-  const isCounting = isVisible && !stats.isLoading && stats.players < stats.targetPlayers;
+  const isCounting = shouldAnimate && stats.players < stats.targetPlayers;
 
   return (
     <div
@@ -587,6 +592,9 @@ function AnimatedStatRow({
   value: number;
   isCounting: boolean;
 }) {
+  // Format display: show value+ if > 0, "0" if explicitly 0, "..." if loading
+  const displayValue = value > 0 ? `${value}+` : value === 0 ? "0" : "...";
+  
   return (
     <div className="flex items-center gap-4">
       <div className={cn(
@@ -597,7 +605,7 @@ function AnimatedStatRow({
       </div>
       <div>
         <p className="text-2xl font-bold text-white tracking-tight tabular-nums">
-          {value > 0 ? `${value}+` : "..."}
+          {displayValue}
         </p>
         <p className="text-xs text-white/40">{label}</p>
       </div>
