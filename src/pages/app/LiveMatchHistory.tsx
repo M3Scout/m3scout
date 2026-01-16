@@ -25,6 +25,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
+import { LiveMatchCard } from "@/components/live-match/LiveMatchCard";
 import { toast } from "sonner";
 import {
   Radio,
@@ -56,6 +57,10 @@ interface MatchWithCompetition {
   season_year: number;
   duration_minutes: number;
   created_at: string;
+  half?: number | null;
+  half_start_time?: string | null;
+  elapsed_seconds_in_half?: number | null;
+  clock_status?: string | null;
   competition: {
     id: string;
     name: string;
@@ -387,6 +392,10 @@ export default function LiveMatchHistory() {
           season_year,
           duration_minutes,
           created_at,
+          half,
+          half_start_time,
+          elapsed_seconds_in_half,
+          clock_status,
           competition:competitions(id, name, display_name)
         `)
         .eq("created_by", user.id)
@@ -475,16 +484,38 @@ export default function LiveMatchHistory() {
       ) : (
         <div className="space-y-6">
           <AnimatePresence mode="popLayout">
-            {/* Live matches (priority with special styling) */}
-            <MatchSection
-              title="Ao Vivo"
-              icon={<Radio className="w-5 h-5 animate-pulse" />}
-              iconColorClass="text-red-400"
-              borderColorClass="border-red-500/30"
-              matches={liveMatches}
-              getMatchLink={getMatchLink}
-              onDeleteClick={setDeleteMatch}
-            />
+            {/* Live matches - using special LiveMatchCard with timer and quick actions */}
+            {liveMatches.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="rounded-2xl border border-red-500/30 bg-zinc-900/40 overflow-hidden"
+              >
+                {/* Section header */}
+                <div className="flex items-center gap-3 px-5 py-4 border-b border-zinc-800/40">
+                  <div className="text-lg text-red-400">
+                    <Radio className="w-5 h-5 animate-pulse" />
+                  </div>
+                  <h3 className="font-semibold text-red-400">Ao Vivo</h3>
+                  <span className="text-xs text-zinc-600 bg-zinc-800/60 px-2 py-0.5 rounded-full">
+                    {liveMatches.length}
+                  </span>
+                </div>
+                
+                {/* Live match cards */}
+                <div className="p-3 space-y-3">
+                  {liveMatches.map((match, i) => (
+                    <LiveMatchCard
+                      key={match.id}
+                      match={match}
+                      link={getMatchLink(match)}
+                      onDelete={() => setDeleteMatch(match)}
+                      index={i}
+                    />
+                  ))}
+                </div>
+              </motion.div>
+            )}
 
             {/* Finished matches waiting to apply */}
             <MatchSection
