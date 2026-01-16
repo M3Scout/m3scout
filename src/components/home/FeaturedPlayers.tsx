@@ -1,61 +1,31 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowRight, Loader2, Star, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowRight, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { safeArray, cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Get color classes based on global score (0-5)
-function getScoreColorClasses(score: number): { text: string; bg: string; glow: string } {
-  if (score >= 4.0) {
-    return { 
-      text: "text-emerald-400", 
-      bg: "bg-emerald-500/20 border-emerald-500/40",
-      glow: "shadow-emerald-500/30"
-    };
-  }
-  if (score >= 3.0) {
-    return { 
-      text: "text-green-400", 
-      bg: "bg-green-500/20 border-green-500/40",
-      glow: "shadow-green-500/30"
-    };
-  }
-  if (score >= 2.0) {
-    return { 
-      text: "text-amber-400", 
-      bg: "bg-amber-500/20 border-amber-500/40",
-      glow: "shadow-amber-500/30"
-    };
-  }
-  return { 
-    text: "text-red-400", 
-    bg: "bg-red-500/20 border-red-500/40",
-    glow: "shadow-red-500/30"
+// Get position color with low opacity for premium look
+function getPositionStyle(position: string): { bg: string; text: string } {
+  const styles: Record<string, { bg: string; text: string }> = {
+    GK: { bg: "bg-amber-500/20", text: "text-amber-300" },
+    CB: { bg: "bg-blue-500/20", text: "text-blue-300" },
+    LB: { bg: "bg-sky-500/20", text: "text-sky-300" },
+    RB: { bg: "bg-sky-500/20", text: "text-sky-300" },
+    CDM: { bg: "bg-green-500/20", text: "text-green-300" },
+    CM: { bg: "bg-emerald-500/20", text: "text-emerald-300" },
+    CAM: { bg: "bg-teal-500/20", text: "text-teal-300" },
+    LM: { bg: "bg-cyan-500/20", text: "text-cyan-300" },
+    RM: { bg: "bg-cyan-500/20", text: "text-cyan-300" },
+    LW: { bg: "bg-purple-500/20", text: "text-purple-300" },
+    RW: { bg: "bg-purple-500/20", text: "text-purple-300" },
+    CF: { bg: "bg-rose-500/20", text: "text-rose-300" },
+    ST: { bg: "bg-red-500/20", text: "text-red-300" },
   };
+  return styles[position] || { bg: "bg-white/10", text: "text-white/70" };
 }
 
-// Get position color
-function getPositionColor(position: string): string {
-  const colors: Record<string, string> = {
-    GK: "bg-amber-500",
-    CB: "bg-blue-500",
-    LB: "bg-sky-500",
-    RB: "bg-sky-500",
-    CDM: "bg-green-600",
-    CM: "bg-green-500",
-    CAM: "bg-emerald-500",
-    LM: "bg-teal-500",
-    RM: "bg-teal-500",
-    LW: "bg-purple-500",
-    RW: "bg-purple-500",
-    CF: "bg-rose-500",
-    ST: "bg-red-500",
-  };
-  return colors[position] || "bg-zinc-500";
-}
-
-// Position labels
+// Position labels - compact
 const positionLabels: Record<string, string> = {
   GK: "GOL",
   CB: "ZAG",
@@ -90,8 +60,8 @@ const containerVariants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.12,
-      delayChildren: 0.1,
+      staggerChildren: 0.1,
+      delayChildren: 0.05,
     },
   },
 } as const;
@@ -99,8 +69,8 @@ const containerVariants = {
 const cardVariants = {
   hidden: { 
     opacity: 0, 
-    y: 60,
-    scale: 0.9,
+    y: 40,
+    scale: 0.95,
   },
   visible: { 
     opacity: 1, 
@@ -108,18 +78,17 @@ const cardVariants = {
     scale: 1,
     transition: {
       type: "spring" as const,
-      stiffness: 100,
-      damping: 15,
-      duration: 0.6,
+      stiffness: 120,
+      damping: 18,
     },
   },
 };
 
 const headerVariants = {
-  hidden: { opacity: 0, x: -30 },
+  hidden: { opacity: 0, y: 20 },
   visible: { 
     opacity: 1, 
-    x: 0,
+    y: 0,
     transition: {
       type: "spring" as const,
       stiffness: 100,
@@ -128,10 +97,9 @@ const headerVariants = {
   },
 };
 
-// Individual card component with scouting focus
+// Premium player card - clean and minimal
 function PlayerCard({ player }: { player: Player }) {
-  const score = player.auto_rating ?? 0;
-  const scoreColors = getScoreColorClasses(score);
+  const positionStyle = getPositionStyle(player.position);
   
   return (
     <motion.div variants={cardVariants}>
@@ -139,71 +107,47 @@ function PlayerCard({ player }: { player: Player }) {
         to={`/players/${player.slug}`}
         className="group block"
       >
-        <article 
-          className={cn(
-            "relative overflow-hidden rounded-xl bg-zinc-900/80 backdrop-blur-sm border border-white/5 transition-all duration-500",
-            "hover:border-white/20 hover:shadow-2xl hover:shadow-black/50",
-            "hover:-translate-y-2"
-          )}
-        >
-          {/* Image Container with gradient overlay */}
+        <article className="relative overflow-hidden rounded-2xl bg-zinc-900/60 backdrop-blur-sm transition-all duration-500 hover:shadow-2xl hover:shadow-white/5">
+          {/* Image Container */}
           <div className="relative aspect-[3/4] overflow-hidden">
             <img
               src={player.photo_url || "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=400&h=600&fit=crop"}
               alt={player.full_name}
               loading="lazy"
-              className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-110"
+              className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-700 ease-out group-hover:scale-105"
             />
             
-            {/* Gradient overlays */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-black/50" />
+            {/* Premium gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent opacity-90" />
             
-            {/* Hover glow effect */}
-            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-t from-primary/10 via-transparent to-transparent" />
+            {/* Subtle hover glow */}
+            <div className="absolute inset-0 bg-gradient-to-t from-white/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             
-            {/* Position Badge - Top Left */}
-            <div className="absolute top-3 left-3">
-              <motion.span 
-                className={cn(
-                  "inline-flex items-center justify-center w-10 h-10 rounded-lg text-white text-xs font-bold uppercase shadow-lg",
-                  getPositionColor(player.position)
-                )}
-                whileHover={{ scale: 1.1 }}
-              >
+            {/* Position Badge - Refined, semi-transparent */}
+            <div className="absolute top-4 left-4">
+              <span className={cn(
+                "inline-flex items-center justify-center px-3 py-1.5 rounded-lg backdrop-blur-md border border-white/10 text-[11px] font-semibold uppercase tracking-wider",
+                positionStyle.bg,
+                positionStyle.text
+              )}>
                 {positionLabels[player.position] || player.position}
-              </motion.span>
-            </div>
-            
-            {/* Global Score Badge - Top Right */}
-            <div className="absolute top-3 right-3">
-              <motion.div 
-                className={cn(
-                  "inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border backdrop-blur-md shadow-lg",
-                  scoreColors.bg,
-                  scoreColors.glow
-                )}
-                whileHover={{ scale: 1.05 }}
-              >
-                <Star className={cn("w-4 h-4 fill-current", scoreColors.text)} />
-                <span className={cn("font-bold text-sm", scoreColors.text)}>
-                  {score.toFixed(1)}
-                </span>
-              </motion.div>
+              </span>
             </div>
             
             {/* Player Info - Bottom */}
-            <div className="absolute bottom-0 left-0 right-0 p-4">
-              <h3 className="text-white font-bold text-lg md:text-xl tracking-wide uppercase mb-1.5 drop-shadow-lg line-clamp-1">
+            <div className="absolute bottom-0 left-0 right-0 p-5">
+              {/* Player Name - Primary element */}
+              <h3 className="text-white font-bold text-xl md:text-2xl tracking-wide mb-2 line-clamp-1 drop-shadow-lg">
                 {player.full_name}
               </h3>
               
-              <p className="text-white/70 text-sm font-medium mb-1">
+              {/* Secondary info - Discrete */}
+              <p className="text-white/60 text-sm font-medium tracking-wide">
                 {player.age ? `${player.age} anos` : "—"} · {player.nationality}
               </p>
               
               {player.current_club && (
-                <p className="text-white/50 text-xs uppercase tracking-wide line-clamp-1">
+                <p className="text-white/40 text-xs uppercase tracking-wider mt-1 line-clamp-1">
                   {player.current_club}
                 </p>
               )}
@@ -215,7 +159,7 @@ function PlayerCard({ player }: { player: Player }) {
   );
 }
 
-// Carousel component for mobile
+// Mobile Carousel - Clean version
 function MobileCarousel({ players }: { players: Player[] }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -229,10 +173,9 @@ function MobileCarousel({ players }: { players: Player[] }) {
     setCurrentIndex((prev) => (prev - 1 + players.length) % players.length);
   }, [players.length]);
   
-  // Auto-play carousel
   useEffect(() => {
     if (!isPaused && players.length > 1) {
-      intervalRef.current = setInterval(nextSlide, 4000);
+      intervalRef.current = setInterval(nextSlide, 5000);
     }
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
@@ -241,85 +184,59 @@ function MobileCarousel({ players }: { players: Player[] }) {
   
   if (players.length === 0) return null;
   
+  const currentPlayer = players[currentIndex];
+  const positionStyle = getPositionStyle(currentPlayer.position);
+  
   return (
     <div 
       className="relative"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onTouchStart={() => setIsPaused(true)}
-      onTouchEnd={() => setTimeout(() => setIsPaused(false), 2000)}
+      onTouchEnd={() => setTimeout(() => setIsPaused(false), 3000)}
     >
-      {/* Carousel Container */}
-      <div className="overflow-hidden rounded-xl">
+      <div className="overflow-hidden rounded-2xl">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentIndex}
-            initial={{ opacity: 0, x: 100 }}
+            initial={{ opacity: 0, x: 60 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -100 }}
-            transition={{ 
-              type: "spring", 
-              stiffness: 300, 
-              damping: 30,
-              duration: 0.4 
-            }}
-            className="w-full"
+            exit={{ opacity: 0, x: -60 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
           >
-            <Link
-              to={`/players/${players[currentIndex].slug}`}
-              className="group block"
-            >
-              <article className="relative overflow-hidden rounded-xl bg-zinc-900/80 backdrop-blur-sm border border-white/5">
+            <Link to={`/players/${currentPlayer.slug}`} className="group block">
+              <article className="relative overflow-hidden rounded-2xl bg-zinc-900/60 backdrop-blur-sm">
                 <div className="relative aspect-[3/4] overflow-hidden">
                   <img
-                    src={players[currentIndex].photo_url || "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=400&h=600&fit=crop"}
-                    alt={players[currentIndex].full_name}
+                    src={currentPlayer.photo_url || "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=400&h=600&fit=crop"}
+                    alt={currentPlayer.full_name}
                     className="absolute inset-0 w-full h-full object-cover object-top"
                   />
                   
-                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent opacity-90" />
                   
                   {/* Position Badge */}
-                  <div className="absolute top-4 left-4">
+                  <div className="absolute top-5 left-5">
                     <span className={cn(
-                      "inline-flex items-center justify-center w-12 h-12 rounded-xl text-white text-sm font-bold uppercase shadow-lg",
-                      getPositionColor(players[currentIndex].position)
+                      "inline-flex items-center justify-center px-4 py-2 rounded-xl backdrop-blur-md border border-white/10 text-xs font-semibold uppercase tracking-wider",
+                      positionStyle.bg,
+                      positionStyle.text
                     )}>
-                      {positionLabels[players[currentIndex].position] || players[currentIndex].position}
+                      {positionLabels[currentPlayer.position] || currentPlayer.position}
                     </span>
                   </div>
                   
-                  {/* Score Badge */}
-                  <div className="absolute top-4 right-4">
-                    {(() => {
-                      const score = players[currentIndex].auto_rating ?? 0;
-                      const colors = getScoreColorClasses(score);
-                      return (
-                        <div className={cn(
-                          "inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border backdrop-blur-md shadow-lg",
-                          colors.bg,
-                          colors.glow
-                        )}>
-                          <Star className={cn("w-5 h-5 fill-current", colors.text)} />
-                          <span className={cn("font-bold text-lg", colors.text)}>
-                            {score.toFixed(1)}
-                          </span>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                  
                   {/* Player Info */}
-                  <div className="absolute bottom-0 left-0 right-0 p-5">
-                    <h3 className="text-white font-bold text-2xl tracking-wide uppercase mb-2 drop-shadow-lg">
-                      {players[currentIndex].full_name}
+                  <div className="absolute bottom-0 left-0 right-0 p-6">
+                    <h3 className="text-white font-bold text-2xl tracking-wide mb-2 drop-shadow-lg">
+                      {currentPlayer.full_name}
                     </h3>
-                    <p className="text-white/70 text-base font-medium mb-1">
-                      {players[currentIndex].age ? `${players[currentIndex].age} anos` : "—"} · {players[currentIndex].nationality}
+                    <p className="text-white/60 text-base font-medium">
+                      {currentPlayer.age ? `${currentPlayer.age} anos` : "—"} · {currentPlayer.nationality}
                     </p>
-                    {players[currentIndex].current_club && (
-                      <p className="text-white/50 text-sm uppercase tracking-wide">
-                        {players[currentIndex].current_club}
+                    {currentPlayer.current_club && (
+                      <p className="text-white/40 text-sm uppercase tracking-wider mt-1">
+                        {currentPlayer.current_club}
                       </p>
                     )}
                   </div>
@@ -330,19 +247,19 @@ function MobileCarousel({ players }: { players: Player[] }) {
         </AnimatePresence>
       </div>
       
-      {/* Navigation Arrows */}
+      {/* Navigation - Minimal */}
       {players.length > 1 && (
         <>
           <button
             onClick={(e) => { e.preventDefault(); prevSlide(); }}
-            className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-black/70 transition-all"
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white/60 hover:text-white hover:bg-black/60 transition-all"
             aria-label="Previous"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
           <button
             onClick={(e) => { e.preventDefault(); nextSlide(); }}
-            className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-black/70 transition-all"
+            className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white/60 hover:text-white hover:bg-black/60 transition-all"
             aria-label="Next"
           >
             <ChevronRight className="w-5 h-5" />
@@ -350,18 +267,18 @@ function MobileCarousel({ players }: { players: Player[] }) {
         </>
       )}
       
-      {/* Dots Indicator */}
+      {/* Dots - Refined */}
       {players.length > 1 && (
-        <div className="flex justify-center gap-2 mt-4">
+        <div className="flex justify-center gap-2 mt-5">
           {players.map((_, index) => (
             <button
               key={index}
               onClick={() => setCurrentIndex(index)}
               className={cn(
-                "w-2 h-2 rounded-full transition-all duration-300",
+                "h-1.5 rounded-full transition-all duration-300",
                 index === currentIndex 
-                  ? "bg-white w-6" 
-                  : "bg-white/30 hover:bg-white/50"
+                  ? "bg-white w-8" 
+                  : "bg-white/20 w-1.5 hover:bg-white/40"
               )}
               aria-label={`Go to slide ${index + 1}`}
             />
@@ -378,7 +295,6 @@ export function FeaturedPlayers() {
   const [isInView, setIsInView] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
 
-  // Intersection observer for section visibility
   useEffect(() => {
     const element = sectionRef.current;
     if (!element) return;
@@ -399,6 +315,7 @@ export function FeaturedPlayers() {
 
   useEffect(() => {
     const fetchPlayers = async () => {
+      // Fetch top-rated players (criteria is technical, but not exposed visually)
       const { data } = await supabase
         .from("players")
         .select("id, slug, full_name, position, age, nationality, current_club, photo_url, auto_rating")
@@ -421,59 +338,52 @@ export function FeaturedPlayers() {
       ref={sectionRef}
       className="relative bg-black py-20 md:py-28 overflow-hidden"
     >
-      {/* Background effects */}
-      <div className="absolute inset-0 bg-gradient-to-b from-zinc-900/50 via-transparent to-zinc-900/30 pointer-events-none" />
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+      {/* Subtle background */}
+      <div className="absolute inset-0 bg-gradient-to-b from-zinc-900/30 via-transparent to-zinc-900/20 pointer-events-none" />
       
       <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
-        {/* Section Header */}
+        {/* Section Header - Clean */}
         <motion.div 
-          className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12"
+          className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-14"
           initial="hidden"
           animate={isInView ? "visible" : "hidden"}
           variants={containerVariants}
         >
           <motion.div variants={headerVariants}>
-            <h2 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tight text-white uppercase leading-none mb-2">
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-white uppercase leading-none">
               ATLETAS
             </h2>
-            <p className="text-white/50 text-sm md:text-base uppercase tracking-widest font-medium">
-              Top avaliados no scouting
-            </p>
           </motion.div>
           
           <motion.div variants={headerVariants}>
             <Link 
               to="/players"
-              className="group inline-flex items-center gap-3 text-white/70 hover:text-white transition-colors duration-300 uppercase tracking-widest text-sm font-medium"
+              className="group inline-flex items-center gap-2 text-white/50 hover:text-white transition-colors duration-300 text-sm font-medium tracking-wide"
             >
-              <span className="relative">
-                Ver Todos
-                <span className="absolute bottom-0 left-0 w-0 h-px bg-white group-hover:w-full transition-all duration-300" />
-              </span>
+              <span>Ver todos</span>
               <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
             </Link>
           </motion.div>
         </motion.div>
 
-        {/* Players Grid / Carousel */}
+        {/* Players */}
         {loading ? (
           <div className="flex items-center justify-center py-24">
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
             >
-              <Loader2 className="w-8 h-8 text-white/50" />
+              <Loader2 className="w-6 h-6 text-white/30" />
             </motion.div>
           </div>
         ) : players.length > 0 ? (
           <>
-            {/* Mobile: Auto-playing Carousel */}
+            {/* Mobile: Carousel */}
             <div className="md:hidden">
               <MobileCarousel players={players} />
             </div>
             
-            {/* Desktop: Animated Grid */}
+            {/* Desktop: Grid */}
             <motion.div 
               className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-6"
               initial="hidden"
@@ -491,8 +401,8 @@ export function FeaturedPlayers() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
-            <p className="text-white/40 uppercase tracking-wider text-sm">
-              Nenhum atleta avaliado disponível no momento.
+            <p className="text-white/30 text-sm">
+              Nenhum atleta disponível no momento.
             </p>
           </motion.div>
         )}
