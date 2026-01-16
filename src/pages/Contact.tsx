@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { motion, useInView } from "framer-motion";
+import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Send, CheckCircle, Mail, Phone, Instagram } from "lucide-react";
+import { Send, CheckCircle, Mail, Instagram, ArrowUpRight, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { submitLead } from "@/lib/leads";
 
@@ -36,6 +38,20 @@ const Contact = () => {
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+
+  const channelsRef = useRef<HTMLDivElement>(null);
+  const formRef = useRef<HTMLDivElement>(null);
+  
+  const channelsInView = useInView(channelsRef, { once: true, margin: "-80px" });
+  const formInView = useInView(formRef, { once: true, margin: "-80px" });
+
+  // Fix scroll bug - always start at top
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    if ('scrollRestoration' in history) {
+      history.scrollRestoration = 'manual';
+    }
+  }, []);
 
   const {
     register,
@@ -83,245 +99,357 @@ const Contact = () => {
   const quickContacts = [
     {
       icon: Mail,
-      title: "E-MAIL",
-      info: "contato@m3agency.com",
-      buttonText: "Enviar e-mail",
+      label: "E-MAIL",
+      value: "contato@m3agency.com",
+      cta: "Enviar e-mail",
       href: "mailto:contato@m3agency.com",
+      external: false,
     },
     {
       icon: WhatsAppIcon,
-      title: "WHATSAPP",
-      info: "(67) 9 9110-6060",
-      buttonText: "Chamar no WhatsApp",
-      href: "https://wa.me/556791106060",
+      label: "WHATSAPP",
+      value: "(67) 9 9110-6060",
+      cta: "Abrir conversa",
+      href: "https://wa.me/556791106060?text=Ol%C3%A1!%20Vim%20pelo%20site%20da%20M3%20Agency%20e%20gostaria%20de%20falar%20sobre%E2%80%A6",
+      external: true,
     },
     {
       icon: Instagram,
-      title: "INSTAGRAM",
-      info: "@_m3agency",
-      buttonText: "Abrir Direct",
-      href: "https://ig.me/m/_m3agency",
-      fallbackHref: "https://instagram.com/_m3agency",
+      label: "INSTAGRAM",
+      value: "@_m3agency",
+      cta: "Abrir perfil",
+      href: "https://instagram.com/_m3agency",
+      external: true,
     },
   ];
 
   if (isSubmitted) {
     return (
-      <div className="min-h-screen bg-[#0B0B0D] flex items-center justify-center py-16 px-6">
-        <div className="text-center max-w-md">
-          <div className="w-20 h-20 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mx-auto mb-8">
-            <CheckCircle className="w-10 h-10 text-[#e52421]" />
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center py-16 px-6">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="text-center max-w-md"
+        >
+          <div className="w-16 h-16 rounded-2xl bg-neutral-900 border border-neutral-800 flex items-center justify-center mx-auto mb-6">
+            <CheckCircle className="w-8 h-8 text-[#e52421]" />
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">Mensagem Enviada!</h1>
-          <p className="text-zinc-400 mb-8 leading-relaxed">
+          <h1 className="text-2xl md:text-3xl font-semibold text-white mb-3">Mensagem Enviada</h1>
+          <p className="text-neutral-400 mb-8 leading-relaxed text-sm">
             Obrigado pelo seu contato. Nossa equipe retornará em breve.
           </p>
           <button 
             onClick={() => setIsSubmitted(false)}
-            className="text-sm uppercase tracking-widest text-zinc-500 hover:text-white transition-colors border-b border-zinc-700 pb-1"
+            className="inline-flex items-center gap-2 text-sm text-neutral-500 hover:text-white transition-colors group"
           >
-            Enviar outra mensagem
+            <span className="relative">
+              Enviar outra mensagem
+              <span className="absolute left-0 bottom-0 w-0 h-px bg-white group-hover:w-full transition-all duration-300" />
+            </span>
           </button>
-        </div>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0B0B0D]">
-      {/* Hero Section */}
-      <section className="pt-32 md:pt-40 pb-12 md:pb-16 px-6">
-        <div className="max-w-[1100px] mx-auto">
-          {/* Eyebrow */}
-          <p className="text-[10px] uppercase tracking-[0.25em] text-zinc-600 mb-4">
-            CONTATO
-          </p>
+    <div className="min-h-screen bg-[#0a0a0a]" style={{ fontFamily: "'Poppins', sans-serif" }}>
+      
+      {/* Subtle grain texture */}
+      <div 
+        className="fixed inset-0 opacity-[0.015] pointer-events-none z-0"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+        }}
+      />
+
+      {/* HERO SECTION */}
+      <section className="relative pt-32 pb-12 md:pt-40 md:pb-16">
+        <div className="relative z-10 mx-auto max-w-[1200px] px-6 md:px-12 lg:px-16">
           
+          {/* Badge */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="mb-8"
+          >
+            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#e52421]/30 bg-[#e52421]/5 text-[10px] uppercase tracking-[0.2em] text-[#e52421] font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#e52421]" />
+              Contato
+            </span>
+          </motion.div>
+
           {/* Title */}
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
-            Entre em{" "}
-            <span className="text-[#e52421]">Contato</span>
-          </h1>
-          
+          <motion.h1 
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
+            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-semibold tracking-tight text-white mb-6"
+          >
+            Fale com a{" "}
+            <span className="text-[#e52421]">M3</span>
+          </motion.h1>
+
           {/* Subtitle */}
-          <p className="text-lg md:text-xl text-zinc-400 max-w-2xl leading-relaxed">
-            Interessado em algum de nossos atletas ou quer saber mais sobre nossos serviços? 
-            Escolha a melhor forma de falar conosco.
-          </p>
+          <motion.p 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+            className="text-lg md:text-xl text-neutral-400 font-light max-w-xl leading-relaxed tracking-wide"
+          >
+            Quer representar um atleta ou falar sobre oportunidades? Escolha o canal ideal.
+          </motion.p>
+
+          {/* Subtle divider */}
+          <motion.div
+            initial={{ opacity: 0, scaleX: 0 }}
+            animate={{ opacity: 1, scaleX: 1 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            className="mt-10 w-20 h-px bg-gradient-to-r from-[#e52421]/60 to-transparent origin-left"
+          />
         </div>
       </section>
 
-      {/* Quick Contact Options */}
-      <section className="pb-16 md:pb-20 px-6">
-        <div className="max-w-[1100px] mx-auto">
-          <p className="text-[10px] uppercase tracking-[0.25em] text-zinc-600 mb-6">
-            Escolha a melhor forma
-          </p>
+      {/* CHANNELS SECTION */}
+      <section className="py-12 md:py-16">
+        <div className="mx-auto max-w-[1200px] px-6 md:px-12 lg:px-16">
           
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+          {/* Section Header */}
+          <motion.div 
+            ref={channelsRef}
+            initial={{ opacity: 0 }}
+            animate={channelsInView ? { opacity: 1 } : {}}
+            transition={{ duration: 0.5 }}
+            className="flex items-center gap-3 mb-8"
+          >
+            <span className="w-2 h-2 rounded-full bg-[#e52421]" />
+            <p className="text-[11px] uppercase tracking-[0.25em] text-neutral-500 font-medium">
+              Canais diretos
+            </p>
+          </motion.div>
+
+          {/* Channels Grid */}
+          <motion.div 
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5"
+            initial="hidden"
+            animate={channelsInView ? "visible" : "hidden"}
+            variants={{
+              hidden: {},
+              visible: {
+                transition: {
+                  staggerChildren: 0.12,
+                  delayChildren: 0.1
+                }
+              }
+            }}
+          >
             {quickContacts.map((contact) => (
-              <a
-                key={contact.title}
+              <motion.a
+                key={contact.label}
                 href={contact.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group block bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 md:p-8 transition-all duration-300 hover:border-[#e52421]/30 hover:shadow-[0_0_30px_-10px_rgba(229,36,33,0.3)] hover:-translate-y-1"
+                target={contact.external ? "_blank" : undefined}
+                rel={contact.external ? "noopener noreferrer" : undefined}
+                variants={{
+                  hidden: { opacity: 0, y: 25, scale: 0.96 },
+                  visible: { 
+                    opacity: 1, 
+                    y: 0,
+                    scale: 1,
+                    transition: {
+                      type: "spring",
+                      stiffness: 100,
+                      damping: 15
+                    }
+                  }
+                }}
+                className="group relative block p-6 rounded-2xl bg-neutral-900/40 backdrop-blur-sm border border-neutral-800/50 transition-all duration-300 hover:border-neutral-700/60 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/20"
               >
                 {/* Icon */}
-                <div className="w-12 h-12 rounded-xl bg-zinc-800 flex items-center justify-center mb-5 group-hover:bg-[#e52421]/10 transition-colors">
-                  <contact.icon className="w-5 h-5 text-zinc-400 group-hover:text-[#e52421] transition-colors" />
-                </div>
-                
-                {/* Title */}
-                <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 mb-2">
-                  {contact.title}
-                </p>
-                
-                {/* Info */}
-                <p className="text-white font-medium mb-6">
-                  {contact.info}
-                </p>
-                
-                {/* Button */}
-                <span className="inline-flex items-center justify-center w-full bg-[#e52421] hover:bg-[#c91f1c] text-white text-sm font-semibold py-3 px-6 rounded-lg transition-colors">
-                  {contact.buttonText}
-                </span>
-              </a>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Form Section */}
-      <section className="pb-20 md:pb-28 px-6">
-        <div className="max-w-[1100px] mx-auto">
-          <div className="border-t border-zinc-800 pt-12 md:pt-16">
-            <p className="text-[10px] uppercase tracking-[0.25em] text-zinc-600 mb-8">
-              Ou envie uma mensagem
-            </p>
-            
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-              <div className="grid sm:grid-cols-2 gap-6">
-                {/* Nome */}
-                <div className="space-y-2">
-                  <Label htmlFor="name" className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">
-                    Nome Completo *
-                  </Label>
-                  <Input
-                    id="name"
-                    {...register("name")}
-                    className="bg-zinc-900 border-zinc-800 rounded-lg px-4 py-3 h-12 text-white placeholder:text-zinc-600 focus-visible:ring-1 focus-visible:ring-[#e52421] focus-visible:border-[#e52421]"
-                    placeholder="Seu nome"
-                  />
-                  {errors.name && <p className="text-sm text-[#e52421]">{errors.name.message}</p>}
-                </div>
-
-                {/* Email */}
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">
-                    E-mail *
-                  </Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    {...register("email")}
-                    className="bg-zinc-900 border-zinc-800 rounded-lg px-4 py-3 h-12 text-white placeholder:text-zinc-600 focus-visible:ring-1 focus-visible:ring-[#e52421] focus-visible:border-[#e52421]"
-                    placeholder="seu@email.com"
-                  />
-                  {errors.email && <p className="text-sm text-[#e52421]">{errors.email.message}</p>}
-                </div>
-
-                {/* Phone */}
-                <div className="space-y-2">
-                  <Label htmlFor="phone" className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">
-                    Telefone
-                  </Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    {...register("phone")}
-                    className="bg-zinc-900 border-zinc-800 rounded-lg px-4 py-3 h-12 text-white placeholder:text-zinc-600 focus-visible:ring-1 focus-visible:ring-[#e52421] focus-visible:border-[#e52421]"
-                    placeholder="+55 (00) 00000-0000"
-                  />
-                </div>
-
-                {/* Organization */}
-                <div className="space-y-2">
-                  <Label htmlFor="organization" className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">
-                    Clube / Organização
-                  </Label>
-                  <Input
-                    id="organization"
-                    {...register("organization")}
-                    className="bg-zinc-900 border-zinc-800 rounded-lg px-4 py-3 h-12 text-white placeholder:text-zinc-600 focus-visible:ring-1 focus-visible:ring-[#e52421] focus-visible:border-[#e52421]"
-                    placeholder="Nome do clube ou empresa"
-                  />
-                </div>
-
-                {/* Subject */}
-                <div className="space-y-2 sm:col-span-2">
-                  <Label htmlFor="subject" className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">
-                    Assunto *
-                  </Label>
-                  <Input
-                    id="subject"
-                    {...register("subject")}
-                    className="bg-zinc-900 border-zinc-800 rounded-lg px-4 py-3 h-12 text-white placeholder:text-zinc-600 focus-visible:ring-1 focus-visible:ring-[#e52421] focus-visible:border-[#e52421]"
-                    placeholder="Qual o motivo do contato?"
-                  />
-                  {errors.subject && <p className="text-sm text-[#e52421]">{errors.subject.message}</p>}
-                </div>
-
-                {/* Message */}
-                <div className="space-y-2 sm:col-span-2">
-                  <Label htmlFor="message" className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">
-                    Mensagem *
-                  </Label>
-                  <Textarea
-                    id="message"
-                    {...register("message")}
-                    className="bg-zinc-900 border-zinc-800 rounded-lg px-4 py-3 text-white placeholder:text-zinc-600 focus-visible:ring-1 focus-visible:ring-[#e52421] focus-visible:border-[#e52421] min-h-[140px] resize-none"
-                    placeholder="Escreva sua mensagem..."
-                  />
-                  {errors.message && <p className="text-sm text-[#e52421]">{errors.message.message}</p>}
-                </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <Button 
-                  type="submit" 
-                  disabled={isSubmitting}
-                  className="bg-[#e52421] hover:bg-[#c91f1c] text-white rounded-lg px-8 py-6 h-auto text-sm font-semibold uppercase tracking-widest shadow-none"
+                <motion.div 
+                  className="w-11 h-11 rounded-xl bg-neutral-800/60 flex items-center justify-center mb-5 group-hover:bg-[#e52421]/10 transition-colors duration-300"
+                  variants={{
+                    hidden: { scale: 0.5, opacity: 0 },
+                    visible: { 
+                      scale: 1, 
+                      opacity: 1,
+                      transition: { delay: 0.1, type: "spring", stiffness: 200 }
+                    }
+                  }}
                 >
-                  {isSubmitting ? (
-                    "Enviando..."
-                  ) : (
-                    <>
-                      <Send className="w-4 h-4 mr-3" />
-                      ENVIAR MENSAGEM
-                    </>
-                  )}
-                </Button>
+                  <contact.icon className="w-5 h-5 text-neutral-500 group-hover:text-[#e52421] transition-colors duration-300" />
+                </motion.div>
                 
-                <p className="text-zinc-600 text-sm">
-                  Respondemos todas as mensagens em até 24 horas úteis.
+                {/* Label */}
+                <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-600 mb-2">
+                  {contact.label}
                 </p>
-              </div>
-            </form>
-          </div>
+                
+                {/* Value */}
+                <p className="text-lg font-medium text-white mb-5">
+                  {contact.value}
+                </p>
+                
+                {/* CTA */}
+                <span className="inline-flex items-center gap-2 text-sm text-[#e52421] group-hover:gap-3 transition-all duration-300">
+                  <span className="relative">
+                    {contact.cta}
+                    <span className="absolute left-0 bottom-0 w-0 h-px bg-[#e52421] group-hover:w-full transition-all duration-300" />
+                  </span>
+                  <ArrowUpRight className="w-3.5 h-3.5" />
+                </span>
+              </motion.a>
+            ))}
+          </motion.div>
+
+          {/* Operating hours */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={channelsInView ? { opacity: 1 } : {}}
+            transition={{ duration: 0.5, delay: 0.5 }}
+            className="mt-8 flex items-center gap-2 text-neutral-600 text-sm"
+          >
+            <Clock className="w-4 h-4" />
+            <span>Atendimento: seg–sex, 9h–18h (BRT)</span>
+          </motion.div>
         </div>
       </section>
 
-      {/* Signature Section */}
-      <section className="py-16 px-6 border-t border-zinc-900">
-        <div className="max-w-[1100px] mx-auto text-center">
-          <p className="text-xl md:text-2xl">
-            <span className="text-white font-bold">M3 Agency.</span>
-            {" "}
-            <span className="text-[#e52421]">Conectando talentos.</span>
-            {" "}
-            <span className="text-white font-bold">Construindo caminhos.</span>
-          </p>
+      {/* FORM SECTION */}
+      <section className="py-12 md:py-16 lg:py-20 bg-[#0d0d0d]">
+        <div className="mx-auto max-w-[1200px] px-6 md:px-12 lg:px-16">
+          
+          {/* Section Header */}
+          <motion.div 
+            ref={formRef}
+            initial={{ opacity: 0 }}
+            animate={formInView ? { opacity: 1 } : {}}
+            transition={{ duration: 0.5 }}
+            className="mb-10"
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <span className="w-2 h-2 rounded-full bg-[#e52421]" />
+              <p className="text-[11px] uppercase tracking-[0.25em] text-neutral-500 font-medium">
+                Envie uma mensagem
+              </p>
+            </div>
+            <p className="text-neutral-600 text-sm font-light">
+              Preencha o formulário e retornaremos em até 24 horas úteis.
+            </p>
+          </motion.div>
+
+          {/* Form */}
+          <motion.form 
+            onSubmit={handleSubmit(onSubmit)} 
+            initial={{ opacity: 0, y: 20 }}
+            animate={formInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="space-y-6"
+          >
+            <div className="grid sm:grid-cols-2 gap-5">
+              {/* Nome */}
+              <div className="space-y-2">
+                <Label htmlFor="name" className="text-[10px] uppercase tracking-[0.2em] text-neutral-500">
+                  Nome Completo *
+                </Label>
+                <Input
+                  id="name"
+                  {...register("name")}
+                  className="bg-neutral-900/60 border-neutral-800 rounded-xl px-4 py-3 h-12 text-white placeholder:text-neutral-600 focus-visible:ring-1 focus-visible:ring-[#e52421] focus-visible:border-[#e52421] transition-colors"
+                  placeholder="Seu nome"
+                />
+                {errors.name && <p className="text-xs text-[#e52421]">{errors.name.message}</p>}
+              </div>
+
+              {/* Email */}
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-[10px] uppercase tracking-[0.2em] text-neutral-500">
+                  E-mail *
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  {...register("email")}
+                  className="bg-neutral-900/60 border-neutral-800 rounded-xl px-4 py-3 h-12 text-white placeholder:text-neutral-600 focus-visible:ring-1 focus-visible:ring-[#e52421] focus-visible:border-[#e52421] transition-colors"
+                  placeholder="seu@email.com"
+                />
+                {errors.email && <p className="text-xs text-[#e52421]">{errors.email.message}</p>}
+              </div>
+
+              {/* Phone */}
+              <div className="space-y-2">
+                <Label htmlFor="phone" className="text-[10px] uppercase tracking-[0.2em] text-neutral-500">
+                  Telefone
+                </Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  {...register("phone")}
+                  className="bg-neutral-900/60 border-neutral-800 rounded-xl px-4 py-3 h-12 text-white placeholder:text-neutral-600 focus-visible:ring-1 focus-visible:ring-[#e52421] focus-visible:border-[#e52421] transition-colors"
+                  placeholder="+55 (00) 00000-0000"
+                />
+              </div>
+
+              {/* Organization */}
+              <div className="space-y-2">
+                <Label htmlFor="organization" className="text-[10px] uppercase tracking-[0.2em] text-neutral-500">
+                  Clube / Organização
+                </Label>
+                <Input
+                  id="organization"
+                  {...register("organization")}
+                  className="bg-neutral-900/60 border-neutral-800 rounded-xl px-4 py-3 h-12 text-white placeholder:text-neutral-600 focus-visible:ring-1 focus-visible:ring-[#e52421] focus-visible:border-[#e52421] transition-colors"
+                  placeholder="Nome do clube ou empresa"
+                />
+              </div>
+
+              {/* Subject */}
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="subject" className="text-[10px] uppercase tracking-[0.2em] text-neutral-500">
+                  Assunto *
+                </Label>
+                <Input
+                  id="subject"
+                  {...register("subject")}
+                  className="bg-neutral-900/60 border-neutral-800 rounded-xl px-4 py-3 h-12 text-white placeholder:text-neutral-600 focus-visible:ring-1 focus-visible:ring-[#e52421] focus-visible:border-[#e52421] transition-colors"
+                  placeholder="Qual o motivo do contato?"
+                />
+                {errors.subject && <p className="text-xs text-[#e52421]">{errors.subject.message}</p>}
+              </div>
+
+              {/* Message */}
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="message" className="text-[10px] uppercase tracking-[0.2em] text-neutral-500">
+                  Mensagem *
+                </Label>
+                <Textarea
+                  id="message"
+                  {...register("message")}
+                  className="bg-neutral-900/60 border-neutral-800 rounded-xl px-4 py-3 text-white placeholder:text-neutral-600 focus-visible:ring-1 focus-visible:ring-[#e52421] focus-visible:border-[#e52421] min-h-[120px] resize-none transition-colors"
+                  placeholder="Escreva sua mensagem..."
+                />
+                {errors.message && <p className="text-xs text-[#e52421]">{errors.message.message}</p>}
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 pt-2">
+              <Button 
+                type="submit" 
+                disabled={isSubmitting}
+                className="bg-[#e52421] hover:bg-[#c91f1c] text-white rounded-xl px-6 py-3 h-12 text-sm font-medium tracking-wide shadow-none transition-all duration-300 hover:shadow-lg hover:shadow-[#e52421]/20"
+              >
+                {isSubmitting ? (
+                  "Enviando..."
+                ) : (
+                  <>
+                    <Send className="w-4 h-4 mr-2" />
+                    Enviar mensagem
+                  </>
+                )}
+              </Button>
+            </div>
+          </motion.form>
         </div>
       </section>
     </div>
