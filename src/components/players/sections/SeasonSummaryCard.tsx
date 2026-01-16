@@ -108,7 +108,53 @@ function getPositionCategory(position: string): PositionCategory {
 // Metric variant types
 type MetricVariant = "default" | "goals" | "assists" | "contribution" | "defensive" | "gk" | "negative";
 
-// Metric card component for main stats
+// Standardized variant styles - only colors change, structure stays identical
+const VARIANT_STYLES: Record<MetricVariant, { bg: string; text: string; iconBg: string; iconColor: string }> = {
+  default: {
+    bg: "bg-card/50 border-border/50",
+    text: "text-foreground",
+    iconBg: "bg-muted/50",
+    iconColor: "text-muted-foreground",
+  },
+  goals: {
+    bg: "bg-gradient-to-br from-red-500/10 to-red-600/5 border-red-500/20",
+    text: "text-red-400",
+    iconBg: "bg-red-500/15",
+    iconColor: "text-red-400",
+  },
+  assists: {
+    bg: "bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20",
+    text: "text-blue-400",
+    iconBg: "bg-blue-500/15",
+    iconColor: "text-blue-400",
+  },
+  contribution: {
+    bg: "bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-emerald-500/20",
+    text: "text-emerald-400",
+    iconBg: "bg-emerald-500/15",
+    iconColor: "text-emerald-400",
+  },
+  defensive: {
+    bg: "bg-gradient-to-br from-cyan-500/10 to-cyan-600/5 border-cyan-500/20",
+    text: "text-cyan-400",
+    iconBg: "bg-cyan-500/15",
+    iconColor: "text-cyan-400",
+  },
+  gk: {
+    bg: "bg-gradient-to-br from-amber-500/10 to-amber-600/5 border-amber-500/20",
+    text: "text-amber-400",
+    iconBg: "bg-amber-500/15",
+    iconColor: "text-amber-400",
+  },
+  negative: {
+    bg: "bg-gradient-to-br from-rose-500/10 to-rose-600/5 border-rose-500/20",
+    text: "text-rose-400",
+    iconBg: "bg-rose-500/15",
+    iconColor: "text-rose-400",
+  },
+};
+
+// Metric card component - FIXED STRUCTURE for all cards
 interface MetricCardProps {
   value: number | string;
   label: string;
@@ -117,70 +163,38 @@ interface MetricCardProps {
 }
 
 function MetricCard({ value, label, icon: Icon, variant = "default" }: MetricCardProps) {
-  const variantStyles: Record<MetricVariant, { bg: string; text: string; iconBg: string; iconColor: string }> = {
-    default: {
-      bg: "bg-card/50",
-      text: "text-foreground",
-      iconBg: "bg-muted/50",
-      iconColor: "text-muted-foreground",
-    },
-    goals: {
-      bg: "bg-gradient-to-br from-red-500/10 to-red-600/5 border-red-500/20",
-      text: "text-red-400",
-      iconBg: "bg-red-500/15",
-      iconColor: "text-red-400",
-    },
-    assists: {
-      bg: "bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20",
-      text: "text-blue-400",
-      iconBg: "bg-blue-500/15",
-      iconColor: "text-blue-400",
-    },
-    contribution: {
-      bg: "bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-emerald-500/20",
-      text: "text-emerald-400",
-      iconBg: "bg-emerald-500/15",
-      iconColor: "text-emerald-400",
-    },
-    defensive: {
-      bg: "bg-gradient-to-br from-cyan-500/10 to-cyan-600/5 border-cyan-500/20",
-      text: "text-cyan-400",
-      iconBg: "bg-cyan-500/15",
-      iconColor: "text-cyan-400",
-    },
-    gk: {
-      bg: "bg-gradient-to-br from-amber-500/10 to-amber-600/5 border-amber-500/20",
-      text: "text-amber-400",
-      iconBg: "bg-amber-500/15",
-      iconColor: "text-amber-400",
-    },
-    negative: {
-      bg: "bg-gradient-to-br from-rose-500/10 to-rose-600/5 border-rose-500/20",
-      text: "text-rose-400",
-      iconBg: "bg-rose-500/15",
-      iconColor: "text-rose-400",
-    },
-  };
-
-  const styles = variantStyles[variant];
+  const styles = VARIANT_STYLES[variant];
 
   return (
     <div
       className={cn(
-        "relative rounded-xl border p-4 transition-all hover:scale-[1.02]",
+        // Fixed structure: same height, padding, border-radius for ALL cards
+        "relative h-[88px] rounded-xl border p-4 transition-all hover:scale-[1.02]",
         styles.bg
       )}
     >
-      <div className="flex items-start justify-between">
-        <div className="space-y-1">
-          <p className={cn("text-3xl font-bold tracking-tight", styles.text)}>
+      {/* Fixed internal grid layout - identical for all cards */}
+      <div className="flex h-full items-start justify-between">
+        {/* Left: Value + Label - always same position */}
+        <div className="flex flex-col justify-between h-full min-w-0 flex-1">
+          <p className={cn(
+            "text-2xl sm:text-3xl font-bold tracking-tight leading-none truncate",
+            styles.text
+          )}>
             {value}
           </p>
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+          <p className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wide leading-tight mt-auto">
             {label}
           </p>
         </div>
-        <div className={cn("rounded-lg p-2", styles.iconBg)}>
+        
+        {/* Right: Icon - ALWAYS same size, position, container */}
+        <div className={cn(
+          // Fixed icon container: 32x32px, same border-radius, same position
+          "flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ml-2",
+          styles.iconBg
+        )}>
+          {/* Fixed icon size: always 16x16px (w-4 h-4) */}
           <Icon className={cn("w-4 h-4", styles.iconColor)} />
         </div>
       </div>
