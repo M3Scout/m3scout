@@ -13,83 +13,54 @@ export type CurrencyCode = "BRL" | "USD" | "EUR";
 
 interface CurrencyConfig {
   symbol: string;
-  decimalSeparator: string;
-  thousandSeparator: string;
   locale: string;
 }
 
 const CURRENCY_CONFIGS: Record<CurrencyCode, CurrencyConfig> = {
-  BRL: {
-    symbol: "R$",
-    decimalSeparator: ",",
-    thousandSeparator: ".",
-    locale: "pt-BR",
-  },
-  USD: {
-    symbol: "$",
-    decimalSeparator: ".",
-    thousandSeparator: ",",
-    locale: "en-US",
-  },
-  EUR: {
-    symbol: "€",
-    decimalSeparator: ",",
-    thousandSeparator: ".",
-    locale: "de-DE",
-  },
+  BRL: { symbol: "R$", locale: "pt-BR" },
+  USD: { symbol: "$", locale: "en-US" },
+  EUR: { symbol: "€", locale: "de-DE" },
 };
 
+const digitsOnly = (input: string) => input.replace(/\D+/g, "");
+
 /**
- * Parse a formatted currency string to a raw number
- * Handles any currency format and extracts the numeric value
+ * Parse a formatted currency string to a raw number.
+ * NOTE: This is best-effort; for the robust input use CurrencyInput (digits->cents).
  */
 export const parseCurrencyValue = (
   value: string,
-  currency: CurrencyCode = "BRL"
+  _currency: CurrencyCode = "BRL"
 ): number | null => {
   if (!value || value.trim() === "") return null;
-
-  const config = CURRENCY_CONFIGS[currency];
-
-  // Remove currency symbol and whitespace
-  let cleaned = value.replace(config.symbol, "").trim();
-
-  // Remove all thousand separators (escape the dot for regex)
-  const thousandRegex = new RegExp(
-    config.thousandSeparator === "." ? "\\." : config.thousandSeparator,
-    "g"
-  );
-  cleaned = cleaned.replace(thousandRegex, "");
-
-  // Replace decimal separator with dot for parsing
-  cleaned = cleaned.replace(config.decimalSeparator, ".");
-
-  const parsed = parseFloat(cleaned);
-  return isNaN(parsed) ? null : parsed;
+  const digits = digitsOnly(value);
+  if (!digits) return null;
+  return Number(digits) / 100;
 };
 
 /**
- * Format a number to a currency display string
+ * Format a number to a currency string (with 2 decimals).
  */
 export const formatCurrencyValue = (
   value: number | null | undefined,
   currency: CurrencyCode = "BRL",
   showSymbol: boolean = true
 ): string => {
-  if (value === null || value === undefined || isNaN(value)) return "";
+  if (value === null || value === undefined) return "";
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "";
 
-  const config = CURRENCY_CONFIGS[currency];
-
-  const formatted = new Intl.NumberFormat(config.locale, {
+  const { locale, symbol } = CURRENCY_CONFIGS[currency];
+  const formatted = new Intl.NumberFormat(locale, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(value);
+  }).format(n);
 
-  return showSymbol ? `${config.symbol} ${formatted}` : formatted;
+  return showSymbol ? `${symbol} ${formatted}` : formatted;
 };
 
 /**
- * Format a number to a currency display string for read-only view
+ * Read-only display formatter.
  */
 export const formatCurrencyDisplay = (
   value: number | string | null | undefined,
@@ -97,17 +68,16 @@ export const formatCurrencyDisplay = (
 ): string => {
   if (value === null || value === undefined || value === "") return "Não informado";
 
-  const numValue = typeof value === "string" ? parseFloat(value) : value;
-  if (isNaN(numValue)) return "Não informado";
+  const n = typeof value === "string" ? Number(value) : value;
+  if (!Number.isFinite(n)) return "Não informado";
 
-  const config = CURRENCY_CONFIGS[currency];
-
-  const formatted = new Intl.NumberFormat(config.locale, {
+  const { locale, symbol } = CURRENCY_CONFIGS[currency];
+  const formatted = new Intl.NumberFormat(locale, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(numValue);
+  }).format(n);
 
-  return `${config.symbol} ${formatted}`;
+  return `${symbol} ${formatted}`;
 };
 
 interface CurrencyInputProps {
@@ -121,6 +91,16 @@ interface CurrencyInputProps {
   showCurrencySelector?: boolean;
 }
 
+/**
+ * Robust "digits -> cents" currency input.
+ *
+ * Rules:
+ * - Only digits are accepted.
+ * - Each digit appends to the end.
+ * - Backspace removes last digit.
+ * - Paste keeps only digits.
+ * - Display is always formatted with Intl.NumberFormat.
+ */
 export function CurrencyInput({
   value,
   currency,
@@ -131,76 +111,134 @@ export function CurrencyInput({
   className,
   showCurrencySelector = true,
 }: CurrencyInputProps) {
-  const [displayValue, setDisplayValue] = React.useState("");
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const [centsDigits, setCentsDigits] = React.useState<string>("");
 
-  const config = CURRENCY_CONFIGS[currency];
+  const { locale, symbol } = CURRENCY_CONFIGS[currency];
 
-  // Update display value when value or currency changes externally
+  const formatted = React.useMemo(() => {
+    const cents = centsDigits ? Number(centsDigits) : null;
+    if (cents === null || !Number.isFinite(cents)) return "";
+
+    const amount = cents / 100;
+    return new Intl.NumberFormat(locale, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  }, [centsDigits, locale]);
+
+  // Keep internal digits in sync with external value changes.
   React.useEffect(() => {
-    if (value !== null && value !== undefined && !isNaN(value)) {
-      setDisplayValue(formatCurrencyValue(value, currency, false));
-    } else {
-      setDisplayValue("");
+    if (value === null || value === undefined || !Number.isFinite(Number(value))) {
+      if (centsDigits !== "") setCentsDigits("");
+      return;
     }
-  }, [value, currency]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawInput = e.target.value;
+    const cents = Math.round(Number(value) * 100);
+    const next = String(cents);
+    if (next !== centsDigits) setCentsDigits(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
 
-    // Remove everything except digits and the decimal separator
-    // First, keep only digits and our decimal separator
-    let cleaned = "";
-    let hasDecimal = false;
-    let decimalCount = 0;
-
-    for (const char of rawInput) {
-      if (char >= "0" && char <= "9") {
-        // After decimal, only allow 2 digits
-        if (hasDecimal) {
-          if (decimalCount < 2) {
-            cleaned += char;
-            decimalCount++;
-          }
-        } else {
-          cleaned += char;
-        }
-      } else if (char === config.decimalSeparator && !hasDecimal) {
-        cleaned += char;
-        hasDecimal = true;
+  const emit = React.useCallback(
+    (nextDigits: string) => {
+      setCentsDigits(nextDigits);
+      if (!nextDigits) {
+        onValueChange(null);
+        return;
       }
-      // Ignore thousand separators during input - they're just visual
+      const cents = Number(nextDigits);
+      if (!Number.isFinite(cents)) {
+        onValueChange(null);
+        return;
+      }
+      onValueChange(cents / 100);
+    },
+    [onValueChange]
+  );
+
+  const keepCaretAtEnd = React.useCallback(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    // next tick to ensure value is updated
+    requestAnimationFrame(() => {
+      const len = el.value.length;
+      try {
+        el.setSelectionRange(len, len);
+      } catch {
+        // ignore
+      }
+    });
+  }, []);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (disabled) return;
+
+    const key = e.key;
+
+    // Allow navigation keys
+    if (
+      key === "Tab" ||
+      key === "ArrowLeft" ||
+      key === "ArrowRight" ||
+      key === "ArrowUp" ||
+      key === "ArrowDown" ||
+      key === "Home" ||
+      key === "End"
+    ) {
+      return;
     }
 
-    setDisplayValue(cleaned);
+    if (key === "Backspace") {
+      e.preventDefault();
+      emit(centsDigits.slice(0, -1));
+      keepCaretAtEnd();
+      return;
+    }
 
-    // Parse to number for the callback
-    // Convert to standard format for parsing
-    const standardized = cleaned.replace(config.decimalSeparator, ".");
-    const numValue = standardized === "" ? null : parseFloat(standardized);
-    
-    if (numValue === null || !isNaN(numValue)) {
-      onValueChange(numValue);
+    if (key === "Delete") {
+      e.preventDefault();
+      emit("");
+      keepCaretAtEnd();
+      return;
+    }
+
+    // Digits -> append
+    if (key.length === 1 && key >= "0" && key <= "9") {
+      e.preventDefault();
+      const next = (centsDigits + key).replace(/^0+(?=\d)/, "");
+      emit(next);
+      keepCaretAtEnd();
+      return;
+    }
+
+    // Block everything else (including decimal separators)
+    if (key.length === 1) {
+      e.preventDefault();
+      keepCaretAtEnd();
     }
   };
 
-  const handleBlur = () => {
-    // Format properly on blur with thousand separators
-    if (value !== null && value !== undefined && !isNaN(value)) {
-      setDisplayValue(formatCurrencyValue(value, currency, false));
-    } else if (displayValue === "" || displayValue === config.decimalSeparator) {
-      setDisplayValue("");
-      onValueChange(null);
-    }
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    if (disabled) return;
+    e.preventDefault();
+    const text = e.clipboardData.getData("text") || "";
+    const digits = digitsOnly(text);
+    const next = digits.replace(/^0+(?=\d)/, "");
+    emit(next);
+    keepCaretAtEnd();
   };
 
   const handleFocus = () => {
-    // On focus, show raw number without thousand separators for easier editing
-    if (value !== null && value !== undefined && !isNaN(value)) {
-      // Show simple format: digits + decimal separator + 2 decimals
-      const simple = value.toFixed(2).replace(".", config.decimalSeparator);
-      setDisplayValue(simple);
-    }
+    keepCaretAtEnd();
+  };
+
+  const handleClick = () => {
+    keepCaretAtEnd();
+  };
+
+  const handleChange = () => {
+    // No-op: we fully control via keydown/paste.
   };
 
   return (
@@ -221,28 +259,32 @@ export function CurrencyInput({
           </SelectContent>
         </Select>
       )}
+
       <div className="relative flex-1">
         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-          {config.symbol}
+          {symbol}
         </span>
         <Input
           ref={inputRef}
           type="text"
-          inputMode="decimal"
-          value={displayValue}
-          onChange={handleInputChange}
-          onBlur={handleBlur}
+          inputMode="numeric"
+          pattern="[0-9]*"
+          value={formatted}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          onPaste={handlePaste}
           onFocus={handleFocus}
+          onClick={handleClick}
           placeholder={placeholder}
           disabled={disabled}
           className="pl-10"
+          aria-label="Valor monetário"
         />
       </div>
     </div>
   );
 }
 
-// Simple display component for read-only views
 interface CurrencyDisplayProps {
   value: number | string | null | undefined;
   currency?: CurrencyCode;
@@ -256,20 +298,16 @@ export function CurrencyDisplay({
   className,
   emptyText = "Não informado",
 }: CurrencyDisplayProps) {
-  const numValue = typeof value === "string" ? parseFloat(value) : value;
-  const isEmpty = numValue === null || numValue === undefined || isNaN(numValue);
+  const n = typeof value === "string" ? Number(value) : value;
+  const isEmpty = n === null || n === undefined || !Number.isFinite(n);
 
   if (isEmpty) {
-    return (
-      <span className={cn("text-muted-foreground text-sm", className)}>
-        {emptyText}
-      </span>
-    );
+    return <span className={cn("text-muted-foreground text-sm", className)}>{emptyText}</span>;
   }
 
   return (
     <span className={cn("text-lg font-bold text-foreground", className)}>
-      {formatCurrencyDisplay(numValue, currency)}
+      {formatCurrencyDisplay(n, currency)}
     </span>
   );
 }
