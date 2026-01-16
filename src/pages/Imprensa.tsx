@@ -31,21 +31,22 @@ const pressKitItems = [
     icon: Sparkles,
     title: "Logo M3 Agency",
     description: "Versões oficiais da marca para uso editorial.",
-    driveUrl: "https://drive.google.com/drive/folders/YOUR_LOGO_FOLDER_ID",
+    driveUrl: "https://drive.google.com/drive/folders/1f99p5pzV9qIcAk05ZaSDFlg2rKR4Eh81?usp=drive_link",
   },
   {
     id: 2,
     icon: Image,
     title: "Fotos dos Atletas",
     description: "Imagens oficiais para matérias e divulgações.",
-    driveUrl: "https://drive.google.com/drive/folders/YOUR_PHOTOS_FOLDER_ID",
+    driveUrl: "https://drive.google.com/drive/folders/1Ft7SwI4wmRKVqvbtSt3hrqJScOfO1vub?usp=drive_link",
   },
   {
     id: 3,
     icon: FileText,
     title: "Release Institucional",
     description: "Textos e informações oficiais sobre a agência.",
-    driveUrl: "https://drive.google.com/drive/folders/YOUR_RELEASE_FOLDER_ID",
+    // TODO: Substituir pelo link oficial quando disponível
+    driveUrl: "#",
   },
 ];
 
