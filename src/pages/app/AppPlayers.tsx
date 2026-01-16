@@ -62,6 +62,7 @@ interface Player {
   contract_status?: string | null;
   is_public: boolean;
   avg_score?: number | null;
+  score_trend?: number | null; // Difference from previous evaluation
   photo_url?: string | null;
   auto_rating?: number | null;
   auto_rating_details?: any;
@@ -149,20 +150,24 @@ const AppPlayers = () => {
       // Normalize to array (never let `players` become undefined/null)
       const safePlayersData = Array.isArray(playersData) ? playersData : [];
 
-      // Fetch average scores for all players (from scouting reports) - non-blocking
-      const scoresByPlayer: Record<string, number[]> = {};
+      // Fetch scores for all players (from scouting reports) - non-blocking
+      // We need individual scores with dates to calculate trends
+      const scoresByPlayer: Record<string, { score: number; date: string }[]> = {};
       try {
         const { data: scoresData } = await supabase
           .from("scouting_reports")
-          .select("player_id, final_score");
+          .select("player_id, final_score, match_date")
+          .order("match_date", { ascending: true });
 
         if (Array.isArray(scoresData)) {
-          // Calculate average scores per player
           scoresData.forEach((report) => {
             if (!scoresByPlayer[report.player_id]) {
               scoresByPlayer[report.player_id] = [];
             }
-            scoresByPlayer[report.player_id].push(report.final_score);
+            scoresByPlayer[report.player_id].push({
+              score: report.final_score,
+              date: report.match_date,
+            });
           });
         }
       } catch (e) {
@@ -171,14 +176,25 @@ const AppPlayers = () => {
 
       const playersWithScores = safePlayersData.map((player) => {
         const scores = scoresByPlayer[player.id];
-        const avgScore =
-          Array.isArray(scores) && scores.length > 0
-            ? scores.reduce((a, b) => a + b, 0) / scores.length
-            : null;
+        let avgScore: number | null = null;
+        let scoreTrend: number | null = null;
+
+        if (Array.isArray(scores) && scores.length > 0) {
+          // Calculate average
+          avgScore = scores.reduce((a, b) => a + b.score, 0) / scores.length;
+          
+          // Calculate trend: compare last score with previous score (or average of all previous)
+          if (scores.length >= 2) {
+            const lastScore = scores[scores.length - 1].score;
+            const previousScore = scores[scores.length - 2].score;
+            scoreTrend = lastScore - previousScore;
+          }
+        }
 
         return {
           ...player,
           avg_score: avgScore,
+          score_trend: scoreTrend,
         };
       });
 
@@ -686,6 +702,7 @@ const AppPlayers = () => {
                   photoUrl={player.photo_url}
                   autoRating={player.auto_rating}
                   avgScore={player.avg_score}
+                  scoreTrend={player.score_trend}
                   contractEnd={player.contract_end}
                   isPublic={player.is_public}
                   isArchived={player.is_archived}
@@ -709,6 +726,7 @@ const AppPlayers = () => {
                   photoUrl={player.photo_url}
                   autoRating={player.auto_rating}
                   avgScore={player.avg_score}
+                  scoreTrend={player.score_trend}
                   contractEnd={player.contract_end}
                   isPublic={player.is_public}
                   isArchived={player.is_archived}

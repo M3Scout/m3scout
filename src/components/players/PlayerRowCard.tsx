@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { MoreVertical, Eye, Edit, FileText, Archive, ArchiveRestore, Trash2 } from "lucide-react";
+import { MoreVertical, Eye, Edit, FileText, Archive, ArchiveRestore, Trash2, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -26,6 +26,7 @@ interface PlayerRowCardProps {
   photoUrl: string | null;
   autoRating: number | null;
   avgScore: number | null;
+  scoreTrend: number | null;
   contractEnd: string | null;
   isPublic: boolean;
   isArchived: boolean | null;
@@ -33,6 +34,35 @@ interface PlayerRowCardProps {
   onArchive: () => void;
   onDelete: () => void;
 }
+
+// Trend indicator component
+const TrendIndicator = ({ trend }: { trend: number | null }) => {
+  if (trend === null || trend === undefined) return null;
+  
+  const threshold = 0.1; // Minimum change to show trend
+  
+  if (Math.abs(trend) < threshold) {
+    return (
+      <span className="text-zinc-500" title="Estável">
+        <Minus className="w-3 h-3" />
+      </span>
+    );
+  }
+  
+  if (trend > 0) {
+    return (
+      <span className="text-emerald-400" title={`+${formatFixed(trend, 1)}`}>
+        <TrendingUp className="w-3 h-3" />
+      </span>
+    );
+  }
+  
+  return (
+    <span className="text-red-400" title={formatFixed(trend, 1)}>
+      <TrendingDown className="w-3 h-3" />
+    </span>
+  );
+};
 
 // Score Técnico colors (0-5 scale, higher is better)
 const getScoreColor = (score: number): string => {
@@ -73,6 +103,7 @@ export function PlayerRowCard({
   photoUrl,
   autoRating,
   avgScore,
+  scoreTrend,
   contractEnd,
   isPublic,
   isArchived,
@@ -133,16 +164,19 @@ export function PlayerRowCard({
         </span>
       </div>
 
-      {/* Score Técnico - PROMINENT */}
+      {/* Score Técnico - PROMINENT with Trend */}
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="flex flex-col items-center justify-center min-w-[60px]">
+            <div className="flex flex-col items-center justify-center min-w-[70px]">
               {avgScore !== null && avgScore !== undefined && Number.isFinite(avgScore) ? (
-                <div className={`px-3 py-1.5 rounded-lg border ${getScoreBgColor(avgScore)}`}>
-                  <span className={`text-lg font-bold tabular-nums ${getScoreColor(avgScore)}`}>
-                    {formatFixed(avgScore, 1)}
-                  </span>
+                <div className="flex items-center gap-1">
+                  <div className={`px-3 py-1.5 rounded-lg border ${getScoreBgColor(avgScore)}`}>
+                    <span className={`text-lg font-bold tabular-nums ${getScoreColor(avgScore)}`}>
+                      {formatFixed(avgScore, 1)}
+                    </span>
+                  </div>
+                  <TrendIndicator trend={scoreTrend} />
                 </div>
               ) : (
                 <span className="text-zinc-600 text-sm">—</span>
@@ -152,6 +186,11 @@ export function PlayerRowCard({
           </TooltipTrigger>
           <TooltipContent side="top">
             <p className="text-xs">Score Técnico (média dos relatórios de scouting)</p>
+            {scoreTrend !== null && scoreTrend !== undefined && (
+              <p className="text-xs text-muted-foreground">
+                Variação: {scoreTrend > 0 ? "+" : ""}{formatFixed(scoreTrend, 1)} vs última avaliação
+              </p>
+            )}
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
@@ -262,6 +301,7 @@ export function PlayerMobileCard({
   photoUrl,
   autoRating,
   avgScore,
+  scoreTrend,
   isPublic,
   isArchived,
   isAdmin,
@@ -363,13 +403,16 @@ export function PlayerMobileCard({
 
       {/* Scores Row */}
       <div className="flex items-center justify-between px-4 py-3 bg-zinc-900/50 border-t border-zinc-900">
-        {/* Score Técnico */}
+        {/* Score Técnico with Trend */}
         <div className="flex items-center gap-2">
           <span className="text-[10px] uppercase tracking-wider text-zinc-600">Score</span>
           {avgScore !== null && avgScore !== undefined && Number.isFinite(avgScore) ? (
-            <span className={`text-lg font-bold tabular-nums ${getScoreColor(avgScore)}`}>
-              {formatFixed(avgScore, 1)}
-            </span>
+            <div className="flex items-center gap-1">
+              <span className={`text-lg font-bold tabular-nums ${getScoreColor(avgScore)}`}>
+                {formatFixed(avgScore, 1)}
+              </span>
+              <TrendIndicator trend={scoreTrend} />
+            </div>
           ) : (
             <span className="text-zinc-600">—</span>
           )}
