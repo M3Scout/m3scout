@@ -1,20 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, useInView } from "framer-motion";
-import heroStadium from "@/assets/hero-stadium.jpg";
 
 const Sobre = () => {
-  const [scrollY, setScrollY] = useState(0);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [isHovering, setIsHovering] = useState(false);
+  const [activeService, setActiveService] = useState<number | null>(null);
   const conceptRef = useRef<HTMLDivElement>(null);
   const servicesRef = useRef<HTMLDivElement>(null);
   const manifestoRef = useRef<HTMLDivElement>(null);
-  const pageRef = useRef<HTMLDivElement>(null);
   
-  const conceptInView = useInView(conceptRef, { once: true, margin: "-100px" });
-  const servicesInView = useInView(servicesRef, { once: true, margin: "-100px" });
-  const manifestoInView = useInView(manifestoRef, { once: true, margin: "-100px" });
+  const conceptInView = useInView(conceptRef, { once: true, margin: "-80px" });
+  const servicesInView = useInView(servicesRef, { once: true, margin: "-80px" });
+  const manifestoInView = useInView(manifestoRef, { once: true, margin: "-80px" });
 
   // Fix scroll bug - always start at top
   useEffect(() => {
@@ -22,24 +18,6 @@ const Sobre = () => {
     if ('scrollRestoration' in history) {
       history.scrollRestoration = 'manual';
     }
-  }, []);
-
-  // Parallax effect for hero
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrollY(window.scrollY);
-    };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  // Custom cursor tracking
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePosition({ x: e.clientX, y: e.clientY });
-    };
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
   const services = [
@@ -60,320 +38,209 @@ const Sobre = () => {
     }
   ];
 
-  // Word-by-word animation variants
-  const headlineWords1 = "Transformamos talento em direção.".split(" ");
-  const headlineWords2 = "Criamos caminhos reais no futebol de elite.".split(" ");
-
-  const wordVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: (i: number) => ({
-      opacity: 1,
-      y: 0,
-      transition: {
-        delay: 0.6 + i * 0.1,
-        duration: 0.5,
-        ease: "easeOut" as const
-      }
-    })
-  };
-
   return (
-    <div 
-      ref={pageRef}
-      className="min-h-screen bg-[#0a0a0a] cursor-none"
-      onMouseEnter={() => setIsHovering(false)}
-    >
-      {/* Custom Cursor */}
-      <motion.div
-        className="fixed top-0 left-0 w-4 h-4 rounded-full bg-[#e52421] pointer-events-none z-[9999] mix-blend-difference hidden md:block"
-        animate={{
-          x: mousePosition.x - 8,
-          y: mousePosition.y - 8,
-          scale: isHovering ? 2.5 : 1,
-        }}
-        transition={{
-          type: "spring",
-          stiffness: 500,
-          damping: 28,
-          mass: 0.5
-        }}
-      />
-      <motion.div
-        className="fixed top-0 left-0 w-10 h-10 rounded-full border border-white/20 pointer-events-none z-[9998] hidden md:block"
-        animate={{
-          x: mousePosition.x - 20,
-          y: mousePosition.y - 20,
-          scale: isHovering ? 1.5 : 1,
-        }}
-        transition={{
-          type: "spring",
-          stiffness: 200,
-          damping: 20,
-          mass: 0.8
-        }}
-      />
-
-      {/* HERO SECTION - Full Screen */}
-      <section className="relative h-screen w-full overflow-hidden">
-        {/* Background Image with Parallax */}
+    <div className="min-h-screen bg-[#0a0a0a]" style={{ fontFamily: "'Poppins', sans-serif" }}>
+      
+      {/* HERO SECTION - Clean, Premium */}
+      <section className="relative min-h-screen w-full flex items-center">
+        {/* Subtle grain texture */}
         <div 
-          className="absolute inset-0 scale-110"
-          style={{ 
-            transform: `translateY(${scrollY * 0.3}px) scale(1.1)`,
-          }}
-        >
-          <img 
-            src={heroStadium} 
-            alt="" 
-            className="w-full h-full object-cover opacity-40"
-          />
-        </div>
-        
-        {/* Dark Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a]/70 via-[#0a0a0a]/50 to-[#0a0a0a]" />
-        
-        {/* Subtle Grain/Noise */}
-        <div 
-          className="absolute inset-0 opacity-[0.03] pointer-events-none"
+          className="absolute inset-0 opacity-[0.02] pointer-events-none"
           style={{
             backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
           }}
         />
 
         {/* Hero Content */}
-        <div className="relative z-10 h-full flex items-center">
-          <div className="mx-auto w-full max-w-[1400px] px-6 lg:px-12">
-            <div className="max-w-4xl">
-              {/* M3 Agency Title - Letter by letter */}
+        <div className="relative z-10 w-full">
+          <div className="mx-auto max-w-[1200px] px-6 md:px-12 lg:px-16 py-32 md:py-40">
+            <div className="max-w-3xl">
+              
+              {/* M3 Agency Title */}
               <motion.h1 
-                className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight text-white mb-6 overflow-hidden"
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
+                className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-semibold tracking-tight text-white mb-8"
               >
-                <motion.span 
-                  className="text-[#e52421] inline-block"
-                  initial={{ opacity: 0, y: 40 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.7, delay: 0.1, ease: [0.25, 0.4, 0.25, 1] }}
-                >
-                  M3
-                </motion.span>
-                <motion.span 
-                  className="inline-block ml-4"
-                  initial={{ opacity: 0, y: 40 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.7, delay: 0.25, ease: [0.25, 0.4, 0.25, 1] }}
-                >
-                  Agency
-                </motion.span>
+                <span className="text-[#e52421]">M3</span> Agency
               </motion.h1>
 
               {/* Subtitle */}
               <motion.p 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.45 }}
-                className="text-lg sm:text-xl md:text-2xl text-neutral-400 mb-10 max-w-2xl"
+                transition={{ duration: 0.7, delay: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+                className="text-lg sm:text-xl md:text-2xl text-neutral-400 font-light mb-12 leading-relaxed tracking-wide"
               >
                 Scouting, estratégia e decisões de carreira no futebol profissional.
               </motion.p>
 
-              {/* Editorial Headline - Word by word */}
-              <div className="mb-12">
-                <p 
-                  className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl leading-[1.25] text-white/90 font-light"
-                  style={{ fontFamily: '"Times New Roman", Georgia, serif' }}
-                >
-                  {/* First line */}
-                  <span className="block overflow-hidden">
-                    {headlineWords1.map((word, i) => (
-                      <motion.span
-                        key={i}
-                        custom={i}
-                        variants={wordVariants}
-                        initial="hidden"
-                        animate="visible"
-                        className="inline-block mr-[0.3em]"
-                      >
-                        {word}
-                      </motion.span>
-                    ))}
-                  </span>
-                  {/* Second line */}
-                  <span className="block overflow-hidden mt-2">
-                    {headlineWords2.map((word, i) => (
-                      <motion.span
-                        key={i}
-                        custom={i + headlineWords1.length}
-                        variants={wordVariants}
-                        initial="hidden"
-                        animate="visible"
-                        className="inline-block mr-[0.3em] text-white"
-                      >
-                        {word}
-                      </motion.span>
-                    ))}
-                  </span>
+              {/* Editorial Headline */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, delay: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+                className="mb-16"
+              >
+                <p className="text-2xl sm:text-3xl md:text-4xl text-white/90 font-light leading-[1.4] tracking-wide">
+                  Transformamos talento em direção.
+                  <br />
+                  <span className="text-neutral-400">Criamos caminhos reais no futebol de elite.</span>
                 </p>
-              </div>
+              </motion.div>
 
-              {/* CTA Button */}
+              {/* CTA Link */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ duration: 0.6, delay: 1.8 }}
+                transition={{ duration: 0.6, delay: 0.6 }}
               >
                 <Link 
                   to="/contato"
-                  className="inline-flex items-center gap-3 text-sm tracking-wide text-neutral-300 hover:text-white transition-colors duration-300 group cursor-none"
-                  onMouseEnter={() => setIsHovering(true)}
-                  onMouseLeave={() => setIsHovering(false)}
+                  className="inline-flex items-center gap-4 text-sm tracking-widest uppercase text-neutral-500 hover:text-white transition-colors duration-300 group"
                 >
-                  <span className="w-8 h-px bg-neutral-500 group-hover:w-12 group-hover:bg-[#e52421] transition-all duration-300" />
+                  <span className="w-10 h-px bg-neutral-600 group-hover:w-16 group-hover:bg-[#e52421] transition-all duration-300" />
                   Falar com a M3
                 </Link>
               </motion.div>
             </div>
           </div>
         </div>
-
-        {/* Scroll Indicator */}
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 2 }}
-          className="absolute bottom-10 left-1/2 -translate-x-1/2"
-        >
-          <div className="w-px h-16 bg-gradient-to-b from-transparent via-neutral-600 to-transparent animate-pulse" />
-        </motion.div>
       </section>
 
-      {/* BLOCO CONCEITO - Editorial */}
-      <section className="py-24 md:py-32 lg:py-40 bg-[#0a0a0a]">
-        <div className="mx-auto max-w-[1400px] px-6 lg:px-12">
-          <div 
+      {/* BLOCO EDITORIAL */}
+      <section className="py-32 md:py-40 lg:py-48 bg-[#0a0a0a]">
+        <div className="mx-auto max-w-[1200px] px-6 md:px-12 lg:px-16">
+          <motion.div 
             ref={conceptRef}
-            className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16"
+            initial={{ opacity: 0, y: 40 }}
+            animate={conceptInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
+            className="max-w-3xl"
           >
-            {/* Empty column for breathing space (desktop only) */}
-            <div className="hidden lg:block lg:col-span-4" />
-            
-            {/* Content column */}
-            <motion.div 
-              initial={{ opacity: 0, y: 30 }}
-              animate={conceptInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.7, ease: "easeOut" }}
-              className="lg:col-span-8"
-            >
-              <p 
-                className="text-xl sm:text-2xl md:text-3xl lg:text-4xl leading-[1.5] text-neutral-300 font-light"
-                style={{ fontFamily: '"Times New Roman", Georgia, serif' }}
-              >
-                <span className="text-white">A M3 Agency atua onde talento encontra decisão.</span>
-                <br /><br />
-                Mais do que representar atletas, operamos como um núcleo estratégico: análise, visão de mercado e construção de carreira com base em dados, contexto competitivo e leitura real do jogo.
-              </p>
-            </motion.div>
-          </div>
+            <p className="text-xl sm:text-2xl md:text-3xl text-neutral-300 font-light leading-[1.8] tracking-wide">
+              <span className="text-white font-normal">A M3 Agency atua onde talento encontra decisão.</span>
+              <br /><br />
+              Mais do que representar atletas, operamos como um núcleo estratégico: análise, visão de mercado e construção de carreira com base em dados, contexto competitivo e leitura real do jogo.
+            </p>
+          </motion.div>
         </div>
       </section>
 
       {/* O QUE FAZEMOS - Editorial List */}
-      <section className="py-24 md:py-32 lg:py-40 bg-[#0f0f0f]">
-        <div className="mx-auto max-w-[1400px] px-6 lg:px-12">
+      <section className="py-24 md:py-32 lg:py-40 bg-[#0d0d0d]">
+        <div className="mx-auto max-w-[1200px] px-6 md:px-12 lg:px-16">
+          
           {/* Section Label */}
           <motion.p 
             initial={{ opacity: 0 }}
             animate={servicesInView ? { opacity: 1 } : {}}
             transition={{ duration: 0.5 }}
-            className="text-[10px] uppercase tracking-[0.3em] text-neutral-600 mb-16 md:mb-20"
+            className="text-[11px] uppercase tracking-[0.3em] text-neutral-600 font-medium mb-16 md:mb-20"
           >
             O que fazemos
           </motion.p>
 
           {/* Services List */}
-          <div ref={servicesRef} className="space-y-0">
+          <div ref={servicesRef}>
             {services.map((service, index) => (
               <motion.div
                 key={service.number}
                 initial={{ opacity: 0, y: 20 }}
                 animate={servicesInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.6, delay: index * 0.15 }}
-                className="group border-t border-neutral-800/60 py-10 md:py-14 lg:py-16"
-                onMouseEnter={() => setIsHovering(true)}
-                onMouseLeave={() => setIsHovering(false)}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                className="group border-t border-neutral-800/50 py-10 md:py-12 lg:py-14 cursor-pointer"
+                onMouseEnter={() => setActiveService(index)}
+                onMouseLeave={() => setActiveService(null)}
               >
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 items-start">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-8 items-baseline">
+                  
                   {/* Number */}
                   <div className="md:col-span-2">
-                    <span className="text-3xl md:text-4xl lg:text-5xl font-bold text-[#e52421] opacity-60 group-hover:opacity-100 transition-opacity duration-300">
+                    <span 
+                      className={`text-2xl md:text-3xl lg:text-4xl font-semibold transition-colors duration-300 ${
+                        activeService === index ? 'text-[#e52421]' : 'text-neutral-700'
+                      }`}
+                    >
                       {service.number}
                     </span>
                   </div>
                   
                   {/* Title */}
                   <div className="md:col-span-4">
-                    <h3 className="text-xl md:text-2xl lg:text-3xl font-semibold text-white group-hover:text-white/90 transition-colors duration-300">
+                    <h3 
+                      className={`text-xl md:text-2xl lg:text-3xl font-medium transition-colors duration-300 ${
+                        activeService === index ? 'text-white' : 'text-neutral-500'
+                      }`}
+                    >
                       {service.title}
                     </h3>
                   </div>
                   
                   {/* Description */}
                   <div className="md:col-span-6">
-                    <p className="text-base md:text-lg text-neutral-500 leading-relaxed group-hover:text-neutral-400 transition-colors duration-300">
+                    <p 
+                      className={`text-base md:text-lg font-light leading-relaxed transition-colors duration-300 ${
+                        activeService === index ? 'text-neutral-300' : 'text-neutral-600'
+                      }`}
+                    >
                       {service.description}
                     </p>
                   </div>
                 </div>
                 
                 {/* Hover accent line */}
-                <div className="mt-8 md:mt-10 h-px bg-gradient-to-r from-[#e52421]/0 via-[#e52421]/0 to-transparent group-hover:from-[#e52421]/40 group-hover:via-[#e52421]/20 transition-all duration-500" />
+                <div 
+                  className={`mt-8 md:mt-10 h-px transition-all duration-500 ${
+                    activeService === index 
+                      ? 'bg-gradient-to-r from-[#e52421]/60 via-[#e52421]/20 to-transparent' 
+                      : 'bg-transparent'
+                  }`} 
+                />
               </motion.div>
             ))}
             
             {/* Bottom border */}
-            <div className="border-t border-neutral-800/60" />
+            <div className="border-t border-neutral-800/50" />
           </div>
         </div>
       </section>
 
-      {/* BLOCO MANIFESTO - Assinatura */}
-      <section className="py-32 md:py-40 lg:py-52 bg-[#0a0a0a]">
-        <div className="mx-auto max-w-[1400px] px-6 lg:px-12">
+      {/* BLOCO MANIFESTO */}
+      <section className="py-40 md:py-52 lg:py-64 bg-[#0a0a0a]">
+        <div className="mx-auto max-w-[1200px] px-6 md:px-12 lg:px-16">
           <motion.div 
             ref={manifestoRef}
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 40 }}
             animate={manifestoInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className="text-center"
+            transition={{ duration: 0.9, ease: [0.25, 0.1, 0.25, 1] }}
+            className="max-w-4xl mx-auto text-center"
           >
-            <p 
-              className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl leading-[1.4] text-white font-light max-w-5xl mx-auto"
-              style={{ fontFamily: '"Times New Roman", Georgia, serif' }}
-            >
+            <p className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-light leading-[1.6] tracking-wide">
               <span className="text-neutral-500">Talento sem direção é ruído.</span>
               <br />
               <span className="text-neutral-500">Direção sem estratégia é sorte.</span>
-              <br />
-              <span className="text-white mt-4 block pt-4">Nós trabalhamos com os dois.</span>
+            </p>
+            <p className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-normal text-white leading-[1.6] tracking-wide mt-8">
+              Nós trabalhamos com os dois.
             </p>
           </motion.div>
         </div>
       </section>
 
       {/* FOOTER SIGNATURE */}
-      <section className="py-20 md:py-24 bg-[#0a0a0a] border-t border-neutral-900">
-        <div className="mx-auto max-w-[1400px] px-6 lg:px-12">
+      <section className="py-16 md:py-20 bg-[#0a0a0a] border-t border-neutral-900/50">
+        <div className="mx-auto max-w-[1200px] px-6 md:px-12 lg:px-16">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-            <p className="text-sm text-neutral-600">
+            <p className="text-xs text-neutral-600 tracking-wide">
               © 2025 M3 Agency. Todos os direitos reservados.
             </p>
-            <p 
-              className="text-lg md:text-xl text-neutral-400"
-              style={{ fontFamily: '"Times New Roman", Georgia, serif' }}
-            >
-              <span className="text-[#e52421] font-semibold">M3</span>{" "}
+            <p className="text-base md:text-lg text-neutral-500 font-light tracking-wide">
+              <span className="text-[#e52421] font-medium">M3</span>{" "}
               <span className="text-white">Agency</span>{" "}
-              <span className="text-neutral-600 mx-2">—</span>{" "}
-              <span className="italic">Scouting que vira contrato.</span>
+              <span className="text-neutral-700 mx-2">—</span>{" "}
+              <span className="text-neutral-400 italic">Scouting que vira contrato.</span>
             </p>
           </div>
         </div>
