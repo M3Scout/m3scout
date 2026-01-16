@@ -15,6 +15,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { extractYouTubeVideoId, safeArray } from "@/lib/utils";
 import { ImageCropperModal } from "@/components/players/ImageCropperModal";
+import { CurrencyInput, CurrencyCode } from "@/components/ui/currency-input";
+import { formatFinancialValue } from "@/lib/formatters";
 
 const positions = [
   "Goleiro",
@@ -73,7 +75,10 @@ export default function NewPlayer() {
     // Private fields
     contract_end: "",
     contract_notes: "",
-    salary_info: "",
+    salary_amount: null as number | null,
+    salary_currency: "BRL" as CurrencyCode,
+    release_clause_amount: null as number | null,
+    release_clause_currency: "BRL" as CurrencyCode,
     internal_notes: "",
     agent_name: "",
     agent_contact: "",
@@ -203,7 +208,8 @@ export default function NewPlayer() {
         photo_url,
         contract_end: formData.contract_end || null,
         contract_notes: formData.contract_notes || null,
-        salary_info: formData.salary_info || null,
+        salary_info: formData.salary_amount ? formatFinancialValue(formData.salary_amount, formData.salary_currency) : null,
+        release_clause: formData.release_clause_amount ? formatFinancialValue(formData.release_clause_amount, formData.release_clause_currency) : null,
         internal_notes: formData.internal_notes || null,
         agent_name: formData.agent_name || null,
         agent_contact: formData.agent_contact || null,
@@ -488,26 +494,37 @@ export default function NewPlayer() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="salary_info">Informações Salariais</Label>
-                <Textarea
-                  id="salary_info"
-                  value={formData.salary_info}
-                  onChange={(e) => handleChange("salary_info", e.target.value)}
-                  placeholder="Salário atual, pretensão, etc."
-                  rows={2}
+                <Label>Salário</Label>
+                <CurrencyInput
+                  value={formData.salary_amount}
+                  currency={formData.salary_currency}
+                  onValueChange={(val) => handleChange("salary_amount", val)}
+                  onCurrencyChange={(curr) => handleChange("salary_currency", curr)}
+                  placeholder="0,00"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="contract_notes">Notas de Contrato</Label>
-                <Textarea
-                  id="contract_notes"
-                  value={formData.contract_notes}
-                  onChange={(e) => handleChange("contract_notes", e.target.value)}
-                  placeholder="Cláusulas, multa rescisória, etc."
-                  rows={2}
+                <Label>Multa Rescisória</Label>
+                <CurrencyInput
+                  value={formData.release_clause_amount}
+                  currency={formData.release_clause_currency}
+                  onValueChange={(val) => handleChange("release_clause_amount", val)}
+                  onCurrencyChange={(curr) => handleChange("release_clause_currency", curr)}
+                  placeholder="0,00"
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="contract_notes">Notas de Contrato</Label>
+              <Textarea
+                id="contract_notes"
+                value={formData.contract_notes}
+                onChange={(e) => handleChange("contract_notes", e.target.value)}
+                placeholder="Cláusulas especiais, observações, etc."
+                rows={2}
+              />
             </div>
 
             <div className="space-y-2">

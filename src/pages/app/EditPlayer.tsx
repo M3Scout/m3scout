@@ -67,6 +67,30 @@ const estimatedLevels = [
   "Série D", "Série C", "Série B", "Série A", "Internacional",
 ];
 
+import { CurrencyInput, CurrencyCode, parseCurrencyValue } from "@/components/ui/currency-input";
+import { formatFinancialValue } from "@/lib/formatters";
+
+// Helper functions to parse legacy string-based salary/release clause
+const parseSalaryFromLegacy = (value: string | null | undefined): number | null => {
+  if (!value) return null;
+  // Remove currency symbols and format characters
+  const cleaned = value.replace(/[R$€$\s.]/g, "").replace(",", ".");
+  const parsed = parseFloat(cleaned);
+  return isNaN(parsed) ? null : parsed;
+};
+
+const parseCurrencyFromLegacy = (value: string | null | undefined): CurrencyCode => {
+  if (!value) return "BRL";
+  if (value.includes("$") && !value.includes("R$")) return "USD";
+  if (value.includes("€")) return "EUR";
+  return "BRL";
+};
+
+const formatLegacySalary = (amount: number | null, currency: CurrencyCode): string | null => {
+  if (amount === null || amount === undefined) return null;
+  return formatFinancialValue(amount, currency);
+};
+
 interface FormData {
   // Basic
   full_name: string;
@@ -101,8 +125,10 @@ interface FormData {
   contract_start: string;
   contract_end: string;
   contract_notes: string;
-  salary_info: string;
-  release_clause: string;
+  salary_amount: number | null;
+  salary_currency: CurrencyCode;
+  release_clause_amount: number | null;
+  release_clause_currency: CurrencyCode;
   contract_status: string;
   passports: string[];
   agent_name: string;
@@ -127,8 +153,10 @@ const initialFormData: FormData = {
   max_speed: "", sprint_30m: "", vo2_max: "", last_physical_evaluation: "",
   playing_height_preference: "", play_style: "", primary_tactical_role: "",
   secondary_tactical_role: "", strengths: [], areas_to_develop: [],
-  contract_start: "", contract_end: "", contract_notes: "", salary_info: "",
-  release_clause: "", contract_status: "contracted", passports: [],
+  contract_start: "", contract_end: "", contract_notes: "",
+  salary_amount: null, salary_currency: "BRL",
+  release_clause_amount: null, release_clause_currency: "BRL",
+  contract_status: "contracted", passports: [],
   agent_name: "", agent_contact: "",
   physical_status: "fit", medical_notes: "",
   overall_rating: "", potential_rating: "", ready_to_compete: null,
@@ -199,8 +227,10 @@ export default function EditPlayer() {
         contract_start: data.contract_start || "",
         contract_end: data.contract_end || "",
         contract_notes: data.contract_notes || "",
-        salary_info: data.salary_info || "",
-        release_clause: data.release_clause || "",
+        salary_amount: parseSalaryFromLegacy(data.salary_info),
+        salary_currency: parseCurrencyFromLegacy(data.salary_info),
+        release_clause_amount: parseSalaryFromLegacy(data.release_clause),
+        release_clause_currency: parseCurrencyFromLegacy(data.release_clause),
         contract_status: data.contract_status || "contracted",
         passports: data.passports || [],
         agent_name: data.agent_name || "",
@@ -382,8 +412,8 @@ export default function EditPlayer() {
           contract_start: formData.contract_start || null,
           contract_end: formData.contract_end || null,
           contract_notes: formData.contract_notes || null,
-          salary_info: formData.salary_info || null,
-          release_clause: formData.release_clause || null,
+          salary_info: formatLegacySalary(formData.salary_amount, formData.salary_currency),
+          release_clause: formatLegacySalary(formData.release_clause_amount, formData.release_clause_currency),
           contract_status: formData.contract_status || null,
           passports: formData.passports,
           agent_name: formData.agent_name || null,
@@ -837,9 +867,15 @@ export default function EditPlayer() {
                     <Label>Contato do Agente</Label>
                     <Input value={formData.agent_contact} onChange={(e) => handleChange("agent_contact", e.target.value)} />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 sm:col-span-2">
                     <Label>Multa Rescisória</Label>
-                    <Input value={formData.release_clause} onChange={(e) => handleChange("release_clause", e.target.value)} placeholder="Ex: R$ 10.000.000" />
+                    <CurrencyInput
+                      value={formData.release_clause_amount}
+                      currency={formData.release_clause_currency}
+                      onValueChange={(val) => handleChange("release_clause_amount", val)}
+                      onCurrencyChange={(curr) => handleChange("release_clause_currency", curr)}
+                      placeholder="0,00"
+                    />
                   </div>
                 </div>
 
@@ -847,8 +883,14 @@ export default function EditPlayer() {
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>Informações Salariais</Label>
-                    <Textarea value={formData.salary_info} onChange={(e) => handleChange("salary_info", e.target.value)} rows={3} />
+                    <Label>Salário</Label>
+                    <CurrencyInput
+                      value={formData.salary_amount}
+                      currency={formData.salary_currency}
+                      onValueChange={(val) => handleChange("salary_amount", val)}
+                      onCurrencyChange={(curr) => handleChange("salary_currency", curr)}
+                      placeholder="0,00"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Notas de Contrato</Label>

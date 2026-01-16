@@ -115,3 +115,66 @@ export const formatMarketValuePrecise = (
   }
   return `${symbol}${n.toLocaleString()}`;
 };
+
+/**
+ * Currency codes supported by the system
+ */
+export type CurrencyCode = "BRL" | "USD" | "EUR";
+
+/**
+ * Currency configuration for display
+ */
+export const CURRENCY_SYMBOLS: Record<CurrencyCode, string> = {
+  BRL: "R$",
+  USD: "$",
+  EUR: "€",
+};
+
+/**
+ * Format a financial value with proper currency formatting
+ * This is for display purposes, showing full formatted value
+ */
+export const formatFinancialValue = (
+  value: unknown,
+  currency: CurrencyCode = "BRL"
+): string => {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "Não informado";
+
+  const locales: Record<CurrencyCode, string> = {
+    BRL: "pt-BR",
+    USD: "en-US",
+    EUR: "de-DE",
+  };
+
+  const symbol = CURRENCY_SYMBOLS[currency];
+  const locale = locales[currency];
+
+  const formatted = new Intl.NumberFormat(locale, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(n);
+
+  return `${symbol} ${formatted}`;
+};
+
+/**
+ * Format a compact financial value (with K/M abbreviations)
+ */
+export const formatFinancialCompact = (
+  value: unknown,
+  currency: CurrencyCode = "BRL"
+): string => {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "—";
+
+  const symbol = CURRENCY_SYMBOLS[currency];
+
+  if (n >= 1000000) {
+    return `${symbol} ${(n / 1000000).toFixed(1)}M`;
+  }
+  if (n >= 1000) {
+    return `${symbol} ${(n / 1000).toFixed(0)}K`;
+  }
+  return `${symbol} ${n.toLocaleString()}`;
+};
