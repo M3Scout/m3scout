@@ -2,10 +2,9 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   Select,
@@ -18,53 +17,34 @@ import {
   Search, 
   Plus, 
   Filter, 
-  MoreVertical,
-  Eye,
-  FileText,
-  Edit,
   Loader2,
-  Trash2,
   X,
-  
   LayoutList,
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
   User,
-  MapPin,
-  Calendar,
   ChevronLeft,
   ChevronRight,
-  Archive,
-  ArchiveRestore,
   GitCompare,
   AlertTriangle,
   RefreshCw,
   ChevronsDown,
   ClipboardList,
-  Star,
 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { DeletePlayerDialog } from "@/components/players/DeletePlayerDialog";
-import { PlayerRatingBadge } from "@/components/players/PlayerRatingBadge";
 import { ScoutingPlayerCard } from "@/components/players/ScoutingPlayerCard";
+import { PlayerRowCard, PlayerMobileCard } from "@/components/players/PlayerRowCard";
 import { BulkRecalculateButton } from "@/components/players/BulkRecalculateButton";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { formatFixed } from "@/lib/formatters";
 import { PlayersListSkeleton } from "@/components/players/PlayersListSkeleton";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { safeArray } from "@/lib/utils";
@@ -104,6 +84,7 @@ const INFINITE_SCROLL_PAGE_SIZE = 24;
 
 const AppPlayers = () => {
   const { isAdmin } = useAuth();
+  const isMobile = useIsMobile();
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -657,195 +638,87 @@ const AppPlayers = () => {
           </div>
         </div>
       ) : viewMode === "table" ? (
-        /* Table View - M3 Admin Design */
-        <div className="admin-card overflow-hidden animate-fade-in delay-100">
-          <div className="overflow-x-auto">
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th 
-                    className="cursor-pointer hover:text-white transition-colors"
-                    onClick={() => handleSort("full_name")}
-                  >
-                    <span className="flex items-center">
-                      Atleta
-                      <SortIcon field="full_name" />
-                    </span>
-                  </th>
-                  <th 
-                    className="cursor-pointer hover:text-white transition-colors"
-                    onClick={() => handleSort("position")}
-                  >
-                    <span className="flex items-center">
-                      Posição
-                      <SortIcon field="position" />
-                    </span>
-                  </th>
-                  <th 
-                    className="cursor-pointer hover:text-white transition-colors"
-                    onClick={() => handleSort("current_club")}
-                  >
-                    <span className="flex items-center">
-                      Clube
-                      <SortIcon field="current_club" />
-                    </span>
-                  </th>
-                  <th 
-                    className="cursor-pointer hover:text-white transition-colors"
-                    onClick={() => handleSort("auto_rating")}
-                  >
-                    <span className="flex items-center">
-                      Nota
-                      <SortIcon field="auto_rating" />
-                    </span>
-                  </th>
-                  <th 
-                    className="cursor-pointer hover:text-white transition-colors"
-                    onClick={() => handleSort("avg_score")}
-                  >
-                    <span className="flex items-center">
-                      Média
-                      <SortIcon field="avg_score" />
-                    </span>
-                  </th>
-                  <th 
-                    className="cursor-pointer hover:text-white transition-colors"
-                    onClick={() => handleSort("contract_end")}
-                  >
-                    <span className="flex items-center">
-                      Contrato
-                      <SortIcon field="contract_end" />
-                    </span>
-                  </th>
-                  <th 
-                    className="cursor-pointer hover:text-white transition-colors"
-                    onClick={() => handleSort("is_public")}
-                  >
-                    <span className="flex items-center">
-                      Status
-                      <SortIcon field="is_public" />
-                    </span>
-                  </th>
-                  <th className="text-right">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {safeArray(paginatedPlayers).map((player) => (
-                  <tr key={player.id}>
-                    <td>
-                      <div>
-                        <p className="admin-table-cell-primary">{player.full_name}</p>
-                        <p className="text-[11px] text-zinc-600">
-                          {player.age ? `${player.age} anos` : ''}{player.age && player.nationality ? ' • ' : ''}{player.nationality}
-                        </p>
-                      </div>
-                    </td>
-                    <td>
-                      <span className="admin-badge-primary">{player.position || "N/A"}</span>
-                    </td>
-                    <td className="admin-table-cell-muted">
-                      {player.current_club || '—'}
-                    </td>
-                    <td>
-                      {player.auto_rating !== null && player.auto_rating !== undefined ? (
-                        <PlayerRatingBadge
-                          rating={player.auto_rating}
-                          ratingDetails={player.auto_rating_details}
-                          playerPosition={player.position}
-                          showReliability={false}
-                          size="sm"
-                        />
-                      ) : (
-                        <span className="text-zinc-600 text-sm">—</span>
-                      )}
-                    </td>
-                    <td>
-                      {player.avg_score !== null && player.avg_score !== undefined && Number.isFinite(player.avg_score) ? (
-                        <span className="font-semibold text-white tabular-nums">{formatFixed(player.avg_score, 1)}</span>
-                      ) : (
-                        <span className="text-zinc-600">—</span>
-                      )}
-                    </td>
-                    <td className="admin-table-cell-muted tabular-nums">
-                      {player.contract_end 
-                        ? new Date(player.contract_end).toLocaleDateString("pt-BR") 
-                        : '—'}
-                    </td>
-                    <td>
-                      <div className="flex items-center gap-1.5">
-                        <span className={
-                          player.is_public 
-                            ? "admin-badge-success" 
-                            : "admin-badge-default"
-                        }>
-                          {player.is_public ? "Público" : "Privado"}
-                        </span>
-                        {player.is_archived && (
-                          <span className="admin-badge-warning">
-                            Arquivado
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreVertical className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem asChild>
-                            <Link to={`/app/players/${player.id}`}>
-                              <Eye className="w-4 h-4 mr-2" />
-                              Ver Detalhes
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <Link to={`/app/players/${player.id}/edit`}>
-                              <Edit className="w-4 h-4 mr-2" />
-                              Editar
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <Link to={`/app/reports/new?player=${player.id}`}>
-                              <FileText className="w-4 h-4 mr-2" />
-                              Novo Relatório
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => handleArchivePlayer(player)}
-                          >
-                            {player.is_archived ? (
-                              <>
-                                <ArchiveRestore className="w-4 h-4 mr-2" />
-                                Restaurar
-                              </>
-                            ) : (
-                              <>
-                                <Archive className="w-4 h-4 mr-2" />
-                                Arquivar
-                              </>
-                            )}
-                          </DropdownMenuItem>
-                          {isAdmin && player.is_archived && (
-                            <DropdownMenuItem
-                              className="text-destructive focus:text-destructive"
-                              onClick={() => handleDeleteClick(player)}
-                            >
-                              <Trash2 className="w-4 h-4 mr-2" />
-                              Excluir Permanentemente
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        /* Row Card View - Modern Scouting Design */
+        <div className="space-y-2 animate-fade-in delay-100">
+          {/* Sort Controls */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2 text-xs text-zinc-500">
+              <span>Ordenar por:</span>
+              <button 
+                onClick={() => handleSort("avg_score")}
+                className={`flex items-center gap-1 px-2 py-1 rounded hover:bg-zinc-800/50 transition-colors ${sortField === "avg_score" ? "text-primary" : ""}`}
+              >
+                Score <SortIcon field="avg_score" />
+              </button>
+              <button 
+                onClick={() => handleSort("auto_rating")}
+                className={`flex items-center gap-1 px-2 py-1 rounded hover:bg-zinc-800/50 transition-colors ${sortField === "auto_rating" ? "text-primary" : ""}`}
+              >
+                Nota Global <SortIcon field="auto_rating" />
+              </button>
+              <button 
+                onClick={() => handleSort("full_name")}
+                className={`flex items-center gap-1 px-2 py-1 rounded hover:bg-zinc-800/50 transition-colors ${sortField === "full_name" ? "text-primary" : ""}`}
+              >
+                Nome <SortIcon field="full_name" />
+              </button>
+              <button 
+                onClick={() => handleSort("position")}
+                className={`flex items-center gap-1 px-2 py-1 rounded hover:bg-zinc-800/50 transition-colors ${sortField === "position" ? "text-primary" : ""}`}
+              >
+                Posição <SortIcon field="position" />
+              </button>
+            </div>
           </div>
+          
+          {/* Player Row Cards */}
+          {isMobile ? (
+            <div className="space-y-3">
+              {safeArray(paginatedPlayers).map((player) => (
+                <PlayerMobileCard
+                  key={player.id}
+                  id={player.id}
+                  fullName={player.full_name}
+                  position={player.position}
+                  age={player.age}
+                  nationality={player.nationality}
+                  currentClub={player.current_club}
+                  photoUrl={player.photo_url}
+                  autoRating={player.auto_rating}
+                  avgScore={player.avg_score}
+                  contractEnd={player.contract_end}
+                  isPublic={player.is_public}
+                  isArchived={player.is_archived}
+                  isAdmin={isAdmin}
+                  onArchive={() => handleArchivePlayer(player)}
+                  onDelete={() => handleDeleteClick(player)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {safeArray(paginatedPlayers).map((player) => (
+                <PlayerRowCard
+                  key={player.id}
+                  id={player.id}
+                  fullName={player.full_name}
+                  position={player.position}
+                  age={player.age}
+                  nationality={player.nationality}
+                  currentClub={player.current_club}
+                  photoUrl={player.photo_url}
+                  autoRating={player.auto_rating}
+                  avgScore={player.avg_score}
+                  contractEnd={player.contract_end}
+                  isPublic={player.is_public}
+                  isArchived={player.is_archived}
+                  isAdmin={isAdmin}
+                  onArchive={() => handleArchivePlayer(player)}
+                  onDelete={() => handleDeleteClick(player)}
+                />
+              ))}
+            </div>
+          )}
         </div>
       ) : (
         /* Scouting Mode View */
