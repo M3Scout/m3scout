@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Instagram, Youtube } from "lucide-react";
+import logoM3 from "@/assets/logo-m3.png";
 
 // Social media configuration
 const socialConfig = {
@@ -8,23 +8,60 @@ const socialConfig = {
     label: "Instagram",
   },
   youtube: {
-    url: "https://youtube.com/@m3agency", // TODO: Update with actual URL
+    url: "https://youtube.com/@m3agency",
     label: "YouTube",
   },
   tiktok: {
-    url: "https://tiktok.com/@m3agency", // TODO: Update with actual URL
+    url: "https://tiktok.com/@m3agency",
     label: "TikTok",
   },
 };
 
-// Custom TikTok icon (not available in Lucide)
+// Custom Instagram icon
+function InstagramIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+      <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+    </svg>
+  );
+}
+
+// Custom YouTube icon
+function YoutubeIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17" />
+      <path d="m10 15 5-3-5-3z" />
+    </svg>
+  );
+}
+
+// Custom TikTok icon
 function TikTokIcon({ className }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2"
+      strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
@@ -34,126 +71,43 @@ function TikTokIcon({ className }: { className?: string }) {
   );
 }
 
+const socialLinks = [
+  { icon: InstagramIcon, href: socialConfig.instagram.url, label: socialConfig.instagram.label },
+  { icon: YoutubeIcon, href: socialConfig.youtube.url, label: socialConfig.youtube.label },
+  { icon: TikTokIcon, href: socialConfig.tiktok.url, label: socialConfig.tiktok.label },
+];
+
 export function PublicFooter() {
   return (
-    <footer className="bg-zinc-950 text-white">
-      <div className="container mx-auto px-6 py-16">
-        {/* Main footer content */}
-        <div className="grid gap-12 md:grid-cols-12">
-          {/* Brand section */}
-          <div className="md:col-span-5">
-            <Link to="/" className="inline-flex items-center gap-3 mb-6 group">
-              <div className="flex h-10 w-10 items-center justify-center bg-white text-zinc-950 font-bold text-sm tracking-tight">
-                M3
-              </div>
-              <span className="text-lg font-medium tracking-tight">M3 Agency</span>
-            </Link>
-            <p className="text-zinc-400 text-sm leading-relaxed max-w-sm">
-              Agência especializada em scouting e gestão de atletas de futebol. 
-              Conectamos talentos aos melhores clubes do mundo.
-            </p>
-          </div>
+    <footer className="bg-zinc-950">
+      <div className="mx-auto max-w-[1280px] px-6 lg:px-10">
+        <div className="flex items-center justify-between h-20 md:h-24">
+          {/* Left: Logo */}
+          <Link 
+            to="/" 
+            className="flex items-center hover:opacity-80 transition-opacity duration-200"
+          >
+            <img 
+              src={logoM3} 
+              alt="M3 Agency" 
+              className="h-6 md:h-7 w-auto"
+            />
+          </Link>
 
-          {/* Navigation */}
-          <div className="md:col-span-3">
-            <h4 className="text-xs font-medium uppercase tracking-widest text-zinc-500 mb-6">
-              Navegação
-            </h4>
-            <ul className="space-y-3">
-              <li>
-                <Link 
-                  to="/" 
-                  className="text-sm text-zinc-300 hover:text-white transition-colors"
-                >
-                  Home
-                </Link>
-              </li>
-              <li>
-                <Link 
-                  to="/players" 
-                  className="text-sm text-zinc-300 hover:text-white transition-colors"
-                >
-                  Atletas
-                </Link>
-              </li>
-              <li>
-                <Link 
-                  to="/sobre" 
-                  className="text-sm text-zinc-300 hover:text-white transition-colors"
-                >
-                  Sobre
-                </Link>
-              </li>
-              <li>
-                <Link 
-                  to="/contact" 
-                  className="text-sm text-zinc-300 hover:text-white transition-colors"
-                >
-                  Contato
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Social & Contact */}
-          <div className="md:col-span-4">
-            <h4 className="text-xs font-medium uppercase tracking-widest text-zinc-500 mb-6">
-              Redes Sociais
-            </h4>
-            <div className="flex items-center gap-4 mb-8">
+          {/* Right: Social Icons */}
+          <div className="flex items-center gap-5 md:gap-6">
+            {socialLinks.map((social) => (
               <a
-                href={socialConfig.instagram.url}
+                key={social.label}
+                href={social.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label={socialConfig.instagram.label}
-                className="text-zinc-400 hover:text-white transition-colors"
+                aria-label={social.label}
+                className="text-zinc-500 hover:text-white transition-colors duration-200"
               >
-                <Instagram className="w-5 h-5" />
+                <social.icon className="w-5 h-5" />
               </a>
-              <a
-                href={socialConfig.youtube.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={socialConfig.youtube.label}
-                className="text-zinc-400 hover:text-white transition-colors"
-              >
-                <Youtube className="w-5 h-5" />
-              </a>
-              <a
-                href={socialConfig.tiktok.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={socialConfig.tiktok.label}
-                className="text-zinc-400 hover:text-white transition-colors"
-              >
-                <TikTokIcon className="w-5 h-5" />
-              </a>
-            </div>
-            <div className="text-sm text-zinc-400">
-              <p>contato@m3agency.com</p>
-              <p className="mt-1">São Paulo, Brasil</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom bar */}
-        <div className="mt-16 pt-8 border-t border-zinc-800 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-xs text-zinc-500">
-            © {new Date().getFullYear()} M3 Agency. Todos os direitos reservados.
-          </p>
-          <div className="flex items-center gap-6">
-            <Link 
-              to="/privacy" 
-              className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
-            >
-              Privacidade
-            </Link>
-            <Link 
-              to="/terms" 
-              className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
-            >
-              Termos
-            </Link>
+            ))}
           </div>
         </div>
       </div>
