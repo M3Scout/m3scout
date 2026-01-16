@@ -1,8 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { PlayerCard } from "@/components/players/PlayerCard";
-import { FeaturedPlayerCard } from "@/components/players/FeaturedPlayerCard";
-import { PlayerFilters } from "@/components/players/PlayerFilters";
+import { AthleteCardPremium } from "@/components/players/AthleteCardPremium";
+import { ControlBarPremium } from "@/components/players/ControlBarPremium";
 import {
   Select,
   SelectContent,
@@ -12,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { safeArray } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 interface Player {
   id: string;
@@ -27,7 +27,6 @@ interface Player {
 }
 
 const PAGE_SIZE_OPTIONS = [12, 24, 48];
-const FEATURED_COUNT = 2; // Number of featured athletes to show
 
 const Players = () => {
   const [players, setPlayers] = useState<Player[]>([]);
@@ -37,6 +36,14 @@ const Players = () => {
   const [nationalityFilter, setNationalityFilter] = useState("todos");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
+
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    if ('scrollRestoration' in history) {
+      history.scrollRestoration = 'manual';
+    }
+  }, []);
 
   useEffect(() => {
     const fetchPlayers = async () => {
@@ -104,36 +111,64 @@ const Players = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black">
+    <div 
+      className="min-h-screen bg-[#080808]"
+      style={{ fontFamily: "'Poppins', sans-serif" }}
+    >
+      {/* Subtle texture overlay */}
+      <div 
+        className="fixed inset-0 pointer-events-none opacity-[0.015]"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+        }}
+      />
+      
+      {/* Vignette effect */}
+      <div 
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.3) 100%)'
+        }}
+      />
+
       {/* Main Container */}
-      <div className="w-full max-w-[1400px] mx-auto px-6 md:px-8">
+      <div className="relative z-10 w-full max-w-[1200px] mx-auto px-6 md:px-12 lg:px-16">
         
-        {/* Header Section */}
-        <section className="pt-32 pb-12">
-          {/* Eyebrow */}
-          <p className="text-xs uppercase tracking-[0.3em] text-zinc-500 mb-3">
+        {/* Header Section - Editorial */}
+        <motion.section 
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
+          className="pt-32 pb-12 md:pt-40 md:pb-16"
+        >
+          {/* Micro label */}
+          <p className="text-[11px] uppercase tracking-[0.35em] text-neutral-500 font-medium mb-4">
             Portfólio
           </p>
           
           {/* Title */}
-          <h1 className="font-serif text-4xl md:text-5xl text-white leading-tight mb-4">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white tracking-tight mb-5">
             Nossos{" "}
-            <span className="text-[#e52421] italic">Atletas</span>
+            <span className="text-[#e52421]">Atletas</span>
           </h1>
           
-          {/* Subtitle */}
-          <p className="text-zinc-400 text-lg max-w-2xl">
-            Explore nosso portfólio completo de atletas. Use os filtros para encontrar 
-            o perfil ideal para suas necessidades.
+          {/* Subtitle - Europa level copy */}
+          <p className="text-neutral-400 text-lg md:text-xl font-light max-w-2xl leading-relaxed tracking-wide">
+            Curadoria, dados e contexto competitivo. Portfólio pronto para decisão.
           </p>
-        </section>
+        </motion.section>
 
         {/* Divider */}
-        <hr className="border-t border-zinc-800 mb-8" />
+        <div className="h-px bg-white/5 mb-10" />
 
-        {/* Filters */}
-        <section className="mb-8">
-          <PlayerFilters
+        {/* Control Bar */}
+        <motion.section 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1, ease: [0.25, 0.1, 0.25, 1] }}
+          className="mb-6"
+        >
+          <ControlBarPremium
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             positionFilter={positionFilter}
@@ -141,78 +176,64 @@ const Players = () => {
             nationalityFilter={nationalityFilter}
             onNationalityChange={setNationalityFilter}
           />
-        </section>
+        </motion.section>
 
         {/* Results Count */}
-        <div className="mb-8">
-          <p className="text-sm text-zinc-500">
-            {filteredPlayers.length} atleta{filteredPlayers.length !== 1 ? "s" : ""} encontrado{filteredPlayers.length !== 1 ? "s" : ""}
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="mb-10"
+        >
+          <p className="text-sm text-neutral-500 font-light tracking-wide">
+            {filteredPlayers.length} atleta{filteredPlayers.length !== 1 ? "s" : ""} no portfólio
           </p>
-        </div>
+        </motion.div>
 
         {/* Loading State */}
         {loading ? (
-          <div className="flex items-center justify-center py-24">
-            <Loader2 className="w-8 h-8 animate-spin text-zinc-500" />
+          <div className="flex items-center justify-center py-32">
+            <Loader2 className="w-8 h-8 animate-spin text-neutral-600" />
           </div>
         ) : filteredPlayers.length > 0 ? (
           <>
             {/* Athletes Grid */}
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4 lg:gap-7 2xl:grid-cols-5">
-              {safeArray(paginatedPlayers).map((player, index) => {
-                // Show featured cards only on first page for top-rated players
-                const isFeatured = currentPage === 1 && index < FEATURED_COUNT && (player.auto_rating ?? 0) >= 3.5;
-                
-                if (isFeatured) {
-                  return (
-                    <FeaturedPlayerCard
-                      key={player.id}
-                      id={player.id}
-                      slug={player.slug}
-                      name={player.full_name}
-                      position={player.position}
-                      age={player.age || 0}
-                      nationality={player.nationality}
-                      currentClub={player.current_club || ""}
-                      imageUrl={player.photo_url || "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=400&h=600&fit=crop"}
-                      autoRating={player.auto_rating}
-                    />
-                  );
-                }
-                
-                return (
-                  <div 
-                    key={player.id}
-                    className="animate-fade-in"
-                    style={{ animationDelay: `${index * 30}ms` }}
-                  >
-                    <PlayerCard
-                      id={player.id}
-                      slug={player.slug}
-                      name={player.full_name}
-                      position={player.position}
-                      secondaryPositions={player.secondary_positions || []}
-                      age={player.age || 0}
-                      nationality={player.nationality}
-                      currentClub={player.current_club || ""}
-                      imageUrl={player.photo_url || "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=400&h=600&fit=crop"}
-                      autoRating={player.auto_rating}
-                    />
-                  </div>
-                );
-              })}
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4 lg:gap-6">
+              {safeArray(paginatedPlayers).map((player, index) => (
+                <motion.div
+                  key={player.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ 
+                    duration: 0.5, 
+                    delay: Math.min(index * 0.05, 0.3),
+                    ease: [0.25, 0.1, 0.25, 1]
+                  }}
+                >
+                  <AthleteCardPremium
+                    id={player.id}
+                    slug={player.slug}
+                    name={player.full_name}
+                    position={player.position}
+                    age={player.age || 0}
+                    nationality={player.nationality}
+                    currentClub={player.current_club || ""}
+                    imageUrl={player.photo_url || "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=400&h=600&fit=crop"}
+                  />
+                </motion.div>
+              ))}
             </div>
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-6 py-16 border-t border-zinc-800 mt-12">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-6 py-16 border-t border-white/5 mt-16">
                 {/* Info & Items per page */}
                 <div className="flex items-center gap-6">
-                  <p className="text-sm text-zinc-500">
+                  <p className="text-sm text-neutral-500 font-light">
                     Mostrando {((currentPage - 1) * itemsPerPage) + 1}–{Math.min(currentPage * itemsPerPage, filteredPlayers.length)} de {filteredPlayers.length}
                   </p>
                   <div className="flex items-center gap-3">
-                    <span className="text-sm text-zinc-600">Itens:</span>
+                    <span className="text-sm text-neutral-600">Itens:</span>
                     <Select
                       value={String(itemsPerPage)}
                       onValueChange={(value) => {
@@ -220,15 +241,15 @@ const Players = () => {
                         setCurrentPage(1);
                       }}
                     >
-                      <SelectTrigger className="w-[70px] h-9 bg-transparent border-zinc-800 text-white rounded-none focus:ring-0">
+                      <SelectTrigger className="w-[70px] h-9 bg-transparent border-white/10 text-white rounded-lg focus:ring-0">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-zinc-950 border-zinc-800 rounded-none">
+                      <SelectContent className="bg-[#0f0f0f] border-white/10 rounded-lg">
                         {safeArray(PAGE_SIZE_OPTIONS).map((size) => (
                           <SelectItem 
                             key={size} 
                             value={String(size)}
-                            className="text-white focus:bg-zinc-800 focus:text-white rounded-none"
+                            className="text-white focus:bg-white/10 focus:text-white rounded-md"
                           >
                             {size}
                           </SelectItem>
@@ -243,24 +264,24 @@ const Players = () => {
                   <button
                     onClick={() => goToPage(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className="w-10 h-10 flex items-center justify-center border border-zinc-800 text-white disabled:opacity-30 disabled:cursor-not-allowed hover:border-zinc-600 transition-colors"
+                    className="w-10 h-10 flex items-center justify-center rounded-lg border border-white/10 text-white disabled:opacity-30 disabled:cursor-not-allowed hover:border-white/20 hover:bg-white/5 transition-all duration-200"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   
                   {safeArray(getPageNumbers()).map((page, index) =>
                     page === "ellipsis" ? (
-                      <span key={`ellipsis-${index}`} className="px-3 text-zinc-600">
+                      <span key={`ellipsis-${index}`} className="px-3 text-neutral-600">
                         …
                       </span>
                     ) : (
                       <button
                         key={page}
                         onClick={() => goToPage(page)}
-                        className={`w-10 h-10 flex items-center justify-center border text-sm font-medium transition-colors ${
+                        className={`w-10 h-10 flex items-center justify-center rounded-lg text-sm font-medium transition-all duration-200 ${
                           currentPage === page
-                            ? "bg-white text-black border-white"
-                            : "border-zinc-800 text-white hover:border-zinc-600"
+                            ? "bg-white text-black"
+                            : "border border-white/10 text-white hover:border-white/20 hover:bg-white/5"
                         }`}
                       >
                         {page}
@@ -271,7 +292,7 @@ const Players = () => {
                   <button
                     onClick={() => goToPage(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className="w-10 h-10 flex items-center justify-center border border-zinc-800 text-white disabled:opacity-30 disabled:cursor-not-allowed hover:border-zinc-600 transition-colors"
+                    className="w-10 h-10 flex items-center justify-center rounded-lg border border-white/10 text-white disabled:opacity-30 disabled:cursor-not-allowed hover:border-white/20 hover:bg-white/5 transition-all duration-200"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
@@ -280,8 +301,8 @@ const Players = () => {
             )}
           </>
         ) : (
-          <div className="text-center py-24">
-            <p className="text-zinc-500">Nenhum atleta encontrado com os filtros selecionados.</p>
+          <div className="text-center py-32">
+            <p className="text-neutral-500 font-light">Nenhum atleta encontrado com os filtros selecionados.</p>
           </div>
         )}
 
