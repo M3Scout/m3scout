@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useState } from "react";
 
 interface AthleteCardPremiumProps {
   id: string;
@@ -10,6 +11,11 @@ interface AthleteCardPremiumProps {
   currentClub: string;
   imageUrl: string;
   isPublic?: boolean;
+  // Scouting mode extras
+  scoutingMode?: boolean;
+  dominantFoot?: string | null;
+  height?: number | null;
+  currentLeague?: string | null;
 }
 
 export function AthleteCardPremium({
@@ -21,8 +27,33 @@ export function AthleteCardPremium({
   currentClub,
   imageUrl,
   isPublic = true,
+  scoutingMode = false,
+  dominantFoot,
+  height,
+  currentLeague,
 }: AthleteCardPremiumProps) {
   const href = isPublic ? `/players/${slug}` : `/app/players/${slug}`;
+  const [imageLoaded, setImageLoaded] = useState(false);
+
+  // Format height
+  const formatHeight = (h: number | null | undefined) => {
+    if (!h) return null;
+    return `${(h / 100).toFixed(2).replace('.', ',')}m`;
+  };
+
+  // Format foot
+  const formatFoot = (foot: string | null | undefined) => {
+    if (!foot) return null;
+    const footMap: Record<string, string> = {
+      'right': 'D',
+      'left': 'E',
+      'both': 'A',
+      'direito': 'D',
+      'esquerdo': 'E',
+      'ambos': 'A',
+    };
+    return footMap[foot.toLowerCase()] || foot.charAt(0).toUpperCase();
+  };
 
   return (
     <Link to={href} className="group block">
@@ -32,11 +63,22 @@ export function AthleteCardPremium({
       >
         {/* Image Container */}
         <div className="relative aspect-[3/4] overflow-hidden">
+          {/* Blur placeholder */}
+          <div 
+            className={`absolute inset-0 bg-neutral-800 transition-opacity duration-500 ${imageLoaded ? 'opacity-0' : 'opacity-100'}`}
+            style={{
+              background: 'linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%)',
+            }}
+          >
+            <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-neutral-700/20 to-neutral-900/20" />
+          </div>
+          
           <img
             src={imageUrl}
             alt={name}
             loading="lazy"
-            className="w-full h-full object-cover transition-transform duration-[320ms] ease-out group-hover:scale-[1.03]"
+            onLoad={() => setImageLoaded(true)}
+            className={`w-full h-full object-cover transition-all duration-500 ease-out group-hover:scale-[1.03] ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
           />
           
           {/* Gradient Overlay - stronger at bottom */}
@@ -60,6 +102,45 @@ export function AthleteCardPremium({
 
           {/* Player Info - Bottom */}
           <div className="absolute bottom-0 left-0 right-0 p-5">
+            {/* Scouting Mode Chips */}
+            {scoutingMode && (dominantFoot || height || currentLeague) && (
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {dominantFoot && (
+                  <span 
+                    className="inline-flex items-center px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider text-white/70 rounded"
+                    style={{ 
+                      background: 'rgba(229, 36, 33, 0.15)',
+                      border: '1px solid rgba(229, 36, 33, 0.25)'
+                    }}
+                  >
+                    Pé: {formatFoot(dominantFoot)}
+                  </span>
+                )}
+                {height && (
+                  <span 
+                    className="inline-flex items-center px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider text-white/70 rounded"
+                    style={{ 
+                      background: 'rgba(229, 36, 33, 0.15)',
+                      border: '1px solid rgba(229, 36, 33, 0.25)'
+                    }}
+                  >
+                    {formatHeight(height)}
+                  </span>
+                )}
+                {currentLeague && (
+                  <span 
+                    className="inline-flex items-center px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider text-white/70 rounded"
+                    style={{ 
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      border: '1px solid rgba(255, 255, 255, 0.1)'
+                    }}
+                  >
+                    {currentLeague}
+                  </span>
+                )}
+              </div>
+            )}
+            
             {/* Name - max 2 lines with clamp */}
             <h3 
               className="text-white text-lg md:text-xl font-semibold tracking-tight mb-2 transition-colors duration-300 line-clamp-2"
