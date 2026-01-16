@@ -210,22 +210,37 @@ const Sobre = () => {
       {/* BLOCO MANIFESTO */}
       <section className="py-40 md:py-52 lg:py-64 bg-[#0a0a0a]">
         <div className="mx-auto max-w-[1200px] px-6 md:px-12 lg:px-16">
-          <motion.div 
+          <div 
             ref={manifestoRef}
-            initial={{ opacity: 0, y: 40 }}
-            animate={manifestoInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.9, ease: [0.25, 0.1, 0.25, 1] }}
             className="max-w-4xl mx-auto text-center"
           >
-            <p className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-light leading-[1.6] tracking-wide">
-              <span className="text-neutral-500">Talento sem direção é ruído.</span>
-              <br />
-              <span className="text-neutral-500">Direção sem estratégia é sorte.</span>
-            </p>
-            <p className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-normal text-white leading-[1.6] tracking-wide mt-8">
+            <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-light leading-[1.6] tracking-wide space-y-4">
+              <motion.p
+                initial={{ opacity: 0, y: 30 }}
+                animate={manifestoInView ? { opacity: 1, y: 0 } : {}}
+                transition={{ duration: 0.7, delay: 0, ease: [0.25, 0.1, 0.25, 1] }}
+                className="text-neutral-500"
+              >
+                Talento sem direção é ruído.
+              </motion.p>
+              <motion.p
+                initial={{ opacity: 0, y: 30 }}
+                animate={manifestoInView ? { opacity: 1, y: 0 } : {}}
+                transition={{ duration: 0.7, delay: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+                className="text-neutral-500"
+              >
+                Direção sem estratégia é sorte.
+              </motion.p>
+            </div>
+            <motion.p 
+              initial={{ opacity: 0, y: 30 }}
+              animate={manifestoInView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.7, delay: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
+              className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-normal text-white leading-[1.6] tracking-wide mt-8"
+            >
               Nós trabalhamos com os dois.
-            </p>
-          </motion.div>
+            </motion.p>
+          </div>
         </div>
       </section>
 
