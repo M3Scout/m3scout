@@ -54,77 +54,81 @@ export function SmartHeader({ variant = "default" }: SmartHeaderProps) {
   };
 
   const showTransparent = variant === "transparent" && isAtTop;
-  const isScrolled = !isAtTop;
 
   return (
     <>
       <header
         className={cn(
           "fixed top-0 left-0 right-0 z-50",
-          "transition-all duration-[240ms] ease-in-out",
+          "transition-all duration-500 ease-out",
           isVisible ? "translate-y-0" : "-translate-y-full",
           showTransparent 
             ? "bg-transparent" 
-            : "bg-black border-b border-white/[0.06]",
-          isScrolled && "backdrop-blur-[6px]"
+            : "bg-black/90 backdrop-blur-md border-b border-white/[0.04]"
         )}
-        style={!showTransparent ? { backgroundColor: "#000" } : undefined}
       >
         <div className="mx-auto max-w-[1280px] px-6 lg:px-10">
-          <div className="flex h-[76px] md:h-[96px] items-center justify-between py-5 md:py-7">
+          <div className="flex h-[72px] md:h-[88px] items-center justify-between">
             {/* Logo */}
             <Link 
               to="/" 
-              className="flex items-center hover:opacity-90 transition-opacity duration-200"
+              className="flex items-center hover:opacity-80 transition-opacity duration-300"
             >
               <img 
                 src={logoM3} 
                 alt="M3 Agency" 
-                className="h-8 md:h-10 w-auto"
+                className="h-7 md:h-9 w-auto"
               />
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center gap-6 xl:gap-8">
+            <nav className="hidden lg:flex items-center gap-1">
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
                   to={link.href}
                   className={cn(
-                    "relative min-h-[44px] flex items-center px-2",
-                    "text-[12px] font-normal uppercase tracking-[0.14em]",
-                    "text-white/65 hover:text-white transition-colors duration-200",
+                    "group relative min-h-[44px] flex items-center px-4",
+                    "text-[11px] font-medium uppercase tracking-[0.18em]",
+                    "text-white/50 hover:text-white transition-colors duration-300",
                     isActive(link.href) && "text-white"
                   )}
                 >
                   {link.label}
-                  {isActive(link.href) && (
-                    <span className="absolute bottom-2 left-2 right-2 h-px bg-white/40" />
-                  )}
+                  {/* Hover underline */}
+                  <span 
+                    className={cn(
+                      "absolute bottom-3 left-4 right-4 h-[1px] bg-white/60",
+                      "origin-left transition-transform duration-300 ease-out",
+                      "scale-x-0 group-hover:scale-x-100",
+                      isActive(link.href) && "scale-x-100 bg-white/40"
+                    )}
+                  />
                 </Link>
               ))}
               
-              {/* ÁREA RESTRITA - Desktop */}
+              {/* ÁREA RESTRITA - Desktop (more discrete) */}
               <Link
                 to="/app/auth"
                 className={cn(
-                  "min-h-[44px] flex items-center px-5",
-                  "border border-[#C0001A] rounded-sm",
-                  "text-[11px] font-semibold uppercase tracking-[0.14em]",
-                  "text-white hover:bg-[#C0001A] transition-colors duration-200"
+                  "ml-6 min-h-[36px] flex items-center gap-2 px-4",
+                  "text-[10px] font-medium uppercase tracking-[0.15em]",
+                  "text-white/40 hover:text-white/70 transition-all duration-300",
+                  "border border-white/10 hover:border-white/25 rounded"
                 )}
               >
+                <Lock size={12} className="opacity-60" />
                 ÁREA RESTRITA
               </Link>
             </nav>
 
             {/* Mobile Menu Button */}
             <button
-              className="lg:hidden min-h-[44px] min-w-[44px] flex items-center justify-center text-white/70 hover:text-white transition-colors duration-200"
+              className="lg:hidden min-h-[44px] min-w-[44px] flex items-center justify-center text-white/60 hover:text-white transition-colors duration-300"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               aria-label={isMenuOpen ? "Fechar menu" : "Abrir menu"}
             >
-              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              {isMenuOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
           </div>
         </div>
@@ -159,18 +163,18 @@ export function SmartHeader({ variant = "default" }: SmartHeaderProps) {
               </Link>
             ))}
             
-            {/* ÁREA RESTRITA - Mobile */}
+            {/* ÁREA RESTRITA - Mobile (discrete) */}
             <Link
               to="/app/auth"
               className={cn(
-                "mt-6 min-h-[44px] flex items-center justify-center gap-2 px-8",
-                "border border-[#C0001A] rounded-sm",
-                "text-xs font-semibold uppercase tracking-[0.18em]",
-                "text-white hover:bg-[#C0001A] transition-all duration-300"
+                "mt-8 min-h-[40px] flex items-center justify-center gap-2 px-6",
+                "text-[11px] font-medium uppercase tracking-[0.15em]",
+                "text-white/40 hover:text-white/70 transition-all duration-300",
+                "border border-white/15 hover:border-white/30 rounded"
               )}
               onClick={() => setIsMenuOpen(false)}
             >
-              <Lock size={14} />
+              <Lock size={12} className="opacity-50" />
               ÁREA RESTRITA
             </Link>
           </nav>
