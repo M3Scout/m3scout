@@ -1,6 +1,7 @@
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { PieChart, Users } from "lucide-react";
 import { motion } from "framer-motion";
+import { getPositionColor, getShortPosition } from "@/lib/positionColors";
 
 interface PositionData {
   name: string;
@@ -11,39 +12,21 @@ interface PositionChartCardProps {
   data: PositionData[];
 }
 
-const POSITION_COLORS: Record<string, string> = {
-  "Goleiro": "#10b981",
-  "Zagueiro": "#3b82f6",
-  "Lateral Direito": "#6366f1",
-  "Lateral Esquerdo": "#8b5cf6",
-  "Volante": "#f59e0b",
-  "Meia": "#ec4899",
-  "Meia Atacante": "#f43f5e",
-  "Ponta Direita": "#14b8a6",
-  "Ponta Esquerda": "#06b6d4",
-  "Centroavante": "#ef4444",
-  "Atacante": "#dc2626",
-};
-
-const getPositionColor = (position: string) => {
-  return POSITION_COLORS[position] || "#71717a";
-};
-
-const getShortPosition = (name: string) => {
-  const shorts: Record<string, string> = {
-    "Goleiro": "GOL",
-    "Zagueiro": "ZAG",
-    "Lateral Direito": "LD",
-    "Lateral Esquerdo": "LE",
-    "Volante": "VOL",
-    "Meia": "MEI",
-    "Meia Atacante": "MEA",
-    "Ponta Direita": "PD",
-    "Ponta Esquerda": "PE",
-    "Centroavante": "CA",
-    "Atacante": "ATA",
+// Convert HSL string to hex for recharts
+const getPositionColorHex = (position: string): string => {
+  const colorConfig = getPositionColor(position);
+  // Map color classes to hex values
+  const hexMap: Record<string, string> = {
+    "text-violet-400": "#a78bfa",
+    "text-blue-400": "#60a5fa",
+    "text-cyan-400": "#22d3ee",
+    "text-emerald-400": "#34d399",
+    "text-amber-400": "#fbbf24",
+    "text-orange-400": "#fb923c",
+    "text-red-400": "#f87171",
+    "text-zinc-400": "#a1a1aa",
   };
-  return shorts[name] || name;
+  return hexMap[colorConfig.textClass] || "#71717a";
 };
 
 export const PositionChartCard = ({ data }: PositionChartCardProps) => {
@@ -84,19 +67,22 @@ export const PositionChartCard = ({ data }: PositionChartCardProps) => {
                     width={45}
                     tickLine={false}
                     axisLine={false}
-                    tick={({ x, y, payload }) => (
-                      <text 
-                        x={x} 
-                        y={y} 
-                        dy={4} 
-                        textAnchor="end" 
-                        fill="#a1a1aa" 
-                        fontSize={10}
-                        fontWeight={500}
-                      >
-                        {getShortPosition(payload.value)}
-                      </text>
-                    )}
+                    tick={({ x, y, payload }) => {
+                      const colors = getPositionColor(payload.value);
+                      return (
+                        <text 
+                          x={x} 
+                          y={y} 
+                          dy={4} 
+                          textAnchor="end" 
+                          fill={getPositionColorHex(payload.value)}
+                          fontSize={10}
+                          fontWeight={600}
+                        >
+                          {getShortPosition(payload.value)}
+                        </text>
+                      );
+                    }}
                   />
                   <Tooltip 
                     contentStyle={{ 
@@ -112,7 +98,7 @@ export const PositionChartCard = ({ data }: PositionChartCardProps) => {
                       ""
                     ]}
                     labelFormatter={(label: string) => (
-                      <span style={{ color: getPositionColor(label), fontSize: "12px", fontWeight: 600 }}>
+                      <span style={{ color: getPositionColorHex(label), fontSize: "12px", fontWeight: 600 }}>
                         {label}
                       </span>
                     )}
@@ -122,7 +108,7 @@ export const PositionChartCard = ({ data }: PositionChartCardProps) => {
                     {data.map((entry, index) => (
                       <Cell 
                         key={`cell-${index}`} 
-                        fill={getPositionColor(entry.name)}
+                        fill={getPositionColorHex(entry.name)}
                         opacity={0.85}
                       />
                     ))}
