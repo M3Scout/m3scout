@@ -28,6 +28,7 @@ interface PhysicalData {
 interface PhysicalDataSectionProps {
   data: PhysicalData;
   playerId?: string;
+  playerName?: string;
 }
 
 // Position-based ideal ranges for body fat percentage
@@ -620,7 +621,7 @@ const PhysicalRadarChart = ({ data }: { data: PhysicalData }) => {
   );
 };
 
-export const PhysicalDataSection = ({ data, playerId }: PhysicalDataSectionProps) => {
+export const PhysicalDataSection = ({ data, playerId, playerName }: PhysicalDataSectionProps) => {
   const bmi = calculateBMI(data.weight, data.height);
   
   // Calculate derived values for body composition
@@ -633,7 +634,8 @@ export const PhysicalDataSection = ({ data, playerId }: PhysicalDataSectionProps
       {/* Evolution Chart - Only show if playerId is provided */}
       {playerId && (
         <PhysicalEvolutionChart 
-          playerId={playerId} 
+          playerId={playerId}
+          playerName={playerName}
           currentData={{
             weight: data.weight,
             body_fat_percentage: data.body_fat_percentage,
