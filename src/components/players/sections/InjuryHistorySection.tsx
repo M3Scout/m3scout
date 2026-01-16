@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { 
   Stethoscope, 
   Calendar, 
@@ -10,11 +11,16 @@ import {
   Clock,
   FileText,
   HeartPulse,
-  ShieldCheck
+  ShieldCheck,
+  Pencil,
+  Trash2
 } from "lucide-react";
 import { safeArray } from "@/lib/utils";
 import { AddInjuryModal } from "./AddInjuryModal";
+import { EditInjuryModal } from "./EditInjuryModal";
+import { DeleteInjuryDialog } from "./DeleteInjuryDialog";
 import { InjuryEvolutionChart } from "./InjuryEvolutionChart";
+import { RecurrentInjuryAlert } from "./RecurrentInjuryAlert";
 
 interface Injury {
   id: string;
@@ -258,7 +264,7 @@ const InjuryHistoryCard = ({ injuries, playerId, onInjuryAdded }: InjuryHistoryC
                   </div>
                   
                   {/* Injury card */}
-                  <div className="p-4 rounded-lg border border-border/50 bg-card/50 hover:bg-card/80 transition-colors">
+                  <div className="p-4 rounded-lg border border-border/50 bg-card/50 hover:bg-card/80 transition-colors group">
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div className="flex-1">
                         <h4 className="font-medium text-foreground">{injury.injury_type}</h4>
@@ -268,12 +274,38 @@ const InjuryHistoryCard = ({ injuries, playerId, onInjuryAdded }: InjuryHistoryC
                           </Badge>
                         )}
                       </div>
-                      <Badge 
-                        variant="outline" 
-                        className={`${severityConfig.colorClass} ${severityConfig.bgClass} shrink-0`}
-                      >
-                        {severityConfig.label}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge 
+                          variant="outline" 
+                          className={`${severityConfig.colorClass} ${severityConfig.bgClass} shrink-0`}
+                        >
+                          {severityConfig.label}
+                        </Badge>
+                        {/* Edit/Delete buttons - only show if we have callback */}
+                        {onInjuryAdded && (
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <EditInjuryModal
+                              injury={injury}
+                              onInjuryUpdated={onInjuryAdded}
+                              trigger={
+                                <Button variant="ghost" size="icon" className="h-7 w-7">
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </Button>
+                              }
+                            />
+                            <DeleteInjuryDialog
+                              injuryId={injury.id}
+                              injuryType={injury.injury_type}
+                              onInjuryDeleted={onInjuryAdded}
+                              trigger={
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive">
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </Button>
+                              }
+                            />
+                          </div>
+                        )}
+                      </div>
                     </div>
                     
                     <div className="grid grid-cols-2 gap-3 text-sm">
@@ -364,6 +396,9 @@ export const InjuryHistorySection = ({
 }: InjuryHistorySectionProps) => {
   return (
     <div className="space-y-6">
+      {/* Alerta de Lesões Recorrentes - aparece primeiro se houver */}
+      <RecurrentInjuryAlert injuries={injuries} threshold={3} />
+      
       {/* Card 1: Status Físico Atual - Maior destaque */}
       <PhysicalStatusCard status={physicalStatus} />
       
