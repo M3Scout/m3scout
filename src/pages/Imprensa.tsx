@@ -318,26 +318,6 @@ const Imprensa = () => {
         </div>
       </section>
 
-      {/* SIGNATURE SECTION */}
-      <section className="py-20 md:py-24 lg:py-32 bg-[#0a0a0a]">
-        <div className="mx-auto max-w-[1200px] px-6 md:px-12 lg:px-16">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.6 }}
-            className="max-w-2xl"
-          >
-            <p className="text-xl sm:text-2xl md:text-3xl font-light leading-relaxed tracking-wide">
-              <span className="text-white font-medium">M3 Agency.</span>
-              {" "}
-              <span className="text-[#e52421]">Conectando talentos.</span>
-              {" "}
-              <span className="text-neutral-500">Construindo caminhos.</span>
-            </p>
-          </motion.div>
-        </div>
-      </section>
     </div>
   );
 };
