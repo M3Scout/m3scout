@@ -183,24 +183,23 @@ export function PlayerRowCard({
         <PositionBadge position={position} />
       </div>
 
-      {/* Score Técnico - PROMINENT with Trend */}
+      {/* Score Técnico - Compact Chip with Trend */}
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="flex flex-col items-center justify-center min-w-[70px]">
+            <div className="flex items-center gap-1">
               {avgScore !== null && avgScore !== undefined && Number.isFinite(avgScore) ? (
-                <div className="flex items-center gap-1">
-                  <div className={`px-3 py-1.5 rounded-lg border ${getScoreBgColor(avgScore)}`}>
-                    <span className={`text-lg font-bold tabular-nums ${getScoreColor(avgScore)}`}>
+                <>
+                  <div className={`px-2.5 py-1 rounded-full border ${getScoreBgColor(avgScore)} flex items-center gap-1`}>
+                    <span className={`text-sm font-semibold tabular-nums ${getScoreColor(avgScore)}`}>
                       {formatFixed(avgScore, 1)}
                     </span>
+                    <TrendIndicator trend={scoreTrend} />
                   </div>
-                  <TrendIndicator trend={scoreTrend} />
-                </div>
+                </>
               ) : (
-                <span className="text-zinc-600 text-sm">—</span>
+                <span className="text-zinc-600 text-xs">—</span>
               )}
-              <span className="text-[9px] uppercase tracking-wider text-zinc-600 mt-0.5">Score</span>
             </div>
           </TooltipTrigger>
           <TooltipContent side="top">
@@ -214,19 +213,19 @@ export function PlayerRowCard({
         </Tooltip>
       </TooltipProvider>
 
-      {/* Nota Global */}
+      {/* Nota Global - Compact */}
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="hidden md:flex flex-col items-center justify-center min-w-[50px]">
+            <div className="hidden md:flex items-center gap-1.5 px-2 py-1 rounded-full bg-zinc-900 border border-zinc-800">
+              <span className="text-[9px] uppercase tracking-wider text-zinc-500">Global</span>
               {autoRating !== null && autoRating !== undefined ? (
-                <span className={`text-base font-semibold tabular-nums ${getGlobalRatingColor(autoRating)}`}>
+                <span className={`text-sm font-semibold tabular-nums ${getGlobalRatingColor(autoRating)}`}>
                   {formatFixed(autoRating, 1)}
                 </span>
               ) : (
-                <span className="text-zinc-600 text-sm">—</span>
+                <span className="text-zinc-600 text-xs">—</span>
               )}
-              <span className="text-[9px] uppercase tracking-wider text-zinc-600">Global</span>
             </div>
           </TooltipTrigger>
           <TooltipContent side="top">
@@ -428,32 +427,31 @@ export function PlayerMobileCard({
         </DropdownMenu>
       </div>
 
-      {/* Scores Row */}
-      <div className="flex items-center justify-between px-4 py-3 bg-zinc-900/50 border-t border-zinc-900">
-        {/* Score Técnico with Trend */}
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] uppercase tracking-wider text-zinc-600">Score</span>
+      {/* Scores Row - Compact */}
+      <div className="flex items-center justify-between px-4 py-2.5 bg-zinc-900/50 border-t border-zinc-900">
+        {/* Score Técnico with Trend - Compact Chip */}
+        <div className="flex items-center gap-1.5">
           {avgScore !== null && avgScore !== undefined && Number.isFinite(avgScore) ? (
-            <div className="flex items-center gap-1">
-              <span className={`text-lg font-bold tabular-nums ${getScoreColor(avgScore)}`}>
+            <div className={`px-2.5 py-1 rounded-full border ${getScoreBgColor(avgScore)} flex items-center gap-1`}>
+              <span className={`text-sm font-semibold tabular-nums ${getScoreColor(avgScore)}`}>
                 {formatFixed(avgScore, 1)}
               </span>
               <TrendIndicator trend={scoreTrend} />
             </div>
           ) : (
-            <span className="text-zinc-600">—</span>
+            <span className="text-zinc-600 text-xs">—</span>
           )}
         </div>
 
-        {/* Nota Global */}
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] uppercase tracking-wider text-zinc-600">Global</span>
+        {/* Nota Global - Compact */}
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-zinc-800/50 border border-zinc-700/50">
+          <span className="text-[9px] uppercase tracking-wider text-zinc-500">Global</span>
           {autoRating !== null && autoRating !== undefined ? (
-            <span className={`text-base font-semibold tabular-nums ${getGlobalRatingColor(autoRating)}`}>
+            <span className={`text-sm font-semibold tabular-nums ${getGlobalRatingColor(autoRating)}`}>
               {formatFixed(autoRating, 1)}
             </span>
           ) : (
-            <span className="text-zinc-600">—</span>
+            <span className="text-zinc-600 text-xs">—</span>
           )}
         </div>
 
