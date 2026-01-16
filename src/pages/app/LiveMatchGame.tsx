@@ -6,6 +6,7 @@ import { GameHeaderCard } from "@/components/live-match/GameHeaderCard";
 import { GameScoreboard, TimerInfo } from "@/components/live-match/GameScoreboard";
 import { AddPlayerModal } from "@/components/live-match/AddPlayerModal";
 import { PremiumPlayerCard } from "@/components/live-match/PremiumPlayerCard";
+import { LiveStatsPanel } from "@/components/live-match/LiveStatsPanel";
 import { EventTimeline } from "@/components/live-match/EventTimeline";
 import { SubstitutionModal } from "@/components/live-match/SubstitutionModal";
 import { Button } from "@/components/ui/button";
@@ -222,6 +223,11 @@ export default function LiveMatchGame() {
             onTimerInfoChange={handleTimerInfoChange}
             isPending={playPauseClock.isPending || endFirstHalf.isPending || startSecondHalf.isPending || finishGame.isPending}
           />
+        )}
+
+        {/* Live Stats Panel */}
+        {!isDraft && matchEvents.length > 0 && (
+          <LiveStatsPanel events={matchEvents} />
         )}
 
         {/* Controls bar */}
