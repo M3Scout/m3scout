@@ -1,6 +1,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Target, Footprints, Compass, ThumbsUp, AlertTriangle } from "lucide-react";
+import { 
+  Target, 
+  Footprints, 
+  Compass, 
+  ThumbsUp, 
+  AlertTriangle,
+  Zap,
+  Users,
+  Crosshair
+} from "lucide-react";
 
 interface TechnicalData {
   dominant_foot?: string | null;
@@ -16,10 +25,47 @@ interface TechnicalProfileSectionProps {
   data: TechnicalData;
 }
 
-const InfoItem = ({ label, value }: { label: string; value: string | null | undefined }) => (
-  <div className="space-y-1">
-    <p className="text-xs text-muted-foreground">{label}</p>
-    <p className="font-medium">{value || <span className="text-muted-foreground">—</span>}</p>
+const InfoRow = ({ 
+  icon: Icon, 
+  label, 
+  value 
+}: { 
+  icon: React.ElementType; 
+  label: string; 
+  value: string | null | undefined;
+}) => (
+  <div className="flex items-start gap-3">
+    <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center">
+      <Icon className="w-4 h-4 text-zinc-400" />
+    </div>
+    <div className="flex-1 min-w-0">
+      <p className="text-xs text-muted-foreground mb-0.5">{label}</p>
+      <p className="text-sm font-semibold text-foreground truncate">
+        {value || <span className="text-muted-foreground font-normal">—</span>}
+      </p>
+    </div>
+  </div>
+);
+
+const MiniCard = ({
+  title,
+  icon: Icon,
+  children,
+  className = ""
+}: {
+  title: string;
+  icon: React.ElementType;
+  children: React.ReactNode;
+  className?: string;
+}) => (
+  <div className={`rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 ${className}`}>
+    <div className="flex items-center gap-2 mb-4">
+      <Icon className="w-4 h-4 text-primary" />
+      <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+        {title}
+      </h4>
+    </div>
+    {children}
   </div>
 );
 
@@ -29,77 +75,110 @@ export const TechnicalProfileSection = ({ data }: TechnicalProfileSectionProps) 
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="pb-4">
         <CardTitle className="flex items-center gap-2">
           <Target className="w-5 h-5 text-primary" />
           Perfil Técnico
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="flex items-start gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Footprints className="w-4 h-4 text-primary" />
+      <CardContent className="space-y-4">
+        {/* Top row: 3 cards on desktop, 2 on tablet, 1 on mobile */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Card 1: Identidade Técnica */}
+          <MiniCard title="Identidade Técnica" icon={Footprints}>
+            <div className="space-y-4">
+              <InfoRow 
+                icon={Footprints} 
+                label="Pé Dominante" 
+                value={data.dominant_foot} 
+              />
+              <InfoRow 
+                icon={Compass} 
+                label="Altura de Jogo" 
+                value={data.playing_height_preference} 
+              />
             </div>
-            <InfoItem label="Pé Dominante" value={data.dominant_foot} />
-          </div>
-          
-          <div className="flex items-start gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Compass className="w-4 h-4 text-primary" />
+          </MiniCard>
+
+          {/* Card 2: Função Tática */}
+          <MiniCard title="Função Tática" icon={Users}>
+            <div className="space-y-4">
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Principal</p>
+                <p className="text-sm font-semibold text-foreground">
+                  {data.primary_tactical_role || <span className="text-muted-foreground font-normal">—</span>}
+                </p>
+              </div>
+              <div className="pt-2 border-t border-zinc-800">
+                <p className="text-xs text-muted-foreground mb-1">Secundária</p>
+                <p className="text-sm font-medium text-zinc-300">
+                  {data.secondary_tactical_role || <span className="text-muted-foreground font-normal">—</span>}
+                </p>
+              </div>
             </div>
-            <InfoItem label="Altura de Jogo" value={data.playing_height_preference} />
-          </div>
-          
-          <div className="flex items-start gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Target className="w-4 h-4 text-primary" />
+          </MiniCard>
+
+          {/* Card 3: Estilo de Jogo */}
+          <MiniCard title="Estilo de Jogo" icon={Zap} className="sm:col-span-2 lg:col-span-1">
+            <div className="flex items-center justify-center min-h-[80px]">
+              {data.play_style ? (
+                <Badge 
+                  variant="secondary" 
+                  className="px-4 py-2 text-sm font-semibold bg-primary/10 text-primary border border-primary/20"
+                >
+                  <Zap className="w-4 h-4 mr-2" />
+                  {data.play_style}
+                </Badge>
+              ) : (
+                <span className="text-sm text-muted-foreground">—</span>
+              )}
             </div>
-            <InfoItem label="Estilo de Jogo" value={data.play_style} />
-          </div>
+          </MiniCard>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <InfoItem label="Função Tática Principal" value={data.primary_tactical_role} />
-          <InfoItem label="Função Tática Secundária" value={data.secondary_tactical_role} />
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm">
-              <ThumbsUp className="w-4 h-4 text-green-500" />
-              <span className="font-medium">Pontos Fortes</span>
-            </div>
+        {/* Bottom row: Pontos Fortes & Pontos a Desenvolver */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Card 4: Pontos Fortes */}
+          <MiniCard title="Pontos Fortes" icon={ThumbsUp}>
             {hasStrengths ? (
               <div className="flex flex-wrap gap-2">
                 {data.strengths!.map((strength) => (
-                  <Badge key={strength} variant="secondary" className="bg-green-500/10 text-green-600 border-green-500/20">
+                  <Badge 
+                    key={strength} 
+                    variant="secondary" 
+                    className="px-3 py-1.5 text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
+                  >
                     {strength}
                   </Badge>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">Nenhum ponto forte cadastrado</p>
+              <p className="text-sm text-muted-foreground py-2">
+                Nenhum ponto forte cadastrado
+              </p>
             )}
-          </div>
+          </MiniCard>
 
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm">
-              <AlertTriangle className="w-4 h-4 text-amber-500" />
-              <span className="font-medium">Pontos a Desenvolver</span>
-            </div>
+          {/* Card 5: Pontos a Desenvolver */}
+          <MiniCard title="Pontos a Desenvolver" icon={AlertTriangle}>
             {hasAreasToImprove ? (
               <div className="flex flex-wrap gap-2">
                 {data.areas_to_develop!.map((area) => (
-                  <Badge key={area} variant="secondary" className="bg-amber-500/10 text-amber-600 border-amber-500/20">
+                  <Badge 
+                    key={area} 
+                    variant="secondary" 
+                    className="px-3 py-1.5 text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition-colors"
+                  >
                     {area}
                   </Badge>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">Nenhuma área cadastrada</p>
+              <p className="text-sm text-muted-foreground py-2">
+                Nenhuma área cadastrada
+              </p>
             )}
-          </div>
+          </MiniCard>
         </div>
       </CardContent>
     </Card>
