@@ -11,6 +11,7 @@ import {
 import { toast } from "sonner";
 import { exportToPdf } from "@/lib/pdfExport";
 import { ComparePdfTemplate } from "./ComparePdfTemplate";
+import type { PlayerStatRow } from "@/lib/attributeRadar";
 
 interface PlayerData {
   id: string;
@@ -48,6 +49,7 @@ interface AggregatedStats {
 
 interface PlayerWithStats extends PlayerData {
   aggregatedStats: AggregatedStats | null;
+  statsRows?: PlayerStatRow[];
 }
 
 interface ExportComparePdfButtonProps {

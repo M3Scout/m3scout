@@ -439,7 +439,42 @@ const ComparePlayers = () => {
                 <Info className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Melhor valor destacado automaticamente</span>
               </div>
-              <ExportComparePdfButton players={selectedPlayers} />
+              <ExportComparePdfButton 
+                players={selectedPlayers.map((p) => ({
+                  ...p,
+                  statsRows: p.stats.map((s) => ({
+                    matches: s.matches,
+                    minutes: s.minutes,
+                    goals: s.goals,
+                    assists: s.assists,
+                    shots: s.shots ?? 0,
+                    shots_on_target: s.shots_on_target ?? 0,
+                    key_passes: s.key_passes ?? 0,
+                    chances_created: s.chances_created ?? 0,
+                    tackles: s.tackles,
+                    interceptions: s.interceptions,
+                    recoveries: s.recoveries,
+                    duels_won: s.duels_won ?? 0,
+                    total_duels: s.total_duels ?? 0,
+                    yellow_cards: s.yellow_cards,
+                    red_cards: s.red_cards,
+                    accurate_passes: s.accurate_passes ?? 0,
+                    total_passes: s.total_passes ?? 0,
+                    successful_dribbles: s.successful_dribbles ?? 0,
+                    total_dribbles: s.total_dribbles ?? 0,
+                    clearances: s.clearances ?? 0,
+                    aerial_duels_won: s.aerial_duels_won ?? 0,
+                    aerial_duels_total: s.aerial_duels_total ?? 0,
+                    ground_duels_won: s.ground_duels_won ?? 0,
+                    ground_duels_total: s.ground_duels_total ?? 0,
+                    saves: s.saves ?? 0,
+                    goals_conceded: s.goals_conceded ?? 0,
+                    clean_sheets: s.clean_sheets ?? 0,
+                    penalties_saved: s.penalties_saved ?? 0,
+                    errors_leading_to_goal: s.errors_leading_to_goal ?? 0,
+                  })),
+                }))}
+              />
             </div>
           </div>
 
