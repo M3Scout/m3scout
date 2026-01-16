@@ -41,7 +41,15 @@ const Players = () => {
   const [nationalityFilter, setNationalityFilter] = useState("todos");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
-  const [scoutingMode, setScoutingMode] = useState(false);
+  const [scoutingMode, setScoutingMode] = useState(() => {
+    const saved = localStorage.getItem('m3-scouting-mode');
+    return saved === 'true';
+  });
+
+  // Persist scouting mode preference
+  useEffect(() => {
+    localStorage.setItem('m3-scouting-mode', String(scoutingMode));
+  }, [scoutingMode]);
 
   // Scroll to top on mount
   useEffect(() => {
