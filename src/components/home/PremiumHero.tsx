@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, ChevronDown, Users, FileText, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 import heroStadium from "@/assets/hero-stadium.jpg";
 
 export function PremiumHero() {
@@ -198,7 +199,7 @@ export function PremiumHero() {
         <div className="grid lg:grid-cols-[1fr,auto] gap-12 lg:gap-20 items-center">
           {/* Left Content */}
           <div className="max-w-2xl">
-            {/* Headline */}
+            {/* Headline with Glitch Effect */}
             <h1
               className={cn(
                 "text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-[1.1] tracking-tight mb-6 transition-all duration-700",
@@ -207,8 +208,12 @@ export function PremiumHero() {
                   : "opacity-0 translate-y-8"
               )}
             >
-              <span className="block">SCOUTING QUE</span>
-              <span className="block text-[#e52421]">VIRA CONTRATO.</span>
+              <span className="block glitch-text" data-text="SCOUTING QUE">
+                SCOUTING QUE
+              </span>
+              <span className="block text-[#e52421] glitch-text" data-text="VIRA CONTRATO.">
+                VIRA CONTRATO.
+              </span>
             </h1>
 
             {/* Subheadline */}
@@ -303,6 +308,51 @@ export function PremiumHero() {
 
 function StatsCard({ prefersReducedMotion }: { prefersReducedMotion: boolean }) {
   const [isHovered, setIsHovered] = useState(false);
+  const [stats, setStats] = useState({
+    players: 0,
+    reports: 0,
+    competitions: 0,
+    isLoading: true,
+  });
+
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        // Fetch public players count
+        const { count: playersCount } = await supabase
+          .from("players")
+          .select("*", { count: "exact", head: true });
+
+        // Fetch active competitions count
+        const { count: competitionsCount } = await supabase
+          .from("competitions")
+          .select("*", { count: "exact", head: true });
+
+        setStats({
+          players: playersCount || 0,
+          reports: 500, // Static fallback - scouting_reports requires auth
+          competitions: competitionsCount || 0,
+          isLoading: false,
+        });
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+        setStats({
+          players: 150,
+          reports: 500,
+          competitions: 25,
+          isLoading: false,
+        });
+      }
+    }
+
+    fetchStats();
+  }, []);
+
+  const formatStat = (value: number, isLoading: boolean) => {
+    if (isLoading) return "...";
+    if (value === 0) return "0";
+    return `${value}+`;
+  };
 
   return (
     <div
@@ -330,9 +380,21 @@ function StatsCard({ prefersReducedMotion }: { prefersReducedMotion: boolean }) 
 
       {/* Stats */}
       <div className="space-y-5">
-        <StatRow icon={Users} label="Atletas monitorados" value="150+" />
-        <StatRow icon={FileText} label="Relatórios gerados" value="500+" />
-        <StatRow icon={Trophy} label="Competições mapeadas" value="25+" />
+        <StatRow
+          icon={Users}
+          label="Atletas monitorados"
+          value={formatStat(stats.players, stats.isLoading)}
+        />
+        <StatRow
+          icon={FileText}
+          label="Relatórios gerados"
+          value={formatStat(stats.reports, stats.isLoading)}
+        />
+        <StatRow
+          icon={Trophy}
+          label="Competições mapeadas"
+          value={formatStat(stats.competitions, stats.isLoading)}
+        />
       </div>
 
       {/* Decorative Corner */}
