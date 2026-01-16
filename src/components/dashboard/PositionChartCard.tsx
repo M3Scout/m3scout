@@ -54,10 +54,10 @@ export const PositionChartCard = ({ data }: PositionChartCardProps) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.25 }}
-      className="rounded-xl border border-zinc-800/50 bg-gradient-to-br from-zinc-900 to-zinc-950 overflow-hidden"
+      className="w-full h-full flex flex-col rounded-xl border border-zinc-800/50 bg-gradient-to-br from-zinc-900 to-zinc-950 overflow-hidden"
     >
       {/* Header */}
-      <div className="px-5 py-4 border-b border-zinc-800/50 bg-zinc-900/50">
+      <div className="px-5 py-4 border-b border-zinc-800/50 bg-zinc-900/50 shrink-0">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500/20 to-green-600/10 flex items-center justify-center">
             <PieChart className="w-4 h-4 text-emerald-400" />
@@ -69,12 +69,12 @@ export const PositionChartCard = ({ data }: PositionChartCardProps) => {
         </div>
       </div>
 
-      {/* Content */}
-      <div className="p-4">
+      {/* Content - flex-1 to fill available height */}
+      <div className="p-4 flex-1 flex flex-col min-h-0">
         {data.length > 0 ? (
           <>
-            {/* Bar Chart */}
-            <div className="h-[180px] mb-4">
+            {/* Bar Chart - flex-1 to fill space */}
+            <div className="flex-1 min-h-[180px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data} layout="vertical" margin={{ left: 0, right: 16, top: 8, bottom: 8 }}>
                   <XAxis type="number" hide />
@@ -131,8 +131,8 @@ export const PositionChartCard = ({ data }: PositionChartCardProps) => {
               </ResponsiveContainer>
             </div>
 
-            {/* Legend */}
-            <div className="flex items-center justify-between pt-3 border-t border-zinc-800/50">
+            {/* Legend - mt-auto to push to bottom */}
+            <div className="flex items-center justify-between pt-3 mt-auto border-t border-zinc-800/50 shrink-0">
               <div className="flex items-center gap-1.5 text-[11px] text-zinc-500">
                 <Users className="w-3.5 h-3.5" />
                 <span>{total} atletas cadastrados</span>
@@ -143,7 +143,7 @@ export const PositionChartCard = ({ data }: PositionChartCardProps) => {
             </div>
           </>
         ) : (
-          <div className="py-12 text-center">
+          <div className="py-12 text-center flex-1 flex flex-col items-center justify-center">
             <PieChart className="w-10 h-10 mx-auto mb-3 text-zinc-700" />
             <p className="text-sm text-zinc-500">Sem dados de posição</p>
           </div>
