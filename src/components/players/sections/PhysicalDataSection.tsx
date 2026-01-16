@@ -3,6 +3,12 @@ import { Activity, Scale, Ruler, Zap, Timer, Heart, Calendar, Dumbbell, Percent,
 import { formatFixed } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar, Legend, Tooltip } from "recharts";
+import {
+  Tooltip as UITooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface PhysicalData {
   weight?: number | null;
@@ -14,11 +20,110 @@ interface PhysicalData {
   sprint_30m?: number | null;
   vo2_max?: number | null;
   last_physical_evaluation?: string | null;
+  position?: string | null;
 }
 
 interface PhysicalDataSectionProps {
   data: PhysicalData;
 }
+
+// Position-based ideal ranges for body fat percentage
+const BODY_FAT_BY_POSITION: Record<string, { min: number; max: number; label: string }> = {
+  // Attackers / Wingers
+  "atacante": { min: 7, max: 9, label: "Atacante" },
+  "ponta": { min: 7, max: 9, label: "Ponta" },
+  "ponta esquerda": { min: 7, max: 9, label: "Ponta Esquerda" },
+  "ponta direita": { min: 7, max: 9, label: "Ponta Direita" },
+  "centroavante": { min: 7, max: 9, label: "Centroavante" },
+  "segundo atacante": { min: 7, max: 9, label: "Segundo Atacante" },
+  // Midfielders
+  "meia": { min: 8, max: 10, label: "Meia" },
+  "meia atacante": { min: 8, max: 10, label: "Meia Atacante" },
+  "meia central": { min: 8, max: 10, label: "Meia Central" },
+  "meia armador": { min: 8, max: 10, label: "Meia Armador" },
+  // Fullbacks
+  "lateral": { min: 8, max: 10, label: "Lateral" },
+  "lateral esquerdo": { min: 8, max: 10, label: "Lateral Esquerdo" },
+  "lateral direito": { min: 8, max: 10, label: "Lateral Direito" },
+  "ala": { min: 8, max: 10, label: "Ala" },
+  // Defensive Midfielders
+  "volante": { min: 9, max: 11, label: "Volante" },
+  "primeiro volante": { min: 9, max: 11, label: "Primeiro Volante" },
+  "segundo volante": { min: 9, max: 11, label: "Segundo Volante" },
+  // Center Backs
+  "zagueiro": { min: 9, max: 12, label: "Zagueiro" },
+  "zagueiro central": { min: 9, max: 12, label: "Zagueiro Central" },
+  "defensor central": { min: 9, max: 12, label: "Defensor Central" },
+  // Goalkeepers
+  "goleiro": { min: 10, max: 13, label: "Goleiro" },
+  "gk": { min: 10, max: 13, label: "Goleiro" },
+  "goalkeeper": { min: 10, max: 13, label: "Goleiro" },
+};
+
+// Position-based ideal ranges for muscle mass percentage
+const MUSCLE_MASS_BY_POSITION: Record<string, { min: number; max: number; label: string }> = {
+  // Wingers / Attackers
+  "ponta": { min: 44, max: 47, label: "Ponta" },
+  "ponta esquerda": { min: 44, max: 47, label: "Ponta Esquerda" },
+  "ponta direita": { min: 44, max: 47, label: "Ponta Direita" },
+  "atacante": { min: 44, max: 47, label: "Atacante" },
+  "centroavante": { min: 44, max: 47, label: "Centroavante" },
+  "segundo atacante": { min: 44, max: 47, label: "Segundo Atacante" },
+  // Midfielders
+  "meia": { min: 45, max: 48, label: "Meia" },
+  "meia atacante": { min: 45, max: 48, label: "Meia Atacante" },
+  "meia central": { min: 45, max: 48, label: "Meia Central" },
+  "meia armador": { min: 45, max: 48, label: "Meia Armador" },
+  // Fullbacks
+  "lateral": { min: 46, max: 49, label: "Lateral" },
+  "lateral esquerdo": { min: 46, max: 49, label: "Lateral Esquerdo" },
+  "lateral direito": { min: 46, max: 49, label: "Lateral Direito" },
+  "ala": { min: 46, max: 49, label: "Ala" },
+  // Defensive Midfielders
+  "volante": { min: 48, max: 51, label: "Volante" },
+  "primeiro volante": { min: 48, max: 51, label: "Primeiro Volante" },
+  "segundo volante": { min: 48, max: 51, label: "Segundo Volante" },
+  // Center Backs
+  "zagueiro": { min: 50, max: 54, label: "Zagueiro" },
+  "zagueiro central": { min: 50, max: 54, label: "Zagueiro Central" },
+  "defensor central": { min: 50, max: 54, label: "Defensor Central" },
+  // Goalkeepers
+  "goleiro": { min: 50, max: 55, label: "Goleiro" },
+  "gk": { min: 50, max: 55, label: "Goleiro" },
+  "goalkeeper": { min: 50, max: 55, label: "Goleiro" },
+};
+
+// Get position range for body fat
+const getBodyFatRange = (position: string | null | undefined): { min: number; max: number; label: string } | null => {
+  if (!position) return null;
+  const normalizedPosition = position.toLowerCase().trim();
+  return BODY_FAT_BY_POSITION[normalizedPosition] || null;
+};
+
+// Get position range for muscle mass
+const getMuscleMassRange = (position: string | null | undefined): { min: number; max: number; label: string } | null => {
+  if (!position) return null;
+  const normalizedPosition = position.toLowerCase().trim();
+  return MUSCLE_MASS_BY_POSITION[normalizedPosition] || null;
+};
+
+// Calculate lean mass: peso_magro = peso × (1 − gordura_percentual/100)
+const calculateLeanMass = (weight: number | null | undefined, bodyFatPercentage: number | null | undefined): number | null => {
+  if (!weight || bodyFatPercentage === null || bodyFatPercentage === undefined) return null;
+  return weight * (1 - bodyFatPercentage / 100);
+};
+
+// Calculate estimated muscle mass: massa_muscular = peso_magro × 0.50
+const calculateEstimatedMuscleMass = (leanMass: number | null): number | null => {
+  if (leanMass === null) return null;
+  return leanMass * 0.50;
+};
+
+// Calculate muscle mass percentage: massa_muscular_percent = (massa_muscular / peso) × 100
+const calculateMuscleMassPercentage = (muscleMass: number | null, weight: number | null | undefined): number | null => {
+  if (muscleMass === null || !weight) return null;
+  return (muscleMass / weight) * 100;
+};
 
 // Ideal ranges for athletes (min, ideal_low, ideal_high, max)
 const METRIC_RANGES: Record<string, { min: number; idealLow: number; idealHigh: number; max: number; unit: string; inverse?: boolean }> = {
@@ -27,6 +132,7 @@ const METRIC_RANGES: Record<string, { min: number; idealLow: number; idealHigh: 
   wingspan: { min: 160, idealLow: 175, idealHigh: 200, max: 215, unit: "cm" },
   body_fat_percentage: { min: 5, idealLow: 8, idealHigh: 15, max: 25, unit: "%", inverse: true },
   muscle_mass: { min: 30, idealLow: 40, idealHigh: 55, max: 65, unit: "kg" },
+  muscle_mass_percentage: { min: 40, idealLow: 44, idealHigh: 55, max: 60, unit: "%", inverse: false },
   bmi: { min: 18, idealLow: 20, idealHigh: 24, max: 28, unit: "" },
   max_speed: { min: 25, idealLow: 30, idealHigh: 35, max: 40, unit: "km/h" },
   sprint_30m: { min: 3.5, idealLow: 3.8, idealHigh: 4.3, max: 5.0, unit: "s", inverse: true },
@@ -39,7 +145,7 @@ const ELITE_BENCHMARKS: Record<string, { value: number; label: string }> = {
   sprint_30m: { value: 3.9, label: "Sprint" },
   vo2_max: { value: 65, label: "VO2 Máx" },
   body_fat_percentage: { value: 10, label: "% Gordura" },
-  muscle_mass: { value: 55, label: "Massa Musc." },
+  muscle_mass_percentage: { value: 50, label: "% Massa Musc." },
 };
 
 // Calculate BMI from weight (kg) and height (cm)
@@ -61,20 +167,54 @@ const normalizeValue = (value: number | null | undefined, metricKey: string): nu
 
   if (range.inverse) {
     // For inverse metrics (lower is better)
-    // Elite benchmark is the "best" low value
     const normalizedValue = ((range.max - value) / (range.max - benchmark.value)) * 100;
     return Math.max(0, Math.min(100, normalizedValue));
   } else {
     // For normal metrics (higher is better)
     const normalizedValue = (value / benchmark.value) * 100;
-    return Math.max(0, Math.min(120, normalizedValue)); // Allow up to 120% for exceptional values
+    return Math.max(0, Math.min(120, normalizedValue));
   }
+};
+
+// Get status based on position-specific ranges
+type MetricStatus = "low" | "ideal" | "high" | "unknown";
+
+const getPositionBasedStatus = (
+  value: number | null | undefined, 
+  range: { min: number; max: number } | null,
+  inverse: boolean = false
+): { status: MetricStatus; color: string } => {
+  if (value === null || value === undefined || !Number.isFinite(value) || !range) {
+    return { status: "unknown", color: "bg-muted" };
+  }
+
+  let status: MetricStatus;
+  if (inverse) {
+    // For inverse metrics (lower is better, like body fat)
+    if (value < range.min) status = "low"; // Too low (could be unhealthy)
+    else if (value <= range.max) status = "ideal";
+    else status = "high";
+  } else {
+    // For normal metrics (higher in range is better)
+    if (value < range.min) status = "low";
+    else if (value <= range.max) status = "ideal";
+    else status = "high";
+  }
+
+  const colors: Record<MetricStatus, string> = {
+    low: "bg-amber-500",
+    ideal: "bg-emerald-500",
+    high: "bg-red-500",
+    unknown: "bg-muted",
+  };
+
+  return { status, color: colors[status] };
 };
 
 // Get status and percentage for a metric
 const getMetricStatus = (value: number | null | undefined, metricKey: string): { 
   percentage: number; 
-  status: "low" | "ideal" | "high" | "unknown";
+  status: MetricStatus;
   color: string;
 } => {
   if (value === null || value === undefined || !Number.isFinite(value)) {
@@ -91,7 +231,7 @@ const getMetricStatus = (value: number | null | undefined, metricKey: string): {
   const clampedValue = Math.max(min, Math.min(max, value));
   const percentage = ((clampedValue - min) / (max - min)) * 100;
 
-  let status: "low" | "ideal" | "high";
+  let status: MetricStatus;
   if (inverse) {
     if (value <= idealHigh) status = "ideal";
     else if (value <= max) status = "high";
@@ -103,23 +243,33 @@ const getMetricStatus = (value: number | null | undefined, metricKey: string): {
     else status = "high";
   }
 
-  const colors = {
+  const colors: Record<MetricStatus, string> = {
     low: "bg-amber-500",
     ideal: "bg-emerald-500",
-    high: "bg-amber-500",
+    high: "bg-red-500",
+    unknown: "bg-muted",
   };
 
   return { percentage, status, color: colors[status] };
 };
 
-const getStatusLabel = (status: "low" | "ideal" | "high" | "unknown"): string => {
-  const labels = {
+const getStatusLabel = (status: MetricStatus): string => {
+  const labels: Record<MetricStatus, string> = {
     low: "Abaixo",
     ideal: "Ideal",
     high: "Acima",
     unknown: "",
   };
   return labels[status];
+};
+
+const getStatusBadgeClasses = (status: MetricStatus): string => {
+  switch (status) {
+    case "ideal": return "bg-emerald-500/20 text-emerald-400";
+    case "low": return "bg-amber-500/20 text-amber-400";
+    case "high": return "bg-red-500/20 text-red-400";
+    default: return "bg-muted/20 text-muted-foreground";
+  }
 };
 
 const BlockTitle = ({ 
@@ -165,9 +315,7 @@ const MetricCard = ({
         {hasValue && status !== "unknown" && (
           <span className={cn(
             "text-[10px] font-medium px-1.5 py-0.5 rounded-full",
-            status === "ideal" && "bg-emerald-500/20 text-emerald-400",
-            status === "low" && "bg-amber-500/20 text-amber-400",
-            status === "high" && "bg-amber-500/20 text-amber-400"
+            getStatusBadgeClasses(status)
           )}>
             {getStatusLabel(status)}
           </span>
@@ -211,8 +359,171 @@ const MetricCard = ({
   );
 };
 
+// Position-based body composition card with tooltip
+const BodyCompositionCard = ({ 
+  icon: Icon, 
+  label, 
+  value, 
+  unit,
+  position,
+  metricType
+}: { 
+  icon: React.ElementType; 
+  label: string; 
+  value: number | null | undefined; 
+  unit: string;
+  position: string | null | undefined;
+  metricType: "body_fat" | "muscle_mass";
+}) => {
+  const hasValue = value !== null && value !== undefined && Number.isFinite(value);
+  
+  const range = metricType === "body_fat" 
+    ? getBodyFatRange(position)
+    : getMuscleMassRange(position);
+  
+  const { status, color } = getPositionBasedStatus(
+    value, 
+    range, 
+    metricType === "body_fat" // Body fat is inverse (lower is better within range)
+  );
+
+  // Calculate percentage for progress bar based on position range
+  let percentage = 50;
+  if (hasValue && range) {
+    const rangeSpan = range.max - range.min;
+    const buffer = rangeSpan * 0.5; // 50% buffer on each side
+    const displayMin = range.min - buffer;
+    const displayMax = range.max + buffer;
+    percentage = ((value! - displayMin) / (displayMax - displayMin)) * 100;
+    percentage = Math.max(0, Math.min(100, percentage));
+  }
+
+  // Calculate ideal zone position for the progress bar
+  const idealZoneStart = range ? 25 : 0; // 25% from left (accounting for buffer)
+  const idealZoneWidth = range ? 50 : 0; // 50% width (the actual range)
+
+  const positionLabel = range?.label || (position ? position : "Posição não definida");
+  
+  return (
+    <TooltipProvider>
+      <UITooltip>
+        <TooltipTrigger asChild>
+          <div className="flex flex-col p-4 rounded-xl bg-secondary/40 border border-border/30 min-h-[140px] cursor-help hover:bg-secondary/60 transition-colors">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Icon className="w-4 h-4 text-muted-foreground" />
+                <p className="text-xs text-muted-foreground">{label}</p>
+              </div>
+              {hasValue && status !== "unknown" && (
+                <span className={cn(
+                  "text-[10px] font-medium px-1.5 py-0.5 rounded-full",
+                  getStatusBadgeClasses(status)
+                )}>
+                  {getStatusLabel(status)}
+                </span>
+              )}
+            </div>
+            
+            <div className="flex-1 flex items-center justify-center">
+              {hasValue ? (
+                <div className="text-center">
+                  <span className="text-2xl font-bold text-foreground">
+                    {formatFixed(value, 1)}
+                  </span>
+                  <span className="text-sm text-muted-foreground ml-1">{unit}</span>
+                </div>
+              ) : (
+                <span className="text-sm text-muted-foreground/60 italic">Não informado</span>
+              )}
+            </div>
+
+            {/* Position reference */}
+            {range && (
+              <div className="text-[10px] text-muted-foreground text-center mb-2">
+                Ref: {range.min}–{range.max}% ({positionLabel})
+              </div>
+            )}
+
+            {hasValue && range && (
+              <div className="mt-1">
+                <div className="h-2 w-full bg-secondary rounded-full overflow-hidden relative">
+                  {/* Ideal zone indicator */}
+                  <div 
+                    className="absolute h-full bg-emerald-500/30 rounded-full"
+                    style={{
+                      left: `${idealZoneStart}%`,
+                      width: `${idealZoneWidth}%`
+                    }}
+                  />
+                  {/* Current value indicator */}
+                  <div 
+                    className={cn(
+                      "absolute h-full w-2 rounded-full transition-all duration-500 -translate-x-1/2",
+                      color
+                    )}
+                    style={{ left: `${percentage}%` }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-xs">
+          <div className="space-y-1 text-xs">
+            <p className="font-semibold">
+              {metricType === "body_fat" ? "% Gordura Corporal" : "% Massa Muscular"}
+            </p>
+            {range ? (
+              <>
+                <p>
+                  <span className="text-muted-foreground">Faixa ideal para </span>
+                  <span className="font-medium">{positionLabel}</span>
+                  <span className="text-muted-foreground">: </span>
+                  <span className="text-emerald-400 font-medium">{range.min}–{range.max}%</span>
+                </p>
+                {hasValue && (
+                  <p>
+                    <span className="text-muted-foreground">Valor atual: </span>
+                    <span className={cn(
+                      "font-medium",
+                      status === "ideal" && "text-emerald-400",
+                      status === "low" && "text-amber-400",
+                      status === "high" && "text-red-400"
+                    )}>
+                      {formatFixed(value, 1)}%
+                    </span>
+                    {status !== "unknown" && (
+                      <span className={cn(
+                        "ml-1",
+                        status === "ideal" && "text-emerald-400",
+                        status === "low" && "text-amber-400",
+                        status === "high" && "text-red-400"
+                      )}>
+                        ({getStatusLabel(status)})
+                      </span>
+                    )}
+                  </p>
+                )}
+              </>
+            ) : (
+              <p className="text-muted-foreground">
+                Defina a posição do atleta para ver a faixa ideal.
+              </p>
+            )}
+          </div>
+        </TooltipContent>
+      </UITooltip>
+    </TooltipProvider>
+  );
+};
+
 // Physical Performance Radar Chart
 const PhysicalRadarChart = ({ data }: { data: PhysicalData }) => {
+  // Calculate muscle mass percentage for radar
+  const leanMass = calculateLeanMass(data.weight, data.body_fat_percentage);
+  const estimatedMuscleMass = calculateEstimatedMuscleMass(leanMass);
+  const muscleMassPercentage = calculateMuscleMassPercentage(estimatedMuscleMass, data.weight);
+
   const radarData = Object.entries(ELITE_BENCHMARKS).map(([key, benchmark]) => {
     let value: number | null | undefined;
     
@@ -221,7 +532,7 @@ const PhysicalRadarChart = ({ data }: { data: PhysicalData }) => {
       case "sprint_30m": value = data.sprint_30m; break;
       case "vo2_max": value = data.vo2_max; break;
       case "body_fat_percentage": value = data.body_fat_percentage; break;
-      case "muscle_mass": value = data.muscle_mass; break;
+      case "muscle_mass_percentage": value = muscleMassPercentage; break;
       default: value = null;
     }
 
@@ -308,6 +619,11 @@ const PhysicalRadarChart = ({ data }: { data: PhysicalData }) => {
 
 export const PhysicalDataSection = ({ data }: PhysicalDataSectionProps) => {
   const bmi = calculateBMI(data.weight, data.height);
+  
+  // Calculate derived values for body composition
+  const leanMass = calculateLeanMass(data.weight, data.body_fat_percentage);
+  const estimatedMuscleMass = calculateEstimatedMuscleMass(leanMass);
+  const muscleMassPercentage = calculateMuscleMassPercentage(estimatedMuscleMass, data.weight);
 
   return (
     <Card>
@@ -339,14 +655,38 @@ export const PhysicalDataSection = ({ data }: PhysicalDataSectionProps) => {
           </div>
         </div>
 
-        {/* Block B - Composição Corporal */}
+        {/* Block B - Composição Corporal (Position-based) */}
         <div>
           <BlockTitle icon={Dumbbell} title="Composição Corporal" />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <MetricCard icon={Percent} label="% Gordura" value={data.body_fat_percentage} unit="%" metricKey="body_fat_percentage" />
-            <MetricCard icon={Dumbbell} label="Massa Muscular" value={data.muscle_mass} unit="kg" metricKey="muscle_mass" />
+            <BodyCompositionCard 
+              icon={Percent} 
+              label="% Gordura" 
+              value={data.body_fat_percentage} 
+              unit="%" 
+              position={data.position}
+              metricType="body_fat"
+            />
+            <BodyCompositionCard 
+              icon={Dumbbell} 
+              label="% Massa Muscular" 
+              value={muscleMassPercentage} 
+              unit="%" 
+              position={data.position}
+              metricType="muscle_mass"
+            />
             <MetricCard icon={Target} label="IMC" value={bmi} unit="" metricKey="bmi" />
           </div>
+          {/* Calculation info */}
+          {data.weight && data.body_fat_percentage && (
+            <div className="mt-3 p-3 rounded-lg bg-muted/30 border border-border/20">
+              <p className="text-[10px] text-muted-foreground">
+                <span className="font-medium">Cálculos:</span>{" "}
+                Peso magro = {formatFixed(leanMass, 1)} kg | 
+                Massa muscular estimada = {formatFixed(estimatedMuscleMass, 1)} kg ({formatFixed(muscleMassPercentage, 1)}% do peso)
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Block C - Performance Física */}
