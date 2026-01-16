@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { getYouTubeEmbedUrl, cn } from "@/lib/utils";
+import { getYouTubeEmbedUrl, getYouTubeThumbnailUrl, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
@@ -34,7 +34,7 @@ import {
   Footprints,
   X,
 } from "lucide-react";
-import { ScoreDisplay } from "@/components/players/ScoreDisplay";
+// Score badge removed from public profile - only shown in admin area
 import { formatFixed } from "@/lib/formatters";
 import { isGoalkeeper } from "@/lib/positionUtils";
 
@@ -396,41 +396,58 @@ function TabButton({
   );
 }
 
-// Video Thumbnail with overlay
+// Video Thumbnail with real YouTube thumbnail
 function VideoThumbnail({ 
   videoUrl, 
+  thumbnailUrl,
   onPlay 
 }: { 
   videoUrl: string;
+  thumbnailUrl: string | null;
   onPlay: () => void;
 }) {
+  const [imgError, setImgError] = useState(false);
+  
   return (
     <motion.button
       onClick={onPlay}
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-      className="relative w-full aspect-video rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-800/50 group"
+      whileHover={{ scale: 1.01 }}
+      whileTap={{ scale: 0.99 }}
+      className="relative w-full aspect-video rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-800/50 group cursor-pointer"
     >
-      {/* Gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10" />
-      <div className="absolute inset-0 bg-[#e52421]/10 opacity-0 group-hover:opacity-100 transition-opacity z-10" />
+      {/* Real thumbnail image */}
+      {thumbnailUrl && !imgError && (
+        <img
+          src={thumbnailUrl}
+          alt="Video thumbnail"
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          onError={() => setImgError(true)}
+        />
+      )}
+      
+      {/* Fallback gradient if no thumbnail */}
+      {(!thumbnailUrl || imgError) && (
+        <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 to-zinc-900" />
+      )}
+      
+      {/* Overlay - darkens on hover */}
+      <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-colors duration-300 z-10" />
       
       {/* Play button */}
       <div className="absolute inset-0 flex items-center justify-center z-20">
         <motion.div 
-          className="w-16 h-16 rounded-full bg-[#e52421] flex items-center justify-center shadow-xl shadow-[#e52421]/30"
-          whileHover={{ scale: 1.1 }}
-          animate={{ scale: [1, 1.05, 1] }}
+          className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-300"
+          animate={{ boxShadow: ["0 0 0 0 rgba(255,255,255,0.4)", "0 0 0 20px rgba(255,255,255,0)", "0 0 0 0 rgba(255,255,255,0.4)"] }}
           transition={{ duration: 2, repeat: Infinity }}
         >
-          <Play className="w-7 h-7 text-white ml-1" fill="white" />
+          <Play className="w-7 h-7 md:w-8 md:h-8 text-[#e52421] ml-1" fill="#e52421" />
         </motion.div>
       </div>
       
-      {/* Label */}
-      <div className="absolute bottom-4 left-4 z-20">
-        <span className="text-xs uppercase tracking-widest text-zinc-400">Highlights</span>
-        <p className="text-white font-semibold">Assistir vídeo completo</p>
+      {/* Label - bottom left */}
+      <div className="absolute bottom-4 left-4 z-20 text-left">
+        <span className="text-[10px] uppercase tracking-widest text-zinc-300/80">Highlights</span>
+        <p className="text-white font-medium text-sm">Assista ao vídeo completo</p>
       </div>
     </motion.button>
   );
@@ -605,6 +622,7 @@ const PlayerProfile = () => {
   }
 
   const embedUrl = player.highlight_video_url ? getYouTubeEmbedUrl(player.highlight_video_url) : null;
+  const thumbnailUrl = player.highlight_video_url ? getYouTubeThumbnailUrl(player.highlight_video_url, "maxres") : null;
 
   return (
     <div className="min-h-screen bg-black overflow-x-hidden">
@@ -641,23 +659,10 @@ const PlayerProfile = () => {
                 <img
                   src={player.photo_url || "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=800&h=1000&fit=crop"}
                   alt={player.full_name}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
                 />
-                {/* Gradient overlay */}
+                {/* Clean gradient overlay - no red */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
-                <div className="absolute inset-0 bg-gradient-to-r from-[#e52421]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                
-                {/* Score Badge */}
-                {player.auto_rating !== null && (
-                  <motion.div 
-                    className="absolute top-4 right-4"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.3, type: "spring" }}
-                  >
-                    <ScoreDisplay score={player.auto_rating} size="lg" />
-                  </motion.div>
-                )}
 
                 {/* Position badge */}
                 <div className="absolute bottom-4 left-4">
@@ -713,16 +718,31 @@ const PlayerProfile = () => {
                 )}
               </div>
 
-              {/* CTA */}
+              {/* Premium CTA Button */}
               <Link to={`/contact?player=${player.slug}`}>
-                <Button 
-                  size="lg"
-                  className="w-full sm:w-auto bg-[#e52421] hover:bg-[#c91f1c] text-white font-medium px-8 rounded-full border-0 shadow-lg shadow-[#e52421]/20 group"
+                <motion.button 
+                  className="group relative inline-flex items-center gap-2 px-6 py-3 rounded-full font-medium text-white text-sm
+                    bg-gradient-to-r from-[#e52421] to-[#b51c1a] 
+                    shadow-lg shadow-[#e52421]/20
+                    hover:shadow-xl hover:shadow-[#e52421]/30
+                    transition-all duration-300"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  <MessageCircle className="w-4 h-4 mr-2" />
-                  Falar com a M3 sobre este atleta
-                  <ChevronRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" />
-                </Button>
+                  <MessageCircle className="w-4 h-4" />
+                  <span>Falar com a M3 sobre este atleta</span>
+                  <motion.span
+                    className="inline-block"
+                    initial={{ x: 0 }}
+                    whileHover={{ x: 4 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </motion.span>
+                  
+                  {/* Glow effect on hover */}
+                  <div className="absolute inset-0 rounded-full bg-[#e52421] opacity-0 group-hover:opacity-20 blur-xl transition-opacity" />
+                </motion.button>
               </Link>
             </motion.div>
           </motion.section>
@@ -1027,7 +1047,7 @@ const PlayerProfile = () => {
               <Dialog open={videoOpen} onOpenChange={setVideoOpen}>
                 <DialogTrigger asChild>
                   <div>
-                    <VideoThumbnail videoUrl={embedUrl} onPlay={() => setVideoOpen(true)} />
+                    <VideoThumbnail videoUrl={embedUrl} thumbnailUrl={thumbnailUrl} onPlay={() => setVideoOpen(true)} />
                   </div>
                 </DialogTrigger>
                 <DialogContent className="max-w-4xl p-0 bg-black border-zinc-800">
@@ -1059,13 +1079,22 @@ const PlayerProfile = () => {
               Entre em contato com a M3 Agency para mais informações.
             </p>
             <Link to={`/contact?player=${player.slug}`}>
-              <Button 
-                size="lg"
-                className="bg-[#e52421] hover:bg-[#c91f1c] text-white font-medium px-10 rounded-full border-0 shadow-lg shadow-[#e52421]/20"
+              <motion.button 
+                className="group relative inline-flex items-center gap-2 px-8 py-3.5 rounded-full font-medium text-white
+                  bg-gradient-to-r from-[#e52421] to-[#b51c1a] 
+                  shadow-lg shadow-[#e52421]/20
+                  hover:shadow-xl hover:shadow-[#e52421]/30
+                  transition-all duration-300"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
               >
-                <MessageCircle className="w-5 h-5 mr-2" />
-                Falar com a M3 Agency
-              </Button>
+                <MessageCircle className="w-5 h-5" />
+                <span>Falar com a M3 Agency</span>
+                <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                
+                {/* Glow effect on hover */}
+                <div className="absolute inset-0 rounded-full bg-[#e52421] opacity-0 group-hover:opacity-20 blur-xl transition-opacity" />
+              </motion.button>
             </Link>
           </motion.section>
 

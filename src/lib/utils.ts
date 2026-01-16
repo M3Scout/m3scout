@@ -85,3 +85,21 @@ export function getYouTubeEmbedUrl(input: string): string | null {
   if (!videoId) return null;
   return `https://www.youtube.com/embed/${videoId}`;
 }
+
+/**
+ * Gets the high-quality thumbnail URL for a YouTube video
+ * Returns maxresdefault (1280x720) with fallback to hqdefault (480x360)
+ */
+export function getYouTubeThumbnailUrl(input: string, quality: "maxres" | "hq" | "mq" | "sd" = "maxres"): string | null {
+  const videoId = extractYouTubeVideoId(input);
+  if (!videoId) return null;
+  
+  const qualityMap = {
+    maxres: "maxresdefault",
+    hq: "hqdefault",
+    mq: "mqdefault",
+    sd: "sddefault",
+  };
+  
+  return `https://img.youtube.com/vi/${videoId}/${qualityMap[quality]}.jpg`;
+}
