@@ -378,7 +378,7 @@ const PlayerDetail = () => {
               />
 
               {/* Season Summary */}
-              <SeasonSummaryCard playerId={player.id} />
+              <SeasonSummaryCard playerId={player.id} playerPosition={player.position} />
 
               {/* Video */}
               {player.highlight_video_url && (() => {
