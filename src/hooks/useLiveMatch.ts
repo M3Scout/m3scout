@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 
 // Types
 export type MatchStatus = "draft" | "live" | "finished" | "applied";
@@ -108,6 +109,7 @@ export function getPositionTemplate(position: string): PositionTemplate {
 export function useLiveMatch(matchId: string) {
   const queryClient = useQueryClient();
   const [onlyOnField, setOnlyOnField] = useState(false);
+  const channelRef = useRef<RealtimeChannel | null>(null);
 
   // Fetch match data
   const { data: match, isLoading: matchLoading, error: matchError } = useQuery({
@@ -126,6 +128,56 @@ export function useLiveMatch(matchId: string) {
       return data as Match;
     },
   });
+
+  // Real-time subscription for multi-device sync
+  useEffect(() => {
+    // Subscribe to match changes
+    const channel = supabase
+      .channel(`live-match-${matchId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'matches',
+          filter: `id=eq.${matchId}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["match", matchId] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'match_events',
+          filter: `match_id=eq.${matchId}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["match-events", matchId] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'match_players',
+          filter: `match_id=eq.${matchId}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["match-players", matchId] });
+        }
+      )
+      .subscribe();
+
+    channelRef.current = channel;
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [matchId, queryClient]);
 
   // Fetch match players
   const { data: matchPlayers = [], isLoading: playersLoading } = useQuery({
@@ -578,6 +630,31 @@ export function useLiveMatch(matchId: string) {
     },
   });
 
+  // Edit event time using RPC
+  const editEventTime = useMutation({
+    mutationFn: async (params: { eventId: string; gameTimeSeconds: number }) => {
+      // Validate: time must be >= 0
+      if (params.gameTimeSeconds < 0) {
+        throw new Error("O tempo não pode ser negativo");
+      }
+
+      const { data, error } = await supabase.rpc("edit_live_event_time", {
+        p_event_id: params.eventId,
+        p_game_time_seconds: params.gameTimeSeconds,
+      });
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["match-events", matchId] });
+      toast.success("Tempo do evento atualizado");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao editar tempo do evento");
+    },
+  });
+
   // Player enters field (for substitutes during live game)
   const playerEnterField = useMutation({
     mutationFn: async (params: { matchPlayerId: string; minute: number }) => {
@@ -746,6 +823,7 @@ export function useLiveMatch(matchId: string) {
     addEvent,
     deleteEvent,
     voidEvent,
+    editEventTime,
     undoLastEvent,
     updateMatchStatus,
     startGame,

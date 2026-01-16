@@ -51,6 +51,7 @@ interface PremiumPlayerCardProps {
   matchPlayer: MatchPlayer;
   eventCounts: Record<MatchEventType, number>;
   matchStatus: MatchStatus;
+  clockStatus?: "stopped" | "running" | "paused";
   currentMinute?: number;
   onAddEvent: (eventType: MatchEventType) => void;
   onUndo: () => void;
@@ -67,6 +68,7 @@ export function PremiumPlayerCard({
   matchPlayer,
   eventCounts,
   matchStatus,
+  clockStatus = "stopped",
   currentMinute = 0,
   onAddEvent,
   onUndo,
@@ -88,9 +90,14 @@ export function PremiumPlayerCard({
   const isGK = matchPlayer.position_template === "goalkeeper";
   const isLive = matchStatus === "live";
   const isDraft = matchStatus === "draft";
+  const isPaused = clockStatus === "paused";
+  const isClockRunning = clockStatus === "running";
   const positionColors = getPositionColor(player.position);
   const shortPosition = getShortPosition(player.position);
   const quickEvents = isGK ? GK_QUICK_EVENTS : QUICK_EVENTS;
+  
+  // Can only add events if: live + clock running + player on field
+  const canAddEvents = isLive && isClockRunning && matchPlayer.is_on_field;
 
   const handleAddEventWithSound = (eventType: MatchEventType) => {
     if (soundEnabled) playSound(getSoundForEvent(eventType));
@@ -314,11 +321,17 @@ export function PremiumPlayerCard({
               >
                 <div className={cn(
                   "px-3 pb-3 pt-0",
-                  isDraft && "opacity-50 pointer-events-none"
+                  (isDraft || isPaused) && "opacity-50"
                 )}>
                   {isDraft && (
                     <p className="text-[10px] text-zinc-500 text-center mb-2 bg-zinc-800/50 rounded py-1">
                       📋 Inicie o jogo para registrar estatísticas
+                    </p>
+                  )}
+                  
+                  {isPaused && isLive && (
+                    <p className="text-[10px] text-amber-400 text-center mb-2 bg-amber-500/10 rounded py-1 border border-amber-500/20">
+                      ⏸️ Jogo pausado — retome para registrar eventos
                     </p>
                   )}
 
@@ -329,7 +342,7 @@ export function PremiumPlayerCard({
                         variant="ghost"
                         size="sm"
                         onClick={() => handleAddEventWithSound(event.type)}
-                        disabled={disabled || isDraft || !matchPlayer.is_on_field}
+                        disabled={disabled || !canAddEvents}
                         className={cn(
                           "h-9 px-3 gap-1.5 rounded-lg transition-all relative",
                           event.color
