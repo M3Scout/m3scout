@@ -158,6 +158,19 @@ const PlayerDetail = () => {
     }
   };
 
+  // Refetch injuries after adding new one
+  const refetchInjuries = async () => {
+    if (!id) return;
+    const { data } = await supabase
+      .from("player_injuries")
+      .select("*")
+      .eq("player_id", id)
+      .order("start_date", { ascending: false });
+    if (data) {
+      setInjuries(data);
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       if (!id) return;
@@ -568,6 +581,8 @@ const PlayerDetail = () => {
             injuries={injuries} 
             physicalStatus={player.physical_status}
             medicalNotes={player.medical_notes}
+            playerId={player.id}
+            onInjuryAdded={refetchInjuries}
           />
         </TabsContent>
 

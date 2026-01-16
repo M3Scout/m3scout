@@ -13,6 +13,8 @@ import {
   ShieldCheck
 } from "lucide-react";
 import { safeArray } from "@/lib/utils";
+import { AddInjuryModal } from "./AddInjuryModal";
+import { InjuryEvolutionChart } from "./InjuryEvolutionChart";
 
 interface Injury {
   id: string;
@@ -27,6 +29,8 @@ interface InjuryHistorySectionProps {
   injuries: Injury[];
   physicalStatus?: string | null;
   medicalNotes?: string | null;
+  playerId?: string;
+  onInjuryAdded?: () => void;
 }
 
 type StatusKey = "fit" | "apto" | "recovering" | "em_recuperacao" | "injured" | "lesionado" | "transition" | "transicao" | "retorno_progressivo";
@@ -201,7 +205,13 @@ const PhysicalStatusCard = ({ status }: { status: string | null | undefined }) =
 };
 
 // Card 2: Histórico de Lesões
-const InjuryHistoryCard = ({ injuries }: { injuries: Injury[] }) => {
+interface InjuryHistoryCardProps {
+  injuries: Injury[];
+  playerId?: string;
+  onInjuryAdded?: () => void;
+}
+
+const InjuryHistoryCard = ({ injuries, playerId, onInjuryAdded }: InjuryHistoryCardProps) => {
   const sortedInjuries = [...safeArray(injuries)].sort(
     (a, b) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime()
   );
@@ -209,15 +219,20 @@ const InjuryHistoryCard = ({ injuries }: { injuries: Injury[] }) => {
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Stethoscope className="w-5 h-5 text-primary" />
-          Histórico de Lesões
-          {sortedInjuries.length > 0 && (
-            <Badge variant="secondary" className="ml-auto text-xs">
-              {sortedInjuries.length} {sortedInjuries.length === 1 ? "registro" : "registros"}
-            </Badge>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Stethoscope className="w-5 h-5 text-primary" />
+            Histórico de Lesões
+            {sortedInjuries.length > 0 && (
+              <Badge variant="secondary" className="text-xs">
+                {sortedInjuries.length} {sortedInjuries.length === 1 ? "registro" : "registros"}
+              </Badge>
+            )}
+          </CardTitle>
+          {playerId && onInjuryAdded && (
+            <AddInjuryModal playerId={playerId} onInjuryAdded={onInjuryAdded} />
           )}
-        </CardTitle>
+        </div>
       </CardHeader>
       <CardContent>
         {sortedInjuries.length > 0 ? (
@@ -340,14 +355,27 @@ const MedicalNotesCard = ({ notes }: { notes: string | null | undefined }) => {
   );
 };
 
-export const InjuryHistorySection = ({ injuries, physicalStatus, medicalNotes }: InjuryHistorySectionProps) => {
+export const InjuryHistorySection = ({ 
+  injuries, 
+  physicalStatus, 
+  medicalNotes,
+  playerId,
+  onInjuryAdded 
+}: InjuryHistorySectionProps) => {
   return (
     <div className="space-y-6">
       {/* Card 1: Status Físico Atual - Maior destaque */}
       <PhysicalStatusCard status={physicalStatus} />
       
       {/* Card 2: Histórico de Lesões */}
-      <InjuryHistoryCard injuries={injuries} />
+      <InjuryHistoryCard 
+        injuries={injuries} 
+        playerId={playerId}
+        onInjuryAdded={onInjuryAdded}
+      />
+      
+      {/* Gráfico de Evolução - só aparece com 2+ lesões */}
+      <InjuryEvolutionChart injuries={injuries} />
       
       {/* Card 3: Observações Médicas */}
       <MedicalNotesCard notes={medicalNotes} />
