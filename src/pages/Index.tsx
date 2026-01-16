@@ -11,8 +11,12 @@ const Index = () => {
       <ParallaxTransition>
         <FeaturedPlayers />
       </ParallaxTransition>
-      <AboutSection />
-      <InstagramFeedSection />
+      <ParallaxTransition>
+        <AboutSection />
+      </ParallaxTransition>
+      <ParallaxTransition>
+        <InstagramFeedSection />
+      </ParallaxTransition>
     </>
   );
 };
