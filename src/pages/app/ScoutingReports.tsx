@@ -23,9 +23,11 @@ import {
   Trophy,
   User,
   LayoutGrid,
-  ClipboardList
+  ClipboardList,
+  Calendar,
 } from "lucide-react";
 import { cn, safeArray } from "@/lib/utils";
+import { startOfYear, subDays, isAfter, parseISO } from "date-fns";
 
 interface ScoutingReportListItem {
   id: string;
@@ -50,6 +52,7 @@ interface ScoutingReportListItem {
 }
 
 type GroupBy = "none" | "player" | "competition" | "scout";
+type PeriodFilter = "all" | "7days" | "30days" | "season";
 
 const ScoutingReports = () => {
   const { user, isAdmin } = useAuth();
@@ -59,6 +62,7 @@ const ScoutingReports = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<string | null>(null);
   const [groupBy, setGroupBy] = useState<GroupBy>("none");
+  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("all");
 
   const fetchReports = useCallback(async () => {
     const { data, error } = await supabase
@@ -121,15 +125,42 @@ const ScoutingReports = () => {
     fetchReports();
   };
 
-  // Filter reports by search
+  // Filter reports by search and period
   const filteredReports = useMemo(() => {
     const query = searchQuery.toLowerCase();
-    return reports.filter((report) => 
-      report.players?.full_name?.toLowerCase().includes(query) ||
-      report.competitions?.name?.toLowerCase().includes(query) ||
-      scoutNames[report.scout_id]?.toLowerCase().includes(query)
-    );
-  }, [reports, searchQuery, scoutNames]);
+    const now = new Date();
+    
+    return reports.filter((report) => {
+      // Text search filter
+      const matchesSearch = 
+        report.players?.full_name?.toLowerCase().includes(query) ||
+        report.competitions?.name?.toLowerCase().includes(query) ||
+        scoutNames[report.scout_id]?.toLowerCase().includes(query);
+      
+      if (!matchesSearch) return false;
+      
+      // Period filter
+      if (periodFilter === "all") return true;
+      
+      const reportDate = parseISO(report.match_date);
+      
+      if (periodFilter === "7days") {
+        return isAfter(reportDate, subDays(now, 7));
+      }
+      
+      if (periodFilter === "30days") {
+        return isAfter(reportDate, subDays(now, 30));
+      }
+      
+      if (periodFilter === "season") {
+        // Current season: from January 1st of current year
+        const seasonStart = startOfYear(now);
+        return isAfter(reportDate, seasonStart);
+      }
+      
+      return true;
+    });
+  }, [reports, searchQuery, scoutNames, periodFilter]);
 
   // Calculate insights for each report
   const reportsWithInsights = useMemo(() => {
@@ -239,6 +270,20 @@ const ScoutingReports = () => {
             className="pl-10 bg-zinc-900/60 border-zinc-800 focus:border-zinc-700"
           />
         </div>
+
+        {/* Period Filter */}
+        <Select value={periodFilter} onValueChange={(v) => setPeriodFilter(v as PeriodFilter)}>
+          <SelectTrigger className="w-[160px] bg-zinc-900/60 border-zinc-800 text-sm h-10">
+            <Calendar className="w-3.5 h-3.5 mr-2 text-zinc-500" />
+            <SelectValue placeholder="Período" />
+          </SelectTrigger>
+          <SelectContent className="bg-zinc-900 border-zinc-800">
+            <SelectItem value="all">Todos os períodos</SelectItem>
+            <SelectItem value="7days">Últimos 7 dias</SelectItem>
+            <SelectItem value="30days">Últimos 30 dias</SelectItem>
+            <SelectItem value="season">Temporada atual</SelectItem>
+          </SelectContent>
+        </Select>
 
         {/* Grouping */}
         <div className="flex items-center gap-2">
