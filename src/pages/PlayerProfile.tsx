@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { getYouTubeEmbedUrl, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { motion } from "framer-motion";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   ArrowLeft, 
   MapPin, 
@@ -24,17 +25,21 @@ import {
   Percent,
   Timer,
   Heart,
-  FileText,
   ChevronRight,
   TrendingUp,
   Trophy,
   Clock,
+  Crosshair,
+  Sparkles,
+  Footprints,
+  X,
 } from "lucide-react";
 import { ScoreDisplay } from "@/components/players/ScoreDisplay";
 import { formatFixed } from "@/lib/formatters";
 import { isGoalkeeper } from "@/lib/positionUtils";
 
-// Player interface with all fields
+// =============== INTERFACES ===============
+
 interface Player {
   id: string;
   slug: string;
@@ -60,7 +65,6 @@ interface Player {
   areas_to_develop: string[] | null;
   contract_status: string | null;
   country: string | null;
-  // Physical data
   body_fat_percentage: number | null;
   muscle_mass: number | null;
   max_speed: number | null;
@@ -88,7 +92,6 @@ interface SeasonStats {
   accurate_passes: number;
   total_passes: number;
   clearances: number;
-  // GK
   saves: number;
   goals_conceded: number;
   clean_sheets: number;
@@ -104,216 +107,225 @@ interface CompetitionStats {
   minutes: number;
   goals: number;
   assists: number;
-  yellow_cards: number;
-  red_cards: number;
-  tackles: number;
-  interceptions: number;
-  recoveries: number;
 }
 
 const currentYear = new Date().getFullYear();
-
 type TabValue = "current" | "per90" | "competition" | "career";
 
-// Animation variants
-const fadeInUp = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
+// =============== ANIMATION VARIANTS ===============
+
+const fadeIn = {
+  hidden: { opacity: 0, y: 8 },
+  visible: { opacity: 1, y: 0 }
 };
 
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.1 }
-  }
+const scaleIn = {
+  hidden: { opacity: 0, scale: 0.95 },
+  visible: { opacity: 1, scale: 1 }
+};
+
+const stagger = {
+  visible: { transition: { staggerChildren: 0.05 } }
 };
 
 // =============== COMPONENTS ===============
 
-function StatCard({ 
+// Highlight Card with gradient and glow
+function HighlightCard({ 
   label, 
   value, 
-  icon: Icon,
-  highlight = false,
   subValue,
+  color = "red",
+  icon: Icon,
+  delay = 0,
 }: { 
-  label: string; 
-  value: number | string;
-  icon?: React.ElementType;
-  highlight?: boolean;
+  label: string;
+  value: string | number;
   subValue?: string;
+  color?: "red" | "blue" | "green" | "purple" | "amber";
+  icon?: React.ElementType;
+  delay?: number;
+}) {
+  const colorMap = {
+    red: "from-[#e52421]/20 to-[#e52421]/5 border-[#e52421]/30 hover:border-[#e52421]/50 hover:shadow-[#e52421]/10",
+    blue: "from-blue-500/20 to-blue-500/5 border-blue-500/30 hover:border-blue-500/50 hover:shadow-blue-500/10",
+    green: "from-emerald-500/20 to-emerald-500/5 border-emerald-500/30 hover:border-emerald-500/50 hover:shadow-emerald-500/10",
+    purple: "from-purple-500/20 to-purple-500/5 border-purple-500/30 hover:border-purple-500/50 hover:shadow-purple-500/10",
+    amber: "from-amber-500/20 to-amber-500/5 border-amber-500/30 hover:border-amber-500/50 hover:shadow-amber-500/10",
+  };
+
+  const iconColorMap = {
+    red: "text-[#e52421]",
+    blue: "text-blue-400",
+    green: "text-emerald-400",
+    purple: "text-purple-400",
+    amber: "text-amber-400",
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.4, delay }}
+      whileHover={{ scale: 1.02, y: -2 }}
+      className={cn(
+        "relative p-5 rounded-2xl border bg-gradient-to-br cursor-default",
+        "transition-all duration-300 hover:shadow-xl",
+        colorMap[color]
+      )}
+    >
+      {Icon && (
+        <Icon className={cn("w-5 h-5 mb-3", iconColorMap[color])} />
+      )}
+      <div className="text-3xl md:text-4xl font-bold text-white tabular-nums tracking-tight">
+        {value}
+      </div>
+      {subValue && (
+        <div className="text-xs text-zinc-500 mt-1">{subValue}</div>
+      )}
+      <div className="text-xs uppercase tracking-widest text-zinc-500 mt-2">{label}</div>
+    </motion.div>
+  );
+}
+
+// Chip component
+function Chip({ 
+  children, 
+  variant = "default",
+  icon: Icon,
+}: { 
+  children: React.ReactNode;
+  variant?: "default" | "primary" | "success" | "warning" | "info";
+  icon?: React.ElementType;
+}) {
+  const variants = {
+    default: "bg-zinc-800/50 text-zinc-300 border-zinc-700/50",
+    primary: "bg-[#e52421]/10 text-[#e52421] border-[#e52421]/30",
+    success: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
+    warning: "bg-amber-500/10 text-amber-400 border-amber-500/30",
+    info: "bg-blue-500/10 text-blue-400 border-blue-500/30",
+  };
+
+  return (
+    <span className={cn(
+      "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all",
+      "hover:scale-105 cursor-default",
+      variants[variant]
+    )}>
+      {Icon && <Icon className="w-3 h-3" />}
+      {children}
+    </span>
+  );
+}
+
+// Stat KPI Card
+function KPICard({ 
+  label, 
+  value, 
+  active = false,
+  onClick,
+}: { 
+  label: string;
+  value: number | string;
+  active?: boolean;
+  onClick?: () => void;
 }) {
   return (
-    <div className={cn(
-      "flex flex-col items-center justify-center p-4 rounded-2xl border transition-all",
-      "bg-zinc-900/50 border-zinc-800/50 hover:border-zinc-700/50 hover:bg-zinc-900/70",
-      highlight && "border-[#e52421]/30 bg-[#e52421]/5"
-    )}>
-      {Icon && <Icon className={cn("w-4 h-4 mb-2", highlight ? "text-[#e52421]" : "text-zinc-500")} />}
+    <motion.button
+      whileHover={{ scale: 1.03 }}
+      whileTap={{ scale: 0.98 }}
+      onClick={onClick}
+      className={cn(
+        "flex flex-col items-center justify-center p-4 rounded-xl border transition-all",
+        "focus:outline-none focus:ring-2 focus:ring-[#e52421]/50",
+        active 
+          ? "bg-[#e52421]/10 border-[#e52421]/40 shadow-lg shadow-[#e52421]/5" 
+          : "bg-zinc-900/50 border-zinc-800/50 hover:border-zinc-700"
+      )}
+    >
       <span className={cn(
-        "text-2xl font-bold tabular-nums",
-        highlight ? "text-white" : "text-zinc-200"
+        "text-2xl md:text-3xl font-bold tabular-nums",
+        active ? "text-white" : "text-zinc-300"
       )}>
         {value}
       </span>
       <span className="text-[10px] uppercase tracking-widest text-zinc-500 mt-1">{label}</span>
-      {subValue && <span className="text-xs text-zinc-600 mt-0.5">{subValue}</span>}
-    </div>
+    </motion.button>
   );
 }
 
-function StatRow({ 
-  label, 
-  value, 
-  highlight = false, 
-  variant,
-  small = false,
-}: { 
-  label: string; 
-  value: number | string;
-  highlight?: boolean;
-  variant?: "warning" | "danger";
-  small?: boolean;
-}) {
-  return (
-    <div>
-      <p className={cn(
-        "text-[10px] uppercase tracking-widest mb-1",
-        variant === "warning" ? "text-amber-500/70" : 
-        variant === "danger" ? "text-red-500/70" : 
-        "text-zinc-600"
-      )}>
-        {label}
-      </p>
-      <p className={cn(
-        "font-semibold tabular-nums",
-        small ? "text-lg" : "text-2xl",
-        highlight ? "text-white" : 
-        variant === "warning" ? "text-amber-400" :
-        variant === "danger" ? "text-red-400" :
-        "text-zinc-300"
-      )}>
-        {value}
-      </p>
-    </div>
-  );
-}
-
-function EmptyState({ message }: { message: string }) {
-  return (
-    <div className="flex items-center justify-center py-12 text-zinc-600">
-      <p className="text-sm">{message}</p>
-    </div>
-  );
-}
-
-function SectionTitle({ 
-  children, 
-  icon: Icon,
-  className 
-}: { 
-  children: React.ReactNode;
-  icon?: React.ElementType;
-  className?: string;
-}) {
-  return (
-    <div className={cn("flex items-center gap-3 mb-6", className)}>
-      {Icon && (
-        <div className="p-2 rounded-xl bg-[#e52421]/10">
-          <Icon className="w-5 h-5 text-[#e52421]" />
-        </div>
-      )}
-      <h2 className="text-xl font-bold text-white tracking-tight">{children}</h2>
-    </div>
-  );
-}
-
-function InfoCard({ 
+// Phase Panel
+function PhasePanel({ 
   title, 
   icon: Icon, 
-  children 
+  color,
+  stats,
 }: { 
   title: string;
   icon: React.ElementType;
-  children: React.ReactNode;
+  color: "orange" | "purple" | "green" | "blue";
+  stats: { label: string; value: number; max?: number }[];
 }) {
+  const colorMap = {
+    orange: { bg: "from-orange-500/10", border: "border-orange-500/20", icon: "text-orange-400", bar: "bg-orange-500" },
+    purple: { bg: "from-purple-500/10", border: "border-purple-500/20", icon: "text-purple-400", bar: "bg-purple-500" },
+    green: { bg: "from-emerald-500/10", border: "border-emerald-500/20", icon: "text-emerald-400", bar: "bg-emerald-500" },
+    blue: { bg: "from-blue-500/10", border: "border-blue-500/20", icon: "text-blue-400", bar: "bg-blue-500" },
+  };
+
+  const c = colorMap[color];
+
   return (
-    <div className="rounded-2xl bg-zinc-900/50 border border-zinc-800/50 p-5 hover:border-zinc-700/50 transition-colors">
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      whileHover={{ scale: 1.01 }}
+      className={cn(
+        "p-5 rounded-2xl border bg-gradient-to-br to-transparent",
+        c.bg, c.border
+      )}
+    >
       <div className="flex items-center gap-2 mb-4">
-        <div className="p-1.5 rounded-lg bg-zinc-800/50">
-          <Icon className="w-4 h-4 text-zinc-400" />
-        </div>
-        <h3 className="text-xs font-medium uppercase tracking-widest text-zinc-500">{title}</h3>
+        <Icon className={cn("w-5 h-5", c.icon)} />
+        <span className="text-sm font-semibold text-white">{title}</span>
       </div>
-      {children}
-    </div>
+      <div className="space-y-3">
+        {stats.map((stat) => {
+          const pct = stat.max ? Math.min(100, (stat.value / stat.max) * 100) : Math.min(100, stat.value);
+          return (
+            <div key={stat.label} className="group cursor-default">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-xs text-zinc-500 group-hover:text-zinc-300 transition-colors">
+                  {stat.label}
+                </span>
+                <span className="text-sm font-semibold text-white tabular-nums">{stat.value}</span>
+              </div>
+              <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                <motion.div 
+                  initial={{ width: 0 }}
+                  whileInView={{ width: `${pct}%` }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.6, ease: "easeOut" }}
+                  className={cn("h-full rounded-full", c.bar)}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </motion.div>
   );
 }
 
-function MetricBar({ 
+// Metric with animated bar
+function AnimatedMetric({ 
   label, 
   value, 
   unit, 
-  min = 0, 
-  max = 100,
-  idealMin,
-  idealMax,
-}: { 
-  label: string;
-  value: number | null;
-  unit: string;
-  min?: number;
-  max?: number;
-  idealMin?: number;
-  idealMax?: number;
-}) {
-  if (value === null || value === undefined) {
-    return (
-      <div className="space-y-2">
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-zinc-400">{label}</span>
-          <span className="text-sm text-zinc-600 italic">Não informado</span>
-        </div>
-      </div>
-    );
-  }
-
-  const percentage = Math.min(100, Math.max(0, ((value - min) / (max - min)) * 100));
-  const idealStartPct = idealMin ? ((idealMin - min) / (max - min)) * 100 : null;
-  const idealWidthPct = idealMin && idealMax ? ((idealMax - idealMin) / (max - min)) * 100 : null;
-
-  return (
-    <div className="space-y-2">
-      <div className="flex justify-between items-center">
-        <span className="text-sm text-zinc-400">{label}</span>
-        <span className="text-sm font-semibold text-white">
-          {formatFixed(value, 1)} {unit}
-        </span>
-      </div>
-      <div className="h-2 w-full bg-zinc-800 rounded-full overflow-hidden relative">
-        {idealStartPct !== null && idealWidthPct !== null && (
-          <div 
-            className="absolute h-full bg-emerald-500/20 rounded-full"
-            style={{ left: `${idealStartPct}%`, width: `${idealWidthPct}%` }}
-          />
-        )}
-        <div 
-          className="h-full bg-[#e52421] rounded-full transition-all duration-500"
-          style={{ width: `${percentage}%` }}
-        />
-      </div>
-    </div>
-  );
-}
-
-function BodyCompositionMetric({
-  label,
-  value,
-  unit,
   icon: Icon,
   reference,
-}: {
+}: { 
   label: string;
   value: number | null;
   unit: string;
@@ -321,19 +333,106 @@ function BodyCompositionMetric({
   reference?: string;
 }) {
   const hasValue = value !== null && value !== undefined;
-  
+
   return (
-    <div className="flex flex-col items-center p-4 rounded-2xl bg-zinc-900/50 border border-zinc-800/50">
-      <Icon className="w-5 h-5 text-zinc-500 mb-2" />
-      <span className="text-2xl font-bold text-white tabular-nums">
-        {hasValue ? formatFixed(value, 1) : "—"}
-      </span>
-      <span className="text-xs text-zinc-500">{unit}</span>
-      <span className="text-[10px] uppercase tracking-widest text-zinc-600 mt-1">{label}</span>
-      {reference && hasValue && (
-        <span className="text-[10px] text-zinc-600 mt-1">Ref: {reference}</span>
+    <motion.div
+      whileHover={{ scale: 1.02 }}
+      className="p-4 rounded-xl bg-zinc-900/50 border border-zinc-800/50 hover:border-zinc-700/50 transition-all"
+    >
+      <div className="flex items-center gap-2 mb-3">
+        <div className="p-1.5 rounded-lg bg-zinc-800/50">
+          <Icon className="w-4 h-4 text-zinc-400" />
+        </div>
+        <span className="text-xs uppercase tracking-widest text-zinc-500">{label}</span>
+      </div>
+      {hasValue ? (
+        <>
+          <div className="text-2xl font-bold text-white tabular-nums">
+            {formatFixed(value, 1)}
+            <span className="text-sm text-zinc-500 ml-1">{unit}</span>
+          </div>
+          {reference && (
+            <span className="text-[10px] text-zinc-600 mt-1 block">Ref: {reference}</span>
+          )}
+        </>
+      ) : (
+        <div className="flex items-center gap-2 text-zinc-600">
+          <div className="w-8 h-8 rounded-lg bg-zinc-800/50 flex items-center justify-center">
+            <X className="w-4 h-4" />
+          </div>
+          <span className="text-sm italic">Não informado</span>
+        </div>
       )}
-    </div>
+    </motion.div>
+  );
+}
+
+// Tab Button
+function TabButton({ 
+  active, 
+  onClick, 
+  children 
+}: { 
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "relative px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap",
+        active ? "text-white" : "text-zinc-500 hover:text-zinc-300"
+      )}
+    >
+      {children}
+      {active && (
+        <motion.div
+          layoutId="activeTab"
+          className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#e52421] rounded-full"
+        />
+      )}
+    </button>
+  );
+}
+
+// Video Thumbnail with overlay
+function VideoThumbnail({ 
+  videoUrl, 
+  onPlay 
+}: { 
+  videoUrl: string;
+  onPlay: () => void;
+}) {
+  return (
+    <motion.button
+      onClick={onPlay}
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      className="relative w-full aspect-video rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-800/50 group"
+    >
+      {/* Gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10" />
+      <div className="absolute inset-0 bg-[#e52421]/10 opacity-0 group-hover:opacity-100 transition-opacity z-10" />
+      
+      {/* Play button */}
+      <div className="absolute inset-0 flex items-center justify-center z-20">
+        <motion.div 
+          className="w-16 h-16 rounded-full bg-[#e52421] flex items-center justify-center shadow-xl shadow-[#e52421]/30"
+          whileHover={{ scale: 1.1 }}
+          animate={{ scale: [1, 1.05, 1] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          <Play className="w-7 h-7 text-white ml-1" fill="white" />
+        </motion.div>
+      </div>
+      
+      {/* Label */}
+      <div className="absolute bottom-4 left-4 z-20">
+        <span className="text-xs uppercase tracking-widest text-zinc-400">Highlights</span>
+        <p className="text-white font-semibold">Assistir vídeo completo</p>
+      </div>
+    </motion.button>
   );
 }
 
@@ -348,52 +447,36 @@ const PlayerProfile = () => {
   const [competitionStats, setCompetitionStats] = useState<CompetitionStats[]>([]);
   const [activeTab, setActiveTab] = useState<TabValue>("current");
   const [statsLoading, setStatsLoading] = useState(true);
+  const [videoOpen, setVideoOpen] = useState(false);
 
+  // Fetch player
   useEffect(() => {
     const fetchPlayer = async () => {
       if (!slug) return;
-
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("players")
         .select("*")
         .eq("slug", slug)
         .eq("is_public", true)
         .maybeSingle();
-
-      if (data) {
-        setPlayer(data);
-      }
+      if (data) setPlayer(data);
       setLoading(false);
     };
-
     fetchPlayer();
   }, [slug]);
 
+  // Fetch stats
   useEffect(() => {
     if (!player?.id) return;
 
     const fetchStats = async () => {
       setStatsLoading(true);
       
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("player_stats")
-        .select(`
-          *,
-          competitions:competition_id (
-            id,
-            name,
-            display_name,
-            type
-          )
-        `)
+        .select(`*, competitions:competition_id (id, name, display_name, type)`)
         .eq("player_id", player.id)
         .order("season_year", { ascending: false });
-
-      if (error) {
-        console.error("Error fetching stats:", error);
-        setStatsLoading(false);
-        return;
-      }
 
       if (Array.isArray(data) && data.length > 0) {
         // Aggregate by season
@@ -436,38 +519,25 @@ const PlayerProfile = () => {
           return acc;
         }, {} as Record<number, SeasonStats>);
 
-        const seasons = Object.values(statsBySeason).sort(
-          (a, b) => b.season_year - a.season_year
-        );
-
+        const seasons = Object.values(statsBySeason).sort((a, b) => b.season_year - a.season_year);
         setCareerStats(seasons);
         
-        const current = seasons.find((s) => s.season_year === currentYear);
-        if (current) {
-          setCurrentSeasonStats(current);
-        } else if (seasons.length > 0) {
-          setCurrentSeasonStats(seasons[0]);
-        }
+        const current = seasons.find((s) => s.season_year === currentYear) || seasons[0];
+        if (current) setCurrentSeasonStats(current);
 
         // Aggregate by competition
         const statsByCompetition = data.reduce((acc, stat) => {
           const compId = stat.competition_id;
           if (!compId) return acc;
-          
           const competition = stat.competitions as { id: string; name: string; display_name: string | null; type: string } | null;
-          const compName = competition?.display_name || competition?.name || "Competição";
-          const compType = competition?.type || "league";
           const key = `${compId}-${stat.season_year}`;
-          
           if (!acc[key]) {
             acc[key] = {
               competition_id: compId,
-              competition_name: compName,
-              competition_type: compType,
+              competition_name: competition?.display_name || competition?.name || "Competição",
+              competition_type: competition?.type || "league",
               season_year: stat.season_year,
               matches: 0, minutes: 0, goals: 0, assists: 0,
-              yellow_cards: 0, red_cards: 0, tackles: 0,
-              interceptions: 0, recoveries: 0,
             };
           }
           const c = acc[key];
@@ -475,63 +545,40 @@ const PlayerProfile = () => {
           c.minutes += stat.minutes || 0;
           c.goals += stat.goals || 0;
           c.assists += stat.assists || 0;
-          c.yellow_cards += stat.yellow_cards || 0;
-          c.red_cards += stat.red_cards || 0;
-          c.tackles += stat.tackles || 0;
-          c.interceptions += stat.interceptions || 0;
-          c.recoveries += stat.recoveries || 0;
           return acc;
         }, {} as Record<string, CompetitionStats>);
 
-        const competitions = Object.values(statsByCompetition).sort(
-          (a, b) => b.season_year - a.season_year || (b.goals + b.assists) - (a.goals + a.assists)
-        );
-        setCompetitionStats(competitions);
+        setCompetitionStats(Object.values(statsByCompetition).sort((a, b) => b.season_year - a.season_year));
       }
-
       setStatsLoading(false);
     };
 
     fetchStats();
   }, [player?.id]);
 
-  const calculatePer90 = (value: number, minutes: number): string => {
-    if (minutes < 90) return "—";
-    return formatFixed((value / minutes) * 90, 2);
-  };
-
-  const getCompetitionTypeLabel = (type: string): string => {
-    const typeMap: Record<string, string> = {
-      league: "Liga",
-      cup: "Copa",
-      state_league: "Estadual",
-      continental: "Continental",
-    };
-    return typeMap[type] || type;
-  };
-
-  // Calculate career totals
+  // Calculations
   const careerTotals = careerStats.reduce((acc, s) => ({
     matches: acc.matches + s.matches,
     minutes: acc.minutes + s.minutes,
     goals: acc.goals + s.goals,
     assists: acc.assists + s.assists,
-    yellow_cards: acc.yellow_cards + s.yellow_cards,
-    red_cards: acc.red_cards + s.red_cards,
+    shots: acc.shots + s.shots,
+    key_passes: acc.key_passes + s.key_passes,
     tackles: acc.tackles + s.tackles,
     interceptions: acc.interceptions + s.interceptions,
     recoveries: acc.recoveries + s.recoveries,
-    shots: acc.shots + s.shots,
-    key_passes: acc.key_passes + s.key_passes,
+    yellow_cards: acc.yellow_cards + s.yellow_cards,
+    red_cards: acc.red_cards + s.red_cards,
   }), {
-    matches: 0, minutes: 0, goals: 0, assists: 0,
-    yellow_cards: 0, red_cards: 0, tackles: 0,
-    interceptions: 0, recoveries: 0, shots: 0, key_passes: 0,
+    matches: 0, minutes: 0, goals: 0, assists: 0, shots: 0, key_passes: 0,
+    tackles: 0, interceptions: 0, recoveries: 0, yellow_cards: 0, red_cards: 0,
   });
 
-  const isGK = player ? isGoalkeeper(player.position) : false;
+  const calculatePer90 = (value: number, minutes: number): string => {
+    if (minutes < 90) return "—";
+    return formatFixed((value / minutes) * 90, 2);
+  };
 
-  // Calculate BMI
   const bmi = player?.weight && player?.height 
     ? player.weight / Math.pow(player.height / 100, 2) 
     : null;
@@ -557,742 +604,433 @@ const PlayerProfile = () => {
     );
   }
 
-  const tabs: { value: TabValue; label: string; shortLabel: string }[] = [
-    { value: "current", label: "Temporada Atual", shortLabel: String(currentYear) },
-    { value: "per90", label: "Por 90 min", shortLabel: "P/90" },
-    { value: "competition", label: "Por Competição", shortLabel: "Comp." },
-    { value: "career", label: "Carreira", shortLabel: "Carreira" },
-  ];
+  const embedUrl = player.highlight_video_url ? getYouTubeEmbedUrl(player.highlight_video_url) : null;
 
   return (
-    <div className="min-h-screen bg-black">
-      {/* Background texture */}
+    <div className="min-h-screen bg-black overflow-x-hidden">
+      {/* Background */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-zinc-900/20 via-black to-black" />
-        <div 
-          className="absolute inset-0 opacity-[0.015]" 
-          style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E\")" }}
-        />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-zinc-900/30 via-black to-black" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-[#e52421]/5 blur-[120px] rounded-full" />
       </div>
 
-      <div className="relative pt-24 md:pt-28 lg:pt-32 pb-16 md:pb-20 lg:pb-24">
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="relative pt-20 pb-16">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           
-          {/* Back Button */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.4 }}
-          >
+          {/* Back */}
+          <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}>
             <Link 
               to="/players" 
-              className="inline-flex items-center gap-2 text-zinc-500 hover:text-white transition-colors mb-8 md:mb-12"
+              className="inline-flex items-center gap-2 text-zinc-500 hover:text-white transition-colors mb-6"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span className="text-sm tracking-wide">Voltar para atletas</span>
+              <span className="text-sm">Voltar</span>
             </Link>
           </motion.div>
 
-          {/* ==================== HERO SECTION ==================== */}
+          {/* ==================== HERO COMPACTO ==================== */}
           <motion.section 
-            className="grid lg:grid-cols-[1fr,1.2fr] gap-8 lg:gap-16 mb-16 lg:mb-24"
-            variants={staggerContainer}
+            className="grid md:grid-cols-[280px,1fr] lg:grid-cols-[320px,1fr] gap-6 lg:gap-10 mb-12"
             initial="hidden"
             animate="visible"
+            variants={stagger}
           >
-            {/* Image Column */}
-            <motion.div variants={fadeInUp} className="relative">
-              <div className="aspect-[3/4] overflow-hidden rounded-3xl bg-zinc-950 relative">
+            {/* Photo Column */}
+            <motion.div variants={fadeIn} className="relative">
+              <div className="relative aspect-[3/4] md:aspect-auto md:h-[420px] rounded-3xl overflow-hidden group">
                 <img
                   src={player.photo_url || "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=800&h=1000&fit=crop"}
                   alt={player.full_name}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                {/* Gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-r from-[#e52421]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                 
-                {/* Score Badge on image */}
+                {/* Score Badge */}
                 {player.auto_rating !== null && (
-                  <div className="absolute bottom-6 left-6">
+                  <motion.div 
+                    className="absolute top-4 right-4"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.3, type: "spring" }}
+                  >
                     <ScoreDisplay score={player.auto_rating} size="lg" />
-                  </div>
+                  </motion.div>
                 )}
+
+                {/* Position badge */}
+                <div className="absolute bottom-4 left-4">
+                  <span className="px-3 py-1.5 bg-[#e52421] text-white text-xs font-semibold uppercase tracking-widest rounded-full">
+                    {player.position}
+                  </span>
+                </div>
               </div>
             </motion.div>
 
             {/* Info Column */}
-            <motion.div variants={fadeInUp} className="flex flex-col lg:py-4">
-              {/* Position Tag */}
-              <span className="inline-block text-[10px] font-semibold uppercase tracking-[0.25em] text-[#e52421] mb-3">
-                {player.position}
-              </span>
-              
+            <motion.div variants={fadeIn} className="flex flex-col justify-center">
               {/* Name */}
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight leading-tight mb-6">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white tracking-tight mb-2">
                 {player.full_name}
               </h1>
+              
+              {/* Role line */}
+              <p className="text-zinc-400 mb-6">
+                {player.primary_tactical_role && <span>{player.primary_tactical_role}</span>}
+                {player.play_style && <span className="text-zinc-600"> • {player.play_style}</span>}
+              </p>
 
-              {/* Secondary Positions */}
-              {player.secondary_positions && player.secondary_positions.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-8">
-                  {player.secondary_positions.map((pos) => (
-                    <Badge 
-                      key={pos} 
-                      variant="outline"
-                      className="text-[10px] uppercase tracking-widest text-zinc-500 border-zinc-800 bg-transparent"
-                    >
-                      {pos}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-
-              {/* Quick Info Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-8 gap-y-5 mb-8">
+              {/* Info Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
                 {player.age && (
-                  <div>
-                    <div className="flex items-center gap-1.5 text-zinc-600 mb-1">
-                      <Calendar className="w-3.5 h-3.5" />
-                      <span className="text-[10px] uppercase tracking-widest">Idade</span>
-                    </div>
-                    <p className="text-white text-lg font-semibold">{player.age} anos</p>
+                  <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800/50 hover:border-zinc-700 transition-colors">
+                    <Calendar className="w-4 h-4 text-zinc-600 mb-1" />
+                    <div className="text-lg font-semibold text-white">{player.age}</div>
+                    <div className="text-[10px] uppercase tracking-widest text-zinc-600">Anos</div>
                   </div>
                 )}
-                
                 {player.height && (
-                  <div>
-                    <div className="flex items-center gap-1.5 text-zinc-600 mb-1">
-                      <Ruler className="w-3.5 h-3.5" />
-                      <span className="text-[10px] uppercase tracking-widest">Altura</span>
-                    </div>
-                    <p className="text-white text-lg font-semibold">{player.height} cm</p>
+                  <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800/50 hover:border-zinc-700 transition-colors">
+                    <Ruler className="w-4 h-4 text-zinc-600 mb-1" />
+                    <div className="text-lg font-semibold text-white">{player.height}cm</div>
+                    <div className="text-[10px] uppercase tracking-widest text-zinc-600">Altura</div>
                   </div>
                 )}
-                
                 {player.dominant_foot && (
-                  <div>
-                    <div className="flex items-center gap-1.5 text-zinc-600 mb-1">
-                      <User className="w-3.5 h-3.5" />
-                      <span className="text-[10px] uppercase tracking-widest">Pé</span>
-                    </div>
-                    <p className="text-white text-lg font-semibold capitalize">{player.dominant_foot}</p>
+                  <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800/50 hover:border-zinc-700 transition-colors">
+                    <User className="w-4 h-4 text-zinc-600 mb-1" />
+                    <div className="text-lg font-semibold text-white capitalize">{player.dominant_foot}</div>
+                    <div className="text-[10px] uppercase tracking-widest text-zinc-600">Pé</div>
                   </div>
                 )}
-                
-                <div>
-                  <div className="flex items-center gap-1.5 text-zinc-600 mb-1">
-                    <Flag className="w-3.5 h-3.5" />
-                    <span className="text-[10px] uppercase tracking-widest">País</span>
-                  </div>
-                  <p className="text-white text-lg font-semibold">{player.nationality}</p>
-                </div>
-                
                 {player.current_club && (
-                  <div className="col-span-2">
-                    <div className="flex items-center gap-1.5 text-zinc-600 mb-1">
-                      <MapPin className="w-3.5 h-3.5" />
-                      <span className="text-[10px] uppercase tracking-widest">Clube</span>
-                    </div>
-                    <p className="text-white text-lg font-semibold">{player.current_club}</p>
+                  <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800/50 hover:border-zinc-700 transition-colors">
+                    <MapPin className="w-4 h-4 text-zinc-600 mb-1" />
+                    <div className="text-lg font-semibold text-white truncate">{player.current_club}</div>
+                    <div className="text-[10px] uppercase tracking-widest text-zinc-600">Clube</div>
                   </div>
                 )}
               </div>
-
-              {/* Tactical Profile Chips */}
-              {(player.primary_tactical_role || player.play_style || (player.strengths && player.strengths.length > 0)) && (
-                <div className="mb-8">
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {player.primary_tactical_role && (
-                      <Badge className="bg-zinc-800 text-zinc-200 border-0 text-xs px-3 py-1">
-                        {player.primary_tactical_role}
-                      </Badge>
-                    )}
-                    {player.secondary_tactical_role && (
-                      <Badge variant="outline" className="border-zinc-700 text-zinc-400 text-xs px-3 py-1">
-                        {player.secondary_tactical_role}
-                      </Badge>
-                    )}
-                    {player.play_style && (
-                      <Badge variant="outline" className="border-zinc-700 text-zinc-400 text-xs px-3 py-1">
-                        {player.play_style}
-                      </Badge>
-                    )}
-                  </div>
-                  
-                  {/* Strengths */}
-                  {player.strengths && player.strengths.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {player.strengths.slice(0, 5).map((s) => (
-                        <span 
-                          key={s} 
-                          className="text-[11px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full"
-                        >
-                          {s}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Bio */}
-              {player.bio_public && (
-                <div className="mb-8">
-                  <p className="text-zinc-400 text-sm leading-relaxed">{player.bio_public}</p>
-                </div>
-              )}
 
               {/* CTA */}
-              <div className="mt-auto pt-4">
-                <Link to={`/contact?player=${player.slug}`}>
-                  <Button 
-                    size="lg"
-                    className="bg-[#e52421] hover:bg-[#c91f1c] text-white font-medium px-8 rounded-full border-0 shadow-lg shadow-[#e52421]/20"
-                  >
-                    <MessageCircle className="w-4 h-4 mr-2" />
-                    Falar com a M3 sobre este atleta
-                    <ChevronRight className="w-4 h-4 ml-2" />
-                  </Button>
-                </Link>
-              </div>
+              <Link to={`/contact?player=${player.slug}`}>
+                <Button 
+                  size="lg"
+                  className="w-full sm:w-auto bg-[#e52421] hover:bg-[#c91f1c] text-white font-medium px-8 rounded-full border-0 shadow-lg shadow-[#e52421]/20 group"
+                >
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  Falar com a M3 sobre este atleta
+                  <ChevronRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" />
+                </Button>
+              </Link>
             </motion.div>
           </motion.section>
 
-          {/* ==================== IDENTITY & PROFILE SECTION ==================== */}
+          {/* ==================== HIGHLIGHT CARDS ==================== */}
+          <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
+            <HighlightCard 
+              label="G+A na Temporada" 
+              value={currentSeasonStats ? currentSeasonStats.goals + currentSeasonStats.assists : 0}
+              subValue={currentSeasonStats ? `${currentSeasonStats.goals}G + ${currentSeasonStats.assists}A` : undefined}
+              color="green"
+              icon={Target}
+              delay={0}
+            />
+            <HighlightCard 
+              label="Minutos Jogados" 
+              value={currentSeasonStats?.minutes || 0}
+              subValue={currentSeasonStats ? `${currentSeasonStats.matches} jogos` : undefined}
+              color="blue"
+              icon={Clock}
+              delay={0.1}
+            />
+            <HighlightCard 
+              label="Pontos Fortes" 
+              value={player.strengths?.length || 0}
+              subValue={player.strengths?.[0] || "—"}
+              color="purple"
+              icon={Zap}
+              delay={0.2}
+            />
+            <HighlightCard 
+              label="Status" 
+              value={player.contract_status === "contracted" ? "Contratado" : "Livre"}
+              subValue={player.current_club || "Sem clube"}
+              color={player.contract_status === "contracted" ? "green" : "amber"}
+              icon={Shield}
+              delay={0.3}
+            />
+          </section>
+
+          {/* ==================== IDENTITY CHIPS ==================== */}
           <motion.section 
-            className="mb-16 lg:mb-24"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            className="mb-12"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
           >
-            <SectionTitle icon={FileText}>Identidade & Perfil</SectionTitle>
-            
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Identity Card */}
-              <InfoCard title="Identidade" icon={User}>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-zinc-500 text-sm">Nome</span>
-                    <span className="text-white text-sm font-medium">{player.full_name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-zinc-500 text-sm">Idade</span>
-                    <span className="text-white text-sm font-medium">{player.age || "—"} anos</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-zinc-500 text-sm">Altura</span>
-                    <span className="text-white text-sm font-medium">{player.height || "—"} cm</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-zinc-500 text-sm">Pé</span>
-                    <span className="text-white text-sm font-medium capitalize">{player.dominant_foot || "—"}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-zinc-500 text-sm">Nacionalidade</span>
-                    <span className="text-white text-sm font-medium">{player.nationality}</span>
-                  </div>
-                </div>
-              </InfoCard>
-
-              {/* Contract Card */}
-              <InfoCard title="Contrato" icon={FileText}>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-zinc-500 text-sm">Status</span>
-                    <Badge 
-                      variant={player.contract_status === "contracted" ? "default" : "outline"}
-                      className={cn(
-                        "text-xs",
-                        player.contract_status === "contracted" 
-                          ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" 
-                          : "bg-amber-500/20 text-amber-400 border-amber-500/30"
-                      )}
-                    >
-                      {player.contract_status === "contracted" ? "Contratado" : "Livre"}
-                    </Badge>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-zinc-500 text-sm">Clube</span>
-                    <span className="text-white text-sm font-medium">{player.current_club || "—"}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-zinc-500 text-sm">País</span>
-                    <span className="text-white text-sm font-medium">{player.country || player.nationality}</span>
-                  </div>
-                </div>
-              </InfoCard>
-
-              {/* Tactical Profile Card */}
-              <InfoCard title="Perfil Tático" icon={Target}>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-zinc-500 text-sm">Posição</span>
-                    <span className="text-white text-sm font-medium">{player.position}</span>
-                  </div>
-                  {player.secondary_positions && player.secondary_positions.length > 0 && (
-                    <div>
-                      <span className="text-zinc-500 text-sm block mb-1">Posições Secundárias</span>
-                      <div className="flex flex-wrap gap-1">
-                        {player.secondary_positions.map((pos) => (
-                          <Badge key={pos} variant="outline" className="text-xs border-zinc-700 text-zinc-400">
-                            {pos}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {player.primary_tactical_role && (
-                    <div className="flex justify-between">
-                      <span className="text-zinc-500 text-sm">Função</span>
-                      <span className="text-white text-sm font-medium">{player.primary_tactical_role}</span>
-                    </div>
-                  )}
-                  {player.play_style && (
-                    <div className="flex justify-between">
-                      <span className="text-zinc-500 text-sm">Estilo</span>
-                      <span className="text-white text-sm font-medium">{player.play_style}</span>
-                    </div>
-                  )}
-                </div>
-              </InfoCard>
+            <div className="flex flex-wrap gap-2 mb-4">
+              <Chip icon={Flag}>{player.nationality}</Chip>
+              {player.secondary_positions?.map((pos) => (
+                <Chip key={pos} variant="default">{pos}</Chip>
+              ))}
+              {player.primary_tactical_role && (
+                <Chip variant="info" icon={Target}>{player.primary_tactical_role}</Chip>
+              )}
+              {player.play_style && (
+                <Chip variant="info">{player.play_style}</Chip>
+              )}
             </div>
-
-            {/* Strengths & Areas to Develop */}
-            {((player.strengths && player.strengths.length > 0) || (player.areas_to_develop && player.areas_to_develop.length > 0)) && (
-              <div className="grid md:grid-cols-2 gap-6 mt-6">
-                {player.strengths && player.strengths.length > 0 && (
-                  <div className="rounded-2xl bg-zinc-900/50 border border-zinc-800/50 p-5">
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="p-1.5 rounded-lg bg-emerald-500/10">
-                        <Zap className="w-4 h-4 text-emerald-400" />
-                      </div>
-                      <h3 className="text-xs font-medium uppercase tracking-widest text-zinc-500">Pontos Fortes</h3>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {player.strengths.map((s) => (
-                        <span 
-                          key={s} 
-                          className="text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-full"
-                        >
-                          {s}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {player.areas_to_develop && player.areas_to_develop.length > 0 && (
-                  <div className="rounded-2xl bg-zinc-900/50 border border-zinc-800/50 p-5">
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="p-1.5 rounded-lg bg-amber-500/10">
-                        <TrendingUp className="w-4 h-4 text-amber-400" />
-                      </div>
-                      <h3 className="text-xs font-medium uppercase tracking-widest text-zinc-500">A Desenvolver</h3>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {player.areas_to_develop.map((a) => (
-                        <span 
-                          key={a} 
-                          className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-full"
-                        >
-                          {a}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+            
+            {/* Strengths & Areas */}
+            <div className="flex flex-wrap gap-2">
+              {player.strengths?.map((s) => (
+                <Chip key={s} variant="success" icon={Zap}>{s}</Chip>
+              ))}
+              {player.areas_to_develop?.map((a) => (
+                <Chip key={a} variant="warning" icon={TrendingUp}>{a}</Chip>
+              ))}
+            </div>
           </motion.section>
 
-          {/* ==================== STATISTICS SECTION ==================== */}
-          <motion.section 
-            className="mb-16 lg:mb-24"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-          >
-            <SectionTitle icon={Activity}>Estatísticas do Atleta</SectionTitle>
+          {/* ==================== STATISTICS DASHBOARD ==================== */}
+          {!statsLoading && careerStats.length > 0 && (
+            <motion.section 
+              className="mb-12"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                <Activity className="w-5 h-5 text-[#e52421]" />
+                Estatísticas
+              </h2>
 
-            {statsLoading ? (
-              <div className="flex items-center justify-center py-16">
-                <Loader2 className="w-6 h-6 animate-spin text-zinc-500" />
+              {/* KPIs Row */}
+              <div className="grid grid-cols-5 gap-3 mb-6">
+                <KPICard label="Jogos" value={careerTotals.matches} />
+                <KPICard label="Minutos" value={careerTotals.minutes} />
+                <KPICard label="Gols" value={careerTotals.goals} active />
+                <KPICard label="Assist." value={careerTotals.assists} />
+                <KPICard label="G+A" value={careerTotals.goals + careerTotals.assists} active />
               </div>
-            ) : careerStats.length === 0 ? (
-              <div className="rounded-2xl bg-zinc-900/50 border border-zinc-800/50 p-12 text-center">
-                <Activity className="w-8 h-8 text-zinc-600 mx-auto mb-4" />
-                <p className="text-zinc-500">Sem estatísticas disponíveis para este atleta.</p>
+
+              {/* Tabs */}
+              <div className="flex gap-2 border-b border-zinc-800 mb-6 overflow-x-auto">
+                <TabButton active={activeTab === "current"} onClick={() => setActiveTab("current")}>
+                  Temporada {currentYear}
+                </TabButton>
+                <TabButton active={activeTab === "per90"} onClick={() => setActiveTab("per90")}>
+                  Por 90 min
+                </TabButton>
+                <TabButton active={activeTab === "competition"} onClick={() => setActiveTab("competition")}>
+                  Por Competição
+                </TabButton>
+                <TabButton active={activeTab === "career"} onClick={() => setActiveTab("career")}>
+                  Carreira
+                </TabButton>
               </div>
-            ) : (
-              <>
-                {/* Career Summary Cards */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-8">
-                  <StatCard label="Jogos" value={careerTotals.matches} icon={Trophy} highlight />
-                  <StatCard label="Minutos" value={careerTotals.minutes} icon={Clock} />
-                  <StatCard label="Gols" value={careerTotals.goals} icon={Target} highlight />
-                  <StatCard label="Assistências" value={careerTotals.assists} />
-                  <StatCard label="Chutes" value={careerTotals.shots} />
-                  <StatCard label="Passes Dec." value={careerTotals.key_passes} />
-                  <StatCard label="Desarmes" value={careerTotals.tackles} icon={Shield} />
-                  <StatCard 
-                    label="Cartões" 
-                    value={`${careerTotals.yellow_cards}/${careerTotals.red_cards}`} 
-                    subValue="Am/Vm"
-                  />
-                </div>
 
-                {/* Tabs */}
-                <div className="flex gap-4 sm:gap-6 mb-8 border-b border-zinc-800 overflow-x-auto">
-                  {tabs.map((tab) => (
-                    <button
-                      key={tab.value}
-                      onClick={() => setActiveTab(tab.value)}
-                      className={cn(
-                        "pb-3 text-sm font-medium transition-colors relative whitespace-nowrap",
-                        activeTab === tab.value ? "text-white" : "text-zinc-600 hover:text-zinc-400"
-                      )}
-                    >
-                      <span className="hidden sm:inline">{tab.label}</span>
-                      <span className="sm:hidden">{tab.shortLabel}</span>
-                      {activeTab === tab.value && (
-                        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#e52421] rounded-full" />
-                      )}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Tab Content */}
-                <div className="rounded-2xl bg-zinc-900/30 border border-zinc-800/50 p-6">
-                  {activeTab === "current" && (
-                    <>
-                      {currentSeasonStats ? (
-                        <div className="space-y-8">
-                          <div className="flex items-center gap-2 mb-4">
-                            <Badge variant="outline" className="border-zinc-700 text-zinc-400">
-                              {currentSeasonStats.season_year}
-                            </Badge>
-                          </div>
-                          
-                          <div className="grid grid-cols-3 sm:grid-cols-5 gap-4 sm:gap-6">
-                            <StatRow label="Jogos" value={currentSeasonStats.matches} />
-                            <StatRow label="Minutos" value={currentSeasonStats.minutes} />
-                            <StatRow label="Gols" value={currentSeasonStats.goals} highlight />
-                            <StatRow label="Assistências" value={currentSeasonStats.assists} />
-                            <StatRow label="G+A" value={currentSeasonStats.goals + currentSeasonStats.assists} highlight />
-                          </div>
-
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 pt-6 border-t border-zinc-800">
-                            <StatRow label="Desarmes" value={currentSeasonStats.tackles} small />
-                            <StatRow label="Interceptações" value={currentSeasonStats.interceptions} small />
-                            <StatRow label="Recuperações" value={currentSeasonStats.recoveries} small />
-                            <div className="flex gap-6">
-                              <StatRow label="Amarelos" value={currentSeasonStats.yellow_cards} variant="warning" small />
-                              <StatRow label="Vermelhos" value={currentSeasonStats.red_cards} variant="danger" small />
-                            </div>
-                          </div>
+              {/* Tab Content */}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeTab}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="rounded-2xl bg-zinc-900/30 border border-zinc-800/50 p-6"
+                >
+                  {activeTab === "current" && currentSeasonStats && (
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-4">
+                      {[
+                        { label: "Jogos", value: currentSeasonStats.matches },
+                        { label: "Minutos", value: currentSeasonStats.minutes },
+                        { label: "Gols", value: currentSeasonStats.goals },
+                        { label: "Assist.", value: currentSeasonStats.assists },
+                        { label: "Desarmes", value: currentSeasonStats.tackles },
+                        { label: "Intercep.", value: currentSeasonStats.interceptions },
+                      ].map((stat) => (
+                        <div key={stat.label} className="text-center">
+                          <div className="text-2xl font-bold text-white tabular-nums">{stat.value}</div>
+                          <div className="text-[10px] uppercase tracking-widest text-zinc-500">{stat.label}</div>
                         </div>
-                      ) : (
-                        <EmptyState message={`Sem dados para ${currentYear}`} />
-                      )}
-                    </>
+                      ))}
+                    </div>
                   )}
 
-                  {activeTab === "per90" && (
-                    <>
-                      {currentSeasonStats && currentSeasonStats.minutes >= 90 ? (
-                        <div className="space-y-8">
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
-                            <StatRow label="Gols/90" value={calculatePer90(currentSeasonStats.goals, currentSeasonStats.minutes)} highlight />
-                            <StatRow label="Assist./90" value={calculatePer90(currentSeasonStats.assists, currentSeasonStats.minutes)} />
-                            <StatRow label="G+A/90" value={calculatePer90(currentSeasonStats.goals + currentSeasonStats.assists, currentSeasonStats.minutes)} highlight />
-                            <StatRow 
-                              label="Min/Gol" 
-                              value={currentSeasonStats.goals > 0 ? Math.round(currentSeasonStats.minutes / currentSeasonStats.goals) : "—"} 
-                            />
-                          </div>
-
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6 pt-6 border-t border-zinc-800">
-                            <StatRow label="Desarmes/90" value={calculatePer90(currentSeasonStats.tackles, currentSeasonStats.minutes)} small />
-                            <StatRow label="Intercep./90" value={calculatePer90(currentSeasonStats.interceptions, currentSeasonStats.minutes)} small />
-                            <StatRow label="Recup./90" value={calculatePer90(currentSeasonStats.recoveries, currentSeasonStats.minutes)} small />
-                          </div>
+                  {activeTab === "per90" && currentSeasonStats && currentSeasonStats.minutes >= 90 && (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      {[
+                        { label: "Gols/90", value: calculatePer90(currentSeasonStats.goals, currentSeasonStats.minutes) },
+                        { label: "Assist./90", value: calculatePer90(currentSeasonStats.assists, currentSeasonStats.minutes) },
+                        { label: "G+A/90", value: calculatePer90(currentSeasonStats.goals + currentSeasonStats.assists, currentSeasonStats.minutes) },
+                        { label: "Desarmes/90", value: calculatePer90(currentSeasonStats.tackles, currentSeasonStats.minutes) },
+                      ].map((stat) => (
+                        <div key={stat.label} className="text-center p-4 rounded-xl bg-zinc-800/30">
+                          <div className="text-2xl font-bold text-white tabular-nums">{stat.value}</div>
+                          <div className="text-[10px] uppercase tracking-widest text-zinc-500">{stat.label}</div>
                         </div>
-                      ) : (
-                        <EmptyState message="Mínimo de 90 minutos necessário" />
-                      )}
-                    </>
+                      ))}
+                    </div>
                   )}
 
-                  {activeTab === "competition" && (
-                    <>
-                      {competitionStats.length > 0 ? (
-                        <div className="overflow-x-auto">
-                          <table className="w-full">
-                            <thead>
-                              <tr className="border-b border-zinc-800">
-                                <th className="text-left text-[10px] uppercase tracking-widest text-zinc-600 pb-3 font-medium">
-                                  Competição
-                                </th>
-                                <th className="text-center text-[10px] uppercase tracking-widest text-zinc-600 pb-3 font-medium">
-                                  Temp.
-                                </th>
-                                <th className="text-center text-[10px] uppercase tracking-widest text-zinc-600 pb-3 font-medium">
-                                  J
-                                </th>
-                                <th className="text-center text-[10px] uppercase tracking-widest text-zinc-600 pb-3 font-medium hidden sm:table-cell">
-                                  Min
-                                </th>
-                                <th className="text-center text-[10px] uppercase tracking-widest text-zinc-600 pb-3 font-medium">
-                                  G
-                                </th>
-                                <th className="text-center text-[10px] uppercase tracking-widest text-zinc-600 pb-3 font-medium">
-                                  A
-                                </th>
-                                <th className="text-center text-[10px] uppercase tracking-widest text-zinc-600 pb-3 font-medium">
-                                  G+A
-                                </th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {competitionStats.map((comp, idx) => (
-                                <tr key={`${comp.competition_id}-${comp.season_year}-${idx}`} className="border-b border-zinc-800/50">
-                                  <td className="py-3 pr-4">
-                                    <div className="flex flex-col gap-0.5">
-                                      <span className="text-white text-sm font-medium truncate max-w-[180px] sm:max-w-none">
-                                        {comp.competition_name}
-                                      </span>
-                                      <span className="text-[9px] uppercase tracking-widest text-zinc-600">
-                                        {getCompetitionTypeLabel(comp.competition_type)}
-                                      </span>
-                                    </div>
-                                  </td>
-                                  <td className="py-3 text-center text-zinc-500 text-sm">{comp.season_year}</td>
-                                  <td className="py-3 text-center text-zinc-400 text-sm">{comp.matches}</td>
-                                  <td className="py-3 text-center text-zinc-400 text-sm hidden sm:table-cell">{comp.minutes}</td>
-                                  <td className="py-3 text-center text-white text-sm font-medium">{comp.goals}</td>
-                                  <td className="py-3 text-center text-zinc-400 text-sm">{comp.assists}</td>
-                                  <td className="py-3 text-center text-white text-sm font-medium">{comp.goals + comp.assists}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      ) : (
-                        <EmptyState message="Sem dados de competições" />
-                      )}
-                    </>
+                  {activeTab === "competition" && competitionStats.length > 0 && (
+                    <div className="space-y-3">
+                      {competitionStats.slice(0, 5).map((comp, idx) => (
+                        <motion.div 
+                          key={`${comp.competition_id}-${comp.season_year}`}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: idx * 0.05 }}
+                          className="flex items-center justify-between p-3 rounded-xl bg-zinc-800/30 hover:bg-zinc-800/50 transition-colors"
+                        >
+                          <div>
+                            <div className="text-sm font-medium text-white">{comp.competition_name}</div>
+                            <div className="text-xs text-zinc-500">{comp.season_year}</div>
+                          </div>
+                          <div className="flex gap-4 text-sm">
+                            <span className="text-zinc-400">{comp.matches}J</span>
+                            <span className="text-white font-semibold">{comp.goals}G</span>
+                            <span className="text-zinc-400">{comp.assists}A</span>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
                   )}
 
                   {activeTab === "career" && (
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="border-b border-zinc-800">
-                            <th className="text-left text-[10px] uppercase tracking-widest text-zinc-600 pb-3 font-medium">
-                              Temporada
-                            </th>
-                            <th className="text-center text-[10px] uppercase tracking-widest text-zinc-600 pb-3 font-medium">
-                              J
-                            </th>
-                            <th className="text-center text-[10px] uppercase tracking-widest text-zinc-600 pb-3 font-medium">
-                              Min
-                            </th>
-                            <th className="text-center text-[10px] uppercase tracking-widest text-zinc-600 pb-3 font-medium">
-                              G
-                            </th>
-                            <th className="text-center text-[10px] uppercase tracking-widest text-zinc-600 pb-3 font-medium">
-                              A
-                            </th>
-                            <th className="text-center text-[10px] uppercase tracking-widest text-zinc-600 pb-3 font-medium">
-                              G+A
-                            </th>
-                            <th className="text-center text-[10px] uppercase tracking-widest text-zinc-600 pb-3 font-medium hidden sm:table-cell">
-                              Cartões
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {careerStats.map((season) => (
-                            <tr key={season.season_year} className="border-b border-zinc-800/50">
-                              <td className="py-3 text-white text-sm font-medium">
-                                {season.season_year}
-                                {season.season_year === currentYear && (
-                                  <Badge variant="outline" className="ml-2 text-[9px] border-zinc-700 text-zinc-500">
-                                    Atual
-                                  </Badge>
-                                )}
-                              </td>
-                              <td className="py-3 text-center text-zinc-400 text-sm">{season.matches}</td>
-                              <td className="py-3 text-center text-zinc-400 text-sm">{season.minutes}</td>
-                              <td className="py-3 text-center text-white text-sm font-medium">{season.goals}</td>
-                              <td className="py-3 text-center text-zinc-400 text-sm">{season.assists}</td>
-                              <td className="py-3 text-center text-white text-sm font-medium">{season.goals + season.assists}</td>
-                              <td className="py-3 text-center text-sm hidden sm:table-cell">
-                                <span className="text-amber-400">{season.yellow_cards}</span>
-                                <span className="text-zinc-600 mx-1">/</span>
-                                <span className="text-red-400">{season.red_cards}</span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                        <tfoot>
-                          <tr className="border-t border-zinc-700 bg-zinc-800/30">
-                            <td className="py-3 text-white text-sm font-semibold">Total</td>
-                            <td className="py-3 text-center text-white text-sm font-semibold">{careerTotals.matches}</td>
-                            <td className="py-3 text-center text-white text-sm font-semibold">{careerTotals.minutes}</td>
-                            <td className="py-3 text-center text-white text-sm font-semibold">{careerTotals.goals}</td>
-                            <td className="py-3 text-center text-white text-sm font-semibold">{careerTotals.assists}</td>
-                            <td className="py-3 text-center text-white text-sm font-semibold">{careerTotals.goals + careerTotals.assists}</td>
-                            <td className="py-3 text-center text-sm font-semibold hidden sm:table-cell">
-                              <span className="text-amber-400">{careerTotals.yellow_cards}</span>
-                              <span className="text-zinc-600 mx-1">/</span>
-                              <span className="text-red-400">{careerTotals.red_cards}</span>
-                            </td>
-                          </tr>
-                        </tfoot>
-                      </table>
+                    <div className="space-y-2">
+                      {careerStats.map((season, idx) => (
+                        <motion.div 
+                          key={season.season_year}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: idx * 0.05 }}
+                          className="flex items-center justify-between p-3 rounded-xl bg-zinc-800/30 hover:bg-zinc-800/50 transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-white">{season.season_year}</span>
+                            {season.season_year === currentYear && (
+                              <Badge variant="outline" className="text-[9px] border-[#e52421]/50 text-[#e52421]">Atual</Badge>
+                            )}
+                          </div>
+                          <div className="flex gap-4 text-sm tabular-nums">
+                            <span className="text-zinc-400">{season.matches}J</span>
+                            <span className="text-white font-semibold">{season.goals}G</span>
+                            <span className="text-zinc-400">{season.assists}A</span>
+                            <span className="text-zinc-500">{season.minutes}'</span>
+                          </div>
+                        </motion.div>
+                      ))}
                     </div>
                   )}
+                </motion.div>
+              </AnimatePresence>
+            </motion.section>
+          )}
+
+          {/* ==================== GAME PHASES ==================== */}
+          {currentSeasonStats && (
+            <motion.section 
+              className="mb-12"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+            >
+              <h2 className="text-xl font-bold text-white mb-6">Fases do Jogo</h2>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <PhasePanel 
+                  title="Ataque" 
+                  icon={Crosshair} 
+                  color="orange"
+                  stats={[
+                    { label: "Gols", value: currentSeasonStats.goals, max: 20 },
+                    { label: "Chutes", value: currentSeasonStats.shots, max: 50 },
+                    { label: "Chutes no Gol", value: currentSeasonStats.shots_on_target, max: 30 },
+                  ]}
+                />
+                <PhasePanel 
+                  title="Criatividade" 
+                  icon={Sparkles} 
+                  color="purple"
+                  stats={[
+                    { label: "Assistências", value: currentSeasonStats.assists, max: 15 },
+                    { label: "Passes Decisivos", value: currentSeasonStats.key_passes, max: 40 },
+                    { label: "Chances Criadas", value: currentSeasonStats.chances_created, max: 30 },
+                  ]}
+                />
+                <PhasePanel 
+                  title="Passe" 
+                  icon={Footprints} 
+                  color="green"
+                  stats={[
+                    { label: "Passes Certos", value: currentSeasonStats.accurate_passes, max: 500 },
+                    { label: "Dribles Certos", value: currentSeasonStats.successful_dribbles, max: 30 },
+                  ]}
+                />
+                <PhasePanel 
+                  title="Defesa" 
+                  icon={Shield} 
+                  color="blue"
+                  stats={[
+                    { label: "Desarmes", value: currentSeasonStats.tackles, max: 40 },
+                    { label: "Interceptações", value: currentSeasonStats.interceptions, max: 30 },
+                    { label: "Recuperações", value: currentSeasonStats.recoveries, max: 50 },
+                  ]}
+                />
+              </div>
+            </motion.section>
+          )}
+
+          {/* ==================== PHYSICAL DATA ==================== */}
+          {(player.height || player.weight || player.wingspan || player.body_fat_percentage || player.max_speed) && (
+            <motion.section 
+              className="mb-12"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+            >
+              <h2 className="text-xl font-bold text-white mb-6">Dados Físicos</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+                <AnimatedMetric label="Altura" value={player.height} unit="cm" icon={Ruler} reference="175-185" />
+                <AnimatedMetric label="Peso" value={player.weight} unit="kg" icon={Scale} reference="70-80" />
+                <AnimatedMetric label="Envergadura" value={player.wingspan} unit="cm" icon={Ruler} />
+                <AnimatedMetric label="% Gordura" value={player.body_fat_percentage} unit="%" icon={Percent} reference="8-12%" />
+                <AnimatedMetric label="Massa Musc." value={player.muscle_mass} unit="kg" icon={Dumbbell} />
+              </div>
+
+              {(player.max_speed || player.sprint_30m || player.vo2_max) && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
+                  <AnimatedMetric label="Vel. Máx" value={player.max_speed} unit="km/h" icon={Zap} reference="32+" />
+                  <AnimatedMetric label="Sprint 30m" value={player.sprint_30m} unit="s" icon={Timer} reference="< 4.0" />
+                  <AnimatedMetric label="VO2 Máx" value={player.vo2_max} unit="ml/kg" icon={Heart} reference="55+" />
                 </div>
-              </>
-            )}
-          </motion.section>
-
-          {/* ==================== PHYSICAL DATA SECTION ==================== */}
-          {(player.height || player.weight || player.wingspan) && (
-            <motion.section 
-              className="mb-16 lg:mb-24"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-            >
-              <SectionTitle icon={Ruler}>Medidas Corporais</SectionTitle>
-              
-              <div className="rounded-2xl bg-zinc-900/50 border border-zinc-800/50 p-6">
-                <div className="space-y-6">
-                  <MetricBar 
-                    label="Altura" 
-                    value={player.height} 
-                    unit="cm" 
-                    min={160} 
-                    max={200}
-                    idealMin={175}
-                    idealMax={190}
-                  />
-                  <MetricBar 
-                    label="Peso" 
-                    value={player.weight} 
-                    unit="kg" 
-                    min={55} 
-                    max={95}
-                    idealMin={70}
-                    idealMax={85}
-                  />
-                  <MetricBar 
-                    label="Envergadura" 
-                    value={player.wingspan} 
-                    unit="cm" 
-                    min={160} 
-                    max={210}
-                    idealMin={180}
-                    idealMax={200}
-                  />
-                </div>
-              </div>
+              )}
             </motion.section>
           )}
 
-          {/* ==================== BODY COMPOSITION SECTION ==================== */}
-          {(player.body_fat_percentage || player.muscle_mass || bmi) && (
+          {/* ==================== VIDEO ==================== */}
+          {embedUrl && (
             <motion.section 
-              className="mb-16 lg:mb-24"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              className="mb-12"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
             >
-              <SectionTitle icon={Scale}>Composição Corporal</SectionTitle>
+              <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                <Play className="w-5 h-5 text-[#e52421]" />
+                Highlights
+              </h2>
               
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <BodyCompositionMetric
-                  label="Gordura Corporal"
-                  value={player.body_fat_percentage}
-                  unit="%"
-                  icon={Percent}
-                  reference="8-12%"
-                />
-                <BodyCompositionMetric
-                  label="Massa Muscular"
-                  value={player.muscle_mass}
-                  unit="kg"
-                  icon={Dumbbell}
-                  reference="45-55 kg"
-                />
-                <BodyCompositionMetric
-                  label="IMC"
-                  value={bmi}
-                  unit=""
-                  icon={Scale}
-                  reference="22-24"
-                />
-              </div>
-            </motion.section>
-          )}
-
-          {/* ==================== PHYSICAL PERFORMANCE SECTION ==================== */}
-          {(player.max_speed || player.sprint_30m || player.vo2_max) && (
-            <motion.section 
-              className="mb-16 lg:mb-24"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-            >
-              <SectionTitle icon={Zap}>Performance Física</SectionTitle>
-              
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <BodyCompositionMetric
-                  label="Velocidade Máxima"
-                  value={player.max_speed}
-                  unit="km/h"
-                  icon={Zap}
-                  reference="32+ km/h"
-                />
-                <BodyCompositionMetric
-                  label="Sprint 30m"
-                  value={player.sprint_30m}
-                  unit="s"
-                  icon={Timer}
-                  reference="< 4.0s"
-                />
-                <BodyCompositionMetric
-                  label="VO2 Máx"
-                  value={player.vo2_max}
-                  unit="ml/kg/min"
-                  icon={Heart}
-                  reference="55+ ml"
-                />
-              </div>
-            </motion.section>
-          )}
-
-          {/* ==================== VIDEO SECTION ==================== */}
-          {player.highlight_video_url && (() => {
-            const embedUrl = getYouTubeEmbedUrl(player.highlight_video_url);
-            if (!embedUrl) return null;
-            return (
-              <motion.section 
-                className="mb-16 lg:mb-24"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-              >
-                <SectionTitle icon={Play}>Highlights & Análise em Vídeo</SectionTitle>
-                
-                <div className="overflow-hidden rounded-2xl bg-zinc-950 border border-zinc-800/50">
+              <Dialog open={videoOpen} onOpenChange={setVideoOpen}>
+                <DialogTrigger asChild>
+                  <div>
+                    <VideoThumbnail videoUrl={embedUrl} onPlay={() => setVideoOpen(true)} />
+                  </div>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl p-0 bg-black border-zinc-800">
                   <div className="aspect-video">
                     <iframe
                       src={embedUrl}
@@ -1302,24 +1040,23 @@ const PlayerProfile = () => {
                       allowFullScreen
                     />
                   </div>
-                </div>
-              </motion.section>
-            );
-          })()}
+                </DialogContent>
+              </Dialog>
+            </motion.section>
+          )}
 
           {/* ==================== FINAL CTA ==================== */}
           <motion.section
-            className="text-center py-12"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            className="text-center py-12 mt-8 rounded-3xl bg-gradient-to-br from-zinc-900/50 to-zinc-900/20 border border-zinc-800/50"
+            initial={{ opacity: 0, scale: 0.98 }}
+            whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
           >
-            <h3 className="text-2xl font-bold text-white mb-4">
-              Interessado em {player.full_name.split(" ")[0]}?
+            <h3 className="text-2xl font-bold text-white mb-3">
+              Interessado em <span className="text-[#e52421]">{player.full_name.split(" ")[0]}</span>?
             </h3>
-            <p className="text-zinc-400 mb-8 max-w-md mx-auto">
-              Entre em contato com a M3 Agency para mais informações sobre representação e oportunidades.
+            <p className="text-zinc-400 mb-6 max-w-md mx-auto text-sm">
+              Entre em contato com a M3 Agency para mais informações.
             </p>
             <Link to={`/contact?player=${player.slug}`}>
               <Button 
