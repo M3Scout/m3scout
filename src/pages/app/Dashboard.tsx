@@ -239,13 +239,23 @@ const Dashboard = () => {
                     />
                     <Tooltip 
                       contentStyle={{ 
-                        backgroundColor: "#18181b", 
+                        backgroundColor: "#09090b", 
                         border: "1px solid #27272a",
                         borderRadius: "8px",
-                        fontSize: "11px"
+                        padding: "8px 12px"
                       }}
-                      formatter={(value: number) => [`${value}`, ""]}
-                      labelStyle={{ color: "#a1a1aa" }}
+                      formatter={(value: number, name: string) => [
+                        <span key="value" style={{ color: "#ffffff", fontWeight: 600, fontSize: "14px" }}>
+                          {value} {value === 1 ? "jogador" : "jogadores"}
+                        </span>,
+                        ""
+                      ]}
+                      labelFormatter={(label: string) => (
+                        <span style={{ color: "#a1a1aa", fontSize: "11px", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                          {label}
+                        </span>
+                      )}
+                      cursor={{ fill: "rgba(255, 255, 255, 0.05)" }}
                     />
                     <Bar 
                       dataKey="value" 
