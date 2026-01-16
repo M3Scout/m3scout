@@ -43,6 +43,7 @@ import { CompareHero } from "@/components/compare/CompareHero";
 import { ComparePlayerCard, CompareEmptySlot } from "@/components/compare/ComparePlayerCard";
 import { CompareStatRow, CompareStatBlock, CompareBarRow } from "@/components/compare/CompareStatBlock";
 import { SimilarPlayerSuggestions } from "@/components/compare/SimilarPlayerSuggestions";
+import { ExportComparePdfButton } from "@/components/compare/ExportComparePdfButton";
 import type { PlayerStatRow } from "@/lib/attributeRadar";
 
 interface Player {
@@ -432,10 +433,13 @@ const ComparePlayers = () => {
               </Tabs>
             </div>
 
-            {/* Info */}
-            <div className="flex items-center gap-1.5 text-xs text-zinc-500 ml-auto">
-              <Info className="w-3.5 h-3.5" />
-              <span>Melhor valor destacado automaticamente</span>
+            {/* Export + Info */}
+            <div className="flex items-center gap-3 ml-auto">
+              <div className="flex items-center gap-1.5 text-xs text-zinc-500">
+                <Info className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Melhor valor destacado automaticamente</span>
+              </div>
+              <ExportComparePdfButton players={selectedPlayers} />
             </div>
           </div>
 
