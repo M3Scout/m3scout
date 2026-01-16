@@ -651,5 +651,98 @@
       opacity: 0;
     }
   }
+
+  /* Light Sweep Animation */
+  @keyframes light-sweep {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(calc(100vw + 200px));
+    }
+  }
+
+  .animate-light-sweep {
+    animation: light-sweep 8s linear infinite;
+  }
+
+  /* Tracking Pulse Animation */
+  @keyframes tracking-pulse {
+    0%, 100% {
+      opacity: 0.2;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.5;
+      transform: scale(1.3);
+    }
+  }
+
+  .animate-tracking-pulse {
+    animation: tracking-pulse 3s ease-in-out infinite;
+  }
+
+  /* Hero Glitch Effect */
+  .hero-glitch {
+    animation: hero-glitch 0.15s ease-out;
+  }
+
+  @keyframes hero-glitch {
+    0% {
+      transform: translateX(0);
+      filter: hue-rotate(0deg);
+    }
+    20% {
+      transform: translateX(-3px);
+      filter: hue-rotate(90deg);
+    }
+    40% {
+      transform: translateX(3px);
+      filter: hue-rotate(-90deg);
+    }
+    60% {
+      transform: translateX(-2px);
+      filter: hue-rotate(45deg);
+    }
+    80% {
+      transform: translateX(1px);
+      filter: hue-rotate(-45deg);
+    }
+    100% {
+      transform: translateX(0);
+      filter: hue-rotate(0deg);
+    }
+  }
+
+  /* Hero Flash Effect */
+  .hero-flash {
+    animation: hero-flash 0.3s ease-out;
+  }
+
+  @keyframes hero-flash {
+    0% {
+      opacity: 0;
+      text-shadow: 0 0 30px rgba(229, 36, 33, 0.8);
+    }
+    30% {
+      opacity: 1;
+      text-shadow: 0 0 60px rgba(229, 36, 33, 1), 0 0 100px rgba(229, 36, 33, 0.5);
+    }
+    100% {
+      opacity: 1;
+      text-shadow: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-glitch,
+    .hero-flash {
+      animation: none;
+    }
+    .animate-light-sweep,
+    .animate-tracking-pulse {
+      animation: none;
+    }
+  }
 }
 
