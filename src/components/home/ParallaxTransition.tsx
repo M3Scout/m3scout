@@ -53,41 +53,6 @@ export function ParallaxTransition({ children }: ParallaxTransitionProps) {
         transition: "opacity 0.1s ease-out",
       }}
     >
-      {/* Decorative Elements */}
-      <div className="absolute -top-20 left-0 right-0 h-20 pointer-events-none overflow-hidden">
-        {/* Gradient fade from hero */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black" />
-        
-        {/* Animated lines */}
-        {!prefersReducedMotion && (
-          <>
-            <div 
-              className="absolute left-1/4 top-0 w-px h-full bg-gradient-to-b from-white/5 to-transparent"
-              style={{
-                transform: `scaleY(${scrollProgress})`,
-                transformOrigin: "top",
-              }}
-            />
-            <div 
-              className="absolute left-1/2 top-0 w-px h-full bg-gradient-to-b from-white/8 to-transparent"
-              style={{
-                transform: `scaleY(${scrollProgress})`,
-                transformOrigin: "top",
-                transitionDelay: "50ms",
-              }}
-            />
-            <div 
-              className="absolute left-3/4 top-0 w-px h-full bg-gradient-to-b from-white/5 to-transparent"
-              style={{
-                transform: `scaleY(${scrollProgress})`,
-                transformOrigin: "top",
-                transitionDelay: "100ms",
-              }}
-            />
-          </>
-        )}
-      </div>
-
       {children}
     </div>
   );
