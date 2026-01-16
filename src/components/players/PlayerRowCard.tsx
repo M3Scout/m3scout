@@ -163,7 +163,7 @@ export function PlayerRowCard({
             <div className="hidden md:flex flex-col items-center justify-center min-w-[50px]">
               {autoRating !== null && autoRating !== undefined ? (
                 <span className={`text-base font-semibold tabular-nums ${getGlobalRatingColor(autoRating)}`}>
-                  {Math.round(autoRating)}
+                  {formatFixed(autoRating, 1)}
                 </span>
               ) : (
                 <span className="text-zinc-600 text-sm">—</span>
@@ -380,7 +380,7 @@ export function PlayerMobileCard({
           <span className="text-[10px] uppercase tracking-wider text-zinc-600">Global</span>
           {autoRating !== null && autoRating !== undefined ? (
             <span className={`text-base font-semibold tabular-nums ${getGlobalRatingColor(autoRating)}`}>
-              {Math.round(autoRating)}
+              {formatFixed(autoRating, 1)}
             </span>
           ) : (
             <span className="text-zinc-600">—</span>
