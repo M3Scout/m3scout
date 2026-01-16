@@ -19,6 +19,8 @@ export interface PositionColorConfig {
   bgClass: string;      // Tailwind background class (10-15% opacity)
   borderClass: string;  // Tailwind border class
   accentClass: string;  // For lateral bar / stronger accent
+  glowClass: string;    // For hover glow effect (shadow)
+  ringClass: string;    // For focus ring on hover
 }
 
 // Position to category mapping
@@ -71,6 +73,8 @@ const categoryColors: Record<PositionCategory, PositionColorConfig> = {
     bgClass: "bg-violet-500/10",
     borderClass: "border-violet-500/30",
     accentClass: "bg-violet-500",
+    glowClass: "shadow-violet-500/20",
+    ringClass: "ring-violet-500/50",
   },
   defender: {
     category: "defender",
@@ -79,6 +83,8 @@ const categoryColors: Record<PositionCategory, PositionColorConfig> = {
     bgClass: "bg-blue-500/10",
     borderClass: "border-blue-500/30",
     accentClass: "bg-blue-500",
+    glowClass: "shadow-blue-500/20",
+    ringClass: "ring-blue-500/50",
   },
   fullback: {
     category: "fullback",
@@ -87,6 +93,8 @@ const categoryColors: Record<PositionCategory, PositionColorConfig> = {
     bgClass: "bg-cyan-500/10",
     borderClass: "border-cyan-500/30",
     accentClass: "bg-cyan-500",
+    glowClass: "shadow-cyan-500/20",
+    ringClass: "ring-cyan-500/50",
   },
   midfielder_defensive: {
     category: "midfielder_defensive",
@@ -95,6 +103,8 @@ const categoryColors: Record<PositionCategory, PositionColorConfig> = {
     bgClass: "bg-emerald-500/10",
     borderClass: "border-emerald-500/30",
     accentClass: "bg-emerald-500",
+    glowClass: "shadow-emerald-500/20",
+    ringClass: "ring-emerald-500/50",
   },
   midfielder: {
     category: "midfielder",
@@ -103,6 +113,8 @@ const categoryColors: Record<PositionCategory, PositionColorConfig> = {
     bgClass: "bg-amber-500/10",
     borderClass: "border-amber-500/30",
     accentClass: "bg-amber-500",
+    glowClass: "shadow-amber-500/20",
+    ringClass: "ring-amber-500/50",
   },
   winger: {
     category: "winger",
@@ -111,6 +123,8 @@ const categoryColors: Record<PositionCategory, PositionColorConfig> = {
     bgClass: "bg-orange-500/10",
     borderClass: "border-orange-500/30",
     accentClass: "bg-orange-500",
+    glowClass: "shadow-orange-500/20",
+    ringClass: "ring-orange-500/50",
   },
   forward: {
     category: "forward",
@@ -119,6 +133,8 @@ const categoryColors: Record<PositionCategory, PositionColorConfig> = {
     bgClass: "bg-red-500/10",
     borderClass: "border-red-500/30",
     accentClass: "bg-red-500",
+    glowClass: "shadow-red-500/20",
+    ringClass: "ring-red-500/50",
   },
 };
 
@@ -130,6 +146,8 @@ const defaultColor: PositionColorConfig = {
   bgClass: "bg-zinc-500/10",
   borderClass: "border-zinc-500/30",
   accentClass: "bg-zinc-500",
+  glowClass: "shadow-zinc-500/20",
+  ringClass: "ring-zinc-500/50",
 };
 
 /**
