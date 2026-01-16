@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -22,14 +22,15 @@ import {
 } from "@/components/ui/alert-dialog";
 import { MatchPlayer, MatchEventType, MatchStatus } from "@/hooks/useLiveMatch";
 import { 
-  Plus, Undo2, ChevronDown, ChevronUp, LogIn, LogOut, 
-  MoreVertical, Trash2, MessageSquare, Goal, Zap, Shield,
+  Undo2, ChevronDown, ChevronUp, LogIn, LogOut, 
+  MoreVertical, Trash2, MessageSquare, Goal, Shield,
   Target, Footprints, HandHelping
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { playSound, getSoundForEvent } from "@/lib/sounds";
 import { getPositionColor, getShortPosition } from "@/lib/positionColors";
 import { PlayerNotesModal } from "./PlayerNotesModal";
+import { MoreStatsMenu } from "./MoreStatsMenu";
 
 // Quick action events
 const QUICK_EVENTS: { type: MatchEventType; icon: React.ReactNode; label: string; color: string }[] = [
@@ -360,16 +361,16 @@ export function PremiumPlayerCard({
                       </Button>
                     ))}
                     
-                    {/* More events button */}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {/* Open full stat panel */}}
-                      className="h-9 px-3 gap-1.5 rounded-lg bg-zinc-800/50 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span className="text-xs">Mais</span>
-                    </Button>
+                    {/* More events menu */}
+                    <MoreStatsMenu
+                      matchStatus={matchStatus}
+                      clockStatus={clockStatus}
+                      isGoalkeeper={isGK}
+                      isOnField={matchPlayer.is_on_field}
+                      eventCounts={eventCounts}
+                      onAddEvent={handleAddEventWithSound}
+                      disabled={disabled}
+                    />
                   </div>
                 </div>
               </motion.div>
