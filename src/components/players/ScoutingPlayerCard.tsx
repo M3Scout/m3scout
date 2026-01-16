@@ -53,6 +53,7 @@ const getLevelLabel = (level: string | null | undefined): string => {
 };
 
 export function ScoutingPlayerCard({
+  id,
   slug,
   name,
   position,
@@ -71,7 +72,8 @@ export function ScoutingPlayerCard({
   overallRating,
   potentialRating,
 }: ScoutingPlayerCardProps) {
-  const href = `/app/players/${slug}`;
+  // App routes use id for reliability (slug may not be unique)
+  const href = `/app/players/${id}`;
 
   return (
     <Link to={href} className="group block">
