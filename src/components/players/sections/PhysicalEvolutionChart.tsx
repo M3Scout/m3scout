@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Plus, Calendar, Loader2, List, Trash2 } from "lucide-react";
+import { TrendingUp, Plus, Calendar, Loader2, List, Trash2, Pencil } from "lucide-react";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -55,11 +55,14 @@ export const PhysicalEvolutionChart = ({ playerId, currentData }: PhysicalEvolut
   const { user, isAdmin, isScout } = useAuth();
   const [selectedMetrics, setSelectedMetrics] = useState<MetricKey[]>(["weight", "body_fat_percentage"]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteRecord, setDeleteRecord] = useState<PhysicalHistoryRecord | null>(null);
+  const [editRecord, setEditRecord] = useState<PhysicalHistoryRecord | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [newRecord, setNewRecord] = useState({
+  
+  const emptyFormState = {
     recorded_at: format(new Date(), "yyyy-MM-dd"),
     weight: "",
     body_fat_percentage: "",
@@ -68,7 +71,10 @@ export const PhysicalEvolutionChart = ({ playerId, currentData }: PhysicalEvolut
     sprint_30m: "",
     vo2_max: "",
     notes: "",
-  });
+  };
+  
+  const [newRecord, setNewRecord] = useState(emptyFormState);
+  const [editFormData, setEditFormData] = useState(emptyFormState);
 
   const canEdit = isAdmin || isScout;
 
@@ -132,16 +138,7 @@ export const PhysicalEvolutionChart = ({ playerId, currentData }: PhysicalEvolut
 
       toast.success("Registro adicionado com sucesso");
       setIsAddDialogOpen(false);
-      setNewRecord({
-        recorded_at: format(new Date(), "yyyy-MM-dd"),
-        weight: "",
-        body_fat_percentage: "",
-        muscle_mass: "",
-        max_speed: "",
-        sprint_30m: "",
-        vo2_max: "",
-        notes: "",
-      });
+      setNewRecord(emptyFormState);
       refetch();
     } catch (error) {
       console.error("Error adding physical record:", error);
@@ -171,6 +168,65 @@ export const PhysicalEvolutionChart = ({ playerId, currentData }: PhysicalEvolut
       toast.error("Erro ao excluir avaliação");
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  // Open edit dialog with record data
+  const handleOpenEdit = (record: PhysicalHistoryRecord) => {
+    setEditRecord(record);
+    setEditFormData({
+      recorded_at: record.recorded_at,
+      weight: record.weight?.toString() || "",
+      body_fat_percentage: record.body_fat_percentage?.toString() || "",
+      muscle_mass: record.muscle_mass?.toString() || "",
+      max_speed: record.max_speed?.toString() || "",
+      sprint_30m: record.sprint_30m?.toString() || "",
+      vo2_max: record.vo2_max?.toString() || "",
+      notes: record.notes || "",
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  // Handle edit submission
+  const handleEditRecord = async () => {
+    if (!editRecord || !user) return;
+
+    setIsSubmitting(true);
+    try {
+      const updateData = {
+        recorded_at: editFormData.recorded_at,
+        weight: editFormData.weight ? parseFloat(editFormData.weight) : null,
+        body_fat_percentage: editFormData.body_fat_percentage ? parseFloat(editFormData.body_fat_percentage) : null,
+        muscle_mass: editFormData.muscle_mass ? parseFloat(editFormData.muscle_mass) : null,
+        max_speed: editFormData.max_speed ? parseFloat(editFormData.max_speed) : null,
+        sprint_30m: editFormData.sprint_30m ? parseFloat(editFormData.sprint_30m) : null,
+        vo2_max: editFormData.vo2_max ? parseFloat(editFormData.vo2_max) : null,
+        notes: editFormData.notes || null,
+      };
+
+      const { error } = await supabase
+        .from("player_physical_history")
+        .update(updateData)
+        .eq("id", editRecord.id);
+
+      if (error) {
+        if (error.code === "23505") {
+          toast.error("Já existe um registro para esta data");
+        } else {
+          throw error;
+        }
+        return;
+      }
+
+      toast.success("Avaliação atualizada com sucesso");
+      setIsEditDialogOpen(false);
+      setEditRecord(null);
+      refetch();
+    } catch (error) {
+      console.error("Error updating physical record:", error);
+      toast.error("Erro ao atualizar avaliação");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -273,14 +329,24 @@ export const PhysicalEvolutionChart = ({ playerId, currentData }: PhysicalEvolut
                             )}
                           </div>
                           {canEdit && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 flex-shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                              onClick={() => setDeleteRecord(record)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                                onClick={() => handleOpenEdit(record)}
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => setDeleteRecord(record)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
                           )}
                         </div>
                       ))}
@@ -542,6 +608,140 @@ export const PhysicalEvolutionChart = ({ playerId, currentData }: PhysicalEvolut
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
+        if (!open) {
+          setIsEditDialogOpen(false);
+          setEditRecord(null);
+        }
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="w-5 h-5" />
+              Editar Avaliação Física
+            </DialogTitle>
+            <DialogDescription>
+              {editRecord && format(new Date(editRecord.recorded_at), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit_recorded_at">Data da Avaliação</Label>
+              <Input
+                id="edit_recorded_at"
+                type="date"
+                value={editFormData.recorded_at}
+                onChange={(e) => setEditFormData({ ...editFormData, recorded_at: e.target.value })}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="edit_weight">Peso (kg)</Label>
+                <Input
+                  id="edit_weight"
+                  type="number"
+                  step="0.1"
+                  placeholder="75.5"
+                  value={editFormData.weight}
+                  onChange={(e) => setEditFormData({ ...editFormData, weight: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit_body_fat">% Gordura</Label>
+                <Input
+                  id="edit_body_fat"
+                  type="number"
+                  step="0.1"
+                  placeholder="12.5"
+                  value={editFormData.body_fat_percentage}
+                  onChange={(e) => setEditFormData({ ...editFormData, body_fat_percentage: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit_muscle_mass">Massa Muscular (kg)</Label>
+                <Input
+                  id="edit_muscle_mass"
+                  type="number"
+                  step="0.1"
+                  placeholder="38.0"
+                  value={editFormData.muscle_mass}
+                  onChange={(e) => setEditFormData({ ...editFormData, muscle_mass: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit_max_speed">Vel. Máx (km/h)</Label>
+                <Input
+                  id="edit_max_speed"
+                  type="number"
+                  step="0.1"
+                  placeholder="32.5"
+                  value={editFormData.max_speed}
+                  onChange={(e) => setEditFormData({ ...editFormData, max_speed: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit_sprint_30m">Sprint 30m (s)</Label>
+                <Input
+                  id="edit_sprint_30m"
+                  type="number"
+                  step="0.01"
+                  placeholder="4.25"
+                  value={editFormData.sprint_30m}
+                  onChange={(e) => setEditFormData({ ...editFormData, sprint_30m: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit_vo2_max">VO2 Máx</Label>
+                <Input
+                  id="edit_vo2_max"
+                  type="number"
+                  step="0.1"
+                  placeholder="55.0"
+                  value={editFormData.vo2_max}
+                  onChange={(e) => setEditFormData({ ...editFormData, vo2_max: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit_notes">Observações</Label>
+              <Textarea
+                id="edit_notes"
+                placeholder="Notas sobre a avaliação..."
+                value={editFormData.notes}
+                onChange={(e) => setEditFormData({ ...editFormData, notes: e.target.value })}
+              />
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <Button 
+                variant="outline" 
+                className="flex-1" 
+                onClick={() => {
+                  setIsEditDialogOpen(false);
+                  setEditRecord(null);
+                }}
+                disabled={isSubmitting}
+              >
+                Cancelar
+              </Button>
+              <Button onClick={handleEditRecord} className="flex-1" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  "Salvar Alterações"
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
