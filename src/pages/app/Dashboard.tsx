@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
-import { 
-  Users, 
-  FileText, 
-  TrendingUp, 
+import {
+  Users,
+  FileText,
+  TrendingUp,
   AlertCircle,
   ChevronRight,
-  Trophy
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -49,7 +48,7 @@ interface RecentLead {
 }
 
 const Dashboard = () => {
-  const { isAdmin } = useAuth();
+  const { user, roles, isInternal, isAdmin } = useAuth();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats>({
     totalPlayers: 0,
@@ -65,6 +64,13 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
+        if (import.meta.env.DEV) {
+          console.debug("[Dashboard] fetch start", {
+            userId: user?.id ?? null,
+            roles,
+            isInternal,
+          });
+        }
         const [
           playersResult,
           reportsResult,
@@ -90,9 +96,10 @@ const Dashboard = () => {
               match_date,
               rating,
               final_score,
-              players!inner(full_name),
-              competitions!inner(name),
-              profiles!inner(full_name)
+              created_at,
+              scout_id,
+              players (full_name),
+              competitions (name)
             `)
             .order("created_at", { ascending: false })
             .limit(5),
@@ -135,16 +142,56 @@ const Dashboard = () => {
           setPositionData(sortedPositions);
         }
 
-        if (recentReportsResult.data) {
+        if (import.meta.env.DEV) {
+          console.debug("[Dashboard] recentReports result", {
+            error: recentReportsResult.error,
+            rows: recentReportsResult.data?.length ?? 0,
+          });
+        }
+
+        if (recentReportsResult.error) {
+          console.error("[Dashboard] Error fetching recent reports:", recentReportsResult.error);
+        } else if (recentReportsResult.data) {
+          const scoutIds = [
+            ...new Set(
+              recentReportsResult.data
+                .map((r: any) => r.scout_id)
+                .filter(Boolean)
+            ),
+          ];
+
+          let scoutNames: Record<string, string> = {};
+          if (scoutIds.length) {
+            const { data: profiles, error: profilesError } = await supabase
+              .from("profiles")
+              .select("user_id, full_name")
+              .in("user_id", scoutIds);
+
+            if (import.meta.env.DEV) {
+              console.debug("[Dashboard] scout profiles result", {
+                error: profilesError,
+                rows: profiles?.length ?? 0,
+                scoutIds,
+              });
+            }
+
+            if (profiles) {
+              profiles.forEach((p) => {
+                scoutNames[p.user_id] = p.full_name || "Scout";
+              });
+            }
+          }
+
           const reports = recentReportsResult.data.map((r: any) => ({
             id: r.id,
-            player_name: r.players?.full_name || "N/A",
-            competition_name: r.competitions?.name || "N/A",
+            player_name: r.players?.full_name || "Atleta desconhecido",
+            competition_name: r.competitions?.name || "—",
             match_date: r.match_date,
-            scout_name: r.profiles?.full_name || "N/A",
+            scout_name: scoutNames[r.scout_id] || "—",
             rating: r.rating,
             final_score: r.final_score,
           }));
+
           setRecentReports(reports);
         }
 
@@ -244,7 +291,7 @@ const Dashboard = () => {
                         borderRadius: "8px",
                         padding: "8px 12px"
                       }}
-                      formatter={(value: number, name: string) => [
+                      formatter={(value: number) => [
                         <span key="value" style={{ color: "#ffffff", fontWeight: 600, fontSize: "14px" }}>
                           {value} {value === 1 ? "jogador" : "jogadores"}
                         </span>,
