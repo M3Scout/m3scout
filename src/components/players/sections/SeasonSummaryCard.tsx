@@ -1,12 +1,28 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { BarChart3, Target, Clock, Trophy, Users, Loader2 } from "lucide-react";
+import { 
+  BarChart3, 
+  Target, 
+  Clock, 
+  Trophy, 
+  Users, 
+  Loader2,
+  Shield,
+  Crosshair,
+  Sparkles,
+  Hand,
+  Goal,
+  ArrowRightLeft,
+  Footprints,
+  Swords
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatFixed } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 
 interface SeasonSummaryCardProps {
   playerId: string;
+  playerPosition?: string;
 }
 
 interface SeasonStats {
@@ -14,20 +30,94 @@ interface SeasonStats {
   minutes: number;
   goals: number;
   assists: number;
+  chances_created: number;
+  key_passes: number;
+  tackles: number;
+  interceptions: number;
+  accurate_passes: number;
+  total_passes: number;
+  clearances: number;
+  duels_won: number;
+  total_duels: number;
+  recoveries: number;
+  saves: number;
+  goals_conceded: number;
+  clean_sheets: number;
+  aerial_duels_won: number;
 }
 
 const currentYear = new Date().getFullYear();
 
+// Position category mapping
+type PositionCategory = "ATA" | "MEIA" | "VOLANTE" | "LATERAL" | "ZAGUEIRO" | "GK";
+
+function getPositionCategory(position: string): PositionCategory {
+  const pos = position.toLowerCase().trim();
+  
+  // Goalkeeper
+  if (pos.includes("goleiro") || pos === "gk" || pos === "goalkeeper") {
+    return "GK";
+  }
+  
+  // Center Back
+  if (pos.includes("zagueiro") || pos === "cb" || pos.includes("central defender")) {
+    return "ZAGUEIRO";
+  }
+  
+  // Fullback/Wingback
+  if (pos.includes("lateral") || pos.includes("ala") || pos === "lb" || pos === "rb" || pos.includes("wingback")) {
+    return "LATERAL";
+  }
+  
+  // Defensive Midfielder
+  if (pos.includes("volante") || pos === "cdm" || pos === "dm" || pos.includes("defensive mid")) {
+    return "VOLANTE";
+  }
+  
+  // Attacking positions (forward, winger)
+  if (
+    pos.includes("atacante") || 
+    pos.includes("ponta") || 
+    pos.includes("centroavante") ||
+    pos === "st" || 
+    pos === "cf" || 
+    pos === "lw" || 
+    pos === "rw" ||
+    pos.includes("forward") ||
+    pos.includes("striker") ||
+    pos.includes("winger")
+  ) {
+    return "ATA";
+  }
+  
+  // Midfielder (default for meia, meia atacante, etc)
+  if (
+    pos.includes("meia") || 
+    pos === "cam" || 
+    pos === "cm" || 
+    pos === "am" ||
+    pos.includes("midfielder")
+  ) {
+    return "MEIA";
+  }
+  
+  // Default to attacking if unclear
+  return "ATA";
+}
+
+// Metric variant types
+type MetricVariant = "default" | "goals" | "assists" | "contribution" | "defensive" | "gk" | "negative";
+
 // Metric card component for main stats
 interface MetricCardProps {
-  value: number;
+  value: number | string;
   label: string;
   icon: React.ElementType;
-  variant?: "default" | "goals" | "assists" | "contribution";
+  variant?: MetricVariant;
 }
 
 function MetricCard({ value, label, icon: Icon, variant = "default" }: MetricCardProps) {
-  const variantStyles = {
+  const variantStyles: Record<MetricVariant, { bg: string; text: string; iconBg: string; iconColor: string }> = {
     default: {
       bg: "bg-card/50",
       text: "text-foreground",
@@ -51,6 +141,24 @@ function MetricCard({ value, label, icon: Icon, variant = "default" }: MetricCar
       text: "text-emerald-400",
       iconBg: "bg-emerald-500/15",
       iconColor: "text-emerald-400",
+    },
+    defensive: {
+      bg: "bg-gradient-to-br from-cyan-500/10 to-cyan-600/5 border-cyan-500/20",
+      text: "text-cyan-400",
+      iconBg: "bg-cyan-500/15",
+      iconColor: "text-cyan-400",
+    },
+    gk: {
+      bg: "bg-gradient-to-br from-amber-500/10 to-amber-600/5 border-amber-500/20",
+      text: "text-amber-400",
+      iconBg: "bg-amber-500/15",
+      iconColor: "text-amber-400",
+    },
+    negative: {
+      bg: "bg-gradient-to-br from-rose-500/10 to-rose-600/5 border-rose-500/20",
+      text: "text-rose-400",
+      iconBg: "bg-rose-500/15",
+      iconColor: "text-rose-400",
     },
   };
 
@@ -95,15 +203,136 @@ function DerivedMetric({ value, label }: DerivedMetricProps) {
   );
 }
 
-export function SeasonSummaryCard({ playerId }: SeasonSummaryCardProps) {
+// Position-specific metrics configuration
+interface PositionMetric {
+  key: keyof SeasonStats | "goal_participation" | "pass_accuracy" | "duel_success";
+  label: string;
+  icon: React.ElementType;
+  variant: MetricVariant;
+  compute?: (stats: SeasonStats) => number | string;
+}
+
+function getPositionMetrics(category: PositionCategory): PositionMetric[] {
+  switch (category) {
+    case "ATA":
+      return [
+        { key: "goals", label: "Gols", icon: Target, variant: "goals" },
+        { key: "assists", label: "Assistências", icon: Trophy, variant: "assists" },
+        { key: "goal_participation", label: "G+A", icon: BarChart3, variant: "contribution", compute: (s) => s.goals + s.assists },
+      ];
+    
+    case "MEIA":
+      return [
+        { key: "assists", label: "Assistências", icon: Trophy, variant: "assists" },
+        { key: "chances_created", label: "Chances Criadas", icon: Sparkles, variant: "contribution" },
+        { key: "key_passes", label: "Passes Decisivos", icon: ArrowRightLeft, variant: "defensive" },
+      ];
+    
+    case "VOLANTE":
+      return [
+        { key: "tackles", label: "Desarmes", icon: Shield, variant: "defensive" },
+        { key: "interceptions", label: "Interceptações", icon: Crosshair, variant: "defensive" },
+        { key: "pass_accuracy", label: "Passes Certos %", icon: Target, variant: "contribution", 
+          compute: (s) => s.total_passes > 0 ? `${formatFixed((s.accurate_passes / s.total_passes) * 100, 0, "0")}%` : "0%" },
+      ];
+    
+    case "LATERAL":
+      return [
+        { key: "assists", label: "Assistências", icon: Trophy, variant: "assists" },
+        { key: "recoveries", label: "Recuperações", icon: Footprints, variant: "defensive" },
+        { key: "duel_success", label: "Duelos Ganhos", icon: Swords, variant: "contribution",
+          compute: (s) => s.duels_won },
+      ];
+    
+    case "ZAGUEIRO":
+      return [
+        { key: "clearances", label: "Cortes", icon: Shield, variant: "defensive" },
+        { key: "tackles", label: "Desarmes", icon: Crosshair, variant: "defensive" },
+        { key: "interceptions", label: "Interceptações", icon: Target, variant: "contribution" },
+      ];
+    
+    case "GK":
+      return [
+        { key: "saves", label: "Defesas", icon: Hand, variant: "gk" },
+        { key: "goals_conceded", label: "Gols Sofridos", icon: Goal, variant: "negative" },
+        { key: "clean_sheets", label: "Clean Sheets", icon: Shield, variant: "contribution" },
+      ];
+    
+    default:
+      return [
+        { key: "goals", label: "Gols", icon: Target, variant: "goals" },
+        { key: "assists", label: "Assistências", icon: Trophy, variant: "assists" },
+        { key: "goal_participation", label: "G+A", icon: BarChart3, variant: "contribution", compute: (s) => s.goals + s.assists },
+      ];
+  }
+}
+
+// Get derived metrics based on position
+function getDerivedMetrics(category: PositionCategory, stats: SeasonStats): { value: string; label: string }[] {
+  const matches = stats.matches || 1;
+  
+  switch (category) {
+    case "ATA":
+      return [
+        { value: formatFixed(stats.goals / matches, 2, "0.00"), label: "gols/jogo" },
+        { value: formatFixed((stats.goals + stats.assists) / matches, 2, "0.00"), label: "G+A/jogo" },
+      ];
+    
+    case "MEIA":
+      return [
+        { value: formatFixed(stats.assists / matches, 2, "0.00"), label: "assists/jogo" },
+        { value: formatFixed(stats.chances_created / matches, 2, "0.00"), label: "chances/jogo" },
+      ];
+    
+    case "VOLANTE":
+      return [
+        { value: formatFixed((stats.tackles + stats.interceptions) / matches, 2, "0.00"), label: "ações def./jogo" },
+        { value: formatFixed(stats.recoveries / matches, 2, "0.00"), label: "recup./jogo" },
+      ];
+    
+    case "LATERAL":
+      return [
+        { value: formatFixed(stats.duels_won / matches, 2, "0.00"), label: "duelos/jogo" },
+        { value: formatFixed(stats.recoveries / matches, 2, "0.00"), label: "recup./jogo" },
+      ];
+    
+    case "ZAGUEIRO":
+      return [
+        { value: formatFixed((stats.clearances + stats.tackles) / matches, 2, "0.00"), label: "ações def./jogo" },
+        { value: formatFixed(stats.aerial_duels_won / matches, 2, "0.00"), label: "duelos aéreos/jogo" },
+      ];
+    
+    case "GK":
+      return [
+        { value: formatFixed(stats.saves / matches, 2, "0.00"), label: "defesas/jogo" },
+        { value: formatFixed(stats.goals_conceded / matches, 2, "0.00"), label: "gols sofridos/jogo" },
+      ];
+    
+    default:
+      return [
+        { value: formatFixed(stats.goals / matches, 2, "0.00"), label: "gols/jogo" },
+        { value: formatFixed((stats.goals + stats.assists) / matches, 2, "0.00"), label: "G+A/jogo" },
+      ];
+  }
+}
+
+export function SeasonSummaryCard({ playerId, playerPosition = "" }: SeasonSummaryCardProps) {
   const [stats, setStats] = useState<SeasonStats | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const positionCategory = getPositionCategory(playerPosition);
 
   useEffect(() => {
     const fetchStats = async () => {
       const { data } = await supabase
         .from("player_stats")
-        .select("matches, minutes, goals, assists")
+        .select(`
+          matches, minutes, goals, assists,
+          chances_created, key_passes, tackles, interceptions,
+          accurate_passes, total_passes, clearances,
+          duels_won, total_duels, recoveries,
+          saves, goals_conceded, clean_sheets, aerial_duels_won
+        `)
         .eq("player_id", playerId)
         .eq("season_year", currentYear);
 
@@ -114,8 +343,28 @@ export function SeasonSummaryCard({ playerId }: SeasonSummaryCardProps) {
             minutes: acc.minutes + (s.minutes || 0),
             goals: acc.goals + (s.goals || 0),
             assists: acc.assists + (s.assists || 0),
+            chances_created: acc.chances_created + (s.chances_created || 0),
+            key_passes: acc.key_passes + (s.key_passes || 0),
+            tackles: acc.tackles + (s.tackles || 0),
+            interceptions: acc.interceptions + (s.interceptions || 0),
+            accurate_passes: acc.accurate_passes + (s.accurate_passes || 0),
+            total_passes: acc.total_passes + (s.total_passes || 0),
+            clearances: acc.clearances + (s.clearances || 0),
+            duels_won: acc.duels_won + (s.duels_won || 0),
+            total_duels: acc.total_duels + (s.total_duels || 0),
+            recoveries: acc.recoveries + (s.recoveries || 0),
+            saves: acc.saves + (s.saves || 0),
+            goals_conceded: acc.goals_conceded + (s.goals_conceded || 0),
+            clean_sheets: acc.clean_sheets + (s.clean_sheets || 0),
+            aerial_duels_won: acc.aerial_duels_won + (s.aerial_duels_won || 0),
           }),
-          { matches: 0, minutes: 0, goals: 0, assists: 0 }
+          {
+            matches: 0, minutes: 0, goals: 0, assists: 0,
+            chances_created: 0, key_passes: 0, tackles: 0, interceptions: 0,
+            accurate_passes: 0, total_passes: 0, clearances: 0,
+            duels_won: 0, total_duels: 0, recoveries: 0,
+            saves: 0, goals_conceded: 0, clean_sheets: 0, aerial_duels_won: 0,
+          }
         );
         setStats(aggregated);
       }
@@ -158,13 +407,8 @@ export function SeasonSummaryCard({ playerId }: SeasonSummaryCardProps) {
     );
   }
 
-  const goalParticipation = stats.goals + stats.assists;
-  const goalsPerMatch = stats.matches > 0 
-    ? formatFixed(stats.goals / stats.matches, 2, "0.00") 
-    : "0.00";
-  const participationPerMatch = stats.matches > 0 
-    ? formatFixed(goalParticipation / stats.matches, 2, "0.00") 
-    : "0.00";
+  const positionMetrics = getPositionMetrics(positionCategory);
+  const derivedMetrics = getDerivedMetrics(positionCategory, stats);
 
   return (
     <Card className="border-border/50 overflow-hidden">
@@ -180,8 +424,9 @@ export function SeasonSummaryCard({ playerId }: SeasonSummaryCardProps) {
           </div>
         </div>
 
-        {/* Main Metrics Grid */}
+        {/* Main Metrics Grid - Base + Position-specific */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-4">
+          {/* Base metrics - always shown */}
           <MetricCard
             value={stats.matches}
             label="Jogos"
@@ -194,30 +439,30 @@ export function SeasonSummaryCard({ playerId }: SeasonSummaryCardProps) {
             icon={Clock}
             variant="default"
           />
-          <MetricCard
-            value={stats.goals}
-            label="Gols"
-            icon={Target}
-            variant="goals"
-          />
-          <MetricCard
-            value={stats.assists}
-            label="Assistências"
-            icon={Trophy}
-            variant="assists"
-          />
-          <MetricCard
-            value={goalParticipation}
-            label="G+A"
-            icon={BarChart3}
-            variant="contribution"
-          />
+          
+          {/* Position-specific metrics */}
+          {positionMetrics.map((metric) => {
+            const value = metric.compute 
+              ? metric.compute(stats) 
+              : stats[metric.key as keyof SeasonStats] ?? 0;
+            
+            return (
+              <MetricCard
+                key={metric.key}
+                value={value}
+                label={metric.label}
+                icon={metric.icon}
+                variant={metric.variant}
+              />
+            );
+          })}
         </div>
 
         {/* Derived Metrics */}
         <div className="flex flex-wrap gap-2 justify-center pt-2 border-t border-border/30">
-          <DerivedMetric value={goalsPerMatch} label="gols/jogo" />
-          <DerivedMetric value={participationPerMatch} label="G+A/jogo" />
+          {derivedMetrics.map((metric, index) => (
+            <DerivedMetric key={index} value={metric.value} label={metric.label} />
+          ))}
         </div>
       </CardContent>
     </Card>
