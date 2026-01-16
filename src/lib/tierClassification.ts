@@ -87,15 +87,15 @@ export function getTierColorClasses(tier: TierLevel | string): string {
     case 'S':
       return 'bg-amber-500/20 text-amber-400 border-amber-500/50';
     case 'A':
-      return 'bg-primary/20 text-primary border-primary/50';
-    case 'B':
       return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50';
+    case 'B':
+      return 'bg-blue-500/20 text-blue-400 border-blue-500/50';
     case 'C':
-      return 'bg-muted text-muted-foreground border-border';
+      return 'bg-zinc-500/20 text-zinc-400 border-zinc-500/50';
     case 'D':
-      return 'bg-destructive/20 text-destructive border-destructive/50';
+      return 'bg-red-500/20 text-red-400 border-red-500/50';
     default:
-      return 'bg-muted text-muted-foreground border-border';
+      return 'bg-zinc-500/20 text-zinc-400 border-zinc-500/50';
   }
 }
 
@@ -147,9 +147,9 @@ export const TIER_THRESHOLDS = {
 export function getTierThresholdsTooltip(): Array<{ tier: TierLevel; range: string; colorClass: string }> {
   return [
     { tier: 'S', range: '> 1.01', colorClass: 'text-amber-400' },
-    { tier: 'A', range: '0.97 – 1.01', colorClass: 'text-primary' },
-    { tier: 'B', range: '0.93 – 0.96', colorClass: 'text-emerald-400' },
-    { tier: 'C', range: '0.89 – 0.92', colorClass: 'text-muted-foreground' },
-    { tier: 'D', range: '< 0.89', colorClass: 'text-destructive' },
+    { tier: 'A', range: '0.97 – 1.01', colorClass: 'text-emerald-400' },
+    { tier: 'B', range: '0.93 – 0.96', colorClass: 'text-blue-400' },
+    { tier: 'C', range: '0.89 – 0.92', colorClass: 'text-zinc-400' },
+    { tier: 'D', range: '< 0.89', colorClass: 'text-red-400' },
   ];
 }
