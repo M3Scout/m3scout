@@ -15,7 +15,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { formatFixed } from "@/lib/formatters";
-import { getPositionColor, getShortPosition } from "@/lib/positionColors";
+import { getShortPosition } from "@/lib/positionColors";
 
 interface PlayerRowCardProps {
   id: string;
@@ -34,14 +34,14 @@ interface PlayerRowCardProps {
   isAdmin: boolean;
   onArchive: () => void;
   onDelete: () => void;
-  isFiltered?: boolean; // Whether this position is being filtered (false = dimmed)
+  isFiltered?: boolean;
 }
 
 // Trend indicator component
 const TrendIndicator = ({ trend }: { trend: number | null }) => {
   if (trend === null || trend === undefined) return null;
   
-  const threshold = 0.1; // Minimum change to show trend
+  const threshold = 0.1;
   
   if (Math.abs(trend) < threshold) {
     return (
@@ -66,7 +66,7 @@ const TrendIndicator = ({ trend }: { trend: number | null }) => {
   );
 };
 
-// Score Técnico colors (0-5 scale, higher is better)
+// Score colors (0-5 scale)
 const getScoreColor = (score: number): string => {
   if (score >= 4.5) return "text-emerald-400";
   if (score >= 4.0) return "text-green-400";
@@ -85,7 +85,7 @@ const getScoreBgColor = (score: number): string => {
   return "bg-red-500/20 border-red-500/30";
 };
 
-// Nota Global colors (0-100 scale, higher is better)
+// Global rating colors (0-100 scale)
 const getGlobalRatingColor = (rating: number): string => {
   if (rating >= 85) return "text-emerald-400";
   if (rating >= 75) return "text-green-400";
@@ -95,13 +95,12 @@ const getGlobalRatingColor = (rating: number): string => {
   return "text-red-400";
 };
 
-// Position Badge Component
+// Simple Position Badge - No colors, just neutral styling
 const PositionBadge = ({ position }: { position: string | null }) => {
-  const colors = getPositionColor(position);
   const shortPos = getShortPosition(position);
   
   return (
-    <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-1 rounded border ${colors.bgClass} ${colors.textClass} ${colors.borderClass}`}>
+    <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-1 rounded border bg-zinc-800 text-zinc-400 border-zinc-700">
       {shortPos}
     </span>
   );
@@ -127,10 +126,8 @@ export function PlayerRowCard({
   isFiltered,
 }: PlayerRowCardProps) {
   const navigate = useNavigate();
-  const positionColors = getPositionColor(position);
 
   const handleRowClick = (e: React.MouseEvent) => {
-    // Prevent navigation if clicking on dropdown
     if ((e.target as HTMLElement).closest('[data-dropdown-trigger]')) {
       return;
     }
@@ -142,20 +139,15 @@ export function PlayerRowCard({
   return (
     <div
       onClick={handleRowClick}
-      className={`group relative flex items-center gap-4 p-4 bg-zinc-950 border border-zinc-900 hover:border-zinc-700 hover:bg-zinc-900/50 transition-all cursor-pointer rounded-lg overflow-hidden ${isFiltered === false ? 'opacity-40' : ''}`}
+      className={`group flex items-center gap-3 p-3 bg-zinc-950 border border-zinc-900 hover:border-zinc-700 hover:bg-zinc-900/50 transition-all cursor-pointer rounded-lg ${isFiltered === false ? 'opacity-40' : ''}`}
     >
-      {/* Position Color Bar - Left accent */}
-      <div className={`absolute left-0 top-0 bottom-0 w-1 ${positionColors.accentClass} opacity-60 group-hover:opacity-100 transition-opacity`} />
-
-      {/* Player Photo */}
-      <div className="relative w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border-2 border-zinc-800 group-hover:border-zinc-700 transition-colors ml-2">
+      {/* Player Photo - Compact */}
+      <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 border border-zinc-800">
         <img
           src={photoUrl || defaultPhoto}
           alt={fullName}
           className="w-full h-full object-cover"
         />
-        {/* Position dot indicator on photo */}
-        <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full ${positionColors.accentClass} border-2 border-zinc-950`} />
       </div>
 
       {/* Main Info */}
@@ -328,7 +320,6 @@ export function PlayerMobileCard({
   isFiltered,
 }: PlayerRowCardProps) {
   const navigate = useNavigate();
-  const positionColors = getPositionColor(position);
 
   const handleCardClick = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('[data-dropdown-trigger]')) {
@@ -342,28 +333,23 @@ export function PlayerMobileCard({
   return (
     <div
       onClick={handleCardClick}
-      className={`relative bg-zinc-950 border border-zinc-900 rounded-lg overflow-hidden cursor-pointer active:scale-[0.99] transition-transform ${isFiltered === false ? 'opacity-40' : ''}`}
+      className={`bg-zinc-950 border border-zinc-900 rounded-lg overflow-hidden cursor-pointer active:scale-[0.99] transition-transform ${isFiltered === false ? 'opacity-40' : ''}`}
     >
-      {/* Position Color Underline */}
-      <div className={`absolute bottom-0 left-0 right-0 h-0.5 ${positionColors.accentClass} opacity-70`} />
-      
       {/* Header with photo and main info */}
-      <div className="flex items-center gap-3 p-4">
-        <div className="relative w-14 h-14 rounded-full overflow-hidden flex-shrink-0 border-2 border-zinc-800">
+      <div className="flex items-center gap-3 p-3">
+        <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border border-zinc-800">
           <img
             src={photoUrl || defaultPhoto}
             alt={fullName}
             className="w-full h-full object-cover"
           />
-          {/* Position dot indicator */}
-          <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full ${positionColors.accentClass} border-2 border-zinc-950`} />
         </div>
 
         <div className="flex-1 min-w-0">
-          <h3 className="text-white font-semibold text-base truncate">{fullName}</h3>
+          <h3 className="text-white font-semibold text-sm truncate">{fullName}</h3>
           <div className="flex items-center gap-2 text-xs text-zinc-500">
-            {/* Position Badge - Colored */}
-            <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider border ${positionColors.bgClass} ${positionColors.textClass} ${positionColors.borderClass}`}>
+            {/* Position Badge - Neutral */}
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider border bg-zinc-800 text-zinc-400 border-zinc-700">
               {getShortPosition(position)}
             </span>
             {age && <span>{age} anos</span>}
