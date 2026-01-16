@@ -25,10 +25,13 @@ import {
 } from "@/components/ui/tooltip";
 
 type TrendDirection = "up" | "down" | "stable" | "new";
+type InsightType = "rising" | "alert" | "market" | "profile" | "competition" | "balance" | "neutral";
+type InsightPriority = 1 | 2 | 3 | 4 | 5; // 1 = highest priority
 
 interface Insight {
   id: string;
-  type: "rising" | "alert" | "market" | "profile" | "competition" | "balance";
+  type: InsightType;
+  priority: InsightPriority;
   icon: React.ElementType;
   title: string;
   description: string;
@@ -81,6 +84,94 @@ const insightConfig = {
     bgClass: "bg-rose-500/10",
     borderClass: "border-rose-500/20 hover:border-rose-500/40",
   },
+  neutral: {
+    icon: Lightbulb,
+    colorClass: "text-zinc-400",
+    bgClass: "bg-zinc-500/5",
+    borderClass: "border-zinc-700/30 hover:border-zinc-600/50",
+  },
+};
+
+// Fallback insights when we don't have enough real data
+const getFallbackInsights = (
+  existingCount: number,
+  stats: { avgAge?: number; positionBalance?: boolean; hasAlerts?: boolean }
+): Insight[] => {
+  const fallbacks: Insight[] = [];
+
+  if (!stats.hasAlerts) {
+    fallbacks.push({
+      id: "fallback-no-alerts",
+      type: "neutral",
+      priority: 5,
+      ...insightConfig.neutral,
+      title: "Nenhum atleta em alerta",
+      description: "Todos os atletas estão com performance estável.",
+      tooltip: "Não há atletas com queda significativa de desempenho ou em situação crítica no momento.",
+      link: "/app/players",
+    });
+  }
+
+  if (stats.avgAge && stats.avgAge < 22) {
+    fallbacks.push({
+      id: "fallback-young-base",
+      type: "neutral",
+      priority: 5,
+      ...insightConfig.neutral,
+      icon: TrendingUp,
+      colorClass: "text-blue-400",
+      bgClass: "bg-blue-500/5",
+      borderClass: "border-blue-500/20 hover:border-blue-500/30",
+      title: "Base jovem promissora",
+      description: `Média de idade de ${stats.avgAge.toFixed(0)} anos no elenco.`,
+      tooltip: "A média de idade dos atletas indica um portfólio com alto potencial de valorização a longo prazo.",
+      link: "/app/players",
+    });
+  }
+
+  if (stats.positionBalance) {
+    fallbacks.push({
+      id: "fallback-balanced",
+      type: "neutral",
+      priority: 5,
+      ...insightConfig.neutral,
+      icon: PieChart,
+      colorClass: "text-emerald-400",
+      bgClass: "bg-emerald-500/5",
+      borderClass: "border-emerald-500/20 hover:border-emerald-500/30",
+      title: "Elenco bem distribuído",
+      description: "Posições equilibradas no portfólio.",
+      tooltip: "A distribuição de posições está equilibrada, reduzindo riscos de concentração em áreas específicas.",
+      link: "/app/players",
+    });
+  }
+
+  // Generic fallbacks
+  fallbacks.push({
+    id: "fallback-explore",
+    type: "neutral",
+    priority: 5,
+    ...insightConfig.neutral,
+    icon: Brain,
+    title: "Explore o portfólio",
+    description: "Analise atletas e crie relatórios.",
+    tooltip: "Acesse a lista completa de atletas para análises detalhadas e criação de novos relatórios de scouting.",
+    link: "/app/players",
+  });
+
+  fallbacks.push({
+    id: "fallback-reports",
+    type: "neutral",
+    priority: 5,
+    ...insightConfig.neutral,
+    icon: Trophy,
+    title: "Acompanhe competições",
+    description: "Veja as competições mais utilizadas.",
+    tooltip: "Monitore quais competições estão gerando os melhores relatórios e insights sobre atletas.",
+    link: "/app/competitions",
+  });
+
+  return fallbacks;
 };
 
 const TrendBadge = ({ trend }: { trend: Insight["trend"] }) => {
@@ -219,7 +310,24 @@ export const InsightsCard = () => {
           };
         };
 
-        // 1. 🔥 Player Rising - Best performing player with trend
+        // Calculate stats for fallback insights
+        const avgAge = players.length > 0 
+          ? players.filter(p => p.age).reduce((sum, p) => sum + (p.age || 0), 0) / players.filter(p => p.age).length
+          : 0;
+
+        const positionCounts: Record<string, number> = {};
+        players.forEach(p => {
+          positionCounts[p.position] = (positionCounts[p.position] || 0) + 1;
+        });
+        const sortedPositions = Object.entries(positionCounts).sort((a, b) => b[1] - a[1]);
+        const topPosition = sortedPositions[0];
+        const concentration = players.length > 0 && topPosition ? (topPosition[1] / players.length) * 100 : 0;
+        const isBalanced = concentration <= 30;
+
+        const lowRatedPlayers = players.filter(p => p.auto_rating && p.auto_rating < 3.0);
+        const hasAlerts = lowRatedPlayers.length > 0;
+
+        // 1. 🔥 Player Rising - Best performing player with trend (Priority 2)
         if (players.length > 0) {
           const topPlayer = players[0];
           if (topPlayer.auto_rating && topPlayer.auto_rating >= 4.0) {
@@ -227,6 +335,7 @@ export const InsightsCard = () => {
             generatedInsights.push({
               id: "rising-1",
               type: "rising",
+              priority: 2,
               ...insightConfig.rising,
               title: `${topPlayer.full_name.split(' ')[0]} está em alta`,
               description: `Nota ${topPlayer.auto_rating.toFixed(1)} — melhor do portfólio atual.`,
@@ -237,14 +346,14 @@ export const InsightsCard = () => {
           }
         }
 
-        // 2. ⚠️ Player Alert - Players with low ratings
-        const lowRatedPlayers = players.filter(p => p.auto_rating && p.auto_rating < 3.0);
-        if (lowRatedPlayers.length > 0) {
+        // 2. ⚠️ Player Alert - Players with low ratings (Priority 1 - highest)
+        if (hasAlerts) {
           const alertPlayer = lowRatedPlayers[0];
           const trend = calculatePlayerTrend(alertPlayer.id);
           generatedInsights.push({
             id: "alert-1",
             type: "alert",
+            priority: 1,
             ...insightConfig.alert,
             title: `${alertPlayer.full_name.split(' ')[0]} precisa de atenção`,
             description: `Nota ${alertPlayer.auto_rating?.toFixed(1)} — abaixo do esperado.`,
@@ -254,7 +363,7 @@ export const InsightsCard = () => {
           });
         }
 
-        // 3. 📈 Market Potential - Young players with good ratings
+        // 3. 📈 Market Potential - Young players with good ratings (Priority 3)
         const youngTalents = players.filter(p => 
           p.age && p.age <= 23 && p.auto_rating && p.auto_rating >= 3.5
         );
@@ -264,6 +373,7 @@ export const InsightsCard = () => {
           generatedInsights.push({
             id: "market-1",
             type: "market",
+            priority: 3,
             ...insightConfig.market,
             title: `${talent.full_name.split(' ')[0]} tem potencial de mercado`,
             description: `${talent.age} anos + nota ${talent.auto_rating?.toFixed(1)} = valorização.`,
@@ -273,9 +383,8 @@ export const InsightsCard = () => {
           });
         }
 
-        // 4. 🧠 Profile Highlight - Player excelling in specific area
+        // 4. 🧠 Profile Highlight - Player excelling in specific area (Priority 3)
         if (stats.length > 0 && players.length > 0) {
-          // Find player with most goals
           const playerGoals: Record<string, number> = {};
           stats.forEach(s => {
             playerGoals[s.player_id] = (playerGoals[s.player_id] || 0) + (s.goals || 0);
@@ -290,6 +399,7 @@ export const InsightsCard = () => {
               generatedInsights.push({
                 id: "profile-1",
                 type: "profile",
+                priority: 3,
                 ...insightConfig.profile,
                 title: `${topScorer.full_name.split(' ')[0]} lidera em gols`,
                 description: `${topScorerId[1]} gols no período — destaque ofensivo.`,
@@ -300,7 +410,7 @@ export const InsightsCard = () => {
           }
         }
 
-        // 5. 🏆 Strategic Competition - Most used competition with trend
+        // 5. 🏆 Strategic Competition - Most used competition (Priority 4)
         if (reports.length > 0) {
           const compCounts: Record<string, { count: number; totalScore: number; name: string }> = {};
           reports.forEach((r: any) => {
@@ -322,6 +432,7 @@ export const InsightsCard = () => {
             generatedInsights.push({
               id: "competition-1",
               type: "competition",
+              priority: 4,
               ...insightConfig.competition,
               title: `${topComp.name.split(' ').slice(0, 3).join(' ')} é estratégica`,
               description: `${topComp.count} relatórios — média ${topComp.avgScore.toFixed(1)}.`,
@@ -332,34 +443,44 @@ export const InsightsCard = () => {
           }
         }
 
-        // 6. 📊 Unbalanced Portfolio - Position concentration
-        if (players.length >= 5) {
-          const positionCounts: Record<string, number> = {};
-          players.forEach(p => {
-            positionCounts[p.position] = (positionCounts[p.position] || 0) + 1;
+        // 6. 📊 Unbalanced Portfolio - Position concentration (Priority 4)
+        if (players.length >= 5 && !isBalanced && topPosition[1] >= 3) {
+          generatedInsights.push({
+            id: "balance-1",
+            type: "balance",
+            priority: 4,
+            ...insightConfig.balance,
+            title: `Portfólio concentrado`,
+            description: `${topPosition[1]} atletas são ${topPosition[0]}s (${concentration.toFixed(0)}%).`,
+            tooltip: `O portfólio tem ${concentration.toFixed(0)}% de concentração na posição ${topPosition[0]}. Considere diversificar para reduzir riscos.`,
+            link: `/app/players`,
+          });
+        }
+
+        // Sort by priority and take top insights
+        generatedInsights.sort((a, b) => a.priority - b.priority);
+
+        // If we have less than 5 insights, add fallbacks
+        const TARGET_INSIGHTS = 5;
+        if (generatedInsights.length < TARGET_INSIGHTS) {
+          const fallbacks = getFallbackInsights(generatedInsights.length, {
+            avgAge: avgAge || undefined,
+            positionBalance: isBalanced,
+            hasAlerts,
           });
 
-          const sortedPositions = Object.entries(positionCounts)
-            .sort((a, b) => b[1] - a[1]);
-
-          const topPosition = sortedPositions[0];
-          const concentration = (topPosition[1] / players.length) * 100;
-
-          if (concentration > 30 && topPosition[1] >= 3) {
-            generatedInsights.push({
-              id: "balance-1",
-              type: "balance",
-              ...insightConfig.balance,
-              title: `Portfólio concentrado`,
-              description: `${topPosition[1]} atletas são ${topPosition[0]}s (${concentration.toFixed(0)}%).`,
-              tooltip: `O portfólio tem ${concentration.toFixed(0)}% de concentração na posição ${topPosition[0]}. Considere diversificar para reduzir riscos.`,
-              link: `/app/players`,
-            });
+          // Add fallbacks until we reach 5
+          for (const fallback of fallbacks) {
+            if (generatedInsights.length >= TARGET_INSIGHTS) break;
+            // Don't add duplicate types
+            if (!generatedInsights.some(i => i.id === fallback.id)) {
+              generatedInsights.push(fallback);
+            }
           }
         }
 
-        // Limit to 5 insights max
-        setInsights(generatedInsights.slice(0, 5));
+        // Always set exactly 5 insights
+        setInsights(generatedInsights.slice(0, TARGET_INSIGHTS));
       } catch (error) {
         console.error("Error generating insights:", error);
       } finally {
@@ -388,9 +509,9 @@ export const InsightsCard = () => {
             </div>
           </div>
         </div>
-        <div className="p-4 space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-16 bg-zinc-800/30 rounded-lg animate-pulse" />
+        <div className="p-3 space-y-2">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="h-[52px] bg-zinc-800/30 rounded-lg animate-pulse" />
           ))}
         </div>
       </motion.div>
@@ -417,62 +538,52 @@ export const InsightsCard = () => {
         </div>
       </div>
 
-      {/* Content */}
+      {/* Content - Always exactly 5 insights */}
       <div className="p-3">
-        {insights.length > 0 ? (
-          <TooltipProvider delayDuration={300}>
-            <div className="space-y-2">
-              {insights.map((insight, index) => {
-                const Icon = insight.icon;
-                return (
-                  <Tooltip key={insight.id}>
-                    <TooltipTrigger asChild>
-                      <Link
-                        to={insight.link}
-                        className={`group flex items-start gap-3 p-3 rounded-lg border transition-all duration-200 hover:scale-[1.01] ${insight.bgClass} ${insight.borderClass}`}
-                      >
-                        {/* Icon */}
-                        <div className={`w-8 h-8 rounded-lg bg-zinc-900/50 flex items-center justify-center shrink-0 ${insight.colorClass}`}>
-                          <Icon className="w-4 h-4" />
-                        </div>
-
-                        {/* Content */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className={`text-sm font-medium ${insight.colorClass}`}>
-                              {insight.title}
-                            </p>
-                            {insight.trend && <TrendBadge trend={insight.trend} />}
-                          </div>
-                          <p className="text-[11px] text-zinc-400 mt-0.5 line-clamp-1">
-                            {insight.description}
-                          </p>
-                        </div>
-
-                        {/* Arrow */}
-                        <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 group-hover:translate-x-0.5 transition-all shrink-0 mt-1" />
-                      </Link>
-                    </TooltipTrigger>
-                    <TooltipContent 
-                      side="left" 
-                      className="max-w-xs bg-zinc-900 border-zinc-800 text-zinc-300 text-xs p-3"
+        <TooltipProvider delayDuration={300}>
+          <div className="space-y-2">
+            {insights.map((insight) => {
+              const Icon = insight.icon;
+              return (
+                <Tooltip key={insight.id}>
+                  <TooltipTrigger asChild>
+                    <Link
+                      to={insight.link}
+                      className={`group flex items-center gap-3 p-3 h-[52px] rounded-lg border transition-all duration-200 hover:scale-[1.01] ${insight.bgClass} ${insight.borderClass}`}
                     >
-                      {insight.tooltip}
-                    </TooltipContent>
-                  </Tooltip>
-                );
-              })}
-            </div>
-          </TooltipProvider>
-        ) : (
-          <div className="py-8 text-center">
-            <Lightbulb className="w-10 h-10 mx-auto mb-3 text-zinc-700" />
-            <p className="text-sm text-zinc-500">Sem insights relevantes no momento</p>
-            <p className="text-[11px] text-zinc-600 mt-1">
-              Adicione mais dados para gerar análises automáticas
-            </p>
+                      {/* Icon */}
+                      <div className={`w-8 h-8 rounded-lg bg-zinc-900/50 flex items-center justify-center shrink-0 ${insight.colorClass}`}>
+                        <Icon className="w-4 h-4" />
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className={`text-sm font-medium truncate ${insight.colorClass}`}>
+                            {insight.title}
+                          </p>
+                          {insight.trend && <TrendBadge trend={insight.trend} />}
+                        </div>
+                        <p className="text-[11px] text-zinc-400 mt-0.5 line-clamp-1">
+                          {insight.description}
+                        </p>
+                      </div>
+
+                      {/* Arrow */}
+                      <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 group-hover:translate-x-0.5 transition-all shrink-0" />
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent 
+                    side="left" 
+                    className="max-w-xs bg-zinc-900 border-zinc-800 text-zinc-300 text-xs p-3"
+                  >
+                    {insight.tooltip}
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
           </div>
-        )}
+        </TooltipProvider>
       </div>
     </motion.div>
   );
