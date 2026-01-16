@@ -1,29 +1,9 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowRight, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { safeArray, cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
-
-// Get position color with low opacity for premium look
-function getPositionStyle(position: string): { bg: string; text: string } {
-  const styles: Record<string, { bg: string; text: string }> = {
-    GK: { bg: "bg-amber-500/20", text: "text-amber-300" },
-    CB: { bg: "bg-blue-500/20", text: "text-blue-300" },
-    LB: { bg: "bg-sky-500/20", text: "text-sky-300" },
-    RB: { bg: "bg-sky-500/20", text: "text-sky-300" },
-    CDM: { bg: "bg-green-500/20", text: "text-green-300" },
-    CM: { bg: "bg-emerald-500/20", text: "text-emerald-300" },
-    CAM: { bg: "bg-teal-500/20", text: "text-teal-300" },
-    LM: { bg: "bg-cyan-500/20", text: "text-cyan-300" },
-    RM: { bg: "bg-cyan-500/20", text: "text-cyan-300" },
-    LW: { bg: "bg-purple-500/20", text: "text-purple-300" },
-    RW: { bg: "bg-purple-500/20", text: "text-purple-300" },
-    CF: { bg: "bg-rose-500/20", text: "text-rose-300" },
-    ST: { bg: "bg-red-500/20", text: "text-red-300" },
-  };
-  return styles[position] || { bg: "bg-white/10", text: "text-white/70" };
-}
+import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 
 // Position labels - compact
 const positionLabels: Record<string, string> = {
@@ -60,26 +40,21 @@ const containerVariants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.1,
+      staggerChildren: 0.08,
       delayChildren: 0.05,
     },
   },
 } as const;
 
 const cardVariants = {
-  hidden: { 
-    opacity: 0, 
-    y: 40,
-    scale: 0.95,
-  },
+  hidden: { opacity: 0, y: 30 },
   visible: { 
     opacity: 1, 
     y: 0,
-    scale: 1,
     transition: {
       type: "spring" as const,
-      stiffness: 120,
-      damping: 18,
+      stiffness: 100,
+      damping: 15,
     },
   },
 };
@@ -97,194 +72,170 @@ const headerVariants = {
   },
 };
 
-// Premium player card - clean and minimal
+// Premium player card
 function PlayerCard({ player }: { player: Player }) {
-  const positionStyle = getPositionStyle(player.position);
-  
   return (
-    <motion.div variants={cardVariants}>
-      <Link
-        to={`/players/${player.slug}`}
-        className="group block"
-      >
-        <article className="relative overflow-hidden rounded-2xl bg-zinc-900/60 backdrop-blur-sm transition-all duration-500 hover:shadow-2xl hover:shadow-white/5">
-          {/* Image Container */}
-          <div className="relative aspect-[3/4] overflow-hidden">
-            <img
-              src={player.photo_url || "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=400&h=600&fit=crop"}
-              alt={player.full_name}
-              loading="lazy"
-              className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-700 ease-out group-hover:scale-105"
-            />
-            
-            {/* Premium gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent opacity-90" />
-            
-            {/* Subtle hover glow */}
-            <div className="absolute inset-0 bg-gradient-to-t from-white/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            
-            {/* Position Badge - Refined, semi-transparent */}
-            <div className="absolute top-4 left-4">
-              <span className={cn(
-                "inline-flex items-center justify-center px-3 py-1.5 rounded-lg backdrop-blur-md border border-white/10 text-[11px] font-semibold uppercase tracking-wider",
-                positionStyle.bg,
-                positionStyle.text
-              )}>
-                {positionLabels[player.position] || player.position}
-              </span>
-            </div>
-            
-            {/* Player Info - Bottom */}
-            <div className="absolute bottom-0 left-0 right-0 p-5">
-              {/* Player Name - Primary element */}
-              <h3 className="text-white font-bold text-xl md:text-2xl tracking-wide mb-2 line-clamp-1 drop-shadow-lg">
-                {player.full_name}
-              </h3>
-              
-              {/* Secondary info - Discrete */}
-              <p className="text-white/60 text-sm font-medium tracking-wide">
-                {player.age ? `${player.age} anos` : "—"} · {player.nationality}
-              </p>
-              
-              {player.current_club && (
-                <p className="text-white/40 text-xs uppercase tracking-wider mt-1 line-clamp-1">
-                  {player.current_club}
-                </p>
-              )}
-            </div>
+    <Link
+      to={`/players/${player.slug}`}
+      className="group block flex-shrink-0 w-[280px] md:w-[320px] lg:w-[340px]"
+    >
+      <article className="relative overflow-hidden rounded-2xl bg-zinc-900/60 transition-all duration-500 hover:shadow-2xl hover:shadow-white/5">
+        {/* Image Container */}
+        <div className="relative aspect-[3/4] overflow-hidden">
+          <img
+            src={player.photo_url || "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=400&h=600&fit=crop"}
+            alt={player.full_name}
+            loading="lazy"
+            className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-700 ease-out group-hover:scale-105"
+          />
+          
+          {/* Premium gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+          
+          {/* Subtle hover glow */}
+          <div className="absolute inset-0 bg-gradient-to-t from-blue-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          
+          {/* Position Badge - Solid blue pill */}
+          <div className="absolute top-4 left-4">
+            <span className="inline-flex items-center justify-center px-3 py-1.5 rounded-full bg-blue-600 text-white text-[11px] font-bold uppercase tracking-wider shadow-lg">
+              {positionLabels[player.position] || player.position}
+            </span>
           </div>
-        </article>
-      </Link>
-    </motion.div>
+          
+          {/* Player Info - Bottom */}
+          <div className="absolute bottom-0 left-0 right-0 p-5">
+            {/* Player Name - Primary element */}
+            <h3 className="text-white font-bold text-xl md:text-2xl tracking-wide mb-2 line-clamp-1 drop-shadow-lg">
+              {player.full_name}
+            </h3>
+            
+            {/* Secondary info */}
+            <p className="text-white/60 text-sm font-medium tracking-wide">
+              {player.age ? `${player.age} anos` : "—"} · {player.nationality}
+            </p>
+            
+            {player.current_club && (
+              <p className="text-white/40 text-xs uppercase tracking-wider mt-1 line-clamp-1">
+                {player.current_club}
+              </p>
+            )}
+          </div>
+        </div>
+      </article>
+    </Link>
   );
 }
 
-// Mobile Carousel - Clean version
-function MobileCarousel({ players }: { players: Player[] }) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+// Drag carousel component
+function DragCarousel({ players }: { players: Player[] }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+  const [isDragging, setIsDragging] = useState(false);
   
-  const nextSlide = useCallback(() => {
-    setCurrentIndex((prev) => (prev + 1) % players.length);
-  }, [players.length]);
+  const x = useMotionValue(0);
+  const springX = useSpring(x, { stiffness: 300, damping: 30 });
   
-  const prevSlide = useCallback(() => {
-    setCurrentIndex((prev) => (prev - 1 + players.length) % players.length);
-  }, [players.length]);
+  const checkScrollPosition = () => {
+    if (!containerRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = containerRef.current;
+    setCanScrollLeft(scrollLeft > 10);
+    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
+  };
   
   useEffect(() => {
-    if (!isPaused && players.length > 1) {
-      intervalRef.current = setInterval(nextSlide, 5000);
-    }
+    const container = containerRef.current;
+    if (!container) return;
+    
+    checkScrollPosition();
+    container.addEventListener('scroll', checkScrollPosition);
+    window.addEventListener('resize', checkScrollPosition);
+    
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      container.removeEventListener('scroll', checkScrollPosition);
+      window.removeEventListener('resize', checkScrollPosition);
     };
-  }, [isPaused, nextSlide, players.length]);
+  }, [players]);
   
-  if (players.length === 0) return null;
+  const scroll = (direction: 'left' | 'right') => {
+    if (!containerRef.current) return;
+    const scrollAmount = 360;
+    containerRef.current.scrollBy({
+      left: direction === 'left' ? -scrollAmount : scrollAmount,
+      behavior: 'smooth'
+    });
+  };
   
-  const currentPlayer = players[currentIndex];
-  const positionStyle = getPositionStyle(currentPlayer.position);
+  const handleDragStart = () => {
+    setIsDragging(true);
+  };
+  
+  const handleDragEnd = () => {
+    setTimeout(() => setIsDragging(false), 100);
+  };
   
   return (
-    <div 
-      className="relative"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
-      onTouchStart={() => setIsPaused(true)}
-      onTouchEnd={() => setTimeout(() => setIsPaused(false), 3000)}
-    >
-      <div className="overflow-hidden rounded-2xl">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentIndex}
-            initial={{ opacity: 0, x: 60 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -60 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+    <div className="relative group/carousel">
+      {/* Scroll container */}
+      <div
+        ref={containerRef}
+        className="flex gap-5 overflow-x-auto scrollbar-hide scroll-smooth pb-4 -mx-6 px-6 lg:-mx-8 lg:px-8 cursor-grab active:cursor-grabbing"
+        style={{ scrollSnapType: 'x mandatory' }}
+        onMouseDown={handleDragStart}
+        onMouseUp={handleDragEnd}
+        onMouseLeave={handleDragEnd}
+      >
+        {players.map((player, index) => (
+          <motion.div 
+            key={player.id}
+            className="scroll-snap-align-start"
+            style={{ scrollSnapAlign: 'start' }}
+            variants={cardVariants}
+            onClick={(e) => {
+              if (isDragging) {
+                e.preventDefault();
+                e.stopPropagation();
+              }
+            }}
           >
-            <Link to={`/players/${currentPlayer.slug}`} className="group block">
-              <article className="relative overflow-hidden rounded-2xl bg-zinc-900/60 backdrop-blur-sm">
-                <div className="relative aspect-[3/4] overflow-hidden">
-                  <img
-                    src={currentPlayer.photo_url || "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=400&h=600&fit=crop"}
-                    alt={currentPlayer.full_name}
-                    className="absolute inset-0 w-full h-full object-cover object-top"
-                  />
-                  
-                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent opacity-90" />
-                  
-                  {/* Position Badge */}
-                  <div className="absolute top-5 left-5">
-                    <span className={cn(
-                      "inline-flex items-center justify-center px-4 py-2 rounded-xl backdrop-blur-md border border-white/10 text-xs font-semibold uppercase tracking-wider",
-                      positionStyle.bg,
-                      positionStyle.text
-                    )}>
-                      {positionLabels[currentPlayer.position] || currentPlayer.position}
-                    </span>
-                  </div>
-                  
-                  {/* Player Info */}
-                  <div className="absolute bottom-0 left-0 right-0 p-6">
-                    <h3 className="text-white font-bold text-2xl tracking-wide mb-2 drop-shadow-lg">
-                      {currentPlayer.full_name}
-                    </h3>
-                    <p className="text-white/60 text-base font-medium">
-                      {currentPlayer.age ? `${currentPlayer.age} anos` : "—"} · {currentPlayer.nationality}
-                    </p>
-                    {currentPlayer.current_club && (
-                      <p className="text-white/40 text-sm uppercase tracking-wider mt-1">
-                        {currentPlayer.current_club}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </article>
-            </Link>
+            <PlayerCard player={player} />
           </motion.div>
-        </AnimatePresence>
+        ))}
+        {/* Spacer for last card visibility */}
+        <div className="flex-shrink-0 w-4 md:w-8" />
       </div>
       
-      {/* Navigation - Minimal */}
-      {players.length > 1 && (
-        <>
-          <button
-            onClick={(e) => { e.preventDefault(); prevSlide(); }}
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white/60 hover:text-white hover:bg-black/60 transition-all"
-            aria-label="Previous"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <button
-            onClick={(e) => { e.preventDefault(); nextSlide(); }}
-            className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white/60 hover:text-white hover:bg-black/60 transition-all"
-            aria-label="Next"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-        </>
-      )}
+      {/* Fade edges */}
+      <div className={cn(
+        "absolute left-0 top-0 bottom-4 w-12 bg-gradient-to-r from-black to-transparent pointer-events-none transition-opacity duration-300",
+        canScrollLeft ? "opacity-100" : "opacity-0"
+      )} />
+      <div className={cn(
+        "absolute right-0 top-0 bottom-4 w-12 bg-gradient-to-l from-black to-transparent pointer-events-none transition-opacity duration-300",
+        canScrollRight ? "opacity-100" : "opacity-0"
+      )} />
       
-      {/* Dots - Refined */}
-      {players.length > 1 && (
-        <div className="flex justify-center gap-2 mt-5">
-          {players.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentIndex(index)}
-              className={cn(
-                "h-1.5 rounded-full transition-all duration-300",
-                index === currentIndex 
-                  ? "bg-white w-8" 
-                  : "bg-white/20 w-1.5 hover:bg-white/40"
-              )}
-              aria-label={`Go to slide ${index + 1}`}
-            />
-          ))}
-        </div>
-      )}
+      {/* Navigation arrows - Discrete, show on hover */}
+      <button
+        onClick={() => scroll('left')}
+        className={cn(
+          "absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white/70 hover:text-white hover:bg-black/80 transition-all duration-300 opacity-0 group-hover/carousel:opacity-100",
+          !canScrollLeft && "!opacity-0 pointer-events-none"
+        )}
+        aria-label="Scroll left"
+      >
+        <ChevronLeft className="w-5 h-5" />
+      </button>
+      <button
+        onClick={() => scroll('right')}
+        className={cn(
+          "absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white/70 hover:text-white hover:bg-black/80 transition-all duration-300 opacity-0 group-hover/carousel:opacity-100",
+          !canScrollRight && "!opacity-0 pointer-events-none"
+        )}
+        aria-label="Scroll right"
+      >
+        <ChevronRight className="w-5 h-5" />
+      </button>
     </div>
   );
 }
@@ -315,14 +266,13 @@ export function FeaturedPlayers() {
 
   useEffect(() => {
     const fetchPlayers = async () => {
-      // Fetch top-rated players (criteria is technical, but not exposed visually)
       const { data } = await supabase
         .from("players")
         .select("id, slug, full_name, position, age, nationality, current_club, photo_url, auto_rating")
         .eq("is_public", true)
         .not("auto_rating", "is", null)
         .order("auto_rating", { ascending: false })
-        .limit(6);
+        .limit(8);
 
       if (data) {
         setPlayers(data);
@@ -336,21 +286,21 @@ export function FeaturedPlayers() {
   return (
     <section 
       ref={sectionRef}
-      className="relative bg-black py-20 md:py-28 overflow-hidden"
+      className="relative bg-black py-16 md:py-24 overflow-hidden"
     >
       {/* Subtle background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-zinc-900/30 via-transparent to-zinc-900/20 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-b from-zinc-900/20 via-transparent to-zinc-900/20 pointer-events-none" />
       
-      <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
-        {/* Section Header - Clean */}
+      <div className="relative mx-auto max-w-7xl">
+        {/* Section Header */}
         <motion.div 
-          className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-14"
+          className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10 px-6 lg:px-8"
           initial="hidden"
           animate={isInView ? "visible" : "hidden"}
           variants={containerVariants}
         >
           <motion.div variants={headerVariants}>
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-white uppercase leading-none">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tight text-white uppercase leading-none">
               ATLETAS
             </h2>
           </motion.div>
@@ -366,9 +316,9 @@ export function FeaturedPlayers() {
           </motion.div>
         </motion.div>
 
-        {/* Players */}
+        {/* Players Carousel */}
         {loading ? (
-          <div className="flex items-center justify-center py-24">
+          <div className="flex items-center justify-center py-24 px-6">
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
@@ -377,27 +327,16 @@ export function FeaturedPlayers() {
             </motion.div>
           </div>
         ) : players.length > 0 ? (
-          <>
-            {/* Mobile: Carousel */}
-            <div className="md:hidden">
-              <MobileCarousel players={players} />
-            </div>
-            
-            {/* Desktop: Grid */}
-            <motion.div 
-              className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-6"
-              initial="hidden"
-              animate={isInView ? "visible" : "hidden"}
-              variants={containerVariants}
-            >
-              {safeArray(players).map((player) => (
-                <PlayerCard key={player.id} player={player} />
-              ))}
-            </motion.div>
-          </>
+          <motion.div
+            initial="hidden"
+            animate={isInView ? "visible" : "hidden"}
+            variants={containerVariants}
+          >
+            <DragCarousel players={players} />
+          </motion.div>
         ) : (
           <motion.div 
-            className="text-center py-24"
+            className="text-center py-24 px-6"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
