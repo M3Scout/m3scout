@@ -496,9 +496,9 @@ export const InsightsCard = () => {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="rounded-xl border border-zinc-800/50 bg-gradient-to-br from-zinc-900 to-zinc-950 overflow-hidden"
+        className="w-full h-full flex flex-col rounded-xl border border-zinc-800/50 bg-gradient-to-br from-zinc-900 to-zinc-950 overflow-hidden"
       >
-        <div className="px-5 py-4 border-b border-zinc-800/50 bg-zinc-900/50">
+        <div className="px-5 py-4 border-b border-zinc-800/50 bg-zinc-900/50 shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500/20 to-yellow-600/10 flex items-center justify-center">
               <Lightbulb className="w-4 h-4 text-amber-400" />
@@ -509,10 +509,12 @@ export const InsightsCard = () => {
             </div>
           </div>
         </div>
-        <div className="p-3 space-y-2">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-[52px] bg-zinc-800/30 rounded-lg animate-pulse" />
-          ))}
+        <div className="p-3 flex-1 flex flex-col">
+          <div className="flex flex-col justify-between h-full gap-2">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="flex-1 min-h-[52px] bg-zinc-800/30 rounded-lg animate-pulse" />
+            ))}
+          </div>
         </div>
       </motion.div>
     );
@@ -522,10 +524,10 @@ export const InsightsCard = () => {
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-xl border border-zinc-800/50 bg-gradient-to-br from-zinc-900 to-zinc-950 overflow-hidden"
+      className="w-full h-full flex flex-col rounded-xl border border-zinc-800/50 bg-gradient-to-br from-zinc-900 to-zinc-950 overflow-hidden"
     >
       {/* Header */}
-      <div className="px-5 py-4 border-b border-zinc-800/50 bg-zinc-900/50">
+      <div className="px-5 py-4 border-b border-zinc-800/50 bg-zinc-900/50 shrink-0">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500/20 to-yellow-600/10 flex items-center justify-center relative">
             <Lightbulb className="w-4 h-4 text-amber-400" />
@@ -538,10 +540,10 @@ export const InsightsCard = () => {
         </div>
       </div>
 
-      {/* Content - Always exactly 5 insights */}
-      <div className="p-3">
+      {/* Content - Always exactly 5 insights with flex-1 to fill height */}
+      <div className="p-3 flex-1 flex flex-col">
         <TooltipProvider delayDuration={300}>
-          <div className="space-y-2">
+          <div className="flex flex-col justify-between h-full gap-2">
             {insights.map((insight) => {
               const Icon = insight.icon;
               return (
@@ -549,7 +551,7 @@ export const InsightsCard = () => {
                   <TooltipTrigger asChild>
                     <Link
                       to={insight.link}
-                      className={`group flex items-center gap-3 p-3 h-[52px] rounded-lg border transition-all duration-200 hover:scale-[1.01] ${insight.bgClass} ${insight.borderClass}`}
+                      className={`group flex items-center gap-3 p-3 flex-1 min-h-[52px] rounded-lg border transition-all duration-200 hover:scale-[1.01] ${insight.bgClass} ${insight.borderClass}`}
                     >
                       {/* Icon */}
                       <div className={`w-8 h-8 rounded-lg bg-zinc-900/50 flex items-center justify-center shrink-0 ${insight.colorClass}`}>
