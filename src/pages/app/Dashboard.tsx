@@ -268,9 +268,9 @@ const Dashboard = () => {
           </div>
           <div className="admin-card-body">
             {positionData.length > 0 ? (
-              <div className="h-[180px]">
+              <div className="h-[200px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={positionData} layout="vertical" margin={{ left: 0, right: 8, top: 0, bottom: 0 }}>
+                  <BarChart data={positionData} layout="vertical" margin={{ left: 8, right: 16, top: 8, bottom: 8 }}>
                     <XAxis 
                       type="number" 
                       hide
@@ -278,11 +278,12 @@ const Dashboard = () => {
                     <YAxis 
                       type="category" 
                       dataKey="name" 
-                      stroke="#52525b" 
-                      fontSize={11}
-                      width={50}
+                      stroke="#71717a" 
+                      fontSize={12}
+                      width={100}
                       tickLine={false}
                       axisLine={false}
+                      tick={{ fill: '#a1a1aa' }}
                     />
                     <Tooltip 
                       contentStyle={{ 
