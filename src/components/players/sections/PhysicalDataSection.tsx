@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity, Scale, Ruler, Zap, Timer, Heart, Calendar, Dumbbell, Percent, Target } from "lucide-react";
+import { Activity, Scale, Ruler, Zap, Timer, Heart, Calendar, Dumbbell, Percent, Target, TrendingUp } from "lucide-react";
 import { formatFixed } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
+import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar, Legend, Tooltip } from "recharts";
 
 interface PhysicalData {
   weight?: number | null;
@@ -32,11 +33,42 @@ const METRIC_RANGES: Record<string, { min: number; idealLow: number; idealHigh: 
   vo2_max: { min: 40, idealLow: 50, idealHigh: 65, max: 75, unit: "ml/kg/min" },
 };
 
+// Elite benchmarks (values that represent elite performance - 100%)
+const ELITE_BENCHMARKS: Record<string, { value: number; label: string }> = {
+  max_speed: { value: 36, label: "Velocidade" },
+  sprint_30m: { value: 3.9, label: "Sprint" },
+  vo2_max: { value: 65, label: "VO2 Máx" },
+  body_fat_percentage: { value: 10, label: "% Gordura" },
+  muscle_mass: { value: 55, label: "Massa Musc." },
+};
+
 // Calculate BMI from weight (kg) and height (cm)
 const calculateBMI = (weight: number | null | undefined, height: number | null | undefined): number | null => {
   if (!weight || !height) return null;
   const heightInMeters = height / 100;
   return weight / (heightInMeters * heightInMeters);
+};
+
+// Normalize value to 0-100 scale for radar chart
+const normalizeValue = (value: number | null | undefined, metricKey: string): number | null => {
+  if (value === null || value === undefined || !Number.isFinite(value)) return null;
+  
+  const benchmark = ELITE_BENCHMARKS[metricKey];
+  if (!benchmark) return null;
+
+  const range = METRIC_RANGES[metricKey];
+  if (!range) return null;
+
+  if (range.inverse) {
+    // For inverse metrics (lower is better)
+    // Elite benchmark is the "best" low value
+    const normalizedValue = ((range.max - value) / (range.max - benchmark.value)) * 100;
+    return Math.max(0, Math.min(100, normalizedValue));
+  } else {
+    // For normal metrics (higher is better)
+    const normalizedValue = (value / benchmark.value) * 100;
+    return Math.max(0, Math.min(120, normalizedValue)); // Allow up to 120% for exceptional values
+  }
 };
 
 // Get status and percentage for a metric
@@ -56,27 +88,21 @@ const getMetricStatus = (value: number | null | undefined, metricKey: string): {
 
   const { min, idealLow, idealHigh, max, inverse } = range;
   
-  // Calculate percentage position (0-100)
   const clampedValue = Math.max(min, Math.min(max, value));
   const percentage = ((clampedValue - min) / (max - min)) * 100;
 
-  // Determine status
   let status: "low" | "ideal" | "high";
   if (inverse) {
-    // For inverse metrics (lower is better, like body fat, sprint time)
     if (value <= idealHigh) status = "ideal";
     else if (value <= max) status = "high";
     else status = "high";
-    
-    if (value < idealLow) status = "low"; // Too low can also be concerning
+    if (value < idealLow) status = "low";
   } else {
-    // For normal metrics (higher is generally better within range)
     if (value < idealLow) status = "low";
     else if (value <= idealHigh) status = "ideal";
     else status = "high";
   }
 
-  // Color based on status
   const colors = {
     low: "bg-amber-500",
     ideal: "bg-emerald-500",
@@ -86,7 +112,6 @@ const getMetricStatus = (value: number | null | undefined, metricKey: string): {
   return { percentage, status, color: colors[status] };
 };
 
-// Get status label
 const getStatusLabel = (status: "low" | "ideal" | "high" | "unknown"): string => {
   const labels = {
     low: "Abaixo",
@@ -97,7 +122,6 @@ const getStatusLabel = (status: "low" | "ideal" | "high" | "unknown"): string =>
   return labels[status];
 };
 
-// Block title component
 const BlockTitle = ({ 
   icon: Icon, 
   title 
@@ -115,7 +139,6 @@ const BlockTitle = ({
   </div>
 );
 
-// Metric card component with progress indicator
 const MetricCard = ({ 
   icon: Icon, 
   label, 
@@ -134,7 +157,6 @@ const MetricCard = ({
   
   return (
     <div className="flex flex-col p-4 rounded-xl bg-secondary/40 border border-border/30 min-h-[120px]">
-      {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <Icon className="w-4 h-4 text-muted-foreground" />
@@ -152,7 +174,6 @@ const MetricCard = ({
         )}
       </div>
       
-      {/* Value */}
       <div className="flex-1 flex items-center justify-center">
         {hasValue ? (
           <div className="text-center">
@@ -166,15 +187,11 @@ const MetricCard = ({
         )}
       </div>
 
-      {/* Progress bar */}
       {hasValue && (
         <div className="mt-3">
           <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden">
-            {/* Background zones */}
             <div className="h-full w-full relative">
-              {/* Full track */}
               <div className="absolute inset-0 bg-muted/50 rounded-full" />
-              {/* Ideal zone indicator (subtle) */}
               <div 
                 className="absolute h-full bg-emerald-500/20 rounded-full"
                 style={{
@@ -182,7 +199,6 @@ const MetricCard = ({
                   width: `${((METRIC_RANGES[metricKey]?.idealHigh ?? 100) - (METRIC_RANGES[metricKey]?.idealLow ?? 0)) / ((METRIC_RANGES[metricKey]?.max ?? 100) - (METRIC_RANGES[metricKey]?.min ?? 0)) * 100}%`
                 }}
               />
-              {/* Current value indicator */}
               <div 
                 className={cn("absolute h-full rounded-full transition-all duration-500", color)}
                 style={{ width: `${Math.min(percentage, 100)}%` }}
@@ -191,6 +207,101 @@ const MetricCard = ({
           </div>
         </div>
       )}
+    </div>
+  );
+};
+
+// Physical Performance Radar Chart
+const PhysicalRadarChart = ({ data }: { data: PhysicalData }) => {
+  const radarData = Object.entries(ELITE_BENCHMARKS).map(([key, benchmark]) => {
+    let value: number | null | undefined;
+    
+    switch (key) {
+      case "max_speed": value = data.max_speed; break;
+      case "sprint_30m": value = data.sprint_30m; break;
+      case "vo2_max": value = data.vo2_max; break;
+      case "body_fat_percentage": value = data.body_fat_percentage; break;
+      case "muscle_mass": value = data.muscle_mass; break;
+      default: value = null;
+    }
+
+    const normalizedValue = normalizeValue(value, key);
+
+    return {
+      metric: benchmark.label,
+      atleta: normalizedValue ?? 0,
+      elite: 100,
+      hasData: normalizedValue !== null,
+    };
+  });
+
+  // Check if we have any data to show
+  const hasAnyData = radarData.some(d => d.hasData);
+
+  if (!hasAnyData) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[280px] text-muted-foreground">
+        <TrendingUp className="w-8 h-8 mb-2 opacity-50" />
+        <p className="text-sm">Dados insuficientes para gerar radar</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-[280px] w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <RadarChart data={radarData} margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
+          <PolarGrid 
+            stroke="hsl(var(--border))" 
+            strokeOpacity={0.5}
+          />
+          <PolarAngleAxis 
+            dataKey="metric" 
+            tick={{ 
+              fill: "hsl(var(--muted-foreground))", 
+              fontSize: 11,
+              fontWeight: 500
+            }}
+          />
+          {/* Elite benchmark (reference) */}
+          <Radar
+            name="Elite"
+            dataKey="elite"
+            stroke="hsl(var(--primary))"
+            fill="hsl(var(--primary))"
+            fillOpacity={0.1}
+            strokeWidth={1}
+            strokeDasharray="4 4"
+          />
+          {/* Athlete values */}
+          <Radar
+            name="Atleta"
+            dataKey="atleta"
+            stroke="hsl(142, 76%, 36%)"
+            fill="hsl(142, 76%, 36%)"
+            fillOpacity={0.3}
+            strokeWidth={2}
+          />
+          <Legend 
+            wrapperStyle={{ 
+              paddingTop: 10,
+              fontSize: 12
+            }}
+          />
+          <Tooltip
+            contentStyle={{
+              backgroundColor: "hsl(var(--popover))",
+              border: "1px solid hsl(var(--border))",
+              borderRadius: 8,
+              fontSize: 12,
+            }}
+            formatter={(value: number, name: string) => [
+              `${value.toFixed(0)}%`,
+              name === "elite" ? "Benchmark Elite" : "Atleta"
+            ]}
+          />
+        </RadarChart>
+      </ResponsiveContainer>
     </div>
   );
 };
@@ -207,6 +318,17 @@ export const PhysicalDataSection = ({ data }: PhysicalDataSectionProps) => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-8">
+        {/* Radar Chart - Performance vs Elite */}
+        <div>
+          <BlockTitle icon={TrendingUp} title="Performance vs Elite" />
+          <div className="rounded-xl bg-secondary/40 border border-border/30 p-4">
+            <PhysicalRadarChart data={data} />
+            <p className="text-xs text-muted-foreground text-center mt-2">
+              Comparação com benchmarks de atletas de elite (100% = nível elite)
+            </p>
+          </div>
+        </div>
+
         {/* Block A - Medidas Corporais */}
         <div>
           <BlockTitle icon={Ruler} title="Medidas Corporais" />
