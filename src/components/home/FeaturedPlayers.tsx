@@ -175,20 +175,20 @@ function DragCarousel({ players }: { players: Player[] }) {
   };
   
   return (
-    <div className="relative group/carousel">
-      {/* Scroll container */}
+    <div className="relative group/carousel px-6 lg:px-8">
+      {/* Scroll container - aligned with title */}
       <div
         ref={containerRef}
-        className="flex gap-5 overflow-x-auto scrollbar-hide scroll-smooth pb-4 -mx-6 px-6 lg:-mx-8 lg:px-8 cursor-grab active:cursor-grabbing"
+        className="flex gap-5 overflow-x-auto overflow-y-visible scrollbar-hide scroll-smooth pb-4 pr-6 lg:pr-8 cursor-grab active:cursor-grabbing"
         style={{ scrollSnapType: 'x mandatory' }}
         onMouseDown={handleDragStart}
         onMouseUp={handleDragEnd}
         onMouseLeave={handleDragEnd}
       >
-        {players.map((player, index) => (
+        {players.map((player) => (
           <motion.div 
             key={player.id}
-            className="scroll-snap-align-start"
+            className="flex-shrink-0"
             style={{ scrollSnapAlign: 'start' }}
             variants={cardVariants}
             onClick={(e) => {
@@ -201,25 +201,22 @@ function DragCarousel({ players }: { players: Player[] }) {
             <PlayerCard player={player} />
           </motion.div>
         ))}
-        {/* Spacer for last card visibility */}
-        <div className="flex-shrink-0 w-4 md:w-8" />
+        {/* End spacer - ensures last card is fully visible */}
+        <div className="flex-shrink-0 w-1" aria-hidden="true" />
       </div>
       
-      {/* Fade edges */}
+      {/* Fade edge - only on left when scrolled */}
       <div className={cn(
-        "absolute left-0 top-0 bottom-4 w-12 bg-gradient-to-r from-black to-transparent pointer-events-none transition-opacity duration-300",
+        "absolute left-6 lg:left-8 top-0 bottom-4 w-16 bg-gradient-to-r from-black to-transparent pointer-events-none transition-opacity duration-300 z-10",
         canScrollLeft ? "opacity-100" : "opacity-0"
       )} />
-      <div className={cn(
-        "absolute right-0 top-0 bottom-4 w-12 bg-gradient-to-l from-black to-transparent pointer-events-none transition-opacity duration-300",
-        canScrollRight ? "opacity-100" : "opacity-0"
-      )} />
       
-      {/* Navigation arrows - Discrete, show on hover */}
+      {/* Navigation arrows - positioned outside cards area */}
       <button
         onClick={() => scroll('left')}
         className={cn(
-          "absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white/70 hover:text-white hover:bg-black/80 transition-all duration-300 opacity-0 group-hover/carousel:opacity-100",
+          "absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/70 backdrop-blur-sm border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-black/90 transition-all duration-300 z-20",
+          "opacity-0 group-hover/carousel:opacity-100",
           !canScrollLeft && "!opacity-0 pointer-events-none"
         )}
         aria-label="Scroll left"
@@ -229,7 +226,8 @@ function DragCarousel({ players }: { players: Player[] }) {
       <button
         onClick={() => scroll('right')}
         className={cn(
-          "absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white/70 hover:text-white hover:bg-black/80 transition-all duration-300 opacity-0 group-hover/carousel:opacity-100",
+          "absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/70 backdrop-blur-sm border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-black/90 transition-all duration-300 z-20",
+          "opacity-0 group-hover/carousel:opacity-100",
           !canScrollRight && "!opacity-0 pointer-events-none"
         )}
         aria-label="Scroll right"
@@ -286,7 +284,7 @@ export function FeaturedPlayers() {
   return (
     <section 
       ref={sectionRef}
-      className="relative bg-black py-16 md:py-24 overflow-hidden"
+      className="relative bg-black py-16 md:py-24 overflow-x-clip overflow-y-visible"
     >
       {/* Subtle background */}
       <div className="absolute inset-0 bg-gradient-to-b from-zinc-900/20 via-transparent to-zinc-900/20 pointer-events-none" />
