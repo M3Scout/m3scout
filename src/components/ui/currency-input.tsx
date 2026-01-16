@@ -41,6 +41,7 @@ const CURRENCY_CONFIGS: Record<CurrencyCode, CurrencyConfig> = {
 
 /**
  * Parse a formatted currency string to a raw number
+ * Handles any currency format and extracts the numeric value
  */
 export const parseCurrencyValue = (
   value: string,
@@ -53,8 +54,12 @@ export const parseCurrencyValue = (
   // Remove currency symbol and whitespace
   let cleaned = value.replace(config.symbol, "").trim();
 
-  // Remove thousand separators
-  cleaned = cleaned.split(config.thousandSeparator).join("");
+  // Remove all thousand separators (escape the dot for regex)
+  const thousandRegex = new RegExp(
+    config.thousandSeparator === "." ? "\\." : config.thousandSeparator,
+    "g"
+  );
+  cleaned = cleaned.replace(thousandRegex, "");
 
   // Replace decimal separator with dot for parsing
   cleaned = cleaned.replace(config.decimalSeparator, ".");
@@ -133,7 +138,7 @@ export function CurrencyInput({
 
   // Update display value when value or currency changes externally
   React.useEffect(() => {
-    if (value !== null && value !== undefined) {
+    if (value !== null && value !== undefined && !isNaN(value)) {
       setDisplayValue(formatCurrencyValue(value, currency, false));
     } else {
       setDisplayValue("");
@@ -143,43 +148,56 @@ export function CurrencyInput({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawInput = e.target.value;
 
-    // Only allow numbers, decimal separator, and thousand separator
-    const allowedChars = new RegExp(
-      `[^0-9${config.decimalSeparator}${config.thousandSeparator}]`,
-      "g"
-    );
-    let cleaned = rawInput.replace(allowedChars, "");
+    // Remove everything except digits and the decimal separator
+    // First, keep only digits and our decimal separator
+    let cleaned = "";
+    let hasDecimal = false;
+    let decimalCount = 0;
 
-    // Ensure only one decimal separator
-    const decimalParts = cleaned.split(config.decimalSeparator);
-    if (decimalParts.length > 2) {
-      cleaned = decimalParts[0] + config.decimalSeparator + decimalParts.slice(1).join("");
-    }
-
-    // Limit decimal places to 2
-    if (decimalParts.length === 2 && decimalParts[1].length > 2) {
-      cleaned = decimalParts[0] + config.decimalSeparator + decimalParts[1].slice(0, 2);
+    for (const char of rawInput) {
+      if (char >= "0" && char <= "9") {
+        // After decimal, only allow 2 digits
+        if (hasDecimal) {
+          if (decimalCount < 2) {
+            cleaned += char;
+            decimalCount++;
+          }
+        } else {
+          cleaned += char;
+        }
+      } else if (char === config.decimalSeparator && !hasDecimal) {
+        cleaned += char;
+        hasDecimal = true;
+      }
+      // Ignore thousand separators during input - they're just visual
     }
 
     setDisplayValue(cleaned);
 
-    // Parse and emit value
-    const numValue = parseCurrencyValue(cleaned, currency);
-    onValueChange(numValue);
+    // Parse to number for the callback
+    // Convert to standard format for parsing
+    const standardized = cleaned.replace(config.decimalSeparator, ".");
+    const numValue = standardized === "" ? null : parseFloat(standardized);
+    
+    if (numValue === null || !isNaN(numValue)) {
+      onValueChange(numValue);
+    }
   };
 
   const handleBlur = () => {
-    // Format properly on blur
-    if (value !== null && value !== undefined) {
+    // Format properly on blur with thousand separators
+    if (value !== null && value !== undefined && !isNaN(value)) {
       setDisplayValue(formatCurrencyValue(value, currency, false));
+    } else if (displayValue === "" || displayValue === config.decimalSeparator) {
+      setDisplayValue("");
+      onValueChange(null);
     }
   };
 
   const handleFocus = () => {
-    // Remove formatting on focus for easier editing
-    if (value !== null && value !== undefined) {
-      const config = CURRENCY_CONFIGS[currency];
-      // Show just the number without thousand separators for editing
+    // On focus, show raw number without thousand separators for easier editing
+    if (value !== null && value !== undefined && !isNaN(value)) {
+      // Show simple format: digits + decimal separator + 2 decimals
       const simple = value.toFixed(2).replace(".", config.decimalSeparator);
       setDisplayValue(simple);
     }
