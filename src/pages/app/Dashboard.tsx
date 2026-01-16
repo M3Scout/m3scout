@@ -10,6 +10,30 @@ import { RecentLeadsCard } from "@/components/dashboard/RecentLeadsCard";
 import { QuickActionsCard } from "@/components/dashboard/QuickActionsCard";
 import { PositionChartCard } from "@/components/dashboard/PositionChartCard";
 import CompetitionUsageWidget from "@/components/competitions/CompetitionUsageWidget";
+import { motion, Variants } from "framer-motion";
+
+// Stagger animation variants
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.4,
+    },
+  },
+};
 
 interface DashboardStats {
   totalPlayers: number;
@@ -185,20 +209,29 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="space-y-6 pb-8">
+    <motion.div 
+      className="space-y-6 pb-8"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
       {/* Hero Section */}
-      <DashboardHero />
+      <motion.div variants={itemVariants}>
+        <DashboardHero />
+      </motion.div>
 
       {/* KPI Cards */}
-      <KPICards 
-        totalPlayers={stats.totalPlayers}
-        reportsThisMonth={stats.reportsThisMonth}
-        totalLeads={stats.totalLeads}
-        expiringContracts={stats.expiringContracts}
-      />
+      <motion.div variants={itemVariants}>
+        <KPICards 
+          totalPlayers={stats.totalPlayers}
+          reportsThisMonth={stats.reportsThisMonth}
+          totalLeads={stats.totalLeads}
+          expiringContracts={stats.expiringContracts}
+        />
+      </motion.div>
 
       {/* Main Content Grid */}
-      <div className="grid lg:grid-cols-3 gap-6">
+      <motion.div variants={itemVariants} className="grid lg:grid-cols-3 gap-6">
         {/* Top Players - Takes more space */}
         <div className="lg:col-span-2">
           <TopPlayersCard />
@@ -208,19 +241,19 @@ const Dashboard = () => {
         <div>
           <PositionChartCard data={positionData} />
         </div>
-      </div>
+      </motion.div>
 
       {/* Secondary Grid */}
-      <div className="grid lg:grid-cols-2 gap-6">
+      <motion.div variants={itemVariants} className="grid lg:grid-cols-2 gap-6">
         {/* Recent Reports */}
         <RecentReportsCard reports={recentReports} />
 
         {/* Recent Leads */}
         <RecentLeadsCard leads={recentLeads} />
-      </div>
+      </motion.div>
 
       {/* Bottom Grid */}
-      <div className="grid lg:grid-cols-2 gap-6">
+      <motion.div variants={itemVariants} className="grid lg:grid-cols-2 gap-6">
         {/* Quick Actions */}
         <QuickActionsCard />
 
@@ -230,8 +263,8 @@ const Dashboard = () => {
             <CompetitionUsageWidget />
           </div>
         )}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 };
 
