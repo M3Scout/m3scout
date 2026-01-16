@@ -12,9 +12,11 @@ import {
   CheckCircle,
   AlertCircle,
   ArrowRightLeft,
-  MessageSquare
+  MessageSquare,
+  AlertTriangle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ContractHistoryTimeline } from "./ContractHistoryTimeline";
 
 interface ContractData {
   current_club?: string | null;
@@ -32,7 +34,55 @@ interface ContractData {
 
 interface ContractSectionProps {
   data: ContractData;
+  playerId?: string;
 }
+
+// Check if contract expires within X months
+const getExpirationAlert = (contractEnd: string | null | undefined): { 
+  isExpiring: boolean; 
+  monthsRemaining: number;
+  message: string;
+  severity: "critical" | "warning" | "none";
+} => {
+  if (!contractEnd) {
+    return { isExpiring: false, monthsRemaining: -1, message: "", severity: "none" };
+  }
+
+  const endDate = new Date(contractEnd);
+  const now = new Date();
+  
+  const monthsRemaining = (endDate.getFullYear() - now.getFullYear()) * 12 
+    + (endDate.getMonth() - now.getMonth());
+
+  if (monthsRemaining < 0) {
+    return { 
+      isExpiring: true, 
+      monthsRemaining: 0, 
+      message: "Contrato encerrado",
+      severity: "critical"
+    };
+  }
+  
+  if (monthsRemaining <= 3) {
+    return { 
+      isExpiring: true, 
+      monthsRemaining, 
+      message: `Expira em ${monthsRemaining} ${monthsRemaining === 1 ? "mês" : "meses"}`,
+      severity: "critical"
+    };
+  }
+  
+  if (monthsRemaining <= 6) {
+    return { 
+      isExpiring: true, 
+      monthsRemaining, 
+      message: `Expira em ${monthsRemaining} meses`,
+      severity: "warning"
+    };
+  }
+
+  return { isExpiring: false, monthsRemaining, message: "", severity: "none" };
+};
 
 type ContractStatus = "contracted" | "contratado" | "free" | "livre" | "loan" | "emprestimo" | "negotiation" | "negociacao";
 
@@ -148,155 +198,227 @@ const EmptyValue = () => (
   <span className="text-sm text-muted-foreground/60 italic">Não informado</span>
 );
 
-export const ContractSection = ({ data }: ContractSectionProps) => {
+// Expiration alert banner
+const ExpirationAlertBanner = ({ contractEnd }: { contractEnd: string | null | undefined }) => {
+  const alert = getExpirationAlert(contractEnd);
+  
+  if (!alert.isExpiring) return null;
+
+  return (
+    <div className={cn(
+      "flex items-center gap-3 p-4 rounded-xl border mb-4",
+      alert.severity === "critical" 
+        ? "bg-red-500/10 border-red-500/30" 
+        : "bg-amber-500/10 border-amber-500/30"
+    )}>
+      <AlertTriangle className={cn(
+        "w-5 h-5",
+        alert.severity === "critical" ? "text-red-400" : "text-amber-400"
+      )} />
+      <div className="flex-1">
+        <p className={cn(
+          "text-sm font-semibold",
+          alert.severity === "critical" ? "text-red-400" : "text-amber-400"
+        )}>
+          {alert.severity === "critical" ? "Atenção Urgente" : "Atenção"}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          {alert.message}. {alert.monthsRemaining <= 3 && alert.monthsRemaining > 0 
+            ? "É necessário iniciar negociações imediatamente." 
+            : alert.monthsRemaining === 0 
+              ? "O contrato já expirou."
+              : "Recomenda-se iniciar conversas sobre renovação."}
+        </p>
+      </div>
+    </div>
+  );
+};
+
+export const ContractSection = ({ data, playerId }: ContractSectionProps) => {
   const statusConfig = getStatusConfig(data.contract_status);
   const StatusIcon = statusConfig.icon;
   const hasPassports = Array.isArray(data?.passports) && data.passports.length > 0;
+  const expirationAlert = getExpirationAlert(data.contract_end);
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center gap-2 mb-6">
-        <div className="p-2 rounded-lg bg-primary/10">
-          <FileText className="w-5 h-5 text-primary" />
+    <div className="space-y-6">
+      {/* Main Contract Card */}
+      <div className="space-y-4">
+        {/* Header */}
+        <div className="flex items-center gap-2 mb-6">
+          <div className="p-2 rounded-lg bg-primary/10">
+            <FileText className="w-5 h-5 text-primary" />
+          </div>
+          <h3 className="text-lg font-semibold">Situação Contratual</h3>
         </div>
-        <h3 className="text-lg font-semibold">Situação Contratual</h3>
-      </div>
 
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        
-        {/* Card 1 - Status Contratual (Primary highlight) */}
-        <InfoCard title="Status Contratual" icon={Briefcase} className="md:col-span-2">
-          <div className={cn(
-            "inline-flex items-center gap-3 px-4 py-3 rounded-xl border",
-            statusConfig.bgColor,
-            statusConfig.borderColor
-          )}>
-            <StatusIcon className={cn("w-6 h-6", statusConfig.color)} />
-            <span className={cn("text-xl font-bold", statusConfig.color)}>
-              {statusConfig.label}
-            </span>
-          </div>
-        </InfoCard>
+        {/* Expiration Alert Banner */}
+        <ExpirationAlertBanner contractEnd={data.contract_end} />
 
-        {/* Card 2 - Clube Atual */}
-        <InfoCard title="Clube Atual" icon={Building2}>
-          <div className="space-y-1">
-            {data.current_club ? (
-              <>
-                <p className="text-lg font-semibold text-foreground">{data.current_club}</p>
-                {data.country && (
-                  <p className="text-sm text-muted-foreground">{data.country}</p>
-                )}
-              </>
-            ) : (
-              <EmptyValue />
-            )}
-          </div>
-        </InfoCard>
-
-        {/* Card 3 - Vigência */}
-        <InfoCard title="Vigência" icon={Calendar}>
-          <div className="flex items-center gap-4">
-            <div className="flex-1">
-              <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Início</p>
-              {data.contract_start ? (
-                <p className="text-sm font-medium text-foreground">{formatDate(data.contract_start)}</p>
-              ) : (
-                <EmptyValue />
-              )}
-            </div>
-            <div className="h-8 w-px bg-border/50" />
-            <div className="flex-1">
-              <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Término</p>
-              {data.contract_end ? (
-                <p className="text-sm font-medium text-foreground">{formatDate(data.contract_end)}</p>
-              ) : (
-                <span className="text-sm text-muted-foreground/60 italic">Indeterminado</span>
-              )}
-            </div>
-          </div>
+        {/* Main Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           
-          {/* Contract duration indicator */}
-          {data.contract_start && data.contract_end && (
-            <div className="mt-3 pt-3 border-t border-border/30">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Clock className="w-3 h-3" />
-                <span>
-                  {calculateContractDuration(data.contract_start, data.contract_end)}
+          {/* Card 1 - Status Contratual (Primary highlight) */}
+          <InfoCard title="Status Contratual" icon={Briefcase} className="md:col-span-2">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className={cn(
+                "inline-flex items-center gap-3 px-4 py-3 rounded-xl border",
+                statusConfig.bgColor,
+                statusConfig.borderColor
+              )}>
+                <StatusIcon className={cn("w-6 h-6", statusConfig.color)} />
+                <span className={cn("text-xl font-bold", statusConfig.color)}>
+                  {statusConfig.label}
                 </span>
               </div>
+              
+              {/* Expiration badge inline */}
+              {expirationAlert.isExpiring && (
+                <Badge 
+                  variant="outline" 
+                  className={cn(
+                    "text-xs",
+                    expirationAlert.severity === "critical"
+                      ? "bg-red-500/15 text-red-400 border-red-500/30"
+                      : "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                  )}
+                >
+                  <AlertTriangle className="w-3 h-3 mr-1" />
+                  {expirationAlert.message}
+                </Badge>
+              )}
             </div>
-          )}
-        </InfoCard>
+          </InfoCard>
 
-        {/* Card 4 - Representação */}
-        <InfoCard title="Representação" icon={User}>
-          <div className="space-y-2">
-            {data.agent_name ? (
-              <>
-                <p className="text-sm font-medium text-foreground">{data.agent_name}</p>
-                {data.agent_contact && (
-                  <p className="text-xs text-muted-foreground">{data.agent_contact}</p>
-                )}
-              </>
-            ) : (
-              <EmptyValue />
-            )}
-          </div>
-        </InfoCard>
-
-        {/* Card 5 - Cláusulas Financeiras */}
-        <InfoCard title="Cláusulas" icon={DollarSign}>
-          <div className="space-y-3">
-            <div>
-              <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Multa Rescisória</p>
-              {data.release_clause ? (
-                <p className="text-lg font-bold text-foreground">{data.release_clause}</p>
+          {/* Card 2 - Clube Atual */}
+          <InfoCard title="Clube Atual" icon={Building2}>
+            <div className="space-y-1">
+              {data.current_club ? (
+                <>
+                  <p className="text-lg font-semibold text-foreground">{data.current_club}</p>
+                  {data.country && (
+                    <p className="text-sm text-muted-foreground">{data.country}</p>
+                  )}
+                </>
               ) : (
                 <EmptyValue />
               )}
             </div>
-            {data.salary_info && (
-              <div className="pt-2 border-t border-border/30">
-                <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Info. Salarial</p>
-                <p className="text-sm text-foreground">{data.salary_info}</p>
+          </InfoCard>
+
+          {/* Card 3 - Vigência */}
+          <InfoCard title="Vigência" icon={Calendar}>
+            <div className="flex items-center gap-4">
+              <div className="flex-1">
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Início</p>
+                {data.contract_start ? (
+                  <p className="text-sm font-medium text-foreground">{formatDate(data.contract_start)}</p>
+                ) : (
+                  <EmptyValue />
+                )}
+              </div>
+              <div className="h-8 w-px bg-border/50" />
+              <div className="flex-1">
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Término</p>
+                {data.contract_end ? (
+                  <p className={cn(
+                    "text-sm font-medium",
+                    expirationAlert.severity === "critical" ? "text-red-400" :
+                    expirationAlert.severity === "warning" ? "text-amber-400" : "text-foreground"
+                  )}>
+                    {formatDate(data.contract_end)}
+                  </p>
+                ) : (
+                  <span className="text-sm text-muted-foreground/60 italic">Indeterminado</span>
+                )}
+              </div>
+            </div>
+            
+            {/* Contract duration indicator */}
+            {data.contract_start && data.contract_end && (
+              <div className="mt-3 pt-3 border-t border-border/30">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Clock className="w-3 h-3" />
+                  <span>
+                    {calculateContractDuration(data.contract_start, data.contract_end)}
+                  </span>
+                </div>
               </div>
             )}
+          </InfoCard>
+
+          {/* Card 4 - Representação */}
+          <InfoCard title="Representação" icon={User}>
+            <div className="space-y-2">
+              {data.agent_name ? (
+                <>
+                  <p className="text-sm font-medium text-foreground">{data.agent_name}</p>
+                  {data.agent_contact && (
+                    <p className="text-xs text-muted-foreground">{data.agent_contact}</p>
+                  )}
+                </>
+              ) : (
+                <EmptyValue />
+              )}
+            </div>
+          </InfoCard>
+
+          {/* Card 5 - Cláusulas Financeiras */}
+          <InfoCard title="Cláusulas" icon={DollarSign}>
+            <div className="space-y-3">
+              <div>
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Multa Rescisória</p>
+                {data.release_clause ? (
+                  <p className="text-lg font-bold text-foreground">{data.release_clause}</p>
+                ) : (
+                  <EmptyValue />
+                )}
+              </div>
+              {data.salary_info && (
+                <div className="pt-2 border-t border-border/30">
+                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Info. Salarial</p>
+                  <p className="text-sm text-foreground">{data.salary_info}</p>
+                </div>
+              )}
+            </div>
+          </InfoCard>
+        </div>
+
+        {/* Additional Info Section */}
+        {(hasPassports || data.contract_notes) && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            {/* Passports */}
+            {hasPassports && (
+              <InfoCard title="Passaportes" icon={Globe}>
+                <div className="flex flex-wrap gap-2">
+                  {data.passports!.map((passport) => (
+                    <Badge 
+                      key={passport} 
+                      variant="secondary"
+                      className="bg-secondary border border-border/50"
+                    >
+                      {passport}
+                    </Badge>
+                  ))}
+                </div>
+              </InfoCard>
+            )}
+
+            {/* Contract Notes */}
+            {data.contract_notes && (
+              <InfoCard title="Observações" icon={FileText} className={!hasPassports ? "md:col-span-2" : ""}>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {data.contract_notes}
+                </p>
+              </InfoCard>
+            )}
           </div>
-        </InfoCard>
+        )}
       </div>
 
-      {/* Additional Info Section */}
-      {(hasPassports || data.contract_notes) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          {/* Passports */}
-          {hasPassports && (
-            <InfoCard title="Passaportes" icon={Globe}>
-              <div className="flex flex-wrap gap-2">
-                {data.passports!.map((passport) => (
-                  <Badge 
-                    key={passport} 
-                    variant="secondary"
-                    className="bg-secondary border border-border/50"
-                  >
-                    {passport}
-                  </Badge>
-                ))}
-              </div>
-            </InfoCard>
-          )}
-
-          {/* Contract Notes */}
-          {data.contract_notes && (
-            <InfoCard title="Observações" icon={FileText} className={!hasPassports ? "md:col-span-2" : ""}>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {data.contract_notes}
-              </p>
-            </InfoCard>
-          )}
-        </div>
+      {/* Contract History Timeline */}
+      {playerId && (
+        <ContractHistoryTimeline playerId={playerId} />
       )}
     </div>
   );

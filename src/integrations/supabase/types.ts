@@ -535,6 +535,62 @@ export type Database = {
           },
         ]
       }
+      player_contract_history: {
+        Row: {
+          club_country: string | null
+          club_name: string
+          contract_type: string
+          created_at: string
+          created_by: string | null
+          end_date: string | null
+          id: string
+          notes: string | null
+          player_id: string
+          salary_info: string | null
+          start_date: string
+          transfer_fee: string | null
+          updated_at: string
+        }
+        Insert: {
+          club_country?: string | null
+          club_name: string
+          contract_type?: string
+          created_at?: string
+          created_by?: string | null
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          player_id: string
+          salary_info?: string | null
+          start_date: string
+          transfer_fee?: string | null
+          updated_at?: string
+        }
+        Update: {
+          club_country?: string | null
+          club_name?: string
+          contract_type?: string
+          created_at?: string
+          created_by?: string | null
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          player_id?: string
+          salary_info?: string | null
+          start_date?: string
+          transfer_fee?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_contract_history_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_injuries: {
         Row: {
           created_at: string
