@@ -95,6 +95,7 @@ export function PositionIdentityCard({
         "group relative bg-zinc-950 border border-zinc-900 rounded-lg overflow-hidden cursor-pointer",
         "transition-all duration-200 ease-out",
         "hover:border-zinc-700 hover:-translate-y-0.5 hover:shadow-lg",
+        "[&_*]:no-underline [&:hover_*]:no-underline",
         positionColors.glowClass,
         isFiltered === false && "opacity-40"
       )}
@@ -104,13 +105,6 @@ export function PositionIdentityCard({
         "absolute left-0 top-0 bottom-0 w-1 transition-all duration-200",
         positionColors.accentClass,
         "opacity-60 group-hover:opacity-100"
-      )} />
-
-      {/* Accent line under name - gradient */}
-      <div className={cn(
-        "absolute top-[52px] left-14 right-4 h-[1px] opacity-0 group-hover:opacity-100 transition-opacity duration-300",
-        "bg-gradient-to-r from-transparent via-current to-transparent",
-        positionColors.textClass
       )} />
 
       <div className="flex">
@@ -130,8 +124,8 @@ export function PositionIdentityCard({
           {/* Header: Name */}
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
-              {/* Name - Primary */}
-              <h3 className="text-white font-semibold text-sm sm:text-base leading-tight truncate group-hover:text-primary transition-colors">
+              {/* Name - Primary - No underline on hover */}
+              <h3 className="text-white font-semibold text-sm sm:text-base leading-tight truncate group-hover:text-primary transition-colors no-underline decoration-transparent">
                 {fullName}
               </h3>
               
@@ -352,6 +346,7 @@ export function PositionIdentityCardMobile({
       className={cn(
         "group relative bg-zinc-950 border border-zinc-900 rounded-lg overflow-hidden cursor-pointer",
         "active:scale-[0.99] transition-transform",
+        "[&_*]:no-underline [&:hover_*]:no-underline",
         isFiltered === false && "opacity-40"
       )}
     >
