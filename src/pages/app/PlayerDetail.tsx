@@ -39,9 +39,7 @@ import { PlayerStatsSection } from "@/components/players/sections/PlayerStatsSec
 import { GoalkeeperStatsSection } from "@/components/players/sections/GoalkeeperStatsSection";
 import { PlayerRatingBadge } from "@/components/players/PlayerRatingBadge";
 import { RatingEvolutionChart } from "@/components/players/sections/RatingEvolutionChart";
-import { PersonalDataCard } from "@/components/players/sections/PersonalDataCard";
-import { ContractInfoCard } from "@/components/players/sections/ContractInfoCard";
-import { TacticalProfileCard } from "@/components/players/sections/TacticalProfileCard";
+import { PlayerOverviewSection } from "@/components/players/sections/PlayerOverviewSection";
 import { SeasonSummaryCard } from "@/components/players/sections/SeasonSummaryCard";
 import { OverallRatingCard } from "@/components/players/sections/OverallRatingCard";
 import { MarketValueSection } from "@/components/players/sections/MarketValueSection";
@@ -360,28 +358,16 @@ const PlayerDetail = () => {
         <TabsContent value="overview">
           <div className="grid gap-6 lg:grid-cols-3">
             <div className="lg:col-span-2 space-y-6">
-              {/* Personal Data */}
-              <PersonalDataCard
+              {/* Executive Summary - All key info in one organized card */}
+              <PlayerOverviewSection
                 fullName={player.full_name}
                 age={player.age}
-                birthDate={player.birth_date}
                 height={player.height}
                 dominantFoot={player.dominant_foot}
                 nationality={player.nationality}
-              />
-
-              {/* Contract Info */}
-              <ContractInfoCard
                 currentClub={player.current_club}
                 country={player.country}
-                agentName={player.agent_name}
-                agentContact={player.agent_contact}
-                contractEnd={player.contract_end}
                 contractStatus={player.contract_status}
-              />
-
-              {/* Tactical Profile */}
-              <TacticalProfileCard
                 position={player.position}
                 secondaryPositions={player.secondary_positions}
                 primaryTacticalRole={player.primary_tactical_role}
