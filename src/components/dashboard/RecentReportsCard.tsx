@@ -43,10 +43,10 @@ export const RecentReportsCard = ({ reports }: RecentReportsCardProps) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.3 }}
-      className="rounded-xl border border-zinc-800/50 bg-gradient-to-br from-zinc-900 to-zinc-950 overflow-hidden"
+      className="w-full h-full flex flex-col rounded-xl border border-zinc-800/50 bg-gradient-to-br from-zinc-900 to-zinc-950 overflow-hidden"
     >
-      {/* Header */}
-      <div className="px-5 py-4 border-b border-zinc-800/50 bg-zinc-900/50 flex items-center justify-between">
+      {/* Header - Fixed at top */}
+      <div className="px-5 py-4 border-b border-zinc-800/50 bg-zinc-900/50 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500/20 to-purple-600/10 flex items-center justify-center">
             <FileText className="w-4 h-4 text-violet-400" />
@@ -66,8 +66,8 @@ export const RecentReportsCard = ({ reports }: RecentReportsCardProps) => {
         </Link>
       </div>
 
-      {/* Content */}
-      <div className="p-3">
+      {/* Content - Scrollable list area */}
+      <div className="p-3 flex-1 flex flex-col min-h-0 overflow-auto">
         {reports.length > 0 ? (
           <div className="space-y-2">
             {safeArray(reports).map((report, index) => (
@@ -111,7 +111,7 @@ export const RecentReportsCard = ({ reports }: RecentReportsCardProps) => {
             ))}
           </div>
         ) : (
-          <div className="py-12 text-center">
+          <div className="py-12 text-center flex-1 flex flex-col items-center justify-center">
             <FileText className="w-10 h-10 mx-auto mb-3 text-zinc-700" />
             <p className="text-sm text-zinc-500">Nenhum relatório ainda</p>
             <Link 
