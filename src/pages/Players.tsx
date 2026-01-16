@@ -9,9 +9,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, Eye } from "lucide-react";
 import { safeArray } from "@/lib/utils";
 import { motion } from "framer-motion";
+import { Switch } from "@/components/ui/switch";
 
 interface Player {
   id: string;
@@ -24,6 +25,10 @@ interface Player {
   current_club: string | null;
   photo_url: string | null;
   auto_rating: number | null;
+  // Scouting mode fields
+  dominant_foot: string | null;
+  height: number | null;
+  estimated_level: string | null;
 }
 
 const PAGE_SIZE_OPTIONS = [12, 24, 48];
@@ -36,6 +41,7 @@ const Players = () => {
   const [nationalityFilter, setNationalityFilter] = useState("todos");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
+  const [scoutingMode, setScoutingMode] = useState(false);
 
   // Scroll to top on mount
   useEffect(() => {
@@ -49,12 +55,12 @@ const Players = () => {
     const fetchPlayers = async () => {
       const { data, error } = await supabase
         .from("players")
-        .select("id, slug, full_name, position, secondary_positions, age, nationality, current_club, photo_url, auto_rating")
+        .select("id, slug, full_name, position, secondary_positions, age, nationality, current_club, photo_url, auto_rating, dominant_foot, height, estimated_level")
         .eq("is_public", true)
         .order("full_name");
 
       if (data) {
-        setPlayers(data);
+        setPlayers(data as Player[]);
       }
       setLoading(false);
     };
@@ -178,16 +184,35 @@ const Players = () => {
           />
         </motion.section>
 
-        {/* Results Count */}
+        {/* Results Count + Scouting Mode Toggle */}
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="mb-10"
+          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-10"
         >
           <p className="text-sm text-neutral-500 font-light tracking-wide">
             {filteredPlayers.length} atleta{filteredPlayers.length !== 1 ? "s" : ""} no portfólio
           </p>
+          
+          {/* Scouting Mode Toggle */}
+          <div 
+            className="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200"
+            style={{
+              background: scoutingMode ? 'rgba(229, 36, 33, 0.08)' : 'rgba(255, 255, 255, 0.02)',
+              border: scoutingMode ? '1px solid rgba(229, 36, 33, 0.2)' : '1px solid rgba(255, 255, 255, 0.06)'
+            }}
+          >
+            <Eye className={`w-4 h-4 transition-colors duration-200 ${scoutingMode ? 'text-[#e52421]' : 'text-neutral-500'}`} />
+            <span className={`text-sm font-medium tracking-wide transition-colors duration-200 ${scoutingMode ? 'text-white' : 'text-neutral-400'}`}>
+              Modo Scouting
+            </span>
+            <Switch
+              checked={scoutingMode}
+              onCheckedChange={setScoutingMode}
+              className="data-[state=checked]:bg-[#e52421]"
+            />
+          </div>
         </motion.div>
 
         {/* Loading State */}
@@ -219,6 +244,10 @@ const Players = () => {
                     nationality={player.nationality}
                     currentClub={player.current_club || ""}
                     imageUrl={player.photo_url || "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=400&h=600&fit=crop"}
+                    scoutingMode={scoutingMode}
+                    dominantFoot={player.dominant_foot}
+                    height={player.height}
+                    currentLeague={player.estimated_level}
                   />
                 </motion.div>
               ))}
