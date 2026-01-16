@@ -4,12 +4,16 @@ import {
   Flame, 
   AlertTriangle, 
   TrendingUp, 
+  TrendingDown,
+  Minus,
   Brain, 
   Trophy, 
   PieChart,
   Sparkles,
   ChevronRight,
-  Lightbulb
+  Lightbulb,
+  ArrowUpRight,
+  ArrowDownRight
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,6 +23,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+
+type TrendDirection = "up" | "down" | "stable" | "new";
 
 interface Insight {
   id: string;
@@ -31,6 +37,11 @@ interface Insight {
   colorClass: string;
   bgClass: string;
   borderClass: string;
+  trend?: {
+    direction: TrendDirection;
+    value?: number;
+    label?: string;
+  };
 }
 
 const insightConfig = {
@@ -72,6 +83,45 @@ const insightConfig = {
   },
 };
 
+const TrendBadge = ({ trend }: { trend: Insight["trend"] }) => {
+  if (!trend) return null;
+
+  const config = {
+    up: {
+      icon: ArrowUpRight,
+      color: "text-emerald-400",
+      bg: "bg-emerald-500/20",
+    },
+    down: {
+      icon: ArrowDownRight,
+      color: "text-rose-400",
+      bg: "bg-rose-500/20",
+    },
+    stable: {
+      icon: Minus,
+      color: "text-zinc-400",
+      bg: "bg-zinc-500/20",
+    },
+    new: {
+      icon: Sparkles,
+      color: "text-amber-400",
+      bg: "bg-amber-500/20",
+    },
+  };
+
+  const { icon: Icon, color, bg } = config[trend.direction];
+
+  return (
+    <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${bg} ${color}`}>
+      <Icon className="w-3 h-3" />
+      {trend.value !== undefined && (
+        <span>{trend.direction === "down" ? "" : "+"}{trend.value}%</span>
+      )}
+      {trend.label && <span>{trend.label}</span>}
+    </div>
+  );
+};
+
 export const InsightsCard = () => {
   const [insights, setInsights] = useState<Insight[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,6 +137,7 @@ export const InsightsCard = () => {
           statsResult,
           reportsResult,
           competitionsResult,
+          ratingHistoryResult,
         ] = await Promise.all([
           supabase
             .from("players")
@@ -102,25 +153,77 @@ export const InsightsCard = () => {
             .limit(200),
           supabase
             .from("scouting_reports")
-            .select("id, player_id, final_score, match_date, competition_id, players(full_name, slug), competitions(name)")
+            .select("id, player_id, final_score, match_date, competition_id, created_at, players(full_name, slug), competitions(name)")
             .is("deleted_at", null)
             .order("match_date", { ascending: false })
-            .limit(50),
+            .limit(100),
           supabase
             .from("competitions")
             .select("id, name, tier, final_coefficient")
             .eq("is_active", true),
+          supabase
+            .from("player_rating_history")
+            .select("player_id, rating, recorded_at")
+            .order("recorded_at", { ascending: false })
+            .limit(100),
         ]);
 
         const players = playersResult.data || [];
         const stats = statsResult.data || [];
         const reports = reportsResult.data || [];
         const competitions = competitionsResult.data || [];
+        const ratingHistory = ratingHistoryResult.data || [];
 
-        // 1. 🔥 Player Rising - Best performing player
+        // Helper: Calculate trend from rating history
+        const calculatePlayerTrend = (playerId: string): { direction: TrendDirection; value: number } => {
+          const playerRatings = ratingHistory
+            .filter(r => r.player_id === playerId)
+            .sort((a, b) => new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime());
+          
+          if (playerRatings.length < 2) {
+            return { direction: "new", value: 0 };
+          }
+
+          const current = playerRatings[0].rating;
+          const previous = playerRatings[Math.min(1, playerRatings.length - 1)].rating;
+          const change = ((current - previous) / previous) * 100;
+
+          if (Math.abs(change) < 2) return { direction: "stable", value: 0 };
+          return {
+            direction: change > 0 ? "up" : "down",
+            value: Math.round(Math.abs(change)),
+          };
+        };
+
+        // Helper: Calculate reports trend (compare last 30 days vs previous 30 days)
+        const calculateReportsTrend = (): { direction: TrendDirection; value: number } => {
+          const now = new Date();
+          const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+
+          const recentReports = reports.filter(r => new Date(r.created_at) >= thirtyDaysAgo).length;
+          const previousReports = reports.filter(r => {
+            const date = new Date(r.created_at);
+            return date >= sixtyDaysAgo && date < thirtyDaysAgo;
+          }).length;
+
+          if (previousReports === 0) {
+            return recentReports > 0 ? { direction: "new", value: recentReports } : { direction: "stable", value: 0 };
+          }
+
+          const change = ((recentReports - previousReports) / previousReports) * 100;
+          if (Math.abs(change) < 5) return { direction: "stable", value: 0 };
+          return {
+            direction: change > 0 ? "up" : "down",
+            value: Math.round(Math.abs(change)),
+          };
+        };
+
+        // 1. 🔥 Player Rising - Best performing player with trend
         if (players.length > 0) {
           const topPlayer = players[0];
           if (topPlayer.auto_rating && topPlayer.auto_rating >= 4.0) {
+            const trend = calculatePlayerTrend(topPlayer.id);
             generatedInsights.push({
               id: "rising-1",
               type: "rising",
@@ -129,6 +232,7 @@ export const InsightsCard = () => {
               description: `Nota ${topPlayer.auto_rating.toFixed(1)} — melhor do portfólio atual.`,
               tooltip: `${topPlayer.full_name} tem a melhor nota automática entre todos os atletas. Posição: ${topPlayer.position}. Clube: ${topPlayer.current_club || 'N/D'}.`,
               link: `/app/players/${topPlayer.id}`,
+              trend: trend.direction !== "stable" ? trend : undefined,
             });
           }
         }
@@ -137,6 +241,7 @@ export const InsightsCard = () => {
         const lowRatedPlayers = players.filter(p => p.auto_rating && p.auto_rating < 3.0);
         if (lowRatedPlayers.length > 0) {
           const alertPlayer = lowRatedPlayers[0];
+          const trend = calculatePlayerTrend(alertPlayer.id);
           generatedInsights.push({
             id: "alert-1",
             type: "alert",
@@ -145,6 +250,7 @@ export const InsightsCard = () => {
             description: `Nota ${alertPlayer.auto_rating?.toFixed(1)} — abaixo do esperado.`,
             tooltip: `${alertPlayer.full_name} está com performance abaixo da média. Considere revisar estatísticas ou criar novo relatório de scouting.`,
             link: `/app/players/${alertPlayer.id}`,
+            trend: trend.direction === "down" ? trend : undefined,
           });
         }
 
@@ -154,6 +260,7 @@ export const InsightsCard = () => {
         );
         if (youngTalents.length > 0) {
           const talent = youngTalents[0];
+          const trend = calculatePlayerTrend(talent.id);
           generatedInsights.push({
             id: "market-1",
             type: "market",
@@ -162,6 +269,7 @@ export const InsightsCard = () => {
             description: `${talent.age} anos + nota ${talent.auto_rating?.toFixed(1)} = valorização.`,
             tooltip: `${talent.full_name} combina juventude (${talent.age} anos) com boa performance (${talent.auto_rating?.toFixed(1)}). Alto potencial de valorização no mercado.`,
             link: `/app/players/${talent.id}`,
+            trend: trend.direction === "up" ? trend : { direction: "new" as TrendDirection, value: 0 },
           });
         }
 
@@ -192,7 +300,7 @@ export const InsightsCard = () => {
           }
         }
 
-        // 5. 🏆 Strategic Competition - Most used competition
+        // 5. 🏆 Strategic Competition - Most used competition with trend
         if (reports.length > 0) {
           const compCounts: Record<string, { count: number; totalScore: number; name: string }> = {};
           reports.forEach((r: any) => {
@@ -210,6 +318,7 @@ export const InsightsCard = () => {
             .sort((a, b) => b.count - a.count)[0];
 
           if (topComp && topComp.count >= 3) {
+            const reportsTrend = calculateReportsTrend();
             generatedInsights.push({
               id: "competition-1",
               type: "competition",
@@ -218,6 +327,7 @@ export const InsightsCard = () => {
               description: `${topComp.count} relatórios — média ${topComp.avgScore.toFixed(1)}.`,
               tooltip: `${topComp.name} é a competição mais utilizada com ${topComp.count} relatórios e média de score ${topComp.avgScore.toFixed(1)}.`,
               link: `/app/competitions`,
+              trend: reportsTrend.direction !== "stable" ? reportsTrend : undefined,
             });
           }
         }
@@ -328,9 +438,12 @@ export const InsightsCard = () => {
 
                         {/* Content */}
                         <div className="flex-1 min-w-0">
-                          <p className={`text-sm font-medium ${insight.colorClass}`}>
-                            {insight.title}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <p className={`text-sm font-medium ${insight.colorClass}`}>
+                              {insight.title}
+                            </p>
+                            {insight.trend && <TrendBadge trend={insight.trend} />}
+                          </div>
                           <p className="text-[11px] text-zinc-400 mt-0.5 line-clamp-1">
                             {insight.description}
                           </p>
