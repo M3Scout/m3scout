@@ -233,23 +233,6 @@ const Sobre = () => {
           </div>
         </div>
       </section>
-
-      {/* FOOTER SIGNATURE */}
-      <section className="py-16 md:py-20 bg-[#0a0a0a] border-t border-neutral-900/50">
-        <div className="mx-auto max-w-[1200px] px-6 md:px-12 lg:px-16">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-            <p className="text-xs text-neutral-600 tracking-wide">
-              © 2025 M3 Agency. Todos os direitos reservados.
-            </p>
-            <p className="text-base md:text-lg text-neutral-500 font-light tracking-wide">
-              <span className="text-[#e52421] font-medium">M3</span>{" "}
-              <span className="text-white">Agency</span>{" "}
-              <span className="text-neutral-700 mx-2">—</span>{" "}
-              <span className="text-neutral-400 italic">Scouting que vira contrato.</span>
-            </p>
-          </div>
-        </div>
-      </section>
     </div>
   );
 };
