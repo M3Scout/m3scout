@@ -268,7 +268,6 @@ export function CurrencyInput({
           ref={inputRef}
           type="text"
           inputMode="numeric"
-          pattern="[0-9]*"
           value={formatted}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
