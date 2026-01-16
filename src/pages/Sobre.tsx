@@ -212,34 +212,24 @@ const Sobre = () => {
         <div className="mx-auto max-w-[1200px] px-6 md:px-12 lg:px-16">
           <div 
             ref={manifestoRef}
-            className="max-w-4xl mx-auto text-center"
+            className="manifesto max-w-4xl mx-auto text-center flex flex-col gap-[10px] md:gap-3"
           >
-            <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-light leading-[1.6] tracking-wide space-y-4">
+            {[
+              { text: "Talento sem direção é ruído.", delay: 0, weight: "font-light" },
+              { text: "Direção sem estratégia é sorte.", delay: 0.15, weight: "font-light" },
+              { text: "Nós trabalhamos com os dois.", delay: 0.3, weight: "font-medium" },
+            ].map((item, index) => (
               <motion.p
-                initial={{ opacity: 0, y: 30 }}
+                key={index}
+                initial={{ opacity: 0, y: 25 }}
                 animate={manifestoInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.7, delay: 0, ease: [0.25, 0.1, 0.25, 1] }}
-                className="text-neutral-500"
+                transition={{ duration: 0.6, delay: item.delay, ease: [0.25, 0.1, 0.25, 1] }}
+                className={`manifesto-item text-[22px] sm:text-[28px] md:text-[34px] lg:text-[40px] ${item.weight} leading-[1.25] tracking-wide text-white/45 transition-colors duration-[220ms] ease-out hover:text-white`}
+                style={{ fontFamily: "'Poppins', sans-serif" }}
               >
-                Talento sem direção é ruído.
+                {item.text}
               </motion.p>
-              <motion.p
-                initial={{ opacity: 0, y: 30 }}
-                animate={manifestoInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.7, delay: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
-                className="text-neutral-500"
-              >
-                Direção sem estratégia é sorte.
-              </motion.p>
-            </div>
-            <motion.p 
-              initial={{ opacity: 0, y: 30 }}
-              animate={manifestoInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.7, delay: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
-              className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-normal text-white leading-[1.6] tracking-wide mt-8"
-            >
-              Nós trabalhamos com os dois.
-            </motion.p>
+            ))}
           </div>
         </div>
       </section>
