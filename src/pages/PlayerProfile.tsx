@@ -691,17 +691,21 @@ const PlayerProfile = () => {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-[#e52421]/5 blur-[120px] rounded-full" />
       </div>
 
-      <div className="relative pt-20 pb-16">
+      <div className="relative pt-24 sm:pt-28 pb-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           
-          {/* Back */}
-          <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}>
+          {/* Back Button - positioned above hero with proper spacing */}
+          <motion.div 
+            initial={{ opacity: 0, x: -10 }} 
+            animate={{ opacity: 1, x: 0 }}
+            className="relative z-10 mb-6"
+          >
             <Link 
               to="/players" 
-              className="inline-flex items-center gap-2 text-zinc-500 hover:text-white transition-colors mb-6"
+              className="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors group py-2"
             >
-              <ArrowLeft className="w-4 h-4" />
-              <span className="text-sm">Voltar</span>
+              <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+              <span className="text-sm font-medium">Voltar</span>
             </Link>
           </motion.div>
 
