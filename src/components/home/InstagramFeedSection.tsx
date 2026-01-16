@@ -151,9 +151,10 @@ export function InstagramFeedSection() {
 
   return (
     <section className="py-20 md:py-28 bg-[#f8f7f4]">
-      {/* Header */}
-      <div className="mx-auto max-w-[1280px] px-6 lg:px-10 mb-12">
-        <div className="flex items-center justify-between">
+      {/* Single container for entire section - consistent alignment */}
+      <div className="mx-auto max-w-[1280px] px-6 lg:px-10">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-12">
           {/* Left: Title + Handle */}
           <div className="flex items-baseline gap-3 md:gap-4">
             <h2 className="text-xs sm:text-sm md:text-base font-medium uppercase tracking-[0.25em] text-neutral-900">
@@ -169,7 +170,7 @@ export function InstagramFeedSection() {
             </a>
           </div>
 
-          {/* Right: Social Icons (Instagram, YouTube, TikTok) */}
+          {/* Right: Social Icons */}
           <div className="flex items-center gap-2 md:gap-3">
             {socialLinks.map((social) => (
               <a
@@ -177,95 +178,93 @@ export function InstagramFeedSection() {
                 href={social.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group w-10 h-10 md:w-11 md:h-11 flex items-center justify-center text-neutral-400 hover:text-neutral-900 transition-all duration-200"
+                className="group relative w-10 h-10 md:w-11 md:h-11 flex items-center justify-center text-neutral-400 hover:text-neutral-900 transition-all duration-200"
                 aria-label={social.label}
               >
                 <social.icon size={18} className="md:w-5 md:h-5" />
-                {/* Subtle underline on hover */}
-                <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-0 h-px bg-neutral-900 group-hover:w-4 transition-all duration-200" />
               </a>
             ))}
           </div>
         </div>
-      </div>
 
-      {/* Carousel Container */}
-      <div className="relative">
-        {/* Loading State */}
-        {loading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-[#f8f7f4]/80 z-20">
-            <Loader2 className="w-6 h-6 animate-spin text-neutral-400" />
+        {/* Carousel Container - within same padding context */}
+        <div className="relative">
+          {/* Loading State */}
+          {loading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-[#f8f7f4]/80 z-20">
+              <Loader2 className="w-6 h-6 animate-spin text-neutral-400" />
+            </div>
+          )}
+
+          {/* Navigation Arrows */}
+          <button
+            onClick={() => scroll("left")}
+            className={cn(
+              "absolute -left-4 md:-left-6 top-1/2 -translate-y-1/2 z-10",
+              "w-10 h-10 md:w-12 md:h-12 flex items-center justify-center",
+              "bg-white border border-neutral-200 text-neutral-700 rounded-full shadow-sm",
+              "hover:bg-neutral-100 transition-all duration-200",
+              !canScrollLeft && "opacity-0 pointer-events-none"
+            )}
+            aria-label="Scroll left"
+          >
+            <ChevronLeft size={20} />
+          </button>
+
+          <button
+            onClick={() => scroll("right")}
+            className={cn(
+              "absolute -right-4 md:-right-6 top-1/2 -translate-y-1/2 z-10",
+              "w-10 h-10 md:w-12 md:h-12 flex items-center justify-center",
+              "bg-white border border-neutral-200 text-neutral-700 rounded-full shadow-sm",
+              "hover:bg-neutral-100 transition-all duration-200",
+              !canScrollRight && "opacity-0 pointer-events-none"
+            )}
+            aria-label="Scroll right"
+          >
+            <ChevronRight size={20} />
+          </button>
+
+          {/* Carousel Track - aligned with header */}
+          <div
+            ref={carouselRef}
+            className="flex gap-2 md:gap-3 overflow-x-auto overflow-y-visible scrollbar-hide snap-x snap-mandatory scroll-smooth"
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          >
+            {posts.map((post) => (
+              <a
+                key={post.id}
+                href={post.permalink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group relative flex-shrink-0 snap-start"
+              >
+                {/* Square Card */}
+                <div className="relative w-[140px] h-[140px] sm:w-[160px] sm:h-[160px] md:w-[180px] md:h-[180px] lg:w-[200px] lg:h-[200px] overflow-hidden">
+                  <img
+                    src={post.imageUrl}
+                    alt="Instagram post"
+                    loading="lazy"
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+
+                  {/* Instagram Icon - Top Right */}
+                  <div className="absolute top-3 right-3 text-white/80 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <Instagram size={18} />
+                  </div>
+
+                  {/* Hover Overlay */}
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                    <span className="text-white text-xs uppercase tracking-[0.15em] font-medium">
+                      Ver no Instagram
+                    </span>
+                  </div>
+                </div>
+              </a>
+            ))}
+            {/* End spacer - ensures last post is fully visible */}
+            <div className="flex-shrink-0 w-1" aria-hidden="true" />
           </div>
-        )}
-
-        {/* Left Arrow */}
-        <button
-          onClick={() => scroll("left")}
-          className={cn(
-            "absolute left-4 md:left-8 top-1/2 -translate-y-1/2 z-10",
-            "w-12 h-12 flex items-center justify-center",
-            "bg-white border border-neutral-200 text-neutral-700",
-            "hover:bg-neutral-100 transition-all duration-200",
-            !canScrollLeft && "opacity-0 pointer-events-none"
-          )}
-          aria-label="Scroll left"
-        >
-          <ChevronLeft size={20} />
-        </button>
-
-        {/* Right Arrow */}
-        <button
-          onClick={() => scroll("right")}
-          className={cn(
-            "absolute right-4 md:right-8 top-1/2 -translate-y-1/2 z-10",
-            "w-12 h-12 flex items-center justify-center",
-            "bg-white border border-neutral-200 text-neutral-700",
-            "hover:bg-neutral-100 transition-all duration-200",
-            !canScrollRight && "opacity-0 pointer-events-none"
-          )}
-          aria-label="Scroll right"
-        >
-          <ChevronRight size={20} />
-        </button>
-
-        {/* Carousel */}
-        <div
-          ref={carouselRef}
-          className="flex gap-1 overflow-x-auto scrollbar-hide snap-x snap-mandatory scroll-smooth px-6 md:px-10"
-          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-        >
-          {posts.map((post) => (
-            <a
-              key={post.id}
-              href={post.permalink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group relative flex-shrink-0 snap-start"
-            >
-              {/* Square Card */}
-              <div className="relative w-[160px] h-[160px] sm:w-[180px] sm:h-[180px] md:w-[200px] md:h-[200px] lg:w-[220px] lg:h-[220px] overflow-hidden">
-                {/* Image */}
-                <img
-                  src={post.imageUrl}
-                  alt="Instagram post"
-                  loading="lazy"
-                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-
-                {/* Instagram Icon - Top Right */}
-                <div className="absolute top-3 right-3 text-white/80 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <Instagram size={18} />
-                </div>
-
-                {/* Hover Overlay */}
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                  <span className="text-white text-xs uppercase tracking-[0.15em] font-medium">
-                    Ver no Instagram
-                  </span>
-                </div>
-              </div>
-            </a>
-          ))}
         </div>
       </div>
 
