@@ -39,7 +39,7 @@ import {
 } from "@/components/ui/collapsible";
 import { DeletePlayerDialog } from "@/components/players/DeletePlayerDialog";
 import { ScoutingPlayerCard } from "@/components/players/ScoutingPlayerCard";
-import { PlayerRowCard, PlayerMobileCard } from "@/components/players/PlayerRowCard";
+import { PositionIdentityCard, PositionIdentityCardMobile } from "@/components/players/PositionIdentityCard";
 import { BulkRecalculateButton } from "@/components/players/BulkRecalculateButton";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -654,8 +654,8 @@ const AppPlayers = () => {
           </div>
         </div>
       ) : viewMode === "table" ? (
-        /* Row Card View - Modern Scouting Design */
-        <div className="space-y-2 animate-fade-in delay-100">
+        /* Position Identity Cards - Premium Grid View */
+        <div className="space-y-4 animate-fade-in delay-100">
           {/* Sort Controls */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2 text-xs text-zinc-500">
@@ -687,11 +687,11 @@ const AppPlayers = () => {
             </div>
           </div>
           
-          {/* Player Row Cards */}
+          {/* Position Identity Cards */}
           {isMobile ? (
             <div className="space-y-3">
               {safeArray(paginatedPlayers).map((player) => (
-                <PlayerMobileCard
+                <PositionIdentityCardMobile
                   key={player.id}
                   id={player.id}
                   fullName={player.full_name}
@@ -701,9 +701,11 @@ const AppPlayers = () => {
                   currentClub={player.current_club}
                   photoUrl={player.photo_url}
                   autoRating={player.auto_rating}
-                  avgScore={player.avg_score}
-                  scoreTrend={player.score_trend}
+                  height={player.height}
+                  dominantFoot={player.dominant_foot}
                   contractEnd={player.contract_end}
+                  overallRating={player.overall_rating}
+                  potentialRating={player.potential_rating}
                   isPublic={player.is_public}
                   isArchived={player.is_archived}
                   isAdmin={isAdmin}
@@ -713,9 +715,9 @@ const AppPlayers = () => {
               ))}
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               {safeArray(paginatedPlayers).map((player) => (
-                <PlayerRowCard
+                <PositionIdentityCard
                   key={player.id}
                   id={player.id}
                   fullName={player.full_name}
@@ -725,9 +727,11 @@ const AppPlayers = () => {
                   currentClub={player.current_club}
                   photoUrl={player.photo_url}
                   autoRating={player.auto_rating}
-                  avgScore={player.avg_score}
-                  scoreTrend={player.score_trend}
+                  height={player.height}
+                  dominantFoot={player.dominant_foot}
                   contractEnd={player.contract_end}
+                  overallRating={player.overall_rating}
+                  potentialRating={player.potential_rating}
                   isPublic={player.is_public}
                   isArchived={player.is_archived}
                   isAdmin={isAdmin}
