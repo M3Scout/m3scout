@@ -414,7 +414,8 @@ export function GameScoreboard({
                 {isWaitingSecondHalf ? (
                   <Button
                     size="lg"
-                    className="col-span-3 h-14 gap-2 bg-purple-600 hover:bg-purple-700 text-lg font-semibold"
+                    variant="info"
+                    className="col-span-3 h-14 gap-2 text-lg font-semibold"
                     onClick={onStartSecondHalf}
                     disabled={isPending}
                   >
@@ -426,12 +427,8 @@ export function GameScoreboard({
                     {/* Play/Pause */}
                     <Button
                       size="lg"
-                      className={cn(
-                        "h-14 gap-2 text-lg font-semibold col-span-1",
-                        isRunning 
-                          ? "bg-amber-600 hover:bg-amber-700" 
-                          : "bg-green-600 hover:bg-green-700"
-                      )}
+                      variant={isRunning ? "warning" : "success"}
+                      className="h-14 gap-2 text-lg font-semibold col-span-1"
                       onClick={onPlayPause}
                       disabled={isPending}
                     >
@@ -494,16 +491,17 @@ export function GameScoreboard({
           {/* Finished state actions */}
           {isFinished && (
             <div className="px-4 pb-4">
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  size="lg"
-                  className="h-14 gap-2 bg-green-600 hover:bg-green-700"
-                  onClick={onPlayPause}
-                  disabled={isPending}
-                >
-                  <Play className="w-5 h-5" />
-                  Retomar
-                </Button>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                size="lg"
+                variant="success"
+                className="h-14 gap-2"
+                onClick={onPlayPause}
+                disabled={isPending}
+              >
+                <Play className="w-5 h-5" />
+                Retomar
+              </Button>
                 <Button
                   size="lg"
                   variant="outline"

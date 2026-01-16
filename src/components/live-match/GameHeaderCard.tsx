@@ -151,9 +151,10 @@ export function GameHeaderCard({
               {/* Start game button (draft only) */}
               {isDraft && (
                 <Button
+                  variant="success"
                   onClick={() => setConfirmStartOpen(true)}
                   disabled={isPending || startersCount === 0}
-                  className="h-10 px-4 gap-2 bg-green-600 hover:bg-green-700 shadow-lg shadow-green-600/20"
+                  className="h-10 px-4 gap-2"
                 >
                   <Play className="w-4 h-4" />
                   <span className="hidden sm:inline">Iniciar Jogo</span>
@@ -210,7 +211,7 @@ export function GameHeaderCard({
             </AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleStartGame}
-              className="bg-green-600 hover:bg-green-700"
+              className="bg-green-600 hover:bg-green-700 shadow-lg shadow-green-600/25"
             >
               <Play className="w-4 h-4 mr-2" />
               Iniciar Jogo
