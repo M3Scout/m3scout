@@ -8,6 +8,7 @@ import { AddPlayerModal } from "@/components/live-match/AddPlayerModal";
 import { PremiumPlayerCard } from "@/components/live-match/PremiumPlayerCard";
 import { LiveStatsPanel } from "@/components/live-match/LiveStatsPanel";
 import { EventTimeline } from "@/components/live-match/EventTimeline";
+import { PendingEventsBadge } from "@/components/live-match/PendingEventsBadge";
 import { SubstitutionModal } from "@/components/live-match/SubstitutionModal";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -58,6 +59,7 @@ export default function LiveMatchGame() {
     matchEvents,
     filteredPlayers,
     playerEventCounts,
+    pendingEventsCount,
     isLoading,
     matchError,
     onlyOnField,
@@ -65,6 +67,7 @@ export default function LiveMatchGame() {
     addPlayer,
     addEvent,
     deleteEvent,
+    voidEvent,
     undoLastEvent,
     updateMatchStatus,
     startGame,
@@ -193,6 +196,7 @@ export default function LiveMatchGame() {
         isPending={updateMatchStatus.isPending || startGame.isPending}
         startersCount={startersCount}
         playersOnField={playersOnField.length}
+        pendingEventsCount={pendingEventsCount}
       />
 
       <div className="container py-4 space-y-4">
@@ -259,11 +263,13 @@ export default function LiveMatchGame() {
               </Button>
             )}
 
-            {!isDraft && (
+            {(isDraft || isLive) && (
               <EventTimeline
                 events={matchEvents}
                 players={matchPlayers}
                 onDeleteEvent={(id) => deleteEvent.mutate(id)}
+                onVoidEvent={(id, reason) => voidEvent.mutate({ eventId: id, reason })}
+                matchStatus={match.status}
               />
             )}
           </div>
