@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface AthleteCardPremiumProps {
   id: string;
@@ -102,44 +103,61 @@ export function AthleteCardPremium({
 
           {/* Player Info - Bottom */}
           <div className="absolute bottom-0 left-0 right-0 p-5">
-            {/* Scouting Mode Chips */}
-            {scoutingMode && (dominantFoot || height || currentLeague) && (
-              <div className="flex flex-wrap gap-1.5 mb-3">
-                {dominantFoot && (
-                  <span 
-                    className="inline-flex items-center px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider text-white/70 rounded"
-                    style={{ 
-                      background: 'rgba(229, 36, 33, 0.15)',
-                      border: '1px solid rgba(229, 36, 33, 0.25)'
-                    }}
-                  >
-                    Pé: {formatFoot(dominantFoot)}
-                  </span>
-                )}
-                {height && (
-                  <span 
-                    className="inline-flex items-center px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider text-white/70 rounded"
-                    style={{ 
-                      background: 'rgba(229, 36, 33, 0.15)',
-                      border: '1px solid rgba(229, 36, 33, 0.25)'
-                    }}
-                  >
-                    {formatHeight(height)}
-                  </span>
-                )}
-                {currentLeague && (
-                  <span 
-                    className="inline-flex items-center px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider text-white/70 rounded"
-                    style={{ 
-                      background: 'rgba(255, 255, 255, 0.05)',
-                      border: '1px solid rgba(255, 255, 255, 0.1)'
-                    }}
-                  >
-                    {currentLeague}
-                  </span>
-                )}
-              </div>
-            )}
+            {/* Scouting Mode Chips with Animation */}
+            <AnimatePresence>
+              {scoutingMode && (dominantFoot || height || currentLeague) && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10, height: 0 }}
+                  animate={{ opacity: 1, y: 0, height: 'auto' }}
+                  exit={{ opacity: 0, y: 10, height: 0 }}
+                  transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
+                  className="flex flex-wrap gap-1.5 mb-3 overflow-hidden"
+                >
+                  {dominantFoot && (
+                    <motion.span 
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.2, delay: 0.05 }}
+                      className="inline-flex items-center px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider text-white/70 rounded"
+                      style={{ 
+                        background: 'rgba(229, 36, 33, 0.15)',
+                        border: '1px solid rgba(229, 36, 33, 0.25)'
+                      }}
+                    >
+                      Pé: {formatFoot(dominantFoot)}
+                    </motion.span>
+                  )}
+                  {height && (
+                    <motion.span 
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.2, delay: 0.1 }}
+                      className="inline-flex items-center px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider text-white/70 rounded"
+                      style={{ 
+                        background: 'rgba(229, 36, 33, 0.15)',
+                        border: '1px solid rgba(229, 36, 33, 0.25)'
+                      }}
+                    >
+                      {formatHeight(height)}
+                    </motion.span>
+                  )}
+                  {currentLeague && (
+                    <motion.span 
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.2, delay: 0.15 }}
+                      className="inline-flex items-center px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider text-white/70 rounded"
+                      style={{ 
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)'
+                      }}
+                    >
+                      {currentLeague}
+                    </motion.span>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
             
             {/* Name - max 2 lines with clamp */}
             <h3 
