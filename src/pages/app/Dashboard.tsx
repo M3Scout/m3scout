@@ -9,6 +9,7 @@ import { RecentReportsCard } from "@/components/dashboard/RecentReportsCard";
 import { RecentLeadsCard } from "@/components/dashboard/RecentLeadsCard";
 import { QuickActionsCard } from "@/components/dashboard/QuickActionsCard";
 import { PositionChartCard } from "@/components/dashboard/PositionChartCard";
+import { InsightsCard } from "@/components/dashboard/InsightsCard";
 import CompetitionUsageWidget from "@/components/competitions/CompetitionUsageWidget";
 import { motion, Variants } from "framer-motion";
 
@@ -230,40 +231,49 @@ const Dashboard = () => {
         />
       </motion.div>
 
-      {/* Main Content Grid */}
+      {/* Insights + Top Players Grid */}
       <motion.div variants={itemVariants} className="grid lg:grid-cols-3 gap-6">
-        {/* Top Players - Takes more space */}
+        {/* Insights - New strategic section */}
+        <div className="lg:col-span-1">
+          <InsightsCard />
+        </div>
+
+        {/* Top Players */}
         <div className="lg:col-span-2">
           <TopPlayersCard />
         </div>
+      </motion.div>
 
+      {/* Position Chart + Reports Grid */}
+      <motion.div variants={itemVariants} className="grid lg:grid-cols-3 gap-6">
         {/* Position Chart */}
         <div>
           <PositionChartCard data={positionData} />
         </div>
+
+        {/* Recent Reports */}
+        <div className="lg:col-span-2">
+          <RecentReportsCard reports={recentReports} />
+        </div>
       </motion.div>
 
-      {/* Secondary Grid */}
+      {/* Leads + Quick Actions Grid */}
       <motion.div variants={itemVariants} className="grid lg:grid-cols-2 gap-6">
-        {/* Recent Reports */}
-        <RecentReportsCard reports={recentReports} />
-
         {/* Recent Leads */}
         <RecentLeadsCard leads={recentLeads} />
-      </motion.div>
 
-      {/* Bottom Grid */}
-      <motion.div variants={itemVariants} className="grid lg:grid-cols-2 gap-6">
         {/* Quick Actions */}
         <QuickActionsCard />
+      </motion.div>
 
-        {/* Competition Usage - Admin Only */}
-        {isAdmin && (
+      {/* Competition Usage - Admin Only */}
+      {isAdmin && (
+        <motion.div variants={itemVariants}>
           <div className="rounded-xl border border-zinc-800/50 bg-gradient-to-br from-zinc-900 to-zinc-950 overflow-hidden">
             <CompetitionUsageWidget />
           </div>
-        )}
-      </motion.div>
+        </motion.div>
+      )}
     </motion.div>
   );
 };
