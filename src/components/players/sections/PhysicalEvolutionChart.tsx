@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Plus, Calendar, Loader2, List, Trash2, Pencil } from "lucide-react";
+import { TrendingUp, Plus, Calendar, Loader2, List, Trash2, Pencil, FileDown } from "lucide-react";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import jsPDF from "jspdf";
 
 interface PhysicalHistoryRecord {
   id: string;
@@ -30,6 +31,7 @@ interface PhysicalHistoryRecord {
 
 interface PhysicalEvolutionChartProps {
   playerId: string;
+  playerName?: string;
   currentData?: {
     weight?: number | null;
     body_fat_percentage?: number | null;
@@ -51,7 +53,7 @@ const METRIC_CONFIG = {
 
 type MetricKey = keyof typeof METRIC_CONFIG;
 
-export const PhysicalEvolutionChart = ({ playerId, currentData }: PhysicalEvolutionChartProps) => {
+export const PhysicalEvolutionChart = ({ playerId, playerName = "Atleta", currentData }: PhysicalEvolutionChartProps) => {
   const { user, isAdmin, isScout } = useAuth();
   const [selectedMetrics, setSelectedMetrics] = useState<MetricKey[]>(["weight", "body_fat_percentage"]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -242,7 +244,178 @@ export const PhysicalEvolutionChart = ({ playerId, currentData }: PhysicalEvolut
     return metrics.length > 0 ? metrics.join(" • ") : "Sem dados registrados";
   };
 
-  // Prepare chart data
+  // Export physical history to PDF
+  const handleExportPDF = () => {
+    if (!history || history.length === 0) {
+      toast.error("Nenhum dado para exportar");
+      return;
+    }
+
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 20;
+      let yPos = 20;
+
+      // Header
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.text("Relatório de Avaliações Físicas", margin, yPos);
+      yPos += 10;
+
+      // Player name
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "normal");
+      doc.text(playerName, margin, yPos);
+      yPos += 8;
+
+      // Date
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text(`Gerado em: ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`, margin, yPos);
+      doc.setTextColor(0);
+      yPos += 15;
+
+      // Summary
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("Resumo", margin, yPos);
+      yPos += 7;
+
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Total de avaliações: ${history.length}`, margin, yPos);
+      yPos += 5;
+      
+      if (history.length > 0) {
+        const firstDate = format(new Date(history[0].recorded_at), "dd/MM/yyyy");
+        const lastDate = format(new Date(history[history.length - 1].recorded_at), "dd/MM/yyyy");
+        doc.text(`Período: ${firstDate} a ${lastDate}`, margin, yPos);
+      }
+      yPos += 15;
+
+      // Table header
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.setFillColor(240, 240, 240);
+      doc.rect(margin, yPos - 5, pageWidth - margin * 2, 8, "F");
+      
+      const colWidths = [28, 22, 22, 28, 25, 22, 23];
+      const headers = ["Data", "Peso", "% Gord.", "Massa Musc.", "Vel. Máx", "Sprint", "VO2"];
+      let xPos = margin;
+      
+      headers.forEach((header, i) => {
+        doc.text(header, xPos + 2, yPos);
+        xPos += colWidths[i];
+      });
+      yPos += 8;
+
+      // Table rows
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+
+      const sortedHistory = [...history].sort((a, b) => 
+        new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime()
+      );
+
+      sortedHistory.forEach((record, index) => {
+        // Check if we need a new page
+        if (yPos > 270) {
+          doc.addPage();
+          yPos = 20;
+        }
+
+        // Alternate row background
+        if (index % 2 === 0) {
+          doc.setFillColor(250, 250, 250);
+          doc.rect(margin, yPos - 4, pageWidth - margin * 2, 7, "F");
+        }
+
+        xPos = margin;
+        const rowData = [
+          format(new Date(record.recorded_at), "dd/MM/yyyy"),
+          record.weight ? `${record.weight} kg` : "-",
+          record.body_fat_percentage ? `${record.body_fat_percentage}%` : "-",
+          record.muscle_mass ? `${record.muscle_mass} kg` : "-",
+          record.max_speed ? `${record.max_speed} km/h` : "-",
+          record.sprint_30m ? `${record.sprint_30m}s` : "-",
+          record.vo2_max ? `${record.vo2_max}` : "-",
+        ];
+
+        rowData.forEach((data, i) => {
+          doc.text(data, xPos + 2, yPos);
+          xPos += colWidths[i];
+        });
+
+        // Add notes if present
+        if (record.notes) {
+          yPos += 5;
+          doc.setFontSize(8);
+          doc.setTextColor(100);
+          doc.text(`Obs: ${record.notes}`, margin + 2, yPos, { maxWidth: pageWidth - margin * 2 - 4 });
+          doc.setTextColor(0);
+          doc.setFontSize(9);
+        }
+
+        yPos += 7;
+      });
+
+      // Evolution summary (if more than 1 record)
+      if (history.length >= 2) {
+        yPos += 10;
+        
+        if (yPos > 250) {
+          doc.addPage();
+          yPos = 20;
+        }
+
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text("Evolução", margin, yPos);
+        yPos += 8;
+
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+
+        const first = history[0];
+        const last = history[history.length - 1];
+
+        const metrics = [
+          { key: "weight", label: "Peso", unit: "kg" },
+          { key: "body_fat_percentage", label: "% Gordura", unit: "%" },
+          { key: "muscle_mass", label: "Massa Muscular", unit: "kg" },
+          { key: "vo2_max", label: "VO2 Máx", unit: "ml/kg/min" },
+        ];
+
+        metrics.forEach(({ key, label, unit }) => {
+          const firstVal = first[key as keyof PhysicalHistoryRecord] as number | null;
+          const lastVal = last[key as keyof PhysicalHistoryRecord] as number | null;
+          
+          if (firstVal !== null && lastVal !== null) {
+            const diff = lastVal - firstVal;
+            const diffStr = diff >= 0 ? `+${diff.toFixed(1)}` : diff.toFixed(1);
+            doc.text(`${label}: ${firstVal} → ${lastVal} ${unit} (${diffStr})`, margin, yPos);
+            yPos += 5;
+          }
+        });
+      }
+
+      // Footer
+      doc.setFontSize(8);
+      doc.setTextColor(150);
+      doc.text("M3 Scouting - Relatório Médico/Físico", margin, doc.internal.pageSize.getHeight() - 10);
+
+      // Save
+      const fileName = `avaliacao-fisica-${playerName.toLowerCase().replace(/\s+/g, "-")}-${format(new Date(), "yyyy-MM-dd")}.pdf`;
+      doc.save(fileName);
+      
+      toast.success("PDF exportado com sucesso");
+    } catch (error) {
+      console.error("Error exporting PDF:", error);
+      toast.error("Erro ao exportar PDF");
+    }
+  };
+
   const chartData = (history || []).map((record) => ({
     date: format(new Date(record.recorded_at), "dd/MM/yy"),
     fullDate: record.recorded_at,
@@ -352,6 +525,18 @@ export const PhysicalEvolutionChart = ({ playerId, currentData }: PhysicalEvolut
                       ))}
                     </div>
                   </ScrollArea>
+                  
+                  {/* Export PDF Button */}
+                  <div className="pt-4 border-t border-border/50">
+                    <Button 
+                      variant="outline" 
+                      className="w-full gap-2" 
+                      onClick={handleExportPDF}
+                    >
+                      <FileDown className="w-4 h-4" />
+                      Exportar PDF
+                    </Button>
+                  </div>
                 </DialogContent>
               </Dialog>
             )}
