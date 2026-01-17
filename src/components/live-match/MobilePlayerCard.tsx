@@ -18,13 +18,14 @@ import {
   LogIn, LogOut, Goal, Shield,
   Target, Footprints, HandHelping, MoreHorizontal, Trash2,
   MessageSquare, Undo2, ArrowRight,
-  RotateCcw, ShieldCheck, Zap, ArrowUpRight, Hand, CircleX, Ban, BarChart3
+  RotateCcw, ShieldCheck, Zap, ArrowUpRight, Hand, CircleX, Ban, BarChart3,
+  ChevronDown, ChevronUp, Plus
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { playSound, getSoundForEvent } from "@/lib/sounds";
 import { getPositionColor, getShortPosition } from "@/lib/positionColors";
 import { PlayerNotesModal } from "./PlayerNotesModal";
-import { MoreStatsMenu } from "./MoreStatsMenu";
+import { InlineMoreStatsPanel } from "./InlineMoreStatsPanel";
 import { toast } from "sonner";
 
 // Main quick actions - always visible in grid
@@ -108,6 +109,7 @@ export function MobilePlayerCard({
 }: MobilePlayerCardProps) {
   const [showOptions, setShowOptions] = useState(false);
   const [showDetailedStats, setShowDetailedStats] = useState(false);
+  const [showMoreStats, setShowMoreStats] = useState(false);
   const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
   const [lastEvent, setLastEvent] = useState<MatchEventType | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -489,18 +491,51 @@ export function MobilePlayerCard({
               );
             })}
             
-            {/* "Mais" button - opens the unified MoreStatsMenu */}
-            <MoreStatsMenu
-              matchStatus={matchStatus}
-              clockStatus={clockStatus}
-              isGoalkeeper={isGK}
-              isOnField={matchPlayer.is_on_field}
-              eventCounts={eventCounts}
-              onAddEvent={handleAddEventWithSound}
-              disabled={disabled}
-            />
+            {/* "Mais" button - expands inline stats panel */}
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowMoreStats(!showMoreStats)}
+              className={cn(
+                "relative flex flex-col items-center justify-center gap-1.5 py-3.5 px-2 rounded-2xl",
+                "transition-all duration-200",
+                showMoreStats ? "bg-primary/20 border-primary/30" : "bg-zinc-800/60",
+                "border border-white/5"
+              )}
+            >
+              {showMoreStats ? (
+                <ChevronUp className="w-5 h-5 text-primary" />
+              ) : (
+                <Plus className="w-5 h-5 text-zinc-400" />
+              )}
+              <span className={cn("text-xs font-medium", showMoreStats ? "text-primary" : "text-zinc-400")}>
+                {showMoreStats ? "Menos" : "Mais"}
+              </span>
+            </motion.button>
           </div>
         </div>
+
+        {/* ===== INLINE MORE STATS PANEL (expandable) ===== */}
+        <AnimatePresence>
+          {showMoreStats && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="overflow-hidden border-t border-zinc-800/50"
+            >
+              <InlineMoreStatsPanel
+                matchStatus={matchStatus}
+                clockStatus={clockStatus}
+                isGoalkeeper={isGK}
+                isOnField={matchPlayer.is_on_field}
+                eventCounts={eventCounts}
+                onAddEvent={handleAddEventWithSound}
+                disabled={disabled}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
 
       {/* Remove confirmation dialog */}
