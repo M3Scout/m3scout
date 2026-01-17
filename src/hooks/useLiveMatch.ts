@@ -669,14 +669,14 @@ export function useLiveMatch(matchId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["match", matchId] });
       queryClient.invalidateQueries({ queryKey: ["match-players", matchId] });
-      toast.success("1º tempo encerrado! Todos os atletas saíram de campo.");
+      toast.success("Intervalo! Jogadores permanecem em campo.");
     },
     onError: (error: Error) => {
       toast.error(error.message || "Erro ao encerrar 1º tempo");
     },
   });
 
-  // Start second half using RPC V3 - does NOT auto-enter players
+  // Start second half using RPC V3 - preserves players on field
   const startSecondHalf = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.rpc("start_second_half_v2", {
@@ -688,7 +688,8 @@ export function useLiveMatch(matchId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["match", matchId] });
-      toast.success("2º tempo iniciado! Marque os atletas que entram em campo.");
+      queryClient.invalidateQueries({ queryKey: ["match-players", matchId] });
+      toast.success("2º tempo iniciado! Jogadores permanecem em campo.");
     },
     onError: (error: Error) => {
       toast.error(error.message || "Erro ao iniciar 2º tempo");

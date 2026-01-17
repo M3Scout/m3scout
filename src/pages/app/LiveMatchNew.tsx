@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -36,7 +36,10 @@ export default function LiveMatchNew() {
   const [durationMinutes, setDurationMinutes] = useState(90);
   const [notes, setNotes] = useState("");
   
-  // Team customization
+  // Team selection from registered teams
+  const [selectedTeamId, setSelectedTeamId] = useState<string>("");
+  
+  // Team customization (manual override)
   const [teamNameDisplay, setTeamNameDisplay] = useState("");
   const [teamLogoUrl, setTeamLogoUrl] = useState("");
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
@@ -59,6 +62,35 @@ export default function LiveMatchNew() {
       return data;
     },
   });
+
+  // Fetch registered teams
+  const { data: teams, isLoading: loadingTeams } = useQuery({
+    queryKey: ["teams"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("teams")
+        .select("id, name, short_name, logo_url, primary_color")
+        .order("name");
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // When a team is selected, populate the fields
+  useEffect(() => {
+    if (selectedTeamId && teams) {
+      const team = teams.find(t => t.id === selectedTeamId);
+      if (team) {
+        setTeamNameDisplay(team.name);
+        setTeamLogoUrl(team.logo_url || "");
+      }
+    } else if (selectedTeamId === "") {
+      // Reset to empty when "custom" is selected
+      setTeamNameDisplay("");
+      setTeamLogoUrl("");
+    }
+  }, [selectedTeamId, teams]);
 
   // Handle logo upload
   const handleLogoUpload = async (file: File) => {
@@ -138,7 +170,9 @@ export default function LiveMatchNew() {
           elapsed_seconds_in_half: 0,
           half_start_time: null,
           match_start_time: null,
-          // Team customization - only save if different from global
+          // Team reference (if selected from registered teams)
+          home_team_id: selectedTeamId && selectedTeamId !== "custom" ? selectedTeamId : null,
+          // Team customization - manual override values
           team_name_display: teamNameDisplay.trim() || null,
           team_logo_url: teamLogoUrl || null,
         })
@@ -233,14 +267,60 @@ export default function LiveMatchNew() {
         
         {/* Card Body */}
         <div className="relative p-6 space-y-6">
-          {/* Team Customization Section */}
+          {/* Team Selection Section */}
           <div className="p-4 rounded-xl bg-zinc-800/30 border border-zinc-700/30 space-y-4">
             <div className="flex items-center gap-2 text-sm font-medium text-zinc-300">
               <Shield className="h-4 w-4 text-emerald-400" />
               Time Principal
             </div>
             
-            <div className="grid gap-4 sm:grid-cols-2">
+            {/* Team Dropdown */}
+            <div className="space-y-2">
+              <Label className="text-xs font-medium text-zinc-400">
+                Selecionar Time Cadastrado
+              </Label>
+              <Select
+                value={selectedTeamId}
+                onValueChange={setSelectedTeamId}
+                disabled={loadingTeams}
+              >
+                <SelectTrigger className="h-11 bg-zinc-900/60 border-zinc-700/50 rounded-xl text-zinc-200">
+                  <SelectValue placeholder="Escolha um time ou personalize abaixo..." />
+                </SelectTrigger>
+                <SelectContent className="bg-zinc-900 border-zinc-800">
+                  <SelectItem value="custom">
+                    <span className="flex items-center gap-2">
+                      <Upload className="h-3.5 w-3.5 text-zinc-500" />
+                      Personalizar manualmente
+                    </span>
+                  </SelectItem>
+                  {teams?.map((team) => (
+                    <SelectItem key={team.id} value={team.id}>
+                      <span className="flex items-center gap-2">
+                        {team.logo_url ? (
+                          <img src={team.logo_url} alt="" className="w-4 h-4 object-contain" />
+                        ) : (
+                          <div 
+                            className="w-4 h-4 rounded" 
+                            style={{ backgroundColor: team.primary_color || '#22c55e' }} 
+                          />
+                        )}
+                        {team.name}
+                        {team.short_name && (
+                          <span className="text-zinc-500 text-xs">({team.short_name})</span>
+                        )}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[10px] text-zinc-500">
+                Selecione um time cadastrado ou personalize manualmente
+              </p>
+            </div>
+
+            {/* Manual customization fields (always visible for override) */}
+            <div className="grid gap-4 sm:grid-cols-2 pt-2 border-t border-zinc-700/20">
               {/* Team Name */}
               <div className="space-y-2">
                 <Label 
@@ -325,11 +405,17 @@ export default function LiveMatchNew() {
             <div className="pt-3 border-t border-zinc-700/30">
               <p className="text-[10px] text-zinc-500 mb-2">Preview do card:</p>
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-900/60 border border-zinc-700/30">
-                <img 
-                  src={displayLogoUrl} 
-                  alt={displayTeamName} 
-                  className="w-6 h-6 object-contain"
-                />
+                {displayLogoUrl ? (
+                  <img 
+                    src={displayLogoUrl} 
+                    alt={displayTeamName} 
+                    className="w-6 h-6 object-contain"
+                  />
+                ) : (
+                  <div className="w-6 h-6 rounded bg-emerald-500/20 flex items-center justify-center">
+                    <Shield className="w-3 h-3 text-emerald-400" />
+                  </div>
+                )}
                 <div>
                   <p className="text-sm font-medium text-zinc-200">{displayTeamName}</p>
                   <p className="text-xs text-zinc-500">
