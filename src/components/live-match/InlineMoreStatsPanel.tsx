@@ -195,8 +195,11 @@ export function InlineMoreStatsPanel({
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.2, ease: "easeOut" }}
       className={cn(
-        "p-3 tablet:p-5 desktop:p-6",
-        "space-y-4 tablet:space-y-5 desktop:space-y-6"
+        // Mobile: compact padding, Tablet: generous breathing room
+        "p-3 tablet:p-6 desktop:p-6",
+        "space-y-4 tablet:space-y-6 desktop:space-y-6",
+        // Tablet: use more screen width
+        "tablet:max-w-[95vw] tablet:mx-auto"
       )}
     >
       {/* Status message */}
@@ -215,7 +218,7 @@ export function InlineMoreStatsPanel({
         </div>
       )}
 
-      {/* Categories Grid - mobile 1 col, iPad/tablet 2 cols, desktop 2 cols */}
+      {/* Categories Grid - mobile 1 col, iPad/tablet 2 cols side by side */}
       <div className={cn(
         "grid grid-cols-1 tablet:grid-cols-2 gap-4 tablet:gap-5 desktop:gap-6"
       )}>
@@ -223,37 +226,42 @@ export function InlineMoreStatsPanel({
           <div
             key={category.categoryKey}
             className={cn(
-              "rounded-2xl tablet:rounded-3xl border-2 p-4 tablet:p-5 desktop:p-6",
+              // Tablet: more padding, larger rounded corners
+              "rounded-2xl tablet:rounded-3xl border-2",
+              "p-4 tablet:p-[20px] desktop:p-6",
               category.bgColor
             )}
           >
-            {/* Category header - improved spacing and visibility */}
-             <div className={cn(
-               "flex items-center gap-3 mb-4 tablet:mb-5 desktop:mb-6 pb-3 border-b border-white/10"
-             )}>
-               <div className={cn(
-                 "w-2 h-6 tablet:h-7 rounded-full",
-                 category.color.replace("text-", "bg-")
-               )} />
+            {/* Category header - clear and prominent */}
+            <div className={cn(
+              "flex items-center gap-3 mb-4 tablet:mb-5 desktop:mb-6 pb-3 border-b border-white/10"
+            )}>
+              <div className={cn(
+                "w-2 h-6 tablet:h-8 rounded-full",
+                category.color.replace("text-", "bg-")
+              )} />
               <div className="flex items-baseline gap-2">
-                 <span className={cn(
-                   "text-base tablet:text-lg desktop:text-xl font-black uppercase tracking-wide",
-                   category.color
-                 )}>
+                <span className={cn(
+                  "text-base tablet:text-xl desktop:text-xl font-black uppercase tracking-wide",
+                  category.color
+                )}>
                   {category.category}
                 </span>
-                 <span className={cn(
-                   "text-xs tablet:text-sm text-zinc-400 font-medium"
-                 )}>
+                <span className="text-xs tablet:text-sm text-zinc-400 font-medium">
                   {CATEGORY_NAMES[category.category]}
                 </span>
               </div>
             </div>
 
-            {/* Stats grid - mobile 2 cols, iPad/tablet ALWAYS 2 cols, desktop 4 cols */}
+            {/* Stats grid - Mobile: 2 cols vertical, Tablet: 2 cols HORIZONTAL cards, Desktop: 4 cols */}
             <div className={cn(
-              "grid grid-cols-2 tablet:grid-cols-2 desktop:grid-cols-4",
-              "gap-3 tablet:gap-[18px] desktop:gap-4"
+              "grid",
+              // Mobile: 2 columns, small cards
+              "grid-cols-2 gap-3",
+              // Tablet: 2 columns, WIDE horizontal cards
+              "tablet:grid-cols-2 tablet:gap-4",
+              // Desktop: 4 columns
+              "desktop:grid-cols-4 desktop:gap-4"
             )}>
               {category.stats.map((stat) => {
                 const count = getCount(stat.type);
@@ -262,71 +270,111 @@ export function InlineMoreStatsPanel({
                 return (
                   <motion.div
                     key={stat.type}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
                     className={cn(
-                      "flex flex-col rounded-xl tablet:rounded-2xl transition-all duration-200",
-                      "bg-zinc-900/70 border-2 border-zinc-700/50",
+                      "rounded-xl tablet:rounded-2xl transition-all duration-200",
+                      "bg-zinc-900/80 border-2 border-zinc-700/50",
                       "hover:border-zinc-600 hover:shadow-xl hover:ring-2",
-                      // Tablet rules (iPad): wider cards, balanced height
-                      "min-h-[110px] tablet:min-h-[120px] desktop:min-h-[140px]",
-                      // Touch-first: avoid cramped visuals - wider cards on tablet
-                      "tablet:min-w-[180px]",
                       getCategoryAccent(category.color),
-                      isHighlight && "border-green-500/60 bg-green-500/10 ring-2 ring-green-500/20"
+                      isHighlight && "border-green-500/60 bg-green-500/10 ring-2 ring-green-500/20",
+                      // ========== MOBILE: Vertical compact layout ==========
+                      "flex flex-col",
+                      "min-h-[100px]",
+                      // ========== TABLET: HORIZONTAL layout - COMPLETELY DIFFERENT ==========
+                      "tablet:flex-row tablet:items-stretch",
+                      "tablet:min-h-[96px] tablet:h-[104px]",
+                      "tablet:min-w-[200px]",
+                      // ========== DESKTOP: Back to vertical ==========
+                      "desktop:flex-col desktop:min-h-[140px] desktop:h-auto"
                     )}
                   >
-                    {/* Value + Label section - generous padding */}
-                     <div className={cn(
-                       "flex-1 flex flex-col items-center justify-center",
-                       "py-4 tablet:py-4 desktop:py-6",
-                       "px-4 tablet:px-4"
-                     )}>
+                    {/* ========== VALUE + LABEL SECTION ========== */}
+                    <div className={cn(
+                      // Mobile: centered column
+                      "flex-1 flex flex-col items-center justify-center",
+                      "py-3 px-3",
+                      // Tablet: HORIZONTAL layout - value left, label right
+                      "tablet:flex-row tablet:items-center tablet:justify-start",
+                      "tablet:py-4 tablet:px-4 tablet:gap-4",
+                      // Desktop: back to column
+                      "desktop:flex-col desktop:items-center desktop:justify-center",
+                      "desktop:py-4 desktop:px-4 desktop:gap-0"
+                    )}>
+                      {/* Value */}
                       <motion.p 
                         key={count}
-                        initial={{ scale: 1.15, opacity: 0.8 }}
+                        initial={{ scale: 1.1, opacity: 0.8 }}
                         animate={{ scale: 1, opacity: 1 }}
-                         className={cn(
-                           // Tablet: 26–30px; Desktop: larger
-                           "text-[26px] tablet:text-[30px] desktop:text-[42px] font-black tabular-nums leading-none",
-                           count > 0 ? category.color : "text-zinc-500"
-                         )}
+                        className={cn(
+                          // Mobile: medium size
+                          "text-[24px] font-black tabular-nums leading-none",
+                          // Tablet: LARGE prominent value on left
+                          "tablet:text-[32px] tablet:min-w-[48px] tablet:text-center",
+                          // Desktop: extra large
+                          "desktop:text-[42px] desktop:min-w-0",
+                          count > 0 ? category.color : "text-zinc-500"
+                        )}
                       >
                         {count}
                       </motion.p>
-                      {/* Label - full text, no abbreviation, responsive size */}
-                       <p className={cn(
-                         // Tablet label: 14–15px, full text, max 2 lines
-                         "text-[12px] tablet:text-[15px] text-center mt-2 tablet:mt-3",
-                         "leading-snug tablet:leading-snug",
-                         "min-h-[34px] tablet:min-h-[44px] flex items-center justify-center",
-                         "font-medium tracking-tight",
-                         // clamp to 2 lines on tablet without relying on a plugin
-                         "tablet:[display:-webkit-box] tablet:[-webkit-line-clamp:2] tablet:[-webkit-box-orient:vertical] tablet:overflow-hidden",
-                         count > 0 ? "text-zinc-200" : "text-zinc-500"
-                       )}>
-                         {stat.label}
-                       </p>
+                      
+                      {/* Label - FULL TEXT, no abbreviation */}
+                      <p className={cn(
+                        // Mobile: small centered text
+                        "text-[11px] text-center mt-2 leading-tight",
+                        "min-h-[28px] flex items-center justify-center",
+                        // Tablet: LARGER text, LEFT aligned, max 2 lines
+                        "tablet:text-[15px] tablet:text-left tablet:mt-0",
+                        "tablet:leading-snug tablet:flex-1",
+                        "tablet:min-h-0",
+                        // Desktop: centered again
+                        "desktop:text-[13px] desktop:text-center desktop:mt-2",
+                        "desktop:min-h-[36px]",
+                        "font-medium tracking-tight",
+                        count > 0 ? "text-zinc-200" : "text-zinc-500"
+                      )}>
+                        {stat.label}
+                      </p>
                     </div>
                     
-                    {/* Action buttons footer - larger touch targets */}
-                    <div className="flex items-center border-t-2 border-zinc-700/40">
+                    {/* ========== ACTION BUTTONS ========== */}
+                    <div className={cn(
+                      // Mobile: horizontal bottom bar
+                      "flex items-center border-t-2 border-zinc-700/40",
+                      // Tablet: VERTICAL right side buttons
+                      "tablet:flex-col tablet:border-t-0 tablet:border-l-2",
+                      "tablet:w-[88px] tablet:shrink-0",
+                      // Desktop: back to horizontal bottom
+                      "desktop:flex-row desktop:border-l-0 desktop:border-t-2",
+                      "desktop:w-auto"
+                    )}>
                       {/* Minus button */}
                       <motion.button
                         whileTap={{ scale: 0.9 }}
                         onClick={() => handleRemoveStat(stat.type, stat.label)}
                         disabled={disabled || isSubmitting || count === 0 || !onVoidLastEvent}
                         className={cn(
-                           // Touch targets: min 40px, tablet bigger
-                           "flex-1 h-10 tablet:h-11 desktop:h-12 flex items-center justify-center",
-                           "text-zinc-500 hover:text-red-400 hover:bg-red-500/15 active:bg-red-500/25",
-                           "disabled:opacity-20 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-zinc-500",
-                           "transition-all rounded-bl-xl tablet:rounded-bl-2xl",
-                           "border-r-2 border-zinc-700/40"
+                          // Mobile: half width, compact height
+                          "flex-1 h-9 flex items-center justify-center",
+                          "border-r-2 border-zinc-700/40",
+                          "rounded-bl-xl",
+                          // Tablet: LARGE touch target (44px min)
+                          "tablet:flex-1 tablet:h-[52px] tablet:w-full",
+                          "tablet:border-r-0 tablet:border-b-2",
+                          "tablet:rounded-bl-none tablet:rounded-tr-2xl",
+                          // Desktop: back to normal
+                          "desktop:h-11 desktop:border-b-0 desktop:border-r-2",
+                          "desktop:rounded-tr-none desktop:rounded-bl-xl",
+                          // Styling
+                          "text-zinc-500 hover:text-red-400 hover:bg-red-500/15 active:bg-red-500/25",
+                          "disabled:opacity-20 disabled:cursor-not-allowed",
+                          "disabled:hover:bg-transparent disabled:hover:text-zinc-500",
+                          "transition-all"
                         )}
                         aria-label={`Remover ${stat.label}`}
                       >
-                         <Minus className="w-5 h-5 tablet:w-6 tablet:h-6" strokeWidth={2.5} />
+                        <Minus className="w-5 h-5 tablet:w-6 tablet:h-6" strokeWidth={2.5} />
                       </motion.button>
                       
                       {/* Plus button */}
@@ -335,15 +383,23 @@ export function InlineMoreStatsPanel({
                         onClick={() => handleAddStat(stat.type, stat.label)}
                         disabled={disabled || isSubmitting || (!canAddEvents && !isDraft)}
                         className={cn(
-                           // Touch targets: min 40px, tablet bigger
-                           "flex-1 h-10 tablet:h-11 desktop:h-12 flex items-center justify-center",
-                           "text-zinc-400 hover:text-emerald-400 hover:bg-emerald-500/15 active:bg-emerald-500/25",
-                           "disabled:opacity-20 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-zinc-400",
-                           "transition-all rounded-br-xl tablet:rounded-br-2xl"
+                          // Mobile: half width, compact height
+                          "flex-1 h-9 flex items-center justify-center",
+                          "rounded-br-xl",
+                          // Tablet: LARGE touch target (44px min)
+                          "tablet:flex-1 tablet:h-[52px] tablet:w-full",
+                          "tablet:rounded-br-2xl tablet:rounded-bl-none",
+                          // Desktop: back to normal
+                          "desktop:h-11 desktop:rounded-bl-none desktop:rounded-br-xl",
+                          // Styling
+                          "text-zinc-400 hover:text-emerald-400 hover:bg-emerald-500/15 active:bg-emerald-500/25",
+                          "disabled:opacity-20 disabled:cursor-not-allowed",
+                          "disabled:hover:bg-transparent disabled:hover:text-zinc-400",
+                          "transition-all"
                         )}
                         aria-label={`Adicionar ${stat.label}`}
                       >
-                         <Plus className="w-5 h-5 tablet:w-6 tablet:h-6" strokeWidth={2.5} />
+                        <Plus className="w-5 h-5 tablet:w-7 tablet:h-7" strokeWidth={2.5} />
                       </motion.button>
                     </div>
                   </motion.div>
