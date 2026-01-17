@@ -167,17 +167,17 @@ export default function LiveMatchGame() {
     });
   };
 
-  const handlePlayerEnter = (matchPlayerId: string, minute: number) => {
-    playerEnterField.mutate({ matchPlayerId, minute });
+  const handlePlayerEnter = (matchPlayerId: string) => {
+    playerEnterField.mutate({ matchPlayerId });
   };
 
-  const handlePlayerExit = (matchPlayerId: string, minute: number) => {
-    playerExitField.mutate({ matchPlayerId, minute });
+  const handlePlayerExit = (matchPlayerId: string) => {
+    playerExitField.mutate({ matchPlayerId });
   };
 
   const handleRemoveFromMatch = (mp: typeof matchPlayers[0]) => {
     if (mp.is_on_field) {
-      playerExitField.mutate({ matchPlayerId: mp.id, minute: currentMinute });
+      playerExitField.mutate({ matchPlayerId: mp.id });
     }
     updatePlayer.mutate({
       matchPlayerId: mp.id,
@@ -377,11 +377,13 @@ export default function LiveMatchGame() {
                   matchStatus={match.status}
                   clockStatus={match.clock_status as "stopped" | "running" | "paused"}
                   currentMinute={currentMinute}
+                  currentPeriod={match.half}
+                  displayMinute={currentTimerInfo?.displayString}
                   eventCounts={playerEventCounts[mp.player_id] || ({} as Record<MatchEventType, number>)}
                   onAddEvent={(type) => handleAddEvent(mp.player_id, type)}
                   onUndo={() => undoLastEvent(mp.player_id)}
-                  onPlayerEnter={(minute) => handlePlayerEnter(mp.id, minute)}
-                  onPlayerExit={(minute) => handlePlayerExit(mp.id, minute)}
+                  onPlayerEnter={(matchPlayerId) => handlePlayerEnter(matchPlayerId)}
+                  onPlayerExit={(matchPlayerId) => handlePlayerExit(matchPlayerId)}
                   onRemoveFromMatch={() => handleRemoveFromMatch(mp)}
                   onSaveNotes={async (notes) => {
                     await updatePlayer.mutateAsync({ matchPlayerId: mp.id, updates: { notes } });
@@ -396,11 +398,13 @@ export default function LiveMatchGame() {
                   matchStatus={match.status}
                   clockStatus={match.clock_status as "stopped" | "running" | "paused"}
                   currentMinute={currentMinute}
+                  currentPeriod={match.half}
+                  displayMinute={currentTimerInfo?.displayString}
                   eventCounts={playerEventCounts[mp.player_id] || ({} as Record<MatchEventType, number>)}
                   onAddEvent={(type) => handleAddEvent(mp.player_id, type)}
                   onUndo={() => undoLastEvent(mp.player_id)}
-                  onPlayerEnter={(minute) => handlePlayerEnter(mp.id, minute)}
-                  onPlayerExit={(minute) => handlePlayerExit(mp.id, minute)}
+                  onPlayerEnter={(matchPlayerId) => handlePlayerEnter(matchPlayerId)}
+                  onPlayerExit={(matchPlayerId) => handlePlayerExit(matchPlayerId)}
                   onRemoveFromMatch={() => handleRemoveFromMatch(mp)}
                   onSaveNotes={async (notes) => {
                     await updatePlayer.mutateAsync({ matchPlayerId: mp.id, updates: { notes } });

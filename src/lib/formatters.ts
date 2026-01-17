@@ -178,3 +178,63 @@ export const formatFinancialCompact = (
   }
   return `${symbol} ${n.toLocaleString()}`;
 };
+
+/**
+ * Format game minute with added time notation (45+X', 90+X')
+ * @param seconds - Total seconds elapsed in the period
+ * @param period - Current period (1 = first half, 2 = second half)
+ * @returns Formatted string like "12'", "45+2'", "67'", "90+4'"
+ */
+export const formatGameMinute = (
+  seconds: number | null | undefined,
+  period: number = 1
+): string => {
+  if (seconds === null || seconds === undefined || !Number.isFinite(seconds)) {
+    return "—";
+  }
+
+  const totalMinutes = Math.floor(seconds / 60);
+  const baseMinute = period === 1 ? 0 : 45;
+  const regularTimeLimit = period === 1 ? 45 : 90;
+  const periodLimit = 45; // 45 minutes per period in seconds = 2700
+
+  const gameMinute = baseMinute + totalMinutes;
+
+  if (gameMinute >= regularTimeLimit) {
+    // Added time
+    const addedMinutes = gameMinute - regularTimeLimit + 1;
+    return `${regularTimeLimit}+${addedMinutes}'`;
+  }
+
+  return `${gameMinute}'`;
+};
+
+/**
+ * Format seconds to display minute for an event
+ * Takes into account period to show correct game minute
+ */
+export const formatEventMinute = (
+  gameTimeSeconds: number | null | undefined,
+  period: number = 1
+): string => {
+  return formatGameMinute(gameTimeSeconds, period);
+};
+
+/**
+ * Format a presence interval for display
+ * Shows entry and exit times in game minute format
+ */
+export const formatPresenceInterval = (
+  enteredSeconds: number,
+  exitedSeconds: number | null,
+  period: number
+): string => {
+  const entryMin = formatGameMinute(enteredSeconds, period);
+  if (exitedSeconds === null) {
+    return `${entryMin} → em campo`;
+  }
+  const exitMin = formatGameMinute(exitedSeconds, period);
+  const durationSeconds = exitedSeconds - enteredSeconds;
+  const durationMinutes = Math.floor(durationSeconds / 60);
+  return `${entryMin} → ${exitMin} (${durationMinutes} min)`;
+};

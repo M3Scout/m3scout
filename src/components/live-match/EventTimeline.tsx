@@ -27,6 +27,7 @@ import {
 import { cn } from "@/lib/utils";
 import { EditEventTimeModal } from "./EditEventTimeModal";
 import { VoidEventDialog } from "./VoidEventDialog";
+import { formatGameMinute } from "@/lib/formatters";
 
 // Event icon and color mapping
 const eventConfig: Record<MatchEventType | "substitution", {
@@ -136,13 +137,17 @@ export function EventTimeline({
   };
 
   const getDisplayMinute = (event: MatchEvent) => {
+    // Priority: display_minute from RPC, then compute from game_time_seconds
     if (event.display_minute) return event.display_minute;
+    if (event.game_time_seconds != null && event.period) {
+      return formatGameMinute(event.game_time_seconds, event.period);
+    }
     if (event.game_time_seconds != null) {
       const mins = Math.floor(event.game_time_seconds / 60);
       return `${mins}'`;
     }
     if (event.minute != null) return `${event.minute}'`;
-    return "--'";
+    return "—";
   };
 
   const openEditTimeModal = (event: MatchEvent) => {
