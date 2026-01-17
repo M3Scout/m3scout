@@ -11,6 +11,7 @@ import {
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { MAIN_TEAM_NAME } from "@/lib/teamConfig";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -178,8 +179,11 @@ export function GameHeaderCard({
             <div className="flex items-center justify-between mt-3">
               <div className="min-w-0">
                 <h1 className="text-base sm:text-lg font-bold text-zinc-100 truncate">
-                  vs {match.opponent_name}
+                  {MAIN_TEAM_NAME}
                 </h1>
+                <p className="text-sm text-zinc-400">
+                  vs {match.opponent_name}
+                </p>
                 <div className="flex items-center gap-2 sm:gap-3 text-xs text-zinc-500 mt-0.5 flex-wrap">
                   <span className="flex items-center gap-1">
                     <Trophy className="w-3 h-3" />

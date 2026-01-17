@@ -5,6 +5,7 @@ import { Match, MatchStatus } from "@/hooks/useLiveMatch";
 import { Radio, CheckCircle2, Pause, ArrowRight, Play, FileEdit } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { MAIN_TEAM_NAME } from "@/lib/teamConfig";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -130,9 +131,12 @@ export function MatchHeader({
             <div className="flex items-center justify-between min-w-0">
               <div className="min-w-0">
                 <h1 className="text-base sm:text-lg font-bold truncate">
-                  vs {match.opponent_name}
+                  {MAIN_TEAM_NAME}
                 </h1>
-                <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                <p className="text-sm text-muted-foreground">
+                  vs {match.opponent_name}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">
                   {competitionName} • {match.season_year}
                   {match.venue && ` • ${match.venue}`}
                 </p>
