@@ -158,6 +158,7 @@ export function useLiveMatch(matchId: string) {
         },
         () => {
           queryClient.invalidateQueries({ queryKey: ["match-events", matchId] });
+          queryClient.invalidateQueries({ queryKey: ["match-player-stats", matchId] });
         }
       )
       .on(
@@ -170,6 +171,18 @@ export function useLiveMatch(matchId: string) {
         },
         () => {
           queryClient.invalidateQueries({ queryKey: ["match-players", matchId] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'match_player_stats',
+          filter: `match_id=eq.${matchId}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["match-player-stats", matchId] });
         }
       )
       .subscribe();
@@ -332,6 +345,7 @@ export function useLiveMatch(matchId: string) {
   });
 
   // Add event using RPC - handles draft vs official status automatically
+  // Now also updates match_player_stats atomically
   const addEvent = useMutation({
     mutationFn: async (params: {
       playerId: string;
@@ -352,10 +366,11 @@ export function useLiveMatch(matchId: string) {
       });
 
       if (error) throw error;
-      return data as { event_status?: string; event_id?: string } | null;
+      return data as { event_status?: string; event_id?: string; stats_updated?: boolean } | null;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["match-events", matchId] });
+      queryClient.invalidateQueries({ queryKey: ["match-player-stats", matchId] });
       
       // Show different toast based on event status
       if (data?.event_status === "draft") {
@@ -596,7 +611,7 @@ export function useLiveMatch(matchId: string) {
     },
   });
 
-  // Void event using RPC (instead of delete)
+  // Void event using RPC (instead of delete) - now also reverts stats
   const voidEvent = useMutation({
     mutationFn: async (params: { eventId: string; reason?: string }) => {
       const { data, error } = await supabase.rpc("void_live_event", {
@@ -605,11 +620,12 @@ export function useLiveMatch(matchId: string) {
       });
 
       if (error) throw error;
-      return data;
+      return data as { stats_reverted?: boolean } | null;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["match-events", matchId] });
-      toast.success("Evento anulado");
+      queryClient.invalidateQueries({ queryKey: ["match-player-stats", matchId] });
+      toast.success(data?.stats_reverted ? "Evento anulado e estatísticas revertidas" : "Evento anulado");
     },
     onError: (error: Error) => {
       toast.error(error.message || "Erro ao anular evento");
