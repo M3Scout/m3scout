@@ -213,28 +213,130 @@ export function PremiumPlayerCard({
 
         {/* Card content */}
         <div className="relative pl-4">
-          {/* Header */}
-          <div className="flex items-center gap-3 p-3">
-            {/* Avatar */}
-            <Avatar className={cn("h-12 w-12 border-2", positionColors.borderClass)}>
-              <AvatarImage src={player.photo_url || undefined} />
-              <AvatarFallback className={cn("font-bold", positionColors.bgClass, positionColors.textClass)}>
-                {player.full_name.slice(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
+          {/* Header - Responsive 2-row layout */}
+          <div className="p-3 space-y-2">
+            {/* Row 1: Avatar + Name + Key buttons */}
+            <div className="flex items-center gap-3">
+              {/* Avatar */}
+              <Avatar className={cn("h-11 w-11 sm:h-12 sm:w-12 border-2 shrink-0", positionColors.borderClass)}>
+                <AvatarImage src={player.photo_url || undefined} />
+                <AvatarFallback className={cn("font-bold text-sm", positionColors.bgClass, positionColors.textClass)}>
+                  {player.full_name.slice(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
 
-            {/* Info */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <h4 className="font-semibold text-zinc-100 truncate">{player.full_name}</h4>
-                {hasNotes && (
-                  <MessageSquare className="w-3 h-3 text-amber-400 shrink-0" />
-                )}
+              {/* Name + Notes */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <h4 className="font-semibold text-zinc-100 truncate text-sm sm:text-base">{player.full_name}</h4>
+                  {hasNotes && (
+                    <MessageSquare className="w-3 h-3 text-amber-400 shrink-0" />
+                  )}
+                </div>
               </div>
-              <div className="flex items-center gap-1.5 flex-wrap">
+
+              {/* Right side buttons */}
+              <div className="flex items-center gap-1 shrink-0">
+                {/* Stats expand toggle */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-lg hover:bg-white/10"
+                  onClick={() => setShowDetailedStats(!showDetailedStats)}
+                >
+                  <BarChart3 className={cn(
+                    "w-4 h-4 transition-colors",
+                    showDetailedStats ? "text-blue-400" : "text-zinc-500"
+                  )} />
+                </Button>
+
+                {/* Enter/Exit button */}
+                {isLive && (
+                  <>
+                    {!matchPlayer.is_on_field && matchPlayer.exited_minute === null ? (
+                      <Button
+                        size="sm"
+                        className="h-9 px-3 bg-green-600 hover:bg-green-700"
+                        onClick={handleEnterField}
+                      >
+                        <LogIn className="w-4 h-4 sm:mr-1" />
+                        <span className="hidden sm:inline">Entrar</span>
+                      </Button>
+                    ) : matchPlayer.is_on_field ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-9 px-3 border-amber-500/50 text-amber-400 hover:bg-amber-500/10"
+                        onClick={handleExitField}
+                      >
+                        <LogOut className="w-4 h-4 sm:mr-1" />
+                        <span className="hidden sm:inline">Sair</span>
+                      </Button>
+                    ) : null}
+                  </>
+                )}
+
+                {/* More menu */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <MoreVertical className="w-4 h-4 text-zinc-500" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-800 z-50">
+                    <DropdownMenuItem onClick={() => setExpanded(!expanded)}>
+                      {expanded ? <ChevronUp className="w-4 h-4 mr-2" /> : <ChevronDown className="w-4 h-4 mr-2" />}
+                      {expanded ? "Ocultar ações" : "Mostrar ações"}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={onUndo} disabled={isDraft}>
+                      <Undo2 className="w-4 h-4 mr-2" />
+                      Desfazer último
+                    </DropdownMenuItem>
+                    {onSaveNotes && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                          <div className="p-0">
+                            <PlayerNotesModal
+                              matchPlayer={matchPlayer}
+                              onSaveNotes={onSaveNotes}
+                              disabled={disabled}
+                              triggerClassName="w-full flex items-center px-2 py-1.5 text-sm cursor-pointer"
+                              triggerContent={
+                                <>
+                                  <MessageSquare className="w-4 h-4 mr-2" />
+                                  {hasNotes ? "Editar notas" : "Adicionar notas"}
+                                </>
+                              }
+                            />
+                          </div>
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    {onRemoveFromMatch && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-red-400 focus:text-red-400 focus:bg-red-500/10"
+                          onClick={() => setRemoveDialogOpen(true)}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Remover da partida
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+
+            {/* Row 2: Chips + Key stats - flex-wrap to prevent overlap */}
+            <div className="flex items-center justify-between gap-2">
+              {/* Left: Status chips */}
+              <div className="flex items-center gap-1.5 flex-wrap min-w-0">
                 <Badge 
                   className={cn(
-                    "text-[10px] px-1.5 py-0 h-5 font-bold",
+                    "text-[10px] px-1.5 py-0 h-5 font-bold shrink-0",
                     positionColors.bgClass, positionColors.textClass
                   )}
                 >
@@ -242,126 +344,35 @@ export function PremiumPlayerCard({
                 </Badge>
                 <Badge 
                   variant={matchPlayer.started ? "secondary" : "outline"} 
-                  className="text-[10px] px-1.5 py-0 h-5"
+                  className="text-[10px] px-1.5 py-0 h-5 shrink-0"
                 >
                   {matchPlayer.started ? "TIT" : "RES"}
                 </Badge>
                 {!isDraft && matchPlayer.is_on_field && (
-                  <Badge className="text-[10px] px-1.5 py-0 h-5 bg-green-600/20 text-green-400 border-green-500/30">
+                  <Badge className="text-[10px] px-1.5 py-0 h-5 bg-green-600/20 text-green-400 border-green-500/30 shrink-0">
                     Em campo
                   </Badge>
                 )}
               </div>
-            </div>
 
-            {/* Key stats */}
-            <div className="flex items-center gap-2">
-              {keyStats.map((stat) => (
-                <div 
-                  key={stat.label}
-                  className="text-center px-2 py-1 rounded-lg bg-zinc-800/60"
-                >
-                  <p className={cn(
-                    "text-lg font-bold tabular-nums",
-                    stat.value > 0 ? positionColors.textClass : "text-zinc-500"
-                  )}>
-                    {stat.value}
-                  </p>
-                  <p className="text-[9px] text-zinc-500 uppercase">{stat.label}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* Stats expand toggle button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 shrink-0 rounded-lg hover:bg-white/10"
-              onClick={() => setShowDetailedStats(!showDetailedStats)}
-            >
-              <BarChart3 className={cn(
-                "w-4 h-4 transition-colors",
-                showDetailedStats ? "text-blue-400" : "text-zinc-500"
-              )} />
-            </Button>
-
-            {/* Enter/Exit button */}
-            {isLive && (
-              <>
-                {!matchPlayer.is_on_field && matchPlayer.exited_minute === null ? (
-                  <Button
-                    size="sm"
-                    className="h-10 px-4 bg-green-600 hover:bg-green-700 shrink-0"
-                    onClick={handleEnterField}
+              {/* Right: Key stats */}
+              <div className="flex items-center gap-1 shrink-0">
+                {keyStats.map((stat) => (
+                  <div 
+                    key={stat.label}
+                    className="text-center px-1.5 py-0.5 rounded-lg bg-zinc-800/60 min-w-[38px]"
                   >
-                    <LogIn className="w-4 h-4 mr-1" />
-                    Entrar
-                  </Button>
-                ) : matchPlayer.is_on_field ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-10 px-4 border-amber-500/50 text-amber-400 hover:bg-amber-500/10 shrink-0"
-                    onClick={handleExitField}
-                  >
-                    <LogOut className="w-4 h-4 mr-1" />
-                    Sair
-                  </Button>
-                ) : null}
-              </>
-            )}
-
-            {/* More menu */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0">
-                  <MoreVertical className="w-4 h-4 text-zinc-500" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-800">
-                <DropdownMenuItem onClick={() => setExpanded(!expanded)}>
-                  {expanded ? <ChevronUp className="w-4 h-4 mr-2" /> : <ChevronDown className="w-4 h-4 mr-2" />}
-                  {expanded ? "Ocultar ações" : "Mostrar ações"}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={onUndo} disabled={isDraft}>
-                  <Undo2 className="w-4 h-4 mr-2" />
-                  Desfazer último
-                </DropdownMenuItem>
-                {onSaveNotes && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                      <div className="p-0">
-                        <PlayerNotesModal
-                          matchPlayer={matchPlayer}
-                          onSaveNotes={onSaveNotes}
-                          disabled={disabled}
-                          triggerClassName="w-full flex items-center px-2 py-1.5 text-sm cursor-pointer"
-                          triggerContent={
-                            <>
-                              <MessageSquare className="w-4 h-4 mr-2" />
-                              {hasNotes ? "Editar notas" : "Adicionar notas"}
-                            </>
-                          }
-                        />
-                      </div>
-                    </DropdownMenuItem>
-                  </>
-                )}
-                {onRemoveFromMatch && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      className="text-red-400 focus:text-red-400 focus:bg-red-500/10"
-                      onClick={() => setRemoveDialogOpen(true)}
-                    >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Remover da partida
-                    </DropdownMenuItem>
-                  </>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+                    <p className={cn(
+                      "text-sm sm:text-lg font-bold tabular-nums leading-tight",
+                      stat.value > 0 ? positionColors.textClass : "text-zinc-500"
+                    )}>
+                      {stat.value}
+                    </p>
+                    <p className="text-[8px] text-zinc-500 uppercase">{stat.label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* ===== DETAILED STATS PANEL (expandable) ===== */}

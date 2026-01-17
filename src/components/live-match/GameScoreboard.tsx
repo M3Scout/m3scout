@@ -351,17 +351,18 @@ export function GameScoreboard({
           {/* Action bar */}
           {isLive && (
             <div className="px-4 pb-4 space-y-3">
-              {/* Added time controls */}
+              {/* Added time controls - Fully responsive */}
               <div className="bg-zinc-800/40 rounded-xl p-3 border border-zinc-700/40">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-zinc-500" />
-                    <span className="text-xs text-zinc-400">Acréscimo:</span>
+                <div className="flex flex-wrap items-center gap-2 w-full">
+                  {/* Main controls: Label + minus/value/plus */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Clock className="w-4 h-4 text-zinc-500 hidden sm:block" />
+                    <span className="text-xs text-zinc-400 hidden sm:inline">Acréscimo:</span>
                     <div className="flex items-center gap-1">
                       <Button
                         variant="outline"
                         size="icon"
-                        className="h-9 w-9 bg-zinc-800 border-zinc-700 hover:bg-zinc-700"
+                        className="h-8 w-8 sm:h-9 sm:w-9 bg-zinc-800 border-zinc-700 hover:bg-zinc-700"
                         onMouseDown={() => startHold(() => adjustAddedTime(-1))}
                         onMouseUp={stopHold}
                         onMouseLeave={stopHold}
@@ -371,13 +372,13 @@ export function GameScoreboard({
                       >
                         <Minus className="w-4 h-4" />
                       </Button>
-                      <Badge className="text-lg font-bold min-w-[3rem] justify-center h-9 bg-zinc-700 text-zinc-100">
+                      <Badge className="text-base sm:text-lg font-bold min-w-[2.5rem] sm:min-w-[3rem] justify-center h-8 sm:h-9 bg-zinc-700 text-zinc-100">
                         +{currentAddedTime}
                       </Badge>
                       <Button
                         variant="outline"
                         size="icon"
-                        className="h-9 w-9 bg-zinc-800 border-zinc-700 hover:bg-zinc-700"
+                        className="h-8 w-8 sm:h-9 sm:w-9 bg-zinc-800 border-zinc-700 hover:bg-zinc-700"
                         onMouseDown={() => startHold(() => adjustAddedTime(1))}
                         onMouseUp={stopHold}
                         onMouseLeave={stopHold}
@@ -390,13 +391,14 @@ export function GameScoreboard({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1">
+                  {/* Preset chips - flex-wrap with responsive sizing */}
+                  <div className="flex items-center gap-1 flex-wrap flex-1 justify-end min-w-0">
                     {ADDED_TIME_CHIPS.map((chip) => (
                       <Button
                         key={chip}
                         variant="ghost"
                         size="sm"
-                        className="h-8 px-2 text-xs text-zinc-400 hover:text-zinc-100"
+                        className="h-7 sm:h-8 px-2 text-[11px] sm:text-xs text-zinc-400 hover:text-zinc-100 hover:bg-zinc-700/50"
                         onClick={() => {
                           onUpdateAddedTime(half, currentAddedTime + chip);
                           toast.success(`+${currentAddedTime + chip} min`, { duration: 1000 });
