@@ -271,6 +271,8 @@ export function useLiveMatch(matchId: string) {
       if (error) throw error;
       return data as MatchPlayerStats[];
     },
+    staleTime: 0, // Always refetch when invalidated
+    refetchOnMount: true,
   });
 
   // Convert matchPlayerStats to a map by player_id for easy lookup
@@ -439,8 +441,15 @@ export function useLiveMatch(matchId: string) {
       return result;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["match-events", matchId] });
-      queryClient.invalidateQueries({ queryKey: ["match-player-stats", matchId] });
+      // Force immediate refetch of both events and stats
+      queryClient.invalidateQueries({ 
+        queryKey: ["match-events", matchId],
+        refetchType: 'active',
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: ["match-player-stats", matchId],
+        refetchType: 'active',
+      });
       
       // Show different toast based on event status
       if (data?.event_status === "draft") {
