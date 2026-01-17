@@ -198,8 +198,10 @@ export function InlineMoreStatsPanel({
         // Mobile: compact padding, Tablet: generous breathing room
         "p-3 tablet:p-6 desktop:p-6",
         "space-y-4 tablet:space-y-6 desktop:space-y-6",
-        // Tablet: use more screen width
-        "tablet:max-w-[95vw] tablet:mx-auto"
+        // Tablet portrait: use more screen width
+        "tablet:max-w-[95vw] tablet:mx-auto",
+        // Tablet landscape: even more compact to fit 2-column cards
+        "tablet-landscape:p-4 tablet-landscape:space-y-4"
       )}
     >
       {/* Status message */}
@@ -220,7 +222,9 @@ export function InlineMoreStatsPanel({
 
       {/* Categories Grid - mobile 1 col, iPad/tablet 2 cols side by side */}
       <div className={cn(
-        "grid grid-cols-1 tablet:grid-cols-2 gap-4 tablet:gap-5 desktop:gap-6"
+        "grid grid-cols-1 tablet:grid-cols-2 gap-4 tablet:gap-5 desktop:gap-6",
+        // Landscape: tighter gap since cards are narrower
+        "tablet-landscape:gap-4"
       )}>
         {stats.map((category) => (
           <div
