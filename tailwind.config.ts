@@ -16,6 +16,8 @@ export default {
       screens: {
         // iPad / Tablet: explicit range, touch-first
         tablet: { min: "768px", max: "1024px" },
+        // Tablet landscape: wider screens in tablet range (orientation-based)
+        "tablet-landscape": { raw: "(min-width: 768px) and (max-width: 1366px) and (orientation: landscape)" },
         // Desktop starts strictly AFTER tablet range to avoid overlap at 1024px
         desktop: { min: "1025px" },
       },

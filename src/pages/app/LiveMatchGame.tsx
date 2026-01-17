@@ -399,12 +399,13 @@ export default function LiveMatchGame() {
             "grid",
             // Mobile: single column
             "grid-cols-1 gap-3",
-            // Tablet: 1 column but with more gap for better card visibility
-            // Cards expand to full width - better for horizontal stat layout
+            // Tablet PORTRAIT: 1 column for horizontal card layout
             "tablet:grid-cols-1 tablet:gap-4",
+            // Tablet LANDSCAPE (iPad rotated): 2 columns side by side
+            "tablet-landscape:grid-cols-2 tablet-landscape:gap-5",
             // Desktop: 2 columns
             "desktop:grid-cols-2 desktop:gap-4",
-            // Large desktop: still 2 cols
+            // Fallback for non-tablet breakpoints
             isMobile ? "" : "md:grid-cols-2"
           )}>
             {displayedPlayers.map((mp, index) => (
