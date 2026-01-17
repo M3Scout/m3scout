@@ -181,15 +181,21 @@ export function PremiumPlayerCard({
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: index * 0.05 }}
         className={cn(
-          "relative rounded-xl overflow-hidden transition-all duration-300",
+          "relative overflow-hidden transition-all duration-300",
+          // Tablet: larger rounded corners
+          "rounded-xl tablet:rounded-2xl",
           "bg-zinc-900/60 border",
           positionColors.borderClass,
           !matchPlayer.is_on_field && !isDraft && "opacity-50",
           disabled && "pointer-events-none"
         )}
       >
-        {/* Position accent bar */}
-        <div className={cn("absolute left-0 top-0 bottom-0 w-1", positionColors.accentClass)} />
+        {/* Position accent bar - thicker on tablet */}
+        <div className={cn(
+          "absolute left-0 top-0 bottom-0",
+          "w-1 tablet:w-1.5",
+          positionColors.accentClass
+        )} />
 
         {/* Event flash animation */}
         <AnimatePresence>
@@ -211,76 +217,108 @@ export function PremiumPlayerCard({
           )}
         </AnimatePresence>
 
-        {/* Card content */}
-        <div className="relative pl-4">
-          {/* Header - Responsive 2-row layout */}
-          <div className="p-3 space-y-2">
+        {/* Card content - more padding on tablet */}
+        <div className="relative pl-4 tablet:pl-5">
+          {/* Header - Responsive layout optimized for tablet */}
+          <div className={cn(
+            "p-3 tablet:p-4 desktop:p-4",
+            "space-y-2 tablet:space-y-3"
+          )}>
             {/* Row 1: Avatar + Name + Key buttons */}
-            <div className="flex items-center gap-3">
-              {/* Avatar */}
-              <Avatar className={cn("h-11 w-11 sm:h-12 sm:w-12 border-2 shrink-0", positionColors.borderClass)}>
+            <div className="flex items-center gap-3 tablet:gap-4">
+              {/* Avatar - LARGER on tablet */}
+              <Avatar className={cn(
+                "shrink-0 border-2",
+                // Mobile: compact, Tablet: prominent, Desktop: same as tablet
+                "h-11 w-11 tablet:h-14 tablet:w-14 desktop:h-14 desktop:w-14",
+                positionColors.borderClass
+              )}>
                 <AvatarImage src={player.photo_url || undefined} />
-                <AvatarFallback className={cn("font-bold text-sm", positionColors.bgClass, positionColors.textClass)}>
+                <AvatarFallback className={cn(
+                  "font-bold",
+                  "text-sm tablet:text-base",
+                  positionColors.bgClass, positionColors.textClass
+                )}>
                   {player.full_name.slice(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
 
-              {/* Name + Notes */}
+              {/* Name + Notes - larger text on tablet */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <h4 className="font-semibold text-zinc-100 truncate text-sm sm:text-base">{player.full_name}</h4>
+                  <h4 className={cn(
+                    "font-semibold text-zinc-100 truncate",
+                    "text-sm tablet:text-lg desktop:text-base"
+                  )}>
+                    {player.full_name}
+                  </h4>
                   {hasNotes && (
-                    <MessageSquare className="w-3 h-3 text-amber-400 shrink-0" />
+                    <MessageSquare className="w-3 h-3 tablet:w-4 tablet:h-4 text-amber-400 shrink-0" />
                   )}
                 </div>
               </div>
 
-              {/* Right side buttons */}
-              <div className="flex items-center gap-1 shrink-0">
+              {/* Right side buttons - LARGER touch targets on tablet */}
+              <div className="flex items-center gap-1 tablet:gap-2 shrink-0">
                 {/* Stats expand toggle */}
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 rounded-lg hover:bg-white/10"
+                  className={cn(
+                    "rounded-lg hover:bg-white/10",
+                    // Touch-friendly: 44px on tablet
+                    "h-8 w-8 tablet:h-11 tablet:w-11"
+                  )}
                   onClick={() => setShowDetailedStats(!showDetailedStats)}
                 >
                   <BarChart3 className={cn(
-                    "w-4 h-4 transition-colors",
+                    "transition-colors",
+                    "w-4 h-4 tablet:w-5 tablet:h-5",
                     showDetailedStats ? "text-blue-400" : "text-zinc-500"
                   )} />
                 </Button>
 
-                {/* Enter/Exit button */}
+                {/* Enter/Exit button - LARGER on tablet */}
                 {isLive && (
                   <>
                     {!matchPlayer.is_on_field && matchPlayer.exited_minute === null ? (
                       <Button
                         size="sm"
-                        className="h-9 px-3 bg-green-600 hover:bg-green-700"
+                        className={cn(
+                          "bg-green-600 hover:bg-green-700",
+                          // Touch-friendly on tablet
+                          "h-9 px-3 tablet:h-11 tablet:px-4 tablet:text-base"
+                        )}
                         onClick={handleEnterField}
                       >
-                        <LogIn className="w-4 h-4 sm:mr-1" />
+                        <LogIn className="w-4 h-4 tablet:w-5 tablet:h-5 tablet:mr-1.5 sm:mr-1" />
                         <span className="hidden sm:inline">Entrar</span>
                       </Button>
                     ) : matchPlayer.is_on_field ? (
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-9 px-3 border-amber-500/50 text-amber-400 hover:bg-amber-500/10"
+                        className={cn(
+                          "border-amber-500/50 text-amber-400 hover:bg-amber-500/10",
+                          // Touch-friendly on tablet
+                          "h-9 px-3 tablet:h-11 tablet:px-4 tablet:text-base"
+                        )}
                         onClick={handleExitField}
                       >
-                        <LogOut className="w-4 h-4 sm:mr-1" />
+                        <LogOut className="w-4 h-4 tablet:w-5 tablet:h-5 tablet:mr-1.5 sm:mr-1" />
                         <span className="hidden sm:inline">Sair</span>
                       </Button>
                     ) : null}
                   </>
                 )}
 
-                {/* More menu */}
+                {/* More menu - LARGER on tablet */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <MoreVertical className="w-4 h-4 text-zinc-500" />
+                    <Button variant="ghost" size="icon" className={cn(
+                      "h-8 w-8 tablet:h-11 tablet:w-11"
+                    )}>
+                      <MoreVertical className="w-4 h-4 tablet:w-5 tablet:h-5 text-zinc-500" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-800 z-50">
@@ -330,13 +368,15 @@ export function PremiumPlayerCard({
               </div>
             </div>
 
-            {/* Row 2: Chips + Key stats - flex-wrap to prevent overlap */}
-            <div className="flex items-center justify-between gap-2">
-              {/* Left: Status chips */}
-              <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+            {/* Row 2: Chips + Key stats - better spacing on tablet */}
+            <div className="flex items-center justify-between gap-2 tablet:gap-3">
+              {/* Left: Status chips - LARGER on tablet */}
+              <div className="flex items-center gap-1.5 tablet:gap-2 flex-wrap min-w-0">
                 <Badge 
                   className={cn(
-                    "text-[10px] px-1.5 py-0 h-5 font-bold shrink-0",
+                    "font-bold shrink-0",
+                    // Tablet: larger badges
+                    "text-[10px] px-1.5 py-0 h-5 tablet:text-xs tablet:px-2 tablet:h-6",
                     positionColors.bgClass, positionColors.textClass
                   )}
                 >
@@ -344,31 +384,48 @@ export function PremiumPlayerCard({
                 </Badge>
                 <Badge 
                   variant={matchPlayer.started ? "secondary" : "outline"} 
-                  className="text-[10px] px-1.5 py-0 h-5 shrink-0"
+                  className={cn(
+                    "shrink-0",
+                    "text-[10px] px-1.5 py-0 h-5 tablet:text-xs tablet:px-2 tablet:h-6"
+                  )}
                 >
                   {matchPlayer.started ? "TIT" : "RES"}
                 </Badge>
                 {!isDraft && matchPlayer.is_on_field && (
-                  <Badge className="text-[10px] px-1.5 py-0 h-5 bg-green-600/20 text-green-400 border-green-500/30 shrink-0">
+                  <Badge className={cn(
+                    "bg-green-600/20 text-green-400 border-green-500/30 shrink-0",
+                    "text-[10px] px-1.5 py-0 h-5 tablet:text-xs tablet:px-2 tablet:h-6"
+                  )}>
                     Em campo
                   </Badge>
                 )}
               </div>
 
-              {/* Right: Key stats */}
-              <div className="flex items-center gap-1 shrink-0">
+              {/* Right: Key stats - LARGER and more readable on tablet */}
+              <div className="flex items-center gap-1 tablet:gap-2 shrink-0">
                 {keyStats.map((stat) => (
                   <div 
                     key={stat.label}
-                    className="text-center px-1.5 py-0.5 rounded-lg bg-zinc-800/60 min-w-[38px]"
+                    className={cn(
+                      "text-center rounded-lg bg-zinc-800/60",
+                      // Tablet: wider stat boxes
+                      "px-1.5 py-0.5 min-w-[38px] tablet:px-3 tablet:py-1 tablet:min-w-[52px]"
+                    )}
                   >
                     <p className={cn(
-                      "text-sm sm:text-lg font-bold tabular-nums leading-tight",
+                      "font-bold tabular-nums leading-tight",
+                      // Tablet: larger values
+                      "text-sm tablet:text-xl desktop:text-lg",
                       stat.value > 0 ? positionColors.textClass : "text-zinc-500"
                     )}>
                       {stat.value}
                     </p>
-                    <p className="text-[8px] text-zinc-500 uppercase">{stat.label}</p>
+                    <p className={cn(
+                      "text-zinc-500 uppercase",
+                      "text-[8px] tablet:text-[10px]"
+                    )}>
+                      {stat.label}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -385,22 +442,39 @@ export function PremiumPlayerCard({
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden"
               >
-                <div className="px-3 pb-3 pt-1">
-                  <div className="grid grid-cols-4 gap-2 p-2 rounded-xl bg-zinc-800/40 border border-zinc-700/30">
+                <div className={cn(
+                  "pb-3 pt-1",
+                  "px-3 tablet:px-4"
+                )}>
+                  <div className={cn(
+                    "grid gap-2 tablet:gap-3 p-2 tablet:p-3 rounded-xl tablet:rounded-2xl bg-zinc-800/40 border border-zinc-700/30",
+                    // Tablet: 4 columns, larger cells
+                    "grid-cols-4"
+                  )}>
                     {(isGK ? DETAILED_STATS_GK : DETAILED_STATS_OUTFIELD).map((stat) => {
                       const value = Number(matchStats[stat.key] ?? 0);
                       return (
-                        <div key={stat.key} className="text-center py-1.5">
-                          <div className="flex items-center justify-center gap-1 mb-0.5">
-                            <span className={stat.color}>{stat.icon}</span>
+                        <div key={stat.key} className={cn(
+                          "text-center",
+                          "py-1.5 tablet:py-2"
+                        )}>
+                          <div className="flex items-center justify-center gap-1 mb-0.5 tablet:mb-1">
+                            <span className={cn(stat.color, "tablet:[&>svg]:w-4 tablet:[&>svg]:h-4")}>{stat.icon}</span>
                           </div>
                           <p className={cn(
-                            "text-lg font-bold tabular-nums",
+                            "font-bold tabular-nums",
+                            // Tablet: larger values
+                            "text-lg tablet:text-2xl",
                             value > 0 ? stat.color : "text-zinc-500"
                           )}>
                             {value}
                           </p>
-                          <p className="text-[8px] text-zinc-500 uppercase truncate px-0.5">{stat.label}</p>
+                          <p className={cn(
+                            "text-zinc-500 uppercase truncate px-0.5",
+                            "text-[8px] tablet:text-[10px]"
+                          )}>
+                            {stat.label}
+                          </p>
                         </div>
                       );
                     })}
@@ -421,22 +495,30 @@ export function PremiumPlayerCard({
                 className="overflow-hidden"
               >
                 <div className={cn(
-                  "px-3 pb-3 pt-0",
+                  "pb-3 pt-0",
+                  "px-3 tablet:px-4",
                   (isDraft || isPaused) && "opacity-50"
                 )}>
                   {isDraft && (
-                    <p className="text-[10px] text-zinc-500 text-center mb-2 bg-zinc-800/50 rounded py-1">
+                    <p className={cn(
+                      "text-zinc-500 text-center mb-2 bg-zinc-800/50 rounded py-1",
+                      "text-[10px] tablet:text-xs"
+                    )}>
                       📋 Inicie o jogo para registrar estatísticas
                     </p>
                   )}
                   
                   {isPaused && isLive && (
-                    <p className="text-[10px] text-amber-400 text-center mb-2 bg-amber-500/10 rounded py-1 border border-amber-500/20">
+                    <p className={cn(
+                      "text-amber-400 text-center mb-2 bg-amber-500/10 rounded py-1 border border-amber-500/20",
+                      "text-[10px] tablet:text-xs"
+                    )}>
                       ⏸️ Jogo pausado — retome para registrar eventos
                     </p>
                   )}
 
-                  <div className="flex items-center gap-2 flex-wrap">
+                  {/* Quick action buttons - LARGER on tablet */}
+                  <div className="flex items-center gap-2 tablet:gap-3 flex-wrap">
                     {quickEvents.map((event) => (
                       <Button
                         key={event.type}
@@ -445,15 +527,25 @@ export function PremiumPlayerCard({
                         onClick={() => handleAddEventWithSound(event.type)}
                         disabled={disabled || !canAddEvents}
                         className={cn(
-                          "h-9 px-3 gap-1.5 rounded-lg transition-all relative",
+                          "gap-1.5 rounded-lg tablet:rounded-xl transition-all relative",
+                          // Tablet: 44px+ height for touch
+                          "h-9 px-3 tablet:h-11 tablet:px-4",
                           event.color
                         )}
                       >
-                        {event.icon}
-                        <span className="text-xs font-medium">{event.label}</span>
+                        <span className="tablet:[&>svg]:w-5 tablet:[&>svg]:h-5">{event.icon}</span>
+                        <span className={cn(
+                          "font-medium",
+                          "text-xs tablet:text-sm"
+                        )}>
+                          {event.label}
+                        </span>
                         {getCount(event.type) > 0 && (
                           <Badge 
-                            className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[9px] bg-zinc-700 text-zinc-200"
+                            className={cn(
+                              "absolute -top-1 -right-1 p-0 flex items-center justify-center bg-zinc-700 text-zinc-200",
+                              "h-4 w-4 text-[9px] tablet:h-5 tablet:w-5 tablet:text-[10px]"
+                            )}
                           >
                             {getCount(event.type)}
                           </Badge>
@@ -461,24 +553,31 @@ export function PremiumPlayerCard({
                       </Button>
                     ))}
                     
-                    {/* More stats toggle button */}
+                    {/* More stats toggle button - LARGER on tablet */}
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => setShowMoreStats(!showMoreStats)}
                       className={cn(
-                        "h-9 px-3 gap-1.5 rounded-lg transition-all",
+                        "gap-1.5 rounded-lg tablet:rounded-xl transition-all",
+                        // Tablet: 44px+ height
+                        "h-9 px-3 tablet:h-11 tablet:px-4",
                         showMoreStats 
                           ? "bg-primary/20 text-primary hover:bg-primary/30" 
                           : "bg-zinc-800/50 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
                       )}
                     >
                       {showMoreStats ? (
-                        <ChevronUp className="w-4 h-4" />
+                        <ChevronUp className="w-4 h-4 tablet:w-5 tablet:h-5" />
                       ) : (
-                        <Plus className="w-4 h-4" />
+                        <Plus className="w-4 h-4 tablet:w-5 tablet:h-5" />
                       )}
-                      <span className="text-xs font-medium">{showMoreStats ? "Menos" : "Mais"}</span>
+                      <span className={cn(
+                        "font-medium",
+                        "text-xs tablet:text-sm"
+                      )}>
+                        {showMoreStats ? "Menos" : "Mais"}
+                      </span>
                     </Button>
                   </div>
                 </div>
