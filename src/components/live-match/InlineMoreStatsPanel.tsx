@@ -253,7 +253,7 @@ export function InlineMoreStatsPanel({
             {/* Stats grid - mobile 2 cols, iPad/tablet ALWAYS 2 cols, desktop 4 cols */}
             <div className={cn(
               "grid grid-cols-2 tablet:grid-cols-2 desktop:grid-cols-4",
-              "gap-3 tablet:gap-4 desktop:gap-4"
+              "gap-3 tablet:gap-[18px] desktop:gap-4"
             )}>
               {category.stats.map((stat) => {
                 const count = getCount(stat.type);
@@ -270,8 +270,8 @@ export function InlineMoreStatsPanel({
                       "hover:border-zinc-600 hover:shadow-xl hover:ring-2",
                       // Tablet rules (iPad): wider cards, balanced height
                       "min-h-[110px] tablet:min-h-[120px] desktop:min-h-[140px]",
-                      // Touch-first: avoid cramped visuals
-                      "tablet:min-w-[160px]",
+                      // Touch-first: avoid cramped visuals - wider cards on tablet
+                      "tablet:min-w-[180px]",
                       getCategoryAccent(category.color),
                       isHighlight && "border-green-500/60 bg-green-500/10 ring-2 ring-green-500/20"
                     )}
