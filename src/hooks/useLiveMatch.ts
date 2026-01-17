@@ -20,7 +20,9 @@ export type MatchEventType =
   // Goalkeeper
   | "save" | "goal_conceded" | "clean_sheet"
   | "penalty_saved" | "error_led_to_goal"
-  | "box_save" | "punch" | "high_claim" | "sweeper_action";
+  | "box_save" | "punch" | "high_claim" | "sweeper_action"
+  // Player presence events
+  | "player_on" | "player_off";
 
 export type ClockStatus = "stopped" | "running" | "paused";
 
@@ -639,7 +641,7 @@ export function useLiveMatch(matchId: string) {
     },
   });
 
-  // Player enters field using RPC V3 (Agency Mode)
+  // Player enters field using RPC V4 (Agency Mode) - now creates event atomically
   const playerEnterField = useMutation({
     mutationFn: async (params: { matchPlayerId: string; minute?: number }) => {
       const { data, error } = await supabase.rpc("player_enter_field", {
@@ -649,10 +651,11 @@ export function useLiveMatch(matchId: string) {
       });
 
       if (error) throw error;
-      return data as { display_minute?: string; period?: number } | null;
+      return data as { display_minute?: string; period?: number; event_id?: string } | null;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["match-players", matchId] });
+      queryClient.invalidateQueries({ queryKey: ["match-events", matchId] });
       const displayMin = data?.display_minute || "";
       toast.success(`Jogador entrou em campo ${displayMin}`);
     },
@@ -661,7 +664,7 @@ export function useLiveMatch(matchId: string) {
     },
   });
 
-  // Player exits field using RPC V3 (Agency Mode)
+  // Player exits field using RPC V4 (Agency Mode) - now creates event atomically
   const playerExitField = useMutation({
     mutationFn: async (params: { matchPlayerId: string; minute?: number }) => {
       const { data, error } = await supabase.rpc("player_exit_field", {
@@ -670,10 +673,11 @@ export function useLiveMatch(matchId: string) {
       });
 
       if (error) throw error;
-      return data as { display_minute?: string; minutes_this_interval?: number } | null;
+      return data as { display_minute?: string; minutes_this_interval?: number; event_id?: string } | null;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["match-players", matchId] });
+      queryClient.invalidateQueries({ queryKey: ["match-events", matchId] });
       const displayMin = data?.display_minute || "";
       toast.success(`Jogador saiu de campo ${displayMin}`);
     },

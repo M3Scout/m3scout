@@ -22,7 +22,7 @@ import { MatchEvent, MatchPlayer, MatchEventType } from "@/hooks/useLiveMatch";
 import { 
   List, Trash2, Goal, HandHelping, Shield, Target, 
   CreditCard, Footprints, ArrowRightLeft, AlertTriangle,
-  Clock, MoreVertical, Pencil, XCircle
+  Clock, MoreVertical, Pencil, XCircle, ArrowUp, ArrowDown
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EditEventTimeModal } from "./EditEventTimeModal";
@@ -68,6 +68,9 @@ const eventConfig: Record<MatchEventType | "substitution", {
   high_claim: { icon: <Shield className="w-3.5 h-3.5" />, label: "Bola Alta", color: "text-blue-400", bgColor: "bg-blue-500/20" },
   sweeper_action: { icon: <Footprints className="w-3.5 h-3.5" />, label: "Saída do Gol", color: "text-cyan-400", bgColor: "bg-cyan-500/20" },
   substitution: { icon: <ArrowRightLeft className="w-3.5 h-3.5" />, label: "Substituição", color: "text-amber-400", bgColor: "bg-amber-500/20" },
+  // Player presence events
+  player_on: { icon: <ArrowUp className="w-3.5 h-3.5" />, label: "Entrou em Campo", color: "text-green-400", bgColor: "bg-green-500/20" },
+  player_off: { icon: <ArrowDown className="w-3.5 h-3.5" />, label: "Saiu de Campo", color: "text-orange-400", bgColor: "bg-orange-500/20" },
 };
 
 interface EventTimelineProps {

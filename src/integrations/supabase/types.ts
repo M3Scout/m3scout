@@ -1558,6 +1558,8 @@ export type Database = {
         | "high_claim"
         | "sweeper_action"
         | "substitution"
+        | "player_on"
+        | "player_off"
       match_status: "draft" | "live" | "finished" | "applied"
       position_template: "outfield" | "goalkeeper"
     }
@@ -1722,6 +1724,8 @@ export const Constants = {
         "high_claim",
         "sweeper_action",
         "substitution",
+        "player_on",
+        "player_off",
       ],
       match_status: ["draft", "live", "finished", "applied"],
       position_template: ["outfield", "goalkeeper"],

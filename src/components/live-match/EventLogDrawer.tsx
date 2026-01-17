@@ -49,6 +49,9 @@ const EVENT_LABELS: Record<MatchEventType | "substitution", string> = {
   high_claim: "Bola Alta",
   sweeper_action: "Saída Gol",
   substitution: "Substituição",
+  // Player presence events
+  player_on: "Entrou em Campo",
+  player_off: "Saiu de Campo",
 };
 
 interface EventLogDrawerProps {
