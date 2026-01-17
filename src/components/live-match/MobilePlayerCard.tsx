@@ -18,7 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MatchPlayer, MatchEventType, MatchStatus } from "@/hooks/useLiveMatch";
+import { MatchPlayer, MatchEventType, MatchStatus, MatchPlayerStats } from "@/hooks/useLiveMatch";
 import { 
   LogIn, LogOut, ChevronDown, ChevronUp, Goal, Shield,
   Target, Footprints, HandHelping, MoreHorizontal, Trash2,
@@ -100,6 +100,7 @@ const CATEGORY_COLORS = {
 interface MobilePlayerCardProps {
   matchPlayer: MatchPlayer;
   eventCounts: Record<MatchEventType, number>;
+  matchStats?: MatchPlayerStats;
   matchStatus: MatchStatus;
   clockStatus?: "stopped" | "running" | "paused";
   currentMinute?: number;
@@ -119,6 +120,7 @@ interface MobilePlayerCardProps {
 export function MobilePlayerCard({
   matchPlayer,
   eventCounts,
+  matchStats,
   matchStatus,
   clockStatus = "stopped",
   currentMinute = 0,
@@ -208,10 +210,12 @@ export function MobilePlayerCard({
 
   const getCount = (type: MatchEventType) => eventCounts[type] || 0;
 
-  // Key stats display
-  const totalGoals = getCount("goal");
-  const totalAssists = getCount("assist");
-  const totalSaves = getCount("save");
+  // Use matchStats if available, fall back to eventCounts
+  const totalGoals = matchStats?.goals ?? getCount("goal");
+  const totalAssists = matchStats?.assists ?? getCount("assist");
+  const totalSaves = matchStats?.saves ?? getCount("save");
+  const totalTackles = matchStats?.tackles ?? getCount("tackle");
+  const totalGoalsConceded = matchStats?.goals_conceded ?? getCount("goal_conceded");
 
   return (
     <>
@@ -251,7 +255,7 @@ export function MobilePlayerCard({
         </AnimatePresence>
 
         {/* ===== HEADER - Clean, no extra wrappers ===== */}
-        <div className="flex items-center gap-3 p-4 pb-3">
+        <div className="flex items-center gap-3 p-4 pb-2">
           {/* Avatar - pill border */}
           <Avatar className={cn("h-12 w-12 border-2 shrink-0 rounded-full", positionColors.borderClass)}>
             <AvatarImage src={player.photo_url || undefined} className="rounded-full" />
@@ -290,44 +294,85 @@ export function MobilePlayerCard({
             </div>
           </div>
 
-          {/* Context buttons - pill shapes */}
-          <div className="flex items-center gap-2 shrink-0">
-            {isLive && (
+          {/* Key stats mini display */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {isGK ? (
               <>
-                {!matchPlayer.is_on_field && matchPlayer.exited_minute === null ? (
-                  <Button
-                    variant="success"
-                    size="sm"
-                    className="h-10 px-4 rounded-full"
-                    onClick={handleEnterField}
-                  >
-                    <LogIn className="w-4 h-4 mr-1.5" />
-                    Entrar
-                  </Button>
-                ) : matchPlayer.is_on_field ? (
-                  <Button
-                    variant="glass"
-                    size="sm"
-                    className="h-10 px-4 rounded-full border-amber-500/30 text-amber-400"
-                    onClick={handleExitField}
-                  >
-                    <LogOut className="w-4 h-4 mr-1.5" />
-                    Sair
-                  </Button>
-                ) : null}
+                <div className="text-center px-2 py-1 rounded-lg bg-zinc-800/60 min-w-[40px]">
+                  <p className={cn("text-sm font-bold tabular-nums", totalSaves > 0 ? "text-emerald-400" : "text-zinc-500")}>
+                    {totalSaves}
+                  </p>
+                  <p className="text-[8px] text-zinc-500 uppercase">DEF</p>
+                </div>
+                <div className="text-center px-2 py-1 rounded-lg bg-zinc-800/60 min-w-[40px]">
+                  <p className={cn("text-sm font-bold tabular-nums", totalGoalsConceded > 0 ? "text-red-400" : "text-zinc-500")}>
+                    {totalGoalsConceded}
+                  </p>
+                  <p className="text-[8px] text-zinc-500 uppercase">GOL-</p>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="text-center px-2 py-1 rounded-lg bg-zinc-800/60 min-w-[40px]">
+                  <p className={cn("text-sm font-bold tabular-nums", totalGoals > 0 ? "text-emerald-400" : "text-zinc-500")}>
+                    {totalGoals}
+                  </p>
+                  <p className="text-[8px] text-zinc-500 uppercase">GOL</p>
+                </div>
+                <div className="text-center px-2 py-1 rounded-lg bg-zinc-800/60 min-w-[40px]">
+                  <p className={cn("text-sm font-bold tabular-nums", totalAssists > 0 ? "text-blue-400" : "text-zinc-500")}>
+                    {totalAssists}
+                  </p>
+                  <p className="text-[8px] text-zinc-500 uppercase">ASS</p>
+                </div>
+                <div className="text-center px-2 py-1 rounded-lg bg-zinc-800/60 min-w-[40px]">
+                  <p className={cn("text-sm font-bold tabular-nums", totalTackles > 0 ? "text-cyan-400" : "text-zinc-500")}>
+                    {totalTackles}
+                  </p>
+                  <p className="text-[8px] text-zinc-500 uppercase">DES</p>
+                </div>
               </>
             )}
-
-            {/* Options button - pill */}
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-10 w-10 rounded-full hover:bg-white/10"
-              onClick={() => setShowOptions(!showOptions)}
-            >
-              <MoreHorizontal className="w-5 h-5 text-zinc-400" />
-            </Button>
           </div>
+        </div>
+
+        {/* ===== ACTION BUTTONS ROW ===== */}
+        <div className="flex items-center justify-end gap-2 px-4 pb-3">
+          {isLive && (
+            <>
+              {!matchPlayer.is_on_field && matchPlayer.exited_minute === null ? (
+                <Button
+                  variant="success"
+                  size="sm"
+                  className="h-10 px-4 rounded-full"
+                  onClick={handleEnterField}
+                >
+                  <LogIn className="w-4 h-4 mr-1.5" />
+                  Entrar
+                </Button>
+              ) : matchPlayer.is_on_field ? (
+                <Button
+                  variant="glass"
+                  size="sm"
+                  className="h-10 px-4 rounded-full border-amber-500/30 text-amber-400"
+                  onClick={handleExitField}
+                >
+                  <LogOut className="w-4 h-4 mr-1.5" />
+                  Sair
+                </Button>
+              ) : null}
+            </>
+          )}
+
+          {/* Options button - pill */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-10 w-10 rounded-full hover:bg-white/10"
+            onClick={() => setShowOptions(!showOptions)}
+          >
+            <MoreHorizontal className="w-5 h-5 text-zinc-400" />
+          </Button>
         </div>
 
         {/* ===== OPTIONS DRAWER (collapsed) ===== */}

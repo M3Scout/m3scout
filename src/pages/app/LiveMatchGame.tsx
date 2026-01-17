@@ -64,6 +64,7 @@ export default function LiveMatchGame() {
     filteredPlayers,
     playerEventCounts,
     pendingEventsCount,
+    playerStatsMap,
     isLoading,
     matchError,
     onlyOnField,
@@ -388,6 +389,7 @@ export default function LiveMatchGame() {
                   currentPeriod={match.half}
                   displayMinute={currentTimerInfo?.displayString}
                   eventCounts={playerEventCounts[mp.player_id] || ({} as Record<MatchEventType, number>)}
+                  matchStats={playerStatsMap[mp.player_id]}
                   onAddEvent={(type) => handleAddEvent(mp.player_id, type)}
                   onUndo={() => undoLastEvent(mp.player_id)}
                   onPlayerEnter={(matchPlayerId) => handlePlayerEnter(matchPlayerId)}
@@ -409,6 +411,7 @@ export default function LiveMatchGame() {
                   currentPeriod={match.half}
                   displayMinute={currentTimerInfo?.displayString}
                   eventCounts={playerEventCounts[mp.player_id] || ({} as Record<MatchEventType, number>)}
+                  matchStats={playerStatsMap[mp.player_id]}
                   onAddEvent={(type) => handleAddEvent(mp.player_id, type)}
                   onUndo={() => undoLastEvent(mp.player_id)}
                   onPlayerEnter={(matchPlayerId) => handlePlayerEnter(matchPlayerId)}
