@@ -418,26 +418,28 @@ export function useLiveMatch(matchId: string) {
     },
   });
 
-  // Start game using RPC - transitions to live and officializes pending events
+  // Start game using RPC V3 - DOES NOT require players on field
   const startGame = useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.rpc("start_live_game", {
+      const { data, error } = await supabase.rpc("start_first_half", {
         p_game_id: matchId,
       });
 
       if (error) throw error;
-      return data as { events_officialized?: number; success?: boolean } | null;
+      return data as { events_officialized?: number; starters_on_field?: number; success?: boolean } | null;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["match", matchId] });
       queryClient.invalidateQueries({ queryKey: ["match-players", matchId] });
       queryClient.invalidateQueries({ queryKey: ["match-events", matchId] });
       
+      const startersOnField = data?.starters_on_field || 0;
       const eventsOfficialized = data?.events_officialized || 0;
-      if (eventsOfficialized > 0) {
-        toast.success(`Jogo iniciado! ${eventsOfficialized} evento(s) oficializado(s)`);
+      
+      if (startersOnField > 0 || eventsOfficialized > 0) {
+        toast.success(`Jogo iniciado! ${startersOnField} atleta(s) em campo`);
       } else {
-        toast.success("Jogo iniciado!");
+        toast.success("1º Tempo iniciado! Adicione atletas em campo quando quiser.");
       }
     },
     onError: (error: Error) => {
@@ -513,60 +515,42 @@ export function useLiveMatch(matchId: string) {
     },
   });
 
-  // End first half
+  // End first half using RPC V3
   const endFirstHalf = useMutation({
     mutationFn: async () => {
-      if (!match) throw new Error("Match not found");
-
-      // Accumulate remaining time and stop
-      const now = Date.now();
-      const start = match.half_start_time ? new Date(match.half_start_time).getTime() : now;
-      const additionalSeconds = match.clock_status === "running" 
-        ? Math.floor((now - start) / 1000) 
-        : 0;
-      const newElapsed = match.elapsed_seconds_in_half + additionalSeconds;
-
-      const { error } = await supabase
-        .from("matches")
-        .update({
-          clock_status: "stopped" as ClockStatus,
-          elapsed_seconds_in_half: newElapsed,
-          half_start_time: null,
-        })
-        .eq("id", matchId);
+      const { data, error } = await supabase.rpc("end_first_half_v2", {
+        p_game_id: matchId,
+      });
 
       if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["match", matchId] });
-      toast.success("1º tempo encerrado!");
+      queryClient.invalidateQueries({ queryKey: ["match-players", matchId] });
+      toast.success("1º tempo encerrado! Todos os atletas saíram de campo.");
     },
-    onError: () => {
-      toast.error("Erro ao encerrar 1º tempo");
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao encerrar 1º tempo");
     },
   });
 
-  // Start second half
+  // Start second half using RPC V3 - does NOT auto-enter players
   const startSecondHalf = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
-        .from("matches")
-        .update({
-          half: 2,
-          clock_status: "running" as ClockStatus,
-          half_start_time: new Date().toISOString(),
-          elapsed_seconds_in_half: 0,
-        })
-        .eq("id", matchId);
+      const { data, error } = await supabase.rpc("start_second_half_v2", {
+        p_game_id: matchId,
+      });
 
       if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["match", matchId] });
-      toast.success("2º tempo iniciado!");
+      toast.success("2º tempo iniciado! Marque os atletas que entram em campo.");
     },
-    onError: () => {
-      toast.error("Erro ao iniciar 2º tempo");
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao iniciar 2º tempo");
     },
   });
 
@@ -590,10 +574,10 @@ export function useLiveMatch(matchId: string) {
     },
   });
 
-  // Finish game using RPC
+  // Finish game using RPC V3
   const finishGame = useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.rpc("finish_live_game", {
+      const { data, error } = await supabase.rpc("end_game_v2", {
         p_game_id: matchId,
       });
 
@@ -655,47 +639,46 @@ export function useLiveMatch(matchId: string) {
     },
   });
 
-  // Player enters field (for substitutes during live game)
+  // Player enters field using RPC V3 (Agency Mode)
   const playerEnterField = useMutation({
-    mutationFn: async (params: { matchPlayerId: string; minute: number }) => {
-      const { error } = await supabase
-        .from("match_players")
-        .update({
-          is_on_field: true,
-          entered_minute: params.minute,
-        })
-        .eq("id", params.matchPlayerId);
+    mutationFn: async (params: { matchPlayerId: string; minute?: number }) => {
+      const { data, error } = await supabase.rpc("player_enter_field", {
+        p_match_id: matchId,
+        p_match_player_id: params.matchPlayerId,
+        p_role: "substitute",
+      });
 
       if (error) throw error;
+      return data as { display_minute?: string; period?: number } | null;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["match-players", matchId] });
-      toast.success("Jogador entrou em campo");
+      const displayMin = data?.display_minute || "";
+      toast.success(`Jogador entrou em campo ${displayMin}`);
     },
-    onError: () => {
-      toast.error("Erro ao registrar entrada");
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao registrar entrada");
     },
   });
 
-  // Player exits field
+  // Player exits field using RPC V3 (Agency Mode)
   const playerExitField = useMutation({
-    mutationFn: async (params: { matchPlayerId: string; minute: number }) => {
-      const { error } = await supabase
-        .from("match_players")
-        .update({
-          is_on_field: false,
-          exited_minute: params.minute,
-        })
-        .eq("id", params.matchPlayerId);
+    mutationFn: async (params: { matchPlayerId: string; minute?: number }) => {
+      const { data, error } = await supabase.rpc("player_exit_field", {
+        p_match_id: matchId,
+        p_match_player_id: params.matchPlayerId,
+      });
 
       if (error) throw error;
+      return data as { display_minute?: string; minutes_this_interval?: number } | null;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["match-players", matchId] });
-      toast.success("Jogador saiu de campo");
+      const displayMin = data?.display_minute || "";
+      toast.success(`Jogador saiu de campo ${displayMin}`);
     },
-    onError: () => {
-      toast.error("Erro ao registrar saída");
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao registrar saída");
     },
   });
 
