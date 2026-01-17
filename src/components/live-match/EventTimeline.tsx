@@ -140,14 +140,14 @@ export function EventTimeline({
   };
 
   const getDisplayMinute = (event: MatchEvent) => {
-    // Priority: display_minute from RPC, then compute from game_time_seconds
+    // Priority: display_minute from RPC, then compute from game_time_seconds using football rounding
     if (event.display_minute) return event.display_minute;
     if (event.game_time_seconds != null && event.period) {
       return formatGameMinute(event.game_time_seconds, event.period);
     }
     if (event.game_time_seconds != null) {
-      const mins = Math.floor(event.game_time_seconds / 60);
-      return `${mins}'`;
+      // Use football rounding: seconds >= 31 rounds up
+      return formatGameMinute(event.game_time_seconds, 1);
     }
     if (event.minute != null) return `${event.minute}'`;
     return "—";

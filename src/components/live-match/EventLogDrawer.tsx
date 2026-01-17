@@ -14,6 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { MatchEvent, MatchPlayer, MatchEventType } from "@/hooks/useLiveMatch";
 import { List, Trash2, Edit2, X, Check, ArrowRightLeft } from "lucide-react";
+import { formatGameMinute } from "@/lib/formatters";
 
 // Event type labels
 const EVENT_LABELS: Record<MatchEventType | "substitution", string> = {
@@ -108,10 +109,14 @@ export function EventLogDrawer({
     setEditMinute("");
   };
 
-  // Format display minute - use display_minute if available, otherwise fallback to minute
+  // Format display minute - use display_minute if available, otherwise use football rounding
   const getDisplayMinute = (event: MatchEvent) => {
     if (event.display_minute) {
       return event.display_minute;
+    }
+    // Use game_time_seconds with football rounding if available
+    if (event.game_time_seconds != null) {
+      return formatGameMinute(event.game_time_seconds, event.period || 1);
     }
     if (event.minute != null) {
       return `${event.minute}'`;
