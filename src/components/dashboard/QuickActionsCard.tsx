@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Users, FileText, GitCompare, MessageSquare, Plus, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
+import { fadeInUp, cardHover, cardTap } from "@/lib/animations";
 
 const actions = [
   {
@@ -44,51 +45,55 @@ const actions = [
 export const QuickActionsCard = () => {
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
+      {...fadeInUp}
       transition={{ delay: 0.4 }}
-      className="rounded-xl border border-zinc-800/50 bg-gradient-to-br from-zinc-900 to-zinc-950 overflow-hidden"
+      className="rounded-[var(--radius-card)] border border-[var(--border-glass)] bg-[var(--bg-glass)] backdrop-blur-sm overflow-hidden"
     >
       {/* Header */}
-      <div className="px-5 py-4 border-b border-zinc-800/50 bg-zinc-900/50">
+      <div className="px-4 sm:px-5 py-4 border-b border-[var(--border-glass)] bg-zinc-900/50">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-red-600/10 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-[var(--radius-button)] bg-gradient-to-br from-primary/20 to-red-600/10 flex items-center justify-center">
             <Plus className="w-4 h-4 text-primary" />
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-white">O que fazer agora?</h2>
-            <p className="text-[10px] text-zinc-500">Ações rápidas disponíveis</p>
+            <h2 className="text-sm font-semibold text-foreground">O que fazer agora?</h2>
+            <p className="text-[10px] text-muted-foreground">Ações rápidas disponíveis</p>
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="p-4">
-        <div className="grid grid-cols-2 gap-3">
-          {actions.map((action, index) => (
-            <Link
+      <div className="p-3 sm:p-4">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3">
+          {actions.map((action) => (
+            <motion.div
               key={action.title}
-              to={action.link}
-              className={`group relative flex flex-col p-4 rounded-xl bg-gradient-to-br ${action.color} border border-zinc-800/50 ${action.borderColor} transition-all duration-300 hover:scale-[1.02] hover:shadow-lg`}
+              whileHover={cardHover}
+              whileTap={cardTap}
             >
-              {/* Icon */}
-              <div className={`w-10 h-10 rounded-lg bg-zinc-900/50 flex items-center justify-center mb-3 ${action.iconColor} group-hover:scale-110 transition-transform`}>
-                <action.icon className="w-5 h-5" />
-              </div>
-              
-              {/* Text */}
-              <div>
-                <p className="text-sm font-medium text-white group-hover:text-primary transition-colors">
-                  {action.title}
-                </p>
-                <p className="text-[11px] text-zinc-500 mt-0.5">
-                  {action.description}
-                </p>
-              </div>
+              <Link
+                to={action.link}
+                className={`group relative flex flex-col p-3 sm:p-4 rounded-[var(--radius-button)] bg-gradient-to-br ${action.color} border border-[var(--border-glass)] ${action.borderColor} transition-all duration-300 hover:shadow-lg min-h-[var(--tap-target)]`}
+              >
+                {/* Icon */}
+                <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-[var(--radius-button)] bg-zinc-900/50 flex items-center justify-center mb-2 sm:mb-3 ${action.iconColor} group-hover:scale-110 transition-transform`}>
+                  <action.icon className="w-4 h-4 sm:w-5 sm:h-5" />
+                </div>
+                
+                {/* Text */}
+                <div>
+                  <p className="text-xs sm:text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                    {action.title}
+                  </p>
+                  <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-0.5 hidden sm:block">
+                    {action.description}
+                  </p>
+                </div>
 
-              {/* Arrow */}
-              <ArrowRight className="absolute top-4 right-4 w-4 h-4 text-zinc-600 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-            </Link>
+                {/* Arrow */}
+                <ArrowRight className="absolute top-3 right-3 sm:top-4 sm:right-4 w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+              </Link>
+            </motion.div>
           ))}
         </div>
       </div>
