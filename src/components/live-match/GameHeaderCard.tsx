@@ -11,8 +11,7 @@ import {
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { MAIN_TEAM_NAME } from "@/lib/teamConfig";
-import logoM3Icon from "@/assets/logo-m3-icon.png";
+import { useTeamSettings } from "@/hooks/useTeamSettings";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -74,6 +73,7 @@ export function GameHeaderCard({
   pendingEventsCount = 0,
 }: GameHeaderCardProps) {
   const [confirmStartOpen, setConfirmStartOpen] = useState(false);
+  const { teamName, logoUrl } = useTeamSettings();
   const config = statusConfig[match.status];
   const competitionName = match.competition?.display_name || match.competition?.name || "Competição";
   const isDraft = match.status === "draft";
@@ -180,13 +180,13 @@ export function GameHeaderCard({
             <div className="flex items-center justify-between mt-3">
               <div className="flex items-center gap-3 min-w-0">
                 <img 
-                  src={logoM3Icon} 
-                  alt={MAIN_TEAM_NAME} 
+                  src={logoUrl} 
+                  alt={teamName} 
                   className="w-10 h-10 sm:w-12 sm:h-12 object-contain shrink-0"
                 />
                 <div className="min-w-0">
                   <h1 className="text-base sm:text-lg font-bold text-zinc-100 truncate">
-                    {MAIN_TEAM_NAME}
+                    {teamName}
                   </h1>
                   <p className="text-sm text-zinc-400">
                     vs {match.opponent_name}

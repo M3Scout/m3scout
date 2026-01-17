@@ -43,6 +43,7 @@ import {
 import { format } from "date-fns";
 import { recalculateAllAttributeScores } from "@/lib/attributeScores";
 import { BulkRecalculateGKButton } from "@/components/players/BulkRecalculateGKButton";
+import { TeamSettingsCard } from "@/components/settings/TeamSettingsCard";
 import { ptBR } from "date-fns/locale";
 
 function ThemeCard() {
@@ -508,6 +509,9 @@ export default function Settings() {
               </p>
             </CardContent>
           </Card>
+
+          {/* Team Settings - Admin Only */}
+          {isAdmin && <TeamSettingsCard />}
 
           {/* Admin Tools */}
           {isAdmin && (

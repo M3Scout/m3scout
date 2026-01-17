@@ -36,8 +36,7 @@ import {
   Timer,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { MAIN_TEAM_NAME } from "@/lib/teamConfig";
-import logoM3Icon from "@/assets/logo-m3-icon.png";
+import { useTeamSettings } from "@/hooks/useTeamSettings";
 
 interface MatchWithCompetition {
   id: string;
@@ -210,6 +209,7 @@ export function LiveMatchCard({ match, link, onDelete, index }: LiveMatchCardPro
   const queryClient = useQueryClient();
   const { displayTime, displayMinute, half } = useLiveTimer(match);
   const [quickEventType, setQuickEventType] = useState<QuickEventType | null>(null);
+  const { teamName, logoUrl } = useTeamSettings();
   const competitionName = match.competition?.display_name || match.competition?.name || "Competição";
 
   // Fetch players on field for quick actions
@@ -350,13 +350,13 @@ export function LiveMatchCard({ match, link, onDelete, index }: LiveMatchCardPro
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-2">
                   <img 
-                    src={logoM3Icon} 
-                    alt={MAIN_TEAM_NAME} 
+                    src={logoUrl} 
+                    alt={teamName} 
                     className="w-8 h-8 object-contain"
                   />
                   <div>
                     <h4 className="font-bold text-lg text-zinc-100 truncate">
-                      {MAIN_TEAM_NAME}
+                      {teamName}
                     </h4>
                     <p className="text-sm text-zinc-400">
                       vs {match.opponent_name}
