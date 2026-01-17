@@ -67,6 +67,8 @@ export default function LiveMatchNew() {
         throw new Error("Preencha os campos obrigatórios");
       }
 
+      // Always create match in draft status first
+      // The clock will only start when user explicitly clicks "Iniciar"
       const { data, error } = await supabase
         .from("matches")
         .insert({
@@ -77,7 +79,13 @@ export default function LiveMatchNew() {
           venue: venue.trim() || null,
           duration_minutes: durationMinutes,
           notes: notes.trim() || null,
-          status: startImmediately ? "live" : "draft",
+          status: "draft", // Always start as draft - RPC start_first_half will set to live
+          // Explicitly set timer fields to ensure clean state
+          clock_status: "stopped",
+          half: 1,
+          elapsed_seconds_in_half: 0,
+          half_start_time: null,
+          match_start_time: null,
         })
         .select("id")
         .single();

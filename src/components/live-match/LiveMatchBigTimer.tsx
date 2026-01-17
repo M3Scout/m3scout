@@ -90,15 +90,22 @@ export function LiveMatchBigTimer({
     if (clockStatus === "running" && halfStartTime) {
       const now = Date.now();
       const start = new Date(halfStartTime).getTime();
-      elapsed += Math.floor((now - start) / 1000);
+      const diff = Math.floor((now - start) / 1000);
+      // Guard against negative values (server time ahead of client)
+      elapsed += Math.max(0, diff);
     }
     return elapsed;
   }, [clockStatus, halfStartTime, elapsedSecondsInHalf]);
 
+  // Reset displaySeconds immediately when elapsedSecondsInHalf changes from server
+  // This ensures the timer shows 0 when the game starts fresh
+  useEffect(() => {
+    setDisplaySeconds(calculateElapsed());
+  }, [elapsedSecondsInHalf, halfStartTime, clockStatus]);
+
   // Update display every second when running
   useEffect(() => {
     if (clockStatus !== "running") {
-      setDisplaySeconds(calculateElapsed());
       return;
     }
 
