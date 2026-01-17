@@ -302,6 +302,117 @@ export type Database = {
           },
         ]
       }
+      match_player_stats: {
+        Row: {
+          aerial_duels_won: number
+          assists: number
+          chances_created: number
+          clearances: number
+          created_at: string
+          dribbles_success: number
+          dribbles_total: number
+          duels_total: number
+          duels_won: number
+          fouls_committed: number
+          fouls_suffered: number
+          goals: number
+          goals_conceded: number
+          id: string
+          interceptions: number
+          key_passes: number
+          match_id: string
+          passes_completed: number
+          passes_total: number
+          player_id: string
+          possession_lost: number
+          recoveries: number
+          red_cards: number
+          saves: number
+          shots: number
+          shots_on_target: number
+          tackles: number
+          updated_at: string
+          yellow_cards: number
+        }
+        Insert: {
+          aerial_duels_won?: number
+          assists?: number
+          chances_created?: number
+          clearances?: number
+          created_at?: string
+          dribbles_success?: number
+          dribbles_total?: number
+          duels_total?: number
+          duels_won?: number
+          fouls_committed?: number
+          fouls_suffered?: number
+          goals?: number
+          goals_conceded?: number
+          id?: string
+          interceptions?: number
+          key_passes?: number
+          match_id: string
+          passes_completed?: number
+          passes_total?: number
+          player_id: string
+          possession_lost?: number
+          recoveries?: number
+          red_cards?: number
+          saves?: number
+          shots?: number
+          shots_on_target?: number
+          tackles?: number
+          updated_at?: string
+          yellow_cards?: number
+        }
+        Update: {
+          aerial_duels_won?: number
+          assists?: number
+          chances_created?: number
+          clearances?: number
+          created_at?: string
+          dribbles_success?: number
+          dribbles_total?: number
+          duels_total?: number
+          duels_won?: number
+          fouls_committed?: number
+          fouls_suffered?: number
+          goals?: number
+          goals_conceded?: number
+          id?: string
+          interceptions?: number
+          key_passes?: number
+          match_id?: string
+          passes_completed?: number
+          passes_total?: number
+          player_id?: string
+          possession_lost?: number
+          recoveries?: number
+          red_cards?: number
+          saves?: number
+          shots?: number
+          shots_on_target?: number
+          tackles?: number
+          updated_at?: string
+          yellow_cards?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_player_stats_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_player_stats_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_players: {
         Row: {
           created_at: string
@@ -1386,6 +1497,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      apply_event_stats: {
+        Args: {
+          p_delta?: number
+          p_event_type: string
+          p_match_id: string
+          p_player_id: string
+        }
+        Returns: undefined
+      }
       calculate_athlete_auto_rating: {
         Args: { p_player_id: string }
         Returns: number
@@ -1420,6 +1540,46 @@ export type Database = {
       get_live_game_clock_seconds: {
         Args: { p_match_id: string }
         Returns: number
+      }
+      get_match_player_stats: {
+        Args: { p_match_id: string }
+        Returns: {
+          aerial_duels_won: number
+          assists: number
+          chances_created: number
+          clearances: number
+          created_at: string
+          dribbles_success: number
+          dribbles_total: number
+          duels_total: number
+          duels_won: number
+          fouls_committed: number
+          fouls_suffered: number
+          goals: number
+          goals_conceded: number
+          id: string
+          interceptions: number
+          key_passes: number
+          match_id: string
+          passes_completed: number
+          passes_total: number
+          player_id: string
+          possession_lost: number
+          recoveries: number
+          red_cards: number
+          saves: number
+          shots: number
+          shots_on_target: number
+          tackles: number
+          updated_at: string
+          yellow_cards: number
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "match_player_stats"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       get_period_clock_seconds: {
         Args: { p_match_id: string }
