@@ -2,10 +2,12 @@ import { useState, useCallback, useMemo } from "react";
 import { useParams, Navigate, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useLiveMatch, MatchEventType } from "@/hooks/useLiveMatch";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { GameHeaderCard } from "@/components/live-match/GameHeaderCard";
 import { GameScoreboard, TimerInfo } from "@/components/live-match/GameScoreboard";
 import { AddPlayerModal } from "@/components/live-match/AddPlayerModal";
 import { PremiumPlayerCard } from "@/components/live-match/PremiumPlayerCard";
+import { MobilePlayerCard } from "@/components/live-match/MobilePlayerCard";
 import { LiveStatsPanel } from "@/components/live-match/LiveStatsPanel";
 import { EventTimeline } from "@/components/live-match/EventTimeline";
 import { PendingEventsBadge } from "@/components/live-match/PendingEventsBadge";
@@ -47,12 +49,12 @@ function PlayerCardSkeleton({ index }: { index: number }) {
 export default function LiveMatchGame() {
   const { matchId } = useParams<{ matchId: string }>();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [addPlayerOpen, setAddPlayerOpen] = useState(false);
   const [substitutionOpen, setSubstitutionOpen] = useState(false);
   const [currentMinute, setCurrentMinute] = useState(0);
   const [currentTimerInfo, setCurrentTimerInfo] = useState<TimerInfo | null>(null);
   const [showOnlyOnField, setShowOnlyOnField] = useState(false);
-
   const {
     match,
     matchPlayers,
@@ -363,26 +365,50 @@ export default function LiveMatchGame() {
             </Button>
           </motion.div>
         ) : (
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className={cn(
+            "grid gap-3",
+            isMobile ? "grid-cols-1" : "md:grid-cols-2"
+          )}>
             {displayedPlayers.map((mp, index) => (
-              <PremiumPlayerCard
-                key={mp.id}
-                matchPlayer={mp}
-                matchStatus={match.status}
-                clockStatus={match.clock_status as "stopped" | "running" | "paused"}
-                currentMinute={currentMinute}
-                eventCounts={playerEventCounts[mp.player_id] || ({} as Record<MatchEventType, number>)}
-                onAddEvent={(type) => handleAddEvent(mp.player_id, type)}
-                onUndo={() => undoLastEvent(mp.player_id)}
-                onPlayerEnter={(minute) => handlePlayerEnter(mp.id, minute)}
-                onPlayerExit={(minute) => handlePlayerExit(mp.id, minute)}
-                onRemoveFromMatch={() => handleRemoveFromMatch(mp)}
-                onSaveNotes={async (notes) => {
-                  await updatePlayer.mutateAsync({ matchPlayerId: mp.id, updates: { notes } });
-                }}
-                disabled={match.status === "applied"}
-                index={index}
-              />
+              isMobile ? (
+                <MobilePlayerCard
+                  key={mp.id}
+                  matchPlayer={mp}
+                  matchStatus={match.status}
+                  clockStatus={match.clock_status as "stopped" | "running" | "paused"}
+                  currentMinute={currentMinute}
+                  eventCounts={playerEventCounts[mp.player_id] || ({} as Record<MatchEventType, number>)}
+                  onAddEvent={(type) => handleAddEvent(mp.player_id, type)}
+                  onUndo={() => undoLastEvent(mp.player_id)}
+                  onPlayerEnter={(minute) => handlePlayerEnter(mp.id, minute)}
+                  onPlayerExit={(minute) => handlePlayerExit(mp.id, minute)}
+                  onRemoveFromMatch={() => handleRemoveFromMatch(mp)}
+                  onSaveNotes={async (notes) => {
+                    await updatePlayer.mutateAsync({ matchPlayerId: mp.id, updates: { notes } });
+                  }}
+                  disabled={match.status === "applied"}
+                  index={index}
+                />
+              ) : (
+                <PremiumPlayerCard
+                  key={mp.id}
+                  matchPlayer={mp}
+                  matchStatus={match.status}
+                  clockStatus={match.clock_status as "stopped" | "running" | "paused"}
+                  currentMinute={currentMinute}
+                  eventCounts={playerEventCounts[mp.player_id] || ({} as Record<MatchEventType, number>)}
+                  onAddEvent={(type) => handleAddEvent(mp.player_id, type)}
+                  onUndo={() => undoLastEvent(mp.player_id)}
+                  onPlayerEnter={(minute) => handlePlayerEnter(mp.id, minute)}
+                  onPlayerExit={(minute) => handlePlayerExit(mp.id, minute)}
+                  onRemoveFromMatch={() => handleRemoveFromMatch(mp)}
+                  onSaveNotes={async (notes) => {
+                    await updatePlayer.mutateAsync({ matchPlayerId: mp.id, updates: { notes } });
+                  }}
+                  disabled={match.status === "applied"}
+                  index={index}
+                />
+              )
             ))}
           </div>
         )}
