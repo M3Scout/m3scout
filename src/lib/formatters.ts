@@ -180,7 +180,32 @@ export const formatFinancialCompact = (
 };
 
 /**
+ * Convert seconds to football-style display minute
+ * Applies rounding rule: if seconds >= 31, rounds up to next minute
+ * Examples:
+ *   7:15 (435s) => 7'
+ *   6:35 (395s) => 7'
+ *   7:31 (451s) => 8'
+ *   7:00 (420s) => 7'
+ *   6:30 (390s) => 6'
+ * 
+ * @param seconds - Total seconds elapsed in the period
+ * @returns The display minute (integer)
+ */
+export const getFootballMinute = (seconds: number): number => {
+  if (!Number.isFinite(seconds) || seconds < 0) return 0;
+  
+  const minute = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  
+  // Football rounding: if seconds >= 31, round up
+  return remainingSeconds >= 31 ? minute + 1 : minute;
+};
+
+/**
  * Format game minute with added time notation (45+X', 90+X')
+ * Uses football-style rounding (seconds >= 31 rounds up)
+ * 
  * @param seconds - Total seconds elapsed in the period
  * @param period - Current period (1 = first half, 2 = second half)
  * @returns Formatted string like "12'", "45+2'", "67'", "90+4'"
@@ -193,25 +218,41 @@ export const formatGameMinute = (
     return "—";
   }
 
-  const totalMinutes = Math.floor(seconds / 60);
+  const periodMinute = getFootballMinute(seconds);
   const baseMinute = period === 1 ? 0 : 45;
   const regularTimeLimit = period === 1 ? 45 : 90;
-  const periodLimit = 45; // 45 minutes per period in seconds = 2700
 
-  const gameMinute = baseMinute + totalMinutes;
+  const gameMinute = baseMinute + periodMinute;
 
-  if (gameMinute >= regularTimeLimit) {
+  if (gameMinute > regularTimeLimit) {
     // Added time
-    const addedMinutes = gameMinute - regularTimeLimit + 1;
+    const addedMinutes = gameMinute - regularTimeLimit;
     return `${regularTimeLimit}+${addedMinutes}'`;
   }
 
-  return `${gameMinute}'`;
+  // Handle edge case: exactly at limit shows as regular time
+  if (gameMinute === regularTimeLimit && seconds % 60 === 0) {
+    return `${regularTimeLimit}'`;
+  }
+
+  // If at limit with seconds, it's added time
+  if (gameMinute >= regularTimeLimit && seconds % 60 > 0) {
+    const addedMinutes = gameMinute - regularTimeLimit;
+    if (addedMinutes > 0) {
+      return `${regularTimeLimit}+${addedMinutes}'`;
+    }
+  }
+
+  // Ensure we never show 0' for events after game started (minimum 1')
+  const displayMinute = gameMinute === 0 && seconds > 0 ? 1 : gameMinute;
+  
+  return `${displayMinute}'`;
 };
 
 /**
  * Format seconds to display minute for an event
  * Takes into account period to show correct game minute
+ * Uses football-style rounding (seconds >= 31 rounds up)
  */
 export const formatEventMinute = (
   gameTimeSeconds: number | null | undefined,
@@ -223,6 +264,7 @@ export const formatEventMinute = (
 /**
  * Format a presence interval for display
  * Shows entry and exit times in game minute format
+ * Uses football-style rounding for both entry and exit
  */
 export const formatPresenceInterval = (
   enteredSeconds: number,
@@ -235,6 +277,6 @@ export const formatPresenceInterval = (
   }
   const exitMin = formatGameMinute(exitedSeconds, period);
   const durationSeconds = exitedSeconds - enteredSeconds;
-  const durationMinutes = Math.floor(durationSeconds / 60);
+  const durationMinutes = Math.round(durationSeconds / 60); // Round duration to nearest minute
   return `${entryMin} → ${exitMin} (${durationMinutes} min)`;
 };

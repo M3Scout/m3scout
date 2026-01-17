@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/popover";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
+import { getFootballMinute } from "@/lib/formatters";
 
 export type ClockStatus = "stopped" | "running" | "paused";
 
@@ -119,19 +120,24 @@ export function GameScoreboard({
 
   const getTimerInfo = useCallback((): TimerInfo => {
     const totalSeconds = displaySeconds;
-    const minutes = Math.floor(totalSeconds / 60);
-    const isInAddedTime = minutes >= halfDuration;
+    // Use football-style rounding for display minute
+    const footballMinute = getFootballMinute(totalSeconds);
+    const isInAddedTime = footballMinute >= halfDuration;
     
     let displayMinute: number;
     let displayString: string;
 
     if (isInAddedTime) {
-      const addedMinutes = minutes - halfDuration;
+      const addedMinutes = footballMinute - halfDuration;
       const baseMinute = half === 1 ? 45 : 90;
       displayMinute = half === 1 ? 45 : 90;
-      displayString = `${baseMinute}+${addedMinutes + 1}'`;
+      if (addedMinutes > 0) {
+        displayString = `${baseMinute}+${addedMinutes}'`;
+      } else {
+        displayString = `${baseMinute}'`;
+      }
     } else {
-      displayMinute = half === 2 ? halfDuration + minutes : minutes;
+      displayMinute = half === 2 ? halfDuration + footballMinute : footballMinute;
       displayString = `${displayMinute}'`;
     }
 
@@ -144,7 +150,8 @@ export function GameScoreboard({
   }, [displaySeconds, halfDuration, half]);
 
   useEffect(() => {
-    const currentMinute = Math.floor(displaySeconds / 60);
+    // Use football-style rounding for minute change detection
+    const currentMinute = getFootballMinute(displaySeconds);
     const absoluteMinute = half === 2 ? halfDuration + currentMinute : currentMinute;
     
     if (absoluteMinute !== lastMinuteRef.current) {
