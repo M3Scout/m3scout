@@ -1,10 +1,19 @@
 import { useCallback, useState } from "react";
 import { motion } from "framer-motion";
-import { Badge } from "@/components/ui/badge";
 import { MatchEventType, MatchStatus } from "@/hooks/useLiveMatch";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Plus, Minus } from "lucide-react";
+
+// Category full names for headers
+const CATEGORY_NAMES: Record<string, string> = {
+  ATA: "Ataque",
+  CRI: "Criação",
+  DEF: "Defesa",
+  DIS: "Disciplina",
+  GK: "Goleiro",
+  "GK+": "Goleiro Avançado",
+};
 
 // Stats categories for inline panel (same as desktop MoreStatsMenu)
 const OUTFIELD_STATS: { category: string; categoryKey: string; color: string; bgColor: string; stats: { type: MatchEventType; label: string }[] }[] = [
@@ -166,17 +175,17 @@ export function InlineMoreStatsPanel({
     }
   }, [isSubmitting, disabled, onVoidLastEvent, getCount]);
 
-  // Get category glow color for hover effects
-  const getCategoryGlow = (color: string) => {
-    const glowMap: Record<string, string> = {
-      "text-red-400": "hover:shadow-red-500/20 focus-within:shadow-red-500/20",
-      "text-amber-400": "hover:shadow-amber-500/20 focus-within:shadow-amber-500/20",
-      "text-blue-400": "hover:shadow-blue-500/20 focus-within:shadow-blue-500/20",
-      "text-purple-400": "hover:shadow-purple-500/20 focus-within:shadow-purple-500/20",
-      "text-green-400": "hover:shadow-green-500/20 focus-within:shadow-green-500/20",
-      "text-cyan-400": "hover:shadow-cyan-500/20 focus-within:shadow-cyan-500/20",
+  // Get category accent color for hover/focus effects
+  const getCategoryAccent = (color: string) => {
+    const accentMap: Record<string, string> = {
+      "text-red-400": "hover:ring-red-500/30 focus-within:ring-red-500/40",
+      "text-amber-400": "hover:ring-amber-500/30 focus-within:ring-amber-500/40",
+      "text-blue-400": "hover:ring-blue-500/30 focus-within:ring-blue-500/40",
+      "text-purple-400": "hover:ring-purple-500/30 focus-within:ring-purple-500/40",
+      "text-green-400": "hover:ring-green-500/30 focus-within:ring-green-500/40",
+      "text-cyan-400": "hover:ring-cyan-500/30 focus-within:ring-cyan-500/40",
     };
-    return glowMap[color] || "";
+    return accentMap[color] || "";
   };
 
   return (
@@ -185,13 +194,13 @@ export function InlineMoreStatsPanel({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.2, ease: "easeOut" }}
-      className="space-y-3 p-4"
+      className="space-y-4 md:space-y-5 lg:space-y-6 p-3 md:p-5 lg:p-6"
     >
       {/* Status message */}
       {!canAddEvents && (
         <div
           className={cn(
-            "p-2.5 rounded-xl text-xs text-center font-medium",
+            "p-3 md:p-4 rounded-xl text-sm md:text-base text-center font-medium",
             isPaused && "bg-amber-500/10 text-amber-400 border border-amber-500/20",
             isDraft && "bg-blue-500/10 text-blue-400 border border-blue-500/20",
             !isOnField && isLive && "bg-red-500/10 text-red-400 border border-red-500/20"
@@ -203,32 +212,37 @@ export function InlineMoreStatsPanel({
         </div>
       )}
 
-      {/* Categories */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+      {/* Categories Grid - 1 col mobile, 2 cols tablet/desktop */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 lg:gap-6">
         {stats.map((category) => (
           <div
             key={category.categoryKey}
             className={cn(
-              "rounded-2xl border p-3",
+              "rounded-2xl md:rounded-3xl border-2 p-4 md:p-5 lg:p-6",
               category.bgColor
             )}
           >
-            {/* Category header */}
-            <div className="flex items-center gap-2 mb-3">
+            {/* Category header - improved spacing and visibility */}
+            <div className="flex items-center gap-3 mb-4 md:mb-5 lg:mb-6 pb-3 border-b border-white/10">
               <div className={cn(
-                "w-1.5 h-4 rounded-full",
+                "w-2 h-6 md:h-7 rounded-full",
                 category.color.replace("text-", "bg-")
               )} />
-              <p className={cn(
-                "text-xs font-bold uppercase tracking-wider",
-                category.color
-              )}>
-                {category.category}
-              </p>
+              <div className="flex items-baseline gap-2">
+                <span className={cn(
+                  "text-base md:text-lg lg:text-xl font-black uppercase tracking-wide",
+                  category.color
+                )}>
+                  {category.category}
+                </span>
+                <span className="text-xs md:text-sm text-zinc-400 font-medium">
+                  {CATEGORY_NAMES[category.category]}
+                </span>
+              </div>
             </div>
 
-            {/* Stats grid - 2 cols mobile, 3-4 cols desktop */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+            {/* Stats grid - Responsive: 2 cols mobile, 2-3 cols tablet, 4 cols desktop */}
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-4">
               {category.stats.map((stat) => {
                 const count = getCount(stat.type);
                 const isHighlight = (stat.type === "goal" || stat.type === "assist" || stat.type === "save") && count > 0;
@@ -237,66 +251,73 @@ export function InlineMoreStatsPanel({
                   <motion.div
                     key={stat.type}
                     whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     className={cn(
-                      "flex flex-col rounded-xl transition-all duration-200",
-                      "bg-zinc-900/60 border border-zinc-700/40",
-                      "hover:border-zinc-600/60 hover:shadow-lg",
-                      getCategoryGlow(category.color),
-                      isHighlight && "border-green-500/50 bg-green-500/5 shadow-green-500/10"
+                      "flex flex-col rounded-xl md:rounded-2xl transition-all duration-200",
+                      "bg-zinc-900/70 border-2 border-zinc-700/50",
+                      "hover:border-zinc-600 hover:shadow-xl hover:ring-2",
+                      "min-h-[120px] md:min-h-[130px] lg:min-h-[140px]",
+                      getCategoryAccent(category.color),
+                      isHighlight && "border-green-500/60 bg-green-500/10 ring-2 ring-green-500/20"
                     )}
                   >
-                    {/* Value + Label section */}
-                    <div className="flex-1 flex flex-col items-center justify-center py-3 px-2 min-h-[60px]">
+                    {/* Value + Label section - generous padding */}
+                    <div className="flex-1 flex flex-col items-center justify-center py-4 md:py-5 lg:py-6 px-3 md:px-4">
                       <motion.p 
                         key={count}
-                        initial={{ scale: 1.2, opacity: 0.8 }}
+                        initial={{ scale: 1.15, opacity: 0.8 }}
                         animate={{ scale: 1, opacity: 1 }}
                         className={cn(
-                          "text-2xl font-bold tabular-nums leading-none",
+                          "text-3xl md:text-4xl lg:text-[42px] font-black tabular-nums leading-none",
                           count > 0 ? category.color : "text-zinc-500"
                         )}
                       >
                         {count}
                       </motion.p>
+                      {/* Label - full text, no abbreviation, responsive size */}
                       <p className={cn(
-                        "text-[9px] sm:text-[10px] text-center leading-snug mt-1.5 px-1 min-h-[24px] flex items-center justify-center",
-                        count > 0 ? "text-zinc-300" : "text-zinc-500"
+                        "text-[11px] md:text-[13px] lg:text-sm text-center leading-relaxed mt-2 md:mt-3",
+                        "min-h-[32px] md:min-h-[36px] flex items-center justify-center",
+                        "font-medium tracking-tight",
+                        count > 0 ? "text-zinc-200" : "text-zinc-500"
                       )}>
                         {stat.label}
                       </p>
                     </div>
                     
-                    {/* Action buttons footer */}
-                    <div className="flex items-center border-t border-zinc-700/30">
+                    {/* Action buttons footer - larger touch targets */}
+                    <div className="flex items-center border-t-2 border-zinc-700/40">
                       {/* Minus button */}
                       <motion.button
-                        whileTap={{ scale: 0.92 }}
+                        whileTap={{ scale: 0.9 }}
                         onClick={() => handleRemoveStat(stat.type, stat.label)}
                         disabled={disabled || isSubmitting || count === 0 || !onVoidLastEvent}
                         className={cn(
-                          "flex-1 h-8 flex items-center justify-center",
-                          "text-zinc-500 hover:text-red-400 hover:bg-red-500/10",
-                          "disabled:opacity-25 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-zinc-500",
-                          "transition-colors rounded-bl-xl",
-                          "border-r border-zinc-700/30"
+                          "flex-1 h-10 md:h-11 lg:h-12 flex items-center justify-center",
+                          "text-zinc-500 hover:text-red-400 hover:bg-red-500/15 active:bg-red-500/25",
+                          "disabled:opacity-20 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-zinc-500",
+                          "transition-all rounded-bl-xl md:rounded-bl-2xl",
+                          "border-r-2 border-zinc-700/40"
                         )}
+                        aria-label={`Remover ${stat.label}`}
                       >
-                        <Minus className="w-3.5 h-3.5" />
+                        <Minus className="w-4 h-4 md:w-5 md:h-5" strokeWidth={2.5} />
                       </motion.button>
                       
                       {/* Plus button */}
                       <motion.button
-                        whileTap={{ scale: 0.92 }}
+                        whileTap={{ scale: 0.9 }}
                         onClick={() => handleAddStat(stat.type, stat.label)}
                         disabled={disabled || isSubmitting || (!canAddEvents && !isDraft)}
                         className={cn(
-                          "flex-1 h-8 flex items-center justify-center",
-                          "text-zinc-400 hover:text-emerald-400 hover:bg-emerald-500/10",
-                          "disabled:opacity-25 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-zinc-400",
-                          "transition-colors rounded-br-xl"
+                          "flex-1 h-10 md:h-11 lg:h-12 flex items-center justify-center",
+                          "text-zinc-400 hover:text-emerald-400 hover:bg-emerald-500/15 active:bg-emerald-500/25",
+                          "disabled:opacity-20 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-zinc-400",
+                          "transition-all rounded-br-xl md:rounded-br-2xl"
                         )}
+                        aria-label={`Adicionar ${stat.label}`}
                       >
-                        <Plus className="w-3.5 h-3.5" />
+                        <Plus className="w-4 h-4 md:w-5 md:h-5" strokeWidth={2.5} />
                       </motion.button>
                     </div>
                   </motion.div>
