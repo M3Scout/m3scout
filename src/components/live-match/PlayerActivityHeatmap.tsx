@@ -31,8 +31,12 @@ interface MatchPlayer {
 interface MatchEvent {
   id: string;
   event_type: string;
+  event_status?: string;
+  count_in_stats?: boolean;
   player_id: string;
   minute: number | null;
+  game_time_seconds: number | null;
+  half: number | null;
 }
 
 interface PlayerActivityHeatmapProps {
@@ -92,6 +96,9 @@ export function PlayerActivityHeatmap({
     }));
   }, [matchDuration]);
 
+  // Event types to exclude from activity heatmap (meta/admin events)
+  const EXCLUDED_EVENT_TYPES = ["player_on", "player_off", "substitution"];
+
   // Build heatmap data per player
   const playerHeatmapData = useMemo(() => {
     const activePlayers = matchPlayers.filter(
@@ -99,15 +106,27 @@ export function PlayerActivityHeatmap({
     );
 
     return activePlayers.map((mp) => {
-      const playerEvents = matchEvents.filter(
-        (e) => e.player_id === mp.player_id && e.minute !== null
-      );
+      // Filter player events - exclude voided events and meta events
+      const playerEvents = matchEvents.filter((e) => {
+        if (e.player_id !== mp.player_id) return false;
+        if (e.event_status === "voided") return false;
+        if (e.count_in_stats === false) return false;
+        if (EXCLUDED_EVENT_TYPES.includes(e.event_type)) return false;
+        // Must have a valid time reference
+        return e.game_time_seconds !== null || e.minute !== null;
+      });
 
-      // Count events per interval
+      // Count events per interval using game_time_seconds OR minute
       const intervalCounts = intervals.map((interval) => {
-        const eventsInInterval = playerEvents.filter(
-          (e) => e.minute! >= interval.start && e.minute! < interval.end
-        );
+        const eventsInInterval = playerEvents.filter((e) => {
+          // Calculate minute from game_time_seconds if available, otherwise use minute
+          const eventMinute = e.game_time_seconds !== null 
+            ? Math.floor(e.game_time_seconds / 60) 
+            : e.minute;
+          
+          if (eventMinute === null) return false;
+          return eventMinute >= interval.start && eventMinute < interval.end;
+        });
 
         // Check if player was on field during this interval
         const onFieldStart = mp.started ? 0 : (mp.entered_minute ?? matchDuration);
@@ -133,7 +152,7 @@ export function PlayerActivityHeatmap({
         totalEvents,
       };
     }).sort((a, b) => b.totalEvents - a.totalEvents);
-  }, [matchPlayers, matchEvents, intervals]);
+  }, [matchPlayers, matchEvents, intervals, matchDuration]);
 
   // Global max for color scaling
   const globalMax = useMemo(() => {

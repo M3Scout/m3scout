@@ -35,6 +35,7 @@ export const OUTFIELD_STATS: StatCategory[] = [
     stats: [
       { type: "goal", label: "Gols" },
       { type: "assist", label: "Assistências" },
+      // Note: shots_total is computed (shot + shot_on_target) in summary
       { type: "shot_on_target", label: "Finalizações no Gol" },
       { type: "shot", label: "Finalizações Fora" },
     ],
@@ -131,12 +132,13 @@ export interface SummaryEventConfig {
 }
 
 // Complete mapping of all event types to their display labels for summary
+// ORDER determines display sequence: attack (1-9), creativity (10-19), passing (20-29), defense (30-39), discipline (40-49), goalkeeper (50-59)
 export const EVENT_TYPE_CONFIG: Record<MatchEventType, SummaryEventConfig> = {
-  // Attack
+  // Attack - shots_total computed stat has order 2.5 (between assists and shot_on_target)
   goal: { label: "Gols", icon: "⚽", category: "attack", order: 1 },
   assist: { label: "Assistências", icon: "👟", category: "attack", order: 2 },
-  shot_on_target: { label: "Finalizações no Gol", icon: "🥅", category: "attack", order: 3 },
-  shot: { label: "Finalizações Fora", icon: "🎯", category: "attack", order: 4 },
+  shot_on_target: { label: "Finalizações no Gol", icon: "🥅", category: "attack", order: 4 },
+  shot: { label: "Finalizações Fora", icon: "🎯", category: "attack", order: 5 },
   
   // Creativity
   key_pass: { label: "Passes Decisivos", icon: "🎯", category: "creativity", order: 10 },
