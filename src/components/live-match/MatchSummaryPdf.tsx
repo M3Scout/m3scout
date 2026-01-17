@@ -42,6 +42,9 @@ const EVENT_LABELS: Record<MatchEventType, string> = {
   punch: "Soco",
   high_claim: "Bola Alta",
   sweeper_action: "Saída Gol",
+  // Player presence events
+  player_on: "Entrou",
+  player_off: "Saiu",
 };
 
 interface MatchSummaryPdfProps {
