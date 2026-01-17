@@ -15,9 +15,9 @@ const OUTFIELD_STATS: { category: string; categoryKey: string; color: string; bg
     bgColor: "bg-red-500/10 border-red-500/20",
     stats: [
       { type: "goal", label: "Gols" },
-      { type: "assist", label: "Assist." },
-      { type: "shot_on_target", label: "Final. Gol" },
-      { type: "shot", label: "Final. Fora" },
+      { type: "assist", label: "Assistências" },
+      { type: "shot_on_target", label: "Finalizações no Gol" },
+      { type: "shot", label: "Finalizações Fora" },
     ],
   },
   {
@@ -26,10 +26,10 @@ const OUTFIELD_STATS: { category: string; categoryKey: string; color: string; bg
     color: "text-amber-400",
     bgColor: "bg-amber-500/10 border-amber-500/20",
     stats: [
-      { type: "key_pass", label: "P. Dec." },
-      { type: "chance_created", label: "Chances" },
-      { type: "dribble_success", label: "Dribles ✓" },
-      { type: "dribble_attempt", label: "Dribles ✗" },
+      { type: "key_pass", label: "Passes Decisivos" },
+      { type: "chance_created", label: "Chances Criadas" },
+      { type: "dribble_success", label: "Dribles Certos" },
+      { type: "dribble_attempt", label: "Dribles Errados" },
     ],
   },
   {
@@ -39,11 +39,11 @@ const OUTFIELD_STATS: { category: string; categoryKey: string; color: string; bg
     bgColor: "bg-blue-500/10 border-blue-500/20",
     stats: [
       { type: "tackle", label: "Desarmes" },
-      { type: "interception", label: "Interc." },
-      { type: "recovery", label: "Recup." },
+      { type: "interception", label: "Interceptações" },
+      { type: "recovery", label: "Recuperações" },
       { type: "clearance", label: "Cortes" },
-      { type: "duel_won", label: "Duelos ✓" },
-      { type: "aerial_duel_won", label: "Aéreos ✓" },
+      { type: "duel_won", label: "Duelos Ganhos" },
+      { type: "aerial_duel_won", label: "Duelos Aéreos" },
     ],
   },
   {
@@ -54,10 +54,10 @@ const OUTFIELD_STATS: { category: string; categoryKey: string; color: string; bg
     stats: [
       { type: "yellow", label: "Amarelos" },
       { type: "red", label: "Vermelhos" },
-      { type: "foul_committed", label: "Faltas" },
-      { type: "foul_suffered", label: "F. Sof." },
-      { type: "pass_success", label: "Passes ✓" },
-      { type: "possession_lost", label: "Perdas" },
+      { type: "foul_committed", label: "Faltas Cometidas" },
+      { type: "foul_suffered", label: "Faltas Sofridas" },
+      { type: "pass_success", label: "Passes Certos" },
+      { type: "possession_lost", label: "Perdas de Posse" },
     ],
   },
 ];
@@ -70,9 +70,9 @@ const GOALKEEPER_STATS: { category: string; categoryKey: string; color: string; 
     bgColor: "bg-green-500/10 border-green-500/20",
     stats: [
       { type: "save", label: "Defesas" },
-      { type: "goal_conceded", label: "Gols Sof." },
-      { type: "penalty_saved", label: "Pên. Def." },
-      { type: "error_led_to_goal", label: "Erros→Gol" },
+      { type: "goal_conceded", label: "Gols Sofridos" },
+      { type: "penalty_saved", label: "Pênaltis Defendidos" },
+      { type: "error_led_to_goal", label: "Erros para Gol" },
     ],
   },
   {
@@ -81,10 +81,10 @@ const GOALKEEPER_STATS: { category: string; categoryKey: string; color: string; 
     color: "text-cyan-400",
     bgColor: "bg-cyan-500/10 border-cyan-500/20",
     stats: [
-      { type: "box_save", label: "Def. Área" },
+      { type: "box_save", label: "Defesas na Área" },
       { type: "punch", label: "Socos" },
       { type: "high_claim", label: "Bolas Altas" },
-      { type: "sweeper_action", label: "Saídas" },
+      { type: "sweeper_action", label: "Saídas do Gol" },
     ],
   },
   {
@@ -95,7 +95,7 @@ const GOALKEEPER_STATS: { category: string; categoryKey: string; color: string; 
     stats: [
       { type: "yellow", label: "Amarelos" },
       { type: "red", label: "Vermelhos" },
-      { type: "foul_committed", label: "Faltas" },
+      { type: "foul_committed", label: "Faltas Cometidas" },
     ],
   },
 ];
@@ -259,7 +259,7 @@ export function InlineMoreStatsPanel({
                         {count}
                       </motion.p>
                       <p className={cn(
-                        "text-[10px] text-center leading-tight mt-1.5 px-1",
+                        "text-[9px] sm:text-[10px] text-center leading-snug mt-1.5 px-1 min-h-[24px] flex items-center justify-center",
                         count > 0 ? "text-zinc-300" : "text-zinc-500"
                       )}>
                         {stat.label}
