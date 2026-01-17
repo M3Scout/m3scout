@@ -609,6 +609,67 @@ export type Database = {
           },
         ]
       }
+      player_field_presence: {
+        Row: {
+          created_at: string
+          entered_at_seconds: number
+          exited_at_seconds: number | null
+          id: string
+          match_id: string
+          match_player_id: string
+          period: number
+          player_id: string
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          entered_at_seconds?: number
+          exited_at_seconds?: number | null
+          id?: string
+          match_id: string
+          match_player_id: string
+          period?: number
+          player_id: string
+          role?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          entered_at_seconds?: number
+          exited_at_seconds?: number | null
+          id?: string
+          match_id?: string
+          match_player_id?: string
+          period?: number
+          player_id?: string
+          role?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_field_presence_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_field_presence_match_player_id_fkey"
+            columns: ["match_player_id"]
+            isOneToOne: false
+            referencedRelation: "match_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_field_presence_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_injuries: {
         Row: {
           created_at: string
@@ -1353,8 +1414,14 @@ export type Database = {
         Args: { p_event_id: string; p_game_time_seconds: number }
         Returns: Json
       }
+      end_first_half_v2: { Args: { p_game_id: string }; Returns: Json }
+      end_game_v2: { Args: { p_game_id: string }; Returns: Json }
       finish_live_game: { Args: { p_game_id: string }; Returns: Json }
       get_live_game_clock_seconds: {
+        Args: { p_match_id: string }
+        Returns: number
+      }
+      get_period_clock_seconds: {
         Args: { p_match_id: string }
         Returns: number
       }
@@ -1368,6 +1435,14 @@ export type Database = {
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_internal_user: { Args: { _user_id: string }; Returns: boolean }
       pause_live_game: { Args: { p_game_id: string }; Returns: Json }
+      player_enter_field: {
+        Args: { p_match_id: string; p_match_player_id: string; p_role?: string }
+        Returns: Json
+      }
+      player_exit_field: {
+        Args: { p_match_id: string; p_match_player_id: string }
+        Returns: Json
+      }
       recalculate_all_attribute_scores: {
         Args: never
         Returns: {
@@ -1408,7 +1483,14 @@ export type Database = {
         Returns: undefined
       }
       resume_live_game: { Args: { p_game_id: string }; Returns: Json }
+      set_added_time: {
+        Args: { p_added_seconds: number; p_game_id: string }
+        Returns: Json
+      }
+      start_first_half: { Args: { p_game_id: string }; Returns: Json }
       start_live_game: { Args: { p_game_id: string }; Returns: Json }
+      start_second_half_v2: { Args: { p_game_id: string }; Returns: Json }
+      toggle_clock: { Args: { p_game_id: string }; Returns: Json }
       toggle_live_game_clock: { Args: { p_game_id: string }; Returns: Json }
       update_player_auto_rating: {
         Args: { p_player_id: string }

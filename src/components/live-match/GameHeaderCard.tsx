@@ -158,17 +158,17 @@ export function GameHeaderCard({
                 )}
               </div>
 
-              {/* Start game button - GREEN glow, not red */}
+              {/* Start game button - GREEN glow, ALWAYS enabled (Agency Mode) */}
               {isDraft && (
                 <Button
                   variant="success"
                   size="mobile"
                   onClick={() => setConfirmStartOpen(true)}
-                  disabled={isPending || startersCount === 0}
+                  disabled={isPending}
                   className="gap-2"
                 >
                   <Play className="w-4 h-4" />
-                  <span className="hidden sm:inline">Iniciar Jogo</span>
+                  <span className="hidden sm:inline">Iniciar 1º Tempo</span>
                   <span className="sm:hidden">Iniciar</span>
                 </Button>
               )}
@@ -202,18 +202,25 @@ export function GameHeaderCard({
         </div>
       </motion.div>
 
-      {/* Confirm Start Dialog */}
+      {/* Confirm Start Dialog - Agency Mode */}
       <AlertDialog open={confirmStartOpen} onOpenChange={setConfirmStartOpen}>
         <AlertDialogContent className="bg-zinc-900 border-zinc-800">
           <AlertDialogHeader>
-            <AlertDialogTitle>Iniciar Jogo?</AlertDialogTitle>
+            <AlertDialogTitle>Iniciar 1º Tempo?</AlertDialogTitle>
             <AlertDialogDescription className="text-zinc-400 space-y-2">
-              <p>Deseja iniciar o jogo agora?</p>
-              <p className="text-sm">
-                • <strong className="text-zinc-200">{startersCount}</strong> jogador{startersCount !== 1 ? "es" : ""} entrará{startersCount !== 1 ? "ão" : ""} em campo
-              </p>
-              <p className="text-sm">• O cronômetro começará a contar</p>
-              <p className="text-sm">• Você poderá registrar estatísticas</p>
+              <p>O cronômetro começará a contar imediatamente.</p>
+              {startersCount > 0 && (
+                <p className="text-sm">
+                  • <strong className="text-zinc-200">{startersCount}</strong> titular{startersCount !== 1 ? "es" : ""} entrará{startersCount !== 1 ? "ão" : ""} em campo automaticamente
+                </p>
+              )}
+              {startersCount === 0 && (
+                <p className="text-sm text-amber-400">
+                  ⚠️ Nenhum titular marcado. Você pode adicionar atletas em campo a qualquer momento.
+                </p>
+              )}
+              <p className="text-sm">• Você poderá pausar/retomar o cronômetro</p>
+              <p className="text-sm">• Atletas podem entrar/sair a qualquer momento</p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -225,7 +232,7 @@ export function GameHeaderCard({
               className="bg-green-600 hover:bg-green-700 shadow-lg shadow-green-600/25"
             >
               <Play className="w-4 h-4 mr-2" />
-              Iniciar Jogo
+              Iniciar 1º Tempo
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
