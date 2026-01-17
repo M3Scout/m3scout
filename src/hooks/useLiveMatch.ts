@@ -485,10 +485,10 @@ export function useLiveMatch(matchId: string) {
     },
   });
 
-  // Undo last event for a player
+  // Undo last event for a player (generic - removes the most recent event of any type)
   const undoLastEvent = useCallback(async (playerId: string) => {
     const playerEvents = matchEvents
-      .filter((e) => e.player_id === playerId)
+      .filter((e) => e.player_id === playerId && e.event_status !== "voided")
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
     if (playerEvents.length === 0) {
@@ -499,6 +499,47 @@ export function useLiveMatch(matchId: string) {
     await deleteEvent.mutateAsync(playerEvents[0].id);
     toast.success("Último evento desfeito");
   }, [matchEvents, deleteEvent]);
+
+  // Void last event of a specific type for a player using RPC
+  // This properly decrements stats (including derived stats for goals)
+  const voidLastEventByType = useMutation({
+    mutationFn: async (params: { playerId: string; eventType: MatchEventType }) => {
+      const { data, error } = await (supabase.rpc as Function)("delete_last_live_event", {
+        p_game_id: matchId,
+        p_player_id: params.playerId,
+        p_event_type: params.eventType,
+      });
+
+      if (error) throw error;
+      
+      const result = data as { 
+        success: boolean; 
+        message?: string;
+        event_id?: string;
+        event_type?: string;
+      } | null;
+      
+      if (result && !result.success) {
+        throw new Error(result.message || "Erro ao remover evento");
+      }
+      
+      return result;
+    },
+    onSuccess: () => {
+      // Force immediate refetch of both events and stats
+      queryClient.invalidateQueries({ 
+        queryKey: ["match-events", matchId],
+        refetchType: 'active',
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: ["match-player-stats", matchId],
+        refetchType: 'active',
+      });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao remover evento");
+    },
+  });
 
   // Update match status
   const updateMatchStatus = useMutation({
@@ -914,6 +955,7 @@ export function useLiveMatch(matchId: string) {
     voidEvent,
     editEventTime,
     undoLastEvent,
+    voidLastEventByType,
     updateMatchStatus,
     startGame,
     playerEnterField,

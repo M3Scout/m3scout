@@ -46,6 +46,7 @@ import LiveMatch from "./pages/app/LiveMatch";
 import LiveMatchNew from "./pages/app/LiveMatchNew";
 import LiveMatchGame from "./pages/app/LiveMatchGame";
 import LiveMatchReview from "./pages/app/LiveMatchReview";
+import Teams from "./pages/app/Teams";
 
 const queryClient = new QueryClient();
 
@@ -107,6 +108,7 @@ const App = () => (
                   <Route path=":matchId" element={<LiveMatchGame />} />
                   <Route path=":matchId/review" element={<LiveMatchReview />} />
                 </Route>
+                <Route path="teams" element={<Teams />} />
                 <Route path="settings" element={<Settings />} />
               </Route>
 
