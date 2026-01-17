@@ -26,6 +26,7 @@ import {
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { getFootballMinute } from "@/lib/formatters";
+import { supabase } from "@/integrations/supabase/client";
 
 export type ClockStatus = "stopped" | "running" | "paused";
 
@@ -95,36 +96,48 @@ export function GameScoreboard({
   const currentAddedTime = half === 1 ? addedTimeFirstHalf : addedTimeSecondHalf;
   const halfDuration = durationMinutes / 2;
 
-  const calculateElapsed = useCallback(() => {
-    let elapsed = elapsedSecondsInHalf;
-    if (clockStatus === "running" && halfStartTime) {
-      const now = Date.now();
-      const start = new Date(halfStartTime).getTime();
-      const diff = Math.floor((now - start) / 1000);
-      // Guard against negative values (server time ahead of client)
-      elapsed += Math.max(0, diff);
-    }
-    return elapsed;
-  }, [clockStatus, halfStartTime, elapsedSecondsInHalf]);
+  // We intentionally avoid using client Date.now() - halfStartTime math here because
+  // client devices can have clock skew (e.g. iPad time ahead), which makes the timer
+  // start "adiantado". Instead we fetch the authoritative elapsed seconds from the backend
+  // once when entering running state, then tick locally.
 
-  // Reset displaySeconds immediately when elapsedSecondsInHalf changes from server
-  // This ensures the timer shows 0 when the game starts fresh
   useEffect(() => {
-    setDisplaySeconds(calculateElapsed());
-  }, [elapsedSecondsInHalf, halfStartTime, clockStatus]);
+    let interval: ReturnType<typeof setInterval> | null = null;
+    let cancelled = false;
 
-  // Update display every second when running
-  useEffect(() => {
-    if (clockStatus !== "running") {
-      return;
+    const syncFromBackend = async () => {
+      try {
+        const { data, error } = await supabase.rpc("get_period_clock_seconds", {
+          p_match_id: matchId,
+        });
+        if (error) throw error;
+        if (!cancelled && typeof data === "number" && Number.isFinite(data)) {
+          setDisplaySeconds(Math.max(0, Math.floor(data)));
+        }
+      } catch {
+        // Fallback: use persisted seconds only
+        if (!cancelled) setDisplaySeconds(Math.max(0, elapsedSecondsInHalf));
+      }
+    };
+
+    if (clockStatus === "running") {
+      // Immediate optimistic render
+      setDisplaySeconds(Math.max(0, elapsedSecondsInHalf));
+      // Authoritative sync (fixes skew on "Iniciar")
+      void syncFromBackend();
+
+      interval = setInterval(() => {
+        setDisplaySeconds((s) => s + 1);
+      }, 1000);
+    } else {
+      setDisplaySeconds(Math.max(0, elapsedSecondsInHalf));
     }
 
-    const interval = setInterval(() => {
-      setDisplaySeconds(calculateElapsed());
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [clockStatus, calculateElapsed]);
+    return () => {
+      cancelled = true;
+      if (interval) clearInterval(interval);
+    };
+  }, [matchId, clockStatus, halfStartTime, elapsedSecondsInHalf]);
 
   const getTimerInfo = useCallback((): TimerInfo => {
     const totalSeconds = displaySeconds;
