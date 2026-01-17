@@ -1,9 +1,7 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,10 +21,8 @@ import { toast } from "sonner";
 import {
   Radio,
   Trophy,
-  Clock,
   Play,
   MoreVertical,
-  Eye,
   Trash2,
   Goal,
   HandHelping,
@@ -37,6 +33,11 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTeamSettings } from "@/hooks/useTeamSettings";
+import { 
+  calculateElapsedSecondsInHalf, 
+  formatClockTime, 
+  getDisplayMinute 
+} from "@/lib/matchClock";
 
 interface MatchWithCompetition {
   id: string;
@@ -51,6 +52,8 @@ interface MatchWithCompetition {
   half_start_time?: string | null;
   elapsed_seconds_in_half?: number | null;
   clock_status?: string | null;
+  added_time_first_half?: number | null;
+  added_time_second_half?: number | null;
   competition: {
     id: string;
     name: string;
@@ -77,97 +80,58 @@ interface LiveMatchCardProps {
   index: number;
 }
 
-// Real-time timer hook
+// Real-time timer hook - uses centralized clock calculation
 function useLiveTimer(match: MatchWithCompetition) {
-  const [displayTime, setDisplayTime] = useState("00:00");
-  const [displayMinute, setDisplayMinute] = useState("0'");
-  const displayTimeRef = useRef("00:00");
+  const half = (match.half ?? 1) as 1 | 2;
+  const halfDuration = (match.duration_minutes ?? 90) / 2;
+  const isRunning = match.status === "live" && match.clock_status === "running";
+  
+  // Calculate initial elapsed seconds using the same logic as LiveMatchBigTimer
+  const getElapsedSeconds = useCallback(() => {
+    return calculateElapsedSecondsInHalf({
+      clock_status: match.clock_status ?? "stopped",
+      half_start_time: match.half_start_time ?? null,
+      elapsed_seconds_in_half: match.elapsed_seconds_in_half ?? 0,
+      half: match.half ?? 1,
+      duration_minutes: match.duration_minutes ?? 90,
+      added_time_first_half: match.added_time_first_half ?? 0,
+      added_time_second_half: match.added_time_second_half ?? 0,
+    });
+  }, [match.clock_status, match.half_start_time, match.elapsed_seconds_in_half, match.half, match.duration_minutes, match.added_time_first_half, match.added_time_second_half]);
+
+  const [elapsedSeconds, setElapsedSeconds] = useState(getElapsedSeconds);
 
   useEffect(() => {
-    displayTimeRef.current = displayTime;
-  }, [displayTime]);
-  
-  useEffect(() => {
-    if (match.status !== "live" || match.clock_status !== "running") {
-      // Calculate static time from elapsed seconds
-      const elapsed = match.elapsed_seconds_in_half || 0;
-      const halfDuration = (match.duration_minutes || 90) / 2;
-      const half = match.half || 1;
-      
-      const totalMinutes = half === 1 
-        ? Math.floor(elapsed / 60)
-        : halfDuration + Math.floor(elapsed / 60);
-      
-      const mins = Math.floor(elapsed / 60);
-      const secs = elapsed % 60;
-      setDisplayTime(`${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`);
-      setDisplayMinute(`${totalMinutes}'`);
+    // Reset elapsed seconds when match state changes
+    setElapsedSeconds(getElapsedSeconds());
+    
+    if (!isRunning) {
       return;
     }
 
-    // Calculate real-time elapsed (authoritative sync once, then tick locally)
-    let cancelled = false;
-    let interval: ReturnType<typeof setInterval> | null = null;
-
-    const halfDuration = (match.duration_minutes || 90) / 2;
-    const half = match.half || 1;
-
-    const applySeconds = (totalSecondsInHalf: number) => {
-      const mins = Math.floor(totalSecondsInHalf / 60);
-      const secs = totalSecondsInHalf % 60;
-      setDisplayTime(`${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`);
-
-      const totalMinutes = half === 1 ? mins : halfDuration + mins;
-      const regularHalfEnd = halfDuration;
-      if (mins > regularHalfEnd) {
-        const addedTime = mins - regularHalfEnd;
-        setDisplayMinute(half === 1 ? `45+${addedTime}'` : `90+${addedTime}'`);
-      } else {
-        setDisplayMinute(`${Math.floor(totalMinutes)}'`);
-      }
-    };
-
-    const syncFromBackend = async () => {
-      try {
-        const { data, error } = await supabase.rpc("get_period_clock_seconds", {
-          p_match_id: match.id,
-        });
-        if (error) throw error;
-        if (!cancelled && typeof data === "number" && Number.isFinite(data)) {
-          applySeconds(Math.max(0, Math.floor(data)));
-        }
-      } catch {
-        // Fallback to local computation (best effort)
-        const halfStartTime = match.half_start_time ? new Date(match.half_start_time).getTime() : null;
-        const baseElapsed = match.elapsed_seconds_in_half || 0;
-        if (!halfStartTime) return;
-        const secondsSinceStart = Math.floor((Date.now() - halfStartTime) / 1000);
-        applySeconds(Math.max(0, baseElapsed + secondsSinceStart));
-      }
-    };
-
-    void syncFromBackend();
-
-    interval = setInterval(() => {
-      // tick display by +1s while running
-      setDisplayTime((prev) => prev); // keep React state updates below
-      setDisplayMinute((prev) => prev);
-      // We increment by recalculating from current displayed mm:ss to avoid Date.now skew.
-      // (Parse is safe here because displayTime is always mm:ss)
-      applySeconds((() => {
-        const [mm, ss] = displayTime.split(":").map((v) => parseInt(v, 10));
-        const base = (Number.isFinite(mm) ? mm : 0) * 60 + (Number.isFinite(ss) ? ss : 0);
-        return base + 1;
-      })());
+    // Tick every second when running
+    const interval = setInterval(() => {
+      setElapsedSeconds(prev => prev + 1);
     }, 1000);
 
-    return () => {
-      cancelled = true;
-      if (interval) clearInterval(interval);
-    };
-  }, [match]);
+    return () => clearInterval(interval);
+  }, [isRunning, getElapsedSeconds]);
 
-  return { displayTime, displayMinute, half: match.half || 1 };
+  // Sync with backend periodically when running (every 30 seconds)
+  useEffect(() => {
+    if (!isRunning) return;
+
+    const syncInterval = setInterval(() => {
+      setElapsedSeconds(getElapsedSeconds());
+    }, 30000);
+
+    return () => clearInterval(syncInterval);
+  }, [isRunning, getElapsedSeconds]);
+
+  const displayTime = formatClockTime(elapsedSeconds);
+  const displayMinute = getDisplayMinute(elapsedSeconds, half, halfDuration);
+
+  return { displayTime, displayMinute, half };
 }
 
 // Quick event types
