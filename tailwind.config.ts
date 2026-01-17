@@ -13,8 +13,13 @@ export default {
       },
     },
     extend: {
+      screens: {
+        // iPad / Tablet: explicit range, touch-first
+        tablet: { min: "768px", max: "1024px" },
+        // Desktop starts strictly AFTER tablet range to avoid overlap at 1024px
+        desktop: { min: "1025px" },
+      },
       colors: {
-        border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
