@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -34,7 +34,6 @@ import {
 import { cn } from "@/lib/utils";
 import { useTeamSettings } from "@/hooks/useTeamSettings";
 import { 
-  calculateElapsedSecondsInHalf, 
   formatClockTime, 
   getDisplayMinute 
 } from "@/lib/matchClock";
@@ -83,56 +82,60 @@ interface LiveMatchCardProps {
   index: number;
 }
 
-// Real-time timer hook - uses centralized clock calculation
+// Real-time timer hook - SINGLE SOURCE OF TRUTH
+// Uses same backend RPC as GameScoreboard to avoid clock skew
 function useLiveTimer(match: MatchWithCompetition) {
   const half = (match.half ?? 1) as 1 | 2;
   const halfDuration = (match.duration_minutes ?? 90) / 2;
-  const isRunning = match.status === "live" && match.clock_status === "running";
+  const clockStatus = match.clock_status ?? "stopped";
+  const isRunning = match.status === "live" && clockStatus === "running";
+  const elapsedSecondsInHalf = match.elapsed_seconds_in_half ?? 0;
   
-  // Calculate initial elapsed seconds using the same logic as LiveMatchBigTimer
-  const getElapsedSeconds = useCallback(() => {
-    return calculateElapsedSecondsInHalf({
-      clock_status: match.clock_status ?? "stopped",
-      half_start_time: match.half_start_time ?? null,
-      elapsed_seconds_in_half: match.elapsed_seconds_in_half ?? 0,
-      half: match.half ?? 1,
-      duration_minutes: match.duration_minutes ?? 90,
-      added_time_first_half: match.added_time_first_half ?? 0,
-      added_time_second_half: match.added_time_second_half ?? 0,
-    });
-  }, [match.clock_status, match.half_start_time, match.elapsed_seconds_in_half, match.half, match.duration_minutes, match.added_time_first_half, match.added_time_second_half]);
-
-  const [elapsedSeconds, setElapsedSeconds] = useState(getElapsedSeconds);
+  const [displaySeconds, setDisplaySeconds] = useState(Math.max(0, elapsedSecondsInHalf));
 
   useEffect(() => {
-    // Reset elapsed seconds when match state changes
-    setElapsedSeconds(getElapsedSeconds());
-    
-    if (!isRunning) {
-      return;
+    let interval: ReturnType<typeof setInterval> | null = null;
+    let cancelled = false;
+
+    const syncFromBackend = async () => {
+      try {
+        // Use the SAME RPC as the main game clock - single source of truth
+        const { data, error } = await supabase.rpc("get_period_clock_seconds", {
+          p_match_id: match.id,
+        });
+        if (error) throw error;
+        if (!cancelled && typeof data === "number" && Number.isFinite(data)) {
+          setDisplaySeconds(Math.max(0, Math.floor(data)));
+        }
+      } catch {
+        // Fallback: use persisted seconds only
+        if (!cancelled) setDisplaySeconds(Math.max(0, elapsedSecondsInHalf));
+      }
+    };
+
+    if (isRunning) {
+      // Immediate optimistic render with persisted value
+      setDisplaySeconds(Math.max(0, elapsedSecondsInHalf));
+      // Authoritative sync from backend (fixes clock skew)
+      void syncFromBackend();
+
+      // Tick every second when running
+      interval = setInterval(() => {
+        setDisplaySeconds((s) => s + 1);
+      }, 1000);
+    } else {
+      // Clock stopped - just show persisted value
+      setDisplaySeconds(Math.max(0, elapsedSecondsInHalf));
     }
 
-    // Tick every second when running
-    const interval = setInterval(() => {
-      setElapsedSeconds(prev => prev + 1);
-    }, 1000);
+    return () => {
+      cancelled = true;
+      if (interval) clearInterval(interval);
+    };
+  }, [match.id, clockStatus, match.half_start_time, elapsedSecondsInHalf, isRunning]);
 
-    return () => clearInterval(interval);
-  }, [isRunning, getElapsedSeconds]);
-
-  // Sync with backend periodically when running (every 30 seconds)
-  useEffect(() => {
-    if (!isRunning) return;
-
-    const syncInterval = setInterval(() => {
-      setElapsedSeconds(getElapsedSeconds());
-    }, 30000);
-
-    return () => clearInterval(syncInterval);
-  }, [isRunning, getElapsedSeconds]);
-
-  const displayTime = formatClockTime(elapsedSeconds);
-  const displayMinute = getDisplayMinute(elapsedSeconds, half, halfDuration);
+  const displayTime = formatClockTime(displaySeconds);
+  const displayMinute = getDisplayMinute(displaySeconds, half, halfDuration);
 
   return { displayTime, displayMinute, half };
 }
