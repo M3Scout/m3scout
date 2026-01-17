@@ -498,10 +498,13 @@ export type Database = {
           match_date: string
           match_start_time: string | null
           notes: string | null
+          opponent_logo_url: string | null
           opponent_name: string
           pause_total_seconds: number
           season_year: number
           status: Database["public"]["Enums"]["match_status"]
+          team_logo_url: string | null
+          team_name_display: string | null
           updated_at: string
           venue: string | null
         }
@@ -520,10 +523,13 @@ export type Database = {
           match_date?: string
           match_start_time?: string | null
           notes?: string | null
+          opponent_logo_url?: string | null
           opponent_name: string
           pause_total_seconds?: number
           season_year?: number
           status?: Database["public"]["Enums"]["match_status"]
+          team_logo_url?: string | null
+          team_name_display?: string | null
           updated_at?: string
           venue?: string | null
         }
@@ -542,10 +548,13 @@ export type Database = {
           match_date?: string
           match_start_time?: string | null
           notes?: string | null
+          opponent_logo_url?: string | null
           opponent_name?: string
           pause_total_seconds?: number
           season_year?: number
           status?: Database["public"]["Enums"]["match_status"]
+          team_logo_url?: string | null
+          team_name_display?: string | null
           updated_at?: string
           venue?: string | null
         }

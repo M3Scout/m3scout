@@ -42,7 +42,12 @@ export function MatchHeader({
   startersCount = 0,
 }: MatchHeaderProps) {
   const [confirmStartOpen, setConfirmStartOpen] = useState(false);
-  const { teamName, logoUrl } = useTeamSettings();
+  const { teamName: globalTeamName, logoUrl: globalLogoUrl } = useTeamSettings();
+  
+  // Use match-specific team info with fallback to global settings
+  const displayTeamName = match.team_name_display || globalTeamName;
+  const displayLogoUrl = match.team_logo_url || globalLogoUrl;
+  
   const config = statusConfig[match.status];
   const competitionName = match.competition?.display_name || match.competition?.name || "Competição";
 
@@ -132,13 +137,13 @@ export function MatchHeader({
             <div className="flex items-center justify-between min-w-0">
               <div className="flex items-center gap-3 min-w-0">
                 <img 
-                  src={logoUrl} 
-                  alt={teamName} 
+                  src={displayLogoUrl} 
+                  alt={displayTeamName} 
                   className="w-10 h-10 object-contain shrink-0"
                 />
                 <div className="min-w-0">
                   <h1 className="text-base sm:text-lg font-bold truncate">
-                    {teamName}
+                    {displayTeamName}
                   </h1>
                   <p className="text-sm text-muted-foreground">
                     vs {match.opponent_name}

@@ -47,6 +47,10 @@ export interface Match {
   added_time_first_half: number;
   added_time_second_half: number;
   match_start_time: string | null;
+  // Team customization fields
+  team_name_display: string | null;
+  team_logo_url: string | null;
+  opponent_logo_url: string | null;
   competition?: {
     id: string;
     name: string;

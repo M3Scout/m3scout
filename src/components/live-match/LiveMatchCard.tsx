@@ -54,6 +54,9 @@ interface MatchWithCompetition {
   clock_status?: string | null;
   added_time_first_half?: number | null;
   added_time_second_half?: number | null;
+  team_name_display?: string | null;
+  team_logo_url?: string | null;
+  opponent_logo_url?: string | null;
   competition: {
     id: string;
     name: string;
@@ -173,8 +176,12 @@ export function LiveMatchCard({ match, link, onDelete, index }: LiveMatchCardPro
   const queryClient = useQueryClient();
   const { displayTime, displayMinute, half } = useLiveTimer(match);
   const [quickEventType, setQuickEventType] = useState<QuickEventType | null>(null);
-  const { teamName, logoUrl } = useTeamSettings();
+  const { teamName: globalTeamName, logoUrl: globalLogoUrl } = useTeamSettings();
   const competitionName = match.competition?.display_name || match.competition?.name || "Competição";
+
+  // Use match-specific team info with fallback to global settings
+  const displayTeamName = match.team_name_display || globalTeamName;
+  const displayLogoUrl = match.team_logo_url || globalLogoUrl;
 
   // Fetch players on field for quick actions
   const { data: matchPlayers = [] } = useQuery({
@@ -314,13 +321,13 @@ export function LiveMatchCard({ match, link, onDelete, index }: LiveMatchCardPro
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-2">
                   <img 
-                    src={logoUrl} 
-                    alt={teamName} 
+                    src={displayLogoUrl} 
+                    alt={displayTeamName} 
                     className="w-8 h-8 object-contain"
                   />
                   <div>
                     <h4 className="font-bold text-lg text-zinc-100 truncate">
-                      {teamName}
+                      {displayTeamName}
                     </h4>
                     <p className="text-sm text-zinc-400">
                       vs {match.opponent_name}

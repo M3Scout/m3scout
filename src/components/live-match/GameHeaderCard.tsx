@@ -73,7 +73,12 @@ export function GameHeaderCard({
   pendingEventsCount = 0,
 }: GameHeaderCardProps) {
   const [confirmStartOpen, setConfirmStartOpen] = useState(false);
-  const { teamName, logoUrl } = useTeamSettings();
+  const { teamName: globalTeamName, logoUrl: globalLogoUrl } = useTeamSettings();
+  
+  // Use match-specific team info with fallback to global settings
+  const displayTeamName = match.team_name_display || globalTeamName;
+  const displayLogoUrl = match.team_logo_url || globalLogoUrl;
+  
   const config = statusConfig[match.status];
   const competitionName = match.competition?.display_name || match.competition?.name || "Competição";
   const isDraft = match.status === "draft";
@@ -180,13 +185,13 @@ export function GameHeaderCard({
             <div className="flex items-center justify-between mt-3">
               <div className="flex items-center gap-3 min-w-0">
                 <img 
-                  src={logoUrl} 
-                  alt={teamName} 
+                  src={displayLogoUrl} 
+                  alt={displayTeamName} 
                   className="w-10 h-10 sm:w-12 sm:h-12 object-contain shrink-0"
                 />
                 <div className="min-w-0">
                   <h1 className="text-base sm:text-lg font-bold text-zinc-100 truncate">
-                    {teamName}
+                    {displayTeamName}
                   </h1>
                   <p className="text-sm text-zinc-400">
                     vs {match.opponent_name}
