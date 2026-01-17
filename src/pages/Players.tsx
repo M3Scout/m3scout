@@ -11,8 +11,9 @@ import {
 } from "@/components/ui/select";
 import { Loader2, ChevronLeft, ChevronRight, Eye, Calendar } from "lucide-react";
 import { safeArray } from "@/lib/utils";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Switch } from "@/components/ui/switch";
+import { fadeInUp, staggerContainer, staggerItem, smoothTransition, buttonHover, buttonTap, pillHover } from "@/lib/animations";
 
 interface Player {
   id: string;
@@ -183,41 +184,58 @@ const Players = () => {
       />
 
       {/* Main Container */}
-      <div className="relative z-10 w-full max-w-[1200px] mx-auto px-6 md:px-12 lg:px-16">
+      <div className="relative z-10 w-full max-w-[1200px] mx-auto px-[var(--padding-mobile)] md:px-12 lg:px-16">
         
         {/* Header Section - Editorial */}
         <motion.section 
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial="hidden"
+          animate="visible"
+          variants={fadeInUp}
           transition={{ duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
-          className="pt-32 pb-12 md:pt-40 md:pb-16"
+          className="pt-28 pb-10 md:pt-40 md:pb-16"
         >
           {/* Micro label */}
-          <p className="text-[11px] uppercase tracking-[0.35em] text-neutral-500 font-medium mb-4">
+          <motion.p 
+            className="text-[11px] uppercase tracking-[0.35em] text-neutral-500 font-medium mb-4"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
             Portfólio
-          </p>
+          </motion.p>
           
           {/* Title */}
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white tracking-tight mb-5">
+          <motion.h1 
+            className="text-3xl md:text-5xl lg:text-6xl font-semibold text-white tracking-tight mb-4 md:mb-5"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
             Nossos{" "}
             <span className="text-[#e52421]">Atletas</span>
-          </h1>
+          </motion.h1>
           
           {/* Subtitle - Europa level copy */}
-          <p className="text-neutral-400 text-lg md:text-xl font-light max-w-2xl leading-relaxed tracking-wide">
+          <motion.p 
+            className="text-neutral-400 text-base md:text-xl font-light max-w-2xl leading-relaxed tracking-wide"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
             Curadoria, dados e contexto competitivo. Portfólio pronto para decisão.
-          </p>
+          </motion.p>
         </motion.section>
 
         {/* Divider */}
-        <div className="h-px bg-white/5 mb-10" />
+        <div className="h-px bg-white/5 mb-8 md:mb-10" />
 
         {/* Control Bar */}
         <motion.section 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1, ease: [0.25, 0.1, 0.25, 1] }}
-          className="mb-6"
+          initial="hidden"
+          animate="visible"
+          variants={fadeInUp}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="mb-5 md:mb-6"
         >
           <ControlBarPremium
             searchQuery={searchQuery}
@@ -234,20 +252,23 @@ const Players = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-10"
+          className="flex flex-col gap-4 mb-8 md:mb-10"
         >
           <p className="text-sm text-neutral-500 font-light tracking-wide">
             {filteredPlayers.length} atleta{filteredPlayers.length !== 1 ? "s" : ""} no portfólio
           </p>
           
           <div className="flex flex-wrap items-center gap-3">
-            {/* Year Filter */}
-            <div 
-              className="flex items-center gap-2 px-3 py-2 rounded-lg"
+            {/* Year Filter - Pill Style */}
+            <motion.div 
+              className="flex items-center gap-2 px-4 py-2.5 rounded-[var(--radius-pill)] min-h-[var(--tap-target)]"
               style={{
-                background: 'rgba(255, 255, 255, 0.02)',
-                border: '1px solid rgba(255, 255, 255, 0.06)'
+                background: 'var(--bg-glass)',
+                border: 'var(--border-glass)',
+                backdropFilter: 'blur(8px)',
               }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
               <Calendar className="w-4 h-4 text-neutral-500" />
               <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
@@ -257,27 +278,30 @@ const Players = () => {
                 >
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-[#0f0f0f] border-white/10 rounded-lg">
+                <SelectContent className="bg-[#0f0f0f] border-white/10 rounded-[var(--radius-button)]">
                   {availableYears.map((year) => (
                     <SelectItem 
                       key={year} 
                       value={String(year)}
-                      className="text-white focus:bg-white/10 focus:text-white rounded-md"
+                      className="text-white focus:bg-white/10 focus:text-white rounded-[var(--radius-button)]"
                     >
                       {year}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-            </div>
+            </motion.div>
             
-            {/* Scouting Mode Toggle */}
-            <div 
-              className="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200"
+            {/* Scouting Mode Toggle - Pill Style */}
+            <motion.div 
+              className="flex items-center gap-3 px-4 py-2.5 rounded-[var(--radius-pill)] min-h-[var(--tap-target)] transition-all duration-200"
               style={{
-                background: scoutingMode ? 'rgba(229, 36, 33, 0.08)' : 'rgba(255, 255, 255, 0.02)',
-                border: scoutingMode ? '1px solid rgba(229, 36, 33, 0.2)' : '1px solid rgba(255, 255, 255, 0.06)'
+                background: scoutingMode ? 'rgba(229, 36, 33, 0.08)' : 'var(--bg-glass)',
+                border: scoutingMode ? '1px solid rgba(229, 36, 33, 0.2)' : 'var(--border-glass)',
+                backdropFilter: 'blur(8px)',
               }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
               <Eye className={`w-4 h-4 transition-colors duration-200 ${scoutingMode ? 'text-[#e52421]' : 'text-neutral-500'}`} />
               <span className={`text-sm font-medium tracking-wide transition-colors duration-200 ${scoutingMode ? 'text-white' : 'text-neutral-400'}`}>
@@ -288,7 +312,7 @@ const Players = () => {
                 onCheckedChange={setScoutingMode}
                 className="data-[state=checked]:bg-[#e52421]"
               />
-            </div>
+            </motion.div>
           </div>
         </motion.div>
 
@@ -300,17 +324,17 @@ const Players = () => {
         ) : filteredPlayers.length > 0 ? (
           <>
             {/* Athletes Grid */}
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4 lg:gap-6">
+            <motion.div 
+              className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4 lg:gap-6"
+              initial="hidden"
+              animate="visible"
+              variants={staggerContainer}
+            >
               {safeArray(paginatedPlayers).map((player, index) => (
                 <motion.div
                   key={player.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ 
-                    duration: 0.5, 
-                    delay: Math.min(index * 0.05, 0.3),
-                    ease: [0.25, 0.1, 0.25, 1]
-                  }}
+                  variants={staggerItem}
+                  custom={index}
                 >
                   <AthleteCardPremium
                     id={player.id}
@@ -328,13 +352,18 @@ const Players = () => {
                   />
                 </motion.div>
               ))}
-            </div>
+            </motion.div>
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-6 py-16 border-t border-white/5 mt-16">
+              <motion.div 
+                className="flex flex-col sm:flex-row items-center justify-between gap-6 py-12 md:py-16 border-t border-white/5 mt-12 md:mt-16"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+              >
                 {/* Info & Items per page */}
-                <div className="flex items-center gap-6">
+                <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
                   <p className="text-sm text-neutral-500 font-light">
                     Mostrando {((currentPage - 1) * itemsPerPage) + 1}–{Math.min(currentPage * itemsPerPage, filteredPlayers.length)} de {filteredPlayers.length}
                   </p>
@@ -347,10 +376,10 @@ const Players = () => {
                         setCurrentPage(1);
                       }}
                     >
-                      <SelectTrigger className="w-[70px] h-9 bg-transparent border-white/10 text-white rounded-lg focus:ring-0">
+                      <SelectTrigger className="w-[70px] h-10 bg-transparent border-white/10 text-white rounded-[var(--radius-button)] focus:ring-0">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-[#0f0f0f] border-white/10 rounded-lg">
+                      <SelectContent className="bg-[#0f0f0f] border-white/10 rounded-[var(--radius-button)]">
                         {safeArray(PAGE_SIZE_OPTIONS).map((size) => (
                           <SelectItem 
                             key={size} 
@@ -367,13 +396,15 @@ const Players = () => {
 
                 {/* Page Numbers */}
                 <div className="flex items-center gap-1">
-                  <button
+                  <motion.button
                     onClick={() => goToPage(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className="w-10 h-10 flex items-center justify-center rounded-lg border border-white/10 text-white disabled:opacity-30 disabled:cursor-not-allowed hover:border-white/20 hover:bg-white/5 transition-all duration-200"
+                    className="w-10 h-10 min-h-[var(--tap-target)] flex items-center justify-center rounded-[var(--radius-button)] border border-white/10 text-white disabled:opacity-30 disabled:cursor-not-allowed hover:border-white/20 hover:bg-white/5 transition-all duration-200"
+                    whileHover={currentPage !== 1 ? buttonHover : {}}
+                    whileTap={currentPage !== 1 ? buttonTap : {}}
                   >
                     <ChevronLeft className="w-4 h-4" />
-                  </button>
+                  </motion.button>
                   
                   {safeArray(getPageNumbers()).map((page, index) =>
                     page === "ellipsis" ? (
@@ -381,29 +412,33 @@ const Players = () => {
                         …
                       </span>
                     ) : (
-                      <button
+                      <motion.button
                         key={page}
                         onClick={() => goToPage(page)}
-                        className={`w-10 h-10 flex items-center justify-center rounded-lg text-sm font-medium transition-all duration-200 ${
+                        className={`w-10 h-10 min-h-[var(--tap-target)] flex items-center justify-center rounded-[var(--radius-button)] text-sm font-medium transition-all duration-200 ${
                           currentPage === page
                             ? "bg-white text-black"
                             : "border border-white/10 text-white hover:border-white/20 hover:bg-white/5"
                         }`}
+                        whileHover={buttonHover}
+                        whileTap={buttonTap}
                       >
                         {page}
-                      </button>
+                      </motion.button>
                     )
                   )}
                   
-                  <button
+                  <motion.button
                     onClick={() => goToPage(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className="w-10 h-10 flex items-center justify-center rounded-lg border border-white/10 text-white disabled:opacity-30 disabled:cursor-not-allowed hover:border-white/20 hover:bg-white/5 transition-all duration-200"
+                    className="w-10 h-10 min-h-[var(--tap-target)] flex items-center justify-center rounded-[var(--radius-button)] border border-white/10 text-white disabled:opacity-30 disabled:cursor-not-allowed hover:border-white/20 hover:bg-white/5 transition-all duration-200"
+                    whileHover={currentPage !== totalPages ? buttonHover : {}}
+                    whileTap={currentPage !== totalPages ? buttonTap : {}}
                   >
                     <ChevronRight className="w-4 h-4" />
-                  </button>
+                  </motion.button>
                 </div>
-              </div>
+              </motion.div>
             )}
           </>
         ) : (
