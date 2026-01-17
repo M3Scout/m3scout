@@ -103,10 +103,12 @@ interface MobilePlayerCardProps {
   matchStatus: MatchStatus;
   clockStatus?: "stopped" | "running" | "paused";
   currentMinute?: number;
+  currentPeriod?: number;
+  displayMinute?: string;
   onAddEvent: (eventType: MatchEventType) => void;
   onUndo: () => void;
-  onPlayerEnter?: (minute: number) => void;
-  onPlayerExit?: (minute: number) => void;
+  onPlayerEnter?: (matchPlayerId: string) => void;
+  onPlayerExit?: (matchPlayerId: string) => void;
   onRemoveFromMatch?: () => void;
   onSaveNotes?: (notes: string) => Promise<void>;
   disabled?: boolean;
@@ -120,6 +122,8 @@ export function MobilePlayerCard({
   matchStatus,
   clockStatus = "stopped",
   currentMinute = 0,
+  currentPeriod = 1,
+  displayMinute,
   onAddEvent,
   onUndo,
   onPlayerEnter,
@@ -194,12 +198,12 @@ export function MobilePlayerCard({
 
   const handleEnterField = () => {
     if (soundEnabled) playSound('enter');
-    onPlayerEnter?.(currentMinute);
+    onPlayerEnter?.(matchPlayer.id);
   };
 
   const handleExitField = () => {
     if (soundEnabled) playSound('exit');
-    onPlayerExit?.(currentMinute);
+    onPlayerExit?.(matchPlayer.id);
   };
 
   const getCount = (type: MatchEventType) => eventCounts[type] || 0;
