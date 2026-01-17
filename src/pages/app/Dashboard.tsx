@@ -11,30 +11,8 @@ import { QuickActionsCard } from "@/components/dashboard/QuickActionsCard";
 import { PositionChartCard } from "@/components/dashboard/PositionChartCard";
 import { InsightsCard } from "@/components/dashboard/InsightsCard";
 import CompetitionUsageWidget from "@/components/competitions/CompetitionUsageWidget";
-import { motion, Variants } from "framer-motion";
-
-// Stagger animation variants
-const containerVariants: Variants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.1,
-    },
-  },
-};
-
-const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.4,
-    },
-  },
-};
+import { motion } from "framer-motion";
+import { staggerContainer, staggerItem } from "@/lib/animations";
 
 interface DashboardStats {
   totalPlayers: number;
@@ -211,18 +189,18 @@ const Dashboard = () => {
 
   return (
     <motion.div 
-      className="space-y-6 pb-8"
-      variants={containerVariants}
+      className="space-y-[var(--gap-mobile)] md:space-y-6 pb-8 px-[var(--padding-mobile)] md:px-0"
+      variants={staggerContainer}
       initial="hidden"
       animate="visible"
     >
       {/* Hero Section */}
-      <motion.div variants={itemVariants}>
+      <motion.div variants={staggerItem}>
         <DashboardHero />
       </motion.div>
 
       {/* KPI Cards */}
-      <motion.div variants={itemVariants}>
+      <motion.div variants={staggerItem}>
         <KPICards 
           totalPlayers={stats.totalPlayers}
           reportsThisMonth={stats.reportsThisMonth}
@@ -233,8 +211,8 @@ const Dashboard = () => {
 
       {/* Insights + Top Players Grid - Shared container with equal heights */}
       <motion.div 
-        variants={itemVariants} 
-        className="grid lg:grid-cols-3 gap-6 items-stretch"
+        variants={staggerItem} 
+        className="grid grid-cols-1 lg:grid-cols-3 gap-[var(--gap-mobile)] md:gap-6 items-stretch"
       >
         {/* Insights - New strategic section */}
         <div className="lg:col-span-1 flex">
@@ -249,8 +227,8 @@ const Dashboard = () => {
 
       {/* Position Chart + Reports Grid - Shared container with equal heights */}
       <motion.div 
-        variants={itemVariants} 
-        className="grid lg:grid-cols-3 gap-6 items-stretch"
+        variants={staggerItem} 
+        className="grid grid-cols-1 lg:grid-cols-3 gap-[var(--gap-mobile)] md:gap-6 items-stretch"
       >
         {/* Position Chart */}
         <div className="lg:col-span-1 flex">
@@ -264,7 +242,7 @@ const Dashboard = () => {
       </motion.div>
 
       {/* Leads + Quick Actions Grid */}
-      <motion.div variants={itemVariants} className="grid lg:grid-cols-2 gap-6">
+      <motion.div variants={staggerItem} className="grid grid-cols-1 lg:grid-cols-2 gap-[var(--gap-mobile)] md:gap-6">
         {/* Recent Leads */}
         <RecentLeadsCard leads={recentLeads} />
 
@@ -274,8 +252,8 @@ const Dashboard = () => {
 
       {/* Competition Usage - Admin Only */}
       {isAdmin && (
-        <motion.div variants={itemVariants}>
-          <div className="rounded-xl border border-zinc-800/50 bg-gradient-to-br from-zinc-900 to-zinc-950 overflow-hidden">
+        <motion.div variants={staggerItem}>
+          <div className="rounded-[var(--radius-card)] border border-[var(--border-glass)] bg-[var(--bg-glass)] backdrop-blur-sm overflow-hidden">
             <CompetitionUsageWidget />
           </div>
         </motion.div>

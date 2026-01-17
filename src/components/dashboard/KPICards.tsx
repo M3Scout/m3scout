@@ -1,6 +1,7 @@
 import { Users, FileText, MessageSquare, AlertTriangle } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
+import { cardHover, cardTap, staggerItem } from "@/lib/animations";
 
 interface KPICardsProps {
   totalPlayers: number;
@@ -64,7 +65,7 @@ export const KPICards = ({ totalPlayers, reportsThisMonth, totalLeads, expiringC
   };
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-[var(--gap-mobile)] md:gap-4">
       {kpiConfig.map((kpi, index) => {
         const value = values[kpi.key];
         const isWarning = kpi.key === "contracts" && value > 0;
@@ -72,32 +73,32 @@ export const KPICards = ({ totalPlayers, reportsThisMonth, totalLeads, expiringC
         return (
           <motion.div
             key={kpi.key}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
+            variants={staggerItem}
+            whileHover={cardHover}
+            whileTap={cardTap}
           >
             <Link
               to={kpi.link}
-              className={`group relative block overflow-hidden rounded-xl border ${kpi.borderColor} bg-gradient-to-br ${kpi.color} p-5 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl ${kpi.glowColor}`}
+              className={`group relative block overflow-hidden rounded-[var(--radius-card)] border ${kpi.borderColor} bg-gradient-to-br ${kpi.color} p-4 sm:p-5 transition-all duration-300 hover:shadow-xl ${kpi.glowColor}`}
             >
               {/* Subtle glow effect */}
               <div className="absolute -top-12 -right-12 w-24 h-24 rounded-full bg-gradient-to-br from-white/5 to-transparent blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               
-              <div className="relative flex flex-col gap-3">
-                <div className={`w-10 h-10 rounded-lg bg-zinc-900/50 flex items-center justify-center ${kpi.iconColor}`}>
-                  <kpi.icon className="w-5 h-5" />
+              <div className="relative flex flex-col gap-2 sm:gap-3">
+                <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-[var(--radius-button)] bg-zinc-900/50 flex items-center justify-center ${kpi.iconColor}`}>
+                  <kpi.icon className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
                 
                 <div>
-                  <p className={`text-3xl sm:text-4xl font-bold tabular-nums ${isWarning ? 'text-amber-400' : 'text-white'}`}>
+                  <p className={`text-2xl sm:text-3xl lg:text-4xl font-bold tabular-nums ${isWarning ? 'text-amber-400' : 'text-foreground'}`}>
                     {value}
                   </p>
                   <div className="flex items-center gap-1.5 mt-1">
-                    <p className="text-xs text-zinc-400 uppercase tracking-wider font-medium">
+                    <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wider font-medium">
                       {kpi.label}
                     </p>
                     {kpi.sublabel && (
-                      <span className="text-[10px] text-zinc-600">
+                      <span className="text-[9px] sm:text-[10px] text-zinc-600">
                         {kpi.sublabel}
                       </span>
                     )}

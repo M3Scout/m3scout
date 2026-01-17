@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { formatFixed } from "@/lib/formatters";
 import { motion } from "framer-motion";
+import { fadeInUp, cardHover, cardTap } from "@/lib/animations";
 
 interface RankedPlayer {
   id: string;
@@ -59,7 +60,7 @@ const getRankBg = (rank: number) => {
     case 3:
       return "bg-gradient-to-r from-amber-600/15 to-orange-500/5 border-amber-600/20";
     default:
-      return "bg-zinc-900/50 border-zinc-800/50";
+      return "bg-[var(--bg-glass)] border-[var(--border-glass)]";
   }
 };
 
@@ -107,30 +108,29 @@ export const TopPlayersCard = () => {
 
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
+      {...fadeInUp}
       transition={{ delay: 0.2 }}
-      className="w-full h-full flex flex-col rounded-xl border border-zinc-800/50 bg-gradient-to-br from-zinc-900 to-zinc-950 overflow-hidden"
+      className="w-full h-full flex flex-col rounded-[var(--radius-card)] border border-[var(--border-glass)] bg-[var(--bg-glass)] backdrop-blur-sm overflow-hidden"
     >
       {/* Header */}
-      <div className="px-5 py-4 border-b border-zinc-800/50 bg-zinc-900/50 shrink-0">
+      <div className="px-4 sm:px-5 py-4 border-b border-[var(--border-glass)] bg-zinc-900/50 shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-red-600/10 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-[var(--radius-button)] bg-gradient-to-br from-primary/20 to-red-600/10 flex items-center justify-center">
               <Trophy className="w-4 h-4 text-primary" />
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-white">Top Atletas</h2>
-              <p className="text-[10px] text-zinc-500">Ranking por nota automática</p>
+              <h2 className="text-sm font-semibold text-foreground">Top Atletas</h2>
+              <p className="text-[10px] text-muted-foreground">Ranking por nota automática</p>
             </div>
           </div>
           
           <Select value={positionFilter} onValueChange={setPositionFilter}>
-            <SelectTrigger className="w-24 h-7 text-xs bg-zinc-800/50 border-zinc-700">
-              <Filter className="w-3 h-3 mr-1.5 text-zinc-500" />
+            <SelectTrigger className="w-24 h-8 text-xs bg-zinc-800/50 border-zinc-700 rounded-[var(--radius-button)]">
+              <Filter className="w-3 h-3 mr-1.5 text-muted-foreground" />
               <SelectValue placeholder="Filtrar" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="rounded-[var(--radius-button)]">
               {POSITIONS.map((pos) => (
                 <SelectItem key={pos.value} value={pos.value} className="text-xs">
                   {pos.label}
@@ -146,72 +146,77 @@ export const TopPlayersCard = () => {
         {loading ? (
           <div className="flex flex-col justify-between h-full gap-1.5">
             {[...Array(8)].map((_, i) => (
-              <div key={i} className="flex-1 min-h-[56px] bg-zinc-800/30 rounded-lg animate-pulse" />
+              <div key={i} className="flex-1 min-h-[52px] bg-zinc-800/30 rounded-[var(--radius-button)] animate-pulse" />
             ))}
           </div>
         ) : players.length > 0 ? (
           <div className="flex flex-col justify-between h-full gap-1.5">
             {players.map((player, index) => (
-              <Link
+              <motion.div
                 key={player.id}
-                to={`/app/players/${player.id}`}
-                className={`group flex items-center gap-3 p-3 flex-1 min-h-[56px] rounded-lg border transition-all duration-200 hover:scale-[1.01] ${getRankBg(index + 1)}`}
+                whileHover={cardHover}
+                whileTap={cardTap}
               >
-                {/* Rank */}
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${
-                  index < 3 ? '' : 'bg-zinc-800 text-zinc-500'
-                }`}>
-                  {getMedalIcon(index + 1) || (
-                    <span>{index + 1}</span>
-                  )}
-                </div>
-
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate group-hover:text-primary transition-colors">
-                    {player.full_name}
-                  </p>
-                  <div className="flex items-center gap-1.5 text-[11px] text-zinc-500">
-                    <span className="font-medium">{player.position}</span>
-                    {player.age && (
-                      <>
-                        <span className="text-zinc-700">•</span>
-                        <span>{player.age}a</span>
-                      </>
-                    )}
-                    {player.current_club && (
-                      <>
-                        <span className="text-zinc-700">•</span>
-                        <span className="truncate max-w-[80px]">{player.current_club}</span>
-                      </>
+                <Link
+                  to={`/app/players/${player.id}`}
+                  className={`group flex items-center gap-3 p-3 flex-1 min-h-[52px] rounded-[var(--radius-button)] border transition-all duration-200 ${getRankBg(index + 1)}`}
+                >
+                  {/* Rank */}
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${
+                    index < 3 ? '' : 'bg-zinc-800 text-muted-foreground'
+                  }`}>
+                    {getMedalIcon(index + 1) || (
+                      <span>{index + 1}</span>
                     )}
                   </div>
-                </div>
 
-                {/* Rating */}
-                <Badge 
-                  variant="outline" 
-                  className={`${getRatingColor(player.auto_rating)} border font-semibold text-xs px-2 py-0.5`}
-                >
-                  <Star className="w-3 h-3 mr-1 fill-current" />
-                  {formatFixed(player.auto_rating, 1, "-")}
-                </Badge>
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
+                      {player.full_name}
+                    </p>
+                    <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                      <span className="font-medium">{player.position}</span>
+                      {player.age && (
+                        <>
+                          <span className="text-zinc-700">•</span>
+                          <span>{player.age}a</span>
+                        </>
+                      )}
+                      {player.current_club && (
+                        <>
+                          <span className="text-zinc-700">•</span>
+                          <span className="truncate max-w-[80px]">{player.current_club}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
 
-                <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
-              </Link>
+                  {/* Rating */}
+                  <Badge 
+                    variant="outline" 
+                    className={`${getRatingColor(player.auto_rating)} border font-semibold text-xs px-2 py-0.5 rounded-full`}
+                  >
+                    <Star className="w-3 h-3 mr-1 fill-current" />
+                    {formatFixed(player.auto_rating, 1, "-")}
+                  </Badge>
+
+                  <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
+                </Link>
+              </motion.div>
             ))}
           </div>
         ) : (
           <div className="py-12 text-center">
             <Trophy className="w-10 h-10 mx-auto mb-3 text-zinc-700" />
-            <p className="text-sm text-zinc-500">Nenhum atleta com nota</p>
+            <p className="text-sm text-muted-foreground">Nenhum atleta com nota</p>
           </div>
         )}
       </div>
 
       {/* Footer */}
       {players.length > 0 && (
-        <div className="px-5 py-3 border-t border-zinc-800/50 bg-zinc-900/30">
+        <div className="px-4 sm:px-5 py-3 border-t border-[var(--border-glass)] bg-zinc-900/30">
           <Link 
             to="/app/players"
             className="text-xs text-primary hover:text-primary/80 flex items-center justify-center gap-1 font-medium transition-colors"

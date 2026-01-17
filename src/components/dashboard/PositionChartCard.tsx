@@ -2,6 +2,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 import { PieChart, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import { getPositionColor, getShortPosition } from "@/lib/positionColors";
+import { fadeInUp } from "@/lib/animations";
 
 interface PositionData {
   name: string;
@@ -15,7 +16,6 @@ interface PositionChartCardProps {
 // Convert HSL string to hex for recharts
 const getPositionColorHex = (position: string): string => {
   const colorConfig = getPositionColor(position);
-  // Map color classes to hex values
   const hexMap: Record<string, string> = {
     "text-violet-400": "#a78bfa",
     "text-blue-400": "#60a5fa",
@@ -34,29 +34,27 @@ export const PositionChartCard = ({ data }: PositionChartCardProps) => {
 
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
+      {...fadeInUp}
       transition={{ delay: 0.25 }}
-      className="w-full h-full flex flex-col rounded-xl border border-zinc-800/50 bg-gradient-to-br from-zinc-900 to-zinc-950 overflow-hidden"
+      className="w-full h-full flex flex-col rounded-[var(--radius-card)] border border-[var(--border-glass)] bg-[var(--bg-glass)] backdrop-blur-sm overflow-hidden"
     >
       {/* Header */}
-      <div className="px-5 py-4 border-b border-zinc-800/50 bg-zinc-900/50 shrink-0">
+      <div className="px-4 sm:px-5 py-4 border-b border-[var(--border-glass)] bg-zinc-900/50 shrink-0">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500/20 to-green-600/10 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-[var(--radius-button)] bg-gradient-to-br from-emerald-500/20 to-green-600/10 flex items-center justify-center">
             <PieChart className="w-4 h-4 text-emerald-400" />
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-white">Perfil do Elenco</h2>
-            <p className="text-[10px] text-zinc-500">Distribuição por posição</p>
+            <h2 className="text-sm font-semibold text-foreground">Perfil do Elenco</h2>
+            <p className="text-[10px] text-muted-foreground">Distribuição por posição</p>
           </div>
         </div>
       </div>
 
-      {/* Content - flex-1 to fill available height */}
-      <div className="p-4 flex-1 flex flex-col min-h-0">
+      {/* Content */}
+      <div className="p-3 sm:p-4 flex-1 flex flex-col min-h-0">
         {data.length > 0 ? (
           <>
-            {/* Bar Chart - flex-1 to fill space */}
             <div className="flex-1 min-h-[180px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data} layout="vertical" margin={{ left: 0, right: 16, top: 8, bottom: 8 }}>
@@ -67,32 +65,29 @@ export const PositionChartCard = ({ data }: PositionChartCardProps) => {
                     width={45}
                     tickLine={false}
                     axisLine={false}
-                    tick={({ x, y, payload }) => {
-                      const colors = getPositionColor(payload.value);
-                      return (
-                        <text 
-                          x={x} 
-                          y={y} 
-                          dy={4} 
-                          textAnchor="end" 
-                          fill={getPositionColorHex(payload.value)}
-                          fontSize={10}
-                          fontWeight={600}
-                        >
-                          {getShortPosition(payload.value)}
-                        </text>
-                      );
-                    }}
+                    tick={({ x, y, payload }) => (
+                      <text 
+                        x={x} 
+                        y={y} 
+                        dy={4} 
+                        textAnchor="end" 
+                        fill={getPositionColorHex(payload.value)}
+                        fontSize={10}
+                        fontWeight={600}
+                      >
+                        {getShortPosition(payload.value)}
+                      </text>
+                    )}
                   />
                   <Tooltip 
                     contentStyle={{ 
-                      backgroundColor: "#09090b", 
-                      border: "1px solid #27272a",
-                      borderRadius: "8px",
+                      backgroundColor: "hsl(var(--background))", 
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "var(--radius-button)",
                       padding: "8px 12px"
                     }}
-                    formatter={(value: number, name: string, props: any) => [
-                      <span key="value" style={{ color: "#ffffff", fontWeight: 600 }}>
+                    formatter={(value: number) => [
+                      <span key="value" style={{ color: "hsl(var(--foreground))", fontWeight: 600 }}>
                         {value} {value === 1 ? "jogador" : "jogadores"}
                       </span>,
                       ""
@@ -117,21 +112,18 @@ export const PositionChartCard = ({ data }: PositionChartCardProps) => {
               </ResponsiveContainer>
             </div>
 
-            {/* Legend - mt-auto to push to bottom */}
-            <div className="flex items-center justify-between pt-3 mt-auto border-t border-zinc-800/50 shrink-0">
-              <div className="flex items-center gap-1.5 text-[11px] text-zinc-500">
+            <div className="flex items-center justify-between pt-3 mt-auto border-t border-[var(--border-glass)] shrink-0">
+              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                 <Users className="w-3.5 h-3.5" />
-                <span>{total} atletas cadastrados</span>
+                <span>{total} atletas</span>
               </div>
-              <div className="text-[10px] text-zinc-600">
-                Top 5 posições
-              </div>
+              <div className="text-[10px] text-zinc-600">Top 5</div>
             </div>
           </>
         ) : (
           <div className="py-12 text-center flex-1 flex flex-col items-center justify-center">
             <PieChart className="w-10 h-10 mx-auto mb-3 text-zinc-700" />
-            <p className="text-sm text-zinc-500">Sem dados de posição</p>
+            <p className="text-sm text-muted-foreground">Sem dados de posição</p>
           </div>
         )}
       </div>
