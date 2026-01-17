@@ -399,8 +399,8 @@ export function useLiveMatch(matchId: string) {
     },
   });
 
-  // Add event using RPC - handles draft vs official status automatically
-  // Now also updates match_player_stats atomically
+  // Add event using RPC v2 - handles draft vs official status automatically
+  // Now also updates match_player_stats atomically with proper stat chaining
   const addEvent = useMutation({
     mutationFn: async (params: {
       playerId: string;
@@ -410,18 +410,33 @@ export function useLiveMatch(matchId: string) {
       half?: 1 | 2;
       displayMinute?: string;
     }) => {
-      const { data, error } = await supabase.rpc("create_live_event", {
+      // Use type assertion since create_live_event_v2 is newly added
+      const { data, error } = await (supabase.rpc as Function)("create_live_event_v2", {
         p_game_id: matchId,
         p_player_id: params.playerId,
         p_type: params.eventType,
-        p_notes: null,
-        p_force_time_seconds: params.minute ? params.minute * 60 : null,
         p_half: params.half || null,
-        p_display_minute: params.displayMinute || null,
+        p_force_time_seconds: params.minute ? params.minute * 60 : null,
+        p_notes: null,
       });
 
       if (error) throw error;
-      return data as { event_status?: string; event_id?: string; stats_updated?: boolean } | null;
+      
+      // Handle RPC response that returns success/error object
+      const result = data as { 
+        success: boolean; 
+        error?: string; 
+        message?: string;
+        event_id?: string; 
+        event_status?: string; 
+        stats_applied?: boolean;
+      } | null;
+      
+      if (result && !result.success) {
+        throw new Error(result.message || "Erro ao registrar evento");
+      }
+      
+      return result;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["match-events", matchId] });
