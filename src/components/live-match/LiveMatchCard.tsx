@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -80,6 +80,11 @@ interface LiveMatchCardProps {
 function useLiveTimer(match: MatchWithCompetition) {
   const [displayTime, setDisplayTime] = useState("00:00");
   const [displayMinute, setDisplayMinute] = useState("0'");
+  const displayTimeRef = useRef("00:00");
+
+  useEffect(() => {
+    displayTimeRef.current = displayTime;
+  }, [displayTime]);
   
   useEffect(() => {
     if (match.status !== "live" || match.clock_status !== "running") {
@@ -99,30 +104,19 @@ function useLiveTimer(match: MatchWithCompetition) {
       return;
     }
 
-    // Calculate real-time elapsed
-    const halfStartTime = match.half_start_time ? new Date(match.half_start_time).getTime() : null;
-    const baseElapsed = match.elapsed_seconds_in_half || 0;
+    // Calculate real-time elapsed (authoritative sync once, then tick locally)
+    let cancelled = false;
+    let interval: ReturnType<typeof setInterval> | null = null;
+
     const halfDuration = (match.duration_minutes || 90) / 2;
     const half = match.half || 1;
 
-    const updateTimer = () => {
-      if (!halfStartTime) return;
-
-      const now = Date.now();
-      const secondsSinceStart = Math.floor((now - halfStartTime) / 1000);
-      const totalSecondsInHalf = baseElapsed + secondsSinceStart;
-      
+    const applySeconds = (totalSecondsInHalf: number) => {
       const mins = Math.floor(totalSecondsInHalf / 60);
       const secs = totalSecondsInHalf % 60;
-      
       setDisplayTime(`${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`);
-      
-      // Calculate match minute
-      const totalMinutes = half === 1 
-        ? mins
-        : halfDuration + mins;
-      
-      // Handle added time display
+
+      const totalMinutes = half === 1 ? mins : halfDuration + mins;
       const regularHalfEnd = halfDuration;
       if (mins > regularHalfEnd) {
         const addedTime = mins - regularHalfEnd;
@@ -132,10 +126,44 @@ function useLiveTimer(match: MatchWithCompetition) {
       }
     };
 
-    updateTimer();
-    const interval = setInterval(updateTimer, 1000);
-    
-    return () => clearInterval(interval);
+    const syncFromBackend = async () => {
+      try {
+        const { data, error } = await supabase.rpc("get_period_clock_seconds", {
+          p_match_id: match.id,
+        });
+        if (error) throw error;
+        if (!cancelled && typeof data === "number" && Number.isFinite(data)) {
+          applySeconds(Math.max(0, Math.floor(data)));
+        }
+      } catch {
+        // Fallback to local computation (best effort)
+        const halfStartTime = match.half_start_time ? new Date(match.half_start_time).getTime() : null;
+        const baseElapsed = match.elapsed_seconds_in_half || 0;
+        if (!halfStartTime) return;
+        const secondsSinceStart = Math.floor((Date.now() - halfStartTime) / 1000);
+        applySeconds(Math.max(0, baseElapsed + secondsSinceStart));
+      }
+    };
+
+    void syncFromBackend();
+
+    interval = setInterval(() => {
+      // tick display by +1s while running
+      setDisplayTime((prev) => prev); // keep React state updates below
+      setDisplayMinute((prev) => prev);
+      // We increment by recalculating from current displayed mm:ss to avoid Date.now skew.
+      // (Parse is safe here because displayTime is always mm:ss)
+      applySeconds((() => {
+        const [mm, ss] = displayTime.split(":").map((v) => parseInt(v, 10));
+        const base = (Number.isFinite(mm) ? mm : 0) * 60 + (Number.isFinite(ss) ? ss : 0);
+        return base + 1;
+      })());
+    }, 1000);
+
+    return () => {
+      cancelled = true;
+      if (interval) clearInterval(interval);
+    };
   }, [match]);
 
   return { displayTime, displayMinute, half: match.half || 1 };

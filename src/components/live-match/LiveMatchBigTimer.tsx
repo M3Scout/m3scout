@@ -22,6 +22,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export type ClockStatus = "stopped" | "running" | "paused";
 
@@ -42,6 +43,7 @@ export interface TimerInfo {
 }
 
 interface LiveMatchBigTimerProps {
+  matchId: string;
   durationMinutes: number;
   matchStatus: "draft" | "live" | "finished" | "applied";
   timerState: TimerState;
@@ -60,6 +62,7 @@ interface LiveMatchBigTimerProps {
 const ADDED_TIME_CHIPS = [1, 2, 3, 5];
 
 export function LiveMatchBigTimer({
+  matchId,
   durationMinutes,
   matchStatus,
   timerState,
@@ -84,37 +87,40 @@ export function LiveMatchBigTimer({
   const currentAddedTime = half === 1 ? addedTimeFirstHalf : addedTimeSecondHalf;
   const halfDuration = durationMinutes / 2; // 45 min for 90 min match
 
-  // Calculate elapsed seconds in current half
-  const calculateElapsed = useCallback(() => {
-    let elapsed = elapsedSecondsInHalf;
-    if (clockStatus === "running" && halfStartTime) {
-      const now = Date.now();
-      const start = new Date(halfStartTime).getTime();
-      const diff = Math.floor((now - start) / 1000);
-      // Guard against negative values (server time ahead of client)
-      elapsed += Math.max(0, diff);
+  // We intentionally avoid using client Date.now() - halfStartTime math here because
+  // client devices can have clock skew, which makes the timer start "adiantado".
+  // We sync the authoritative seconds from the backend once, then tick locally.
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval> | null = null;
+    let cancelled = false;
+
+    const syncFromBackend = async () => {
+      try {
+        const { data, error } = await supabase.rpc("get_period_clock_seconds", {
+          p_match_id: matchId,
+        });
+        if (error) throw error;
+        if (!cancelled && typeof data === "number" && Number.isFinite(data)) {
+          setDisplaySeconds(Math.max(0, Math.floor(data)));
+        }
+      } catch {
+        if (!cancelled) setDisplaySeconds(Math.max(0, elapsedSecondsInHalf));
+      }
+    };
+
+    if (clockStatus === "running") {
+      setDisplaySeconds(Math.max(0, elapsedSecondsInHalf));
+      void syncFromBackend();
+      interval = setInterval(() => setDisplaySeconds((s) => s + 1), 1000);
+    } else {
+      setDisplaySeconds(Math.max(0, elapsedSecondsInHalf));
     }
-    return elapsed;
+
+    return () => {
+      cancelled = true;
+      if (interval) clearInterval(interval);
+    };
   }, [clockStatus, halfStartTime, elapsedSecondsInHalf]);
-
-  // Reset displaySeconds immediately when elapsedSecondsInHalf changes from server
-  // This ensures the timer shows 0 when the game starts fresh
-  useEffect(() => {
-    setDisplaySeconds(calculateElapsed());
-  }, [elapsedSecondsInHalf, halfStartTime, clockStatus]);
-
-  // Update display every second when running
-  useEffect(() => {
-    if (clockStatus !== "running") {
-      return;
-    }
-
-    const interval = setInterval(() => {
-      setDisplaySeconds(calculateElapsed());
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [clockStatus, calculateElapsed]);
 
   // Build timer info for parent
   const getTimerInfo = useCallback((): TimerInfo => {
