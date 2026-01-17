@@ -224,97 +224,105 @@ export function MobilePlayerCard({
           )}
         </AnimatePresence>
 
-        {/* ===== HEADER ===== */}
-        <div className="flex items-center gap-3 p-4 pb-2">
-          {/* Avatar */}
-          <Avatar className={cn("h-12 w-12 border-2 shrink-0 rounded-full", positionColors.borderClass)}>
-            <AvatarImage src={player.photo_url || undefined} className="rounded-full" />
-            <AvatarFallback className={cn("font-bold text-sm rounded-full", positionColors.bgClass, positionColors.textClass)}>
-              {player.full_name.slice(0, 2).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
+        {/* ===== HEADER - Responsive 2-line layout ===== */}
+        <div className="p-4 pb-2 space-y-2">
+          {/* Row 1: Avatar + Name + Stats toggle */}
+          <div className="flex items-center gap-3">
+            {/* Avatar */}
+            <Avatar className={cn("h-11 w-11 border-2 shrink-0 rounded-full", positionColors.borderClass)}>
+              <AvatarImage src={player.photo_url || undefined} className="rounded-full" />
+              <AvatarFallback className={cn("font-bold text-sm rounded-full", positionColors.bgClass, positionColors.textClass)}>
+                {player.full_name.slice(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
 
-          {/* Info */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
+            {/* Name + Notes icon */}
+            <div className="flex-1 min-w-0 flex items-center gap-2">
               <h4 className="font-semibold text-zinc-100 truncate text-base">{player.full_name}</h4>
               {hasNotes && (
                 <MessageSquare className="w-3.5 h-3.5 text-amber-400 shrink-0" />
               )}
             </div>
-            {/* Pills row */}
-            <div className="flex items-center gap-1.5 mt-1.5">
+
+            {/* Stats toggle button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-full hover:bg-white/10 shrink-0"
+              onClick={() => setShowDetailedStats(!showDetailedStats)}
+            >
+              <BarChart3 className={cn(
+                "w-4 h-4 transition-colors",
+                showDetailedStats ? "text-blue-400" : "text-zinc-500"
+              )} />
+            </Button>
+          </div>
+
+          {/* Row 2: Chips + Key stats - Always visible, never overlapping */}
+          <div className="flex items-center justify-between gap-2">
+            {/* Left: Status chips - flex-wrap to prevent overlap */}
+            <div className="flex items-center gap-1.5 flex-wrap min-w-0">
               <Badge 
-                size="sm"
                 className={cn(
-                  "font-bold",
+                  "font-bold text-[10px] px-1.5 py-0.5 h-5 shrink-0",
                   positionColors.bgClass, positionColors.textClass
                 )}
               >
                 {shortPosition}
               </Badge>
               <Badge 
-                size="sm"
-                variant={matchPlayer.is_on_field ? "success" : "glass"}
+                className={cn(
+                  "text-[10px] px-1.5 py-0.5 h-5 shrink-0",
+                  matchPlayer.is_on_field 
+                    ? "bg-green-600/20 text-green-400 border-green-500/30" 
+                    : "bg-zinc-700/50 text-zinc-400 border-zinc-600/30"
+                )}
               >
                 {matchPlayer.is_on_field ? "Em campo" : "Banco"}
               </Badge>
             </div>
-          </div>
 
-          {/* Key stats mini display */}
-          <div className="flex items-center gap-1.5 shrink-0">
-            {isGK ? (
-              <>
-                <div className="text-center px-2 py-1 rounded-lg bg-zinc-800/60 min-w-[40px]">
-                  <p className={cn("text-sm font-bold tabular-nums", totalSaves > 0 ? "text-emerald-400" : "text-zinc-500")}>
-                    {totalSaves}
-                  </p>
-                  <p className="text-[8px] text-zinc-500 uppercase">DEF</p>
-                </div>
-                <div className="text-center px-2 py-1 rounded-lg bg-zinc-800/60 min-w-[40px]">
-                  <p className={cn("text-sm font-bold tabular-nums", totalGoalsConceded > 0 ? "text-red-400" : "text-zinc-500")}>
-                    {totalGoalsConceded}
-                  </p>
-                  <p className="text-[8px] text-zinc-500 uppercase">GOL-</p>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="text-center px-2 py-1 rounded-lg bg-zinc-800/60 min-w-[40px]">
-                  <p className={cn("text-sm font-bold tabular-nums", totalGoals > 0 ? "text-emerald-400" : "text-zinc-500")}>
-                    {totalGoals}
-                  </p>
-                  <p className="text-[8px] text-zinc-500 uppercase">GOL</p>
-                </div>
-                <div className="text-center px-2 py-1 rounded-lg bg-zinc-800/60 min-w-[40px]">
-                  <p className={cn("text-sm font-bold tabular-nums", totalAssists > 0 ? "text-blue-400" : "text-zinc-500")}>
-                    {totalAssists}
-                  </p>
-                  <p className="text-[8px] text-zinc-500 uppercase">ASS</p>
-                </div>
-                <div className="text-center px-2 py-1 rounded-lg bg-zinc-800/60 min-w-[40px]">
-                  <p className={cn("text-sm font-bold tabular-nums", totalShots > 0 ? "text-orange-400" : "text-zinc-500")}>
-                    {totalShots}
-                  </p>
-                  <p className="text-[8px] text-zinc-500 uppercase">CHU</p>
-                </div>
-              </>
-            )}
+            {/* Right: Key stats - compact display */}
+            <div className="flex items-center gap-1 shrink-0">
+              {isGK ? (
+                <>
+                  <div className="text-center px-1.5 py-0.5 rounded-md bg-zinc-800/60 min-w-[36px]">
+                    <p className={cn("text-sm font-bold tabular-nums leading-tight", totalSaves > 0 ? "text-emerald-400" : "text-zinc-500")}>
+                      {totalSaves}
+                    </p>
+                    <p className="text-[7px] text-zinc-500 uppercase">DEF</p>
+                  </div>
+                  <div className="text-center px-1.5 py-0.5 rounded-md bg-zinc-800/60 min-w-[36px]">
+                    <p className={cn("text-sm font-bold tabular-nums leading-tight", totalGoalsConceded > 0 ? "text-red-400" : "text-zinc-500")}>
+                      {totalGoalsConceded}
+                    </p>
+                    <p className="text-[7px] text-zinc-500 uppercase">GOL-</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="text-center px-1.5 py-0.5 rounded-md bg-zinc-800/60 min-w-[36px]">
+                    <p className={cn("text-sm font-bold tabular-nums leading-tight", totalGoals > 0 ? "text-emerald-400" : "text-zinc-500")}>
+                      {totalGoals}
+                    </p>
+                    <p className="text-[7px] text-zinc-500 uppercase">GOL</p>
+                  </div>
+                  <div className="text-center px-1.5 py-0.5 rounded-md bg-zinc-800/60 min-w-[36px]">
+                    <p className={cn("text-sm font-bold tabular-nums leading-tight", totalAssists > 0 ? "text-blue-400" : "text-zinc-500")}>
+                      {totalAssists}
+                    </p>
+                    <p className="text-[7px] text-zinc-500 uppercase">ASS</p>
+                  </div>
+                  <div className="text-center px-1.5 py-0.5 rounded-md bg-zinc-800/60 min-w-[36px]">
+                    <p className={cn("text-sm font-bold tabular-nums leading-tight", totalShots > 0 ? "text-orange-400" : "text-zinc-500")}>
+                      {totalShots}
+                    </p>
+                    <p className="text-[7px] text-zinc-500 uppercase">FIN</p>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
-          
-          {/* Stats expand toggle button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 rounded-full hover:bg-white/10"
-            onClick={() => setShowDetailedStats(!showDetailedStats)}
-          >
-            <BarChart3 className={cn(
-              "w-4 h-4 transition-colors",
-              showDetailedStats ? "text-blue-400" : "text-zinc-500"
-            )} />
-          </Button>
         </div>
 
         {/* ===== DETAILED STATS PANEL (expandable) ===== */}
