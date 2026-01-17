@@ -1657,6 +1657,16 @@ export type Database = {
           old_final: number
         }[]
       }
+      recalculate_all_event_display_minutes: {
+        Args: never
+        Returns: {
+          event_id: string
+          game_time_seconds: number
+          new_display_minute: string
+          old_display_minute: string
+          period: number
+        }[]
+      }
       recalculate_all_player_ratings: {
         Args: never
         Returns: {
