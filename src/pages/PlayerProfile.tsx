@@ -34,9 +34,17 @@ import {
   Footprints,
   X,
 } from "lucide-react";
-// Score badge removed from public profile - only shown in admin area
 import { formatFixed } from "@/lib/formatters";
 import { isGoalkeeper } from "@/lib/positionUtils";
+import { 
+  staggerContainer, 
+  staggerItem, 
+  cardHover, 
+  cardTap,
+  pillHover,
+  fadeInUp,
+  scaleIn,
+} from "@/lib/animations";
 
 // =============== INTERFACES ===============
 
@@ -112,25 +120,9 @@ interface CompetitionStats {
 const currentYear = new Date().getFullYear();
 type TabValue = "current" | "per90" | "competition" | "career";
 
-// =============== ANIMATION VARIANTS ===============
-
-const fadeIn = {
-  hidden: { opacity: 0, y: 8 },
-  visible: { opacity: 1, y: 0 }
-};
-
-const scaleIn = {
-  hidden: { opacity: 0, scale: 0.95 },
-  visible: { opacity: 1, scale: 1 }
-};
-
-const stagger = {
-  visible: { transition: { staggerChildren: 0.05 } }
-};
-
 // =============== COMPONENTS ===============
 
-// Highlight Card with gradient and glow
+// Highlight Card with gradient and glow - uses design system tokens
 function HighlightCard({ 
   label, 
   value, 
@@ -147,15 +139,15 @@ function HighlightCard({
   delay?: number;
 }) {
   const colorMap = {
-    red: "from-[#e52421]/20 to-[#e52421]/5 border-[#e52421]/30 hover:border-[#e52421]/50 hover:shadow-[#e52421]/10",
-    blue: "from-blue-500/20 to-blue-500/5 border-blue-500/30 hover:border-blue-500/50 hover:shadow-blue-500/10",
-    green: "from-emerald-500/20 to-emerald-500/5 border-emerald-500/30 hover:border-emerald-500/50 hover:shadow-emerald-500/10",
-    purple: "from-purple-500/20 to-purple-500/5 border-purple-500/30 hover:border-purple-500/50 hover:shadow-purple-500/10",
-    amber: "from-amber-500/20 to-amber-500/5 border-amber-500/30 hover:border-amber-500/50 hover:shadow-amber-500/10",
+    red: "from-primary/20 to-primary/5 border-primary/30 hover:border-primary/50",
+    blue: "from-blue-500/20 to-blue-500/5 border-blue-500/30 hover:border-blue-500/50",
+    green: "from-emerald-500/20 to-emerald-500/5 border-emerald-500/30 hover:border-emerald-500/50",
+    purple: "from-purple-500/20 to-purple-500/5 border-purple-500/30 hover:border-purple-500/50",
+    amber: "from-amber-500/20 to-amber-500/5 border-amber-500/30 hover:border-amber-500/50",
   };
 
   const iconColorMap = {
-    red: "text-[#e52421]",
+    red: "text-primary",
     blue: "text-blue-400",
     green: "text-emerald-400",
     purple: "text-purple-400",
@@ -167,28 +159,29 @@ function HighlightCard({
       initial={{ opacity: 0, y: 20, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.4, delay }}
-      whileHover={{ scale: 1.02, y: -2 }}
+      whileHover={cardHover}
+      whileTap={cardTap}
       className={cn(
-        "relative p-5 rounded-2xl border bg-gradient-to-br cursor-default",
-        "transition-all duration-300 hover:shadow-xl",
+        "relative p-4 md:p-5 rounded-[--radius-card] border bg-gradient-to-br cursor-default",
+        "transition-all duration-300 shadow-[--shadow-soft]",
         colorMap[color]
       )}
     >
       {Icon && (
-        <Icon className={cn("w-5 h-5 mb-3", iconColorMap[color])} />
+        <Icon className={cn("w-4 h-4 md:w-5 md:h-5 mb-2 md:mb-3", iconColorMap[color])} />
       )}
-      <div className="text-3xl md:text-4xl font-bold text-white tabular-nums tracking-tight">
+      <div className="text-2xl md:text-4xl font-bold text-foreground tabular-nums tracking-tight">
         {value}
       </div>
       {subValue && (
-        <div className="text-xs text-zinc-500 mt-1">{subValue}</div>
+        <div className="text-[10px] md:text-xs text-muted-foreground mt-1">{subValue}</div>
       )}
-      <div className="text-xs uppercase tracking-widest text-zinc-500 mt-2">{label}</div>
+      <div className="text-[10px] md:text-xs uppercase tracking-widest text-muted-foreground mt-2">{label}</div>
     </motion.div>
   );
 }
 
-// Chip component
+// Chip component - uses design system pill tokens
 function Chip({ 
   children, 
   variant = "default",
@@ -199,26 +192,30 @@ function Chip({
   icon?: React.ElementType;
 }) {
   const variants = {
-    default: "bg-zinc-800/50 text-zinc-300 border-zinc-700/50",
-    primary: "bg-[#e52421]/10 text-[#e52421] border-[#e52421]/30",
+    default: "bg-[--bg-glass] text-muted-foreground border-[--border-glass]",
+    primary: "bg-primary/10 text-primary border-primary/30",
     success: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
     warning: "bg-amber-500/10 text-amber-400 border-amber-500/30",
     info: "bg-blue-500/10 text-blue-400 border-blue-500/30",
   };
 
   return (
-    <span className={cn(
-      "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all",
-      "hover:scale-105 cursor-default",
-      variants[variant]
-    )}>
+    <motion.span 
+      whileHover={pillHover}
+      className={cn(
+        "inline-flex items-center gap-1.5 px-3 py-1.5",
+        "rounded-[--radius-pill] text-xs font-medium border",
+        "min-h-[36px] cursor-default transition-all",
+        variants[variant]
+      )}
+    >
       {Icon && <Icon className="w-3 h-3" />}
       {children}
-    </span>
+    </motion.span>
   );
 }
 
-// Stat KPI Card
+// Stat KPI Card - uses design system tokens
 function KPICard({ 
   label, 
   value, 
@@ -232,29 +229,31 @@ function KPICard({
 }) {
   return (
     <motion.button
-      whileHover={{ scale: 1.03 }}
-      whileTap={{ scale: 0.98 }}
+      whileHover={cardHover}
+      whileTap={cardTap}
       onClick={onClick}
       className={cn(
-        "flex flex-col items-center justify-center p-4 rounded-xl border transition-all",
-        "focus:outline-none focus:ring-2 focus:ring-[#e52421]/50",
+        "flex flex-col items-center justify-center p-3 md:p-4",
+        "rounded-[--radius-button] border transition-all",
+        "focus:outline-none focus-visible:ring-[--focus-ring]",
+        "min-h-[--tap-target]",
         active 
-          ? "bg-[#e52421]/10 border-[#e52421]/40 shadow-lg shadow-[#e52421]/5" 
-          : "bg-zinc-900/50 border-zinc-800/50 hover:border-zinc-700"
+          ? "bg-primary/10 border-primary/40 shadow-[--shadow-soft]" 
+          : "bg-[--bg-glass] border-[--border-glass] hover:border-muted-foreground/30"
       )}
     >
       <span className={cn(
-        "text-2xl md:text-3xl font-bold tabular-nums",
-        active ? "text-white" : "text-zinc-300"
+        "text-xl md:text-3xl font-bold tabular-nums",
+        active ? "text-foreground" : "text-muted-foreground"
       )}>
         {value}
       </span>
-      <span className="text-[10px] uppercase tracking-widest text-zinc-500 mt-1">{label}</span>
+      <span className="text-[9px] md:text-[10px] uppercase tracking-widest text-muted-foreground mt-1">{label}</span>
     </motion.button>
   );
 }
 
-// Phase Panel
+// Phase Panel - uses design system tokens
 function PhasePanel({ 
   title, 
   icon: Icon, 
@@ -280,28 +279,28 @@ function PhasePanel({
       initial={{ opacity: 0, y: 10 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      whileHover={{ scale: 1.01 }}
+      whileHover={cardHover}
       className={cn(
-        "p-5 rounded-2xl border bg-gradient-to-br to-transparent",
+        "p-4 md:p-5 rounded-[--radius-card] border bg-gradient-to-br to-transparent",
         c.bg, c.border
       )}
     >
-      <div className="flex items-center gap-2 mb-4">
-        <Icon className={cn("w-5 h-5", c.icon)} />
-        <span className="text-sm font-semibold text-white">{title}</span>
+      <div className="flex items-center gap-2 mb-3 md:mb-4">
+        <Icon className={cn("w-4 h-4 md:w-5 md:h-5", c.icon)} />
+        <span className="text-sm font-semibold text-foreground">{title}</span>
       </div>
-      <div className="space-y-3">
+      <div className="space-y-2.5 md:space-y-3">
         {stats.map((stat) => {
           const pct = stat.max ? Math.min(100, (stat.value / stat.max) * 100) : Math.min(100, stat.value);
           return (
             <div key={stat.label} className="group cursor-default">
               <div className="flex justify-between items-center mb-1">
-                <span className="text-xs text-zinc-500 group-hover:text-zinc-300 transition-colors">
+                <span className="text-[11px] md:text-xs text-muted-foreground group-hover:text-foreground transition-colors">
                   {stat.label}
                 </span>
-                <span className="text-sm font-semibold text-white tabular-nums">{stat.value}</span>
+                <span className="text-xs md:text-sm font-semibold text-foreground tabular-nums">{stat.value}</span>
               </div>
-              <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+              <div className="h-1 md:h-1.5 bg-muted rounded-full overflow-hidden">
                 <motion.div 
                   initial={{ width: 0 }}
                   whileInView={{ width: `${pct}%` }}
@@ -318,7 +317,7 @@ function PhasePanel({
   );
 }
 
-// Metric with animated bar
+// Metric with animated bar - uses design system tokens
 function AnimatedMetric({ 
   label, 
   value, 
@@ -336,38 +335,42 @@ function AnimatedMetric({
 
   return (
     <motion.div
-      whileHover={{ scale: 1.02 }}
-      className="p-4 rounded-xl bg-zinc-900/50 border border-zinc-800/50 hover:border-zinc-700/50 transition-all"
+      whileHover={cardHover}
+      className={cn(
+        "p-3 md:p-4 rounded-[--radius-button] transition-all",
+        "bg-[--bg-glass] border border-[--border-glass]",
+        "hover:border-muted-foreground/30"
+      )}
     >
-      <div className="flex items-center gap-2 mb-3">
-        <div className="p-1.5 rounded-lg bg-zinc-800/50">
-          <Icon className="w-4 h-4 text-zinc-400" />
+      <div className="flex items-center gap-2 mb-2 md:mb-3">
+        <div className="p-1 md:p-1.5 rounded-lg bg-muted/50">
+          <Icon className="w-3.5 h-3.5 md:w-4 md:h-4 text-muted-foreground" />
         </div>
-        <span className="text-xs uppercase tracking-widest text-zinc-500">{label}</span>
+        <span className="text-[10px] md:text-xs uppercase tracking-widest text-muted-foreground">{label}</span>
       </div>
       {hasValue ? (
         <>
-          <div className="text-2xl font-bold text-white tabular-nums">
+          <div className="text-xl md:text-2xl font-bold text-foreground tabular-nums">
             {formatFixed(value, 1)}
-            <span className="text-sm text-zinc-500 ml-1">{unit}</span>
+            <span className="text-xs md:text-sm text-muted-foreground ml-1">{unit}</span>
           </div>
           {reference && (
-            <span className="text-[10px] text-zinc-600 mt-1 block">Ref: {reference}</span>
+            <span className="text-[9px] md:text-[10px] text-muted-foreground/60 mt-1 block">Ref: {reference}</span>
           )}
         </>
       ) : (
-        <div className="flex items-center gap-2 text-zinc-600">
-          <div className="w-8 h-8 rounded-lg bg-zinc-800/50 flex items-center justify-center">
-            <X className="w-4 h-4" />
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-muted/50 flex items-center justify-center">
+            <X className="w-3.5 h-3.5 md:w-4 md:h-4" />
           </div>
-          <span className="text-sm italic">Não informado</span>
+          <span className="text-xs md:text-sm italic">Não informado</span>
         </div>
       )}
     </motion.div>
   );
 }
 
-// Tab Button
+// Tab Button - uses design system tokens
 function TabButton({ 
   active, 
   onClick, 
@@ -378,25 +381,28 @@ function TabButton({
   children: React.ReactNode;
 }) {
   return (
-    <button
+    <motion.button
       onClick={onClick}
+      whileHover={pillHover}
+      whileTap={cardTap}
       className={cn(
-        "relative px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap",
-        active ? "text-white" : "text-zinc-500 hover:text-zinc-300"
+        "relative px-3 md:px-4 py-2 text-xs md:text-sm font-medium transition-colors whitespace-nowrap",
+        "min-h-[--tap-target] rounded-[--radius-pill]",
+        active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
       )}
     >
       {children}
       {active && (
         <motion.div
           layoutId="activeTab"
-          className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#e52421] rounded-full"
+          className="absolute bottom-0 left-2 right-2 h-0.5 bg-primary rounded-full"
         />
       )}
-    </button>
+    </motion.button>
   );
 }
 
-// Video Thumbnail with real YouTube thumbnail
+// Video Thumbnail with real YouTube thumbnail - uses design system tokens
 function VideoThumbnail({ 
   videoUrl, 
   thumbnailUrl,
@@ -411,9 +417,12 @@ function VideoThumbnail({
   return (
     <motion.button
       onClick={onPlay}
-      whileHover={{ scale: 1.01 }}
-      whileTap={{ scale: 0.99 }}
-      className="relative w-full aspect-video rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-800/50 group cursor-pointer"
+      whileHover={cardHover}
+      whileTap={cardTap}
+      className={cn(
+        "relative w-full aspect-video overflow-hidden group cursor-pointer",
+        "rounded-[--radius-card] bg-muted border border-[--border-glass]"
+      )}
     >
       {/* Real thumbnail image */}
       {thumbnailUrl && !imgError && (
@@ -427,7 +436,7 @@ function VideoThumbnail({
       
       {/* Fallback gradient if no thumbnail */}
       {(!thumbnailUrl || imgError) && (
-        <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 to-zinc-900" />
+        <div className="absolute inset-0 bg-gradient-to-br from-muted to-background" />
       )}
       
       {/* Overlay - darkens on hover */}
@@ -436,24 +445,28 @@ function VideoThumbnail({
       {/* Play button */}
       <div className="absolute inset-0 flex items-center justify-center z-20">
         <motion.div 
-          className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-300"
+          className={cn(
+            "w-14 h-14 md:w-20 md:h-20 rounded-full flex items-center justify-center",
+            "bg-white/90 backdrop-blur-sm shadow-2xl",
+            "group-hover:scale-110 transition-transform duration-300"
+          )}
           animate={{ boxShadow: ["0 0 0 0 rgba(255,255,255,0.4)", "0 0 0 20px rgba(255,255,255,0)", "0 0 0 0 rgba(255,255,255,0.4)"] }}
           transition={{ duration: 2, repeat: Infinity }}
         >
-          <Play className="w-7 h-7 md:w-8 md:h-8 text-[#e52421] ml-1" fill="#e52421" />
+          <Play className="w-6 h-6 md:w-8 md:h-8 text-primary ml-1" fill="hsl(var(--primary))" />
         </motion.div>
       </div>
       
       {/* Label - bottom left */}
-      <div className="absolute bottom-4 left-4 z-20 text-left">
-        <span className="text-[10px] uppercase tracking-widest text-zinc-300/80">Highlights</span>
-        <p className="text-white font-medium text-sm">Assista ao vídeo completo</p>
+      <div className="absolute bottom-3 left-3 md:bottom-4 md:left-4 z-20 text-left">
+        <span className="text-[9px] md:text-[10px] uppercase tracking-widest text-white/80">Highlights</span>
+        <p className="text-white font-medium text-xs md:text-sm">Assista ao vídeo completo</p>
       </div>
     </motion.button>
   );
 }
 
-// Sticky Mobile CTA
+// Sticky Mobile CTA - uses design system tokens
 function StickyMobileCTA({ 
   playerSlug, 
   playerName,
@@ -474,23 +487,27 @@ function StickyMobileCTA({
           className="fixed bottom-0 left-0 right-0 z-50 md:hidden"
         >
           {/* Gradient backdrop */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/95 to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/95 to-transparent pointer-events-none" />
           
-          <div className="relative px-4 py-4 pb-safe">
+          <div className="relative px-[--padding-mobile] py-4 pb-safe">
             <Link to={`/contact?player=${playerSlug}`}>
               <motion.button 
-                className="w-full group relative flex items-center justify-center gap-2 px-6 py-3.5 rounded-full font-medium text-white
-                  bg-gradient-to-r from-[#e52421] to-[#b51c1a] 
-                  shadow-lg shadow-[#e52421]/30
-                  active:scale-[0.98] transition-transform"
-                whileTap={{ scale: 0.98 }}
+                whileTap={cardTap}
+                className={cn(
+                  "w-full group relative flex items-center justify-center gap-2",
+                  "px-6 min-h-[--tap-target] rounded-[--radius-pill]",
+                  "font-medium text-primary-foreground",
+                  "bg-gradient-to-r from-primary to-primary/80",
+                  "shadow-lg shadow-primary/30",
+                  "active:scale-[0.98] transition-transform"
+                )}
               >
                 <MessageCircle className="w-4 h-4" />
                 <span className="text-sm">Falar sobre {playerName.split(" ")[0]}</span>
                 <ChevronRight className="w-4 h-4" />
                 
                 {/* Glow */}
-                <div className="absolute inset-0 rounded-full bg-[#e52421]/20 blur-xl" />
+                <div className="absolute inset-0 rounded-[--radius-pill] bg-primary/20 blur-xl" />
               </motion.button>
             </Link>
           </div>
@@ -714,22 +731,28 @@ const PlayerProfile = () => {
             className="grid md:grid-cols-[280px,1fr] lg:grid-cols-[320px,1fr] gap-6 lg:gap-10 mb-12"
             initial="hidden"
             animate="visible"
-            variants={stagger}
+            variants={staggerContainer}
           >
             {/* Photo Column */}
-            <motion.div variants={fadeIn} className="relative">
-              <div className="relative aspect-[3/4] md:aspect-auto md:h-[420px] rounded-3xl overflow-hidden group">
+            <motion.div variants={staggerItem} className="relative">
+              <div className={cn(
+                "relative aspect-[3/4] md:aspect-auto md:h-[420px] overflow-hidden group",
+                "rounded-[--radius-card]"
+              )}>
                 <img
                   src={player.photo_url || "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=800&h=1000&fit=crop"}
                   alt={player.full_name}
                   className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
                 />
-                {/* Clean gradient overlay - no red */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+                {/* Clean gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
 
                 {/* Position badge */}
-                <div className="absolute bottom-4 left-4">
-                  <span className="px-3 py-1.5 bg-[#e52421] text-white text-xs font-semibold uppercase tracking-widest rounded-full">
+                <div className="absolute bottom-3 left-3 md:bottom-4 md:left-4">
+                  <span className={cn(
+                    "px-3 py-1.5 text-xs font-semibold uppercase tracking-widest",
+                    "bg-primary text-primary-foreground rounded-[--radius-pill]"
+                  )}>
                     {player.position}
                   </span>
                 </div>
@@ -737,81 +760,113 @@ const PlayerProfile = () => {
             </motion.div>
 
             {/* Info Column */}
-            <motion.div variants={fadeIn} className="flex flex-col justify-center">
+            <motion.div variants={staggerItem} className="flex flex-col justify-center">
               {/* Name */}
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white tracking-tight mb-2">
+              <h1 className="text-2xl sm:text-4xl lg:text-5xl font-bold text-foreground tracking-tight mb-2">
                 {player.full_name}
               </h1>
               
               {/* Role line */}
-              <p className="text-zinc-400 mb-6">
+              <p className="text-muted-foreground mb-4 md:mb-6 text-sm md:text-base">
                 {player.primary_tactical_role && <span>{player.primary_tactical_role}</span>}
-                {player.play_style && <span className="text-zinc-600"> • {player.play_style}</span>}
+                {player.play_style && <span className="text-muted-foreground/60"> • {player.play_style}</span>}
               </p>
 
               {/* Info Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 md:gap-3 mb-4 md:mb-6">
                 {player.age && (
-                  <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800/50 hover:border-zinc-700 transition-colors">
-                    <Calendar className="w-4 h-4 text-zinc-600 mb-1" />
-                    <div className="text-lg font-semibold text-white">{player.age}</div>
-                    <div className="text-[10px] uppercase tracking-widest text-zinc-600">Anos</div>
-                  </div>
+                  <motion.div 
+                    whileHover={cardHover}
+                    className={cn(
+                      "p-2.5 md:p-3 transition-all",
+                      "rounded-[--radius-button] bg-[--bg-glass] border border-[--border-glass]",
+                      "hover:border-muted-foreground/30"
+                    )}
+                  >
+                    <Calendar className="w-3.5 h-3.5 md:w-4 md:h-4 text-muted-foreground mb-1" />
+                    <div className="text-base md:text-lg font-semibold text-foreground">{player.age}</div>
+                    <div className="text-[9px] md:text-[10px] uppercase tracking-widest text-muted-foreground">Anos</div>
+                  </motion.div>
                 )}
                 {player.height && (
-                  <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800/50 hover:border-zinc-700 transition-colors">
-                    <Ruler className="w-4 h-4 text-zinc-600 mb-1" />
-                    <div className="text-lg font-semibold text-white">{player.height}cm</div>
-                    <div className="text-[10px] uppercase tracking-widest text-zinc-600">Altura</div>
-                  </div>
+                  <motion.div 
+                    whileHover={cardHover}
+                    className={cn(
+                      "p-2.5 md:p-3 transition-all",
+                      "rounded-[--radius-button] bg-[--bg-glass] border border-[--border-glass]",
+                      "hover:border-muted-foreground/30"
+                    )}
+                  >
+                    <Ruler className="w-3.5 h-3.5 md:w-4 md:h-4 text-muted-foreground mb-1" />
+                    <div className="text-base md:text-lg font-semibold text-foreground">{player.height}cm</div>
+                    <div className="text-[9px] md:text-[10px] uppercase tracking-widest text-muted-foreground">Altura</div>
+                  </motion.div>
                 )}
                 {player.dominant_foot && (
-                  <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800/50 hover:border-zinc-700 transition-colors">
-                    <User className="w-4 h-4 text-zinc-600 mb-1" />
-                    <div className="text-lg font-semibold text-white capitalize">{player.dominant_foot}</div>
-                    <div className="text-[10px] uppercase tracking-widest text-zinc-600">Pé</div>
-                  </div>
+                  <motion.div 
+                    whileHover={cardHover}
+                    className={cn(
+                      "p-2.5 md:p-3 transition-all",
+                      "rounded-[--radius-button] bg-[--bg-glass] border border-[--border-glass]",
+                      "hover:border-muted-foreground/30"
+                    )}
+                  >
+                    <User className="w-3.5 h-3.5 md:w-4 md:h-4 text-muted-foreground mb-1" />
+                    <div className="text-base md:text-lg font-semibold text-foreground capitalize">{player.dominant_foot}</div>
+                    <div className="text-[9px] md:text-[10px] uppercase tracking-widest text-muted-foreground">Pé</div>
+                  </motion.div>
                 )}
                 {player.current_club && (
-                  <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800/50 hover:border-zinc-700 transition-colors">
-                    <MapPin className="w-4 h-4 text-zinc-600 mb-1" />
-                    <div className="text-lg font-semibold text-white truncate">{player.current_club}</div>
-                    <div className="text-[10px] uppercase tracking-widest text-zinc-600">Clube</div>
-                  </div>
+                  <motion.div 
+                    whileHover={cardHover}
+                    className={cn(
+                      "p-2.5 md:p-3 transition-all",
+                      "rounded-[--radius-button] bg-[--bg-glass] border border-[--border-glass]",
+                      "hover:border-muted-foreground/30"
+                    )}
+                  >
+                    <MapPin className="w-3.5 h-3.5 md:w-4 md:h-4 text-muted-foreground mb-1" />
+                    <div className="text-base md:text-lg font-semibold text-foreground truncate">{player.current_club}</div>
+                    <div className="text-[9px] md:text-[10px] uppercase tracking-widest text-muted-foreground">Clube</div>
+                  </motion.div>
                 )}
               </div>
 
               {/* Premium CTA Button */}
               <Link to={`/contact?player=${player.slug}`}>
                 <motion.button 
-                  className="group relative inline-flex items-center gap-2 px-6 py-3 rounded-full font-medium text-white text-sm
-                    bg-gradient-to-r from-[#e52421] to-[#b51c1a] 
-                    shadow-lg shadow-[#e52421]/20
-                    hover:shadow-xl hover:shadow-[#e52421]/30
-                    transition-all duration-300"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                  whileHover={cardHover}
+                  whileTap={cardTap}
+                  className={cn(
+                    "group relative inline-flex items-center gap-2",
+                    "px-5 md:px-6 min-h-[--tap-target] rounded-[--radius-pill]",
+                    "font-medium text-primary-foreground text-sm",
+                    "bg-gradient-to-r from-primary to-primary/80",
+                    "shadow-lg shadow-primary/20",
+                    "hover:shadow-xl hover:shadow-primary/30",
+                    "transition-all duration-300"
+                  )}
                 >
                   <MessageCircle className="w-4 h-4" />
-                  <span>Falar com a M3 sobre este atleta</span>
-                  <motion.span
-                    className="inline-block"
-                    initial={{ x: 0 }}
-                    whileHover={{ x: 4 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </motion.span>
+                  <span className="hidden sm:inline">Falar com a M3 sobre este atleta</span>
+                  <span className="sm:hidden">Falar sobre atleta</span>
+                  <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   
                   {/* Glow effect on hover */}
-                  <div className="absolute inset-0 rounded-full bg-[#e52421] opacity-0 group-hover:opacity-20 blur-xl transition-opacity" />
+                  <div className="absolute inset-0 rounded-[--radius-pill] bg-primary opacity-0 group-hover:opacity-20 blur-xl transition-opacity" />
                 </motion.button>
               </Link>
             </motion.div>
           </motion.section>
 
           {/* ==================== HIGHLIGHT CARDS ==================== */}
-          <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
+          <motion.section 
+            className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8 md:mb-12"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={staggerContainer}
+          >
             <HighlightCard 
               label="G+A na Temporada" 
               value={currentSeasonStats ? currentSeasonStats.goals + currentSeasonStats.assists : 0}
@@ -844,16 +899,16 @@ const PlayerProfile = () => {
               icon={Shield}
               delay={0.3}
             />
-          </section>
+          </motion.section>
 
           {/* ==================== IDENTITY CHIPS ==================== */}
           <motion.section 
-            className="mb-12"
+            className="mb-8 md:mb-12"
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
           >
-            <div className="flex flex-wrap gap-2 mb-4">
+            <div className="flex flex-wrap gap-2 mb-3 md:mb-4">
               <Chip icon={Flag}>{player.nationality}</Chip>
               {player.secondary_positions?.map((pos) => (
                 <Chip key={pos} variant="default">{pos}</Chip>
@@ -880,18 +935,18 @@ const PlayerProfile = () => {
           {/* ==================== STATISTICS DASHBOARD ==================== */}
           {!statsLoading && careerStats.length > 0 && (
             <motion.section 
-              className="mb-12"
+              className="mb-8 md:mb-12"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
             >
-              <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                <Activity className="w-5 h-5 text-[#e52421]" />
+              <h2 className="text-lg md:text-xl font-bold text-foreground mb-4 md:mb-6 flex items-center gap-2">
+                <Activity className="w-4 h-4 md:w-5 md:h-5 text-primary" />
                 Estatísticas
               </h2>
 
               {/* KPIs Row */}
-              <div className="grid grid-cols-5 gap-3 mb-6">
+              <div className="grid grid-cols-5 gap-2 md:gap-3 mb-4 md:mb-6">
                 <KPICard label="Jogos" value={careerTotals.matches} />
                 <KPICard label="Minutos" value={careerTotals.minutes} />
                 <KPICard label="Gols" value={careerTotals.goals} active />
@@ -900,7 +955,7 @@ const PlayerProfile = () => {
               </div>
 
               {/* Tabs */}
-              <div className="flex gap-2 border-b border-zinc-800 mb-6 overflow-x-auto">
+              <div className="flex gap-1 md:gap-2 border-b border-border mb-4 md:mb-6 overflow-x-auto pb-px -mx-[--padding-mobile] px-[--padding-mobile] md:mx-0 md:px-0">
                 <TabButton active={activeTab === "current"} onClick={() => setActiveTab("current")}>
                   Temporada {currentYear}
                 </TabButton>
@@ -923,10 +978,13 @@ const PlayerProfile = () => {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2 }}
-                  className="rounded-2xl bg-zinc-900/30 border border-zinc-800/50 p-6"
+                  className={cn(
+                    "p-4 md:p-6",
+                    "rounded-[--radius-card] bg-[--bg-glass] border border-[--border-glass]"
+                  )}
                 >
                   {activeTab === "current" && currentSeasonStats && (
-                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-4">
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 md:gap-4">
                       {[
                         { label: "Jogos", value: currentSeasonStats.matches },
                         { label: "Minutos", value: currentSeasonStats.minutes },
@@ -936,47 +994,53 @@ const PlayerProfile = () => {
                         { label: "Intercep.", value: currentSeasonStats.interceptions },
                       ].map((stat) => (
                         <div key={stat.label} className="text-center">
-                          <div className="text-2xl font-bold text-white tabular-nums">{stat.value}</div>
-                          <div className="text-[10px] uppercase tracking-widest text-zinc-500">{stat.label}</div>
+                          <div className="text-xl md:text-2xl font-bold text-foreground tabular-nums">{stat.value}</div>
+                          <div className="text-[9px] md:text-[10px] uppercase tracking-widest text-muted-foreground">{stat.label}</div>
                         </div>
                       ))}
                     </div>
                   )}
 
                   {activeTab === "per90" && currentSeasonStats && currentSeasonStats.minutes >= 90 && (
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4">
                       {[
                         { label: "Gols/90", value: calculatePer90(currentSeasonStats.goals, currentSeasonStats.minutes) },
                         { label: "Assist./90", value: calculatePer90(currentSeasonStats.assists, currentSeasonStats.minutes) },
                         { label: "G+A/90", value: calculatePer90(currentSeasonStats.goals + currentSeasonStats.assists, currentSeasonStats.minutes) },
                         { label: "Desarmes/90", value: calculatePer90(currentSeasonStats.tackles, currentSeasonStats.minutes) },
                       ].map((stat) => (
-                        <div key={stat.label} className="text-center p-4 rounded-xl bg-zinc-800/30">
-                          <div className="text-2xl font-bold text-white tabular-nums">{stat.value}</div>
-                          <div className="text-[10px] uppercase tracking-widest text-zinc-500">{stat.label}</div>
+                        <div key={stat.label} className={cn(
+                          "text-center p-3 md:p-4",
+                          "rounded-[--radius-button] bg-muted/30"
+                        )}>
+                          <div className="text-xl md:text-2xl font-bold text-foreground tabular-nums">{stat.value}</div>
+                          <div className="text-[9px] md:text-[10px] uppercase tracking-widest text-muted-foreground">{stat.label}</div>
                         </div>
                       ))}
                     </div>
                   )}
 
                   {activeTab === "competition" && competitionStats.length > 0 && (
-                    <div className="space-y-3">
+                    <div className="space-y-2 md:space-y-3">
                       {competitionStats.slice(0, 5).map((comp, idx) => (
                         <motion.div 
                           key={`${comp.competition_id}-${comp.season_year}`}
                           initial={{ opacity: 0, x: -10 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: idx * 0.05 }}
-                          className="flex items-center justify-between p-3 rounded-xl bg-zinc-800/30 hover:bg-zinc-800/50 transition-colors"
+                          className={cn(
+                            "flex items-center justify-between p-3",
+                            "rounded-[--radius-button] bg-muted/30 hover:bg-muted/50 transition-colors"
+                          )}
                         >
                           <div>
-                            <div className="text-sm font-medium text-white">{comp.competition_name}</div>
-                            <div className="text-xs text-zinc-500">{comp.season_year}</div>
+                            <div className="text-xs md:text-sm font-medium text-foreground">{comp.competition_name}</div>
+                            <div className="text-[10px] md:text-xs text-muted-foreground">{comp.season_year}</div>
                           </div>
-                          <div className="flex gap-4 text-sm">
-                            <span className="text-zinc-400">{comp.matches}J</span>
-                            <span className="text-white font-semibold">{comp.goals}G</span>
-                            <span className="text-zinc-400">{comp.assists}A</span>
+                          <div className="flex gap-3 md:gap-4 text-xs md:text-sm">
+                            <span className="text-muted-foreground">{comp.matches}J</span>
+                            <span className="text-foreground font-semibold">{comp.goals}G</span>
+                            <span className="text-muted-foreground">{comp.assists}A</span>
                           </div>
                         </motion.div>
                       ))}
@@ -991,19 +1055,22 @@ const PlayerProfile = () => {
                           initial={{ opacity: 0, x: -10 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: idx * 0.05 }}
-                          className="flex items-center justify-between p-3 rounded-xl bg-zinc-800/30 hover:bg-zinc-800/50 transition-colors"
+                          className={cn(
+                            "flex items-center justify-between p-3",
+                            "rounded-[--radius-button] bg-muted/30 hover:bg-muted/50 transition-colors"
+                          )}
                         >
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-white">{season.season_year}</span>
+                            <span className="text-xs md:text-sm font-medium text-foreground">{season.season_year}</span>
                             {season.season_year === currentYear && (
-                              <Badge variant="outline" className="text-[9px] border-[#e52421]/50 text-[#e52421]">Atual</Badge>
+                              <Badge variant="outline" className="text-[8px] md:text-[9px] border-primary/50 text-primary">Atual</Badge>
                             )}
                           </div>
-                          <div className="flex gap-4 text-sm tabular-nums">
-                            <span className="text-zinc-400">{season.matches}J</span>
-                            <span className="text-white font-semibold">{season.goals}G</span>
-                            <span className="text-zinc-400">{season.assists}A</span>
-                            <span className="text-zinc-500">{season.minutes}'</span>
+                          <div className="flex gap-3 md:gap-4 text-xs md:text-sm tabular-nums">
+                            <span className="text-muted-foreground">{season.matches}J</span>
+                            <span className="text-foreground font-semibold">{season.goals}G</span>
+                            <span className="text-muted-foreground">{season.assists}A</span>
+                            <span className="text-muted-foreground/60 hidden sm:inline">{season.minutes}'</span>
                           </div>
                         </motion.div>
                       ))}
@@ -1017,13 +1084,13 @@ const PlayerProfile = () => {
           {/* ==================== GAME PHASES ==================== */}
           {currentSeasonStats && (
             <motion.section 
-              className="mb-12"
+              className="mb-8 md:mb-12"
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               viewport={{ once: true }}
             >
-              <h2 className="text-xl font-bold text-white mb-6">Fases do Jogo</h2>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <h2 className="text-lg md:text-xl font-bold text-foreground mb-4 md:mb-6">Fases do Jogo</h2>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                 <PhasePanel 
                   title="Ataque" 
                   icon={Crosshair} 
@@ -1070,13 +1137,13 @@ const PlayerProfile = () => {
           {/* ==================== PHYSICAL DATA ==================== */}
           {(player.height || player.weight || player.wingspan || player.body_fat_percentage || player.max_speed) && (
             <motion.section 
-              className="mb-12"
+              className="mb-8 md:mb-12"
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               viewport={{ once: true }}
             >
-              <h2 className="text-xl font-bold text-white mb-6">Dados Físicos</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+              <h2 className="text-lg md:text-xl font-bold text-foreground mb-4 md:mb-6">Dados Físicos</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
                 <AnimatedMetric label="Altura" value={player.height} unit="cm" icon={Ruler} reference="175-185" />
                 <AnimatedMetric label="Peso" value={player.weight} unit="kg" icon={Scale} reference="70-80" />
                 <AnimatedMetric label="Envergadura" value={player.wingspan} unit="cm" icon={Ruler} />
@@ -1085,7 +1152,7 @@ const PlayerProfile = () => {
               </div>
 
               {(player.max_speed || player.sprint_30m || player.vo2_max) && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4 mt-3 md:mt-4">
                   <AnimatedMetric label="Vel. Máx" value={player.max_speed} unit="km/h" icon={Zap} reference="32+" />
                   <AnimatedMetric label="Sprint 30m" value={player.sprint_30m} unit="s" icon={Timer} reference="< 4.0" />
                   <AnimatedMetric label="VO2 Máx" value={player.vo2_max} unit="ml/kg" icon={Heart} reference="55+" />
@@ -1097,13 +1164,13 @@ const PlayerProfile = () => {
           {/* ==================== VIDEO ==================== */}
           {embedUrl && (
             <motion.section 
-              className="mb-12"
+              className="mb-8 md:mb-12"
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               viewport={{ once: true }}
             >
-              <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                <Play className="w-5 h-5 text-[#e52421]" />
+              <h2 className="text-lg md:text-xl font-bold text-foreground mb-4 md:mb-6 flex items-center gap-2">
+                <Play className="w-4 h-4 md:w-5 md:h-5 text-primary" />
                 Highlights
               </h2>
               
@@ -1113,12 +1180,15 @@ const PlayerProfile = () => {
                     <VideoThumbnail videoUrl={embedUrl} thumbnailUrl={thumbnailUrl} onPlay={() => setVideoOpen(true)} />
                   </div>
                 </DialogTrigger>
-                <DialogContent className="max-w-4xl p-0 bg-black border-zinc-800">
+                <DialogContent className={cn(
+                  "max-w-4xl p-0 bg-background border-border",
+                  "rounded-[--radius-card]"
+                )}>
                   <div className="aspect-video">
                     <iframe
                       src={embedUrl}
                       title="Player Highlights"
-                      className="w-full h-full"
+                      className="w-full h-full rounded-[--radius-card]"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen
                     />
@@ -1130,33 +1200,41 @@ const PlayerProfile = () => {
 
           {/* ==================== FINAL CTA ==================== */}
           <motion.section
-            className="text-center py-12 mt-8 rounded-3xl bg-gradient-to-br from-zinc-900/50 to-zinc-900/20 border border-zinc-800/50"
+            className={cn(
+              "text-center py-8 md:py-12 mt-6 md:mt-8 px-4",
+              "rounded-[--radius-card] bg-gradient-to-br from-muted/50 to-muted/20",
+              "border border-[--border-glass]"
+            )}
             initial={{ opacity: 0, scale: 0.98 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
           >
-            <h3 className="text-2xl font-bold text-white mb-3">
-              Interessado em <span className="text-[#e52421]">{player.full_name.split(" ")[0]}</span>?
+            <h3 className="text-xl md:text-2xl font-bold text-foreground mb-2 md:mb-3">
+              Interessado em <span className="text-primary">{player.full_name.split(" ")[0]}</span>?
             </h3>
-            <p className="text-zinc-400 mb-6 max-w-md mx-auto text-sm">
+            <p className="text-muted-foreground mb-4 md:mb-6 max-w-md mx-auto text-xs md:text-sm">
               Entre em contato com a M3 Agency para mais informações.
             </p>
             <Link to={`/contact?player=${player.slug}`}>
               <motion.button 
-                className="group relative inline-flex items-center gap-2 px-8 py-3.5 rounded-full font-medium text-white
-                  bg-gradient-to-r from-[#e52421] to-[#b51c1a] 
-                  shadow-lg shadow-[#e52421]/20
-                  hover:shadow-xl hover:shadow-[#e52421]/30
-                  transition-all duration-300"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                whileHover={cardHover}
+                whileTap={cardTap}
+                className={cn(
+                  "group relative inline-flex items-center gap-2",
+                  "px-6 md:px-8 min-h-[--tap-target] rounded-[--radius-pill]",
+                  "font-medium text-primary-foreground",
+                  "bg-gradient-to-r from-primary to-primary/80",
+                  "shadow-lg shadow-primary/20",
+                  "hover:shadow-xl hover:shadow-primary/30",
+                  "transition-all duration-300"
+                )}
               >
-                <MessageCircle className="w-5 h-5" />
-                <span>Falar com a M3 Agency</span>
+                <MessageCircle className="w-4 h-4 md:w-5 md:h-5" />
+                <span className="text-sm md:text-base">Falar com a M3 Agency</span>
                 <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 
                 {/* Glow effect on hover */}
-                <div className="absolute inset-0 rounded-full bg-[#e52421] opacity-0 group-hover:opacity-20 blur-xl transition-opacity" />
+                <div className="absolute inset-0 rounded-[--radius-pill] bg-primary opacity-0 group-hover:opacity-20 blur-xl transition-opacity" />
               </motion.button>
             </Link>
           </motion.section>
