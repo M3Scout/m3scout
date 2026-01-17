@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
@@ -63,6 +63,9 @@ interface MatchWithCompetition {
   clock_status?: string | null;
   added_time_first_half?: number | null;
   added_time_second_half?: number | null;
+  team_name_display?: string | null;
+  team_logo_url?: string | null;
+  opponent_logo_url?: string | null;
   competition: {
     id: string;
     name: string;
@@ -400,6 +403,9 @@ export default function LiveMatchHistory() {
           clock_status,
           added_time_first_half,
           added_time_second_half,
+          team_name_display,
+          team_logo_url,
+          opponent_logo_url,
           competition:competitions(id, name, display_name)
         `)
         .eq("created_by", user.id)
@@ -410,6 +416,32 @@ export default function LiveMatchHistory() {
     },
     enabled: !!user,
   });
+
+  // Subscribe to realtime updates for matches (clock sync)
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('matches-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'matches',
+          filter: `created_by=eq.${user.id}`,
+        },
+        (payload) => {
+          // Invalidate query to refetch with updated clock state
+          queryClient.invalidateQueries({ queryKey: ["matches-history", user.id] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, queryClient]);
 
   const deleteMatchMutation = useMutation({
     mutationFn: async (matchId: string) => {

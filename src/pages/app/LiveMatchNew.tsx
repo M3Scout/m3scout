@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useTeamSettings } from "@/hooks/useTeamSettings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,13 +19,14 @@ import {
 import { toast } from "sonner";
 import { 
   Radio, Play, Loader2, MapPin, Clock, Trophy, Calendar, 
-  FileText, Zap, ArrowRight 
+  FileText, Zap, ArrowRight, Shield, Upload, X, Image
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function LiveMatchNew() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { teamName: globalTeamName, logoUrl: globalLogoUrl } = useTeamSettings();
   
   const currentYear = new Date().getFullYear();
   const [seasonYear, setSeasonYear] = useState(currentYear);
@@ -33,6 +35,12 @@ export default function LiveMatchNew() {
   const [venue, setVenue] = useState("");
   const [durationMinutes, setDurationMinutes] = useState(90);
   const [notes, setNotes] = useState("");
+  
+  // Team customization
+  const [teamNameDisplay, setTeamNameDisplay] = useState("");
+  const [teamLogoUrl, setTeamLogoUrl] = useState("");
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   // Validation states
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -51,6 +59,50 @@ export default function LiveMatchNew() {
       return data;
     },
   });
+
+  // Handle logo upload
+  const handleLogoUpload = async (file: File) => {
+    if (!file) return;
+    
+    if (!file.type.startsWith("image/")) {
+      toast.error("Apenas imagens são permitidas");
+      return;
+    }
+    
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Imagem muito grande (máx. 5MB)");
+      return;
+    }
+
+    setIsUploadingLogo(true);
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `match-team-${Date.now()}.${fileExt}`;
+      const filePath = `match-logos/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("team-logos")
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from("team-logos")
+        .getPublicUrl(filePath);
+
+      setTeamLogoUrl(urlData.publicUrl);
+      toast.success("Logo carregado!");
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error("Erro ao fazer upload do logo");
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    setTeamLogoUrl("");
+  };
 
   // Create match mutation (draft mode)
   const createMatch = useMutation({
@@ -86,6 +138,9 @@ export default function LiveMatchNew() {
           elapsed_seconds_in_half: 0,
           half_start_time: null,
           match_start_time: null,
+          // Team customization - only save if different from global
+          team_name_display: teamNameDisplay.trim() || null,
+          team_logo_url: teamLogoUrl || null,
         })
         .select("id")
         .single();
@@ -126,6 +181,10 @@ export default function LiveMatchNew() {
   const seasonOptions = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
 
   const isFormValid = competitionId && opponentName.trim();
+
+  // Display values: custom or fallback to global
+  const displayTeamName = teamNameDisplay.trim() || globalTeamName;
+  const displayLogoUrl = teamLogoUrl || globalLogoUrl;
 
   return (
     <div className="container max-w-2xl py-6 space-y-6">
@@ -174,6 +233,113 @@ export default function LiveMatchNew() {
         
         {/* Card Body */}
         <div className="relative p-6 space-y-6">
+          {/* Team Customization Section */}
+          <div className="p-4 rounded-xl bg-zinc-800/30 border border-zinc-700/30 space-y-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-zinc-300">
+              <Shield className="h-4 w-4 text-emerald-400" />
+              Time Principal
+            </div>
+            
+            <div className="grid gap-4 sm:grid-cols-2">
+              {/* Team Name */}
+              <div className="space-y-2">
+                <Label 
+                  htmlFor="teamName" 
+                  className="text-xs font-medium text-zinc-400"
+                >
+                  Nome do Time
+                </Label>
+                <Input
+                  id="teamName"
+                  placeholder={globalTeamName}
+                  value={teamNameDisplay}
+                  onChange={(e) => setTeamNameDisplay(e.target.value)}
+                  className="h-10 bg-zinc-900/60 border-zinc-700/50 rounded-lg text-zinc-200 placeholder:text-zinc-600"
+                />
+                <p className="text-[10px] text-zinc-500">
+                  Deixe vazio para usar: {globalTeamName}
+                </p>
+              </div>
+
+              {/* Team Logo */}
+              <div className="space-y-2">
+                <Label className="text-xs font-medium text-zinc-400">
+                  Logo do Time
+                </Label>
+                <div className="flex items-center gap-3">
+                  {/* Logo preview */}
+                  <div className="w-12 h-12 rounded-lg bg-zinc-800 border border-zinc-700/50 flex items-center justify-center overflow-hidden">
+                    {displayLogoUrl ? (
+                      <img 
+                        src={displayLogoUrl} 
+                        alt="Logo" 
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <Image className="w-5 h-5 text-zinc-600" />
+                    )}
+                  </div>
+                  
+                  {/* Upload/Remove buttons */}
+                  <div className="flex flex-col gap-1">
+                    <input
+                      ref={logoInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => e.target.files?.[0] && handleLogoUpload(e.target.files[0])}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => logoInputRef.current?.click()}
+                      disabled={isUploadingLogo}
+                      className="h-8 text-xs gap-1.5"
+                    >
+                      {isUploadingLogo ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Upload className="h-3 w-3" />
+                      )}
+                      Upload
+                    </Button>
+                    {teamLogoUrl && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleRemoveLogo}
+                        className="h-6 text-[10px] text-zinc-500 hover:text-red-400 gap-1 px-2"
+                      >
+                        <X className="h-3 w-3" />
+                        Remover
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Preview */}
+            <div className="pt-3 border-t border-zinc-700/30">
+              <p className="text-[10px] text-zinc-500 mb-2">Preview do card:</p>
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-900/60 border border-zinc-700/30">
+                <img 
+                  src={displayLogoUrl} 
+                  alt={displayTeamName} 
+                  className="w-6 h-6 object-contain"
+                />
+                <div>
+                  <p className="text-sm font-medium text-zinc-200">{displayTeamName}</p>
+                  <p className="text-xs text-zinc-500">
+                    vs {opponentName || "Adversário"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Row 1: Season + Competition */}
           <div className="grid gap-5 sm:grid-cols-2">
             <div className="space-y-2">
