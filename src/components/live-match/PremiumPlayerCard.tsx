@@ -25,13 +25,13 @@ import {
   Undo2, ChevronDown, ChevronUp, LogIn, LogOut, 
   MoreVertical, Trash2, MessageSquare, Goal, Shield,
   Target, Footprints, HandHelping, BarChart3, ArrowRight,
-  RotateCcw, ShieldCheck, Zap, ArrowUpRight, Hand, CircleX, Ban
+  RotateCcw, ShieldCheck, Zap, ArrowUpRight, Hand, CircleX, Ban, Plus
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { playSound, getSoundForEvent } from "@/lib/sounds";
 import { getPositionColor, getShortPosition } from "@/lib/positionColors";
 import { PlayerNotesModal } from "./PlayerNotesModal";
-import { MoreStatsMenu } from "./MoreStatsMenu";
+import { InlineMoreStatsPanel } from "./InlineMoreStatsPanel";
 
 // Detailed stats config for expandable panel
 interface DetailedStat {
@@ -116,6 +116,7 @@ export function PremiumPlayerCard({
 }: PremiumPlayerCardProps) {
   const [expanded, setExpanded] = useState(true);
   const [showDetailedStats, setShowDetailedStats] = useState(false);
+  const [showMoreStats, setShowMoreStats] = useState(false);
   const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
   const [lastEvent, setLastEvent] = useState<MatchEventType | null>(null);
 
@@ -449,18 +450,50 @@ export function PremiumPlayerCard({
                       </Button>
                     ))}
                     
-                    {/* More events menu */}
-                    <MoreStatsMenu
-                      matchStatus={matchStatus}
-                      clockStatus={clockStatus}
-                      isGoalkeeper={isGK}
-                      isOnField={matchPlayer.is_on_field}
-                      eventCounts={eventCounts}
-                      onAddEvent={handleAddEventWithSound}
-                      disabled={disabled}
-                    />
+                    {/* More stats toggle button */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowMoreStats(!showMoreStats)}
+                      className={cn(
+                        "h-9 px-3 gap-1.5 rounded-lg transition-all",
+                        showMoreStats 
+                          ? "bg-primary/20 text-primary hover:bg-primary/30" 
+                          : "bg-zinc-800/50 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+                      )}
+                    >
+                      {showMoreStats ? (
+                        <ChevronUp className="w-4 h-4" />
+                      ) : (
+                        <Plus className="w-4 h-4" />
+                      )}
+                      <span className="text-xs font-medium">{showMoreStats ? "Menos" : "Mais"}</span>
+                    </Button>
                   </div>
                 </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* ===== INLINE MORE STATS PANEL (expandable) ===== */}
+          <AnimatePresence>
+            {showMoreStats && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.22, ease: "easeOut" }}
+                className="overflow-hidden border-t border-zinc-800/50"
+              >
+                <InlineMoreStatsPanel
+                  matchStatus={matchStatus}
+                  clockStatus={clockStatus}
+                  isGoalkeeper={isGK}
+                  isOnField={matchPlayer.is_on_field}
+                  eventCounts={eventCounts}
+                  onAddEvent={handleAddEventWithSound}
+                  disabled={disabled}
+                />
               </motion.div>
             )}
           </AnimatePresence>

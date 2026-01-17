@@ -170,8 +170,9 @@ export function InlineMoreStatsPanel({
     <motion.div
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2 }}
-      className="space-y-2 px-4 pb-4"
+      exit={{ opacity: 0, y: -8 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
+      className="space-y-2.5 p-4"
     >
       {/* Status message */}
       {!canAddEvents && (
@@ -189,81 +190,84 @@ export function InlineMoreStatsPanel({
         </div>
       )}
 
-      {/* Categories grid */}
-      {stats.map((category) => (
-        <div
-          key={category.categoryKey}
-          className={cn(
-            "rounded-xl border p-2.5",
-            category.bgColor
-          )}
-        >
-          <p className={cn(
-            "text-[10px] font-bold mb-2 uppercase tracking-wider",
-            category.color
-          )}>
-            {category.category}
-          </p>
-          <div className="grid grid-cols-2 gap-1.5">
-            {category.stats.map((stat) => {
-              const count = getCount(stat.type);
-              const isHighlight = (stat.type === "goal" || stat.type === "assist" || stat.type === "save") && count > 0;
-              
-              return (
-                <div
-                  key={stat.type}
-                  className={cn(
-                    "flex items-center gap-1.5 p-2 rounded-lg transition-all",
-                    "bg-background/40 border border-border/30",
-                    isHighlight && "border-green-500/40 bg-green-500/10"
-                  )}
-                >
-                  {/* Minus button */}
-                  <motion.button
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => handleRemoveStat(stat.type, stat.label)}
-                    disabled={disabled || isSubmitting || count === 0 || !onVoidLastEvent}
+      {/* Categories grid - responsive */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+        {stats.map((category) => (
+          <div
+            key={category.categoryKey}
+            className={cn(
+              "rounded-xl border p-3",
+              category.bgColor
+            )}
+          >
+            <p className={cn(
+              "text-[10px] font-bold mb-2.5 uppercase tracking-wider",
+              category.color
+            )}>
+              {category.category}
+            </p>
+            {/* Stats grid - 2 cols on mobile, 3 cols on desktop */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5">
+              {category.stats.map((stat) => {
+                const count = getCount(stat.type);
+                const isHighlight = (stat.type === "goal" || stat.type === "assist" || stat.type === "save") && count > 0;
+                
+                return (
+                  <div
+                    key={stat.type}
                     className={cn(
-                      "w-7 h-7 rounded-md flex items-center justify-center shrink-0",
-                      "bg-zinc-700/50 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200",
-                      "disabled:opacity-30 disabled:cursor-not-allowed",
-                      "transition-colors"
+                      "flex items-center gap-1.5 p-2 rounded-lg transition-all",
+                      "bg-background/40 border border-border/30",
+                      isHighlight && "border-green-500/40 bg-green-500/10"
                     )}
                   >
-                    <Minus className="w-3.5 h-3.5" />
-                  </motion.button>
-                  
-                  {/* Count and label */}
-                  <div className="flex-1 text-center min-w-0">
-                    <p className={cn(
-                      "text-base font-bold tabular-nums leading-none",
-                      count > 0 ? category.color : "text-zinc-500"
-                    )}>
-                      {count}
-                    </p>
-                    <p className="text-[9px] text-zinc-500 truncate mt-0.5">{stat.label}</p>
+                    {/* Minus button */}
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => handleRemoveStat(stat.type, stat.label)}
+                      disabled={disabled || isSubmitting || count === 0 || !onVoidLastEvent}
+                      className={cn(
+                        "w-7 h-7 rounded-md flex items-center justify-center shrink-0",
+                        "bg-zinc-700/50 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200",
+                        "disabled:opacity-30 disabled:cursor-not-allowed",
+                        "transition-colors"
+                      )}
+                    >
+                      <Minus className="w-3.5 h-3.5" />
+                    </motion.button>
+                    
+                    {/* Count and label */}
+                    <div className="flex-1 text-center min-w-0">
+                      <p className={cn(
+                        "text-base font-bold tabular-nums leading-none",
+                        count > 0 ? category.color : "text-zinc-500"
+                      )}>
+                        {count}
+                      </p>
+                      <p className="text-[9px] text-zinc-500 truncate mt-0.5">{stat.label}</p>
+                    </div>
+                    
+                    {/* Plus button */}
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => handleAddStat(stat.type, stat.label)}
+                      disabled={disabled || isSubmitting || (!canAddEvents && !isDraft)}
+                      className={cn(
+                        "w-7 h-7 rounded-md flex items-center justify-center shrink-0",
+                        "bg-zinc-700/50 text-zinc-200 hover:bg-primary/20 hover:text-primary",
+                        "disabled:opacity-30 disabled:cursor-not-allowed",
+                        "transition-colors"
+                      )}
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </motion.button>
                   </div>
-                  
-                  {/* Plus button */}
-                  <motion.button
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => handleAddStat(stat.type, stat.label)}
-                    disabled={disabled || isSubmitting || (!canAddEvents && !isDraft)}
-                    className={cn(
-                      "w-7 h-7 rounded-md flex items-center justify-center shrink-0",
-                      "bg-zinc-700/50 text-zinc-200 hover:bg-primary/20 hover:text-primary",
-                      "disabled:opacity-30 disabled:cursor-not-allowed",
-                      "transition-colors"
-                    )}
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                  </motion.button>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </motion.div>
   );
 }
