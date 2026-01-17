@@ -31,7 +31,7 @@ import { toast } from "sonner";
 const QUICK_ACTIONS: { type: MatchEventType; icon: React.ReactNode; label: string; bgColor: string; textColor: string }[] = [
   { type: "goal", icon: <Goal className="w-5 h-5" />, label: "Gol", bgColor: "bg-emerald-500/20", textColor: "text-emerald-400" },
   { type: "assist", icon: <HandHelping className="w-5 h-5" />, label: "Assist", bgColor: "bg-blue-500/20", textColor: "text-blue-400" },
-  { type: "shot_on_target", icon: <Target className="w-5 h-5" />, label: "Chute", bgColor: "bg-orange-500/20", textColor: "text-orange-400" },
+  { type: "shot_on_target", icon: <Target className="w-5 h-5" />, label: "Final.", bgColor: "bg-orange-500/20", textColor: "text-orange-400" },
   { type: "tackle", icon: <Shield className="w-5 h-5" />, label: "Desarme", bgColor: "bg-cyan-500/20", textColor: "text-cyan-400" },
   { type: "dribble_success", icon: <Footprints className="w-5 h-5" />, label: "Drible", bgColor: "bg-purple-500/20", textColor: "text-purple-400" },
 ];

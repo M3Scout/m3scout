@@ -63,7 +63,7 @@ const DETAILED_STATS_GK: DetailedStat[] = [
 const QUICK_EVENTS: { type: MatchEventType; icon: React.ReactNode; label: string; color: string }[] = [
   { type: "goal", icon: <Goal className="w-4 h-4" />, label: "Gol", color: "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30" },
   { type: "assist", icon: <HandHelping className="w-4 h-4" />, label: "Assist", color: "bg-blue-500/20 text-blue-400 hover:bg-blue-500/30" },
-  { type: "shot_on_target", icon: <Target className="w-4 h-4" />, label: "Chute", color: "bg-orange-500/20 text-orange-400 hover:bg-orange-500/30" },
+  { type: "shot_on_target", icon: <Target className="w-4 h-4" />, label: "Final.", color: "bg-orange-500/20 text-orange-400 hover:bg-orange-500/30" },
   { type: "tackle", icon: <Shield className="w-4 h-4" />, label: "Desarme", color: "bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30" },
   { type: "dribble_success", icon: <Footprints className="w-4 h-4" />, label: "Drible", color: "bg-purple-500/20 text-purple-400 hover:bg-purple-500/30" },
 ];

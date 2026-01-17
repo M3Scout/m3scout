@@ -13,8 +13,8 @@ import logoM3 from "@/assets/logo-m3.png";
 const EVENT_LABELS: Record<MatchEventType, string> = {
   goal: "Gol",
   assist: "Assistência",
-  shot: "Chute",
-  shot_on_target: "Chute no Gol",
+  shot: "Finalização Fora",
+  shot_on_target: "Finalização Gol",
   key_pass: "Passe Decisivo",
   chance_created: "Chance Criada",
   dribble_success: "Drible Certo",

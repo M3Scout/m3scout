@@ -39,8 +39,8 @@ interface MatchHistory {
 const EVENT_LABELS: Record<string, string> = {
   goal: "Gols",
   assist: "Assist.",
-  shot: "Chutes",
-  shot_on_target: "C. Gol",
+  shot: "Final.",
+  shot_on_target: "F. Gol",
   key_pass: "P. Dec.",
   tackle: "Desarmes",
   interception: "Interc.",
