@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { motion } from "framer-motion";
-import { MatchEventType, MatchStatus } from "@/hooks/useLiveMatch";
+import { MatchEventType, MatchStatus, MatchPlayerStats } from "@/hooks/useLiveMatch";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Plus, Minus } from "lucide-react";
@@ -115,6 +115,7 @@ interface InlineMoreStatsPanelProps {
   isGoalkeeper: boolean;
   isOnField: boolean;
   eventCounts: Record<MatchEventType, number>;
+  matchStats?: MatchPlayerStats;
   onAddEvent: (eventType: MatchEventType) => void;
   onVoidLastEvent?: (eventType: MatchEventType) => void;
   disabled?: boolean;
@@ -126,6 +127,7 @@ export function InlineMoreStatsPanel({
   isGoalkeeper,
   isOnField,
   eventCounts,
+  matchStats,
   onAddEvent,
   onVoidLastEvent,
   disabled,
@@ -138,7 +140,50 @@ export function InlineMoreStatsPanel({
   const canAddEvents = (isLive && clockStatus === "running" && isOnField) || isDraft;
 
   const stats = isGoalkeeper ? GOALKEEPER_STATS : OUTFIELD_STATS;
-  const getCount = (type: MatchEventType) => eventCounts[type] || 0;
+  
+  // Use matchStats (from match_player_stats table) for display - this includes derived stats
+  // Fall back to eventCounts for event-based counting
+  const getDisplayCount = useCallback((type: MatchEventType): number => {
+    if (matchStats) {
+      // Map event types to matchStats fields - using the persisted stats that include derived values
+      switch (type) {
+        case "goal": return matchStats.goals;
+        case "assist": return matchStats.assists;
+        case "shot_on_target": return matchStats.shots_on_target;
+        case "shot": return matchStats.shots - matchStats.shots_on_target; // Shots outside = total shots - on target
+        case "key_pass": return matchStats.key_passes;
+        case "chance_created": return matchStats.chances_created;
+        case "dribble_success": return matchStats.dribbles_success;
+        case "dribble_attempt": return matchStats.dribbles_total - matchStats.dribbles_success;
+        case "tackle": return matchStats.tackles;
+        case "interception": return matchStats.interceptions;
+        case "recovery": return matchStats.recoveries;
+        case "clearance": return matchStats.clearances;
+        case "duel_won": return matchStats.duels_won;
+        case "duel_total": return matchStats.duels_total - matchStats.duels_won; // Lost duels
+        case "aerial_duel_won": return matchStats.aerial_duels_won;
+        case "yellow": return matchStats.yellow_cards;
+        case "red": return matchStats.red_cards;
+        case "foul_committed": return matchStats.fouls_committed;
+        case "foul_suffered": return matchStats.fouls_suffered;
+        case "pass_success": return matchStats.passes_completed;
+        case "pass_total": return matchStats.passes_total - matchStats.passes_completed; // Failed passes
+        case "possession_lost": return matchStats.possession_lost;
+        case "save": return matchStats.saves;
+        case "goal_conceded": return matchStats.goals_conceded;
+        // Goalkeeper specific
+        case "box_save": return 0; // Not in matchStats currently
+        case "punch": return 0;
+        case "high_claim": return 0;
+        case "sweeper_action": return 0;
+        default: return eventCounts[type] || 0;
+      }
+    }
+    return eventCounts[type] || 0;
+  }, [matchStats, eventCounts]);
+  
+  // For the "-" button, we need to check if there are events to remove (event-based)
+  const getEventCount = (type: MatchEventType) => eventCounts[type] || 0;
 
   const handleAddStat = useCallback((type: MatchEventType, label: string) => {
     if (isSubmitting || disabled) return;
@@ -161,8 +206,9 @@ export function InlineMoreStatsPanel({
   const handleRemoveStat = useCallback((type: MatchEventType, label: string) => {
     if (isSubmitting || disabled) return;
     
-    const count = getCount(type);
-    if (count === 0) {
+    // Check event count (not display count) to see if there's an event to remove
+    const eventCount = getEventCount(type);
+    if (eventCount === 0) {
       toast.info("Nenhum evento para remover");
       return;
     }
@@ -173,7 +219,7 @@ export function InlineMoreStatsPanel({
       toast.success(`${label} -1`, { duration: 2000 });
       setTimeout(() => setIsSubmitting(false), 250);
     }
-  }, [isSubmitting, disabled, onVoidLastEvent, getCount]);
+  }, [isSubmitting, disabled, onVoidLastEvent, getEventCount]);
 
   // Get category accent color for hover/focus effects
   const getCategoryAccent = (color: string) => {
@@ -268,7 +314,7 @@ export function InlineMoreStatsPanel({
               "desktop:grid-cols-4 desktop:gap-4"
             )}>
               {category.stats.map((stat) => {
-                const count = getCount(stat.type);
+                const count = getDisplayCount(stat.type);
                 const isHighlight = (stat.type === "goal" || stat.type === "assist" || stat.type === "save") && count > 0;
                 
                 return (

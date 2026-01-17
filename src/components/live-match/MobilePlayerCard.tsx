@@ -540,6 +540,7 @@ export function MobilePlayerCard({
                 isGoalkeeper={isGK}
                 isOnField={matchPlayer.is_on_field}
                 eventCounts={eventCounts}
+                matchStats={matchStats}
                 onAddEvent={handleAddEventWithSound}
                 onVoidLastEvent={onVoidLastEvent}
                 disabled={disabled}
