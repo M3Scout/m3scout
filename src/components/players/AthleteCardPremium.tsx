@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { cardHover, cardTap, pillHover, smoothTransition, staggerContainer, staggerItem } from "@/lib/animations";
 
 interface AthleteCardPremiumProps {
   id: string;
@@ -64,9 +65,14 @@ export function AthleteCardPremium({
 
   return (
     <Link to={href} className="group block">
-      <article 
-        className="relative overflow-hidden rounded-[20px] bg-[#0a0a0a] transition-all duration-300 ease-out group-hover:-translate-y-1 group-hover:shadow-[0_8px_30px_rgba(0,0,0,0.4)]"
+      <motion.article 
+        className="relative overflow-hidden rounded-[var(--radius-card)] bg-[#0a0a0a]"
         style={{ fontFamily: "'Poppins', sans-serif" }}
+        whileHover={cardHover}
+        whileTap={cardTap}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={smoothTransition}
       >
         {/* Image Container */}
         <div className="relative aspect-[3/4] overflow-hidden">
@@ -80,31 +86,40 @@ export function AthleteCardPremium({
             <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-neutral-700/20 to-neutral-900/20" />
           </div>
           
-          <img
+          <motion.img
             src={imageUrl}
             alt={name}
             loading="lazy"
             onLoad={() => setImageLoaded(true)}
-            className={`w-full h-full object-cover transition-all duration-500 ease-out group-hover:scale-[1.03] ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+            className={`w-full h-full object-cover ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+            initial={{ scale: 1 }}
+            whileHover={{ scale: 1.03 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
           />
           
           {/* Gradient Overlay - stronger at bottom */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent transition-opacity duration-300 group-hover:from-black/95" />
           
           {/* Border on hover */}
-          <div className="absolute inset-0 rounded-[20px] border border-transparent transition-all duration-300 group-hover:border-white/10" />
+          <motion.div 
+            className="absolute inset-0 rounded-[var(--radius-card)] border border-white/0"
+            whileHover={{ borderColor: "rgba(255,255,255,0.1)" }}
+            transition={smoothTransition}
+          />
           
-          {/* Position Tag - Top Left */}
+          {/* Position Tag - Top Left - Pill Style */}
           <div className="absolute top-4 left-4">
-            <span 
-              className="inline-block px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.15em] text-white/90 rounded-sm"
+            <motion.span 
+              className="inline-block px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.15em] text-white/90 rounded-[var(--radius-pill)]"
               style={{ 
-                background: 'rgba(15, 15, 15, 0.92)',
-                border: '1px solid rgba(255, 255, 255, 0.08)'
+                background: 'var(--bg-glass)',
+                border: 'var(--border-glass)',
+                backdropFilter: 'blur(8px)',
               }}
+              whileHover={pillHover}
             >
               {position}
-            </span>
+            </motion.span>
           </div>
 
           {/* Player Info - Bottom */}
@@ -113,21 +128,21 @@ export function AthleteCardPremium({
             <AnimatePresence>
               {scoutingMode && (dominantFoot || height || totalMinutes !== undefined) && (
                 <motion.div 
-                  initial={{ opacity: 0, y: 10, height: 0 }}
-                  animate={{ opacity: 1, y: 0, height: 'auto' }}
-                  exit={{ opacity: 0, y: 10, height: 0 }}
-                  transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
+                  initial="hidden"
+                  animate="visible"
+                  exit="hidden"
+                  variants={staggerContainer}
                   className="flex flex-wrap gap-1.5 mb-3 overflow-hidden"
                 >
                   {dominantFoot && (
                     <motion.span 
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.2, delay: 0.05 }}
-                      className="inline-flex items-center px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider text-white/70 rounded"
+                      variants={staggerItem}
+                      whileHover={pillHover}
+                      className="inline-flex items-center px-2.5 py-1 text-[9px] font-medium uppercase tracking-wider text-white/80 rounded-[var(--radius-pill)]"
                       style={{ 
                         background: 'rgba(229, 36, 33, 0.15)',
-                        border: '1px solid rgba(229, 36, 33, 0.25)'
+                        border: '1px solid rgba(229, 36, 33, 0.25)',
+                        backdropFilter: 'blur(4px)',
                       }}
                     >
                       Pé: {formatFoot(dominantFoot)}
@@ -135,13 +150,13 @@ export function AthleteCardPremium({
                   )}
                   {height && (
                     <motion.span 
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.2, delay: 0.1 }}
-                      className="inline-flex items-center px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider text-white/70 rounded"
+                      variants={staggerItem}
+                      whileHover={pillHover}
+                      className="inline-flex items-center px-2.5 py-1 text-[9px] font-medium uppercase tracking-wider text-white/80 rounded-[var(--radius-pill)]"
                       style={{ 
                         background: 'rgba(229, 36, 33, 0.15)',
-                        border: '1px solid rgba(229, 36, 33, 0.25)'
+                        border: '1px solid rgba(229, 36, 33, 0.25)',
+                        backdropFilter: 'blur(4px)',
                       }}
                     >
                       {formatHeight(height)}
@@ -149,13 +164,13 @@ export function AthleteCardPremium({
                   )}
                   {/* Minutes chip - always show in scouting mode */}
                   <motion.span 
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.2, delay: 0.15 }}
-                    className="inline-flex items-center px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider text-white/70 rounded"
+                    variants={staggerItem}
+                    whileHover={pillHover}
+                    className="inline-flex items-center px-2.5 py-1 text-[9px] font-medium uppercase tracking-wider text-white/80 rounded-[var(--radius-pill)]"
                     style={{ 
-                      background: 'rgba(255, 255, 255, 0.05)',
-                      border: '1px solid rgba(255, 255, 255, 0.1)'
+                      background: 'var(--bg-glass)',
+                      border: 'var(--border-glass)',
+                      backdropFilter: 'blur(4px)',
                     }}
                   >
                     MIN {formatMinutes(totalMinutes)}
@@ -165,9 +180,7 @@ export function AthleteCardPremium({
             </AnimatePresence>
             
             {/* Name - max 2 lines with clamp */}
-            <h3 
-              className="text-white text-lg md:text-xl font-semibold tracking-tight mb-2 transition-colors duration-300 line-clamp-2"
-            >
+            <h3 className="text-white text-lg md:text-xl font-semibold tracking-tight mb-2 transition-colors duration-300 line-clamp-2">
               {name}
             </h3>
             
@@ -181,7 +194,7 @@ export function AthleteCardPremium({
             </p>
           </div>
         </div>
-      </article>
+      </motion.article>
     </Link>
   );
 }

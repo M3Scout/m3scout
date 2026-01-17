@@ -8,6 +8,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { safeArray } from "@/lib/utils";
+import { motion } from "framer-motion";
+import { fadeInUp, smoothTransition } from "@/lib/animations";
 
 interface ControlBarPremiumProps {
   searchQuery: string;
@@ -51,13 +53,18 @@ export function ControlBarPremium({
   onNationalityChange,
 }: ControlBarPremiumProps) {
   return (
-    <div 
-      className="flex flex-col lg:flex-row gap-3 p-1.5 rounded-lg"
+    <motion.div 
+      className="flex flex-col lg:flex-row gap-3 p-2 rounded-[var(--radius-card)]"
       style={{ 
         fontFamily: "'Poppins', sans-serif",
-        background: 'rgba(255, 255, 255, 0.02)',
-        border: '1px solid rgba(255, 255, 255, 0.06)'
+        background: 'var(--bg-glass)',
+        border: 'var(--border-glass)',
+        backdropFilter: 'blur(8px)',
       }}
+      initial="hidden"
+      animate="visible"
+      variants={fadeInUp}
+      transition={smoothTransition}
     >
       {/* Search - Takes most space */}
       <div className="relative flex-1">
@@ -67,7 +74,7 @@ export function ControlBarPremium({
           placeholder="Buscar atleta..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-11 h-11 bg-transparent border-0 text-white placeholder:text-neutral-500 rounded-md focus-visible:ring-1 focus-visible:ring-white/10 transition-all duration-200"
+          className="pl-11 h-[var(--tap-target)] bg-transparent border-0 text-white placeholder:text-neutral-500 rounded-[var(--radius-button)] focus-visible:ring-1 focus-visible:ring-white/10 transition-all duration-200"
           style={{ fontFamily: "'Poppins', sans-serif" }}
         />
       </div>
@@ -77,20 +84,20 @@ export function ControlBarPremium({
         {/* Position Filter */}
         <Select value={positionFilter} onValueChange={onPositionChange}>
           <SelectTrigger 
-            className="w-full sm:w-[160px] h-11 bg-transparent border-0 text-white rounded-md focus:ring-1 focus:ring-white/10 hover:bg-white/5 transition-all duration-200"
+            className="w-full sm:w-[160px] h-[var(--tap-target)] bg-transparent border-0 text-white rounded-[var(--radius-button)] focus:ring-1 focus:ring-white/10 hover:bg-white/5 transition-all duration-200"
             style={{ fontFamily: "'Poppins', sans-serif" }}
           >
             <SelectValue placeholder="Posição" />
           </SelectTrigger>
           <SelectContent 
-            className="bg-[#0f0f0f] border-white/10 rounded-lg"
+            className="bg-[#0f0f0f] border-white/10 rounded-[var(--radius-button)]"
             style={{ fontFamily: "'Poppins', sans-serif" }}
           >
             {safeArray(positions).map((pos) => (
               <SelectItem 
                 key={pos} 
                 value={pos.toLowerCase()}
-                className="text-white focus:bg-white/10 focus:text-white rounded-md"
+                className="text-white focus:bg-white/10 focus:text-white rounded-[var(--radius-button)]"
               >
                 {pos}
               </SelectItem>
@@ -101,20 +108,20 @@ export function ControlBarPremium({
         {/* Nationality Filter */}
         <Select value={nationalityFilter} onValueChange={onNationalityChange}>
           <SelectTrigger 
-            className="w-full sm:w-[160px] h-11 bg-transparent border-0 text-white rounded-md focus:ring-1 focus:ring-white/10 hover:bg-white/5 transition-all duration-200"
+            className="w-full sm:w-[160px] h-[var(--tap-target)] bg-transparent border-0 text-white rounded-[var(--radius-button)] focus:ring-1 focus:ring-white/10 hover:bg-white/5 transition-all duration-200"
             style={{ fontFamily: "'Poppins', sans-serif" }}
           >
             <SelectValue placeholder="Nacionalidade" />
           </SelectTrigger>
           <SelectContent 
-            className="bg-[#0f0f0f] border-white/10 rounded-lg"
+            className="bg-[#0f0f0f] border-white/10 rounded-[var(--radius-button)]"
             style={{ fontFamily: "'Poppins', sans-serif" }}
           >
             {safeArray(nationalities).map((nat) => (
               <SelectItem 
                 key={nat} 
                 value={nat.toLowerCase()}
-                className="text-white focus:bg-white/10 focus:text-white rounded-md"
+                className="text-white focus:bg-white/10 focus:text-white rounded-[var(--radius-button)]"
               >
                 {nat}
               </SelectItem>
@@ -122,6 +129,6 @@ export function ControlBarPremium({
           </SelectContent>
         </Select>
       </div>
-    </div>
+    </motion.div>
   );
 }
