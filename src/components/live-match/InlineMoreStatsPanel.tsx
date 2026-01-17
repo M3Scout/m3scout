@@ -194,13 +194,19 @@ export function InlineMoreStatsPanel({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.2, ease: "easeOut" }}
-      className="space-y-4 md:space-y-5 lg:space-y-6 p-3 md:p-5 lg:p-6"
+      className={cn(
+        "p-3 md:p-5 lg:p-6",
+        "space-y-4 md:space-y-5 lg:space-y-6",
+        // iPad landscape: tighter spacing
+        "md:landscape:p-4 md:landscape:space-y-3"
+      )}
     >
       {/* Status message */}
       {!canAddEvents && (
         <div
           className={cn(
             "p-3 md:p-4 rounded-xl text-sm md:text-base text-center font-medium",
+            "md:landscape:p-2.5 md:landscape:text-sm",
             isPaused && "bg-amber-500/10 text-amber-400 border border-amber-500/20",
             isDraft && "bg-blue-500/10 text-blue-400 border border-blue-500/20",
             !isOnField && isLive && "bg-red-500/10 text-red-400 border border-red-500/20"
@@ -212,37 +218,52 @@ export function InlineMoreStatsPanel({
         </div>
       )}
 
-      {/* Categories Grid - 1 col mobile, 2 cols tablet/desktop */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 lg:gap-6">
+      {/* Categories Grid - 1 col mobile, 2 cols tablet/desktop, 2 cols iPad landscape */}
+      <div className={cn(
+        "grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 lg:gap-6",
+        "md:landscape:gap-3"
+      )}>
         {stats.map((category) => (
           <div
             key={category.categoryKey}
             className={cn(
               "rounded-2xl md:rounded-3xl border-2 p-4 md:p-5 lg:p-6",
+              "md:landscape:p-3 md:landscape:rounded-2xl",
               category.bgColor
             )}
           >
             {/* Category header - improved spacing and visibility */}
-            <div className="flex items-center gap-3 mb-4 md:mb-5 lg:mb-6 pb-3 border-b border-white/10">
+            <div className={cn(
+              "flex items-center gap-3 mb-4 md:mb-5 lg:mb-6 pb-3 border-b border-white/10",
+              "md:landscape:mb-3 md:landscape:pb-2 md:landscape:gap-2"
+            )}>
               <div className={cn(
                 "w-2 h-6 md:h-7 rounded-full",
+                "md:landscape:h-5 md:landscape:w-1.5",
                 category.color.replace("text-", "bg-")
               )} />
               <div className="flex items-baseline gap-2">
                 <span className={cn(
                   "text-base md:text-lg lg:text-xl font-black uppercase tracking-wide",
+                  "md:landscape:text-base",
                   category.color
                 )}>
                   {category.category}
                 </span>
-                <span className="text-xs md:text-sm text-zinc-400 font-medium">
+                <span className={cn(
+                  "text-xs md:text-sm text-zinc-400 font-medium",
+                  "md:landscape:text-xs"
+                )}>
                   {CATEGORY_NAMES[category.category]}
                 </span>
               </div>
             </div>
 
-            {/* Stats grid - Responsive: 2 cols mobile, 2-3 cols tablet, 4 cols desktop */}
-            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-4">
+            {/* Stats grid - 2 cols mobile, 3 cols iPad landscape, 2 cols tablet portrait, 4 cols desktop */}
+            <div className={cn(
+              "grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-4",
+              "md:landscape:grid-cols-3 md:landscape:gap-2.5"
+            )}>
               {category.stats.map((stat) => {
                 const count = getCount(stat.type);
                 const isHighlight = (stat.type === "goal" || stat.type === "assist" || stat.type === "save") && count > 0;
@@ -257,18 +278,26 @@ export function InlineMoreStatsPanel({
                       "bg-zinc-900/70 border-2 border-zinc-700/50",
                       "hover:border-zinc-600 hover:shadow-xl hover:ring-2",
                       "min-h-[120px] md:min-h-[130px] lg:min-h-[140px]",
+                      // iPad landscape: more compact cards
+                      "md:landscape:min-h-[100px] md:landscape:rounded-xl",
                       getCategoryAccent(category.color),
                       isHighlight && "border-green-500/60 bg-green-500/10 ring-2 ring-green-500/20"
                     )}
                   >
                     {/* Value + Label section - generous padding */}
-                    <div className="flex-1 flex flex-col items-center justify-center py-4 md:py-5 lg:py-6 px-3 md:px-4">
+                    <div className={cn(
+                      "flex-1 flex flex-col items-center justify-center py-4 md:py-5 lg:py-6 px-3 md:px-4",
+                      // iPad landscape: tighter padding
+                      "md:landscape:py-2.5 md:landscape:px-2"
+                    )}>
                       <motion.p 
                         key={count}
                         initial={{ scale: 1.15, opacity: 0.8 }}
                         animate={{ scale: 1, opacity: 1 }}
                         className={cn(
                           "text-3xl md:text-4xl lg:text-[42px] font-black tabular-nums leading-none",
+                          // iPad landscape: smaller value
+                          "md:landscape:text-2xl",
                           count > 0 ? category.color : "text-zinc-500"
                         )}
                       >
@@ -279,6 +308,8 @@ export function InlineMoreStatsPanel({
                         "text-[11px] md:text-[13px] lg:text-sm text-center leading-relaxed mt-2 md:mt-3",
                         "min-h-[32px] md:min-h-[36px] flex items-center justify-center",
                         "font-medium tracking-tight",
+                        // iPad landscape: compact label
+                        "md:landscape:text-[11px] md:landscape:mt-1.5 md:landscape:min-h-[26px] md:landscape:leading-snug",
                         count > 0 ? "text-zinc-200" : "text-zinc-500"
                       )}>
                         {stat.label}
@@ -294,14 +325,16 @@ export function InlineMoreStatsPanel({
                         disabled={disabled || isSubmitting || count === 0 || !onVoidLastEvent}
                         className={cn(
                           "flex-1 h-10 md:h-11 lg:h-12 flex items-center justify-center",
+                          // iPad landscape: compact buttons
+                          "md:landscape:h-9",
                           "text-zinc-500 hover:text-red-400 hover:bg-red-500/15 active:bg-red-500/25",
                           "disabled:opacity-20 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-zinc-500",
-                          "transition-all rounded-bl-xl md:rounded-bl-2xl",
+                          "transition-all rounded-bl-xl md:rounded-bl-2xl md:landscape:rounded-bl-lg",
                           "border-r-2 border-zinc-700/40"
                         )}
                         aria-label={`Remover ${stat.label}`}
                       >
-                        <Minus className="w-4 h-4 md:w-5 md:h-5" strokeWidth={2.5} />
+                        <Minus className="w-4 h-4 md:w-5 md:h-5 md:landscape:w-4 md:landscape:h-4" strokeWidth={2.5} />
                       </motion.button>
                       
                       {/* Plus button */}
@@ -311,9 +344,11 @@ export function InlineMoreStatsPanel({
                         disabled={disabled || isSubmitting || (!canAddEvents && !isDraft)}
                         className={cn(
                           "flex-1 h-10 md:h-11 lg:h-12 flex items-center justify-center",
+                          // iPad landscape: compact buttons
+                          "md:landscape:h-9",
                           "text-zinc-400 hover:text-emerald-400 hover:bg-emerald-500/15 active:bg-emerald-500/25",
                           "disabled:opacity-20 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-zinc-400",
-                          "transition-all rounded-br-xl md:rounded-br-2xl"
+                          "transition-all rounded-br-xl md:rounded-br-2xl md:landscape:rounded-br-lg"
                         )}
                         aria-label={`Adicionar ${stat.label}`}
                       >
