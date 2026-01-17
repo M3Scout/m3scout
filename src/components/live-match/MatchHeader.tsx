@@ -6,6 +6,7 @@ import { Radio, CheckCircle2, Pause, ArrowRight, Play, FileEdit } from "lucide-r
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { MAIN_TEAM_NAME } from "@/lib/teamConfig";
+import logoM3Icon from "@/assets/logo-m3-icon.png";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -129,17 +130,24 @@ export function MatchHeader({
 
             {/* Row 2: Match info - Compact */}
             <div className="flex items-center justify-between min-w-0">
-              <div className="min-w-0">
-                <h1 className="text-base sm:text-lg font-bold truncate">
-                  {MAIN_TEAM_NAME}
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                  vs {match.opponent_name}
-                </p>
-                <p className="text-xs text-muted-foreground truncate">
-                  {competitionName} • {match.season_year}
-                  {match.venue && ` • ${match.venue}`}
-                </p>
+              <div className="flex items-center gap-3 min-w-0">
+                <img 
+                  src={logoM3Icon} 
+                  alt={MAIN_TEAM_NAME} 
+                  className="w-10 h-10 object-contain shrink-0"
+                />
+                <div className="min-w-0">
+                  <h1 className="text-base sm:text-lg font-bold truncate">
+                    {MAIN_TEAM_NAME}
+                  </h1>
+                  <p className="text-sm text-muted-foreground">
+                    vs {match.opponent_name}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {competitionName} • {match.season_year}
+                    {match.venue && ` • ${match.venue}`}
+                  </p>
+                </div>
               </div>
             </div>
           </div>

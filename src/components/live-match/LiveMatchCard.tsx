@@ -37,6 +37,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MAIN_TEAM_NAME } from "@/lib/teamConfig";
+import logoM3Icon from "@/assets/logo-m3-icon.png";
 
 interface MatchWithCompetition {
   id: string;
@@ -347,13 +348,20 @@ export function LiveMatchCard({ match, link, onDelete, index }: LiveMatchCardPro
 
               {/* Match info */}
               <div className="flex-1 min-w-0">
-                <div className="mb-2">
-                  <h4 className="font-bold text-lg text-zinc-100 truncate">
-                    {MAIN_TEAM_NAME}
-                  </h4>
-                  <p className="text-sm text-zinc-400">
-                    vs {match.opponent_name}
-                  </p>
+                <div className="flex items-center gap-2 mb-2">
+                  <img 
+                    src={logoM3Icon} 
+                    alt={MAIN_TEAM_NAME} 
+                    className="w-8 h-8 object-contain"
+                  />
+                  <div>
+                    <h4 className="font-bold text-lg text-zinc-100 truncate">
+                      {MAIN_TEAM_NAME}
+                    </h4>
+                    <p className="text-sm text-zinc-400">
+                      vs {match.opponent_name}
+                    </p>
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-3 text-xs text-zinc-500 mb-4">

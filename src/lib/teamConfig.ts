@@ -10,3 +10,6 @@ export const MAIN_TEAM_NAME = "M3 Scouting";
 
 // Short version for mobile/compact displays
 export const MAIN_TEAM_SHORT = "M3";
+
+// Logo path (imported in components)
+export const MAIN_TEAM_LOGO = "/assets/logo-m3-icon.png";
