@@ -61,6 +61,8 @@ interface MatchWithCompetition {
   half_start_time?: string | null;
   elapsed_seconds_in_half?: number | null;
   clock_status?: string | null;
+  added_time_first_half?: number | null;
+  added_time_second_half?: number | null;
   competition: {
     id: string;
     name: string;
@@ -396,6 +398,8 @@ export default function LiveMatchHistory() {
           half_start_time,
           elapsed_seconds_in_half,
           clock_status,
+          added_time_first_half,
+          added_time_second_half,
           competition:competitions(id, name, display_name)
         `)
         .eq("created_by", user.id)
