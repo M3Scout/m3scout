@@ -24,7 +24,7 @@ import {
   Target, Footprints, HandHelping, MoreHorizontal, Trash2,
   MessageSquare, Undo2, ArrowRight, AlertTriangle, Hand,
   ShieldCheck, RotateCcw, Ban, Users, ArrowUpRight, Square,
-  UserX, CircleOff, CircleX, Crosshair, Zap
+  UserX, CircleOff, CircleX, Crosshair, Zap, BarChart3
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { playSound, getSoundForEvent } from "@/lib/sounds";
@@ -97,6 +97,32 @@ const CATEGORY_COLORS = {
   goalkeeper: "text-purple-400",
 } as const;
 
+// Detailed stats config for expandable panel
+interface DetailedStat {
+  key: keyof MatchPlayerStats;
+  label: string;
+  icon: React.ReactNode;
+  color: string;
+}
+
+const DETAILED_STATS_OUTFIELD: DetailedStat[] = [
+  { key: "shots_on_target", label: "No Gol", icon: <Target className="w-3.5 h-3.5" />, color: "text-orange-400" },
+  { key: "passes_completed", label: "Passes", icon: <ArrowRight className="w-3.5 h-3.5" />, color: "text-blue-400" },
+  { key: "dribbles_success", label: "Dribles", icon: <Footprints className="w-3.5 h-3.5" />, color: "text-purple-400" },
+  { key: "recoveries", label: "Recup.", icon: <RotateCcw className="w-3.5 h-3.5" />, color: "text-cyan-400" },
+  { key: "tackles", label: "Desarm.", icon: <Shield className="w-3.5 h-3.5" />, color: "text-cyan-400" },
+  { key: "interceptions", label: "Interc.", icon: <ShieldCheck className="w-3.5 h-3.5" />, color: "text-cyan-400" },
+  { key: "key_passes", label: "P. Dec.", icon: <ArrowUpRight className="w-3.5 h-3.5" />, color: "text-blue-400" },
+  { key: "chances_created", label: "Chances", icon: <Zap className="w-3.5 h-3.5" />, color: "text-emerald-400" },
+];
+
+const DETAILED_STATS_GK: DetailedStat[] = [
+  { key: "saves", label: "Defesas", icon: <Hand className="w-3.5 h-3.5" />, color: "text-emerald-400" },
+  { key: "goals_conceded", label: "Gols Sof.", icon: <CircleX className="w-3.5 h-3.5" />, color: "text-red-400" },
+  { key: "clearances", label: "Cortes", icon: <Ban className="w-3.5 h-3.5" />, color: "text-cyan-400" },
+  { key: "recoveries", label: "Recup.", icon: <RotateCcw className="w-3.5 h-3.5" />, color: "text-cyan-400" },
+];
+
 interface MobilePlayerCardProps {
   matchPlayer: MatchPlayer;
   eventCounts: Record<MatchEventType, number>;
@@ -138,6 +164,7 @@ export function MobilePlayerCard({
 }: MobilePlayerCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
+  const [showDetailedStats, setShowDetailedStats] = useState(false);
   const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
   const [lastEvent, setLastEvent] = useState<MatchEventType | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -336,7 +363,55 @@ export function MobilePlayerCard({
               </>
             )}
           </div>
+          
+          {/* Stats expand toggle button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 rounded-full hover:bg-white/10"
+            onClick={() => setShowDetailedStats(!showDetailedStats)}
+          >
+            <BarChart3 className={cn(
+              "w-4 h-4 transition-colors",
+              showDetailedStats ? "text-blue-400" : "text-zinc-500"
+            )} />
+          </Button>
         </div>
+
+        {/* ===== DETAILED STATS PANEL (expandable) ===== */}
+        <AnimatePresence>
+          {showDetailedStats && matchStats && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              <div className="px-4 pb-3 pt-1">
+                <div className="grid grid-cols-4 gap-2 p-2 rounded-xl bg-zinc-800/40 border border-zinc-700/30">
+                  {(isGK ? DETAILED_STATS_GK : DETAILED_STATS_OUTFIELD).map((stat) => {
+                    const value = Number(matchStats[stat.key] ?? 0);
+                    return (
+                      <div key={stat.key} className="text-center py-1.5">
+                        <div className="flex items-center justify-center gap-1 mb-0.5">
+                          <span className={stat.color}>{stat.icon}</span>
+                        </div>
+                        <p className={cn(
+                          "text-lg font-bold tabular-nums",
+                          value > 0 ? stat.color : "text-zinc-500"
+                        )}>
+                          {value}
+                        </p>
+                        <p className="text-[8px] text-zinc-500 uppercase truncate px-0.5">{stat.label}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* ===== ACTION BUTTONS ROW ===== */}
         <div className="flex items-center justify-end gap-2 px-4 pb-3">
