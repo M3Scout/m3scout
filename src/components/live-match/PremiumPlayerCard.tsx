@@ -128,6 +128,8 @@ export function PremiumPlayerCard({
   // Use matchStats if available, fall back to eventCounts
   const totalGoals = matchStats?.goals ?? getCount("goal");
   const totalAssists = matchStats?.assists ?? getCount("assist");
+  const totalShots = matchStats?.shots ?? getCount("shot") + getCount("shot_on_target") + getCount("goal");
+  const totalShotsOnTarget = matchStats?.shots_on_target ?? getCount("shot_on_target") + getCount("goal");
   const totalSaves = matchStats?.saves ?? getCount("save");
   const totalTackles = matchStats?.tackles ?? getCount("tackle");
   const totalGoalsConceded = matchStats?.goals_conceded ?? getCount("goal_conceded");
@@ -140,7 +142,7 @@ export function PremiumPlayerCard({
   ] : [
     { label: "GOL", value: totalGoals },
     { label: "ASS", value: totalAssists },
-    { label: "DES", value: totalTackles },
+    { label: "CHU", value: totalShots },
   ];
 
   return (

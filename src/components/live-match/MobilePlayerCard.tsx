@@ -213,6 +213,8 @@ export function MobilePlayerCard({
   // Use matchStats if available, fall back to eventCounts
   const totalGoals = matchStats?.goals ?? getCount("goal");
   const totalAssists = matchStats?.assists ?? getCount("assist");
+  const totalShots = matchStats?.shots ?? getCount("shot") + getCount("shot_on_target") + getCount("goal");
+  const totalShotsOnTarget = matchStats?.shots_on_target ?? getCount("shot_on_target") + getCount("goal");
   const totalSaves = matchStats?.saves ?? getCount("save");
   const totalTackles = matchStats?.tackles ?? getCount("tackle");
   const totalGoalsConceded = matchStats?.goals_conceded ?? getCount("goal_conceded");
@@ -326,10 +328,10 @@ export function MobilePlayerCard({
                   <p className="text-[8px] text-zinc-500 uppercase">ASS</p>
                 </div>
                 <div className="text-center px-2 py-1 rounded-lg bg-zinc-800/60 min-w-[40px]">
-                  <p className={cn("text-sm font-bold tabular-nums", totalTackles > 0 ? "text-cyan-400" : "text-zinc-500")}>
-                    {totalTackles}
+                  <p className={cn("text-sm font-bold tabular-nums", totalShots > 0 ? "text-orange-400" : "text-zinc-500")}>
+                    {totalShots}
                   </p>
-                  <p className="text-[8px] text-zinc-500 uppercase">DES</p>
+                  <p className="text-[8px] text-zinc-500 uppercase">CHU</p>
                 </div>
               </>
             )}
