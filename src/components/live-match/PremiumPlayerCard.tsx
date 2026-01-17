@@ -20,7 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MatchPlayer, MatchEventType, MatchStatus } from "@/hooks/useLiveMatch";
+import { MatchPlayer, MatchEventType, MatchStatus, MatchPlayerStats } from "@/hooks/useLiveMatch";
 import { 
   Undo2, ChevronDown, ChevronUp, LogIn, LogOut, 
   MoreVertical, Trash2, MessageSquare, Goal, Shield,
@@ -51,6 +51,7 @@ const GK_QUICK_EVENTS: { type: MatchEventType; icon: React.ReactNode; label: str
 interface PremiumPlayerCardProps {
   matchPlayer: MatchPlayer;
   eventCounts: Record<MatchEventType, number>;
+  matchStats?: MatchPlayerStats;
   matchStatus: MatchStatus;
   clockStatus?: "stopped" | "running" | "paused";
   currentMinute?: number;
@@ -70,6 +71,7 @@ interface PremiumPlayerCardProps {
 export function PremiumPlayerCard({
   matchPlayer,
   eventCounts,
+  matchStats,
   matchStatus,
   clockStatus = "stopped",
   currentMinute = 0,
@@ -122,19 +124,23 @@ export function PremiumPlayerCard({
   };
 
   const getCount = (type: MatchEventType) => eventCounts[type] || 0;
-  const totalGoals = getCount("goal");
-  const totalAssists = getCount("assist");
-  const totalSaves = getCount("save");
+  
+  // Use matchStats if available, fall back to eventCounts
+  const totalGoals = matchStats?.goals ?? getCount("goal");
+  const totalAssists = matchStats?.assists ?? getCount("assist");
+  const totalSaves = matchStats?.saves ?? getCount("save");
+  const totalTackles = matchStats?.tackles ?? getCount("tackle");
+  const totalGoalsConceded = matchStats?.goals_conceded ?? getCount("goal_conceded");
   const hasNotes = matchPlayer.notes && matchPlayer.notes.trim().length > 0;
 
-  // Calculate key stats for display
+  // Calculate key stats for display - use actual stats from DB
   const keyStats = isGK ? [
     { label: "DEF", value: totalSaves },
-    { label: "GOL-", value: getCount("goal_conceded") },
+    { label: "GOL-", value: totalGoalsConceded },
   ] : [
     { label: "GOL", value: totalGoals },
     { label: "ASS", value: totalAssists },
-    { label: "DES", value: getCount("tackle") },
+    { label: "DES", value: totalTackles },
   ];
 
   return (

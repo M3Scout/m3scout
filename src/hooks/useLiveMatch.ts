@@ -97,6 +97,38 @@ export interface MatchEvent {
   period: number;
 }
 
+export interface MatchPlayerStats {
+  id: string;
+  match_id: string;
+  player_id: string;
+  goals: number;
+  assists: number;
+  shots: number;
+  shots_on_target: number;
+  key_passes: number;
+  chances_created: number;
+  passes_completed: number;
+  passes_total: number;
+  dribbles_success: number;
+  dribbles_total: number;
+  tackles: number;
+  interceptions: number;
+  recoveries: number;
+  clearances: number;
+  duels_won: number;
+  duels_total: number;
+  aerial_duels_won: number;
+  yellow_cards: number;
+  red_cards: number;
+  fouls_committed: number;
+  fouls_suffered: number;
+  possession_lost: number;
+  saves: number;
+  goals_conceded: number;
+  created_at: string;
+  updated_at: string;
+}
+
 // Local storage key for offline draft
 const getLocalStorageKey = (matchId: string) => `live-match-draft-${matchId}`;
 
@@ -226,6 +258,29 @@ export function useLiveMatch(matchId: string) {
       return data as MatchEvent[];
     },
   });
+
+  // Fetch match player stats (from the new match_player_stats table)
+  const { data: matchPlayerStats = [], isLoading: statsLoading } = useQuery({
+    queryKey: ["match-player-stats", matchId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("match_player_stats")
+        .select("*")
+        .eq("match_id", matchId);
+
+      if (error) throw error;
+      return data as MatchPlayerStats[];
+    },
+  });
+
+  // Convert matchPlayerStats to a map by player_id for easy lookup
+  const playerStatsMap = useMemo(() => {
+    const map: Record<string, MatchPlayerStats> = {};
+    matchPlayerStats.forEach((stats) => {
+      map[stats.player_id] = stats;
+    });
+    return map;
+  }, [matchPlayerStats]);
 
   // Filtered players (exclude removed, optionally only on field)
   const filteredPlayers = useMemo(() => {
@@ -807,12 +862,15 @@ export function useLiveMatch(matchId: string) {
     filteredPlayers,
     playerEventCounts,
     pendingEventsCount,
+    matchPlayerStats,
+    playerStatsMap,
     
     // Loading states
-    isLoading: matchLoading || playersLoading || eventsLoading,
+    isLoading: matchLoading || playersLoading || eventsLoading || statsLoading,
     matchLoading,
     playersLoading,
     eventsLoading,
+    statsLoading,
     matchError,
 
     // Filters
