@@ -19,8 +19,8 @@ import { List, Trash2, Edit2, X, Check, ArrowRightLeft } from "lucide-react";
 const EVENT_LABELS: Record<MatchEventType | "substitution", string> = {
   goal: "Gol",
   assist: "Assistência",
-  shot: "Chute",
-  shot_on_target: "Chute no Gol",
+  shot: "Finalização Fora",
+  shot_on_target: "Finalização Gol",
   key_pass: "Passe Decisivo",
   chance_created: "Chance Criada",
   dribble_success: "Drible Certo",

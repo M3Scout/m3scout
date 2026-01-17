@@ -117,8 +117,8 @@ export const LIVE_EVENT_ACTIONS: LiveEventAction[] = [
     label: "Finalização no gol",
     group: "attack",
     icon: Target,
-    description: "Chute ao gol",
-    aliases: ["chute", "finalizacao", "no gol"],
+    description: "Finalização que foi ao gol",
+    aliases: ["finalização", "finalizacao", "no gol", "chute gol"],
   },
   {
     key: "shot",
@@ -126,8 +126,8 @@ export const LIVE_EVENT_ACTIONS: LiveEventAction[] = [
     label: "Finalização para fora",
     group: "attack",
     icon: Crosshair,
-    description: "Chute que não foi no gol",
-    aliases: ["chute fora", "finalização fora"],
+    description: "Finalização que não foi no gol",
+    aliases: ["finalização fora", "para fora", "chute fora"],
   },
   {
     key: "chance_created",

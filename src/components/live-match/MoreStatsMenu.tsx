@@ -44,8 +44,8 @@ const DESKTOP_OUTFIELD_STATS: { category: string; color: string; bgColor: string
     stats: [
       { type: "goal", label: "Gols" },
       { type: "assist", label: "Assist." },
-      { type: "shot", label: "Chutes" },
-      { type: "shot_on_target", label: "Chutes Gol" },
+      { type: "shot_on_target", label: "Final. Gol" },
+      { type: "shot", label: "Final. Fora" },
     ],
   },
   {

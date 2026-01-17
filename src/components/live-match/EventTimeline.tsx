@@ -38,8 +38,8 @@ const eventConfig: Record<MatchEventType | "substitution", {
 }> = {
   goal: { icon: <Goal className="w-3.5 h-3.5" />, label: "Gol", color: "text-emerald-400", bgColor: "bg-emerald-500/20" },
   assist: { icon: <HandHelping className="w-3.5 h-3.5" />, label: "Assistência", color: "text-blue-400", bgColor: "bg-blue-500/20" },
-  shot: { icon: <Target className="w-3.5 h-3.5" />, label: "Chute", color: "text-orange-400", bgColor: "bg-orange-500/20" },
-  shot_on_target: { icon: <Target className="w-3.5 h-3.5" />, label: "Chute no Gol", color: "text-orange-400", bgColor: "bg-orange-500/20" },
+  shot: { icon: <Target className="w-3.5 h-3.5" />, label: "Final. Fora", color: "text-orange-400", bgColor: "bg-orange-500/20" },
+  shot_on_target: { icon: <Target className="w-3.5 h-3.5" />, label: "Final. Gol", color: "text-orange-400", bgColor: "bg-orange-500/20" },
   key_pass: { icon: <Footprints className="w-3.5 h-3.5" />, label: "Passe Decisivo", color: "text-purple-400", bgColor: "bg-purple-500/20" },
   chance_created: { icon: <Target className="w-3.5 h-3.5" />, label: "Chance Criada", color: "text-amber-400", bgColor: "bg-amber-500/20" },
   dribble_success: { icon: <Footprints className="w-3.5 h-3.5" />, label: "Drible Certo", color: "text-purple-400", bgColor: "bg-purple-500/20" },

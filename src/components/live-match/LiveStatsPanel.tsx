@@ -65,8 +65,13 @@ export function LiveStatsPanel({ events, className }: LiveStatsPanelProps) {
     const assists = events.filter(e => e.event_type === "assist").reduce((acc, e) => acc + e.value, 0);
     const yellowCards = events.filter(e => e.event_type === "yellow").reduce((acc, e) => acc + e.value, 0);
     const redCards = events.filter(e => e.event_type === "red").reduce((acc, e) => acc + e.value, 0);
-    const shots = events.filter(e => e.event_type === "shot").reduce((acc, e) => acc + e.value, 0);
+    
+    // Finalizações: shot = para fora, shot_on_target = no gol, goal = conta como finalização no gol
+    const shotsOff = events.filter(e => e.event_type === "shot").reduce((acc, e) => acc + e.value, 0);
     const shotsOnTarget = events.filter(e => e.event_type === "shot_on_target").reduce((acc, e) => acc + e.value, 0);
+    // Gols contam como finalizações no gol
+    const totalShotsOnTarget = shotsOnTarget + goals;
+    const totalShots = shotsOff + totalShotsOnTarget;
     
     // Possession calculation (based on passes vs possession lost)
     const passSuccess = events.filter(e => e.event_type === "pass_success").reduce((acc, e) => acc + e.value, 0);
@@ -86,8 +91,8 @@ export function LiveStatsPanel({ events, className }: LiveStatsPanelProps) {
       assists,
       yellowCards,
       redCards,
-      shots,
-      shotsOnTarget,
+      shots: totalShots,
+      shotsOnTarget: totalShotsOnTarget,
       passAccuracy,
       tackles,
       interceptions,
