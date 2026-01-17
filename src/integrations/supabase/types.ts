@@ -494,6 +494,7 @@ export type Database = {
           elapsed_seconds_in_half: number | null
           half: number | null
           half_start_time: string | null
+          home_team_id: string | null
           id: string
           match_date: string
           match_start_time: string | null
@@ -519,6 +520,7 @@ export type Database = {
           elapsed_seconds_in_half?: number | null
           half?: number | null
           half_start_time?: string | null
+          home_team_id?: string | null
           id?: string
           match_date?: string
           match_start_time?: string | null
@@ -544,6 +546,7 @@ export type Database = {
           elapsed_seconds_in_half?: number | null
           half?: number | null
           half_start_time?: string | null
+          home_team_id?: string | null
           id?: string
           match_date?: string
           match_start_time?: string | null
@@ -564,6 +567,13 @@ export type Database = {
             columns: ["competition_id"]
             isOneToOne: false
             referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_home_team_id_fkey"
+            columns: ["home_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]
@@ -1504,6 +1514,42 @@ export type Database = {
         }
         Relationships: []
       }
+      teams: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          primary_color: string | null
+          secondary_color: string | null
+          short_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          primary_color?: string | null
+          secondary_color?: string | null
+          short_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          primary_color?: string | null
+          secondary_color?: string | null
+          short_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -1560,6 +1606,10 @@ export type Database = {
           p_player_id: string
           p_type: string
         }
+        Returns: Json
+      }
+      delete_last_live_event: {
+        Args: { p_event_type: string; p_game_id: string; p_player_id: string }
         Returns: Json
       }
       edit_live_event_time: {
