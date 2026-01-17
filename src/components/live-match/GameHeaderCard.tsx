@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { MAIN_TEAM_NAME } from "@/lib/teamConfig";
+import logoM3Icon from "@/assets/logo-m3-icon.png";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -177,28 +178,35 @@ export function GameHeaderCard({
 
             {/* Bottom row: Match info - clean, no boxes */}
             <div className="flex items-center justify-between mt-3">
-              <div className="min-w-0">
-                <h1 className="text-base sm:text-lg font-bold text-zinc-100 truncate">
-                  {MAIN_TEAM_NAME}
-                </h1>
-                <p className="text-sm text-zinc-400">
-                  vs {match.opponent_name}
-                </p>
-                <div className="flex items-center gap-2 sm:gap-3 text-xs text-zinc-500 mt-0.5 flex-wrap">
-                  <span className="flex items-center gap-1">
-                    <Trophy className="w-3 h-3" />
-                    <span className="truncate max-w-[120px] sm:max-w-none">{competitionName}</span>
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-3 h-3" />
-                    {format(new Date(match.match_date), "dd MMM", { locale: ptBR })}
-                  </span>
-                  {match.venue && (
-                    <span className="hidden sm:flex items-center gap-1">
-                      <MapPin className="w-3 h-3" />
-                      {match.venue}
+              <div className="flex items-center gap-3 min-w-0">
+                <img 
+                  src={logoM3Icon} 
+                  alt={MAIN_TEAM_NAME} 
+                  className="w-10 h-10 sm:w-12 sm:h-12 object-contain shrink-0"
+                />
+                <div className="min-w-0">
+                  <h1 className="text-base sm:text-lg font-bold text-zinc-100 truncate">
+                    {MAIN_TEAM_NAME}
+                  </h1>
+                  <p className="text-sm text-zinc-400">
+                    vs {match.opponent_name}
+                  </p>
+                  <div className="flex items-center gap-2 sm:gap-3 text-xs text-zinc-500 mt-0.5 flex-wrap">
+                    <span className="flex items-center gap-1">
+                      <Trophy className="w-3 h-3" />
+                      <span className="truncate max-w-[120px] sm:max-w-none">{competitionName}</span>
                     </span>
-                  )}
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      {format(new Date(match.match_date), "dd MMM", { locale: ptBR })}
+                    </span>
+                    {match.venue && (
+                      <span className="hidden sm:flex items-center gap-1">
+                        <MapPin className="w-3 h-3" />
+                        {match.venue}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
