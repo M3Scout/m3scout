@@ -211,7 +211,16 @@ export default function LiveMatchGame() {
         pendingEventsCount={pendingEventsCount}
       />
 
-      <div className="container py-4 space-y-4">
+      {/* Main container - optimized for tablet */}
+      <div className={cn(
+        "py-4 space-y-4",
+        // Mobile: standard container padding
+        "px-4",
+        // Tablet (768-1024px): use more screen width, less horizontal padding
+        "tablet:px-6 tablet:max-w-[95vw] tablet:mx-auto",
+        // Desktop: back to normal container behavior
+        "desktop:container desktop:px-4 desktop:max-w-none"
+      )}>
         {/* Scoreboard - only visible after game starts */}
         {!isDraft && (
           <GameScoreboard
@@ -246,19 +255,23 @@ export default function LiveMatchGame() {
           <LiveStatsPanel events={matchEvents} />
         )}
 
-        {/* Controls bar */}
+        {/* Controls bar - optimized for tablet touch */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-wrap items-center gap-2 justify-between"
+          className="flex flex-wrap items-center gap-2 tablet:gap-3 justify-between"
         >
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2 tablet:gap-3 flex-wrap">
             <Button 
               onClick={() => setAddPlayerOpen(true)} 
               size="sm"
-              className="h-10 gap-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700"
+              className={cn(
+                "gap-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700",
+                // Tablet: larger touch target
+                "h-10 tablet:h-11 tablet:px-4 tablet:text-sm"
+              )}
             >
-              <UserPlus className="h-4 w-4" />
+              <UserPlus className="h-4 w-4 tablet:h-5 tablet:w-5" />
               {isDraft ? "Escalação" : "Jogador"}
             </Button>
 
@@ -267,10 +280,14 @@ export default function LiveMatchGame() {
                 onClick={() => setSubstitutionOpen(true)} 
                 variant="outline"
                 size="sm"
-                className="h-10 gap-2 border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+                className={cn(
+                  "gap-2 border-zinc-700 text-zinc-300 hover:bg-zinc-800",
+                  // Tablet: larger touch target
+                  "h-10 tablet:h-11 tablet:px-4 tablet:text-sm"
+                )}
                 disabled={playersOnField.length === 0 || playersOffField.length === 0}
               >
-                <ArrowRightLeft className="h-4 w-4" />
+                <ArrowRightLeft className="h-4 w-4 tablet:h-5 tablet:w-5" />
                 <span className="hidden sm:inline">Substituir</span>
               </Button>
             )}
@@ -293,15 +310,19 @@ export default function LiveMatchGame() {
 
           <div className="flex items-center gap-3">
             {!isDraft && (
-              <div className="flex items-center gap-2 bg-zinc-800/60 rounded-lg px-3 py-1.5 border border-zinc-700/40">
-                <Filter className="w-3.5 h-3.5 text-zinc-500" />
+              <div className={cn(
+                "flex items-center gap-2 bg-zinc-800/60 rounded-lg border border-zinc-700/40",
+                // Tablet: larger filter control
+                "px-3 py-1.5 tablet:px-4 tablet:py-2"
+              )}>
+                <Filter className="w-3.5 h-3.5 tablet:w-4 tablet:h-4 text-zinc-500" />
                 <Switch
                   id="only-on-field"
                   checked={showOnlyOnField}
                   onCheckedChange={setShowOnlyOnField}
                   className="data-[state=checked]:bg-green-600"
                 />
-                <Label htmlFor="only-on-field" className="text-xs text-zinc-400 cursor-pointer">
+                <Label htmlFor="only-on-field" className="text-xs tablet:text-sm text-zinc-400 cursor-pointer">
                   Em campo
                 </Label>
               </div>
@@ -375,8 +396,16 @@ export default function LiveMatchGame() {
           </motion.div>
         ) : (
           <div className={cn(
-            "grid gap-3",
-            isMobile ? "grid-cols-1" : "md:grid-cols-2"
+            "grid",
+            // Mobile: single column
+            "grid-cols-1 gap-3",
+            // Tablet: 1 column but with more gap for better card visibility
+            // Cards expand to full width - better for horizontal stat layout
+            "tablet:grid-cols-1 tablet:gap-4",
+            // Desktop: 2 columns
+            "desktop:grid-cols-2 desktop:gap-4",
+            // Large desktop: still 2 cols
+            isMobile ? "" : "md:grid-cols-2"
           )}>
             {displayedPlayers.map((mp, index) => (
               isMobile ? (
