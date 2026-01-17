@@ -24,13 +24,40 @@ import { MatchPlayer, MatchEventType, MatchStatus, MatchPlayerStats } from "@/ho
 import { 
   Undo2, ChevronDown, ChevronUp, LogIn, LogOut, 
   MoreVertical, Trash2, MessageSquare, Goal, Shield,
-  Target, Footprints, HandHelping
+  Target, Footprints, HandHelping, BarChart3, ArrowRight,
+  RotateCcw, ShieldCheck, Zap, ArrowUpRight, Hand, CircleX, Ban
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { playSound, getSoundForEvent } from "@/lib/sounds";
 import { getPositionColor, getShortPosition } from "@/lib/positionColors";
 import { PlayerNotesModal } from "./PlayerNotesModal";
 import { MoreStatsMenu } from "./MoreStatsMenu";
+
+// Detailed stats config for expandable panel
+interface DetailedStat {
+  key: keyof MatchPlayerStats;
+  label: string;
+  icon: React.ReactNode;
+  color: string;
+}
+
+const DETAILED_STATS_OUTFIELD: DetailedStat[] = [
+  { key: "shots_on_target", label: "No Gol", icon: <Target className="w-3.5 h-3.5" />, color: "text-orange-400" },
+  { key: "passes_completed", label: "Passes", icon: <ArrowRight className="w-3.5 h-3.5" />, color: "text-blue-400" },
+  { key: "dribbles_success", label: "Dribles", icon: <Footprints className="w-3.5 h-3.5" />, color: "text-purple-400" },
+  { key: "recoveries", label: "Recup.", icon: <RotateCcw className="w-3.5 h-3.5" />, color: "text-cyan-400" },
+  { key: "tackles", label: "Desarm.", icon: <Shield className="w-3.5 h-3.5" />, color: "text-cyan-400" },
+  { key: "interceptions", label: "Interc.", icon: <ShieldCheck className="w-3.5 h-3.5" />, color: "text-cyan-400" },
+  { key: "key_passes", label: "P. Dec.", icon: <ArrowUpRight className="w-3.5 h-3.5" />, color: "text-blue-400" },
+  { key: "chances_created", label: "Chances", icon: <Zap className="w-3.5 h-3.5" />, color: "text-emerald-400" },
+];
+
+const DETAILED_STATS_GK: DetailedStat[] = [
+  { key: "saves", label: "Defesas", icon: <Hand className="w-3.5 h-3.5" />, color: "text-emerald-400" },
+  { key: "goals_conceded", label: "Gols Sof.", icon: <CircleX className="w-3.5 h-3.5" />, color: "text-red-400" },
+  { key: "clearances", label: "Cortes", icon: <Ban className="w-3.5 h-3.5" />, color: "text-cyan-400" },
+  { key: "recoveries", label: "Recup.", icon: <RotateCcw className="w-3.5 h-3.5" />, color: "text-cyan-400" },
+];
 
 // Quick action events
 const QUICK_EVENTS: { type: MatchEventType; icon: React.ReactNode; label: string; color: string }[] = [
@@ -88,6 +115,7 @@ export function PremiumPlayerCard({
   index = 0,
 }: PremiumPlayerCardProps) {
   const [expanded, setExpanded] = useState(true);
+  const [showDetailedStats, setShowDetailedStats] = useState(false);
   const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
   const [lastEvent, setLastEvent] = useState<MatchEventType | null>(null);
 
@@ -243,6 +271,19 @@ export function PremiumPlayerCard({
               ))}
             </div>
 
+            {/* Stats expand toggle button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 shrink-0 rounded-lg hover:bg-white/10"
+              onClick={() => setShowDetailedStats(!showDetailedStats)}
+            >
+              <BarChart3 className={cn(
+                "w-4 h-4 transition-colors",
+                showDetailedStats ? "text-blue-400" : "text-zinc-500"
+              )} />
+            </Button>
+
             {/* Enter/Exit button */}
             {isLive && (
               <>
@@ -321,6 +362,41 @@ export function PremiumPlayerCard({
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+
+          {/* ===== DETAILED STATS PANEL (expandable) ===== */}
+          <AnimatePresence>
+            {showDetailedStats && matchStats && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="px-3 pb-3 pt-1">
+                  <div className="grid grid-cols-4 gap-2 p-2 rounded-xl bg-zinc-800/40 border border-zinc-700/30">
+                    {(isGK ? DETAILED_STATS_GK : DETAILED_STATS_OUTFIELD).map((stat) => {
+                      const value = Number(matchStats[stat.key] ?? 0);
+                      return (
+                        <div key={stat.key} className="text-center py-1.5">
+                          <div className="flex items-center justify-center gap-1 mb-0.5">
+                            <span className={stat.color}>{stat.icon}</span>
+                          </div>
+                          <p className={cn(
+                            "text-lg font-bold tabular-nums",
+                            value > 0 ? stat.color : "text-zinc-500"
+                          )}>
+                            {value}
+                          </p>
+                          <p className="text-[8px] text-zinc-500 uppercase truncate px-0.5">{stat.label}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Quick actions */}
           <AnimatePresence>
