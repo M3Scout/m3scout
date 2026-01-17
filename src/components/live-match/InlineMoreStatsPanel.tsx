@@ -15,7 +15,8 @@ const CATEGORY_NAMES: Record<string, string> = {
   "GK+": "Goleiro Avançado",
 };
 
-// Stats categories for inline panel (same as desktop MoreStatsMenu)
+// Stats categories for inline panel - SINGLE SOURCE OF TRUTH
+// These definitions are also mirrored in matchStatsDefinitions.ts for the summary
 const OUTFIELD_STATS: { category: string; categoryKey: string; color: string; bgColor: string; stats: { type: MatchEventType; label: string }[] }[] = [
   {
     category: "ATA",

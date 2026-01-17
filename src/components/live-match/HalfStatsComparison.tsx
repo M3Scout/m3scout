@@ -2,83 +2,36 @@ import { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { MatchEvent, MatchPlayer, MatchEventType } from "@/hooks/useLiveMatch";
 import { cn } from "@/lib/utils";
+import {
+  EVENT_TYPE_CONFIG,
+  CATEGORY_COLORS,
+  COMPUTED_STATS,
+  SUMMARY_EVENT_TYPES,
+  EventCountsMap,
+} from "@/lib/matchStatsDefinitions";
 
 interface HalfStatsComparisonProps {
   events: MatchEvent[];
   matchPlayers: MatchPlayer[];
 }
 
-// Complete mapping of all event types to their display labels
-const EVENT_TYPE_CONFIG: Record<MatchEventType, { label: string; icon: string; category: string; order: number }> = {
-  // Attack
-  goal: { label: "Gols", icon: "⚽", category: "attack", order: 1 },
-  assist: { label: "Assistências", icon: "👟", category: "attack", order: 2 },
-  shot: { label: "Finalizações Fora", icon: "🎯", category: "attack", order: 3 },
-  shot_on_target: { label: "Finalizações no Gol", icon: "🥅", category: "attack", order: 4 },
-  
-  // Creativity
-  key_pass: { label: "Passes Decisivos", icon: "🎯", category: "creativity", order: 10 },
-  chance_created: { label: "Chances Criadas", icon: "💡", category: "creativity", order: 11 },
-  dribble_success: { label: "Dribles Certos", icon: "✓", category: "creativity", order: 12 },
-  dribble_attempt: { label: "Dribles Errados", icon: "✗", category: "creativity", order: 13 },
-  
-  // Passing
-  pass_success: { label: "Passes Certos", icon: "📤", category: "passing", order: 20 },
-  pass_total: { label: "Passes Totais", icon: "📤", category: "passing", order: 21 },
-  possession_lost: { label: "Perdas de Posse", icon: "❌", category: "passing", order: 22 },
-  
-  // Defense
-  tackle: { label: "Desarmes", icon: "🦶", category: "defense", order: 30 },
-  interception: { label: "Interceptações", icon: "🛡️", category: "defense", order: 31 },
-  recovery: { label: "Recuperações", icon: "↩️", category: "defense", order: 32 },
-  clearance: { label: "Cortes", icon: "🧹", category: "defense", order: 33 },
-  duel_won: { label: "Duelos Ganhos", icon: "💪", category: "defense", order: 34 },
-  duel_total: { label: "Duelos Totais", icon: "⚔️", category: "defense", order: 35 },
-  aerial_duel_won: { label: "Duelos Aéreos", icon: "🦅", category: "defense", order: 36 },
-  
-  // Discipline
-  yellow: { label: "Cartões Amarelos", icon: "🟨", category: "discipline", order: 40 },
-  red: { label: "Cartões Vermelhos", icon: "🟥", category: "discipline", order: 41 },
-  foul_committed: { label: "Faltas Cometidas", icon: "⚠️", category: "discipline", order: 42 },
-  foul_suffered: { label: "Faltas Sofridas", icon: "🤕", category: "discipline", order: 43 },
-  
-  // Goalkeeper
-  save: { label: "Defesas", icon: "🧤", category: "goalkeeper", order: 50 },
-  goal_conceded: { label: "Gols Sofridos", icon: "😢", category: "goalkeeper", order: 51 },
-  clean_sheet: { label: "Clean Sheet", icon: "🛡️", category: "goalkeeper", order: 52 },
-  penalty_saved: { label: "Pênaltis Defendidos", icon: "🦸", category: "goalkeeper", order: 53 },
-  error_led_to_goal: { label: "Erros para Gol", icon: "💥", category: "goalkeeper", order: 54 },
-  box_save: { label: "Defesas na Área", icon: "📦", category: "goalkeeper", order: 55 },
-  punch: { label: "Socos", icon: "👊", category: "goalkeeper", order: 56 },
-  high_claim: { label: "Bolas Altas", icon: "🙌", category: "goalkeeper", order: 57 },
-  sweeper_action: { label: "Saídas do Gol", icon: "🏃", category: "goalkeeper", order: 58 },
-  
-  // Player presence events (usually not shown in summary but included for completeness)
-  player_on: { label: "Entrou", icon: "➡️", category: "meta", order: 91 },
-  player_off: { label: "Saiu", icon: "⬅️", category: "meta", order: 92 },
-};
-
-// Category colors for visual grouping
-const CATEGORY_COLORS: Record<string, string> = {
-  attack: "text-red-400",
-  creativity: "text-amber-400",
-  passing: "text-cyan-400",
-  defense: "text-blue-400",
-  discipline: "text-purple-400",
-  goalkeeper: "text-green-400",
-  meta: "text-muted-foreground",
-};
+interface StatsRow {
+  id: string;
+  label: string;
+  icon: string;
+  category: string;
+  order: number;
+  first: number;
+  second: number;
+  total: number;
+}
 
 export function HalfStatsComparison({ events, matchPlayers }: HalfStatsComparisonProps) {
   const { statsRows, substitutions } = useMemo(() => {
     // Count all event types by half
-    const eventCounts: Record<MatchEventType, { first: number; second: number }> = {} as any;
+    const eventCounts: EventCountsMap = {};
     
-    // Initialize all event types
-    (Object.keys(EVENT_TYPE_CONFIG) as MatchEventType[]).forEach((type) => {
-      eventCounts[type] = { first: 0, second: 0 };
-    });
-
+    // Note: We use Partial<Record> so we don't need to initialize all types upfront
     // Count events by half - only count official events (not voided)
     events.forEach((event) => {
       if (event.event_status === "voided" || !event.count_in_stats) return;
@@ -86,9 +39,11 @@ export function HalfStatsComparison({ events, matchPlayers }: HalfStatsCompariso
       const half = event.half === 2 ? "second" : "first";
       const eventType = event.event_type as MatchEventType;
       
-      if (eventCounts[eventType]) {
-        eventCounts[eventType][half] += event.value || 1;
+      // Initialize if not exists, then increment
+      if (!eventCounts[eventType]) {
+        eventCounts[eventType] = { first: 0, second: 0 };
       }
+      eventCounts[eventType]![half] += event.value || 1;
     });
 
     // Count substitutions from match players
@@ -105,26 +60,50 @@ export function HalfStatsComparison({ events, matchPlayers }: HalfStatsCompariso
       }
     });
 
-    // Build stats rows - only include event types that have at least 1 occurrence
-    const rows: { type: MatchEventType; first: number; second: number; total: number }[] = [];
+    // Build stats rows - include direct event types and computed stats
+    const rows: StatsRow[] = [];
     
-    (Object.keys(EVENT_TYPE_CONFIG) as MatchEventType[])
-      .filter((type) => !["player_on", "player_off"].includes(type)) // Exclude meta events
-      .forEach((type) => {
-        const counts = eventCounts[type];
-        const total = counts.first + counts.second;
-        if (total > 0) {
-          rows.push({
-            type,
-            first: counts.first,
-            second: counts.second,
-            total,
-          });
-        }
-      });
+    // Add direct event type rows
+    SUMMARY_EVENT_TYPES.forEach((type) => {
+      const counts = eventCounts[type];
+      if (!counts) return; // Skip if no events of this type
+      
+      const total = counts.first + counts.second;
+      if (total > 0) {
+        const config = EVENT_TYPE_CONFIG[type];
+        rows.push({
+          id: type,
+          label: config.label,
+          icon: config.icon,
+          category: config.category,
+          order: config.order,
+          first: counts.first,
+          second: counts.second,
+          total,
+        });
+      }
+    });
+
+    // Add computed stats (e.g., Finalizações Total)
+    COMPUTED_STATS.forEach((computedStat) => {
+      const computed = computedStat.compute(eventCounts);
+      const total = computed.first + computed.second;
+      if (total > 0) {
+        rows.push({
+          id: computedStat.id,
+          label: computedStat.label,
+          icon: computedStat.icon,
+          category: computedStat.category,
+          order: computedStat.order,
+          first: computed.first,
+          second: computed.second,
+          total,
+        });
+      }
+    });
 
     // Sort by order defined in config
-    rows.sort((a, b) => EVENT_TYPE_CONFIG[a.type].order - EVENT_TYPE_CONFIG[b.type].order);
+    rows.sort((a, b) => a.order - b.order);
 
     return {
       statsRows: rows,
@@ -168,13 +147,12 @@ export function HalfStatsComparison({ events, matchPlayers }: HalfStatsCompariso
       {/* Stats rows */}
       <div className="divide-y">
         {statsRows.map((row) => {
-          const config = EVENT_TYPE_CONFIG[row.type];
-          const categoryColor = CATEGORY_COLORS[config.category];
+          const categoryColor = CATEGORY_COLORS[row.category];
           
           return (
             <StatRow
-              key={row.type}
-              label={`${config.icon} ${config.label}`}
+              key={row.id}
+              label={`${row.icon} ${row.label}`}
               first={row.first}
               second={row.second}
               total={row.total}
