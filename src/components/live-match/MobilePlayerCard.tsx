@@ -4,11 +4,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -20,19 +15,19 @@ import {
 } from "@/components/ui/alert-dialog";
 import { MatchPlayer, MatchEventType, MatchStatus, MatchPlayerStats } from "@/hooks/useLiveMatch";
 import { 
-  LogIn, LogOut, ChevronDown, ChevronUp, Goal, Shield,
+  LogIn, LogOut, Goal, Shield,
   Target, Footprints, HandHelping, MoreHorizontal, Trash2,
-  MessageSquare, Undo2, ArrowRight, AlertTriangle, Hand,
-  ShieldCheck, RotateCcw, Ban, Users, ArrowUpRight, Square,
-  UserX, CircleOff, CircleX, Crosshair, Zap, BarChart3
+  MessageSquare, Undo2, ArrowRight,
+  RotateCcw, ShieldCheck, Zap, ArrowUpRight, Hand, CircleX, Ban, BarChart3
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { playSound, getSoundForEvent } from "@/lib/sounds";
 import { getPositionColor, getShortPosition } from "@/lib/positionColors";
 import { PlayerNotesModal } from "./PlayerNotesModal";
+import { MoreStatsMenu } from "./MoreStatsMenu";
 import { toast } from "sonner";
 
-// Main quick actions - always visible in 3x2 grid
+// Main quick actions - always visible in grid
 const QUICK_ACTIONS: { type: MatchEventType; icon: React.ReactNode; label: string; bgColor: string; textColor: string }[] = [
   { type: "goal", icon: <Goal className="w-5 h-5" />, label: "Gol", bgColor: "bg-emerald-500/20", textColor: "text-emerald-400" },
   { type: "assist", icon: <HandHelping className="w-5 h-5" />, label: "Assist", bgColor: "bg-blue-500/20", textColor: "text-blue-400" },
@@ -48,54 +43,6 @@ const GK_QUICK_ACTIONS: { type: MatchEventType; icon: React.ReactNode; label: st
   { type: "sweeper_action", icon: <Footprints className="w-5 h-5" />, label: "Saída", bgColor: "bg-cyan-500/20", textColor: "text-cyan-400" },
   { type: "punch", icon: <Hand className="w-5 h-5" />, label: "Soco", bgColor: "bg-purple-500/20", textColor: "text-purple-400" },
 ];
-
-// Secondary actions - in expandable accordion
-interface SecondaryAction {
-  type: MatchEventType;
-  icon: React.ReactNode;
-  label: string;
-  category: "attack" | "passing" | "defense" | "discipline" | "goalkeeper";
-}
-
-const SECONDARY_ACTIONS: SecondaryAction[] = [
-  // Attack
-  { type: "shot", icon: <Crosshair className="w-4 h-4" />, label: "Chute fora", category: "attack" },
-  { type: "chance_created", icon: <Zap className="w-4 h-4" />, label: "Chance criada", category: "attack" },
-  { type: "dribble_attempt", icon: <Footprints className="w-4 h-4" />, label: "Drible perdido", category: "attack" },
-  { type: "foul_suffered", icon: <UserX className="w-4 h-4" />, label: "Falta sofrida", category: "attack" },
-  // Passing
-  { type: "pass_success", icon: <ArrowRight className="w-4 h-4" />, label: "Passe certo", category: "passing" },
-  { type: "pass_total", icon: <ArrowRight className="w-4 h-4" />, label: "Passe errado", category: "passing" },
-  { type: "key_pass", icon: <ArrowUpRight className="w-4 h-4" />, label: "Passe decisivo", category: "passing" },
-  // Defense
-  { type: "interception", icon: <ShieldCheck className="w-4 h-4" />, label: "Interceptação", category: "defense" },
-  { type: "recovery", icon: <RotateCcw className="w-4 h-4" />, label: "Recuperação", category: "defense" },
-  { type: "clearance", icon: <Ban className="w-4 h-4" />, label: "Corte", category: "defense" },
-  { type: "duel_won", icon: <Users className="w-4 h-4" />, label: "Duelo ganho", category: "defense" },
-  { type: "aerial_duel_won", icon: <ArrowUpRight className="w-4 h-4" />, label: "Duelo aéreo", category: "defense" },
-  { type: "foul_committed", icon: <AlertTriangle className="w-4 h-4" />, label: "Falta cometida", category: "defense" },
-  { type: "possession_lost", icon: <CircleOff className="w-4 h-4" />, label: "Posse perdida", category: "defense" },
-  // Discipline
-  { type: "yellow", icon: <Square className="w-4 h-4 fill-yellow-400 text-yellow-400" />, label: "Amarelo", category: "discipline" },
-  { type: "red", icon: <Square className="w-4 h-4 fill-red-500 text-red-500" />, label: "Vermelho", category: "discipline" },
-];
-
-const GK_SECONDARY_ACTIONS: SecondaryAction[] = [
-  { type: "box_save", icon: <Hand className="w-4 h-4" />, label: "Defesa difícil", category: "goalkeeper" },
-  { type: "penalty_saved", icon: <Shield className="w-4 h-4" />, label: "Pênalti defendido", category: "goalkeeper" },
-  { type: "error_led_to_goal", icon: <AlertTriangle className="w-4 h-4" />, label: "Erro p/ gol", category: "goalkeeper" },
-  // Also include discipline for GK
-  { type: "yellow", icon: <Square className="w-4 h-4 fill-yellow-400 text-yellow-400" />, label: "Amarelo", category: "discipline" },
-  { type: "red", icon: <Square className="w-4 h-4 fill-red-500 text-red-500" />, label: "Vermelho", category: "discipline" },
-];
-
-const CATEGORY_COLORS = {
-  attack: "text-emerald-400",
-  passing: "text-blue-400",
-  defense: "text-cyan-400",
-  discipline: "text-amber-400",
-  goalkeeper: "text-purple-400",
-} as const;
 
 // Detailed stats config for expandable panel
 interface DetailedStat {
@@ -149,9 +96,6 @@ export function MobilePlayerCard({
   matchStats,
   matchStatus,
   clockStatus = "stopped",
-  currentMinute = 0,
-  currentPeriod = 1,
-  displayMinute,
   onAddEvent,
   onUndo,
   onPlayerEnter,
@@ -162,7 +106,6 @@ export function MobilePlayerCard({
   soundEnabled = true,
   index = 0,
 }: MobilePlayerCardProps) {
-  const [expanded, setExpanded] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
   const [showDetailedStats, setShowDetailedStats] = useState(false);
   const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
@@ -181,7 +124,6 @@ export function MobilePlayerCard({
   const shortPosition = getShortPosition(player.position);
   
   const quickActions = isGK ? GK_QUICK_ACTIONS : QUICK_ACTIONS;
-  const secondaryActions = isGK ? GK_SECONDARY_ACTIONS : SECONDARY_ACTIONS;
   
   // Can only add events if: live + clock running + player on field
   const canAddEvents = isLive && isClockRunning && matchPlayer.is_on_field;
@@ -241,9 +183,7 @@ export function MobilePlayerCard({
   const totalGoals = matchStats?.goals ?? getCount("goal");
   const totalAssists = matchStats?.assists ?? getCount("assist");
   const totalShots = matchStats?.shots ?? getCount("shot") + getCount("shot_on_target") + getCount("goal");
-  const totalShotsOnTarget = matchStats?.shots_on_target ?? getCount("shot_on_target") + getCount("goal");
   const totalSaves = matchStats?.saves ?? getCount("save");
-  const totalTackles = matchStats?.tackles ?? getCount("tackle");
   const totalGoalsConceded = matchStats?.goals_conceded ?? getCount("goal_conceded");
 
   return (
@@ -253,7 +193,6 @@ export function MobilePlayerCard({
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: index * 0.04, duration: 0.25 }}
         className={cn(
-          // Clean card with unified radius - no extra boxes or overlays
           "relative rounded-[18px] overflow-hidden transition-all duration-300",
           "bg-zinc-900/80 backdrop-blur-sm",
           "border border-white/5",
@@ -283,9 +222,9 @@ export function MobilePlayerCard({
           )}
         </AnimatePresence>
 
-        {/* ===== HEADER - Clean, no extra wrappers ===== */}
+        {/* ===== HEADER ===== */}
         <div className="flex items-center gap-3 p-4 pb-2">
-          {/* Avatar - pill border */}
+          {/* Avatar */}
           <Avatar className={cn("h-12 w-12 border-2 shrink-0 rounded-full", positionColors.borderClass)}>
             <AvatarImage src={player.photo_url || undefined} className="rounded-full" />
             <AvatarFallback className={cn("font-bold text-sm rounded-full", positionColors.bgClass, positionColors.textClass)}>
@@ -301,9 +240,8 @@ export function MobilePlayerCard({
                 <MessageSquare className="w-3.5 h-3.5 text-amber-400 shrink-0" />
               )}
             </div>
-            {/* Pills row - no extra backgrounds */}
+            {/* Pills row */}
             <div className="flex items-center gap-1.5 mt-1.5">
-              {/* Position pill */}
               <Badge 
                 size="sm"
                 className={cn(
@@ -313,7 +251,6 @@ export function MobilePlayerCard({
               >
                 {shortPosition}
               </Badge>
-              {/* Status pill */}
               <Badge 
                 size="sm"
                 variant={matchPlayer.is_on_field ? "success" : "glass"}
@@ -441,7 +378,7 @@ export function MobilePlayerCard({
             </>
           )}
 
-          {/* Options button - pill */}
+          {/* Options button */}
           <Button 
             variant="ghost" 
             size="icon" 
@@ -502,7 +439,7 @@ export function MobilePlayerCard({
           )}
         </AnimatePresence>
 
-        {/* ===== STATUS MESSAGE - Pill style ===== */}
+        {/* ===== STATUS MESSAGE ===== */}
         {(isDraft || (isLive && isPaused) || (isLive && !matchPlayer.is_on_field)) && (
           <div className="px-4 pb-2">
             <div className={cn(
@@ -518,7 +455,7 @@ export function MobilePlayerCard({
           </div>
         )}
 
-        {/* ===== QUICK ACTIONS GRID - Pill buttons ===== */}
+        {/* ===== QUICK ACTIONS GRID ===== */}
         <div className="px-4 pb-3">
           <div className="grid grid-cols-3 gap-2">
             {quickActions.map((action) => {
@@ -530,7 +467,6 @@ export function MobilePlayerCard({
                   onClick={() => handleAddEventWithSound(action.type)}
                   disabled={disabled || isSubmitting || (!canAddEvents && !isDraft)}
                   className={cn(
-                    // Soft button - no hard rectangles
                     "relative flex flex-col items-center justify-center gap-1.5 py-3.5 px-2 rounded-2xl",
                     "transition-all duration-200",
                     action.bgColor,
@@ -553,80 +489,18 @@ export function MobilePlayerCard({
               );
             })}
             
-            {/* Expand button - soft pill */}
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setExpanded(!expanded)}
-              className={cn(
-                "flex flex-col items-center justify-center gap-1.5 py-3.5 px-2 rounded-2xl",
-                "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-300",
-                "border border-white/5",
-                "transition-all duration-200"
-              )}
-            >
-              {expanded ? (
-                <>
-                  <ChevronUp className="w-5 h-5" />
-                  <span className="text-xs font-medium">Menos</span>
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="w-5 h-5" />
-                  <span className="text-xs font-medium">Mais</span>
-                </>
-              )}
-            </motion.button>
+            {/* "Mais" button - opens the unified MoreStatsMenu */}
+            <MoreStatsMenu
+              matchStatus={matchStatus}
+              clockStatus={clockStatus}
+              isGoalkeeper={isGK}
+              isOnField={matchPlayer.is_on_field}
+              eventCounts={eventCounts}
+              onAddEvent={handleAddEventWithSound}
+              disabled={disabled}
+            />
           </div>
         </div>
-
-        {/* ===== SECONDARY ACTIONS (EXPANDABLE) ===== */}
-        <AnimatePresence>
-          {expanded && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.25, ease: "easeInOut" }}
-              className="overflow-hidden"
-            >
-              <div className="px-4 pb-4 pt-1 border-t border-zinc-800/50">
-                <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2 mt-2">
-                  Mais estatísticas
-                </p>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {secondaryActions.map((action) => {
-                    const count = getCount(action.type);
-                    return (
-                      <motion.button
-                        key={action.type}
-                        whileTap={{ scale: 0.97 }}
-                        onClick={() => handleAddEventWithSound(action.type)}
-                        disabled={disabled || isSubmitting || (!canAddEvents && !isDraft)}
-                        className={cn(
-                          "flex items-center gap-2 py-2.5 px-3 rounded-xl",
-                          "bg-zinc-800/40 hover:bg-zinc-800/70",
-                          "transition-all duration-150",
-                          "disabled:opacity-40 disabled:cursor-not-allowed",
-                          CATEGORY_COLORS[action.category]
-                        )}
-                      >
-                        {action.icon}
-                        <span className="text-xs font-medium text-zinc-200 flex-1 text-left truncate">
-                          {action.label}
-                        </span>
-                        {count > 0 && (
-                          <Badge className="h-5 min-w-5 p-0 flex items-center justify-center text-[10px] bg-zinc-700 text-zinc-300">
-                            {count}
-                          </Badge>
-                        )}
-                      </motion.button>
-                    );
-                  })}
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </motion.div>
 
       {/* Remove confirmation dialog */}
