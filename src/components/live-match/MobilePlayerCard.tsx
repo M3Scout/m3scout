@@ -216,9 +216,10 @@ export function MobilePlayerCard({
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: index * 0.04, duration: 0.25 }}
         className={cn(
-          "relative rounded-2xl overflow-hidden transition-all duration-300",
-          "bg-gradient-to-b from-zinc-900/90 to-zinc-900/70",
-          "border border-zinc-800/60",
+          // Clean card with unified radius - no extra boxes or overlays
+          "relative rounded-[18px] overflow-hidden transition-all duration-300",
+          "bg-zinc-900/80 backdrop-blur-sm",
+          "border border-white/5",
           !matchPlayer.is_on_field && !isDraft && "opacity-60",
           disabled && "pointer-events-none"
         )}
@@ -232,7 +233,7 @@ export function MobilePlayerCard({
               exit={{ opacity: 0 }}
               transition={{ duration: 0.6 }}
               className={cn(
-                "absolute inset-0 pointer-events-none z-10",
+                "absolute inset-0 pointer-events-none z-10 rounded-[18px]",
                 lastEvent === "goal" && "bg-emerald-500/40",
                 lastEvent === "assist" && "bg-blue-500/40",
                 lastEvent === "yellow" && "bg-yellow-500/40",
@@ -245,12 +246,12 @@ export function MobilePlayerCard({
           )}
         </AnimatePresence>
 
-        {/* ===== HEADER ===== */}
+        {/* ===== HEADER - Clean, no extra wrappers ===== */}
         <div className="flex items-center gap-3 p-4 pb-3">
-          {/* Avatar */}
-          <Avatar className={cn("h-12 w-12 border-2 shrink-0", positionColors.borderClass)}>
-            <AvatarImage src={player.photo_url || undefined} />
-            <AvatarFallback className={cn("font-bold text-sm", positionColors.bgClass, positionColors.textClass)}>
+          {/* Avatar - pill border */}
+          <Avatar className={cn("h-12 w-12 border-2 shrink-0 rounded-full", positionColors.borderClass)}>
+            <AvatarImage src={player.photo_url || undefined} className="rounded-full" />
+            <AvatarFallback className={cn("font-bold text-sm rounded-full", positionColors.bgClass, positionColors.textClass)}>
               {player.full_name.slice(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
@@ -263,36 +264,37 @@ export function MobilePlayerCard({
                 <MessageSquare className="w-3.5 h-3.5 text-amber-400 shrink-0" />
               )}
             </div>
-            <div className="flex items-center gap-1.5 mt-1">
+            {/* Pills row - no extra backgrounds */}
+            <div className="flex items-center gap-1.5 mt-1.5">
+              {/* Position pill */}
               <Badge 
+                size="sm"
                 className={cn(
-                  "text-[10px] px-2 py-0.5 h-5 font-bold rounded-full",
+                  "font-bold",
                   positionColors.bgClass, positionColors.textClass
                 )}
               >
                 {shortPosition}
               </Badge>
-              {/* Status badge */}
-              {matchPlayer.is_on_field ? (
-                <Badge className="text-[10px] px-2 py-0.5 h-5 rounded-full bg-green-500/20 text-green-400 border-0">
-                  🟢 Em campo
-                </Badge>
-              ) : (
-                <Badge className="text-[10px] px-2 py-0.5 h-5 rounded-full bg-zinc-700/50 text-zinc-400 border-0">
-                  ⚪ Banco
-                </Badge>
-              )}
+              {/* Status pill */}
+              <Badge 
+                size="sm"
+                variant={matchPlayer.is_on_field ? "success" : "glass"}
+              >
+                {matchPlayer.is_on_field ? "Em campo" : "Banco"}
+              </Badge>
             </div>
           </div>
 
-          {/* Context button: Enter/Exit or Options */}
+          {/* Context buttons - pill shapes */}
           <div className="flex items-center gap-2 shrink-0">
             {isLive && (
               <>
                 {!matchPlayer.is_on_field && matchPlayer.exited_minute === null ? (
                   <Button
+                    variant="success"
                     size="sm"
-                    className="h-10 px-4 rounded-xl bg-green-600 hover:bg-green-500 text-white font-medium shadow-lg shadow-green-600/20"
+                    className="h-10 px-4 rounded-full"
                     onClick={handleEnterField}
                   >
                     <LogIn className="w-4 h-4 mr-1.5" />
@@ -300,9 +302,9 @@ export function MobilePlayerCard({
                   </Button>
                 ) : matchPlayer.is_on_field ? (
                   <Button
-                    variant="outline"
+                    variant="glass"
                     size="sm"
-                    className="h-10 px-4 rounded-xl border-amber-500/40 text-amber-400 hover:bg-amber-500/10"
+                    className="h-10 px-4 rounded-full border-amber-500/30 text-amber-400"
                     onClick={handleExitField}
                   >
                     <LogOut className="w-4 h-4 mr-1.5" />
@@ -312,11 +314,11 @@ export function MobilePlayerCard({
               </>
             )}
 
-            {/* Options button */}
+            {/* Options button - pill */}
             <Button 
               variant="ghost" 
               size="icon" 
-              className="h-10 w-10 rounded-xl"
+              className="h-10 w-10 rounded-full hover:bg-white/10"
               onClick={() => setShowOptions(!showOptions)}
             >
               <MoreHorizontal className="w-5 h-5 text-zinc-400" />
@@ -374,23 +376,23 @@ export function MobilePlayerCard({
           )}
         </AnimatePresence>
 
-        {/* ===== STATUS MESSAGE ===== */}
+        {/* ===== STATUS MESSAGE - Pill style ===== */}
         {(isDraft || (isLive && isPaused) || (isLive && !matchPlayer.is_on_field)) && (
           <div className="px-4 pb-2">
             <div className={cn(
-              "text-[11px] text-center py-1.5 px-3 rounded-lg",
-              isDraft && "bg-blue-500/10 text-blue-400",
-              isPaused && isLive && "bg-amber-500/10 text-amber-400",
-              !matchPlayer.is_on_field && isLive && !isPaused && "bg-zinc-800/50 text-zinc-500"
+              "text-[11px] text-center py-2 px-4 rounded-full",
+              isDraft && "bg-blue-500/10 text-blue-400 border border-blue-500/20",
+              isPaused && isLive && "bg-amber-500/10 text-amber-400 border border-amber-500/20",
+              !matchPlayer.is_on_field && isLive && !isPaused && "bg-zinc-800/40 text-zinc-500 border border-zinc-700/30"
             )}>
-              {isDraft && "📋 Inicie o jogo para contar eventos"}
-              {isPaused && isLive && "⏸️ Jogo pausado"}
+              {isDraft && "Inicie o jogo para contar eventos"}
+              {isPaused && isLive && "Jogo pausado"}
               {!matchPlayer.is_on_field && isLive && !isPaused && "Atleta no banco"}
             </div>
           </div>
         )}
 
-        {/* ===== QUICK ACTIONS GRID (ALWAYS VISIBLE) ===== */}
+        {/* ===== QUICK ACTIONS GRID - Pill buttons ===== */}
         <div className="px-4 pb-3">
           <div className="grid grid-cols-3 gap-2">
             {quickActions.map((action) => {
@@ -402,9 +404,11 @@ export function MobilePlayerCard({
                   onClick={() => handleAddEventWithSound(action.type)}
                   disabled={disabled || isSubmitting || (!canAddEvents && !isDraft)}
                   className={cn(
-                    "relative flex flex-col items-center justify-center gap-1 py-3 px-2 rounded-xl",
+                    // Soft button - no hard rectangles
+                    "relative flex flex-col items-center justify-center gap-1.5 py-3.5 px-2 rounded-2xl",
                     "transition-all duration-200",
                     action.bgColor,
+                    "border border-white/5",
                     "disabled:opacity-40 disabled:cursor-not-allowed",
                     "active:scale-95"
                   )}
@@ -412,7 +416,10 @@ export function MobilePlayerCard({
                   <span className={action.textColor}>{action.icon}</span>
                   <span className={cn("text-xs font-medium", action.textColor)}>{action.label}</span>
                   {count > 0 && (
-                    <Badge className="absolute -top-1 -right-1 h-5 min-w-5 p-0 flex items-center justify-center text-[10px] bg-zinc-900 text-zinc-200 border border-zinc-700">
+                    <Badge 
+                      size="sm"
+                      className="absolute -top-1.5 -right-1.5 bg-zinc-800 text-zinc-200 border border-zinc-700"
+                    >
                       {count}
                     </Badge>
                   )}
@@ -420,13 +427,14 @@ export function MobilePlayerCard({
               );
             })}
             
-            {/* Expand button */}
+            {/* Expand button - soft pill */}
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={() => setExpanded(!expanded)}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 py-3 px-2 rounded-xl",
-                "bg-zinc-800/50 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-300",
+                "flex flex-col items-center justify-center gap-1.5 py-3.5 px-2 rounded-2xl",
+                "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-300",
+                "border border-white/5",
                 "transition-all duration-200"
               )}
             >

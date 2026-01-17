@@ -90,71 +90,82 @@ export function GameHeaderCard({
         className="sticky top-0 z-20"
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
-        <div className="bg-zinc-950/95 backdrop-blur-lg border-b border-zinc-800/60">
-          <div className="container py-3">
-            {/* Top row: Back + Status badges + Action */}
-            <div className="flex items-center justify-between gap-3 mb-3">
-              <div className="flex items-center gap-3">
+        {/* Clean mobile toolbar - no extra backgrounds or boxes */}
+        <div className="bg-zinc-950/95 backdrop-blur-lg border-b border-zinc-800/40">
+          <div className="px-4 py-3">
+            {/* Top row: Back + Status pills + Action */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Back button - pill shape */}
                 <Link to="/app/live-match">
-                  <Button variant="ghost" size="icon" className="h-9 w-9">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-10 w-10 rounded-full bg-white/5 border border-white/10 hover:bg-white/10"
+                  >
                     <ArrowLeft className="w-4 h-4" />
                   </Button>
                 </Link>
 
-                {/* Status badge */}
+                {/* Status pill - glass style, no square background */}
                 <Badge 
-                  className={cn(
-                    "h-7 gap-1.5 text-xs font-semibold",
-                    config.bgClass, config.textClass
-                  )}
+                  variant={isDraft ? "draft" : isLive ? "live" : "glass"}
+                  size="mobile"
+                  className="gap-1.5"
                 >
                   {config.icon}
                   {config.label}
                 </Badge>
 
-                {/* Half badge (live only) */}
+                {/* Half badge (live only) - pill style */}
                 {(isLive || match.status === "finished") && match.half && (
                   <Badge 
+                    size="mobile"
                     className={cn(
-                      "h-7 text-xs font-bold",
-                      match.half === 1 ? "bg-blue-600/80 text-white" : "bg-purple-600/80 text-white"
+                      "font-bold",
+                      match.half === 1 ? "bg-blue-600/80 text-white border-blue-500/30" : "bg-purple-600/80 text-white border-purple-500/30"
                     )}
                   >
                     {match.half === 1 ? "1º Tempo" : "2º Tempo"}
                   </Badge>
                 )}
 
-                {/* Players count */}
+                {/* Players count - glass pill */}
                 <Badge 
-                  variant="outline" 
-                  className="h-7 gap-1 text-xs border-zinc-700 text-zinc-400"
+                  variant="glass" 
+                  size="mobile"
+                  className="gap-1.5"
                 >
-                  <Users className="w-3 h-3" />
-                  {isDraft ? (
-                    <span>{startersCount} titular{startersCount !== 1 ? "es" : ""}</span>
-                  ) : (
-                    <span>{playersOnField} em campo</span>
-                  )}
+                  <Users className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">
+                    {isDraft ? `${startersCount} titular${startersCount !== 1 ? "es" : ""}` : `${playersOnField} em campo`}
+                  </span>
+                  <span className="sm:hidden">
+                    {isDraft ? startersCount : playersOnField}
+                  </span>
                 </Badge>
 
-                {/* Pending events badge */}
+                {/* Pending events badge - only when relevant */}
                 {isDraft && pendingEventsCount > 0 && (
                   <Badge 
-                    className="h-7 gap-1 text-xs bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                    variant="warning"
+                    size="mobile"
+                    className="gap-1.5"
                   >
-                    <Clock className="w-3 h-3" />
-                    {pendingEventsCount} pendente{pendingEventsCount !== 1 ? "s" : ""}
+                    <Clock className="w-3.5 h-3.5" />
+                    {pendingEventsCount}
                   </Badge>
                 )}
               </div>
 
-              {/* Start game button (draft only) */}
+              {/* Start game button - GREEN glow, not red */}
               {isDraft && (
                 <Button
                   variant="success"
+                  size="mobile"
                   onClick={() => setConfirmStartOpen(true)}
                   disabled={isPending || startersCount === 0}
-                  className="h-10 px-4 gap-2"
+                  className="gap-2"
                 >
                   <Play className="w-4 h-4" />
                   <span className="hidden sm:inline">Iniciar Jogo</span>
@@ -163,23 +174,23 @@ export function GameHeaderCard({
               )}
             </div>
 
-            {/* Bottom row: Match info */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-lg sm:text-xl font-bold text-zinc-100">
+            {/* Bottom row: Match info - clean, no boxes */}
+            <div className="flex items-center justify-between mt-3">
+              <div className="min-w-0">
+                <h1 className="text-base sm:text-lg font-bold text-zinc-100 truncate">
                   vs {match.opponent_name}
                 </h1>
-                <div className="flex items-center gap-3 text-xs text-zinc-500 mt-0.5">
+                <div className="flex items-center gap-2 sm:gap-3 text-xs text-zinc-500 mt-0.5 flex-wrap">
                   <span className="flex items-center gap-1">
                     <Trophy className="w-3 h-3" />
-                    {competitionName}
+                    <span className="truncate max-w-[120px] sm:max-w-none">{competitionName}</span>
                   </span>
                   <span className="flex items-center gap-1">
                     <Calendar className="w-3 h-3" />
-                    {format(new Date(match.match_date), "dd MMM yyyy", { locale: ptBR })}
+                    {format(new Date(match.match_date), "dd MMM", { locale: ptBR })}
                   </span>
                   {match.venue && (
-                    <span className="flex items-center gap-1 hidden sm:flex">
+                    <span className="hidden sm:flex items-center gap-1">
                       <MapPin className="w-3 h-3" />
                       {match.venue}
                     </span>

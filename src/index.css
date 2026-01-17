@@ -36,6 +36,40 @@
 
     --radius: 0.75rem;
 
+    /* ========== MOBILE DESIGN SYSTEM TOKENS ========== */
+    /* Unified radius tokens */
+    --radius-card: 18px;
+    --radius-pill: 999px;
+    --radius-button: 14px;
+    --radius-input: 12px;
+    --radius-badge: 999px;
+    
+    /* Border tokens */
+    --border-subtle: 1px solid hsl(222 30% 18% / 0.4);
+    --border-glass: 1px solid hsl(0 0% 100% / 0.08);
+    
+    /* Elevation backgrounds */
+    --bg-elev-0: hsl(222 47% 5%);
+    --bg-elev-1: hsl(222 47% 8%);
+    --bg-elev-2: hsl(222 47% 11%);
+    --bg-glass: hsl(0 0% 100% / 0.04);
+    --bg-glass-hover: hsl(0 0% 100% / 0.08);
+    
+    /* Shadow tokens */
+    --shadow-soft: 0 2px 8px -2px hsl(0 0% 0% / 0.3);
+    --shadow-medium: 0 4px 16px -4px hsl(0 0% 0% / 0.4);
+    --shadow-glow-green: 0 0 20px -5px hsl(142 76% 36% / 0.4);
+    --shadow-glow-red: 0 0 20px -5px hsl(0 72% 51% / 0.4);
+    --shadow-glow-blue: 0 0 20px -5px hsl(199 89% 48% / 0.4);
+    
+    /* Focus ring */
+    --focus-ring: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--primary) / 0.5);
+    
+    /* Mobile spacing */
+    --gap-mobile: 12px;
+    --padding-mobile: 16px;
+    --tap-target: 44px;
+
     /* M3 Brand Colors */
     --m3-red: 0 72% 51%;
     --m3-red-light: 0 72% 60%;

@@ -5,7 +5,8 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  // Base: consistent radius, proper tap target sizing
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[14px] text-sm font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 active:scale-[0.98]",
   {
     variants: {
       variant: {
@@ -19,17 +20,21 @@ const buttonVariants = cva(
         gold: "bg-gradient-to-r from-accent to-amber-500 text-accent-foreground font-semibold shadow-lg shadow-amber-500/25 hover:shadow-xl focus-visible:ring-amber-500",
         hero: "bg-primary text-primary-foreground font-semibold shadow-xl shadow-primary/30 hover:shadow-2xl hover:shadow-primary/40 hover:scale-[1.02] active:scale-[0.98] focus-visible:ring-primary",
         heroOutline: "border-2 border-primary/50 text-foreground bg-transparent hover:bg-primary/10 hover:border-primary font-semibold focus-visible:ring-primary",
-        // New semantic variants with matching glows
-        success: "bg-green-600 text-white hover:bg-green-700 shadow-lg shadow-green-600/25 hover:shadow-xl hover:shadow-green-600/30 focus-visible:ring-green-500",
-        warning: "bg-amber-600 text-white hover:bg-amber-700 shadow-lg shadow-amber-600/25 hover:shadow-xl hover:shadow-amber-600/30 focus-visible:ring-amber-500",
-        info: "bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/25 hover:shadow-xl hover:shadow-blue-600/30 focus-visible:ring-blue-500",
+        // Semantic variants with MATCHING glow colors (no red glow on green buttons)
+        success: "bg-green-600 text-white hover:bg-green-500 shadow-lg shadow-green-600/30 hover:shadow-xl hover:shadow-green-500/40 focus-visible:ring-green-500",
+        warning: "bg-amber-600 text-white hover:bg-amber-500 shadow-lg shadow-amber-600/30 hover:shadow-xl hover:shadow-amber-500/40 focus-visible:ring-amber-500",
+        info: "bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-600/30 hover:shadow-xl hover:shadow-blue-500/40 focus-visible:ring-blue-500",
+        // Glass variant for mobile
+        glass: "bg-white/5 border border-white/10 text-zinc-300 hover:bg-white/10 backdrop-blur-sm",
       },
       size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-9 rounded-md px-3",
-        lg: "h-12 rounded-lg px-8 text-base",
-        xl: "h-14 rounded-xl px-10 text-lg",
-        icon: "h-10 w-10",
+        default: "h-10 px-4 py-2 min-h-[44px]", // 44px minimum tap target
+        sm: "h-9 rounded-xl px-3 min-h-[36px]",
+        lg: "h-12 rounded-2xl px-8 text-base min-h-[48px]",
+        xl: "h-14 rounded-2xl px-10 text-lg min-h-[56px]",
+        icon: "h-10 w-10 min-h-[44px] min-w-[44px]",
+        // Mobile-optimized size
+        mobile: "h-11 rounded-xl px-5 min-h-[44px] text-sm font-medium",
       },
     },
     defaultVariants: {
