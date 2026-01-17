@@ -75,6 +75,7 @@ export default function LiveMatchGame() {
     voidEvent,
     editEventTime,
     undoLastEvent,
+    voidLastEventByType,
     updateMatchStatus,
     startGame,
     playerEnterField,
@@ -422,6 +423,7 @@ export default function LiveMatchGame() {
                   matchStats={playerStatsMap[mp.player_id]}
                   onAddEvent={(type) => handleAddEvent(mp.player_id, type)}
                   onUndo={() => undoLastEvent(mp.player_id)}
+                  onVoidLastEvent={(type) => voidLastEventByType.mutate({ playerId: mp.player_id, eventType: type })}
                   onPlayerEnter={(matchPlayerId) => handlePlayerEnter(matchPlayerId)}
                   onPlayerExit={(matchPlayerId) => handlePlayerExit(matchPlayerId)}
                   onRemoveFromMatch={() => handleRemoveFromMatch(mp)}
@@ -444,6 +446,7 @@ export default function LiveMatchGame() {
                   matchStats={playerStatsMap[mp.player_id]}
                   onAddEvent={(type) => handleAddEvent(mp.player_id, type)}
                   onUndo={() => undoLastEvent(mp.player_id)}
+                  onVoidLastEvent={(type) => voidLastEventByType.mutate({ playerId: mp.player_id, eventType: type })}
                   onPlayerEnter={(matchPlayerId) => handlePlayerEnter(matchPlayerId)}
                   onPlayerExit={(matchPlayerId) => handlePlayerExit(matchPlayerId)}
                   onRemoveFromMatch={() => handleRemoveFromMatch(mp)}

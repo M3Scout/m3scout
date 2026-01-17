@@ -82,6 +82,7 @@ interface MobilePlayerCardProps {
   displayMinute?: string;
   onAddEvent: (eventType: MatchEventType) => void;
   onUndo: () => void;
+  onVoidLastEvent?: (eventType: MatchEventType) => void;
   onPlayerEnter?: (matchPlayerId: string) => void;
   onPlayerExit?: (matchPlayerId: string) => void;
   onRemoveFromMatch?: () => void;
@@ -99,6 +100,7 @@ export function MobilePlayerCard({
   clockStatus = "stopped",
   onAddEvent,
   onUndo,
+  onVoidLastEvent,
   onPlayerEnter,
   onPlayerExit,
   onRemoveFromMatch,
@@ -539,6 +541,7 @@ export function MobilePlayerCard({
                 isOnField={matchPlayer.is_on_field}
                 eventCounts={eventCounts}
                 onAddEvent={handleAddEventWithSound}
+                onVoidLastEvent={onVoidLastEvent}
                 disabled={disabled}
               />
             </motion.div>
