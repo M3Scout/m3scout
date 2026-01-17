@@ -1543,6 +1543,17 @@ export type Database = {
             }
             Returns: Json
           }
+      create_live_event_v2: {
+        Args: {
+          p_force_time_seconds?: number
+          p_game_id: string
+          p_half?: number
+          p_notes?: string
+          p_player_id: string
+          p_type: string
+        }
+        Returns: Json
+      }
       edit_live_event_time: {
         Args: { p_event_id: string; p_game_time_seconds: number }
         Returns: Json
