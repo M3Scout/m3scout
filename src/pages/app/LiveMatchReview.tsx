@@ -15,6 +15,7 @@ import { HalfStatsComparison } from "@/components/live-match/HalfStatsComparison
 import { SubstitutionStatsCard } from "@/components/live-match/SubstitutionStatsCard";
 import { EventDistributionChart } from "@/components/live-match/EventDistributionChart";
 import { PlayerActivityHeatmap } from "@/components/live-match/PlayerActivityHeatmap";
+import { PlayerPresenceHistory } from "@/components/live-match/PlayerPresenceHistory";
 import { MatchSummaryPdfButton } from "@/components/live-match/MatchSummaryPdf";
 import {
   CheckCircle2,
@@ -28,6 +29,7 @@ import {
   Pencil,
   Check,
   X,
+  Clock,
 } from "lucide-react";
 
 // Map match events to player_stats columns
@@ -522,6 +524,22 @@ export default function LiveMatchReview() {
         matchEvents={matchEvents}
         matchDuration={match.duration_minutes}
       />
+
+      {/* Player Presence History */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5" />
+            Histórico de Presença em Campo
+          </CardTitle>
+          <CardDescription>
+            Intervalos de tempo em que cada atleta esteve em campo
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <PlayerPresenceHistory matchId={matchId!} />
+        </CardContent>
+      </Card>
 
       {/* Inconsistencies */}
       {inconsistencies.length > 0 && (

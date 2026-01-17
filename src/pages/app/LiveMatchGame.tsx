@@ -12,6 +12,7 @@ import { LiveStatsPanel } from "@/components/live-match/LiveStatsPanel";
 import { EventTimeline } from "@/components/live-match/EventTimeline";
 import { PendingEventsBadge } from "@/components/live-match/PendingEventsBadge";
 import { SubstitutionModal } from "@/components/live-match/SubstitutionModal";
+import { EventEffects, useEventEffects } from "@/components/live-match/EventEffects";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -55,6 +56,7 @@ export default function LiveMatchGame() {
   const [currentMinute, setCurrentMinute] = useState(0);
   const [currentTimerInfo, setCurrentTimerInfo] = useState<TimerInfo | null>(null);
   const [showOnlyOnField, setShowOnlyOnField] = useState(false);
+  const { lastEvent, triggerEvent, effectsEnabled } = useEventEffects();
   const {
     match,
     matchPlayers,
@@ -158,6 +160,9 @@ export default function LiveMatchGame() {
   }
 
   const handleAddEvent = (playerId: string, eventType: MatchEventType) => {
+    // Trigger visual effects for important events
+    triggerEvent(eventType);
+    
     addEvent.mutate({ 
       playerId, 
       eventType, 
@@ -192,6 +197,9 @@ export default function LiveMatchGame() {
 
   return (
     <div className="min-h-screen bg-zinc-950 pb-20">
+      {/* Event Visual Effects */}
+      <EventEffects lastEvent={lastEvent} enabled={effectsEnabled} />
+
       {/* Premium Header */}
       <GameHeaderCard
         match={match}
