@@ -21,6 +21,12 @@ import { useSidebar } from "@/hooks/useSidebar";
 import { toast } from "sonner";
 import logoM3 from "@/assets/logo-m3.png";
 import logoM3Icon from "@/assets/logo-m3-icon.png";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const navItems = [
   { href: "/app", icon: LayoutDashboard, label: "Dashboard" },
@@ -158,83 +164,136 @@ export function AppSidebar() {
 
         {/* Navigation - Clean and focused */}
         <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              to={item.href}
-              className={cn(
-                "flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all duration-100 group relative",
-                isActive(item.href)
-                  ? "bg-primary/15 text-white"
-                  : "text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/40 active:bg-zinc-800/60"
-              )}
-            >
-              {/* Active indicator */}
-              {isActive(item.href) && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-primary rounded-r" />
-              )}
-              <item.icon className={cn(
-                "w-4 h-4 shrink-0 transition-colors",
-                isActive(item.href) ? "text-primary" : "text-zinc-600 group-hover:text-zinc-400"
-              )} />
-              {!isCollapsed && (
-                <span className={cn(
-                  "text-sm transition-colors",
-                  isActive(item.href) ? "font-medium" : ""
-                )}>
-                  {item.label}
-                </span>
-              )}
-            </Link>
-          ))}
+          <TooltipProvider delayDuration={0}>
+            {navItems.map((item) => {
+              const linkContent = (
+                <Link
+                  to={item.href}
+                  className={cn(
+                    "flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all duration-100 group relative",
+                    isActive(item.href)
+                      ? "bg-primary/15 text-white"
+                      : "text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/40 active:bg-zinc-800/60"
+                  )}
+                >
+                  {/* Active indicator */}
+                  {isActive(item.href) && (
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-primary rounded-r" />
+                  )}
+                  <item.icon className={cn(
+                    "w-4 h-4 shrink-0 transition-colors",
+                    isActive(item.href) ? "text-primary" : "text-zinc-600 group-hover:text-zinc-400"
+                  )} />
+                  {!isCollapsed && (
+                    <span className={cn(
+                      "text-sm transition-colors",
+                      isActive(item.href) ? "font-medium" : ""
+                    )}>
+                      {item.label}
+                    </span>
+                  )}
+                </Link>
+              );
+
+              // Show tooltip only when collapsed
+              if (isCollapsed) {
+                return (
+                  <Tooltip key={item.href}>
+                    <TooltipTrigger asChild>
+                      {linkContent}
+                    </TooltipTrigger>
+                    <TooltipContent side="right" sideOffset={8}>
+                      {item.label}
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              }
+
+              return <div key={item.href}>{linkContent}</div>;
+            })}
+          </TooltipProvider>
         </nav>
 
         {/* Bottom Section - Subtle */}
         <div className="p-2 border-t border-zinc-800/20 space-y-0.5">
-          {bottomNavItems.map((item) => (
-            <Link
-              key={item.href}
-              to={item.href}
-              className={cn(
-                "flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all duration-100 group relative",
-                isActive(item.href)
-                  ? "bg-primary/15 text-white"
-                  : "text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/40 active:bg-zinc-800/60"
-              )}
-            >
-              {isActive(item.href) && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-primary rounded-r" />
-              )}
-              <item.icon className={cn(
-                "w-4 h-4 shrink-0 transition-colors",
-                isActive(item.href) ? "text-primary" : "text-zinc-600 group-hover:text-zinc-400"
-              )} />
-              {!isCollapsed && (
-                <span className={cn(
-                  "text-sm transition-colors",
-                  isActive(item.href) ? "font-medium" : ""
-                )}>
-                  {item.label}
-                </span>
-              )}
-            </Link>
-          ))}
-          
-          {/* User email - very subtle */}
-          {!isCollapsed && user && (
-            <div className="px-2.5 py-1.5 text-[10px] text-zinc-700 truncate">
-              {user.email}
-            </div>
-          )}
-          
-          {/* Logout button */}
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2.5 px-2.5 py-2 w-full rounded-lg text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800/40 active:bg-zinc-800/60 transition-all duration-100 group"
-          >
-            <LogOut className="w-4 h-4 shrink-0 text-zinc-700 group-hover:text-zinc-500" />
-            {!isCollapsed && <span className="text-sm">Sair</span>}
-          </button>
+          <TooltipProvider delayDuration={0}>
+            {bottomNavItems.map((item) => {
+              const linkContent = (
+                <Link
+                  to={item.href}
+                  className={cn(
+                    "flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all duration-100 group relative",
+                    isActive(item.href)
+                      ? "bg-primary/15 text-white"
+                      : "text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/40 active:bg-zinc-800/60"
+                  )}
+                >
+                  {isActive(item.href) && (
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-primary rounded-r" />
+                  )}
+                  <item.icon className={cn(
+                    "w-4 h-4 shrink-0 transition-colors",
+                    isActive(item.href) ? "text-primary" : "text-zinc-600 group-hover:text-zinc-400"
+                  )} />
+                  {!isCollapsed && (
+                    <span className={cn(
+                      "text-sm transition-colors",
+                      isActive(item.href) ? "font-medium" : ""
+                    )}>
+                      {item.label}
+                    </span>
+                  )}
+                </Link>
+              );
+
+              if (isCollapsed) {
+                return (
+                  <Tooltip key={item.href}>
+                    <TooltipTrigger asChild>
+                      {linkContent}
+                    </TooltipTrigger>
+                    <TooltipContent side="right" sideOffset={8}>
+                      {item.label}
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              }
+
+              return <div key={item.href}>{linkContent}</div>;
+            })}
+            
+            {/* User email - very subtle */}
+            {!isCollapsed && user && (
+              <div className="px-2.5 py-1.5 text-[10px] text-zinc-700 truncate">
+                {user.email}
+              </div>
+            )}
+            
+            {/* Logout button */}
+            {isCollapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-2.5 px-2.5 py-2 w-full rounded-lg text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800/40 active:bg-zinc-800/60 transition-all duration-100 group"
+                  >
+                    <LogOut className="w-4 h-4 shrink-0 text-zinc-700 group-hover:text-zinc-500" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" sideOffset={8}>
+                  Sair
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2.5 px-2.5 py-2 w-full rounded-lg text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800/40 active:bg-zinc-800/60 transition-all duration-100 group"
+              >
+                <LogOut className="w-4 h-4 shrink-0 text-zinc-700 group-hover:text-zinc-500" />
+                <span className="text-sm">Sair</span>
+              </button>
+            )}
+          </TooltipProvider>
         </div>
       </aside>
     </>
