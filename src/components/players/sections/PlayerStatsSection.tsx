@@ -127,6 +127,9 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
     minutes: 0,
     goals: 0,
     assists: 0,
+    // Shooting stats
+    shots: 0,
+    shots_on_target: 0,
     yellow_cards: 0,
     red_cards: 0,
     tackles: 0,
@@ -170,6 +173,9 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
       minutes: 0,
       goals: 0,
       assists: 0,
+      // Shooting stats
+      shots: 0,
+      shots_on_target: 0,
       yellow_cards: 0,
       red_cards: 0,
       tackles: 0,
@@ -195,6 +201,9 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
         minutes: stat.minutes,
         goals: stat.goals,
         assists: stat.assists,
+        // Shooting stats
+        shots: stat.shots || 0,
+        shots_on_target: stat.shots_on_target || 0,
         yellow_cards: stat.yellow_cards,
         red_cards: stat.red_cards,
         tackles: stat.tackles,
@@ -236,6 +245,9 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
       minutes: formData.minutes,
       goals: formData.goals,
       assists: formData.assists,
+      // Shooting stats
+      shots: formData.shots,
+      shots_on_target: formData.shots_on_target,
       yellow_cards: formData.yellow_cards,
       red_cards: formData.red_cards,
       tackles: formData.tackles,
@@ -482,6 +494,31 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
                         min={0}
                         value={formData.assists}
                         onChange={(e) => handleInputChange("assists", parseInt(e.target.value) || 0)}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Shooting Stats */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2">
+                        <Target className="w-4 h-4" />
+                        Finalizações (Total)
+                      </Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={formData.shots}
+                        onChange={(e) => handleInputChange("shots", parseInt(e.target.value) || 0)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Finalizações no Gol</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={formData.shots_on_target}
+                        onChange={(e) => handleInputChange("shots_on_target", parseInt(e.target.value) || 0)}
                       />
                     </div>
                   </div>
