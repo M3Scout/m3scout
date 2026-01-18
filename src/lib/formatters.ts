@@ -181,13 +181,17 @@ export const formatFinancialCompact = (
 
 /**
  * Convert seconds to football-style display minute
- * Applies rounding rule: if seconds >= 31, rounds up to next minute
+ * Uses rounding to nearest minute: Math.round(seconds / 60)
+ * Equivalent to: Math.floor((seconds + 30) / 60)
+ * 
  * Examples:
- *   7:15 (435s) => 7'
- *   6:35 (395s) => 7'
- *   7:31 (451s) => 8'
- *   7:00 (420s) => 7'
- *   6:30 (390s) => 6'
+ *   1:53 (113s) => 2' (rounds up)
+ *   6:29 (389s) => 6' (rounds down)
+ *   6:30 (390s) => 7' (rounds up at exactly 30s)
+ *   7:15 (435s) => 7' (rounds down)
+ *   7:31 (451s) => 8' (rounds up)
+ *   0:10 (10s)  => 0'
+ *   0:30 (30s)  => 1'
  * 
  * @param seconds - Total seconds elapsed in the period
  * @returns The display minute (integer)
@@ -195,16 +199,13 @@ export const formatFinancialCompact = (
 export const getFootballMinute = (seconds: number): number => {
   if (!Number.isFinite(seconds) || seconds < 0) return 0;
   
-  const minute = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
-  
-  // Football rounding: if seconds >= 31, round up
-  return remainingSeconds >= 31 ? minute + 1 : minute;
+  // Round to nearest minute: Math.floor((seconds + 30) / 60)
+  return Math.floor((seconds + 30) / 60);
 };
 
 /**
  * Format game minute with added time notation (45+X', 90+X')
- * Uses football-style rounding (seconds >= 31 rounds up)
+ * Uses rounding to nearest minute (rounds at 30s)
  * 
  * @param seconds - Total seconds elapsed in the period
  * @param period - Current period (1 = first half, 2 = second half)
@@ -252,7 +253,7 @@ export const formatGameMinute = (
 /**
  * Format seconds to display minute for an event
  * Takes into account period to show correct game minute
- * Uses football-style rounding (seconds >= 31 rounds up)
+ * Uses rounding to nearest minute (rounds at 30s)
  */
 export const formatEventMinute = (
   gameTimeSeconds: number | null | undefined,
