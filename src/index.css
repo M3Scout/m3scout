@@ -778,5 +778,26 @@
       animation: none;
     }
   }
+
+  /* ========== TOUCH DEVICE OPTIMIZATIONS ========== */
+  /* Make menu buttons always visible on touch devices */
+  @media (hover: none) and (pointer: coarse) {
+    .group:hover .opacity-0,
+    .group .opacity-0.group-hover\:opacity-100 {
+      opacity: 1 !important;
+    }
+    
+    /* Ensure touch targets are large enough */
+    button, a, [role="button"] {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    
+    /* Small icon buttons can be smaller */
+    button[class*="h-8"], button[class*="h-6"] {
+      min-height: unset;
+      min-width: unset;
+    }
+  }
 }
 
