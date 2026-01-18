@@ -204,7 +204,13 @@ export function SimilarPlayerSuggestions({
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-xl bg-gradient-to-br from-zinc-900/80 to-zinc-950 border border-zinc-800/50 overflow-hidden"
+      className={cn(
+        "rounded-xl border overflow-hidden",
+        // Desktop: original gradient style
+        "sm:bg-gradient-to-br sm:from-zinc-900/80 sm:to-zinc-950 sm:border-zinc-800/50",
+        // Mobile: cleaner, lighter background for better readability
+        "bg-zinc-900 border-zinc-700/50"
+      )}
     >
       {/* Header */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-800/50 bg-gradient-to-r from-orange-500/5 to-transparent">
@@ -213,13 +219,13 @@ export function SimilarPlayerSuggestions({
         </div>
         <div>
           <h3 className="text-sm font-semibold text-zinc-100">Atletas Similares</h3>
-          <p className="text-[10px] text-zinc-500">Sugestões baseadas no perfil selecionado</p>
+          <p className="text-[10px] text-zinc-500 sm:text-zinc-500">Sugestões baseadas no perfil selecionado</p>
         </div>
       </div>
 
       {/* Suggestions Grid */}
-      <div className="p-4">
-        <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="p-3 sm:p-4">
+        <div className="grid gap-3 sm:gap-2 grid-cols-1 sm:grid-cols-3 lg:grid-cols-6">
           <AnimatePresence mode="popLayout">
             {suggestions.map((suggestion, index) => (
               <SuggestionCard
@@ -250,9 +256,18 @@ function SuggestionCard({ suggestion, index, onSelect }: SuggestionCardProps) {
   // Match score indicator
   const matchLevel = score >= 60 ? "high" : score >= 40 ? "medium" : "low";
   const matchColors = {
-    high: "text-emerald-400 bg-emerald-500/10",
-    medium: "text-amber-400 bg-amber-500/10", 
-    low: "text-zinc-400 bg-zinc-500/10",
+    high: {
+      desktop: "text-emerald-400 bg-emerald-500/10",
+      mobile: "text-emerald-300 bg-emerald-500/20 border border-emerald-500/30"
+    },
+    medium: {
+      desktop: "text-amber-400 bg-amber-500/10",
+      mobile: "text-amber-300 bg-amber-500/20 border border-amber-500/30"
+    },
+    low: {
+      desktop: "text-zinc-400 bg-zinc-500/10",
+      mobile: "text-zinc-300 bg-zinc-600/30 border border-zinc-500/30"
+    },
   };
 
   return (
@@ -263,26 +278,48 @@ function SuggestionCard({ suggestion, index, onSelect }: SuggestionCardProps) {
       transition={{ duration: 0.2, delay: index * 0.05 }}
       onClick={onSelect}
       className={cn(
-        "relative group rounded-lg p-3 text-left transition-all",
-        "bg-zinc-900/50 border border-zinc-800/50",
-        "hover:bg-zinc-800/50 hover:border-zinc-700",
-        "focus:outline-none focus:ring-2",
-        posColor.ringClass
+        "relative group text-left transition-all focus:outline-none focus:ring-2",
+        posColor.ringClass,
+        // Desktop: compact vertical card
+        "sm:rounded-lg sm:p-3 sm:bg-zinc-900/50 sm:border sm:border-zinc-800/50",
+        "sm:hover:bg-zinc-800/50 sm:hover:border-zinc-700",
+        // Mobile: horizontal card with better contrast and spacing
+        "flex sm:block items-center gap-3 p-3 sm:p-3",
+        "rounded-xl sm:rounded-lg",
+        "bg-zinc-800 sm:bg-zinc-900/50",
+        "border border-zinc-600/50 sm:border-zinc-800/50",
+        "shadow-sm sm:shadow-none"
       )}
     >
-      {/* Match score badge */}
+      {/* Match score badge - Desktop: absolute top-right, Mobile: inside card right side */}
       <div className={cn(
-        "absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded text-[9px] font-bold",
-        matchColors[matchLevel]
+        "px-2 py-1 rounded-md text-[10px] font-bold",
+        // Desktop positioning
+        "sm:absolute sm:-top-1.5 sm:-right-1.5 sm:px-1.5 sm:py-0.5 sm:rounded sm:text-[9px]",
+        matchColors[matchLevel].desktop,
+        // Mobile: positioned in flow, better visibility
+        "sm:block absolute right-3 top-1/2 -translate-y-1/2 sm:translate-y-0 sm:static",
+        // Mobile-specific solid background
+        "max-sm:bg-zinc-700 max-sm:text-zinc-100 max-sm:border max-sm:border-zinc-500/50"
       )}>
         {Math.round(score)}%
       </div>
 
       {/* Avatar */}
-      <div className="flex items-center gap-2 mb-2">
+      <div className={cn(
+        "flex-shrink-0",
+        // Desktop: stacked layout
+        "sm:mb-2",
+        // Mobile: side by side
+        "flex items-center gap-3 sm:gap-2"
+      )}>
         <div className={cn(
-          "w-10 h-10 rounded-lg overflow-hidden ring-2 flex-shrink-0",
-          posColor.ringClass
+          "rounded-lg overflow-hidden ring-2 flex-shrink-0",
+          posColor.ringClass,
+          // Desktop: 40px
+          "sm:w-10 sm:h-10",
+          // Mobile: larger avatar
+          "w-12 h-12"
         )}>
           {player.photo_url ? (
             <img
@@ -291,14 +328,46 @@ function SuggestionCard({ suggestion, index, onSelect }: SuggestionCardProps) {
               className="w-full h-full object-cover"
             />
           ) : (
-            <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
-              <User className="w-4 h-4 text-zinc-600" />
+            <div className="w-full h-full bg-zinc-700 sm:bg-zinc-800 flex items-center justify-center">
+              <User className="w-5 h-5 sm:w-4 sm:h-4 text-zinc-500 sm:text-zinc-600" />
             </div>
           )}
         </div>
 
-        {/* Add icon on hover */}
-        <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/80 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
+        {/* Mobile: name and details next to avatar */}
+        <div className="flex-1 min-w-0 sm:hidden">
+          {/* Name */}
+          <p className="text-sm font-semibold text-zinc-100 truncate leading-tight">
+            {player.full_name.split(' ').slice(0, 2).join(' ')}
+          </p>
+
+          {/* Position badge and rating */}
+          <div className="flex items-center gap-2 mt-1">
+            <span className={cn(
+              "text-[10px] font-bold uppercase px-1.5 py-0.5 rounded",
+              posColor.bgClass,
+              posColor.textClass
+            )}>
+              {shortPos}
+            </span>
+            {player.auto_rating !== null && (
+              <span className="text-xs font-semibold text-zinc-400">
+                {formatFixed(player.auto_rating, 0)}
+              </span>
+            )}
+          </div>
+
+          {/* Top reason */}
+          {reasons.length > 0 && (
+            <p className="text-[11px] text-zinc-400 mt-1 truncate flex items-center gap-1">
+              <Zap className="w-3 h-3 text-zinc-500" />
+              {reasons[0]}
+            </p>
+          )}
+        </div>
+
+        {/* Desktop: Add icon on hover overlay */}
+        <div className="hidden sm:flex absolute inset-0 items-center justify-center bg-zinc-900/80 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
           <div className={cn(
             "p-2 rounded-full",
             posColor.bgClass
@@ -308,34 +377,45 @@ function SuggestionCard({ suggestion, index, onSelect }: SuggestionCardProps) {
         </div>
       </div>
 
-      {/* Name */}
-      <p className="text-xs font-semibold text-zinc-200 truncate leading-tight">
-        {player.full_name.split(' ').slice(0, 2).join(' ')}
-      </p>
+      {/* Desktop-only: Name, position, reason (hidden on mobile) */}
+      <div className="hidden sm:block">
+        {/* Name */}
+        <p className="text-xs font-semibold text-zinc-200 truncate leading-tight">
+          {player.full_name.split(' ').slice(0, 2).join(' ')}
+        </p>
 
-      {/* Position badge */}
-      <div className="flex items-center gap-1.5 mt-1">
-        <span className={cn(
-          "text-[9px] font-bold uppercase px-1.5 py-0.5 rounded",
-          posColor.bgClass,
-          posColor.textClass
-        )}>
-          {shortPos}
-        </span>
-        {player.auto_rating !== null && (
-          <span className="text-[10px] font-semibold text-zinc-500">
-            {formatFixed(player.auto_rating, 0)}
+        {/* Position badge */}
+        <div className="flex items-center gap-1.5 mt-1">
+          <span className={cn(
+            "text-[9px] font-bold uppercase px-1.5 py-0.5 rounded",
+            posColor.bgClass,
+            posColor.textClass
+          )}>
+            {shortPos}
           </span>
+          {player.auto_rating !== null && (
+            <span className="text-[10px] font-semibold text-zinc-500">
+              {formatFixed(player.auto_rating, 0)}
+            </span>
+          )}
+        </div>
+
+        {/* Top reason */}
+        {reasons.length > 0 && (
+          <p className="text-[9px] text-zinc-600 mt-1.5 truncate flex items-center gap-1">
+            <Zap className="w-2.5 h-2.5" />
+            {reasons[0]}
+          </p>
         )}
       </div>
 
-      {/* Top reason */}
-      {reasons.length > 0 && (
-        <p className="text-[9px] text-zinc-600 mt-1.5 truncate flex items-center gap-1">
-          <Zap className="w-2.5 h-2.5" />
-          {reasons[0]}
-        </p>
-      )}
+      {/* Mobile-only: subtle add indicator (bottom-right) */}
+      <div className={cn(
+        "sm:hidden absolute bottom-2 right-2 p-1.5 rounded-full",
+        "bg-zinc-700/50 opacity-60"
+      )}>
+        <Plus className="w-3 h-3 text-zinc-400" />
+      </div>
     </motion.button>
   );
 }
