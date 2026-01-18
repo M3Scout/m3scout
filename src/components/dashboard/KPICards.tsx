@@ -1,7 +1,7 @@
 import { Users, FileText, MessageSquare, AlertTriangle } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { cardHover, cardTap, staggerItem } from "@/lib/animations";
+import { kpiCardVariants, subtleHover, subtleTap } from "@/lib/animations";
 
 interface KPICardsProps {
   totalPlayers: number;
@@ -73,9 +73,12 @@ export const KPICards = ({ totalPlayers, reportsThisMonth, totalLeads, expiringC
         return (
           <motion.div
             key={kpi.key}
-            variants={staggerItem}
-            whileHover={cardHover}
-            whileTap={cardTap}
+            custom={index}
+            initial="hidden"
+            animate="visible"
+            variants={kpiCardVariants}
+            whileHover={subtleHover}
+            whileTap={subtleTap}
           >
             <Link
               to={kpi.link}
@@ -85,14 +88,24 @@ export const KPICards = ({ totalPlayers, reportsThisMonth, totalLeads, expiringC
               <div className="absolute -top-12 -right-12 w-24 h-24 rounded-full bg-gradient-to-br from-white/5 to-transparent blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               
               <div className="relative flex flex-col gap-2 sm:gap-3">
-                <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-[var(--radius-button)] bg-zinc-900/50 flex items-center justify-center ${kpi.iconColor}`}>
+                <motion.div 
+                  className={`w-9 h-9 sm:w-10 sm:h-10 rounded-[var(--radius-button)] bg-zinc-900/50 flex items-center justify-center ${kpi.iconColor}`}
+                  initial={{ scale: 0, rotate: -180 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ delay: index * 0.1 + 0.2, duration: 0.4, type: "spring", stiffness: 200 }}
+                >
                   <kpi.icon className="w-4 h-4 sm:w-5 sm:h-5" />
-                </div>
+                </motion.div>
                 
                 <div>
-                  <p className={`text-2xl sm:text-3xl lg:text-4xl font-bold tabular-nums ${isWarning ? 'text-amber-400' : 'text-foreground'}`}>
+                  <motion.p 
+                    className={`text-2xl sm:text-3xl lg:text-4xl font-bold tabular-nums ${isWarning ? 'text-amber-400' : 'text-foreground'}`}
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.1 + 0.3, duration: 0.3 }}
+                  >
                     {value}
-                  </p>
+                  </motion.p>
                   <div className="flex items-center gap-1.5 mt-1">
                     <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wider font-medium">
                       {kpi.label}

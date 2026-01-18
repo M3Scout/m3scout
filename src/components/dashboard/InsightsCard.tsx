@@ -544,36 +544,54 @@ export const InsightsCard = () => {
       <div className="p-3 flex-1 flex flex-col">
         <TooltipProvider delayDuration={300}>
           <div className="flex flex-col justify-between h-full gap-2">
-            {insights.map((insight) => {
+            {insights.map((insight, index) => {
               const Icon = insight.icon;
               return (
                 <Tooltip key={insight.id}>
                   <TooltipTrigger asChild>
-                    <Link
-                      to={insight.link}
-                      className={`group flex items-center gap-3 p-3 flex-1 min-h-[52px] rounded-lg border transition-all duration-200 hover:scale-[1.01] w-full max-w-full overflow-hidden ${insight.bgClass} ${insight.borderClass}`}
+                    <motion.div
+                      custom={index}
+                      initial={{ opacity: 0, x: -15, scale: 0.98 }}
+                      animate={{ opacity: 1, x: 0, scale: 1 }}
+                      transition={{ 
+                        delay: index * 0.08, 
+                        duration: 0.35, 
+                        ease: "easeOut" 
+                      }}
+                      whileHover={{ scale: 1.01, x: 2 }}
+                      whileTap={{ scale: 0.99 }}
                     >
-                      {/* Icon */}
-                      <div className={`w-8 h-8 rounded-lg bg-zinc-900/50 flex items-center justify-center shrink-0 ${insight.colorClass}`}>
-                        <Icon className="w-4 h-4" />
-                      </div>
+                      <Link
+                        to={insight.link}
+                        className={`group flex items-center gap-3 p-3 flex-1 min-h-[52px] rounded-lg border transition-all duration-200 w-full max-w-full overflow-hidden ${insight.bgClass} ${insight.borderClass}`}
+                      >
+                        {/* Icon */}
+                        <motion.div 
+                          className={`w-8 h-8 rounded-lg bg-zinc-900/50 flex items-center justify-center shrink-0 ${insight.colorClass}`}
+                          initial={{ scale: 0, rotate: -90 }}
+                          animate={{ scale: 1, rotate: 0 }}
+                          transition={{ delay: index * 0.08 + 0.1, duration: 0.3, type: "spring", stiffness: 200 }}
+                        >
+                          <Icon className="w-4 h-4" />
+                        </motion.div>
 
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className={`text-sm font-medium truncate ${insight.colorClass}`}>
-                            {insight.title}
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className={`text-sm font-medium truncate ${insight.colorClass}`}>
+                              {insight.title}
+                            </p>
+                            {insight.trend && <TrendBadge trend={insight.trend} />}
+                          </div>
+                          <p className="text-[11px] text-zinc-400 mt-0.5 line-clamp-1">
+                            {insight.description}
                           </p>
-                          {insight.trend && <TrendBadge trend={insight.trend} />}
                         </div>
-                        <p className="text-[11px] text-zinc-400 mt-0.5 line-clamp-1">
-                          {insight.description}
-                        </p>
-                      </div>
 
-                      {/* Arrow */}
-                      <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 group-hover:translate-x-0.5 transition-all shrink-0" />
-                    </Link>
+                        {/* Arrow */}
+                        <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 group-hover:translate-x-0.5 transition-all shrink-0" />
+                      </Link>
+                    </motion.div>
                   </TooltipTrigger>
                   <TooltipContent 
                     side="left" 
