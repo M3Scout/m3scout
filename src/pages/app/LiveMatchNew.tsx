@@ -44,6 +44,11 @@ export default function LiveMatchNew() {
   const [teamLogoUrl, setTeamLogoUrl] = useState("");
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  
+  // Opponent logo
+  const [opponentLogoUrl, setOpponentLogoUrl] = useState("");
+  const [isUploadingOpponentLogo, setIsUploadingOpponentLogo] = useState(false);
+  const opponentLogoInputRef = useRef<HTMLInputElement>(null);
 
   // Validation states
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -136,6 +141,50 @@ export default function LiveMatchNew() {
     setTeamLogoUrl("");
   };
 
+  // Handle opponent logo upload
+  const handleOpponentLogoUpload = async (file: File) => {
+    if (!file) return;
+    
+    if (!file.type.startsWith("image/")) {
+      toast.error("Apenas imagens são permitidas");
+      return;
+    }
+    
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Imagem muito grande (máx. 5MB)");
+      return;
+    }
+
+    setIsUploadingOpponentLogo(true);
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `opponent-${Date.now()}.${fileExt}`;
+      const filePath = `match-logos/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("team-logos")
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from("team-logos")
+        .getPublicUrl(filePath);
+
+      setOpponentLogoUrl(urlData.publicUrl);
+      toast.success("Logo do adversário carregado!");
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error("Erro ao fazer upload do logo");
+    } finally {
+      setIsUploadingOpponentLogo(false);
+    }
+  };
+
+  const handleRemoveOpponentLogo = () => {
+    setOpponentLogoUrl("");
+  };
+
   // Create match mutation (draft mode)
   const createMatch = useMutation({
     mutationFn: async (startImmediately: boolean) => {
@@ -175,6 +224,7 @@ export default function LiveMatchNew() {
           // Team customization - manual override values
           team_name_display: teamNameDisplay.trim() || null,
           team_logo_url: teamLogoUrl || null,
+          opponent_logo_url: opponentLogoUrl || null,
         })
         .select("id")
         .single();
@@ -404,24 +454,38 @@ export default function LiveMatchNew() {
             {/* Preview */}
             <div className="pt-3 border-t border-zinc-700/30">
               <p className="text-[10px] text-zinc-500 mb-2">Preview do card:</p>
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-900/60 border border-zinc-700/30">
+              <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-zinc-900/60 border border-zinc-700/30">
+                {/* Home team logo */}
                 {displayLogoUrl ? (
                   <img 
                     src={displayLogoUrl} 
                     alt={displayTeamName} 
-                    className="w-6 h-6 object-contain"
+                    className="w-8 h-8 object-contain rounded bg-zinc-800/50 p-0.5"
                   />
                 ) : (
-                  <div className="w-6 h-6 rounded bg-emerald-500/20 flex items-center justify-center">
-                    <Shield className="w-3 h-3 text-emerald-400" />
+                  <div className="w-8 h-8 rounded bg-emerald-500/20 flex items-center justify-center">
+                    <Shield className="w-4 h-4 text-emerald-400" />
                   </div>
                 )}
-                <div>
-                  <p className="text-sm font-medium text-zinc-200">{displayTeamName}</p>
-                  <p className="text-xs text-zinc-500">
-                    vs {opponentName || "Adversário"}
+                
+                <div className="flex-1 text-center">
+                  <p className="text-sm font-medium text-zinc-200">
+                    {displayTeamName} <span className="text-zinc-500 font-normal">vs</span> {opponentName || "Adversário"}
                   </p>
                 </div>
+                
+                {/* Opponent logo */}
+                {opponentLogoUrl ? (
+                  <img 
+                    src={opponentLogoUrl} 
+                    alt={opponentName || "Adversário"} 
+                    className="w-8 h-8 object-contain rounded bg-zinc-800/50 p-0.5"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded bg-red-500/20 flex items-center justify-center">
+                    <Shield className="w-4 h-4 text-red-400" />
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -492,28 +556,96 @@ export default function LiveMatchNew() {
             </div>
           </div>
 
-          {/* Row 2: Opponent */}
-          <div className="space-y-2">
-            <Label 
-              htmlFor="opponent"
-              className="text-xs font-medium text-zinc-400 flex items-center gap-1.5"
-            >
-              <Zap className="h-3.5 w-3.5" />
-              Adversário <span className="text-red-400">*</span>
-            </Label>
-            <Input
-              id="opponent"
-              placeholder="Nome do time adversário"
-              value={opponentName}
-              onChange={(e) => { setOpponentName(e.target.value); clearError("opponent"); }}
-              className={cn(
-                "h-11 bg-zinc-900/60 border-zinc-700/50 rounded-xl text-zinc-200 placeholder:text-zinc-600 hover:border-zinc-600/60 focus:ring-1 focus:ring-green-500/30 focus:border-green-500/50 transition-all",
-                errors.opponent && "border-red-500/50 focus:ring-red-500/30 focus:border-red-500/50"
-              )}
-            />
-            {errors.opponent && (
-              <p className="text-xs text-red-400 mt-1">{errors.opponent}</p>
-            )}
+          {/* Row 2: Opponent Section */}
+          <div className="p-4 rounded-xl bg-zinc-800/30 border border-zinc-700/30 space-y-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-zinc-300">
+              <Zap className="h-4 w-4 text-red-400" />
+              Adversário
+            </div>
+            
+            <div className="grid gap-4 sm:grid-cols-2">
+              {/* Opponent Name */}
+              <div className="space-y-2">
+                <Label 
+                  htmlFor="opponent"
+                  className="text-xs font-medium text-zinc-400"
+                >
+                  Nome do Time <span className="text-red-400">*</span>
+                </Label>
+                <Input
+                  id="opponent"
+                  placeholder="Nome do time adversário"
+                  value={opponentName}
+                  onChange={(e) => { setOpponentName(e.target.value); clearError("opponent"); }}
+                  className={cn(
+                    "h-10 bg-zinc-900/60 border-zinc-700/50 rounded-lg text-zinc-200 placeholder:text-zinc-600",
+                    errors.opponent && "border-red-500/50"
+                  )}
+                />
+                {errors.opponent && (
+                  <p className="text-xs text-red-400 mt-1">{errors.opponent}</p>
+                )}
+              </div>
+
+              {/* Opponent Logo */}
+              <div className="space-y-2">
+                <Label className="text-xs font-medium text-zinc-400">
+                  Logo do Adversário
+                </Label>
+                <div className="flex items-center gap-3">
+                  {/* Logo preview */}
+                  <div className="w-12 h-12 rounded-lg bg-zinc-800 border border-zinc-700/50 flex items-center justify-center overflow-hidden">
+                    {opponentLogoUrl ? (
+                      <img 
+                        src={opponentLogoUrl} 
+                        alt="Logo adversário" 
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <Image className="w-5 h-5 text-zinc-600" />
+                    )}
+                  </div>
+                  
+                  {/* Upload/Remove buttons */}
+                  <div className="flex flex-col gap-1">
+                    <input
+                      ref={opponentLogoInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => e.target.files?.[0] && handleOpponentLogoUpload(e.target.files[0])}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => opponentLogoInputRef.current?.click()}
+                      disabled={isUploadingOpponentLogo}
+                      className="h-8 text-xs gap-1.5"
+                    >
+                      {isUploadingOpponentLogo ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Upload className="h-3 w-3" />
+                      )}
+                      Upload
+                    </Button>
+                    {opponentLogoUrl && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleRemoveOpponentLogo}
+                        className="h-6 text-[10px] text-zinc-500 hover:text-red-400 gap-1 px-2"
+                      >
+                        <X className="h-3 w-3" />
+                        Remover
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Row 3: Venue + Duration */}
