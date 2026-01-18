@@ -288,14 +288,8 @@ export function InlineMoreStatsPanel({
         </div>
       )}
 
-      {/* Categories - stacked on mobile/tablet, 2-col on desktop */}
-      <div className={cn(
-        "grid gap-4",
-        // Mobile & Tablet: single column for full-width categories
-        "grid-cols-1",
-        // Desktop: 2 columns side-by-side
-        "desktop:grid-cols-2 desktop:gap-6"
-      )}>
+      {/* Categories - ALWAYS stacked vertically (1 column) on all breakpoints */}
+      <div className="grid grid-cols-1 gap-4 tablet:gap-5 desktop:gap-6">
         {stats.map((category) => (
           <div
             key={category.categoryKey}
