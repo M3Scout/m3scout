@@ -327,13 +327,13 @@ export function InlineMoreStatsPanel({
               </div>
             </div>
 
-            {/* Stats grid - FIXED: Mobile/Tablet = 2 cols, Desktop = 3-4 cols */}
+            {/* Stats grid - Mobile/Tablet = 2 cols, Desktop = 4 cols */}
             <div className={cn(
               "grid gap-3",
               // Mobile & Tablet: ALWAYS 2 columns
               "grid-cols-2",
-              // Desktop: 3 columns for better density
-              "desktop:grid-cols-3 desktop:gap-4"
+              // Desktop: 4 columns to match reference
+              "desktop:grid-cols-4 desktop:gap-4"
             )}>
               {category.stats.map((stat) => {
                 const count = getDisplayCount(stat.type);
