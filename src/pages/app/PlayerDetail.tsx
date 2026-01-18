@@ -247,123 +247,141 @@ const PlayerDetail = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-        <div className="flex items-start gap-4">
+    <div className="space-y-6 w-full min-w-0 overflow-x-hidden">
+      {/* Header - Mobile-first redesign */}
+      <div className="flex flex-col gap-4 w-full min-w-0">
+        {/* Row 1: Back button + Menu (if needed) */}
+        <div className="flex items-center justify-between">
           <Button variant="ghost" size="icon" onClick={() => navigate("/app/players")}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <div className="flex items-start gap-4">
-            {/* Photo */}
-            <div className="w-20 h-20 rounded-xl overflow-hidden bg-secondary/50 flex-shrink-0">
-              {player.photo_url ? (
-                <img
-                  src={player.photo_url}
-                  alt={player.full_name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <User className="w-8 h-8 text-muted-foreground" />
-                </div>
-              )}
-            </div>
-            <div>
-              <div className="flex items-center gap-3 mb-1">
-                <h1 className="text-2xl font-bold">{player.full_name}</h1>
-                <Badge variant={player.is_public ? "default" : "secondary"}>
-                  {player.is_public ? (
-                    <>
-                      <Eye className="w-3 h-3 mr-1" />
-                      Público
-                    </>
-                  ) : (
-                    <>
-                      <EyeOff className="w-3 h-3 mr-1" />
-                      Privado
-                    </>
-                  )}
+        </div>
+        
+        {/* Row 2: Photo + Name/Position/Rating */}
+        <div className="flex items-start gap-4 w-full min-w-0">
+          {/* Photo */}
+          <div className="w-20 h-20 rounded-xl overflow-hidden bg-secondary/50 flex-shrink-0">
+            {player.photo_url ? (
+              <img
+                src={player.photo_url}
+                alt={player.full_name}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <User className="w-8 h-8 text-muted-foreground" />
+              </div>
+            )}
+          </div>
+          
+          {/* Info block */}
+          <div className="flex-1 min-w-0">
+            {/* Name */}
+            <h1 className="text-xl md:text-2xl font-bold truncate">{player.full_name}</h1>
+            
+            {/* Positions */}
+            <div className="flex flex-wrap items-center gap-1.5 mt-1 text-muted-foreground">
+              <Badge variant="outline" className="text-xs">{player.position}</Badge>
+              {safeArray(player.secondary_positions).slice(0, 2).map((pos) => (
+                <Badge key={pos} variant="outline" className="opacity-70 text-xs">
+                  {pos}
                 </Badge>
-              </div>
-              <div className="flex flex-wrap items-center gap-2 text-muted-foreground">
-                <Badge variant="outline">{player.position}</Badge>
-                {safeArray(player.secondary_positions).map((pos) => (
-                  <Badge key={pos} variant="outline" className="opacity-70">
-                    {pos}
-                  </Badge>
-                ))}
-              </div>
-              {/* Player Rating */}
-              {player.auto_rating !== null && player.auto_rating !== undefined && (
-                <div className="mt-2">
-                  <PlayerRatingBadge
-                    rating={player.auto_rating}
-                    playerPosition={player.position}
-                    size="md"
-                  />
-                </div>
-              )}
+              ))}
             </div>
+            
+            {/* Rating */}
+            {player.auto_rating !== null && player.auto_rating !== undefined && (
+              <div className="mt-2">
+                <PlayerRatingBadge
+                  rating={player.auto_rating}
+                  playerPosition={player.position}
+                  size="sm"
+                />
+              </div>
+            )}
           </div>
         </div>
+        
+        {/* Row 3: Badge - compact */}
+        <div className="flex items-center">
+          <Badge variant={player.is_public ? "default" : "secondary"} className="text-xs">
+            {player.is_public ? (
+              <>
+                <Eye className="w-3 h-3 mr-1" />
+                Público
+              </>
+            ) : (
+              <>
+                <EyeOff className="w-3 h-3 mr-1" />
+                Privado
+              </>
+            )}
+          </Badge>
+        </div>
 
-        {/* Actions */}
-        <div className="flex flex-wrap gap-2 ml-14 md:ml-0">
-          <Button variant="outline" asChild>
+        {/* Row 4: Actions - stacked on mobile */}
+        <div className="flex flex-col gap-2 w-full">
+          <Button variant="outline" asChild className="w-full justify-center">
             <Link to={`/app/reports/new?player=${player.id}`}>
-              <FileText className="w-4 h-4" />
+              <FileText className="w-4 h-4 mr-2" />
               Novo Relatório
             </Link>
           </Button>
-          <Button variant="outline" asChild>
-            <Link to={`/app/players/${player.id}/edit`}>
-              <Edit className="w-4 h-4" />
-              Editar
-            </Link>
-          </Button>
-          {isAdmin && (
-            <Button
-              variant="destructive"
-              onClick={() => setDeleteDialogOpen(true)}
-            >
-              <Trash2 className="w-4 h-4" />
-              Excluir
+          <div className="grid grid-cols-2 gap-2">
+            <Button variant="outline" asChild className="justify-center">
+              <Link to={`/app/players/${player.id}/edit`}>
+                <Edit className="w-4 h-4 mr-2" />
+                Editar
+              </Link>
             </Button>
-          )}
+            {isAdmin && (
+              <Button
+                variant="destructive"
+                onClick={() => setDeleteDialogOpen(true)}
+                className="justify-center"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Excluir
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Main Content with Tabs */}
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7 h-auto">
-          <TabsTrigger value="overview" className="gap-2">
+      <Tabs defaultValue="overview" className="space-y-4 w-full min-w-0">
+        {/* Mobile: Grid of small tab buttons */}
+        <TabsList className="grid grid-cols-4 gap-1.5 w-full md:flex md:flex-wrap md:gap-1 p-0 md:p-1 bg-transparent md:bg-zinc-800/50 md:rounded-xl md:border md:border-white/5">
+          <TabsTrigger value="overview" className="flex-col md:flex-row gap-1 py-2 px-2 text-[10px] md:text-sm md:px-3">
             <User className="w-4 h-4" />
-            <span className="hidden sm:inline">Visão Geral</span>
+            <span className="md:hidden">Geral</span>
+            <span className="hidden md:inline">Visão Geral</span>
           </TabsTrigger>
-          <TabsTrigger value="stats" className="gap-2">
+          <TabsTrigger value="stats" className="flex-col md:flex-row gap-1 py-2 px-2 text-[10px] md:text-sm md:px-3">
             <BarChart3 className="w-4 h-4" />
-            <span className="hidden sm:inline">Estatísticas</span>
+            <span className="md:hidden">Stats</span>
+            <span className="hidden md:inline">Estatísticas</span>
           </TabsTrigger>
-          <TabsTrigger value="market" className="gap-2">
+          <TabsTrigger value="market" className="flex-col md:flex-row gap-1 py-2 px-2 text-[10px] md:text-sm md:px-3">
             <DollarSign className="w-4 h-4" />
-            <span className="hidden sm:inline">Valor de Mercado</span>
+            <span className="md:hidden">Valor</span>
+            <span className="hidden md:inline">Valor de Mercado</span>
           </TabsTrigger>
-          <TabsTrigger value="physical" className="gap-2">
+          <TabsTrigger value="physical" className="flex-col md:flex-row gap-1 py-2 px-2 text-[10px] md:text-sm md:px-3">
             <Activity className="w-4 h-4" />
-            <span className="hidden sm:inline">Físico</span>
+            <span>Físico</span>
           </TabsTrigger>
-          <TabsTrigger value="technical" className="gap-2">
+          <TabsTrigger value="technical" className="flex-col md:flex-row gap-1 py-2 px-2 text-[10px] md:text-sm md:px-3">
             <Target className="w-4 h-4" />
-            <span className="hidden sm:inline">Técnico</span>
+            <span>Técnico</span>
           </TabsTrigger>
-          <TabsTrigger value="medical" className="gap-2">
+          <TabsTrigger value="medical" className="flex-col md:flex-row gap-1 py-2 px-2 text-[10px] md:text-sm md:px-3">
             <Stethoscope className="w-4 h-4" />
-            <span className="hidden sm:inline">Médico</span>
+            <span>Médico</span>
           </TabsTrigger>
-          <TabsTrigger value="contract" className="gap-2">
+          <TabsTrigger value="contract" className="flex-col md:flex-row gap-1 py-2 px-2 text-[10px] md:text-sm md:px-3">
             <ContractIcon className="w-4 h-4" />
-            <span className="hidden sm:inline">Contrato</span>
+            <span>Contrato</span>
           </TabsTrigger>
         </TabsList>
 
