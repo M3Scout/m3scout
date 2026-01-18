@@ -285,25 +285,45 @@ const ScoutingReports = () => {
           </SelectContent>
         </Select>
 
-        {/* Grouping */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-zinc-500 hidden sm:inline">Agrupar:</span>
+        {/* Grouping - Segmented Control */}
+        <div className="flex items-center gap-2.5">
+          <span className="text-xs text-zinc-500 hidden sm:inline font-medium">Agrupar:</span>
           <Tabs value={groupBy} onValueChange={(v) => setGroupBy(v as GroupBy)}>
-            <TabsList className="bg-zinc-900/60 border border-zinc-800 h-9">
-              <TabsTrigger value="none" className="text-xs h-7 px-3 gap-1.5 data-[state=active]:bg-zinc-800">
-                <LayoutGrid className="w-3.5 h-3.5" />
+            <TabsList className="bg-zinc-900 border border-zinc-700/50 h-10 p-1 gap-0.5 rounded-lg shadow-sm">
+              <TabsTrigger 
+                value="none" 
+                className="text-xs h-8 px-2.5 sm:px-3 gap-1.5 rounded-md transition-all duration-200
+                  data-[state=inactive]:text-zinc-500 data-[state=inactive]:hover:text-zinc-300 data-[state=inactive]:hover:bg-zinc-800/50
+                  data-[state=active]:bg-zinc-700 data-[state=active]:text-zinc-100 data-[state=active]:shadow-sm"
+              >
+                <LayoutGrid className="w-4 h-4" />
                 <span className="hidden sm:inline">Todos</span>
               </TabsTrigger>
-              <TabsTrigger value="player" className="text-xs h-7 px-3 gap-1.5 data-[state=active]:bg-zinc-800">
-                <Users className="w-3.5 h-3.5" />
+              <TabsTrigger 
+                value="player" 
+                className="text-xs h-8 px-2.5 sm:px-3 gap-1.5 rounded-md transition-all duration-200
+                  data-[state=inactive]:text-zinc-500 data-[state=inactive]:hover:text-zinc-300 data-[state=inactive]:hover:bg-zinc-800/50
+                  data-[state=active]:bg-zinc-700 data-[state=active]:text-zinc-100 data-[state=active]:shadow-sm"
+              >
+                <Users className="w-4 h-4" />
                 <span className="hidden sm:inline">Atleta</span>
               </TabsTrigger>
-              <TabsTrigger value="competition" className="text-xs h-7 px-3 gap-1.5 data-[state=active]:bg-zinc-800">
-                <Trophy className="w-3.5 h-3.5" />
+              <TabsTrigger 
+                value="competition" 
+                className="text-xs h-8 px-2.5 sm:px-3 gap-1.5 rounded-md transition-all duration-200
+                  data-[state=inactive]:text-zinc-500 data-[state=inactive]:hover:text-zinc-300 data-[state=inactive]:hover:bg-zinc-800/50
+                  data-[state=active]:bg-zinc-700 data-[state=active]:text-zinc-100 data-[state=active]:shadow-sm"
+              >
+                <Trophy className="w-4 h-4" />
                 <span className="hidden sm:inline">Competição</span>
               </TabsTrigger>
-              <TabsTrigger value="scout" className="text-xs h-7 px-3 gap-1.5 data-[state=active]:bg-zinc-800">
-                <User className="w-3.5 h-3.5" />
+              <TabsTrigger 
+                value="scout" 
+                className="text-xs h-8 px-2.5 sm:px-3 gap-1.5 rounded-md transition-all duration-200
+                  data-[state=inactive]:text-zinc-500 data-[state=inactive]:hover:text-zinc-300 data-[state=inactive]:hover:bg-zinc-800/50
+                  data-[state=active]:bg-zinc-700 data-[state=active]:text-zinc-100 data-[state=active]:shadow-sm"
+              >
+                <User className="w-4 h-4" />
                 <span className="hidden sm:inline">Scout</span>
               </TabsTrigger>
             </TabsList>
