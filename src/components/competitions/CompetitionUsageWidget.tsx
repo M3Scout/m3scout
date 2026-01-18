@@ -181,7 +181,7 @@ const CompetitionUsageWidget = () => {
 
   return (
     <>
-      <Card>
+      <Card className="border-0 bg-zinc-900/60 shadow-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-primary" />
