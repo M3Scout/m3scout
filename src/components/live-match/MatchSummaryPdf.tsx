@@ -25,7 +25,10 @@ const EVENT_LABELS: Record<MatchEventType, string> = {
   clearance: "Corte",
   duel_won: "Duelo Ganho",
   duel_total: "Duelo Total",
+  ground_duel_won: "Duelo no Chão",
+  ground_duel_total: "Duelo no Chão (Perdido)",
   aerial_duel_won: "Duelo Aéreo",
+  aerial_duel_total: "Duelo Aéreo (Perdido)",
   yellow: "Amarelo",
   red: "Vermelho",
   foul_committed: "Falta Cometida",
@@ -42,6 +45,7 @@ const EVENT_LABELS: Record<MatchEventType, string> = {
   punch: "Soco",
   high_claim: "Bola Alta",
   sweeper_action: "Saída Gol",
+  substitution: "Substituição",
   // Player presence events
   player_on: "Entrou",
   player_off: "Saiu",

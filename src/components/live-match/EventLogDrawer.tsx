@@ -17,7 +17,7 @@ import { List, Trash2, Edit2, X, Check, ArrowRightLeft } from "lucide-react";
 import { formatGameMinute } from "@/lib/formatters";
 
 // Event type labels
-const EVENT_LABELS: Record<MatchEventType | "substitution", string> = {
+const EVENT_LABELS: Record<MatchEventType, string> = {
   goal: "Gol",
   assist: "Assistência",
   shot: "Finalização Fora",
@@ -32,7 +32,10 @@ const EVENT_LABELS: Record<MatchEventType | "substitution", string> = {
   clearance: "Corte",
   duel_won: "Duelo Ganho",
   duel_total: "Duelo Total",
+  ground_duel_won: "Duelo no Chão",
+  ground_duel_total: "Duelo no Chão (Perdido)",
   aerial_duel_won: "Duelo Aéreo",
+  aerial_duel_total: "Duelo Aéreo (Perdido)",
   yellow: "Amarelo",
   red: "Vermelho",
   foul_committed: "Falta Cometida",
