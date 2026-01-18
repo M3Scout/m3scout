@@ -157,8 +157,9 @@ export const EVENT_TYPE_CONFIG: Record<MatchEventType, SummaryEventConfig> = {
   recovery: { label: "Recuperações", icon: "↩️", category: "defense", order: 32 },
   clearance: { label: "Cortes", icon: "🧹", category: "defense", order: 33 },
   duel_won: { label: "Duelos Ganhos", icon: "💪", category: "defense", order: 34 },
-  duel_total: { label: "Duelos Totais", icon: "⚔️", category: "defense", order: 35 },
-  aerial_duel_won: { label: "Duelos Aéreos", icon: "🦅", category: "defense", order: 36 },
+  duel_total: { label: "Duelos Perdidos", icon: "⚔️", category: "defense", order: 35 },
+  aerial_duel_won: { label: "Duelos Aéreos Ganhos", icon: "🦅", category: "defense", order: 36 },
+  aerial_duel_total: { label: "Duelos Aéreos Perdidos", icon: "🦅", category: "defense", order: 37 },
   
   // Discipline
   yellow: { label: "Cartões Amarelos", icon: "🟨", category: "discipline", order: 40 },

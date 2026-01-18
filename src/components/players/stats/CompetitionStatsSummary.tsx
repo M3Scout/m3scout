@@ -137,8 +137,9 @@ export function CompetitionStatsSummary({
             <>
               <StatChip label="Gols" value={safe(stats.goals)} highlight />
               <StatChip label="Assist" value={safe(stats.assists)} highlight />
-              <StatChip label="Chutes" value={safe(stats.shots)} />
+              <StatChip label="Final" value={safe(stats.shots)} />
               <StatChip label="No Gol" value={safe(stats.shots_on_target)} />
+              <StatChip label="% Final" value={`${shotAccuracy}%`} />
               <StatChip label="P.Dec" value={safe(stats.key_passes)} />
               <StatChip label="Chances" value={safe(stats.chances_created)} />
               <StatChip label="Dribles" value={`${safe(stats.successful_dribbles)}/${safe(stats.total_dribbles)}`} />
@@ -212,15 +213,16 @@ export function CompetitionStatsSummary({
       ) : (
         // Outfield Player Stats
         <>
-          {/* Attack */}
-          <StatSection title="Ataque" icon={<Crosshair className="w-4 h-4" />} iconColor="text-orange-500">
+          {/* Attack / Finalizações */}
+          <StatSection title="Ataque / Finalizações" icon={<Crosshair className="w-4 h-4" />} iconColor="text-orange-500">
             <StatChip label="Jogos" value={safe(stats.matches)} highlight />
             <StatChip label="Minutos" value={safe(stats.minutes)} />
             <StatChip label="Gols" value={safe(stats.goals)} variant="success" />
             <StatChip label="Assistências" value={safe(stats.assists)} variant="success" />
-            <StatChip label="Chutes" value={safe(stats.shots)} />
+            <StatChip label="Finalizações" value={safe(stats.shots)} />
             <StatChip label="No Gol" value={safe(stats.shots_on_target)} />
-            <StatChip label="% Chutes" value={`${shotAccuracy}%`} />
+            <StatChip label="Fora" value={Math.max(0, safe(stats.shots) - safe(stats.shots_on_target))} />
+            <StatChip label="% Precisão" value={`${shotAccuracy}%`} />
             <StatChip label="Impedimentos" value={safe(stats.offsides)} />
           </StatSection>
 
