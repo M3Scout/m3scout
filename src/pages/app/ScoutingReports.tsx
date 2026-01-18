@@ -373,32 +373,48 @@ const ScoutingReports = () => {
           )}
         </motion.div>
       ) : (
-        <div className="space-y-8">
-          <AnimatePresence mode="popLayout">
+        <AnimatePresence mode="wait">
+          <motion.div 
+            key={groupBy}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="space-y-8"
+          >
             {Object.entries(groupedReports).map(([groupName, groupReports], groupIndex) => (
               <motion.div
                 key={groupName}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ delay: groupIndex * 0.1 }}
+                transition={{ delay: groupIndex * 0.05, duration: 0.25 }}
               >
                 {/* Group header (only show if grouped) */}
                 {groupBy !== "none" && (
-                  <div className="flex items-center gap-3 mb-4">
+                  <motion.div 
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: groupIndex * 0.05 + 0.1 }}
+                    className="flex items-center gap-3 mb-4"
+                  >
                     <h2 className="text-lg font-semibold text-zinc-200">
                       {groupName}
                     </h2>
                     <span className="text-xs text-zinc-500 bg-zinc-800/60 px-2 py-0.5 rounded-full">
                       {groupReports.length} relatório{groupReports.length !== 1 ? "s" : ""}
                     </span>
-                  </div>
+                  </motion.div>
                 )}
 
                 {/* Reports grid */}
                 <div className="space-y-3">
                   {safeArray(groupReports).map((report, i) => (
-                    <div key={report.id}>
+                    <motion.div 
+                      key={report.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: groupIndex * 0.05 + i * 0.03, duration: 0.2 }}
+                    >
                       <ReportCard
                         report={report}
                         scoutName={scoutNames[report.scout_id] || "Scout"}
@@ -415,13 +431,13 @@ const ScoutingReports = () => {
                           if (!open) setDeleteDialogOpen(null);
                         }}
                       />
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
               </motion.div>
             ))}
-          </AnimatePresence>
-        </div>
+          </motion.div>
+        </AnimatePresence>
       )}
     </div>
   );
