@@ -123,6 +123,8 @@ export default function LiveMatchReview() {
     matchPlayers,
     matchEvents,
     playerEventCounts,
+    matchPlayerStats,
+    playerStatsMap,
     isLoading,
     matchError,
     clearLocalDraft,
@@ -326,7 +328,9 @@ export default function LiveMatchReview() {
       const durationMinutes = match.duration_minutes;
 
       for (const mp of matchPlayers) {
-        const counts = (playerEventCounts[mp.player_id] || {}) as Partial<Record<MatchEventType, number>>;
+        // Use match_player_stats (calculated by RPC with proper derivations like goal→shot_on_target)
+        // instead of counting raw events which misses derived stats
+        const matchStats = playerStatsMap[mp.player_id];
         
         // Use manual minutes if set, otherwise calculate automatically
         const minutesPlayed = manualMinutes[mp.player_id] ?? calculateMinutesPlayed(mp, durationMinutes);
@@ -340,17 +344,57 @@ export default function LiveMatchReview() {
           .eq("season_year", match.season_year)
           .maybeSingle();
 
-        // Build update object with incremented values
+        // Build update object with incremented values using match_player_stats
+        // This ensures derived stats (goal → shots + shots_on_target) are correctly included
         const statsData: Record<string, number> = {
           matches: (existingStats?.matches ?? 0) + 1,
           minutes: (existingStats?.minutes ?? 0) + minutesPlayed,
         };
 
-        for (const [eventType, column] of Object.entries(EVENT_TO_STAT_COLUMN)) {
-          const newValue = counts[eventType as MatchEventType] ?? 0;
-          if (column) {
-            const existingValue = existingStats?.[column as keyof typeof existingStats] ?? 0;
-            statsData[column] = (typeof existingValue === 'number' ? existingValue : 0) + newValue;
+        // Map from match_player_stats columns to player_stats columns
+        const MATCH_STATS_TO_PLAYER_STATS: Record<string, string> = {
+          goals: "goals",
+          assists: "assists",
+          shots: "shots",
+          shots_on_target: "shots_on_target",
+          key_passes: "key_passes",
+          chances_created: "chances_created",
+          dribbles_success: "successful_dribbles",
+          dribbles_total: "total_dribbles",
+          tackles: "tackles",
+          interceptions: "interceptions",
+          recoveries: "recoveries",
+          clearances: "clearances",
+          duels_won: "duels_won",
+          duels_total: "total_duels",
+          aerial_duels_won: "aerial_duels_won",
+          yellow_cards: "yellow_cards",
+          red_cards: "red_cards",
+          fouls_committed: "fouls_committed",
+          fouls_suffered: "fouls_drawn",
+          passes_completed: "accurate_passes",
+          passes_total: "total_passes",
+          possession_lost: "possession_lost",
+          saves: "saves",
+          goals_conceded: "goals_conceded",
+        };
+
+        if (matchStats) {
+          // Use pre-calculated stats from match_player_stats (includes derived values)
+          for (const [matchCol, playerCol] of Object.entries(MATCH_STATS_TO_PLAYER_STATS)) {
+            const newValue = (matchStats as unknown as Record<string, number>)[matchCol] ?? 0;
+            const existingValue = existingStats?.[playerCol as keyof typeof existingStats] ?? 0;
+            statsData[playerCol] = (typeof existingValue === 'number' ? existingValue : 0) + newValue;
+          }
+        } else {
+          // Fallback to event counting if no match_player_stats exist
+          const counts = (playerEventCounts[mp.player_id] || {}) as Partial<Record<MatchEventType, number>>;
+          for (const [eventType, column] of Object.entries(EVENT_TO_STAT_COLUMN)) {
+            const newValue = counts[eventType as MatchEventType] ?? 0;
+            if (column) {
+              const existingValue = existingStats?.[column as keyof typeof existingStats] ?? 0;
+              statsData[column] = (typeof existingValue === 'number' ? existingValue : 0) + newValue;
+            }
           }
         }
 
