@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LiveMatchCard } from "@/components/live-match/LiveMatchCard";
+import { useTeamSettings } from "@/hooks/useTeamSettings";
 import { toast } from "sonner";
 import {
   Radio,
@@ -203,6 +204,11 @@ function MatchCard({ match, link, onDelete, index }: MatchCardProps) {
   const config = statusConfig[match.status];
   const competitionName = match.competition?.display_name || match.competition?.name || "Competição";
   const isLive = match.status === "live";
+  const { teamName: globalTeamName, logoUrl: globalLogoUrl } = useTeamSettings();
+
+  // Use match-specific team info with fallback to global settings
+  const displayTeamName = match.team_name_display || globalTeamName || "Time";
+  const displayLogoUrl = match.team_logo_url || globalLogoUrl;
 
   return (
     <motion.div
@@ -225,26 +231,50 @@ function MatchCard({ match, link, onDelete, index }: MatchCardProps) {
         )}
 
         <div className="flex items-center gap-4">
-          {/* Status indicator */}
-          <div className={cn(
-            "shrink-0 w-12 h-12 rounded-xl flex items-center justify-center",
-            config.bgClass
-          )}>
-            <div className={cn("scale-125", config.textClass)}>
-              {config.icon}
-            </div>
+          {/* Team logos section */}
+          <div className="shrink-0 flex items-center gap-2">
+            {/* Home team logo */}
+            {displayLogoUrl ? (
+              <img 
+                src={displayLogoUrl} 
+                alt={displayTeamName} 
+                className="w-10 h-10 object-contain rounded-lg bg-zinc-800/50 p-1"
+              />
+            ) : (
+              <div className={cn(
+                "w-10 h-10 rounded-lg flex items-center justify-center text-xs font-bold",
+                config.bgClass, config.textClass
+              )}>
+                {displayTeamName.substring(0, 2).toUpperCase()}
+              </div>
+            )}
+            
+            <span className="text-zinc-500 text-xs font-medium">vs</span>
+            
+            {/* Away team logo */}
+            {match.opponent_logo_url ? (
+              <img 
+                src={match.opponent_logo_url} 
+                alt={match.opponent_name} 
+                className="w-10 h-10 object-contain rounded-lg bg-zinc-800/50 p-1"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-lg bg-zinc-700/40 flex items-center justify-center text-xs font-bold text-zinc-400">
+                {match.opponent_name.substring(0, 2).toUpperCase()}
+              </div>
+            )}
           </div>
 
           {/* Match info */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <h4 className="font-semibold text-zinc-100 truncate">
-                vs {match.opponent_name}
+                {displayTeamName} <span className="text-zinc-500 font-normal">vs</span> {match.opponent_name}
               </h4>
               <Badge 
                 variant="outline" 
                 className={cn(
-                  "text-[10px] px-2 py-0 h-5 border-0",
+                  "text-[10px] px-2 py-0 h-5 border-0 shrink-0",
                   config.bgClass, config.textClass
                 )}
               >
@@ -252,7 +282,7 @@ function MatchCard({ match, link, onDelete, index }: MatchCardProps) {
               </Badge>
             </div>
 
-            <div className="flex items-center gap-3 text-xs text-zinc-500">
+            <div className="flex items-center gap-3 text-xs text-zinc-500 flex-wrap">
               <span className="flex items-center gap-1">
                 <Trophy className="h-3 w-3" />
                 {competitionName}
