@@ -222,17 +222,26 @@ function MatchCard({ match, link, onDelete, index }: MatchCardProps) {
         className={cn(
           "block relative rounded-xl border bg-zinc-900/60 p-4 transition-all duration-300",
           "hover:bg-zinc-900/80 hover:border-zinc-700/60 hover:shadow-xl hover:shadow-black/20 hover:-translate-y-0.5",
-          isLive && "border-red-500/30 shadow-lg shadow-red-500/10"
+          isLive && "border-red-500/30 shadow-lg shadow-red-500/10",
+          // Touch optimizations - single tap opens immediately
+          "touch-action-manipulation",
+          "[touch-action:manipulation]",
+          "[-webkit-tap-highlight-color:transparent]"
         )}
+        style={{
+          // iOS touch optimization
+          WebkitTapHighlightColor: 'transparent',
+          touchAction: 'manipulation',
+        }}
       >
-        {/* Live glow effect */}
+        {/* Live glow effect - pointer-events-none to not capture touches */}
         {isLive && (
           <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-red-600/5 via-transparent to-red-600/5 pointer-events-none" />
         )}
 
         <div className="flex items-center gap-4">
           {/* Team logos section */}
-          <div className="shrink-0 flex items-center gap-2">
+          <div className="shrink-0 flex items-center gap-2 pointer-events-none">
             {/* Home team logo */}
             {displayLogoUrl ? (
               <img 
@@ -265,8 +274,8 @@ function MatchCard({ match, link, onDelete, index }: MatchCardProps) {
             )}
           </div>
 
-          {/* Match info */}
-          <div className="flex-1 min-w-0">
+          {/* Match info - pointer-events-none so touches pass through to link */}
+          <div className="flex-1 min-w-0 pointer-events-none">
             <div className="flex items-center gap-2 mb-1">
               <h4 className="font-semibold text-zinc-100 truncate">
                 {displayTeamName} <span className="text-zinc-500 font-normal">vs</span> {match.opponent_name}
@@ -304,42 +313,63 @@ function MatchCard({ match, link, onDelete, index }: MatchCardProps) {
             </div>
           </div>
 
-          {/* Actions */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild onClick={(e) => e.preventDefault()}>
-              <Button 
-                variant="ghost" 
-                size="icon"
-                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <MoreVertical className="w-4 h-4 text-zinc-500" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-800">
-              <DropdownMenuItem asChild>
-                <Link to={link} className="flex items-center gap-2 cursor-pointer">
-                  {match.status === "live" ? (
-                    <>
-                      <Play className="w-3.5 h-3.5" />
-                      Continuar
-                    </>
-                  ) : (
-                    <>
-                      <Eye className="w-3.5 h-3.5" />
-                      Ver detalhes
-                    </>
-                  )}
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={(e) => { e.preventDefault(); onDelete(); }}
-                className="text-red-400 focus:text-red-400 focus:bg-red-500/10 cursor-pointer"
-              >
-                <Trash2 className="w-3.5 h-3.5 mr-2" />
-                Excluir
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* Actions - Stop propagation to prevent navigation when clicking menu */}
+          <div 
+            className="relative z-10"
+            onClick={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+          >
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  className="h-8 w-8 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity touch:opacity-100"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  onTouchEnd={(e) => {
+                    e.stopPropagation();
+                  }}
+                  style={{
+                    // Always visible on touch devices
+                    opacity: 'var(--touch-opacity, 0)',
+                  }}
+                >
+                  <MoreVertical className="w-4 h-4 text-zinc-500" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-800">
+                <DropdownMenuItem asChild>
+                  <Link to={link} className="flex items-center gap-2 cursor-pointer">
+                    {match.status === "live" ? (
+                      <>
+                        <Play className="w-3.5 h-3.5" />
+                        Continuar
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="w-3.5 h-3.5" />
+                        Ver detalhes
+                      </>
+                    )}
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={(e) => { 
+                    e.preventDefault(); 
+                    e.stopPropagation();
+                    onDelete(); 
+                  }}
+                  className="text-red-400 focus:text-red-400 focus:bg-red-500/10 cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5 mr-2" />
+                  Excluir
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </Link>
     </motion.div>
