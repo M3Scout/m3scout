@@ -723,7 +723,7 @@ const AppPlayers = () => {
           {/* List View - Compact Rows */}
           {isMobile ? (
             <div className="space-y-2">
-              {safeArray(paginatedPlayers).map((player) => (
+              {safeArray(paginatedPlayers).map((player, index) => (
                 <PlayerMobileCard
                   key={player.id}
                   id={player.id}
@@ -742,12 +742,13 @@ const AppPlayers = () => {
                   isAdmin={isAdmin}
                   onArchive={() => handleArchivePlayer(player)}
                   onDelete={() => handleDeleteClick(player)}
+                  index={index}
                 />
               ))}
             </div>
           ) : (
             <div className="space-y-1.5">
-              {safeArray(paginatedPlayers).map((player) => (
+              {safeArray(paginatedPlayers).map((player, index) => (
                 <PlayerRowCard
                   key={player.id}
                   id={player.id}
@@ -766,6 +767,7 @@ const AppPlayers = () => {
                   isAdmin={isAdmin}
                   onArchive={() => handleArchivePlayer(player)}
                   onDelete={() => handleDeleteClick(player)}
+                  index={index}
                 />
               ))}
             </div>
