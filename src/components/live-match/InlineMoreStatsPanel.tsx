@@ -190,23 +190,38 @@ export function InlineMoreStatsPanel({
   // For the "-" button, we need to check if there are events to remove (event-based)
   const getEventCount = (type: MatchEventType) => eventCounts[type] || 0;
 
+  // Haptic feedback for touch devices
+  const triggerHaptic = useCallback((type: 'light' | 'medium' | 'error' = 'light') => {
+    if ('vibrate' in navigator) {
+      const patterns: Record<string, number | number[]> = {
+        light: 10,
+        medium: 20,
+        error: [30, 50, 30],
+      };
+      navigator.vibrate(patterns[type]);
+    }
+  }, []);
+
   const handleAddStat = useCallback((type: MatchEventType, label: string) => {
     if (isSubmitting || disabled) return;
 
     if (isLive && !isOnField) {
+      triggerHaptic('error');
       toast.error("Atleta fora de campo");
       return;
     }
     if (isLive && isPaused) {
+      triggerHaptic('error');
       toast.warning("Jogo pausado");
       return;
     }
 
+    triggerHaptic('medium');
     setIsSubmitting(true);
     onAddEvent(type);
     toast.success(`${label} +1`, { duration: 2000 });
     setTimeout(() => setIsSubmitting(false), 250);
-  }, [isSubmitting, disabled, isLive, isOnField, isPaused, onAddEvent]);
+  }, [isSubmitting, disabled, isLive, isOnField, isPaused, onAddEvent, triggerHaptic]);
 
   const handleRemoveStat = useCallback((type: MatchEventType, label: string) => {
     if (isSubmitting || disabled) return;
@@ -214,17 +229,19 @@ export function InlineMoreStatsPanel({
     // Check event count (not display count) to see if there's an event to remove
     const eventCount = getEventCount(type);
     if (eventCount === 0) {
+      triggerHaptic('error');
       toast.info("Nenhum evento para remover");
       return;
     }
 
     if (onVoidLastEvent) {
+      triggerHaptic('light');
       setIsSubmitting(true);
       onVoidLastEvent(type);
       toast.success(`${label} -1`, { duration: 2000 });
       setTimeout(() => setIsSubmitting(false), 250);
     }
-  }, [isSubmitting, disabled, onVoidLastEvent, getEventCount]);
+  }, [isSubmitting, disabled, onVoidLastEvent, getEventCount, triggerHaptic]);
 
   // Get category accent color for hover/focus effects
   const getCategoryAccent = (color: string) => {
