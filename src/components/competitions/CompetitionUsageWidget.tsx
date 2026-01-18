@@ -210,7 +210,7 @@ const CompetitionUsageWidget = () => {
               <p>Nenhuma competição em uso ainda</p>
             </div>
           ) : (
-            <div className="rounded-lg border overflow-hidden">
+            <div className="rounded-lg overflow-hidden">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/30">

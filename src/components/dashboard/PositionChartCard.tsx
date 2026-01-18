@@ -36,10 +36,10 @@ export const PositionChartCard = ({ data }: PositionChartCardProps) => {
     <motion.div 
       {...fadeInUp}
       transition={{ delay: 0.25 }}
-      className="w-full h-full flex flex-col rounded-[var(--radius-card)] border border-[var(--border-glass)] bg-[var(--bg-glass)] backdrop-blur-sm overflow-hidden"
+      className="w-full h-full flex flex-col rounded-[var(--radius-card)] bg-zinc-900/60 backdrop-blur-sm shadow-sm overflow-hidden"
     >
       {/* Header */}
-      <div className="px-4 sm:px-5 py-4 border-b border-[var(--border-glass)] bg-zinc-900/50 shrink-0">
+      <div className="px-4 sm:px-5 py-4 border-b border-zinc-800/40 bg-zinc-900/50 shrink-0">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-[var(--radius-button)] bg-gradient-to-br from-emerald-500/20 to-green-600/10 flex items-center justify-center">
             <PieChart className="w-4 h-4 text-emerald-400" />
@@ -112,7 +112,7 @@ export const PositionChartCard = ({ data }: PositionChartCardProps) => {
               </ResponsiveContainer>
             </div>
 
-            <div className="flex items-center justify-between pt-3 mt-auto border-t border-[var(--border-glass)] shrink-0">
+            <div className="flex items-center justify-between pt-3 mt-auto border-t border-zinc-800/40 shrink-0">
               <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                 <Users className="w-3.5 h-3.5" />
                 <span>{total} atletas</span>
