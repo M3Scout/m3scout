@@ -1,16 +1,34 @@
 import { Outlet } from "react-router-dom";
 import { AppSidebar } from "./AppSidebar";
+import { SidebarProvider, useSidebar } from "@/hooks/useSidebar";
+import { cn } from "@/lib/utils";
 
-export function AppLayout() {
+function AppLayoutContent() {
+  const { isCollapsed } = useSidebar();
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex w-full">
       <AppSidebar />
-      {/* Mobile padding for fixed header */}
-      <main className="lg:ml-56 pt-14 lg:pt-0 min-h-screen">
-        <div className="p-[var(--padding-mobile)] md:p-6 lg:p-8 max-w-[1400px]">
+      {/* Main content with dynamic margin based on sidebar state */}
+      <main 
+        className={cn(
+          "flex-1 pt-14 lg:pt-0 min-h-screen transition-[margin] duration-200 ease-out",
+          // Desktop: dynamic margin based on sidebar state
+          isCollapsed ? "lg:ml-[60px]" : "lg:ml-56"
+        )}
+      >
+        <div className="p-[var(--padding-mobile)] md:p-6 lg:p-8 w-full">
           <Outlet />
         </div>
       </main>
     </div>
+  );
+}
+
+export function AppLayout() {
+  return (
+    <SidebarProvider>
+      <AppLayoutContent />
+    </SidebarProvider>
   );
 }

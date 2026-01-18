@@ -16,8 +16,8 @@ import {
   Radio,
 } from "lucide-react";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { useSidebar } from "@/hooks/useSidebar";
 import { toast } from "sonner";
 import logoM3 from "@/assets/logo-m3.png";
 import logoM3Icon from "@/assets/logo-m3-icon.png";
@@ -41,7 +41,7 @@ export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const { isCollapsed, toggleCollapsed } = useSidebar();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isActive = (href: string) => {
@@ -141,7 +141,7 @@ export function AppSidebar() {
             )}
           </Link>
           <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
+            onClick={toggleCollapsed}
             className={cn(
               "w-6 h-6 flex items-center justify-center text-zinc-600 hover:text-zinc-300 transition-colors rounded",
               isCollapsed && "mx-auto"
