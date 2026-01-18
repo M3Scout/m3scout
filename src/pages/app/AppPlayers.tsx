@@ -408,31 +408,34 @@ const AppPlayers = () => {
     return pages;
   };
 
-  return (
+    return (
     <ErrorBoundary fallbackMessage="Não foi possível carregar os detalhes da competição.">
-    <div className="space-y-6">
-      {/* Header */}
-      <header className="admin-header animate-fade-in">
-        <div>
+    <div className="space-y-6 w-full min-w-0 overflow-x-hidden">
+      {/* Header - Mobile responsive */}
+      <header className="admin-header animate-fade-in flex-col gap-4">
+        <div className="w-full">
           <h1 className="admin-title">Atletas</h1>
           <p className="admin-subtitle">Gerencie todos os atletas da agência</p>
         </div>
-        <div className="flex gap-2">
+        {/* Actions - stack on mobile, row on desktop */}
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           {isAdmin && (
             <BulkRecalculateButton onComplete={fetchPlayers} />
           )}
-          <Button variant="outline" asChild className="admin-btn-outline">
-            <Link to="/app/compare">
-              <GitCompare className="w-4 h-4" />
-              Comparar
-            </Link>
-          </Button>
-          <Button className="admin-btn-primary" asChild>
-            <Link to="/app/players/new">
-              <Plus className="w-4 h-4" />
-              Novo Atleta
-            </Link>
-          </Button>
+          <div className="grid grid-cols-2 sm:flex gap-2">
+            <Button variant="outline" asChild className="admin-btn-outline justify-center">
+              <Link to="/app/compare">
+                <GitCompare className="w-4 h-4 sm:mr-1" />
+                <span className="hidden sm:inline">Comparar</span>
+              </Link>
+            </Button>
+            <Button className="admin-btn-primary justify-center" asChild>
+              <Link to="/app/players/new">
+                <Plus className="w-4 h-4 sm:mr-1" />
+                <span className="hidden sm:inline">Novo Atleta</span>
+              </Link>
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -657,10 +660,38 @@ const AppPlayers = () => {
         </div>
       ) : viewMode === "table" ? (
         /* LIST MODE - Compact rows, no position colors */
-        <div className="space-y-2 animate-fade-in delay-100">
-          {/* Sort Controls */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2 text-xs text-zinc-500">
+        <div className="space-y-2 animate-fade-in delay-100 w-full min-w-0">
+          {/* Sort Controls - Compact dropdown on mobile, inline buttons on desktop */}
+          <div className="flex items-center justify-between mb-4 w-full min-w-0">
+            {/* Mobile: Dropdown sort */}
+            <div className="flex md:hidden items-center gap-2 w-full">
+              <span className="text-xs text-zinc-500 shrink-0">Ordenar:</span>
+              <Select 
+                value={`${sortField}-${sortDirection}`} 
+                onValueChange={(value) => {
+                  const [field, dir] = value.split('-') as [SortField, SortDirection];
+                  setSortField(field);
+                  setSortDirection(dir);
+                }}
+              >
+                <SelectTrigger className="flex-1 h-9 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="avg_score-desc">Score ↓</SelectItem>
+                  <SelectItem value="avg_score-asc">Score ↑</SelectItem>
+                  <SelectItem value="auto_rating-desc">Nota Global ↓</SelectItem>
+                  <SelectItem value="auto_rating-asc">Nota Global ↑</SelectItem>
+                  <SelectItem value="full_name-asc">Nome A-Z</SelectItem>
+                  <SelectItem value="full_name-desc">Nome Z-A</SelectItem>
+                  <SelectItem value="position-asc">Posição A-Z</SelectItem>
+                  <SelectItem value="position-desc">Posição Z-A</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Desktop: Inline buttons */}
+            <div className="hidden md:flex items-center gap-2 text-xs text-zinc-500">
               <span>Ordenar por:</span>
               <button 
                 onClick={() => handleSort("avg_score")}
