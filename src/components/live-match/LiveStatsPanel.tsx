@@ -221,8 +221,8 @@ function CategorySection({ category, stats, delay = 0 }: CategorySectionProps) {
         )} />
       </div>
       
-      {/* Stats grid */}
-      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
+      {/* Stats grid - 2 cols on mobile/tablet, 4 on desktop */}
+      <div className="grid grid-cols-2 desktop:grid-cols-4 gap-2">
         {stats.map((stat, index) => (
           <MiniStatCard
             key={stat.key}
