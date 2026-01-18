@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import { formatFixed } from "@/lib/formatters";
 import { motion } from "framer-motion";
-import { fadeInUp, cardHover, cardTap } from "@/lib/animations";
+import { fadeInUp, playerRankItemVariants, subtleHover, subtleTap } from "@/lib/animations";
 
 interface RankedPlayer {
   id: string;
@@ -154,21 +154,30 @@ export const TopPlayersCard = () => {
             {players.map((player, index) => (
               <motion.div
                 key={player.id}
-                whileHover={cardHover}
-                whileTap={cardTap}
+                custom={index}
+                initial="hidden"
+                animate="visible"
+                variants={playerRankItemVariants}
+                whileHover={subtleHover}
+                whileTap={subtleTap}
               >
                 <Link
                   to={`/app/players/${player.id}`}
                   className={`group flex items-center gap-3 p-3 flex-1 min-h-[52px] rounded-[var(--radius-button)] transition-all duration-200 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 w-full max-w-full overflow-hidden ${getRankBg(index + 1)}`}
                 >
                   {/* Rank */}
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${
-                    index < 3 ? '' : 'bg-zinc-800 text-muted-foreground'
-                  }`}>
+                  <motion.div 
+                    className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${
+                      index < 3 ? '' : 'bg-zinc-800 text-muted-foreground'
+                    }`}
+                    initial={{ scale: 0, rotate: -180 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ delay: index * 0.05 + 0.15, duration: 0.3, type: "spring", stiffness: 200 }}
+                  >
                     {getMedalIcon(index + 1) || (
                       <span>{index + 1}</span>
                     )}
-                  </div>
+                  </motion.div>
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">
@@ -193,13 +202,19 @@ export const TopPlayersCard = () => {
                   </div>
 
                   {/* Rating */}
-                  <Badge 
-                    variant="outline" 
-                    className={`${getRatingColor(player.auto_rating)} border font-semibold text-xs px-2 py-0.5 rounded-full`}
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.05 + 0.2, duration: 0.25 }}
                   >
-                    <Star className="w-3 h-3 mr-1 fill-current" />
-                    {formatFixed(player.auto_rating, 1, "-")}
-                  </Badge>
+                    <Badge 
+                      variant="outline" 
+                      className={`${getRatingColor(player.auto_rating)} border font-semibold text-xs px-2 py-0.5 rounded-full`}
+                    >
+                      <Star className="w-3 h-3 mr-1 fill-current" />
+                      {formatFixed(player.auto_rating, 1, "-")}
+                    </Badge>
+                  </motion.div>
 
                   <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
                 </Link>
