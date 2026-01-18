@@ -54,13 +54,13 @@ const getMedalIcon = (rank: number) => {
 const getRankBg = (rank: number) => {
   switch (rank) {
     case 1:
-      return "bg-gradient-to-r from-yellow-500/20 to-amber-500/10 border-yellow-500/30";
+      return "bg-gradient-to-r from-yellow-500/20 to-amber-500/10";
     case 2:
-      return "bg-gradient-to-r from-zinc-400/10 to-zinc-500/5 border-zinc-400/20";
+      return "bg-gradient-to-r from-zinc-400/10 to-zinc-500/5";
     case 3:
-      return "bg-gradient-to-r from-amber-600/15 to-orange-500/5 border-amber-600/20";
+      return "bg-gradient-to-r from-amber-600/15 to-orange-500/5";
     default:
-      return "bg-[var(--bg-glass)] border-[var(--border-glass)]";
+      return "bg-zinc-800/30";
   }
 };
 
@@ -159,7 +159,7 @@ export const TopPlayersCard = () => {
               >
                 <Link
                   to={`/app/players/${player.id}`}
-                  className={`group flex items-center gap-3 p-3 flex-1 min-h-[52px] rounded-[var(--radius-button)] border transition-all duration-200 ${getRankBg(index + 1)}`}
+                  className={`group flex items-center gap-3 p-3 flex-1 min-h-[52px] rounded-[var(--radius-button)] transition-all duration-200 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${getRankBg(index + 1)}`}
                 >
                   {/* Rank */}
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${
