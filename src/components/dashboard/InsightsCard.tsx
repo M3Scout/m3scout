@@ -496,7 +496,7 @@ export const InsightsCard = () => {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full h-full flex flex-col rounded-xl bg-zinc-900/60 backdrop-blur-sm shadow-sm overflow-hidden"
+        className="w-full max-w-full h-full flex flex-col rounded-xl bg-zinc-900/60 backdrop-blur-sm shadow-sm overflow-hidden"
       >
         <div className="px-5 py-4 border-b border-zinc-800/40 bg-zinc-900/50 shrink-0">
           <div className="flex items-center gap-2.5">
@@ -524,7 +524,7 @@ export const InsightsCard = () => {
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="w-full h-full flex flex-col rounded-xl bg-zinc-900/60 backdrop-blur-sm shadow-sm overflow-hidden"
+      className="w-full max-w-full h-full flex flex-col rounded-xl bg-zinc-900/60 backdrop-blur-sm shadow-sm overflow-hidden"
     >
       {/* Header */}
       <div className="px-5 py-4 border-b border-zinc-800/40 bg-zinc-900/50 shrink-0">
@@ -551,7 +551,7 @@ export const InsightsCard = () => {
                   <TooltipTrigger asChild>
                     <Link
                       to={insight.link}
-                      className={`group flex items-center gap-3 p-3 flex-1 min-h-[52px] rounded-lg border transition-all duration-200 hover:scale-[1.01] ${insight.bgClass} ${insight.borderClass}`}
+                      className={`group flex items-center gap-3 p-3 flex-1 min-h-[52px] rounded-lg border transition-all duration-200 hover:scale-[1.01] w-full max-w-full overflow-hidden ${insight.bgClass} ${insight.borderClass}`}
                     >
                       {/* Icon */}
                       <div className={`w-8 h-8 rounded-lg bg-zinc-900/50 flex items-center justify-center shrink-0 ${insight.colorClass}`}>

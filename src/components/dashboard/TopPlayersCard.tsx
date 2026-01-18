@@ -110,7 +110,7 @@ export const TopPlayersCard = () => {
     <motion.div 
       {...fadeInUp}
       transition={{ delay: 0.2 }}
-      className="w-full h-full flex flex-col rounded-[var(--radius-card)] bg-zinc-900/60 backdrop-blur-sm shadow-sm overflow-hidden"
+      className="w-full max-w-full h-full flex flex-col rounded-[var(--radius-card)] bg-zinc-900/60 backdrop-blur-sm shadow-sm overflow-hidden"
     >
       {/* Header */}
       <div className="px-4 sm:px-5 py-4 border-b border-zinc-800/40 bg-zinc-900/50 shrink-0">
@@ -159,7 +159,7 @@ export const TopPlayersCard = () => {
               >
                 <Link
                   to={`/app/players/${player.id}`}
-                  className={`group flex items-center gap-3 p-3 flex-1 min-h-[52px] rounded-[var(--radius-button)] transition-all duration-200 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${getRankBg(index + 1)}`}
+                  className={`group flex items-center gap-3 p-3 flex-1 min-h-[52px] rounded-[var(--radius-button)] transition-all duration-200 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 w-full max-w-full overflow-hidden ${getRankBg(index + 1)}`}
                 >
                   {/* Rank */}
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${

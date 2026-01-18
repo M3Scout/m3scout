@@ -65,7 +65,7 @@ export const KPICards = ({ totalPlayers, reportsThisMonth, totalLeads, expiringC
   };
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-[var(--gap-mobile)] md:gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-[var(--gap-mobile)] md:gap-4 w-full max-w-full">
       {kpiConfig.map((kpi, index) => {
         const value = values[kpi.key];
         const isWarning = kpi.key === "contracts" && value > 0;

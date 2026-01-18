@@ -189,7 +189,7 @@ const Dashboard = () => {
 
   return (
     <motion.div 
-      className="space-y-[var(--gap-mobile)] md:space-y-6 pb-8 px-[var(--padding-mobile)] md:px-0"
+      className="space-y-[var(--gap-mobile)] md:space-y-6 pb-8 px-[var(--padding-mobile)] md:px-0 w-full max-w-full overflow-x-hidden"
       variants={staggerContainer}
       initial="hidden"
       animate="visible"
@@ -212,15 +212,15 @@ const Dashboard = () => {
       {/* Insights + Top Players Grid - Shared container with equal heights */}
       <motion.div 
         variants={staggerItem} 
-        className="grid grid-cols-1 lg:grid-cols-3 gap-[var(--gap-mobile)] md:gap-6 items-stretch"
+        className="grid grid-cols-1 lg:grid-cols-3 gap-[var(--gap-mobile)] md:gap-6 items-stretch w-full max-w-full"
       >
         {/* Insights - New strategic section */}
-        <div className="lg:col-span-1 flex">
+        <div className="lg:col-span-1 flex min-w-0 w-full">
           <InsightsCard />
         </div>
 
         {/* Top Players */}
-        <div className="lg:col-span-2 flex">
+        <div className="lg:col-span-2 flex min-w-0 w-full">
           <TopPlayersCard />
         </div>
       </motion.div>
@@ -228,21 +228,21 @@ const Dashboard = () => {
       {/* Position Chart + Reports Grid - Shared container with equal heights */}
       <motion.div 
         variants={staggerItem} 
-        className="grid grid-cols-1 lg:grid-cols-3 gap-[var(--gap-mobile)] md:gap-6 items-stretch"
+        className="grid grid-cols-1 lg:grid-cols-3 gap-[var(--gap-mobile)] md:gap-6 items-stretch w-full max-w-full"
       >
         {/* Position Chart */}
-        <div className="lg:col-span-1 flex">
+        <div className="lg:col-span-1 flex min-w-0 w-full">
           <PositionChartCard data={positionData} />
         </div>
 
         {/* Recent Reports */}
-        <div className="lg:col-span-2 flex">
+        <div className="lg:col-span-2 flex min-w-0 w-full">
           <RecentReportsCard reports={recentReports} />
         </div>
       </motion.div>
 
       {/* Leads + Quick Actions Grid */}
-      <motion.div variants={staggerItem} className="grid grid-cols-1 lg:grid-cols-2 gap-[var(--gap-mobile)] md:gap-6">
+      <motion.div variants={staggerItem} className="grid grid-cols-1 lg:grid-cols-2 gap-[var(--gap-mobile)] md:gap-6 w-full max-w-full">
         {/* Recent Leads */}
         <RecentLeadsCard leads={recentLeads} />
 

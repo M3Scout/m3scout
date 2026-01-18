@@ -8,7 +8,7 @@ export const DashboardHero = () => {
   return (
     <motion.div 
       {...fadeInUp}
-      className="relative overflow-hidden rounded-[var(--radius-card)] bg-[var(--bg-glass)] backdrop-blur-sm border border-[var(--border-glass)]"
+      className="relative overflow-hidden rounded-[var(--radius-card)] bg-[var(--bg-glass)] backdrop-blur-sm border border-[var(--border-glass)] w-full max-w-full"
     >
       {/* Background Effects */}
       <div className="absolute inset-0 overflow-hidden">
