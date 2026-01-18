@@ -304,6 +304,7 @@ export type Database = {
       }
       match_player_stats: {
         Row: {
+          aerial_duels_total: number
           aerial_duels_won: number
           assists: number
           chances_created: number
@@ -335,6 +336,7 @@ export type Database = {
           yellow_cards: number
         }
         Insert: {
+          aerial_duels_total?: number
           aerial_duels_won?: number
           assists?: number
           chances_created?: number
@@ -366,6 +368,7 @@ export type Database = {
           yellow_cards?: number
         }
         Update: {
+          aerial_duels_total?: number
           aerial_duels_won?: number
           assists?: number
           chances_created?: number
@@ -1576,15 +1579,25 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      apply_event_stats: {
-        Args: {
-          p_delta?: number
-          p_event_type: string
-          p_match_id: string
-          p_player_id: string
-        }
-        Returns: undefined
-      }
+      apply_event_stats:
+        | {
+            Args: {
+              p_delta?: number
+              p_event_type?: string
+              p_match_id?: string
+              p_player_id?: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_delta?: number
+              p_event_type: string
+              p_match_id: string
+              p_player_id: string
+            }
+            Returns: undefined
+          }
       calculate_athlete_auto_rating: {
         Args: { p_player_id: string }
         Returns: number
@@ -1626,6 +1639,7 @@ export type Database = {
       get_match_player_stats: {
         Args: { p_match_id: string }
         Returns: {
+          aerial_duels_total: number
           aerial_duels_won: number
           assists: number
           chances_created: number
@@ -1812,6 +1826,7 @@ export type Database = {
         | "substitution"
         | "player_on"
         | "player_off"
+        | "aerial_duel_total"
       match_status: "draft" | "live" | "finished" | "applied"
       position_template: "outfield" | "goalkeeper"
     }
@@ -1978,6 +1993,7 @@ export const Constants = {
         "substitution",
         "player_on",
         "player_off",
+        "aerial_duel_total",
       ],
       match_status: ["draft", "live", "finished", "applied"],
       position_template: ["outfield", "goalkeeper"],

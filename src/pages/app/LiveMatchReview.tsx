@@ -384,6 +384,7 @@ export default function LiveMatchReview() {
           duels_won: "duels_won",
           duels_total: "total_duels",
           aerial_duels_won: "aerial_duels_won",
+          aerial_duels_total: "aerial_duels_total", // NEW: Map aerial duels total
           yellow_cards: "yellow_cards",
           red_cards: "red_cards",
           fouls_committed: "fouls_committed",

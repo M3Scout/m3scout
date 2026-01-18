@@ -117,20 +117,24 @@ export function OutfieldPlayerStats({ stats }: OutfieldPlayerStatsProps) {
         />
       </StatGroup>
 
-      {/* C) Shooting */}
+      {/* C) Shooting / Finalizações */}
       <StatGroup title="Finalizações" icon={<Crosshair className="w-4 h-4" />}>
         <StatCard 
-          label="Chutes" 
+          label="Total" 
           value={safe(stats.shots)} 
         />
         <StatCard 
-          label="Chutes no Gol" 
+          label="No Gol" 
           value={safe(stats.shots_on_target)} 
           total={safe(stats.shots) || undefined}
           showPercentage={safe(stats.shots) > 0}
         />
         <StatCard 
-          label="Chutes Bloqueados" 
+          label="Fora" 
+          value={Math.max(0, safe(stats.shots) - safe(stats.shots_on_target))} 
+        />
+        <StatCard 
+          label="Bloqueados" 
           value={safe(stats.shots_blocked)} 
         />
         <StatCard 
