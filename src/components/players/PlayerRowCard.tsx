@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { MoreVertical, Eye, Edit, FileText, Archive, ArchiveRestore, Trash2, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +17,7 @@ import {
 } from "@/components/ui/tooltip";
 import { formatFixed } from "@/lib/formatters";
 import { getShortPosition, getPositionColor } from "@/lib/positionColors";
+import { playerRankItemVariants, subtleHover, subtleTap } from "@/lib/animations";
 
 interface PlayerRowCardProps {
   id: string;
@@ -35,6 +37,7 @@ interface PlayerRowCardProps {
   onArchive: () => void;
   onDelete: () => void;
   isFiltered?: boolean;
+  index?: number;
 }
 
 // Trend indicator component
@@ -127,6 +130,7 @@ export function PlayerRowCard({
   onArchive,
   onDelete,
   isFiltered,
+  index = 0,
 }: PlayerRowCardProps) {
   const navigate = useNavigate();
 
@@ -142,9 +146,15 @@ export function PlayerRowCard({
   const posColor = getPositionColor(position);
 
   return (
-    <div
+    <motion.div
+      variants={playerRankItemVariants}
+      initial="hidden"
+      animate="visible"
+      custom={index}
+      whileHover={subtleHover}
+      whileTap={subtleTap}
       onClick={handleRowClick}
-      className={`group relative flex items-center gap-3 p-3 pl-5 bg-zinc-950 border border-zinc-900 hover:border-zinc-700 hover:bg-zinc-900/50 transition-all cursor-pointer rounded-lg overflow-hidden ${isFiltered === false ? 'opacity-40' : ''}`}
+      className={`group relative flex items-center gap-3 p-3 pl-5 bg-zinc-950 border border-zinc-900 hover:border-zinc-700 hover:bg-zinc-900/50 transition-colors cursor-pointer rounded-lg overflow-hidden ${isFiltered === false ? 'opacity-40' : ''}`}
     >
       {/* Left Rail - Position Color Accent */}
       <div 
@@ -306,7 +316,7 @@ export function PlayerRowCard({
           )}
         </DropdownMenuContent>
       </DropdownMenu>
-    </div>
+    </motion.div>
   );
 }
 
@@ -328,6 +338,7 @@ export function PlayerMobileCard({
   onArchive,
   onDelete,
   isFiltered,
+  index = 0,
 }: PlayerRowCardProps) {
   const navigate = useNavigate();
 
@@ -343,9 +354,14 @@ export function PlayerMobileCard({
   const posColor = getPositionColor(position);
 
   return (
-    <div
+    <motion.div
+      variants={playerRankItemVariants}
+      initial="hidden"
+      animate="visible"
+      custom={index}
+      whileTap={subtleTap}
       onClick={handleCardClick}
-      className={`relative bg-zinc-950 border border-zinc-900 rounded-lg overflow-hidden cursor-pointer active:scale-[0.99] transition-transform ${isFiltered === false ? 'opacity-40' : ''}`}
+      className={`relative bg-zinc-950 border border-zinc-900 rounded-lg overflow-hidden cursor-pointer ${isFiltered === false ? 'opacity-40' : ''}`}
     >
       {/* Left Rail - Position Color Accent */}
       <div 
@@ -472,6 +488,6 @@ export function PlayerMobileCard({
           )}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
