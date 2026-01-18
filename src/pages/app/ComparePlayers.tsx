@@ -291,9 +291,17 @@ const ComparePlayers = () => {
           />
         </div>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0 bg-zinc-900 border-zinc-800" align="start">
-        <Command className="bg-transparent">
-          <CommandInput placeholder="Buscar atleta..." className="border-zinc-800" />
+      <PopoverContent 
+        className="w-80 p-0 bg-zinc-900 border-zinc-800" 
+        align="start"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
+        <Command className="bg-transparent" shouldFilter={true}>
+          <CommandInput 
+            placeholder="Buscar atleta..." 
+            className="border-zinc-800"
+            autoFocus={false}
+          />
           <CommandList className="max-h-[300px]">
             <CommandEmpty>Nenhum atleta encontrado.</CommandEmpty>
             <CommandGroup>
