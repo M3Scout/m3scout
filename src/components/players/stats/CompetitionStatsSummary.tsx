@@ -52,12 +52,12 @@ interface StatSectionProps {
 
 function StatSection({ title, icon, iconColor = "text-muted-foreground", children }: StatSectionProps) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 w-full max-w-full min-w-0 overflow-hidden">
       <div className={`flex items-center gap-2 text-xs font-medium ${iconColor}`}>
         {icon}
         <span className="uppercase tracking-wide">{title}</span>
       </div>
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 w-full max-w-full">
         {children}
       </div>
     </div>
@@ -116,12 +116,12 @@ export function CompetitionStatsSummary({
   if (compact) {
     // Quick summary chips
     return (
-      <div className="bg-muted/30 rounded-lg p-3">
+      <div className="bg-muted/30 rounded-lg p-3 w-full max-w-full min-w-0 overflow-hidden">
         <div className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
           <Zap className="w-3 h-3" />
           Estatísticas Completas
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 w-full max-w-full">
           <StatChip label="Jogos" value={safe(stats.matches)} />
           <StatChip label="Min" value={safe(stats.minutes)} />
           {isGK ? (
@@ -157,7 +157,7 @@ export function CompetitionStatsSummary({
 
   // Full display
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full max-w-full min-w-0 overflow-hidden">
       {/* Header with competition badge */}
       {competitionName && (
         <div className="flex items-center gap-2">

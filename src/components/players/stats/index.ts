@@ -4,3 +4,4 @@ export { GoalkeeperStats } from "./GoalkeeperStats";
 export { PlayerStatsDisplay, AggregatedStatsDisplay } from "./PlayerStatsDisplay";
 export { CompetitionStatsSummary } from "./CompetitionStatsSummary";
 export { SeasonEvolutionChart } from "./SeasonEvolutionChart";
+export { SeasonStatsCard, SeasonTotalsCard } from "./SeasonStatsCard";
