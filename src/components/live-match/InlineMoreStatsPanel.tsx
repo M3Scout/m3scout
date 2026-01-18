@@ -271,11 +271,13 @@ export function InlineMoreStatsPanel({
         </div>
       )}
 
-      {/* Categories Grid - mobile 1 col, iPad/tablet 2 cols side by side */}
+      {/* Categories - stacked on mobile/tablet, 2-col on desktop */}
       <div className={cn(
-        "grid grid-cols-1 tablet:grid-cols-2 gap-4 tablet:gap-5 desktop:gap-6",
-        // Landscape: tighter gap since cards are narrower
-        "tablet-landscape:gap-4"
+        "grid gap-4",
+        // Mobile & Tablet: single column for full-width categories
+        "grid-cols-1",
+        // Desktop: 2 columns side-by-side
+        "desktop:grid-cols-2 desktop:gap-6"
       )}>
         {stats.map((category) => (
           <div
@@ -308,15 +310,13 @@ export function InlineMoreStatsPanel({
               </div>
             </div>
 
-            {/* Stats grid - Mobile: 2 cols vertical, Tablet: 2 cols HORIZONTAL cards, Desktop: 4 cols */}
+            {/* Stats grid - FIXED: Mobile/Tablet = 2 cols, Desktop = 3-4 cols */}
             <div className={cn(
-              "grid",
-              // Mobile: 2 columns, small cards
-              "grid-cols-2 gap-3",
-              // Tablet: 2 columns, WIDE horizontal cards
-              "tablet:grid-cols-2 tablet:gap-4",
-              // Desktop: 4 columns
-              "desktop:grid-cols-4 desktop:gap-4"
+              "grid gap-3",
+              // Mobile & Tablet: ALWAYS 2 columns
+              "grid-cols-2",
+              // Desktop: 3 columns for better density
+              "desktop:grid-cols-3 desktop:gap-4"
             )}>
               {category.stats.map((stat) => {
                 const count = getDisplayCount(stat.type);
@@ -328,99 +328,74 @@ export function InlineMoreStatsPanel({
                     whileHover={{ scale: 1.01 }}
                     whileTap={{ scale: 0.99 }}
                     className={cn(
-                      "rounded-xl tablet:rounded-2xl transition-all duration-200",
+                      "rounded-xl transition-all duration-200",
                       "bg-zinc-900/80 border-2 border-zinc-700/50",
                       "hover:border-zinc-600 hover:shadow-xl hover:ring-2",
                       getCategoryAccent(category.color),
                       isHighlight && "border-green-500/60 bg-green-500/10 ring-2 ring-green-500/20",
-                      // ========== MOBILE: Vertical compact layout ==========
+                      // SIMPLE: always vertical layout
                       "flex flex-col",
-                      "min-h-[100px]",
-                      // ========== TABLET: HORIZONTAL layout - COMPLETELY DIFFERENT ==========
-                      "tablet:flex-row tablet:items-stretch",
-                      "tablet:min-h-[96px] tablet:h-[104px]",
-                      "tablet:min-w-[200px]",
-                      // ========== DESKTOP: Back to vertical ==========
-                      "desktop:flex-col desktop:min-h-[140px] desktop:h-auto"
+                      // Mobile: compact
+                      "min-h-[110px]",
+                      // Tablet: wider and taller for touch
+                      "tablet:min-h-[120px]",
+                      // Desktop: similar
+                      "desktop:min-h-[130px]"
                     )}
                   >
-                    {/* ========== VALUE + LABEL SECTION ========== */}
-                    <div className={cn(
-                      // Mobile: centered column
-                      "flex-1 flex flex-col items-center justify-center",
-                      "py-3 px-3",
-                      // Tablet: HORIZONTAL layout - value left, label right
-                      "tablet:flex-row tablet:items-center tablet:justify-start",
-                      "tablet:py-4 tablet:px-4 tablet:gap-4",
-                      // Desktop: back to column
-                      "desktop:flex-col desktop:items-center desktop:justify-center",
-                      "desktop:py-4 desktop:px-4 desktop:gap-0"
-                    )}>
-                      {/* Value */}
+                    {/* VALUE + LABEL SECTION - always vertical centered */}
+                    <div className="flex-1 flex flex-col items-center justify-center py-3 px-2 tablet:py-4 tablet:px-3">
+                      {/* Value - large and prominent */}
                       <motion.p 
                         key={count}
                         initial={{ scale: 1.1, opacity: 0.8 }}
                         animate={{ scale: 1, opacity: 1 }}
                         className={cn(
-                          // Mobile: medium size
-                          "text-[24px] font-black tabular-nums leading-none",
-                          // Tablet: LARGE prominent value on left
-                          "tablet:text-[32px] tablet:min-w-[48px] tablet:text-center",
-                          // Desktop: extra large
-                          "desktop:text-[42px] desktop:min-w-0",
+                          "font-black tabular-nums leading-none",
+                          // Mobile: readable
+                          "text-[28px]",
+                          // Tablet: larger for visibility
+                          "tablet:text-[36px]",
+                          // Desktop
+                          "desktop:text-[38px]",
                           count > 0 ? category.color : "text-zinc-500"
                         )}
                       >
                         {count}
                       </motion.p>
                       
-                      {/* Label - FULL TEXT, no abbreviation */}
+                      {/* Label - FULL TEXT, allow 2 lines, no abbreviation */}
                       <p className={cn(
-                        // Mobile: small centered text
-                        "text-[11px] text-center mt-2 leading-tight",
-                        "min-h-[28px] flex items-center justify-center",
-                        // Tablet: LARGER text, LEFT aligned, max 2 lines
-                        "tablet:text-[15px] tablet:text-left tablet:mt-0",
-                        "tablet:leading-snug tablet:flex-1",
-                        "tablet:min-h-0",
-                        // Desktop: centered again
-                        "desktop:text-[13px] desktop:text-center desktop:mt-2",
-                        "desktop:min-h-[36px]",
-                        "font-medium tracking-tight",
+                        "text-center mt-2 leading-tight font-medium tracking-tight",
+                        // Mobile: readable text
+                        "text-[11px] min-h-[26px]",
+                        // Tablet: larger, clearer text
+                        "tablet:text-[13px] tablet:min-h-[32px] tablet:mt-2.5",
+                        // Desktop
+                        "desktop:text-[13px] desktop:min-h-[34px]",
                         count > 0 ? "text-zinc-200" : "text-zinc-500"
                       )}>
                         {stat.label}
                       </p>
                     </div>
                     
-                    {/* ========== ACTION BUTTONS ========== */}
-                    <div className={cn(
-                      // Mobile: horizontal bottom bar
-                      "flex items-center border-t-2 border-zinc-700/40",
-                      // Tablet: VERTICAL right side buttons
-                      "tablet:flex-col tablet:border-t-0 tablet:border-l-2",
-                      "tablet:w-[88px] tablet:shrink-0",
-                      // Desktop: back to horizontal bottom
-                      "desktop:flex-row desktop:border-l-0 desktop:border-t-2",
-                      "desktop:w-auto"
-                    )}>
+                    {/* ACTION BUTTONS - TOUCH FRIENDLY */}
+                    <div className="flex items-center border-t-2 border-zinc-700/40">
                       {/* Minus button */}
                       <motion.button
                         whileTap={{ scale: 0.9 }}
                         onClick={() => handleRemoveStat(stat.type, stat.label)}
                         disabled={disabled || isSubmitting || count === 0 || !onVoidLastEvent}
                         className={cn(
-                          // Mobile: half width, compact height
-                          "flex-1 h-9 flex items-center justify-center",
-                          "border-r-2 border-zinc-700/40",
+                          "flex-1 flex items-center justify-center",
+                          "border-r border-zinc-700/40",
                           "rounded-bl-xl",
-                          // Tablet: LARGE touch target (44px min)
-                          "tablet:flex-1 tablet:h-[52px] tablet:w-full",
-                          "tablet:border-r-0 tablet:border-b-2",
-                          "tablet:rounded-bl-none tablet:rounded-tr-2xl",
-                          // Desktop: back to normal
-                          "desktop:h-11 desktop:border-b-0 desktop:border-r-2",
-                          "desktop:rounded-tr-none desktop:rounded-bl-xl",
+                          // Mobile: decent size
+                          "h-10",
+                          // Tablet: LARGE touch target (44px minimum)
+                          "tablet:h-12",
+                          // Desktop
+                          "desktop:h-11",
                           // Styling
                           "text-zinc-500 hover:text-red-400 hover:bg-red-500/15 active:bg-red-500/25",
                           "disabled:opacity-20 disabled:cursor-not-allowed",
@@ -438,14 +413,14 @@ export function InlineMoreStatsPanel({
                         onClick={() => handleAddStat(stat.type, stat.label)}
                         disabled={disabled || isSubmitting || (!canAddEvents && !isDraft)}
                         className={cn(
-                          // Mobile: half width, compact height
-                          "flex-1 h-9 flex items-center justify-center",
+                          "flex-1 flex items-center justify-center",
                           "rounded-br-xl",
-                          // Tablet: LARGE touch target (44px min)
-                          "tablet:flex-1 tablet:h-[52px] tablet:w-full",
-                          "tablet:rounded-br-2xl tablet:rounded-bl-none",
-                          // Desktop: back to normal
-                          "desktop:h-11 desktop:rounded-bl-none desktop:rounded-br-xl",
+                          // Mobile: decent size
+                          "h-10",
+                          // Tablet: LARGE touch target (44px minimum)
+                          "tablet:h-12",
+                          // Desktop
+                          "desktop:h-11",
                           // Styling
                           "text-zinc-400 hover:text-emerald-400 hover:bg-emerald-500/15 active:bg-emerald-500/25",
                           "disabled:opacity-20 disabled:cursor-not-allowed",
