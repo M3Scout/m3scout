@@ -17,6 +17,12 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -34,6 +40,7 @@ import {
   Activity,
   Footprints,
   Info,
+  Search,
 } from "lucide-react";
 import { cn, safeArray } from "@/lib/utils";
 import { formatFixed } from "@/lib/formatters";
@@ -44,6 +51,8 @@ import { ComparePlayerCard, CompareEmptySlot } from "@/components/compare/Compar
 import { CompareStatRow, CompareStatBlock, CompareBarRow } from "@/components/compare/CompareStatBlock";
 import { SimilarPlayerSuggestions } from "@/components/compare/SimilarPlayerSuggestions";
 import { ExportComparePdfButton } from "@/components/compare/ExportComparePdfButton";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Input } from "@/components/ui/input";
 import type { PlayerStatRow } from "@/lib/attributeRadar";
 
 interface Player {
@@ -277,90 +286,213 @@ const ComparePlayers = () => {
     );
   }
 
-  const PlayerSelector = ({ slotIndex, required = false }: { slotIndex: number; required?: boolean }) => (
-    <Popover
-      open={openSelector === slotIndex}
-      onOpenChange={(open) => setOpenSelector(open ? slotIndex : null)}
-    >
-      <PopoverTrigger asChild>
-        <div>
-          <CompareEmptySlot
-            index={slotIndex}
-            required={required}
-            onClick={() => setOpenSelector(slotIndex)}
-          />
+  const PlayerSelector = ({ slotIndex, required = false }: { slotIndex: number; required?: boolean }) => {
+    const isMobile = useIsMobile();
+    const [searchQuery, setSearchQuery] = useState("");
+    const isOpen = openSelector === slotIndex;
+
+    const filteredPlayers = useMemo(() => {
+      if (!searchQuery.trim()) return availablePlayers;
+      const query = searchQuery.toLowerCase();
+      return availablePlayers.filter((p) =>
+        p.full_name.toLowerCase().includes(query) ||
+        p.position.toLowerCase().includes(query) ||
+        (p.current_club && p.current_club.toLowerCase().includes(query))
+      );
+    }, [availablePlayers, searchQuery]);
+
+    const handleClose = () => {
+      setOpenSelector(null);
+      setSearchQuery("");
+    };
+
+    const handleSelect = (player: Player) => {
+      handleSelectPlayer(player, slotIndex);
+      setSearchQuery("");
+    };
+
+    // Player list item component
+    const PlayerListItem = ({ player }: { player: Player }) => {
+      const posColor = getPositionColor(player.position);
+      return (
+        <div
+          onClick={() => handleSelect(player)}
+          className="flex items-center gap-3 w-full p-3 cursor-pointer hover:bg-zinc-800 active:bg-zinc-700 transition-colors rounded-lg"
+        >
+          <div className={cn(
+            "w-11 h-11 rounded-lg overflow-hidden flex-shrink-0 ring-2",
+            posColor.ringClass
+          )}>
+            {player.photo_url ? (
+              <img
+                src={player.photo_url}
+                alt={player.full_name}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
+                <User className="w-5 h-5 text-zinc-600" />
+              </div>
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-zinc-200 truncate">{player.full_name}</p>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className={cn(
+                "text-[10px] font-bold uppercase px-1.5 py-0.5 rounded",
+                posColor.bgClass,
+                posColor.textClass
+              )}>
+                {getShortPosition(player.position)}
+              </span>
+              <span className="text-xs text-zinc-500 truncate">
+                {player.current_club || "Sem clube"}
+              </span>
+            </div>
+          </div>
+          {player.auto_rating !== null && (
+            <span className="text-sm font-bold text-zinc-400">
+              {formatFixed(player.auto_rating, 0)}
+            </span>
+          )}
         </div>
-      </PopoverTrigger>
-      <PopoverContent 
-        className="w-80 p-0 bg-zinc-900 border-zinc-800" 
-        align="start"
-        onOpenAutoFocus={(e) => e.preventDefault()}
+      );
+    };
+
+    // Mobile: Drawer
+    if (isMobile) {
+      return (
+        <>
+          <div onClick={() => setOpenSelector(slotIndex)}>
+            <CompareEmptySlot
+              index={slotIndex}
+              required={required}
+              onClick={() => setOpenSelector(slotIndex)}
+            />
+          </div>
+          <Drawer open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+            <DrawerContent className="bg-zinc-900 border-zinc-800 max-h-[85vh]">
+              <DrawerHeader className="border-b border-zinc-800 pb-4">
+                <DrawerTitle className="text-zinc-100">Selecionar Atleta</DrawerTitle>
+              </DrawerHeader>
+              
+              {/* Search Input - No autoFocus */}
+              <div className="p-4 border-b border-zinc-800">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                  <Input
+                    placeholder="Buscar atleta..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
+                  />
+                </div>
+              </div>
+
+              {/* Scrollable Player List */}
+              <div className="flex-1 overflow-y-auto overscroll-contain p-2" style={{ maxHeight: 'calc(85vh - 140px)' }}>
+                {filteredPlayers.length === 0 ? (
+                  <p className="text-center text-zinc-500 py-8">Nenhum atleta encontrado.</p>
+                ) : (
+                  <div className="space-y-1">
+                    {safeArray(filteredPlayers).map((player) => (
+                      <PlayerListItem key={player.id} player={player} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </DrawerContent>
+          </Drawer>
+        </>
+      );
+    }
+
+    // Desktop: Popover with Command
+    return (
+      <Popover
+        open={isOpen}
+        onOpenChange={(open) => (open ? setOpenSelector(slotIndex) : handleClose())}
       >
-        <Command className="bg-transparent" shouldFilter={true}>
-          <CommandInput 
-            placeholder="Buscar atleta..." 
-            className="border-zinc-800"
-            autoFocus={false}
-          />
-          <CommandList className="max-h-[300px]">
-            <CommandEmpty>Nenhum atleta encontrado.</CommandEmpty>
-            <CommandGroup>
-              {safeArray(availablePlayers).map((player) => {
-                const posColor = getPositionColor(player.position);
-                return (
-                  <CommandItem
-                    key={player.id}
-                    value={player.full_name}
-                    onSelect={() => handleSelectPlayer(player, slotIndex)}
-                    className="cursor-pointer hover:bg-zinc-800"
-                  >
-                    <div className="flex items-center gap-3 w-full">
-                      <div className={cn(
-                        "w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 ring-2",
-                        posColor.ringClass
-                      )}>
-                        {player.photo_url ? (
-                          <img
-                            src={player.photo_url}
-                            alt={player.full_name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
-                            <User className="w-4 h-4 text-zinc-600" />
+        <PopoverTrigger asChild>
+          <div>
+            <CompareEmptySlot
+              index={slotIndex}
+              required={required}
+              onClick={() => setOpenSelector(slotIndex)}
+            />
+          </div>
+        </PopoverTrigger>
+        <PopoverContent 
+          className="w-80 p-0 bg-zinc-900 border-zinc-800" 
+          align="start"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
+          <Command className="bg-transparent" shouldFilter={true}>
+            <CommandInput 
+              placeholder="Buscar atleta..." 
+              className="border-zinc-800"
+              autoFocus={false}
+            />
+            <CommandList className="max-h-[300px]">
+              <CommandEmpty>Nenhum atleta encontrado.</CommandEmpty>
+              <CommandGroup>
+                {safeArray(availablePlayers).map((player) => {
+                  const posColor = getPositionColor(player.position);
+                  return (
+                    <CommandItem
+                      key={player.id}
+                      value={player.full_name}
+                      onSelect={() => handleSelect(player)}
+                      className="cursor-pointer hover:bg-zinc-800"
+                    >
+                      <div className="flex items-center gap-3 w-full">
+                        <div className={cn(
+                          "w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 ring-2",
+                          posColor.ringClass
+                        )}>
+                          {player.photo_url ? (
+                            <img
+                              src={player.photo_url}
+                              alt={player.full_name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
+                              <User className="w-4 h-4 text-zinc-600" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-zinc-200 truncate">{player.full_name}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className={cn(
+                              "text-[10px] font-bold uppercase px-1.5 py-0.5 rounded",
+                              posColor.bgClass,
+                              posColor.textClass
+                            )}>
+                              {getShortPosition(player.position)}
+                            </span>
+                            <span className="text-xs text-zinc-500 truncate">
+                              {player.current_club || "Sem clube"}
+                            </span>
                           </div>
+                        </div>
+                        {player.auto_rating !== null && (
+                          <span className="text-sm font-bold text-zinc-400">
+                            {formatFixed(player.auto_rating, 0)}
+                          </span>
                         )}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-zinc-200 truncate">{player.full_name}</p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className={cn(
-                            "text-[10px] font-bold uppercase px-1.5 py-0.5 rounded",
-                            posColor.bgClass,
-                            posColor.textClass
-                          )}>
-                            {getShortPosition(player.position)}
-                          </span>
-                          <span className="text-xs text-zinc-500 truncate">
-                            {player.current_club || "Sem clube"}
-                          </span>
-                        </div>
-                      </div>
-                      {player.auto_rating !== null && (
-                        <span className="text-sm font-bold text-zinc-400">
-                          {formatFixed(player.auto_rating, 0)}
-                        </span>
-                      )}
-                    </div>
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  );
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    );
+  };
 
   return (
     <div className="space-y-6 pb-12">
