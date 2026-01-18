@@ -47,10 +47,10 @@ export const QuickActionsCard = () => {
     <motion.div 
       {...fadeInUp}
       transition={{ delay: 0.4 }}
-      className="rounded-[var(--radius-card)] border border-[var(--border-glass)] bg-[var(--bg-glass)] backdrop-blur-sm overflow-hidden"
+      className="rounded-[var(--radius-card)] bg-zinc-900/60 backdrop-blur-sm shadow-sm overflow-hidden"
     >
       {/* Header */}
-      <div className="px-4 sm:px-5 py-4 border-b border-[var(--border-glass)] bg-zinc-900/50">
+      <div className="px-4 sm:px-5 py-4 border-b border-zinc-800/40 bg-zinc-900/50">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-[var(--radius-button)] bg-gradient-to-br from-primary/20 to-red-600/10 flex items-center justify-center">
             <Plus className="w-4 h-4 text-primary" />
@@ -73,7 +73,7 @@ export const QuickActionsCard = () => {
             >
               <Link
                 to={action.link}
-                className={`group relative flex flex-col p-3 sm:p-4 rounded-[var(--radius-button)] bg-gradient-to-br ${action.color} border border-[var(--border-glass)] ${action.borderColor} transition-all duration-300 hover:shadow-lg min-h-[var(--tap-target)]`}
+                className={`group relative flex flex-col p-3 sm:p-4 rounded-[var(--radius-button)] bg-gradient-to-br ${action.color} ${action.borderColor} transition-all duration-300 hover:shadow-lg min-h-[var(--tap-target)]`}
               >
                 {/* Icon */}
                 <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-[var(--radius-button)] bg-zinc-900/50 flex items-center justify-center mb-2 sm:mb-3 ${action.iconColor} group-hover:scale-110 transition-transform`}>

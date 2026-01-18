@@ -496,9 +496,9 @@ export const InsightsCard = () => {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full h-full flex flex-col rounded-xl border border-zinc-800/50 bg-gradient-to-br from-zinc-900 to-zinc-950 overflow-hidden"
+        className="w-full h-full flex flex-col rounded-xl bg-zinc-900/60 backdrop-blur-sm shadow-sm overflow-hidden"
       >
-        <div className="px-5 py-4 border-b border-zinc-800/50 bg-zinc-900/50 shrink-0">
+        <div className="px-5 py-4 border-b border-zinc-800/40 bg-zinc-900/50 shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500/20 to-yellow-600/10 flex items-center justify-center">
               <Lightbulb className="w-4 h-4 text-amber-400" />
@@ -524,10 +524,10 @@ export const InsightsCard = () => {
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="w-full h-full flex flex-col rounded-xl border border-zinc-800/50 bg-gradient-to-br from-zinc-900 to-zinc-950 overflow-hidden"
+      className="w-full h-full flex flex-col rounded-xl bg-zinc-900/60 backdrop-blur-sm shadow-sm overflow-hidden"
     >
       {/* Header */}
-      <div className="px-5 py-4 border-b border-zinc-800/50 bg-zinc-900/50 shrink-0">
+      <div className="px-5 py-4 border-b border-zinc-800/40 bg-zinc-900/50 shrink-0">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500/20 to-yellow-600/10 flex items-center justify-center relative">
             <Lightbulb className="w-4 h-4 text-amber-400" />
