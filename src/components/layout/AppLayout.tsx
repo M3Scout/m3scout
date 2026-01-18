@@ -1,10 +1,13 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
+import { AnimatePresence } from "framer-motion";
 import { AppSidebar } from "./AppSidebar";
 import { SidebarProvider, useSidebar } from "@/hooks/useSidebar";
+import { PageTransition } from "./PageTransition";
 import { cn } from "@/lib/utils";
 
 function AppLayoutContent() {
   const { isCollapsed } = useSidebar();
+  const location = useLocation();
 
   return (
     <div className="min-h-screen bg-background flex w-full max-w-full overflow-x-hidden">
@@ -18,7 +21,11 @@ function AppLayoutContent() {
         )}
       >
         <div className="p-[var(--padding-mobile)] md:p-6 lg:p-8 w-full max-w-full overflow-x-hidden">
-          <Outlet />
+          <AnimatePresence mode="wait" initial={false}>
+            <PageTransition key={location.pathname}>
+              <Outlet />
+            </PageTransition>
+          </AnimatePresence>
         </div>
       </main>
     </div>
