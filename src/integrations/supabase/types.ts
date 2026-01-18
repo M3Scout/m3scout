@@ -1579,25 +1579,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      apply_event_stats:
-        | {
-            Args: {
-              p_delta?: number
-              p_event_type?: string
-              p_match_id?: string
-              p_player_id?: string
-            }
-            Returns: undefined
-          }
-        | {
-            Args: {
-              p_delta?: number
-              p_event_type: string
-              p_match_id: string
-              p_player_id: string
-            }
-            Returns: undefined
-          }
+      apply_event_stats: {
+        Args: {
+          p_delta?: number
+          p_event_type?: string
+          p_match_id?: string
+          p_player_id?: string
+        }
+        Returns: undefined
+      }
       calculate_athlete_auto_rating: {
         Args: { p_player_id: string }
         Returns: number
