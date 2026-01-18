@@ -499,7 +499,7 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
                   </div>
 
                   {/* Shooting Stats */}
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label className="flex items-center gap-2">
                         <Target className="w-4 h-4" />
@@ -513,13 +513,33 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Finalizações no Gol</Label>
+                      <Label className={formData.shots_on_target > formData.shots ? "text-destructive" : ""}>
+                        Finalizações no Gol
+                      </Label>
                       <Input
                         type="number"
                         min={0}
+                        max={formData.shots}
                         value={formData.shots_on_target}
-                        onChange={(e) => handleInputChange("shots_on_target", parseInt(e.target.value) || 0)}
+                        onChange={(e) => {
+                          const value = parseInt(e.target.value) || 0;
+                          handleInputChange("shots_on_target", Math.min(value, formData.shots));
+                        }}
+                        className={formData.shots_on_target > formData.shots ? "border-destructive" : ""}
                       />
+                      {formData.shots_on_target > formData.shots && (
+                        <p className="text-xs text-destructive">Não pode ser maior que o total</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-muted-foreground">Finalizações Fora</Label>
+                      <Input
+                        type="number"
+                        value={Math.max(0, formData.shots - formData.shots_on_target)}
+                        disabled
+                        className="bg-muted cursor-not-allowed"
+                      />
+                      <p className="text-xs text-muted-foreground">Calculado automaticamente</p>
                     </div>
                   </div>
 
