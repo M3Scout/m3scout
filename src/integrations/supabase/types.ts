@@ -1581,10 +1581,10 @@ export type Database = {
     Functions: {
       apply_event_stats: {
         Args: {
-          p_delta?: number
-          p_event_type?: string
-          p_match_id?: string
-          p_player_id?: string
+          p_delta: number
+          p_event_type: string
+          p_match_id: string
+          p_player_id: string
         }
         Returns: undefined
       }
@@ -1817,6 +1817,8 @@ export type Database = {
         | "player_on"
         | "player_off"
         | "aerial_duel_total"
+        | "ground_duel_won"
+        | "ground_duel_total"
       match_status: "draft" | "live" | "finished" | "applied"
       position_template: "outfield" | "goalkeeper"
     }
@@ -1984,6 +1986,8 @@ export const Constants = {
         "player_on",
         "player_off",
         "aerial_duel_total",
+        "ground_duel_won",
+        "ground_duel_total",
       ],
       match_status: ["draft", "live", "finished", "applied"],
       position_template: ["outfield", "goalkeeper"],

@@ -52,8 +52,9 @@ const OUTFIELD_STATS: { category: string; categoryKey: string; color: string; bg
       { type: "interception", label: "Interceptações" },
       { type: "recovery", label: "Recuperações" },
       { type: "clearance", label: "Cortes" },
-      { type: "duel_won", label: "Duelos Ganhos" },
+      { type: "ground_duel_won", label: "Duelos no Chão" },
       { type: "aerial_duel_won", label: "Duelos Aéreos" },
+      { type: "duel_won", label: "Duelos Ganhos" },
     ],
   },
   {
@@ -161,6 +162,8 @@ export function InlineMoreStatsPanel({
         case "interception": return matchStats.interceptions;
         case "recovery": return matchStats.recoveries;
         case "clearance": return matchStats.clearances;
+        case "ground_duel_won": return matchStats.duels_won - matchStats.aerial_duels_won; // Ground duels = total won - aerial won
+        case "ground_duel_total": return (matchStats.duels_total - matchStats.duels_won) - (matchStats.aerial_duels_total - matchStats.aerial_duels_won); // Ground duels lost
         case "duel_won": return matchStats.duels_won;
         case "duel_total": return matchStats.duels_total - matchStats.duels_won; // Lost duels
         case "aerial_duel_won": return matchStats.aerial_duels_won;

@@ -30,7 +30,7 @@ import { VoidEventDialog } from "./VoidEventDialog";
 import { formatGameMinute } from "@/lib/formatters";
 
 // Event icon and color mapping
-const eventConfig: Record<MatchEventType | "substitution", {
+const eventConfig: Record<MatchEventType, {
   icon: React.ReactNode;
   label: string;
   color: string;
@@ -48,9 +48,12 @@ const eventConfig: Record<MatchEventType | "substitution", {
   interception: { icon: <Shield className="w-3.5 h-3.5" />, label: "Interceptação", color: "text-cyan-400", bgColor: "bg-cyan-500/20" },
   recovery: { icon: <Shield className="w-3.5 h-3.5" />, label: "Recuperação", color: "text-cyan-400", bgColor: "bg-cyan-500/20" },
   clearance: { icon: <Shield className="w-3.5 h-3.5" />, label: "Corte", color: "text-blue-400", bgColor: "bg-blue-500/20" },
+  ground_duel_won: { icon: <Shield className="w-3.5 h-3.5" />, label: "Duelo no Chão", color: "text-green-400", bgColor: "bg-green-500/20" },
+  ground_duel_total: { icon: <Shield className="w-3.5 h-3.5" />, label: "Duelo no Chão", color: "text-zinc-400", bgColor: "bg-zinc-500/20" },
   duel_won: { icon: <Shield className="w-3.5 h-3.5" />, label: "Duelo Ganho", color: "text-green-400", bgColor: "bg-green-500/20" },
   duel_total: { icon: <Shield className="w-3.5 h-3.5" />, label: "Duelo", color: "text-zinc-400", bgColor: "bg-zinc-500/20" },
   aerial_duel_won: { icon: <Shield className="w-3.5 h-3.5" />, label: "Duelo Aéreo", color: "text-green-400", bgColor: "bg-green-500/20" },
+  aerial_duel_total: { icon: <Shield className="w-3.5 h-3.5" />, label: "Duelo Aéreo", color: "text-zinc-400", bgColor: "bg-zinc-500/20" },
   yellow: { icon: <CreditCard className="w-3.5 h-3.5" />, label: "Cartão Amarelo", color: "text-yellow-400", bgColor: "bg-yellow-500/20" },
   red: { icon: <CreditCard className="w-3.5 h-3.5" />, label: "Cartão Vermelho", color: "text-red-400", bgColor: "bg-red-500/20" },
   foul_committed: { icon: <AlertTriangle className="w-3.5 h-3.5" />, label: "Falta Cometida", color: "text-orange-400", bgColor: "bg-orange-500/20" },

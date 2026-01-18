@@ -14,7 +14,8 @@ export type MatchEventType =
   | "key_pass" | "chance_created"
   | "dribble_success" | "dribble_attempt"
   | "tackle" | "interception" | "recovery" | "clearance"
-  | "duel_won" | "duel_total" | "aerial_duel_won"
+  | "duel_won" | "duel_total" | "aerial_duel_won" | "aerial_duel_total"
+  | "ground_duel_won" | "ground_duel_total"
   | "yellow" | "red" | "foul_committed" | "foul_suffered"
   | "pass_success" | "pass_total" | "possession_lost"
   // Goalkeeper
@@ -22,7 +23,9 @@ export type MatchEventType =
   | "penalty_saved" | "error_led_to_goal"
   | "box_save" | "punch" | "high_claim" | "sweeper_action"
   // Player presence events
-  | "player_on" | "player_off";
+  | "player_on" | "player_off"
+  // Substitution event
+  | "substitution";
 
 export type ClockStatus = "stopped" | "running" | "paused";
 
@@ -122,6 +125,7 @@ export interface MatchPlayerStats {
   duels_won: number;
   duels_total: number;
   aerial_duels_won: number;
+  aerial_duels_total: number;
   yellow_cards: number;
   red_cards: number;
   fouls_committed: number;
