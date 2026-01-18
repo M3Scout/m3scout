@@ -51,10 +51,10 @@ export const RecentLeadsCard = ({ leads }: RecentLeadsCardProps) => {
     <motion.div 
       {...fadeInUp}
       transition={{ delay: 0.35 }}
-      className="rounded-[var(--radius-card)] border border-[var(--border-glass)] bg-[var(--bg-glass)] backdrop-blur-sm overflow-hidden"
+      className="rounded-[var(--radius-card)] bg-zinc-900/60 backdrop-blur-sm shadow-sm overflow-hidden"
     >
       {/* Header */}
-      <div className="px-4 sm:px-5 py-4 border-b border-[var(--border-glass)] bg-zinc-900/50 flex items-center justify-between">
+      <div className="px-4 sm:px-5 py-4 border-b border-zinc-800/40 bg-zinc-900/50 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-[var(--radius-button)] bg-gradient-to-br from-amber-500/20 to-yellow-600/10 flex items-center justify-center relative">
             <MessageSquare className="w-4 h-4 text-amber-400" />
@@ -91,7 +91,7 @@ export const RecentLeadsCard = ({ leads }: RecentLeadsCardProps) => {
               >
                 <Link
                   to="/app/leads"
-                  className="group flex items-center gap-3 p-3 rounded-[var(--radius-button)] bg-zinc-900/30 border border-transparent hover:border-[var(--border-glass)] hover:bg-zinc-800/30 transition-all duration-200"
+                  className="group flex items-center gap-3 p-3 rounded-[var(--radius-button)] bg-zinc-900/30 hover:bg-zinc-800/30 transition-all duration-200"
                 >
                   {/* Avatar */}
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-zinc-700 to-zinc-800 flex items-center justify-center text-sm font-medium text-zinc-300 shrink-0">

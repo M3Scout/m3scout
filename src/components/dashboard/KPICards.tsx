@@ -79,7 +79,7 @@ export const KPICards = ({ totalPlayers, reportsThisMonth, totalLeads, expiringC
           >
             <Link
               to={kpi.link}
-              className={`group relative block overflow-hidden rounded-[var(--radius-card)] border ${kpi.borderColor} bg-gradient-to-br ${kpi.color} p-4 sm:p-5 transition-all duration-300 hover:shadow-xl ${kpi.glowColor}`}
+              className={`group relative block overflow-hidden rounded-[var(--radius-card)] bg-gradient-to-br ${kpi.color} p-4 sm:p-5 transition-all duration-300 hover:shadow-xl ${kpi.glowColor}`}
             >
               {/* Subtle glow effect */}
               <div className="absolute -top-12 -right-12 w-24 h-24 rounded-full bg-gradient-to-br from-white/5 to-transparent blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />

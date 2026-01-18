@@ -110,10 +110,10 @@ export const TopPlayersCard = () => {
     <motion.div 
       {...fadeInUp}
       transition={{ delay: 0.2 }}
-      className="w-full h-full flex flex-col rounded-[var(--radius-card)] border border-[var(--border-glass)] bg-[var(--bg-glass)] backdrop-blur-sm overflow-hidden"
+      className="w-full h-full flex flex-col rounded-[var(--radius-card)] bg-zinc-900/60 backdrop-blur-sm shadow-sm overflow-hidden"
     >
       {/* Header */}
-      <div className="px-4 sm:px-5 py-4 border-b border-[var(--border-glass)] bg-zinc-900/50 shrink-0">
+      <div className="px-4 sm:px-5 py-4 border-b border-zinc-800/40 bg-zinc-900/50 shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-[var(--radius-button)] bg-gradient-to-br from-primary/20 to-red-600/10 flex items-center justify-center">
@@ -216,7 +216,7 @@ export const TopPlayersCard = () => {
 
       {/* Footer */}
       {players.length > 0 && (
-        <div className="px-4 sm:px-5 py-3 border-t border-[var(--border-glass)] bg-zinc-900/30">
+        <div className="px-4 sm:px-5 py-3 border-t border-zinc-800/40 bg-zinc-900/30">
           <Link 
             to="/app/players"
             className="text-xs text-primary hover:text-primary/80 flex items-center justify-center gap-1 font-medium transition-colors"

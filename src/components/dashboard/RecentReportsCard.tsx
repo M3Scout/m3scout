@@ -43,10 +43,10 @@ export const RecentReportsCard = ({ reports }: RecentReportsCardProps) => {
     <motion.div 
       {...fadeInUp}
       transition={{ delay: 0.3 }}
-      className="w-full h-full flex flex-col rounded-[var(--radius-card)] border border-[var(--border-glass)] bg-[var(--bg-glass)] backdrop-blur-sm overflow-hidden"
+      className="w-full h-full flex flex-col rounded-[var(--radius-card)] bg-zinc-900/60 backdrop-blur-sm shadow-sm overflow-hidden"
     >
       {/* Header - Fixed at top */}
-      <div className="px-4 sm:px-5 py-4 border-b border-[var(--border-glass)] bg-zinc-900/50 flex items-center justify-between shrink-0">
+      <div className="px-4 sm:px-5 py-4 border-b border-zinc-800/40 bg-zinc-900/50 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-[var(--radius-button)] bg-gradient-to-br from-violet-500/20 to-purple-600/10 flex items-center justify-center">
             <FileText className="w-4 h-4 text-violet-400" />
@@ -78,7 +78,7 @@ export const RecentReportsCard = ({ reports }: RecentReportsCardProps) => {
               >
                 <Link 
                   to={`/app/reports/${report.id}`}
-                  className="group flex items-center gap-3 sm:gap-4 p-3 rounded-[var(--radius-button)] bg-zinc-900/30 border border-transparent hover:border-[var(--border-glass)] hover:bg-zinc-800/30 transition-all duration-200"
+                  className="group flex items-center gap-3 sm:gap-4 p-3 rounded-[var(--radius-button)] bg-zinc-900/30 hover:bg-zinc-800/30 transition-all duration-200"
                 >
                   {/* Score */}
                   <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-[var(--radius-button)] bg-gradient-to-br ${getScoreColor(report.final_score)} flex items-center justify-center shadow-lg shrink-0`}>
