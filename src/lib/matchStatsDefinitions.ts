@@ -77,6 +77,7 @@ export const OUTFIELD_STATS: StatCategory[] = [
       { type: "foul_committed", label: "Faltas Cometidas" },
       { type: "foul_suffered", label: "Faltas Sofridas" },
       { type: "pass_success", label: "Passes Certos" },
+      { type: "pass_total", label: "Passes Errados" },
       { type: "possession_lost", label: "Perdas de Posse" },
     ],
   },
@@ -148,8 +149,8 @@ export const EVENT_TYPE_CONFIG: Record<MatchEventType, SummaryEventConfig> = {
   
   // Passing
   pass_success: { label: "Passes Certos", icon: "📤", category: "passing", order: 20 },
-  pass_total: { label: "Passes Totais", icon: "📤", category: "passing", order: 21 },
-  possession_lost: { label: "Perdas de Posse", icon: "❌", category: "passing", order: 22 },
+  pass_total: { label: "Passes Errados", icon: "❌", category: "passing", order: 21 },
+  possession_lost: { label: "Perdas de Posse", icon: "💨", category: "passing", order: 22 },
   
   // Defense
   tackle: { label: "Desarmes", icon: "🦶", category: "defense", order: 30 },

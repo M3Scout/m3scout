@@ -67,6 +67,7 @@ const OUTFIELD_STATS: { category: string; categoryKey: string; color: string; bg
       { type: "foul_committed", label: "Faltas Cometidas" },
       { type: "foul_suffered", label: "Faltas Sofridas" },
       { type: "pass_success", label: "Passes Certos" },
+      { type: "pass_total", label: "Passes Errados" },
       { type: "possession_lost", label: "Perdas de Posse" },
     ],
   },
