@@ -219,15 +219,45 @@ export const COMPUTED_STATS: ComputedStatDefinition[] = [
     category: "attack",
     order: 2.5, // Between assists and shots_on_target
     compute: (counts) => ({
-      first: (counts.shot?.first || 0) + (counts.shot_on_target?.first || 0),
-      second: (counts.shot?.second || 0) + (counts.shot_on_target?.second || 0),
+      // Total shots = shot_on_target (direct) + shot (off-target) + goal (always on target)
+      first: (counts.shot?.first || 0) + (counts.shot_on_target?.first || 0) + (counts.goal?.first || 0),
+      second: (counts.shot?.second || 0) + (counts.shot_on_target?.second || 0) + (counts.goal?.second || 0),
+    }),
+  },
+  {
+    id: "shots_on_target_computed",
+    label: "Finalizações no Gol",
+    icon: "🥅",
+    category: "attack",
+    order: 3.5, // After shots_total, before shot (off-target)
+    compute: (counts) => ({
+      // Shots on target = shot_on_target (direct) + goal (always on target)
+      first: (counts.shot_on_target?.first || 0) + (counts.goal?.first || 0),
+      second: (counts.shot_on_target?.second || 0) + (counts.goal?.second || 0),
+    }),
+  },
+  {
+    id: "dribbles_total_computed",
+    label: "Dribles Tentados",
+    icon: "👟",
+    category: "creativity",
+    order: 13.5, // After dribble_attempt
+    compute: (counts) => ({
+      // Total dribbles = dribble_success + dribble_attempt (failed)
+      first: (counts.dribble_success?.first || 0) + (counts.dribble_attempt?.first || 0),
+      second: (counts.dribble_success?.second || 0) + (counts.dribble_attempt?.second || 0),
     }),
   },
 ];
 
 // Helper to get all event types that should be shown in the summary
+// Exclude types that are now computed (to avoid duplicates)
 export const SUMMARY_EVENT_TYPES = (Object.keys(EVENT_TYPE_CONFIG) as MatchEventType[])
-  .filter((type) => !["player_on", "player_off", "substitution"].includes(type));
+  .filter((type) => ![
+    "player_on", "player_off", "substitution", // Meta events
+    "shot_on_target", // Now computed as shots_on_target_computed (includes goals)
+    "dribble_attempt", // Now computed as dribbles_total_computed (dribble_attempt is for "failed" dribbles)
+  ].includes(type));
 
 // All event types for initialization (including meta events)
 export const ALL_EVENT_TYPES = Object.keys(EVENT_TYPE_CONFIG) as MatchEventType[];

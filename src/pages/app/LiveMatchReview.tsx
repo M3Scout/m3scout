@@ -131,6 +131,9 @@ export default function LiveMatchReview() {
   } = useLiveMatch(matchId || "");
 
   // Detect inconsistencies (including GK-specific)
+  // IMPORTANT: Use playerStatsMap (from match_player_stats table) for consistency checks
+  // because the RPC apply_event_stats automatically increments totals when success events occur
+  // (e.g., dribble_success increments both dribbles_success AND dribbles_total)
   const inconsistencies = useMemo<Inconsistency[]>(() => {
     if (!match) return [];
     const issues: Inconsistency[] = [];
@@ -138,13 +141,15 @@ export default function LiveMatchReview() {
 
     matchPlayers.forEach((mp) => {
       if (!mp.player) return;
-      const counts = (playerEventCounts[mp.player_id] || {}) as Partial<Record<MatchEventType, number>>;
+      // Use playerStatsMap which contains the aggregated stats from match_player_stats table
+      // This reflects the correct derived values (e.g., dribbles_total includes dribbles_success)
+      const stats = playerStatsMap[mp.player_id];
       const isGK = mp.position_template === "goalkeeper";
 
-      // Common checks
+      // Common checks - use stats from match_player_stats (already aggregated correctly)
       // Shots on target > Shots
-      const shots = counts.shot ?? 0;
-      const shotsOnTarget = counts.shot_on_target ?? 0;
+      const shots = stats?.shots ?? 0;
+      const shotsOnTarget = stats?.shots_on_target ?? 0;
       if (shotsOnTarget > shots) {
         issues.push({
           playerId: mp.player_id,
@@ -154,21 +159,21 @@ export default function LiveMatchReview() {
         });
       }
 
-      // Dribbles success > attempts
-      const dribbleSuccess = counts.dribble_success ?? 0;
-      const dribbleAttempt = counts.dribble_attempt ?? 0;
-      if (dribbleSuccess > dribbleAttempt) {
+      // Dribbles success > total (from match_player_stats)
+      const dribbleSuccess = stats?.dribbles_success ?? 0;
+      const dribbleTotal = stats?.dribbles_total ?? 0;
+      if (dribbleSuccess > dribbleTotal) {
         issues.push({
           playerId: mp.player_id,
           playerName: mp.player.full_name,
           type: "warning",
-          message: `Dribles certos (${dribbleSuccess}) > Dribles tentados (${dribbleAttempt})`,
+          message: `Dribles certos (${dribbleSuccess}) > Dribles tentados (${dribbleTotal})`,
         });
       }
 
-      // Duels won > total duels
-      const duelsWon = counts.duel_won ?? 0;
-      const duelsTotal = counts.duel_total ?? 0;
+      // Duels won > total duels (from match_player_stats)
+      const duelsWon = stats?.duels_won ?? 0;
+      const duelsTotal = stats?.duels_total ?? 0;
       if (duelsWon > duelsTotal) {
         issues.push({
           playerId: mp.player_id,
@@ -179,7 +184,7 @@ export default function LiveMatchReview() {
       }
 
       // Aerial duels won > total duels (warning only)
-      const aerialWon = counts.aerial_duel_won ?? 0;
+      const aerialWon = stats?.aerial_duels_won ?? 0;
       if (aerialWon > duelsTotal && duelsTotal > 0) {
         issues.push({
           playerId: mp.player_id,
@@ -189,9 +194,9 @@ export default function LiveMatchReview() {
         });
       }
 
-      // Passes accurate > total
-      const passesAcc = counts.pass_success ?? 0;
-      const passesTotal = counts.pass_total ?? 0;
+      // Passes accurate > total (from match_player_stats)
+      const passesAcc = stats?.passes_completed ?? 0;
+      const passesTotal = stats?.passes_total ?? 0;
       if (passesAcc > passesTotal) {
         issues.push({
           playerId: mp.player_id,
@@ -230,10 +235,11 @@ export default function LiveMatchReview() {
         });
       }
 
-      // GK-specific checks
+      // GK-specific checks (use playerEventCounts for clean_sheet since it's an event, not aggregated stat)
       if (isGK) {
+        const counts = (playerEventCounts[mp.player_id] || {}) as Partial<Record<MatchEventType, number>>;
         const cleanSheets = counts.clean_sheet ?? 0;
-        const goalsConceded = counts.goal_conceded ?? 0;
+        const goalsConceded = stats?.goals_conceded ?? 0;
 
         // Clean sheet > 1 (can only have 1 per game)
         if (cleanSheets > 1) {
@@ -256,7 +262,7 @@ export default function LiveMatchReview() {
         }
 
         // Saves/goals ratio check (info only)
-        const saves = counts.save ?? 0;
+        const saves = stats?.saves ?? 0;
         if (saves === 0 && goalsConceded > 2) {
           issues.push({
             playerId: mp.player_id,
@@ -267,9 +273,19 @@ export default function LiveMatchReview() {
         }
       }
 
-      // Player has no events
-      const totalEvents = Object.values(counts).reduce((a, b) => (a ?? 0) + (b ?? 0), 0);
-      if (totalEvents === 0) {
+      // Player has no stats recorded
+      const hasAnyStats = stats && (
+        (stats.goals ?? 0) > 0 ||
+        (stats.assists ?? 0) > 0 ||
+        (stats.shots ?? 0) > 0 ||
+        (stats.tackles ?? 0) > 0 ||
+        (stats.interceptions ?? 0) > 0 ||
+        (stats.recoveries ?? 0) > 0 ||
+        (stats.passes_completed ?? 0) > 0 ||
+        (stats.dribbles_success ?? 0) > 0 ||
+        (stats.saves ?? 0) > 0
+      );
+      if (!hasAnyStats) {
         issues.push({
           playerId: mp.player_id,
           playerName: mp.player.full_name,
@@ -280,7 +296,7 @@ export default function LiveMatchReview() {
     });
 
     return issues;
-  }, [match, matchPlayers, playerEventCounts]);
+  }, [match, matchPlayers, playerStatsMap, playerEventCounts]);
 
   // Calculate minutes played for a player based on match data
   const calculateMinutesPlayed = (
