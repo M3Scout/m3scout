@@ -840,11 +840,12 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
                               <>
                                 <TableHead className="text-center">G</TableHead>
                                 <TableHead className="text-center">A</TableHead>
+                                <TableHead className="text-center">Fin</TableHead>
+                                <TableHead className="text-center">NoG</TableHead>
                                 <TableHead className="text-center">🟨</TableHead>
                                 <TableHead className="text-center">🟥</TableHead>
                                 <TableHead className="text-center">Des</TableHead>
                                 <TableHead className="text-center">Int</TableHead>
-                                <TableHead className="text-center">Rec</TableHead>
                               </>
                             )}
                             {canEdit && <TableHead className="w-20"></TableHead>}
@@ -886,11 +887,12 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
                                       {stat.goals}
                                     </TableCell>
                                     <TableCell className="text-center">{stat.assists}</TableCell>
+                                    <TableCell className="text-center">{stat.shots || 0}</TableCell>
+                                    <TableCell className="text-center">{stat.shots_on_target || 0}</TableCell>
                                     <TableCell className="text-center">{stat.yellow_cards}</TableCell>
                                     <TableCell className="text-center">{stat.red_cards}</TableCell>
                                     <TableCell className="text-center">{stat.tackles}</TableCell>
                                     <TableCell className="text-center">{stat.interceptions}</TableCell>
-                                    <TableCell className="text-center">{stat.recoveries}</TableCell>
                                   </>
                                 )}
                                 {canEdit && (
@@ -923,7 +925,7 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
                               {expandedStats.has(stat.id) && (
                                 <TableRow key={`${stat.id}-expanded`}>
                                   <TableCell 
-                                    colSpan={isGK ? (canEdit ? 9 : 8) : (canEdit ? 11 : 10)}
+                                    colSpan={isGK ? (canEdit ? 9 : 8) : (canEdit ? 12 : 11)}
                                     className="bg-muted/30 p-4"
                                   >
                                     <CompetitionStatsSummary
@@ -972,6 +974,12 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
                                   {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.assists || 0), 0)}
                                 </TableCell>
                                 <TableCell className="text-center">
+                                  {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.shots || 0), 0)}
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.shots_on_target || 0), 0)}
+                                </TableCell>
+                                <TableCell className="text-center">
                                   {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.yellow_cards || 0), 0)}
                                 </TableCell>
                                 <TableCell className="text-center">
@@ -982,9 +990,6 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
                                 </TableCell>
                                 <TableCell className="text-center">
                                   {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.interceptions || 0), 0)}
-                                </TableCell>
-                                <TableCell className="text-center">
-                                  {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.recoveries || 0), 0)}
                                 </TableCell>
                               </>
                             )}

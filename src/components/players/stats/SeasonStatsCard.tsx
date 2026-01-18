@@ -127,8 +127,8 @@ export function SeasonStatsCard({
             )}
           </div>
 
-          {/* Stats Grid - 2 columns */}
-          <div className="grid grid-cols-2 gap-2 w-full">
+          {/* Stats Grid - 3 columns for outfield, 2 for GK */}
+          <div className={`grid gap-2 w-full ${isGK ? 'grid-cols-2' : 'grid-cols-3'}`}>
             <StatChip label="Jogos" value={stat.matches} index={0} />
             <StatChip label="Minutos" value={stat.minutes} index={1} />
 
@@ -142,9 +142,11 @@ export function SeasonStatsCard({
             ) : (
               <>
                 <StatChip label="Gols" value={stat.goals} highlight="green" index={2} />
-                <StatChip label="Assistências" value={stat.assists} highlight="blue" index={3} />
-                <StatChip label="Amarelos" value={stat.yellow_cards} variant="warning" index={4} />
-                <StatChip label="Vermelhos" value={stat.red_cards} variant="danger" index={5} />
+                <StatChip label="Assist" value={stat.assists} highlight="blue" index={3} />
+                <StatChip label="Finaliz." value={stat.shots || 0} index={4} />
+                <StatChip label="No Gol" value={stat.shots_on_target || 0} index={5} />
+                <StatChip label="Amarelos" value={stat.yellow_cards} variant="warning" index={6} />
+                <StatChip label="Vermelhos" value={stat.red_cards} variant="danger" index={7} />
               </>
             )}
           </div>
@@ -227,6 +229,8 @@ export function SeasonTotalsCard({ seasonStats, isGK, index = 0 }: SeasonTotalsC
       minutes: acc.minutes + (s.minutes || 0),
       goals: acc.goals + (s.goals || 0),
       assists: acc.assists + (s.assists || 0),
+      shots: acc.shots + (s.shots || 0),
+      shots_on_target: acc.shots_on_target + (s.shots_on_target || 0),
       yellow_cards: acc.yellow_cards + (s.yellow_cards || 0),
       red_cards: acc.red_cards + (s.red_cards || 0),
       saves: acc.saves + (s.saves || 0),
@@ -239,6 +243,8 @@ export function SeasonTotalsCard({ seasonStats, isGK, index = 0 }: SeasonTotalsC
       minutes: 0,
       goals: 0,
       assists: 0,
+      shots: 0,
+      shots_on_target: 0,
       yellow_cards: 0,
       red_cards: 0,
       saves: 0,
@@ -260,7 +266,7 @@ export function SeasonTotalsCard({ seasonStats, isGK, index = 0 }: SeasonTotalsC
           <div className="flex items-center gap-2 mb-2">
             <Badge variant="secondary" className="text-xs">Total da Temporada</Badge>
           </div>
-          <div className="grid grid-cols-2 gap-2 w-full">
+          <div className={`grid gap-2 w-full ${isGK ? 'grid-cols-2' : 'grid-cols-3'}`}>
             <StatChip label="Jogos" value={totals.matches} index={0} />
             <StatChip label="Minutos" value={totals.minutes} index={1} />
             {isGK ? (
@@ -273,9 +279,11 @@ export function SeasonTotalsCard({ seasonStats, isGK, index = 0 }: SeasonTotalsC
             ) : (
               <>
                 <StatChip label="Gols" value={totals.goals} highlight="green" index={2} />
-                <StatChip label="Assistências" value={totals.assists} highlight="blue" index={3} />
-                <StatChip label="Amarelos" value={totals.yellow_cards} variant="warning" index={4} />
-                <StatChip label="Vermelhos" value={totals.red_cards} variant="danger" index={5} />
+                <StatChip label="Assist" value={totals.assists} highlight="blue" index={3} />
+                <StatChip label="Finaliz." value={totals.shots} index={4} />
+                <StatChip label="No Gol" value={totals.shots_on_target} index={5} />
+                <StatChip label="Amarelos" value={totals.yellow_cards} variant="warning" index={6} />
+                <StatChip label="Vermelhos" value={totals.red_cards} variant="danger" index={7} />
               </>
             )}
           </div>
