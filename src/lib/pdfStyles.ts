@@ -1,20 +1,24 @@
 /**
  * Shared PDF styles and utilities for @react-pdf/renderer
  * Vector-based PDF generation for crisp text at any scale
+ * 
+ * NOTE: Using Helvetica (built-in PDF font) to avoid font encoding errors
+ * with external WOFF2 fonts that can cause "DataView offset" crashes.
  */
 import { StyleSheet, Font } from "@react-pdf/renderer";
 
-// Register Inter font for PDF (Google Fonts CDN)
+// Use Helvetica (built-in) as primary font to avoid encoding issues
+// Helvetica is universally supported in PDF and handles all characters safely
 Font.register({
-  family: "Inter",
+  family: "Helvetica",
   fonts: [
-    { src: "https://fonts.gstatic.com/s/inter/v18/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfAZ9hiJ-Ek-_EeA.woff2", fontWeight: 400 },
-    { src: "https://fonts.gstatic.com/s/inter/v18/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuI6fAZ9hiJ-Ek-_EeA.woff2", fontWeight: 500 },
-    { src: "https://fonts.gstatic.com/s/inter/v18/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuGKYAZ9hiJ-Ek-_EeA.woff2", fontWeight: 600 },
-    { src: "https://fonts.gstatic.com/s/inter/v18/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuFuYAZ9hiJ-Ek-_EeA.woff2", fontWeight: 700 },
-    { src: "https://fonts.gstatic.com/s/inter/v18/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuDyYAZ9hiJ-Ek-_EeA.woff2", fontWeight: 800 },
+    { src: "Helvetica", fontWeight: 400 },
+    { src: "Helvetica-Bold", fontWeight: 700 },
   ],
 });
+
+// Hyphenation callback to prevent word-break issues
+Font.registerHyphenationCallback((word) => [word]);
 
 // Design tokens
 export const PDF_COLORS = {
@@ -58,7 +62,7 @@ export const pdfBaseStyles = StyleSheet.create({
   // Page
   page: {
     padding: 40,
-    fontFamily: "Inter",
+    fontFamily: "Helvetica",
     fontSize: 10,
     color: PDF_COLORS.gray900,
     backgroundColor: PDF_COLORS.white,
