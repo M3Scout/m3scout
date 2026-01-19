@@ -194,8 +194,7 @@ export function PremiumPlayerCard({
           "rounded-xl tablet:rounded-2xl",
           "bg-zinc-900/60 border",
           positionColors.borderClass,
-          !matchPlayer.is_on_field && !isDraft && "opacity-50",
-          disabled && "pointer-events-none"
+          !matchPlayer.is_on_field && !isDraft && "opacity-50"
         )}
       >
         {/* Position accent bar - thicker on tablet */}

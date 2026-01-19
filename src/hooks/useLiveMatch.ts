@@ -466,10 +466,13 @@ export function useLiveMatch(matchId: string) {
         });
       }
     },
-    onError: (error: Error) => {
-      toast.error(error.message || "Erro ao registrar evento");
+    onError: (error: any) => {
+      const status = typeof error?.status === "number" ? error.status : undefined;
+      const message = error?.message || "Erro ao registrar evento";
+      toast.error(status ? `Erro (${status})` : "Erro", {
+        description: message,
+      });
     },
-  });
 
   // Delete event (undo)
   const deleteEvent = useMutation({

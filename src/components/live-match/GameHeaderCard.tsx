@@ -92,6 +92,9 @@ export function GameHeaderCard({
   const isDraft = match.status === "draft";
   const isLive = match.status === "live";
 
+  const statusValue = match.status as unknown as string;
+  const isFinal = ["finished", "applied", "completed"].includes(statusValue);
+
   const handleStartGame = () => {
     setConfirmStartOpen(false);
     onStartGame?.();
@@ -188,8 +191,8 @@ export function GameHeaderCard({
                 </Button>
               )}
 
-              {/* Review mode button - only when finished */}
-              {match.status === "finished" && onToggleReviewMode && (
+              {/* Review mode button - when match is final (finished/applied/completed) */}
+              {isFinal && onToggleReviewMode && (
                 <Button
                   variant={isReviewMode ? "destructive" : "outline"}
                   size="mobile"
@@ -197,8 +200,8 @@ export function GameHeaderCard({
                   disabled={isPending || isRegenerating}
                   className={cn(
                     "gap-2",
-                    isReviewMode 
-                      ? "border-amber-500/50 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30" 
+                    isReviewMode
+                      ? "border-amber-500/50 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30"
                       : "border-amber-500/50 text-amber-400 hover:bg-amber-500/10"
                   )}
                 >
@@ -211,8 +214,8 @@ export function GameHeaderCard({
                   ) : (
                     <>
                       <Edit3 className="w-4 h-4" />
-                      <span className="hidden sm:inline">Editar Pós-Jogo</span>
-                      <span className="sm:hidden">Editar</span>
+                      <span className="hidden sm:inline">Editar Pós-Jogo (Revisão)</span>
+                      <span className="sm:hidden">Revisão</span>
                     </>
                   )}
                 </Button>
