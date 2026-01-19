@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef } from "react";
 import { useParams, Navigate, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useLiveMatch, MatchEventType } from "@/hooks/useLiveMatch";
@@ -18,6 +18,16 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   UserPlus, Users, ArrowRightLeft, Filter, 
   LayoutGrid, LayoutList, Zap, Edit3, Save, X, PlusCircle
@@ -60,6 +70,8 @@ export default function LiveMatchGame() {
   const [currentTimerInfo, setCurrentTimerInfo] = useState<TimerInfo | null>(null);
   const [showOnlyOnField, setShowOnlyOnField] = useState(false);
   const [isReviewMode, setIsReviewMode] = useState(false);
+  const [showExitReviewDialog, setShowExitReviewDialog] = useState(false);
+  const reviewModeEventsCount = useRef(0);
   const { lastEvent, triggerEvent, effectsEnabled } = useEventEffects();
   const {
     match,
@@ -173,6 +185,11 @@ export default function LiveMatchGame() {
     // In review mode, use forced minute if provided
     const minuteToUse = forceMinute !== undefined ? forceMinute : currentMinute;
     
+    // Track events added in review mode
+    if (isReviewMode) {
+      reviewModeEventsCount.current += 1;
+    }
+    
     addEvent.mutate({ 
       playerId, 
       eventType, 
@@ -185,6 +202,42 @@ export default function LiveMatchGame() {
   const handleAddManualEvent = (playerId: string, eventType: MatchEventType, minute: number, notes?: string) => {
     handleAddEvent(playerId, eventType, minute);
     // TODO: notes can be stored if needed in future
+  };
+
+  const handleToggleReviewMode = () => {
+    if (isReviewMode) {
+      // Exiting review mode - check for unsaved events
+      if (reviewModeEventsCount.current > 0) {
+        setShowExitReviewDialog(true);
+        return;
+      }
+      toast.success("Modo revisão finalizado.");
+    } else {
+      reviewModeEventsCount.current = 0;
+      toast.info("Modo revisão ativado. Você pode adicionar/editar eventos.");
+    }
+    setIsReviewMode(!isReviewMode);
+  };
+
+  const handleConfirmExitReview = (shouldRegenerate: boolean) => {
+    if (shouldRegenerate) {
+      regenerateSummary.mutate(undefined, {
+        onSuccess: () => {
+          toast.success("Resumo regenerado com sucesso!");
+          reviewModeEventsCount.current = 0;
+          setIsReviewMode(false);
+          setShowExitReviewDialog(false);
+        },
+        onError: () => {
+          toast.error("Erro ao regenerar resumo. Tente novamente.");
+        }
+      });
+    } else {
+      reviewModeEventsCount.current = 0;
+      setIsReviewMode(false);
+      setShowExitReviewDialog(false);
+      toast.info("Modo revisão finalizado sem regenerar resumo.");
+    }
   };
 
   const handlePlayerEnter = (matchPlayerId: string) => {
@@ -228,18 +281,47 @@ export default function LiveMatchGame() {
         playersOnField={playersOnField.length}
         pendingEventsCount={pendingEventsCount}
         isReviewMode={isReviewMode}
-        onToggleReviewMode={() => {
-          if (isReviewMode) {
-            // Exiting review mode - show confirmation
-            toast.success("Modo revisão finalizado. Estatísticas atualizadas.");
-          } else {
-            toast.info("Modo revisão ativado. Você pode adicionar/editar eventos.");
-          }
-          setIsReviewMode(!isReviewMode);
-        }}
+        onToggleReviewMode={handleToggleReviewMode}
         onRegenerateSummary={() => regenerateSummary.mutate()}
         isRegenerating={regenerateSummary.isPending}
       />
+
+      {/* Exit Review Mode Confirmation Dialog */}
+      <AlertDialog open={showExitReviewDialog} onOpenChange={setShowExitReviewDialog}>
+        <AlertDialogContent className="bg-zinc-900 border-zinc-800">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-zinc-100">
+              Sair do Modo Revisão?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-zinc-400">
+              Você adicionou <strong className="text-amber-400">{reviewModeEventsCount.current}</strong> evento(s) durante esta revisão. 
+              Deseja regenerar o resumo da partida com as novas estatísticas?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel 
+              className="bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700"
+              onClick={() => setShowExitReviewDialog(false)}
+            >
+              Continuar editando
+            </AlertDialogCancel>
+            <Button
+              variant="outline"
+              className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+              onClick={() => handleConfirmExitReview(false)}
+            >
+              Sair sem regenerar
+            </Button>
+            <AlertDialogAction
+              className="bg-green-600 hover:bg-green-700 text-white"
+              onClick={() => handleConfirmExitReview(true)}
+              disabled={regenerateSummary.isPending}
+            >
+              {regenerateSummary.isPending ? "Regenerando..." : "Regenerar e sair"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Main container - optimized for tablet */}
       <div className={cn(
