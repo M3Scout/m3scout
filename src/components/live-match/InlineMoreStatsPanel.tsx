@@ -153,45 +153,46 @@ export function InlineMoreStatsPanel({
   const getDisplayCount = useCallback((type: MatchEventType): number => {
     if (matchStats) {
       // Map event types to matchStats fields - using the persisted stats that include derived values
+      // All subtraction-based calculations must be clamped to >= 0 to prevent negative values
       switch (type) {
-        case "goal": return matchStats.goals;
-        case "assist": return matchStats.assists;
-        case "shot_on_target": return matchStats.shots_on_target;
-        case "shot": return matchStats.shots - matchStats.shots_on_target; // Shots outside = total shots - on target
-        case "key_pass": return matchStats.key_passes;
-        case "chance_created": return matchStats.chances_created;
-        case "dribble_success": return matchStats.dribbles_success;
-        case "dribble_attempt": return matchStats.dribbles_total - matchStats.dribbles_success;
-        case "tackle": return matchStats.tackles;
-        case "interception": return matchStats.interceptions;
-        case "recovery": return matchStats.recoveries;
-        case "clearance": return matchStats.clearances;
+        case "goal": return Math.max(0, matchStats.goals);
+        case "assist": return Math.max(0, matchStats.assists);
+        case "shot_on_target": return Math.max(0, matchStats.shots_on_target);
+        case "shot": return Math.max(0, matchStats.shots - matchStats.shots_on_target); // Shots outside = total shots - on target
+        case "key_pass": return Math.max(0, matchStats.key_passes);
+        case "chance_created": return Math.max(0, matchStats.chances_created);
+        case "dribble_success": return Math.max(0, matchStats.dribbles_success);
+        case "dribble_attempt": return Math.max(0, matchStats.dribbles_total - matchStats.dribbles_success); // Dribble attempts failed
+        case "tackle": return Math.max(0, matchStats.tackles);
+        case "interception": return Math.max(0, matchStats.interceptions);
+        case "recovery": return Math.max(0, matchStats.recoveries);
+        case "clearance": return Math.max(0, matchStats.clearances);
         // Duels - now using dedicated fields for won/lost tracking
-        case "ground_duel_won": return matchStats.duels_won - matchStats.aerial_duels_won; // Ground duels won
+        case "ground_duel_won": return Math.max(0, matchStats.duels_won - matchStats.aerial_duels_won); // Ground duels won
         case "ground_duel_total": return Math.max(0, (matchStats.duels_total - matchStats.duels_won) - (matchStats.aerial_duels_total - matchStats.aerial_duels_won)); // Ground duels lost
-        case "aerial_duel_won": return matchStats.aerial_duels_won;
+        case "aerial_duel_won": return Math.max(0, matchStats.aerial_duels_won);
         case "aerial_duel_total": return Math.max(0, matchStats.aerial_duels_total - matchStats.aerial_duels_won); // Aerial duels lost
         // Legacy generic duels (for backward compatibility)
-        case "duel_won": return matchStats.duels_won;
+        case "duel_won": return Math.max(0, matchStats.duels_won);
         case "duel_total": return Math.max(0, matchStats.duels_total - matchStats.duels_won); // All lost duels
-        case "yellow": return matchStats.yellow_cards;
-        case "red": return matchStats.red_cards;
-        case "foul_committed": return matchStats.fouls_committed;
-        case "foul_suffered": return matchStats.fouls_suffered;
-        case "pass_success": return matchStats.passes_completed;
-        case "pass_total": return matchStats.passes_total - matchStats.passes_completed; // Failed passes
-        case "possession_lost": return matchStats.possession_lost;
-        case "save": return matchStats.saves;
-        case "goal_conceded": return matchStats.goals_conceded;
+        case "yellow": return Math.max(0, matchStats.yellow_cards);
+        case "red": return Math.max(0, matchStats.red_cards);
+        case "foul_committed": return Math.max(0, matchStats.fouls_committed);
+        case "foul_suffered": return Math.max(0, matchStats.fouls_suffered);
+        case "pass_success": return Math.max(0, matchStats.passes_completed);
+        case "pass_total": return Math.max(0, matchStats.passes_total - matchStats.passes_completed); // Failed passes
+        case "possession_lost": return Math.max(0, matchStats.possession_lost);
+        case "save": return Math.max(0, matchStats.saves);
+        case "goal_conceded": return Math.max(0, matchStats.goals_conceded);
         // Goalkeeper specific
         case "box_save": return 0; // Not in matchStats currently
         case "punch": return 0;
         case "high_claim": return 0;
         case "sweeper_action": return 0;
-        default: return eventCounts[type] || 0;
+        default: return Math.max(0, eventCounts[type] || 0);
       }
     }
-    return eventCounts[type] || 0;
+    return Math.max(0, eventCounts[type] || 0);
   }, [matchStats, eventCounts]);
   
   // For the "-" button, we need to check if there are events to remove (event-based)
