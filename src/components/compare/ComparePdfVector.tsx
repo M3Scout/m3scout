@@ -713,6 +713,40 @@ export function ComparePdfVector({
                   </View>
                 );
               })}
+              {/* Average Row */}
+              {(() => {
+                const averages = players.map((_, pIdx) => {
+                  const vals = playersRadarData[pIdx]?.values || [];
+                  const sum = vals.reduce((acc, v) => acc + v, 0);
+                  return vals.length > 0 ? sum / vals.length : null;
+                });
+                const validAverages = averages.filter(v => v !== null) as number[];
+                const allSame = validAverages.length <= 1 || validAverages.every(v => Math.round(v) === Math.round(validAverages[0]));
+                const bestAvg = allSame ? null : Math.max(...validAverages);
+                
+                return (
+                  <View style={[styles.tableRow, { borderTop: `2px solid ${PDF_COLORS.gray300}`, backgroundColor: PDF_COLORS.gray50 }]}>
+                    <Text style={[styles.tableLabelCell, { fontWeight: 700 }]}>MÉDIA</Text>
+                    {players.map((player, pIdx) => {
+                      const avg = averages[pIdx];
+                      const isBest = !allSame && avg !== null && Math.round(avg) === Math.round(bestAvg!);
+                      const playerColor = playersRadarData[pIdx]?.color || PDF_COLORS.gray500;
+                      
+                      return (
+                        <Text
+                          key={player.id}
+                          style={isBest
+                            ? [styles.tableValueCellBest, { color: playerColor, backgroundColor: `${playerColor}15`, fontWeight: 700 }]
+                            : [styles.tableValueCell, { fontWeight: 700 }]
+                          }
+                        >
+                          {avg !== null ? avg.toFixed(1) : "—"}{isBest ? " ↑" : ""}
+                        </Text>
+                      );
+                    })}
+                  </View>
+                );
+              })()}
             </View>
           </>
         )}
