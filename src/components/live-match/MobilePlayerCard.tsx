@@ -595,6 +595,7 @@ export function MobilePlayerCard({
                 onAddEvent={handleAddEventWithSound}
                 onVoidLastEvent={onVoidLastEvent}
                 disabled={disabled}
+                isReviewMode={isReviewMode}
               />
             </motion.div>
           )}

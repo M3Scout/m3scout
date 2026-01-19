@@ -643,6 +643,7 @@ export function PremiumPlayerCard({
                   onAddEvent={handleAddEventWithSound}
                   onVoidLastEvent={onVoidLastEvent}
                   disabled={disabled}
+                  isReviewMode={isReviewMode}
                 />
               </motion.div>
             )}
