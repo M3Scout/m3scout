@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, forwardRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -50,13 +50,13 @@ interface AddManualEventModalProps {
   isPending?: boolean;
 }
 
-export function AddManualEventModal({
+export const AddManualEventModal = forwardRef<HTMLDivElement, AddManualEventModalProps>(function AddManualEventModal({
   open,
   onOpenChange,
   players,
   onAddEvent,
   isPending,
-}: AddManualEventModalProps) {
+}, ref) {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>("");
   const [selectedEventType, setSelectedEventType] = useState<MatchEventType | "">("");
   const [minute, setMinute] = useState<string>("");
@@ -176,4 +176,4 @@ export function AddManualEventModal({
       </DialogContent>
     </Dialog>
   );
-}
+});

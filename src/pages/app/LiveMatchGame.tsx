@@ -14,6 +14,7 @@ import { PendingEventsBadge } from "@/components/live-match/PendingEventsBadge";
 import { SubstitutionModal } from "@/components/live-match/SubstitutionModal";
 import { EventEffects, useEventEffects } from "@/components/live-match/EventEffects";
 import { AddManualEventModal } from "@/components/live-match/AddManualEventModal";
+import { LiveMatchDebugHud, LiveMatchRpcError } from "@/components/live-match/LiveMatchDebugHud";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -72,6 +73,8 @@ export default function LiveMatchGame() {
   const [isReviewMode, setIsReviewMode] = useState(false);
   const [showExitReviewDialog, setShowExitReviewDialog] = useState(false);
   const reviewModeEventsCount = useRef(0);
+  const [lastActionAttempt, setLastActionAttempt] = useState<string | null>(null);
+  const [lastRpcError, setLastRpcError] = useState<LiveMatchRpcError>(null);
   const { lastEvent, triggerEvent, effectsEnabled } = useEventEffects();
   const {
     match,
@@ -179,6 +182,10 @@ export default function LiveMatchGame() {
   }
 
   const handleAddEvent = (playerId: string, eventType: MatchEventType, forceMinute?: number) => {
+    // Track for debug
+    setLastActionAttempt(eventType);
+    setLastRpcError(null);
+    
     // Trigger visual effects for important events
     triggerEvent(eventType);
     
@@ -196,6 +203,13 @@ export default function LiveMatchGame() {
       minute: minuteToUse || undefined,
       half: currentTimerInfo?.half,
       displayMinute: forceMinute !== undefined ? `${forceMinute}'` : currentTimerInfo?.displayString,
+    }, {
+      onError: (error: any) => {
+        setLastRpcError({
+          status: error?.status,
+          message: error?.message || "Erro desconhecido",
+        });
+      },
     });
   };
 
@@ -264,11 +278,35 @@ export default function LiveMatchGame() {
   const isFinished = match.status === "finished";
   const competitionName = match.competition?.display_name || match.competition?.name || "Competição";
   
-  // Can add events if: (live and clock running) OR review mode
-  const canAddEvents = (isLive && match.clock_status === "running") || isReviewMode;
+  // Unified gating logic
+  const statusStr = String(match.status);
+  const isFinal = ["finished", "applied", "completed"].includes(statusStr);
+  const isLocked = statusStr === "locked" || Boolean((match as any).is_locked);
+  
+  // Can add events if: (live and clock running) OR (final and review mode and not locked)
+  const canAddEvents = !isLocked && ((isLive && match.clock_status === "running") || (isFinal && isReviewMode));
+  
+  // Determine UI read-only reason for Debug HUD
+  const uiReadOnlyReason = useMemo(() => {
+    if (isLocked) return "LOCKED";
+    if (isDraft) return "DRAFT";
+    if (isFinal && !isReviewMode) return "FINAL_NOT_REVIEW";
+    if (isLive && match.clock_status !== "running") return "CLOCK_NOT_RUNNING";
+    return "";
+  }, [isLocked, isDraft, isFinal, isReviewMode, isLive, match.clock_status]);
 
   return (
     <div className="min-h-screen bg-zinc-950 pb-20">
+      {/* Debug HUD - only for admins */}
+      <LiveMatchDebugHud
+        match={match}
+        isReviewMode={isReviewMode}
+        canAddEvents={canAddEvents}
+        uiReadOnlyReason={uiReadOnlyReason}
+        lastActionAttempt={lastActionAttempt}
+        lastRpcError={lastRpcError}
+      />
+
       {/* Event Visual Effects */}
       <EventEffects lastEvent={lastEvent} enabled={effectsEnabled} />
 
@@ -561,7 +599,7 @@ export default function LiveMatchGame() {
                     await updatePlayer.mutateAsync({ matchPlayerId, updates: { started } });
                     toast.success(started ? "Definido como Titular" : "Definido como Reserva");
                   }}
-                  disabled={match.status === "applied"}
+                  disabled={isLocked}
                   isReviewMode={isReviewMode}
                   index={index}
                 />
@@ -589,7 +627,7 @@ export default function LiveMatchGame() {
                     await updatePlayer.mutateAsync({ matchPlayerId, updates: { started } });
                     toast.success(started ? "Definido como Titular" : "Definido como Reserva");
                   }}
-                  disabled={match.status === "applied"}
+                  disabled={isLocked}
                   isReviewMode={isReviewMode}
                   index={index}
                 />
