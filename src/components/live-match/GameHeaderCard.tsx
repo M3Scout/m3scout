@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Match, MatchStatus } from "@/hooks/useLiveMatch";
@@ -102,9 +101,8 @@ export function GameHeaderCard({
 
   return (
     <>
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
+      {/* Removed framer-motion animation to prevent header disappearing during scroll/re-renders */}
+      <div
         className="sticky top-0 z-20"
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
@@ -280,7 +278,7 @@ export function GameHeaderCard({
             </div>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Confirm Start Dialog - Agency Mode */}
       <AlertDialog open={confirmStartOpen} onOpenChange={setConfirmStartOpen}>
