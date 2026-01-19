@@ -62,9 +62,10 @@ export const OUTFIELD_STATS: StatCategory[] = [
       { type: "interception", label: "Interceptações" },
       { type: "recovery", label: "Recuperações" },
       { type: "clearance", label: "Cortes" },
-      { type: "ground_duel_won", label: "Duelos no Chão" },
-      { type: "aerial_duel_won", label: "Duelos Aéreos" },
-      { type: "duel_won", label: "Duelos Ganhos" },
+      { type: "ground_duel_won", label: "Duelo Chão ✓" },
+      { type: "ground_duel_total", label: "Duelo Chão ✗" },
+      { type: "aerial_duel_won", label: "Duelo Aéreo ✓" },
+      { type: "aerial_duel_total", label: "Duelo Aéreo ✗" },
     ],
   },
   {

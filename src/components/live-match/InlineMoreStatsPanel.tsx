@@ -52,9 +52,10 @@ const OUTFIELD_STATS: { category: string; categoryKey: string; color: string; bg
       { type: "interception", label: "Interceptações" },
       { type: "recovery", label: "Recuperações" },
       { type: "clearance", label: "Cortes" },
-      { type: "ground_duel_won", label: "Duelos no Chão" },
-      { type: "aerial_duel_won", label: "Duelos Aéreos" },
-      { type: "duel_won", label: "Duelos Ganhos" },
+      { type: "ground_duel_won", label: "Duelo Chão ✓" },
+      { type: "ground_duel_total", label: "Duelo Chão ✗" },
+      { type: "aerial_duel_won", label: "Duelo Aéreo ✓" },
+      { type: "aerial_duel_total", label: "Duelo Aéreo ✗" },
     ],
   },
   {
@@ -162,11 +163,14 @@ export function InlineMoreStatsPanel({
         case "interception": return matchStats.interceptions;
         case "recovery": return matchStats.recoveries;
         case "clearance": return matchStats.clearances;
-        case "ground_duel_won": return matchStats.duels_won - matchStats.aerial_duels_won; // Ground duels = total won - aerial won
-        case "ground_duel_total": return (matchStats.duels_total - matchStats.duels_won) - (matchStats.aerial_duels_total - matchStats.aerial_duels_won); // Ground duels lost
-        case "duel_won": return matchStats.duels_won;
-        case "duel_total": return matchStats.duels_total - matchStats.duels_won; // Lost duels
+        // Duels - now using dedicated fields for won/lost tracking
+        case "ground_duel_won": return matchStats.duels_won - matchStats.aerial_duels_won; // Ground duels won
+        case "ground_duel_total": return Math.max(0, (matchStats.duels_total - matchStats.duels_won) - (matchStats.aerial_duels_total - matchStats.aerial_duels_won)); // Ground duels lost
         case "aerial_duel_won": return matchStats.aerial_duels_won;
+        case "aerial_duel_total": return Math.max(0, matchStats.aerial_duels_total - matchStats.aerial_duels_won); // Aerial duels lost
+        // Legacy generic duels (for backward compatibility)
+        case "duel_won": return matchStats.duels_won;
+        case "duel_total": return Math.max(0, matchStats.duels_total - matchStats.duels_won); // All lost duels
         case "yellow": return matchStats.yellow_cards;
         case "red": return matchStats.red_cards;
         case "foul_committed": return matchStats.fouls_committed;
