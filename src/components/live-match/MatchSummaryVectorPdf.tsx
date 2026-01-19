@@ -102,8 +102,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   logo: {
-    width: 44,
     height: 44,
+    objectFit: "contain" as const,
+  },
+  logoSmall: {
+    height: 28,
+    objectFit: "contain" as const,
   },
   headerTitle: {
     fontSize: 20,
@@ -942,7 +946,7 @@ export function MatchSummaryVectorPdf({
         {/* Compact Header */}
         <View style={{ ...styles.header, marginBottom: 16, paddingBottom: 12 }}>
           <View style={styles.headerLeft}>
-            {logoUrl && <Image src={logoUrl} style={{ width: 32, height: 32 }} />}
+            {logoUrl && <Image src={logoUrl} style={styles.logoSmall} />}
             <View>
               <Text style={{ fontSize: 14, fontWeight: 700 }}>Resumo do Jogo</Text>
               <Text style={{ fontSize: 9, color: PDF_COLORS.gray500 }}>
@@ -1058,25 +1062,8 @@ export function MatchSummaryVectorPdf({
         <Text style={styles.footer}>
           Gerado por M3 Scouting • {format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
         </Text>
-        <Text style={styles.pageNumber}>2</Text>
-      </Page>
-
-      {/* Page 3: Player Stats */}
-      <Page size="A4" style={styles.page}>
-        {/* Compact Header */}
-        <View style={{ ...styles.header, marginBottom: 16, paddingBottom: 12 }}>
-          <View style={styles.headerLeft}>
-            {logoUrl && <Image src={logoUrl} style={{ width: 32, height: 32 }} />}
-            <View>
-              <Text style={{ fontSize: 14, fontWeight: 700 }}>Estatísticas por Jogador</Text>
-              <Text style={{ fontSize: 9, color: PDF_COLORS.gray500 }}>
-                {displayTeamName} vs {match.opponent_name}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Player Stats */}
+        {/* Player Stats - flows from page 2 */}
+        <Text style={{ ...styles.sectionTitle, marginTop: 12 }}>Estatísticas por Jogador</Text>
         <View style={styles.playersGrid}>
           {filteredPlayers.slice(0, 16).map((mp) => {
             if (!mp.player) return null;
@@ -1102,7 +1089,7 @@ export function MatchSummaryVectorPdf({
             );
 
             return (
-              <View key={mp.id} style={styles.playerCard}>
+              <View key={mp.id} style={styles.playerCard} wrap={false}>
                 <View style={styles.playerCardHeader}>
                   {mp.player.photo_url ? (
                     <Image src={mp.player.photo_url} style={styles.playerPhoto} />
@@ -1141,10 +1128,9 @@ export function MatchSummaryVectorPdf({
         </View>
 
         {/* Footer */}
-        <Text style={styles.footer}>
+        <Text style={styles.footer} fixed>
           Gerado por M3 Scouting • {format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
         </Text>
-        <Text style={styles.pageNumber}>3</Text>
       </Page>
     </Document>
   );
