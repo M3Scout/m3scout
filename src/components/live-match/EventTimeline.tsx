@@ -128,14 +128,20 @@ export function EventTimeline({
       }
     });
 
-    const sortByCreatedAt = (a: MatchEvent, b: MatchEvent) =>
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    // Sort by game_time_seconds (descending - most recent first), fallback to created_at
+    const sortByGameTime = (a: MatchEvent, b: MatchEvent) => {
+      const timeA = a.game_time_seconds ?? 0;
+      const timeB = b.game_time_seconds ?? 0;
+      if (timeA !== timeB) return timeB - timeA;
+      // Fallback: sort by created_at
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    };
 
     return {
-      firstHalfEvents: first.sort(sortByCreatedAt),
-      secondHalfEvents: second.sort(sortByCreatedAt),
-      draftEvents: draft.sort(sortByCreatedAt),
-      voidedEvents: voided.sort(sortByCreatedAt),
+      firstHalfEvents: first.sort(sortByGameTime),
+      secondHalfEvents: second.sort(sortByGameTime),
+      draftEvents: draft.sort(sortByGameTime),
+      voidedEvents: voided.sort(sortByGameTime),
     };
   }, [events]);
 

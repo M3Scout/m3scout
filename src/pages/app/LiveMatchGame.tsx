@@ -3,6 +3,7 @@ import { useParams, Navigate, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useLiveMatch, MatchEventType } from "@/hooks/useLiveMatch";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { GameHeaderCard } from "@/components/live-match/GameHeaderCard";
 import { GameScoreboard, TimerInfo } from "@/components/live-match/GameScoreboard";
 import { AddPlayerModal } from "@/components/live-match/AddPlayerModal";
@@ -60,7 +61,7 @@ function PlayerCardSkeleton({ index }: { index: number }) {
   );
 }
 
-export default function LiveMatchGame() {
+function LiveMatchGameContent() {
   const { matchId } = useParams<{ matchId: string }>();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -669,5 +670,16 @@ export default function LiveMatchGame() {
         isPending={addEvent.isPending}
       />
     </div>
+  );
+}
+
+// Wrap with ErrorBoundary to catch render errors
+export default function LiveMatchGame() {
+  return (
+    <ErrorBoundary 
+      fallbackMessage="Ocorreu um erro ao carregar a partida. Tente recarregar a página."
+    >
+      <LiveMatchGameContent />
+    </ErrorBoundary>
   );
 }
