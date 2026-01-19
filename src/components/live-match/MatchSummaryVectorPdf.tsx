@@ -372,6 +372,38 @@ const styles = StyleSheet.create({
     color: PDF_COLORS.gray500,
     marginTop: 2,
   },
+  playerMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 6,
+  },
+  playerBadgeStarter: {
+    backgroundColor: "#DCFCE7", // green-100
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 3,
+    fontSize: 7,
+    fontWeight: 600,
+    color: "#166534", // green-800
+  },
+  playerBadgeSub: {
+    backgroundColor: "#DBEAFE", // blue-100
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 3,
+    fontSize: 7,
+    fontWeight: 600,
+    color: "#1E40AF", // blue-800
+  },
+  playerMinutes: {
+    backgroundColor: PDF_COLORS.gray100,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 3,
+    fontSize: 7,
+    color: PDF_COLORS.gray600,
+  },
   playerStats: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -1051,7 +1083,7 @@ export function MatchSummaryVectorPdf({
             const counts = playerEventCounts[mp.player_id] || {};
             const statEntries = Object.entries(counts)
               .filter(([_, v]) => (v ?? 0) > 0)
-              .slice(0, 6);
+              .slice(0, 5);
             
             const initials = mp.player.full_name
               .split(" ")
@@ -1059,6 +1091,15 @@ export function MatchSummaryVectorPdf({
               .map((n) => n[0])
               .join("")
               .toUpperCase();
+            
+            // Calculate minutes played
+            const minutesPlayed = mp.minutes_played ?? (
+              mp.started 
+                ? (mp.exited_minute ?? matchDuration) 
+                : mp.entered_minute 
+                  ? (mp.exited_minute ?? matchDuration) - mp.entered_minute
+                  : 0
+            );
 
             return (
               <View key={mp.id} style={styles.playerCard}>
@@ -1074,6 +1115,14 @@ export function MatchSummaryVectorPdf({
                     <Text style={styles.playerName}>{mp.player.full_name}</Text>
                     <Text style={styles.playerPosition}>{mp.player.position}</Text>
                   </View>
+                </View>
+                <View style={styles.playerMeta}>
+                  <Text style={mp.started ? styles.playerBadgeStarter : styles.playerBadgeSub}>
+                    {mp.started ? "TITULAR" : "RESERVA"}
+                  </Text>
+                  {minutesPlayed > 0 && (
+                    <Text style={styles.playerMinutes}>{minutesPlayed} min</Text>
+                  )}
                 </View>
                 <View style={styles.playerStats}>
                   {statEntries.length > 0 ? (
