@@ -821,6 +821,34 @@ export function ScoutingReportVectorPdf({ report, logoUrl }: ScoutingReportVecto
           })}
         </View>
 
+        {/* ========== Summary & Recommendation (same page if space available) ========== */}
+        {(report.summary || report.recommendation || report.match_notes) && (
+          <View style={{ marginTop: 16 }}>
+            <View style={styles.pageHeader}>
+              <Text style={styles.pageHeaderTitle}>Resumo e Recomendações</Text>
+            </View>
+
+            {report.summary && (
+              <View style={styles.card} wrap={false}>
+                <Text style={styles.summaryTitle}>Resumo</Text>
+                <Text style={styles.summaryText}>{report.summary}</Text>
+              </View>
+            )}
+            {report.recommendation && (
+              <View style={styles.card} wrap={false}>
+                <Text style={styles.summaryTitle}>Recomendação</Text>
+                <Text style={styles.summaryText}>{report.recommendation}</Text>
+              </View>
+            )}
+            {report.match_notes && (
+              <View style={styles.card} wrap={false}>
+                <Text style={styles.summaryTitle}>Observações da Partida</Text>
+                <Text style={styles.summaryText}>{report.match_notes}</Text>
+              </View>
+            )}
+          </View>
+        )}
+
         {/* Footer */}
         <View style={styles.footer} fixed>
           <View style={styles.footerLeft}>
@@ -832,48 +860,6 @@ export function ScoutingReportVectorPdf({ report, logoUrl }: ScoutingReportVecto
           </Text>
         </View>
       </Page>
-
-      {/* ========== PAGE 3: Summary & Recommendation ========== */}
-      {(report.summary || report.recommendation || report.match_notes) && (
-        <Page size="A4" style={styles.page}>
-          <View style={styles.pageHeader}>
-            <Text style={styles.pageHeaderTitle}>Resumo e Recomendações</Text>
-            <Text style={styles.pageHeaderSubtitle}>
-              {report.players?.full_name} • {format(new Date(report.match_date), "dd/MM/yyyy", { locale: ptBR })}
-            </Text>
-          </View>
-
-          {report.summary && (
-            <View style={styles.card} wrap={false}>
-              <Text style={styles.summaryTitle}>Resumo</Text>
-              <Text style={styles.summaryText}>{report.summary}</Text>
-            </View>
-          )}
-          {report.recommendation && (
-            <View style={styles.card} wrap={false}>
-              <Text style={styles.summaryTitle}>Recomendação</Text>
-              <Text style={styles.summaryText}>{report.recommendation}</Text>
-            </View>
-          )}
-          {report.match_notes && (
-            <View style={styles.card} wrap={false}>
-              <Text style={styles.summaryTitle}>Observações da Partida</Text>
-              <Text style={styles.summaryText}>{report.match_notes}</Text>
-            </View>
-          )}
-
-          {/* Footer */}
-          <View style={styles.footer} fixed>
-            <View style={styles.footerLeft}>
-              {logoUrl && <Image src={logoUrl} style={styles.footerLogo} />}
-              <Text style={styles.footerText}>M3 Scouting © {new Date().getFullYear()}</Text>
-            </View>
-            <Text style={styles.footerText}>
-              Relatório gerado em {format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-            </Text>
-          </View>
-        </Page>
-      )}
     </Document>
   );
 }
