@@ -7,17 +7,11 @@
  */
 import { StyleSheet, Font } from "@react-pdf/renderer";
 
-// Use Helvetica (built-in) as primary font to avoid encoding issues
-// Helvetica is universally supported in PDF and handles all characters safely
-Font.register({
-  family: "Helvetica",
-  fonts: [
-    { src: "Helvetica", fontWeight: 400 },
-    { src: "Helvetica-Bold", fontWeight: 700 },
-  ],
-});
+// IMPORTANT: Helvetica is a built-in PDF font and should NOT be registered.
+// Simply use fontFamily: "Helvetica" in styles - it works out of the box.
+// Registering built-in fonts causes "DataView offset" crashes.
 
-// Hyphenation callback to prevent word-break issues
+// Disable hyphenation to prevent word-break issues with special characters
 Font.registerHyphenationCallback((word) => [word]);
 
 // Design tokens
