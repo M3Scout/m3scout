@@ -25,7 +25,8 @@ import {
   Undo2, ChevronDown, ChevronUp, LogIn, LogOut, 
   MoreVertical, Trash2, MessageSquare, Goal, Shield,
   Target, Footprints, HandHelping, BarChart3, ArrowRight,
-  RotateCcw, ShieldCheck, Zap, ArrowUpRight, Hand, CircleX, Ban, Plus
+  RotateCcw, ShieldCheck, Zap, ArrowUpRight, Hand, CircleX, Ban, Plus,
+  UserCheck, UserMinus
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { playSound, getSoundForEvent } from "@/lib/sounds";
@@ -91,6 +92,7 @@ interface PremiumPlayerCardProps {
   onPlayerExit?: (matchPlayerId: string) => void;
   onRemoveFromMatch?: () => void;
   onSaveNotes?: (notes: string) => Promise<void>;
+  onUpdateStarterStatus?: (matchPlayerId: string, started: boolean) => Promise<void>;
   disabled?: boolean;
   soundEnabled?: boolean;
   index?: number;
@@ -112,6 +114,7 @@ export function PremiumPlayerCard({
   onPlayerExit,
   onRemoveFromMatch,
   onSaveNotes,
+  onUpdateStarterStatus,
   disabled,
   soundEnabled = true,
   index = 0,
@@ -332,6 +335,29 @@ export function PremiumPlayerCard({
                       <Undo2 className="w-4 h-4 mr-2" />
                       Desfazer último
                     </DropdownMenuItem>
+                    {/* Starter status toggle - only in draft mode */}
+                    {isDraft && onUpdateStarterStatus && (
+                      <>
+                        <DropdownMenuSeparator />
+                        {matchPlayer.started ? (
+                          <DropdownMenuItem 
+                            onClick={() => onUpdateStarterStatus(matchPlayer.id, false)}
+                            className="text-amber-400 focus:text-amber-400 focus:bg-amber-500/10"
+                          >
+                            <UserMinus className="w-4 h-4 mr-2" />
+                            Definir como Reserva
+                          </DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem 
+                            onClick={() => onUpdateStarterStatus(matchPlayer.id, true)}
+                            className="text-emerald-400 focus:text-emerald-400 focus:bg-emerald-500/10"
+                          >
+                            <UserCheck className="w-4 h-4 mr-2" />
+                            Definir como Titular
+                          </DropdownMenuItem>
+                        )}
+                      </>
+                    )}
                     {onSaveNotes && (
                       <>
                         <DropdownMenuSeparator />
