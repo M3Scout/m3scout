@@ -301,11 +301,11 @@ const styles = StyleSheet.create({
   },
 });
 
-// Native SVG Radar Chart for react-pdf
-function RadarChartSvg({ data, size = 180 }: { data: { label: string; score: number }[]; size?: number }) {
+// Native SVG Radar Chart for react-pdf with labels
+function RadarChartSvg({ data, size = 200 }: { data: { label: string; score: number; color: string }[]; size?: number }) {
   const cx = size / 2;
   const cy = size / 2;
-  const maxRadius = size / 2 - 30;
+  const maxRadius = size / 2 - 45; // More space for labels
   const levels = 5;
   const angleSlice = (Math.PI * 2) / data.length;
 
@@ -351,43 +351,74 @@ function RadarChartSvg({ data, size = 180 }: { data: { label: string; score: num
     return `${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`;
   }).join(" ");
 
-  // Generate labels
-  const labels = data.map((d, i) => {
+  // Calculate label positions
+  const labelPositions = data.map((d, i) => {
     const angle = angleSlice * i - Math.PI / 2;
-    const labelRadius = maxRadius + 18;
+    const labelRadius = maxRadius + 25;
     const x = cx + labelRadius * Math.cos(angle);
     const y = cy + labelRadius * Math.sin(angle);
-    return { x, y, label: d.label, score: d.score };
+    return { x, y, label: d.label, score: d.score, color: d.color, angle };
   });
 
   return (
-    <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      <G>
-        {gridLines}
-        {axisLines}
-        <Polygon
-          points={dataPoints}
-          fill={PDF_COLORS.blue}
-          fillOpacity={0.3}
-          stroke={PDF_COLORS.blue}
-          strokeWidth={2}
-        />
-        {/* Data points */}
-        {data.map((d, i) => {
-          const angle = angleSlice * i - Math.PI / 2;
-          const r = (d.score / 100) * maxRadius;
-          return (
-            <Circle
-              key={`point-${i}`}
-              cx={cx + r * Math.cos(angle)}
-              cy={cy + r * Math.sin(angle)}
-              r={3}
-              fill={PDF_COLORS.blue}
-            />
-          );
-        })}
-      </G>
-    </Svg>
+    <View style={{ position: "relative", width: size, height: size }}>
+      <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <G>
+          {gridLines}
+          {axisLines}
+          <Polygon
+            points={dataPoints}
+            fill={PDF_COLORS.blue}
+            fillOpacity={0.3}
+            stroke={PDF_COLORS.blue}
+            strokeWidth={2}
+          />
+          {/* Data points */}
+          {data.map((d, i) => {
+            const angle = angleSlice * i - Math.PI / 2;
+            const r = (d.score / 100) * maxRadius;
+            return (
+              <Circle
+                key={`point-${i}`}
+                cx={cx + r * Math.cos(angle)}
+                cy={cy + r * Math.sin(angle)}
+                r={4}
+                fill={d.color}
+                stroke={PDF_COLORS.white}
+                strokeWidth={1}
+              />
+            );
+          })}
+        </G>
+      </Svg>
+      {/* Labels positioned around the chart */}
+      {labelPositions.map((pos, i) => {
+        // Calculate text alignment based on position
+        const isLeft = pos.x < cx - 10;
+        const isRight = pos.x > cx + 10;
+        const isTop = pos.y < cy - 10;
+        
+        return (
+          <View
+            key={`label-${i}`}
+            style={{
+              position: "absolute",
+              left: isLeft ? pos.x - 40 : isRight ? pos.x - 10 : pos.x - 25,
+              top: isTop ? pos.y - 8 : pos.y - 4,
+              width: 50,
+              alignItems: isLeft ? "flex-end" : isRight ? "flex-start" : "center",
+            }}
+          >
+            <Text style={{ fontSize: 7, fontWeight: 700, color: pos.color }}>
+              {pos.label}
+            </Text>
+            <Text style={{ fontSize: 9, fontWeight: 800, color: PDF_COLORS.gray900 }}>
+              {pos.score}
+            </Text>
+          </View>
+        );
+      })}
+    </View>
   );
 }
 
@@ -558,17 +589,8 @@ export function ScoutingReportVectorPdf({ report, logoUrl }: ScoutingReportVecto
           {/* Radar Chart */}
           <View style={[styles.card, styles.gridHalf]}>
             <Text style={styles.cardTitle}>Perfil de Desempenho</Text>
-            <View style={{ alignItems: "center" }}>
-              <RadarChartSvg data={radarData} size={160} />
-            </View>
-            {/* Legend */}
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
-              {radarData.map((d) => (
-                <View key={d.label} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                  <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: d.color }} />
-                  <Text style={{ fontSize: 7, color: PDF_COLORS.gray600 }}>{d.label}: {d.score}</Text>
-                </View>
-              ))}
+            <View style={{ alignItems: "center", paddingVertical: 8 }}>
+              <RadarChartSvg data={radarData} size={200} />
             </View>
           </View>
 
