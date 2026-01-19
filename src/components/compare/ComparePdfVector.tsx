@@ -717,12 +717,31 @@ export function ComparePdfVector({
           </>
         )}
 
+        {/* Footer Page 1 */}
+        <Text style={styles.footer}>
+          {players.length} atletas • Relatório M3 Scouting • Página 1
+        </Text>
+      </Page>
+
+      {/* Page 2 - Statistics Tables */}
+      <Page size="A4" style={styles.page}>
+        {/* Header Page 2 */}
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.headerTitle}>Comparação de Atletas</Text>
+            <Text style={styles.headerSubtitle}>
+              Relatório gerado em {format(generatedAt, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+            </Text>
+          </View>
+          {logoUrl && <Image src={logoUrl} style={styles.logo} />}
+        </View>
+
         {/* Stats Table - Visão Geral */}
-        <View style={styles.sectionHeader}>
+        <View style={styles.sectionHeader} wrap={false}>
           <View style={[styles.sectionAccent, { backgroundColor: PDF_COLORS.orange }]} />
           <Text style={styles.sectionTitle}>Visão Geral</Text>
         </View>
-        <View style={styles.table}>
+        <View style={styles.table} wrap={false}>
           <StatRow label="Nota Global" getValue={(p) => p.auto_rating} formatType="decimal" />
           <StatRow label="Idade" getValue={(p) => p.age} higherIsBetter={false} />
           <StatRow label="Altura (cm)" getValue={(p) => p.height ?? null} />
@@ -731,11 +750,11 @@ export function ComparePdfVector({
         </View>
 
         {/* Stats Table - Produção Ofensiva */}
-        <View style={styles.sectionHeader}>
+        <View style={styles.sectionHeader} wrap={false}>
           <View style={[styles.sectionAccent, { backgroundColor: PDF_COLORS.green }]} />
           <Text style={styles.sectionTitle}>Produção Ofensiva</Text>
         </View>
-        <View style={styles.table}>
+        <View style={styles.table} wrap={false}>
           <StatRow label="Gols" getValue={(p) => p.aggregatedStats?.goals ?? null} />
           <StatRow label="Assistências" getValue={(p) => p.aggregatedStats?.assists ?? null} />
           <StatRow label="Finalizações" getValue={(p) => p.aggregatedStats?.shots ?? null} />
@@ -744,29 +763,29 @@ export function ComparePdfVector({
         </View>
 
         {/* Stats Table - Defesa */}
-        <View style={styles.sectionHeader}>
+        <View style={styles.sectionHeader} wrap={false}>
           <View style={[styles.sectionAccent, { backgroundColor: PDF_COLORS.blue }]} />
           <Text style={styles.sectionTitle}>Defesa e Recuperação</Text>
         </View>
-        <View style={styles.table}>
+        <View style={styles.table} wrap={false}>
           <StatRow label="Desarmes" getValue={(p) => p.aggregatedStats?.tackles ?? null} />
           <StatRow label="Interceptações" getValue={(p) => p.aggregatedStats?.interceptions ?? null} />
           <StatRow label="Recuperações" getValue={(p) => p.aggregatedStats?.recoveries ?? null} />
         </View>
 
         {/* Stats Table - Disciplina */}
-        <View style={styles.sectionHeader}>
+        <View style={styles.sectionHeader} wrap={false}>
           <View style={[styles.sectionAccent, { backgroundColor: PDF_COLORS.amber }]} />
           <Text style={styles.sectionTitle}>Disciplina</Text>
         </View>
-        <View style={styles.table}>
+        <View style={styles.table} wrap={false}>
           <StatRow label="Amarelos" getValue={(p) => p.aggregatedStats?.yellow_cards ?? null} higherIsBetter={false} />
           <StatRow label="Vermelhos" getValue={(p) => p.aggregatedStats?.red_cards ?? null} higherIsBetter={false} />
         </View>
 
-        {/* Footer */}
+        {/* Footer Page 2 */}
         <Text style={styles.footer}>
-          {players.length} atletas • Relatório M3 Scouting
+          {players.length} atletas • Relatório M3 Scouting • Página 2
         </Text>
       </Page>
     </Document>
