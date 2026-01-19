@@ -36,6 +36,16 @@ export default function LiveMatchNew() {
   const [durationMinutes, setDurationMinutes] = useState(90);
   const [notes, setNotes] = useState("");
   
+  // Match date and time - default to today with current time rounded to nearest 15 min
+  const getDefaultTime = () => {
+    const now = new Date();
+    const minutes = Math.round(now.getMinutes() / 15) * 15;
+    now.setMinutes(minutes, 0, 0);
+    return now.toTimeString().slice(0, 5); // "HH:MM"
+  };
+  const [matchDate, setMatchDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [matchTime, setMatchTime] = useState(getDefaultTime);
+  
   // Team selection from registered teams
   const [selectedTeamId, setSelectedTeamId] = useState<string>("");
   
@@ -200,6 +210,9 @@ export default function LiveMatchNew() {
         throw new Error("Preencha os campos obrigatórios");
       }
 
+      // Combine date and time into a proper timestamp
+      const matchDateTime = new Date(`${matchDate}T${matchTime}:00`);
+      
       // Always create match in draft status first
       // The clock will only start when user explicitly clicks "Iniciar"
       const { data, error } = await supabase
@@ -209,6 +222,7 @@ export default function LiveMatchNew() {
           competition_id: competitionId,
           season_year: seasonYear,
           opponent_name: opponentName.trim(),
+          match_date: matchDateTime.toISOString(),
           venue: venue.trim() || null,
           duration_minutes: durationMinutes,
           notes: notes.trim() || null,
@@ -648,7 +662,44 @@ export default function LiveMatchNew() {
             </div>
           </div>
 
-          {/* Row 3: Venue + Duration */}
+          {/* Row 3: Date + Time */}
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label 
+                htmlFor="matchDate" 
+                className="text-xs font-medium text-zinc-400 flex items-center gap-1.5"
+              >
+                <Calendar className="h-3.5 w-3.5" />
+                Data do Jogo
+              </Label>
+              <Input
+                id="matchDate"
+                type="date"
+                value={matchDate}
+                onChange={(e) => setMatchDate(e.target.value)}
+                className="h-11 bg-zinc-900/60 border-zinc-700/50 rounded-xl text-zinc-200 hover:border-zinc-600/60 focus:ring-1 focus:ring-green-500/30 focus:border-green-500/50 transition-all"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label 
+                htmlFor="matchTime" 
+                className="text-xs font-medium text-zinc-400 flex items-center gap-1.5"
+              >
+                <Clock className="h-3.5 w-3.5" />
+                Horário
+              </Label>
+              <Input
+                id="matchTime"
+                type="time"
+                value={matchTime}
+                onChange={(e) => setMatchTime(e.target.value)}
+                className="h-11 bg-zinc-900/60 border-zinc-700/50 rounded-xl text-zinc-200 hover:border-zinc-600/60 focus:ring-1 focus:ring-green-500/30 focus:border-green-500/50 transition-all"
+              />
+            </div>
+          </div>
+
+          {/* Row 4: Venue + Duration */}
           <div className="grid gap-5 sm:grid-cols-2">
             <div className="space-y-2">
               <Label 
