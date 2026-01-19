@@ -2,7 +2,7 @@
  * Match Summary PDF Export Button
  * Uses @react-pdf/renderer for vector-based PDF generation
  */
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Match, MatchPlayer, MatchEvent, MatchEventType } from "@/hooks/useLiveMatch";
@@ -12,8 +12,8 @@ import { useTeamSettings } from "@/hooks/useTeamSettings";
 import { MatchSummaryVectorPdf } from "./MatchSummaryVectorPdf";
 import { exportVectorPdf } from "@/lib/vectorPdfExport";
 
-// Import the logo as a URL for react-pdf
-import logoM3 from "@/assets/logo-m3.png";
+// Use static URL path for the logo (works reliably with react-pdf)
+const LOGO_URL = "/logo-m3.png";
 
 interface MatchSummaryPdfProps {
   match: Match;
@@ -29,7 +29,26 @@ export function MatchSummaryPdfButton({
   playerEventCounts,
 }: MatchSummaryPdfProps) {
   const [isExporting, setIsExporting] = useState(false);
+  const [logoBase64, setLogoBase64] = useState<string | null>(null);
   const { teamName: settingsTeamName } = useTeamSettings();
+
+  // Pre-load logo as base64 for reliable PDF embedding
+  useEffect(() => {
+    const loadLogo = async () => {
+      try {
+        const response = await fetch(LOGO_URL);
+        const blob = await response.blob();
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setLogoBase64(reader.result as string);
+        };
+        reader.readAsDataURL(blob);
+      } catch (error) {
+        console.warn("Failed to load logo:", error);
+      }
+    };
+    loadLogo();
+  }, []);
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -46,7 +65,7 @@ export function MatchSummaryPdfButton({
           matchEvents={matchEvents}
           playerEventCounts={playerEventCounts}
           teamName={teamName}
-          logoUrl={logoM3}
+          logoUrl={logoBase64 || undefined}
         />
       );
       
