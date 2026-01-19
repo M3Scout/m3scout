@@ -334,6 +334,34 @@ const styles = StyleSheet.create({
     padding: 12,
     backgroundColor: PDF_COLORS.white,
   },
+  playerCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 8,
+  },
+  playerPhoto: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: PDF_COLORS.gray200,
+  },
+  playerPhotoPlaceholder: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: PDF_COLORS.gray200,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  playerPhotoInitials: {
+    fontSize: 12,
+    fontWeight: 700,
+    color: PDF_COLORS.gray500,
+  },
+  playerInfo: {
+    flex: 1,
+  },
   playerName: {
     fontSize: 10,
     fontWeight: 600,
@@ -342,13 +370,12 @@ const styles = StyleSheet.create({
   playerPosition: {
     fontSize: 8,
     color: PDF_COLORS.gray500,
-    marginTop: 3,
+    marginTop: 2,
   },
   playerStats: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 6,
-    marginTop: 8,
   },
   playerStatBadge: {
     backgroundColor: PDF_COLORS.gray100,
@@ -1025,11 +1052,29 @@ export function MatchSummaryVectorPdf({
             const statEntries = Object.entries(counts)
               .filter(([_, v]) => (v ?? 0) > 0)
               .slice(0, 6);
+            
+            const initials = mp.player.full_name
+              .split(" ")
+              .slice(0, 2)
+              .map((n) => n[0])
+              .join("")
+              .toUpperCase();
 
             return (
               <View key={mp.id} style={styles.playerCard}>
-                <Text style={styles.playerName}>{mp.player.full_name}</Text>
-                <Text style={styles.playerPosition}>{mp.player.position}</Text>
+                <View style={styles.playerCardHeader}>
+                  {mp.player.photo_url ? (
+                    <Image src={mp.player.photo_url} style={styles.playerPhoto} />
+                  ) : (
+                    <View style={styles.playerPhotoPlaceholder}>
+                      <Text style={styles.playerPhotoInitials}>{initials}</Text>
+                    </View>
+                  )}
+                  <View style={styles.playerInfo}>
+                    <Text style={styles.playerName}>{mp.player.full_name}</Text>
+                    <Text style={styles.playerPosition}>{mp.player.position}</Text>
+                  </View>
+                </View>
                 <View style={styles.playerStats}>
                   {statEntries.length > 0 ? (
                     statEntries.map(([type, value]) => (
