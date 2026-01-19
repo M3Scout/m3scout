@@ -16,7 +16,7 @@ import { SubstitutionStatsCard } from "@/components/live-match/SubstitutionStats
 import { EventDistributionChart } from "@/components/live-match/EventDistributionChart";
 import { PlayerActivityHeatmap } from "@/components/live-match/PlayerActivityHeatmap";
 import { PlayerPresenceHistory } from "@/components/live-match/PlayerPresenceHistory";
-import { MatchSummaryPdfButton } from "@/components/live-match/MatchSummaryPdf";
+import { MatchSummaryPdfButton } from "@/components/live-match/MatchSummaryPdfButton";
 import {
   CheckCircle2,
   AlertTriangle,
