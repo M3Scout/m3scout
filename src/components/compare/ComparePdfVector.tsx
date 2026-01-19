@@ -115,7 +115,10 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: 4,
-    borderRadius: "8px 0 0 8px",
+    borderTopLeftRadius: 8,
+    borderBottomLeftRadius: 8,
+    borderTopRightRadius: 0,
+    borderBottomRightRadius: 0,
   },
   playerContent: {
     flexDirection: "row",
