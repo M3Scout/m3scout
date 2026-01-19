@@ -24,8 +24,8 @@ import { MatchSummaryVectorPdf } from "./MatchSummaryVectorPdf";
 import { PlayerSelectPdfModal } from "./PlayerSelectPdfModal";
 import { exportVectorPdf } from "@/lib/vectorPdfExport";
 
-// Use static URL path for the logo (works reliably with react-pdf)
-const LOGO_URL = "/logo-m3.png";
+// Use the new logo for PDF reports
+const LOGO_URL = "/logo-relatorio-pdf.png";
 
 interface MatchSummaryPdfButtonProps {
   match: Match;

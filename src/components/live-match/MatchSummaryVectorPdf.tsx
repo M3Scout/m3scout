@@ -81,7 +81,7 @@ const HEATMAP_COLORS = {
 
 const styles = StyleSheet.create({
   page: {
-    padding: 40,
+    padding: 32,
     fontFamily: "Helvetica",
     fontSize: 10,
     color: PDF_COLORS.gray900,
@@ -92,8 +92,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 24,
-    paddingBottom: 16,
+    marginBottom: 16,
+    paddingBottom: 12,
     borderBottom: `2px solid ${PDF_COLORS.brandRed}`,
   },
   headerLeft: {
@@ -142,78 +142,78 @@ const styles = StyleSheet.create({
   // Stats Grid
   statsGrid: {
     flexDirection: "row",
-    gap: 12,
-    marginBottom: 24,
+    gap: 10,
+    marginBottom: 16,
   },
   statCard: {
     flex: 1,
     backgroundColor: PDF_COLORS.gray100,
-    borderRadius: 8,
-    padding: 16,
+    borderRadius: 6,
+    padding: 12,
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 70,
+    minHeight: 55,
   },
   statCardGreen: {
     flex: 1,
     backgroundColor: "#DCFCE7",
-    borderRadius: 8,
-    padding: 16,
+    borderRadius: 6,
+    padding: 12,
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 70,
+    minHeight: 55,
   },
   statCardBlue: {
     flex: 1,
     backgroundColor: "#DBEAFE",
-    borderRadius: 8,
-    padding: 16,
+    borderRadius: 6,
+    padding: 12,
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 70,
+    minHeight: 55,
   },
   statValue: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: 700,
     color: PDF_COLORS.gray900,
     textAlign: "center",
   },
   statValueGreen: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: 700,
     color: PDF_COLORS.green,
     textAlign: "center",
   },
   statValueBlue: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: 700,
     color: PDF_COLORS.blue,
     textAlign: "center",
   },
   statLabel: {
-    fontSize: 9,
+    fontSize: 8,
     color: PDF_COLORS.gray500,
-    marginTop: 6,
+    marginTop: 4,
     textAlign: "center",
   },
   // Section
   sectionTitle: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: 700,
     color: PDF_COLORS.gray900,
-    marginBottom: 12,
-    marginTop: 8,
+    marginBottom: 8,
+    marginTop: 6,
   },
   sectionSubtitle: {
-    fontSize: 9,
+    fontSize: 8,
     color: PDF_COLORS.gray500,
-    marginBottom: 10,
-    marginTop: -8,
+    marginBottom: 8,
+    marginTop: -6,
   },
   // Table
   table: {
-    marginBottom: 20,
-    borderRadius: 8,
+    marginBottom: 14,
+    borderRadius: 6,
     border: `1px solid ${PDF_COLORS.gray200}`,
     overflow: "hidden",
   },
@@ -223,8 +223,8 @@ const styles = StyleSheet.create({
   },
   tableHeaderCell: {
     flex: 1,
-    padding: 8,
-    fontSize: 10,
+    padding: 5,
+    fontSize: 9,
     fontWeight: 600,
     textAlign: "center",
     color: PDF_COLORS.gray600,
@@ -232,8 +232,8 @@ const styles = StyleSheet.create({
   },
   tableHeaderCellWide: {
     flex: 2,
-    padding: 8,
-    fontSize: 10,
+    padding: 5,
+    fontSize: 9,
     fontWeight: 600,
     textAlign: "center",
     color: PDF_COLORS.gray600,
@@ -245,24 +245,24 @@ const styles = StyleSheet.create({
   },
   tableCell: {
     flex: 1,
-    padding: 6,
-    fontSize: 11,
+    padding: 4,
+    fontSize: 10,
     fontWeight: 700,
     textAlign: "center",
     borderRight: `1px solid ${PDF_COLORS.gray200}`,
   },
   tableCellWide: {
     flex: 2,
-    padding: 6,
-    fontSize: 9,
+    padding: 4,
+    fontSize: 8,
     color: PDF_COLORS.gray600,
     textAlign: "center",
     borderRight: `1px solid ${PDF_COLORS.gray200}`,
   },
   tableCellLabel: {
     flex: 1,
-    padding: 6,
-    fontSize: 10,
+    padding: 4,
+    fontSize: 9,
     color: PDF_COLORS.gray600,
     textAlign: "center",
     borderRight: `1px solid ${PDF_COLORS.gray200}`,
@@ -270,29 +270,29 @@ const styles = StyleSheet.create({
   // Events Grid
   eventsGrid: {
     flexDirection: "row",
-    gap: 16,
-    marginBottom: 24,
+    gap: 12,
+    marginBottom: 16,
   },
   eventsColumn: {
     flex: 1,
     border: `1px solid ${PDF_COLORS.gray200}`,
-    borderRadius: 8,
-    padding: 14,
+    borderRadius: 6,
+    padding: 10,
     backgroundColor: PDF_COLORS.white,
   },
   eventsColumnTitle: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: 600,
     color: PDF_COLORS.gray700,
-    marginBottom: 10,
-    paddingBottom: 6,
+    marginBottom: 8,
+    paddingBottom: 4,
     borderBottom: `1px solid ${PDF_COLORS.gray200}`,
   },
   eventItem: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 6,
-    minHeight: 16,
+    marginBottom: 4,
+    minHeight: 14,
   },
   eventMinute: {
     backgroundColor: PDF_COLORS.gray200,
@@ -325,13 +325,13 @@ const styles = StyleSheet.create({
   playersGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 10,
+    gap: 8,
   },
   playerCard: {
     width: "48%",
     border: `1px solid ${PDF_COLORS.gray200}`,
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: 6,
+    padding: 10,
     backgroundColor: PDF_COLORS.white,
   },
   playerCardHeader: {
@@ -424,39 +424,39 @@ const styles = StyleSheet.create({
   // Distribution summary
   distributionRow: {
     flexDirection: "row",
-    gap: 12,
-    marginBottom: 20,
+    gap: 10,
+    marginBottom: 14,
   },
   distributionCard: {
     flex: 1,
     backgroundColor: PDF_COLORS.gray100,
-    borderRadius: 6,
-    padding: 12,
+    borderRadius: 4,
+    padding: 10,
     alignItems: "center",
   },
   distributionCardHighlight: {
     flex: 1,
     backgroundColor: "#FEF3C7", // amber-100
-    borderRadius: 6,
-    padding: 12,
+    borderRadius: 4,
+    padding: 10,
     alignItems: "center",
   },
   distributionValue: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 700,
     color: PDF_COLORS.gray900,
   },
   distributionLabel: {
-    fontSize: 8,
+    fontSize: 7,
     color: PDF_COLORS.gray500,
-    marginTop: 4,
+    marginTop: 3,
   },
   // Heatmap
   heatmapContainer: {
-    marginBottom: 20,
+    marginBottom: 14,
     border: `1px solid ${PDF_COLORS.gray200}`,
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: 6,
+    padding: 10,
   },
   heatmapLegend: {
     flexDirection: "row",
@@ -541,20 +541,20 @@ const styles = StyleSheet.create({
   // Footer
   footer: {
     position: "absolute",
-    bottom: 28,
-    left: 40,
-    right: 40,
+    bottom: 20,
+    left: 32,
+    right: 32,
     textAlign: "center",
-    fontSize: 8,
+    fontSize: 7,
     color: PDF_COLORS.gray400,
     borderTop: `1px solid ${PDF_COLORS.gray200}`,
-    paddingTop: 12,
+    paddingTop: 8,
   },
   pageNumber: {
     position: "absolute",
-    bottom: 28,
-    right: 40,
-    fontSize: 8,
+    bottom: 20,
+    right: 32,
+    fontSize: 7,
     color: PDF_COLORS.gray400,
   },
 });
@@ -915,7 +915,7 @@ export function MatchSummaryVectorPdf({
           {halfStats.rows.map((row) => (
             <View key={row.id} style={styles.tableRow}>
               <Text style={styles.tableCell}>{row.first}</Text>
-              <Text style={styles.tableCellWide}>{row.icon} {row.label}</Text>
+              <Text style={styles.tableCellWide}>{row.label}</Text>
               <Text style={styles.tableCell}>{row.second}</Text>
               <Text style={styles.tableCell}>{row.total}</Text>
             </View>
@@ -923,7 +923,7 @@ export function MatchSummaryVectorPdf({
           {(halfStats.substitutions.first > 0 || halfStats.substitutions.second > 0) && (
             <View style={styles.tableRow}>
               <Text style={styles.tableCell}>{halfStats.substitutions.first}</Text>
-              <Text style={styles.tableCellWide}>🔄 Substituições</Text>
+              <Text style={styles.tableCellWide}>Substituições</Text>
               <Text style={styles.tableCell}>{halfStats.substitutions.second}</Text>
               <Text style={styles.tableCell}>{halfStats.substitutions.first + halfStats.substitutions.second}</Text>
             </View>
