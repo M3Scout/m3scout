@@ -8,6 +8,7 @@ import { FileDown, Loader2 } from "lucide-react";
 import { exportToPdf } from "@/lib/pdfExport";
 import { toast } from "sonner";
 import logoM3 from "@/assets/logo-m3.png";
+import { useTeamSettings } from "@/hooks/useTeamSettings";
 
 // Event type labels
 const EVENT_LABELS: Record<MatchEventType, string> = {
@@ -66,6 +67,7 @@ export function MatchSummaryPdfButton({
 }: MatchSummaryPdfProps) {
   const [isExporting, setIsExporting] = useState(false);
   const templateRef = useRef<HTMLDivElement>(null);
+  const { teamName: settingsTeamName } = useTeamSettings();
 
   const handleExport = async () => {
     if (!templateRef.current) return;
@@ -76,6 +78,7 @@ export function MatchSummaryPdfButton({
       
       await exportToPdf(templateRef.current, {
         filename,
+        outputResolution: 3, // Higher quality for crisp text
         onProgress: (progress) => {
           console.log(`PDF Export progress: ${progress}%`);
         },
@@ -141,6 +144,7 @@ export function MatchSummaryPdfButton({
   const halfStats = getHalfStats();
   const eventsByHalf = getEventsByHalf();
   const competitionName = match.competition?.display_name || match.competition?.name || "Competição";
+  const teamName = match.team_name_display || settingsTeamName || "Time";
 
   return (
     <>
@@ -180,7 +184,7 @@ export function MatchSummaryPdfButton({
               </div>
             </div>
             <div className="text-right">
-              <p className="text-lg font-bold text-gray-900">vs {match.opponent_name}</p>
+              <p className="text-lg font-bold text-gray-900">{teamName} vs {match.opponent_name}</p>
               <p className="text-sm text-gray-600">
                 {format(new Date(match.match_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
               </p>
