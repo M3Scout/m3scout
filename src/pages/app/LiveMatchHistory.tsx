@@ -298,7 +298,11 @@ function MatchCard({ match, link, onDelete, index }: MatchCardProps) {
               </span>
               <span className="flex items-center gap-1">
                 <Calendar className="h-3 w-3" />
-                {format(new Date(match.match_date), "dd MMM yyyy", { locale: ptBR })}
+                {format(new Date(match.match_date), "dd/MM/yyyy", { locale: ptBR })}
+              </span>
+              <span className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                {format(new Date(match.match_date), "HH:mm")}
               </span>
               {match.venue && (
                 <span className="flex items-center gap-1 hidden sm:flex">
@@ -306,9 +310,8 @@ function MatchCard({ match, link, onDelete, index }: MatchCardProps) {
                   {match.venue}
                 </span>
               )}
-              <span className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                {match.duration_minutes}'
+              <span className="flex items-center gap-1 text-zinc-600">
+                ({match.duration_minutes}')
               </span>
             </div>
           </div>

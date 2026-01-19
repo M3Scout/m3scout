@@ -203,7 +203,11 @@ export function GameHeaderCard({
                     </span>
                     <span className="flex items-center gap-1">
                       <Calendar className="w-3 h-3" />
-                      {format(new Date(match.match_date), "dd MMM", { locale: ptBR })}
+                      {format(new Date(match.match_date), "dd/MM/yyyy", { locale: ptBR })}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      {format(new Date(match.match_date), "HH:mm")}
                     </span>
                     {match.venue && (
                       <span className="hidden sm:flex items-center gap-1">
