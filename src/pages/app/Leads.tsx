@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { AdminSkeletonTable } from "@/components/admin/AdminSkeleton";
+import { PermissionGate } from "@/components/auth/PermissionGate";
+import { usePermissions } from "@/hooks/usePermissions";
 
 type Lead = Tables<"leads">;
 
@@ -365,15 +367,17 @@ export default function Leads() {
 
               {/* Actions */}
               <div className="flex justify-between items-center border-t border-zinc-800 pt-4">
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => deleteLead(selectedLead.id)}
-                  className="text-xs"
-                >
-                  <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                  Excluir
-                </Button>
+                <PermissionGate module="leads" action="delete">
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => deleteLead(selectedLead.id)}
+                    className="text-xs"
+                  >
+                    <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                    Excluir
+                  </Button>
+                </PermissionGate>
                 <p className="text-[10px] text-zinc-600">
                   {format(new Date(selectedLead.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
                 </p>

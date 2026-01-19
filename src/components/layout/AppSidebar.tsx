@@ -14,9 +14,11 @@ import {
   GitCompare,
   Newspaper,
   Radio,
+  Shield,
 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermissions, ModuleKey } from "@/hooks/usePermissions";
 import { useSidebar } from "@/hooks/useSidebar";
 import { toast } from "sonner";
 import logoM3 from "@/assets/logo-m3.png";
@@ -47,8 +49,17 @@ export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
+  const { can } = usePermissions();
   const { isCollapsed, toggleCollapsed } = useSidebar();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Filter nav items based on permissions
+  const visibleNavItems = navItems.filter(item => {
+    if (!item.module) return true;
+    return can(item.module as ModuleKey, "view");
+  });
+
+  const visibleBottomItems = bottomNavItems;
 
   const isActive = (href: string) => {
     if (href === "/app") return location.pathname === "/app";
@@ -92,7 +103,7 @@ export function AppSidebar() {
         )}
       >
         <div className="p-2 space-y-0.5">
-          {[...navItems, ...bottomNavItems].map((item) => (
+          {[...visibleNavItems, ...visibleBottomItems].map((item) => (
             <Link
               key={item.href}
               to={item.href}
@@ -111,6 +122,22 @@ export function AppSidebar() {
               <span className="text-sm">{item.label}</span>
             </Link>
           ))}
+          {/* User Management - Admin Only */}
+          {can("users", "manage") && (
+            <Link
+              to="/app/settings/users"
+              onClick={() => setMobileMenuOpen(false)}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-100",
+                isActive("/app/settings/users")
+                  ? "bg-primary/10 text-primary"
+                  : "text-zinc-400 hover:text-white hover:bg-zinc-800/40 active:bg-zinc-800/60"
+              )}
+            >
+              <Shield className="w-4 h-4 shrink-0" />
+              <span className="text-sm">Usuários</span>
+            </Link>
+          )}
           <div className="h-px bg-zinc-800/40 my-1.5" />
           <button
             onClick={handleLogout}
@@ -165,7 +192,7 @@ export function AppSidebar() {
         {/* Navigation - Clean and focused */}
         <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
           <TooltipProvider delayDuration={0}>
-            {navItems.map((item) => {
+            {visibleNavItems.map((item) => {
               const linkContent = (
                 <Link
                   to={item.href}
@@ -261,6 +288,59 @@ export function AppSidebar() {
 
               return <div key={item.href}>{linkContent}</div>;
             })}
+
+            {/* User Management - Admin Only */}
+            {can("users", "manage") && (
+              <>
+                {isCollapsed ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Link
+                        to="/app/settings/users"
+                        className={cn(
+                          "flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all duration-100 group relative",
+                          isActive("/app/settings/users")
+                            ? "bg-primary/15 text-white"
+                            : "text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/40 active:bg-zinc-800/60"
+                        )}
+                      >
+                        <Shield className={cn(
+                          "w-4 h-4 shrink-0 transition-colors",
+                          isActive("/app/settings/users") ? "text-primary" : "text-zinc-600 group-hover:text-zinc-400"
+                        )} />
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" sideOffset={8}>
+                      Usuários & Permissões
+                    </TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <Link
+                    to="/app/settings/users"
+                    className={cn(
+                      "flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all duration-100 group relative",
+                      isActive("/app/settings/users")
+                        ? "bg-primary/15 text-white"
+                        : "text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/40 active:bg-zinc-800/60"
+                    )}
+                  >
+                    {isActive("/app/settings/users") && (
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-primary rounded-r" />
+                    )}
+                    <Shield className={cn(
+                      "w-4 h-4 shrink-0 transition-colors",
+                      isActive("/app/settings/users") ? "text-primary" : "text-zinc-600 group-hover:text-zinc-400"
+                    )} />
+                    <span className={cn(
+                      "text-sm transition-colors",
+                      isActive("/app/settings/users") ? "font-medium" : ""
+                    )}>
+                      Usuários
+                    </span>
+                  </Link>
+                )}
+              </>
+            )}
             
             {/* User email - very subtle */}
             {!isCollapsed && user && (

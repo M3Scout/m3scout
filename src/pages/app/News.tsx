@@ -18,6 +18,8 @@ import { Plus, Search, Edit, Trash2, Eye, EyeOff, ChevronRight } from "lucide-re
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { PermissionGate } from "@/components/auth/PermissionGate";
+import { usePermissions } from "@/hooks/usePermissions";
 
 type NewsArticle = {
   id: string;
@@ -186,14 +188,16 @@ const News = () => {
                         <Edit className="w-4 h-4" />
                       </Link>
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setDeleteId(article.id)}
-                      className="w-8 h-8 text-zinc-500 hover:text-red-400 hover:bg-red-500/10"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    <PermissionGate module="news" action="delete">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setDeleteId(article.id)}
+                        className="w-8 h-8 text-zinc-500 hover:text-red-400 hover:bg-red-500/10"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </PermissionGate>
                   </div>
                 </div>
               ))}
