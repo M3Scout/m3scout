@@ -15,9 +15,10 @@ import {
 import { DeleteReportDialog } from "@/components/scouting/DeleteReportDialog";
 import { ReportCard, ReportCardSkeleton } from "@/components/scouting/ReportCard";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 import { 
   Search, 
-  Plus, 
+  Plus,
   FileText, 
   Users,
   Trophy,
@@ -56,6 +57,7 @@ type PeriodFilter = "all" | "7days" | "30days" | "season";
 
 const ScoutingReports = () => {
   const { user, isAdmin } = useAuth();
+  const { canDelete } = usePermissions();
   const [reports, setReports] = useState<ScoutingReportListItem[]>([]);
   const [scoutNames, setScoutNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -116,8 +118,9 @@ const ScoutingReports = () => {
     fetchReports();
   }, [fetchReports]);
 
-  const canDeleteReport = (scoutId: string) => {
-    return isAdmin || scoutId === user?.id;
+  const canDeleteReport = () => {
+    // Only ADMIN can delete reports (RBAC policy)
+    return canDelete("reports");
   };
 
   const handleReportDeleted = () => {
@@ -418,7 +421,7 @@ const ScoutingReports = () => {
                       <ReportCard
                         report={report}
                         scoutName={scoutNames[report.scout_id] || "Scout"}
-                        canDelete={canDeleteReport(report.scout_id)}
+                        canDelete={canDeleteReport()}
                         onDelete={() => setDeleteDialogOpen(report.id)}
                         insight={report.insight}
                         index={i}
