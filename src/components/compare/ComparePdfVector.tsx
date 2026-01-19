@@ -399,17 +399,22 @@ function CompareRadarSvg({
     })
   );
 
-  // Labels
+  // Labels with values
   const labelPositions = RADAR_LABELS.map((label, i) => {
     const angle = angleSlice * i - Math.PI / 2;
-    const labelRadius = maxRadius + 18;
+    const labelRadius = maxRadius + 28;
     const x = cx + labelRadius * Math.cos(angle);
     const y = cy + labelRadius * Math.sin(angle);
-    return { x, y, label };
+    // Get values for each player at this attribute
+    const playerValues = playersData.map(p => ({
+      value: Math.round(p.values[i]),
+      color: p.color,
+    }));
+    return { x, y, label, playerValues };
   });
 
   return (
-    <View style={{ position: "relative", width: size, height: size }}>
+    <View style={{ position: "relative", width: size, height: size + 20 }}>
       <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
         <G>
           {gridPolygons}
@@ -418,25 +423,45 @@ function CompareRadarSvg({
           {dataPoints}
         </G>
       </Svg>
-      {/* Labels positioned around the chart */}
+      {/* Labels with player values positioned around the chart */}
       {labelPositions.map((pos, i) => {
         const isLeft = pos.x < cx - 10;
         const isRight = pos.x > cx + 10;
+        const isTop = pos.y < cy;
         
         return (
           <View
             key={`label-${i}`}
             style={{
               position: "absolute",
-              left: isLeft ? pos.x - 22 : isRight ? pos.x - 8 : pos.x - 15,
-              top: pos.y - 5,
-              width: 30,
+              left: isLeft ? pos.x - 55 : isRight ? pos.x - 5 : pos.x - 30,
+              top: isTop ? pos.y - 18 : pos.y - 2,
+              width: 60,
               alignItems: isLeft ? "flex-end" : isRight ? "flex-start" : "center",
             }}
           >
-            <Text style={{ fontSize: 7, fontWeight: 700, color: PDF_COLORS.gray600 }}>
+            {/* Attribute label */}
+            <Text style={{ fontSize: 7, fontWeight: 700, color: PDF_COLORS.gray600, marginBottom: 2 }}>
               {pos.label}
             </Text>
+            {/* Player values row */}
+            <View style={{ flexDirection: "row", gap: 4, justifyContent: isLeft ? "flex-end" : isRight ? "flex-start" : "center" }}>
+              {pos.playerValues.map((pv, pIdx) => (
+                <View
+                  key={pIdx}
+                  style={{
+                    backgroundColor: `${pv.color}20`,
+                    paddingHorizontal: 4,
+                    paddingVertical: 1,
+                    borderRadius: 3,
+                  }}
+                >
+                  <Text style={{ fontSize: 7, fontWeight: 700, color: pv.color }}>
+                    {pv.value}
+                  </Text>
+                </View>
+              ))}
+            </View>
           </View>
         );
       })}
