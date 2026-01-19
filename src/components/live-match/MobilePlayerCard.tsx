@@ -19,7 +19,7 @@ import {
   Target, Footprints, HandHelping, MoreHorizontal, Trash2,
   MessageSquare, Undo2, ArrowRight,
   RotateCcw, ShieldCheck, Zap, ArrowUpRight, Hand, CircleX, Ban, BarChart3,
-  ChevronDown, ChevronUp, Plus
+  ChevronDown, ChevronUp, Plus, UserCheck, UserMinus
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { playSound, getSoundForEvent } from "@/lib/sounds";
@@ -87,6 +87,7 @@ interface MobilePlayerCardProps {
   onPlayerExit?: (matchPlayerId: string) => void;
   onRemoveFromMatch?: () => void;
   onSaveNotes?: (notes: string) => Promise<void>;
+  onUpdateStarterStatus?: (matchPlayerId: string, started: boolean) => Promise<void>;
   disabled?: boolean;
   soundEnabled?: boolean;
   index?: number;
@@ -105,6 +106,7 @@ export function MobilePlayerCard({
   onPlayerExit,
   onRemoveFromMatch,
   onSaveNotes,
+  onUpdateStarterStatus,
   disabled,
   soundEnabled = true,
   index = 0,
@@ -411,41 +413,75 @@ export function MobilePlayerCard({
               transition={{ duration: 0.2 }}
               className="overflow-hidden border-t border-zinc-800/50"
             >
-              <div className="flex items-center gap-2 p-3 bg-zinc-800/30">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="flex-1 h-9 rounded-lg text-zinc-300 hover:bg-zinc-700/50"
-                  onClick={() => { onUndo(); setShowOptions(false); }}
-                  disabled={isDraft}
-                >
-                  <Undo2 className="w-4 h-4 mr-1.5" />
-                  Desfazer
-                </Button>
-                {onSaveNotes && (
-                  <PlayerNotesModal
-                    matchPlayer={matchPlayer}
-                    onSaveNotes={onSaveNotes}
-                    disabled={disabled}
-                    triggerClassName="flex-1 h-9 rounded-lg text-zinc-300 hover:bg-zinc-700/50 bg-transparent border-0 justify-center"
-                    triggerContent={
-                      <>
-                        <MessageSquare className="w-4 h-4 mr-1.5" />
-                        Notas
-                      </>
-                    }
-                  />
+              <div className="flex flex-col gap-2 p-3 bg-zinc-800/30">
+                {/* Starter status toggle - only in draft mode */}
+                {isDraft && onUpdateStarterStatus && (
+                  <div className="flex items-center gap-2">
+                    {matchPlayer.started ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="flex-1 h-9 rounded-lg text-amber-400 hover:bg-amber-500/10"
+                        onClick={() => { 
+                          onUpdateStarterStatus(matchPlayer.id, false); 
+                          setShowOptions(false); 
+                        }}
+                      >
+                        <UserMinus className="w-4 h-4 mr-1.5" />
+                        Definir como Reserva
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="flex-1 h-9 rounded-lg text-emerald-400 hover:bg-emerald-500/10"
+                        onClick={() => { 
+                          onUpdateStarterStatus(matchPlayer.id, true); 
+                          setShowOptions(false); 
+                        }}
+                      >
+                        <UserCheck className="w-4 h-4 mr-1.5" />
+                        Definir como Titular
+                      </Button>
+                    )}
+                  </div>
                 )}
-                {onRemoveFromMatch && (
+                <div className="flex items-center gap-2">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-9 px-3 rounded-lg text-red-400 hover:bg-red-500/10"
-                    onClick={() => { setRemoveDialogOpen(true); setShowOptions(false); }}
+                    className="flex-1 h-9 rounded-lg text-zinc-300 hover:bg-zinc-700/50"
+                    onClick={() => { onUndo(); setShowOptions(false); }}
+                    disabled={isDraft}
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Undo2 className="w-4 h-4 mr-1.5" />
+                    Desfazer
                   </Button>
-                )}
+                  {onSaveNotes && (
+                    <PlayerNotesModal
+                      matchPlayer={matchPlayer}
+                      onSaveNotes={onSaveNotes}
+                      disabled={disabled}
+                      triggerClassName="flex-1 h-9 rounded-lg text-zinc-300 hover:bg-zinc-700/50 bg-transparent border-0 justify-center"
+                      triggerContent={
+                        <>
+                          <MessageSquare className="w-4 h-4 mr-1.5" />
+                          Notas
+                        </>
+                      }
+                    />
+                  )}
+                  {onRemoveFromMatch && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-9 px-3 rounded-lg text-red-400 hover:bg-red-500/10"
+                      onClick={() => { setRemoveDialogOpen(true); setShowOptions(false); }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
             </motion.div>
           )}

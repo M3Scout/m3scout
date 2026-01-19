@@ -22,6 +22,7 @@ import {
   LayoutGrid, LayoutList, Zap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 // Loading skeleton for player cards
 function PlayerCardSkeleton({ index }: { index: number }) {
@@ -430,6 +431,10 @@ export default function LiveMatchGame() {
                   onSaveNotes={async (notes) => {
                     await updatePlayer.mutateAsync({ matchPlayerId: mp.id, updates: { notes } });
                   }}
+                  onUpdateStarterStatus={async (matchPlayerId, started) => {
+                    await updatePlayer.mutateAsync({ matchPlayerId, updates: { started } });
+                    toast.success(started ? "Definido como Titular" : "Definido como Reserva");
+                  }}
                   disabled={match.status === "applied"}
                   index={index}
                 />
@@ -452,6 +457,10 @@ export default function LiveMatchGame() {
                   onRemoveFromMatch={() => handleRemoveFromMatch(mp)}
                   onSaveNotes={async (notes) => {
                     await updatePlayer.mutateAsync({ matchPlayerId: mp.id, updates: { notes } });
+                  }}
+                  onUpdateStarterStatus={async (matchPlayerId, started) => {
+                    await updatePlayer.mutateAsync({ matchPlayerId, updates: { started } });
+                    toast.success(started ? "Definido como Titular" : "Definido como Reserva");
                   }}
                   disabled={match.status === "applied"}
                   index={index}
