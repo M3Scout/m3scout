@@ -1,10 +1,10 @@
-import { useState, useRef, useCallback, useEffect } from "react";
-import { createPortal } from "react-dom";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { FileDown, Loader2, ChevronDown, Check, Eye } from "lucide-react";
+import { FileDown, Loader2, ChevronDown, Eye } from "lucide-react";
 import { toast } from "sonner";
-import { ScoutingReportPdfTemplate } from "./pdf/ScoutingReportPdfTemplate";
-import { exportToPdf, generateReportFilename } from "@/lib/pdfExport";
+import { ScoutingReportVectorPdf } from "./pdf/ScoutingReportVectorPdf";
+import { exportVectorPdf } from "@/lib/vectorPdfExport";
+import { generateReportFilename } from "@/lib/pdfExport";
 import { PdfPreviewModal } from "./PdfPreviewModal";
 import type { ScoutingReportData } from "@/types/scouting";
 import {
@@ -16,131 +16,76 @@ import {
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 
+// Logo URL for PDF
+const LOGO_URL = "/logo-relatorio.png";
+
 interface ExportPdfButtonProps {
   report: ScoutingReportData;
   variant?: "default" | "outline" | "ghost";
   size?: "default" | "sm" | "lg" | "icon";
 }
 
-type QualityKey = "normal" | "high";
-
-type QualityOption = {
-  label: string;
-  description: string;
-  scale: number;
-  outputResolution: number; // Upscale multiplier for final output
-};
-
-// CRITICAL: All quality options MUST use scale=1 for pixel-identical export.
-// PDF quality comes from outputResolution (upscaling), not from html2canvas scale.
-// Higher html2canvas scales (1.5x, 2x, 3x) cause subtle flex/baseline alignment shifts.
-const QUALITY_OPTIONS: Record<QualityKey, QualityOption> = {
-  normal: {
-    label: "Normal",
-    description: "Resolução padrão (2x)",
-    scale: 1, // NEVER change this
-    outputResolution: 2, // 2x upscale = ~1588px wide
-  },
-  high: {
-    label: "Alta Resolução",
-    description: "Para impressão (3x)",
-    scale: 1, // NEVER change this - use outputResolution for quality
-    outputResolution: 3, // 3x upscale = ~2382px wide
-  },
-};
-
-const STORAGE_KEY = "pdf-quality-preference";
-
-function getStoredQuality(): QualityKey {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === "normal" || stored === "high") {
-      return stored;
-    }
-  } catch {
-    // localStorage not available
-  }
-  return "normal";
-}
-
-function setStoredQuality(quality: QualityKey): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, quality);
-  } catch {
-    // localStorage not available
-  }
-}
-
 export function ExportPdfButton({ report, variant = "outline", size = "sm" }: ExportPdfButtonProps) {
   const [isExporting, setIsExporting] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [showTemplate, setShowTemplate] = useState(false);
-  const [preferredQuality, setPreferredQuality] = useState<QualityKey>("normal");
+  const [logoBase64, setLogoBase64] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
-  const [previewQuality, setPreviewQuality] = useState<QualityKey>("normal");
-  const templateRef = useRef<HTMLDivElement>(null);
 
-  // Load preference from localStorage on mount
+  // Pre-load logo as base64 for reliable PDF embedding
   useEffect(() => {
-    setPreferredQuality(getStoredQuality());
+    const loadLogo = async () => {
+      try {
+        const response = await fetch(LOGO_URL);
+        const blob = await response.blob();
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setLogoBase64(reader.result as string);
+        };
+        reader.readAsDataURL(blob);
+      } catch (error) {
+        console.warn("Failed to load logo:", error);
+      }
+    };
+    loadLogo();
   }, []);
 
-  const handleOpenPreview = useCallback((quality: QualityKey) => {
+  const handleOpenPreview = useCallback(() => {
     if (!report.players) {
       toast.error("Dados do jogador não disponíveis");
       return;
     }
-
-    // Save preference
-    setPreferredQuality(quality);
-    setStoredQuality(quality);
-    setPreviewQuality(quality);
     setShowPreview(true);
   }, [report.players]);
 
-  const handleDirectExport = useCallback(async (quality: QualityKey) => {
+  const handleDirectExport = useCallback(async () => {
     if (!report.players) {
       toast.error("Dados do jogador não disponíveis");
       return;
     }
 
-    // Save preference
-    setPreferredQuality(quality);
-    setStoredQuality(quality);
-
-    const qualityConfig = QUALITY_OPTIONS[quality];
     setIsExporting(true);
-    setProgress(0);
-    setShowTemplate(true);
-
-    // Wait for template to render, fonts and images to fully load
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    // Also wait for document fonts
-    if (document.fonts && document.fonts.ready) {
-      await document.fonts.ready;
-    }
 
     try {
-      const templateElement = templateRef.current;
-      if (!templateElement) {
-        throw new Error("Template não encontrado");
-      }
-
       const filename = generateReportFilename(
         report.players.full_name,
         report.match_date
       );
 
-      await exportToPdf(templateElement, {
+      const pdfDocument = (
+        <ScoutingReportVectorPdf
+          report={report}
+          logoUrl={logoBase64 || undefined}
+        />
+      );
+
+      await exportVectorPdf(pdfDocument, {
         filename,
-        scale: qualityConfig.scale,
-        outputResolution: qualityConfig.outputResolution,
-        onProgress: setProgress,
+        onProgress: (progress) => {
+          console.log(`PDF Export progress: ${progress}%`);
+        },
       });
 
       toast.success("PDF exportado com sucesso!", {
-        description: `${filename} (${qualityConfig.label})`,
+        description: filename,
       });
     } catch (error) {
       console.error("Erro ao exportar PDF:", error);
@@ -149,10 +94,8 @@ export function ExportPdfButton({ report, variant = "outline", size = "sm" }: Ex
       });
     } finally {
       setIsExporting(false);
-      setShowTemplate(false);
-      setProgress(0);
     }
-  }, [report]);
+  }, [report, logoBase64]);
 
   return (
     <>
@@ -167,7 +110,7 @@ export function ExportPdfButton({ report, variant = "outline", size = "sm" }: Ex
             {isExporting ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                {progress > 0 && <span>{Math.round(progress)}%</span>}
+                <span>Gerando...</span>
               </>
             ) : (
               <>
@@ -179,68 +122,35 @@ export function ExportPdfButton({ report, variant = "outline", size = "sm" }: Ex
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
-          {/* Preview options */}
+          {/* Preview option */}
           <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
-            Com preview
+            Opções
           </DropdownMenuLabel>
           <DropdownMenuItem
-            onClick={() => handleOpenPreview("normal")}
+            onClick={handleOpenPreview}
             className="flex items-center gap-2 cursor-pointer"
           >
             <Eye className="w-4 h-4 text-muted-foreground" />
             <div className="flex flex-col items-start gap-0.5">
-              <span className="font-medium">Preview Normal</span>
+              <span className="font-medium">Visualizar Preview</span>
               <span className="text-xs text-muted-foreground">
-                Visualizar antes de exportar
+                Ver antes de exportar
               </span>
             </div>
-            {preferredQuality === "normal" && (
-              <Check className="w-4 h-4 text-primary ml-auto" />
-            )}
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => handleOpenPreview("high")}
-            className="flex items-center gap-2 cursor-pointer"
-          >
-            <Eye className="w-4 h-4 text-muted-foreground" />
-            <div className="flex flex-col items-start gap-0.5">
-              <span className="font-medium">Preview Alta Qualidade</span>
-              <span className="text-xs text-muted-foreground">
-                Melhor p/ impressão
-              </span>
-            </div>
-            {preferredQuality === "high" && (
-              <Check className="w-4 h-4 text-primary ml-auto" />
-            )}
           </DropdownMenuItem>
 
           <DropdownMenuSeparator />
 
-          {/* Direct export options */}
-          <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
-            Exportar direto
-          </DropdownMenuLabel>
+          {/* Direct export */}
           <DropdownMenuItem
-            onClick={() => handleDirectExport("normal")}
+            onClick={handleDirectExport}
             className="flex items-center gap-2 cursor-pointer"
           >
             <FileDown className="w-4 h-4 text-muted-foreground" />
             <div className="flex flex-col items-start gap-0.5">
-              <span className="font-medium">{QUALITY_OPTIONS.normal.label}</span>
+              <span className="font-medium">Exportar PDF Vetorial</span>
               <span className="text-xs text-muted-foreground">
-                {QUALITY_OPTIONS.normal.description}
-              </span>
-            </div>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => handleDirectExport("high")}
-            className="flex items-center gap-2 cursor-pointer"
-          >
-            <FileDown className="w-4 h-4 text-muted-foreground" />
-            <div className="flex flex-col items-start gap-0.5">
-              <span className="font-medium">{QUALITY_OPTIONS.high.label}</span>
-              <span className="text-xs text-muted-foreground">
-                {QUALITY_OPTIONS.high.description}
+                Alta qualidade (textos nítidos)
               </span>
             </div>
           </DropdownMenuItem>
@@ -252,33 +162,9 @@ export function ExportPdfButton({ report, variant = "outline", size = "sm" }: Ex
         report={report}
         open={showPreview}
         onOpenChange={setShowPreview}
-        qualityScale={QUALITY_OPTIONS[previewQuality].scale}
-        qualityLabel={QUALITY_OPTIONS[previewQuality].label}
+        qualityScale={1}
+        qualityLabel="Vetorial"
       />
-
-      {/* Hidden template for direct PDF generation - uses same fixed styling */}
-      {showTemplate &&
-        createPortal(
-          <div
-            style={{
-              position: "fixed",
-              left: "-9999px",
-              top: 0,
-              zIndex: -1,
-              overflow: "visible",
-              backgroundColor: "#FFFFFF",
-            }}
-          >
-            <div
-              style={{
-                backgroundColor: "#FFFFFF",
-              }}
-            >
-              <ScoutingReportPdfTemplate ref={templateRef} report={report} />
-            </div>
-          </div>,
-          document.body
-        )}
     </>
   );
 }
