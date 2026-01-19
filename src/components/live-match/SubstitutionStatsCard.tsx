@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowRightLeft, Clock, ArrowDown, ArrowUp, Timer, Download } from "lucide-react";
 import { useExportPng } from "@/hooks/useExportPng";
+import { calculateMinutesPlayed, getMinutesPlayedPercent, STANDARD_MATCH_DURATION } from "@/lib/minutesPlayed";
 
 interface MatchPlayer {
   id: string;
@@ -57,6 +58,8 @@ interface PlayerTimeInfo {
   exitedMinute: number | null;
   wasSubstitutedIn: boolean;
   wasSubstitutedOut: boolean;
+  rangeDisplay: string;
+  endMinute: number;
 }
 
 export function SubstitutionStatsCard({
@@ -87,44 +90,35 @@ export function SubstitutionStatsCard({
       .sort((a, b) => a.minute - b.minute);
   }, [matchEvents, matchPlayers]);
 
-  // Calculate time on field for each player
+  // Calculate time on field for each player using standardized logic
   const playerTimeStats = useMemo<PlayerTimeInfo[]>(() => {
     return matchPlayers
       .filter((mp) => mp.player && !mp.is_removed)
       .map((mp) => {
-        let minutesPlayed = 0;
-        
-        if (mp.minutes_played !== null) {
-          minutesPlayed = mp.minutes_played;
-        } else if (mp.started) {
-          if (mp.exited_minute !== null) {
-            minutesPlayed = mp.exited_minute;
-          } else {
-            minutesPlayed = matchDuration;
-          }
-        } else if (mp.entered_minute !== null) {
-          if (mp.exited_minute !== null) {
-            minutesPlayed = Math.max(0, mp.exited_minute - mp.entered_minute);
-          } else {
-            minutesPlayed = Math.max(0, matchDuration - mp.entered_minute);
-          }
-        }
+        const info = calculateMinutesPlayed({
+          started: mp.started,
+          entered_minute: mp.entered_minute,
+          exited_minute: mp.exited_minute,
+          minutes_played: mp.minutes_played,
+        });
         
         const wasSubstitutedIn = mp.entered_minute !== null && !mp.started;
         const wasSubstitutedOut = mp.exited_minute !== null;
         
         return {
           player: mp,
-          minutesPlayed,
+          minutesPlayed: info.minutesPlayed,
           started: mp.started,
           enteredMinute: mp.entered_minute,
           exitedMinute: mp.exited_minute,
           wasSubstitutedIn,
           wasSubstitutedOut,
+          rangeDisplay: info.rangeDisplay,
+          endMinute: info.endMinute,
         };
       })
       .sort((a, b) => b.minutesPlayed - a.minutesPlayed);
-  }, [matchPlayers, matchDuration]);
+  }, [matchPlayers]);
 
   // Summary stats
   const summaryStats = useMemo(() => {
@@ -272,7 +266,7 @@ export function SubstitutionStatsCard({
               {playerTimeStats.map((stat) => {
                 if (!stat.player.player) return null;
                 
-                const percentPlayed = Math.round((stat.minutesPlayed / matchDuration) * 100);
+                const percentPlayed = getMinutesPlayedPercent(stat.minutesPlayed);
                 
                 return (
                   <div
@@ -317,26 +311,18 @@ export function SubstitutionStatsCard({
                         </span>
                       </div>
                       
-                      {/* Entry/Exit info */}
-                      {(stat.enteredMinute !== null || stat.exitedMinute !== null) && (
+                      {/* Entry/Exit info - using standardized range display */}
+                      {stat.rangeDisplay !== "—" && (
                         <div className="flex items-center gap-2 mt-0.5">
-                          {stat.started && stat.exitedMinute !== null && (
-                            <span className="text-[10px] text-muted-foreground">
-                              0' → {stat.exitedMinute}'
-                            </span>
-                          )}
-                          {!stat.started && stat.enteredMinute !== null && (
-                            <span className="text-[10px] text-muted-foreground">
-                              {stat.enteredMinute}' → {stat.exitedMinute ?? matchDuration}'
-                            </span>
-                          )}
+                          <span className="text-[10px] text-muted-foreground">
+                            {stat.rangeDisplay}
+                          </span>
                         </div>
                       )}
                     </div>
                     
                     <div className="text-right shrink-0">
-                      <p className="text-sm font-bold">{stat.minutesPlayed}'</p>
-                      <p className="text-[10px] text-muted-foreground">minutos</p>
+                      <p className="text-sm font-bold">{stat.minutesPlayed} min</p>
                     </div>
                   </div>
                 );

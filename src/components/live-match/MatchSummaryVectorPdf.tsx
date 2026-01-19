@@ -31,6 +31,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PDF_COLORS } from "@/lib/pdfStyles";
 import { Match, MatchPlayer, MatchEvent, MatchEventType } from "@/hooks/useLiveMatch";
+import { calculateMinutesPlayed } from "@/lib/minutesPlayed";
 import {
   EVENT_TYPE_CONFIG,
   COMPUTED_STATS,
@@ -1353,14 +1354,14 @@ export function MatchSummaryVectorPdf({
               .join("")
               .toUpperCase();
             
-            // Calculate minutes played
-            const minutesPlayed = mp.minutes_played ?? (
-              mp.started 
-                ? (mp.exited_minute ?? matchDuration) 
-                : mp.entered_minute 
-                  ? (mp.exited_minute ?? matchDuration) - mp.entered_minute
-                  : 0
-            );
+            // Calculate minutes played using standardized logic
+            const minutesInfo = calculateMinutesPlayed({
+              started: mp.started,
+              entered_minute: mp.entered_minute,
+              exited_minute: mp.exited_minute,
+              minutes_played: mp.minutes_played,
+            });
+            const minutesPlayed = minutesInfo.minutesPlayed;
 
             return (
               <View key={mp.id} style={styles.playerCard} wrap={false}>
