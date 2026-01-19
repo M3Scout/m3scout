@@ -23,6 +23,9 @@ import {
   G,
   Path,
   Polyline,
+  Defs,
+  LinearGradient,
+  Stop,
 } from "@react-pdf/renderer";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -906,6 +909,30 @@ export function MatchSummaryVectorPdf({
     return points.join(' ');
   };
 
+  // Generate closed area path for gradient fill (smoothed line + baseline)
+  const generateAreaPath = () => {
+    if (chartData.data.length === 0) return "";
+    const xScale = plotWidth / matchDuration;
+    const yScale = plotHeight / chartData.maxEvents;
+    const baseline = CHART_PADDING.top + plotHeight;
+    
+    // Start at bottom-left
+    let path = `M ${CHART_PADDING.left} ${baseline}`;
+    
+    // Line up to first point then follow the curve
+    chartData.data.forEach((d) => {
+      const x = CHART_PADDING.left + (d.minute * xScale);
+      const y = CHART_PADDING.top + plotHeight - (d.smoothed * yScale);
+      path += ` L ${x.toFixed(1)} ${y.toFixed(1)}`;
+    });
+    
+    // Close path back to baseline
+    const lastX = CHART_PADDING.left + plotWidth;
+    path += ` L ${lastX} ${baseline} Z`;
+    
+    return path;
+  };
+
   // Generate dots for raw events
   const generateEventDots = () => {
     const xScale = plotWidth / matchDuration;
@@ -1068,6 +1095,21 @@ export function MatchSummaryVectorPdf({
                   strokeDasharray="2,2"
                 />
               ))}
+
+              {/* Gradient definition */}
+              <Defs>
+                <LinearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+                  <Stop offset="0%" stopColor={PDF_COLORS.brandRed} stopOpacity={0.3} />
+                  <Stop offset="100%" stopColor={PDF_COLORS.brandRed} stopOpacity={0.02} />
+                </LinearGradient>
+              </Defs>
+
+              {/* Area fill under smoothed line */}
+              <Path
+                d={generateAreaPath()}
+                fill="url(#areaGradient)"
+                stroke="none"
+              />
 
               {/* Half-time vertical line */}
               <SvgLine
