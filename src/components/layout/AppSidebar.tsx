@@ -29,18 +29,18 @@ import {
 } from "@/components/ui/tooltip";
 
 const navItems = [
-  { href: "/app", icon: LayoutDashboard, label: "Dashboard" },
-  { href: "/app/players", icon: Users, label: "Atletas" },
-  { href: "/app/compare", icon: GitCompare, label: "Comparar" },
-  { href: "/app/reports", icon: FileText, label: "Relatórios" },
-  { href: "/app/live-match", icon: Radio, label: "Jogo Ao Vivo" },
-  { href: "/app/competitions", icon: Trophy, label: "Competições" },
-  { href: "/app/news", icon: Newspaper, label: "Notícias" },
-  { href: "/app/leads", icon: MessageSquare, label: "Leads" },
+  { href: "/app", icon: LayoutDashboard, label: "Dashboard", module: "app" as const },
+  { href: "/app/players", icon: Users, label: "Atletas", module: "players" as const },
+  { href: "/app/compare", icon: GitCompare, label: "Comparar", module: "compare" as const },
+  { href: "/app/reports", icon: FileText, label: "Relatórios", module: "reports" as const },
+  { href: "/app/live-match", icon: Radio, label: "Jogo Ao Vivo", module: "live_match" as const },
+  { href: "/app/competitions", icon: Trophy, label: "Competições", module: "competitions" as const },
+  { href: "/app/news", icon: Newspaper, label: "Notícias", module: "news" as const },
+  { href: "/app/leads", icon: MessageSquare, label: "Leads", module: "leads" as const },
 ];
 
 const bottomNavItems = [
-  { href: "/app/settings", icon: Settings, label: "Configurações" },
+  { href: "/app/settings", icon: Settings, label: "Configurações", module: null },
 ];
 
 export function AppSidebar() {
