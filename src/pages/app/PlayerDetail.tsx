@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { getYouTubeEmbedUrl, safeArray } from "@/lib/utils";
 import { isGoalkeeper } from "@/lib/positionUtils";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -335,14 +337,16 @@ const PlayerDetail = () => {
               </Link>
             </Button>
             {isAdmin && (
-              <Button
-                variant="destructive"
-                onClick={() => setDeleteDialogOpen(true)}
-                className="justify-center"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Excluir
-              </Button>
+              <PermissionGate module="players" action="delete">
+                <Button
+                  variant="destructive"
+                  onClick={() => setDeleteDialogOpen(true)}
+                  className="justify-center"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Excluir
+                </Button>
+              </PermissionGate>
             )}
           </div>
         </div>
