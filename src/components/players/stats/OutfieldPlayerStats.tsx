@@ -143,8 +143,8 @@ export function OutfieldPlayerStats({ stats }: OutfieldPlayerStatsProps) {
         />
       </StatGroup>
 
-      {/* D) Defense & Duels */}
-      <StatGroup title="Defesa e Duelos" icon={<Shield className="w-4 h-4" />}>
+      {/* D) Defense */}
+      <StatGroup title="Defesa" icon={<Shield className="w-4 h-4" />}>
         <StatCard 
           label="Desarmes" 
           value={safe(stats.tackles)} 
@@ -161,6 +161,10 @@ export function OutfieldPlayerStats({ stats }: OutfieldPlayerStatsProps) {
           label="Recuperações" 
           value={safe(stats.recoveries)} 
         />
+      </StatGroup>
+
+      {/* E) Duelos */}
+      <StatGroup title="Duelos" icon={<Target className="w-4 h-4" />}>
         <StatCard 
           label="Duelos no Chão" 
           value={safe(stats.ground_duels_won)} 
@@ -168,14 +172,30 @@ export function OutfieldPlayerStats({ stats }: OutfieldPlayerStatsProps) {
           showPercentage={safe(stats.ground_duels_total) > 0}
         />
         <StatCard 
+          label="% Chão" 
+          value={safe(stats.ground_duels_total) > 0 
+            ? Math.round((safe(stats.ground_duels_won) / safe(stats.ground_duels_total)) * 100) 
+            : 0}
+        />
+        <StatCard 
           label="Duelos Aéreos" 
           value={safe(stats.aerial_duels_won)} 
           total={safe(stats.aerial_duels_total) || undefined}
           showPercentage={safe(stats.aerial_duels_total) > 0}
         />
+        <StatCard 
+          label="% Aéreo" 
+          value={safe(stats.aerial_duels_total) > 0 
+            ? Math.round((safe(stats.aerial_duels_won) / safe(stats.aerial_duels_total)) * 100) 
+            : 0}
+        />
+        <StatCard 
+          label="Duelos Totais" 
+          value={safe(stats.ground_duels_total) + safe(stats.aerial_duels_total)} 
+        />
       </StatGroup>
 
-      {/* E) Ball Control & Discipline */}
+      {/* F) Ball Control & Discipline */}
       <StatGroup title="Bola e Disciplina" icon={<AlertTriangle className="w-4 h-4" />}>
         <StatCard 
           label="Dribles" 
