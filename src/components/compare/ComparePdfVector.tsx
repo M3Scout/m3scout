@@ -675,6 +675,48 @@ export function ComparePdfVector({
           </View>
         )}
 
+        {/* Attributes Table */}
+        {hasRadarData && (
+          <>
+            <View style={styles.sectionHeader}>
+              <View style={[styles.sectionAccent, { backgroundColor: "#8b5cf6" }]} />
+              <Text style={styles.sectionTitle}>Atributos Calculados</Text>
+            </View>
+            <View style={styles.table}>
+              {RADAR_LABELS.map((label, attrIdx) => {
+                const fullLabels = ["Ataque", "Técnica", "Tático", "Defesa", "Criatividade"];
+                const values = players.map((_, pIdx) => playersRadarData[pIdx]?.values[attrIdx] ?? null);
+                const validValues = values.filter(v => v !== null) as number[];
+                const allSame = validValues.length <= 1 || validValues.every(v => v === validValues[0]);
+                const bestValue = allSame ? null : Math.max(...validValues);
+                
+                return (
+                  <View key={label} style={styles.tableRow}>
+                    <Text style={styles.tableLabelCell}>{fullLabels[attrIdx]}</Text>
+                    {players.map((player, pIdx) => {
+                      const val = playersRadarData[pIdx]?.values[attrIdx] ?? null;
+                      const isBest = !allSame && val === bestValue;
+                      const playerColor = playersRadarData[pIdx]?.color || PDF_COLORS.gray500;
+                      
+                      return (
+                        <Text
+                          key={player.id}
+                          style={isBest
+                            ? [styles.tableValueCellBest, { color: playerColor, backgroundColor: `${playerColor}10` }]
+                            : styles.tableValueCell
+                          }
+                        >
+                          {val !== null ? Math.round(val) : "—"}{isBest ? " ↑" : ""}
+                        </Text>
+                      );
+                    })}
+                  </View>
+                );
+              })}
+            </View>
+          </>
+        )}
+
         {/* Stats Table - Visão Geral */}
         <View style={styles.sectionHeader}>
           <View style={[styles.sectionAccent, { backgroundColor: PDF_COLORS.orange }]} />
