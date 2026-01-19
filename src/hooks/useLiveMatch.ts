@@ -783,10 +783,11 @@ export function useLiveMatch(matchId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["match-events", matchId] });
-      toast.success("Tempo do evento atualizado");
+      queryClient.invalidateQueries({ queryKey: ["match-player-stats", matchId] });
+      toast.success("Minuto do evento atualizado");
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Erro ao editar tempo do evento");
+      toast.error(error.message || "Erro ao editar minuto do evento");
     },
   });
 

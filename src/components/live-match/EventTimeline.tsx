@@ -84,6 +84,7 @@ interface EventTimelineProps {
   onEditEventTime?: (eventId: string, gameTimeSeconds: number) => Promise<void>;
   matchStatus?: "draft" | "live" | "finished" | "applied";
   maxGameTimeSeconds?: number;
+  isReviewMode?: boolean;
 }
 
 export function EventTimeline({
@@ -94,6 +95,7 @@ export function EventTimeline({
   onEditEventTime,
   matchStatus = "draft",
   maxGameTimeSeconds,
+  isReviewMode = false,
 }: EventTimelineProps) {
   const [editTimeModalOpen, setEditTimeModalOpen] = useState(false);
   const [voidDialogOpen, setVoidDialogOpen] = useState(false);
@@ -276,19 +278,25 @@ export function EventTimeline({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-800">
-              {/* Edit time - only for official events in live/finished status */}
-              {event.event_status === "official" && onEditEventTime && (matchStatus === "live" || matchStatus === "finished") && (
+              {/* Edit time - available in live mode OR in review mode for finished/applied matches */}
+              {event.event_status === "official" && onEditEventTime && (
+                matchStatus === "live" || 
+                (["finished", "applied"].includes(matchStatus) && isReviewMode)
+              ) && (
                 <DropdownMenuItem 
                   onClick={() => openEditTimeModal(event)}
                   className="gap-2 text-blue-400 focus:text-blue-400 focus:bg-blue-500/10"
                 >
                   <Pencil className="w-3.5 h-3.5" />
-                  Editar tempo
+                  Editar minuto
                 </DropdownMenuItem>
               )}
               
-              {/* Void event - only for official events */}
+              {/* Void event - available for official events in live mode OR in review mode */}
               {event.event_status === "official" && onVoidEvent && (
+                matchStatus === "live" || 
+                (["finished", "applied"].includes(matchStatus) && isReviewMode)
+              ) && (
                 <DropdownMenuItem 
                   onClick={() => openVoidDialog(event)}
                   className="gap-2 text-amber-400 focus:text-amber-400 focus:bg-amber-500/10"
