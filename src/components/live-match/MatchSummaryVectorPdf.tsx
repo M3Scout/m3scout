@@ -1,6 +1,12 @@
 /**
  * Match Summary PDF using @react-pdf/renderer
  * Vector-based PDF for crisp text rendering
+ * 
+ * Supports:
+ * - Complete statistics by half (using matchStatsDefinitions)
+ * - Player activity heatmap
+ * - Event distribution summary
+ * - Filter by specific players
  */
 import React from "react";
 import {
@@ -15,8 +21,14 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PDF_COLORS } from "@/lib/pdfStyles";
 import { Match, MatchPlayer, MatchEvent, MatchEventType } from "@/hooks/useLiveMatch";
+import {
+  EVENT_TYPE_CONFIG,
+  COMPUTED_STATS,
+  SUMMARY_EVENT_TYPES,
+  EventCountsMap,
+} from "@/lib/matchStatsDefinitions";
 
-// Event type labels
+// Event type labels (backup)
 const EVENT_LABELS: Record<MatchEventType, string> = {
   goal: "Gol",
   assist: "Assistência",
@@ -55,6 +67,16 @@ const EVENT_LABELS: Record<MatchEventType, string> = {
   substitution: "Substituição",
   player_on: "Entrou",
   player_off: "Saiu",
+};
+
+// Heatmap intensity colors
+const HEATMAP_COLORS = {
+  offField: "#E5E7EB", // gray-200
+  noEvents: "#F3F4F6", // gray-100
+  low: "#86EFAC", // green-300
+  medium: "#FDE047", // yellow-300
+  high: "#FB923C", // orange-400
+  veryHigh: "#EF4444", // red-500
 };
 
 const styles = StyleSheet.create({
@@ -110,6 +132,12 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: PDF_COLORS.gray400,
     marginTop: 2,
+  },
+  playerFilter: {
+    fontSize: 10,
+    color: PDF_COLORS.brandRed,
+    marginTop: 4,
+    fontWeight: 700,
   },
   // Stats Grid
   statsGrid: {
@@ -174,6 +202,13 @@ const styles = StyleSheet.create({
     fontWeight: 700,
     color: PDF_COLORS.gray900,
     marginBottom: 12,
+    marginTop: 8,
+  },
+  sectionSubtitle: {
+    fontSize: 9,
+    color: PDF_COLORS.gray500,
+    marginBottom: 10,
+    marginTop: -8,
   },
   // Table
   table: {
@@ -195,21 +230,38 @@ const styles = StyleSheet.create({
     color: PDF_COLORS.gray600,
     borderRight: `1px solid ${PDF_COLORS.gray200}`,
   },
+  tableHeaderCellWide: {
+    flex: 2,
+    padding: 8,
+    fontSize: 10,
+    fontWeight: 600,
+    textAlign: "center",
+    color: PDF_COLORS.gray600,
+    borderRight: `1px solid ${PDF_COLORS.gray200}`,
+  },
   tableRow: {
     flexDirection: "row",
     borderTop: `1px solid ${PDF_COLORS.gray200}`,
   },
   tableCell: {
     flex: 1,
-    padding: 8,
+    padding: 6,
     fontSize: 11,
     fontWeight: 700,
     textAlign: "center",
     borderRight: `1px solid ${PDF_COLORS.gray200}`,
   },
+  tableCellWide: {
+    flex: 2,
+    padding: 6,
+    fontSize: 9,
+    color: PDF_COLORS.gray600,
+    textAlign: "center",
+    borderRight: `1px solid ${PDF_COLORS.gray200}`,
+  },
   tableCellLabel: {
     flex: 1,
-    padding: 8,
+    padding: 6,
     fontSize: 10,
     color: PDF_COLORS.gray600,
     textAlign: "center",
@@ -310,6 +362,123 @@ const styles = StyleSheet.create({
     fontSize: 8,
     color: PDF_COLORS.gray300,
   },
+  // Distribution summary
+  distributionRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 20,
+  },
+  distributionCard: {
+    flex: 1,
+    backgroundColor: PDF_COLORS.gray100,
+    borderRadius: 6,
+    padding: 12,
+    alignItems: "center",
+  },
+  distributionCardHighlight: {
+    flex: 1,
+    backgroundColor: "#FEF3C7", // amber-100
+    borderRadius: 6,
+    padding: 12,
+    alignItems: "center",
+  },
+  distributionValue: {
+    fontSize: 18,
+    fontWeight: 700,
+    color: PDF_COLORS.gray900,
+  },
+  distributionLabel: {
+    fontSize: 8,
+    color: PDF_COLORS.gray500,
+    marginTop: 4,
+  },
+  // Heatmap
+  heatmapContainer: {
+    marginBottom: 20,
+    border: `1px solid ${PDF_COLORS.gray200}`,
+    borderRadius: 8,
+    padding: 12,
+  },
+  heatmapLegend: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 10,
+    paddingBottom: 8,
+    borderBottom: `1px solid ${PDF_COLORS.gray200}`,
+  },
+  heatmapLegendLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  heatmapLegendBox: {
+    width: 12,
+    height: 12,
+    borderRadius: 2,
+  },
+  heatmapLegendText: {
+    fontSize: 7,
+    color: PDF_COLORS.gray500,
+  },
+  heatmapHeader: {
+    flexDirection: "row",
+    marginBottom: 6,
+  },
+  heatmapPlayerCol: {
+    width: 100,
+  },
+  heatmapCellsHeader: {
+    flex: 1,
+    flexDirection: "row",
+  },
+  heatmapTimeLabel: {
+    flex: 1,
+    fontSize: 7,
+    textAlign: "center",
+    color: PDF_COLORS.gray400,
+  },
+  heatmapTotalCol: {
+    width: 32,
+    fontSize: 7,
+    textAlign: "center",
+    color: PDF_COLORS.gray500,
+    fontWeight: 600,
+  },
+  heatmapRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 3,
+  },
+  heatmapPlayerInfo: {
+    width: 100,
+    paddingRight: 8,
+  },
+  heatmapPlayerName: {
+    fontSize: 8,
+    fontWeight: 600,
+    color: PDF_COLORS.gray900,
+  },
+  heatmapPlayerPosition: {
+    fontSize: 6,
+    color: PDF_COLORS.gray400,
+  },
+  heatmapCells: {
+    flex: 1,
+    flexDirection: "row",
+    gap: 2,
+  },
+  heatmapCell: {
+    flex: 1,
+    height: 14,
+    borderRadius: 2,
+  },
+  heatmapTotal: {
+    width: 32,
+    fontSize: 9,
+    fontWeight: 600,
+    textAlign: "center",
+    color: PDF_COLORS.gray700,
+  },
   // Footer
   footer: {
     position: "absolute",
@@ -322,6 +491,13 @@ const styles = StyleSheet.create({
     borderTop: `1px solid ${PDF_COLORS.gray200}`,
     paddingTop: 12,
   },
+  pageNumber: {
+    position: "absolute",
+    bottom: 28,
+    right: 40,
+    fontSize: 8,
+    color: PDF_COLORS.gray400,
+  },
 });
 
 interface MatchSummaryVectorPdfProps {
@@ -331,7 +507,11 @@ interface MatchSummaryVectorPdfProps {
   playerEventCounts: Record<string, Partial<Record<MatchEventType, number>>>;
   teamName: string;
   logoUrl?: string;
+  selectedPlayerIds?: string[]; // Filter for specific players
 }
+
+// Heatmap interval size in minutes
+const HEATMAP_INTERVAL = 5;
 
 export function MatchSummaryVectorPdf({
   match,
@@ -340,26 +520,199 @@ export function MatchSummaryVectorPdf({
   playerEventCounts,
   teamName,
   logoUrl,
+  selectedPlayerIds,
 }: MatchSummaryVectorPdfProps) {
-  // Calculate stats by half
-  const getHalfStats = () => {
-    const first = { goals: 0, assists: 0, yellowCards: 0, redCards: 0, shots: 0, saves: 0 };
-    const second = { goals: 0, assists: 0, yellowCards: 0, redCards: 0, shots: 0, saves: 0 };
+  // Determine match duration
+  const matchDuration = match.duration_minutes || 90;
+  
+  // Filter players if selectedPlayerIds is provided
+  const filteredPlayers = selectedPlayerIds && selectedPlayerIds.length > 0
+    ? matchPlayers.filter((mp) => selectedPlayerIds.includes(mp.player_id))
+    : matchPlayers;
 
-    matchEvents.forEach((event) => {
-      const stats = event.half === 2 ? second : first;
-      switch (event.event_type) {
-        case "goal": stats.goals += event.value; break;
-        case "assist": stats.assists += event.value; break;
-        case "yellow": stats.yellowCards += event.value; break;
-        case "red": stats.redCards += event.value; break;
-        case "shot":
-        case "shot_on_target": stats.shots += event.value; break;
-        case "save": stats.saves += event.value; break;
+  // Filter events for selected players
+  const filteredEvents = selectedPlayerIds && selectedPlayerIds.length > 0
+    ? matchEvents.filter((e) => selectedPlayerIds.includes(e.player_id))
+    : matchEvents;
+
+  // Calculate stats by half using the same logic as HalfStatsComparison
+  const getHalfStats = () => {
+    const eventCounts: EventCountsMap = {};
+    
+    filteredEvents.forEach((event) => {
+      if (event.event_status === "voided" || !event.count_in_stats) return;
+      
+      const half = event.half === 2 ? "second" : "first";
+      const eventType = event.event_type as MatchEventType;
+      
+      if (!eventCounts[eventType]) {
+        eventCounts[eventType] = { first: 0, second: 0 };
+      }
+      eventCounts[eventType]![half] += event.value || 1;
+    });
+
+    // Count substitutions
+    let subsFirstHalf = 0;
+    let subsSecondHalf = 0;
+    filteredEvents.forEach((event) => {
+      if (event.event_type === "player_on" && event.event_status !== "voided") {
+        if (event.half === 2 || event.period === 2) {
+          subsSecondHalf++;
+        } else {
+          subsFirstHalf++;
+        }
       }
     });
 
-    return { first, second };
+    // Build stats rows
+    interface StatsRow {
+      id: string;
+      label: string;
+      icon: string;
+      first: number;
+      second: number;
+      total: number;
+      order: number;
+    }
+    
+    const rows: StatsRow[] = [];
+    
+    // Add direct event type rows
+    SUMMARY_EVENT_TYPES.forEach((type) => {
+      const counts = eventCounts[type];
+      if (!counts) return;
+      
+      const total = counts.first + counts.second;
+      if (total > 0) {
+        const config = EVENT_TYPE_CONFIG[type];
+        rows.push({
+          id: type,
+          label: config.label,
+          icon: config.icon,
+          first: counts.first,
+          second: counts.second,
+          total,
+          order: config.order,
+        });
+      }
+    });
+
+    // Add computed stats
+    COMPUTED_STATS.forEach((computedStat) => {
+      const computed = computedStat.compute(eventCounts);
+      const total = computed.first + computed.second;
+      if (total > 0) {
+        rows.push({
+          id: computedStat.id,
+          label: computedStat.label,
+          icon: computedStat.icon,
+          first: computed.first,
+          second: computed.second,
+          total,
+          order: computedStat.order,
+        });
+      }
+    });
+
+    // Sort by order
+    rows.sort((a, b) => a.order - b.order);
+
+    return {
+      rows,
+      substitutions: { first: subsFirstHalf, second: subsSecondHalf },
+      totals: {
+        goals: (eventCounts.goal?.first || 0) + (eventCounts.goal?.second || 0),
+        assists: (eventCounts.assist?.first || 0) + (eventCounts.assist?.second || 0),
+      }
+    };
+  };
+
+  // Calculate event distribution summary
+  const getDistributionStats = () => {
+    const validEvents = filteredEvents.filter(
+      (e) => e.event_status !== "voided" && e.count_in_stats !== false
+    );
+    const firstHalfEvents = validEvents.filter((e) => e.half === 1).length;
+    const secondHalfEvents = validEvents.filter((e) => e.half === 2).length;
+    
+    // Find peak minute
+    const minuteCounts: Record<number, number> = {};
+    validEvents.forEach((event) => {
+      let eventMinute: number | null = event.minute;
+      if (eventMinute === null && event.game_time_seconds !== null) {
+        eventMinute = Math.floor(event.game_time_seconds / 60);
+      }
+      if (eventMinute !== null && eventMinute >= 0) {
+        minuteCounts[eventMinute] = (minuteCounts[eventMinute] || 0) + 1;
+      }
+    });
+
+    let peakMinute = 0;
+    let peakCount = 0;
+    Object.entries(minuteCounts).forEach(([min, count]) => {
+      if (count > peakCount) {
+        peakCount = count;
+        peakMinute = parseInt(min);
+      }
+    });
+
+    return {
+      firstHalf: firstHalfEvents,
+      secondHalf: secondHalfEvents,
+      peakMinute,
+      peakCount,
+      total: validEvents.length,
+    };
+  };
+
+  // Calculate heatmap data
+  const getHeatmapData = () => {
+    const intervals = Math.ceil(matchDuration / HEATMAP_INTERVAL);
+    const EXCLUDED_EVENT_TYPES = ["player_on", "player_off", "substitution"];
+    
+    const activePlayers = filteredPlayers.filter(
+      (mp) => mp.player && !mp.is_removed
+    );
+
+    const playerData = activePlayers.map((mp) => {
+      const playerEvents = filteredEvents.filter((e) => {
+        if (e.player_id !== mp.player_id) return false;
+        if (e.event_status === "voided") return false;
+        if (e.count_in_stats === false) return false;
+        if (EXCLUDED_EVENT_TYPES.includes(e.event_type)) return false;
+        return e.game_time_seconds !== null || e.minute !== null;
+      });
+
+      const intervalCounts: number[] = [];
+      for (let i = 0; i < intervals; i++) {
+        const start = i * HEATMAP_INTERVAL;
+        const end = (i + 1) * HEATMAP_INTERVAL;
+        
+        const count = playerEvents.filter((e) => {
+          const eventMinute = e.game_time_seconds !== null 
+            ? Math.floor(e.game_time_seconds / 60) 
+            : e.minute;
+          if (eventMinute === null) return false;
+          return eventMinute >= start && eventMinute < end;
+        }).length;
+        
+        intervalCounts.push(count);
+      }
+
+      return {
+        player: mp,
+        intervalCounts,
+        totalEvents: playerEvents.length,
+      };
+    });
+
+    // Sort by total events
+    playerData.sort((a, b) => b.totalEvents - a.totalEvents);
+
+    // Find global max for color scaling
+    const globalMax = Math.max(...playerData.flatMap((p) => p.intervalCounts), 1);
+
+    return { playerData, intervals, globalMax };
   };
 
   // Group events by half
@@ -367,7 +720,7 @@ export function MatchSummaryVectorPdf({
     const first: MatchEvent[] = [];
     const second: MatchEvent[] = [];
 
-    matchEvents.forEach((event) => {
+    filteredEvents.forEach((event) => {
       if (event.half === 2) {
         second.push(event);
       } else {
@@ -388,25 +741,41 @@ export function MatchSummaryVectorPdf({
     return mp?.player?.full_name || "Jogador";
   };
 
+  const getHeatmapColor = (count: number, globalMax: number): string => {
+    if (count === 0) return HEATMAP_COLORS.noEvents;
+    const intensity = count / globalMax;
+    if (intensity >= 0.8) return HEATMAP_COLORS.veryHigh;
+    if (intensity >= 0.6) return HEATMAP_COLORS.high;
+    if (intensity >= 0.4) return HEATMAP_COLORS.medium;
+    return HEATMAP_COLORS.low;
+  };
+
   const halfStats = getHalfStats();
+  const distributionStats = getDistributionStats();
+  const heatmapData = getHeatmapData();
   const eventsByHalf = getEventsByHalf();
   const competitionName = match.competition?.display_name || match.competition?.name || "Competição";
   const displayTeamName = match.team_name_display || teamName || "Time";
 
-  // Stats row component
-  const StatsRow = ({ label, first, second }: { label: string; first: number; second: number }) => {
-    if (first === 0 && second === 0) return null;
-    return (
-      <View style={styles.tableRow}>
-        <Text style={styles.tableCell}>{first}</Text>
-        <Text style={styles.tableCellLabel}>{label}</Text>
-        <Text style={styles.tableCell}>{second}</Text>
-      </View>
-    );
-  };
+  // Generate time labels for heatmap
+  const timeLabels: string[] = [];
+  for (let i = 0; i < heatmapData.intervals; i++) {
+    if (i % 3 === 0) {
+      timeLabels.push(`${i * HEATMAP_INTERVAL}'`);
+    } else {
+      timeLabels.push("");
+    }
+  }
+
+  // Determine if filtered
+  const isFiltered = selectedPlayerIds && selectedPlayerIds.length > 0;
+  const filterPlayerNames = isFiltered 
+    ? filteredPlayers.map(mp => mp.player?.full_name).filter(Boolean).join(", ")
+    : null;
 
   return (
     <Document>
+      {/* Page 1: Header, Stats, Distribution */}
       <Page size="A4" style={styles.page}>
         {/* Header */}
         <View style={styles.header}>
@@ -428,47 +797,160 @@ export function MatchSummaryVectorPdf({
             {match.venue && (
               <Text style={styles.matchVenue}>{match.venue}</Text>
             )}
+            {filterPlayerNames && (
+              <Text style={styles.playerFilter}>Jogador: {filterPlayerNames}</Text>
+            )}
           </View>
         </View>
 
         {/* Global Stats */}
         <View style={styles.statsGrid}>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>{matchPlayers.length}</Text>
+            <Text style={styles.statValue}>{filteredPlayers.length}</Text>
             <Text style={styles.statLabel}>Jogadores</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>{matchEvents.length}</Text>
+            <Text style={styles.statValue}>{filteredEvents.length}</Text>
             <Text style={styles.statLabel}>Eventos</Text>
           </View>
           <View style={styles.statCardGreen}>
-            <Text style={styles.statValueGreen}>
-              {halfStats.first.goals + halfStats.second.goals}
-            </Text>
+            <Text style={styles.statValueGreen}>{halfStats.totals.goals}</Text>
             <Text style={styles.statLabel}>Gols</Text>
           </View>
           <View style={styles.statCardBlue}>
-            <Text style={styles.statValueBlue}>
-              {halfStats.first.assists + halfStats.second.assists}
-            </Text>
+            <Text style={styles.statValueBlue}>{halfStats.totals.assists}</Text>
             <Text style={styles.statLabel}>Assistências</Text>
           </View>
         </View>
 
-        {/* Stats by Half */}
+        {/* Distribution Summary */}
+        <Text style={styles.sectionTitle}>Distribuição de Eventos</Text>
+        <View style={styles.distributionRow}>
+          <View style={styles.distributionCard}>
+            <Text style={styles.distributionValue}>{distributionStats.firstHalf}</Text>
+            <Text style={styles.distributionLabel}>1º TEMPO</Text>
+          </View>
+          <View style={styles.distributionCard}>
+            <Text style={styles.distributionValue}>{distributionStats.secondHalf}</Text>
+            <Text style={styles.distributionLabel}>2º TEMPO</Text>
+          </View>
+          <View style={styles.distributionCardHighlight}>
+            <Text style={styles.distributionValue}>{distributionStats.peakMinute}'</Text>
+            <Text style={styles.distributionLabel}>PICO ({distributionStats.peakCount} eventos)</Text>
+          </View>
+          <View style={styles.distributionCard}>
+            <Text style={styles.distributionValue}>{distributionStats.total}</Text>
+            <Text style={styles.distributionLabel}>TOTAL</Text>
+          </View>
+        </View>
+
+        {/* Stats by Half - Complete Table */}
         <Text style={styles.sectionTitle}>Estatísticas por Tempo</Text>
         <View style={styles.table}>
           <View style={styles.tableHeaderRow}>
             <Text style={styles.tableHeaderCell}>1º TEMPO</Text>
-            <Text style={styles.tableHeaderCell}>Estatística</Text>
+            <Text style={styles.tableHeaderCellWide}>Estatística</Text>
             <Text style={styles.tableHeaderCell}>2º TEMPO</Text>
+            <Text style={styles.tableHeaderCell}>TOTAL</Text>
           </View>
-          <StatsRow label="⚽ Gols" first={halfStats.first.goals} second={halfStats.second.goals} />
-          <StatsRow label="👟 Assistências" first={halfStats.first.assists} second={halfStats.second.assists} />
-          <StatsRow label="🟨 Amarelos" first={halfStats.first.yellowCards} second={halfStats.second.yellowCards} />
-          <StatsRow label="🟥 Vermelhos" first={halfStats.first.redCards} second={halfStats.second.redCards} />
-          <StatsRow label="🎯 Chutes" first={halfStats.first.shots} second={halfStats.second.shots} />
-          <StatsRow label="🧤 Defesas" first={halfStats.first.saves} second={halfStats.second.saves} />
+          {halfStats.rows.map((row) => (
+            <View key={row.id} style={styles.tableRow}>
+              <Text style={styles.tableCell}>{row.first}</Text>
+              <Text style={styles.tableCellWide}>{row.icon} {row.label}</Text>
+              <Text style={styles.tableCell}>{row.second}</Text>
+              <Text style={styles.tableCell}>{row.total}</Text>
+            </View>
+          ))}
+          {(halfStats.substitutions.first > 0 || halfStats.substitutions.second > 0) && (
+            <View style={styles.tableRow}>
+              <Text style={styles.tableCell}>{halfStats.substitutions.first}</Text>
+              <Text style={styles.tableCellWide}>🔄 Substituições</Text>
+              <Text style={styles.tableCell}>{halfStats.substitutions.second}</Text>
+              <Text style={styles.tableCell}>{halfStats.substitutions.first + halfStats.substitutions.second}</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Footer */}
+        <Text style={styles.footer}>
+          Gerado por M3 Scouting • {format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+        </Text>
+        <Text style={styles.pageNumber}>1</Text>
+      </Page>
+
+      {/* Page 2: Activity Heatmap + Events */}
+      <Page size="A4" style={styles.page}>
+        {/* Compact Header */}
+        <View style={{ ...styles.header, marginBottom: 16, paddingBottom: 12 }}>
+          <View style={styles.headerLeft}>
+            {logoUrl && <Image src={logoUrl} style={{ width: 32, height: 32 }} />}
+            <View>
+              <Text style={{ fontSize: 14, fontWeight: 700 }}>Resumo do Jogo</Text>
+              <Text style={{ fontSize: 9, color: PDF_COLORS.gray500 }}>
+                {displayTeamName} vs {match.opponent_name}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Activity Heatmap */}
+        <Text style={styles.sectionTitle}>Mapa de Atividade</Text>
+        <Text style={styles.sectionSubtitle}>Intensidade de eventos por jogador a cada {HEATMAP_INTERVAL} minutos</Text>
+        
+        <View style={styles.heatmapContainer}>
+          {/* Legend */}
+          <View style={styles.heatmapLegend}>
+            <View style={styles.heatmapLegendLeft}>
+              <Text style={styles.heatmapLegendText}>Menos ativo</Text>
+              <View style={{ ...styles.heatmapLegendBox, backgroundColor: HEATMAP_COLORS.low }} />
+              <View style={{ ...styles.heatmapLegendBox, backgroundColor: HEATMAP_COLORS.medium }} />
+              <View style={{ ...styles.heatmapLegendBox, backgroundColor: HEATMAP_COLORS.high }} />
+              <View style={{ ...styles.heatmapLegendBox, backgroundColor: HEATMAP_COLORS.veryHigh }} />
+              <Text style={styles.heatmapLegendText}>Mais ativo</Text>
+            </View>
+            <View style={styles.heatmapLegendLeft}>
+              <View style={{ ...styles.heatmapLegendBox, backgroundColor: HEATMAP_COLORS.noEvents, borderWidth: 1, borderColor: PDF_COLORS.gray300, borderStyle: "dashed" }} />
+              <Text style={styles.heatmapLegendText}>Sem eventos</Text>
+            </View>
+          </View>
+
+          {/* Time axis */}
+          <View style={styles.heatmapHeader}>
+            <View style={styles.heatmapPlayerCol} />
+            <View style={styles.heatmapCellsHeader}>
+              {timeLabels.map((label, idx) => (
+                <Text key={idx} style={styles.heatmapTimeLabel}>{label}</Text>
+              ))}
+            </View>
+            <Text style={styles.heatmapTotalCol}>Total</Text>
+          </View>
+
+          {/* Player rows - limit to 18 for page fit */}
+          {heatmapData.playerData.slice(0, 18).map(({ player, intervalCounts, totalEvents }) => {
+            if (!player.player) return null;
+            return (
+              <View key={player.id} style={styles.heatmapRow}>
+                <View style={styles.heatmapPlayerInfo}>
+                  <Text style={styles.heatmapPlayerName}>
+                    {player.player.full_name.split(" ").slice(-1)[0]}
+                  </Text>
+                  <Text style={styles.heatmapPlayerPosition}>{player.player.position}</Text>
+                </View>
+                <View style={styles.heatmapCells}>
+                  {intervalCounts.map((count, idx) => (
+                    <View
+                      key={idx}
+                      style={{
+                        ...styles.heatmapCell,
+                        backgroundColor: getHeatmapColor(count, heatmapData.globalMax),
+                      }}
+                    />
+                  ))}
+                </View>
+                <Text style={styles.heatmapTotal}>{totalEvents}</Text>
+              </View>
+            );
+          })}
         </View>
 
         {/* Events by Half */}
@@ -479,7 +961,7 @@ export function MatchSummaryVectorPdf({
             <Text style={styles.eventsColumnTitle}>
               1º TEMPO ({eventsByHalf.firstHalf.length})
             </Text>
-            {eventsByHalf.firstHalf.slice(0, 12).map((event) => (
+            {eventsByHalf.firstHalf.slice(0, 10).map((event) => (
               <View key={event.id} style={styles.eventItem}>
                 <Text style={styles.eventMinute}>
                   {event.display_minute || `${event.minute}'`}
@@ -488,8 +970,8 @@ export function MatchSummaryVectorPdf({
                 <Text style={styles.eventPlayer}>- {getPlayerName(event.player_id)}</Text>
               </View>
             ))}
-            {eventsByHalf.firstHalf.length > 12 && (
-              <Text style={styles.eventMore}>+{eventsByHalf.firstHalf.length - 12} eventos...</Text>
+            {eventsByHalf.firstHalf.length > 10 && (
+              <Text style={styles.eventMore}>+{eventsByHalf.firstHalf.length - 10} eventos...</Text>
             )}
           </View>
 
@@ -498,7 +980,7 @@ export function MatchSummaryVectorPdf({
             <Text style={styles.eventsColumnTitle}>
               2º TEMPO ({eventsByHalf.secondHalf.length})
             </Text>
-            {eventsByHalf.secondHalf.slice(0, 12).map((event) => (
+            {eventsByHalf.secondHalf.slice(0, 10).map((event) => (
               <View key={event.id} style={styles.eventItem}>
                 <Text style={styles.eventMinute}>
                   {event.display_minute || `${event.minute}'`}
@@ -507,21 +989,42 @@ export function MatchSummaryVectorPdf({
                 <Text style={styles.eventPlayer}>- {getPlayerName(event.player_id)}</Text>
               </View>
             ))}
-            {eventsByHalf.secondHalf.length > 12 && (
-              <Text style={styles.eventMore}>+{eventsByHalf.secondHalf.length - 12} eventos...</Text>
+            {eventsByHalf.secondHalf.length > 10 && (
+              <Text style={styles.eventMore}>+{eventsByHalf.secondHalf.length - 10} eventos...</Text>
             )}
           </View>
         </View>
 
+        {/* Footer */}
+        <Text style={styles.footer}>
+          Gerado por M3 Scouting • {format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+        </Text>
+        <Text style={styles.pageNumber}>2</Text>
+      </Page>
+
+      {/* Page 3: Player Stats */}
+      <Page size="A4" style={styles.page}>
+        {/* Compact Header */}
+        <View style={{ ...styles.header, marginBottom: 16, paddingBottom: 12 }}>
+          <View style={styles.headerLeft}>
+            {logoUrl && <Image src={logoUrl} style={{ width: 32, height: 32 }} />}
+            <View>
+              <Text style={{ fontSize: 14, fontWeight: 700 }}>Estatísticas por Jogador</Text>
+              <Text style={{ fontSize: 9, color: PDF_COLORS.gray500 }}>
+                {displayTeamName} vs {match.opponent_name}
+              </Text>
+            </View>
+          </View>
+        </View>
+
         {/* Player Stats */}
-        <Text style={styles.sectionTitle}>Estatísticas por Jogador</Text>
         <View style={styles.playersGrid}>
-          {matchPlayers.slice(0, 16).map((mp) => {
+          {filteredPlayers.slice(0, 16).map((mp) => {
             if (!mp.player) return null;
             const counts = playerEventCounts[mp.player_id] || {};
             const statEntries = Object.entries(counts)
               .filter(([_, v]) => (v ?? 0) > 0)
-              .slice(0, 5);
+              .slice(0, 6);
 
             return (
               <View key={mp.id} style={styles.playerCard}>
@@ -547,6 +1050,7 @@ export function MatchSummaryVectorPdf({
         <Text style={styles.footer}>
           Gerado por M3 Scouting • {format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
         </Text>
+        <Text style={styles.pageNumber}>3</Text>
       </Page>
     </Document>
   );
