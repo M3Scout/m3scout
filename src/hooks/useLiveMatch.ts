@@ -411,6 +411,8 @@ export function useLiveMatch(matchId: string) {
 
   // Add event using RPC v2 - handles draft vs official status automatically
   // Now also updates match_player_stats atomically with proper stat chaining
+  // Add event using RPC V2 (single overload)
+  // Function signature: create_live_event_v2(p_game_id, p_player_id, p_type, p_half, p_force_time_seconds, p_notes, p_display_minute)
   const addEvent = useMutation({
     mutationFn: async (params: {
       playerId: string;
@@ -419,15 +421,17 @@ export function useLiveMatch(matchId: string) {
       value?: number;
       half?: 1 | 2;
       displayMinute?: string;
+      notes?: string;
     }) => {
-      // Use type assertion since create_live_event_v2 is newly added
+      // Call RPC with all parameters in correct order to avoid ambiguity
       const { data, error } = await (supabase.rpc as Function)("create_live_event_v2", {
         p_game_id: matchId,
         p_player_id: params.playerId,
         p_type: params.eventType,
-        p_half: params.half || null,
-        p_force_time_seconds: params.minute ? params.minute * 60 : null,
-        p_notes: null,
+        p_half: params.half ?? null,
+        p_force_time_seconds: params.minute != null ? params.minute * 60 : null,
+        p_notes: params.notes ?? null,
+        p_display_minute: params.displayMinute ?? null,
       });
 
       if (error) throw error;
