@@ -12,13 +12,15 @@ import {
   Svg,
   Polygon,
   Line,
+  Circle,
+  G,
   StyleSheet,
 } from "@react-pdf/renderer";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { PDF_COLORS, POSITION_COLORS_PDF, formatNumber, formatPercent } from "@/lib/pdfStyles";
+import { PDF_COLORS, POSITION_COLORS_PDF } from "@/lib/pdfStyles";
 import { getPositionColor, getShortPosition } from "@/lib/positionColors";
-import type { PlayerStatRow } from "@/lib/attributeRadar";
+import { computeRadarAttributes, type PlayerStatRow } from "@/lib/attributeRadar";
 
 interface PlayerData {
   id: string;
@@ -261,7 +263,186 @@ const styles = StyleSheet.create({
     borderTop: `1px solid ${PDF_COLORS.gray200}`,
     paddingTop: 10,
   },
+  // Radar Section
+  radarSection: {
+    marginBottom: 20,
+    border: `1px solid ${PDF_COLORS.gray200}`,
+    borderRadius: 8,
+    padding: 16,
+  },
+  radarGrid: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "flex-start",
+    gap: 20,
+  },
+  radarLegend: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 20,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTop: `1px solid ${PDF_COLORS.gray100}`,
+  },
+  legendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  legendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  legendText: {
+    fontSize: 8,
+    color: PDF_COLORS.gray600,
+    fontWeight: 600,
+  },
 });
+
+// Radar attribute labels
+const RADAR_LABELS = ["ATA", "TÉC", "TÁT", "DEF", "CRI"];
+const RADAR_COLORS = [
+  { stroke: "#3b82f6", fill: "#3b82f6" }, // Blue
+  { stroke: "#10b981", fill: "#10b981" }, // Green
+  { stroke: "#f59e0b", fill: "#f59e0b" }, // Amber
+  { stroke: "#ec4899", fill: "#ec4899" }, // Pink
+];
+
+// Comparison Radar Chart SVG
+function CompareRadarSvg({ 
+  playersData, 
+  size = 180 
+}: { 
+  playersData: { name: string; values: number[]; color: string }[];
+  size?: number;
+}) {
+  const cx = size / 2;
+  const cy = size / 2;
+  const maxRadius = size / 2 - 30;
+  const levels = 5;
+  const numSides = 5;
+  const angleSlice = (Math.PI * 2) / numSides;
+
+  // Generate grid polygons
+  const gridPolygons = [];
+  for (let level = 1; level <= levels; level++) {
+    const r = (maxRadius / levels) * level;
+    const points = Array.from({ length: numSides }, (_, i) => {
+      const angle = angleSlice * i - Math.PI / 2;
+      return `${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`;
+    }).join(" ");
+    gridPolygons.push(
+      <Polygon
+        key={`grid-${level}`}
+        points={points}
+        fill="none"
+        stroke={PDF_COLORS.gray200}
+        strokeWidth={0.5}
+      />
+    );
+  }
+
+  // Generate axis lines
+  const axisLines = Array.from({ length: numSides }, (_, i) => {
+    const angle = angleSlice * i - Math.PI / 2;
+    return (
+      <Line
+        key={`axis-${i}`}
+        x1={cx}
+        y1={cy}
+        x2={cx + maxRadius * Math.cos(angle)}
+        y2={cy + maxRadius * Math.sin(angle)}
+        stroke={PDF_COLORS.gray200}
+        strokeWidth={0.5}
+      />
+    );
+  });
+
+  // Generate data polygons for each player
+  const dataPolygons = playersData.map((player, pIdx) => {
+    const points = player.values.map((val, i) => {
+      const angle = angleSlice * i - Math.PI / 2;
+      const r = (val / 100) * maxRadius;
+      return `${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`;
+    }).join(" ");
+    
+    return (
+      <Polygon
+        key={`data-${pIdx}`}
+        points={points}
+        fill={player.color}
+        fillOpacity={0.15}
+        stroke={player.color}
+        strokeWidth={2}
+      />
+    );
+  });
+
+  // Data points for each player
+  const dataPoints = playersData.flatMap((player, pIdx) => 
+    player.values.map((val, i) => {
+      const angle = angleSlice * i - Math.PI / 2;
+      const r = (val / 100) * maxRadius;
+      return (
+        <Circle
+          key={`point-${pIdx}-${i}`}
+          cx={cx + r * Math.cos(angle)}
+          cy={cy + r * Math.sin(angle)}
+          r={3}
+          fill={player.color}
+          stroke={PDF_COLORS.white}
+          strokeWidth={1}
+        />
+      );
+    })
+  );
+
+  // Labels
+  const labelPositions = RADAR_LABELS.map((label, i) => {
+    const angle = angleSlice * i - Math.PI / 2;
+    const labelRadius = maxRadius + 18;
+    const x = cx + labelRadius * Math.cos(angle);
+    const y = cy + labelRadius * Math.sin(angle);
+    return { x, y, label };
+  });
+
+  return (
+    <View style={{ position: "relative", width: size, height: size }}>
+      <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <G>
+          {gridPolygons}
+          {axisLines}
+          {dataPolygons}
+          {dataPoints}
+        </G>
+      </Svg>
+      {/* Labels positioned around the chart */}
+      {labelPositions.map((pos, i) => {
+        const isLeft = pos.x < cx - 10;
+        const isRight = pos.x > cx + 10;
+        
+        return (
+          <View
+            key={`label-${i}`}
+            style={{
+              position: "absolute",
+              left: isLeft ? pos.x - 22 : isRight ? pos.x - 8 : pos.x - 15,
+              top: pos.y - 5,
+              width: 30,
+              alignItems: isLeft ? "flex-end" : isRight ? "flex-start" : "center",
+            }}
+          >
+            <Text style={{ fontSize: 7, fontWeight: 700, color: PDF_COLORS.gray600 }}>
+              {pos.label}
+            </Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
 
 const getPositionColorHex = (position: string | null): string => {
   if (!position) return PDF_COLORS.gray500;
@@ -299,6 +480,37 @@ export function ComparePdfVector({
     if (validValues.length <= 1) return true;
     return validValues.every(v => v === validValues[0]);
   };
+
+  // Calculate radar data for each player
+  const playersRadarData = players.map((player, idx) => {
+    let values = [50, 50, 50, 50, 50]; // Default values
+    
+    if (player.statsRows && player.statsRows.length > 0) {
+      const result = computeRadarAttributes(player.statsRows, player.position, {
+        logOnce: false,
+      });
+      if (result.confidence !== "none") {
+        values = [
+          result.ata ?? 50,
+          result.tec ?? 50,
+          result.tat ?? 50,
+          result.def ?? 50,
+          result.cri ?? 50,
+        ];
+      }
+    }
+    
+    return {
+      name: player.full_name,
+      values,
+      color: RADAR_COLORS[idx % RADAR_COLORS.length].stroke,
+    };
+  });
+
+  // Check if we have valid radar data (at least one player with non-default values)
+  const hasRadarData = playersRadarData.some(p => 
+    p.values.some((v, i) => v !== 50 || i === 0)
+  );
 
   // Stat row component
   const StatRow = ({
@@ -416,6 +628,27 @@ export function ComparePdfVector({
             );
           })}
         </View>
+
+        {/* Radar Chart Comparison */}
+        {hasRadarData && (
+          <View style={styles.radarSection}>
+            <View style={styles.sectionHeader}>
+              <View style={[styles.sectionAccent, { backgroundColor: "#8b5cf6" }]} />
+              <Text style={styles.sectionTitle}>Comparação de Atributos</Text>
+            </View>
+            <View style={styles.radarGrid}>
+              <CompareRadarSvg playersData={playersRadarData} size={200} />
+            </View>
+            <View style={styles.radarLegend}>
+              {playersRadarData.map((player, idx) => (
+                <View key={idx} style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: player.color }]} />
+                  <Text style={styles.legendText}>{player.name}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
 
         {/* Stats Table - Visão Geral */}
         <View style={styles.sectionHeader}>
