@@ -1351,6 +1351,7 @@ export type Database = {
           created_at: string
           full_name: string | null
           id: string
+          last_login_at: string | null
           updated_at: string
           user_id: string
         }
@@ -1359,6 +1360,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          last_login_at?: string | null
           updated_at?: string
           user_id: string
         }
@@ -1367,6 +1369,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          last_login_at?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -1553,23 +1556,137 @@ export type Database = {
         }
         Relationships: []
       }
+      user_permissions: {
+        Row: {
+          app_view: boolean
+          compare_view: boolean
+          competitions_create: boolean
+          competitions_delete: boolean
+          competitions_edit: boolean
+          competitions_view: boolean
+          created_at: string
+          id: string
+          leads_create: boolean
+          leads_delete: boolean
+          leads_edit: boolean
+          leads_export: boolean
+          leads_view: boolean
+          live_match_log: boolean
+          live_match_view: boolean
+          news_create: boolean
+          news_delete: boolean
+          news_edit: boolean
+          news_publish: boolean
+          news_view: boolean
+          players_create: boolean
+          players_delete: boolean
+          players_edit: boolean
+          players_export: boolean
+          players_view: boolean
+          reports_create: boolean
+          reports_delete: boolean
+          reports_edit: boolean
+          reports_export: boolean
+          reports_view: boolean
+          updated_at: string
+          user_id: string
+          users_manage: boolean
+        }
+        Insert: {
+          app_view?: boolean
+          compare_view?: boolean
+          competitions_create?: boolean
+          competitions_delete?: boolean
+          competitions_edit?: boolean
+          competitions_view?: boolean
+          created_at?: string
+          id?: string
+          leads_create?: boolean
+          leads_delete?: boolean
+          leads_edit?: boolean
+          leads_export?: boolean
+          leads_view?: boolean
+          live_match_log?: boolean
+          live_match_view?: boolean
+          news_create?: boolean
+          news_delete?: boolean
+          news_edit?: boolean
+          news_publish?: boolean
+          news_view?: boolean
+          players_create?: boolean
+          players_delete?: boolean
+          players_edit?: boolean
+          players_export?: boolean
+          players_view?: boolean
+          reports_create?: boolean
+          reports_delete?: boolean
+          reports_edit?: boolean
+          reports_export?: boolean
+          reports_view?: boolean
+          updated_at?: string
+          user_id: string
+          users_manage?: boolean
+        }
+        Update: {
+          app_view?: boolean
+          compare_view?: boolean
+          competitions_create?: boolean
+          competitions_delete?: boolean
+          competitions_edit?: boolean
+          competitions_view?: boolean
+          created_at?: string
+          id?: string
+          leads_create?: boolean
+          leads_delete?: boolean
+          leads_edit?: boolean
+          leads_export?: boolean
+          leads_view?: boolean
+          live_match_log?: boolean
+          live_match_view?: boolean
+          news_create?: boolean
+          news_delete?: boolean
+          news_edit?: boolean
+          news_publish?: boolean
+          news_view?: boolean
+          players_create?: boolean
+          players_delete?: boolean
+          players_edit?: boolean
+          players_export?: boolean
+          players_view?: boolean
+          reports_create?: boolean
+          reports_delete?: boolean
+          reports_edit?: boolean
+          reports_export?: boolean
+          reports_view?: boolean
+          updated_at?: string
+          user_id?: string
+          users_manage?: boolean
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
           id: string
+          is_owner: boolean
           role: Database["public"]["Enums"]["app_role"]
+          status: string
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
+          is_owner?: boolean
           role?: Database["public"]["Enums"]["app_role"]
+          status?: string
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
+          is_owner?: boolean
           role?: Database["public"]["Enums"]["app_role"]
+          status?: string
           user_id?: string
         }
         Relationships: []
@@ -1600,6 +1717,7 @@ export type Database = {
         }
         Returns: Json
       }
+      can_delete: { Args: { _user_id: string }; Returns: boolean }
       create_live_event_v2: {
         Args: {
           p_force_time_seconds?: number
@@ -1671,6 +1789,14 @@ export type Database = {
         Args: { p_match_id: string }
         Returns: number
       }
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_permission: {
+        Args: { _action: string; _module: string; _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1680,6 +1806,7 @@ export type Database = {
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_internal_user: { Args: { _user_id: string }; Returns: boolean }
+      is_owner: { Args: { _user_id: string }; Returns: boolean }
       pause_live_game: { Args: { p_game_id: string }; Returns: Json }
       player_enter_field: {
         Args: { p_match_id: string; p_match_player_id: string; p_role?: string }
@@ -1779,7 +1906,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "scout" | "member" | "partner"
+      app_role: "admin" | "scout" | "member" | "partner" | "editor" | "viewer"
       competition_type: "league" | "cup" | "state_league" | "continental"
       match_event_type:
         | "goal"
@@ -1948,7 +2075,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "scout", "member", "partner"],
+      app_role: ["admin", "scout", "member", "partner", "editor", "viewer"],
       competition_type: ["league", "cup", "state_league", "continental"],
       match_event_type: [
         "goal",
