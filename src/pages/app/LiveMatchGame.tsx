@@ -470,6 +470,7 @@ export default function LiveMatchGame() {
                   await editEventTime.mutateAsync({ eventId: id, gameTimeSeconds: seconds });
                 }}
                 matchStatus={match.status}
+                isReviewMode={isReviewMode}
               />
             )}
           </div>
