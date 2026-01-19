@@ -208,8 +208,7 @@ export function MobilePlayerCard({
           "relative rounded-[18px] overflow-hidden transition-all duration-300",
           "bg-zinc-900/80 backdrop-blur-sm",
           "border border-white/5",
-          !matchPlayer.is_on_field && !isDraft && "opacity-60",
-          disabled && "pointer-events-none"
+          !matchPlayer.is_on_field && !isDraft && "opacity-60"
         )}
       >
         {/* Event flash animation */}
