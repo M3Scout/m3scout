@@ -16,6 +16,9 @@ import {
   Polygon,
   Rect,
   G,
+  Defs,
+  LinearGradient,
+  Stop,
   StyleSheet,
 } from "@react-pdf/renderer";
 import { format } from "date-fns";
@@ -32,6 +35,12 @@ function getScoreColor(score: number): string {
   return PDF_COLORS.red;
 }
 
+// Truncate text helper
+function truncateText(text: string, maxLength: number): string {
+  if (!text || text.length <= maxLength) return text;
+  return text.substring(0, maxLength - 1) + "…";
+}
+
 // Styles
 const styles = StyleSheet.create({
   page: {
@@ -45,7 +54,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-start",
     paddingBottom: 16,
     marginBottom: 20,
     borderBottom: `3px solid ${PDF_COLORS.brandRed}`,
@@ -54,15 +63,23 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+    flex: 1,
+    maxWidth: "60%",
   },
   logo: {
-    width: 60,
-    height: 36,
+    width: 50,
+    height: "auto",
+    objectFit: "contain",
+  },
+  headerTitleBlock: {
+    flex: 1,
+    flexShrink: 1,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: 800,
     color: PDF_COLORS.gray900,
+    flexWrap: "wrap",
   },
   headerSubtitle: {
     fontSize: 9,
@@ -70,18 +87,21 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   headerRight: {
-    backgroundColor: PDF_COLORS.gray100,
-    padding: 12,
-    borderRadius: 8,
+    backgroundColor: PDF_COLORS.gray900,
+    padding: 10,
+    borderRadius: 6,
+    width: 160,
+    flexShrink: 0,
   },
   headerMeta: {
-    fontSize: 9,
-    color: PDF_COLORS.gray600,
-    marginBottom: 2,
+    fontSize: 8,
+    color: PDF_COLORS.gray400,
+    marginBottom: 4,
+    lineHeight: 1.3,
   },
   headerMetaValue: {
-    fontWeight: 600,
-    color: PDF_COLORS.gray900,
+    fontWeight: 700,
+    color: PDF_COLORS.white,
   },
   // Player Card
   playerCard: {
@@ -229,31 +249,45 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: 800,
   },
-  // Category Details
+  // Category Details with Icons
   categoryItem: {
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: PDF_COLORS.gray100,
     borderRadius: 8,
     padding: 12,
     marginBottom: 8,
   },
-  categoryHeader: {
+  categoryIconContainer: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+  },
+  categoryContent: {
+    flex: 1,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 4,
+  },
+  categoryNameBlock: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   categoryName: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: 700,
     color: PDF_COLORS.gray900,
   },
   categoryWeight: {
-    fontSize: 7,
+    fontSize: 8,
     color: PDF_COLORS.gray500,
     marginLeft: 6,
   },
   categoryScore: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: 800,
   },
   categoryNotes: {
@@ -261,6 +295,49 @@ const styles = StyleSheet.create({
     color: PDF_COLORS.gray600,
     lineHeight: 1.4,
     marginTop: 4,
+    marginLeft: 38,
+  },
+  // Bar Chart Section
+  barChartCard: {
+    backgroundColor: PDF_COLORS.gray900,
+    borderRadius: 10,
+    padding: 16,
+    marginBottom: 16,
+  },
+  barChartTitle: {
+    fontSize: 12,
+    fontWeight: 800,
+    color: PDF_COLORS.white,
+    marginBottom: 14,
+  },
+  barRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  barLabel: {
+    width: 60,
+    fontSize: 9,
+    fontWeight: 600,
+    color: PDF_COLORS.gray300,
+  },
+  barTrack: {
+    flex: 1,
+    height: 16,
+    backgroundColor: PDF_COLORS.gray700,
+    borderRadius: 4,
+    marginHorizontal: 8,
+    overflow: "hidden",
+  },
+  barFill: {
+    height: 16,
+    borderRadius: 4,
+  },
+  barValue: {
+    width: 30,
+    fontSize: 11,
+    fontWeight: 800,
+    textAlign: "right",
   },
   // Summary
   summaryTitle: {
@@ -292,20 +369,78 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   footerLogo: {
-    width: 32,
-    height: 20,
+    width: 28,
+    height: "auto",
   },
   footerText: {
     fontSize: 8,
     color: PDF_COLORS.gray500,
   },
+  // Page header for continuation pages
+  pageHeader: {
+    marginBottom: 16,
+  },
+  pageHeaderTitle: {
+    fontSize: 14,
+    fontWeight: 800,
+    color: PDF_COLORS.gray900,
+  },
+  pageHeaderSubtitle: {
+    fontSize: 9,
+    color: PDF_COLORS.gray500,
+    marginTop: 2,
+  },
 });
 
+// Category Icon SVG Component
+function CategoryIcon({ color, iconType }: { color: string; iconType: string }) {
+  const iconSize = 14;
+  
+  // Simple icon paths for each category
+  const icons: Record<string, React.ReactNode> = {
+    technical: (
+      // Football/soccer ball icon
+      <Circle cx={7} cy={7} r={6} fill="none" stroke={color} strokeWidth={1.5} />
+    ),
+    tactical: (
+      // Crosshair/target icon
+      <G>
+        <Circle cx={7} cy={7} r={5} fill="none" stroke={color} strokeWidth={1.5} />
+        <Line x1={7} y1={2} x2={7} y2={5} stroke={color} strokeWidth={1.5} />
+        <Line x1={7} y1={9} x2={7} y2={12} stroke={color} strokeWidth={1.5} />
+        <Line x1={2} y1={7} x2={5} y2={7} stroke={color} strokeWidth={1.5} />
+        <Line x1={9} y1={7} x2={12} y2={7} stroke={color} strokeWidth={1.5} />
+      </G>
+    ),
+    physical: (
+      // Lightning bolt icon
+      <Path d="M8 2 L4 8 L7 8 L6 12 L10 6 L7 6 L8 2 Z" fill={color} />
+    ),
+    mental: (
+      // Brain/head icon - simplified
+      <G>
+        <Circle cx={7} cy={7} r={5} fill="none" stroke={color} strokeWidth={1.5} />
+        <Path d="M5 7 Q7 4 9 7 Q7 10 5 7" fill="none" stroke={color} strokeWidth={1} />
+      </G>
+    ),
+    impact: (
+      // Star icon
+      <Path d="M7 2 L8.5 5.5 L12 6 L9.5 8.5 L10 12 L7 10.5 L4 12 L4.5 8.5 L2 6 L5.5 5.5 Z" fill={color} />
+    ),
+  };
+
+  return (
+    <Svg width={iconSize} height={iconSize} viewBox="0 0 14 14">
+      {icons[iconType] || icons.technical}
+    </Svg>
+  );
+}
+
 // Native SVG Radar Chart for react-pdf with labels
-function RadarChartSvg({ data, size = 200 }: { data: { label: string; score: number; color: string }[]; size?: number }) {
+function RadarChartSvg({ data, size = 180 }: { data: { label: string; score: number; color: string }[]; size?: number }) {
   const cx = size / 2;
   const cy = size / 2;
-  const maxRadius = size / 2 - 45; // More space for labels
+  const maxRadius = size / 2 - 40;
   const levels = 5;
   const angleSlice = (Math.PI * 2) / data.length;
 
@@ -354,7 +489,7 @@ function RadarChartSvg({ data, size = 200 }: { data: { label: string; score: num
   // Calculate label positions
   const labelPositions = data.map((d, i) => {
     const angle = angleSlice * i - Math.PI / 2;
-    const labelRadius = maxRadius + 25;
+    const labelRadius = maxRadius + 22;
     const x = cx + labelRadius * Math.cos(angle);
     const y = cy + labelRadius * Math.sin(angle);
     return { x, y, label: d.label, score: d.score, color: d.color, angle };
@@ -393,7 +528,6 @@ function RadarChartSvg({ data, size = 200 }: { data: { label: string; score: num
       </Svg>
       {/* Labels positioned around the chart */}
       {labelPositions.map((pos, i) => {
-        // Calculate text alignment based on position
         const isLeft = pos.x < cx - 10;
         const isRight = pos.x > cx + 10;
         const isTop = pos.y < cy - 10;
@@ -403,62 +537,22 @@ function RadarChartSvg({ data, size = 200 }: { data: { label: string; score: num
             key={`label-${i}`}
             style={{
               position: "absolute",
-              left: isLeft ? pos.x - 40 : isRight ? pos.x - 10 : pos.x - 25,
-              top: isTop ? pos.y - 8 : pos.y - 4,
-              width: 50,
+              left: isLeft ? pos.x - 35 : isRight ? pos.x - 10 : pos.x - 22,
+              top: isTop ? pos.y - 6 : pos.y - 4,
+              width: 45,
               alignItems: isLeft ? "flex-end" : isRight ? "flex-start" : "center",
             }}
           >
-            <Text style={{ fontSize: 7, fontWeight: 700, color: pos.color }}>
+            <Text style={{ fontSize: 6, fontWeight: 700, color: pos.color }}>
               {pos.label}
             </Text>
-            <Text style={{ fontSize: 9, fontWeight: 800, color: PDF_COLORS.gray900 }}>
+            <Text style={{ fontSize: 8, fontWeight: 800, color: PDF_COLORS.gray900 }}>
               {pos.score}
             </Text>
           </View>
         );
       })}
     </View>
-  );
-}
-
-// Native SVG Bar Chart for react-pdf
-function BarChartSvg({ data, width = 200, height = 120 }: { 
-  data: { name: string; score: number; color: string }[]; 
-  width?: number; 
-  height?: number;
-}) {
-  const barHeight = 18;
-  const gap = 6;
-  const labelWidth = 55;
-  const maxBarWidth = width - labelWidth - 30;
-
-  return (
-    <Svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
-      {data.map((d, i) => {
-        const y = i * (barHeight + gap) + 5;
-        const barWidth = (d.score / 100) * maxBarWidth;
-        return (
-          <G key={i}>
-            <Rect
-              x={labelWidth}
-              y={y}
-              width={barWidth}
-              height={barHeight}
-              fill={d.color}
-              rx={3}
-            />
-            <Rect
-              x={labelWidth + barWidth + 4}
-              y={y + 2}
-              width={20}
-              height={barHeight - 4}
-              fill="none"
-            />
-          </G>
-        );
-      })}
-    </Svg>
   );
 }
 
@@ -493,6 +587,7 @@ export function ScoutingReportVectorPdf({ report, logoUrl }: ScoutingReportVecto
   }));
 
   const barData = SCOUTING_CATEGORY_CONFIG.map((cat) => ({
+    key: cat.key,
     name: cat.label,
     score: report[`${cat.key}_score` as keyof ScoutingReportData] as number,
     color: cat.color,
@@ -516,27 +611,35 @@ export function ScoutingReportVectorPdf({ report, logoUrl }: ScoutingReportVecto
 
   return (
     <Document>
+      {/* ========== PAGE 1: Header + Player + Charts ========== */}
       <Page size="A4" style={styles.page}>
-        {/* Header */}
+        {/* Header - Fixed layout */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             {logoUrl && <Image src={logoUrl} style={styles.logo} />}
-            <View>
+            <View style={styles.headerTitleBlock}>
               <Text style={styles.headerTitle}>Relatório de Scouting</Text>
               <Text style={styles.headerSubtitle}>Análise de Desempenho Profissional</Text>
             </View>
           </View>
           <View style={styles.headerRight}>
             <Text style={styles.headerMeta}>
-              Data: <Text style={styles.headerMetaValue}>
-                {format(new Date(report.match_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+              Data:{" "}
+              <Text style={styles.headerMetaValue}>
+                {format(new Date(report.match_date), "dd/MM/yyyy", { locale: ptBR })}
               </Text>
             </Text>
             <Text style={styles.headerMeta}>
-              Competição: <Text style={styles.headerMetaValue}>{competitionLabel}</Text>
+              Competição:{" "}
+              <Text style={styles.headerMetaValue}>
+                {truncateText(competitionLabel, 28)}
+              </Text>
             </Text>
-            <Text style={styles.headerMeta}>
-              Scout: <Text style={styles.headerMetaValue}>{report.profiles?.full_name || "Scout"}</Text>
+            <Text style={[styles.headerMeta, { marginBottom: 0 }]}>
+              Scout:{" "}
+              <Text style={styles.headerMetaValue}>
+                {truncateText(report.profiles?.full_name || "Scout", 24)}
+              </Text>
             </Text>
           </View>
         </View>
@@ -584,13 +687,13 @@ export function ScoutingReportVectorPdf({ report, logoUrl }: ScoutingReportVecto
           </View>
         </View>
 
-        {/* Charts Grid */}
+        {/* Charts Grid: Radar + Breakdown */}
         <View style={styles.grid}>
           {/* Radar Chart */}
           <View style={[styles.card, styles.gridHalf]}>
             <Text style={styles.cardTitle}>Perfil de Desempenho</Text>
-            <View style={{ alignItems: "center", paddingVertical: 8 }}>
-              <RadarChartSvg data={radarData} size={200} />
+            <View style={{ alignItems: "center", paddingVertical: 4 }}>
+              <RadarChartSvg data={radarData} size={180} />
             </View>
           </View>
 
@@ -641,8 +744,51 @@ export function ScoutingReportVectorPdf({ report, logoUrl }: ScoutingReportVecto
           </View>
         </View>
 
-        {/* Category Details */}
-        <View style={styles.card}>
+        {/* Bar Chart - Dark theme (Premium look) */}
+        <View style={styles.barChartCard}>
+          <Text style={styles.barChartTitle}>Scores por Categoria</Text>
+          {barData.map((item) => (
+            <View key={item.key} style={styles.barRow}>
+              <Text style={styles.barLabel}>{item.name}</Text>
+              <View style={styles.barTrack}>
+                <View
+                  style={[
+                    styles.barFill,
+                    {
+                      width: `${item.score}%`,
+                      backgroundColor: item.color,
+                    },
+                  ]}
+                />
+              </View>
+              <Text style={[styles.barValue, { color: item.color }]}>{item.score}</Text>
+            </View>
+          ))}
+        </View>
+
+        {/* Footer */}
+        <View style={styles.footer} fixed>
+          <View style={styles.footerLeft}>
+            {logoUrl && <Image src={logoUrl} style={styles.footerLogo} />}
+            <Text style={styles.footerText}>M3 Scouting © {new Date().getFullYear()}</Text>
+          </View>
+          <Text style={styles.footerText}>
+            Relatório gerado em {format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+          </Text>
+        </View>
+      </Page>
+
+      {/* ========== PAGE 2: Category Details with Icons ========== */}
+      <Page size="A4" style={styles.page}>
+        <View style={styles.pageHeader}>
+          <Text style={styles.pageHeaderTitle}>Detalhamento por Categoria</Text>
+          <Text style={styles.pageHeaderSubtitle}>
+            {report.players?.full_name} • {format(new Date(report.match_date), "dd/MM/yyyy", { locale: ptBR })}
+          </Text>
+        </View>
+
+        {/* Category Details - Full block, won't break */}
+        <View style={styles.card} wrap={false}>
           <Text style={styles.cardTitle}>Scores por Categoria</Text>
           {SCOUTING_CATEGORY_CONFIG.map((cat) => {
             const score = report[`${cat.key}_score` as keyof ScoutingReportData] as number;
@@ -650,15 +796,20 @@ export function ScoutingReportVectorPdf({ report, logoUrl }: ScoutingReportVecto
             const weight = CATEGORY_WEIGHTS[cat.key as keyof typeof CATEGORY_WEIGHTS] * 100;
 
             return (
-              <View key={cat.key} style={styles.categoryItem}>
-                <View style={styles.categoryHeader}>
-                  <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    <Text style={styles.categoryName}>{cat.label}</Text>
-                    <Text style={styles.categoryWeight}>(Peso: {weight}%)</Text>
+              <View key={cat.key} wrap={false}>
+                <View style={styles.categoryItem}>
+                  <View style={[styles.categoryIconContainer, { backgroundColor: cat.color + "20" }]}>
+                    <CategoryIcon color={cat.color} iconType={cat.key} />
                   </View>
-                  <Text style={[styles.categoryScore, { color: getScoreColor(score) }]}>
-                    {score}
-                  </Text>
+                  <View style={styles.categoryContent}>
+                    <View style={styles.categoryNameBlock}>
+                      <Text style={styles.categoryName}>{cat.label}</Text>
+                      <Text style={styles.categoryWeight}>(Peso: {weight}%)</Text>
+                    </View>
+                    <Text style={[styles.categoryScore, { color: getScoreColor(score) }]}>
+                      {score}
+                    </Text>
+                  </View>
                 </View>
                 {notes && (
                   <Text style={styles.categoryNotes}>{notes}</Text>
@@ -680,23 +831,30 @@ export function ScoutingReportVectorPdf({ report, logoUrl }: ScoutingReportVecto
         </View>
       </Page>
 
-      {/* Page 2: Summary & Recommendation */}
+      {/* ========== PAGE 3: Summary & Recommendation ========== */}
       {(report.summary || report.recommendation || report.match_notes) && (
         <Page size="A4" style={styles.page}>
+          <View style={styles.pageHeader}>
+            <Text style={styles.pageHeaderTitle}>Resumo e Recomendações</Text>
+            <Text style={styles.pageHeaderSubtitle}>
+              {report.players?.full_name} • {format(new Date(report.match_date), "dd/MM/yyyy", { locale: ptBR })}
+            </Text>
+          </View>
+
           {report.summary && (
-            <View style={styles.card}>
+            <View style={styles.card} wrap={false}>
               <Text style={styles.summaryTitle}>Resumo</Text>
               <Text style={styles.summaryText}>{report.summary}</Text>
             </View>
           )}
           {report.recommendation && (
-            <View style={styles.card}>
+            <View style={styles.card} wrap={false}>
               <Text style={styles.summaryTitle}>Recomendação</Text>
               <Text style={styles.summaryText}>{report.recommendation}</Text>
             </View>
           )}
           {report.match_notes && (
-            <View style={styles.card}>
+            <View style={styles.card} wrap={false}>
               <Text style={styles.summaryTitle}>Observações da Partida</Text>
               <Text style={styles.summaryText}>{report.match_notes}</Text>
             </View>
