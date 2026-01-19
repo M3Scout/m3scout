@@ -110,7 +110,6 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: PDF_COLORS.gray400,
     marginTop: 2,
-    fontStyle: "italic",
   },
   // Stats Grid
   statsGrid: {
@@ -266,10 +265,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   eventMore: {
-    fontSize: 9,
-    color: PDF_COLORS.gray400,
+    fontSize: 8,
+    color: PDF_COLORS.gray300,
     marginTop: 6,
-    fontStyle: "italic",
   },
   // Players Grid
   playersGrid: {
@@ -310,8 +308,7 @@ const styles = StyleSheet.create({
   },
   noStats: {
     fontSize: 8,
-    color: PDF_COLORS.gray400,
-    fontStyle: "italic",
+    color: PDF_COLORS.gray300,
   },
   // Footer
   footer: {
