@@ -262,8 +262,17 @@ export function LiveStatsPanel({ events, className, currentHalf }: LiveStatsPane
     const interceptions = getValue("interception");
     const recoveries = getValue("recovery");
     const clearances = getValue("clearance");
-    const duelsWon = getValue("duel_won");
-    const aerialDuels = getValue("aerial_duel_won");
+    
+    // Duels - separated by type
+    const groundDuelsWon = getValue("ground_duel_won");
+    const groundDuelsLost = getValue("ground_duel_total");
+    const aerialDuelsWon = getValue("aerial_duel_won");
+    const aerialDuelsLost = getValue("aerial_duel_total");
+    
+    // Calculated totals
+    const groundDuelsTotal = groundDuelsWon + groundDuelsLost;
+    const aerialDuelsTotal = aerialDuelsWon + aerialDuelsLost;
+    const duelsWonTotal = groundDuelsWon + aerialDuelsWon;
     
     // Creativity
     const chancesCreated = getValue("chance_created");
@@ -289,8 +298,13 @@ export function LiveStatsPanel({ events, className, currentHalf }: LiveStatsPane
       interceptions,
       recoveries,
       clearances,
-      duelsWon,
-      aerialDuels,
+      groundDuelsWon,
+      groundDuelsLost,
+      groundDuelsTotal,
+      aerialDuelsWon,
+      aerialDuelsLost,
+      aerialDuelsTotal,
+      duelsWonTotal,
       chancesCreated,
       keyPasses,
       dribblesSuccess,
@@ -324,8 +338,9 @@ export function LiveStatsPanel({ events, className, currentHalf }: LiveStatsPane
     { key: "interceptions", label: "Interc.", value: stats.interceptions, icon: <ShieldCheck className="w-3 h-3" />, category: "defense" as const },
     { key: "recoveries", label: "Recup.", value: stats.recoveries, icon: <RotateCcw className="w-3 h-3" />, category: "defense" as const },
     { key: "clearances", label: "Cortes", value: stats.clearances, icon: <Ban className="w-3 h-3" />, category: "defense" as const },
-    { key: "duels", label: "Duelos", value: stats.duelsWon, icon: <Users className="w-3 h-3" />, category: "defense" as const },
-  ].filter(s => s.value > 0);
+    { key: "groundDuels", label: "D.Chão", value: stats.groundDuelsWon, icon: <Users className="w-3 h-3" />, category: "defense" as const, suffix: `/${stats.groundDuelsTotal}` },
+    { key: "aerialDuels", label: "D.Aéreo", value: stats.aerialDuelsWon, icon: <Users className="w-3 h-3" />, category: "defense" as const, suffix: `/${stats.aerialDuelsTotal}` },
+  ].filter(s => s.value > 0 || (s.key === "groundDuels" && stats.groundDuelsTotal > 0) || (s.key === "aerialDuels" && stats.aerialDuelsTotal > 0));
 
   const disciplineStats: StatItem[] = [
     { key: "yellow", label: "Amarelos", value: stats.yellowCards, icon: <Square className="w-3 h-3 fill-yellow-400" />, category: "discipline" as const },

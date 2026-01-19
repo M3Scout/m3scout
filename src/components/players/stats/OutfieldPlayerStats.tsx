@@ -190,6 +190,10 @@ export function OutfieldPlayerStats({ stats }: OutfieldPlayerStatsProps) {
             : 0}
         />
         <StatCard 
+          label="Duelos Ganhos" 
+          value={safe(stats.ground_duels_won) + safe(stats.aerial_duels_won)} 
+        />
+        <StatCard 
           label="Duelos Totais" 
           value={safe(stats.ground_duels_total) + safe(stats.aerial_duels_total)} 
         />
