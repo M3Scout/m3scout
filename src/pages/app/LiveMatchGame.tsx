@@ -13,13 +13,14 @@ import { EventTimeline } from "@/components/live-match/EventTimeline";
 import { PendingEventsBadge } from "@/components/live-match/PendingEventsBadge";
 import { SubstitutionModal } from "@/components/live-match/SubstitutionModal";
 import { EventEffects, useEventEffects } from "@/components/live-match/EventEffects";
+import { AddManualEventModal } from "@/components/live-match/AddManualEventModal";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
   UserPlus, Users, ArrowRightLeft, Filter, 
-  LayoutGrid, LayoutList, Zap
+  LayoutGrid, LayoutList, Zap, Edit3, Save, X, PlusCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -54,9 +55,11 @@ export default function LiveMatchGame() {
   const isMobile = useIsMobile();
   const [addPlayerOpen, setAddPlayerOpen] = useState(false);
   const [substitutionOpen, setSubstitutionOpen] = useState(false);
+  const [manualEventOpen, setManualEventOpen] = useState(false);
   const [currentMinute, setCurrentMinute] = useState(0);
   const [currentTimerInfo, setCurrentTimerInfo] = useState<TimerInfo | null>(null);
   const [showOnlyOnField, setShowOnlyOnField] = useState(false);
+  const [isReviewMode, setIsReviewMode] = useState(false);
   const { lastEvent, triggerEvent, effectsEnabled } = useEventEffects();
   const {
     match,

@@ -1718,17 +1718,30 @@ export type Database = {
         Returns: Json
       }
       can_delete: { Args: { _user_id: string }; Returns: boolean }
-      create_live_event_v2: {
-        Args: {
-          p_force_time_seconds?: number
-          p_game_id: string
-          p_half?: number
-          p_notes?: string
-          p_player_id: string
-          p_type: string
-        }
-        Returns: Json
-      }
+      create_live_event_v2:
+        | {
+            Args: {
+              p_display_minute?: string
+              p_force_time_seconds?: number
+              p_game_id: string
+              p_half?: number
+              p_notes?: string
+              p_player_id: string
+              p_type: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_force_time_seconds?: number
+              p_game_id: string
+              p_half?: number
+              p_notes?: string
+              p_player_id: string
+              p_type: string
+            }
+            Returns: Json
+          }
       delete_last_live_event: {
         Args: { p_event_type: string; p_game_id: string; p_player_id: string }
         Returns: Json
