@@ -445,6 +445,16 @@ export function EventTimeline({
           currentGameTimeSeconds={selectedEvent.game_time_seconds}
           maxGameTimeSeconds={maxGameTimeSeconds}
           onSave={handleEditTime}
+          debugEvent={{
+            id: selectedEvent.id,
+            event_type: selectedEvent.event_type,
+            half: selectedEvent.half,
+            period: selectedEvent.period,
+            minute: selectedEvent.minute,
+            game_time_seconds: selectedEvent.game_time_seconds,
+            display_minute: selectedEvent.display_minute,
+            created_at: selectedEvent.created_at,
+          }}
         />
       )}
 
