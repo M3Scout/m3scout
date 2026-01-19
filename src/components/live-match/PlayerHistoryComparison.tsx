@@ -15,6 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { BarChart3, TrendingUp, TrendingDown, Minus, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { calculateMinutesPlayed } from "@/lib/minutesPlayed";
 
 interface PlayerHistoryComparisonProps {
   playerId: string;
@@ -121,17 +122,14 @@ export function PlayerHistoryComparison({
         const match = mp.matches as any;
         const comp = match?.competition;
         
-        // Calculate minutes played
-        let minutes = mp.minutes_played;
-        if (minutes === null) {
-          if (mp.started) {
-            minutes = mp.exited_minute ?? match?.duration_minutes ?? 90;
-          } else if (mp.entered_minute !== null) {
-            minutes = (mp.exited_minute ?? match?.duration_minutes ?? 90) - mp.entered_minute;
-          } else {
-            minutes = 0;
-          }
-        }
+        // Calculate minutes played using standardized logic (always 90' game)
+        const minutesInfo = calculateMinutesPlayed({
+          started: mp.started,
+          entered_minute: mp.entered_minute,
+          exited_minute: mp.exited_minute,
+          minutes_played: mp.minutes_played,
+        });
+        const minutes = minutesInfo.minutesPlayed;
 
         return {
           matchId: mp.match_id,

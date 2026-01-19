@@ -17,6 +17,7 @@ import { EventDistributionChart } from "@/components/live-match/EventDistributio
 import { PlayerActivityHeatmap } from "@/components/live-match/PlayerActivityHeatmap";
 import { PlayerPresenceHistory } from "@/components/live-match/PlayerPresenceHistory";
 import { MatchSummaryPdfButton } from "@/components/live-match/MatchSummaryPdfButton";
+import { calculateMinutesPlayed, STANDARD_MATCH_DURATION } from "@/lib/minutesPlayed";
 import {
   CheckCircle2,
   AlertTriangle,
@@ -300,41 +301,18 @@ export default function LiveMatchReview() {
     return issues;
   }, [match, matchPlayers, playerStatsMap, playerEventCounts]);
 
-  // Calculate minutes played for a player based on match data
-  const calculateMinutesPlayed = (
+  // Calculate minutes played using standardized logic (always 90' game)
+  const calculateMinutesPlayedForPlayer = (
     mp: typeof matchPlayers[0],
-    durationMinutes: number
+    _durationMinutes: number // Kept for signature compatibility but not used
   ): number => {
-    // If minutes_played is already set manually, use it
-    if (mp.minutes_played !== null) {
-      return mp.minutes_played;
-    }
-
-    const started = mp.started;
-    const enteredMinute = mp.entered_minute;
-    const exitedMinute = mp.exited_minute;
-
-    if (started) {
-      // Started the game
-      if (exitedMinute !== null) {
-        // Was substituted out
-        return Math.max(0, exitedMinute);
-      }
-      // Played full match
-      return durationMinutes;
-    } else {
-      // Did not start
-      if (enteredMinute !== null) {
-        if (exitedMinute !== null) {
-          // Came in and went out
-          return Math.max(0, exitedMinute - enteredMinute);
-        }
-        // Came in and stayed until the end
-        return Math.max(0, durationMinutes - enteredMinute);
-      }
-      // Never entered (shouldn't happen normally, but safeguard)
-      return 0;
-    }
+    const info = calculateMinutesPlayed({
+      started: mp.started,
+      entered_minute: mp.entered_minute,
+      exited_minute: mp.exited_minute,
+      minutes_played: mp.minutes_played,
+    });
+    return info.minutesPlayed;
   };
 
   // Apply stats mutation - now properly INCREMENTS existing stats
@@ -350,8 +328,8 @@ export default function LiveMatchReview() {
         // instead of counting raw events which misses derived stats
         const matchStats = playerStatsMap[mp.player_id];
         
-        // Use manual minutes if set, otherwise calculate automatically
-        const minutesPlayed = manualMinutes[mp.player_id] ?? calculateMinutesPlayed(mp, durationMinutes);
+        // Use manual minutes if set, otherwise calculate automatically using standardized logic
+        const minutesPlayed = manualMinutes[mp.player_id] ?? calculateMinutesPlayedForPlayer(mp, durationMinutes);
 
         // First, try to get existing stats
         const { data: existingStats } = await supabase
@@ -679,22 +657,22 @@ export default function LiveMatchReview() {
                 const isApplied = appliedPlayerIds.includes(mp.player_id);
                 const isEditing = editingPlayerId === mp.player_id;
                 
-                // Use manual minutes if set, otherwise calculate
+                // Use standardized minutes calculation
                 const hasManualOverride = manualMinutes[mp.player_id] !== undefined;
-                const calculatedMinutes = calculateMinutesPlayed(mp, match.duration_minutes);
-                const displayMinutes = manualMinutes[mp.player_id] ?? calculatedMinutes;
+                const minutesInfo = calculateMinutesPlayed({
+                  started: mp.started,
+                  entered_minute: mp.entered_minute,
+                  exited_minute: mp.exited_minute,
+                  minutes_played: mp.minutes_played,
+                });
+                const displayMinutes = manualMinutes[mp.player_id] ?? minutesInfo.minutesPlayed;
                 
                 // Determine how minutes were calculated for display
                 const getMinutesLabel = () => {
                   if (hasManualOverride) return "editado";
                   if (mp.minutes_played !== null) return "manual";
-                  if (mp.started && mp.exited_minute === null) return "titular completo";
-                  if (mp.started && mp.exited_minute !== null) return `saiu ${mp.exited_minute}'`;
-                  if (!mp.started && mp.entered_minute !== null) {
-                    if (mp.exited_minute !== null) return `${mp.entered_minute}'-${mp.exited_minute}'`;
-                    return `entrou ${mp.entered_minute}'`;
-                  }
-                  return "";
+                  // Show standardized range display
+                  return minutesInfo.rangeDisplay;
                 };
 
                 const handleStartEdit = () => {
