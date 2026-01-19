@@ -61,8 +61,8 @@ function PlayerCardSkeleton({ index }: { index: number }) {
   );
 }
 
-function LiveMatchGameContent() {
-  const { matchId } = useParams<{ matchId: string }>();
+// Inner content component that receives validated matchId
+function LiveMatchGameInner({ matchId }: { matchId: string }) {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [addPlayerOpen, setAddPlayerOpen] = useState(false);
@@ -110,7 +110,7 @@ function LiveMatchGameContent() {
     updateAddedTime,
     finishGame,
     regenerateSummary,
-  } = useLiveMatch(matchId || "");
+  } = useLiveMatch(matchId);
 
   const handleMinuteChange = useCallback((minute: number) => {
     setCurrentMinute(minute);
@@ -146,10 +146,6 @@ function LiveMatchGameContent() {
     }
     return filteredPlayers;
   }, [filteredPlayers, showOnlyOnField, match?.status]);
-
-  if (!matchId) {
-    return <Navigate to="/app/live-match/new" replace />;
-  }
 
   if (isLoading) {
     return (
@@ -671,6 +667,20 @@ function LiveMatchGameContent() {
       />
     </div>
   );
+}
+
+// Wrapper component that extracts matchId and handles missing ID case
+// This ensures hooks are called in consistent order regardless of matchId availability
+function LiveMatchGameContent() {
+  const { matchId } = useParams<{ matchId: string }>();
+  
+  // Guard: if no matchId, redirect (this happens before any other hooks in Inner)
+  if (!matchId) {
+    return <Navigate to="/app/live-match/new" replace />;
+  }
+  
+  // Render inner component with guaranteed matchId
+  return <LiveMatchGameInner matchId={matchId} />;
 }
 
 // Wrap with ErrorBoundary to catch render errors
