@@ -688,7 +688,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
                           <Shield className="w-4 h-4 text-blue-500" />
                           <span className="text-blue-600">DEFESA (DEF)</span>
                         </div>
-                        <p className="text-xs text-muted-foreground -mt-2">Desarmes, interceptações e duelos</p>
+                        <p className="text-xs text-muted-foreground -mt-2">Desarmes, interceptações e recuperações</p>
                         
                         <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
                           <StatInput 
@@ -710,29 +710,93 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
                             tooltip="Bolas recuperadas"
                           />
                           <StatInput 
-                            label="Duelos Ganhos" 
-                            value={stat.duels_won} 
-                            onChange={(v) => updateStatField(stat.id, "duels_won", v)}
-                            tooltip="Disputas vencidas (corpo a corpo)"
-                          />
-                          <StatInput 
-                            label="Duelos Totais" 
-                            value={stat.total_duels} 
-                            onChange={(v) => updateStatField(stat.id, "total_duels", v)}
-                            tooltip="Total de disputas"
-                          />
-                          <StatInput 
-                            label="Duelos Aéreos Ganhos" 
-                            value={stat.aerial_duels_won} 
-                            onChange={(v) => updateStatField(stat.id, "aerial_duels_won", v)}
-                            tooltip="Disputas aéreas vencidas"
-                          />
-                          <StatInput 
                             label="Cortes" 
                             value={stat.clearances} 
                             onChange={(v) => updateStatField(stat.id, "clearances", v)}
                             tooltip="Afastamentos de perigo"
                           />
+                        </div>
+                      </div>
+                      
+                      {/* === SEÇÃO: DUELOS NO CHÃO === */}
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 text-sm font-medium">
+                          <Target className="w-4 h-4 text-cyan-500" />
+                          <span className="text-cyan-600">DUELOS NO CHÃO</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground -mt-2">Disputas corpo a corpo no chão</p>
+                        
+                        <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
+                          <StatInput 
+                            label="Ganhos" 
+                            value={stat.ground_duels_won} 
+                            onChange={(v) => updateStatField(stat.id, "ground_duels_won", v)}
+                            tooltip="Duelos no chão vencidos"
+                          />
+                          <StatInput 
+                            label="Perdidos" 
+                            value={(() => {
+                              const won = normalizeStatValue(stat.ground_duels_won);
+                              const total = normalizeStatValue(stat.ground_duels_total);
+                              return total > 0 ? total - won : "";
+                            })()} 
+                            onChange={(v) => {
+                              const won = normalizeStatValue(stat.ground_duels_won);
+                              const lost = normalizeStatValue(v);
+                              updateStatField(stat.id, "ground_duels_total", won + lost);
+                            }}
+                            tooltip="Duelos no chão perdidos"
+                          />
+                          <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
+                            <span className="text-xs text-muted-foreground">Total:</span>
+                            <span className="font-medium">{normalizeStatValue(stat.ground_duels_total)}</span>
+                            <span className="text-xs text-muted-foreground">
+                              ({normalizeStatValue(stat.ground_duels_total) > 0 
+                                ? Math.round((normalizeStatValue(stat.ground_duels_won) / normalizeStatValue(stat.ground_duels_total)) * 100) 
+                                : 0}%)
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* === SEÇÃO: DUELOS AÉREOS === */}
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 text-sm font-medium">
+                          <Zap className="w-4 h-4 text-purple-500" />
+                          <span className="text-purple-600">DUELOS AÉREOS</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground -mt-2">Disputas de bola aérea</p>
+                        
+                        <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
+                          <StatInput 
+                            label="Ganhos" 
+                            value={stat.aerial_duels_won} 
+                            onChange={(v) => updateStatField(stat.id, "aerial_duels_won", v)}
+                            tooltip="Duelos aéreos vencidos"
+                          />
+                          <StatInput 
+                            label="Perdidos" 
+                            value={(() => {
+                              const won = normalizeStatValue(stat.aerial_duels_won);
+                              const total = normalizeStatValue(stat.aerial_duels_total);
+                              return total > 0 ? total - won : "";
+                            })()} 
+                            onChange={(v) => {
+                              const won = normalizeStatValue(stat.aerial_duels_won);
+                              const lost = normalizeStatValue(v);
+                              updateStatField(stat.id, "aerial_duels_total", won + lost);
+                            }}
+                            tooltip="Duelos aéreos perdidos"
+                          />
+                          <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
+                            <span className="text-xs text-muted-foreground">Total:</span>
+                            <span className="font-medium">{normalizeStatValue(stat.aerial_duels_total)}</span>
+                            <span className="text-xs text-muted-foreground">
+                              ({normalizeStatValue(stat.aerial_duels_total) > 0 
+                                ? Math.round((normalizeStatValue(stat.aerial_duels_won) / normalizeStatValue(stat.aerial_duels_total)) * 100) 
+                                : 0}%)
+                            </span>
+                          </div>
                         </div>
                       </div>
 
