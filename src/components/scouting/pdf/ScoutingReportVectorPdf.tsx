@@ -669,11 +669,10 @@ export function ScoutingReportVectorPdf({ report, logoUrl }: ScoutingReportVecto
                   {report.players?.current_club} • {report.players?.nationality}
                 </Text>
               </View>
-              {report.opponent && (
-                <Text style={styles.playerOpponent}>
-                  Partida contra: {report.opponent}
-                </Text>
-              )}
+              <Text style={styles.playerOpponent}>
+                Partida: {format(new Date(report.match_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                {report.opponent ? ` • vs ${report.opponent}` : ""}
+              </Text>
             </View>
           </View>
           <View style={styles.scoreBlock}>
