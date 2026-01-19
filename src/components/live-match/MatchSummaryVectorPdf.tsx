@@ -16,6 +16,13 @@ import {
   Text,
   Image,
   StyleSheet,
+  Svg,
+  Line as SvgLine,
+  Rect,
+  Circle,
+  G,
+  Path,
+  Polyline,
 } from "@react-pdf/renderer";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -728,6 +735,61 @@ export function MatchSummaryVectorPdf({
     };
   };
 
+  // Calculate chart data for distribution graph (events per minute + smoothed)
+  const getChartData = () => {
+    const validEvents = filteredEvents.filter(
+      (e) => e.event_status !== "voided" && e.count_in_stats !== false
+    );
+    
+    // Create array with all minutes (0 to matchDuration)
+    const data: Array<{ minute: number; total: number; smoothed: number; goals: number }> = [];
+    for (let i = 0; i <= matchDuration; i++) {
+      data.push({ minute: i, total: 0, smoothed: 0, goals: 0 });
+    }
+
+    // Count events per minute
+    validEvents.forEach((event) => {
+      let eventMinute: number | null = event.minute;
+      if (eventMinute === null && event.game_time_seconds !== null) {
+        eventMinute = Math.floor(event.game_time_seconds / 60);
+      }
+      if (eventMinute === null || eventMinute < 0 || eventMinute > matchDuration + 15) return;
+      
+      const idx = Math.min(Math.floor(eventMinute), data.length - 1);
+      if (idx >= 0 && idx < data.length) {
+        data[idx].total++;
+        if (event.event_type === "goal") data[idx].goals++;
+      }
+    });
+
+    // Apply 5-minute moving average for smoothed line
+    const smoothedData = data.map((point, idx) => {
+      const windowSize = 5;
+      const start = Math.max(0, idx - Math.floor(windowSize / 2));
+      const end = Math.min(data.length - 1, idx + Math.floor(windowSize / 2));
+      
+      let sum = 0;
+      let count = 0;
+      for (let i = start; i <= end; i++) {
+        sum += data[i].total;
+        count++;
+      }
+      
+      return {
+        ...point,
+        smoothed: count > 0 ? Number((sum / count).toFixed(2)) : 0,
+      };
+    });
+
+    // Find max for Y scaling
+    const maxEvents = Math.max(...smoothedData.map(d => Math.max(d.total, d.smoothed)), 1);
+    
+    // Get goal minutes for markers
+    const goalMinutes = smoothedData.filter(d => d.goals > 0).map(d => d.minute);
+
+    return { data: smoothedData, maxEvents, goalMinutes };
+  };
+
   // Calculate heatmap data
   const getHeatmapData = () => {
     const intervals = Math.ceil(matchDuration / HEATMAP_INTERVAL);
@@ -815,10 +877,48 @@ export function MatchSummaryVectorPdf({
 
   const halfStats = getHalfStats();
   const distributionStats = getDistributionStats();
+  const chartData = getChartData();
   const heatmapData = getHeatmapData();
   const eventsByHalf = getEventsByHalf();
   const competitionName = match.competition?.display_name || match.competition?.name || "Competição";
   const displayTeamName = match.team_name_display || teamName || "Time";
+  const halfTimeMinute = Math.floor(matchDuration / 2);
+
+  // Chart dimensions for SVG
+  const CHART_WIDTH = 500;
+  const CHART_HEIGHT = 100;
+  const CHART_PADDING = { top: 10, right: 10, bottom: 20, left: 25 };
+  const plotWidth = CHART_WIDTH - CHART_PADDING.left - CHART_PADDING.right;
+  const plotHeight = CHART_HEIGHT - CHART_PADDING.top - CHART_PADDING.bottom;
+
+  // Generate SVG path for smoothed line
+  const generateSmoothedPath = () => {
+    if (chartData.data.length === 0) return "";
+    const xScale = plotWidth / matchDuration;
+    const yScale = plotHeight / chartData.maxEvents;
+    
+    const points = chartData.data.map((d, i) => {
+      const x = CHART_PADDING.left + (d.minute * xScale);
+      const y = CHART_PADDING.top + plotHeight - (d.smoothed * yScale);
+      return `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
+    });
+    
+    return points.join(' ');
+  };
+
+  // Generate dots for raw events
+  const generateEventDots = () => {
+    const xScale = plotWidth / matchDuration;
+    const yScale = plotHeight / chartData.maxEvents;
+    
+    return chartData.data
+      .filter(d => d.total > 0)
+      .map(d => ({
+        cx: CHART_PADDING.left + (d.minute * xScale),
+        cy: CHART_PADDING.top + plotHeight - (d.total * yScale),
+        minute: d.minute,
+      }));
+  };
 
   // Generate time labels for heatmap
   const timeLabels: string[] = [];
@@ -932,6 +1032,138 @@ export function MatchSummaryVectorPdf({
               <Text style={styles.tableCell}>{halfStats.substitutions.first + halfStats.substitutions.second}</Text>
             </View>
           )}
+        </View>
+
+        {/* Distribution Chart Section */}
+        <View wrap={false}>
+          <Text style={styles.sectionTitle}>Distribuição de Eventos</Text>
+          <Text style={styles.sectionSubtitle}>Intensidade do jogo ao longo do tempo</Text>
+          
+          {/* Summary Badges Row */}
+          <View style={{ flexDirection: "row", gap: 8, marginBottom: 10 }}>
+            <View style={{ backgroundColor: PDF_COLORS.gray100, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 }}>
+              <Text style={{ fontSize: 8, color: PDF_COLORS.gray700 }}>1º Tempo: {distributionStats.firstHalf} eventos</Text>
+            </View>
+            <View style={{ backgroundColor: PDF_COLORS.gray100, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 }}>
+              <Text style={{ fontSize: 8, color: PDF_COLORS.gray700 }}>2º Tempo: {distributionStats.secondHalf} eventos</Text>
+            </View>
+            <View style={{ backgroundColor: "#FEF3C7", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 }}>
+              <Text style={{ fontSize: 8, color: "#92400E" }}>Pico: {distributionStats.peakMinute}' ({distributionStats.peakCount} eventos)</Text>
+            </View>
+          </View>
+
+          {/* SVG Chart */}
+          <View style={{ border: `1px solid ${PDF_COLORS.gray200}`, borderRadius: 6, padding: 8, backgroundColor: PDF_COLORS.white }}>
+            <Svg width={CHART_WIDTH} height={CHART_HEIGHT} viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}>
+              {/* Grid lines (horizontal) */}
+              {[0, 0.25, 0.5, 0.75, 1].map((ratio, idx) => (
+                <SvgLine
+                  key={`grid-h-${idx}`}
+                  x1={CHART_PADDING.left}
+                  y1={CHART_PADDING.top + plotHeight * (1 - ratio)}
+                  x2={CHART_WIDTH - CHART_PADDING.right}
+                  y2={CHART_PADDING.top + plotHeight * (1 - ratio)}
+                  stroke={PDF_COLORS.gray200}
+                  strokeWidth={0.5}
+                  strokeDasharray="2,2"
+                />
+              ))}
+
+              {/* Half-time vertical line */}
+              <SvgLine
+                x1={CHART_PADDING.left + (halfTimeMinute / matchDuration) * plotWidth}
+                y1={CHART_PADDING.top}
+                x2={CHART_PADDING.left + (halfTimeMinute / matchDuration) * plotWidth}
+                y2={CHART_PADDING.top + plotHeight}
+                stroke={PDF_COLORS.gray400}
+                strokeWidth={1}
+                strokeDasharray="4,3"
+              />
+
+              {/* Goal markers (green vertical lines) */}
+              {chartData.goalMinutes.map((min, idx) => (
+                <SvgLine
+                  key={`goal-${idx}`}
+                  x1={CHART_PADDING.left + (min / matchDuration) * plotWidth}
+                  y1={CHART_PADDING.top}
+                  x2={CHART_PADDING.left + (min / matchDuration) * plotWidth}
+                  y2={CHART_PADDING.top + plotHeight}
+                  stroke="#22c55e"
+                  strokeWidth={2}
+                  strokeOpacity={0.7}
+                />
+              ))}
+
+              {/* Smoothed line (main intensity curve) */}
+              <Path
+                d={generateSmoothedPath()}
+                stroke={PDF_COLORS.brandRed}
+                strokeWidth={2}
+                fill="none"
+              />
+
+              {/* Event dots */}
+              {generateEventDots().map((dot, idx) => (
+                <Circle
+                  key={`dot-${idx}`}
+                  cx={dot.cx}
+                  cy={dot.cy}
+                  r={2.5}
+                  fill={PDF_COLORS.gray400}
+                  fillOpacity={0.6}
+                />
+              ))}
+
+              {/* X-axis */}
+              <SvgLine
+                x1={CHART_PADDING.left}
+                y1={CHART_PADDING.top + plotHeight}
+                x2={CHART_WIDTH - CHART_PADDING.right}
+                y2={CHART_PADDING.top + plotHeight}
+                stroke={PDF_COLORS.gray300}
+                strokeWidth={1}
+              />
+
+              {/* X-axis labels */}
+              {[0, 15, 30, 45, 60, 75, 90].filter(m => m <= matchDuration).map((minute) => (
+                <G key={`xlabel-${minute}`}>
+                  <SvgLine
+                    x1={CHART_PADDING.left + (minute / matchDuration) * plotWidth}
+                    y1={CHART_PADDING.top + plotHeight}
+                    x2={CHART_PADDING.left + (minute / matchDuration) * plotWidth}
+                    y2={CHART_PADDING.top + plotHeight + 3}
+                    stroke={PDF_COLORS.gray400}
+                    strokeWidth={0.5}
+                  />
+                </G>
+              ))}
+            </Svg>
+
+            {/* X-axis text labels (outside SVG for better font rendering) */}
+            <View style={{ flexDirection: "row", justifyContent: "space-between", paddingLeft: CHART_PADDING.left - 5, paddingRight: CHART_PADDING.right }}>
+              {[0, 15, 30, 45, 60, 75, 90].filter(m => m <= matchDuration).map((minute) => (
+                <Text key={`xlbl-${minute}`} style={{ fontSize: 7, color: PDF_COLORS.gray400 }}>{minute}'</Text>
+              ))}
+            </View>
+
+            {/* Legend */}
+            <View style={{ flexDirection: "row", justifyContent: "center", gap: 16, marginTop: 6 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <View style={{ width: 12, height: 2, backgroundColor: PDF_COLORS.brandRed, borderRadius: 1 }} />
+                <Text style={{ fontSize: 7, color: PDF_COLORS.gray500 }}>Intensidade (média móvel)</Text>
+              </View>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <View style={{ width: 5, height: 5, backgroundColor: PDF_COLORS.gray400, borderRadius: 2.5 }} />
+                <Text style={{ fontSize: 7, color: PDF_COLORS.gray500 }}>Eventos por minuto</Text>
+              </View>
+              {chartData.goalMinutes.length > 0 && (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                  <View style={{ width: 2, height: 10, backgroundColor: "#22c55e", borderRadius: 1 }} />
+                  <Text style={{ fontSize: 7, color: PDF_COLORS.gray500 }}>Gols</Text>
+                </View>
+              )}
+            </View>
+          </View>
         </View>
 
         {/* Footer */}
