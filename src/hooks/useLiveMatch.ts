@@ -473,6 +473,7 @@ export function useLiveMatch(matchId: string) {
         description: message,
       });
     },
+  });
 
   // Delete event (undo)
   const deleteEvent = useMutation({
