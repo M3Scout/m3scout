@@ -123,6 +123,7 @@ interface InlineMoreStatsPanelProps {
   onAddEvent: (eventType: MatchEventType) => void;
   onVoidLastEvent?: (eventType: MatchEventType) => void;
   disabled?: boolean;
+  isReviewMode?: boolean;
 }
 
 export function InlineMoreStatsPanel({
@@ -135,13 +136,15 @@ export function InlineMoreStatsPanel({
   onAddEvent,
   onVoidLastEvent,
   disabled,
+  isReviewMode = false,
 }: InlineMoreStatsPanelProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isLive = matchStatus === "live";
   const isDraft = matchStatus === "draft";
   const isPaused = clockStatus === "paused";
-  const canAddEvents = (isLive && clockStatus === "running" && isOnField) || isDraft;
+  // Can add events if: (live + clock running + on field) OR draft OR review mode
+  const canAddEvents = (isLive && clockStatus === "running" && isOnField) || isDraft || isReviewMode;
 
   const stats = isGoalkeeper ? GOALKEEPER_STATS : OUTFIELD_STATS;
   
@@ -209,15 +212,18 @@ export function InlineMoreStatsPanel({
   const handleAddStat = useCallback((type: MatchEventType, label: string) => {
     if (isSubmitting || disabled) return;
 
-    if (isLive && !isOnField) {
-      triggerHaptic('error');
-      toast.error("Atleta fora de campo");
-      return;
-    }
-    if (isLive && isPaused) {
-      triggerHaptic('error');
-      toast.warning("Jogo pausado");
-      return;
+    // In review mode, skip field/clock validations
+    if (!isReviewMode) {
+      if (isLive && !isOnField) {
+        triggerHaptic('error');
+        toast.error("Atleta fora de campo");
+        return;
+      }
+      if (isLive && isPaused) {
+        triggerHaptic('error');
+        toast.warning("Jogo pausado");
+        return;
+      }
     }
 
     triggerHaptic('medium');
@@ -225,7 +231,7 @@ export function InlineMoreStatsPanel({
     onAddEvent(type);
     toast.success(`${label} +1`, { duration: 2000 });
     setTimeout(() => setIsSubmitting(false), 250);
-  }, [isSubmitting, disabled, isLive, isOnField, isPaused, onAddEvent, triggerHaptic]);
+  }, [isSubmitting, disabled, isLive, isOnField, isPaused, onAddEvent, triggerHaptic, isReviewMode]);
 
   const handleRemoveStat = useCallback((type: MatchEventType, label: string) => {
     if (isSubmitting || disabled) return;
@@ -426,7 +432,7 @@ export function InlineMoreStatsPanel({
                       <motion.button
                         whileTap={{ scale: 0.9 }}
                         onClick={() => handleAddStat(stat.type, stat.label)}
-                        disabled={disabled || isSubmitting || (!canAddEvents && !isDraft)}
+                        disabled={disabled || isSubmitting || !canAddEvents}
                         className={cn(
                           "flex-1 flex items-center justify-center",
                           "rounded-br-xl",
