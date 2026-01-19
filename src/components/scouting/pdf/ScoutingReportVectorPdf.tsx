@@ -299,7 +299,8 @@ const styles = StyleSheet.create({
   },
   // Bar Chart Section
   barChartCard: {
-    backgroundColor: PDF_COLORS.gray900,
+    backgroundColor: PDF_COLORS.white,
+    border: `1px solid ${PDF_COLORS.gray200}`,
     borderRadius: 10,
     padding: 16,
     marginBottom: 16,
@@ -307,7 +308,7 @@ const styles = StyleSheet.create({
   barChartTitle: {
     fontSize: 12,
     fontWeight: 800,
-    color: PDF_COLORS.white,
+    color: PDF_COLORS.gray900,
     marginBottom: 14,
   },
   barRow: {
@@ -319,12 +320,12 @@ const styles = StyleSheet.create({
     width: 60,
     fontSize: 9,
     fontWeight: 600,
-    color: PDF_COLORS.gray300,
+    color: PDF_COLORS.gray700,
   },
   barTrack: {
     flex: 1,
     height: 16,
-    backgroundColor: PDF_COLORS.gray700,
+    backgroundColor: PDF_COLORS.gray200,
     borderRadius: 4,
     marginHorizontal: 8,
     overflow: "hidden",
