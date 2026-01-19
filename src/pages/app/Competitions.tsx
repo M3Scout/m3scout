@@ -58,6 +58,7 @@ import { toast } from "sonner";
 import { CompetitionFilters } from "@/components/competitions/CompetitionFilters";
 import { CompetitionRowCard, CompetitionMobileCard } from "@/components/competitions/CompetitionRowCard";
 import { getTierFromCoefficient, getTierAdminBadgeClass, getTierThresholdsTooltip } from "@/lib/tierClassification";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 
 interface Competition {
   id: string;
@@ -540,16 +541,17 @@ const Competitions = () => {
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          {isAdmin && competitions.length > 0 && (
-            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-              <Button 
-                variant="outline" 
-                className="text-destructive border-destructive/30 hover:bg-destructive/10"
-                onClick={() => setDeleteDialogOpen(true)}
-              >
-                <Trash2 className="w-4 h-4" />
-                Excluir Todas
-              </Button>
+          <PermissionGate module="competitions" action="delete">
+            {competitions.length > 0 && (
+              <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <Button 
+                  variant="outline" 
+                  className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                  onClick={() => setDeleteDialogOpen(true)}
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Excluir Todas
+                </Button>
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle className="flex items-center gap-2 text-destructive">
@@ -590,7 +592,8 @@ const Competitions = () => {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-          )}
+            )}
+          </PermissionGate>
           {isAdmin && competitions.length > 0 && (
             <Button 
               variant="outline" 

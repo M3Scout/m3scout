@@ -7,9 +7,10 @@ import { ScoreBreakdownDisplay } from "@/components/scouting/ScoreBreakdownDispl
 import { DeleteReportDialog } from "@/components/scouting/DeleteReportDialog";
 import { ExportPdfButton } from "@/components/scouting/ExportPdfButton";
 import { useAuth } from "@/hooks/useAuth";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import { 
   ArrowLeft, 
-  Calendar, 
+  Calendar,
   Trophy, 
   User,
   Target,
@@ -97,13 +98,10 @@ const categoryConfig = [
 const ReportDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user, isAdmin } = useAuth();
+const { user } = useAuth();
   const [report, setReport] = useState<ReportDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Check if current user can delete this report
-  const canDelete = report && (isAdmin || report.scout_id === user?.id);
 
   useEffect(() => {
     const fetchReport = async () => {
@@ -265,12 +263,12 @@ const ReportDetail = () => {
               Editar
             </Button>
           </Link>
-          {canDelete && (
+          <PermissionGate module="reports" action="delete">
             <DeleteReportDialog
               reportId={report.id}
               onDeleted={() => navigate("/app/reports")}
             />
-          )}
+          </PermissionGate>
         </div>
       </div>
 

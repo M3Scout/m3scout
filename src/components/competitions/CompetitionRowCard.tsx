@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/tooltip";
 import { TierBadge, CoefficientBar, TypeBadge, StatusBadge, VisibilityDisplay } from "./CompetitionVisuals";
 import { getTierFromCoefficient } from "@/lib/tierClassification";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 
 interface Competition {
   id: string;
@@ -125,13 +126,15 @@ export function CompetitionRowCard({ competition, isAdmin, onEdit, onDelete }: C
                 <Edit className="w-4 h-4 mr-2" />
                 Editar
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => onDelete(competition)}
-                className="text-destructive focus:text-destructive"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Excluir
-              </DropdownMenuItem>
+              <PermissionGate module="competitions" action="delete">
+                <DropdownMenuItem
+                  onClick={() => onDelete(competition)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Excluir
+                </DropdownMenuItem>
+              </PermissionGate>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -206,17 +209,19 @@ export function CompetitionMobileCard({ competition, isAdmin, onEdit, onDelete }
                 <Edit className="w-4 h-4 mr-2" />
                 Editar
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-destructive border-destructive/30"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete(competition);
-                }}
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
+              <PermissionGate module="competitions" action="delete">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-destructive border-destructive/30"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(competition);
+                  }}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </PermissionGate>
             </div>
           )}
         </div>
