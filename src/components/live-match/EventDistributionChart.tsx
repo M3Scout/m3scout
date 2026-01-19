@@ -23,6 +23,10 @@ interface MatchEvent {
   player_id: string;
   minute: number | null;
   half: number | null;
+  game_time_seconds: number | null;
+  display_minute: string | null;
+  event_status?: string;
+  count_in_stats?: boolean;
 }
 
 interface EventDistributionChartProps {
@@ -85,10 +89,20 @@ export function EventDistributionChart({
     ];
 
     // Count events per minute
+    // Skip events that don't count in stats or are voided
     matchEvents.forEach((event) => {
-      if (event.minute === null || event.minute < 0 || event.minute > matchDuration) return;
+      if (event.event_status === "voided" || event.count_in_stats === false) return;
       
-      const idx = Math.floor(event.minute);
+      // Derive minute from game_time_seconds if minute is null
+      let eventMinute: number | null = event.minute;
+      if (eventMinute === null && event.game_time_seconds !== null) {
+        eventMinute = Math.floor(event.game_time_seconds / 60);
+      }
+      
+      if (eventMinute === null || eventMinute < 0 || eventMinute > matchDuration + 15) return;
+      
+      // Clamp to chart range
+      const idx = Math.min(Math.floor(eventMinute), data.length - 1);
       if (idx >= 0 && idx < data.length) {
         data[idx].total++;
         
@@ -140,10 +154,14 @@ export function EventDistributionChart({
 
   // Stats summary
   const stats = useMemo(() => {
-    const firstHalfEvents = matchEvents.filter((e) => e.half === 1).length;
-    const secondHalfEvents = matchEvents.filter((e) => e.half === 2).length;
+    // Filter only valid events for counting
+    const validEvents = matchEvents.filter(
+      (e) => e.event_status !== "voided" && e.count_in_stats !== false
+    );
+    const firstHalfEvents = validEvents.filter((e) => e.half === 1).length;
+    const secondHalfEvents = validEvents.filter((e) => e.half === 2).length;
     
-    // Find peak minute
+    // Find peak minute from chartData
     let peakMinute = 0;
     let peakCount = 0;
     chartData.forEach((point) => {
@@ -158,7 +176,7 @@ export function EventDistributionChart({
       secondHalf: secondHalfEvents,
       peakMinute,
       peakCount,
-      totalEvents: matchEvents.length,
+      totalEvents: validEvents.length,
     };
   }, [matchEvents, chartData]);
 

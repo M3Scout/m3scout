@@ -218,20 +218,22 @@ export default function LiveMatchReview() {
       }
 
       // Entered/exited minute range check
-      if (mp.entered_minute !== null && (mp.entered_minute < 0 || mp.entered_minute > duration)) {
+      // Allow extra 15 minutes for stoppage time (90 + 15 = 105 max for normal games)
+      const maxAllowedMinute = duration + 15;
+      if (mp.entered_minute !== null && (mp.entered_minute < 0 || mp.entered_minute > maxAllowedMinute)) {
         issues.push({
           playerId: mp.player_id,
           playerName: mp.player.full_name,
           type: "warning",
-          message: `Minuto de entrada (${mp.entered_minute}) fora do intervalo 0-${duration}`,
+          message: `Minuto de entrada (${mp.entered_minute}) fora do intervalo 0-${maxAllowedMinute}`,
         });
       }
-      if (mp.exited_minute !== null && (mp.exited_minute < 0 || mp.exited_minute > duration)) {
+      if (mp.exited_minute !== null && (mp.exited_minute < 0 || mp.exited_minute > maxAllowedMinute)) {
         issues.push({
           playerId: mp.player_id,
           playerName: mp.player.full_name,
           type: "warning",
-          message: `Minuto de saída (${mp.exited_minute}) fora do intervalo 0-${duration}`,
+          message: `Minuto de saída (${mp.exited_minute}) fora do intervalo 0-${maxAllowedMinute}`,
         });
       }
 
