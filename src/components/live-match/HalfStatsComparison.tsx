@@ -46,16 +46,17 @@ export function HalfStatsComparison({ events, matchPlayers }: HalfStatsCompariso
       eventCounts[eventType]![half] += event.value || 1;
     });
 
-    // Count substitutions from match players
+    // Count substitutions from substitution events (player_on type)
+    // This uses the correct period/half from the event itself
     let subsFirstHalf = 0;
     let subsSecondHalf = 0;
 
-    matchPlayers.forEach((mp) => {
-      if (!mp.started && mp.entered_minute !== null) {
-        if (mp.entered_minute <= 45) {
-          subsFirstHalf++;
-        } else {
+    events.forEach((event) => {
+      if (event.event_type === "player_on" && event.event_status !== "voided") {
+        if (event.half === 2 || event.period === 2) {
           subsSecondHalf++;
+        } else {
+          subsFirstHalf++;
         }
       }
     });
