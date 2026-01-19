@@ -5,7 +5,9 @@ import { toast } from "sonner";
 import { ComparePdfVector } from "./ComparePdfVector";
 import { exportVectorPdf } from "@/lib/vectorPdfExport";
 import type { PlayerStatRow } from "@/lib/attributeRadar";
-import logoM3 from "@/assets/logo-m3.png";
+
+// Use the new logo for PDF reports
+const LOGO_URL = "/logo-relatorio-pdf.png";
 
 interface PlayerData {
   id: string;
@@ -70,7 +72,7 @@ export function ExportComparePdfButton({ players, disabled }: ExportComparePdfBu
       const pdfDocument = (
         <ComparePdfVector
           players={players}
-          logoUrl={logoM3}
+          logoUrl={LOGO_URL}
         />
       );
 
