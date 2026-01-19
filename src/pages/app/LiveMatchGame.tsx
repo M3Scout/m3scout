@@ -93,6 +93,7 @@ export default function LiveMatchGame() {
     startSecondHalf,
     updateAddedTime,
     finishGame,
+    regenerateSummary,
   } = useLiveMatch(matchId || "");
 
   const handleMinuteChange = useCallback((minute: number) => {
@@ -236,6 +237,8 @@ export default function LiveMatchGame() {
           }
           setIsReviewMode(!isReviewMode);
         }}
+        onRegenerateSummary={() => regenerateSummary.mutate()}
+        isRegenerating={regenerateSummary.isPending}
       />
 
       {/* Main container - optimized for tablet */}

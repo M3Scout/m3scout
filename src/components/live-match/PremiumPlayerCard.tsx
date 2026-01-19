@@ -430,6 +430,14 @@ export function PremiumPlayerCard({
                     Em campo
                   </Badge>
                 )}
+                {isReviewMode && (
+                  <Badge className={cn(
+                    "bg-amber-500/20 text-amber-300 border-amber-500/30 shrink-0 animate-pulse",
+                    "text-[10px] px-1.5 py-0 h-5 tablet:text-xs tablet:px-2 tablet:h-6"
+                  )}>
+                    Revisão
+                  </Badge>
+                )}
               </div>
 
               {/* Right: Key stats - LARGER and more readable on tablet */}
