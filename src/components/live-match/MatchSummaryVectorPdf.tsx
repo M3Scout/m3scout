@@ -106,6 +106,12 @@ const styles = StyleSheet.create({
     color: PDF_COLORS.gray500,
     marginTop: 2,
   },
+  matchVenue: {
+    fontSize: 9,
+    color: PDF_COLORS.gray400,
+    marginTop: 2,
+    fontStyle: "italic",
+  },
   // Stats Grid
   statsGrid: {
     flexDirection: "row",
@@ -420,7 +426,11 @@ export function MatchSummaryVectorPdf({
             <Text style={styles.matchTitle}>{displayTeamName} vs {match.opponent_name}</Text>
             <Text style={styles.matchDate}>
               {format(new Date(match.match_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+              {match.match_start_time && ` • ${format(new Date(match.match_start_time), "HH:mm")}`}
             </Text>
+            {match.venue && (
+              <Text style={styles.matchVenue}>{match.venue}</Text>
+            )}
           </View>
         </View>
 
