@@ -68,7 +68,7 @@ interface ComparePdfVectorProps {
 const styles = StyleSheet.create({
   page: {
     padding: 32,
-    fontFamily: "Inter",
+    fontFamily: "Helvetica",
     fontSize: 10,
     color: PDF_COLORS.gray900,
     backgroundColor: PDF_COLORS.white,
