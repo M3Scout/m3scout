@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Match, MatchStatus } from "@/hooks/useLiveMatch";
 import { 
   Radio, Play, ArrowLeft, Users, Trophy, 
-  MapPin, Calendar, FileEdit, CheckCircle2, Pause, Clock, Edit3, X, Save
+  MapPin, Calendar, FileEdit, CheckCircle2, Pause, Clock, Edit3, X, Save, RefreshCw
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -32,6 +32,8 @@ interface GameHeaderCardProps {
   pendingEventsCount?: number;
   isReviewMode?: boolean;
   onToggleReviewMode?: () => void;
+  onRegenerateSummary?: () => void;
+  isRegenerating?: boolean;
 }
 
 const statusConfig: Record<MatchStatus, { 
@@ -75,6 +77,8 @@ export function GameHeaderCard({
   pendingEventsCount = 0,
   isReviewMode = false,
   onToggleReviewMode,
+  onRegenerateSummary,
+  isRegenerating = false,
 }: GameHeaderCardProps) {
   const [confirmStartOpen, setConfirmStartOpen] = useState(false);
   const { teamName: globalTeamName, logoUrl: globalLogoUrl } = useTeamSettings();
@@ -190,7 +194,7 @@ export function GameHeaderCard({
                   variant={isReviewMode ? "destructive" : "outline"}
                   size="mobile"
                   onClick={onToggleReviewMode}
-                  disabled={isPending}
+                  disabled={isPending || isRegenerating}
                   className={cn(
                     "gap-2",
                     isReviewMode 
@@ -211,6 +215,24 @@ export function GameHeaderCard({
                       <span className="sm:hidden">Editar</span>
                     </>
                   )}
+                </Button>
+              )}
+
+              {/* Regenerate summary button - only in review mode */}
+              {isReviewMode && onRegenerateSummary && (
+                <Button
+                  variant="outline"
+                  size="mobile"
+                  onClick={onRegenerateSummary}
+                  disabled={isRegenerating}
+                  className={cn(
+                    "gap-2 border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10",
+                    isRegenerating && "animate-pulse"
+                  )}
+                >
+                  <RefreshCw className={cn("w-4 h-4", isRegenerating && "animate-spin")} />
+                  <span className="hidden sm:inline">{isRegenerating ? "Regenerando..." : "Regerar Resumo"}</span>
+                  <span className="sm:hidden">{isRegenerating ? "..." : "Regerar"}</span>
                 </Button>
               )}
             </div>

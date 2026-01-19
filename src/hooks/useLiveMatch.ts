@@ -928,6 +928,96 @@ export function useLiveMatch(matchId: string) {
     localStorage.removeItem(getLocalStorageKey(matchId));
   }, [matchId]);
 
+  // Regenerate match summary - recalculates all player stats from events
+  const regenerateSummary = useMutation({
+    mutationFn: async () => {
+      // Get all official events that count in stats
+      const { data: events, error: eventsError } = await supabase
+        .from("match_events")
+        .select("*")
+        .eq("match_id", matchId)
+        .eq("event_status", "official")
+        .eq("count_in_stats", true);
+
+      if (eventsError) throw eventsError;
+
+      // Get all players in match
+      const { data: players, error: playersError } = await supabase
+        .from("match_players")
+        .select("player_id")
+        .eq("match_id", matchId)
+        .eq("is_removed", false);
+
+      if (playersError) throw playersError;
+
+      // For each player, recalculate stats from events
+      for (const player of players || []) {
+        const playerEvents = events?.filter(e => e.player_id === player.player_id) || [];
+        
+        // Aggregate events by type
+        const stats: Record<string, number> = {};
+        for (const event of playerEvents) {
+          const key = event.event_type;
+          stats[key] = (stats[key] || 0) + event.value;
+        }
+
+        // Map event types to match_player_stats columns
+        const statsUpdate = {
+          goals: stats["goal"] || 0,
+          assists: stats["assist"] || 0,
+          shots: (stats["shot"] || 0) + (stats["shot_on_target"] || 0) + (stats["goal"] || 0),
+          shots_on_target: (stats["shot_on_target"] || 0) + (stats["goal"] || 0),
+          key_passes: stats["key_pass"] || 0,
+          chances_created: stats["chance_created"] || 0,
+          passes_completed: stats["pass_success"] || 0,
+          passes_total: stats["pass_total"] || 0,
+          dribbles_success: stats["dribble_success"] || 0,
+          dribbles_total: (stats["dribble_success"] || 0) + (stats["dribble_attempt"] || 0),
+          tackles: stats["tackle"] || 0,
+          interceptions: stats["interception"] || 0,
+          recoveries: stats["recovery"] || 0,
+          clearances: stats["clearance"] || 0,
+          duels_won: (stats["duel_won"] || 0) + (stats["ground_duel_won"] || 0) + (stats["aerial_duel_won"] || 0),
+          duels_total: (stats["duel_total"] || 0) + (stats["ground_duel_total"] || 0) + (stats["aerial_duel_total"] || 0),
+          aerial_duels_won: stats["aerial_duel_won"] || 0,
+          aerial_duels_total: stats["aerial_duel_total"] || 0,
+          yellow_cards: stats["yellow"] || 0,
+          red_cards: stats["red"] || 0,
+          fouls_committed: stats["foul_committed"] || 0,
+          fouls_suffered: stats["foul_suffered"] || 0,
+          possession_lost: stats["possession_lost"] || 0,
+          saves: stats["save"] || 0,
+          goals_conceded: stats["goal_conceded"] || 0,
+        };
+
+        // Upsert stats
+        const { error: upsertError } = await supabase
+          .from("match_player_stats")
+          .upsert({
+            match_id: matchId,
+            player_id: player.player_id,
+            ...statsUpdate,
+            updated_at: new Date().toISOString(),
+          }, {
+            onConflict: "match_id,player_id",
+          });
+
+        if (upsertError) {
+          console.error("Error upserting stats for player:", player.player_id, upsertError);
+        }
+      }
+
+      return { success: true, playersProcessed: players?.length || 0 };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["match-player-stats", matchId] });
+      toast.success(`Resumo regenerado! ${data.playersProcessed} jogadores processados.`);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao regenerar resumo");
+    },
+  });
+
   return {
     // Data
     match,
@@ -966,6 +1056,7 @@ export function useLiveMatch(matchId: string) {
     playerEnterField,
     playerExitField,
     substitutePlayer,
+    regenerateSummary,
     // Timer V2 mutations
     playPauseClock,
     resetClock,

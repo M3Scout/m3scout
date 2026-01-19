@@ -290,6 +290,16 @@ export function MobilePlayerCard({
               >
                 {matchPlayer.is_on_field ? "Em campo" : "Banco"}
               </Badge>
+              {isReviewMode && (
+                <Badge 
+                  className={cn(
+                    "text-[10px] px-1.5 py-0.5 h-5 shrink-0 animate-pulse",
+                    "bg-amber-500/20 text-amber-300 border-amber-500/30"
+                  )}
+                >
+                  Revisão
+                </Badge>
+              )}
             </div>
 
             {/* Right: Key stats - compact display */}
