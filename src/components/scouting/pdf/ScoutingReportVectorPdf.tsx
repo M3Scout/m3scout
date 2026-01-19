@@ -54,7 +54,8 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "center",
+    paddingTop: 8,
     paddingBottom: 16,
     marginBottom: 20,
     borderBottom: `3px solid ${PDF_COLORS.brandRed}`,
@@ -64,10 +65,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     flex: 1,
-    maxWidth: "60%",
+    maxWidth: "58%",
   },
   logo: {
-    width: 50,
+    width: 48,
     height: "auto",
     objectFit: "contain",
   },
@@ -76,7 +77,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: 800,
     color: PDF_COLORS.gray900,
     flexWrap: "wrap",
@@ -84,24 +85,25 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: 9,
     color: PDF_COLORS.gray500,
-    marginTop: 2,
+    marginTop: 3,
   },
   headerRight: {
-    backgroundColor: PDF_COLORS.gray900,
+    backgroundColor: PDF_COLORS.gray100,
+    border: `1px solid ${PDF_COLORS.gray200}`,
     padding: 10,
     borderRadius: 6,
-    width: 160,
+    width: 165,
     flexShrink: 0,
   },
   headerMeta: {
     fontSize: 8,
-    color: PDF_COLORS.gray400,
+    color: PDF_COLORS.gray600,
     marginBottom: 4,
-    lineHeight: 1.3,
+    lineHeight: 1.4,
   },
   headerMetaValue: {
     fontWeight: 700,
-    color: PDF_COLORS.white,
+    color: PDF_COLORS.gray900,
   },
   // Player Card
   playerCard: {
@@ -625,21 +627,21 @@ export function ScoutingReportVectorPdf({ report, logoUrl }: ScoutingReportVecto
           </View>
           <View style={styles.headerRight}>
             <Text style={styles.headerMeta}>
-              Data:{" "}
+              Gerado em:{" "}
               <Text style={styles.headerMetaValue}>
-                {format(new Date(report.match_date), "dd/MM/yyyy", { locale: ptBR })}
+                {format(new Date(), "dd/MM/yyyy", { locale: ptBR })}
               </Text>
             </Text>
             <Text style={styles.headerMeta}>
               Competição:{" "}
               <Text style={styles.headerMetaValue}>
-                {truncateText(competitionLabel, 28)}
+                {truncateText(competitionLabel, 26)}
               </Text>
             </Text>
             <Text style={[styles.headerMeta, { marginBottom: 0 }]}>
               Scout:{" "}
               <Text style={styles.headerMetaValue}>
-                {truncateText(report.profiles?.full_name || "Scout", 24)}
+                {truncateText(report.profiles?.full_name || "Scout", 22)}
               </Text>
             </Text>
           </View>
