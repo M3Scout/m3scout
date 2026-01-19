@@ -165,17 +165,25 @@ export default function LiveMatchGame() {
     );
   }
 
-  const handleAddEvent = (playerId: string, eventType: MatchEventType) => {
+  const handleAddEvent = (playerId: string, eventType: MatchEventType, forceMinute?: number) => {
     // Trigger visual effects for important events
     triggerEvent(eventType);
+    
+    // In review mode, use forced minute if provided
+    const minuteToUse = forceMinute !== undefined ? forceMinute : currentMinute;
     
     addEvent.mutate({ 
       playerId, 
       eventType, 
-      minute: currentMinute || undefined,
+      minute: minuteToUse || undefined,
       half: currentTimerInfo?.half,
-      displayMinute: currentTimerInfo?.displayString,
+      displayMinute: forceMinute !== undefined ? `${forceMinute}'` : currentTimerInfo?.displayString,
     });
+  };
+
+  const handleAddManualEvent = (playerId: string, eventType: MatchEventType, minute: number, notes?: string) => {
+    handleAddEvent(playerId, eventType, minute);
+    // TODO: notes can be stored if needed in future
   };
 
   const handlePlayerEnter = (matchPlayerId: string) => {
@@ -199,7 +207,11 @@ export default function LiveMatchGame() {
   const existingPlayerIds = matchPlayers.map((mp) => mp.player_id);
   const isDraft = match.status === "draft";
   const isLive = match.status === "live";
+  const isFinished = match.status === "finished";
   const competitionName = match.competition?.display_name || match.competition?.name || "Competição";
+  
+  // Can add events if: (live and clock running) OR review mode
+  const canAddEvents = (isLive && match.clock_status === "running") || isReviewMode;
 
   return (
     <div className="min-h-screen bg-zinc-950 pb-20">
@@ -214,6 +226,16 @@ export default function LiveMatchGame() {
         startersCount={startersCount}
         playersOnField={playersOnField.length}
         pendingEventsCount={pendingEventsCount}
+        isReviewMode={isReviewMode}
+        onToggleReviewMode={() => {
+          if (isReviewMode) {
+            // Exiting review mode - show confirmation
+            toast.success("Modo revisão finalizado. Estatísticas atualizadas.");
+          } else {
+            toast.info("Modo revisão ativado. Você pode adicionar/editar eventos.");
+          }
+          setIsReviewMode(!isReviewMode);
+        }}
       />
 
       {/* Main container - optimized for tablet */}
@@ -297,7 +319,23 @@ export default function LiveMatchGame() {
               </Button>
             )}
 
-            {(isDraft || isLive) && (
+            {/* Manual event button - only in review mode */}
+            {isReviewMode && (
+              <Button 
+                onClick={() => setManualEventOpen(true)} 
+                size="sm"
+                className={cn(
+                  "gap-2 bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/50 text-amber-300",
+                  "h-10 tablet:h-11 tablet:px-4 tablet:text-sm"
+                )}
+              >
+                <PlusCircle className="h-4 w-4 tablet:h-5 tablet:w-5" />
+                <span className="hidden sm:inline">Evento Manual</span>
+                <span className="sm:hidden">Evento</span>
+              </Button>
+            )}
+
+            {(isDraft || isLive || isReviewMode) && (
               <EventTimeline
                 events={matchEvents}
                 players={matchPlayers}
@@ -439,6 +477,7 @@ export default function LiveMatchGame() {
                     toast.success(started ? "Definido como Titular" : "Definido como Reserva");
                   }}
                   disabled={match.status === "applied"}
+                  isReviewMode={isReviewMode}
                   index={index}
                 />
               ) : (
@@ -466,6 +505,7 @@ export default function LiveMatchGame() {
                     toast.success(started ? "Definido como Titular" : "Definido como Reserva");
                   }}
                   disabled={match.status === "applied"}
+                  isReviewMode={isReviewMode}
                   index={index}
                 />
               )
@@ -494,6 +534,15 @@ export default function LiveMatchGame() {
         currentMinute={currentMinute}
         currentHalf={currentTimerInfo?.half}
         displayMinute={currentTimerInfo?.displayString}
+      />
+
+      {/* Manual Event Modal - for review mode */}
+      <AddManualEventModal
+        open={manualEventOpen}
+        onOpenChange={setManualEventOpen}
+        players={matchPlayers}
+        onAddEvent={handleAddManualEvent}
+        isPending={addEvent.isPending}
       />
     </div>
   );

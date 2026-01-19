@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Match, MatchStatus } from "@/hooks/useLiveMatch";
 import { 
   Radio, Play, ArrowLeft, Users, Trophy, 
-  MapPin, Calendar, FileEdit, CheckCircle2, Pause, Clock
+  MapPin, Calendar, FileEdit, CheckCircle2, Pause, Clock, Edit3, X, Save
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -30,6 +30,8 @@ interface GameHeaderCardProps {
   startersCount?: number;
   playersOnField?: number;
   pendingEventsCount?: number;
+  isReviewMode?: boolean;
+  onToggleReviewMode?: () => void;
 }
 
 const statusConfig: Record<MatchStatus, { 
@@ -71,6 +73,8 @@ export function GameHeaderCard({
   startersCount = 0,
   playersOnField = 0,
   pendingEventsCount = 0,
+  isReviewMode = false,
+  onToggleReviewMode,
 }: GameHeaderCardProps) {
   const [confirmStartOpen, setConfirmStartOpen] = useState(false);
   const { teamName: globalTeamName, logoUrl: globalLogoUrl } = useTeamSettings();
@@ -177,6 +181,36 @@ export function GameHeaderCard({
                   <Play className="w-4 h-4" />
                   <span className="hidden sm:inline">Iniciar 1º Tempo</span>
                   <span className="sm:hidden">Iniciar</span>
+                </Button>
+              )}
+
+              {/* Review mode button - only when finished */}
+              {match.status === "finished" && onToggleReviewMode && (
+                <Button
+                  variant={isReviewMode ? "destructive" : "outline"}
+                  size="mobile"
+                  onClick={onToggleReviewMode}
+                  disabled={isPending}
+                  className={cn(
+                    "gap-2",
+                    isReviewMode 
+                      ? "border-amber-500/50 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30" 
+                      : "border-amber-500/50 text-amber-400 hover:bg-amber-500/10"
+                  )}
+                >
+                  {isReviewMode ? (
+                    <>
+                      <Save className="w-4 h-4" />
+                      <span className="hidden sm:inline">Sair da Revisão</span>
+                      <span className="sm:hidden">Sair</span>
+                    </>
+                  ) : (
+                    <>
+                      <Edit3 className="w-4 h-4" />
+                      <span className="hidden sm:inline">Editar Pós-Jogo</span>
+                      <span className="sm:hidden">Editar</span>
+                    </>
+                  )}
                 </Button>
               )}
             </div>

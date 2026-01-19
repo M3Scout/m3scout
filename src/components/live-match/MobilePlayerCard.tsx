@@ -90,6 +90,7 @@ interface MobilePlayerCardProps {
   onUpdateStarterStatus?: (matchPlayerId: string, started: boolean) => Promise<void>;
   disabled?: boolean;
   soundEnabled?: boolean;
+  isReviewMode?: boolean;
   index?: number;
 }
 
@@ -109,6 +110,7 @@ export function MobilePlayerCard({
   onUpdateStarterStatus,
   disabled,
   soundEnabled = true,
+  isReviewMode = false,
   index = 0,
 }: MobilePlayerCardProps) {
   const [showOptions, setShowOptions] = useState(false);
@@ -124,6 +126,7 @@ export function MobilePlayerCard({
   const isGK = matchPlayer.position_template === "goalkeeper";
   const isLive = matchStatus === "live";
   const isDraft = matchStatus === "draft";
+  const isFinished = matchStatus === "finished";
   const isPaused = clockStatus === "paused";
   const isClockRunning = clockStatus === "running";
   const positionColors = getPositionColor(player.position);
@@ -131,26 +134,29 @@ export function MobilePlayerCard({
   
   const quickActions = isGK ? GK_QUICK_ACTIONS : QUICK_ACTIONS;
   
-  // Can only add events if: live + clock running + player on field
-  const canAddEvents = isLive && isClockRunning && matchPlayer.is_on_field;
+  // Can add events if: (live + clock running + player on field) OR review mode
+  const canAddEvents = (isLive && isClockRunning && matchPlayer.is_on_field) || isReviewMode;
   const hasNotes = matchPlayer.notes && matchPlayer.notes.trim().length > 0;
 
   const handleAddEventWithSound = useCallback((eventType: MatchEventType) => {
     if (isSubmitting || disabled) return;
     
-    // Check validations
-    if (isLive && !matchPlayer.is_on_field) {
-      toast.error("Atleta fora de campo", {
-        description: "Este jogador não está em campo.",
-      });
-      return;
-    }
+    // In review mode, skip field/clock validations
+    if (!isReviewMode) {
+      // Check validations
+      if (isLive && !matchPlayer.is_on_field) {
+        toast.error("Atleta fora de campo", {
+          description: "Este jogador não está em campo.",
+        });
+        return;
+      }
 
-    if (isLive && isPaused) {
-      toast.warning("Jogo pausado", {
-        description: "Retome o jogo para registrar eventos.",
-      });
-      return;
+      if (isLive && isPaused) {
+        toast.warning("Jogo pausado", {
+          description: "Retome o jogo para registrar eventos.",
+        });
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -171,7 +177,7 @@ export function MobilePlayerCard({
     
     // Debounce
     setTimeout(() => setIsSubmitting(false), 300);
-  }, [isSubmitting, disabled, isLive, matchPlayer.is_on_field, isPaused, soundEnabled, onAddEvent, isDraft, onUndo]);
+  }, [isSubmitting, disabled, isLive, matchPlayer.is_on_field, isPaused, soundEnabled, onAddEvent, isDraft, onUndo, isReviewMode]);
 
   const handleEnterField = () => {
     if (soundEnabled) playSound('enter');

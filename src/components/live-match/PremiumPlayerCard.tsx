@@ -95,6 +95,7 @@ interface PremiumPlayerCardProps {
   onUpdateStarterStatus?: (matchPlayerId: string, started: boolean) => Promise<void>;
   disabled?: boolean;
   soundEnabled?: boolean;
+  isReviewMode?: boolean;
   index?: number;
 }
 
@@ -117,6 +118,7 @@ export function PremiumPlayerCard({
   onUpdateStarterStatus,
   disabled,
   soundEnabled = true,
+  isReviewMode = false,
   index = 0,
 }: PremiumPlayerCardProps) {
   const [expanded, setExpanded] = useState(true);
@@ -131,14 +133,15 @@ export function PremiumPlayerCard({
   const isGK = matchPlayer.position_template === "goalkeeper";
   const isLive = matchStatus === "live";
   const isDraft = matchStatus === "draft";
+  const isFinished = matchStatus === "finished";
   const isPaused = clockStatus === "paused";
   const isClockRunning = clockStatus === "running";
   const positionColors = getPositionColor(player.position);
   const shortPosition = getShortPosition(player.position);
   const quickEvents = isGK ? GK_QUICK_EVENTS : QUICK_EVENTS;
   
-  // Can only add events if: live + clock running + player on field
-  const canAddEvents = isLive && isClockRunning && matchPlayer.is_on_field;
+  // Can add events if: (live + clock running + player on field) OR review mode
+  const canAddEvents = (isLive && isClockRunning && matchPlayer.is_on_field) || isReviewMode;
 
   const handleAddEventWithSound = (eventType: MatchEventType) => {
     if (soundEnabled) playSound(getSoundForEvent(eventType));
