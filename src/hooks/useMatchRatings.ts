@@ -99,6 +99,7 @@ export function usePlayerMatchRating(
 
 /**
  * Get sorted players by rating (highest first)
+ * Players without ratings (0 minutes) are placed at the end
  */
 export function useSortedPlayersByRating(
   matchPlayers: MatchPlayer[],
@@ -108,6 +109,13 @@ export function useSortedPlayersByRating(
   
   return useMemo(() => {
     return Array.from(ratings.values())
-      .sort((a, b) => b.rating.rating - a.rating.rating);
+      .sort((a, b) => {
+        // Players without ratings go to the end
+        if (!a.rating.hasRating && !b.rating.hasRating) return 0;
+        if (!a.rating.hasRating) return 1;
+        if (!b.rating.hasRating) return -1;
+        // Sort by rating descending
+        return (b.rating.rating ?? 0) - (a.rating.rating ?? 0);
+      });
   }, [ratings]);
 }

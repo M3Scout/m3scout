@@ -34,13 +34,61 @@ export function PlayerRatingBadge({
   showTooltip = true,
   className,
 }: PlayerRatingBadgeProps) {
-  const bgColor = getRatingBgColor(rating.rating);
-  
   const sizeClasses = {
     sm: "h-5 min-w-[32px] text-xs px-1.5",
     md: "h-7 min-w-[40px] text-sm px-2",
     lg: "h-9 min-w-[52px] text-base px-3 font-bold",
   };
+  
+  // Players with no rating (0 minutes) show "—"
+  if (!rating.hasRating) {
+    const noRatingBadge = (
+      <div
+        className={cn(
+          "inline-flex items-center justify-center gap-1 rounded-md font-semibold text-muted-foreground bg-muted/50 border border-border",
+          sizeClasses[size],
+          className
+        )}
+      >
+        <span>—</span>
+      </div>
+    );
+    
+    if (!showTooltip) {
+      return (
+        <div className="flex items-center gap-1.5">
+          {noRatingBadge}
+          {showLabel && (
+            <span className={cn("text-muted-foreground", size === "sm" ? "text-[10px]" : "text-xs")}>
+              Sem nota
+            </span>
+          )}
+        </div>
+      );
+    }
+    
+    return (
+      <TooltipProvider delayDuration={200}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex items-center gap-1.5 cursor-help">
+              {noRatingBadge}
+              {showLabel && (
+                <span className={cn("text-muted-foreground", size === "sm" ? "text-[10px]" : "text-xs")}>
+                  Sem nota
+                </span>
+              )}
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="top">
+            <p className="text-xs text-muted-foreground">Não entrou em campo</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+  
+  const bgColor = getRatingBgColor(rating.rating!);
   
   const badge = (
     <div
@@ -52,7 +100,7 @@ export function PlayerRatingBadge({
       )}
     >
       {size === "lg" && <Star className="h-4 w-4 fill-current" />}
-      <span className="tabular-nums">{rating.rating.toFixed(1)}</span>
+      <span className="tabular-nums">{rating.rating!.toFixed(1)}</span>
     </div>
   );
   
@@ -86,7 +134,7 @@ export function PlayerRatingBadge({
           <div className="space-y-1.5 text-xs">
             <div className="flex justify-between gap-4">
               <span className="text-muted-foreground">Nota Final</span>
-              <span className="font-bold">{rating.rating.toFixed(1)}</span>
+              <span className="font-bold">{rating.rating!.toFixed(1)}</span>
             </div>
             <div className="flex justify-between gap-4">
               <span className="text-muted-foreground">Classificação</span>
@@ -101,39 +149,43 @@ export function PlayerRatingBadge({
               <span className="text-muted-foreground">Fator Minutos</span>
               <span>×{rating.minutesFactor}</span>
             </div>
-            <hr className="border-border/50" />
-            <div className="text-[10px] text-muted-foreground space-y-0.5">
-              <div className="flex justify-between">
-                <span>Ataque</span>
-                <span className={rating.breakdown.attack >= 0 ? "text-green-400" : "text-red-400"}>
-                  {rating.breakdown.attack >= 0 ? "+" : ""}{rating.breakdown.attack}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Criação</span>
-                <span className={rating.breakdown.creation >= 0 ? "text-green-400" : "text-red-400"}>
-                  {rating.breakdown.creation >= 0 ? "+" : ""}{rating.breakdown.creation}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Passe</span>
-                <span className={rating.breakdown.passing >= 0 ? "text-green-400" : "text-red-400"}>
-                  {rating.breakdown.passing >= 0 ? "+" : ""}{rating.breakdown.passing}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Defesa</span>
-                <span className={rating.breakdown.defense >= 0 ? "text-green-400" : "text-red-400"}>
-                  {rating.breakdown.defense >= 0 ? "+" : ""}{rating.breakdown.defense}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Disciplina</span>
-                <span className={rating.breakdown.discipline >= 0 ? "text-green-400" : "text-red-400"}>
-                  {rating.breakdown.discipline >= 0 ? "+" : ""}{rating.breakdown.discipline}
-                </span>
-              </div>
-            </div>
+            {rating.breakdown && (
+              <>
+                <hr className="border-border/50" />
+                <div className="text-[10px] text-muted-foreground space-y-0.5">
+                  <div className="flex justify-between">
+                    <span>Ataque</span>
+                    <span className={rating.breakdown.attack >= 0 ? "text-green-400" : "text-red-400"}>
+                      {rating.breakdown.attack >= 0 ? "+" : ""}{rating.breakdown.attack}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Criação</span>
+                    <span className={rating.breakdown.creation >= 0 ? "text-green-400" : "text-red-400"}>
+                      {rating.breakdown.creation >= 0 ? "+" : ""}{rating.breakdown.creation}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Passe</span>
+                    <span className={rating.breakdown.passing >= 0 ? "text-green-400" : "text-red-400"}>
+                      {rating.breakdown.passing >= 0 ? "+" : ""}{rating.breakdown.passing}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Defesa</span>
+                    <span className={rating.breakdown.defense >= 0 ? "text-green-400" : "text-red-400"}>
+                      {rating.breakdown.defense >= 0 ? "+" : ""}{rating.breakdown.defense}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Disciplina</span>
+                    <span className={rating.breakdown.discipline >= 0 ? "text-green-400" : "text-red-400"}>
+                      {rating.breakdown.discipline >= 0 ? "+" : ""}{rating.breakdown.discipline}
+                    </span>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </TooltipContent>
       </Tooltip>
