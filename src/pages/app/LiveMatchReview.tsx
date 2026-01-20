@@ -34,6 +34,9 @@ import {
 } from "lucide-react";
 
 // Map match events to player_stats columns
+// NOTE: Events like dribble_success and dribble_attempt are NOT mapped directly to total_dribbles
+// because total_dribbles = successful_dribbles + failed_dribbles (derived, not a direct mapping)
+// The RPC apply_event_stats handles this correctly: dribble_success increments BOTH success AND total
 const EVENT_TO_STAT_COLUMN: Partial<Record<MatchEventType, string>> = {
   goal: "goals",
   assist: "assists",
@@ -42,7 +45,8 @@ const EVENT_TO_STAT_COLUMN: Partial<Record<MatchEventType, string>> = {
   key_pass: "key_passes",
   chance_created: "chances_created",
   dribble_success: "successful_dribbles",
-  dribble_attempt: "total_dribbles",
+  // dribble_attempt is NOT mapped to total_dribbles - it's a FAILED dribble, not the total!
+  // total_dribbles should be derived as: successful_dribbles + failed_dribbles
   tackle: "tackles",
   interception: "interceptions",
   recovery: "recoveries",
@@ -55,7 +59,7 @@ const EVENT_TO_STAT_COLUMN: Partial<Record<MatchEventType, string>> = {
   foul_committed: "fouls_committed",
   foul_suffered: "fouls_drawn",
   pass_success: "accurate_passes",
-  pass_total: "total_passes",
+  // pass_total is also a FAILED pass event, not the total! Similar to dribbles.
   possession_lost: "possession_lost",
   save: "saves",
   goal_conceded: "goals_conceded",
@@ -393,6 +397,16 @@ export default function LiveMatchReview() {
               statsData[column] = (typeof existingValue === 'number' ? existingValue : 0) + newValue;
             }
           }
+          
+          // CRITICAL: Derive total_dribbles and total_passes from success + failed counts
+          // Since dribble_attempt and pass_total are FAILED attempts, not totals
+          const dribbleSuccess = counts.dribble_success ?? 0;
+          const dribbleFailed = counts.dribble_attempt ?? 0;
+          const passSuccess = counts.pass_success ?? 0;
+          const passFailed = counts.pass_total ?? 0;
+          
+          statsData.total_dribbles = (existingStats?.total_dribbles ?? 0) + dribbleSuccess + dribbleFailed;
+          statsData.total_passes = (existingStats?.total_passes ?? 0) + passSuccess + passFailed;
         }
 
         // Upsert with the new totals
