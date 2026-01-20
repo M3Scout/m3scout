@@ -41,6 +41,7 @@ import { PlayerStatsSection } from "@/components/players/sections/PlayerStatsSec
 import { GoalkeeperStatsSection } from "@/components/players/sections/GoalkeeperStatsSection";
 import { PlayerRatingBadge } from "@/components/players/PlayerRatingBadge";
 import { RatingEvolutionChart } from "@/components/players/sections/RatingEvolutionChart";
+import { MatchRatingEvolutionChart } from "@/components/players/sections/MatchRatingEvolutionChart";
 import { PlayerOverviewSection } from "@/components/players/sections/PlayerOverviewSection";
 import { SeasonSummaryCard } from "@/components/players/sections/SeasonSummaryCard";
 import { OverallRatingCard } from "@/components/players/sections/OverallRatingCard";
@@ -566,6 +567,12 @@ const PlayerDetail = () => {
 
         {/* Stats Tab */}
         <TabsContent value="stats" className="space-y-6">
+          {/* Match Rating Evolution Chart */}
+          <MatchRatingEvolutionChart 
+            playerId={player.id} 
+            playerName={player.full_name}
+          />
+          
           <PlayerStatsSection 
             playerId={player.id}
             playerPosition={player.position}
