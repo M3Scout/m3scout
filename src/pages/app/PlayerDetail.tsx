@@ -47,6 +47,7 @@ import { OverallRatingCard } from "@/components/players/sections/OverallRatingCa
 import { MarketValueSection } from "@/components/players/sections/MarketValueSection";
 import { MarketValueTab } from "@/components/players/sections/MarketValueTab";
 import { DataQualityPanel } from "@/components/players/DataQualityPanel";
+import { LiveMatchStatsSection } from "@/components/players/sections/LiveMatchStatsSection";
 
 import { UnifiedRadarCard } from "@/components/players/UnifiedRadarCard";
 
@@ -565,6 +566,13 @@ const PlayerDetail = () => {
 
         {/* Stats Tab */}
         <TabsContent value="stats" className="space-y-6">
+          {/* Live Match Stats - Single Source of Truth */}
+          <LiveMatchStatsSection
+            playerId={player.id}
+            playerPosition={player.position}
+          />
+          
+          {/* Historical/Manual Stats */}
           <PlayerStatsSection 
             playerId={player.id}
             playerPosition={player.position}
