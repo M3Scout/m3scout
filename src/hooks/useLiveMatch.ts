@@ -783,15 +783,26 @@ export function useLiveMatch(matchId: string) {
       });
 
       if (error) throw error;
-      return data;
+      
+      // CRITICAL: Check the success field from the RPC response
+      // The RPC returns { success: false, message: "..." } when blocked
+      const result = data as { success: boolean; message?: string; game_time_seconds?: number } | null;
+      if (!result?.success) {
+        throw new Error(result?.message || "Erro ao editar minuto do evento");
+      }
+      
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       // Invalidate all relevant queries - including match-players since
       // player_on/player_off events now sync to match_players.entered_minute/exited_minute
       queryClient.invalidateQueries({ queryKey: ["match-events", matchId] });
       queryClient.invalidateQueries({ queryKey: ["match-players", matchId] });
       queryClient.invalidateQueries({ queryKey: ["match-player-stats", matchId] });
-      toast.success("Minuto do evento atualizado");
+      const displayMinute = data?.game_time_seconds != null 
+        ? `${Math.floor(data.game_time_seconds / 60)}'` 
+        : "";
+      toast.success(`Minuto do evento atualizado ${displayMinute}`);
     },
     onError: (error: Error) => {
       toast.error(error.message || "Erro ao editar minuto do evento");
