@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -128,6 +128,18 @@ export function PremiumPlayerCard({
   const [lastEvent, setLastEvent] = useState<MatchEventType | null>(null);
 
   const player = matchPlayer.player;
+
+  // CRITICAL: useCallback MUST be called before any early returns to maintain stable hook count
+  // This prevents React error #310 when switching between MobilePlayerCard and PremiumPlayerCard
+  const handleAddEventWithSound = useCallback((eventType: MatchEventType) => {
+    if (!player) return;
+    if (soundEnabled) playSound(getSoundForEvent(eventType));
+    setLastEvent(eventType);
+    setTimeout(() => setLastEvent(null), 1000);
+    onAddEvent(eventType);
+  }, [player, soundEnabled, onAddEvent]);
+
+  // Early return AFTER all hooks to maintain stable hook count
   if (!player) return null;
 
   const isGK = matchPlayer.position_template === "goalkeeper";
@@ -142,13 +154,6 @@ export function PremiumPlayerCard({
   
   // Can add events if: (live + clock running + player on field) OR review mode
   const canAddEvents = (isLive && isClockRunning && matchPlayer.is_on_field) || isReviewMode;
-
-  const handleAddEventWithSound = (eventType: MatchEventType) => {
-    if (soundEnabled) playSound(getSoundForEvent(eventType));
-    setLastEvent(eventType);
-    setTimeout(() => setLastEvent(null), 1000);
-    onAddEvent(eventType);
-  };
 
   const handleEnterField = () => {
     if (soundEnabled) playSound('enter');

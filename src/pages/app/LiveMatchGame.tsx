@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { useLiveMatch, MatchEventType } from "@/hooks/useLiveMatch";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { HookDebugErrorBoundary, getHookMask, isBlockEnabled, getHookDebugState, setHookDebugState } from "@/components/HookDebugErrorBoundary";
 import { GameHeaderCard } from "@/components/live-match/GameHeaderCard";
 import { GameScoreboard, TimerInfo } from "@/components/live-match/GameScoreboard";
 import { AddPlayerModal } from "@/components/live-match/AddPlayerModal";
@@ -72,13 +73,17 @@ function LiveMatchGameInner({ matchId }: { matchId: string }) {
     (window.location.hostname.includes("id-preview--") || import.meta.env.DEV) &&
     new URLSearchParams(window.location.search).has("hookDebug");
 
-  const [hookDebugFlags, setHookDebugFlags] = useState({
-    header: true,
-    timeline: true,
-    summary: true,
-    statsPanels: true,
-    modals: true,
-  });
+  // Read hookMask from URL or storage for binary search
+  const hookMask = hookDebugEnabled ? getHookMask() : 31;
+  
+  // Convert bitmask to individual flags (indices: 0=Header, 1=Timeline, 2=Summary, 3=StatsPanels, 4=Modals)
+  const [hookDebugFlags, setHookDebugFlags] = useState(() => ({
+    header: isBlockEnabled(0, hookMask),
+    timeline: isBlockEnabled(1, hookMask),
+    summary: isBlockEnabled(2, hookMask),
+    statsPanels: isBlockEnabled(3, hookMask),
+    modals: isBlockEnabled(4, hookMask),
+  }));
 
   const [addPlayerOpen, setAddPlayerOpen] = useState(false);
   const [substitutionOpen, setSubstitutionOpen] = useState(false);
@@ -790,8 +795,22 @@ function LiveMatchGameContent() {
   return <LiveMatchGameInner matchId={matchId} />;
 }
 
-// Wrap with ErrorBoundary to catch render errors
+// Wrap with appropriate ErrorBoundary based on hookDebug mode
 export default function LiveMatchGame() {
+  const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : new URLSearchParams();
+  const isHookDebug = params.has("hookDebug");
+
+  // Use HookDebugErrorBoundary when in debug mode for detailed error capture
+  if (isHookDebug) {
+    return (
+      <HookDebugErrorBoundary 
+        fallbackMessage="Ocorreu um erro ao carregar a partida. Tente recarregar a página."
+      >
+        <LiveMatchGameContent />
+      </HookDebugErrorBoundary>
+    );
+  }
+
   return (
     <ErrorBoundary 
       fallbackMessage="Ocorreu um erro ao carregar a partida. Tente recarregar a página."
