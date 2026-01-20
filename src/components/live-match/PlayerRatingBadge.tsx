@@ -2,11 +2,12 @@
  * Badge component to display a player's match rating (0.0-10.0)
  * 
  * Uses the SofaScore-style color scheme:
- * - 8.0+ = Emerald (exceptional)
- * - 7.0-7.9 = Green (very good)
- * - 6.0-6.9 = Amber (good)
- * - 5.0-5.9 = Orange (regular)
- * - <5.0 = Red (poor)
+ * - 0.0-5.9 = Red
+ * - 6.0-6.4 = Orange
+ * - 6.5-6.9 = Amber
+ * - 7.0-7.9 = Green
+ * - 8.0-8.9 = Cyan
+ * - 9.0-10.0 = Blue
  */
 
 import { cn } from "@/lib/utils";
@@ -17,21 +18,26 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Star } from "lucide-react";
+import { RatingBreakdownModal } from "./RatingBreakdownModal";
+import { Star, Info } from "lucide-react";
 
 interface PlayerRatingBadgeProps {
   rating: MatchRatingResult;
+  playerName?: string;
   size?: "sm" | "md" | "lg";
   showLabel?: boolean;
   showTooltip?: boolean;
+  showDetailButton?: boolean;
   className?: string;
 }
 
 export function PlayerRatingBadge({
   rating,
+  playerName = "Jogador",
   size = "md",
   showLabel = false,
   showTooltip = true,
+  showDetailButton = true,
   className,
 }: PlayerRatingBadgeProps) {
   const sizeClasses = {
@@ -93,9 +99,10 @@ export function PlayerRatingBadge({
   const badge = (
     <div
       className={cn(
-        "inline-flex items-center justify-center gap-1 rounded-md font-semibold text-white shadow-sm",
+        "inline-flex items-center justify-center gap-1 rounded-md font-semibold text-white shadow-sm transition-transform hover:scale-105",
         bgColor,
         sizeClasses[size],
+        showDetailButton && "cursor-pointer",
         className
       )}
     >
@@ -103,6 +110,23 @@ export function PlayerRatingBadge({
       <span className="tabular-nums">{rating.rating!.toFixed(1)}</span>
     </div>
   );
+  
+  // If detail button enabled, wrap in modal
+  if (showDetailButton && rating.hasRating) {
+    return (
+      <RatingBreakdownModal rating={rating} playerName={playerName}>
+        <div className="flex items-center gap-1.5 cursor-pointer group">
+          {badge}
+          {showLabel && (
+            <span className={cn("text-muted-foreground", size === "sm" ? "text-[10px]" : "text-xs")}>
+              {rating.label}
+            </span>
+          )}
+          <Info className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+        </div>
+      </RatingBreakdownModal>
+    );
+  }
   
   if (!showTooltip) {
     return (
@@ -130,7 +154,7 @@ export function PlayerRatingBadge({
             )}
           </div>
         </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-[200px]">
+        <TooltipContent side="top" className="max-w-[220px]">
           <div className="space-y-1.5 text-xs">
             <div className="flex justify-between gap-4">
               <span className="text-muted-foreground">Nota Final</span>
@@ -186,6 +210,9 @@ export function PlayerRatingBadge({
                 </div>
               </>
             )}
+            <p className="text-[10px] text-muted-foreground/70 pt-1">
+              Clique para ver detalhes
+            </p>
           </div>
         </TooltipContent>
       </Tooltip>

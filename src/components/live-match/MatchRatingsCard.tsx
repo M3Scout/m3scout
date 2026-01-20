@@ -81,7 +81,7 @@ export function MatchRatingsCard({
                   <p className="text-[10px] uppercase text-emerald-400 font-medium">Destaque</p>
                   <p className="text-sm font-medium truncate">{bestPlayer.playerName.split(" ")[0]}</p>
                 </div>
-                <PlayerRatingBadge rating={bestPlayer.rating} size="sm" showTooltip={false} />
+                <PlayerRatingBadge rating={bestPlayer.rating} playerName={bestPlayer.playerName} size="sm" showTooltip={false} showDetailButton={false} />
               </div>
             )}
             
@@ -93,7 +93,7 @@ export function MatchRatingsCard({
                   <p className="text-[10px] uppercase text-orange-400 font-medium">A Evoluir</p>
                   <p className="text-sm font-medium truncate">{worstPlayer.playerName.split(" ")[0]}</p>
                 </div>
-                <PlayerRatingBadge rating={worstPlayer.rating} size="sm" showTooltip={false} />
+                <PlayerRatingBadge rating={worstPlayer.rating} playerName={worstPlayer.playerName} size="sm" showTooltip={false} showDetailButton={false} />
               </div>
             )}
             
@@ -155,7 +155,7 @@ export function MatchRatingsCard({
                 </div>
                 
                 {/* Rating Badge */}
-                <PlayerRatingBadge rating={player.rating} size="md" />
+                <PlayerRatingBadge rating={player.rating} playerName={player.playerName} size="md" />
               </div>
             ))}
           </div>
