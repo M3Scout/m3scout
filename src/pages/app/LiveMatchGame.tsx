@@ -65,6 +65,21 @@ function PlayerCardSkeleton({ index }: { index: number }) {
 function LiveMatchGameInner({ matchId }: { matchId: string }) {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+
+  // HookDebug (preview-only): helps isolate hook-order violations by mounting/unmounting blocks
+  const hookDebugEnabled =
+    typeof window !== "undefined" &&
+    (window.location.hostname.includes("id-preview--") || import.meta.env.DEV) &&
+    new URLSearchParams(window.location.search).has("hookDebug");
+
+  const [hookDebugFlags, setHookDebugFlags] = useState({
+    header: true,
+    timeline: true,
+    summary: true,
+    statsPanels: true,
+    modals: true,
+  });
+
   const [addPlayerOpen, setAddPlayerOpen] = useState(false);
   const [substitutionOpen, setSubstitutionOpen] = useState(false);
   const [manualEventOpen, setManualEventOpen] = useState(false);
@@ -304,22 +319,107 @@ function LiveMatchGameInner({ matchId }: { matchId: string }) {
         lastRpcError={lastRpcError}
       />
 
+      {/* HookDebug controls (preview only): add ?hookDebug=1 to the URL */}
+      {hookDebugEnabled && (
+        <div className="mx-4 mt-4 rounded-xl border border-zinc-800/60 bg-zinc-900/70 p-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="text-xs font-semibold text-zinc-200">HookDebug</div>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 px-2 text-[11px] border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+                onClick={() =>
+                  setHookDebugFlags({
+                    header: true,
+                    timeline: true,
+                    summary: true,
+                    statsPanels: true,
+                    modals: true,
+                  })
+                }
+              >
+                Tudo
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 px-2 text-[11px] border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+                onClick={() =>
+                  setHookDebugFlags({
+                    header: false,
+                    timeline: false,
+                    summary: false,
+                    statsPanels: false,
+                    modals: false,
+                  })
+                }
+              >
+                Nada
+              </Button>
+            </div>
+          </div>
+
+          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="flex items-center justify-between gap-3">
+              <Label className="text-xs text-zinc-400">A) Header / Scoreboard</Label>
+              <Switch
+                checked={hookDebugFlags.header}
+                onCheckedChange={(v) => setHookDebugFlags((s) => ({ ...s, header: v }))}
+              />
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <Label className="text-xs text-zinc-400">B) Timeline</Label>
+              <Switch
+                checked={hookDebugFlags.timeline}
+                onCheckedChange={(v) => setHookDebugFlags((s) => ({ ...s, timeline: v }))}
+              />
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <Label className="text-xs text-zinc-400">C) Summary</Label>
+              <Switch
+                checked={hookDebugFlags.summary}
+                onCheckedChange={(v) => setHookDebugFlags((s) => ({ ...s, summary: v }))}
+              />
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <Label className="text-xs text-zinc-400">D) Stats / Cards</Label>
+              <Switch
+                checked={hookDebugFlags.statsPanels}
+                onCheckedChange={(v) => setHookDebugFlags((s) => ({ ...s, statsPanels: v }))}
+              />
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <Label className="text-xs text-zinc-400">E) Modals / Portals</Label>
+              <Switch
+                checked={hookDebugFlags.modals}
+                onCheckedChange={(v) => setHookDebugFlags((s) => ({ ...s, modals: v }))}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Event Visual Effects */}
       <EventEffects lastEvent={lastEvent} enabled={effectsEnabled} />
 
       {/* Premium Header */}
-      <GameHeaderCard
-        match={match}
-        onStartGame={() => startGame.mutate()}
-        isPending={updateMatchStatus.isPending || startGame.isPending}
-        startersCount={startersCount}
-        playersOnField={playersOnField.length}
-        pendingEventsCount={pendingEventsCount}
-        isReviewMode={isReviewMode}
-        onToggleReviewMode={handleToggleReviewMode}
-        onRegenerateSummary={() => regenerateSummary.mutate()}
-        isRegenerating={regenerateSummary.isPending}
-      />
+      {hookDebugFlags.header && (
+        <GameHeaderCard
+          match={match}
+          onStartGame={() => startGame.mutate()}
+          isPending={updateMatchStatus.isPending || startGame.isPending}
+          startersCount={startersCount}
+          playersOnField={playersOnField.length}
+          pendingEventsCount={pendingEventsCount}
+          isReviewMode={isReviewMode}
+          onToggleReviewMode={handleToggleReviewMode}
+          onRegenerateSummary={() => regenerateSummary.mutate()}
+          isRegenerating={regenerateSummary.isPending}
+        />
+      )}
 
       {/* Exit Review Mode Confirmation Dialog */}
       <AlertDialog open={showExitReviewDialog} onOpenChange={setShowExitReviewDialog}>
@@ -369,7 +469,7 @@ function LiveMatchGameInner({ matchId }: { matchId: string }) {
         "desktop:container desktop:px-4 desktop:max-w-none"
       )}>
         {/* Scoreboard - only visible after game starts */}
-        {!isDraft && (
+        {hookDebugFlags.header && !isDraft && (
           <GameScoreboard
             matchId={matchId}
             opponentName={match.opponent_name}
@@ -393,106 +493,118 @@ function LiveMatchGameInner({ matchId }: { matchId: string }) {
             onFinishGame={handleFinishGame}
             onMinuteChange={handleMinuteChange}
             onTimerInfoChange={handleTimerInfoChange}
-            isPending={playPauseClock.isPending || endFirstHalf.isPending || startSecondHalf.isPending || finishGame.isPending}
+            isPending={
+              playPauseClock.isPending ||
+              endFirstHalf.isPending ||
+              startSecondHalf.isPending ||
+              finishGame.isPending
+            }
           />
         )}
 
-        {/* Live Stats Panel */}
-        {!isDraft && matchEvents.length > 0 && (
+        {/* Live Stats Panel (Summary) */}
+        {hookDebugFlags.summary && !isDraft && matchEvents.length > 0 && (
           <LiveStatsPanel events={matchEvents} />
         )}
 
         {/* Controls bar - optimized for tablet touch */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-wrap items-center gap-2 tablet:gap-3 justify-between"
-        >
-          <div className="flex items-center gap-2 tablet:gap-3 flex-wrap">
-            <Button 
-              onClick={() => setAddPlayerOpen(true)} 
-              size="sm"
-              className={cn(
-                "gap-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700",
-                // Tablet: larger touch target
-                "h-10 tablet:h-11 tablet:px-4 tablet:text-sm"
-              )}
-            >
-              <UserPlus className="h-4 w-4 tablet:h-5 tablet:w-5" />
-              {isDraft ? "Escalação" : "Jogador"}
-            </Button>
-
-            {isLive && (
-              <Button 
-                onClick={() => setSubstitutionOpen(true)} 
-                variant="outline"
+        {hookDebugFlags.statsPanels && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-wrap items-center gap-2 tablet:gap-3 justify-between"
+          >
+            <div className="flex items-center gap-2 tablet:gap-3 flex-wrap">
+              <Button
+                onClick={() => setAddPlayerOpen(true)}
                 size="sm"
                 className={cn(
-                  "gap-2 border-zinc-700 text-zinc-300 hover:bg-zinc-800",
+                  "gap-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700",
                   // Tablet: larger touch target
                   "h-10 tablet:h-11 tablet:px-4 tablet:text-sm"
                 )}
-                disabled={playersOnField.length === 0 || playersOffField.length === 0}
               >
-                <ArrowRightLeft className="h-4 w-4 tablet:h-5 tablet:w-5" />
-                <span className="hidden sm:inline">Substituir</span>
+                <UserPlus className="h-4 w-4 tablet:h-5 tablet:w-5" />
+                {isDraft ? "Escalação" : "Jogador"}
               </Button>
-            )}
 
-            {/* Manual event button - only in review mode */}
-            {isReviewMode && (
-              <Button 
-                onClick={() => setManualEventOpen(true)} 
-                size="sm"
-                className={cn(
-                  "gap-2 bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/50 text-amber-300",
-                  "h-10 tablet:h-11 tablet:px-4 tablet:text-sm"
-                )}
-              >
-                <PlusCircle className="h-4 w-4 tablet:h-5 tablet:w-5" />
-                <span className="hidden sm:inline">Evento Manual</span>
-                <span className="sm:hidden">Evento</span>
-              </Button>
-            )}
+              {isLive && (
+                <Button
+                  onClick={() => setSubstitutionOpen(true)}
+                  variant="outline"
+                  size="sm"
+                  className={cn(
+                    "gap-2 border-zinc-700 text-zinc-300 hover:bg-zinc-800",
+                    // Tablet: larger touch target
+                    "h-10 tablet:h-11 tablet:px-4 tablet:text-sm"
+                  )}
+                  disabled={playersOnField.length === 0 || playersOffField.length === 0}
+                >
+                  <ArrowRightLeft className="h-4 w-4 tablet:h-5 tablet:w-5" />
+                  <span className="hidden sm:inline">Substituir</span>
+                </Button>
+              )}
 
-            {(isDraft || isLive || isReviewMode) && (
-              <EventTimeline
-                events={matchEvents}
-                players={matchPlayers}
-                onDeleteEvent={(id) => deleteEvent.mutate(id)}
-                onVoidEvent={async (id, reason) => { 
-                  await voidEvent.mutateAsync({ eventId: id, reason }); 
-                }}
-                onEditEventTime={async (id, seconds) => {
-                  await editEventTime.mutateAsync({ eventId: id, gameTimeSeconds: seconds });
-                }}
-                matchStatus={match.status}
-                isReviewMode={isReviewMode}
-              />
-            )}
-          </div>
+              {/* Manual event button - only in review mode */}
+              {isReviewMode && (
+                <Button
+                  onClick={() => setManualEventOpen(true)}
+                  size="sm"
+                  className={cn(
+                    "gap-2 bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/50 text-amber-300",
+                    "h-10 tablet:h-11 tablet:px-4 tablet:text-sm"
+                  )}
+                >
+                  <PlusCircle className="h-4 w-4 tablet:h-5 tablet:w-5" />
+                  <span className="hidden sm:inline">Evento Manual</span>
+                  <span className="sm:hidden">Evento</span>
+                </Button>
+              )}
 
-          <div className="flex items-center gap-3">
-            {!isDraft && (
-              <div className={cn(
-                "flex items-center gap-2 bg-zinc-800/60 rounded-lg border border-zinc-700/40",
-                // Tablet: larger filter control
-                "px-3 py-1.5 tablet:px-4 tablet:py-2"
-              )}>
-                <Filter className="w-3.5 h-3.5 tablet:w-4 tablet:h-4 text-zinc-500" />
-                <Switch
-                  id="only-on-field"
-                  checked={showOnlyOnField}
-                  onCheckedChange={setShowOnlyOnField}
-                  className="data-[state=checked]:bg-green-600"
+              {hookDebugFlags.timeline && (isDraft || isLive || isReviewMode) && (
+                <EventTimeline
+                  events={matchEvents}
+                  players={matchPlayers}
+                  onDeleteEvent={(id) => deleteEvent.mutate(id)}
+                  onVoidEvent={async (id, reason) => {
+                    await voidEvent.mutateAsync({ eventId: id, reason });
+                  }}
+                  onEditEventTime={async (id, seconds) => {
+                    await editEventTime.mutateAsync({ eventId: id, gameTimeSeconds: seconds });
+                  }}
+                  matchStatus={match.status}
+                  isReviewMode={isReviewMode}
                 />
-                <Label htmlFor="only-on-field" className="text-xs tablet:text-sm text-zinc-400 cursor-pointer">
-                  Em campo
-                </Label>
-              </div>
-            )}
-          </div>
-        </motion.div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3">
+              {!isDraft && (
+                <div
+                  className={cn(
+                    "flex items-center gap-2 bg-zinc-800/60 rounded-lg border border-zinc-700/40",
+                    // Tablet: larger filter control
+                    "px-3 py-1.5 tablet:px-4 tablet:py-2"
+                  )}
+                >
+                  <Filter className="w-3.5 h-3.5 tablet:w-4 tablet:h-4 text-zinc-500" />
+                  <Switch
+                    id="only-on-field"
+                    checked={showOnlyOnField}
+                    onCheckedChange={setShowOnlyOnField}
+                    className="data-[state=checked]:bg-green-600"
+                  />
+                  <Label
+                    htmlFor="only-on-field"
+                    className="text-xs tablet:text-sm text-zinc-400 cursor-pointer"
+                  >
+                    Em campo
+                  </Label>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
 
         {/* Players count */}
         <div className="flex items-center gap-2 text-xs text-zinc-500">
@@ -530,121 +642,134 @@ function LiveMatchGameInner({ matchId }: { matchId: string }) {
         )}
 
         {/* Player cards */}
-        {displayedPlayers.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex flex-col items-center justify-center py-16"
-          >
-            <div className="w-16 h-16 rounded-2xl bg-zinc-800/60 flex items-center justify-center mb-4">
-              <Users className="w-8 h-8 text-zinc-600" />
-            </div>
-            <h3 className="text-lg font-semibold text-zinc-300 mb-1">
-              Nenhum jogador adicionado
-            </h3>
-            <p className="text-sm text-zinc-500 text-center max-w-sm mb-4">
-              {isDraft 
-                ? "Adicione jogadores à escalação para começar"
-                : showOnlyOnField 
-                  ? "Nenhum jogador em campo no momento"
-                  : "Adicione jogadores ao jogo"
-              }
-            </p>
-            <Button 
-              onClick={() => setAddPlayerOpen(true)}
-              className="gap-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700"
+        {hookDebugFlags.statsPanels ? (
+          displayedPlayers.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex flex-col items-center justify-center py-16"
             >
-              <UserPlus className="w-4 h-4" />
-              {isDraft ? "Montar Escalação" : "Adicionar Jogador"}
-            </Button>
-          </motion.div>
+              <div className="w-16 h-16 rounded-2xl bg-zinc-800/60 flex items-center justify-center mb-4">
+                <Users className="w-8 h-8 text-zinc-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-zinc-300 mb-1">
+                Nenhum jogador adicionado
+              </h3>
+              <p className="text-sm text-zinc-500 text-center max-w-sm mb-4">
+                {isDraft
+                  ? "Adicione jogadores à escalação para começar"
+                  : showOnlyOnField
+                    ? "Nenhum jogador em campo no momento"
+                    : "Adicione jogadores ao jogo"}
+              </p>
+              <Button
+                onClick={() => setAddPlayerOpen(true)}
+                className="gap-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700"
+              >
+                <UserPlus className="w-4 h-4" />
+                {isDraft ? "Montar Escalação" : "Adicionar Jogador"}
+              </Button>
+            </motion.div>
+          ) : (
+            <div
+              className={cn(
+                "grid",
+                // Mobile: single column
+                "grid-cols-1 gap-3",
+                // Tablet PORTRAIT: 1 column for horizontal card layout
+                "tablet:grid-cols-1 tablet:gap-4",
+                // Tablet LANDSCAPE (iPad rotated): 2 columns side by side
+                "tablet-landscape:grid-cols-2 tablet-landscape:gap-5",
+                // Desktop: 2 columns
+                "desktop:grid-cols-2 desktop:gap-4",
+                // Fallback for non-tablet breakpoints
+                isMobile ? "" : "md:grid-cols-2"
+              )}
+            >
+              {displayedPlayers.map((mp, index) => {
+                // Use a key that includes isMobile to force complete remount when switching
+                // between MobilePlayerCard and PremiumPlayerCard. This prevents React error #310
+                // caused by different hook counts between the two components.
+                const cardKey = `${mp.id}-${isMobile ? "mobile" : "desktop"}`;
+
+                const commonProps = {
+                  matchPlayer: mp,
+                  matchStatus: match.status,
+                  clockStatus: match.clock_status as "stopped" | "running" | "paused",
+                  currentMinute: currentMinute,
+                  currentPeriod: match.half,
+                  displayMinute: currentTimerInfo?.displayString,
+                  eventCounts:
+                    playerEventCounts[mp.player_id] || ({} as Record<MatchEventType, number>),
+                  matchStats: playerStatsMap[mp.player_id],
+                  onAddEvent: (type: MatchEventType) => handleAddEvent(mp.player_id, type),
+                  onUndo: () => undoLastEvent(mp.player_id),
+                  onVoidLastEvent: (type: MatchEventType) =>
+                    voidLastEventByType.mutate({ playerId: mp.player_id, eventType: type }),
+                  onPlayerEnter: (matchPlayerId: string) => handlePlayerEnter(matchPlayerId),
+                  onPlayerExit: (matchPlayerId: string) => handlePlayerExit(matchPlayerId),
+                  onRemoveFromMatch: () => handleRemoveFromMatch(mp),
+                  onSaveNotes: async (notes: string) => {
+                    await updatePlayer.mutateAsync({ matchPlayerId: mp.id, updates: { notes } });
+                  },
+                  onUpdateStarterStatus: async (matchPlayerId: string, started: boolean) => {
+                    await updatePlayer.mutateAsync({ matchPlayerId, updates: { started } });
+                    toast.success(started ? "Definido como Titular" : "Definido como Reserva");
+                  },
+                  disabled: isLocked,
+                  isReviewMode: isReviewMode,
+                  index: index,
+                };
+
+                return isMobile ? (
+                  <MobilePlayerCard key={cardKey} {...commonProps} />
+                ) : (
+                  <PremiumPlayerCard key={cardKey} {...commonProps} />
+                );
+              })}
+            </div>
+          )
         ) : (
-          <div className={cn(
-            "grid",
-            // Mobile: single column
-            "grid-cols-1 gap-3",
-            // Tablet PORTRAIT: 1 column for horizontal card layout
-            "tablet:grid-cols-1 tablet:gap-4",
-            // Tablet LANDSCAPE (iPad rotated): 2 columns side by side
-            "tablet-landscape:grid-cols-2 tablet-landscape:gap-5",
-            // Desktop: 2 columns
-            "desktop:grid-cols-2 desktop:gap-4",
-            // Fallback for non-tablet breakpoints
-            isMobile ? "" : "md:grid-cols-2"
-          )}>
-            {displayedPlayers.map((mp, index) => {
-              // Use a key that includes isMobile to force complete remount when switching
-              // between MobilePlayerCard and PremiumPlayerCard. This prevents React error #310
-              // caused by different hook counts between the two components.
-              const cardKey = `${mp.id}-${isMobile ? 'mobile' : 'desktop'}`;
-              
-              const commonProps = {
-                matchPlayer: mp,
-                matchStatus: match.status,
-                clockStatus: match.clock_status as "stopped" | "running" | "paused",
-                currentMinute: currentMinute,
-                currentPeriod: match.half,
-                displayMinute: currentTimerInfo?.displayString,
-                eventCounts: playerEventCounts[mp.player_id] || ({} as Record<MatchEventType, number>),
-                matchStats: playerStatsMap[mp.player_id],
-                onAddEvent: (type: MatchEventType) => handleAddEvent(mp.player_id, type),
-                onUndo: () => undoLastEvent(mp.player_id),
-                onVoidLastEvent: (type: MatchEventType) => voidLastEventByType.mutate({ playerId: mp.player_id, eventType: type }),
-                onPlayerEnter: (matchPlayerId: string) => handlePlayerEnter(matchPlayerId),
-                onPlayerExit: (matchPlayerId: string) => handlePlayerExit(matchPlayerId),
-                onRemoveFromMatch: () => handleRemoveFromMatch(mp),
-                onSaveNotes: async (notes: string) => {
-                  await updatePlayer.mutateAsync({ matchPlayerId: mp.id, updates: { notes } });
-                },
-                onUpdateStarterStatus: async (matchPlayerId: string, started: boolean) => {
-                  await updatePlayer.mutateAsync({ matchPlayerId, updates: { started } });
-                  toast.success(started ? "Definido como Titular" : "Definido como Reserva");
-                },
-                disabled: isLocked,
-                isReviewMode: isReviewMode,
-                index: index,
-              };
-              
-              return isMobile ? (
-                <MobilePlayerCard key={cardKey} {...commonProps} />
-              ) : (
-                <PremiumPlayerCard key={cardKey} {...commonProps} />
-              );
-            })}
+          <div className="py-10 text-center text-sm text-zinc-500">
+            HookDebug: bloco D (Stats / Cards) desativado.
           </div>
         )}
       </div>
 
       {/* Modals */}
-      <AddPlayerModal
-        open={addPlayerOpen}
-        onOpenChange={setAddPlayerOpen}
-        existingPlayerIds={existingPlayerIds}
-        matchStatus={match.status}
-        onAddPlayer={(params) => addPlayer.mutate(params)}
-        isPending={addPlayer.isPending}
-      />
+      {hookDebugFlags.modals && (
+        <>
+          <AddPlayerModal
+            open={addPlayerOpen}
+            onOpenChange={setAddPlayerOpen}
+            existingPlayerIds={existingPlayerIds}
+            matchStatus={match.status}
+            onAddPlayer={(params) => addPlayer.mutate(params)}
+            isPending={addPlayer.isPending}
+          />
 
-      <SubstitutionModal
-        open={substitutionOpen}
-        onOpenChange={setSubstitutionOpen}
-        playersOnField={playersOnField}
-        playersOffField={playersOffField}
-        onSubstitute={(params) => substitutePlayer.mutate(params)}
-        isPending={substitutePlayer.isPending}
-        currentMinute={currentMinute}
-        currentHalf={currentTimerInfo?.half}
-        displayMinute={currentTimerInfo?.displayString}
-      />
+          <SubstitutionModal
+            open={substitutionOpen}
+            onOpenChange={setSubstitutionOpen}
+            playersOnField={playersOnField}
+            playersOffField={playersOffField}
+            onSubstitute={(params) => substitutePlayer.mutate(params)}
+            isPending={substitutePlayer.isPending}
+            currentMinute={currentMinute}
+            currentHalf={currentTimerInfo?.half}
+            displayMinute={currentTimerInfo?.displayString}
+          />
 
-      {/* Manual Event Modal - for review mode */}
-      <AddManualEventModal
-        open={manualEventOpen}
-        onOpenChange={setManualEventOpen}
-        players={matchPlayers}
-        onAddEvent={handleAddManualEvent}
-        isPending={addEvent.isPending}
-      />
+          {/* Manual Event Modal - for review mode */}
+          <AddManualEventModal
+            open={manualEventOpen}
+            onOpenChange={setManualEventOpen}
+            players={matchPlayers}
+            onAddEvent={handleAddManualEvent}
+            isPending={addEvent.isPending}
+          />
+        </>
+      )}
     </div>
   );
 }
