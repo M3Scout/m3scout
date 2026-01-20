@@ -755,7 +755,7 @@ export default function LiveMatchReview() {
                             exited_minute: mp.exited_minute,
                             minutes_played: mp.minutes_played,
                           });
-                          return <PlayerRatingBadge rating={playerRating} size="sm" />;
+                          return <PlayerRatingBadge rating={playerRating} playerName={mp.player.full_name} size="sm" />;
                         })()}
                       </div>
                       <div className="flex items-center gap-2 mt-0.5">

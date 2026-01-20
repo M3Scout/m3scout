@@ -1410,7 +1410,9 @@ export function MatchSummaryVectorPdf({
                       );
                     }
                     
-                    const bgColor = rating.rating! >= 8.0 ? "#10b981" : rating.rating! >= 7.0 ? "#22c55e" : rating.rating! >= 6.0 ? "#f59e0b" : rating.rating! >= 5.0 ? "#f97316" : "#ef4444";
+                    // SofaScore color bands: <6=red, 6-6.4=orange, 6.5-6.9=amber, 7-7.9=green, 8-8.9=cyan, 9+=blue
+                    const r = rating.rating!;
+                    const bgColor = r < 6.0 ? "#ef4444" : r < 6.5 ? "#f97316" : r < 7.0 ? "#f59e0b" : r < 8.0 ? "#22c55e" : r < 9.0 ? "#06b6d4" : "#3b82f6";
                     return (
                       <View style={{ backgroundColor: bgColor, paddingLeft: 4, paddingRight: 4, paddingTop: 2, paddingBottom: 2, borderRadius: 3 }}>
                         <Text style={{ fontSize: 8, fontWeight: 700, color: "#ffffff" }}>{rating.rating!.toFixed(1)}</Text>
