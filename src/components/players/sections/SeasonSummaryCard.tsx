@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
   BarChart3, 
@@ -16,7 +15,7 @@ import {
   Footprints,
   Swords
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { usePlayerMatchStats, toSeasonSummaryFormat } from "@/hooks/usePlayerMatchStats";
 import { formatFixed } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 
@@ -331,62 +330,16 @@ function getDerivedMetrics(category: PositionCategory, stats: SeasonStats): { va
 }
 
 export function SeasonSummaryCard({ playerId, playerPosition = "" }: SeasonSummaryCardProps) {
-  const [stats, setStats] = useState<SeasonStats | null>(null);
-  const [loading, setLoading] = useState(true);
-
   const positionCategory = getPositionCategory(playerPosition);
+  
+  // Use the unified Stats Engine - single source of truth from match_player_stats
+  const { totals, isLoading: loading } = usePlayerMatchStats({
+    playerId,
+    seasonYear: currentYear,
+  });
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      const { data } = await supabase
-        .from("player_stats")
-        .select(`
-          matches, minutes, goals, assists,
-          chances_created, key_passes, tackles, interceptions,
-          accurate_passes, total_passes, clearances,
-          duels_won, total_duels, recoveries,
-          saves, goals_conceded, clean_sheets, aerial_duels_won
-        `)
-        .eq("player_id", playerId)
-        .eq("season_year", currentYear);
-
-      if (Array.isArray(data) && data.length > 0) {
-        const aggregated = data.reduce(
-          (acc, s) => ({
-            matches: acc.matches + (s.matches || 0),
-            minutes: acc.minutes + (s.minutes || 0),
-            goals: acc.goals + (s.goals || 0),
-            assists: acc.assists + (s.assists || 0),
-            chances_created: acc.chances_created + (s.chances_created || 0),
-            key_passes: acc.key_passes + (s.key_passes || 0),
-            tackles: acc.tackles + (s.tackles || 0),
-            interceptions: acc.interceptions + (s.interceptions || 0),
-            accurate_passes: acc.accurate_passes + (s.accurate_passes || 0),
-            total_passes: acc.total_passes + (s.total_passes || 0),
-            clearances: acc.clearances + (s.clearances || 0),
-            duels_won: acc.duels_won + (s.duels_won || 0),
-            total_duels: acc.total_duels + (s.total_duels || 0),
-            recoveries: acc.recoveries + (s.recoveries || 0),
-            saves: acc.saves + (s.saves || 0),
-            goals_conceded: acc.goals_conceded + (s.goals_conceded || 0),
-            clean_sheets: acc.clean_sheets + (s.clean_sheets || 0),
-            aerial_duels_won: acc.aerial_duels_won + (s.aerial_duels_won || 0),
-          }),
-          {
-            matches: 0, minutes: 0, goals: 0, assists: 0,
-            chances_created: 0, key_passes: 0, tackles: 0, interceptions: 0,
-            accurate_passes: 0, total_passes: 0, clearances: 0,
-            duels_won: 0, total_duels: 0, recoveries: 0,
-            saves: 0, goals_conceded: 0, clean_sheets: 0, aerial_duels_won: 0,
-          }
-        );
-        setStats(aggregated);
-      }
-      setLoading(false);
-    };
-
-    fetchStats();
-  }, [playerId]);
+  // Convert to the format expected by this component
+  const stats: SeasonStats | null = totals.matches > 0 ? toSeasonSummaryFormat(totals) : null;
 
   if (loading) {
     return (
