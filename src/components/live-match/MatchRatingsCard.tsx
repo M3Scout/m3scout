@@ -32,16 +32,22 @@ export function MatchRatingsCard({
   // Only show ratings after match is finished or applied
   const showRatings = matchStatus === "finished" || matchStatus === "applied";
   
-  // Calculate team average
-  const teamAverage = useMemo(() => {
-    if (sortedPlayers.length === 0) return 0;
-    const sum = sortedPlayers.reduce((acc, p) => acc + p.rating.rating, 0);
-    return Math.round((sum / sortedPlayers.length) * 10) / 10;
-  }, [sortedPlayers]);
+  // Filter players with valid ratings (played > 0 minutes)
+  const playersWithRatings = useMemo(() => 
+    sortedPlayers.filter(p => p.rating.hasRating),
+    [sortedPlayers]
+  );
   
-  // Best and worst ratings
-  const bestPlayer = sortedPlayers[0];
-  const worstPlayer = sortedPlayers[sortedPlayers.length - 1];
+  // Calculate team average (only from players who actually played)
+  const teamAverage = useMemo(() => {
+    if (playersWithRatings.length === 0) return 0;
+    const sum = playersWithRatings.reduce((acc, p) => acc + (p.rating.rating ?? 0), 0);
+    return Math.round((sum / playersWithRatings.length) * 10) / 10;
+  }, [playersWithRatings]);
+  
+  // Best and worst ratings (only from players who played)
+  const bestPlayer = playersWithRatings[0];
+  const worstPlayer = playersWithRatings[playersWithRatings.length - 1];
   
   if (!showRatings) {
     return null;
@@ -56,16 +62,16 @@ export function MatchRatingsCard({
         </CardTitle>
         <CardDescription className="flex items-center gap-3">
           <span>Avaliação de desempenho individual (0-10)</span>
-          {teamAverage > 0 && (
-            <Badge variant="secondary" className="text-xs">
-              Média: {teamAverage.toFixed(1)}
-            </Badge>
-          )}
+        {playersWithRatings.length > 0 && (
+          <Badge variant="secondary" className="text-xs">
+            Média: {teamAverage.toFixed(1)} ({playersWithRatings.length} jogadores)
+          </Badge>
+        )}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Highlights */}
-        {sortedPlayers.length >= 2 && (
+        {/* Highlights - only show if we have players who played */}
+        {playersWithRatings.length >= 2 && (
           <div className="grid grid-cols-2 gap-3">
             {/* Best Player */}
             {bestPlayer && (
@@ -80,7 +86,7 @@ export function MatchRatingsCard({
             )}
             
             {/* Needs Improvement */}
-            {worstPlayer && worstPlayer.rating.rating < 6.0 && (
+            {worstPlayer && worstPlayer.rating.rating !== null && worstPlayer.rating.rating < 6.0 && (
               <div className="flex items-center gap-2 p-3 rounded-lg bg-orange-500/10 border border-orange-500/20">
                 <TrendingDown className="h-4 w-4 text-orange-400 shrink-0" />
                 <div className="flex-1 min-w-0">
@@ -92,7 +98,7 @@ export function MatchRatingsCard({
             )}
             
             {/* If no one is below 6, show average */}
-            {worstPlayer && worstPlayer.rating.rating >= 6.0 && (
+            {worstPlayer && worstPlayer.rating.rating !== null && worstPlayer.rating.rating >= 6.0 && (
               <div className="flex items-center gap-2 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
                 <Minus className="h-4 w-4 text-blue-400 shrink-0" />
                 <div className="flex-1 min-w-0">

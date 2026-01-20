@@ -1400,10 +1400,20 @@ export function MatchSummaryVectorPdf({
                       exited_minute: mp.exited_minute,
                       minutes_played: mp.minutes_played,
                     });
-                    const bgColor = rating.rating >= 8.0 ? "#10b981" : rating.rating >= 7.0 ? "#22c55e" : rating.rating >= 6.0 ? "#f59e0b" : rating.rating >= 5.0 ? "#f97316" : "#ef4444";
+                    
+                    // Players with no rating (0 minutes) show "—"
+                    if (!rating.hasRating) {
+                      return (
+                        <View style={{ backgroundColor: "#6b7280", paddingLeft: 4, paddingRight: 4, paddingTop: 2, paddingBottom: 2, borderRadius: 3 }}>
+                          <Text style={{ fontSize: 8, fontWeight: 700, color: "#ffffff" }}>—</Text>
+                        </View>
+                      );
+                    }
+                    
+                    const bgColor = rating.rating! >= 8.0 ? "#10b981" : rating.rating! >= 7.0 ? "#22c55e" : rating.rating! >= 6.0 ? "#f59e0b" : rating.rating! >= 5.0 ? "#f97316" : "#ef4444";
                     return (
                       <View style={{ backgroundColor: bgColor, paddingLeft: 4, paddingRight: 4, paddingTop: 2, paddingBottom: 2, borderRadius: 3 }}>
-                        <Text style={{ fontSize: 8, fontWeight: 700, color: "#ffffff" }}>{rating.rating.toFixed(1)}</Text>
+                        <Text style={{ fontSize: 8, fontWeight: 700, color: "#ffffff" }}>{rating.rating!.toFixed(1)}</Text>
                       </View>
                     );
                   })()}

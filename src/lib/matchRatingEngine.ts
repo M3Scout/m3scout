@@ -66,19 +66,21 @@ export interface RatingBreakdown {
 }
 
 export interface MatchRatingResult {
-  /** Final rating 0.0-10.0 */
-  rating: number;
+  /** Whether the player has a valid rating (played > 0 minutes) */
+  hasRating: boolean;
+  /** Final rating 0.0-10.0 (null if no rating) */
+  rating: number | null;
   /** Raw impact before minutes factor */
   rawImpact: number;
   /** Minutes factor applied (0.35-1.0) */
   minutesFactor: number;
   /** Minutes played (0-90+) */
   minutesPlayed: number;
-  /** Impact breakdown by category */
-  breakdown: RatingBreakdown;
+  /** Impact breakdown by category (null if no rating) */
+  breakdown: RatingBreakdown | null;
   /** Color for display (green/yellow/orange/red) */
   color: string;
-  /** Label for display (Excelente/Bom/Regular/Fraco) */
+  /** Label for display (Excelente/Bom/Regular/Fraco/Sem nota) */
   label: string;
 }
 
@@ -176,6 +178,19 @@ export function calculateMatchRating(
   stats: PlayerStatsInput,
   minutesPlayed: number
 ): MatchRatingResult {
+  // CRITICAL: Players with 0 minutes don't get a rating
+  if (minutesPlayed <= 0) {
+    return {
+      hasRating: false,
+      rating: null,
+      rawImpact: 0,
+      minutesFactor: 0,
+      minutesPlayed: 0,
+      breakdown: null,
+      color: "text-muted-foreground",
+      label: "Sem nota",
+    };
+  }
   // === ATTACK IMPACT ===
   const goals = Math.max(0, stats.goals) * WEIGHTS.goal;
   const assists = Math.max(0, stats.assists) * WEIGHTS.assist;
@@ -231,6 +246,7 @@ export function calculateMatchRating(
   const roundedRating = Math.round(rating * 10) / 10;
   
   return {
+    hasRating: true,
     rating: roundedRating,
     rawImpact: Math.round(rawImpact * 100) / 100,
     minutesFactor: Math.round(minutesFactor * 100) / 100,
