@@ -514,3 +514,227 @@ export function toSeasonSummaryFormat(stats: MatchDerivedStats) {
     aerial_duels_won: stats.aerial_duels_won,
   };
 }
+
+/**
+ * Interface for stats grouped by season and competition (for PlayerStatsSection)
+ */
+export interface SeasonCompetitionStats {
+  id: string; // Synthetic ID: season_competition
+  season_year: number;
+  competition_id: string | null;
+  competition_name: string | null;
+  stats: MatchDerivedStats;
+}
+
+/**
+ * Hook to get player match stats organized by season and competition
+ * This is the format expected by PlayerStatsSection "Detalhes por Temporada"
+ */
+export function usePlayerMatchStatsBySeasonCompetition({
+  playerId,
+  enabled = true,
+}: {
+  playerId: string;
+  enabled?: boolean;
+}) {
+  const { data: matchesData, isLoading, error, refetch } = useQuery({
+    queryKey: ["player-match-stats-by-season-comp", playerId],
+    queryFn: async () => {
+      // Get all match_players entries for this player (only finished/applied matches)
+      const { data: matchPlayers, error: mpError } = await supabase
+        .from("match_players")
+        .select(`
+          id,
+          match_id,
+          player_id,
+          started,
+          entered_minute,
+          exited_minute,
+          minutes_played,
+          match:matches!inner (
+            id,
+            match_date,
+            opponent_name,
+            competition_id,
+            season_year,
+            duration_minutes,
+            status,
+            competition:competitions (
+              id,
+              name,
+              display_name
+            )
+          )
+        `)
+        .eq("player_id", playerId)
+        .eq("is_removed", false)
+        .in("match.status", ["finished", "applied"]);
+
+      if (mpError) throw mpError;
+
+      const typedPlayers = matchPlayers as unknown as MatchPlayerWithMatch[];
+      const matchIds = (typedPlayers || [])
+        .filter(mp => mp.match)
+        .map(mp => mp.match_id);
+
+      if (matchIds.length === 0) {
+        return { matchPlayers: [], matchStats: {} };
+      }
+
+      // Get all match_player_stats for these matches
+      const { data: statsData, error: statsError } = await supabase
+        .from("match_player_stats")
+        .select("*")
+        .eq("player_id", playerId)
+        .in("match_id", matchIds);
+
+      if (statsError) throw statsError;
+
+      // Create a map of match_id -> stats
+      const statsMap: Record<string, MatchPlayerStats> = {};
+      (statsData || []).forEach((stat) => {
+        statsMap[stat.match_id] = stat as MatchPlayerStats;
+      });
+
+      return { 
+        matchPlayers: typedPlayers, 
+        matchStats: statsMap 
+      };
+    },
+    enabled: enabled && !!playerId,
+    staleTime: 30000,
+  });
+
+  // Group data by season_year + competition_id
+  const statsBySeasonCompetition: Record<string, SeasonCompetitionStats> = {};
+  const seasonYears = new Set<number>();
+
+  (matchesData?.matchPlayers || [])
+    .filter((mp): mp is MatchPlayerWithMatch & { match: NonNullable<MatchPlayerWithMatch["match"]> } => 
+      mp.match !== null
+    )
+    .forEach((mp) => {
+      const stats = matchesData?.matchStats[mp.match_id];
+      const season = mp.match.season_year;
+      const compId = mp.match.competition_id || "no-competition";
+      const key = `${season}_${compId}`;
+      
+      seasonYears.add(season);
+
+      if (!statsBySeasonCompetition[key]) {
+        const competition = mp.match.competition;
+        statsBySeasonCompetition[key] = {
+          id: key,
+          season_year: season,
+          competition_id: mp.match.competition_id,
+          competition_name: competition?.display_name || competition?.name || null,
+          stats: {
+            matches: 0,
+            minutes: 0,
+            goals: 0,
+            assists: 0,
+            shots: 0,
+            shots_on_target: 0,
+            shots_off_target: 0,
+            passes_completed: 0,
+            passes_failed: 0,
+            passes_total: 0,
+            key_passes: 0,
+            chances_created: 0,
+            dribbles_success: 0,
+            dribbles_failed: 0,
+            dribbles_total: 0,
+            tackles: 0,
+            interceptions: 0,
+            recoveries: 0,
+            clearances: 0,
+            duels_won: 0,
+            duels_total: 0,
+            aerial_duels_won: 0,
+            aerial_duels_total: 0,
+            ground_duels_won: 0,
+            ground_duels_total: 0,
+            yellow_cards: 0,
+            red_cards: 0,
+            fouls_committed: 0,
+            fouls_suffered: 0,
+            possession_lost: 0,
+            saves: 0,
+            goals_conceded: 0,
+            clean_sheets: 0,
+            penalties_saved: 0,
+          },
+        };
+      }
+
+      const entry = statsBySeasonCompetition[key];
+      const s = entry.stats;
+
+      // Calculate minutes using standardized logic
+      const minutesPlayed = calculateMinutesPlayed(
+        mp.started,
+        mp.entered_minute,
+        mp.exited_minute,
+        mp.minutes_played,
+        mp.match.duration_minutes
+      );
+
+      s.matches += 1;
+      s.minutes += minutesPlayed;
+      s.goals += stats?.goals ?? 0;
+      s.assists += stats?.assists ?? 0;
+      s.shots += stats?.shots ?? 0;
+      s.shots_on_target += stats?.shots_on_target ?? 0;
+      s.shots_off_target += Math.max(0, (stats?.shots ?? 0) - (stats?.shots_on_target ?? 0));
+      s.passes_completed += stats?.passes_completed ?? 0;
+      s.passes_total += stats?.passes_total ?? 0;
+      s.passes_failed += Math.max(0, (stats?.passes_total ?? 0) - (stats?.passes_completed ?? 0));
+      s.key_passes += stats?.key_passes ?? 0;
+      s.chances_created += stats?.chances_created ?? 0;
+      s.dribbles_success += stats?.dribbles_success ?? 0;
+      s.dribbles_total += stats?.dribbles_total ?? 0;
+      s.dribbles_failed += Math.max(0, (stats?.dribbles_total ?? 0) - (stats?.dribbles_success ?? 0));
+      s.tackles += stats?.tackles ?? 0;
+      s.interceptions += stats?.interceptions ?? 0;
+      s.recoveries += stats?.recoveries ?? 0;
+      s.clearances += stats?.clearances ?? 0;
+      s.duels_won += stats?.duels_won ?? 0;
+      s.duels_total += stats?.duels_total ?? 0;
+      s.aerial_duels_won += stats?.aerial_duels_won ?? 0;
+      s.aerial_duels_total += stats?.aerial_duels_total ?? 0;
+      s.ground_duels_won += (stats?.duels_won ?? 0) - (stats?.aerial_duels_won ?? 0);
+      s.ground_duels_total += (stats?.duels_total ?? 0) - (stats?.aerial_duels_total ?? 0);
+      s.yellow_cards += stats?.yellow_cards ?? 0;
+      s.red_cards += stats?.red_cards ?? 0;
+      s.fouls_committed += stats?.fouls_committed ?? 0;
+      s.fouls_suffered += stats?.fouls_suffered ?? 0;
+      s.possession_lost += stats?.possession_lost ?? 0;
+      s.saves += stats?.saves ?? 0;
+      s.goals_conceded += stats?.goals_conceded ?? 0;
+    });
+
+  // Convert to array sorted by season (desc) then competition name
+  const statsArray = Object.values(statsBySeasonCompetition)
+    .sort((a, b) => {
+      if (b.season_year !== a.season_year) return b.season_year - a.season_year;
+      return (a.competition_name || "").localeCompare(b.competition_name || "");
+    });
+
+  // Group by season for UI
+  const groupedBySeason: Record<number, SeasonCompetitionStats[]> = {};
+  statsArray.forEach((stat) => {
+    if (!groupedBySeason[stat.season_year]) {
+      groupedBySeason[stat.season_year] = [];
+    }
+    groupedBySeason[stat.season_year].push(stat);
+  });
+
+  return {
+    stats: statsArray,
+    bySeason: groupedBySeason,
+    seasons: Array.from(seasonYears).sort((a, b) => b - a),
+    isLoading,
+    error,
+    refetch,
+  };
+}
