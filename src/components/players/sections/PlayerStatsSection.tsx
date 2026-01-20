@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { safeArray } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -55,6 +55,7 @@ import {
   ChevronDown,
   ChevronsUpDown,
   TrendingUp,
+  Zap,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -69,6 +70,7 @@ import {
 import { isGoalkeeper } from "@/lib/positionUtils";
 import { CompetitionStatsSummary, SeasonEvolutionChart, SeasonStatsCard, SeasonTotalsCard } from "@/components/players/stats";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { usePlayerMatchStatsBySeasonCompetition, type SeasonCompetitionStats } from "@/hooks/usePlayerMatchStats";
 
 interface Competition {
   id: string;
@@ -98,7 +100,19 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
   const isGK = isGoalkeeper(playerPosition);
   const isMobile = useIsMobile();
 
-  const [stats, setStats] = useState<StatsWithCompetition[]>([]);
+  // ========================================
+  // SINGLE SOURCE OF TRUTH: match_player_stats
+  // ========================================
+  const { 
+    stats: liveMatchStats, 
+    bySeason: liveStatsBySeason, 
+    seasons: liveSeasons,
+    isLoading: liveLoading,
+    refetch: refetchLiveStats,
+  } = usePlayerMatchStatsBySeasonCompetition({ playerId });
+
+  // Legacy manual stats (kept for backwards compatibility and manual entries)
+  const [manualStats, setManualStats] = useState<StatsWithCompetition[]>([]);
   const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -158,7 +172,7 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
     ]);
 
     if (statsRes.data) {
-      setStats(statsRes.data as StatsWithCompetition[]);
+      setManualStats(statsRes.data as StatsWithCompetition[]);
     }
     if (competitionsRes.data) {
       setCompetitions(competitionsRes.data);
@@ -166,6 +180,85 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
 
     setLoading(false);
   };
+
+  // ========================================
+  // MERGE: Live match stats + Manual stats
+  // Priority: Live match stats override manual for same season/competition
+  // ========================================
+  const stats = useMemo(() => {
+    // Convert live match stats to the format expected by the UI
+    const liveAsPlayerStats: StatsWithCompetition[] = liveMatchStats.map((ls) => ({
+      id: ls.id,
+      player_id: playerId,
+      season_year: ls.season_year,
+      competition_id: ls.competition_id,
+      matches: ls.stats.matches,
+      minutes: ls.stats.minutes,
+      goals: ls.stats.goals,
+      assists: ls.stats.assists,
+      yellow_cards: ls.stats.yellow_cards,
+      red_cards: ls.stats.red_cards,
+      tackles: ls.stats.tackles,
+      interceptions: ls.stats.interceptions,
+      recoveries: ls.stats.recoveries,
+      clearances: ls.stats.clearances,
+      saves: ls.stats.saves,
+      saves_inside_box: 0,
+      goals_conceded: ls.stats.goals_conceded,
+      clean_sheets: ls.stats.clean_sheets,
+      penalties_saved: ls.stats.penalties_saved,
+      errors_leading_to_goal: 0,
+      punches: 0,
+      successful_runs_out: 0,
+      total_runs_out: 0,
+      high_claims: 0,
+      accurate_passes: ls.stats.passes_completed,
+      total_passes: ls.stats.passes_total,
+      key_passes: ls.stats.key_passes,
+      chances_created: ls.stats.chances_created,
+      long_passes_accurate: 0,
+      long_passes_total: 0,
+      shots: ls.stats.shots,
+      shots_on_target: ls.stats.shots_on_target,
+      shots_blocked: 0,
+      offsides: 0,
+      duels_won: ls.stats.duels_won,
+      total_duels: ls.stats.duels_total,
+      aerial_duels_won: ls.stats.aerial_duels_won,
+      aerial_duels_total: ls.stats.aerial_duels_total,
+      ground_duels_won: ls.stats.ground_duels_won,
+      ground_duels_total: ls.stats.ground_duels_total,
+      successful_dribbles: ls.stats.dribbles_success,
+      total_dribbles: ls.stats.dribbles_total,
+      possession_lost: ls.stats.possession_lost,
+      fouls_drawn: ls.stats.fouls_suffered,
+      fouls_committed: ls.stats.fouls_committed,
+      times_dribbled_past: 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      competitions: ls.competition_name ? {
+        name: ls.competition_name,
+        computed_coefficient: 1.0,
+      } : null,
+      // Mark as live data for UI differentiation
+      _isLiveData: true,
+    } as StatsWithCompetition & { _isLiveData?: boolean }));
+
+    // Create a set of keys for live stats to filter out duplicates from manual
+    const liveKeys = new Set(liveAsPlayerStats.map(s => `${s.season_year}_${s.competition_id || 'none'}`));
+
+    // Filter manual stats that don't overlap with live stats
+    const nonOverlappingManual = manualStats.filter(ms => {
+      const key = `${ms.season_year}_${ms.competition_id || 'none'}`;
+      return !liveKeys.has(key);
+    });
+
+    // Combine: live stats first (most accurate), then non-overlapping manual
+    return [...liveAsPlayerStats, ...nonOverlappingManual].sort((a, b) => {
+      if (b.season_year !== a.season_year) return b.season_year - a.season_year;
+      return (a.competitions?.name || "").localeCompare(b.competitions?.name || "");
+    });
+  }, [liveMatchStats, manualStats, playerId]);
 
   const resetForm = () => {
     setFormData({
@@ -370,7 +463,10 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
   const uniqueSeasons = sortedSeasons.length;
   const uniqueCompetitions = new Set(stats.map(s => s.competition_id)).size;
 
-  if (loading) {
+  // Combined loading state
+  const isLoading = loading || liveLoading;
+
+  if (isLoading) {
     return (
       <Card>
         <CardContent className="flex items-center justify-center py-12">
@@ -384,10 +480,18 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
     <div className="w-full max-w-full min-w-0 overflow-x-hidden">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="w-5 h-5" />
-            Estatísticas por Temporada
-          </CardTitle>
+          <div className="flex flex-col gap-1">
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="w-5 h-5" />
+              Estatísticas por Temporada
+            </CardTitle>
+            {liveMatchStats.length > 0 && (
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Zap className="w-3 h-3 text-emerald-500" />
+                Dados sincronizados de {liveMatchStats.length} partida{liveMatchStats.length > 1 ? 's' : ''} ao vivo
+              </p>
+            )}
+          </div>
           {canEdit && (
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
