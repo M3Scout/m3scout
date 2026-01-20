@@ -786,7 +786,10 @@ export function useLiveMatch(matchId: string) {
       return data;
     },
     onSuccess: () => {
+      // Invalidate all relevant queries - including match-players since
+      // player_on/player_off events now sync to match_players.entered_minute/exited_minute
       queryClient.invalidateQueries({ queryKey: ["match-events", matchId] });
+      queryClient.invalidateQueries({ queryKey: ["match-players", matchId] });
       queryClient.invalidateQueries({ queryKey: ["match-player-stats", matchId] });
       toast.success("Minuto do evento atualizado");
     },
