@@ -572,65 +572,45 @@ function LiveMatchGameInner({ matchId }: { matchId: string }) {
             // Fallback for non-tablet breakpoints
             isMobile ? "" : "md:grid-cols-2"
           )}>
-            {displayedPlayers.map((mp, index) => (
-              isMobile ? (
-                <MobilePlayerCard
-                  key={mp.id}
-                  matchPlayer={mp}
-                  matchStatus={match.status}
-                  clockStatus={match.clock_status as "stopped" | "running" | "paused"}
-                  currentMinute={currentMinute}
-                  currentPeriod={match.half}
-                  displayMinute={currentTimerInfo?.displayString}
-                  eventCounts={playerEventCounts[mp.player_id] || ({} as Record<MatchEventType, number>)}
-                  matchStats={playerStatsMap[mp.player_id]}
-                  onAddEvent={(type) => handleAddEvent(mp.player_id, type)}
-                  onUndo={() => undoLastEvent(mp.player_id)}
-                  onVoidLastEvent={(type) => voidLastEventByType.mutate({ playerId: mp.player_id, eventType: type })}
-                  onPlayerEnter={(matchPlayerId) => handlePlayerEnter(matchPlayerId)}
-                  onPlayerExit={(matchPlayerId) => handlePlayerExit(matchPlayerId)}
-                  onRemoveFromMatch={() => handleRemoveFromMatch(mp)}
-                  onSaveNotes={async (notes) => {
-                    await updatePlayer.mutateAsync({ matchPlayerId: mp.id, updates: { notes } });
-                  }}
-                  onUpdateStarterStatus={async (matchPlayerId, started) => {
-                    await updatePlayer.mutateAsync({ matchPlayerId, updates: { started } });
-                    toast.success(started ? "Definido como Titular" : "Definido como Reserva");
-                  }}
-                  disabled={isLocked}
-                  isReviewMode={isReviewMode}
-                  index={index}
-                />
+            {displayedPlayers.map((mp, index) => {
+              // Use a key that includes isMobile to force complete remount when switching
+              // between MobilePlayerCard and PremiumPlayerCard. This prevents React error #310
+              // caused by different hook counts between the two components.
+              const cardKey = `${mp.id}-${isMobile ? 'mobile' : 'desktop'}`;
+              
+              const commonProps = {
+                matchPlayer: mp,
+                matchStatus: match.status,
+                clockStatus: match.clock_status as "stopped" | "running" | "paused",
+                currentMinute: currentMinute,
+                currentPeriod: match.half,
+                displayMinute: currentTimerInfo?.displayString,
+                eventCounts: playerEventCounts[mp.player_id] || ({} as Record<MatchEventType, number>),
+                matchStats: playerStatsMap[mp.player_id],
+                onAddEvent: (type: MatchEventType) => handleAddEvent(mp.player_id, type),
+                onUndo: () => undoLastEvent(mp.player_id),
+                onVoidLastEvent: (type: MatchEventType) => voidLastEventByType.mutate({ playerId: mp.player_id, eventType: type }),
+                onPlayerEnter: (matchPlayerId: string) => handlePlayerEnter(matchPlayerId),
+                onPlayerExit: (matchPlayerId: string) => handlePlayerExit(matchPlayerId),
+                onRemoveFromMatch: () => handleRemoveFromMatch(mp),
+                onSaveNotes: async (notes: string) => {
+                  await updatePlayer.mutateAsync({ matchPlayerId: mp.id, updates: { notes } });
+                },
+                onUpdateStarterStatus: async (matchPlayerId: string, started: boolean) => {
+                  await updatePlayer.mutateAsync({ matchPlayerId, updates: { started } });
+                  toast.success(started ? "Definido como Titular" : "Definido como Reserva");
+                },
+                disabled: isLocked,
+                isReviewMode: isReviewMode,
+                index: index,
+              };
+              
+              return isMobile ? (
+                <MobilePlayerCard key={cardKey} {...commonProps} />
               ) : (
-                <PremiumPlayerCard
-                  key={mp.id}
-                  matchPlayer={mp}
-                  matchStatus={match.status}
-                  clockStatus={match.clock_status as "stopped" | "running" | "paused"}
-                  currentMinute={currentMinute}
-                  currentPeriod={match.half}
-                  displayMinute={currentTimerInfo?.displayString}
-                  eventCounts={playerEventCounts[mp.player_id] || ({} as Record<MatchEventType, number>)}
-                  matchStats={playerStatsMap[mp.player_id]}
-                  onAddEvent={(type) => handleAddEvent(mp.player_id, type)}
-                  onUndo={() => undoLastEvent(mp.player_id)}
-                  onVoidLastEvent={(type) => voidLastEventByType.mutate({ playerId: mp.player_id, eventType: type })}
-                  onPlayerEnter={(matchPlayerId) => handlePlayerEnter(matchPlayerId)}
-                  onPlayerExit={(matchPlayerId) => handlePlayerExit(matchPlayerId)}
-                  onRemoveFromMatch={() => handleRemoveFromMatch(mp)}
-                  onSaveNotes={async (notes) => {
-                    await updatePlayer.mutateAsync({ matchPlayerId: mp.id, updates: { notes } });
-                  }}
-                  onUpdateStarterStatus={async (matchPlayerId, started) => {
-                    await updatePlayer.mutateAsync({ matchPlayerId, updates: { started } });
-                    toast.success(started ? "Definido como Titular" : "Definido como Reserva");
-                  }}
-                  disabled={isLocked}
-                  isReviewMode={isReviewMode}
-                  index={index}
-                />
-              )
-            ))}
+                <PremiumPlayerCard key={cardKey} {...commonProps} />
+              );
+            })}
           </div>
         )}
       </div>
