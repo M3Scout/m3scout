@@ -30,8 +30,9 @@ import {
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PDF_COLORS } from "@/lib/pdfStyles";
-import { Match, MatchPlayer, MatchEvent, MatchEventType } from "@/hooks/useLiveMatch";
+import { Match, MatchPlayer, MatchEvent, MatchEventType, MatchPlayerStats } from "@/hooks/useLiveMatch";
 import { calculateMinutesPlayed } from "@/lib/minutesPlayed";
+import { calculatePlayerMatchRating, getRatingBgColor } from "@/lib/matchRatingEngine";
 import {
   EVENT_TYPE_CONFIG,
   COMPUTED_STATS,
@@ -579,6 +580,7 @@ interface MatchSummaryVectorPdfProps {
   matchPlayers: MatchPlayer[];
   matchEvents: MatchEvent[];
   playerEventCounts: Record<string, Partial<Record<MatchEventType, number>>>;
+  playerStatsMap?: Record<string, MatchPlayerStats>;
   teamName: string;
   logoUrl?: string;
   selectedPlayerIds?: string[]; // Filter for specific players
@@ -592,6 +594,7 @@ export function MatchSummaryVectorPdf({
   matchPlayers,
   matchEvents,
   playerEventCounts,
+  playerStatsMap = {},
   teamName,
   logoUrl,
   selectedPlayerIds,
@@ -1388,6 +1391,22 @@ export function MatchSummaryVectorPdf({
                   {minutesPlayed > 0 && (
                     <Text style={styles.playerMinutes}>{minutesPlayed} min</Text>
                   )}
+                  {/* Match Rating Badge */}
+                  {(match.status === "finished" || match.status === "applied") && (() => {
+                    const stats = playerStatsMap[mp.player_id];
+                    const rating = calculatePlayerMatchRating(stats, {
+                      started: mp.started,
+                      entered_minute: mp.entered_minute,
+                      exited_minute: mp.exited_minute,
+                      minutes_played: mp.minutes_played,
+                    });
+                    const bgColor = rating.rating >= 8.0 ? "#10b981" : rating.rating >= 7.0 ? "#22c55e" : rating.rating >= 6.0 ? "#f59e0b" : rating.rating >= 5.0 ? "#f97316" : "#ef4444";
+                    return (
+                      <View style={{ backgroundColor: bgColor, paddingLeft: 4, paddingRight: 4, paddingTop: 2, paddingBottom: 2, borderRadius: 3 }}>
+                        <Text style={{ fontSize: 8, fontWeight: 700, color: "#ffffff" }}>{rating.rating.toFixed(1)}</Text>
+                      </View>
+                    );
+                  })()}
                 </View>
                 <View style={styles.playerStats}>
                   {statEntries.length > 0 ? (
