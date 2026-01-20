@@ -13,6 +13,7 @@ export interface MatchWithRating extends MatchWithStats {
 
 interface UsePlayerMatchRatingsOptions {
   playerId: string;
+  playerPosition?: string; // To detect if goalkeeper
   seasonYear?: number;
   competitionId?: string;
   enabled?: boolean;
@@ -21,8 +22,9 @@ interface UsePlayerMatchRatingsOptions {
 /**
  * Convert MatchDerivedStats to PlayerStatsInput format for rating calculation
  */
-function matchDerivedStatsToInput(stats: MatchDerivedStats): PlayerStatsInput {
+function matchDerivedStatsToInput(stats: MatchDerivedStats, isGoalkeeper: boolean): PlayerStatsInput {
   return {
+    // Outfield stats
     goals: stats.goals,
     assists: stats.assists,
     shots_on_target: stats.shots_on_target,
@@ -39,6 +41,13 @@ function matchDerivedStatsToInput(stats: MatchDerivedStats): PlayerStatsInput {
     tackles: stats.tackles,
     yellow_cards: stats.yellow_cards,
     red_cards: stats.red_cards,
+    // Goalkeeper stats
+    saves: stats.saves,
+    goals_conceded: stats.goals_conceded,
+    clean_sheets: stats.clean_sheets,
+    penalty_saved: stats.penalties_saved,
+    // Flag for rating engine
+    isGoalkeeper,
   };
 }
 
@@ -47,6 +56,7 @@ function matchDerivedStatsToInput(stats: MatchDerivedStats): PlayerStatsInput {
  */
 export function usePlayerMatchRatings({
   playerId,
+  playerPosition,
   seasonYear,
   competitionId,
   enabled = true,
@@ -66,17 +76,23 @@ export function usePlayerMatchRatings({
     enabled,
   });
 
+  // Detect if player is a goalkeeper based on position
+  const isGoalkeeper = useMemo(() => {
+    const pos = playerPosition?.toLowerCase() ?? '';
+    return pos === 'gk' || pos === 'goleiro' || pos === 'goalkeeper';
+  }, [playerPosition]);
+
   // Calculate ratings for each match
   const matchesWithRatings: MatchWithRating[] = useMemo(() => {
     return matches.map((match) => {
-      const statsInput = matchDerivedStatsToInput(match.stats);
+      const statsInput = matchDerivedStatsToInput(match.stats, isGoalkeeper);
       const rating = calculateMatchRating(statsInput, match.minutes_played);
       return {
         ...match,
         rating,
       };
     });
-  }, [matches]);
+  }, [matches, isGoalkeeper]);
 
   // Get average rating (only from matches where player has a rating)
   const averageRating = useMemo(() => {
