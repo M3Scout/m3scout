@@ -297,15 +297,17 @@ function LiveMatchGameInner({ matchId }: { matchId: string }) {
   
   // Can add events if: (live and clock running) OR (final and review mode and not locked)
   const canAddEvents = !isLocked && ((isLive && match.clock_status === "running") || (isFinal && isReviewMode));
-  
+
   // Determine UI read-only reason for Debug HUD
-  const uiReadOnlyReason = useMemo(() => {
+  // NOTE: this must NOT be a hook (e.g., useMemo) because this component has early returns above.
+  // Having a hook after an early return causes "Rendered more hooks than during the previous render" on refresh.
+  const uiReadOnlyReason = (() => {
     if (isLocked) return "LOCKED";
     if (isDraft) return "DRAFT";
     if (isFinal && !isReviewMode) return "FINAL_NOT_REVIEW";
     if (isLive && match.clock_status !== "running") return "CLOCK_NOT_RUNNING";
     return "";
-  }, [isLocked, isDraft, isFinal, isReviewMode, isLive, match.clock_status]);
+  })();
 
   return (
     <div className="min-h-screen bg-zinc-950 pb-20">
