@@ -17,7 +17,10 @@ import { EventDistributionChart } from "@/components/live-match/EventDistributio
 import { PlayerActivityHeatmap } from "@/components/live-match/PlayerActivityHeatmap";
 import { PlayerPresenceHistory } from "@/components/live-match/PlayerPresenceHistory";
 import { MatchSummaryPdfButton } from "@/components/live-match/MatchSummaryPdfButton";
+import { MatchRatingsCard } from "@/components/live-match/MatchRatingsCard";
+import { PlayerRatingBadge } from "@/components/live-match/PlayerRatingBadge";
 import { calculateMinutesPlayed, STANDARD_MATCH_DURATION } from "@/lib/minutesPlayed";
+import { calculatePlayerMatchRating } from "@/lib/matchRatingEngine";
 import {
   CheckCircle2,
   AlertTriangle,
@@ -519,6 +522,7 @@ export default function LiveMatchReview() {
           matchPlayers={matchPlayers}
           matchEvents={matchEvents}
           playerEventCounts={playerEventCounts}
+          playerStatsMap={playerStatsMap}
         />
       </div>
 
@@ -559,6 +563,13 @@ export default function LiveMatchReview() {
           <HalfStatsComparison events={matchEvents} matchPlayers={matchPlayers} />
         </CardContent>
       </Card>
+
+      {/* Match Ratings - Shows after match is finished */}
+      <MatchRatingsCard
+        matchPlayers={matchPlayers}
+        playerStatsMap={playerStatsMap}
+        matchStatus={match.status}
+      />
 
       {/* Substitution Stats */}
       <SubstitutionStatsCard
@@ -735,6 +746,17 @@ export default function LiveMatchReview() {
                         {isApplied && (
                           <CheckCircle2 className="h-4 w-4 text-green-500" />
                         )}
+                        {/* Rating Badge - show for finished/applied matches */}
+                        {(match.status === "finished" || match.status === "applied") && (() => {
+                          const stats = playerStatsMap[mp.player_id];
+                          const playerRating = calculatePlayerMatchRating(stats, {
+                            started: mp.started,
+                            entered_minute: mp.entered_minute,
+                            exited_minute: mp.exited_minute,
+                            minutes_played: mp.minutes_played,
+                          });
+                          return <PlayerRatingBadge rating={playerRating} size="sm" />;
+                        })()}
                       </div>
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-xs text-muted-foreground">

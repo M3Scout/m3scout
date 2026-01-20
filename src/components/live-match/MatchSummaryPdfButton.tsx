@@ -16,7 +16,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { Match, MatchPlayer, MatchEvent, MatchEventType } from "@/hooks/useLiveMatch";
+import { Match, MatchPlayer, MatchEvent, MatchEventType, MatchPlayerStats } from "@/hooks/useLiveMatch";
 import { FileDown, Loader2, ChevronDown, Users, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { useTeamSettings } from "@/hooks/useTeamSettings";
@@ -32,6 +32,7 @@ interface MatchSummaryPdfButtonProps {
   matchPlayers: MatchPlayer[];
   matchEvents: MatchEvent[];
   playerEventCounts: Record<string, Partial<Record<MatchEventType, number>>>;
+  playerStatsMap?: Record<string, MatchPlayerStats>;
 }
 
 export function MatchSummaryPdfButton({
@@ -39,6 +40,7 @@ export function MatchSummaryPdfButton({
   matchPlayers,
   matchEvents,
   playerEventCounts,
+  playerStatsMap = {},
 }: MatchSummaryPdfButtonProps) {
   const [isExporting, setIsExporting] = useState(false);
   const [logoBase64, setLogoBase64] = useState<string | null>(null);
@@ -102,6 +104,7 @@ export function MatchSummaryPdfButton({
           matchPlayers={matchPlayers}
           matchEvents={matchEvents}
           playerEventCounts={playerEventCounts}
+          playerStatsMap={playerStatsMap}
           teamName={teamName}
           logoUrl={logoBase64 || undefined}
           selectedPlayerIds={selectedPlayerIds}
