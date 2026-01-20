@@ -1000,7 +1000,8 @@ export function useLiveMatch(matchId: string) {
           key_passes: stats["key_pass"] || 0,
           chances_created: stats["chance_created"] || 0,
           passes_completed: stats["pass_success"] || 0,
-          passes_total: stats["pass_total"] || 0,
+          // passes_total = passes certos + passes errados (igual lógica de shots)
+          passes_total: (stats["pass_success"] || 0) + (stats["pass_total"] || 0),
           dribbles_success: stats["dribble_success"] || 0,
           dribbles_total: (stats["dribble_success"] || 0) + (stats["dribble_attempt"] || 0),
           tackles: stats["tackle"] || 0,
