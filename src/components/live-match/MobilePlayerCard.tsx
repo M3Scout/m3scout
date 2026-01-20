@@ -121,6 +121,51 @@ export function MobilePlayerCard({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const player = matchPlayer.player;
+
+  // CRITICAL: useCallback MUST be called before any early returns to maintain stable hook count
+  // This prevents React error #310 when switching between MobilePlayerCard and PremiumPlayerCard
+  const handleAddEventWithSound = useCallback((eventType: MatchEventType) => {
+    if (!player || isSubmitting || disabled) return;
+    
+    // In review mode, skip field/clock validations
+    if (!isReviewMode) {
+      // Check validations
+      if (matchStatus === "live" && !matchPlayer.is_on_field) {
+        toast.error("Atleta fora de campo", {
+          description: "Este jogador não está em campo.",
+        });
+        return;
+      }
+
+      if (matchStatus === "live" && clockStatus === "paused") {
+        toast.warning("Jogo pausado", {
+          description: "Retome o jogo para registrar eventos.",
+        });
+        return;
+      }
+    }
+
+    setIsSubmitting(true);
+    
+    if (soundEnabled) playSound(getSoundForEvent(eventType));
+    setLastEvent(eventType);
+    setTimeout(() => setLastEvent(null), 800);
+    onAddEvent(eventType);
+    
+    toast.success(`Evento registrado`, {
+      description: matchStatus === "draft" ? "Pendente até iniciar o jogo" : undefined,
+      action: {
+        label: "Desfazer",
+        onClick: () => onUndo(),
+      },
+      duration: 5000,
+    });
+    
+    // Debounce
+    setTimeout(() => setIsSubmitting(false), 300);
+  }, [player, isSubmitting, disabled, matchStatus, matchPlayer.is_on_field, clockStatus, soundEnabled, onAddEvent, onUndo, isReviewMode]);
+
+  // Early return AFTER all hooks to maintain stable hook count
   if (!player) return null;
 
   const isGK = matchPlayer.position_template === "goalkeeper";
@@ -137,47 +182,6 @@ export function MobilePlayerCard({
   // Can add events if: (live + clock running + player on field) OR review mode
   const canAddEvents = (isLive && isClockRunning && matchPlayer.is_on_field) || isReviewMode;
   const hasNotes = matchPlayer.notes && matchPlayer.notes.trim().length > 0;
-
-  const handleAddEventWithSound = useCallback((eventType: MatchEventType) => {
-    if (isSubmitting || disabled) return;
-    
-    // In review mode, skip field/clock validations
-    if (!isReviewMode) {
-      // Check validations
-      if (isLive && !matchPlayer.is_on_field) {
-        toast.error("Atleta fora de campo", {
-          description: "Este jogador não está em campo.",
-        });
-        return;
-      }
-
-      if (isLive && isPaused) {
-        toast.warning("Jogo pausado", {
-          description: "Retome o jogo para registrar eventos.",
-        });
-        return;
-      }
-    }
-
-    setIsSubmitting(true);
-    
-    if (soundEnabled) playSound(getSoundForEvent(eventType));
-    setLastEvent(eventType);
-    setTimeout(() => setLastEvent(null), 800);
-    onAddEvent(eventType);
-    
-    toast.success(`Evento registrado`, {
-      description: isDraft ? "Pendente até iniciar o jogo" : undefined,
-      action: {
-        label: "Desfazer",
-        onClick: () => onUndo(),
-      },
-      duration: 5000,
-    });
-    
-    // Debounce
-    setTimeout(() => setIsSubmitting(false), 300);
-  }, [isSubmitting, disabled, isLive, matchPlayer.is_on_field, isPaused, soundEnabled, onAddEvent, isDraft, onUndo, isReviewMode]);
 
   const handleEnterField = () => {
     if (soundEnabled) playSound('enter');
