@@ -4,6 +4,8 @@
  * This component displays player statistics aggregated from the live match system.
  * It uses usePlayerMatchStats hook which derives all data from match_player_stats,
  * ensuring consistency with the Match Review screen.
+ * 
+ * Now includes match ratings history with SofaScore-style ratings.
  */
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,10 +19,16 @@ import {
   Target,
   Trophy,
   Users,
+  Star,
 } from "lucide-react";
-import { usePlayerMatchStats, toOutfieldStatsFormat } from "@/hooks/usePlayerMatchStats";
+import { usePlayerMatchRatings } from "@/hooks/usePlayerMatchRatings";
+import { toOutfieldStatsFormat } from "@/hooks/usePlayerMatchStats";
 import { OutfieldPlayerStats } from "@/components/players/stats/OutfieldPlayerStats";
+import { getRatingBgColor, getRatingColor } from "@/lib/matchRatingEngine";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Link } from "react-router-dom";
 
 interface LiveMatchStatsSectionProps {
   playerId: string;
@@ -35,9 +43,11 @@ export function LiveMatchStatsSection({ playerId, playerPosition }: LiveMatchSta
     matches, 
     totals, 
     bySeason, 
-    byCompetition, 
+    averageRating,
+    bestMatch,
+    recentTrend,
     isLoading 
-  } = usePlayerMatchStats({
+  } = usePlayerMatchRatings({
     playerId,
   });
 
@@ -75,6 +85,9 @@ export function LiveMatchStatsSection({ playerId, playerPosition }: LiveMatchSta
   // Get season years available
   const seasons = Object.keys(bySeason).map(Number).sort((a, b) => b - a);
 
+  // Matches with ratings for display
+  const ratedMatches = matches.filter(m => m.rating.hasRating);
+
   return (
     <div className="space-y-6">
       {/* Summary Card */}
@@ -91,8 +104,8 @@ export function LiveMatchStatsSection({ playerId, playerPosition }: LiveMatchSta
           </div>
         </CardHeader>
         <CardContent>
-          {/* Quick stats row */}
-          <div className="grid grid-cols-4 gap-3 mb-6">
+          {/* Quick stats row - now includes average rating */}
+          <div className="grid grid-cols-5 gap-2 mb-6">
             <QuickStat 
               icon={<Trophy className="w-4 h-4" />} 
               label="Jogos" 
@@ -111,9 +124,22 @@ export function LiveMatchStatsSection({ playerId, playerPosition }: LiveMatchSta
             />
             <QuickStat 
               icon={<Users className="w-4 h-4" />} 
-              label="Assistências" 
+              label="Assist." 
               value={totals.assists} 
             />
+            {/* Average Rating */}
+            {averageRating !== null && (
+              <div className="flex flex-col items-center p-2 rounded-lg bg-primary/10">
+                <Star className="w-4 h-4 text-amber-400 fill-amber-400 mb-1" />
+                <span className={cn(
+                  "text-lg font-bold",
+                  getRatingColor(averageRating)
+                )}>
+                  {averageRating.toFixed(1)}
+                </span>
+                <span className="text-[10px] text-muted-foreground">Média</span>
+              </div>
+            )}
           </div>
 
           {/* Season tabs */}
@@ -142,7 +168,7 @@ export function LiveMatchStatsSection({ playerId, playerPosition }: LiveMatchSta
         </CardContent>
       </Card>
 
-      {/* Match-by-match breakdown */}
+      {/* Match-by-match breakdown with ratings */}
       {matches.length > 0 && (
         <Card>
           <CardHeader>
@@ -152,45 +178,67 @@ export function LiveMatchStatsSection({ playerId, playerPosition }: LiveMatchSta
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-[300px]">
+            <ScrollArea className="h-[350px]">
               <div className="space-y-2">
                 {matches.map((match) => (
-                  <div 
+                  <Link 
                     key={match.match_id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                    to={`/app/live-match/${match.match_id}/review`}
+                    className="block"
                   >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium truncate">
-                          vs {match.opponent_name}
+                    <div 
+                      className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium truncate">
+                            vs {match.opponent_name}
+                          </span>
+                          {match.competition_name && (
+                            <Badge variant="outline" className="text-xs truncate max-w-[100px]">
+                              {match.competition_name}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {format(new Date(match.match_date), "dd MMM yyyy", { locale: ptBR })}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        {/* Minutes */}
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Clock className="w-3 h-3" />
+                          {match.minutes_played}'
                         </span>
-                        {match.competition_name && (
-                          <Badge variant="outline" className="text-xs truncate">
-                            {match.competition_name}
+                        
+                        {/* Goals/Assists badges */}
+                        {match.stats.goals > 0 && (
+                          <Badge variant="default" className="bg-green-600 text-xs h-5">
+                            {match.stats.goals}G
                           </Badge>
                         )}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {new Date(match.match_date).toLocaleDateString("pt-BR")}
+                        {match.stats.assists > 0 && (
+                          <Badge variant="secondary" className="text-xs h-5">
+                            {match.stats.assists}A
+                          </Badge>
+                        )}
+                        
+                        {/* Rating Badge */}
+                        {match.rating.hasRating ? (
+                          <div className={cn(
+                            "px-2 py-0.5 rounded text-white text-xs font-bold min-w-[36px] text-center",
+                            getRatingBgColor(match.rating.rating!)
+                          )}>
+                            {match.rating.rating!.toFixed(1)}
+                          </div>
+                        ) : (
+                          <div className="px-2 py-0.5 rounded bg-muted text-muted-foreground text-xs font-medium">
+                            —
+                          </div>
+                        )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 text-sm">
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {match.minutes_played}'
-                      </span>
-                      {match.stats.goals > 0 && (
-                        <Badge variant="default" className="bg-green-600">
-                          {match.stats.goals}G
-                        </Badge>
-                      )}
-                      {match.stats.assists > 0 && (
-                        <Badge variant="secondary">
-                          {match.stats.assists}A
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </ScrollArea>
@@ -215,7 +263,7 @@ function QuickStat({
 }) {
   return (
     <div className={cn(
-      "flex flex-col items-center p-3 rounded-lg",
+      "flex flex-col items-center p-2 rounded-lg",
       highlight ? "bg-primary/10" : "bg-muted/50"
     )}>
       <div className={cn(
@@ -230,7 +278,7 @@ function QuickStat({
       )}>
         {value}
       </span>
-      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="text-[10px] text-muted-foreground">{label}</span>
     </div>
   );
 }
