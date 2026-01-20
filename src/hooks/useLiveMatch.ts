@@ -757,7 +757,14 @@ export function useLiveMatch(matchId: string) {
       });
 
       if (error) throw error;
-      return data as { stats_reverted?: boolean } | null;
+      
+      // CRITICAL: Check the success field from the RPC response
+      const result = data as { success: boolean; message?: string; stats_reverted?: boolean; match_status?: string } | null;
+      if (result && !result.success) {
+        throw new Error(result.message || "Erro ao anular evento");
+      }
+      
+      return result;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["match-events", matchId] });
