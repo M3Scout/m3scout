@@ -844,12 +844,15 @@ export function MatchSummaryVectorPdf({
     return { playerData, intervals, globalMax };
   };
 
-  // Group events by half
+  // Group events by half - ONLY include active (non-voided) events
   const getEventsByHalf = () => {
     const first: MatchEvent[] = [];
     const second: MatchEvent[] = [];
 
     filteredEvents.forEach((event) => {
+      // CRITICAL: Skip voided events - they should NOT appear in event lists
+      if (event.event_status === "voided" || event.count_in_stats === false) return;
+      
       if (event.half === 2) {
         second.push(event);
       } else {

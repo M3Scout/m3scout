@@ -238,8 +238,13 @@ function CategorySection({ category, stats, delay = 0 }: CategorySectionProps) {
 
 export function LiveStatsPanel({ events, className, currentHalf }: LiveStatsPanelProps) {
   const stats = useMemo(() => {
+    // CRITICAL: Filter out voided events - they should NOT count in stats
+    const activeEvents = events.filter(
+      e => e.event_status !== "voided" && e.count_in_stats !== false
+    );
+    
     const getValue = (type: string) => 
-      events.filter(e => e.event_type === type).reduce((acc, e) => acc + e.value, 0);
+      activeEvents.filter(e => e.event_type === type).reduce((acc, e) => acc + e.value, 0);
     
     const goals = getValue("goal");
     const assists = getValue("assist");
@@ -370,7 +375,7 @@ export function LiveStatsPanel({ events, className, currentHalf }: LiveStatsPane
           <div>
             <h3 className="text-base font-semibold text-zinc-100">Estatísticas ao Vivo</h3>
             <p className="text-[11px] text-zinc-500">
-              {events.length} eventos registrados
+              {events.filter(e => e.event_status !== "voided" && e.count_in_stats !== false).length} eventos registrados
               {halfLabel && <span className="text-zinc-600"> • {halfLabel}</span>}
             </p>
           </div>
