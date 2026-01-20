@@ -375,6 +375,14 @@ export function EventTimeline({
             <SheetTitle className="flex items-center gap-2 text-zinc-100">
               <Clock className="w-5 h-5 text-zinc-400" />
               Timeline de Eventos
+              {isReviewMode && (
+                <Badge 
+                  className="ml-auto bg-amber-500/20 text-amber-400 border border-amber-500/40 text-[10px] font-medium animate-pulse"
+                >
+                  <Pencil className="w-3 h-3 mr-1" />
+                  Modo Revisão
+                </Badge>
+              )}
             </SheetTitle>
           </SheetHeader>
 
