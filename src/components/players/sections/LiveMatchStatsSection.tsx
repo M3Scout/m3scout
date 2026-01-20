@@ -30,8 +30,7 @@ interface LiveMatchStatsSectionProps {
 const currentYear = new Date().getFullYear();
 
 export function LiveMatchStatsSection({ playerId, playerPosition }: LiveMatchStatsSectionProps) {
-  const isGK = isGoalkeeper(playerPosition);
-  
+  // Note: playerPosition kept for future GK-specific rendering
   const { 
     matches, 
     totals, 
