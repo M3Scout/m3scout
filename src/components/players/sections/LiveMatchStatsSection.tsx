@@ -49,6 +49,7 @@ export function LiveMatchStatsSection({ playerId, playerPosition }: LiveMatchSta
     isLoading 
   } = usePlayerMatchRatings({
     playerId,
+    playerPosition,
   });
 
   if (isLoading) {

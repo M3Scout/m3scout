@@ -59,6 +59,11 @@ export function useMatchRatings({
       
       const stats = playerStatsMap[mp.player_id];
       
+      // Detect if player is a goalkeeper based on position
+      const isGoalkeeper = mp.player.position?.toLowerCase() === 'gk' || 
+                           mp.player.position?.toLowerCase() === 'goleiro' ||
+                           mp.player.position?.toLowerCase() === 'goalkeeper';
+      
       const minutesInput: MatchPlayerMinutesInput = {
         started: mp.started,
         entered_minute: mp.entered_minute,
@@ -67,7 +72,7 @@ export function useMatchRatings({
       };
       
       const minutesInfo = calculateMinutesPlayed(minutesInput);
-      const rating = calculatePlayerMatchRating(stats, minutesInput);
+      const rating = calculatePlayerMatchRating(stats, minutesInput, isGoalkeeper);
       
       ratingsMap.set(mp.player_id, {
         playerId: mp.player_id,
