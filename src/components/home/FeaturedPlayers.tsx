@@ -1,12 +1,29 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowRight, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
-import { safeArray, cn } from "@/lib/utils";
-import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { ArrowRight, Loader2, ChevronLeft, ChevronRight, Zap, Activity } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
-// Position labels - compact
+// Position labels - professional format
 const positionLabels: Record<string, string> = {
+  GK: "Goleiro",
+  CB: "Zagueiro",
+  LB: "Lateral Esquerdo",
+  RB: "Lateral Direito",
+  CDM: "Volante",
+  CM: "Meio-Campo",
+  CAM: "Meia Atacante",
+  LM: "Meia Esquerda",
+  RM: "Meia Direita",
+  LW: "Ponta Esquerda",
+  RW: "Ponta Direita",
+  CF: "Segundo Atacante",
+  ST: "Atacante",
+};
+
+// Position codes - compact
+const positionCodes: Record<string, string> = {
   GK: "GOL",
   CB: "ZAG",
   LB: "LE",
@@ -22,6 +39,13 @@ const positionLabels: Record<string, string> = {
   ST: "ATA",
 };
 
+// Foot labels
+const footLabels: Record<string, string> = {
+  right: "Direito",
+  left: "Esquerdo",
+  both: "Ambos",
+};
+
 interface Player {
   id: string;
   slug: string;
@@ -32,93 +56,124 @@ interface Player {
   current_club: string | null;
   photo_url: string | null;
   auto_rating: number | null;
+  dominant_foot: string | null;
 }
 
-// Animation variants
+// Animation config
+const sectionEasing = [0.22, 1, 0.36, 1] as const;
+
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
     transition: {
       staggerChildren: 0.08,
-      delayChildren: 0.05,
+      delayChildren: 0.1,
     },
   },
-} as const;
+};
 
 const cardVariants = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { 
-    opacity: 1, 
+  hidden: { opacity: 0, y: 12 },
+  visible: {
+    opacity: 1,
     y: 0,
     transition: {
-      type: "spring" as const,
-      stiffness: 100,
-      damping: 15,
+      duration: 0.42,
+      ease: sectionEasing,
     },
   },
 };
 
 const headerVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { 
-    opacity: 1, 
+  hidden: { opacity: 0, y: 12 },
+  visible: {
+    opacity: 1,
     y: 0,
     transition: {
-      type: "spring" as const,
-      stiffness: 100,
-      damping: 20,
+      duration: 0.42,
+      ease: sectionEasing,
     },
   },
 };
 
-// Premium player card
-function PlayerCard({ player }: { player: Player }) {
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// CARD VARIANT A — Premium Standard
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function PlayerCardPremium({ player }: { player: Player }) {
+  const [isHovered, setIsHovered] = useState(false);
+
   return (
     <Link
       to={`/players/${player.slug}`}
-      className="group block flex-shrink-0 w-[280px] md:w-[320px] lg:w-[340px]"
+      className="group block"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
-      <article className="relative overflow-hidden rounded-2xl bg-zinc-900/60 transition-all duration-500 hover:shadow-2xl hover:shadow-white/5">
-        {/* Image Container */}
+      <article className="relative overflow-hidden rounded-sm bg-[#0a0c12]">
+        {/* Image Container - 70% of card */}
         <div className="relative aspect-[3/4] overflow-hidden">
-          <img
-            src={player.photo_url || "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=400&h=600&fit=crop"}
+          <motion.img
+            src={player.photo_url || "/placeholder.svg"}
             alt={player.full_name}
             loading="lazy"
-            className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-700 ease-out group-hover:scale-105"
+            className="absolute inset-0 w-full h-full object-cover object-top"
+            animate={{ scale: isHovered ? 1.03 : 1 }}
+            transition={{ duration: 0.24, ease: "easeOut" }}
           />
-          
+
           {/* Premium gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-          
-          {/* Subtle hover glow */}
-          <div className="absolute inset-0 bg-gradient-to-t from-blue-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          
-          {/* Position Badge - Solid blue pill */}
-          <div className="absolute top-4 left-4">
-            <span className="inline-flex items-center justify-center px-3 py-1.5 rounded-full bg-blue-600 text-white text-[11px] font-bold uppercase tracking-wider shadow-lg">
-              {positionLabels[player.position] || player.position}
-            </span>
+          <div
+            className={cn(
+              "absolute inset-0 bg-gradient-to-t from-[#070910] via-[#070910]/50 to-transparent transition-opacity duration-240",
+              isHovered ? "opacity-95" : "opacity-85"
+            )}
+          />
+
+          {/* Metadata Line - Top */}
+          <div className="absolute top-4 left-4 right-4 flex items-center gap-2">
+            <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.1em] text-white/50">
+              <Zap className="w-3 h-3 text-white/40" />
+              <span>{positionCodes[player.position] || player.position}</span>
+            </div>
+            <div className="flex-1" />
+            <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.1em] text-emerald-400/70">
+              <Activity className="w-3 h-3" />
+              <span>Monitorado</span>
+            </div>
           </div>
-          
+
           {/* Player Info - Bottom */}
           <div className="absolute bottom-0 left-0 right-0 p-5">
-            {/* Player Name - Primary element */}
-            <h3 className="text-white font-bold text-xl md:text-2xl tracking-wide mb-2 line-clamp-1 drop-shadow-lg">
+            {/* Name */}
+            <h3 className="text-white font-semibold text-lg tracking-tight mb-1.5 line-clamp-1">
               {player.full_name}
             </h3>
-            
-            {/* Secondary info */}
-            <p className="text-white/60 text-sm font-medium tracking-wide">
-              {player.age ? `${player.age} anos` : "—"} · {player.nationality}
+
+            {/* Age & Country */}
+            <p className="text-white/50 text-[13px] font-medium tracking-wide mb-1">
+              {player.age ? `${player.age} anos` : "—"}
+              <span className="mx-1.5 text-white/20">•</span>
+              {player.nationality}
             </p>
-            
+
+            {/* Club */}
             {player.current_club && (
-              <p className="text-white/40 text-xs uppercase tracking-wider mt-1 line-clamp-1">
+              <p className="text-white/30 text-[11px] uppercase tracking-[0.08em] line-clamp-1">
                 {player.current_club}
               </p>
             )}
+
+            {/* Hover CTA */}
+            <motion.div
+              className="flex items-center gap-1.5 mt-4 text-white/40 text-[11px] font-medium tracking-wide"
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: isHovered ? 1 : 0, y: isHovered ? 0 : 4 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+            >
+              <span>Ver perfil</span>
+              <ArrowRight className="w-3 h-3" />
+            </motion.div>
           </div>
         </div>
       </article>
@@ -126,123 +181,234 @@ function PlayerCard({ player }: { player: Player }) {
   );
 }
 
-// Drag carousel component
-function DragCarousel({ players }: { players: Player[] }) {
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// CARD VARIANT B — Data-Driven / Scout
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function PlayerCardScout({ player }: { player: Player }) {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <Link
+      to={`/players/${player.slug}`}
+      className="group block"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <article className="relative overflow-hidden rounded-sm bg-[#0a0c12]">
+        {/* Image Container */}
+        <div className="relative aspect-[3/4] overflow-hidden">
+          <motion.img
+            src={player.photo_url || "/placeholder.svg"}
+            alt={player.full_name}
+            loading="lazy"
+            className="absolute inset-0 w-full h-full object-cover object-top"
+            animate={{ scale: isHovered ? 1.03 : 1 }}
+            transition={{ duration: 0.24, ease: "easeOut" }}
+          />
+
+          {/* Premium gradient overlay */}
+          <div
+            className={cn(
+              "absolute inset-0 bg-gradient-to-t from-[#070910] via-[#070910]/50 to-transparent transition-opacity duration-240",
+              isHovered ? "opacity-95" : "opacity-85"
+            )}
+          />
+
+          {/* Status Badge - Top Right */}
+          <div className="absolute top-4 right-4">
+            <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[9px] font-medium uppercase tracking-[0.1em] text-emerald-400">
+                Monitorado
+              </span>
+            </div>
+          </div>
+
+          {/* Player Info - Bottom */}
+          <div className="absolute bottom-0 left-0 right-0 p-4">
+            {/* Name */}
+            <h3 className="text-white font-semibold text-lg tracking-tight mb-1 line-clamp-1">
+              {player.full_name}
+            </h3>
+
+            {/* Age & Country */}
+            <p className="text-white/50 text-[13px] font-medium tracking-wide mb-3">
+              {player.age ? `${player.age} anos` : "—"}
+              <span className="mx-1.5 text-white/20">•</span>
+              {player.nationality}
+            </p>
+
+            {/* Data Strip - Scout Quick Read */}
+            <div className="flex items-center gap-3 pt-3 border-t border-white/[0.06] text-[10px] font-medium uppercase tracking-[0.08em] text-white/40">
+              <span className="text-white/60">
+                POS: {positionCodes[player.position] || player.position}
+              </span>
+              <span className="w-px h-3 bg-white/10" />
+              <span>
+                Pé: {player.dominant_foot ? footLabels[player.dominant_foot] || player.dominant_foot : "—"}
+              </span>
+              <span className="w-px h-3 bg-white/10" />
+              <span>
+                {player.age ? `${player.age}a` : "—"}
+              </span>
+            </div>
+
+            {/* Hover CTA */}
+            <motion.div
+              className="flex items-center gap-1.5 mt-3 text-white/40 text-[11px] font-medium tracking-wide"
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: isHovered ? 1 : 0, y: isHovered ? 0 : 4 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+            >
+              <span>Ver perfil</span>
+              <ArrowRight className="w-3 h-3" />
+            </motion.div>
+          </div>
+        </div>
+      </article>
+    </Link>
+  );
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// DESKTOP GRID
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function DesktopGrid({ players, variant }: { players: Player[]; variant: "premium" | "scout" }) {
+  const CardComponent = variant === "scout" ? PlayerCardScout : PlayerCardPremium;
+
+  return (
+    <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5 px-6 lg:px-8">
+      {players.slice(0, 8).map((player, index) => (
+        <motion.div
+          key={player.id}
+          variants={cardVariants}
+          custom={index}
+        >
+          <CardComponent player={player} />
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// MOBILE CAROUSEL
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function MobileCarousel({ players, variant }: { players: Player[]; variant: "premium" | "scout" }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
-  const [isDragging, setIsDragging] = useState(false);
-  
-  const x = useMotionValue(0);
-  const springX = useSpring(x, { stiffness: 300, damping: 30 });
-  
+
+  const CardComponent = variant === "scout" ? PlayerCardScout : PlayerCardPremium;
+
   const checkScrollPosition = () => {
     if (!containerRef.current) return;
     const { scrollLeft, scrollWidth, clientWidth } = containerRef.current;
     setCanScrollLeft(scrollLeft > 10);
     setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
   };
-  
+
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-    
+
     checkScrollPosition();
-    container.addEventListener('scroll', checkScrollPosition);
-    window.addEventListener('resize', checkScrollPosition);
-    
+    container.addEventListener("scroll", checkScrollPosition);
+    window.addEventListener("resize", checkScrollPosition);
+
     return () => {
-      container.removeEventListener('scroll', checkScrollPosition);
-      window.removeEventListener('resize', checkScrollPosition);
+      container.removeEventListener("scroll", checkScrollPosition);
+      window.removeEventListener("resize", checkScrollPosition);
     };
   }, [players]);
-  
-  const scroll = (direction: 'left' | 'right') => {
+
+  const scroll = (direction: "left" | "right") => {
     if (!containerRef.current) return;
-    const scrollAmount = 360;
+    const scrollAmount = 280;
     containerRef.current.scrollBy({
-      left: direction === 'left' ? -scrollAmount : scrollAmount,
-      behavior: 'smooth'
+      left: direction === "left" ? -scrollAmount : scrollAmount,
+      behavior: "smooth",
     });
   };
-  
-  const handleDragStart = () => {
-    setIsDragging(true);
-  };
-  
-  const handleDragEnd = () => {
-    setTimeout(() => setIsDragging(false), 100);
-  };
-  
+
   return (
-    <div className="relative group/carousel px-6 lg:px-8">
-      {/* Scroll container - aligned with title */}
+    <div className="md:hidden relative">
+      {/* Scroll Container */}
       <div
         ref={containerRef}
-        className="flex gap-5 overflow-x-auto overflow-y-visible scrollbar-hide scroll-smooth pb-4 pr-6 lg:pr-8 cursor-grab active:cursor-grabbing"
-        style={{ scrollSnapType: 'x mandatory' }}
-        onMouseDown={handleDragStart}
-        onMouseUp={handleDragEnd}
-        onMouseLeave={handleDragEnd}
+        className="flex gap-3 overflow-x-auto scrollbar-hide scroll-smooth px-5 pb-4"
+        style={{
+          scrollSnapType: "x mandatory",
+          WebkitOverflowScrolling: "touch",
+        }}
       >
-        {players.map((player) => (
-          <motion.div 
+        {players.map((player, index) => (
+          <motion.div
             key={player.id}
-            className="flex-shrink-0"
-            style={{ scrollSnapAlign: 'start' }}
+            className="flex-shrink-0 w-[260px]"
+            style={{ scrollSnapAlign: "start" }}
             variants={cardVariants}
-            onClick={(e) => {
-              if (isDragging) {
-                e.preventDefault();
-                e.stopPropagation();
-              }
-            }}
+            custom={index}
           >
-            <PlayerCard player={player} />
+            <CardComponent player={player} />
           </motion.div>
         ))}
-        {/* End spacer - ensures last card is fully visible */}
-        <div className="flex-shrink-0 w-1" aria-hidden="true" />
+        {/* End spacer */}
+        <div className="flex-shrink-0 w-3" aria-hidden="true" />
       </div>
-      
-      {/* Fade edge - only on left when scrolled */}
-      <div className={cn(
-        "absolute left-6 lg:left-8 top-0 bottom-4 w-16 bg-gradient-to-r from-black to-transparent pointer-events-none transition-opacity duration-300 z-10",
-        canScrollLeft ? "opacity-100" : "opacity-0"
-      )} />
-      
-      {/* Navigation arrows - positioned outside cards area */}
-      <button
-        onClick={() => scroll('left')}
+
+      {/* Left fade */}
+      <div
         className={cn(
-          "absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/70 backdrop-blur-sm border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-black/90 transition-all duration-300 z-20",
-          "opacity-0 group-hover/carousel:opacity-100",
-          !canScrollLeft && "!opacity-0 pointer-events-none"
+          "absolute left-0 top-0 bottom-4 w-12 bg-gradient-to-r from-[#070910] to-transparent pointer-events-none transition-opacity duration-300",
+          canScrollLeft ? "opacity-100" : "opacity-0"
         )}
-        aria-label="Scroll left"
+      />
+
+      {/* Right fade */}
+      <div
+        className={cn(
+          "absolute right-0 top-0 bottom-4 w-12 bg-gradient-to-l from-[#070910] to-transparent pointer-events-none transition-opacity duration-300",
+          canScrollRight ? "opacity-100" : "opacity-0"
+        )}
+      />
+
+      {/* Navigation arrows */}
+      <button
+        onClick={() => scroll("left")}
+        className={cn(
+          "absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/50 transition-all duration-200",
+          !canScrollLeft && "opacity-0 pointer-events-none"
+        )}
+        aria-label="Anterior"
       >
-        <ChevronLeft className="w-5 h-5" />
+        <ChevronLeft className="w-4 h-4" />
       </button>
       <button
-        onClick={() => scroll('right')}
+        onClick={() => scroll("right")}
         className={cn(
-          "absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/70 backdrop-blur-sm border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-black/90 transition-all duration-300 z-20",
-          "opacity-0 group-hover/carousel:opacity-100",
-          !canScrollRight && "!opacity-0 pointer-events-none"
+          "absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/50 transition-all duration-200",
+          !canScrollRight && "opacity-0 pointer-events-none"
         )}
-        aria-label="Scroll right"
+        aria-label="Próximo"
       >
-        <ChevronRight className="w-5 h-5" />
+        <ChevronRight className="w-4 h-4" />
       </button>
     </div>
   );
 }
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// MAIN SECTION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 export function FeaturedPlayers() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [isInView, setIsInView] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
+
+  // A/B variant - can be toggled via props or feature flag
+  const variant: "premium" | "scout" = "premium";
 
   useEffect(() => {
     const element = sectionRef.current;
@@ -266,7 +432,7 @@ export function FeaturedPlayers() {
     const fetchPlayers = async () => {
       const { data } = await supabase
         .from("players")
-        .select("id, slug, full_name, position, age, nationality, current_club, photo_url, auto_rating")
+        .select("id, slug, full_name, position, age, nationality, current_club, photo_url, auto_rating, dominant_foot")
         .eq("is_public", true)
         .not("auto_rating", "is", null)
         .order("auto_rating", { ascending: false })
@@ -282,46 +448,53 @@ export function FeaturedPlayers() {
   }, []);
 
   return (
-    <section 
+    <section
       ref={sectionRef}
-      className="relative bg-black py-16 md:py-24 overflow-x-clip overflow-y-visible"
+      className="relative py-20 md:py-28 overflow-hidden"
+      style={{ backgroundColor: "#070910" }}
     >
-      {/* Subtle background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-zinc-900/20 via-transparent to-zinc-900/20 pointer-events-none" />
-      
+      {/* Subtle ambient glow */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-[600px] h-[400px] bg-white/[0.01] blur-[120px] rounded-full" />
+        <div className="absolute bottom-0 right-1/4 w-[500px] h-[300px] bg-white/[0.01] blur-[100px] rounded-full" />
+      </div>
+
       <div className="relative mx-auto max-w-7xl">
         {/* Section Header */}
-        <motion.div 
-          className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10 px-6 lg:px-8"
+        <motion.div
+          className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10 md:mb-14 px-5 md:px-6 lg:px-8"
           initial="hidden"
           animate={isInView ? "visible" : "hidden"}
           variants={containerVariants}
         >
-          <motion.div variants={headerVariants}>
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tight text-white uppercase leading-none">
+          <motion.div variants={headerVariants} className="space-y-2">
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight text-white uppercase">
               ATLETAS
             </h2>
+            <p className="text-white/40 text-sm md:text-[15px] font-medium tracking-wide">
+              Talentos monitorados pela M3
+            </p>
           </motion.div>
-          
+
           <motion.div variants={headerVariants}>
-            <Link 
+            <Link
               to="/players"
-              className="group inline-flex items-center gap-2 text-white/50 hover:text-white transition-colors duration-300 text-sm font-medium tracking-wide"
+              className="group inline-flex items-center gap-2 text-white/40 hover:text-white transition-colors duration-300 text-sm font-medium tracking-wide"
             >
               <span>Ver todos</span>
-              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+              <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5" />
             </Link>
           </motion.div>
         </motion.div>
 
-        {/* Players Carousel */}
+        {/* Players Display */}
         {loading ? (
           <div className="flex items-center justify-center py-24 px-6">
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
             >
-              <Loader2 className="w-6 h-6 text-white/30" />
+              <Loader2 className="w-5 h-5 text-white/20" />
             </motion.div>
           </div>
         ) : players.length > 0 ? (
@@ -330,10 +503,11 @@ export function FeaturedPlayers() {
             animate={isInView ? "visible" : "hidden"}
             variants={containerVariants}
           >
-            <DragCarousel players={players} />
+            <DesktopGrid players={players} variant={variant} />
+            <MobileCarousel players={players} variant={variant} />
           </motion.div>
         ) : (
-          <motion.div 
+          <motion.div
             className="text-center py-24 px-6"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
