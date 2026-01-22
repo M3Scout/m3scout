@@ -356,36 +356,36 @@ const PlayerDetail = () => {
 
       {/* Main Content with Tabs */}
       <Tabs defaultValue="overview" className="space-y-4 w-full min-w-0">
-        {/* Mobile: Grid of small tab buttons */}
-        <TabsList className="grid grid-cols-4 gap-1.5 w-full md:flex md:flex-wrap md:gap-1 p-0 md:p-1 bg-transparent md:bg-zinc-800/50 md:rounded-xl md:border md:border-white/5">
-          <TabsTrigger value="overview" className="flex-col md:flex-row gap-1 py-2 px-2 text-[10px] md:text-sm md:px-3">
+        {/* Premium Tab Navigation */}
+        <TabsList>
+          <TabsTrigger value="overview">
             <User className="w-4 h-4" />
-            <span className="md:hidden">Geral</span>
-            <span className="hidden md:inline">Visão Geral</span>
+            <span className="hidden sm:inline">Visão Geral</span>
+            <span className="sm:hidden">Geral</span>
           </TabsTrigger>
-          <TabsTrigger value="stats" className="flex-col md:flex-row gap-1 py-2 px-2 text-[10px] md:text-sm md:px-3">
+          <TabsTrigger value="stats">
             <BarChart3 className="w-4 h-4" />
-            <span className="md:hidden">Stats</span>
-            <span className="hidden md:inline">Estatísticas</span>
+            <span className="hidden sm:inline">Estatísticas</span>
+            <span className="sm:hidden">Stats</span>
           </TabsTrigger>
-          <TabsTrigger value="market" className="flex-col md:flex-row gap-1 py-2 px-2 text-[10px] md:text-sm md:px-3">
+          <TabsTrigger value="market">
             <DollarSign className="w-4 h-4" />
-            <span className="md:hidden">Valor</span>
-            <span className="hidden md:inline">Valor de Mercado</span>
+            <span className="hidden sm:inline">Valor de Mercado</span>
+            <span className="sm:hidden">Valor</span>
           </TabsTrigger>
-          <TabsTrigger value="physical" className="flex-col md:flex-row gap-1 py-2 px-2 text-[10px] md:text-sm md:px-3">
+          <TabsTrigger value="physical">
             <Activity className="w-4 h-4" />
             <span>Físico</span>
           </TabsTrigger>
-          <TabsTrigger value="technical" className="flex-col md:flex-row gap-1 py-2 px-2 text-[10px] md:text-sm md:px-3">
+          <TabsTrigger value="technical">
             <Target className="w-4 h-4" />
             <span>Técnico</span>
           </TabsTrigger>
-          <TabsTrigger value="medical" className="flex-col md:flex-row gap-1 py-2 px-2 text-[10px] md:text-sm md:px-3">
+          <TabsTrigger value="medical">
             <Stethoscope className="w-4 h-4" />
             <span>Médico</span>
           </TabsTrigger>
-          <TabsTrigger value="contract" className="flex-col md:flex-row gap-1 py-2 px-2 text-[10px] md:text-sm md:px-3">
+          <TabsTrigger value="contract">
             <ContractIcon className="w-4 h-4" />
             <span>Contrato</span>
           </TabsTrigger>
