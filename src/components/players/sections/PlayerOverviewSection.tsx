@@ -14,6 +14,7 @@ import {
   Shield,
   MapPin
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface PlayerOverviewSectionProps {
   // Identity
@@ -36,24 +37,61 @@ interface PlayerOverviewSectionProps {
   areasToDevelope: string[] | null;
 }
 
-// Mini Card Component
+// Premium Mini Card Component with glass effect
 const MiniCard = ({
   title,
   icon: Icon,
   children,
-  className = ""
+  className = "",
+  variant = "default"
 }: {
   title: string;
   icon: React.ElementType;
   children: React.ReactNode;
   className?: string;
+  variant?: "default" | "primary";
 }) => (
-  <div className={`rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 h-full ${className}`}>
-    <div className="flex items-center gap-2 mb-4">
-      <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-        <Icon className="w-3.5 h-3.5 text-primary" />
+  <div 
+    className={cn(
+      // Base structure
+      "group relative rounded-xl p-5 h-full",
+      "transition-all duration-200 ease-out",
+      // Gradient background for depth
+      "bg-gradient-to-br from-zinc-900/80 via-zinc-900/60 to-zinc-950/80",
+      // Subtle luminous border
+      "border border-white/[0.04]",
+      "shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)]",
+      // Hover: subtle lift
+      "hover:border-white/[0.08]",
+      "hover:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04),0_4px_20px_-4px_rgba(0,0,0,0.3)]",
+      // Primary variant - more prominent
+      variant === "primary" && [
+        "from-zinc-900/90 via-zinc-800/70 to-zinc-900/90",
+        "border-white/[0.06]",
+        "shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04),0_2px_12px_-2px_rgba(0,0,0,0.2)]",
+      ],
+      className
+    )}
+  >
+    {/* Header */}
+    <div className="flex items-center gap-2.5 mb-5">
+      <div 
+        className={cn(
+          "w-8 h-8 rounded-lg flex items-center justify-center",
+          "transition-all duration-200",
+          variant === "primary" 
+            ? "bg-primary/15 shadow-[0_0_12px_2px_rgba(220,38,38,0.1)]" 
+            : "bg-zinc-800/80"
+        )}
+      >
+        <Icon 
+          className={cn(
+            "w-4 h-4",
+            variant === "primary" ? "text-primary" : "text-zinc-500"
+          )} 
+        />
       </div>
-      <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+      <h4 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
         {title}
       </h4>
     </div>
@@ -61,20 +99,53 @@ const MiniCard = ({
   </div>
 );
 
-// Status color helper
+// Premium Badge Component
+const PremiumBadge = ({
+  children,
+  variant = "default",
+  className = ""
+}: {
+  children: React.ReactNode;
+  variant?: "default" | "success" | "warning" | "primary";
+  className?: string;
+}) => {
+  const variantStyles = {
+    default: "bg-zinc-800/60 text-zinc-300 border-zinc-700/50",
+    success: "bg-emerald-500/[0.08] text-emerald-400/90 border-emerald-500/20 hover:bg-emerald-500/[0.12]",
+    warning: "bg-amber-500/[0.08] text-amber-400/90 border-amber-500/20 hover:bg-amber-500/[0.12]",
+    primary: "bg-primary/[0.08] text-primary/90 border-primary/20",
+  };
+
+  return (
+    <Badge 
+      variant="secondary" 
+      className={cn(
+        "px-3 py-1.5 text-xs font-medium",
+        "border backdrop-blur-sm",
+        "transition-all duration-150",
+        variantStyles[variant],
+        className
+      )}
+    >
+      {children}
+    </Badge>
+  );
+};
+
+// Status color helper - more desaturated
 function getStatusColor(status: string | null): string {
   switch (status?.toLowerCase()) {
     case "free":
     case "livre":
-      return "bg-emerald-500/15 text-emerald-400 border-emerald-500/25";
+      return "bg-emerald-500/[0.08] text-emerald-400/90 border-emerald-500/20";
     case "contracted":
     case "contratado":
-      return "bg-primary/15 text-primary border-primary/25";
+      return "bg-primary/[0.08] text-primary/90 border-primary/20";
     case "loan":
     case "emprestado":
-      return "bg-amber-500/15 text-amber-400 border-amber-500/25";
+      return "bg-amber-500/[0.08] text-amber-400/90 border-amber-500/20";
     default:
-      return "bg-zinc-800 text-zinc-400 border-zinc-700";
+      return "bg-zinc-800/60 text-zinc-400 border-zinc-700/50";
   }
 }
 
@@ -115,59 +186,57 @@ export function PlayerOverviewSection({
   const hasAreasToImprove = Array.isArray(areasToDevelope) && areasToDevelope.length > 0;
 
   return (
-    <Card className="border-zinc-800 bg-card/50">
-      <CardHeader className="pb-4">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <User className="w-5 h-5 text-primary" />
-          Resumo Executivo
+    <Card className="border-zinc-800/50 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-sm">
+      <CardHeader className="pb-5">
+        <CardTitle className="flex items-center gap-2.5 text-lg">
+          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+            <User className="w-4 h-4 text-primary" />
+          </div>
+          <span className="text-[13px] font-semibold uppercase tracking-[0.1em] text-zinc-400">
+            Resumo Executivo
+          </span>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Row 1: Identity + Contract */}
+      <CardContent className="space-y-5">
+        {/* Row 1: Identity (primary) + Contract */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Card 1: Identity */}
-          <MiniCard title="Identidade" icon={User}>
-            <div className="space-y-3">
-              {/* Name - max emphasis */}
-              <h3 className="text-xl font-bold text-foreground leading-tight">
+          {/* Card 1: Identity - PRIMARY FOCUS */}
+          <MiniCard title="Identidade" icon={User} variant="primary">
+            <div className="space-y-4">
+              {/* Name - maximum emphasis */}
+              <h3 className="text-2xl font-bold text-white leading-tight tracking-tight">
                 {fullName}
               </h3>
               
-              {/* Quick info line */}
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-zinc-400">
+              {/* Quick info line - refined hierarchy */}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-zinc-500">
                 {age !== null && (
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5" />
-                    {age} anos
+                  <span className="flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-zinc-600" />
+                    <span className="text-zinc-400">{age} anos</span>
                   </span>
                 )}
                 {height !== null && (
-                  <>
-                    <span className="text-zinc-600">•</span>
-                    <span className="flex items-center gap-1">
-                      <Ruler className="w-3.5 h-3.5" />
-                      {height} cm
-                    </span>
-                  </>
+                  <span className="flex items-center gap-1.5">
+                    <Ruler className="w-3.5 h-3.5 text-zinc-600" />
+                    <span className="text-zinc-400">{height} cm</span>
+                  </span>
                 )}
                 {dominantFoot && (
-                  <>
-                    <span className="text-zinc-600">•</span>
-                    <span className="flex items-center gap-1">
-                      <Footprints className="w-3.5 h-3.5" />
-                      Pé {dominantFoot}
-                    </span>
-                  </>
+                  <span className="flex items-center gap-1.5">
+                    <Footprints className="w-3.5 h-3.5 text-zinc-600" />
+                    <span className="text-zinc-400">Pé {dominantFoot}</span>
+                  </span>
                 )}
               </div>
               
-              {/* Nationality badge */}
+              {/* Nationality badge - refined */}
               <div>
                 <Badge 
                   variant="secondary" 
-                  className="px-3 py-1 text-xs font-medium bg-zinc-800 text-zinc-200 border border-zinc-700"
+                  className="px-3 py-1.5 text-xs font-medium bg-zinc-800/50 text-zinc-300 border border-zinc-700/50 backdrop-blur-sm"
                 >
-                  <Flag className="w-3 h-3 mr-1.5" />
+                  <Flag className="w-3 h-3 mr-1.5 text-zinc-500" />
                   {nationality}
                 </Badge>
               </div>
@@ -177,28 +246,31 @@ export function PlayerOverviewSection({
           {/* Card 2: Contract */}
           <MiniCard title="Contrato" icon={Building}>
             <div className="space-y-4">
-              {/* Status badge - prominent */}
+              {/* Status badge - refined */}
               {contractStatus && (
                 <div>
-                  <Badge className={`px-3 py-1.5 text-sm font-semibold ${getStatusColor(contractStatus)}`}>
+                  <Badge className={cn(
+                    "px-4 py-2 text-sm font-semibold border backdrop-blur-sm",
+                    getStatusColor(contractStatus)
+                  )}>
                     {getStatusLabel(contractStatus)}
                   </Badge>
                 </div>
               )}
               
-              {/* Club info */}
+              {/* Club info - better hierarchy */}
               <div className="space-y-2">
                 {currentClub ? (
-                  <p className="text-base font-semibold text-foreground">
+                  <p className="text-lg font-semibold text-zinc-200">
                     {currentClub}
                   </p>
                 ) : (
-                  <p className="text-sm text-muted-foreground">Sem clube</p>
+                  <p className="text-sm text-zinc-600">Sem clube</p>
                 )}
                 
                 {country && (
-                  <p className="text-sm text-zinc-400 flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5" />
+                  <p className="text-sm text-zinc-500 flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-zinc-600" />
                     {country}
                   </p>
                 )}
@@ -212,10 +284,10 @@ export function PlayerOverviewSection({
           {/* Card 3: Tactical Profile */}
           <MiniCard title="Perfil Tático" icon={Target}>
             <div className="space-y-4">
-              {/* Position - prominent badge */}
-              <div className="space-y-2">
+              {/* Position - prominent but refined */}
+              <div className="space-y-3">
                 <Badge 
-                  className="px-4 py-2 text-sm font-bold bg-primary/15 text-primary border border-primary/25"
+                  className="px-4 py-2 text-sm font-bold bg-primary/[0.08] text-primary/90 border border-primary/20 backdrop-blur-sm"
                 >
                   {position}
                 </Badge>
@@ -227,7 +299,7 @@ export function PlayerOverviewSection({
                       <Badge 
                         key={pos} 
                         variant="secondary" 
-                        className="text-xs px-2 py-0.5 bg-zinc-800 text-zinc-300 border-zinc-700"
+                        className="text-xs px-2.5 py-1 bg-zinc-800/50 text-zinc-400 border-zinc-700/50 backdrop-blur-sm"
                       >
                         {pos}
                       </Badge>
@@ -238,8 +310,8 @@ export function PlayerOverviewSection({
               
               {/* Tactical roles */}
               {(primaryTacticalRole || secondaryTacticalRole) && (
-                <div className="space-y-1.5">
-                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <div className="space-y-2">
+                  <p className="text-[10px] uppercase tracking-[0.1em] text-zinc-600 flex items-center gap-1.5">
                     <Shield className="w-3 h-3" />
                     Funções
                   </p>
@@ -247,7 +319,7 @@ export function PlayerOverviewSection({
                     {primaryTacticalRole && (
                       <Badge 
                         variant="outline" 
-                        className="text-xs border-zinc-700 text-zinc-300"
+                        className="text-xs border-zinc-700/50 text-zinc-400 bg-zinc-800/30"
                       >
                         {primaryTacticalRole}
                       </Badge>
@@ -255,7 +327,7 @@ export function PlayerOverviewSection({
                     {secondaryTacticalRole && (
                       <Badge 
                         variant="outline" 
-                        className="text-xs border-zinc-800 text-zinc-500"
+                        className="text-xs border-zinc-800/50 text-zinc-500 bg-transparent"
                       >
                         {secondaryTacticalRole}
                       </Badge>
@@ -272,13 +344,19 @@ export function PlayerOverviewSection({
               {playStyle ? (
                 <Badge 
                   variant="secondary" 
-                  className="px-5 py-3 text-base font-semibold bg-gradient-to-r from-primary/10 to-primary/5 text-primary border border-primary/20"
+                  className={cn(
+                    "px-5 py-3 text-base font-semibold",
+                    "bg-gradient-to-r from-primary/[0.08] via-primary/[0.06] to-primary/[0.08]",
+                    "text-primary/90 border border-primary/15",
+                    "backdrop-blur-sm",
+                    "shadow-[0_0_20px_-4px_rgba(220,38,38,0.15)]"
+                  )}
                 >
-                  <Zap className="w-4 h-4 mr-2" />
+                  <Zap className="w-4 h-4 mr-2 text-primary/70" />
                   {playStyle}
                 </Badge>
               ) : (
-                <span className="text-sm text-muted-foreground">—</span>
+                <span className="text-sm text-zinc-600">—</span>
               )}
             </div>
           </MiniCard>
@@ -291,17 +369,13 @@ export function PlayerOverviewSection({
             {hasStrengths ? (
               <div className="flex flex-wrap gap-2">
                 {strengths!.map((strength) => (
-                  <Badge 
-                    key={strength} 
-                    variant="secondary" 
-                    className="px-3 py-1.5 text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
-                  >
+                  <PremiumBadge key={strength} variant="success">
                     {strength}
-                  </Badge>
+                  </PremiumBadge>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground py-2">
+              <p className="text-sm text-zinc-600 py-2">
                 Nenhum ponto forte cadastrado
               </p>
             )}
@@ -312,17 +386,13 @@ export function PlayerOverviewSection({
             {hasAreasToImprove ? (
               <div className="flex flex-wrap gap-2">
                 {areasToDevelope!.map((area) => (
-                  <Badge 
-                    key={area} 
-                    variant="secondary" 
-                    className="px-3 py-1.5 text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition-colors"
-                  >
+                  <PremiumBadge key={area} variant="warning">
                     {area}
-                  </Badge>
+                  </PremiumBadge>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground py-2">
+              <p className="text-sm text-zinc-600 py-2">
                 Nenhuma área cadastrada
               </p>
             )}
