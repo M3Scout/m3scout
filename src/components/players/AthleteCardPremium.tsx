@@ -243,28 +243,70 @@ function VisualModeCard({
           />
 
           {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#070910] via-[#070910]/50 to-transparent opacity-90" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#070910] via-[#070910]/50 to-[#070910]/30 opacity-90" />
 
-          {/* Position Badge */}
-          <div className="absolute top-4 left-4">
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border border-white/[0.08]" style={badgeStyle}>
-              <Zap className="w-3 h-3 text-white/60" />
-              <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-white">
-                {getPositionLabel(position)}
-              </span>
-            </div>
-          </div>
-
-          {/* Priority Badge */}
-          <div className="absolute top-4 right-4">
-            <div
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border border-white/[0.08]"
-              style={{ ...badgeStyle, background: priorityInfo.bgColor }}
+          {/* ━━━ TOP META BAR ━━━ */}
+          <div className="absolute top-0 left-0 right-0 pt-4 px-4">
+            <div 
+              className="flex items-center justify-between gap-3 min-h-[34px] px-3 py-2 rounded-sm"
+              style={{
+                background: "rgba(7, 9, 16, 0.72)",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+                border: "1px solid rgba(255, 255, 255, 0.06)",
+                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
+              }}
             >
-              <PriorityIcon className="w-3 h-3" style={{ color: priorityInfo.color }} />
-              <span className="text-[10px] font-semibold uppercase tracking-[0.08em]" style={{ color: priorityInfo.color }}>
-                {priority === "high" ? "Prioridade" : "Monitorado"}
-              </span>
+              {/* Position Badge - Neutral, less emphasis */}
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-4 rounded-sm flex items-center justify-center bg-white/[0.06]">
+                  <Zap className="w-2.5 h-2.5 text-white/50" />
+                </div>
+                <span className="text-[10px] font-medium uppercase tracking-[0.1em] text-white/70">
+                  {getPositionLabel(position)}
+                </span>
+              </div>
+
+              {/* Status Badge - Semantic green with indicator */}
+              <div className="flex items-center gap-2">
+                <div 
+                  className="flex items-center gap-1.5 px-2 py-1 rounded-sm"
+                  style={{
+                    background: priority === "high" ? priorityInfo.bgColor : "rgba(30, 215, 96, 0.1)",
+                    border: `1px solid ${priority === "high" ? priorityInfo.color : "#1ED760"}20`,
+                  }}
+                >
+                  {priority === "high" ? (
+                    <>
+                      <motion.div
+                        animate={{ scale: [1, 1.2, 1] }}
+                        transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                      >
+                        <PriorityIcon className="w-3 h-3" style={{ color: priorityInfo.color }} />
+                      </motion.div>
+                      <span 
+                        className="text-[9px] font-bold uppercase tracking-[0.1em]"
+                        style={{ color: priorityInfo.color }}
+                      >
+                        Prioridade
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span 
+                        className="w-1.5 h-1.5 rounded-full animate-pulse"
+                        style={{ backgroundColor: "#1ED760" }}
+                      />
+                      <span 
+                        className="text-[9px] font-semibold uppercase tracking-[0.1em]"
+                        style={{ color: "#1ED760" }}
+                      >
+                        Monitorado
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -378,30 +420,70 @@ function ClubScoutingCard({
           />
 
           {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#070910] via-[#070910]/60 to-[#070910]/20" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#070910] via-[#070910]/60 to-[#070910]/30" />
 
-          {/* Technical Header Overlay */}
-          <div className="absolute top-0 left-0 right-0 p-3" style={{ background: "linear-gradient(180deg, rgba(7,9,16,0.85) 0%, transparent 100%)" }}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/80">
+          {/* ━━━ TOP META BAR — CLUB MODE ━━━ */}
+          <div className="absolute top-0 left-0 right-0 pt-4 px-4">
+            <div 
+              className="flex items-center justify-between gap-2 min-h-[36px] px-3 py-2 rounded-sm"
+              style={{
+                background: "rgba(7, 9, 16, 0.78)",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+                border: "1px solid rgba(255, 255, 255, 0.06)",
+                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.25)",
+              }}
+            >
+              {/* Position Badge - Neutral */}
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-4 rounded-sm flex items-center justify-center bg-white/[0.06]">
+                  <Zap className="w-2.5 h-2.5 text-white/50" />
+                </div>
+                <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-white/70">
                   {getPositionLabel(position)}
                 </span>
-                <span className="text-white/20">•</span>
-                <span className="text-[10px] font-medium uppercase tracking-[0.1em]" style={{ color: "#1ED760" }}>
+              </div>
+
+              {/* Separator */}
+              <div className="w-px h-4 bg-white/10" />
+
+              {/* Status Badge */}
+              <div 
+                className="flex items-center gap-1.5 px-2 py-1 rounded-sm"
+                style={{
+                  background: "rgba(30, 215, 96, 0.08)",
+                  border: "1px solid rgba(30, 215, 96, 0.15)",
+                }}
+              >
+                <span 
+                  className="w-1.5 h-1.5 rounded-full animate-pulse"
+                  style={{ backgroundColor: "#1ED760" }}
+                />
+                <span 
+                  className="text-[9px] font-semibold uppercase tracking-[0.1em]"
+                  style={{ color: "#1ED760" }}
+                >
                   Monitorado
                 </span>
               </div>
+
+              {/* Priority Badge - Only if high */}
               {priority === "high" && (
                 <motion.div
-                  className="flex items-center gap-1 px-2 py-0.5 rounded-sm"
-                  style={{ background: priorityInfo.bgColor }}
-                  animate={{ opacity: [0.8, 1, 0.8] }}
+                  className="flex items-center gap-1 px-2 py-1 rounded-sm ml-auto"
+                  style={{ 
+                    background: priorityInfo.bgColor,
+                    border: `1px solid ${priorityInfo.color}25`,
+                  }}
+                  animate={{ opacity: [0.85, 1, 0.85] }}
                   transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                 >
                   <Flame className="w-3 h-3" style={{ color: priorityInfo.color }} />
-                  <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: priorityInfo.color }}>
-                    Prioridade
+                  <span 
+                    className="text-[9px] font-bold uppercase tracking-[0.08em]"
+                    style={{ color: priorityInfo.color }}
+                  >
+                    Hot
                   </span>
                 </motion.div>
               )}
