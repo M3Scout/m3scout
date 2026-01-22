@@ -23,7 +23,7 @@ import { usePermissions, ModuleKey } from "@/hooks/usePermissions";
 import { useSidebar } from "@/hooks/useSidebar";
 import { toast } from "sonner";
 import logoM3 from "@/assets/logo-m3.png";
-import logoM3Icon from "@/assets/logo-m3-icon.png";
+// Logo icon import removed - using single logo for brand consistency
 import {
   Tooltip,
   TooltipContent,
@@ -357,23 +357,27 @@ export function AppSidebar() {
         )}
       >
         {/* Logo Section */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-white/[0.04] shrink-0">
-          <Link to="/" className="flex items-center hover:opacity-80 transition-opacity">
-            {(isCollapsed || isTablet) ? (
-              <img 
-                src={logoM3Icon} 
-                alt="M3 Agency" 
-                className="h-9 w-9 rounded-lg"
-              />
-            ) : (
-              <img 
-                src={logoM3} 
-                alt="M3 Agency" 
-                className="h-8 w-auto"
-              />
+        <div className={cn(
+          "h-16 flex items-center border-b border-white/[0.04] shrink-0 transition-all duration-200",
+          (isCollapsed || isTablet) ? "justify-center px-2" : "justify-between px-4"
+        )}>
+          <Link 
+            to="/" 
+            className={cn(
+              "flex items-center hover:opacity-80 transition-all duration-200",
+              (isCollapsed || isTablet) && "justify-center"
             )}
+          >
+            <img 
+              src={logoM3} 
+              alt="M3 Agency" 
+              className={cn(
+                "w-auto object-contain transition-all duration-200",
+                (isCollapsed || isTablet) ? "h-6 max-w-[48px]" : "h-8"
+              )}
+            />
           </Link>
-          {/* Only show toggle on desktop */}
+          {/* Only show toggle on desktop when expanded */}
           {!isTablet && !isCollapsed && (
             <button
               onClick={toggleCollapsed}
