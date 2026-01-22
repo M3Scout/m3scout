@@ -359,6 +359,13 @@ const { user } = useAuth();
                       border: "1px solid hsl(var(--border))",
                       borderRadius: "8px"
                     }}
+                    labelStyle={{ 
+                      color: "hsl(var(--foreground))",
+                      fontWeight: 600
+                    }}
+                    itemStyle={{ 
+                      color: "hsl(var(--muted-foreground))"
+                    }}
                     formatter={(value: number, name: string, props: any) => [
                       `${value} (Peso: ${props.payload.weight}%)`,
                       "Score"
