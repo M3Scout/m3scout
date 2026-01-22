@@ -259,7 +259,7 @@ const Players = () => {
       />
 
       {/* Main Container */}
-      <div className="relative z-10 w-full max-w-[1200px] mx-auto px-[var(--padding-mobile)] md:px-12 lg:px-16">
+      <div className="relative z-10 w-full max-w-[1400px] mx-auto px-[var(--padding-mobile)] md:px-8 lg:px-10 xl:px-12">
         
         {/* Header Section - Editorial */}
         <motion.section 
@@ -459,21 +459,13 @@ const Players = () => {
           </div>
         ) : filteredPlayers.length > 0 ? (
           <>
-            {/* Athletes Grid - Premium 3-column layout with min-width cards */}
+            {/* Athletes Grid - 4 columns on desktop, portrait cards */}
             <motion.div 
-              className={cn(
-                "grid gap-6 md:gap-7",
-                scoutingMode && clubMode 
-                  ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" // Denser for club mode
-                  : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" // Premium 3-column max
-              )}
-              style={{
-                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 380px), 1fr))',
-              }}
+              className="grid gap-5 md:gap-6 lg:gap-7 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
               initial="hidden"
               animate="visible"
               variants={staggerContainer}
-              key={`grid-${scoutingMode}-${clubMode}`} // Force re-render on mode change
+              key={`grid-${scoutingMode}-${clubMode}`}
             >
               {safeArray(paginatedPlayers).map((player, index) => (
                 <motion.div
