@@ -113,7 +113,7 @@ export function CinematicHero() {
             initial="hidden"
             animate={isLoaded ? "visible" : "hidden"}
             custom={0.36}
-            className="flex flex-wrap gap-4"
+            className="flex flex-wrap gap-4 mb-12"
           >
             {/* Primary Button */}
             <Link to="/players">
@@ -148,6 +148,26 @@ export function CinematicHero() {
               </motion.button>
             </Link>
           </motion.div>
+
+          {/* Social Proof - Discrete */}
+          <motion.div
+            variants={fadeUpVariant}
+            initial="hidden"
+            animate={isLoaded ? "visible" : "hidden"}
+            custom={0.48}
+            className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-white/40"
+          >
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/70" />
+              <span>Sistema ativo</span>
+            </div>
+            <div className="hidden sm:block w-px h-4 bg-white/10" />
+            <span>+150 atletas monitorados</span>
+            <div className="hidden sm:block w-px h-4 bg-white/10" />
+            <span>+100 competições mapeadas</span>
+            <div className="hidden md:block w-px h-4 bg-white/10" />
+            <span className="hidden md:block">Relatórios em tempo real</span>
+          </motion.div>
         </div>
       </div>
 
@@ -155,9 +175,9 @@ export function CinematicHero() {
       <motion.button
         onClick={scrollToContent}
         initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: isLoaded ? 0.5 : 0, y: isLoaded ? 0 : 10 }}
-        transition={{ delay: 0.8, duration: 0.5 }}
-        whileHover={{ opacity: 0.8 }}
+        animate={{ opacity: isLoaded ? 0.4 : 0, y: isLoaded ? 0 : 10 }}
+        transition={{ delay: 0.9, duration: 0.5 }}
+        whileHover={{ opacity: 0.7 }}
         className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 text-white cursor-pointer"
         aria-label="Role para explorar"
       >
