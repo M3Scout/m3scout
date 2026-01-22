@@ -340,6 +340,7 @@ function VisualModeCard({
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // CARD VARIANT B — CLUB SCOUTING MODE (Data-driven)
+// Premium Desktop Layout: 3 Zones (Header / Image / Info)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function ClubScoutingCard({
@@ -377,7 +378,7 @@ function ClubScoutingCard({
       onMouseLeave={() => setIsHovered(false)}
     >
       <motion.article
-        className="relative overflow-hidden rounded-sm"
+        className="relative overflow-hidden rounded-sm flex flex-col"
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         whileHover={{ y: -4 }}
@@ -387,19 +388,96 @@ function ClubScoutingCard({
         }}
         style={{
           background: "#0a0c12",
+          minHeight: "440px",
           boxShadow: isHovered
-            ? `0 20px 40px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255,255,255,0.05), 0 0 40px -10px ${priorityInfo.glowColor}`
-            : "0 4px 12px -4px rgba(0, 0, 0, 0.3)",
+            ? `0 24px 48px -12px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255,255,255,0.05), 0 0 50px -15px ${priorityInfo.glowColor}`
+            : "0 4px 16px -4px rgba(0, 0, 0, 0.35)",
         }}
       >
         {/* Priority indicator bar - left side */}
-        <div
+        <motion.div
           className="absolute top-0 left-0 bottom-0 w-[3px] z-20"
           style={{ backgroundColor: priorityInfo.color }}
+          animate={priority === "high" ? { opacity: [0.7, 1, 0.7] } : {}}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
         />
 
-        {/* Image Container - Smaller in Club Mode */}
-        <div className="relative aspect-[4/3] overflow-hidden">
+        {/* ━━━ ZONE 1: FIXED HEADER — 60px ━━━ */}
+        <div 
+          className="relative z-10 flex-shrink-0 px-4 py-3"
+          style={{
+            minHeight: "60px",
+            background: "linear-gradient(180deg, rgba(7, 9, 16, 0.95) 0%, rgba(7, 9, 16, 0.85) 100%)",
+            borderBottom: "1px solid rgba(255, 255, 255, 0.04)",
+          }}
+        >
+          <div 
+            className="flex items-center justify-between gap-3 h-full"
+          >
+            {/* Left: Position Badge */}
+            <div 
+              className="flex items-center gap-2 px-3 py-2 rounded-sm min-h-[32px]"
+              style={{
+                background: "rgba(255, 255, 255, 0.04)",
+                border: "1px solid rgba(255, 255, 255, 0.06)",
+              }}
+            >
+              <div className="w-5 h-5 rounded-sm flex items-center justify-center bg-white/[0.08]">
+                <Zap className="w-3 h-3 text-white/60" />
+              </div>
+              <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/80">
+                {getPositionLabel(position)}
+              </span>
+            </div>
+
+            {/* Right: Status + Priority Badges */}
+            <div className="flex items-center gap-2">
+              {/* Status Badge - Monitorado */}
+              <div 
+                className="flex items-center gap-2 px-3 py-2 rounded-sm min-h-[32px]"
+                style={{
+                  background: "rgba(30, 215, 96, 0.08)",
+                  border: "1px solid rgba(30, 215, 96, 0.12)",
+                }}
+              >
+                <span 
+                  className="w-2 h-2 rounded-full animate-pulse"
+                  style={{ backgroundColor: "#1ED760" }}
+                />
+                <span 
+                  className="text-[10px] font-semibold uppercase tracking-[0.1em]"
+                  style={{ color: "#1ED760" }}
+                >
+                  Monitorado
+                </span>
+              </div>
+
+              {/* Priority Badge - High Priority */}
+              {priority === "high" && (
+                <motion.div
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-sm min-h-[32px]"
+                  style={{ 
+                    background: priorityInfo.bgColor,
+                    border: `1px solid ${priorityInfo.color}30`,
+                  }}
+                  animate={{ opacity: [0.85, 1, 0.85] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                >
+                  <PriorityIcon className="w-3.5 h-3.5" style={{ color: priorityInfo.color }} />
+                  <span 
+                    className="text-[10px] font-bold uppercase tracking-[0.06em]"
+                    style={{ color: priorityInfo.color }}
+                  >
+                    Prioridade
+                  </span>
+                </motion.div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ━━━ ZONE 2: IMAGE AREA ━━━ */}
+        <div className="relative flex-shrink-0 h-[180px] overflow-hidden">
           {/* Placeholder */}
           <div
             className={cn(
@@ -415,153 +493,98 @@ function ClubScoutingCard({
             loading="lazy"
             onLoad={() => setImageLoaded(true)}
             className={cn("w-full h-full object-cover object-top", imageLoaded ? "opacity-100" : "opacity-0")}
-            animate={{ scale: isHovered ? 1.02 : 1 }}
-            transition={{ duration: 0.22, ease: "easeOut" }}
+            animate={{ scale: isHovered ? 1.03 : 1 }}
+            transition={{ duration: 0.26, ease: "easeOut" }}
           />
 
           {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#070910] via-[#070910]/60 to-[#070910]/30" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0c12] via-[#0a0c12]/40 to-transparent" />
 
-          {/* ━━━ TOP META BAR — CLUB MODE ━━━ */}
-          <div className="absolute top-0 left-0 right-0 pt-4 px-4">
-            <div 
-              className="flex items-center justify-between gap-2 min-h-[36px] px-3 py-2 rounded-sm"
-              style={{
-                background: "rgba(7, 9, 16, 0.78)",
-                backdropFilter: "blur(12px)",
-                WebkitBackdropFilter: "blur(12px)",
-                border: "1px solid rgba(255, 255, 255, 0.06)",
-                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.25)",
-              }}
-            >
-              {/* Position Badge - Neutral */}
-              <div className="flex items-center gap-1.5">
-                <div className="w-4 h-4 rounded-sm flex items-center justify-center bg-white/[0.06]">
-                  <Zap className="w-2.5 h-2.5 text-white/50" />
-                </div>
-                <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-white/70">
-                  {getPositionLabel(position)}
-                </span>
-              </div>
-
-              {/* Separator */}
-              <div className="w-px h-4 bg-white/10" />
-
-              {/* Status Badge */}
-              <div 
-                className="flex items-center gap-1.5 px-2 py-1 rounded-sm"
-                style={{
-                  background: "rgba(30, 215, 96, 0.08)",
-                  border: "1px solid rgba(30, 215, 96, 0.15)",
-                }}
-              >
-                <span 
-                  className="w-1.5 h-1.5 rounded-full animate-pulse"
-                  style={{ backgroundColor: "#1ED760" }}
-                />
-                <span 
-                  className="text-[9px] font-semibold uppercase tracking-[0.1em]"
-                  style={{ color: "#1ED760" }}
-                >
-                  Monitorado
-                </span>
-              </div>
-
-              {/* Priority Badge - Only if high */}
-              {priority === "high" && (
-                <motion.div
-                  className="flex items-center gap-1 px-2 py-1 rounded-sm ml-auto"
-                  style={{ 
-                    background: priorityInfo.bgColor,
-                    border: `1px solid ${priorityInfo.color}25`,
-                  }}
-                  animate={{ opacity: [0.85, 1, 0.85] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                >
-                  <Flame className="w-3 h-3" style={{ color: priorityInfo.color }} />
-                  <span 
-                    className="text-[9px] font-bold uppercase tracking-[0.08em]"
-                    style={{ color: priorityInfo.color }}
-                  >
-                    Hot
-                  </span>
-                </motion.div>
-              )}
-            </div>
-          </div>
-
-          {/* Name overlay on image */}
-          <div className="absolute bottom-0 left-0 right-0 p-3">
-            <h3 className="text-white text-base font-semibold tracking-tight line-clamp-1">{name}</h3>
+          {/* Name overlay on image bottom */}
+          <div className="absolute bottom-0 left-0 right-0 p-4">
+            <h3 className="text-white text-lg font-bold tracking-tight line-clamp-1">{name}</h3>
           </div>
         </div>
 
-        {/* Data Panel - Dense Information */}
-        <div className="p-3 space-y-3 border-t border-white/[0.04]">
-          {/* Primary Data Row */}
-          <div className="flex items-center gap-2 text-[11px] text-white/60 font-medium">
-            <span>{age} anos</span>
-            <span className="text-white/20">•</span>
-            <span>{formatHeight(height)}</span>
-            <span className="text-white/20">•</span>
-            <span>Pé {formatFoot(dominantFoot)}</span>
+        {/* ━━━ ZONE 3: INFO & KPI AREA ━━━ */}
+        <div className="flex-1 flex flex-col p-4 pt-3 space-y-3">
+          {/* Meta Row: Age, Height, Foot, Competition */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-[12px] text-white/70 font-medium">
+              <span>{age} anos</span>
+              <span className="text-white/20">•</span>
+              <span>{formatHeight(height)}</span>
+              <span className="text-white/20">•</span>
+              <span>Pé {formatFoot(dominantFoot)}</span>
+            </div>
+            
+            {/* Country & Club */}
+            <div className="flex items-center gap-2 text-[11px] text-white/50">
+              {nationality && <span>{nationality}</span>}
+              {currentClub && (
+                <>
+                  <span className="text-white/20">•</span>
+                  <span className="text-white/40 line-clamp-1">{currentClub}</span>
+                </>
+              )}
+            </div>
+
+            {/* Competition */}
+            {competitionName && (
+              <div className="text-[10px] uppercase tracking-[0.1em] text-white/40 line-clamp-1 pt-1">
+                {competitionName}
+              </div>
+            )}
           </div>
 
-          {/* Competition */}
-          {competitionName && (
-            <div className="text-[10px] uppercase tracking-[0.08em] text-white/40 line-clamp-1">
-              {competitionName}
-            </div>
-          )}
-
-          {/* KPI Grid */}
-          <div className="grid grid-cols-2 gap-2">
+          {/* KPI Grid - 2x2 */}
+          <div className="grid grid-cols-2 gap-2 flex-shrink-0">
             {/* Scout Rating */}
-            <div className="flex items-center gap-2 p-2 rounded-sm bg-white/[0.03] border border-white/[0.04]">
-              <div className="w-6 h-6 rounded-sm flex items-center justify-center bg-amber-500/10">
-                <span className="text-[10px] font-bold text-amber-400">⭐</span>
+            <div className="flex items-center gap-2.5 p-2.5 rounded-sm bg-white/[0.03] border border-white/[0.05]">
+              <div className="w-7 h-7 rounded-sm flex items-center justify-center bg-amber-500/10">
+                <span className="text-xs font-bold text-amber-400">⭐</span>
               </div>
               <div>
                 <div className="text-[9px] uppercase tracking-wider text-white/40">Scout</div>
-                <div className="text-sm font-semibold text-white">{overallRating?.toFixed(1) || "—"}</div>
+                <div className="text-base font-bold text-white">{overallRating?.toFixed(1) || "—"}</div>
               </div>
             </div>
 
             {/* Potential */}
-            <div className="flex items-center gap-2 p-2 rounded-sm bg-white/[0.03] border border-white/[0.04]">
-              <div className="w-6 h-6 rounded-sm flex items-center justify-center bg-emerald-500/10">
-                <TrendingUp className="w-3 h-3 text-emerald-400" />
+            <div className="flex items-center gap-2.5 p-2.5 rounded-sm bg-white/[0.03] border border-white/[0.05]">
+              <div className="w-7 h-7 rounded-sm flex items-center justify-center bg-emerald-500/10">
+                <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
               </div>
               <div>
                 <div className="text-[9px] uppercase tracking-wider text-white/40">Potencial</div>
-                <div className="text-sm font-semibold text-white">{potentialRating?.toFixed(1) || "—"}</div>
+                <div className="text-base font-bold text-white">{potentialRating?.toFixed(1) || "—"}</div>
               </div>
             </div>
 
             {/* Physical Status */}
-            <div className="flex items-center gap-2 p-2 rounded-sm bg-white/[0.03] border border-white/[0.04]">
-              <div className="w-6 h-6 rounded-sm flex items-center justify-center" style={{ background: `${physicalInfo.color}15` }}>
-                <Activity className="w-3 h-3" style={{ color: physicalInfo.color }} />
+            <div className="flex items-center gap-2.5 p-2.5 rounded-sm bg-white/[0.03] border border-white/[0.05]">
+              <div className="w-7 h-7 rounded-sm flex items-center justify-center" style={{ background: `${physicalInfo.color}12` }}>
+                <Activity className="w-3.5 h-3.5" style={{ color: physicalInfo.color }} />
               </div>
               <div>
                 <div className="text-[9px] uppercase tracking-wider text-white/40">Físico</div>
-                <div className="text-xs font-semibold" style={{ color: physicalInfo.color }}>{physicalInfo.label}</div>
+                <div className="text-sm font-bold" style={{ color: physicalInfo.color }}>{physicalInfo.label}</div>
               </div>
             </div>
 
             {/* Market Value */}
-            <div className="flex items-center gap-2 p-2 rounded-sm bg-white/[0.03] border border-white/[0.04]">
-              <div className="w-6 h-6 rounded-sm flex items-center justify-center bg-blue-500/10">
-                <DollarSign className="w-3 h-3 text-blue-400" />
+            <div className="flex items-center gap-2.5 p-2.5 rounded-sm bg-white/[0.03] border border-white/[0.05]">
+              <div className="w-7 h-7 rounded-sm flex items-center justify-center bg-blue-500/10">
+                <DollarSign className="w-3.5 h-3.5 text-blue-400" />
               </div>
               <div>
                 <div className="text-[9px] uppercase tracking-wider text-white/40">Valor</div>
-                <div className="text-xs font-semibold text-white">{formatMarketValue(marketValue)}</div>
+                <div className="text-sm font-bold text-white">{formatMarketValue(marketValue)}</div>
               </div>
             </div>
           </div>
 
-          {/* Hover Additional Info */}
+          {/* Hover Additional Info - Reveals on hover */}
           <AnimatePresence>
             {isHovered && (
               <motion.div
@@ -571,34 +594,46 @@ function ClubScoutingCard({
                 transition={{ duration: 0.18, ease: premiumEasing }}
                 className="overflow-hidden"
               >
-                <div className="pt-2 border-t border-white/[0.04] space-y-1.5">
+                <div className="pt-2 border-t border-white/[0.05] space-y-2">
                   {lastReportDate && (
-                    <div className="flex items-center gap-2 text-[10px] text-white/40">
-                      <FileText className="w-3 h-3" />
+                    <div className="flex items-center gap-2 text-[11px] text-white/50">
+                      <FileText className="w-3.5 h-3.5" />
                       <span>Último relatório: {lastReportDate}</span>
                     </div>
                   )}
                   {estimatedLevel && (
-                    <div className="flex items-center gap-2 text-[10px] text-white/40">
-                      <Calendar className="w-3 h-3" />
+                    <div className="flex items-center gap-2 text-[11px] text-white/50">
+                      <Calendar className="w-3.5 h-3.5" />
                       <span>Nível estimado: {estimatedLevel}</span>
                     </div>
                   )}
-                  <div className="flex items-center gap-1.5 pt-1 text-white/50 text-[11px] font-medium">
-                    <span>Ver análise completa</span>
-                    <ArrowRight className="w-3 h-3" />
-                  </div>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
 
-        {/* Microcopy footer */}
-        <div className="px-3 pb-2">
-          <p className="text-[9px] uppercase tracking-[0.1em] text-white/20">
-            Perfil validado por scout
-          </p>
+          {/* Footer CTA */}
+          <div className="mt-auto pt-2">
+            <motion.div
+              className="flex items-center justify-between"
+              initial={{ opacity: 0.6 }}
+              animate={{ opacity: isHovered ? 1 : 0.6 }}
+              transition={{ duration: 0.15 }}
+            >
+              <p className="text-[9px] uppercase tracking-[0.1em] text-white/25">
+                Perfil validado por scout
+              </p>
+              <motion.div
+                className="flex items-center gap-1 text-white/50 text-[11px] font-medium"
+                initial={{ opacity: 0, x: -4 }}
+                animate={{ opacity: isHovered ? 1 : 0, x: isHovered ? 0 : -4 }}
+                transition={{ duration: 0.15, ease: "easeOut" }}
+              >
+                <span>Ver análise</span>
+                <ArrowRight className="w-3 h-3" />
+              </motion.div>
+            </motion.div>
+          </div>
         </div>
       </motion.article>
     </Link>
