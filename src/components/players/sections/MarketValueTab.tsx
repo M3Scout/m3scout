@@ -59,6 +59,7 @@ import {
   MoreHorizontal,
   Pencil,
   Trash2,
+  Coins,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -70,8 +71,9 @@ import {
   ResponsiveContainer,
   Area,
   AreaChart,
-  CartesianGrid,
+  ReferenceLine,
 } from "recharts";
+import { cn } from "@/lib/utils";
 
 interface MarketValueTabProps {
   playerId: string;
@@ -118,38 +120,125 @@ function formatFullValue(value: number, currency: string): string {
   return `${symbol}${value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-function getTrendIcon(trend: string | null) {
+function getTrendInfo(trend: string | null) {
   switch (trend) {
     case "up":
-      return <TrendingUp className="w-5 h-5" />;
+      return {
+        icon: TrendingUp,
+        color: "text-emerald-400/90",
+        bg: "bg-emerald-500/[0.08] border-emerald-500/20",
+        label: "Em alta",
+      };
     case "down":
-      return <TrendingDown className="w-5 h-5" />;
+      return {
+        icon: TrendingDown,
+        color: "text-rose-400/90",
+        bg: "bg-rose-500/[0.08] border-rose-500/20",
+        label: "Em baixa",
+      };
     default:
-      return <Minus className="w-5 h-5" />;
+      return {
+        icon: Minus,
+        color: "text-zinc-500",
+        bg: "bg-zinc-800/40 border-zinc-700/40",
+        label: "Estável",
+      };
   }
 }
 
-function getTrendColor(trend: string | null): string {
-  switch (trend) {
-    case "up":
-      return "text-emerald-400";
-    case "down":
-      return "text-red-400";
-    default:
-      return "text-muted-foreground";
-  }
-}
+// Premium Summary Card Component
+const SummaryCard = ({
+  label,
+  value,
+  subValue,
+  icon: Icon,
+  variant = "default",
+}: {
+  label: string;
+  value: React.ReactNode;
+  subValue?: React.ReactNode;
+  icon: React.ElementType;
+  variant?: "primary" | "gold" | "default";
+}) => {
+  const variantStyles = {
+    primary: {
+      card: "from-primary/[0.08] via-zinc-900/80 to-zinc-950/90 border-primary/15",
+      glow: "via-primary/40",
+      icon: "bg-primary/10 text-primary",
+    },
+    gold: {
+      card: "from-amber-500/[0.08] via-zinc-900/80 to-zinc-950/90 border-amber-500/15",
+      glow: "via-amber-400/40",
+      icon: "bg-amber-500/10 text-amber-400/90",
+    },
+    default: {
+      card: "from-zinc-900/80 to-zinc-950/90 border-zinc-800/40",
+      glow: "via-zinc-700/30",
+      icon: "bg-zinc-800/60 text-zinc-500",
+    },
+  };
 
-function getTrendBgColor(trend: string | null): string {
-  switch (trend) {
-    case "up":
-      return "bg-emerald-500/10 border-emerald-500/20";
-    case "down":
-      return "bg-red-500/10 border-red-500/20";
-    default:
-      return "bg-secondary border-border";
+  const styles = variantStyles[variant];
+
+  return (
+    <Card className={cn(
+      "relative overflow-hidden border backdrop-blur-sm",
+      "bg-gradient-to-br",
+      "shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)]",
+      "transition-all duration-200 hover:border-white/[0.08]",
+      styles.card
+    )}>
+      {/* Top glow line */}
+      <div className={cn(
+        "absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-px",
+        "bg-gradient-to-r from-transparent to-transparent",
+        styles.glow
+      )} />
+      
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-zinc-500 mb-2">
+              {label}
+            </p>
+            <div className="text-3xl font-bold text-white leading-none tracking-tight">
+              {value}
+            </div>
+            {subValue && (
+              <div className="mt-2 text-xs text-zinc-600">
+                {subValue}
+              </div>
+            )}
+          </div>
+          <div className={cn(
+            "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
+            styles.icon
+          )}>
+            <Icon className="w-5 h-5" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+// Premium Tooltip
+const PremiumTooltip = ({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    return (
+      <div className="bg-zinc-900/95 border border-zinc-800/60 rounded-xl p-4 shadow-2xl backdrop-blur-sm">
+        <p className="text-3xl font-bold text-primary mb-1">
+          {formatValue(data.rawValue, data.currency)}
+        </p>
+        <p className="text-[10px] uppercase tracking-wider text-zinc-600">
+          {data.fullDate}
+        </p>
+      </div>
+    );
   }
-}
+  return null;
+};
 
 export function MarketValueTab({
   playerId,
@@ -374,142 +463,144 @@ export function MarketValueTab({
     currency: entry.currency,
   }));
 
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-card border border-border rounded-lg p-3 shadow-xl">
-          <p className="text-xs text-muted-foreground mb-1">{data.fullDate}</p>
-          <p className="text-lg font-bold text-primary">
-            {formatValue(data.rawValue, data.currency)}
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
+  const trendInfo = getTrendInfo(marketValueTrend);
+  const TrendIcon = trendInfo.icon;
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <Loader2 className="w-8 h-8 animate-spin text-zinc-600" />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Summary Cards */}
+      {/* Premium Summary Cards */}
       <div className="grid gap-4 md:grid-cols-3">
-        {/* Current Value */}
-        <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-          <CardContent className="pt-6">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Valor Atual</p>
-                {marketValue !== null ? (
-                  <p className="text-3xl font-bold text-primary">
-                    {formatValue(marketValue, marketValueCurrency || "EUR")}
-                  </p>
-                ) : (
-                  <p className="text-xl text-muted-foreground">Não definido</p>
+        {/* Current Value - Primary Focus */}
+        <SummaryCard
+          label="Valor Atual"
+          value={
+            marketValue !== null ? (
+              <span className="text-primary">
+                {formatValue(marketValue, marketValueCurrency || "EUR")}
+              </span>
+            ) : (
+              <span className="text-zinc-600">Não definido</span>
+            )
+          }
+          subValue={
+            marketValue !== null && (
+              <Badge 
+                variant="outline" 
+                className={cn(
+                  "text-[10px] font-medium border backdrop-blur-sm px-2 py-0.5",
+                  trendInfo.bg,
+                  trendInfo.color
                 )}
-              </div>
-              <div className={`p-2 rounded-lg border ${getTrendBgColor(marketValueTrend)}`}>
-                <span className={getTrendColor(marketValueTrend)}>
-                  {getTrendIcon(marketValueTrend)}
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+              >
+                <TrendIcon className="w-3 h-3 mr-1" />
+                {trendInfo.label}
+              </Badge>
+            )
+          }
+          icon={Coins}
+          variant="primary"
+        />
 
         {/* Highest Value */}
-        <Card className="bg-gradient-to-br from-amber-500/10 to-amber-500/5 border-amber-500/20">
-          <CardContent className="pt-6">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Valor Máximo</p>
-                {highestValue ? (
-                  <>
-                    <p className="text-3xl font-bold text-amber-400">
-                      {formatValue(highestValue.value, highestValue.currency)}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {new Date(highestValue.date).toLocaleDateString("pt-BR")}
-                    </p>
-                  </>
-                ) : (
-                  <p className="text-xl text-muted-foreground">—</p>
-                )}
-              </div>
-              <div className="p-2 rounded-lg border bg-amber-500/10 border-amber-500/20">
-                <Crown className="w-5 h-5 text-amber-400" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <SummaryCard
+          label="Valor Máximo"
+          value={
+            highestValue ? (
+              <span className="text-amber-400/90">
+                {formatValue(highestValue.value, highestValue.currency)}
+              </span>
+            ) : (
+              <span className="text-zinc-600">—</span>
+            )
+          }
+          subValue={
+            highestValue && (
+              <span className="text-zinc-600">
+                {new Date(highestValue.date).toLocaleDateString("pt-BR", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })}
+              </span>
+            )
+          }
+          icon={Crown}
+          variant="gold"
+        />
 
         {/* Last Updated */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Última Atualização</p>
-                {lastUpdated ? (
-                  <p className="text-xl font-semibold">
-                    {new Date(lastUpdated).toLocaleDateString("pt-BR", {
-                      day: "2-digit",
-                      month: "long",
-                      year: "numeric",
-                    })}
-                  </p>
-                ) : (
-                  <p className="text-xl text-muted-foreground">—</p>
-                )}
-              </div>
-              <div className="p-2 rounded-lg border bg-secondary">
-                <Clock className="w-5 h-5 text-muted-foreground" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <SummaryCard
+          label="Última Atualização"
+          value={
+            lastUpdated ? (
+              <span className="text-xl text-zinc-300">
+                {new Date(lastUpdated).toLocaleDateString("pt-BR", {
+                  day: "2-digit",
+                  month: "long",
+                  year: "numeric",
+                })}
+              </span>
+            ) : (
+              <span className="text-zinc-600">—</span>
+            )
+          }
+          icon={Clock}
+          variant="default"
+        />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Left Column - Form */}
+        {/* Left Column - Premium Form */}
         <div className="lg:col-span-1">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <DollarSign className="w-5 h-5 text-primary" />
-                Atualizar Valor
+          <Card className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)] overflow-hidden">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <DollarSign className="w-4 h-4 text-primary" />
+                </div>
+                <span className="text-[13px] font-semibold uppercase tracking-[0.1em] text-zinc-400">
+                  Atualizar Valor
+                </span>
               </CardTitle>
             </CardHeader>
             <CardContent>
               {canEdit ? (
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  {/* Value Input - Premium Style */}
                   <div className="space-y-2">
-                    <Label>Valor</Label>
+                    <Label className="text-[10px] uppercase tracking-wider text-zinc-500">
+                      Valor
+                    </Label>
                     <Input
                       type="number"
                       min={0}
                       step="0.01"
-                      placeholder="1000000"
+                      placeholder="1.000.000"
                       value={formValue}
                       onChange={(e) => setFormValue(e.target.value)}
                       required
-                      className="bg-secondary/50"
+                      className="h-12 text-lg font-bold bg-zinc-900/50 border-zinc-800/60 focus:border-primary/40 placeholder:text-zinc-700"
                     />
                   </div>
 
+                  {/* Currency Select */}
                   <div className="space-y-2">
-                    <Label>Moeda</Label>
+                    <Label className="text-[10px] uppercase tracking-wider text-zinc-500">
+                      Moeda
+                    </Label>
                     <Select value={formCurrency} onValueChange={setFormCurrency}>
-                      <SelectTrigger className="bg-secondary/50">
+                      <SelectTrigger className="h-11 bg-zinc-900/50 border-zinc-800/60">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-zinc-900 border-zinc-800">
                         {CURRENCIES.map((curr) => (
                           <SelectItem key={curr.value} value={curr.value}>
                             {curr.label}
@@ -519,9 +610,10 @@ export function MarketValueTab({
                     </Select>
                   </div>
 
+                  {/* Date Input */}
                   <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4" />
+                    <Label className="text-[10px] uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
+                      <Calendar className="w-3 h-3" />
                       Data
                     </Label>
                     <Input
@@ -529,124 +621,185 @@ export function MarketValueTab({
                       value={formDate}
                       onChange={(e) => setFormDate(e.target.value)}
                       required
-                      className="bg-secondary/50"
+                      className="h-11 bg-zinc-900/50 border-zinc-800/60"
                     />
                   </div>
 
+                  {/* Source Input */}
                   <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
-                      <Database className="w-4 h-4" />
-                      Fonte (opcional)
+                    <Label className="text-[10px] uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
+                      <Database className="w-3 h-3" />
+                      Fonte <span className="text-zinc-700">(opcional)</span>
                     </Label>
                     <Input
                       placeholder="Ex: Transfermarkt, Scout"
                       value={formSource}
                       onChange={(e) => setFormSource(e.target.value)}
-                      className="bg-secondary/50"
+                      className="h-11 bg-zinc-900/50 border-zinc-800/60 placeholder:text-zinc-700"
                     />
                   </div>
 
+                  {/* Note Input */}
                   <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
-                      <FileText className="w-4 h-4" />
-                      Nota (opcional)
+                    <Label className="text-[10px] uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
+                      <FileText className="w-3 h-3" />
+                      Nota <span className="text-zinc-700">(opcional)</span>
                     </Label>
                     <Textarea
                       placeholder="Observações sobre a atualização..."
                       value={formNote}
                       onChange={(e) => setFormNote(e.target.value)}
                       rows={2}
-                      className="bg-secondary/50"
+                      className="bg-zinc-900/50 border-zinc-800/60 placeholder:text-zinc-700 resize-none"
                     />
                   </div>
 
-                  <Button type="submit" disabled={saving} className="w-full">
+                  {/* Premium Submit Button */}
+                  <Button 
+                    type="submit" 
+                    disabled={saving} 
+                    className={cn(
+                      "w-full h-12 font-semibold",
+                      "bg-gradient-to-r from-primary/90 to-primary hover:from-primary hover:to-primary/90",
+                      "border border-primary/20",
+                      "shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.4)]",
+                      "transition-all duration-200"
+                    )}
+                  >
                     {saving ? (
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     ) : (
                       <Save className="w-4 h-4 mr-2" />
                     )}
-                    Salvar
+                    Salvar Atualização
                   </Button>
                 </form>
               ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  Apenas administradores e scouts podem atualizar o valor.
-                </p>
+                <div className="text-center py-8">
+                  <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-zinc-900/60 flex items-center justify-center">
+                    <DollarSign className="w-6 h-6 text-zinc-700" />
+                  </div>
+                  <p className="text-sm text-zinc-600">
+                    Apenas administradores e scouts podem atualizar o valor.
+                  </p>
+                </div>
               )}
             </CardContent>
           </Card>
         </div>
 
-        {/* Right Column - Chart */}
+        {/* Right Column - Premium Chart */}
         <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <TrendingUp className="w-5 h-5 text-primary" />
-                Evolução do Valor de Mercado
+          <Card className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)] overflow-hidden">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                  <TrendingUp className="w-4 h-4 text-emerald-400/80" />
+                </div>
+                <span className="text-[13px] font-semibold uppercase tracking-[0.1em] text-zinc-400">
+                  Evolução do Valor de Mercado
+                </span>
               </CardTitle>
             </CardHeader>
             <CardContent>
               {(chartData?.length ?? 0) >= 2 ? (
-                <div className="h-64">
+                <div className="h-64 -mx-2">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={chartData}>
+                    <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
                       <defs>
-                        <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                        <linearGradient id="marketValueGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.25} />
+                          <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid 
-                        strokeDasharray="3 3" 
-                        stroke="hsl(var(--border))" 
-                        vertical={false}
-                      />
+                      
                       <XAxis
                         dataKey="date"
-                        stroke="hsl(var(--muted-foreground))"
-                        fontSize={11}
+                        stroke="transparent"
+                        tick={{ fontSize: 9, fill: "hsl(240,5%,40%)" }}
                         tickLine={false}
                         axisLine={false}
                       />
                       <YAxis
-                        stroke="hsl(var(--muted-foreground))"
-                        fontSize={11}
+                        stroke="transparent"
+                        tick={{ fontSize: 9, fill: "hsl(240,5%,40%)" }}
                         tickLine={false}
                         axisLine={false}
                         tickFormatter={(value) => `${value}M`}
                       />
-                      <Tooltip content={<CustomTooltip />} />
+                      
+                      <Tooltip content={<PremiumTooltip />} />
+                      
+                      {/* Subtle reference lines */}
+                      {chartData.length > 0 && (
+                        <ReferenceLine 
+                          y={chartData[chartData.length - 1].value} 
+                          stroke="hsl(var(--primary))" 
+                          strokeDasharray="6 4" 
+                          strokeWidth={1}
+                          opacity={0.4}
+                        />
+                      )}
+                      
                       <Area
                         type="monotone"
                         dataKey="value"
                         stroke="hsl(var(--primary))"
-                        strokeWidth={2}
-                        fill="url(#colorValue)"
-                        dot={{ fill: "hsl(var(--primary))", strokeWidth: 0, r: 4 }}
-                        activeDot={{ r: 6, fill: "hsl(var(--primary))" }}
+                        strokeWidth={3}
+                        fill="url(#marketValueGradient)"
+                        dot={(props: any) => {
+                          const { cx, cy, index } = props;
+                          const isLast = index === chartData.length - 1;
+                          return (
+                            <circle 
+                              cx={cx} 
+                              cy={cy} 
+                              r={isLast ? 6 : 4} 
+                              fill={isLast ? "hsl(var(--primary))" : "hsl(var(--background))"}
+                              stroke="hsl(var(--primary))"
+                              strokeWidth={isLast ? 0 : 2}
+                            />
+                          );
+                        }}
+                        activeDot={{ 
+                          r: 7, 
+                          fill: "hsl(var(--primary))", 
+                          stroke: "hsl(var(--background))", 
+                          strokeWidth: 3 
+                        }}
                       />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
               ) : (chartData?.length ?? 0) === 1 ? (
-                <div className="flex items-center justify-center h-40 text-center">
-                  <div>
-                    <p className="text-muted-foreground mb-2">Apenas 1 registro</p>
-                    <p className="text-2xl font-bold text-primary">
-                      {formatValue(chartData[0].rawValue, chartData[0].currency)}
-                    </p>
-                    <p className="text-sm text-muted-foreground">{chartData[0].fullDate}</p>
+                /* Single entry - Timeline start state */
+                <div className="flex flex-col items-center justify-center h-48 text-center">
+                  <div className="relative mb-4">
+                    {/* Timeline visual */}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 rounded-full bg-primary/5 border border-primary/10" />
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-primary/10 border border-primary/20" />
+                    <div className="relative z-10 w-10 h-10 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center">
+                      <Coins className="w-5 h-5 text-primary" />
+                    </div>
                   </div>
+                  <p className="text-3xl font-bold text-primary mb-1">
+                    {formatValue(chartData[0].rawValue, chartData[0].currency)}
+                  </p>
+                  <p className="text-xs text-zinc-600 mb-4">{chartData[0].fullDate}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-zinc-600 max-w-[200px]">
+                    Início da linha do tempo. Adicione mais registros para visualizar a evolução.
+                  </p>
                 </div>
               ) : (
-                <div className="flex items-center justify-center h-40 text-muted-foreground">
-                  <div className="text-center">
-                    <DollarSign className="w-10 h-10 mx-auto mb-2 opacity-30" />
-                    <p>Nenhum histórico disponível</p>
-                    <p className="text-sm">Adicione o primeiro valor de mercado</p>
+                /* Empty state */
+                <div className="flex flex-col items-center justify-center h-48 text-center">
+                  <div className="w-14 h-14 rounded-xl bg-zinc-900/60 flex items-center justify-center mb-4">
+                    <DollarSign className="w-7 h-7 text-zinc-700" />
                   </div>
+                  <p className="text-sm text-zinc-500 mb-1">Nenhum histórico disponível</p>
+                  <p className="text-xs text-zinc-700">
+                    Adicione o primeiro valor de mercado para iniciar
+                  </p>
                 </div>
               )}
             </CardContent>
@@ -654,112 +807,157 @@ export function MarketValueTab({
         </div>
       </div>
 
-      {/* History Table */}
+      {/* Premium History Table */}
       {(history?.length ?? 0) > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <FileText className="w-5 h-5 text-primary" />
-              Histórico de Valores
+        <Card className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)] overflow-hidden">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-zinc-800/60 flex items-center justify-center">
+                <FileText className="w-4 h-4 text-zinc-500" />
+              </div>
+              <span className="text-[13px] font-semibold uppercase tracking-[0.1em] text-zinc-400">
+                Histórico de Valores
+              </span>
+              <Badge variant="outline" className="ml-auto text-[10px] bg-zinc-900/60 border-zinc-800/50 text-zinc-500">
+                {history.length} registro{history.length > 1 ? "s" : ""}
+              </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Data</TableHead>
-                    <TableHead>Valor</TableHead>
-                    <TableHead>Moeda</TableHead>
-                    <TableHead>Fonte</TableHead>
-                    <TableHead>Nota</TableHead>
-                    {canEdit && <TableHead className="w-12"></TableHead>}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {[...history].reverse().map((entry, index) => (
-                    <TableRow key={entry.id}>
-                      <TableCell className="font-medium">
-                        {new Date(entry.recorded_at).toLocaleDateString("pt-BR")}
-                        {index === 0 && (
-                          <Badge variant="secondary" className="ml-2 text-xs">
-                            Atual
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="font-bold text-primary">
-                        {formatFullValue(entry.value, entry.currency)}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{entry.currency}</Badge>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {entry.source || "—"}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground max-w-xs truncate">
-                        {entry.note || "—"}
-                      </TableCell>
-                      {canEdit && (
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleEditClick(entry)}>
-                                <Pencil className="h-4 w-4 mr-2" />
-                                Editar
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => handleDeleteClick(entry)}
-                                className="text-destructive focus:text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Excluir
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      )}
+              <div className="border border-zinc-800/40 rounded-xl overflow-hidden bg-zinc-900/30">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-b border-zinc-800/40 bg-zinc-900/50">
+                      <TableHead className="text-[10px] uppercase tracking-wider text-zinc-500">Data</TableHead>
+                      <TableHead className="text-[10px] uppercase tracking-wider text-zinc-500">Valor</TableHead>
+                      <TableHead className="text-[10px] uppercase tracking-wider text-zinc-500">Moeda</TableHead>
+                      <TableHead className="text-[10px] uppercase tracking-wider text-zinc-500">Fonte</TableHead>
+                      <TableHead className="text-[10px] uppercase tracking-wider text-zinc-500">Nota</TableHead>
+                      {canEdit && <TableHead className="w-12"></TableHead>}
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {[...history].reverse().map((entry, index) => {
+                      const isLatest = index === 0;
+                      return (
+                        <TableRow 
+                          key={entry.id}
+                          className={cn(
+                            "transition-all duration-150",
+                            "hover:bg-zinc-800/30",
+                            index % 2 === 0 ? "bg-transparent" : "bg-zinc-900/20",
+                            "border-b border-zinc-800/20",
+                            isLatest && "bg-primary/[0.03]"
+                          )}
+                        >
+                          <TableCell className="py-4">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-zinc-300 font-medium">
+                                {new Date(entry.recorded_at).toLocaleDateString("pt-BR")}
+                              </span>
+                              {isLatest && (
+                                <Badge 
+                                  className={cn(
+                                    "text-[9px] font-bold uppercase tracking-wider px-2 py-0.5",
+                                    "bg-primary/10 text-primary border-primary/20"
+                                  )}
+                                >
+                                  Atual
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className={cn(
+                            "py-4 font-bold tabular-nums",
+                            isLatest ? "text-primary text-lg" : "text-zinc-200"
+                          )}>
+                            {formatFullValue(entry.value, entry.currency)}
+                          </TableCell>
+                          <TableCell className="py-4">
+                            <Badge 
+                              variant="outline" 
+                              className="text-[10px] bg-zinc-900/60 border-zinc-800/50 text-zinc-500"
+                            >
+                              {entry.currency}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="py-4 text-sm text-zinc-600">
+                            {entry.source || "—"}
+                          </TableCell>
+                          <TableCell className="py-4 text-sm text-zinc-600 max-w-xs truncate">
+                            {entry.note || "—"}
+                          </TableCell>
+                          {canEdit && (
+                            <TableCell className="py-4">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-8 w-8 text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800/40"
+                                  >
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-800">
+                                  <DropdownMenuItem 
+                                    onClick={() => handleEditClick(entry)}
+                                    className="text-zinc-300 focus:text-white focus:bg-zinc-800"
+                                  >
+                                    <Pencil className="h-4 w-4 mr-2" />
+                                    Editar
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={() => handleDeleteClick(entry)}
+                                    className="text-rose-400 focus:text-rose-300 focus:bg-rose-500/10"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Excluir
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          )}
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Edit Dialog */}
+      {/* Edit Dialog - Premium Style */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent>
+        <DialogContent className="bg-zinc-950 border-zinc-800">
           <DialogHeader>
-            <DialogTitle>Editar Entrada</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-zinc-200">Editar Entrada</DialogTitle>
+            <DialogDescription className="text-zinc-600">
               Atualize os dados desta entrada do histórico de valor de mercado.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Valor</Label>
+              <Label className="text-[10px] uppercase tracking-wider text-zinc-500">Valor</Label>
               <Input
                 type="number"
                 min={0}
                 step="0.01"
                 value={editFormValue}
                 onChange={(e) => setEditFormValue(e.target.value)}
-                className="bg-secondary/50"
+                className="h-11 bg-zinc-900/50 border-zinc-800/60"
               />
             </div>
             <div className="space-y-2">
-              <Label>Moeda</Label>
+              <Label className="text-[10px] uppercase tracking-wider text-zinc-500">Moeda</Label>
               <Select value={editFormCurrency} onValueChange={setEditFormCurrency}>
-                <SelectTrigger className="bg-secondary/50">
+                <SelectTrigger className="h-11 bg-zinc-900/50 border-zinc-800/60">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-zinc-900 border-zinc-800">
                   {CURRENCIES.map((curr) => (
                     <SelectItem key={curr.value} value={curr.value}>
                       {curr.label}
@@ -769,36 +967,40 @@ export function MarketValueTab({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Data</Label>
+              <Label className="text-[10px] uppercase tracking-wider text-zinc-500">Data</Label>
               <Input
                 type="date"
                 value={editFormDate}
                 onChange={(e) => setEditFormDate(e.target.value)}
-                className="bg-secondary/50"
+                className="h-11 bg-zinc-900/50 border-zinc-800/60"
               />
             </div>
             <div className="space-y-2">
-              <Label>Fonte (opcional)</Label>
+              <Label className="text-[10px] uppercase tracking-wider text-zinc-500">Fonte (opcional)</Label>
               <Input
                 placeholder="Ex: Transfermarkt, Scout"
                 value={editFormSource}
                 onChange={(e) => setEditFormSource(e.target.value)}
-                className="bg-secondary/50"
+                className="h-11 bg-zinc-900/50 border-zinc-800/60"
               />
             </div>
             <div className="space-y-2">
-              <Label>Nota (opcional)</Label>
+              <Label className="text-[10px] uppercase tracking-wider text-zinc-500">Nota (opcional)</Label>
               <Textarea
                 placeholder="Observações..."
                 value={editFormNote}
                 onChange={(e) => setEditFormNote(e.target.value)}
                 rows={2}
-                className="bg-secondary/50"
+                className="bg-zinc-900/50 border-zinc-800/60 resize-none"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+            <Button 
+              variant="outline" 
+              onClick={() => setEditDialogOpen(false)}
+              className="border-zinc-800 hover:bg-zinc-800/50"
+            >
               Cancelar
             </Button>
             <Button onClick={handleEditSave} disabled={editSaving}>
@@ -811,26 +1013,28 @@ export function MarketValueTab({
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-zinc-950 border-zinc-800">
           <AlertDialogHeader>
-            <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-zinc-200">Tem certeza?</AlertDialogTitle>
+            <AlertDialogDescription className="text-zinc-500">
               Esta ação irá excluir a entrada de valor de mercado de{" "}
-              <span className="font-semibold text-foreground">
+              <span className="font-semibold text-zinc-300">
                 {deleteEntry && formatFullValue(deleteEntry.value, deleteEntry.currency)}
               </span>{" "}
               do dia{" "}
-              <span className="font-semibold text-foreground">
+              <span className="font-semibold text-zinc-300">
                 {deleteEntry && new Date(deleteEntry.recorded_at).toLocaleDateString("pt-BR")}
               </span>.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel className="border-zinc-800 hover:bg-zinc-800/50">
+              Cancelar
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
               disabled={deleteSaving}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-rose-600 text-white hover:bg-rose-700"
             >
               {deleteSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Excluir
