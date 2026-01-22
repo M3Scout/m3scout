@@ -354,6 +354,60 @@ const styles = StyleSheet.create({
     color: PDF_COLORS.gray600,
     lineHeight: 1.5,
   },
+  // Category Legend Section
+  categoryLegendCard: {
+    backgroundColor: PDF_COLORS.gray100,
+    border: `1px solid ${PDF_COLORS.gray200}`,
+    borderRadius: 8,
+    padding: 14,
+    marginBottom: 16,
+  },
+  categoryLegendTitle: {
+    fontSize: 11,
+    fontWeight: 800,
+    color: PDF_COLORS.gray900,
+    marginBottom: 10,
+  },
+  categoryLegendGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  categoryLegendItem: {
+    width: "48%",
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    marginBottom: 6,
+  },
+  categoryLegendIconBox: {
+    width: 22,
+    height: 22,
+    borderRadius: 4,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 1,
+  },
+  categoryLegendContent: {
+    flex: 1,
+  },
+  categoryLegendName: {
+    fontSize: 9,
+    fontWeight: 700,
+    color: PDF_COLORS.gray900,
+    marginBottom: 1,
+  },
+  categoryLegendSub: {
+    fontSize: 7,
+    color: PDF_COLORS.gray600,
+    lineHeight: 1.3,
+  },
+  categoryLegendDesc: {
+    fontSize: 7,
+    color: PDF_COLORS.gray500,
+    lineHeight: 1.3,
+    marginTop: 1,
+  },
   // Footer
   footer: {
     position: "absolute",
@@ -787,6 +841,68 @@ export function ScoutingReportVectorPdf({ report, logoUrl }: ScoutingReportVecto
           <Text style={styles.pageHeaderSubtitle}>
             {report.players?.full_name} • {format(new Date(report.match_date), "dd/MM/yyyy", { locale: ptBR })}
           </Text>
+        </View>
+
+        {/* Category Legend - Explanatory Section */}
+        <View style={styles.categoryLegendCard} wrap={false}>
+          <Text style={styles.categoryLegendTitle}>Entenda as categorias avaliadas</Text>
+          <View style={styles.categoryLegendGrid}>
+            {/* Técnico */}
+            <View style={styles.categoryLegendItem}>
+              <View style={[styles.categoryLegendIconBox, { backgroundColor: "#10B98120" }]}>
+                <CategoryIcon color="#10B981" iconType="technical" />
+              </View>
+              <View style={styles.categoryLegendContent}>
+                <Text style={styles.categoryLegendName}>Técnico</Text>
+                <Text style={styles.categoryLegendSub}>Controle, passes, finalização e dribles.</Text>
+                <Text style={styles.categoryLegendDesc}>Avalia a qualidade técnica do atleta com a bola e a execução dos fundamentos.</Text>
+              </View>
+            </View>
+            {/* Tático */}
+            <View style={styles.categoryLegendItem}>
+              <View style={[styles.categoryLegendIconBox, { backgroundColor: "#3B82F620" }]}>
+                <CategoryIcon color="#3B82F6" iconType="tactical" />
+              </View>
+              <View style={styles.categoryLegendContent}>
+                <Text style={styles.categoryLegendName}>Tático</Text>
+                <Text style={styles.categoryLegendSub}>Posicionamento, leitura de jogo e tomada de decisões.</Text>
+                <Text style={styles.categoryLegendDesc}>Analisa inteligência de jogo e entendimento tático.</Text>
+              </View>
+            </View>
+            {/* Físico */}
+            <View style={styles.categoryLegendItem}>
+              <View style={[styles.categoryLegendIconBox, { backgroundColor: "#F59E0B20" }]}>
+                <CategoryIcon color="#F59E0B" iconType="physical" />
+              </View>
+              <View style={styles.categoryLegendContent}>
+                <Text style={styles.categoryLegendName}>Físico</Text>
+                <Text style={styles.categoryLegendSub}>Velocidade, força, resistência e agilidade.</Text>
+                <Text style={styles.categoryLegendDesc}>Reflete a capacidade atlética ao longo da partida.</Text>
+              </View>
+            </View>
+            {/* Mental */}
+            <View style={styles.categoryLegendItem}>
+              <View style={[styles.categoryLegendIconBox, { backgroundColor: "#EC489920" }]}>
+                <CategoryIcon color="#EC4899" iconType="mental" />
+              </View>
+              <View style={styles.categoryLegendContent}>
+                <Text style={styles.categoryLegendName}>Mental</Text>
+                <Text style={styles.categoryLegendSub}>Concentração, liderança e resiliência.</Text>
+                <Text style={styles.categoryLegendDesc}>Mede comportamento psicológico e resposta à pressão.</Text>
+              </View>
+            </View>
+            {/* Impacto / Produção - Full width */}
+            <View style={[styles.categoryLegendItem, { width: "100%" }]}>
+              <View style={[styles.categoryLegendIconBox, { backgroundColor: "#8B5CF620" }]}>
+                <CategoryIcon color="#8B5CF6" iconType="impact" />
+              </View>
+              <View style={styles.categoryLegendContent}>
+                <Text style={styles.categoryLegendName}>Impacto / Produção</Text>
+                <Text style={styles.categoryLegendSub}>Participações decisivas, gols e assistências.</Text>
+                <Text style={styles.categoryLegendDesc}>Avalia a influência direta do atleta no resultado do jogo.</Text>
+              </View>
+            </View>
+          </View>
         </View>
 
         {/* Category Details - Full block, won't break */}
