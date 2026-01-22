@@ -461,10 +461,15 @@ const Players = () => {
           </div>
         ) : filteredPlayers.length > 0 ? (
           <>
-            {/* Athletes Grid - 4 columns on desktop, portrait cards */}
+            {/* Athletes Grid - 1 column for Club Mode, 4 columns for Visual Mode */}
             <motion.div 
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-              style={{ gap: 'clamp(24px, 2vw, 32px)' }}
+              className={cn(
+                "grid",
+                scoutingMode && clubMode 
+                  ? "grid-cols-1 max-w-[1100px] mx-auto" 
+                  : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+              )}
+              style={{ gap: scoutingMode && clubMode ? '16px' : 'clamp(24px, 2vw, 32px)' }}
               initial="hidden"
               animate="visible"
               variants={staggerContainer}
