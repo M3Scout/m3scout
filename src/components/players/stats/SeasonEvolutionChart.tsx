@@ -73,50 +73,116 @@ type StatOption = {
   secondaryPer90Key?: string;
 };
 
+// Premium desaturated colors
 const OUTFIELD_STAT_OPTIONS: StatOption[] = [
   { 
-    value: "goals", label: "Gols", color: "hsl(142, 76%, 36%)", 
-    secondaryValue: "assists", secondaryLabel: "Assistências", secondaryColor: "hsl(221, 83%, 53%)",
+    value: "goals", label: "Gols", color: "hsl(152, 50%, 42%)", 
+    secondaryValue: "assists", secondaryLabel: "Assistências", secondaryColor: "hsl(217, 60%, 55%)",
     per90Key: "goals_per90", secondaryPer90Key: "assists_per90"
   },
   { 
-    value: "shots", label: "Chutes", color: "hsl(221, 83%, 53%)", 
-    secondaryValue: "shots_on_target", secondaryLabel: "No Gol", secondaryColor: "hsl(142, 76%, 36%)",
+    value: "shots", label: "Chutes", color: "hsl(217, 60%, 55%)", 
+    secondaryValue: "shots_on_target", secondaryLabel: "No Gol", secondaryColor: "hsl(152, 50%, 42%)",
     per90Key: "shots_per90", secondaryPer90Key: "shots_on_target_per90"
   },
   { 
-    value: "key_passes", label: "Passes Decisivos", color: "hsl(262, 83%, 58%)", 
-    secondaryValue: "chances_created", secondaryLabel: "Chances Criadas", secondaryColor: "hsl(45, 93%, 47%)",
+    value: "key_passes", label: "Passes Decisivos", color: "hsl(265, 50%, 55%)", 
+    secondaryValue: "chances_created", secondaryLabel: "Chances Criadas", secondaryColor: "hsl(40, 70%, 50%)",
     per90Key: "key_passes_per90", secondaryPer90Key: "chances_created_per90"
   },
   { 
-    value: "tackles", label: "Desarmes", color: "hsl(221, 83%, 53%)", 
-    secondaryValue: "interceptions", secondaryLabel: "Interceptações", secondaryColor: "hsl(142, 76%, 36%)",
+    value: "tackles", label: "Desarmes", color: "hsl(217, 60%, 55%)", 
+    secondaryValue: "interceptions", secondaryLabel: "Interceptações", secondaryColor: "hsl(152, 50%, 42%)",
     per90Key: "tackles_per90", secondaryPer90Key: "interceptions_per90"
   },
   { 
-    value: "recoveries", label: "Recuperações", color: "hsl(262, 83%, 58%)",
+    value: "recoveries", label: "Recuperações", color: "hsl(265, 50%, 55%)",
     per90Key: "recoveries_per90"
   },
-  { value: "matches", label: "Jogos", color: "hsl(221, 83%, 53%)", secondaryValue: "minutes", secondaryLabel: "Minutos (÷10)", secondaryColor: "hsl(45, 93%, 47%)" },
-  { value: "yellow_cards", label: "Amarelos", color: "hsl(45, 93%, 47%)", secondaryValue: "red_cards", secondaryLabel: "Vermelhos", secondaryColor: "hsl(0, 72%, 51%)" },
+  { value: "matches", label: "Jogos", color: "hsl(217, 60%, 55%)", secondaryValue: "minutes", secondaryLabel: "Minutos (÷10)", secondaryColor: "hsl(40, 70%, 50%)" },
+  { value: "yellow_cards", label: "Amarelos", color: "hsl(40, 70%, 50%)", secondaryValue: "red_cards", secondaryLabel: "Vermelhos", secondaryColor: "hsl(0, 55%, 50%)" },
 ];
 
 const GK_STAT_OPTIONS: StatOption[] = [
   { 
-    value: "saves", label: "Defesas", color: "hsl(142, 76%, 36%)", 
-    secondaryValue: "goals_conceded", secondaryLabel: "Gols Sofridos", secondaryColor: "hsl(0, 72%, 51%)",
+    value: "saves", label: "Defesas", color: "hsl(152, 50%, 42%)", 
+    secondaryValue: "goals_conceded", secondaryLabel: "Gols Sofridos", secondaryColor: "hsl(0, 55%, 50%)",
     per90Key: "saves_per90", secondaryPer90Key: "goals_conceded_per90"
   },
-  { value: "clean_sheets", label: "Clean Sheets", color: "hsl(221, 83%, 53%)" },
-  { value: "penalties_saved", label: "Pênaltis Defendidos", color: "hsl(262, 83%, 58%)" },
-  { value: "matches", label: "Jogos", color: "hsl(221, 83%, 53%)", secondaryValue: "minutes", secondaryLabel: "Minutos (÷10)", secondaryColor: "hsl(45, 93%, 47%)" },
+  { value: "clean_sheets", label: "Clean Sheets", color: "hsl(217, 60%, 55%)" },
+  { value: "penalties_saved", label: "Pênaltis Defendidos", color: "hsl(265, 50%, 55%)" },
+  { value: "matches", label: "Jogos", color: "hsl(217, 60%, 55%)", secondaryValue: "minutes", secondaryLabel: "Minutos (÷10)", secondaryColor: "hsl(40, 70%, 50%)" },
 ];
 
 // Helper to calculate per 90 stat
 const calcPer90 = (value: number, minutes: number): number => {
   if (minutes === 0) return 0;
   return Math.round((value / minutes) * 90 * 100) / 100;
+};
+
+// Premium Tooltip Component
+const PremiumTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="
+        bg-zinc-950/95 backdrop-blur-sm 
+        border border-zinc-800/60 
+        rounded-xl shadow-[0_8px_32px_-8px_rgba(0,0,0,0.5)]
+        p-4 min-w-[160px]
+      ">
+        {/* Season header */}
+        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-zinc-800/50">
+          <span className="text-[10px] uppercase tracking-wider text-zinc-500">Temporada</span>
+          <span className="text-sm font-bold text-white">{label}</span>
+        </div>
+        
+        {/* Values */}
+        <div className="space-y-2">
+          {payload.map((entry: any, index: number) => (
+            <div key={index} className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <span
+                  className="w-2.5 h-2.5 rounded-sm"
+                  style={{ backgroundColor: entry.color }}
+                />
+                <span className="text-xs text-zinc-400">{entry.name}</span>
+              </div>
+              <span className="text-sm font-semibold text-white tabular-nums">
+                {entry.dataKey === 'minutesScaled' 
+                  ? (entry.value * 10).toLocaleString()
+                  : typeof entry.value === 'number' 
+                    ? entry.value.toFixed(entry.dataKey.includes('per90') ? 2 : 0)
+                    : entry.value
+                }
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
+// Premium Legend Component
+const PremiumLegend = (props: any) => {
+  const { payload } = props;
+  
+  return (
+    <div className="flex items-center justify-center gap-5 mt-4">
+      {payload.map((entry: any, index: number) => (
+        <div key={index} className="flex items-center gap-2">
+          <span
+            className="w-2.5 h-2.5 rounded-sm"
+            style={{ backgroundColor: entry.color }}
+          />
+          <span className="text-[11px] text-zinc-500 font-medium">
+            {entry.value}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
 };
 
 export function SeasonEvolutionChart({ stats, isGoalkeeper = false }: SeasonEvolutionChartProps) {
@@ -223,65 +289,59 @@ export function SeasonEvolutionChart({ stats, isGoalkeeper = false }: SeasonEvol
     return null; // Don't show chart with less than 2 seasons
   }
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-popover border rounded-lg shadow-lg p-3 text-sm">
-          <p className="font-semibold mb-2">Temporada {label}</p>
-          {payload.map((entry: any, index: number) => (
-            <p key={index} className="flex items-center gap-2">
-              <span
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: entry.color }}
-              />
-              <span className="text-muted-foreground">{entry.name}:</span>
-              <span className="font-medium">
-                {entry.dataKey === 'minutesScaled' 
-                  ? entry.value * 10 
-                  : typeof entry.value === 'number' 
-                    ? entry.value.toFixed(entry.dataKey.includes('per90') ? 2 : 0)
-                    : entry.value
-                }
-              </span>
-            </p>
-          ))}
-        </div>
-      );
-    }
-    return null;
-  };
-
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <TrendingUp className="w-5 h-5 text-blue-500" />
+    <Card className="border-zinc-800/50 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95">
+      <CardHeader className="pb-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <CardTitle className="flex items-center gap-2.5 text-base font-semibold">
+            <div className="w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center">
+              <TrendingUp className="w-4 h-4 text-sky-400" />
+            </div>
             Evolução por Temporada
           </CardTitle>
+          
+          {/* Premium Controls */}
           <div className="flex items-center gap-3">
+            {/* Per 90 Toggle - Premium Style */}
             {hasPer90 && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-zinc-900/60 border border-zinc-800/50">
                 <Switch
                   id="per90-toggle"
                   checked={showPer90}
                   onCheckedChange={setShowPer90}
-                  className="data-[state=checked]:bg-blue-500"
+                  className="data-[state=checked]:bg-primary h-4 w-7 [&>span]:h-3 [&>span]:w-3"
                 />
-                <Label htmlFor="per90-toggle" className="text-xs text-muted-foreground cursor-pointer">
+                <Label 
+                  htmlFor="per90-toggle" 
+                  className="text-[10px] uppercase tracking-wider text-zinc-500 cursor-pointer font-medium"
+                >
                   Por 90min
                 </Label>
               </div>
             )}
+            
+            {/* Stat Selector - Premium Style */}
             <Select value={selectedStat} onValueChange={(v) => { setSelectedStat(v); setShowPer90(false); }}>
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="
+                w-[200px] h-9
+                bg-zinc-900/60 border-zinc-800/50 
+                text-xs font-medium text-zinc-300
+                hover:bg-zinc-800/60 hover:border-zinc-700/50
+                focus:ring-1 focus:ring-primary/30 focus:border-primary/30
+              ">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-zinc-950 border-zinc-800">
                 {statOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
+                  <SelectItem 
+                    key={option.value} 
+                    value={option.value}
+                    className="text-xs text-zinc-300 focus:bg-zinc-800 focus:text-white"
+                  >
                     {option.label}
-                    {option.secondaryLabel && ` + ${option.secondaryLabel}`}
+                    {option.secondaryLabel && (
+                      <span className="text-zinc-500"> + {option.secondaryLabel}</span>
+                    )}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -289,37 +349,76 @@ export function SeasonEvolutionChart({ stats, isGoalkeeper = false }: SeasonEvol
           </div>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="h-[280px] w-full">
+      
+      <CardContent className="pt-2">
+        {/* Chart Container - Increased height for better proportions */}
+        <div className="h-[300px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart
               data={chartData}
-              margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+              margin={{ top: 20, right: 20, left: 0, bottom: 10 }}
+              barCategoryGap="25%"
             >
-              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              {/* Gradient definitions for premium bars */}
+              <defs>
+                <linearGradient id="primaryBarGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={currentStatOption.color} stopOpacity={0.9} />
+                  <stop offset="100%" stopColor={currentStatOption.color} stopOpacity={0.5} />
+                </linearGradient>
+                {currentStatOption.secondaryColor && (
+                  <linearGradient id="secondaryBarGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={currentStatOption.secondaryColor} stopOpacity={0.9} />
+                    <stop offset="100%" stopColor={currentStatOption.secondaryColor} stopOpacity={0.5} />
+                  </linearGradient>
+                )}
+              </defs>
+              
+              {/* Grid - Much more subtle */}
+              <CartesianGrid 
+                strokeDasharray="3 3" 
+                stroke="hsl(240, 5%, 20%)"
+                strokeOpacity={0.3}
+                vertical={false}
+              />
+              
+              {/* X Axis - Subtle */}
               <XAxis
                 dataKey="season"
-                tick={{ fontSize: 12 }}
-                className="text-muted-foreground"
+                tick={{ fontSize: 11, fill: 'hsl(240, 5%, 45%)' }}
+                axisLine={{ stroke: 'hsl(240, 5%, 20%)', strokeOpacity: 0.5 }}
+                tickLine={false}
+                dy={8}
               />
+              
+              {/* Y Axis - Minimal */}
               <YAxis
-                tick={{ fontSize: 12 }}
-                className="text-muted-foreground"
+                tick={{ fontSize: 10, fill: 'hsl(240, 5%, 40%)' }}
+                axisLine={false}
+                tickLine={false}
                 allowDecimals={showPer90}
                 domain={showPer90 ? [0, 'auto'] : undefined}
+                width={35}
               />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend
-                wrapperStyle={{ fontSize: '12px' }}
-                iconType="circle"
+              
+              {/* Premium Tooltip */}
+              <Tooltip 
+                content={<PremiumTooltip />}
+                cursor={{ fill: 'hsl(240, 5%, 15%)', fillOpacity: 0.5 }}
               />
+              
+              {/* Premium Legend */}
+              <Legend content={<PremiumLegend />} />
+              
+              {/* Primary Bar - Premium gradient with rounded corners */}
               <Bar
                 dataKey={primaryDataKey}
                 name={showPer90 ? `${currentStatOption.label}/90` : currentStatOption.label}
-                fill={currentStatOption.color}
-                radius={[4, 4, 0, 0]}
-                maxBarSize={60}
+                fill="url(#primaryBarGradient)"
+                radius={[6, 6, 0, 0]}
+                maxBarSize={50}
               />
+              
+              {/* Secondary Bar/Line */}
               {secondaryDataKey && currentStatOption.secondaryLabel && (
                 secondaryDataKey === 'minutes' || currentStatOption.secondaryValue === 'minutes' ? (
                   <Line
@@ -327,8 +426,18 @@ export function SeasonEvolutionChart({ stats, isGoalkeeper = false }: SeasonEvol
                     dataKey="minutesScaled"
                     name={currentStatOption.secondaryLabel}
                     stroke={currentStatOption.secondaryColor}
-                    strokeWidth={2}
-                    dot={{ fill: currentStatOption.secondaryColor, strokeWidth: 2 }}
+                    strokeWidth={2.5}
+                    dot={{ 
+                      fill: currentStatOption.secondaryColor, 
+                      strokeWidth: 0,
+                      r: 4
+                    }}
+                    activeDot={{
+                      fill: currentStatOption.secondaryColor,
+                      strokeWidth: 2,
+                      stroke: 'hsl(240, 5%, 10%)',
+                      r: 6
+                    }}
                   />
                 ) : (
                   <Bar
@@ -337,17 +446,19 @@ export function SeasonEvolutionChart({ stats, isGoalkeeper = false }: SeasonEvol
                       ? `${currentStatOption.secondaryLabel}/90` 
                       : currentStatOption.secondaryLabel
                     }
-                    fill={currentStatOption.secondaryColor}
-                    radius={[4, 4, 0, 0]}
-                    maxBarSize={60}
+                    fill="url(#secondaryBarGradient)"
+                    radius={[6, 6, 0, 0]}
+                    maxBarSize={50}
                   />
                 )
               )}
             </ComposedChart>
           </ResponsiveContainer>
         </div>
+        
+        {/* Per90 indicator - subtle */}
         {showPer90 && (
-          <p className="text-xs text-muted-foreground text-center mt-2">
+          <p className="text-[10px] text-zinc-600 text-center mt-3 uppercase tracking-wider">
             Valores calculados por 90 minutos jogados
           </p>
         )}
