@@ -130,16 +130,43 @@ function PlayerCardPremium({ player }: { player: Player }) {
             )}
           />
 
-          {/* Metadata Line - Top */}
-          <div className="absolute top-4 left-4 right-4 flex items-center gap-2">
-            <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.1em] text-white/50">
-              <Zap className="w-3 h-3 text-white/40" />
-              <span>{positionCodes[player.position] || player.position}</span>
+          {/* Position Badge - Top Left */}
+          <div className="absolute top-4 left-4">
+            <div 
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border border-white/[0.08]"
+              style={{ 
+                background: "rgba(7, 9, 16, 0.65)", 
+                backdropFilter: "blur(6px)",
+                WebkitBackdropFilter: "blur(6px)"
+              }}
+            >
+              <Zap className="w-3 h-3 text-white/60" />
+              <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-white">
+                {positionCodes[player.position] || player.position}
+              </span>
             </div>
-            <div className="flex-1" />
-            <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.1em] text-emerald-400/70">
-              <Activity className="w-3 h-3" />
-              <span>Monitorado</span>
+          </div>
+
+          {/* Status Badge - Top Right */}
+          <div className="absolute top-4 right-4">
+            <div 
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border border-white/[0.08]"
+              style={{ 
+                background: "rgba(7, 9, 16, 0.65)", 
+                backdropFilter: "blur(6px)",
+                WebkitBackdropFilter: "blur(6px)"
+              }}
+            >
+              <span 
+                className="w-1.5 h-1.5 rounded-full animate-pulse"
+                style={{ backgroundColor: "#1ED760" }}
+              />
+              <span 
+                className="text-[10px] font-semibold uppercase tracking-[0.1em]"
+                style={{ color: "#1ED760" }}
+              >
+                Monitorado
+              </span>
             </div>
           </div>
 
@@ -214,11 +241,41 @@ function PlayerCardScout({ player }: { player: Player }) {
             )}
           />
 
+          {/* Position Badge - Top Left */}
+          <div className="absolute top-4 left-4">
+            <div 
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border border-white/[0.08]"
+              style={{ 
+                background: "rgba(7, 9, 16, 0.65)", 
+                backdropFilter: "blur(6px)",
+                WebkitBackdropFilter: "blur(6px)"
+              }}
+            >
+              <Zap className="w-3 h-3 text-white/60" />
+              <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-white">
+                {positionCodes[player.position] || player.position}
+              </span>
+            </div>
+          </div>
+
           {/* Status Badge - Top Right */}
           <div className="absolute top-4 right-4">
-            <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-sm">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[9px] font-medium uppercase tracking-[0.1em] text-emerald-400">
+            <div 
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border border-white/[0.08]"
+              style={{ 
+                background: "rgba(7, 9, 16, 0.65)", 
+                backdropFilter: "blur(6px)",
+                WebkitBackdropFilter: "blur(6px)"
+              }}
+            >
+              <span 
+                className="w-1.5 h-1.5 rounded-full animate-pulse"
+                style={{ backgroundColor: "#1ED760" }}
+              />
+              <span 
+                className="text-[10px] font-semibold uppercase tracking-[0.1em]"
+                style={{ color: "#1ED760" }}
+              >
                 Monitorado
               </span>
             </div>
@@ -408,7 +465,7 @@ export function FeaturedPlayers() {
   const sectionRef = useRef<HTMLElement>(null);
 
   // A/B variant - can be toggled via props or feature flag
-  const variant: "premium" | "scout" = "premium";
+  const variant: "premium" | "scout" = "scout";
 
   useEffect(() => {
     const element = sectionRef.current;
