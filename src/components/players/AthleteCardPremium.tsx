@@ -197,7 +197,7 @@ function VisualModeCard({
       onMouseLeave={() => setIsHovered(false)}
     >
       <motion.article
-        className="relative overflow-hidden rounded-md"
+        className="relative overflow-hidden rounded-md w-full"
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         whileHover={{ y: -5 }}
@@ -207,7 +207,9 @@ function VisualModeCard({
         }}
         style={{
           background: "#0a0c12",
-          height: "450px",
+          aspectRatio: "3 / 4",
+          minHeight: "380px",
+          maxHeight: "480px",
           boxShadow: isHovered
             ? `0 28px 56px -16px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255,255,255,0.06), 0 0 48px -12px ${priorityInfo.glowColor}`
             : "0 6px 20px -6px rgba(0, 0, 0, 0.35)",
@@ -390,7 +392,7 @@ function ClubScoutingCard({
       onMouseLeave={() => setIsHovered(false)}
     >
       <motion.article
-        className="relative overflow-hidden rounded-sm flex flex-col"
+        className="relative overflow-hidden rounded-sm flex flex-col w-full"
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         whileHover={{ y: -4 }}
@@ -400,7 +402,9 @@ function ClubScoutingCard({
         }}
         style={{
           background: "#0a0c12",
-          minHeight: "440px",
+          aspectRatio: "3 / 4",
+          minHeight: "380px",
+          maxHeight: "480px",
           boxShadow: isHovered
             ? `0 24px 48px -12px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255,255,255,0.05), 0 0 50px -15px ${priorityInfo.glowColor}`
             : "0 4px 16px -4px rgba(0, 0, 0, 0.35)",
