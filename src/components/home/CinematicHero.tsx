@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, ChevronDown, Users, FileText, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
-import heroStadium from "@/assets/hero-stadium.jpg";
+import heroAbstract from "@/assets/hero-abstract-intelligence.jpg";
 
 // Simple animation stages for headline
 type HeadlineStage = "hidden" | "line1" | "line2" | "complete";
@@ -85,33 +85,33 @@ export function CinematicHero() {
   return (
     <section
       ref={heroRef}
-      className="relative min-h-screen flex items-center overflow-hidden bg-neutral-950"
+      className="relative min-h-screen flex items-center overflow-hidden"
+      style={{ backgroundColor: "#070910" }}
     >
-      {/* Background Image with Parallax */}
+      {/* Abstract Background Image with Parallax */}
       <div
         className="absolute inset-0 z-0 transition-transform duration-100"
-        style={{ transform: `translateY(${parallaxOffset}px) scale(1.15)` }}
+        style={{ transform: `translateY(${parallaxOffset}px) scale(1.1)` }}
       >
         <img
-          src={heroStadium}
+          src={heroAbstract}
           alt=""
           className="w-full h-full object-cover"
-          style={{ filter: "blur(1px) saturate(0.9)" }}
         />
-        {/* Vignette */}
+        {/* Subtle Vignette - less aggressive to preserve the abstract visual */}
         <div
           className="absolute inset-0"
           style={{
-            background: "radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.9) 100%)",
+            background: "radial-gradient(ellipse at center, transparent 20%, rgba(7,9,16,0.4) 60%, rgba(7,9,16,0.85) 100%)",
           }}
         />
       </div>
 
-      {/* Dark Overlay for Legibility */}
+      {/* Lighter Overlay - preserve more of the abstract image */}
       <div
         className="absolute inset-0 z-[1]"
         style={{
-          background: "linear-gradient(135deg, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.65) 40%, rgba(0,0,0,0.8) 100%)",
+          background: "linear-gradient(135deg, rgba(7,9,16,0.7) 0%, rgba(7,9,16,0.35) 40%, rgba(7,9,16,0.6) 100%)",
         }}
       />
 
@@ -299,7 +299,10 @@ export function CinematicHero() {
       </button>
 
       {/* Bottom Gradient */}
-      <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-neutral-950 via-neutral-950/50 to-transparent z-[5]" />
+      <div 
+        className="absolute bottom-0 left-0 right-0 h-40 z-[5]" 
+        style={{ background: "linear-gradient(to top, #070910 0%, rgba(7,9,16,0.5) 50%, transparent 100%)" }}
+      />
     </section>
   );
 }
