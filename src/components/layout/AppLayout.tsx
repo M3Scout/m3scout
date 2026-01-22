@@ -10,7 +10,7 @@ function AppLayoutContent() {
   const location = useLocation();
 
   return (
-    <div className="min-h-screen flex w-full max-w-full overflow-x-hidden bg-[linear-gradient(180deg,hsl(222_47%_7%)_0%,hsl(222_50%_5%)_100%)]">
+    <div className="min-h-screen flex w-full max-w-full overflow-x-hidden bg-background">
       <AppSidebar />
       {/* Main content with dynamic margin based on sidebar state */}
       <main 
