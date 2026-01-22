@@ -21,11 +21,29 @@ import {
   Stop,
   StyleSheet,
 } from "@react-pdf/renderer";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PDF_COLORS } from "@/lib/pdfStyles";
 import { CATEGORY_WEIGHTS, getRatingLabel, ScoreBreakdown } from "@/lib/scoring";
 import { ScoutingReportData, SCOUTING_CATEGORY_CONFIG } from "@/types/scouting";
+
+/**
+ * Parse date string safely preserving the local date.
+ * Handles both ISO timestamps (with timezone) and date-only strings (YYYY-MM-DD).
+ * For date-only strings, we treat them as local dates to avoid UTC shift issues.
+ */
+function parseDateSafe(dateStr: string): Date {
+  if (!dateStr) return new Date();
+  
+  // If it's a full ISO timestamp (contains 'T'), use parseISO which handles TZ correctly
+  if (dateStr.includes("T")) {
+    return parseISO(dateStr);
+  }
+  
+  // For date-only strings (YYYY-MM-DD), parse as local date to avoid UTC shift
+  const [year, month, day] = dateStr.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
 
 // Score color helper
 function getScoreColor(score: number): string {
@@ -724,7 +742,7 @@ export function ScoutingReportVectorPdf({ report, logoUrl }: ScoutingReportVecto
                 </Text>
               </View>
               <Text style={styles.playerOpponent}>
-                Partida: {format(new Date(report.match_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                Relatório: {format(parseDateSafe(report.created_at), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
                 {report.opponent ? ` • vs ${report.opponent}` : ""}
               </Text>
             </View>
@@ -839,7 +857,7 @@ export function ScoutingReportVectorPdf({ report, logoUrl }: ScoutingReportVecto
         <View style={styles.pageHeader}>
           <Text style={styles.pageHeaderTitle}>Detalhamento por Categoria</Text>
           <Text style={styles.pageHeaderSubtitle}>
-            {report.players?.full_name} • {format(new Date(report.match_date), "dd/MM/yyyy", { locale: ptBR })}
+            {report.players?.full_name} • {format(parseDateSafe(report.created_at), "dd/MM/yyyy", { locale: ptBR })}
           </Text>
         </View>
 

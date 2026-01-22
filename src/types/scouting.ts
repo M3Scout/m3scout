@@ -2,6 +2,7 @@
 
 export interface ScoutingReportData {
   id: string;
+  created_at: string;
   match_date: string;
   opponent: string | null;
   match_notes: string | null;
