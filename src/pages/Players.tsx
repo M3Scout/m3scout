@@ -26,6 +26,7 @@ interface Player {
   current_club: string | null;
   photo_url: string | null;
   auto_rating: number | null;
+  created_at: string;
   // Scouting mode fields
   dominant_foot: string | null;
   height: number | null;
@@ -97,7 +98,8 @@ const Players = () => {
         .select(`
           id, slug, full_name, position, secondary_positions, age, nationality, 
           current_club, photo_url, auto_rating, dominant_foot, height,
-          overall_rating, potential_rating, physical_status, market_value, estimated_level
+          overall_rating, potential_rating, physical_status, market_value, estimated_level,
+          created_at
         `)
         .eq("is_public", true)
         .order("full_name");
@@ -497,6 +499,7 @@ const Players = () => {
                     estimatedLevel={player.estimated_level}
                     competitionName={player.competition_name}
                     lastReportDate={player.last_report_date}
+                    createdAt={player.created_at}
                   />
                 </motion.div>
               ))}

@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap, ArrowRight, Flame, Eye, Snowflake, TrendingUp, Activity, DollarSign, FileText, Calendar } from "lucide-react";
+import { Zap, ArrowRight, Flame, Eye, Snowflake, TrendingUp, Activity, DollarSign, FileText, Calendar, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -32,9 +32,28 @@ export interface AthleteCardPremiumProps {
   estimatedLevel?: string | null;
   competitionName?: string | null;
   lastReportDate?: string | null;
+  // New field for "Novo" status
+  createdAt?: string | null;
 }
 
 type PriorityLevel = "high" | "monitoring" | "low";
+type StatusLevel = "priority" | "new" | "monitoring";
+
+// Check if athlete was added in the last 30 days
+function isNewAthlete(createdAt?: string | null): boolean {
+  if (!createdAt) return false;
+  const created = new Date(createdAt);
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  return created >= thirtyDaysAgo;
+}
+
+// Determine status: Priority > New > Monitoring
+function getAthleteStatus(priority: PriorityLevel, createdAt?: string | null): StatusLevel {
+  if (priority === "high") return "priority";
+  if (isNewAthlete(createdAt)) return "new";
+  return "monitoring";
+}
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // CONSTANTS
@@ -182,12 +201,13 @@ function VisualModeCard({
   imageUrl,
   isPublic,
   priority,
+  createdAt,
 }: AthleteCardPremiumProps & { priority: PriorityLevel }) {
   const [isHovered, setIsHovered] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const href = isPublic ? `/players/${slug}` : `/app/players/${slug}`;
   const priorityInfo = priorityConfig[priority];
-  const PriorityIcon = priorityInfo.icon;
+  const status = getAthleteStatus(priority, createdAt);
 
   return (
     <Link
@@ -272,8 +292,8 @@ function VisualModeCard({
               </span>
             </div>
 
-            {/* Right Pill: Status (Priority wins over Monitored) */}
-            {priority === "high" ? (
+            {/* Right Pill: Status (Priority > New > Monitoring) */}
+            {status === "priority" ? (
               <motion.div 
                 className="flex items-center gap-2 px-3 py-2 rounded-md min-h-[32px]"
                 style={{
@@ -290,6 +310,26 @@ function VisualModeCard({
                   style={{ color: "#FF6B35" }}
                 >
                   Prioridade
+                </span>
+              </motion.div>
+            ) : status === "new" ? (
+              <motion.div 
+                className="flex items-center gap-2 px-3 py-2 rounded-md min-h-[32px]"
+                style={{
+                  background: "rgba(10, 12, 18, 0.92)",
+                  border: "1px solid rgba(59, 130, 246, 0.35)",
+                  boxShadow: "0 2px 8px rgba(0, 0, 0, 0.4), 0 0 12px rgba(59, 130, 246, 0.15)",
+                }}
+                initial={{ scale: 1 }}
+                animate={{ scale: [1, 1.02, 1] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <Sparkles className="w-3.5 h-3.5" style={{ color: "#3B82F6" }} />
+                <span 
+                  className="text-[10px] font-bold uppercase tracking-[0.08em]"
+                  style={{ color: "#3B82F6" }}
+                >
+                  Novo
                 </span>
               </motion.div>
             ) : (
@@ -377,13 +417,14 @@ function ClubScoutingCard({
   competitionName,
   lastReportDate,
   priority,
+  createdAt,
 }: AthleteCardPremiumProps & { priority: PriorityLevel }) {
   const [isHovered, setIsHovered] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const href = isPublic ? `/players/${slug}` : `/app/players/${slug}`;
   const priorityInfo = priorityConfig[priority];
-  const PriorityIcon = priorityInfo.icon;
   const physicalInfo = physicalStatusLabels[physicalStatus || "fit"];
+  const status = getAthleteStatus(priority, createdAt);
 
   return (
     <Link
@@ -439,8 +480,8 @@ function ClubScoutingCard({
               </span>
             </div>
 
-            {/* Right Pill: Status (Priority wins over Monitored) */}
-            {priority === "high" ? (
+            {/* Right Pill: Status (Priority > New > Monitoring) */}
+            {status === "priority" ? (
               <motion.div 
                 className="flex items-center gap-2 px-3 py-2 rounded-md min-h-[32px]"
                 style={{
@@ -457,6 +498,26 @@ function ClubScoutingCard({
                   style={{ color: "#FF6B35" }}
                 >
                   Prioridade
+                </span>
+              </motion.div>
+            ) : status === "new" ? (
+              <motion.div 
+                className="flex items-center gap-2 px-3 py-2 rounded-md min-h-[32px]"
+                style={{
+                  background: "rgba(10, 12, 18, 0.92)",
+                  border: "1px solid rgba(59, 130, 246, 0.35)",
+                  boxShadow: "0 2px 8px rgba(0, 0, 0, 0.4), 0 0 12px rgba(59, 130, 246, 0.15)",
+                }}
+                initial={{ scale: 1 }}
+                animate={{ scale: [1, 1.02, 1] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <Sparkles className="w-3.5 h-3.5" style={{ color: "#3B82F6" }} />
+                <span 
+                  className="text-[10px] font-bold uppercase tracking-[0.08em]"
+                  style={{ color: "#3B82F6" }}
+                >
+                  Novo
                 </span>
               </motion.div>
             ) : (
