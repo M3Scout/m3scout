@@ -79,6 +79,22 @@ export function CinematicHero() {
       {/* Main Content */}
       <div className="relative z-10 w-full mx-auto max-w-[1200px] px-6 lg:px-10 py-20">
         <div className="max-w-2xl">
+          {/* Badge */}
+          <motion.div
+            variants={fadeUpVariant}
+            initial="hidden"
+            animate={isLoaded ? "visible" : "hidden"}
+            custom={0.06}
+            className="mb-6"
+          >
+            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/[0.02]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#e52421] animate-pulse" />
+              <span className="text-[10px] tracking-[0.2em] uppercase text-white/50 font-medium">
+                Football Intelligence System
+              </span>
+            </span>
+          </motion.div>
+
           {/* Headline */}
           <motion.h1
             variants={fadeUpVariant}
@@ -87,11 +103,9 @@ export function CinematicHero() {
             custom={0.12}
             className="text-4xl sm:text-5xl md:text-6xl lg:text-[4.5rem] font-bold leading-[1.05] tracking-tight mb-6"
           >
-            <span className="block text-white">SCOUTING QUE</span>
-            <span className="block">
-              <span className="text-white">VIRA </span>
-              <span className="text-[#e52421]">CONTRATO.</span>
-            </span>
+            <span className="block text-white">FOOTBALL</span>
+            <span className="block text-white">INTELLIGENCE.</span>
+            <span className="block text-[#e52421]">NOT OPINION.</span>
           </motion.h1>
 
           {/* Subheadline */}
@@ -149,24 +163,23 @@ export function CinematicHero() {
             </Link>
           </motion.div>
 
-          {/* Social Proof - Discrete */}
+          {/* Metric - Sistema Ativo */}
           <motion.div
             variants={fadeUpVariant}
             initial="hidden"
             animate={isLoaded ? "visible" : "hidden"}
             custom={0.48}
-            className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-white/40"
+            className="flex items-center gap-4"
           >
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 text-sm text-white/40">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/70" />
               <span>Sistema ativo</span>
             </div>
-            <div className="hidden sm:block w-px h-4 bg-white/10" />
-            <span>+150 atletas monitorados</span>
-            <div className="hidden sm:block w-px h-4 bg-white/10" />
-            <span>+100 competições mapeadas</span>
-            <div className="hidden md:block w-px h-4 bg-white/10" />
-            <span className="hidden md:block">Relatórios em tempo real</span>
+            <div className="w-px h-6 bg-white/10" />
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-bold text-white">150+</span>
+              <span className="text-sm text-white/40">atletas monitorados</span>
+            </div>
           </motion.div>
         </div>
       </div>
