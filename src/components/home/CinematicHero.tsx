@@ -1,24 +1,22 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { ArrowRight, ChevronDown, Users, FileText, Trophy } from "lucide-react";
+import { ArrowRight, ChevronDown } from "lucide-react";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
-import heroAbstract from "@/assets/hero-abstract-intelligence.jpg";
-
-// Simple animation stages for headline
-type HeadlineStage = "hidden" | "line1" | "line2" | "complete";
 
 export function CinematicHero() {
   const heroRef = useRef<HTMLElement>(null);
-  const [scrollY, setScrollY] = useState(0);
-  const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
-  const [headlineStage, setHeadlineStage] = useState<HeadlineStage>("hidden");
-  const [showSubheadline, setShowSubheadline] = useState(false);
-  const [showCtas, setShowCtas] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
 
-  // Check reduced motion preference
+  const { scrollYProgress } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"],
+  });
+
+  const backgroundY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
+  const contentOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
+
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     setPrefersReducedMotion(mediaQuery.matches);
@@ -27,60 +25,42 @@ export function CinematicHero() {
     return () => mediaQuery.removeEventListener("change", handleChange);
   }, []);
 
-  // Simple 2-line headline animation
   useEffect(() => {
-    if (prefersReducedMotion) {
-      setHeadlineStage("complete");
-      setShowSubheadline(true);
-      setShowCtas(true);
-      return;
-    }
-
-    const timers: NodeJS.Timeout[] = [];
-    
-    timers.push(setTimeout(() => setHeadlineStage("line1"), 150));
-    timers.push(setTimeout(() => setHeadlineStage("line2"), 300));
-    timers.push(setTimeout(() => setHeadlineStage("complete"), 450));
-    timers.push(setTimeout(() => setShowSubheadline(true), 550));
-    timers.push(setTimeout(() => setShowCtas(true), 850));
-
-    return () => timers.forEach(clearTimeout);
-  }, [prefersReducedMotion]);
-
-  // Parallax scroll effect
-  useEffect(() => {
-    if (prefersReducedMotion) return;
-    const handleScroll = () => {
-      if (!heroRef.current) return;
-      const rect = heroRef.current.getBoundingClientRect();
-      if (rect.bottom > 0) setScrollY(window.scrollY);
-    };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [prefersReducedMotion]);
-
-  // Mouse spotlight effect
-  useEffect(() => {
-    if (prefersReducedMotion) return;
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!heroRef.current) return;
-      const rect = heroRef.current.getBoundingClientRect();
-      if (e.clientY > rect.bottom) return;
-      setMousePos({
-        x: e.clientX / window.innerWidth,
-        y: e.clientY / window.innerHeight,
-      });
-    };
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, [prefersReducedMotion]);
+    const timer = setTimeout(() => setIsLoaded(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   const scrollToContent = () => {
     window.scrollTo({ top: window.innerHeight, behavior: "smooth" });
   };
 
-  const parallaxOffset = prefersReducedMotion ? 0 : scrollY * 0.3;
-  const hudParallax = prefersReducedMotion ? 0 : scrollY * 0.15;
+  // Animation variants
+  const containerVariants = {
+    hidden: {},
+    visible: {
+      transition: {
+        staggerChildren: 0.15,
+        delayChildren: 0.2,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.8,
+        ease: [0.25, 0.46, 0.45, 0.94] as const,
+      },
+    },
+  };
+
+  const buttonHover = {
+    scale: 1.02,
+    transition: { duration: 0.2, ease: "easeOut" as const },
+  };
 
   return (
     <section
@@ -88,529 +68,395 @@ export function CinematicHero() {
       className="relative min-h-screen flex items-center overflow-hidden"
       style={{ backgroundColor: "#070910" }}
     >
-      {/* Abstract Background Image with Parallax */}
-      <div
-        className="absolute inset-0 z-0 transition-transform duration-100"
-        style={{ transform: `translateY(${parallaxOffset}px) scale(1.1)` }}
+      {/* Abstract Grid Background with Parallax */}
+      <motion.div
+        className="absolute inset-0 z-0"
+        style={{ y: prefersReducedMotion ? 0 : backgroundY }}
       >
-        <img
-          src={heroAbstract}
-          alt=""
-          className="w-full h-full object-cover"
-        />
-        {/* Subtle Vignette - less aggressive to preserve the abstract visual */}
+        <AbstractGridBackground isLoaded={isLoaded} reducedMotion={prefersReducedMotion} />
+      </motion.div>
+
+      {/* Ambient Glow Effects */}
+      <div className="absolute inset-0 z-[1] pointer-events-none">
+        {/* Primary glow - center left */}
         <div
-          className="absolute inset-0"
+          className={cn(
+            "absolute top-1/2 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full transition-opacity duration-[2000ms]",
+            isLoaded ? "opacity-100" : "opacity-0"
+          )}
           style={{
-            background: "radial-gradient(ellipse at center, transparent 20%, rgba(7,9,16,0.4) 60%, rgba(7,9,16,0.85) 100%)",
+            background: "radial-gradient(circle, rgba(229,36,33,0.06) 0%, transparent 70%)",
+            filter: "blur(80px)",
+          }}
+        />
+        {/* Secondary glow - right */}
+        <div
+          className={cn(
+            "absolute top-1/3 right-1/4 w-[400px] h-[400px] rounded-full transition-opacity duration-[2500ms] delay-500",
+            isLoaded ? "opacity-100" : "opacity-0"
+          )}
+          style={{
+            background: "radial-gradient(circle, rgba(59,130,246,0.04) 0%, transparent 70%)",
+            filter: "blur(60px)",
           }}
         />
       </div>
 
-      {/* Lighter Overlay - preserve more of the abstract image */}
-      <div
-        className="absolute inset-0 z-[1]"
-        style={{
-          background: "linear-gradient(135deg, rgba(7,9,16,0.7) 0%, rgba(7,9,16,0.35) 40%, rgba(7,9,16,0.6) 100%)",
-        }}
-      />
-
-      {/* Grain Texture */}
-      <div
-        className="absolute inset-0 z-[2] pointer-events-none opacity-[0.04]"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
-        }}
-      />
-
-      {/* Tactical Grid & HUD Layer */}
-      <div
-        className="absolute inset-0 z-[3] pointer-events-none overflow-hidden"
-        style={{ transform: `translateY(${hudParallax}px)` }}
-      >
-        {/* Tactical Field Lines */}
-        <TacticalGrid />
-
-        {/* Tracking Dots */}
-        {!prefersReducedMotion && <TrackingDots />}
-
-        {/* Light Sweep (Radar Style) */}
-        {!prefersReducedMotion && (
-          <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-full animate-light-sweep">
-              <div
-                className="absolute top-0 w-[200px] h-full"
-                style={{
-                  background: "linear-gradient(90deg, transparent 0%, rgba(229,36,33,0.03) 50%, transparent 100%)",
-                }}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Corner Reticles */}
-        <Reticle position="top-[12%] left-[8%]" size={16} />
-        <Reticle position="bottom-[18%] right-[12%]" size={20} isCircle />
-
-        {/* Technical Label - only Scouting Intel, removed Data Layer */}
-        <div className="absolute top-[10%] right-[6%] text-[9px] tracking-[0.35em] text-white/15 font-mono uppercase">
-          Scouting Intel
-        </div>
-      </div>
-
-      {/* Mouse Spotlight */}
-      <div
-        className="absolute inset-0 z-[4] pointer-events-none hidden md:block"
-        style={{
-          background: prefersReducedMotion
-            ? "none"
-            : `radial-gradient(500px circle at ${mousePos.x * 100}% ${mousePos.y * 100}%, rgba(229,36,33,0.04) 0%, transparent 50%)`,
-        }}
-      />
+      {/* HUD Frame Elements */}
+      <HUDElements isLoaded={isLoaded} />
 
       {/* Main Content */}
-      <div className="relative z-10 w-full mx-auto max-w-[1280px] px-6 lg:px-10 py-20">
-        <div className="grid lg:grid-cols-[1fr,auto] gap-12 lg:gap-16 items-center">
-          {/* Left Content */}
-          <div className="max-w-2xl">
-            {/* Simple 2-line Animated Headline */}
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.05] tracking-tight mb-8">
-              {/* Line 1: SCOUTING QUE */}
-              <span
-                className={cn(
-                  "block text-white transition-all duration-300 ease-out",
-                  headlineStage === "hidden" && "opacity-0 translate-y-3",
-                  (headlineStage === "line1" || headlineStage === "line2" || headlineStage === "complete") && "opacity-100 translate-y-0"
-                )}
-              >
-                SCOUTING QUE
+      <motion.div
+        className="relative z-10 w-full mx-auto max-w-[1280px] px-6 lg:px-10"
+        style={{ opacity: prefersReducedMotion ? 1 : contentOpacity }}
+      >
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate={isLoaded ? "visible" : "hidden"}
+          className="max-w-3xl"
+        >
+          {/* Intel Badge */}
+          <motion.div variants={itemVariants} className="mb-8">
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/10 bg-white/[0.02]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#e52421] animate-pulse" />
+              <span className="text-[10px] tracking-[0.25em] uppercase text-white/50 font-medium">
+                Football Intelligence System
               </span>
-              {/* Line 2: VIRA CONTRATO. */}
-              <span
-                className={cn(
-                  "block transition-all duration-300 ease-out",
-                  (headlineStage === "hidden" || headlineStage === "line1") && "opacity-0 translate-y-3",
-                  (headlineStage === "line2" || headlineStage === "complete") && "opacity-100 translate-y-0"
-                )}
-                style={{ transitionDelay: headlineStage === "line1" ? "0ms" : "100ms" }}
-              >
-                <span className="text-white">VIRA </span>
-                <span className="text-[#e52421]">CONTRATO.</span>
-              </span>
-            </h1>
+            </span>
+          </motion.div>
 
-            {/* Subheadline with Text Reveal */}
-            <div className="mb-10 overflow-hidden">
-              <p
-                className={cn(
-                  "text-lg md:text-xl text-white/65 max-w-lg leading-relaxed transition-all duration-700",
-                  showSubheadline
-                    ? "opacity-100 translate-y-0"
-                    : "opacity-0 translate-y-8"
-                )}
-              >
-                <TextReveal show={showSubheadline} delay={0}>
-                  Identificamos talento,
-                </TextReveal>{" "}
-                <TextReveal show={showSubheadline} delay={100}>
-                  aceleramos evolução
-                </TextReveal>{" "}
-                <TextReveal show={showSubheadline} delay={200}>
-                  e conectamos com clubes de elite.
-                </TextReveal>
-              </p>
-            </div>
-
-            {/* CTAs with Enhanced Effects */}
-            <div
-              className={cn(
-                "flex flex-wrap gap-4 mb-4 transition-all duration-700",
-                showCtas ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-              )}
-            >
-              <Link to="/players">
-                <Button
-                  size="lg"
-                  className="group relative bg-[#e52421] text-white px-8 py-6 text-base font-medium tracking-wide overflow-hidden transition-all duration-300 hover:translate-y-[-2px] hover:shadow-xl"
-                  style={{
-                    boxShadow: "0 0 0 0 rgba(229,36,33,0), 0 4px 15px -3px rgba(0,0,0,0.3)",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.boxShadow = "inset 0 0 20px rgba(255,255,255,0.15), 0 8px 25px -5px rgba(229,36,33,0.4)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.boxShadow = "0 0 0 0 rgba(229,36,33,0), 0 4px 15px -3px rgba(0,0,0,0.3)";
-                  }}
-                >
-                  Ver Atletas
-                  <ArrowRight className="w-5 h-5 ml-2 transition-transform duration-300 group-hover:translate-x-1" />
-                </Button>
-              </Link>
-              <Link to="/contact">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="border-white/25 text-white px-8 py-6 text-base font-medium tracking-wide transition-all duration-300 hover:bg-white/10 hover:border-white/50 hover:translate-y-[-2px]"
-                >
-                  Falar com a M3
-                </Button>
-              </Link>
-            </div>
-
-            {/* Micro Text */}
-            <p
-              className={cn(
-                "text-sm text-white/35 transition-all duration-500",
-                showCtas ? "opacity-100" : "opacity-0"
-              )}
-              style={{ transitionDelay: "200ms" }}
-            >
-              Acesso rápido ao portfólio e relatórios.
-            </p>
-          </div>
-
-          {/* Right - Live Scouting Feed */}
-          <div
-            className={cn(
-              "hidden lg:block transition-all duration-1000",
-              showCtas ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
-            )}
-            style={{ transitionDelay: "300ms" }}
+          {/* Main Headline */}
+          <motion.h1
+            variants={itemVariants}
+            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.05] tracking-tight mb-6"
           >
-            <LiveScoutingFeed prefersReducedMotion={prefersReducedMotion} />
-          </div>
-        </div>
-      </div>
+            <span className="block text-white">FOOTBALL</span>
+            <span className="block text-white">INTELLIGENCE.</span>
+            <span className="block text-[#e52421]">NOT OPINION.</span>
+          </motion.h1>
+
+          {/* Subheadline */}
+          <motion.p
+            variants={itemVariants}
+            className="text-lg md:text-xl text-white/50 max-w-xl leading-relaxed mb-10"
+          >
+            Plataforma proprietária de scouting que transforma dados em decisões. 
+            Identificamos talento antes do mercado.
+          </motion.p>
+
+          {/* CTA Buttons */}
+          <motion.div variants={itemVariants} className="flex flex-wrap gap-4 mb-6">
+            <Link to="/players">
+              <motion.button
+                whileHover={buttonHover}
+                whileTap={{ scale: 0.98 }}
+                className="group relative inline-flex items-center gap-2 px-8 py-4 bg-[#e52421] text-white font-medium tracking-wide overflow-hidden transition-shadow duration-300 hover:shadow-[0_8px_30px_-8px_rgba(229,36,33,0.5)]"
+              >
+                <span className="relative z-10">Ver Atletas</span>
+                <ArrowRight className="w-4 h-4 relative z-10 transition-transform duration-300 group-hover:translate-x-1" />
+                {/* Hover shine effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+              </motion.button>
+            </Link>
+            <Link to="/contact">
+              <motion.button
+                whileHover={buttonHover}
+                whileTap={{ scale: 0.98 }}
+                className="inline-flex items-center gap-2 px-8 py-4 border border-white/20 text-white font-medium tracking-wide transition-all duration-300 hover:border-white/40 hover:bg-white/[0.03]"
+              >
+                Falar com a M3
+              </motion.button>
+            </Link>
+          </motion.div>
+
+          {/* Micro Stats */}
+          <motion.div
+            variants={itemVariants}
+            className="flex items-center gap-6 text-xs text-white/30"
+          >
+            <div className="flex items-center gap-2">
+              <div className="w-1 h-1 rounded-full bg-emerald-500/60" />
+              <span>Sistema ativo</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-white/50">150+</span>
+              <span>atletas monitorados</span>
+            </div>
+          </motion.div>
+        </motion.div>
+      </motion.div>
 
       {/* Scroll Indicator */}
-      <button
+      <motion.button
         onClick={scrollToContent}
-        className={cn(
-          "absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 text-white/40 hover:text-white/70 transition-all duration-500 cursor-pointer",
-          showCtas ? "opacity-100" : "opacity-0"
-        )}
-        style={{ transitionDelay: "600ms" }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: isLoaded ? 1 : 0, y: isLoaded ? 0 : 20 }}
+        transition={{ delay: 1.5, duration: 0.6 }}
+        className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 text-white/30 hover:text-white/60 transition-colors cursor-pointer"
         aria-label="Role para explorar"
       >
-        <span className="text-[9px] tracking-[0.35em] uppercase font-medium">
-          Role para explorar
-        </span>
-        <ChevronDown className="w-5 h-5 animate-bounce" />
-      </button>
+        <span className="text-[9px] tracking-[0.3em] uppercase">Explorar</span>
+        <ChevronDown className="w-4 h-4 animate-bounce" />
+      </motion.button>
 
       {/* Bottom Gradient */}
-      <div 
-        className="absolute bottom-0 left-0 right-0 h-40 z-[5]" 
-        style={{ background: "linear-gradient(to top, #070910 0%, rgba(7,9,16,0.5) 50%, transparent 100%)" }}
+      <div
+        className="absolute bottom-0 left-0 right-0 h-48 z-[5] pointer-events-none"
+        style={{
+          background: "linear-gradient(to top, #070910 0%, rgba(7,9,16,0.8) 40%, transparent 100%)",
+        }}
       />
     </section>
   );
 }
 
-// Text Reveal Component
-function TextReveal({ children, show, delay }: { children: React.ReactNode; show: boolean; delay: number }) {
+// Abstract Grid Background Component
+function AbstractGridBackground({ isLoaded, reducedMotion }: { isLoaded: boolean; reducedMotion: boolean }) {
   return (
-    <span
-      className={cn(
-        "inline-block transition-all duration-500",
-        show ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
-      )}
-      style={{ transitionDelay: `${delay}ms` }}
-    >
-      {children}
-    </span>
-  );
-}
+    <div className="absolute inset-0 overflow-hidden">
+      {/* Base grid - perspective view */}
+      <svg
+        className={cn(
+          "absolute inset-0 w-full h-full transition-opacity duration-[2000ms]",
+          isLoaded ? "opacity-100" : "opacity-0"
+        )}
+        preserveAspectRatio="xMidYMid slice"
+      >
+        <defs>
+          {/* Grid pattern */}
+          <pattern id="heroGrid" width="60" height="60" patternUnits="userSpaceOnUse">
+            <path
+              d="M 60 0 L 0 0 0 60"
+              fill="none"
+              stroke="rgba(255,255,255,0.03)"
+              strokeWidth="1"
+            />
+          </pattern>
+          {/* Radial mask for grid fade */}
+          <radialGradient id="gridFade" cx="50%" cy="50%" r="60%">
+            <stop offset="0%" stopColor="white" stopOpacity="1" />
+            <stop offset="100%" stopColor="white" stopOpacity="0" />
+          </radialGradient>
+          <mask id="gridMask">
+            <rect width="100%" height="100%" fill="url(#gridFade)" />
+          </mask>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#heroGrid)" mask="url(#gridMask)" />
+      </svg>
 
-// Tactical Grid Component
-function TacticalGrid() {
-  return (
-    <div className="absolute inset-0 opacity-[0.025]">
-      {/* Vertical lines */}
-      <div className="absolute left-1/4 top-0 bottom-0 w-px bg-white" />
-      <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white" />
-      <div className="absolute left-3/4 top-0 bottom-0 w-px bg-white" />
-      {/* Horizontal lines */}
-      <div className="absolute top-1/3 left-0 right-0 h-px bg-white" />
-      <div className="absolute top-2/3 left-0 right-0 h-px bg-white" />
-      {/* Center circle */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 border border-white rounded-full" />
+      {/* Perspective lines - converging to center */}
+      <div
+        className={cn(
+          "absolute inset-0 transition-opacity duration-[2500ms] delay-300",
+          isLoaded ? "opacity-100" : "opacity-0"
+        )}
+      >
+        <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="rgba(255,255,255,0)" />
+              <stop offset="50%" stopColor="rgba(255,255,255,0.06)" />
+              <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+            </linearGradient>
+          </defs>
+          {/* Horizontal scan lines */}
+          {[20, 35, 50, 65, 80].map((y) => (
+            <line
+              key={y}
+              x1="0%"
+              y1={`${y}%`}
+              x2="100%"
+              y2={`${y}%`}
+              stroke="url(#lineGradient)"
+              strokeWidth="1"
+            />
+          ))}
+        </svg>
+      </div>
+
+      {/* Data points / nodes */}
+      <div
+        className={cn(
+          "absolute inset-0 transition-opacity duration-[3000ms] delay-500",
+          isLoaded ? "opacity-100" : "opacity-0"
+        )}
+      >
+        {!reducedMotion && <DataNodes />}
+      </div>
+
+      {/* Floating connection lines */}
+      <svg
+        className={cn(
+          "absolute inset-0 w-full h-full transition-opacity duration-[3000ms] delay-700",
+          isLoaded ? "opacity-100" : "opacity-0"
+        )}
+      >
+        <defs>
+          <linearGradient id="connectionGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="rgba(229,36,33,0)" />
+            <stop offset="50%" stopColor="rgba(229,36,33,0.15)" />
+            <stop offset="100%" stopColor="rgba(229,36,33,0)" />
+          </linearGradient>
+        </defs>
+        {/* Connection paths */}
+        <path
+          d="M 15% 30% Q 30% 40% 45% 35%"
+          fill="none"
+          stroke="url(#connectionGradient)"
+          strokeWidth="1"
+          className={cn(!reducedMotion && "animate-pulse")}
+          style={{ animationDuration: "4s" }}
+        />
+        <path
+          d="M 55% 60% Q 70% 50% 85% 55%"
+          fill="none"
+          stroke="url(#connectionGradient)"
+          strokeWidth="1"
+          className={cn(!reducedMotion && "animate-pulse")}
+          style={{ animationDuration: "5s", animationDelay: "1s" }}
+        />
+        <path
+          d="M 25% 70% Q 40% 65% 55% 75%"
+          fill="none"
+          stroke="rgba(59,130,246,0.08)"
+          strokeWidth="1"
+          className={cn(!reducedMotion && "animate-pulse")}
+          style={{ animationDuration: "6s", animationDelay: "2s" }}
+        />
+      </svg>
     </div>
   );
 }
 
-// Tracking Dots Component
-function TrackingDots() {
-  const dots = [
-    { left: "15%", top: "25%", delay: 0 },
-    { left: "75%", top: "35%", delay: 1 },
-    { left: "45%", top: "60%", delay: 2 },
-    { left: "25%", top: "70%", delay: 0.5 },
-    { left: "65%", top: "75%", delay: 1.5 },
-    { left: "85%", top: "55%", delay: 2.5 },
+// Data Nodes Component
+function DataNodes() {
+  const nodes = [
+    { x: "18%", y: "28%", size: 4, delay: 0 },
+    { x: "45%", y: "35%", size: 3, delay: 0.5 },
+    { x: "72%", y: "42%", size: 5, delay: 1 },
+    { x: "28%", y: "55%", size: 3, delay: 1.5 },
+    { x: "58%", y: "62%", size: 4, delay: 2 },
+    { x: "85%", y: "48%", size: 3, delay: 0.8 },
+    { x: "38%", y: "72%", size: 4, delay: 1.2 },
+    { x: "68%", y: "78%", size: 3, delay: 1.8 },
   ];
 
   return (
     <>
-      {dots.map((dot, i) => (
+      {nodes.map((node, i) => (
         <div
           key={i}
-          className="absolute w-2 h-2 rounded-full bg-[#e52421]/20 animate-tracking-pulse"
+          className="absolute animate-pulse"
           style={{
-            left: dot.left,
-            top: dot.top,
-            animationDelay: `${dot.delay}s`,
+            left: node.x,
+            top: node.y,
+            width: node.size,
+            height: node.size,
+            animationDelay: `${node.delay}s`,
+            animationDuration: "3s",
           }}
         >
-          <div className="absolute inset-0 rounded-full bg-[#e52421]/40 animate-ping" />
+          <div
+            className="w-full h-full rounded-full bg-white/20"
+            style={{
+              boxShadow: "0 0 8px rgba(255,255,255,0.1)",
+            }}
+          />
+          {/* Outer ring for some nodes */}
+          {i % 2 === 0 && (
+            <div
+              className="absolute inset-0 -m-1 border border-white/5 rounded-full animate-ping"
+              style={{ animationDuration: "2s" }}
+            />
+          )}
         </div>
       ))}
     </>
   );
 }
 
-// Reticle Component
-function Reticle({ position, size, isCircle }: { position: string; size: number; isCircle?: boolean }) {
-  if (isCircle) {
-    return (
-      <div className={`absolute ${position} opacity-15`} style={{ width: size * 5, height: size * 5 }}>
-        <div className="absolute inset-0 border border-white/40 rounded-full" />
-        <div className="absolute inset-2 border border-white/25 rounded-full" />
-        <div className="absolute top-1/2 left-0 right-0 h-px bg-white/25" />
-        <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white/25" />
-      </div>
-    );
-  }
-
+// HUD Frame Elements
+function HUDElements({ isLoaded }: { isLoaded: boolean }) {
   return (
-    <div className={`absolute ${position} opacity-20`} style={{ width: size * 4, height: size * 4 }}>
-      <div className="absolute top-0 left-0 w-4 h-px bg-white" />
-      <div className="absolute top-0 left-0 w-px h-4 bg-white" />
-      <div className="absolute bottom-0 right-0 w-4 h-px bg-white" />
-      <div className="absolute bottom-0 right-0 w-px h-4 bg-white" />
-    </div>
-  );
-}
-
-// Live Scouting Feed Component with Real Data
-function LiveScoutingFeed({ prefersReducedMotion }: { prefersReducedMotion: boolean }) {
-  const cardRef = useRef<HTMLDivElement>(null);
-  const [isVisible, setIsVisible] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
-  const [stats, setStats] = useState({
-    players: 0,
-    reports: 0,
-    competitions: 0,
-    targetPlayers: 0,
-    targetReports: 0,
-    targetCompetitions: 0,
-    isLoading: true,
-    hasError: false,
-  });
-
-  // Intersection Observer for viewport detection
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.3 }
-    );
-
-    if (cardRef.current) observer.observe(cardRef.current);
-    return () => observer.disconnect();
-  }, []);
-
-  // Fetch real data from database
-  useEffect(() => {
-    async function fetchStats() {
-      try {
-        // Count public players (is_public = true and not archived)
-        const { count: playersCount, error: playersError } = await supabase
-          .from("players")
-          .select("*", { count: "exact", head: true })
-          .eq("is_public", true)
-          .or("is_archived.is.null,is_archived.eq.false");
-
-        // Count all scouting reports (not deleted)
-        const { count: reportsCount, error: reportsError } = await supabase
-          .from("scouting_reports")
-          .select("*", { count: "exact", head: true })
-          .is("deleted_at", null);
-
-        // Count active competitions
-        const { count: competitionsCount, error: competitionsError } = await supabase
-          .from("competitions")
-          .select("*", { count: "exact", head: true })
-          .eq("is_active", true);
-
-        const hasAnyError = playersError || reportsError || competitionsError;
-
-        if (hasAnyError) {
-          console.error("Error fetching hero stats:", { playersError, reportsError, competitionsError });
-        }
-
-        setStats({
-          players: 0,
-          reports: 0,
-          competitions: 0,
-          targetPlayers: playersCount ?? 0,
-          targetReports: reportsCount ?? 0,
-          targetCompetitions: competitionsCount ?? 0,
-          isLoading: false,
-          hasError: !!hasAnyError,
-        });
-      } catch (error) {
-        console.error("Error fetching hero stats:", error);
-        setStats((prev) => ({
-          ...prev,
-          targetPlayers: 0,
-          targetReports: 0,
-          targetCompetitions: 0,
-          isLoading: false,
-          hasError: true,
-        }));
-      }
-    }
-    fetchStats();
-  }, []);
-
-  // Only animate counters if we have valid data (no error, values > 0)
-  const shouldAnimate = isVisible && !stats.isLoading && !stats.hasError && 
-    (stats.targetPlayers > 0 || stats.targetReports > 0 || stats.targetCompetitions > 0);
-
-  // Animate counters when visible and data is valid
-  useEffect(() => {
-    if (!shouldAnimate) {
-      if (prefersReducedMotion || stats.hasError) {
-        setStats((prev) => ({
-          ...prev,
-          players: prev.targetPlayers,
-          reports: prev.targetReports,
-          competitions: prev.targetCompetitions,
-        }));
-      }
-      return;
-    }
-
-    const duration = 1200;
-    const steps = 50;
-    const interval = duration / steps;
-
-    let step = 0;
-    const timer = setInterval(() => {
-      step++;
-      const progress = step / steps;
-      const eased = 1 - Math.pow(1 - progress, 3); // Ease out cubic
-
-      setStats((prev) => ({
-        ...prev,
-        players: Math.round(prev.targetPlayers * eased),
-        reports: Math.round(prev.targetReports * eased),
-        competitions: Math.round(prev.targetCompetitions * eased),
-      }));
-
-      if (step >= steps) clearInterval(timer);
-    }, interval);
-
-    return () => clearInterval(timer);
-  }, [shouldAnimate, stats.targetPlayers, stats.targetReports, stats.targetCompetitions, prefersReducedMotion, stats.hasError]);
-
-  const isCounting = shouldAnimate && stats.players < stats.targetPlayers;
-
-  return (
-    <div
-      ref={cardRef}
-      className={cn(
-        "relative p-6 rounded-2xl backdrop-blur-xl transition-all duration-500",
-        "bg-white/[0.03] border border-white/10",
-        "hover:bg-white/[0.06] hover:border-white/20",
-        !prefersReducedMotion && "animate-float-subtle"
-      )}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      style={{
-        boxShadow: isHovered
-          ? "0 25px 50px -12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)"
-          : "0 10px 40px -10px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)",
-      }}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
-          <div className={cn(
-            "w-2 h-2 rounded-full bg-[#e52421]",
-            isCounting ? "animate-pulse" : ""
-          )} />
-          <span className="text-[9px] tracking-[0.25em] text-white/40 uppercase font-medium">
-            Live Scouting Feed
-          </span>
+    <div className="absolute inset-0 z-[2] pointer-events-none overflow-hidden">
+      {/* Top-left corner bracket */}
+      <div
+        className={cn(
+          "absolute top-8 left-8 transition-all duration-1000",
+          isLoaded ? "opacity-100 translate-x-0 translate-y-0" : "opacity-0 -translate-x-4 -translate-y-4"
+        )}
+      >
+        <div className="w-16 h-16">
+          <div className="absolute top-0 left-0 w-8 h-px bg-gradient-to-r from-white/20 to-transparent" />
+          <div className="absolute top-0 left-0 w-px h-8 bg-gradient-to-b from-white/20 to-transparent" />
         </div>
-        <span className="text-[8px] tracking-[0.2em] text-[#e52421]/60 uppercase font-medium px-2 py-1 bg-[#e52421]/10 rounded">
-          Live Data
-        </span>
       </div>
 
-      {/* Stats */}
-      <div className="space-y-5">
-        <AnimatedStatRow
-          icon={Users}
-          label="Atletas monitorados"
-          value={stats.players}
-          isCounting={isCounting}
-        />
-        <AnimatedStatRow
-          icon={FileText}
-          label="Relatórios gerados"
-          value={stats.reports}
-          isCounting={isCounting}
-        />
-        <AnimatedStatRow
-          icon={Trophy}
-          label="Competições mapeadas"
-          value={stats.competitions}
-          isCounting={isCounting}
-        />
+      {/* Top-right corner bracket */}
+      <div
+        className={cn(
+          "absolute top-8 right-8 transition-all duration-1000",
+          isLoaded ? "opacity-100 translate-x-0 translate-y-0" : "opacity-0 translate-x-4 -translate-y-4"
+        )}
+      >
+        <div className="w-16 h-16">
+          <div className="absolute top-0 right-0 w-8 h-px bg-gradient-to-l from-white/20 to-transparent" />
+          <div className="absolute top-0 right-0 w-px h-8 bg-gradient-to-b from-white/20 to-transparent" />
+        </div>
       </div>
 
-      {/* Decorative Corner */}
-      <div className="absolute top-0 right-0 w-16 h-16 overflow-hidden rounded-tr-2xl">
-        <div className="absolute top-2 right-2 w-8 h-8 border-t border-r border-white/10" />
+      {/* Right side data display */}
+      <div
+        className={cn(
+          "absolute right-8 top-1/2 -translate-y-1/2 hidden lg:block transition-all duration-1000 delay-500",
+          isLoaded ? "opacity-100 translate-x-0" : "opacity-0 translate-x-8"
+        )}
+      >
+        <div className="space-y-6 text-right">
+          <div className="text-[9px] tracking-[0.3em] text-white/20 uppercase">
+            Analysis Active
+          </div>
+          <div className="flex flex-col gap-1">
+            {[1, 2, 3, 4].map((i) => (
+              <div
+                key={i}
+                className="h-px bg-gradient-to-l from-white/15 to-transparent animate-pulse"
+                style={{
+                  width: `${20 + i * 8}px`,
+                  animationDelay: `${i * 0.3}s`,
+                  animationDuration: "2s",
+                }}
+              />
+            ))}
+          </div>
+        </div>
       </div>
-    </div>
-  );
-}
 
-function AnimatedStatRow({
-  icon: Icon,
-  label,
-  value,
-  isCounting,
-}: {
-  icon: React.ElementType;
-  label: string;
-  value: number;
-  isCounting: boolean;
-}) {
-  // Format display: show value+ if > 0, "0" if explicitly 0, "..." if loading
-  const displayValue = value > 0 ? `${value}+` : value === 0 ? "0" : "...";
-  
-  return (
-    <div className="flex items-center gap-4">
-      <div className={cn(
-        "w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center transition-all duration-300",
-        isCounting && "animate-pulse"
-      )}>
-        <Icon className="w-5 h-5 text-[#e52421]" />
+      {/* Bottom-left technical label */}
+      <div
+        className={cn(
+          "absolute bottom-24 left-8 transition-all duration-1000 delay-700",
+          isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+        )}
+      >
+        <div className="text-[9px] tracking-[0.25em] text-white/15 font-mono uppercase">
+          M3 Scout Engine v2.0
+        </div>
       </div>
-      <div>
-        <p className="text-2xl font-bold text-white tracking-tight tabular-nums">
-          {displayValue}
-        </p>
-        <p className="text-xs text-white/40">{label}</p>
+
+      {/* Crosshair element - center right area */}
+      <div
+        className={cn(
+          "absolute top-1/3 right-1/4 hidden md:block transition-opacity duration-1000 delay-1000",
+          isLoaded ? "opacity-100" : "opacity-0"
+        )}
+      >
+        <div className="relative w-12 h-12">
+          <div className="absolute top-1/2 left-0 right-0 h-px bg-white/10" />
+          <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white/10" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 border border-white/20 rounded-full" />
+        </div>
       </div>
     </div>
   );
