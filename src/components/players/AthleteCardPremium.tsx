@@ -254,64 +254,65 @@ function VisualModeCard({
           <div className="absolute inset-0 bg-gradient-to-b from-[#070910]/25 via-transparent to-transparent" />
         </div>
 
-        {/* ━━━ SLIM TOP HEADER — 14px from top, compact 28-30px height ━━━ */}
+        {/* ━━━ TOP HEADER — Two separate pills ━━━ */}
         <div className="absolute top-0 left-0 right-0 pt-3.5 px-3.5 z-20">
-          <div 
-            className="flex items-center justify-between gap-2 px-2.5 py-2 rounded-sm"
-            style={{
-              background: "rgba(7, 9, 16, 0.68)",
-              backdropFilter: "blur(10px)",
-              WebkitBackdropFilter: "blur(10px)",
-              border: "1px solid rgba(255, 255, 255, 0.05)",
-              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
-            }}
-          >
-            {/* Position Badge - Minimal, neutral */}
-            <div className="flex items-center gap-1.5">
-              <Zap className="w-3 h-3 text-white/50" />
-              <span className="text-[10px] font-semibold uppercase tracking-[0.06em] text-white/70">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            {/* Left Pill: Position */}
+            <div 
+              className="flex items-center gap-2 px-3 py-2 rounded-md min-h-[32px]"
+              style={{
+                background: "rgba(10, 12, 18, 0.92)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3)",
+              }}
+            >
+              <Zap className="w-3.5 h-3.5 text-white/60" />
+              <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/90">
                 {getPositionLabel(position)}
               </span>
             </div>
 
-            {/* Status Badge - Compact semantic indicator */}
-            <div 
-              className="flex items-center gap-1.5 px-2 py-1 rounded-sm"
-              style={{
-                background: priority === "high" ? priorityInfo.bgColor : "rgba(30, 215, 96, 0.08)",
-                border: `1px solid ${priority === "high" ? priorityInfo.color : "#1ED760"}18`,
-              }}
-            >
-              {priority === "high" ? (
-                <>
-                  <motion.div
-                    animate={{ scale: [1, 1.12, 1] }}
-                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                  >
-                    <PriorityIcon className="w-3 h-3" style={{ color: priorityInfo.color }} />
-                  </motion.div>
-                  <span 
-                    className="text-[9px] font-bold uppercase tracking-[0.06em]"
-                    style={{ color: priorityInfo.color }}
-                  >
-                    Hot
-                  </span>
-                </>
-              ) : (
-                <>
-                  <span 
-                    className="w-1.5 h-1.5 rounded-full animate-pulse"
-                    style={{ backgroundColor: "#1ED760" }}
-                  />
-                  <span 
-                    className="text-[9px] font-semibold uppercase tracking-[0.06em]"
-                    style={{ color: "#1ED760" }}
-                  >
-                    Monitorado
-                  </span>
-                </>
-              )}
-            </div>
+            {/* Right Pill: Status (Priority wins over Monitored) */}
+            {priority === "high" ? (
+              <motion.div 
+                className="flex items-center gap-2 px-3 py-2 rounded-md min-h-[32px]"
+                style={{
+                  background: "rgba(10, 12, 18, 0.92)",
+                  border: "1px solid rgba(255, 107, 53, 0.35)",
+                  boxShadow: "0 2px 8px rgba(0, 0, 0, 0.4), 0 0 12px rgba(255, 107, 53, 0.15)",
+                }}
+                animate={{ opacity: [0.9, 1, 0.9] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <Flame className="w-3.5 h-3.5" style={{ color: "#FF6B35" }} />
+                <span 
+                  className="text-[10px] font-bold uppercase tracking-[0.08em]"
+                  style={{ color: "#FF6B35" }}
+                >
+                  Prioridade
+                </span>
+              </motion.div>
+            ) : (
+              <div 
+                className="flex items-center gap-2 px-3 py-2 rounded-md min-h-[32px]"
+                style={{
+                  background: "rgba(10, 12, 18, 0.92)",
+                  border: "1px solid rgba(30, 215, 96, 0.25)",
+                  boxShadow: "0 2px 8px rgba(0, 0, 0, 0.4)",
+                }}
+              >
+                <span 
+                  className="w-2 h-2 rounded-full animate-pulse"
+                  style={{ backgroundColor: "#1ED760" }}
+                />
+                <span 
+                  className="text-[10px] font-semibold uppercase tracking-[0.08em]"
+                  style={{ color: "#1ED760" }}
+                >
+                  Monitorado
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -418,42 +419,53 @@ function ClubScoutingCard({
           transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
         />
 
-        {/* ━━━ ZONE 1: FIXED HEADER — 60px ━━━ */}
-        <div 
-          className="relative z-10 flex-shrink-0 px-4 py-3"
-          style={{
-            minHeight: "60px",
-            background: "linear-gradient(180deg, rgba(7, 9, 16, 0.95) 0%, rgba(7, 9, 16, 0.85) 100%)",
-            borderBottom: "1px solid rgba(255, 255, 255, 0.04)",
-          }}
-        >
-          <div 
-            className="flex items-center justify-between gap-3 h-full"
-          >
-            {/* Left: Position Badge */}
+        {/* ━━━ ZONE 1: TOP HEADER — Two separate pills ━━━ */}
+        <div className="relative z-10 flex-shrink-0 pt-3.5 px-3.5 pb-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            {/* Left Pill: Position */}
             <div 
-              className="flex items-center gap-2 px-3 py-2 rounded-sm min-h-[32px]"
+              className="flex items-center gap-2 px-3 py-2 rounded-md min-h-[32px]"
               style={{
-                background: "rgba(255, 255, 255, 0.04)",
-                border: "1px solid rgba(255, 255, 255, 0.06)",
+                background: "rgba(10, 12, 18, 0.92)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3)",
               }}
             >
               <div className="w-5 h-5 rounded-sm flex items-center justify-center bg-white/[0.08]">
                 <Zap className="w-3 h-3 text-white/60" />
               </div>
-              <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/80">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/90">
                 {getPositionLabel(position)}
               </span>
             </div>
 
-            {/* Right: Status + Priority Badges */}
-            <div className="flex items-center gap-2">
-              {/* Status Badge - Monitorado */}
-              <div 
-                className="flex items-center gap-2 px-3 py-2 rounded-sm min-h-[32px]"
+            {/* Right Pill: Status (Priority wins over Monitored) */}
+            {priority === "high" ? (
+              <motion.div 
+                className="flex items-center gap-2 px-3 py-2 rounded-md min-h-[32px]"
                 style={{
-                  background: "rgba(30, 215, 96, 0.08)",
-                  border: "1px solid rgba(30, 215, 96, 0.12)",
+                  background: "rgba(10, 12, 18, 0.92)",
+                  border: "1px solid rgba(255, 107, 53, 0.35)",
+                  boxShadow: "0 2px 8px rgba(0, 0, 0, 0.4), 0 0 12px rgba(255, 107, 53, 0.15)",
+                }}
+                animate={{ opacity: [0.9, 1, 0.9] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <Flame className="w-3.5 h-3.5" style={{ color: "#FF6B35" }} />
+                <span 
+                  className="text-[10px] font-bold uppercase tracking-[0.08em]"
+                  style={{ color: "#FF6B35" }}
+                >
+                  Prioridade
+                </span>
+              </motion.div>
+            ) : (
+              <div 
+                className="flex items-center gap-2 px-3 py-2 rounded-md min-h-[32px]"
+                style={{
+                  background: "rgba(10, 12, 18, 0.92)",
+                  border: "1px solid rgba(30, 215, 96, 0.25)",
+                  boxShadow: "0 2px 8px rgba(0, 0, 0, 0.4)",
                 }}
               >
                 <span 
@@ -461,34 +473,13 @@ function ClubScoutingCard({
                   style={{ backgroundColor: "#1ED760" }}
                 />
                 <span 
-                  className="text-[10px] font-semibold uppercase tracking-[0.1em]"
+                  className="text-[10px] font-semibold uppercase tracking-[0.08em]"
                   style={{ color: "#1ED760" }}
                 >
                   Monitorado
                 </span>
               </div>
-
-              {/* Priority Badge - High Priority */}
-              {priority === "high" && (
-                <motion.div
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-sm min-h-[32px]"
-                  style={{ 
-                    background: priorityInfo.bgColor,
-                    border: `1px solid ${priorityInfo.color}30`,
-                  }}
-                  animate={{ opacity: [0.85, 1, 0.85] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                >
-                  <PriorityIcon className="w-3.5 h-3.5" style={{ color: priorityInfo.color }} />
-                  <span 
-                    className="text-[10px] font-bold uppercase tracking-[0.06em]"
-                    style={{ color: priorityInfo.color }}
-                  >
-                    Prioridade
-                  </span>
-                </motion.div>
-              )}
-            </div>
+            )}
           </div>
         </div>
 
