@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { cardHover, cardTap, pillHover, smoothTransition, staggerContainer, staggerItem } from "@/lib/animations";
+import { Zap, ArrowRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface AthleteCardPremiumProps {
   id: string;
@@ -20,6 +21,36 @@ interface AthleteCardPremiumProps {
   totalMinutes?: number | null;
 }
 
+// Position codes - compact
+const positionCodes: Record<string, string> = {
+  GK: "GOL",
+  CB: "ZAG",
+  LB: "LE",
+  RB: "LD",
+  CDM: "VOL",
+  CM: "MC",
+  CAM: "MEI",
+  LM: "ME",
+  RM: "MD",
+  LW: "PE",
+  RW: "PD",
+  CF: "SA",
+  ST: "ATA",
+};
+
+// Foot labels
+const footLabels: Record<string, string> = {
+  right: "Direito",
+  left: "Esquerdo",
+  both: "Ambos",
+  direito: "Direito",
+  esquerdo: "Esquerdo",
+  ambos: "Ambos",
+};
+
+// Animation easing
+const premiumEasing = [0.4, 0, 0.2, 1] as const;
+
 export function AthleteCardPremium({
   slug,
   name,
@@ -36,162 +67,208 @@ export function AthleteCardPremium({
 }: AthleteCardPremiumProps) {
   const href = isPublic ? `/players/${slug}` : `/app/players/${slug}`;
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   // Format height
   const formatHeight = (h: number | null | undefined) => {
     if (!h) return null;
-    return `${(h / 100).toFixed(2).replace('.', ',')}m`;
+    return `${(h / 100).toFixed(2).replace(".", ",")}m`;
   };
 
-  // Format foot
-  const formatFoot = (foot: string | null | undefined) => {
-    if (!foot) return null;
+  // Format foot - short
+  const formatFootShort = (foot: string | null | undefined) => {
+    if (!foot) return "—";
     const footMap: Record<string, string> = {
-      'right': 'D',
-      'left': 'E',
-      'both': 'A',
-      'direito': 'D',
-      'esquerdo': 'E',
-      'ambos': 'A',
+      right: "D",
+      left: "E",
+      both: "A",
+      direito: "D",
+      esquerdo: "E",
+      ambos: "A",
     };
     return footMap[foot.toLowerCase()] || foot.charAt(0).toUpperCase();
   };
 
+  // Format foot - full
+  const formatFootFull = (foot: string | null | undefined) => {
+    if (!foot) return "—";
+    return footLabels[foot.toLowerCase()] || foot;
+  };
+
   // Format minutes with pt-BR thousands separator
   const formatMinutes = (mins: number | null | undefined) => {
-    if (!mins || mins === 0) return '—';
-    return mins.toLocaleString('pt-BR');
+    if (!mins || mins === 0) return "—";
+    return mins.toLocaleString("pt-BR");
+  };
+
+  // Get position code
+  const positionCode = positionCodes[position] || position;
+
+  // Badge styles - glassmorphism
+  const badgeStyle = {
+    background: "rgba(7, 9, 16, 0.65)",
+    backdropFilter: "blur(6px)",
+    WebkitBackdropFilter: "blur(6px)",
   };
 
   return (
-    <Link to={href} className="group block">
-      <motion.article 
-        className="relative overflow-hidden rounded-[var(--radius-card)] bg-[#0a0a0a]"
-        style={{ fontFamily: "'Poppins', sans-serif" }}
-        whileHover={cardHover}
-        whileTap={cardTap}
-        initial={{ opacity: 0, y: 20 }}
+    <Link
+      to={href}
+      className="group block"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <motion.article
+        className="relative overflow-hidden rounded-sm bg-[#0a0c12]"
+        initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={smoothTransition}
+        whileHover={{ y: -4 }}
+        transition={{
+          default: { duration: 0.42, ease: premiumEasing },
+          y: { duration: 0.24, ease: "easeOut" },
+        }}
+        style={{
+          boxShadow: isHovered
+            ? "0 20px 40px -12px rgba(0, 0, 0, 0.5), 0 8px 16px -8px rgba(0, 0, 0, 0.4)"
+            : "0 4px 12px -4px rgba(0, 0, 0, 0.3)",
+          transition: "box-shadow 0.24s cubic-bezier(0.4, 0, 0.2, 1)",
+        }}
       >
         {/* Image Container */}
         <div className="relative aspect-[3/4] overflow-hidden">
           {/* Blur placeholder */}
-          <div 
-            className={`absolute inset-0 bg-neutral-800 transition-opacity duration-500 ${imageLoaded ? 'opacity-0' : 'opacity-100'}`}
+          <div
+            className={cn(
+              "absolute inset-0 transition-opacity duration-500",
+              imageLoaded ? "opacity-0" : "opacity-100"
+            )}
             style={{
-              background: 'linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%)',
+              background: "linear-gradient(135deg, #12141a 0%, #070910 100%)",
             }}
           >
-            <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-neutral-700/20 to-neutral-900/20" />
+            <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-white/[0.02] to-transparent" />
           </div>
-          
+
           <motion.img
             src={imageUrl}
             alt={name}
             loading="lazy"
             onLoad={() => setImageLoaded(true)}
-            className={`w-full h-full object-cover ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
-            initial={{ scale: 1 }}
-            whileHover={{ scale: 1.03 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
+            className={cn(
+              "w-full h-full object-cover object-top",
+              imageLoaded ? "opacity-100" : "opacity-0"
+            )}
+            animate={{ scale: isHovered ? 1.03 : 1 }}
+            transition={{ duration: 0.24, ease: "easeOut" }}
           />
-          
-          {/* Gradient Overlay - stronger at bottom */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent transition-opacity duration-300 group-hover:from-black/95" />
-          
-          {/* Border on hover */}
-          <motion.div 
-            className="absolute inset-0 rounded-[var(--radius-card)] border border-white/0"
-            whileHover={{ borderColor: "rgba(255,255,255,0.1)" }}
-            transition={smoothTransition}
+
+          {/* Premium gradient overlay - stronger for consistent contrast */}
+          <div
+            className={cn(
+              "absolute inset-0 bg-gradient-to-t from-[#070910] via-[#070910]/50 to-transparent transition-opacity duration-240",
+              isHovered ? "opacity-95" : "opacity-85"
+            )}
           />
-          
-          {/* Position Tag - Top Left - Pill Style */}
+
+          {/* Position Badge - Top Left */}
           <div className="absolute top-4 left-4">
-            <motion.span 
-              className="inline-block px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.15em] text-white/90 rounded-[var(--radius-pill)]"
-              style={{ 
-                background: 'var(--bg-glass)',
-                border: 'var(--border-glass)',
-                backdropFilter: 'blur(8px)',
-              }}
-              whileHover={pillHover}
+            <div
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border border-white/[0.08]"
+              style={badgeStyle}
             >
-              {position}
-            </motion.span>
+              <Zap className="w-3 h-3 text-white/60" />
+              <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-white">
+                {positionCode}
+              </span>
+            </div>
+          </div>
+
+          {/* Status Badge - Top Right */}
+          <div className="absolute top-4 right-4">
+            <div
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border border-white/[0.08]"
+              style={badgeStyle}
+            >
+              <span
+                className="w-1.5 h-1.5 rounded-full animate-pulse"
+                style={{ backgroundColor: "#1ED760" }}
+              />
+              <span
+                className="text-[10px] font-semibold uppercase tracking-[0.1em]"
+                style={{ color: "#1ED760" }}
+              >
+                Monitorado
+              </span>
+            </div>
           </div>
 
           {/* Player Info - Bottom */}
-          <div className="absolute bottom-0 left-0 right-0 p-5">
-            {/* Scouting Mode Chips with Animation */}
+          <div className="absolute bottom-0 left-0 right-0 p-4">
+            {/* Name - Primary focus */}
+            <h3 className="text-white text-lg font-semibold tracking-tight mb-1.5 line-clamp-1">
+              {name}
+            </h3>
+
+            {/* Meta row - Age • Country • Club */}
+            <p className="text-white/50 text-[13px] font-medium tracking-wide mb-3">
+              {age > 0 && <span>{age} anos</span>}
+              {age > 0 && nationality && (
+                <span className="mx-1.5 text-white/20">•</span>
+              )}
+              {nationality && <span>{nationality}</span>}
+              {(age > 0 || nationality) && currentClub && (
+                <span className="mx-1.5 text-white/20">•</span>
+              )}
+              {currentClub && (
+                <span className="text-white/30">{currentClub}</span>
+              )}
+            </p>
+
+            {/* Scouting Mode - Data Strip */}
             <AnimatePresence>
-              {scoutingMode && (dominantFoot || height || totalMinutes !== undefined) && (
-                <motion.div 
-                  initial="hidden"
-                  animate="visible"
-                  exit="hidden"
-                  variants={staggerContainer}
-                  className="flex flex-wrap gap-1.5 mb-3 overflow-hidden"
+              {scoutingMode && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2, ease: premiumEasing }}
+                  className="overflow-hidden"
                 >
-                  {dominantFoot && (
-                    <motion.span 
-                      variants={staggerItem}
-                      whileHover={pillHover}
-                      className="inline-flex items-center px-2.5 py-1 text-[9px] font-medium uppercase tracking-wider text-white/80 rounded-[var(--radius-pill)]"
-                      style={{ 
-                        background: 'rgba(229, 36, 33, 0.15)',
-                        border: '1px solid rgba(229, 36, 33, 0.25)',
-                        backdropFilter: 'blur(4px)',
-                      }}
-                    >
-                      Pé: {formatFoot(dominantFoot)}
-                    </motion.span>
-                  )}
-                  {height && (
-                    <motion.span 
-                      variants={staggerItem}
-                      whileHover={pillHover}
-                      className="inline-flex items-center px-2.5 py-1 text-[9px] font-medium uppercase tracking-wider text-white/80 rounded-[var(--radius-pill)]"
-                      style={{ 
-                        background: 'rgba(229, 36, 33, 0.15)',
-                        border: '1px solid rgba(229, 36, 33, 0.25)',
-                        backdropFilter: 'blur(4px)',
-                      }}
-                    >
-                      {formatHeight(height)}
-                    </motion.span>
-                  )}
-                  {/* Minutes chip - always show in scouting mode */}
-                  <motion.span 
-                    variants={staggerItem}
-                    whileHover={pillHover}
-                    className="inline-flex items-center px-2.5 py-1 text-[9px] font-medium uppercase tracking-wider text-white/80 rounded-[var(--radius-pill)]"
-                    style={{ 
-                      background: 'var(--bg-glass)',
-                      border: 'var(--border-glass)',
-                      backdropFilter: 'blur(4px)',
-                    }}
-                  >
-                    MIN {formatMinutes(totalMinutes)}
-                  </motion.span>
+                  <div className="flex items-center gap-3 pt-3 border-t border-white/[0.06] text-[10px] font-medium uppercase tracking-[0.08em] text-white/40">
+                    <span className="text-white/60">
+                      POS: {positionCode}
+                    </span>
+                    <span className="w-px h-3 bg-white/10" />
+                    <span>
+                      Pé: {formatFootFull(dominantFoot)}
+                    </span>
+                    {height && (
+                      <>
+                        <span className="w-px h-3 bg-white/10" />
+                        <span>{formatHeight(height)}</span>
+                      </>
+                    )}
+                    {totalMinutes !== undefined && totalMinutes !== null && (
+                      <>
+                        <span className="w-px h-3 bg-white/10" />
+                        <span>{formatMinutes(totalMinutes)} min</span>
+                      </>
+                    )}
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
-            
-            {/* Name - max 2 lines with clamp */}
-            <h3 className="text-white text-lg md:text-xl font-semibold tracking-tight mb-2 transition-colors duration-300 line-clamp-2">
-              {name}
-            </h3>
-            
-            {/* Meta row */}
-            <p className="text-neutral-400 text-sm font-light tracking-wide">
-              {age > 0 && <span>{age} anos</span>}
-              {age > 0 && nationality && <span className="mx-2 text-neutral-600">•</span>}
-              {nationality && <span>{nationality}</span>}
-              {(age > 0 || nationality) && currentClub && <span className="mx-2 text-neutral-600">•</span>}
-              {currentClub && <span className="text-neutral-500">{currentClub}</span>}
-            </p>
+
+            {/* Hover CTA - Fade in */}
+            <motion.div
+              className="flex items-center gap-1.5 mt-3 text-white/40 text-[11px] font-medium tracking-wide"
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: isHovered ? 1 : 0, y: isHovered ? 0 : 4 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+            >
+              <span>Ver perfil</span>
+              <ArrowRight className="w-3 h-3" />
+            </motion.div>
           </div>
         </div>
       </motion.article>
