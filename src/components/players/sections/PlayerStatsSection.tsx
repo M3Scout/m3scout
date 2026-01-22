@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { safeArray } from "@/lib/utils";
+import { cn, safeArray } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -478,25 +478,34 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
 
   return (
     <div className="w-full max-w-full min-w-0 overflow-x-hidden">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+      <Card className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)] overflow-hidden">
+        <CardHeader className="flex flex-row items-center justify-between pb-4">
           <div className="flex flex-col gap-1">
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="w-5 h-5" />
-              Estatísticas por Temporada
+            <CardTitle className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                <BarChart3 className="w-4 h-4 text-blue-400/80" />
+              </div>
+              <span className="text-[13px] font-semibold uppercase tracking-[0.1em] text-zinc-400">
+                Estatísticas por Temporada
+              </span>
             </CardTitle>
             {liveMatchStats.length > 0 && (
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <Zap className="w-3 h-3 text-emerald-500" />
-                Dados sincronizados de {liveMatchStats.length} partida{liveMatchStats.length > 1 ? 's' : ''} ao vivo
+              <p className="text-[10px] text-zinc-600 flex items-center gap-1 ml-10">
+                <Zap className="w-3 h-3 text-emerald-400/80" />
+                Sincronizado de {liveMatchStats.length} partida{liveMatchStats.length > 1 ? 's' : ''} ao vivo
               </p>
             )}
           </div>
           {canEdit && (
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
-                <Button onClick={() => handleOpenDialog()}>
-                  <Plus className="w-4 h-4 mr-2" />
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => handleOpenDialog()}
+                  className="text-xs text-zinc-500 hover:text-zinc-300 border border-zinc-800/50 hover:border-zinc-700/60"
+                >
+                  <Plus className="w-3.5 h-3.5 mr-1.5" />
                   Adicionar
                 </Button>
               </DialogTrigger>
@@ -799,71 +808,82 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
             </div>
           ) : (
             <div className="space-y-6">
-              {/* Career Summary Card */}
-              <div className="bg-gradient-to-r from-muted/50 to-muted/30 rounded-lg p-4 border">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-semibold flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-blue-500" />
+              {/* Career Summary Card - Premium Headline */}
+              <div className="relative rounded-xl p-5 bg-gradient-to-br from-zinc-900/80 via-zinc-900/60 to-zinc-950/80 border border-white/[0.04] overflow-hidden">
+                {/* Subtle glow */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+                
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-[13px] font-semibold uppercase tracking-[0.1em] text-zinc-400 flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-blue-400/80" />
                     Resumo de Carreira
                   </h4>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Badge variant="outline">{uniqueSeasons} temporada{uniqueSeasons > 1 ? 's' : ''}</Badge>
-                    <Badge variant="secondary">{uniqueCompetitions} competição{uniqueCompetitions > 1 ? 'ões' : ''}</Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-[10px] bg-zinc-900/60 border-zinc-800/50 text-zinc-500">
+                      {uniqueSeasons} temporada{uniqueSeasons > 1 ? 's' : ''}
+                    </Badge>
+                    <Badge variant="outline" className="text-[10px] bg-zinc-900/60 border-zinc-800/50 text-zinc-500">
+                      {uniqueCompetitions} competição{uniqueCompetitions > 1 ? 'ões' : ''}
+                    </Badge>
                   </div>
                 </div>
+                
+                {/* Premium Stats Grid - number > label hierarchy */}
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
-                  <div className="text-center px-3 py-2 rounded-lg bg-background border">
-                    <div className="text-lg font-bold tabular-nums">{careerTotals.matches}</div>
-                    <div className="text-[10px] text-muted-foreground uppercase">Jogos</div>
+                  {/* Base stats */}
+                  <div className="text-center p-3 rounded-xl bg-zinc-900/50 border border-zinc-800/30">
+                    <div className="text-2xl font-bold tabular-nums text-white">{careerTotals.matches}</div>
+                    <div className="text-[9px] text-zinc-600 uppercase tracking-wider mt-1">Jogos</div>
                   </div>
-                  <div className="text-center px-3 py-2 rounded-lg bg-background border">
-                    <div className="text-lg font-bold tabular-nums">{careerTotals.minutes}</div>
-                    <div className="text-[10px] text-muted-foreground uppercase">Minutos</div>
+                  <div className="text-center p-3 rounded-xl bg-zinc-900/50 border border-zinc-800/30">
+                    <div className="text-2xl font-bold tabular-nums text-white">{careerTotals.minutes.toLocaleString()}</div>
+                    <div className="text-[9px] text-zinc-600 uppercase tracking-wider mt-1">Minutos</div>
                   </div>
+                  
                   {isGK ? (
                     <>
-                      <div className="text-center px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                        <div className="text-lg font-bold tabular-nums text-emerald-600">{careerTotals.saves}</div>
-                        <div className="text-[10px] text-muted-foreground uppercase">Defesas</div>
+                      <div className="text-center p-3 rounded-xl bg-emerald-500/[0.06] border border-emerald-500/15">
+                        <div className="text-2xl font-bold tabular-nums text-emerald-400/90">{careerTotals.saves}</div>
+                        <div className="text-[9px] text-zinc-600 uppercase tracking-wider mt-1">Defesas</div>
                       </div>
-                      <div className="text-center px-3 py-2 rounded-lg bg-background border">
-                        <div className="text-lg font-bold tabular-nums">{careerTotals.goals_conceded}</div>
-                        <div className="text-[10px] text-muted-foreground uppercase">Gols Sofr</div>
+                      <div className="text-center p-3 rounded-xl bg-rose-500/[0.04] border border-rose-500/10">
+                        <div className="text-2xl font-bold tabular-nums text-rose-400/80">{careerTotals.goals_conceded}</div>
+                        <div className="text-[9px] text-zinc-600 uppercase tracking-wider mt-1">Gols Sofr</div>
                       </div>
-                      <div className="text-center px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                        <div className="text-lg font-bold tabular-nums text-emerald-600">{careerTotals.clean_sheets}</div>
-                        <div className="text-[10px] text-muted-foreground uppercase">Clean Sheets</div>
+                      <div className="text-center p-3 rounded-xl bg-emerald-500/[0.06] border border-emerald-500/15">
+                        <div className="text-2xl font-bold tabular-nums text-emerald-400/90">{careerTotals.clean_sheets}</div>
+                        <div className="text-[9px] text-zinc-600 uppercase tracking-wider mt-1">Clean Sheets</div>
                       </div>
-                      <div className="text-center px-3 py-2 rounded-lg bg-background border">
-                        <div className="text-lg font-bold tabular-nums">{careerTotals.penalties_saved}</div>
-                        <div className="text-[10px] text-muted-foreground uppercase">Pên Def</div>
+                      <div className="text-center p-3 rounded-xl bg-zinc-900/50 border border-zinc-800/30">
+                        <div className="text-2xl font-bold tabular-nums text-white">{careerTotals.penalties_saved}</div>
+                        <div className="text-[9px] text-zinc-600 uppercase tracking-wider mt-1">Pên Def</div>
                       </div>
                     </>
                   ) : (
                     <>
-                      <div className="text-center px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                        <div className="text-lg font-bold tabular-nums text-emerald-600">{careerTotals.goals}</div>
-                        <div className="text-[10px] text-muted-foreground uppercase">Gols</div>
+                      <div className="text-center p-3 rounded-xl bg-emerald-500/[0.06] border border-emerald-500/15">
+                        <div className="text-2xl font-bold tabular-nums text-emerald-400/90">{careerTotals.goals}</div>
+                        <div className="text-[9px] text-zinc-600 uppercase tracking-wider mt-1">Gols</div>
                       </div>
-                      <div className="text-center px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                        <div className="text-lg font-bold tabular-nums text-blue-600">{careerTotals.assists}</div>
-                        <div className="text-[10px] text-muted-foreground uppercase">Assist</div>
+                      <div className="text-center p-3 rounded-xl bg-blue-500/[0.06] border border-blue-500/15">
+                        <div className="text-2xl font-bold tabular-nums text-blue-400/90">{careerTotals.assists}</div>
+                        <div className="text-[9px] text-zinc-600 uppercase tracking-wider mt-1">Assist</div>
                       </div>
-                      <div className="text-center px-3 py-2 rounded-lg bg-background border">
-                        <div className="text-lg font-bold tabular-nums">{careerTotals.shots}</div>
-                        <div className="text-[10px] text-muted-foreground uppercase">Chutes</div>
+                      <div className="text-center p-3 rounded-xl bg-zinc-900/50 border border-zinc-800/30">
+                        <div className="text-2xl font-bold tabular-nums text-white">{careerTotals.shots}</div>
+                        <div className="text-[9px] text-zinc-600 uppercase tracking-wider mt-1">Chutes</div>
                       </div>
-                      <div className="text-center px-3 py-2 rounded-lg bg-background border">
-                        <div className="text-lg font-bold tabular-nums">{careerTotals.key_passes}</div>
-                        <div className="text-[10px] text-muted-foreground uppercase">P. Decisivos</div>
+                      <div className="text-center p-3 rounded-xl bg-zinc-900/50 border border-zinc-800/30">
+                        <div className="text-2xl font-bold tabular-nums text-white">{careerTotals.key_passes}</div>
+                        <div className="text-[9px] text-zinc-600 uppercase tracking-wider mt-1">P. Decisivos</div>
                       </div>
-                      <div className="text-center px-3 py-2 rounded-lg bg-background border">
-                        <div className="text-lg font-bold tabular-nums">{careerTotals.tackles}</div>
-                        <div className="text-[10px] text-muted-foreground uppercase">Desarmes</div>
+                      <div className="text-center p-3 rounded-xl bg-zinc-900/50 border border-zinc-800/30">
+                        <div className="text-2xl font-bold tabular-nums text-white">{careerTotals.tackles}</div>
+                        <div className="text-[9px] text-zinc-600 uppercase tracking-wider mt-1">Desarmes</div>
                       </div>
-                      <div className="text-center px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                        <div className="text-lg font-bold tabular-nums text-amber-600">{careerTotals.yellow_cards}</div>
-                        <div className="text-[10px] text-muted-foreground uppercase">Amarelos</div>
+                      <div className="text-center p-3 rounded-xl bg-amber-500/[0.05] border border-amber-500/15">
+                        <div className="text-2xl font-bold tabular-nums text-amber-400/90">{careerTotals.yellow_cards}</div>
+                        <div className="text-[9px] text-zinc-600 uppercase tracking-wider mt-1">Amarelos</div>
                       </div>
                     </>
                   )}
@@ -874,27 +894,29 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
               <SeasonEvolutionChart stats={stats} isGoalkeeper={isGK} />
 
               {/* Expand/Collapse All Button */}
-              <div className="flex items-center justify-between">
-                <h4 className="font-semibold text-sm text-muted-foreground">Detalhes por Temporada</h4>
+              <div className="flex items-center justify-between pt-2">
+                <h4 className="text-[13px] font-semibold uppercase tracking-[0.1em] text-zinc-500">Detalhes por Temporada</h4>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={toggleAllExpanded}
-                  className="text-xs"
+                  className="text-[10px] text-zinc-600 hover:text-zinc-400"
                 >
-                  <ChevronsUpDown className="w-4 h-4 mr-1" />
+                  <ChevronsUpDown className="w-3.5 h-3.5 mr-1" />
                   {allExpanded ? 'Recolher Todas' : 'Expandir Todas'}
                 </Button>
               </div>
 
               {safeArray(sortedSeasons).map((season) => (
                 <div key={season} className="w-full max-w-full min-w-0 overflow-hidden">
-                  <h4 className="font-semibold mb-3 flex items-center gap-2">
-                    <Badge variant="outline">{season}</Badge>
-                    <span className="text-sm text-muted-foreground">
-                      ({safeArray(statsBySeason[season]).length} competição{safeArray(statsBySeason[season]).length > 1 ? "ões" : ""})
+                  <div className="flex items-center gap-3 mb-3">
+                    <Badge className="bg-primary/10 text-primary border-primary/20 text-sm font-bold px-3">
+                      {season}
+                    </Badge>
+                    <span className="text-xs text-zinc-600">
+                      {safeArray(statsBySeason[season]).length} competição{safeArray(statsBySeason[season]).length > 1 ? "ões" : ""}
                     </span>
-                  </h4>
+                  </div>
 
                   {/* Mobile: Card layout */}
                   {isMobile ? (
@@ -924,79 +946,85 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
                       )}
                     </div>
                   ) : (
-                    /* Desktop: Table layout */
-                    <div className="border rounded-lg overflow-hidden">
+                    /* Desktop: Premium Table layout */
+                    <div className="border border-zinc-800/40 rounded-xl overflow-hidden bg-zinc-900/30">
                       <Table>
                         <TableHeader>
-                          <TableRow>
-                            <TableHead>Competição</TableHead>
-                            <TableHead className="text-center">J</TableHead>
-                            <TableHead className="text-center">Min</TableHead>
+                          <TableRow className="border-b border-zinc-800/40 bg-zinc-900/50">
+                            <TableHead className="text-[10px] uppercase tracking-wider text-zinc-500">Competição</TableHead>
+                            <TableHead className="text-center text-[10px] uppercase tracking-wider text-zinc-500">J</TableHead>
+                            <TableHead className="text-center text-[10px] uppercase tracking-wider text-zinc-500">Min</TableHead>
                             {isGK ? (
                               <>
-                                <TableHead className="text-center">Def</TableHead>
-                                <TableHead className="text-center">GS</TableHead>
-                                <TableHead className="text-center">CS</TableHead>
-                                <TableHead className="text-center">PD</TableHead>
-                                <TableHead className="text-center">Err</TableHead>
+                                <TableHead className="text-center text-[10px] uppercase tracking-wider text-zinc-500">Def</TableHead>
+                                <TableHead className="text-center text-[10px] uppercase tracking-wider text-zinc-500">GS</TableHead>
+                                <TableHead className="text-center text-[10px] uppercase tracking-wider text-zinc-500">CS</TableHead>
+                                <TableHead className="text-center text-[10px] uppercase tracking-wider text-zinc-500">PD</TableHead>
+                                <TableHead className="text-center text-[10px] uppercase tracking-wider text-zinc-500">Err</TableHead>
                               </>
                             ) : (
                               <>
-                                <TableHead className="text-center">G</TableHead>
-                                <TableHead className="text-center">A</TableHead>
-                                <TableHead className="text-center">Fin</TableHead>
-                                <TableHead className="text-center">NoG</TableHead>
-                                <TableHead className="text-center">🟨</TableHead>
-                                <TableHead className="text-center">🟥</TableHead>
-                                <TableHead className="text-center">Des</TableHead>
-                                <TableHead className="text-center">Int</TableHead>
+                                <TableHead className="text-center text-[10px] uppercase tracking-wider text-zinc-500">G</TableHead>
+                                <TableHead className="text-center text-[10px] uppercase tracking-wider text-zinc-500">A</TableHead>
+                                <TableHead className="text-center text-[10px] uppercase tracking-wider text-zinc-500">Fin</TableHead>
+                                <TableHead className="text-center text-[10px] uppercase tracking-wider text-zinc-500">NoG</TableHead>
+                                <TableHead className="text-center text-[10px] uppercase tracking-wider text-zinc-500">🟨</TableHead>
+                                <TableHead className="text-center text-[10px] uppercase tracking-wider text-zinc-500">🟥</TableHead>
+                                <TableHead className="text-center text-[10px] uppercase tracking-wider text-zinc-500">Des</TableHead>
+                                <TableHead className="text-center text-[10px] uppercase tracking-wider text-zinc-500">Int</TableHead>
                               </>
                             )}
                             {canEdit && <TableHead className="w-20"></TableHead>}
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {safeArray(statsBySeason[season]).map((stat) => (
+                          {safeArray(statsBySeason[season]).map((stat, idx) => (
                             <>
                               <TableRow 
                                 key={stat.id} 
-                                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                                className={cn(
+                                  "cursor-pointer transition-all duration-150",
+                                  "hover:bg-zinc-800/30",
+                                  idx % 2 === 0 ? "bg-transparent" : "bg-zinc-900/20",
+                                  "border-b border-zinc-800/20"
+                                )}
                                 onClick={() => toggleStatExpanded(stat.id)}
                               >
-                                <TableCell className="font-medium">
+                                <TableCell className="font-medium py-3">
                                   <div className="flex items-center gap-2">
                                     <ChevronDown 
-                                      className={`w-4 h-4 text-muted-foreground transition-transform ${
-                                        expandedStats.has(stat.id) ? 'rotate-180' : ''
-                                      }`} 
+                                      className={cn(
+                                        "w-4 h-4 text-zinc-600 transition-transform duration-200",
+                                        expandedStats.has(stat.id) && 'rotate-180 text-primary'
+                                      )} 
                                     />
-                                    {stat.competitions?.name || "Sem competição"}
+                                    <span className="text-sm text-zinc-300">{stat.competitions?.name || "Sem competição"}</span>
                                   </div>
                                 </TableCell>
-                                <TableCell className="text-center">{stat.matches}</TableCell>
-                                <TableCell className="text-center">{stat.minutes}</TableCell>
+                                <TableCell className="text-center text-sm text-zinc-400 tabular-nums">{stat.matches}</TableCell>
+                                <TableCell className="text-center text-sm text-zinc-400 tabular-nums">{stat.minutes}</TableCell>
                                 {isGK ? (
                                   <>
-                                    <TableCell className="text-center font-semibold text-blue-500">
+                                    <TableCell className="text-center font-bold text-emerald-400/90 tabular-nums">
                                       {stat.saves || 0}
                                     </TableCell>
-                                    <TableCell className="text-center">{stat.goals_conceded || 0}</TableCell>
-                                    <TableCell className="text-center text-emerald-500">{stat.clean_sheets || 0}</TableCell>
-                                    <TableCell className="text-center">{stat.penalties_saved || 0}</TableCell>
-                                    <TableCell className="text-center text-red-500">{stat.errors_leading_to_goal || 0}</TableCell>
+                                    <TableCell className="text-center text-sm text-zinc-400 tabular-nums">{stat.goals_conceded || 0}</TableCell>
+                                    <TableCell className="text-center font-semibold text-emerald-400/90 tabular-nums">{stat.clean_sheets || 0}</TableCell>
+                                    <TableCell className="text-center text-sm text-zinc-400 tabular-nums">{stat.penalties_saved || 0}</TableCell>
+                                    <TableCell className="text-center text-sm text-rose-400/80 tabular-nums">{stat.errors_leading_to_goal || 0}</TableCell>
                                   </>
                                 ) : (
                                   <>
-                                    <TableCell className="text-center font-semibold text-blue-500">
+                                    <TableCell className="text-center font-bold text-emerald-400/90 tabular-nums">
                                       {stat.goals}
                                     </TableCell>
-                                    <TableCell className="text-center">{stat.assists}</TableCell>
-                                    <TableCell className="text-center">{stat.shots || 0}</TableCell>
-                                    <TableCell className="text-center">{stat.shots_on_target || 0}</TableCell>
-                                    <TableCell className="text-center">{stat.yellow_cards}</TableCell>
-                                    <TableCell className="text-center">{stat.red_cards}</TableCell>
-                                    <TableCell className="text-center">{stat.tackles}</TableCell>
-                                    <TableCell className="text-center">{stat.interceptions}</TableCell>
+                                    <TableCell className="text-center font-semibold text-blue-400/90 tabular-nums">{stat.assists}</TableCell>
+                                    <TableCell className="text-center text-sm text-zinc-400 tabular-nums">{stat.shots || 0}</TableCell>
+                                    <TableCell className="text-center text-sm text-zinc-400 tabular-nums">{stat.shots_on_target || 0}</TableCell>
+                                    <TableCell className="text-center text-sm text-amber-400/80 tabular-nums">{stat.yellow_cards}</TableCell>
+                                    <TableCell className="text-center text-sm text-rose-400/80 tabular-nums">{stat.red_cards}</TableCell>
+                                    <TableCell className="text-center text-sm text-zinc-400 tabular-nums">{stat.tackles}</TableCell>
+                                    <TableCell className="text-center text-sm text-zinc-400 tabular-nums">{stat.interceptions}</TableCell>
                                   </>
                                 )}
                                 {canEdit && (
@@ -1042,51 +1070,53 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
                               )}
                             </>
                           ))}
-                          {/* Totals row */}
-                          <TableRow className="bg-muted/50 font-semibold">
-                            <TableCell>Total</TableCell>
-                            <TableCell className="text-center">
+                          {/* Totals row - Premium visual closure */}
+                          <TableRow className="bg-gradient-to-r from-zinc-800/40 via-zinc-800/30 to-zinc-800/40 border-t-2 border-zinc-700/50">
+                            <TableCell className="py-3">
+                              <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">Total</span>
+                            </TableCell>
+                            <TableCell className="text-center font-bold text-white tabular-nums">
                               {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.matches || 0), 0)}
                             </TableCell>
-                            <TableCell className="text-center">
+                            <TableCell className="text-center font-bold text-white tabular-nums">
                               {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.minutes || 0), 0)}
                             </TableCell>
                             {isGK ? (
                               <>
-                                <TableCell className="text-center text-blue-500">
+                                <TableCell className="text-center font-bold text-emerald-400 tabular-nums">
                                   {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.saves || 0), 0)}
                                 </TableCell>
-                                <TableCell className="text-center">
+                                <TableCell className="text-center font-bold text-white tabular-nums">
                                   {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.goals_conceded || 0), 0)}
                                 </TableCell>
-                                <TableCell className="text-center text-emerald-500">
+                                <TableCell className="text-center font-bold text-emerald-400 tabular-nums">
                                   {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.clean_sheets || 0), 0)}
                                 </TableCell>
-                                <TableCell className="text-center">
+                                <TableCell className="text-center font-bold text-white tabular-nums">
                                   {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.penalties_saved || 0), 0)}
                                 </TableCell>
-                                <TableCell className="text-center text-red-500">
+                                <TableCell className="text-center font-bold text-rose-400 tabular-nums">
                                   {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.errors_leading_to_goal || 0), 0)}
                                 </TableCell>
                               </>
                             ) : (
                               <>
-                                <TableCell className="text-center text-blue-500">
+                                <TableCell className="text-center font-bold text-emerald-400 tabular-nums">
                                   {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.goals || 0), 0)}
                                 </TableCell>
-                                <TableCell className="text-center">
+                                <TableCell className="text-center font-bold text-blue-400 tabular-nums">
                                   {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.assists || 0), 0)}
                                 </TableCell>
-                                <TableCell className="text-center">
+                                <TableCell className="text-center font-bold text-white tabular-nums">
                                   {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.shots || 0), 0)}
                                 </TableCell>
-                                <TableCell className="text-center">
+                                <TableCell className="text-center font-bold text-white tabular-nums">
                                   {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.shots_on_target || 0), 0)}
                                 </TableCell>
-                                <TableCell className="text-center">
+                                <TableCell className="text-center font-bold text-amber-400 tabular-nums">
                                   {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.yellow_cards || 0), 0)}
                                 </TableCell>
-                                <TableCell className="text-center">
+                                <TableCell className="text-center font-bold text-rose-400 tabular-nums">
                                   {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.red_cards || 0), 0)}
                                 </TableCell>
                                 <TableCell className="text-center">
