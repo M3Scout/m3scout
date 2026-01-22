@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { ChevronDown, ChevronUp, BarChart3, AlertTriangle, CheckCircle, Info } from "lucide-react";
+import { ChevronDown, ChevronUp, ShieldCheck, AlertTriangle, CheckCircle, Info } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -15,6 +15,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 
 // Position group mapping
 type PositionGroup = 'goalkeeper' | 'center_back' | 'defensive_mid' | 'midfielder' | 'forward';
@@ -264,30 +265,40 @@ export function DataQualityPanel({ playerId, position }: DataQualityPanelProps) 
   }, [stats, expectedStats]);
 
   const getQualityColor = (percentage: number) => {
-    if (percentage >= 80) return 'text-green-500';
-    if (percentage >= 50) return 'text-yellow-500';
-    return 'text-red-500';
+    if (percentage >= 80) return 'text-emerald-400/90';
+    if (percentage >= 50) return 'text-amber-400/90';
+    return 'text-rose-400/90';
   };
 
-  const getQualityBadge = (percentage: number) => {
-    if (percentage >= 80) return { label: 'Boa', variant: 'default' as const };
-    if (percentage >= 50) return { label: 'Parcial', variant: 'secondary' as const };
-    return { label: 'Baixa', variant: 'destructive' as const };
+  const getQualityBadgeStyles = (percentage: number) => {
+    if (percentage >= 80) return 'bg-emerald-500/[0.08] text-emerald-400/90 border-emerald-500/20';
+    if (percentage >= 50) return 'bg-amber-500/[0.08] text-amber-400/90 border-amber-500/20';
+    return 'bg-rose-500/[0.08] text-rose-400/90 border-rose-500/20';
+  };
+
+  const getQualityLabel = (percentage: number) => {
+    if (percentage >= 80) return 'Alta';
+    if (percentage >= 50) return 'Média';
+    return 'Baixa';
   };
 
   if (loading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <BarChart3 className="w-5 h-5" />
-            Qualidade de Dados
+      <Card className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+              <ShieldCheck className="w-4 h-4 text-blue-400/80" />
+            </div>
+            <span className="text-[13px] font-semibold uppercase tracking-[0.1em] text-zinc-400">
+              Confiabilidade dos Dados
+            </span>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="animate-pulse space-y-2">
-            <div className="h-4 bg-muted rounded w-1/2" />
-            <div className="h-3 bg-muted rounded w-3/4" />
+            <div className="h-4 bg-zinc-800 rounded w-1/2" />
+            <div className="h-3 bg-zinc-800 rounded w-3/4" />
           </div>
         </CardContent>
       </Card>
@@ -296,15 +307,19 @@ export function DataQualityPanel({ playerId, position }: DataQualityPanelProps) 
 
   if (stats.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <BarChart3 className="w-5 h-5" />
-            Qualidade de Dados
+      <Card className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)]">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+              <ShieldCheck className="w-4 h-4 text-blue-400/80" />
+            </div>
+            <span className="text-[13px] font-semibold uppercase tracking-[0.1em] text-zinc-400">
+              Confiabilidade dos Dados
+            </span>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="flex items-center gap-2 text-zinc-600">
             <AlertTriangle className="w-4 h-4" />
             <span className="text-sm">Nenhuma estatística cadastrada</span>
           </div>
@@ -313,27 +328,37 @@ export function DataQualityPanel({ playerId, position }: DataQualityPanelProps) 
     );
   }
 
-  const qualityBadge = getQualityBadge(qualityData.overall);
-
   return (
-    <Card>
+    <Card className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)] overflow-hidden">
       <Collapsible open={open} onOpenChange={setOpen}>
         <CollapsibleTrigger asChild>
-          <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-            <CardTitle className="flex items-center justify-between text-base">
-              <div className="flex items-center gap-2">
-                <BarChart3 className="w-5 h-5" />
-                Qualidade de Dados
+          <CardHeader className="cursor-pointer hover:bg-zinc-900/30 transition-colors pb-3">
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                  <ShieldCheck className="w-4 h-4 text-blue-400/80" />
+                </div>
+                <span className="text-[13px] font-semibold uppercase tracking-[0.1em] text-zinc-400">
+                  Confiabilidade
+                </span>
               </div>
-              <div className="flex items-center gap-2">
-                <Badge variant={qualityBadge.variant}>{qualityBadge.label}</Badge>
-                <span className={`text-lg font-bold ${getQualityColor(qualityData.overall)}`}>
+              <div className="flex items-center gap-3">
+                <Badge 
+                  variant="outline" 
+                  className={cn(
+                    "text-[10px] font-medium uppercase tracking-wider border backdrop-blur-sm",
+                    getQualityBadgeStyles(qualityData.overall)
+                  )}
+                >
+                  {getQualityLabel(qualityData.overall)}
+                </Badge>
+                <span className={cn("text-xl font-bold", getQualityColor(qualityData.overall))}>
                   {qualityData.overall}%
                 </span>
                 {open ? (
-                  <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                  <ChevronUp className="w-4 h-4 text-zinc-600" />
                 ) : (
-                  <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                  <ChevronDown className="w-4 h-4 text-zinc-600" />
                 )}
               </div>
             </CardTitle>
@@ -341,71 +366,75 @@ export function DataQualityPanel({ playerId, position }: DataQualityPanelProps) 
         </CollapsibleTrigger>
         <CollapsibleContent>
           <CardContent className="pt-0 space-y-4">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">
-                Posição: <span className="text-foreground">{POSITION_GROUP_LABELS[positionGroup]}</span>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-zinc-600">
+                Perfil: <span className="text-zinc-400">{POSITION_GROUP_LABELS[positionGroup]}</span>
               </span>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger>
-                    <Info className="w-4 h-4 text-muted-foreground" />
+                    <Info className="w-3.5 h-3.5 text-zinc-600" />
                   </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
-                    <p className="text-xs">
-                      Mostra quantas estatísticas esperadas para a posição {POSITION_GROUP_LABELS[positionGroup]} estão presentes em cada competição/ano.
+                  <TooltipContent className="max-w-xs bg-zinc-900 border-zinc-800">
+                    <p className="text-xs text-zinc-300">
+                      Indica a completude das estatísticas esperadas para {POSITION_GROUP_LABELS[positionGroup]}. 
+                      Quanto maior, mais confiável é a análise automática.
                     </p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2">
               {qualityData.byCompetition.map((comp) => (
-                <div key={comp.id} className="space-y-2 p-3 rounded-lg bg-muted/30">
+                <div 
+                  key={comp.id} 
+                  className="p-3 rounded-xl bg-zinc-900/40 border border-zinc-800/30 space-y-2"
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{comp.competition}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-sm font-medium text-zinc-300 truncate">{comp.competition}</p>
+                      <p className="text-[10px] text-zinc-600">
                         {comp.year} • {comp.matches} jogos • {comp.minutes} min
                       </p>
                     </div>
                     <div className="flex items-center gap-2 ml-2">
                       {comp.percentage >= 80 ? (
-                        <CheckCircle className="w-4 h-4 text-green-500" />
+                        <CheckCircle className="w-4 h-4 text-emerald-400/80" />
                       ) : comp.percentage >= 50 ? (
-                        <AlertTriangle className="w-4 h-4 text-yellow-500" />
+                        <AlertTriangle className="w-4 h-4 text-amber-400/80" />
                       ) : (
-                        <AlertTriangle className="w-4 h-4 text-red-500" />
+                        <AlertTriangle className="w-4 h-4 text-rose-400/80" />
                       )}
-                      <span className={`text-sm font-semibold ${getQualityColor(comp.percentage)}`}>
+                      <span className={cn("text-xs font-semibold", getQualityColor(comp.percentage))}>
                         {comp.presentCount}/{comp.expectedCount}
                       </span>
                     </div>
                   </div>
-                  <Progress value={comp.percentage} className="h-1.5" />
+                  <Progress value={comp.percentage} className="h-1 bg-zinc-800" />
                   {comp.missingStats.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-1">
-                      {comp.missingStats.slice(0, 5).map((stat) => (
-                        <Badge key={stat} variant="outline" className="text-[10px] py-0 px-1.5 text-muted-foreground">
+                      {comp.missingStats.slice(0, 4).map((stat) => (
+                        <Badge 
+                          key={stat} 
+                          variant="outline" 
+                          className="text-[9px] py-0 px-1.5 bg-zinc-900/50 text-zinc-600 border-zinc-800/50"
+                        >
                           {stat}
                         </Badge>
                       ))}
-                      {comp.missingStats.length > 5 && (
-                        <Badge variant="outline" className="text-[10px] py-0 px-1.5 text-muted-foreground">
-                          +{comp.missingStats.length - 5}
+                      {comp.missingStats.length > 4 && (
+                        <Badge 
+                          variant="outline" 
+                          className="text-[9px] py-0 px-1.5 bg-zinc-900/50 text-zinc-600 border-zinc-800/50"
+                        >
+                          +{comp.missingStats.length - 4}
                         </Badge>
                       )}
                     </div>
                   )}
                 </div>
               ))}
-            </div>
-
-            <div className="pt-2 border-t">
-              <p className="text-xs text-muted-foreground">
-                <strong>Estatísticas esperadas para {POSITION_GROUP_LABELS[positionGroup]}:</strong>{' '}
-                {expectedStats.map((s) => s.label).join(', ')}
-              </p>
             </div>
           </CardContent>
         </CollapsibleContent>

@@ -48,6 +48,8 @@ import { OverallRatingCard } from "@/components/players/sections/OverallRatingCa
 import { MarketValueSection } from "@/components/players/sections/MarketValueSection";
 import { MarketValueTab } from "@/components/players/sections/MarketValueTab";
 import { DataQualityPanel } from "@/components/players/DataQualityPanel";
+import { RecentReportsCard } from "@/components/players/sections/RecentReportsCard";
+import { MetadataCard } from "@/components/players/sections/MetadataCard";
 
 
 import { UnifiedRadarCard } from "@/components/players/UnifiedRadarCard";
@@ -489,78 +491,15 @@ const PlayerDetail = () => {
                 position={player.position}
               />
               {/* Recent Reports */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="w-5 h-5" />
-                    Relatórios Recentes
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {reports.length > 0 ? (
-                    <div className="space-y-3">
-                      {safeArray(reports).map((report) => (
-                        <Link
-                          key={report.id}
-                          to={`/app/reports/${report.id}`}
-                          className="block p-3 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors"
-                        >
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-sm font-medium">
-                              {report.competition?.name || "Competição"}
-                            </span>
-                            <Badge variant="outline">{Number.isFinite(report.final_score) ? report.final_score.toFixed(1) : "—"}</Badge>
-                          </div>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(report.match_date).toLocaleDateString("pt-BR")}
-                          </p>
-                        </Link>
-                      ))}
-                      <Button variant="ghost" className="w-full" asChild>
-                        <Link to={`/app/reports?player=${player.id}`}>
-                          Ver todos os relatórios
-                        </Link>
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="text-center py-4">
-                      <p className="text-muted-foreground text-sm mb-3">
-                        Nenhum relatório encontrado
-                      </p>
-                      <Button variant="outline" size="sm" asChild>
-                        <Link to={`/app/reports/new?player=${player.id}`}>
-                          <FileText className="w-4 h-4" />
-                          Criar Relatório
-                        </Link>
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              <RecentReportsCard reports={reports} playerId={player.id} />
 
               {/* Metadata */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm">Metadados</CardTitle>
-                </CardHeader>
-                <CardContent className="text-sm text-muted-foreground space-y-2">
-                  <p>
-                    <strong>ID:</strong>{" "}
-                    <code className="text-xs bg-secondary px-1 py-0.5 rounded">{player.id}</code>
-                  </p>
-                  <p>
-                    <strong>Slug:</strong> {player.slug}
-                  </p>
-                  <p>
-                    <strong>Criado em:</strong>{" "}
-                    {new Date(player.created_at).toLocaleDateString("pt-BR")}
-                  </p>
-                  <p>
-                    <strong>Atualizado em:</strong>{" "}
-                    {new Date(player.updated_at).toLocaleDateString("pt-BR")}
-                  </p>
-                </CardContent>
-              </Card>
+              <MetadataCard 
+                id={player.id} 
+                slug={player.slug} 
+                createdAt={player.created_at} 
+                updatedAt={player.updated_at} 
+              />
             </div>
           </div>
         </TabsContent>
