@@ -36,6 +36,10 @@ interface Player {
   physical_status: string | null;
   market_value: number | null;
   estimated_level: string | null;
+  // New indicator header fields
+  play_style: string | null;
+  primary_tactical_role: string | null;
+  secondary_tactical_role: string | null;
 }
 
 interface PlayerWithCompetition extends Player {
@@ -43,9 +47,10 @@ interface PlayerWithCompetition extends Player {
   last_report_date?: string | null;
 }
 
-interface PlayerMinutes {
+interface PlayerStatsAggregated {
   player_id: string;
   total_minutes: number;
+  total_matches: number;
 }
 
 const PAGE_SIZE_OPTIONS = [12, 24, 48];
@@ -55,7 +60,7 @@ const availableYears = [currentYear, currentYear - 1, currentYear - 2];
 
 const Players = () => {
   const [players, setPlayers] = useState<PlayerWithCompetition[]>([]);
-  const [playerMinutes, setPlayerMinutes] = useState<Map<string, number>>(new Map());
+  const [playerStats, setPlayerStats] = useState<Map<string, { minutes: number; matches: number }>>(new Map());
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [positionFilter, setPositionFilter] = useState("todos");
@@ -92,13 +97,14 @@ const Players = () => {
   // Fetch players with scouting data
   useEffect(() => {
     const fetchPlayers = async () => {
-      // First, fetch all player data
+      // First, fetch all player data including new indicator fields
       const { data: playersData, error: playersError } = await supabase
         .from("players")
         .select(`
           id, slug, full_name, position, secondary_positions, age, nationality, 
           current_club, photo_url, auto_rating, dominant_foot, height,
           overall_rating, potential_rating, physical_status, market_value, estimated_level,
+          play_style, primary_tactical_role, secondary_tactical_role,
           created_at
         `)
         .eq("is_public", true)
@@ -163,31 +169,34 @@ const Players = () => {
     fetchPlayers();
   }, []);
 
-  // Fetch minutes for selected year
+  // Fetch minutes and matches for selected year
   useEffect(() => {
-    const fetchMinutes = async () => {
+    const fetchStats = async () => {
       if (players.length === 0) return;
       
       const playerIds = players.map(p => p.id);
       
       const { data, error } = await supabase
         .from("player_stats")
-        .select("player_id, minutes")
+        .select("player_id, minutes, matches")
         .in("player_id", playerIds)
         .eq("season_year", selectedYear);
 
       if (data) {
-        // Aggregate minutes per player
-        const minutesMap = new Map<string, number>();
+        // Aggregate minutes and matches per player
+        const statsMap = new Map<string, { minutes: number; matches: number }>();
         data.forEach((stat) => {
-          const current = minutesMap.get(stat.player_id) || 0;
-          minutesMap.set(stat.player_id, current + (stat.minutes || 0));
+          const current = statsMap.get(stat.player_id) || { minutes: 0, matches: 0 };
+          statsMap.set(stat.player_id, {
+            minutes: current.minutes + (stat.minutes || 0),
+            matches: current.matches + (stat.matches || 0),
+          });
         });
-        setPlayerMinutes(minutesMap);
+        setPlayerStats(statsMap);
       }
     };
 
-    fetchMinutes();
+    fetchStats();
   }, [players, selectedYear]);
 
   const filteredPlayers = useMemo(() => {
@@ -496,7 +505,8 @@ const Players = () => {
                     clubMode={clubMode}
                     dominantFoot={player.dominant_foot}
                     height={player.height}
-                    totalMinutes={playerMinutes.get(player.id) || null}
+                    totalMinutes={playerStats.get(player.id)?.minutes || null}
+                    totalMatches={playerStats.get(player.id)?.matches || null}
                     overallRating={player.overall_rating}
                     potentialRating={player.potential_rating}
                     physicalStatus={player.physical_status}
@@ -505,6 +515,9 @@ const Players = () => {
                     competitionName={player.competition_name}
                     lastReportDate={player.last_report_date}
                     createdAt={player.created_at}
+                    playStyle={player.play_style}
+                    primaryTacticalRole={player.primary_tactical_role}
+                    secondaryTacticalRole={player.secondary_tactical_role}
                   />
                 </motion.div>
               ))}

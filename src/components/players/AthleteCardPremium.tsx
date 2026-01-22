@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap, ArrowRight, Flame, Eye, Snowflake, TrendingUp, Activity, DollarSign, FileText, Calendar, Sparkles, User, Ruler, Target } from "lucide-react";
+import { Zap, ArrowRight, Flame, Eye, Snowflake, TrendingUp, Activity, DollarSign, FileText, Calendar, Sparkles, User, Ruler, Target, Star, Gamepad2, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -34,6 +34,11 @@ export interface AthleteCardPremiumProps {
   lastReportDate?: string | null;
   // New field for "Novo" status
   createdAt?: string | null;
+  // New indicator header fields
+  totalMatches?: number | null;
+  playStyle?: string | null;
+  primaryTacticalRole?: string | null;
+  secondaryTacticalRole?: string | null;
 }
 
 type PriorityLevel = "high" | "monitoring" | "low";
@@ -185,6 +190,203 @@ const badgeStyle = {
   backdropFilter: "blur(8px)",
   WebkitBackdropFilter: "blur(8px)",
 };
+
+// Format minutes for display (1k+ format)
+function formatMinutesDisplay(minutes: number | null | undefined): string {
+  if (!minutes) return "0";
+  if (minutes >= 1000) {
+    return `${(minutes / 1000).toFixed(1)}k`;
+  }
+  return minutes.toString();
+}
+
+// Physical status config for new header
+const PHYSICAL_STATUS_CONFIG: Record<string, { 
+  label: string; 
+  color: string; 
+  bgColor: string; 
+  borderColor: string;
+  dotColor: string;
+}> = {
+  fit: { 
+    label: "APTO", 
+    color: "#1ED760", 
+    bgColor: "rgba(30, 215, 96, 0.1)", 
+    borderColor: "rgba(30, 215, 96, 0.2)",
+    dotColor: "#1ED760"
+  },
+  attention: { 
+    label: "EM TRANSIÇÃO", 
+    color: "#FFB800", 
+    bgColor: "rgba(255, 184, 0, 0.1)", 
+    borderColor: "rgba(255, 184, 0, 0.2)",
+    dotColor: "#FFB800"
+  },
+  recovering: { 
+    label: "EM TRANSIÇÃO", 
+    color: "#FFB800", 
+    bgColor: "rgba(255, 184, 0, 0.1)", 
+    borderColor: "rgba(255, 184, 0, 0.2)",
+    dotColor: "#FFB800"
+  },
+  injured: { 
+    label: "INAPTO", 
+    color: "#FF4444", 
+    bgColor: "rgba(255, 68, 68, 0.1)", 
+    borderColor: "rgba(255, 68, 68, 0.2)",
+    dotColor: "#FF4444"
+  },
+};
+
+const DEFAULT_PHYSICAL_CONFIG = {
+  label: "N/I",
+  color: "rgba(255, 255, 255, 0.4)",
+  bgColor: "rgba(255, 255, 255, 0.03)",
+  borderColor: "rgba(255, 255, 255, 0.06)",
+  dotColor: "rgba(255, 255, 255, 0.3)"
+};
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// CLUB MODE INDICATOR ROW COMPONENT
+// New header: NOTA / JOGOS / MINUTOS / FÍSICO / ESTILO DE JOGO
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+interface ClubModeIndicatorRowProps {
+  overallRating?: number | null;
+  totalMinutes?: number | null;
+  totalMatches?: number | null;
+  physicalStatus?: string | null;
+  physicalInfo?: { label: string; color: string };
+  playStyle?: string | null;
+  primaryTacticalRole?: string | null;
+  secondaryTacticalRole?: string | null;
+}
+
+function ClubModeIndicatorRow({
+  overallRating,
+  totalMinutes,
+  totalMatches,
+  physicalStatus,
+  playStyle,
+  primaryTacticalRole,
+  secondaryTacticalRole,
+}: ClubModeIndicatorRowProps) {
+  const minutes = totalMinutes ?? 0;
+  const matches = totalMatches ?? 0;
+  
+  // Rating: show only if minutes > 0
+  const showRating = minutes > 0 && overallRating !== null && overallRating !== undefined;
+  const ratingDisplay = showRating ? overallRating.toFixed(1) : "—";
+  
+  // Physical status
+  const physicalKey = physicalStatus?.toLowerCase() || "";
+  const physicalConfig = PHYSICAL_STATUS_CONFIG[physicalKey] || DEFAULT_PHYSICAL_CONFIG;
+  
+  // Play style and roles
+  const roles = [primaryTacticalRole, secondaryTacticalRole].filter(Boolean).slice(0, 2);
+  const hasPlayStyle = Boolean(playStyle) || roles.length > 0;
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-3">
+      {/* NOTA */}
+      <div 
+        className="flex items-center gap-2 px-2.5 py-1.5 rounded-md"
+        style={{
+          background: "rgba(255, 255, 255, 0.03)",
+          border: "1px solid rgba(255, 255, 255, 0.06)",
+        }}
+      >
+        <Star className="w-3.5 h-3.5 text-white/40" />
+        <div className="flex flex-col">
+          <span className="text-[8px] uppercase tracking-wider text-white/35 leading-tight">Nota</span>
+          <span className="text-sm font-bold text-white leading-tight">{ratingDisplay}</span>
+        </div>
+      </div>
+      
+      {/* JOGOS */}
+      <div 
+        className="flex items-center gap-2 px-2.5 py-1.5 rounded-md"
+        style={{
+          background: "rgba(255, 255, 255, 0.03)",
+          border: "1px solid rgba(255, 255, 255, 0.06)",
+        }}
+      >
+        <Gamepad2 className="w-3.5 h-3.5 text-white/40" />
+        <div className="flex flex-col">
+          <span className="text-[8px] uppercase tracking-wider text-white/35 leading-tight">Jogos</span>
+          <span className="text-sm font-bold text-white leading-tight">{matches}</span>
+        </div>
+      </div>
+      
+      {/* MINUTOS */}
+      <div 
+        className="flex items-center gap-2 px-2.5 py-1.5 rounded-md"
+        style={{
+          background: "rgba(255, 255, 255, 0.03)",
+          border: "1px solid rgba(255, 255, 255, 0.06)",
+        }}
+      >
+        <Clock className="w-3.5 h-3.5 text-white/40" />
+        <div className="flex flex-col">
+          <span className="text-[8px] uppercase tracking-wider text-white/35 leading-tight">Minutos</span>
+          <span className="text-sm font-bold text-white leading-tight">{formatMinutesDisplay(minutes)}</span>
+        </div>
+      </div>
+      
+      {/* FÍSICO (with color emphasis) */}
+      <div 
+        className="flex items-center gap-2 px-2.5 py-1.5 rounded-md"
+        style={{
+          background: physicalConfig.bgColor,
+          border: `1px solid ${physicalConfig.borderColor}`,
+        }}
+      >
+        <div 
+          className="w-2 h-2 rounded-full"
+          style={{ backgroundColor: physicalConfig.dotColor }}
+        />
+        <div className="flex flex-col">
+          <span className="text-[8px] uppercase tracking-wider text-white/35 leading-tight">Físico</span>
+          <span 
+            className="text-xs font-bold uppercase leading-tight"
+            style={{ color: physicalConfig.color }}
+          >
+            {physicalConfig.label}
+          </span>
+        </div>
+      </div>
+      
+      {/* ESTILO DE JOGO */}
+      {hasPlayStyle && (
+        <div 
+          className="flex items-center gap-2 px-2.5 py-1.5 rounded-md"
+          style={{
+            background: "rgba(255, 255, 255, 0.03)",
+            border: "1px solid rgba(255, 255, 255, 0.06)",
+          }}
+        >
+          <Zap className="w-3.5 h-3.5 text-primary/60" />
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[8px] uppercase tracking-wider text-white/35 leading-tight">Estilo</span>
+            <div className="flex flex-wrap items-center gap-1">
+              {playStyle && (
+                <span className="text-xs font-medium text-white/80 leading-tight">{playStyle}</span>
+              )}
+              {roles.map((role, i) => (
+                <span 
+                  key={i}
+                  className="text-[9px] text-white/40 px-1 py-0.5 rounded bg-white/5"
+                >
+                  {role}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // CARD VARIANT A — VISUAL MODE (Default / Home-like)
@@ -418,6 +620,12 @@ function ClubScoutingCard({
   lastReportDate,
   priority,
   createdAt,
+  // New indicator header fields
+  totalMinutes,
+  totalMatches,
+  playStyle,
+  primaryTacticalRole,
+  secondaryTacticalRole,
 }: AthleteCardPremiumProps & { priority: PriorityLevel }) {
   const [isHovered, setIsHovered] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -608,71 +816,17 @@ function ClubScoutingCard({
               )}
             </div>
 
-            {/* Second Row: Numeric KPIs */}
-            <div className="flex flex-wrap items-center gap-4 md:gap-6 mb-3">
-              {/* Scout Rating */}
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-md flex items-center justify-center bg-amber-500/10 border border-amber-500/20">
-                  <span className="text-sm">⭐</span>
-                </div>
-                <div>
-                  <div className="text-[9px] uppercase tracking-wider text-white/40 leading-tight">Scout</div>
-                  <div className="text-lg font-bold text-white leading-tight">{overallRating?.toFixed(1) || "—"}</div>
-                </div>
-              </div>
-
-              {/* Potential */}
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-md flex items-center justify-center bg-emerald-500/10 border border-emerald-500/20">
-                  <TrendingUp className="w-4 h-4 text-emerald-400" />
-                </div>
-                <div>
-                  <div className="text-[9px] uppercase tracking-wider text-white/40 leading-tight">Potencial</div>
-                  <div className="text-lg font-bold text-white leading-tight">{potentialRating?.toFixed(1) || "—"}</div>
-                </div>
-              </div>
-
-              {/* Physical Status */}
-              <div className="flex items-center gap-2">
-                <div 
-                  className="w-8 h-8 rounded-md flex items-center justify-center border"
-                  style={{ 
-                    background: `${physicalInfo.color}12`,
-                    borderColor: `${physicalInfo.color}30`,
-                  }}
-                >
-                  <Activity className="w-4 h-4" style={{ color: physicalInfo.color }} />
-                </div>
-                <div>
-                  <div className="text-[9px] uppercase tracking-wider text-white/40 leading-tight">Físico</div>
-                  <div className="text-sm font-bold leading-tight" style={{ color: physicalInfo.color }}>{physicalInfo.label}</div>
-                </div>
-              </div>
-
-              {/* Market Value */}
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-md flex items-center justify-center bg-blue-500/10 border border-blue-500/20">
-                  <DollarSign className="w-4 h-4 text-blue-400" />
-                </div>
-                <div>
-                  <div className="text-[9px] uppercase tracking-wider text-white/40 leading-tight">Valor</div>
-                  <div className="text-sm font-bold text-white leading-tight">{formatMarketValue(marketValue)}</div>
-                </div>
-              </div>
-
-              {/* Estimated Level */}
-              {estimatedLevel && (
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-md flex items-center justify-center bg-purple-500/10 border border-purple-500/20">
-                    <Target className="w-4 h-4 text-purple-400" />
-                  </div>
-                  <div>
-                    <div className="text-[9px] uppercase tracking-wider text-white/40 leading-tight">Nível</div>
-                    <div className="text-sm font-bold text-purple-300 leading-tight">{estimatedLevel}</div>
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* Second Row: New Indicator Header (NOTA / JOGOS / MINUTOS / FÍSICO / ESTILO) */}
+            <ClubModeIndicatorRow 
+              overallRating={overallRating}
+              totalMinutes={totalMinutes}
+              totalMatches={totalMatches}
+              physicalStatus={physicalStatus}
+              physicalInfo={physicalInfo}
+              playStyle={playStyle}
+              primaryTacticalRole={primaryTacticalRole}
+              secondaryTacticalRole={secondaryTacticalRole}
+            />
 
             {/* Third Row: Meta info (always visible, no hover needed) */}
             <div className="flex flex-wrap items-center gap-3 text-[11px] text-white/40">
