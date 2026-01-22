@@ -23,8 +23,7 @@ import {
   Share2,
   Loader2
 } from "lucide-react";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { formatDateBR } from "@/lib/dateUtils";
 import { cn, safeArray } from "@/lib/utils";
 import { getScoreColor, getRatingLabel, CATEGORY_WEIGHTS, ScoreBreakdown } from "@/lib/scoring";
 import {
@@ -239,7 +238,7 @@ const { user } = useAuth();
           <div className="flex flex-wrap items-center gap-4 text-muted-foreground">
             <span className="flex items-center gap-1">
               <Calendar className="w-4 h-4" />
-              {format(new Date(report.match_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+              {formatDateBR(report.created_at)}
             </span>
             <span className="flex items-center gap-1">
               <Trophy className="w-4 h-4" />

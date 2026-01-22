@@ -21,29 +21,12 @@ import {
   Stop,
   StyleSheet,
 } from "@react-pdf/renderer";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PDF_COLORS } from "@/lib/pdfStyles";
 import { CATEGORY_WEIGHTS, getRatingLabel, ScoreBreakdown } from "@/lib/scoring";
 import { ScoutingReportData, SCOUTING_CATEGORY_CONFIG } from "@/types/scouting";
-
-/**
- * Parse date string safely preserving the local date.
- * Handles both ISO timestamps (with timezone) and date-only strings (YYYY-MM-DD).
- * For date-only strings, we treat them as local dates to avoid UTC shift issues.
- */
-function parseDateSafe(dateStr: string): Date {
-  if (!dateStr) return new Date();
-  
-  // If it's a full ISO timestamp (contains 'T'), use parseISO which handles TZ correctly
-  if (dateStr.includes("T")) {
-    return parseISO(dateStr);
-  }
-  
-  // For date-only strings (YYYY-MM-DD), parse as local date to avoid UTC shift
-  const [year, month, day] = dateStr.split("-").map(Number);
-  return new Date(year, month - 1, day);
-}
+import { parseDateSafe } from "@/lib/dateUtils";
 
 // Score color helper
 function getScoreColor(score: number): string {
