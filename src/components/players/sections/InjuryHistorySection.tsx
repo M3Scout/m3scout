@@ -60,107 +60,120 @@ interface StatusConfig {
   colorClass: string;
   bgClass: string;
   borderClass: string;
+  glowClass: string;
 }
 
+// Premium desaturated status colors for clinical authority
 const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
   fit: {
-    label: "Apto",
-    description: "Liberado para treinos e jogos",
+    label: "Apto para Atividade",
+    description: "Atleta liberado para treinos e competições",
     icon: CheckCircle2,
-    colorClass: "text-green-500",
-    bgClass: "bg-green-500/10",
-    borderClass: "border-green-500/30",
+    colorClass: "text-emerald-400",
+    bgClass: "bg-emerald-500/8",
+    borderClass: "border-emerald-500/20",
+    glowClass: "shadow-[0_0_20px_-4px_rgba(16,185,129,0.15)]",
   },
   apto: {
-    label: "Apto",
-    description: "Liberado para treinos e jogos",
+    label: "Apto para Atividade",
+    description: "Atleta liberado para treinos e competições",
     icon: CheckCircle2,
-    colorClass: "text-green-500",
-    bgClass: "bg-green-500/10",
-    borderClass: "border-green-500/30",
+    colorClass: "text-emerald-400",
+    bgClass: "bg-emerald-500/8",
+    borderClass: "border-emerald-500/20",
+    glowClass: "shadow-[0_0_20px_-4px_rgba(16,185,129,0.15)]",
   },
   recovering: {
     label: "Em Recuperação",
-    description: "Em tratamento médico",
+    description: "Atleta em tratamento médico supervisionado",
     icon: Activity,
-    colorClass: "text-amber-500",
-    bgClass: "bg-amber-500/10",
-    borderClass: "border-amber-500/30",
+    colorClass: "text-amber-400",
+    bgClass: "bg-amber-500/8",
+    borderClass: "border-amber-500/20",
+    glowClass: "shadow-[0_0_20px_-4px_rgba(245,158,11,0.15)]",
   },
   em_recuperacao: {
     label: "Em Recuperação",
-    description: "Em tratamento médico",
+    description: "Atleta em tratamento médico supervisionado",
     icon: Activity,
-    colorClass: "text-amber-500",
-    bgClass: "bg-amber-500/10",
-    borderClass: "border-amber-500/30",
+    colorClass: "text-amber-400",
+    bgClass: "bg-amber-500/8",
+    borderClass: "border-amber-500/20",
+    glowClass: "shadow-[0_0_20px_-4px_rgba(245,158,11,0.15)]",
   },
   injured: {
-    label: "Lesionado",
-    description: "Afastado por lesão",
+    label: "Afastado por Lesão",
+    description: "Atleta em período de recuperação completa",
     icon: XCircle,
-    colorClass: "text-red-500",
-    bgClass: "bg-red-500/10",
-    borderClass: "border-red-500/30",
+    colorClass: "text-rose-400",
+    bgClass: "bg-rose-500/8",
+    borderClass: "border-rose-500/20",
+    glowClass: "shadow-[0_0_20px_-4px_rgba(244,63,94,0.15)]",
   },
   lesionado: {
-    label: "Lesionado",
-    description: "Afastado por lesão",
+    label: "Afastado por Lesão",
+    description: "Atleta em período de recuperação completa",
     icon: XCircle,
-    colorClass: "text-red-500",
-    bgClass: "bg-red-500/10",
-    borderClass: "border-red-500/30",
+    colorClass: "text-rose-400",
+    bgClass: "bg-rose-500/8",
+    borderClass: "border-rose-500/20",
+    glowClass: "shadow-[0_0_20px_-4px_rgba(244,63,94,0.15)]",
   },
   transition: {
     label: "Retorno Progressivo",
-    description: "Em transição para atividades normais",
+    description: "Atleta em transição para atividades normais",
     icon: AlertTriangle,
-    colorClass: "text-blue-500",
-    bgClass: "bg-blue-500/10",
-    borderClass: "border-blue-500/30",
+    colorClass: "text-sky-400",
+    bgClass: "bg-sky-500/8",
+    borderClass: "border-sky-500/20",
+    glowClass: "shadow-[0_0_20px_-4px_rgba(14,165,233,0.15)]",
   },
   transicao: {
     label: "Retorno Progressivo",
-    description: "Em transição para atividades normais",
+    description: "Atleta em transição para atividades normais",
     icon: AlertTriangle,
-    colorClass: "text-blue-500",
-    bgClass: "bg-blue-500/10",
-    borderClass: "border-blue-500/30",
+    colorClass: "text-sky-400",
+    bgClass: "bg-sky-500/8",
+    borderClass: "border-sky-500/20",
+    glowClass: "shadow-[0_0_20px_-4px_rgba(14,165,233,0.15)]",
   },
   retorno_progressivo: {
     label: "Retorno Progressivo",
-    description: "Em transição para atividades normais",
+    description: "Atleta em transição para atividades normais",
     icon: AlertTriangle,
-    colorClass: "text-blue-500",
-    bgClass: "bg-blue-500/10",
-    borderClass: "border-blue-500/30",
+    colorClass: "text-sky-400",
+    bgClass: "bg-sky-500/8",
+    borderClass: "border-sky-500/20",
+    glowClass: "shadow-[0_0_20px_-4px_rgba(14,165,233,0.15)]",
   },
 };
 
 const DEFAULT_STATUS: StatusConfig = {
-  label: "Apto",
-  description: "Liberado para treinos e jogos",
+  label: "Apto para Atividade",
+  description: "Atleta liberado para treinos e competições",
   icon: CheckCircle2,
-  colorClass: "text-green-500",
-  bgClass: "bg-green-500/10",
-  borderClass: "border-green-500/30",
+  colorClass: "text-emerald-400",
+  bgClass: "bg-emerald-500/8",
+  borderClass: "border-emerald-500/20",
+  glowClass: "shadow-[0_0_20px_-4px_rgba(16,185,129,0.15)]",
 };
 
 const getSeverityConfig = (severity: string) => {
-  const severityMap: Record<string, { label: string; colorClass: string; bgClass: string }> = {
-    mild: { label: "Leve", colorClass: "text-green-600", bgClass: "bg-green-500/10" },
-    leve: { label: "Leve", colorClass: "text-green-600", bgClass: "bg-green-500/10" },
-    medium: { label: "Média", colorClass: "text-amber-600", bgClass: "bg-amber-500/10" },
-    media: { label: "Média", colorClass: "text-amber-600", bgClass: "bg-amber-500/10" },
-    média: { label: "Média", colorClass: "text-amber-600", bgClass: "bg-amber-500/10" },
-    severe: { label: "Grave", colorClass: "text-red-600", bgClass: "bg-red-500/10" },
-    grave: { label: "Grave", colorClass: "text-red-600", bgClass: "bg-red-500/10" },
+  const severityMap: Record<string, { label: string; colorClass: string; bgClass: string; borderClass: string }> = {
+    mild: { label: "Leve", colorClass: "text-emerald-400/90", bgClass: "bg-emerald-500/8", borderClass: "border-emerald-500/20" },
+    leve: { label: "Leve", colorClass: "text-emerald-400/90", bgClass: "bg-emerald-500/8", borderClass: "border-emerald-500/20" },
+    medium: { label: "Moderada", colorClass: "text-amber-400/90", bgClass: "bg-amber-500/8", borderClass: "border-amber-500/20" },
+    media: { label: "Moderada", colorClass: "text-amber-400/90", bgClass: "bg-amber-500/8", borderClass: "border-amber-500/20" },
+    média: { label: "Moderada", colorClass: "text-amber-400/90", bgClass: "bg-amber-500/8", borderClass: "border-amber-500/20" },
+    severe: { label: "Grave", colorClass: "text-rose-400/90", bgClass: "bg-rose-500/8", borderClass: "border-rose-500/20" },
+    grave: { label: "Grave", colorClass: "text-rose-400/90", bgClass: "bg-rose-500/8", borderClass: "border-rose-500/20" },
   };
   
   return severityMap[severity.toLowerCase()] || { 
     label: severity.charAt(0).toUpperCase() + severity.slice(1), 
-    colorClass: "text-muted-foreground", 
-    bgClass: "bg-muted" 
+    colorClass: "text-zinc-400", 
+    bgClass: "bg-zinc-800/50",
+    borderClass: "border-zinc-700/30"
   };
 };
 
@@ -188,41 +201,102 @@ const formatDate = (dateString: string): string => {
   });
 };
 
-// Card 1: Status Físico Atual
+// Premium Clinical Section Card
+const ClinicalCard = ({
+  title,
+  icon: Icon,
+  children,
+  action,
+  badge,
+  className = ""
+}: {
+  title: string;
+  icon: React.ElementType;
+  children: React.ReactNode;
+  action?: React.ReactNode;
+  badge?: React.ReactNode;
+  className?: string;
+}) => (
+  <Card className={`
+    border-zinc-800/50 
+    bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95
+    shadow-[0_4px_20px_-4px_rgba(0,0,0,0.3)]
+    ${className}
+  `}>
+    <CardHeader className="pb-4">
+      <div className="flex items-center justify-between">
+        <CardTitle className="flex items-center gap-2.5 text-base font-semibold">
+          <div className="w-8 h-8 rounded-lg bg-zinc-800/60 border border-zinc-700/30 flex items-center justify-center">
+            <Icon className="w-4 h-4 text-zinc-400" />
+          </div>
+          <span>{title}</span>
+          {badge}
+        </CardTitle>
+        {action}
+      </div>
+    </CardHeader>
+    <CardContent>{children}</CardContent>
+  </Card>
+);
+
+// Card 1: Status Físico Atual - Premium Medical Seal
 const PhysicalStatusCard = ({ status }: { status: string | null | undefined }) => {
   const statusKey = (status?.toLowerCase() || "apto") as StatusKey;
   const config = STATUS_CONFIG[statusKey] || DEFAULT_STATUS;
   const StatusIcon = config.icon;
 
   return (
-    <Card className={`border-2 ${config.borderClass} ${config.bgClass}`}>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <HeartPulse className="w-5 h-5 text-primary" />
-          Status Físico Atual
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex flex-col items-center justify-center py-4 space-y-3">
-          <div className={`p-4 rounded-full ${config.bgClass}`}>
-            <StatusIcon className={`w-12 h-12 ${config.colorClass}`} />
+    <div className={`
+      relative rounded-xl overflow-hidden
+      bg-gradient-to-b from-zinc-900/80 via-zinc-900/60 to-zinc-950/80
+      border ${config.borderClass}
+      ${config.glowClass}
+    `}>
+      {/* Top glow line */}
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-zinc-600/40 to-transparent" />
+      
+      <div className="p-6">
+        {/* Header */}
+        <div className="flex items-center gap-2.5 mb-6">
+          <div className="w-8 h-8 rounded-lg bg-zinc-800/60 border border-zinc-700/30 flex items-center justify-center">
+            <HeartPulse className="w-4 h-4 text-zinc-400" />
           </div>
-          <Badge 
-            variant="outline" 
-            className={`text-lg px-6 py-2 font-semibold ${config.colorClass} ${config.bgClass} ${config.borderClass}`}
-          >
-            {config.label}
-          </Badge>
-          <p className="text-sm text-muted-foreground text-center">
-            {config.description}
-          </p>
+          <h3 className="text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
+            Status Físico Atual
+          </h3>
         </div>
-      </CardContent>
-    </Card>
+        
+        {/* Premium Medical Seal */}
+        <div className="flex flex-col items-center justify-center py-6 space-y-5">
+          {/* Icon with layered background */}
+          <div className="relative">
+            <div className={`absolute inset-0 rounded-full ${config.bgClass} blur-xl scale-150`} />
+            <div className={`relative p-5 rounded-full ${config.bgClass} border ${config.borderClass}`}>
+              <StatusIcon className={`w-10 h-10 ${config.colorClass}`} />
+            </div>
+          </div>
+          
+          {/* Status Label - Premium Seal Style */}
+          <div className="text-center space-y-2">
+            <div className={`
+              inline-flex px-5 py-2 rounded-full
+              ${config.bgClass} border ${config.borderClass}
+            `}>
+              <span className={`text-sm font-semibold tracking-wide ${config.colorClass}`}>
+                {config.label}
+              </span>
+            </div>
+            <p className="text-xs text-zinc-500 max-w-[200px]">
+              {config.description}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 
-// Card 2: Histórico de Lesões
+// Card 2: Histórico de Lesões - Clinical Timeline
 interface InjuryHistoryCardProps {
   injuries: Injury[];
   playerId?: string;
@@ -235,167 +309,187 @@ const InjuryHistoryCard = ({ injuries, playerId, onInjuryAdded }: InjuryHistoryC
   );
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Stethoscope className="w-5 h-5 text-primary" />
-            Histórico de Lesões
-            {sortedInjuries.length > 0 && (
-              <Badge variant="secondary" className="text-xs">
-                {sortedInjuries.length} {sortedInjuries.length === 1 ? "registro" : "registros"}
-              </Badge>
-            )}
-          </CardTitle>
-          {playerId && onInjuryAdded && (
-            <AddInjuryModal playerId={playerId} onInjuryAdded={onInjuryAdded} />
-          )}
-        </div>
-      </CardHeader>
-      <CardContent>
-        {sortedInjuries.length > 0 ? (
-          <div className="relative space-y-4">
-            {/* Timeline line */}
-            <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-border" />
+    <ClinicalCard
+      title="Histórico de Lesões"
+      icon={Stethoscope}
+      badge={
+        sortedInjuries.length > 0 ? (
+          <span className="ml-2 px-2 py-0.5 rounded-full bg-zinc-800/60 border border-zinc-700/30 text-[10px] font-medium text-zinc-400">
+            {sortedInjuries.length} {sortedInjuries.length === 1 ? "registro" : "registros"}
+          </span>
+        ) : null
+      }
+      action={
+        playerId && onInjuryAdded ? (
+          <AddInjuryModal playerId={playerId} onInjuryAdded={onInjuryAdded} />
+        ) : null
+      }
+    >
+      {sortedInjuries.length > 0 ? (
+        <div className="relative space-y-4">
+          {/* Timeline line - subtle */}
+          <div className="absolute left-[11px] top-2 bottom-2 w-px bg-zinc-800" />
+          
+          {sortedInjuries.map((injury) => {
+            const severityConfig = getSeverityConfig(injury.severity);
+            const isOngoing = !injury.return_date;
             
-            {sortedInjuries.map((injury, index) => {
-              const severityConfig = getSeverityConfig(injury.severity);
-              const isOngoing = !injury.return_date;
-              
-              return (
-                <div key={injury.id} className="relative pl-8">
-                  {/* Timeline dot */}
-                  <div 
-                    className={`absolute left-0 top-2 w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                      isOngoing 
-                        ? "bg-red-500/20 border-red-500" 
-                        : "bg-background border-muted-foreground/30"
-                    }`}
-                  >
-                    <div className={`w-2 h-2 rounded-full ${isOngoing ? "bg-red-500" : "bg-muted-foreground/50"}`} />
-                  </div>
-                  
-                  {/* Injury card */}
-                  <div className="p-4 rounded-lg border border-border/50 bg-card/50 hover:bg-card/80 transition-colors group">
-                    <div className="flex items-start justify-between gap-3 mb-3">
-                      <div className="flex-1">
-                        <h4 className="font-medium text-foreground">{injury.injury_type}</h4>
-                        {isOngoing && (
-                          <Badge variant="destructive" className="mt-1 text-xs">
-                            Em tratamento
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge 
-                          variant="outline" 
-                          className={`${severityConfig.colorClass} ${severityConfig.bgClass} shrink-0`}
-                        >
-                          {severityConfig.label}
-                        </Badge>
-                        {/* Edit/Delete buttons - only show if we have callback */}
-                        {onInjuryAdded && (
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <EditInjuryModal
-                              injury={injury}
-                              onInjuryUpdated={onInjuryAdded}
-                              trigger={
-                                <Button variant="ghost" size="icon" className="h-7 w-7">
-                                  <Pencil className="w-3.5 h-3.5" />
-                                </Button>
-                              }
-                            />
-                            <DeleteInjuryDialog
-                              injuryId={injury.id}
-                              injuryType={injury.injury_type}
-                              onInjuryDeleted={onInjuryAdded}
-                              trigger={
-                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive">
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </Button>
-                              }
-                            />
-                          </div>
-                        )}
-                      </div>
+            return (
+              <div key={injury.id} className="relative pl-9">
+                {/* Timeline dot */}
+                <div 
+                  className={`
+                    absolute left-0 top-3 w-6 h-6 rounded-full 
+                    border flex items-center justify-center
+                    ${isOngoing 
+                      ? "bg-rose-500/10 border-rose-500/30" 
+                      : "bg-zinc-800/60 border-zinc-700/30"
+                    }
+                  `}
+                >
+                  <div className={`w-2 h-2 rounded-full ${isOngoing ? "bg-rose-400" : "bg-zinc-600"}`} />
+                </div>
+                
+                {/* Injury card - premium style */}
+                <div className="
+                  p-4 rounded-xl 
+                  bg-zinc-900/50 border border-zinc-800/50
+                  hover:bg-zinc-900/70 hover:border-zinc-700/50
+                  transition-all duration-200 group
+                ">
+                  <div className="flex items-start justify-between gap-3 mb-4">
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-white">{injury.injury_type}</h4>
+                      {isOngoing && (
+                        <span className="inline-flex mt-1.5 px-2 py-0.5 rounded text-[10px] font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                          Em tratamento
+                        </span>
+                      )}
                     </div>
-                    
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Calendar className="w-3.5 h-3.5" />
-                        <span>Início: {formatDate(injury.start_date)}</span>
-                      </div>
-                      {injury.return_date ? (
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
-                          <span>Retorno: {formatDate(injury.return_date)}</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2 text-amber-500">
-                          <Clock className="w-3.5 h-3.5" />
-                          <span>Aguardando retorno</span>
+                    <div className="flex items-center gap-2">
+                      <span className={`
+                        px-2.5 py-1 rounded-md text-xs font-medium
+                        ${severityConfig.bgClass} ${severityConfig.colorClass} 
+                        border ${severityConfig.borderClass}
+                      `}>
+                        {severityConfig.label}
+                      </span>
+                      {/* Edit/Delete - ghost buttons */}
+                      {onInjuryAdded && (
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <EditInjuryModal
+                            injury={injury}
+                            onInjuryUpdated={onInjuryAdded}
+                            trigger={
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-zinc-500 hover:text-zinc-300">
+                                <Pencil className="w-3.5 h-3.5" />
+                              </Button>
+                            }
+                          />
+                          <DeleteInjuryDialog
+                            injuryId={injury.id}
+                            injuryType={injury.injury_type}
+                            onInjuryDeleted={onInjuryAdded}
+                            trigger={
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-zinc-500 hover:text-rose-400">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            }
+                          />
                         </div>
                       )}
                     </div>
-                    
-                    <div className="mt-2 pt-2 border-t border-border/30">
-                      <span className="text-xs text-muted-foreground">
-                        Tempo afastado: <span className="font-medium text-foreground">{calculateDaysAway(injury.start_date, injury.return_date)}</span>
-                      </span>
+                  </div>
+                  
+                  {/* Date info - clean grid */}
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-3.5 h-3.5 text-zinc-600" />
+                      <div>
+                        <span className="text-zinc-500 text-xs">Início</span>
+                        <p className="text-zinc-300 text-sm font-medium">{formatDate(injury.start_date)}</p>
+                      </div>
                     </div>
-                    
-                    {injury.notes && (
-                      <p className="mt-2 text-sm text-muted-foreground italic">
-                        "{injury.notes}"
-                      </p>
+                    {injury.return_date ? (
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500/70" />
+                        <div>
+                          <span className="text-zinc-500 text-xs">Retorno</span>
+                          <p className="text-zinc-300 text-sm font-medium">{formatDate(injury.return_date)}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-3.5 h-3.5 text-amber-500/70" />
+                        <div>
+                          <span className="text-zinc-500 text-xs">Retorno</span>
+                          <p className="text-amber-400/80 text-sm font-medium">Pendente</p>
+                        </div>
+                      </div>
                     )}
                   </div>
+                  
+                  {/* Duration - subtle footer */}
+                  <div className="mt-4 pt-3 border-t border-zinc-800/50">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-zinc-600">Tempo de afastamento</span>
+                      <span className="text-xs font-semibold text-zinc-400">
+                        {calculateDaysAway(injury.start_date, injury.return_date)}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {/* Notes - clinical style */}
+                  {injury.notes && (
+                    <div className="mt-3 p-3 rounded-lg bg-zinc-800/30 border border-zinc-700/20">
+                      <p className="text-xs text-zinc-400 leading-relaxed">
+                        {injury.notes}
+                      </p>
+                    </div>
+                  )}
                 </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <div className="p-4 rounded-full bg-green-500/10 mb-4">
-              <ShieldCheck className="w-10 h-10 text-green-500" />
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        /* Empty state - institutional style */
+        <div className="flex flex-col items-center justify-center py-10 text-center">
+          <div className="relative mb-5">
+            <div className="absolute inset-0 rounded-full bg-emerald-500/10 blur-xl scale-150" />
+            <div className="relative p-4 rounded-full bg-emerald-500/8 border border-emerald-500/20">
+              <ShieldCheck className="w-8 h-8 text-emerald-400/80" />
             </div>
-            <p className="font-medium text-foreground">Nenhuma lesão registrada</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Histórico clínico limpo
-            </p>
           </div>
-        )}
-      </CardContent>
-    </Card>
+          <p className="font-semibold text-white mb-1">Histórico Clínico Limpo</p>
+          <p className="text-xs text-zinc-500 max-w-[220px]">
+            Nenhuma lesão registrada no prontuário do atleta
+          </p>
+        </div>
+      )}
+    </ClinicalCard>
   );
 };
 
-// Card 3: Observações Médicas
+// Card 3: Observações Médicas - Clinical Notes
 const MedicalNotesCard = ({ notes }: { notes: string | null | undefined }) => {
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <FileText className="w-5 h-5 text-primary" />
-          Observações Médicas
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {notes ? (
-          <div className="p-4 rounded-lg bg-muted/30 border border-border/50">
-            <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
-              {notes}
-            </p>
+    <ClinicalCard title="Observações Médicas" icon={FileText}>
+      {notes ? (
+        <div className="p-4 rounded-xl bg-zinc-900/50 border border-zinc-800/50">
+          <p className="text-sm text-zinc-300 whitespace-pre-wrap leading-relaxed">
+            {notes}
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center py-8 text-center">
+          <div className="w-10 h-10 rounded-full bg-zinc-800/60 border border-zinc-700/30 flex items-center justify-center mb-3">
+            <FileText className="w-4 h-4 text-zinc-600" />
           </div>
-        ) : (
-          <div className="flex items-center justify-center py-6 text-center">
-            <p className="text-sm text-muted-foreground">
-              Nenhuma observação registrada
-            </p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          <p className="text-sm text-zinc-500">Nenhuma observação clínica registrada</p>
+        </div>
+      )}
+    </ClinicalCard>
   );
 };
 
@@ -409,7 +503,7 @@ export const InjuryHistorySection = ({
 }: InjuryHistorySectionProps) => {
   return (
     <div className="space-y-6">
-      {/* Export PDF Button - só aparece se tiver dados do player */}
+      {/* Export PDF Button */}
       {player && (
         <div className="flex justify-end">
           <ExportClinicalPdfButton
@@ -421,10 +515,10 @@ export const InjuryHistorySection = ({
         </div>
       )}
       
-      {/* Alerta de Lesões Recorrentes - aparece primeiro se houver */}
+      {/* Alerta de Lesões Recorrentes */}
       <RecurrentInjuryAlert injuries={injuries} threshold={3} />
       
-      {/* Card 1: Status Físico Atual - Maior destaque */}
+      {/* Card 1: Status Físico Atual - Premium Medical Seal */}
       <PhysicalStatusCard status={physicalStatus} />
       
       {/* Card 2: Histórico de Lesões */}
@@ -434,7 +528,7 @@ export const InjuryHistorySection = ({
         onInjuryAdded={onInjuryAdded}
       />
       
-      {/* Gráfico de Evolução - só aparece com 2+ lesões */}
+      {/* Gráfico de Evolução */}
       <InjuryEvolutionChart injuries={injuries} />
       
       {/* Card 3: Observações Médicas */}
