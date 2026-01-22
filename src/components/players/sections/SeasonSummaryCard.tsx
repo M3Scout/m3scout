@@ -53,107 +53,75 @@ type PositionCategory = "ATA" | "MEIA" | "VOLANTE" | "LATERAL" | "ZAGUEIRO" | "G
 function getPositionCategory(position: string): PositionCategory {
   const pos = position.toLowerCase().trim();
   
-  // Goalkeeper
-  if (pos.includes("goleiro") || pos === "gk" || pos === "goalkeeper") {
-    return "GK";
-  }
+  if (pos.includes("goleiro") || pos === "gk" || pos === "goalkeeper") return "GK";
+  if (pos.includes("zagueiro") || pos === "cb" || pos.includes("central defender")) return "ZAGUEIRO";
+  if (pos.includes("lateral") || pos.includes("ala") || pos === "lb" || pos === "rb" || pos.includes("wingback")) return "LATERAL";
+  if (pos.includes("volante") || pos === "cdm" || pos === "dm" || pos.includes("defensive mid")) return "VOLANTE";
+  if (pos.includes("atacante") || pos.includes("ponta") || pos.includes("centroavante") || pos === "st" || pos === "cf" || pos === "lw" || pos === "rw" || pos.includes("forward") || pos.includes("striker") || pos.includes("winger")) return "ATA";
+  if (pos.includes("meia") || pos === "cam" || pos === "cm" || pos === "am" || pos.includes("midfielder")) return "MEIA";
   
-  // Center Back
-  if (pos.includes("zagueiro") || pos === "cb" || pos.includes("central defender")) {
-    return "ZAGUEIRO";
-  }
-  
-  // Fullback/Wingback
-  if (pos.includes("lateral") || pos.includes("ala") || pos === "lb" || pos === "rb" || pos.includes("wingback")) {
-    return "LATERAL";
-  }
-  
-  // Defensive Midfielder
-  if (pos.includes("volante") || pos === "cdm" || pos === "dm" || pos.includes("defensive mid")) {
-    return "VOLANTE";
-  }
-  
-  // Attacking positions (forward, winger)
-  if (
-    pos.includes("atacante") || 
-    pos.includes("ponta") || 
-    pos.includes("centroavante") ||
-    pos === "st" || 
-    pos === "cf" || 
-    pos === "lw" || 
-    pos === "rw" ||
-    pos.includes("forward") ||
-    pos.includes("striker") ||
-    pos.includes("winger")
-  ) {
-    return "ATA";
-  }
-  
-  // Midfielder (default for meia, meia atacante, etc)
-  if (
-    pos.includes("meia") || 
-    pos === "cam" || 
-    pos === "cm" || 
-    pos === "am" ||
-    pos.includes("midfielder")
-  ) {
-    return "MEIA";
-  }
-  
-  // Default to attacking if unclear
   return "ATA";
 }
 
 // Metric variant types
 type MetricVariant = "default" | "goals" | "assists" | "contribution" | "defensive" | "gk" | "negative";
 
-// Standardized variant styles - only colors change, structure stays identical
-const VARIANT_STYLES: Record<MetricVariant, { bg: string; text: string; iconBg: string; iconColor: string }> = {
+// Premium variant styles - desaturated, elegant
+const VARIANT_STYLES: Record<MetricVariant, { 
+  container: string; 
+  value: string; 
+  iconBg: string; 
+  iconColor: string;
+  glow?: string;
+}> = {
   default: {
-    bg: "bg-card/50 border-border/50",
-    text: "text-foreground",
-    iconBg: "bg-muted/50",
-    iconColor: "text-muted-foreground",
+    container: "from-zinc-900/80 to-zinc-950/80 border-white/[0.04]",
+    value: "text-zinc-300",
+    iconBg: "bg-zinc-800/60",
+    iconColor: "text-zinc-500",
   },
   goals: {
-    bg: "bg-gradient-to-br from-red-500/10 to-red-600/5 border-red-500/20",
-    text: "text-red-400",
-    iconBg: "bg-red-500/15",
-    iconColor: "text-red-400",
+    container: "from-rose-500/[0.06] via-zinc-900/80 to-zinc-950/80 border-rose-500/15",
+    value: "text-rose-400/90",
+    iconBg: "bg-rose-500/10",
+    iconColor: "text-rose-400/80",
+    glow: "shadow-[0_0_20px_-4px_rgba(244,63,94,0.15)]",
   },
   assists: {
-    bg: "bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20",
-    text: "text-blue-400",
-    iconBg: "bg-blue-500/15",
-    iconColor: "text-blue-400",
+    container: "from-blue-500/[0.06] via-zinc-900/80 to-zinc-950/80 border-blue-500/15",
+    value: "text-blue-400/90",
+    iconBg: "bg-blue-500/10",
+    iconColor: "text-blue-400/80",
+    glow: "shadow-[0_0_20px_-4px_rgba(59,130,246,0.15)]",
   },
   contribution: {
-    bg: "bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-emerald-500/20",
-    text: "text-emerald-400",
-    iconBg: "bg-emerald-500/15",
-    iconColor: "text-emerald-400",
+    container: "from-emerald-500/[0.06] via-zinc-900/80 to-zinc-950/80 border-emerald-500/15",
+    value: "text-emerald-400/90",
+    iconBg: "bg-emerald-500/10",
+    iconColor: "text-emerald-400/80",
+    glow: "shadow-[0_0_20px_-4px_rgba(16,185,129,0.15)]",
   },
   defensive: {
-    bg: "bg-gradient-to-br from-cyan-500/10 to-cyan-600/5 border-cyan-500/20",
-    text: "text-cyan-400",
-    iconBg: "bg-cyan-500/15",
-    iconColor: "text-cyan-400",
+    container: "from-cyan-500/[0.06] via-zinc-900/80 to-zinc-950/80 border-cyan-500/15",
+    value: "text-cyan-400/90",
+    iconBg: "bg-cyan-500/10",
+    iconColor: "text-cyan-400/80",
   },
   gk: {
-    bg: "bg-gradient-to-br from-amber-500/10 to-amber-600/5 border-amber-500/20",
-    text: "text-amber-400",
-    iconBg: "bg-amber-500/15",
-    iconColor: "text-amber-400",
+    container: "from-amber-500/[0.06] via-zinc-900/80 to-zinc-950/80 border-amber-500/15",
+    value: "text-amber-400/90",
+    iconBg: "bg-amber-500/10",
+    iconColor: "text-amber-400/80",
   },
   negative: {
-    bg: "bg-gradient-to-br from-rose-500/10 to-rose-600/5 border-rose-500/20",
-    text: "text-rose-400",
-    iconBg: "bg-rose-500/15",
-    iconColor: "text-rose-400",
+    container: "from-rose-500/[0.04] via-zinc-900/80 to-zinc-950/80 border-rose-500/10",
+    value: "text-rose-400/80",
+    iconBg: "bg-rose-500/10",
+    iconColor: "text-rose-400/70",
   },
 };
 
-// Metric card component - FIXED STRUCTURE for all cards
+// Premium Metric Card - hierarchy: number > label > icon
 interface MetricCardProps {
   value: number | string;
   label: string;
@@ -167,33 +135,38 @@ function MetricCard({ value, label, icon: Icon, variant = "default" }: MetricCar
   return (
     <div
       className={cn(
-        // Fixed structure: same height, padding, border-radius for ALL cards
-        "relative h-[88px] rounded-xl border p-4 transition-all hover:scale-[1.02]",
-        styles.bg
+        // Premium glass card
+        "group relative rounded-xl p-4 h-[96px]",
+        "bg-gradient-to-br border backdrop-blur-sm",
+        "transition-all duration-200",
+        "hover:border-white/[0.08] hover:translate-y-[-1px]",
+        styles.container,
+        styles.glow
       )}
     >
-      {/* Fixed internal grid layout - identical for all cards */}
       <div className="flex h-full items-start justify-between">
-        {/* Left: Value + Label - always same position */}
+        {/* Left: Value (primary) + Label (secondary) */}
         <div className="flex flex-col justify-between h-full min-w-0 flex-1">
+          {/* Value - maximum emphasis */}
           <p className={cn(
-            "text-2xl sm:text-3xl font-bold tracking-tight leading-none truncate",
-            styles.text
+            "text-3xl sm:text-4xl font-bold tracking-tight leading-none",
+            styles.value
           )}>
             {value}
           </p>
-          <p className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wide leading-tight mt-auto">
+          {/* Label - refined secondary */}
+          <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-[0.1em] mt-auto">
             {label}
           </p>
         </div>
         
-        {/* Right: Icon - ALWAYS same size, position, container */}
+        {/* Right: Icon - tertiary, subtle */}
         <div className={cn(
-          // Fixed icon container: 32x32px, same border-radius, same position
-          "flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ml-2",
+          "flex-shrink-0 w-9 h-9 rounded-lg flex items-center justify-center ml-3",
+          "transition-all duration-200",
+          "group-hover:scale-105",
           styles.iconBg
         )}>
-          {/* Fixed icon size: always 16x16px (w-4 h-4) */}
           <Icon className={cn("w-4 h-4", styles.iconColor)} />
         </div>
       </div>
@@ -201,7 +174,7 @@ function MetricCard({ value, label, icon: Icon, variant = "default" }: MetricCar
   );
 }
 
-// Derived metric badge component
+// Premium Derived Metric Chip
 interface DerivedMetricProps {
   value: string;
   label: string;
@@ -209,9 +182,15 @@ interface DerivedMetricProps {
 
 function DerivedMetric({ value, label }: DerivedMetricProps) {
   return (
-    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/30 border border-border/50">
-      <span className="text-sm font-semibold text-foreground">{value}</span>
-      <span className="text-xs text-muted-foreground">{label}</span>
+    <div className={cn(
+      "flex items-center gap-2 px-4 py-2 rounded-full",
+      "bg-zinc-900/60 border border-white/[0.04]",
+      "backdrop-blur-sm",
+      "transition-all duration-200",
+      "hover:border-white/[0.08] hover:bg-zinc-800/40"
+    )}>
+      <span className="text-sm font-semibold text-zinc-200">{value}</span>
+      <span className="text-[11px] text-zinc-500 uppercase tracking-wide">{label}</span>
     </div>
   );
 }
@@ -233,14 +212,12 @@ function getPositionMetrics(category: PositionCategory): PositionMetric[] {
         { key: "assists", label: "Assistências", icon: Trophy, variant: "assists" },
         { key: "goal_participation", label: "G+A", icon: BarChart3, variant: "contribution", compute: (s) => s.goals + s.assists },
       ];
-    
     case "MEIA":
       return [
         { key: "assists", label: "Assistências", icon: Trophy, variant: "assists" },
         { key: "chances_created", label: "Chances Criadas", icon: Sparkles, variant: "contribution" },
         { key: "key_passes", label: "Passes Decisivos", icon: ArrowRightLeft, variant: "defensive" },
       ];
-    
     case "VOLANTE":
       return [
         { key: "tackles", label: "Desarmes", icon: Shield, variant: "defensive" },
@@ -248,29 +225,24 @@ function getPositionMetrics(category: PositionCategory): PositionMetric[] {
         { key: "pass_accuracy", label: "Passes Certos %", icon: Target, variant: "contribution", 
           compute: (s) => s.total_passes > 0 ? `${formatFixed((s.accurate_passes / s.total_passes) * 100, 0, "0")}%` : "0%" },
       ];
-    
     case "LATERAL":
       return [
         { key: "assists", label: "Assistências", icon: Trophy, variant: "assists" },
         { key: "recoveries", label: "Recuperações", icon: Footprints, variant: "defensive" },
-        { key: "duel_success", label: "Duelos Ganhos", icon: Swords, variant: "contribution",
-          compute: (s) => s.duels_won },
+        { key: "duel_success", label: "Duelos Ganhos", icon: Swords, variant: "contribution", compute: (s) => s.duels_won },
       ];
-    
     case "ZAGUEIRO":
       return [
         { key: "clearances", label: "Cortes", icon: Shield, variant: "defensive" },
         { key: "tackles", label: "Desarmes", icon: Crosshair, variant: "defensive" },
         { key: "interceptions", label: "Interceptações", icon: Target, variant: "contribution" },
       ];
-    
     case "GK":
       return [
         { key: "saves", label: "Defesas", icon: Hand, variant: "gk" },
         { key: "goals_conceded", label: "Gols Sofridos", icon: Goal, variant: "negative" },
         { key: "clean_sheets", label: "Clean Sheets", icon: Shield, variant: "contribution" },
       ];
-    
     default:
       return [
         { key: "goals", label: "Gols", icon: Target, variant: "goals" },
@@ -290,37 +262,31 @@ function getDerivedMetrics(category: PositionCategory, stats: SeasonStats): { va
         { value: formatFixed(stats.goals / matches, 2, "0.00"), label: "gols/jogo" },
         { value: formatFixed((stats.goals + stats.assists) / matches, 2, "0.00"), label: "G+A/jogo" },
       ];
-    
     case "MEIA":
       return [
         { value: formatFixed(stats.assists / matches, 2, "0.00"), label: "assists/jogo" },
         { value: formatFixed(stats.chances_created / matches, 2, "0.00"), label: "chances/jogo" },
       ];
-    
     case "VOLANTE":
       return [
         { value: formatFixed((stats.tackles + stats.interceptions) / matches, 2, "0.00"), label: "ações def./jogo" },
         { value: formatFixed(stats.recoveries / matches, 2, "0.00"), label: "recup./jogo" },
       ];
-    
     case "LATERAL":
       return [
         { value: formatFixed(stats.duels_won / matches, 2, "0.00"), label: "duelos/jogo" },
         { value: formatFixed(stats.recoveries / matches, 2, "0.00"), label: "recup./jogo" },
       ];
-    
     case "ZAGUEIRO":
       return [
         { value: formatFixed((stats.clearances + stats.tackles) / matches, 2, "0.00"), label: "ações def./jogo" },
         { value: formatFixed(stats.aerial_duels_won / matches, 2, "0.00"), label: "duelos aéreos/jogo" },
       ];
-    
     case "GK":
       return [
         { value: formatFixed(stats.saves / matches, 2, "0.00"), label: "defesas/jogo" },
         { value: formatFixed(stats.goals_conceded / matches, 2, "0.00"), label: "gols sofridos/jogo" },
       ];
-    
     default:
       return [
         { value: formatFixed(stats.goals / matches, 2, "0.00"), label: "gols/jogo" },
@@ -332,20 +298,18 @@ function getDerivedMetrics(category: PositionCategory, stats: SeasonStats): { va
 export function SeasonSummaryCard({ playerId, playerPosition = "" }: SeasonSummaryCardProps) {
   const positionCategory = getPositionCategory(playerPosition);
   
-  // Use the unified Stats Engine - single source of truth from match_player_stats
   const { totals, isLoading: loading } = usePlayerMatchStats({
     playerId,
     seasonYear: currentYear,
   });
 
-  // Convert to the format expected by this component
   const stats: SeasonStats | null = totals.matches > 0 ? toSeasonSummaryFormat(totals) : null;
 
   if (loading) {
     return (
-      <Card className="border-border/50">
+      <Card className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95">
         <CardContent className="flex items-center justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+          <Loader2 className="w-6 h-6 animate-spin text-zinc-600" />
         </CardContent>
       </Card>
     );
@@ -353,19 +317,21 @@ export function SeasonSummaryCard({ playerId, playerPosition = "" }: SeasonSumma
 
   if (!stats || stats.matches === 0) {
     return (
-      <Card className="border-border/50">
+      <Card className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95">
         <CardContent className="py-8">
           <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <BarChart3 className="w-5 h-5 text-primary" />
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <BarChart3 className="w-4 h-4 text-primary" />
             </div>
             <div>
-              <h3 className="font-semibold text-foreground">Resumo da Temporada {currentYear}</h3>
-              <p className="text-xs text-muted-foreground">Performance do atleta</p>
+              <h3 className="text-[13px] font-semibold uppercase tracking-[0.1em] text-zinc-400">
+                Resumo da Temporada {currentYear}
+              </h3>
+              <p className="text-xs text-zinc-600">Performance do atleta</p>
             </div>
           </div>
           <div className="text-center py-6">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-zinc-600">
               Sem dados registrados para a temporada atual
             </p>
           </div>
@@ -378,22 +344,24 @@ export function SeasonSummaryCard({ playerId, playerPosition = "" }: SeasonSumma
   const derivedMetrics = getDerivedMetrics(positionCategory, stats);
 
   return (
-    <Card className="border-border/50 overflow-hidden">
+    <Card className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)] overflow-hidden">
       <CardContent className="p-6">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 rounded-lg bg-primary/10">
-            <BarChart3 className="w-5 h-5 text-primary" />
+          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+            <BarChart3 className="w-4 h-4 text-primary" />
           </div>
           <div>
-            <h3 className="font-semibold text-foreground">Resumo da Temporada {currentYear}</h3>
-            <p className="text-xs text-muted-foreground">Performance do atleta</p>
+            <h3 className="text-[13px] font-semibold uppercase tracking-[0.1em] text-zinc-400">
+              Resumo da Temporada {currentYear}
+            </h3>
+            <p className="text-xs text-zinc-600">Performance do atleta</p>
           </div>
         </div>
 
-        {/* Main Metrics Grid - Base + Position-specific */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-4">
-          {/* Base metrics - always shown */}
+        {/* Main Metrics Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-5">
+          {/* Base metrics */}
           <MetricCard
             value={stats.matches}
             label="Jogos"
@@ -426,7 +394,7 @@ export function SeasonSummaryCard({ playerId, playerPosition = "" }: SeasonSumma
         </div>
 
         {/* Derived Metrics */}
-        <div className="flex flex-wrap gap-2 justify-center pt-2 border-t border-border/30">
+        <div className="flex flex-wrap gap-2 justify-center pt-4 border-t border-zinc-800/40">
           {derivedMetrics.map((metric, index) => (
             <DerivedMetric key={index} value={metric.value} label={metric.label} />
           ))}
