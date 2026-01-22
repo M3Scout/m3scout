@@ -169,7 +169,7 @@ const badgeStyle = {
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // CARD VARIANT A — VISUAL MODE (Default / Home-like)
-// Premium Desktop: ~390px height, comfortable spacing
+// Premium Desktop: 450px height, image-centric, slim header
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function VisualModeCard({
@@ -197,41 +197,41 @@ function VisualModeCard({
       onMouseLeave={() => setIsHovered(false)}
     >
       <motion.article
-        className="relative overflow-hidden rounded-sm"
+        className="relative overflow-hidden rounded-md"
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        whileHover={{ y: -4 }}
+        whileHover={{ y: -5 }}
         transition={{
           default: { duration: 0.22, ease: premiumEasing },
-          y: { duration: 0.16, ease: "easeOut" },
+          y: { duration: 0.18, ease: "easeOut" },
         }}
         style={{
           background: "#0a0c12",
-          minHeight: "390px",
+          height: "450px",
           boxShadow: isHovered
-            ? `0 24px 48px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255,255,255,0.05), 0 0 40px -10px ${priorityInfo.glowColor}`
-            : "0 4px 14px -4px rgba(0, 0, 0, 0.3)",
+            ? `0 28px 56px -16px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255,255,255,0.06), 0 0 48px -12px ${priorityInfo.glowColor}`
+            : "0 6px 20px -6px rgba(0, 0, 0, 0.35)",
         }}
       >
-        {/* Priority indicator bar */}
+        {/* Priority indicator bar - top edge */}
         {priority === "high" && (
           <motion.div
-            className="absolute top-0 left-0 right-0 h-[2px] z-20"
+            className="absolute top-0 left-0 right-0 h-[2px] z-30"
             style={{ backgroundColor: priorityInfo.color }}
             animate={{ opacity: [0.6, 1, 0.6] }}
             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
           />
         )}
 
-        {/* Image Container - Taller aspect ratio for premium feel */}
-        <div className="relative w-full h-full min-h-[390px] overflow-hidden">
+        {/* Full-height Image Container - Image as hero element */}
+        <div className="absolute inset-0 overflow-hidden">
           {/* Placeholder */}
           <div
             className={cn(
               "absolute inset-0 transition-opacity duration-500",
               imageLoaded ? "opacity-0" : "opacity-100"
             )}
-            style={{ background: "linear-gradient(135deg, #12141a 0%, #070910 100%)" }}
+            style={{ background: "linear-gradient(145deg, #12141a 0%, #070910 100%)" }}
           />
 
           <motion.img
@@ -239,102 +239,111 @@ function VisualModeCard({
             alt={name}
             loading="lazy"
             onLoad={() => setImageLoaded(true)}
-            className={cn("w-full h-full object-cover object-top", imageLoaded ? "opacity-100" : "opacity-0")}
-            animate={{ scale: isHovered ? 1.03 : 1 }}
-            transition={{ duration: 0.24, ease: "easeOut" }}
+            className={cn(
+              "w-full h-full object-cover object-top",
+              imageLoaded ? "opacity-100" : "opacity-0"
+            )}
+            animate={{ scale: isHovered ? 1.04 : 1 }}
+            transition={{ duration: 0.32, ease: "easeOut" }}
           />
 
-          {/* Gradient overlay - stronger at bottom for text legibility */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#070910] via-[#070910]/45 to-[#070910]/20" />
+          {/* Gradient overlays for depth and legibility */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#070910] via-[#070910]/35 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#070910]/25 via-transparent to-transparent" />
+        </div>
 
-          {/* ━━━ TOP META BAR — with more breathing room ━━━ */}
-          <div className="absolute top-0 left-0 right-0 pt-5 px-4">
+        {/* ━━━ SLIM TOP HEADER — 14px from top, compact 28-30px height ━━━ */}
+        <div className="absolute top-0 left-0 right-0 pt-3.5 px-3.5 z-20">
+          <div 
+            className="flex items-center justify-between gap-2 px-2.5 py-2 rounded-sm"
+            style={{
+              background: "rgba(7, 9, 16, 0.68)",
+              backdropFilter: "blur(10px)",
+              WebkitBackdropFilter: "blur(10px)",
+              border: "1px solid rgba(255, 255, 255, 0.05)",
+              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
+            }}
+          >
+            {/* Position Badge - Minimal, neutral */}
+            <div className="flex items-center gap-1.5">
+              <Zap className="w-3 h-3 text-white/50" />
+              <span className="text-[10px] font-semibold uppercase tracking-[0.06em] text-white/70">
+                {getPositionLabel(position)}
+              </span>
+            </div>
+
+            {/* Status Badge - Compact semantic indicator */}
             <div 
-              className="flex items-center justify-between gap-3 min-h-[36px] px-3.5 py-2.5 rounded-sm"
+              className="flex items-center gap-1.5 px-2 py-1 rounded-sm"
               style={{
-                background: "rgba(7, 9, 16, 0.72)",
-                backdropFilter: "blur(12px)",
-                WebkitBackdropFilter: "blur(12px)",
-                border: "1px solid rgba(255, 255, 255, 0.06)",
-                boxShadow: "0 2px 10px rgba(0, 0, 0, 0.25)",
+                background: priority === "high" ? priorityInfo.bgColor : "rgba(30, 215, 96, 0.08)",
+                border: `1px solid ${priority === "high" ? priorityInfo.color : "#1ED760"}18`,
               }}
             >
-              {/* Position Badge - Neutral, less emphasis */}
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded-sm flex items-center justify-center bg-white/[0.07]">
-                  <Zap className="w-3 h-3 text-white/55" />
-                </div>
-                <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-white/75">
-                  {getPositionLabel(position)}
-                </span>
-              </div>
-
-              {/* Status Badge - Semantic green with indicator */}
-              <div className="flex items-center gap-2">
-                <div 
-                  className="flex items-center gap-2 px-2.5 py-1.5 rounded-sm"
-                  style={{
-                    background: priority === "high" ? priorityInfo.bgColor : "rgba(30, 215, 96, 0.1)",
-                    border: `1px solid ${priority === "high" ? priorityInfo.color : "#1ED760"}20`,
-                  }}
-                >
-                  {priority === "high" ? (
-                    <>
-                      <motion.div
-                        animate={{ scale: [1, 1.15, 1] }}
-                        transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                      >
-                        <PriorityIcon className="w-3.5 h-3.5" style={{ color: priorityInfo.color }} />
-                      </motion.div>
-                      <span 
-                        className="text-[10px] font-bold uppercase tracking-[0.08em]"
-                        style={{ color: priorityInfo.color }}
-                      >
-                        Prioridade
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <span 
-                        className="w-2 h-2 rounded-full animate-pulse"
-                        style={{ backgroundColor: "#1ED760" }}
-                      />
-                      <span 
-                        className="text-[10px] font-semibold uppercase tracking-[0.08em]"
-                        style={{ color: "#1ED760" }}
-                      >
-                        Monitorado
-                      </span>
-                    </>
-                  )}
-                </div>
-              </div>
+              {priority === "high" ? (
+                <>
+                  <motion.div
+                    animate={{ scale: [1, 1.12, 1] }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                  >
+                    <PriorityIcon className="w-3 h-3" style={{ color: priorityInfo.color }} />
+                  </motion.div>
+                  <span 
+                    className="text-[9px] font-bold uppercase tracking-[0.06em]"
+                    style={{ color: priorityInfo.color }}
+                  >
+                    Hot
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span 
+                    className="w-1.5 h-1.5 rounded-full animate-pulse"
+                    style={{ backgroundColor: "#1ED760" }}
+                  />
+                  <span 
+                    className="text-[9px] font-semibold uppercase tracking-[0.06em]"
+                    style={{ color: "#1ED760" }}
+                  >
+                    Monitorado
+                  </span>
+                </>
+              )}
             </div>
           </div>
+        </div>
 
-          {/* Player Info - More generous spacing */}
-          <div className="absolute bottom-0 left-0 right-0 p-5">
-            <h3 className="text-white text-xl font-semibold tracking-tight mb-2 line-clamp-1">{name}</h3>
-            <p className="text-white/55 text-sm font-medium tracking-wide leading-relaxed">
-              {age > 0 && <span>{age} anos</span>}
-              {age > 0 && nationality && <span className="mx-2 text-white/25">•</span>}
-              {nationality}
-            </p>
-            {currentClub && (
-              <p className="text-white/35 text-[13px] mt-1.5 line-clamp-1">{currentClub}</p>
-            )}
-
-            {/* Hover CTA */}
-            <motion.div
-              className="flex items-center gap-2 mt-4 text-white/45 text-[12px] font-medium tracking-wide"
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: isHovered ? 1 : 0, y: isHovered ? 0 : 5 }}
-              transition={{ duration: 0.16, ease: "easeOut" }}
-            >
-              <span>Ver perfil</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </motion.div>
+        {/* ━━━ BOTTOM INFO ZONE — Generous padding, clear hierarchy ━━━ */}
+        <div className="absolute bottom-0 left-0 right-0 p-5 z-10">
+          {/* Name - Primary focus */}
+          <h3 className="text-white text-[22px] font-bold tracking-tight mb-3 line-clamp-1 drop-shadow-sm">
+            {name}
+          </h3>
+          
+          {/* Meta row - Age & Nationality */}
+          <div className="flex items-center gap-2 text-[14px] text-white/60 font-medium mb-2">
+            {age > 0 && <span>{age} anos</span>}
+            {age > 0 && nationality && <span className="text-white/25">•</span>}
+            {nationality && <span>{nationality}</span>}
           </div>
+          
+          {/* Club - Secondary info */}
+          {currentClub && (
+            <p className="text-white/40 text-[13px] font-medium line-clamp-1 mb-3">
+              {currentClub}
+            </p>
+          )}
+
+          {/* Hover CTA - Slides up on hover */}
+          <motion.div
+            className="flex items-center gap-2 text-white/50 text-[12px] font-medium tracking-wide pt-2 border-t border-white/[0.06]"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: isHovered ? 1 : 0, y: isHovered ? 0 : 6 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+          >
+            <span>Ver perfil completo</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </motion.div>
         </div>
       </motion.article>
     </Link>
