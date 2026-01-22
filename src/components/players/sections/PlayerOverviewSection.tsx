@@ -186,7 +186,7 @@ export function PlayerOverviewSection({
   const hasAreasToImprove = Array.isArray(areasToDevelope) && areasToDevelope.length > 0;
 
   return (
-    <Card className="border-zinc-800/50 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-sm">
+    <Card className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)]">
       <CardHeader className="pb-5">
         <CardTitle className="flex items-center gap-2.5 text-lg">
           <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
