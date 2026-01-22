@@ -4,68 +4,69 @@ interface PlayersListSkeletonProps {
 }
 
 export function PlayersListSkeleton({ viewMode, count = 12 }: PlayersListSkeletonProps) {
-  if (viewMode === "scouting") {
-    return (
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {Array.from({ length: count }).map((_, i) => (
-          <div key={i} className="admin-card p-4">
-            <div className="flex items-start gap-3">
-              <div className="admin-skeleton-avatar h-12 w-12 shrink-0" />
-              <div className="flex-1 space-y-2">
-                <div className="admin-skeleton-heading w-3/4" />
-                <div className="admin-skeleton-text w-1/2" />
-                <div className="flex gap-2 mt-2">
-                  <div className="admin-skeleton h-5 w-14 rounded" />
-                  <div className="admin-skeleton h-5 w-10 rounded" />
-                </div>
-              </div>
-            </div>
-            <div className="mt-4 pt-3 border-t border-zinc-800/30 flex items-center justify-between">
-              <div className="admin-skeleton h-6 w-16" />
-              <div className="admin-skeleton h-7 w-7 rounded" />
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  // Table view skeleton - Admin style
+  // Premium card skeleton matching 420x560 dimensions
   return (
-    <div className="admin-card overflow-hidden">
-      {/* Table Header Skeleton */}
-      <div className="px-4 py-3 border-b border-zinc-800/30">
-        <div className="flex items-center gap-8">
-          <div className="admin-skeleton-text w-16" />
-          <div className="admin-skeleton-text w-14" />
-          <div className="admin-skeleton-text w-12" />
-          <div className="admin-skeleton-text w-10" />
-          <div className="admin-skeleton-text w-14" />
-          <div className="admin-skeleton-text w-12" />
-          <div className="admin-skeleton-text w-10" />
-        </div>
-      </div>
-      
-      {/* Table Rows Skeleton */}
+    <div 
+      className="grid gap-6 md:gap-8 justify-center"
+      style={{
+        gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 420px))',
+        maxWidth: '1360px',
+        margin: '0 auto',
+      }}
+    >
       {Array.from({ length: count }).map((_, i) => (
-        <div
-          key={i}
-          className="px-4 py-3 border-b border-zinc-800/20 last:border-0 flex items-center gap-6"
-          style={{ animationDelay: `${i * 30}ms` }}
+        <div 
+          key={i} 
+          className="w-full max-w-[420px] mx-auto rounded-xl overflow-hidden"
+          style={{ 
+            height: '560px',
+            background: '#0a0c12',
+            animationDelay: `${i * 50}ms`,
+          }}
         >
-          <div className="flex items-center gap-3 w-48">
-            <div className="admin-skeleton-avatar h-9 w-9 rounded-lg shrink-0" />
-            <div className="space-y-1.5 flex-1">
-              <div className="admin-skeleton-heading w-28" />
-              <div className="admin-skeleton-text w-16" />
+          {/* Top Meta Bar Skeleton */}
+          <div className="pt-3.5 px-3.5">
+            <div 
+              className="flex items-center justify-between min-h-[30px] px-2.5 py-2 rounded-lg"
+              style={{ background: 'rgba(255,255,255,0.03)' }}
+            >
+              <div className="admin-skeleton h-4 w-12 rounded" />
+              <div className="admin-skeleton h-4 w-16 rounded" />
             </div>
           </div>
-          <div className="admin-skeleton h-5 w-14 rounded" />
-          <div className="admin-skeleton-text w-24" />
-          <div className="admin-skeleton h-6 w-10" />
-          <div className="admin-skeleton-text w-16" />
-          <div className="admin-skeleton h-5 w-14 rounded" />
-          <div className="admin-skeleton h-7 w-7 rounded ml-auto" />
+
+          {/* Image Area Skeleton - Hero zone */}
+          <div className="relative w-full" style={{ height: '340px' }}>
+            <div 
+              className="absolute inset-0 admin-skeleton"
+              style={{ 
+                background: 'linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.05) 100%)',
+              }}
+            />
+          </div>
+
+          {/* Content Area Skeleton */}
+          <div 
+            className="p-5 space-y-3"
+            style={{ background: 'rgba(255,255,255,0.02)' }}
+          >
+            {/* Name */}
+            <div className="admin-skeleton-heading h-6 w-3/4 rounded" />
+            
+            {/* Age & Nationality */}
+            <div className="flex items-center gap-3">
+              <div className="admin-skeleton h-4 w-16 rounded" />
+              <div className="admin-skeleton h-4 w-20 rounded" />
+            </div>
+
+            {/* Club */}
+            <div className="admin-skeleton-text h-4 w-1/2 rounded" />
+
+            {/* Priority bar */}
+            <div className="pt-2">
+              <div className="admin-skeleton h-1.5 w-full rounded-full" />
+            </div>
+          </div>
         </div>
       ))}
     </div>
