@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 import jsPDF from "jspdf";
 
 interface PhysicalHistoryRecord {
@@ -455,48 +456,60 @@ export const PhysicalEvolutionChart = ({ playerId, playerName = "Atleta", curren
 
   return (
     <>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <TrendingUp className="w-4 h-4 text-primary" />
-            Evolução Física
+      <Card className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)] overflow-hidden">
+        <CardHeader className="flex flex-row items-center justify-between pb-4">
+          <CardTitle className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center">
+              <TrendingUp className="w-4 h-4 text-cyan-400/80" />
+            </div>
+            <span className="text-[13px] font-semibold uppercase tracking-[0.1em] text-zinc-400">
+              Evolução Física
+            </span>
           </CardTitle>
           <div className="flex items-center gap-2">
-            {/* History Button */}
+            {/* History Button - Discrete */}
             {history && history.length > 0 && (
               <Dialog open={isHistoryDialogOpen} onOpenChange={setIsHistoryDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="ghost" size="sm" className="gap-1">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="gap-1.5 text-[10px] text-zinc-600 hover:text-zinc-400"
+                  >
                     <List className="w-3 h-3" />
                     Histórico
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-lg">
+                <DialogContent className="max-w-lg bg-zinc-950 border-zinc-800">
                   <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                      <List className="w-5 h-5" />
+                    <DialogTitle className="flex items-center gap-2 text-zinc-200">
+                      <List className="w-5 h-5 text-cyan-400/80" />
                       Histórico de Avaliações
                     </DialogTitle>
-                    <DialogDescription>
+                    <DialogDescription className="text-zinc-600">
                       {history.length} {history.length === 1 ? "avaliação registrada" : "avaliações registradas"}
                     </DialogDescription>
                   </DialogHeader>
                   <ScrollArea className="max-h-[400px] pr-4">
                     <div className="space-y-2">
-                      {historyReversed.map((record) => (
+                      {historyReversed.map((record, idx) => (
                         <div
                           key={record.id}
-                          className="flex items-start justify-between gap-3 p-3 rounded-lg bg-muted/30 border border-border/50"
+                          className={cn(
+                            "flex items-start justify-between gap-3 p-3 rounded-xl border transition-colors",
+                            "border-zinc-800/40 hover:border-zinc-700/50",
+                            idx % 2 === 0 ? "bg-zinc-900/30" : "bg-zinc-900/50"
+                          )}
                         >
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium">
+                            <p className="text-sm font-medium text-zinc-300">
                               {format(new Date(record.recorded_at), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
                             </p>
-                            <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                            <p className="text-xs text-zinc-600 mt-0.5 truncate">
                               {formatRecordSummary(record)}
                             </p>
                             {record.notes && (
-                              <p className="text-xs text-muted-foreground mt-1 italic">
+                              <p className="text-xs text-zinc-700 mt-1 italic">
                                 "{record.notes}"
                               </p>
                             )}
@@ -506,7 +519,7 @@ export const PhysicalEvolutionChart = ({ playerId, playerName = "Atleta", curren
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                                className="h-8 w-8 text-zinc-600 hover:text-primary hover:bg-primary/10"
                                 onClick={() => handleOpenEdit(record)}
                               >
                                 <Pencil className="w-4 h-4" />
@@ -514,7 +527,7 @@ export const PhysicalEvolutionChart = ({ playerId, playerName = "Atleta", curren
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                className="h-8 w-8 text-zinc-600 hover:text-rose-400 hover:bg-rose-500/10"
                                 onClick={() => setDeleteRecord(record)}
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -527,10 +540,10 @@ export const PhysicalEvolutionChart = ({ playerId, playerName = "Atleta", curren
                   </ScrollArea>
                   
                   {/* Export PDF Button */}
-                  <div className="pt-4 border-t border-border/50">
+                  <div className="pt-4 border-t border-zinc-800/50">
                     <Button 
                       variant="outline" 
-                      className="w-full gap-2" 
+                      className="w-full gap-2 border-zinc-800 hover:bg-zinc-800/50" 
                       onClick={handleExportPDF}
                     >
                       <FileDown className="w-4 h-4" />
@@ -541,36 +554,43 @@ export const PhysicalEvolutionChart = ({ playerId, playerName = "Atleta", curren
               </Dialog>
             )}
 
-            {/* Add Button */}
+            {/* Add Button - Discrete */}
             {canEdit && (
               <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-1">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="gap-1.5 text-[10px] text-zinc-600 hover:text-zinc-400 border border-zinc-800/50 hover:border-zinc-700/60"
+                  >
                     <Plus className="w-3 h-3" />
                     Adicionar
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-md">
+                <DialogContent className="max-w-md bg-zinc-950 border-zinc-800">
                   <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                      <Calendar className="w-5 h-5" />
+                    <DialogTitle className="flex items-center gap-2 text-zinc-200">
+                      <Calendar className="w-5 h-5 text-cyan-400/80" />
                       Nova Avaliação Física
                     </DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4 pt-4">
                     <div className="space-y-2">
-                      <Label htmlFor="recorded_at">Data da Avaliação</Label>
+                      <Label htmlFor="recorded_at" className="text-[10px] uppercase tracking-wider text-zinc-500">
+                        Data da Avaliação
+                      </Label>
                       <Input
                         id="recorded_at"
                         type="date"
                         value={newRecord.recorded_at}
                         onChange={(e) => setNewRecord({ ...newRecord, recorded_at: e.target.value })}
+                        className="h-11 bg-zinc-900/50 border-zinc-800/60"
                       />
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-2">
-                        <Label htmlFor="weight">Peso (kg)</Label>
+                        <Label htmlFor="weight" className="text-[10px] uppercase tracking-wider text-zinc-500">Peso (kg)</Label>
                         <Input
                           id="weight"
                           type="number"
@@ -578,10 +598,11 @@ export const PhysicalEvolutionChart = ({ playerId, playerName = "Atleta", curren
                           placeholder="75.5"
                           value={newRecord.weight}
                           onChange={(e) => setNewRecord({ ...newRecord, weight: e.target.value })}
+                          className="h-10 bg-zinc-900/50 border-zinc-800/60 placeholder:text-zinc-700"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="body_fat">% Gordura</Label>
+                        <Label htmlFor="body_fat" className="text-[10px] uppercase tracking-wider text-zinc-500">% Gordura</Label>
                         <Input
                           id="body_fat"
                           type="number"
@@ -589,10 +610,11 @@ export const PhysicalEvolutionChart = ({ playerId, playerName = "Atleta", curren
                           placeholder="12.5"
                           value={newRecord.body_fat_percentage}
                           onChange={(e) => setNewRecord({ ...newRecord, body_fat_percentage: e.target.value })}
+                          className="h-10 bg-zinc-900/50 border-zinc-800/60 placeholder:text-zinc-700"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="muscle_mass">Massa Muscular (kg)</Label>
+                        <Label htmlFor="muscle_mass" className="text-[10px] uppercase tracking-wider text-zinc-500">Massa Musc. (kg)</Label>
                         <Input
                           id="muscle_mass"
                           type="number"
@@ -600,10 +622,11 @@ export const PhysicalEvolutionChart = ({ playerId, playerName = "Atleta", curren
                           placeholder="38.0"
                           value={newRecord.muscle_mass}
                           onChange={(e) => setNewRecord({ ...newRecord, muscle_mass: e.target.value })}
+                          className="h-10 bg-zinc-900/50 border-zinc-800/60 placeholder:text-zinc-700"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="max_speed">Vel. Máx (km/h)</Label>
+                        <Label htmlFor="max_speed" className="text-[10px] uppercase tracking-wider text-zinc-500">Vel. Máx (km/h)</Label>
                         <Input
                           id="max_speed"
                           type="number"
@@ -611,10 +634,11 @@ export const PhysicalEvolutionChart = ({ playerId, playerName = "Atleta", curren
                           placeholder="32.5"
                           value={newRecord.max_speed}
                           onChange={(e) => setNewRecord({ ...newRecord, max_speed: e.target.value })}
+                          className="h-10 bg-zinc-900/50 border-zinc-800/60 placeholder:text-zinc-700"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="sprint_30m">Sprint 30m (s)</Label>
+                        <Label htmlFor="sprint_30m" className="text-[10px] uppercase tracking-wider text-zinc-500">Sprint 30m (s)</Label>
                         <Input
                           id="sprint_30m"
                           type="number"
@@ -622,10 +646,11 @@ export const PhysicalEvolutionChart = ({ playerId, playerName = "Atleta", curren
                           placeholder="4.25"
                           value={newRecord.sprint_30m}
                           onChange={(e) => setNewRecord({ ...newRecord, sprint_30m: e.target.value })}
+                          className="h-10 bg-zinc-900/50 border-zinc-800/60 placeholder:text-zinc-700"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="vo2_max">VO2 Máx</Label>
+                        <Label htmlFor="vo2_max" className="text-[10px] uppercase tracking-wider text-zinc-500">VO2 Máx</Label>
                         <Input
                           id="vo2_max"
                           type="number"
@@ -633,21 +658,23 @@ export const PhysicalEvolutionChart = ({ playerId, playerName = "Atleta", curren
                           placeholder="55.0"
                           value={newRecord.vo2_max}
                           onChange={(e) => setNewRecord({ ...newRecord, vo2_max: e.target.value })}
+                          className="h-10 bg-zinc-900/50 border-zinc-800/60 placeholder:text-zinc-700"
                         />
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="notes">Observações</Label>
+                      <Label htmlFor="notes" className="text-[10px] uppercase tracking-wider text-zinc-500">Observações</Label>
                       <Textarea
                         id="notes"
                         placeholder="Notas sobre a avaliação..."
                         value={newRecord.notes}
                         onChange={(e) => setNewRecord({ ...newRecord, notes: e.target.value })}
+                        className="bg-zinc-900/50 border-zinc-800/60 placeholder:text-zinc-700 resize-none"
                       />
                     </div>
 
-                    <Button onClick={handleAddRecord} className="w-full" disabled={isSubmitting}>
+                    <Button onClick={handleAddRecord} className="w-full h-11" disabled={isSubmitting}>
                       {isSubmitting ? (
                         <>
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -664,20 +691,21 @@ export const PhysicalEvolutionChart = ({ playerId, playerName = "Atleta", curren
           </div>
         </CardHeader>
         <CardContent>
-          {/* Metric selector */}
-          <div className="flex flex-wrap gap-2 mb-4">
+          {/* Premium Metric Selector - Filter Chips */}
+          <div className="flex flex-wrap gap-2 mb-5">
             {Object.entries(METRIC_CONFIG).map(([key, config]) => (
               <button
                 key={key}
                 onClick={() => toggleMetric(key as MetricKey)}
-                className={`px-2 py-1 text-xs rounded-full border transition-colors ${
+                className={cn(
+                  "px-3 py-1.5 text-[10px] font-medium uppercase tracking-wider rounded-full border transition-all duration-150",
                   selectedMetrics.includes(key as MetricKey)
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border bg-secondary/40 text-muted-foreground hover:bg-secondary"
-                }`}
+                    ? "border-primary/40 bg-primary/10 text-primary shadow-[0_0_12px_-3px_hsl(var(--primary)/0.4)]"
+                    : "border-zinc-800/50 bg-zinc-900/30 text-zinc-600 hover:bg-zinc-800/40 hover:text-zinc-400"
+                )}
               >
                 <span
-                  className="inline-block w-2 h-2 rounded-full mr-1.5"
+                  className="inline-block w-1.5 h-1.5 rounded-full mr-1.5"
                   style={{ backgroundColor: config.color }}
                 />
                 {config.label}
@@ -687,45 +715,68 @@ export const PhysicalEvolutionChart = ({ playerId, playerName = "Atleta", curren
 
           {isLoading ? (
             <div className="flex items-center justify-center h-[250px]">
-              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              <Loader2 className="w-6 h-6 animate-spin text-zinc-600" />
             </div>
           ) : !hasData ? (
-            <div className="flex flex-col items-center justify-center h-[250px] text-muted-foreground">
-              <TrendingUp className="w-8 h-8 mb-2 opacity-50" />
-              <p className="text-sm">Nenhuma avaliação registrada</p>
-              <p className="text-xs mt-1">Adicione avaliações físicas para ver a evolução</p>
+            /* Premium Empty State */
+            <div className="flex flex-col items-center justify-center h-[250px] text-center">
+              <div className="relative mb-4">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full bg-cyan-500/5 border border-cyan-500/10" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-cyan-500/10 border border-cyan-500/15" />
+                <div className="relative z-10 w-10 h-10 rounded-xl bg-zinc-900/60 flex items-center justify-center border border-zinc-800/50">
+                  <TrendingUp className="w-5 h-5 text-zinc-600" />
+                </div>
+              </div>
+              <p className="text-sm text-zinc-500 mb-1">Nenhuma avaliação registrada</p>
+              <p className="text-[10px] uppercase tracking-wider text-zinc-700 max-w-[200px]">
+                Adicione avaliações físicas para visualizar a evolução do atleta
+              </p>
             </div>
           ) : (
-            <div className="h-[250px] w-full">
+            <div className="h-[250px] w-full -mx-2">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} />
+                <LineChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+                  <CartesianGrid 
+                    strokeDasharray="4 4" 
+                    stroke="hsl(240,5%,20%)" 
+                    strokeOpacity={0.4}
+                    vertical={false}
+                  />
                   <XAxis
                     dataKey="date"
-                    tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
-                    tickLine={{ stroke: "hsl(var(--border))" }}
+                    tick={{ fill: "hsl(240,5%,40%)", fontSize: 9 }}
+                    tickLine={false}
+                    axisLine={false}
                   />
                   <YAxis
-                    tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
-                    tickLine={{ stroke: "hsl(var(--border))" }}
+                    tick={{ fill: "hsl(240,5%,40%)", fontSize: 9 }}
+                    tickLine={false}
+                    axisLine={false}
                     width={35}
                   />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "hsl(var(--popover))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: 8,
+                      backgroundColor: "hsl(240,6%,10%)",
+                      border: "1px solid hsl(240,5%,20%)",
+                      borderRadius: 12,
                       fontSize: 12,
+                      boxShadow: "0 10px 30px -10px rgba(0,0,0,0.5)",
                     }}
+                    labelStyle={{ color: "hsl(240,5%,70%)", marginBottom: 4 }}
                     labelFormatter={(label) => `Data: ${label}`}
                     formatter={(value: number, name: string) => {
                       const config = METRIC_CONFIG[name as MetricKey];
-                      return [`${value?.toFixed(1)} ${config?.unit || ""}`, config?.label || name];
+                      return [
+                        <span key={name} className="font-bold">{value?.toFixed(1)} {config?.unit || ""}</span>,
+                        config?.label || name
+                      ];
                     }}
                   />
                   <Legend
-                    wrapperStyle={{ fontSize: 11, paddingTop: 10 }}
-                    formatter={(value) => METRIC_CONFIG[value as MetricKey]?.label || value}
+                    wrapperStyle={{ fontSize: 10, paddingTop: 10 }}
+                    formatter={(value) => (
+                      <span className="text-zinc-500">{METRIC_CONFIG[value as MetricKey]?.label || value}</span>
+                    )}
                   />
                   {selectedMetrics.map((metric) => (
                     <Line
@@ -733,9 +784,9 @@ export const PhysicalEvolutionChart = ({ playerId, playerName = "Atleta", curren
                       type="monotone"
                       dataKey={metric}
                       stroke={METRIC_CONFIG[metric].color}
-                      strokeWidth={2}
+                      strokeWidth={2.5}
                       dot={{ fill: METRIC_CONFIG[metric].color, strokeWidth: 0, r: 3 }}
-                      activeDot={{ r: 5, strokeWidth: 0 }}
+                      activeDot={{ r: 6, strokeWidth: 0, fill: METRIC_CONFIG[metric].color }}
                       connectNulls
                     />
                   ))}
@@ -744,10 +795,10 @@ export const PhysicalEvolutionChart = ({ playerId, playerName = "Atleta", curren
             </div>
           )}
 
-          {/* History count */}
+          {/* History count - Discrete footer */}
           {history && history.length > 0 && (
-            <p className="text-xs text-muted-foreground text-center mt-2">
-              {history.length} {history.length === 1 ? "avaliação registrada" : "avaliações registradas"}
+            <p className="text-[10px] text-zinc-700 text-center mt-3 uppercase tracking-wider">
+              {history.length} {history.length === 1 ? "avaliação" : "avaliações"}
             </p>
           )}
         </CardContent>
