@@ -9,8 +9,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, ChevronLeft, ChevronRight, Eye, Calendar } from "lucide-react";
-import { safeArray } from "@/lib/utils";
+import { Loader2, ChevronLeft, ChevronRight, Eye, Calendar, LayoutGrid, Table2 } from "lucide-react";
+import { safeArray, cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { Switch } from "@/components/ui/switch";
 import { fadeInUp, staggerContainer, staggerItem, smoothTransition, buttonHover, buttonTap, pillHover } from "@/lib/animations";
@@ -29,6 +29,17 @@ interface Player {
   // Scouting mode fields
   dominant_foot: string | null;
   height: number | null;
+  // New scouting fields
+  overall_rating: number | null;
+  potential_rating: number | null;
+  physical_status: string | null;
+  market_value: number | null;
+  estimated_level: string | null;
+}
+
+interface PlayerWithCompetition extends Player {
+  competition_name?: string | null;
+  last_report_date?: string | null;
 }
 
 interface PlayerMinutes {
@@ -42,7 +53,7 @@ const currentYear = new Date().getFullYear();
 const availableYears = [currentYear, currentYear - 1, currentYear - 2];
 
 const Players = () => {
-  const [players, setPlayers] = useState<Player[]>([]);
+  const [players, setPlayers] = useState<PlayerWithCompetition[]>([]);
   const [playerMinutes, setPlayerMinutes] = useState<Map<string, number>>(new Map());
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -55,11 +66,19 @@ const Players = () => {
     const saved = localStorage.getItem('m3-scouting-mode');
     return saved === 'true';
   });
+  const [clubMode, setClubMode] = useState(() => {
+    const saved = localStorage.getItem('m3-club-mode');
+    return saved === 'true';
+  });
 
-  // Persist scouting mode preference
+  // Persist mode preferences
   useEffect(() => {
     localStorage.setItem('m3-scouting-mode', String(scoutingMode));
   }, [scoutingMode]);
+
+  useEffect(() => {
+    localStorage.setItem('m3-club-mode', String(clubMode));
+  }, [clubMode]);
 
   // Scroll to top on mount
   useEffect(() => {
@@ -69,18 +88,73 @@ const Players = () => {
     }
   }, []);
 
-  // Fetch players
+  // Fetch players with scouting data
   useEffect(() => {
     const fetchPlayers = async () => {
-      const { data, error } = await supabase
+      // First, fetch all player data
+      const { data: playersData, error: playersError } = await supabase
         .from("players")
-        .select("id, slug, full_name, position, secondary_positions, age, nationality, current_club, photo_url, auto_rating, dominant_foot, height")
+        .select(`
+          id, slug, full_name, position, secondary_positions, age, nationality, 
+          current_club, photo_url, auto_rating, dominant_foot, height,
+          overall_rating, potential_rating, physical_status, market_value, estimated_level
+        `)
         .eq("is_public", true)
         .order("full_name");
 
-      if (data) {
-        setPlayers(data as Player[]);
+      if (!playersData) {
+        setLoading(false);
+        return;
       }
+
+      // Fetch competition data for each player
+      const playerIds = playersData.map(p => p.id);
+      const { data: statsData } = await supabase
+        .from("player_stats")
+        .select("player_id, competition_id")
+        .in("player_id", playerIds)
+        .eq("season_year", currentYear);
+
+      // Fetch competition names
+      const competitionIds = [...new Set(statsData?.map(s => s.competition_id).filter(Boolean) || [])];
+      const { data: competitionsData } = await supabase
+        .from("competitions")
+        .select("id, name")
+        .in("id", competitionIds);
+
+      // Fetch last report dates
+      const { data: reportsData } = await supabase
+        .from("scouting_reports")
+        .select("player_id, match_date")
+        .in("player_id", playerIds)
+        .is("deleted_at", null)
+        .order("match_date", { ascending: false });
+
+      // Build competition map
+      const competitionMap = new Map(competitionsData?.map(c => [c.id, c.name]) || []);
+      const playerCompetitionMap = new Map<string, string>();
+      statsData?.forEach(s => {
+        if (s.competition_id && !playerCompetitionMap.has(s.player_id)) {
+          playerCompetitionMap.set(s.player_id, competitionMap.get(s.competition_id) || "");
+        }
+      });
+
+      // Build last report map
+      const lastReportMap = new Map<string, string>();
+      reportsData?.forEach(r => {
+        if (!lastReportMap.has(r.player_id)) {
+          lastReportMap.set(r.player_id, new Date(r.match_date).toLocaleDateString('pt-BR'));
+        }
+      });
+
+      // Combine data
+      const enrichedPlayers: PlayerWithCompetition[] = playersData.map(player => ({
+        ...player,
+        competition_name: playerCompetitionMap.get(player.id) || null,
+        last_report_date: lastReportMap.get(player.id) || null,
+      }));
+
+      setPlayers(enrichedPlayers);
       setLoading(false);
     };
 
@@ -293,7 +367,7 @@ const Players = () => {
               </Select>
             </motion.div>
             
-            {/* Scouting Mode Toggle - Pill Style */}
+            {/* Scouting Mode Toggle */}
             <motion.div 
               className="flex items-center gap-3 px-4 py-2.5 rounded-[var(--radius-pill)] min-h-[var(--tap-target)] transition-all duration-200"
               style={{
@@ -314,7 +388,68 @@ const Players = () => {
                 className="data-[state=checked]:bg-[#e52421]"
               />
             </motion.div>
+
+            {/* A/B Toggle - Visual vs Club Mode (only visible when scouting mode is on) */}
+            <AnimatePresence>
+              {scoutingMode && (
+                <motion.div
+                  initial={{ opacity: 0, width: 0 }}
+                  animate={{ opacity: 1, width: "auto" }}
+                  exit={{ opacity: 0, width: 0 }}
+                  transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                  className="overflow-hidden"
+                >
+                  <div 
+                    className="flex items-center gap-1 p-1 rounded-[var(--radius-pill)]"
+                    style={{
+                      background: 'rgba(7, 9, 16, 0.8)',
+                      border: '1px solid rgba(255, 255, 255, 0.06)',
+                    }}
+                  >
+                    <button
+                      onClick={() => setClubMode(false)}
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-2 rounded-[var(--radius-pill)] text-sm font-medium transition-all duration-200",
+                        !clubMode 
+                          ? "bg-white/10 text-white" 
+                          : "text-white/40 hover:text-white/60"
+                      )}
+                    >
+                      <LayoutGrid className="w-4 h-4" />
+                      <span className="hidden sm:inline">Visual</span>
+                    </button>
+                    <button
+                      onClick={() => setClubMode(true)}
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-2 rounded-[var(--radius-pill)] text-sm font-medium transition-all duration-200",
+                        clubMode 
+                          ? "bg-white/10 text-white" 
+                          : "text-white/40 hover:text-white/60"
+                      )}
+                    >
+                      <Table2 className="w-4 h-4" />
+                      <span className="hidden sm:inline">Club Mode</span>
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
+
+          {/* Scouting Mode Microcopy */}
+          <AnimatePresence>
+            {scoutingMode && (
+              <motion.p
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+                className="text-[11px] uppercase tracking-[0.15em] text-white/30"
+              >
+                {clubMode ? "Dados prontos para decisão" : "Curadoria profissional"}
+              </motion.p>
+            )}
+          </AnimatePresence>
         </motion.div>
 
         {/* Loading State */}
@@ -326,16 +461,24 @@ const Players = () => {
           <>
             {/* Athletes Grid - Responsive with generous spacing */}
             <motion.div 
-              className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:gap-7 xl:grid-cols-4 xl:gap-8"
+              className={cn(
+                "grid gap-5",
+                scoutingMode && clubMode 
+                  ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 sm:gap-5 lg:gap-6" // Denser for club mode
+                  : "grid-cols-1 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:gap-7 xl:grid-cols-4 xl:gap-8"
+              )}
               initial="hidden"
               animate="visible"
               variants={staggerContainer}
+              key={`grid-${scoutingMode}-${clubMode}`} // Force re-render on mode change
             >
               {safeArray(paginatedPlayers).map((player, index) => (
                 <motion.div
                   key={player.id}
                   variants={staggerItem}
                   custom={index}
+                  layout
+                  transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
                 >
                   <AthleteCardPremium
                     id={player.id}
@@ -345,11 +488,19 @@ const Players = () => {
                     age={player.age || 0}
                     nationality={player.nationality}
                     currentClub={player.current_club || ""}
-                    imageUrl={player.photo_url || "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=400&h=600&fit=crop"}
+                    imageUrl={player.photo_url || "/placeholder.svg"}
                     scoutingMode={scoutingMode}
+                    clubMode={clubMode}
                     dominantFoot={player.dominant_foot}
                     height={player.height}
                     totalMinutes={playerMinutes.get(player.id) || null}
+                    overallRating={player.overall_rating}
+                    potentialRating={player.potential_rating}
+                    physicalStatus={player.physical_status}
+                    marketValue={player.market_value}
+                    estimatedLevel={player.estimated_level}
+                    competitionName={player.competition_name}
+                    lastReportDate={player.last_report_date}
                   />
                 </motion.div>
               ))}
