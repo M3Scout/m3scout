@@ -459,14 +459,17 @@ const Players = () => {
           </div>
         ) : filteredPlayers.length > 0 ? (
           <>
-            {/* Athletes Grid - Responsive with generous spacing */}
+            {/* Athletes Grid - Premium 3-column layout with min-width cards */}
             <motion.div 
               className={cn(
-                "grid gap-5",
+                "grid gap-6 md:gap-7",
                 scoutingMode && clubMode 
-                  ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 sm:gap-5 lg:gap-6" // Denser for club mode
-                  : "grid-cols-1 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:gap-7 xl:grid-cols-4 xl:gap-8"
+                  ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" // Denser for club mode
+                  : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" // Premium 3-column max
               )}
+              style={{
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 380px), 1fr))',
+              }}
               initial="hidden"
               animate="visible"
               variants={staggerContainer}
