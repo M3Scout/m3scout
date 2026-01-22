@@ -1,6 +1,5 @@
 import * as React from "react";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
-
 import { cn } from "@/lib/utils";
 
 const Tabs = TabsPrimitive.Root;
@@ -12,12 +11,17 @@ const TabsList = React.forwardRef<
   <TabsPrimitive.List
     ref={ref}
     className={cn(
-      // Mobile-first: vertical stack or horizontal scroll with proper containment
-      "inline-flex items-center justify-start gap-1 p-1 text-muted-foreground",
-      // Mobile: wrap into rows if needed, full width container
-      "flex-wrap w-full",
-      // Desktop: horizontal layout with rounded container
-      "md:flex-nowrap md:w-auto md:rounded-xl md:bg-zinc-800/50 md:backdrop-blur-sm md:border md:border-white/5",
+      // Base: premium dark gradient bar with subtle border
+      "relative flex items-center gap-1",
+      "w-full h-[52px] px-2",
+      "bg-gradient-to-r from-zinc-900/95 via-zinc-900/90 to-zinc-900/95",
+      "border-b border-white/[0.06]",
+      "backdrop-blur-sm",
+      // Mobile: horizontal scroll with hidden scrollbar
+      "overflow-x-auto scrollbar-hide",
+      // Tablet/Desktop: centered flex
+      "md:justify-start md:gap-0.5 md:px-4",
+      "lg:justify-center",
       className,
     )}
     {...props}
@@ -32,25 +36,45 @@ const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      // Base styles - compact on mobile
-      "inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-all",
-      // Mobile: smaller, squared corners, minimal padding
-      "rounded-lg px-3 py-2 min-h-[40px] min-w-0",
-      // Mobile: add background to each tab for clarity
-      "bg-zinc-800/50 border border-white/5",
-      // Desktop: pill style
-      "md:rounded-full md:px-4 md:bg-transparent md:border-0",
-      // Active state - contained background, no overflow
-      "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm",
-      // Inactive hover
-      "hover:bg-white/5 data-[state=active]:hover:bg-primary",
+      // Base structure
+      "group relative inline-flex items-center justify-center gap-2",
+      "h-[52px] px-4 md:px-5",
+      "whitespace-nowrap",
+      "transition-all duration-200 ease-out",
+      // Typography: clean and legible
+      "text-[13px] md:text-sm font-medium tracking-wide",
+      // Icon styling
+      "[&>svg]:w-4 [&>svg]:h-4 [&>svg]:shrink-0 [&>svg]:stroke-[1.5]",
+      // Default state: muted gray
+      "text-zinc-400",
+      "[&>svg]:text-zinc-500",
+      // Hover state: white text with subtle lift
+      "hover:text-white hover:translate-y-[-1px]",
+      "[&>svg]:transition-colors [&>svg]:duration-200",
+      "hover:[&>svg]:text-zinc-300",
+      // Active state: white text with translucent pill background
+      "data-[state=active]:text-white",
+      "data-[state=active]:[&>svg]:text-white",
+      "data-[state=active]:bg-white/[0.06]",
+      "data-[state=active]:rounded-lg",
       // Focus state
-      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900",
       "disabled:pointer-events-none disabled:opacity-50",
       className,
     )}
     {...props}
-  />
+  >
+    {props.children}
+    {/* Animated red underline for active state */}
+    <span
+      className={cn(
+        "absolute bottom-0 left-1/2 -translate-x-1/2",
+        "h-[2px] w-0 bg-primary rounded-full",
+        "transition-all duration-300 ease-out",
+        "group-data-[state=active]:w-[calc(100%-16px)]",
+      )}
+    />
+  </TabsPrimitive.Trigger>
 ));
 TabsTrigger.displayName = TabsPrimitive.Trigger.displayName;
 
@@ -61,9 +85,12 @@ const TabsContent = React.forwardRef<
   <TabsPrimitive.Content
     ref={ref}
     className={cn(
-      "mt-3 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+      "mt-4 ring-offset-background",
+      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
       // Prevent horizontal overflow
       "w-full min-w-0 overflow-x-hidden",
+      // Subtle fade-in animation
+      "animate-fade-in",
       className,
     )}
     {...props}
