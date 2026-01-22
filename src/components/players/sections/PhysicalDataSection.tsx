@@ -276,6 +276,7 @@ const getStatusBadgeClasses = (status: MetricStatus): string => {
   }
 };
 
+// Premium Block Title
 const BlockTitle = ({ 
   icon: Icon, 
   title 
@@ -283,16 +284,17 @@ const BlockTitle = ({
   icon: React.ElementType; 
   title: string;
 }) => (
-  <div className="flex items-center gap-2 mb-4">
-    <div className="p-1.5 rounded-md bg-primary/10">
-      <Icon className="w-4 h-4 text-primary" />
+  <div className="flex items-center gap-2.5 mb-4">
+    <div className="w-7 h-7 rounded-lg bg-zinc-800/60 flex items-center justify-center">
+      <Icon className="w-3.5 h-3.5 text-zinc-500" />
     </div>
-    <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+    <h4 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
       {title}
     </h4>
   </div>
 );
 
+// Premium Metric Card with hierarchy: number > context > detail
 const MetricCard = ({ 
   icon: Icon, 
   label, 
@@ -310,15 +312,20 @@ const MetricCard = ({
   const { percentage, status, color } = getMetricStatus(value, metricKey);
   
   return (
-    <div className="flex flex-col p-4 rounded-xl bg-secondary/40 border border-border/30 min-h-[120px]">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <Icon className="w-4 h-4 text-muted-foreground" />
-          <p className="text-xs text-muted-foreground">{label}</p>
+    <div className={cn(
+      "relative flex flex-col p-4 rounded-xl min-h-[120px]",
+      "bg-gradient-to-br from-zinc-900/80 to-zinc-950/80",
+      "border border-zinc-800/40",
+      "transition-all duration-200 hover:border-zinc-700/50"
+    )}>
+      {/* Icon - Secondary position */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="w-7 h-7 rounded-lg bg-zinc-800/50 flex items-center justify-center">
+          <Icon className="w-3.5 h-3.5 text-zinc-600" />
         </div>
         {hasValue && status !== "unknown" && (
           <span className={cn(
-            "text-[10px] font-medium px-1.5 py-0.5 rounded-full",
+            "text-[9px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full",
             getStatusBadgeClasses(status)
           )}>
             {getStatusLabel(status)}
@@ -326,26 +333,31 @@ const MetricCard = ({
         )}
       </div>
       
-      <div className="flex-1 flex items-center justify-center">
+      {/* Value - Primary hierarchy */}
+      <div className="flex-1 flex flex-col justify-center">
         {hasValue ? (
-          <div className="text-center">
-            <span className="text-2xl font-bold text-foreground">
+          <div>
+            <span className="text-3xl font-bold text-white tabular-nums">
               {formatFixed(value, 1)}
             </span>
-            <span className="text-sm text-muted-foreground ml-1">{unit}</span>
+            <span className="text-sm text-zinc-600 ml-1">{unit}</span>
           </div>
         ) : (
-          <span className="text-sm text-muted-foreground/60 italic">Não informado</span>
+          <div className="flex flex-col items-start">
+            <span className="text-sm text-zinc-700">Dado não coletado</span>
+          </div>
         )}
+        <p className="text-[10px] text-zinc-600 uppercase tracking-wider mt-1">{label}</p>
       </div>
 
+      {/* Progress bar - Thinner and more elegant */}
       {hasValue && (
         <div className="mt-3">
-          <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden">
+          <div className="h-1 w-full bg-zinc-900 rounded-full overflow-hidden">
             <div className="h-full w-full relative">
-              <div className="absolute inset-0 bg-muted/50 rounded-full" />
+              {/* Ideal zone - subtle */}
               <div 
-                className="absolute h-full bg-emerald-500/20 rounded-full"
+                className="absolute h-full bg-emerald-500/10 rounded-full"
                 style={{
                   left: `${((METRIC_RANGES[metricKey]?.idealLow ?? 0) - (METRIC_RANGES[metricKey]?.min ?? 0)) / ((METRIC_RANGES[metricKey]?.max ?? 100) - (METRIC_RANGES[metricKey]?.min ?? 0)) * 100}%`,
                   width: `${((METRIC_RANGES[metricKey]?.idealHigh ?? 100) - (METRIC_RANGES[metricKey]?.idealLow ?? 0)) / ((METRIC_RANGES[metricKey]?.max ?? 100) - (METRIC_RANGES[metricKey]?.min ?? 0)) * 100}%`
@@ -363,7 +375,7 @@ const MetricCard = ({
   );
 };
 
-// Position-based body composition card with tooltip
+// Premium Position-based body composition card with tooltip
 const BodyCompositionCard = ({ 
   icon: Icon, 
   label, 
@@ -388,39 +400,42 @@ const BodyCompositionCard = ({
   const { status, color } = getPositionBasedStatus(
     value, 
     range, 
-    metricType === "body_fat" // Body fat is inverse (lower is better within range)
+    metricType === "body_fat"
   );
 
   // Calculate percentage for progress bar based on position range
   let percentage = 50;
   if (hasValue && range) {
     const rangeSpan = range.max - range.min;
-    const buffer = rangeSpan * 0.5; // 50% buffer on each side
+    const buffer = rangeSpan * 0.5;
     const displayMin = range.min - buffer;
     const displayMax = range.max + buffer;
     percentage = ((value! - displayMin) / (displayMax - displayMin)) * 100;
     percentage = Math.max(0, Math.min(100, percentage));
   }
 
-  // Calculate ideal zone position for the progress bar
-  const idealZoneStart = range ? 25 : 0; // 25% from left (accounting for buffer)
-  const idealZoneWidth = range ? 50 : 0; // 50% width (the actual range)
-
+  const idealZoneStart = range ? 25 : 0;
+  const idealZoneWidth = range ? 50 : 0;
   const positionLabel = range?.label || (position ? position : "Posição não definida");
   
   return (
     <TooltipProvider>
       <UITooltip>
         <TooltipTrigger asChild>
-          <div className="flex flex-col p-4 rounded-xl bg-secondary/40 border border-border/30 min-h-[140px] cursor-help hover:bg-secondary/60 transition-colors">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <Icon className="w-4 h-4 text-muted-foreground" />
-                <p className="text-xs text-muted-foreground">{label}</p>
+          <div className={cn(
+            "relative flex flex-col p-4 rounded-xl min-h-[140px] cursor-help",
+            "bg-gradient-to-br from-zinc-900/80 to-zinc-950/80",
+            "border border-zinc-800/40",
+            "transition-all duration-200 hover:border-zinc-700/50"
+          )}>
+            {/* Icon - Secondary */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-7 h-7 rounded-lg bg-zinc-800/50 flex items-center justify-center">
+                <Icon className="w-3.5 h-3.5 text-zinc-600" />
               </div>
               {hasValue && status !== "unknown" && (
                 <span className={cn(
-                  "text-[10px] font-medium px-1.5 py-0.5 rounded-full",
+                  "text-[9px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full",
                   getStatusBadgeClasses(status)
                 )}>
                   {getStatusLabel(status)}
@@ -428,32 +443,35 @@ const BodyCompositionCard = ({
               )}
             </div>
             
-            <div className="flex-1 flex items-center justify-center">
+            {/* Value - Primary */}
+            <div className="flex-1 flex flex-col justify-center">
               {hasValue ? (
-                <div className="text-center">
-                  <span className="text-2xl font-bold text-foreground">
+                <div>
+                  <span className="text-3xl font-bold text-white tabular-nums">
                     {formatFixed(value, 1)}
                   </span>
-                  <span className="text-sm text-muted-foreground ml-1">{unit}</span>
+                  <span className="text-sm text-zinc-600 ml-1">{unit}</span>
                 </div>
               ) : (
-                <span className="text-sm text-muted-foreground/60 italic">Não informado</span>
+                <span className="text-sm text-zinc-700">Dado não coletado</span>
               )}
+              <p className="text-[10px] text-zinc-600 uppercase tracking-wider mt-1">{label}</p>
             </div>
 
-            {/* Position reference */}
+            {/* Position reference - Discrete */}
             {range && (
-              <div className="text-[10px] text-muted-foreground text-center mb-2">
-                Ref: {range.min}–{range.max}% ({positionLabel})
+              <div className="text-[9px] text-zinc-700 mt-2">
+                Ref: {range.min}–{range.max}% <span className="text-zinc-800">({positionLabel})</span>
               </div>
             )}
 
+            {/* Progress bar - Thinner */}
             {hasValue && range && (
-              <div className="mt-1">
-                <div className="h-2 w-full bg-secondary rounded-full overflow-hidden relative">
+              <div className="mt-2">
+                <div className="h-1 w-full bg-zinc-900 rounded-full overflow-hidden relative">
                   {/* Ideal zone indicator */}
                   <div 
-                    className="absolute h-full bg-emerald-500/30 rounded-full"
+                    className="absolute h-full bg-emerald-500/15 rounded-full"
                     style={{
                       left: `${idealZoneStart}%`,
                       width: `${idealZoneWidth}%`
@@ -462,7 +480,7 @@ const BodyCompositionCard = ({
                   {/* Current value indicator */}
                   <div 
                     className={cn(
-                      "absolute h-full w-2 rounded-full transition-all duration-500 -translate-x-1/2",
+                      "absolute h-full w-1.5 rounded-full transition-all duration-500 -translate-x-1/2",
                       color
                     )}
                     style={{ left: `${percentage}%` }}
@@ -472,27 +490,25 @@ const BodyCompositionCard = ({
             )}
           </div>
         </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-xs">
-          <div className="space-y-1 text-xs">
-            <p className="font-semibold">
+        <TooltipContent side="top" className="max-w-xs bg-zinc-900/95 border-zinc-800 shadow-2xl">
+          <div className="space-y-1.5 text-xs p-1">
+            <p className="font-semibold text-zinc-200">
               {metricType === "body_fat" ? "% Gordura Corporal" : "% Massa Muscular"}
             </p>
             {range ? (
               <>
-                <p>
-                  <span className="text-muted-foreground">Faixa ideal para </span>
-                  <span className="font-medium">{positionLabel}</span>
-                  <span className="text-muted-foreground">: </span>
-                  <span className="text-emerald-400 font-medium">{range.min}–{range.max}%</span>
+                <p className="text-zinc-500">
+                  Faixa ideal para <span className="text-zinc-300">{positionLabel}</span>:{" "}
+                  <span className="text-emerald-400 font-semibold">{range.min}–{range.max}%</span>
                 </p>
                 {hasValue && (
-                  <p>
-                    <span className="text-muted-foreground">Valor atual: </span>
+                  <p className="text-zinc-500">
+                    Valor atual:{" "}
                     <span className={cn(
-                      "font-medium",
+                      "font-semibold",
                       status === "ideal" && "text-emerald-400",
                       status === "low" && "text-amber-400",
-                      status === "high" && "text-red-400"
+                      status === "high" && "text-rose-400"
                     )}>
                       {formatFixed(value, 1)}%
                     </span>
@@ -501,7 +517,7 @@ const BodyCompositionCard = ({
                         "ml-1",
                         status === "ideal" && "text-emerald-400",
                         status === "low" && "text-amber-400",
-                        status === "high" && "text-red-400"
+                        status === "high" && "text-rose-400"
                       )}>
                         ({getStatusLabel(status)})
                       </span>
@@ -510,7 +526,7 @@ const BodyCompositionCard = ({
                 )}
               </>
             ) : (
-              <p className="text-muted-foreground">
+              <p className="text-zinc-600">
                 Defina a posição do atleta para ver a faixa ideal.
               </p>
             )}
@@ -521,7 +537,7 @@ const BodyCompositionCard = ({
   );
 };
 
-// Physical Performance Radar Chart
+// Premium Physical Radar Chart
 const PhysicalRadarChart = ({ data }: { data: PhysicalData }) => {
   // Calculate muscle mass percentage for radar
   const leanMass = calculateLeanMass(data.weight, data.body_fat_percentage);
@@ -555,9 +571,17 @@ const PhysicalRadarChart = ({ data }: { data: PhysicalData }) => {
 
   if (!hasAnyData) {
     return (
-      <div className="flex flex-col items-center justify-center h-[280px] text-muted-foreground">
-        <TrendingUp className="w-8 h-8 mb-2 opacity-50" />
-        <p className="text-sm">Dados insuficientes para gerar radar</p>
+      <div className="flex flex-col items-center justify-center h-[280px] text-center">
+        <div className="relative mb-4">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full bg-zinc-800/30 border border-zinc-800/40" />
+          <div className="relative z-10 w-12 h-12 rounded-xl bg-zinc-900/60 flex items-center justify-center border border-zinc-800/50">
+            <TrendingUp className="w-6 h-6 text-zinc-700" />
+          </div>
+        </div>
+        <p className="text-sm text-zinc-600">Dados insuficientes para gerar radar</p>
+        <p className="text-[10px] text-zinc-700 uppercase tracking-wider mt-1">
+          Adicione métricas de performance
+        </p>
       </div>
     );
   }
@@ -567,51 +591,58 @@ const PhysicalRadarChart = ({ data }: { data: PhysicalData }) => {
       <ResponsiveContainer width="100%" height="100%">
         <RadarChart data={radarData} margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
           <PolarGrid 
-            stroke="hsl(var(--border))" 
-            strokeOpacity={0.5}
+            stroke="hsl(240,5%,20%)" 
+            strokeOpacity={0.4}
           />
           <PolarAngleAxis 
             dataKey="metric" 
             tick={{ 
-              fill: "hsl(var(--muted-foreground))", 
-              fontSize: 11,
+              fill: "hsl(240,5%,50%)", 
+              fontSize: 10,
               fontWeight: 500
             }}
           />
-          {/* Elite benchmark (reference) */}
+          {/* Elite benchmark - subtle dashed reference */}
           <Radar
             name="Elite"
             dataKey="elite"
             stroke="hsl(var(--primary))"
             fill="hsl(var(--primary))"
-            fillOpacity={0.1}
+            fillOpacity={0.05}
             strokeWidth={1}
             strokeDasharray="4 4"
+            strokeOpacity={0.4}
           />
-          {/* Athlete values */}
+          {/* Athlete values - stronger and focused */}
           <Radar
             name="Atleta"
             dataKey="atleta"
-            stroke="hsl(142, 76%, 36%)"
-            fill="hsl(142, 76%, 36%)"
-            fillOpacity={0.3}
-            strokeWidth={2}
+            stroke="hsl(142, 70%, 45%)"
+            fill="hsl(142, 70%, 45%)"
+            fillOpacity={0.2}
+            strokeWidth={2.5}
           />
           <Legend 
             wrapperStyle={{ 
               paddingTop: 10,
-              fontSize: 12
+              fontSize: 10
             }}
+            formatter={(value) => (
+              <span className="text-zinc-500">
+                {value === "Elite" ? "Benchmark Elite" : "Atleta"}
+              </span>
+            )}
           />
           <Tooltip
             contentStyle={{
-              backgroundColor: "hsl(var(--popover))",
-              border: "1px solid hsl(var(--border))",
-              borderRadius: 8,
-              fontSize: 12,
+              backgroundColor: "hsl(240,6%,10%)",
+              border: "1px solid hsl(240,5%,20%)",
+              borderRadius: 12,
+              fontSize: 11,
+              boxShadow: "0 10px 30px -10px rgba(0,0,0,0.5)",
             }}
             formatter={(value: number, name: string) => [
-              `${value.toFixed(0)}%`,
+              <span key={name} className="font-bold">{value.toFixed(0)}%</span>,
               name === "elite" ? "Benchmark Elite" : "Atleta"
             ]}
           />
@@ -647,21 +678,25 @@ export const PhysicalDataSection = ({ data, playerId, playerName }: PhysicalData
         />
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="w-5 h-5 text-primary" />
-            Dados Físicos
+      <Card className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)] overflow-hidden">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+              <Activity className="w-4 h-4 text-emerald-400/80" />
+            </div>
+            <span className="text-[13px] font-semibold uppercase tracking-[0.1em] text-zinc-400">
+              Dados Físicos
+            </span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-8">
           {/* Radar Chart - Performance vs Elite */}
           <div>
             <BlockTitle icon={TrendingUp} title="Performance vs Elite" />
-            <div className="rounded-xl bg-secondary/40 border border-border/30 p-4">
+            <div className="rounded-xl bg-zinc-900/40 border border-zinc-800/40 p-4">
               <PhysicalRadarChart data={data} />
-              <p className="text-xs text-muted-foreground text-center mt-2">
-                Comparação com benchmarks de atletas de elite (100% = nível elite)
+              <p className="text-[10px] text-zinc-700 text-center mt-2 uppercase tracking-wider">
+                Comparação com benchmarks elite (100% = nível elite)
               </p>
             </div>
           </div>
@@ -698,13 +733,13 @@ export const PhysicalDataSection = ({ data, playerId, playerName }: PhysicalData
               />
               <MetricCard icon={Target} label="IMC" value={bmi} unit="" metricKey="bmi" />
             </div>
-            {/* Calculation info */}
+            {/* Calculation info - Discrete */}
             {data.weight && data.body_fat_percentage && (
-              <div className="mt-3 p-3 rounded-lg bg-muted/30 border border-border/20">
-                <p className="text-[10px] text-muted-foreground">
-                  <span className="font-medium">Cálculos:</span>{" "}
+              <div className="mt-3 p-3 rounded-lg bg-zinc-900/30 border border-zinc-800/30">
+                <p className="text-[9px] text-zinc-700 uppercase tracking-wider">
+                  <span className="text-zinc-600">Cálculos:</span>{" "}
                   Peso magro = {formatFixed(leanMass, 1)} kg | 
-                  Massa muscular estimada = {formatFixed(estimatedMuscleMass, 1)} kg ({formatFixed(muscleMassPercentage, 1)}% do peso)
+                  Massa muscular estimada = {formatFixed(estimatedMuscleMass, 1)} kg ({formatFixed(muscleMassPercentage, 1)}%)
                 </p>
               </div>
             )}
@@ -720,12 +755,12 @@ export const PhysicalDataSection = ({ data, playerId, playerName }: PhysicalData
             </div>
           </div>
 
-          {/* Last evaluation footer */}
+          {/* Last evaluation footer - Discrete */}
           {data.last_physical_evaluation && (
-            <div className="pt-4 border-t border-border/50 flex items-center gap-2 text-sm text-muted-foreground">
-              <Calendar className="w-4 h-4" />
+            <div className="pt-4 border-t border-zinc-800/40 flex items-center gap-2 text-xs text-zinc-600">
+              <Calendar className="w-3.5 h-3.5" />
               <span>Última avaliação:</span>
-              <span className="font-medium text-foreground">
+              <span className="font-medium text-zinc-400">
                 {new Date(data.last_physical_evaluation).toLocaleDateString("pt-BR")}
               </span>
             </div>
