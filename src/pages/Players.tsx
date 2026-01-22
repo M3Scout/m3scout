@@ -164,22 +164,23 @@ const Players = () => {
 
   return (
     <div 
-      className="min-h-screen bg-[#080808]"
-      style={{ fontFamily: "'Poppins', sans-serif" }}
+      className="min-h-screen"
+      style={{ 
+        backgroundColor: "#070910",
+        fontFamily: "'Poppins', sans-serif" 
+      }}
     >
+      {/* Subtle ambient glow */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-[600px] h-[400px] bg-white/[0.01] blur-[120px] rounded-full" />
+        <div className="absolute bottom-0 right-1/4 w-[500px] h-[300px] bg-white/[0.01] blur-[100px] rounded-full" />
+      </div>
+      
       {/* Subtle texture overlay */}
       <div 
         className="fixed inset-0 pointer-events-none opacity-[0.015]"
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
-        }}
-      />
-      
-      {/* Vignette effect */}
-      <div 
-        className="fixed inset-0 pointer-events-none"
-        style={{
-          background: 'radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.3) 100%)'
         }}
       />
 
@@ -323,9 +324,9 @@ const Players = () => {
           </div>
         ) : filteredPlayers.length > 0 ? (
           <>
-            {/* Athletes Grid */}
+            {/* Athletes Grid - Responsive with generous spacing */}
             <motion.div 
-              className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4 lg:gap-6"
+              className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:gap-7 xl:grid-cols-4 xl:gap-8"
               initial="hidden"
               animate="visible"
               variants={staggerContainer}
