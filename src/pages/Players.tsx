@@ -259,7 +259,7 @@ const Players = () => {
       />
 
       {/* Main Container */}
-      <div className="relative z-10 w-full max-w-[1400px] mx-auto px-[var(--padding-mobile)] md:px-8 lg:px-10 xl:px-12">
+      <div className="relative z-10 w-full max-w-[1360px] mx-auto px-4 md:px-6 lg:px-8">
         
         {/* Header Section - Editorial */}
         <motion.section 
@@ -461,7 +461,11 @@ const Players = () => {
           <>
             {/* Athletes Grid - 4 columns on desktop, portrait cards */}
             <motion.div 
-              className="grid gap-5 md:gap-6 lg:gap-7 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+              style={{
+                gap: 'clamp(24px, 2vw, 32px)',
+                gridTemplateColumns: undefined, // Let Tailwind handle responsive
+              }}
               initial="hidden"
               animate="visible"
               variants={staggerContainer}
