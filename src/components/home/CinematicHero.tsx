@@ -3,12 +3,20 @@ import { Link } from "react-router-dom";
 import { ArrowRight, ChevronDown } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 import heroImage from "@/assets/hero-stadium-cinematic.jpg";
+
+interface HeroStats {
+  athletes: number | null;
+  reports: number | null;
+  competitions: number | null;
+}
 
 export function CinematicHero() {
   const heroRef = useRef<HTMLElement>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const [stats, setStats] = useState<HeroStats>({ athletes: null, reports: null, competitions: null });
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -21,6 +29,38 @@ export function CinematicHero() {
   useEffect(() => {
     const timer = setTimeout(() => setIsLoaded(true), 100);
     return () => clearTimeout(timer);
+  }, []);
+
+  // Fetch real stats from database
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const [playersRes, reportsRes, competitionsRes] = await Promise.all([
+          supabase
+            .from("players")
+            .select("*", { count: "exact", head: true })
+            .eq("is_public", true)
+            .or("is_archived.is.null,is_archived.eq.false"),
+          supabase
+            .from("scouting_reports")
+            .select("*", { count: "exact", head: true })
+            .is("deleted_at", null),
+          supabase
+            .from("competitions")
+            .select("*", { count: "exact", head: true })
+            .eq("is_active", true),
+        ]);
+
+        setStats({
+          athletes: playersRes.count ?? null,
+          reports: reportsRes.count ?? null,
+          competitions: competitionsRes.count ?? null,
+        });
+      } catch (error) {
+        console.error("Error fetching hero stats:", error);
+      }
+    }
+    fetchStats();
   }, []);
 
   const scrollToContent = () => {
@@ -163,23 +203,50 @@ export function CinematicHero() {
             </Link>
           </motion.div>
 
-          {/* Metric - Sistema Ativo */}
+          {/* Status Bar - Discrete style with real data */}
           <motion.div
             variants={fadeUpVariant}
             initial="hidden"
             animate={isLoaded ? "visible" : "hidden"}
             custom={0.48}
-            className="flex items-center gap-4"
+            className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-white/45"
           >
-            <div className="flex items-center gap-2 text-sm text-white/40">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/70" />
+            {/* Sistema ativo */}
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80" />
               <span>Sistema ativo</span>
             </div>
-            <div className="w-px h-6 bg-white/10" />
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold text-white">150+</span>
-              <span className="text-sm text-white/40">atletas monitorados</span>
-            </div>
+
+            {/* Athletes */}
+            {stats.athletes !== null && stats.athletes > 0 && (
+              <>
+                <span className="text-white/20">•</span>
+                <span>
+                  {stats.athletes} {stats.athletes === 1 ? "atleta monitorado" : "atletas monitorados"}
+                </span>
+              </>
+            )}
+
+            {/* Reports */}
+            {stats.reports !== null && stats.reports > 0 && (
+              <>
+                <span className="text-white/20">•</span>
+                <span>
+                  {stats.reports} {stats.reports === 1 ? "relatório gerado" : "relatórios gerados"}
+                </span>
+              </>
+            )}
+
+            {/* Competitions */}
+            {stats.competitions !== null && stats.competitions > 0 && (
+              <>
+                <span className="text-white/20">•</span>
+                <span>
+                  {stats.competitions >= 100 ? "100+" : stats.competitions}{" "}
+                  {stats.competitions === 1 ? "competição monitorada" : "competições monitoradas"}
+                </span>
+              </>
+            )}
           </motion.div>
         </div>
       </div>
