@@ -29,26 +29,27 @@ p, span, h1, h2, h3, h4, h5, h6, a, li {
 
 @layer base {
   :root {
-    /* ========== PREMIUM LAYER SYSTEM ========== */
-    /* Base layer - deep navy blue with subtle warmth */
-    --background: 222 47% 7%;
+    /* ========== PREMIUM EXECUTIVE PALETTE ========== */
+    /* Base layer - #070910 deep charcoal-navy */
+    --background: 227 39% 5%;
     --foreground: 210 40% 98%;
 
-    /* Card layer - elevated blue-black, NOT pure black */
-    --card: 220 45% 9%;
+    /* Card layer - #0F172A slate navy */
+    --card: 222 47% 11%;
     --card-foreground: 210 40% 98%;
 
     /* Popover - slightly elevated from cards */
-    --popover: 220 42% 10%;
+    --popover: 222 45% 12%;
     --popover-foreground: 210 40% 98%;
 
     --primary: 0 72% 51%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 222 35% 13%;
+    /* Secondary - #0B0F1A for headers/nav */
+    --secondary: 224 41% 7%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 222 30% 16%;
+    --muted: 222 35% 14%;
     --muted-foreground: 215 20% 55%;
 
     --accent: 45 93% 58%;
@@ -57,9 +58,9 @@ p, span, h1, h2, h3, h4, h5, h6, a, li {
     --destructive: 0 72% 51%;
     --destructive-foreground: 210 40% 98%;
 
-    /* Subtle separation border - barely visible white */
-    --border: 220 30% 14%;
-    --input: 222 35% 12%;
+    /* Subtle separation border */
+    --border: 222 30% 16%;
+    --input: 224 41% 10%;
     --ring: 0 72% 51%;
 
     --radius: 0.75rem;
@@ -73,23 +74,23 @@ p, span, h1, h2, h3, h4, h5, h6, a, li {
     --radius-badge: 999px;
     
     /* Border tokens - ultra subtle for premium separation */
-    --border-subtle: 1px solid hsl(220 30% 20% / 0.25);
+    --border-subtle: 1px solid hsl(222 30% 18% / 0.25);
     --border-glass: 1px solid hsl(210 20% 98% / 0.04);
     --border-card: 1px solid hsl(210 20% 98% / 0.03);
     
-    /* Elevation backgrounds - cohesive blue-black system */
-    --bg-elev-0: hsl(222 47% 6%);
-    --bg-elev-1: hsl(220 45% 9%);
-    --bg-elev-2: hsl(220 42% 12%);
-    --bg-elev-3: hsl(220 40% 15%);
+    /* Elevation backgrounds - executive layer system */
+    --bg-elev-0: hsl(227 39% 5%);  /* #070910 */
+    --bg-elev-1: hsl(224 41% 7%);  /* #0B0F1A */
+    --bg-elev-2: hsl(222 47% 11%); /* #0F172A */
+    --bg-elev-3: hsl(222 42% 14%);
     --bg-glass: hsl(210 20% 98% / 0.03);
     --bg-glass-hover: hsl(210 20% 98% / 0.06);
     
     /* Shadow tokens - deep and subtle for real elevation */
-    --shadow-soft: 0 2px 8px -2px hsl(222 50% 3% / 0.4);
-    --shadow-medium: 0 4px 16px -4px hsl(222 50% 3% / 0.5);
-    --shadow-card: 0 4px 24px -6px hsl(222 50% 3% / 0.6), 0 2px 8px -2px hsl(222 50% 3% / 0.3);
-    --shadow-elevated: 0 8px 40px -8px hsl(222 50% 3% / 0.7), 0 4px 16px -4px hsl(222 50% 3% / 0.4);
+    --shadow-soft: 0 2px 8px -2px hsl(227 50% 2% / 0.5);
+    --shadow-medium: 0 4px 16px -4px hsl(227 50% 2% / 0.6);
+    --shadow-card: 0 4px 24px -6px hsl(227 50% 2% / 0.7), 0 2px 8px -2px hsl(227 50% 2% / 0.4);
+    --shadow-elevated: 0 8px 40px -8px hsl(227 50% 2% / 0.8), 0 4px 16px -4px hsl(227 50% 2% / 0.5);
     --shadow-glow-green: 0 0 20px -5px hsl(142 76% 36% / 0.4);
     --shadow-glow-red: 0 0 20px -5px hsl(0 72% 51% / 0.4);
     --shadow-glow-blue: 0 0 20px -5px hsl(199 89% 48% / 0.4);
@@ -117,28 +118,29 @@ p, span, h1, h2, h3, h4, h5, h6, a, li {
     --gold-foreground: 222 47% 6%;
     --emerald: 142 76% 36%;
     --emerald-light: 142 70% 50%;
-    --navy: 222 47% 7%;
-    --navy-light: 220 45% 12%;
+    --navy: 227 39% 5%;
+    --navy-light: 224 41% 7%;
     
-    /* Gradients - harmonious with layer system */
+    /* Gradients - cohesive with executive palette */
     --gradient-primary: linear-gradient(135deg, hsl(0 72% 51%), hsl(0 72% 42%));
     --gradient-gold: linear-gradient(135deg, hsl(45 93% 58%), hsl(38 92% 50%));
-    --gradient-dark: linear-gradient(180deg, hsl(220 45% 9%), hsl(222 47% 5%));
-    --gradient-card: linear-gradient(180deg, hsl(220 45% 10% / 0.95), hsl(220 45% 8% / 0.9));
-    --gradient-hero: linear-gradient(180deg, hsl(222 47% 7%) 0%, hsl(222 47% 5%) 50%, hsl(0 72% 8% / 0.2) 100%);
-    --gradient-background: linear-gradient(180deg, hsl(222 47% 7%) 0%, hsl(222 50% 5%) 100%);
+    --gradient-dark: linear-gradient(180deg, hsl(222 47% 11%), hsl(227 39% 5%));
+    --gradient-card: linear-gradient(180deg, hsl(222 47% 12% / 0.95), hsl(222 47% 10% / 0.9));
+    --gradient-hero: linear-gradient(180deg, hsl(227 39% 5%) 0%, hsl(227 42% 4%) 100%);
+    --gradient-background: hsl(227 39% 5%);
     
     /* Shadows - refined for depth */
     --shadow-glow: 0 0 40px -10px hsl(0 72% 51% / 0.4);
     --shadow-gold: 0 0 30px -5px hsl(45 93% 58% / 0.3);
 
-    --sidebar-background: 222 50% 5%;
+    /* Sidebar - #0B0F1A base */
+    --sidebar-background: 224 41% 6%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 0 72% 51%;
     --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 220 35% 11%;
+    --sidebar-accent: 222 42% 12%;
     --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 220 30% 14%;
+    --sidebar-border: 222 30% 14%;
     --sidebar-ring: 0 72% 51%;
   }
 }
