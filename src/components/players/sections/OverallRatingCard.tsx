@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Star, TrendingUp, Clock, Info, RefreshCw, Loader2 } from "lucide-react";
+import { Star, TrendingUp, Clock, Info, RefreshCw, Loader2, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatFixed } from "@/lib/formatters";
 import { SafeRatingBreakdownModalV2 } from "@/components/players/SafeRatingBreakdownModalV2";
@@ -23,17 +23,24 @@ interface OverallRatingCardProps {
 }
 
 function getRatingColor(rating: number): string {
-  if (rating >= 4.0) return "text-emerald-400";
+  if (rating >= 4.0) return "text-emerald-400/90";
   if (rating >= 3.0) return "text-primary";
-  if (rating >= 2.0) return "text-amber-400";
-  return "text-destructive";
+  if (rating >= 2.0) return "text-amber-400/90";
+  return "text-rose-400/90";
 }
 
-function getRatingBgColor(rating: number): string {
-  if (rating >= 4.0) return "bg-emerald-500/10";
-  if (rating >= 3.0) return "bg-primary/10";
-  if (rating >= 2.0) return "bg-amber-500/10";
-  return "bg-destructive/10";
+function getRatingBgGradient(rating: number): string {
+  if (rating >= 4.0) return "from-emerald-500/[0.08] to-emerald-500/[0.02]";
+  if (rating >= 3.0) return "from-primary/[0.08] to-primary/[0.02]";
+  if (rating >= 2.0) return "from-amber-500/[0.08] to-amber-500/[0.02]";
+  return "from-rose-500/[0.08] to-rose-500/[0.02]";
+}
+
+function getRatingBorderColor(rating: number): string {
+  if (rating >= 4.0) return "border-emerald-500/20";
+  if (rating >= 3.0) return "border-primary/20";
+  if (rating >= 2.0) return "border-amber-500/20";
+  return "border-rose-500/20";
 }
 
 function getRatingLabel(rating: number): string {
@@ -85,12 +92,16 @@ export function OverallRatingCard({
   };
 
   return (
-    <Card>
+    <Card className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)] overflow-hidden">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Star className="w-5 h-5 text-primary" />
-            Avaliação Geral
+          <CardTitle className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Star className="w-4 h-4 text-primary" />
+            </div>
+            <span className="text-[13px] font-semibold uppercase tracking-[0.1em] text-zinc-400">
+              Avaliação Geral
+            </span>
           </CardTitle>
           <div className="flex items-center gap-2">
             {isAdmin && playerId && (
@@ -99,7 +110,7 @@ export function OverallRatingCard({
                 size="sm"
                 onClick={handleRecalculate}
                 disabled={recalculating}
-                className="h-7 px-2 text-xs"
+                className="h-7 px-2 text-xs text-zinc-500 hover:text-zinc-300"
               >
                 {recalculating ? (
                   <Loader2 className="w-3 h-3 animate-spin" />
@@ -118,7 +129,7 @@ export function OverallRatingCard({
                 isAdmin={isAdmin}
                 onRecalculated={onRatingRecalculated}
                 trigger={
-                  <button className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors">
+                  <button className="text-[10px] text-zinc-600 hover:text-zinc-400 flex items-center gap-1 transition-colors uppercase tracking-wider">
                     <Info className="w-3 h-3" />
                     Detalhes
                   </button>
@@ -129,48 +140,69 @@ export function OverallRatingCard({
         </div>
       </CardHeader>
       <CardContent>
-        <div className="flex items-start gap-4">
-          {/* Main Rating */}
+        <div className="flex items-start gap-5">
+          {/* Main Rating - Primary Focus */}
           {displayRating !== null ? (
             <div
               className={cn(
-                "flex flex-col items-center justify-center w-20 h-20 rounded-xl",
-                getRatingBgColor(displayRating)
+                "relative flex flex-col items-center justify-center w-24 h-24 rounded-2xl",
+                "bg-gradient-to-br border backdrop-blur-sm",
+                "transition-all duration-200",
+                getRatingBgGradient(displayRating),
+                getRatingBorderColor(displayRating)
               )}
             >
-              <span className={cn("text-3xl font-bold", getRatingColor(displayRating))}>
+              {/* Glow effect */}
+              <div className={cn(
+                "absolute inset-0 rounded-2xl opacity-50 blur-xl",
+                displayRating >= 4.0 ? "bg-emerald-500/10" :
+                displayRating >= 3.0 ? "bg-primary/10" :
+                displayRating >= 2.0 ? "bg-amber-500/10" :
+                "bg-rose-500/10"
+              )} />
+              <span className={cn("text-4xl font-bold tracking-tight relative z-10", getRatingColor(displayRating))}>
                 {formatFixed(displayRating, 1)}
               </span>
-              <span className="text-xs text-muted-foreground">/5.0</span>
+              <span className="text-[10px] text-zinc-600 font-medium relative z-10">/5.0</span>
             </div>
           ) : (
-            <div className="flex items-center justify-center w-20 h-20 rounded-xl bg-secondary/30">
-              <span className="text-sm text-muted-foreground">N/A</span>
+            <div className="flex items-center justify-center w-24 h-24 rounded-2xl bg-zinc-900/50 border border-zinc-800/40">
+              <span className="text-sm text-zinc-600">N/A</span>
             </div>
           )}
 
           {/* Rating Details */}
-          <div className="flex-1 space-y-2">
+          <div className="flex-1 space-y-3">
+            {/* Status Badge - Executive style */}
             {displayRating !== null && (
-              <Badge className={cn("text-xs", getRatingBgColor(displayRating), getRatingColor(displayRating))}>
+              <Badge 
+                variant="outline" 
+                className={cn(
+                  "text-xs font-medium uppercase tracking-wide backdrop-blur-sm border",
+                  displayRating >= 4.0 ? "bg-emerald-500/[0.08] text-emerald-400/90 border-emerald-500/20" :
+                  displayRating >= 3.0 ? "bg-primary/[0.08] text-primary border-primary/20" :
+                  displayRating >= 2.0 ? "bg-amber-500/[0.08] text-amber-400/90 border-amber-500/20" :
+                  "bg-rose-500/[0.08] text-rose-400/90 border-rose-500/20"
+                )}
+              >
                 {getRatingLabel(displayRating)}
               </Badge>
             )}
 
-            {/* Stars */}
+            {/* Stars - Secondary role, subtle */}
             {displayRating !== null && (
               <div className="flex items-center gap-0.5">
                 {Array.from({ length: 5 }).map((_, i) => {
                   const fillLevel = Math.min(1, Math.max(0, displayRating - i));
                   return (
-                    <div key={i} className="relative w-4 h-4">
-                      <Star className="w-4 h-4 text-muted-foreground/30 absolute" />
+                    <div key={i} className="relative w-3.5 h-3.5">
+                      <Star className="w-3.5 h-3.5 text-zinc-800 absolute" />
                       {fillLevel > 0 && (
                         <div
                           className="overflow-hidden absolute"
                           style={{ width: `${fillLevel * 100}%` }}
                         >
-                          <Star className={cn("w-4 h-4 fill-current", getRatingColor(displayRating))} />
+                          <Star className={cn("w-3.5 h-3.5 fill-current", getRatingColor(displayRating))} />
                         </div>
                       )}
                     </div>
@@ -179,30 +211,33 @@ export function OverallRatingCard({
               </div>
             )}
 
-            {/* Potential */}
-            {potentialRating !== null && (
-              <div className="flex items-center gap-2 text-sm">
-                <TrendingUp className="w-3 h-3 text-muted-foreground" />
-                <span className="text-muted-foreground">Potencial:</span>
-                <span className="font-medium text-amber-400">{formatFixed(potentialRating, 1)}</span>
-              </div>
-            )}
+            {/* Secondary Indicators - Organized and discrete */}
+            <div className="space-y-1.5 pt-1">
+              {/* Potential */}
+              {potentialRating !== null && (
+                <div className="flex items-center gap-2 text-xs">
+                  <TrendingUp className="w-3 h-3 text-amber-500/70" />
+                  <span className="text-zinc-600">Potencial</span>
+                  <span className="font-semibold text-amber-400/90">{formatFixed(potentialRating, 1)}</span>
+                </div>
+              )}
 
-            {/* Scout Rating if different from auto */}
-            {overallRating !== null && autoRating !== null && overallRating !== autoRating && (
-              <div className="flex items-center gap-2 text-sm">
-                <Star className="w-3 h-3 text-muted-foreground" />
-                <span className="text-muted-foreground">Scout:</span>
-                <span className="font-medium">{formatFixed(overallRating, 1)}</span>
-              </div>
-            )}
+              {/* Scout Rating if different from auto */}
+              {overallRating !== null && autoRating !== null && overallRating !== autoRating && (
+                <div className="flex items-center gap-2 text-xs">
+                  <User className="w-3 h-3 text-zinc-600" />
+                  <span className="text-zinc-600">Scout</span>
+                  <span className="font-semibold text-zinc-400">{formatFixed(overallRating, 1)}</span>
+                </div>
+              )}
 
-            {formattedDate && (
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <Clock className="w-3 h-3" />
-                Atualizado em {formattedDate}
-              </p>
-            )}
+              {formattedDate && (
+                <div className="flex items-center gap-1.5 text-[10px] text-zinc-600 pt-1">
+                  <Clock className="w-3 h-3" />
+                  <span>Atualizado em {formattedDate}</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </CardContent>
