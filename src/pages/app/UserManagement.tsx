@@ -446,7 +446,7 @@ export default function UserManagement() {
       </div>
 
       {/* Search and Filters */}
-      <Card>
+      <Card className="bg-zinc-900/50 border border-zinc-800/50">
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row gap-3">
             {/* Search */}
@@ -491,7 +491,7 @@ export default function UserManagement() {
       </Card>
 
       {/* Desktop Table */}
-      <Card className="hidden md:block">
+      <Card className="hidden md:block bg-zinc-900/50 border border-zinc-800/50">
         <CardContent className="p-0">
           <Table>
             <TableHeader>
@@ -601,7 +601,7 @@ export default function UserManagement() {
       {/* Mobile Cards */}
       <div className="md:hidden space-y-3">
         {filteredUsers.length === 0 ? (
-          <Card>
+          <Card className="bg-zinc-900/50 border border-zinc-800/50">
             <CardContent className="py-12 text-center">
               <Users className="w-12 h-12 mx-auto mb-3 opacity-20" />
               <p className="text-muted-foreground">Nenhum usuário encontrado</p>
@@ -609,7 +609,7 @@ export default function UserManagement() {
           </Card>
         ) : (
           filteredUsers.map((user) => (
-            <Card key={user.user_id}>
+            <Card key={user.user_id} className="bg-zinc-900/50 border border-zinc-800/50">
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
