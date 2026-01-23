@@ -143,11 +143,8 @@ export function MatchHeader({
                 />
                 <div className="min-w-0">
                   <h1 className="text-base sm:text-lg font-bold truncate">
-                    {displayTeamName}
+                    {displayTeamName} <span className="text-muted-foreground font-medium">×</span> {match.opponent_name || "Adversário"}
                   </h1>
-                  <p className="text-sm text-muted-foreground">
-                    vs {match.opponent_name}
-                  </p>
                   <p className="text-xs text-muted-foreground truncate">
                     {competitionName} • {match.season_year}
                     {match.venue && ` • ${match.venue}`}

@@ -146,7 +146,7 @@ export function GameHeaderCard({
                   </Badge>
                 )}
 
-                {/* Players count - glass pill */}
+                {/* Players count - glass pill - always show total count */}
                 <Badge 
                   variant="glass" 
                   size="mobile"
@@ -154,10 +154,16 @@ export function GameHeaderCard({
                 >
                   <Users className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">
-                    {isDraft ? `${startersCount} titular${startersCount !== 1 ? "es" : ""}` : `${playersOnField} em campo`}
+                    {isDraft 
+                      ? (startersCount > 0 ? `${startersCount} titular${startersCount !== 1 ? "es" : ""}` : "—")
+                      : (playersOnField > 0 ? `${playersOnField} em campo` : "—")
+                    }
                   </span>
                   <span className="sm:hidden">
-                    {isDraft ? startersCount : playersOnField}
+                    {isDraft 
+                      ? (startersCount > 0 ? startersCount : "—")
+                      : (playersOnField > 0 ? playersOnField : "—")
+                    }
                   </span>
                 </Badge>
 
@@ -248,11 +254,8 @@ export function GameHeaderCard({
                 />
                 <div className="min-w-0">
                   <h1 className="text-base sm:text-lg font-bold text-zinc-100 truncate">
-                    {displayTeamName}
+                    {displayTeamName} <span className="text-zinc-500 font-medium">×</span> {match.opponent_name || "Adversário"}
                   </h1>
-                  <p className="text-sm text-zinc-400">
-                    vs {match.opponent_name}
-                  </p>
                   <div className="flex items-center gap-2 sm:gap-3 text-xs text-zinc-500 mt-0.5 flex-wrap">
                     <span className="flex items-center gap-1">
                       <Trophy className="w-3 h-3" />
