@@ -3,7 +3,6 @@ import { AnimatePresence } from "framer-motion";
 import { SmartHeader } from "./SmartHeader";
 import { PublicFooter } from "./PublicFooter";
 import { PageTransition } from "./PageTransition";
-import { MobileStickyCTA } from "./MobileStickyCTA";
 
 export function PublicLayout() {
   const location = useLocation();
@@ -13,7 +12,7 @@ export function PublicLayout() {
     <div className="min-h-screen flex flex-col bg-black">
       {/* Smart header with transparent variant on home page */}
       <SmartHeader variant={isHomePage ? "transparent" : "default"} />
-      <main className="flex-1 pb-20 lg:pb-0">
+      <main className="flex-1">
         <AnimatePresence mode="wait">
           <PageTransition key={location.pathname}>
             <Outlet />
@@ -21,9 +20,6 @@ export function PublicLayout() {
         </AnimatePresence>
       </main>
       <PublicFooter />
-      
-      {/* Mobile sticky CTA */}
-      <MobileStickyCTA />
     </div>
   );
 }
