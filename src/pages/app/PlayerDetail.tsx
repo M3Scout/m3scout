@@ -424,7 +424,7 @@ const PlayerDetail = () => {
                 const embedUrl = getYouTubeEmbedUrl(player.highlight_video_url);
                 if (!embedUrl) return null;
                 return (
-                  <Card>
+                  <Card className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
                         <Play className="w-5 h-5" />
