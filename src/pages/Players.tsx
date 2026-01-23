@@ -171,24 +171,55 @@ const Players = () => {
     fetchPlayers();
   }, []);
 
-  // Fetch minutes, matches, and RATINGS for selected year from OFFICIAL source
-  // This must match the same source used in PlayerDetail/AthleteIndicatorHeader (usePlayerMatchRatings)
+  // Fetch season stats from player_stats table (same source as DETALHES POR TEMPORADA in profile)
+  // This is the aggregated season data, not live match data
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchSeasonStats = async () => {
       if (players.length === 0) return;
       
       const playerIds = players.map(p => p.id);
       
-      // Query 1: Get match_players data with match info for minutes/matches
+      // Query player_stats table - same source used by PlayerStatsSection for "DETALHES POR TEMPORADA"
+      const { data: seasonStatsData, error: statsError } = await supabase
+        .from("player_stats")
+        .select(`
+          player_id,
+          season_year,
+          matches,
+          minutes,
+          goals,
+          assists
+        `)
+        .in("player_id", playerIds)
+        .eq("season_year", selectedYear);
+
+      if (statsError) {
+        console.error("[Players.tsx] Error fetching player_stats:", statsError);
+        setPlayerStats(new Map());
+        return;
+      }
+
+      // Aggregate stats per player (sum across all competitions for the year)
+      const statsMap = new Map<string, { minutes: number; matches: number; averageRating: number | null }>();
+      
+      // Group by player_id and sum matches/minutes
+      const playerAggregates = new Map<string, { minutes: number; matches: number }>();
+      (seasonStatsData || []).forEach((stat: any) => {
+        const current = playerAggregates.get(stat.player_id) || { minutes: 0, matches: 0 };
+        playerAggregates.set(stat.player_id, {
+          minutes: current.minutes + (stat.minutes || 0),
+          matches: current.matches + (stat.matches || 0),
+        });
+      });
+
+      // Now fetch ratings from match_players/match_player_stats for the same year
+      // to calculate average rating (using same logic as usePlayerMatchRatings)
       const { data: matchPlayersData, error: mpError } = await supabase
         .from("match_players")
         .select(`
           id,
           player_id,
           minutes_played,
-          started,
-          entered_minute,
-          exited_minute,
           match:matches!inner (
             id,
             season_year,
@@ -200,104 +231,73 @@ const Players = () => {
         .eq("match.season_year", selectedYear)
         .in("match.status", ["finished", "applied"]);
 
-      if (mpError) {
-        console.error("[Players.tsx] Error fetching match_players:", mpError);
-        return;
-      }
+      let ratingsMap = new Map<string, number[]>();
 
-      if (!matchPlayersData || matchPlayersData.length === 0) {
-        setPlayerStats(new Map());
-        return;
-      }
+      if (!mpError && matchPlayersData && matchPlayersData.length > 0) {
+        const matchIds = [...new Set(matchPlayersData.map((mp: any) => mp.match.id))];
 
-      // Get unique match IDs
-      const matchIds = [...new Set(matchPlayersData.map((mp: any) => mp.match.id))];
+        const { data: matchStatsData } = await supabase
+          .from("match_player_stats")
+          .select("*")
+          .in("player_id", playerIds)
+          .in("match_id", matchIds);
 
-      // Query 2: Get match_player_stats for calculating ratings (same as usePlayerMatchRatings)
-      const { data: statsData, error: statsError } = await supabase
-        .from("match_player_stats")
-        .select("*")
-        .in("player_id", playerIds)
-        .in("match_id", matchIds);
+        const statsLookup = new Map<string, any>();
+        (matchStatsData || []).forEach((stat: any) => {
+          statsLookup.set(`${stat.player_id}-${stat.match_id}`, stat);
+        });
 
-      if (statsError) {
-        console.error("[Players.tsx] Error fetching match_player_stats:", statsError);
-      }
+        const playerPositionMap = new Map<string, string>();
+        players.forEach(p => playerPositionMap.set(p.id, p.position?.toLowerCase() || ""));
 
-      // Build a map of stats: { `${player_id}-${match_id}`: stats }
-      const statsLookup = new Map<string, any>();
-      (statsData || []).forEach((stat: any) => {
-        statsLookup.set(`${stat.player_id}-${stat.match_id}`, stat);
-      });
+        matchPlayersData.forEach((mp: any) => {
+          const officialMinutes = mp.minutes_played ?? 0;
+          if (officialMinutes > 0) {
+            const matchStats = statsLookup.get(`${mp.player_id}-${mp.match.id}`);
+            if (matchStats) {
+              const position = playerPositionMap.get(mp.player_id) || "";
+              const isGoalkeeper = position === "gk" || position === "goleiro" || position === "goalkeeper";
+              
+              const statsInput: PlayerStatsInput = {
+                goals: matchStats.goals || 0,
+                assists: matchStats.assists || 0,
+                shots_on_target: matchStats.shots_on_target || 0,
+                shots: matchStats.shots || 0,
+                dribbles_success: matchStats.dribbles_success || 0,
+                dribbles_total: matchStats.dribbles_total || 0,
+                key_passes: matchStats.key_passes || 0,
+                chances_created: matchStats.chances_created || 0,
+                passes_completed: matchStats.passes_completed || 0,
+                passes_total: matchStats.passes_total || 0,
+                interceptions: matchStats.interceptions || 0,
+                recoveries: matchStats.recoveries || 0,
+                clearances: matchStats.clearances || 0,
+                tackles: matchStats.tackles || 0,
+                yellow_cards: matchStats.yellow_cards || 0,
+                red_cards: matchStats.red_cards || 0,
+                saves: matchStats.saves || 0,
+                goals_conceded: matchStats.goals_conceded || 0,
+                isGoalkeeper,
+              };
 
-      // Create a map: player -> position for GK detection
-      const playerPositionMap = new Map<string, string>();
-      players.forEach(p => playerPositionMap.set(p.id, p.position?.toLowerCase() || ""));
-
-      // Aggregate: minutes, matches, and RATINGS per player
-      // Using EXACTLY the same logic as usePlayerMatchRatings:
-      // - Only matches with rating (minutesPlayed > 0) count toward average
-      // - Average = sum(ratings) / count(ratedMatches)
-      const playerData = new Map<string, { 
-        minutes: number; 
-        matches: number; 
-        ratings: number[];
-      }>();
-
-      matchPlayersData.forEach((mp: any) => {
-        const current = playerData.get(mp.player_id) || { minutes: 0, matches: 0, ratings: [] };
-        const officialMinutes = mp.minutes_played ?? 0;
-        
-        current.minutes += officialMinutes;
-        current.matches += 1;
-
-        // Calculate rating for this match if player has stats and minutes > 0
-        if (officialMinutes > 0) {
-          const matchStats = statsLookup.get(`${mp.player_id}-${mp.match.id}`);
-          if (matchStats) {
-            const position = playerPositionMap.get(mp.player_id) || "";
-            const isGoalkeeper = position === "gk" || position === "goleiro" || position === "goalkeeper";
-            
-            // Build PlayerStatsInput (same as usePlayerMatchRatings -> matchDerivedStatsToInput)
-            const statsInput: PlayerStatsInput = {
-              goals: matchStats.goals || 0,
-              assists: matchStats.assists || 0,
-              shots_on_target: matchStats.shots_on_target || 0,
-              shots: matchStats.shots || 0,
-              dribbles_success: matchStats.dribbles_success || 0,
-              dribbles_total: matchStats.dribbles_total || 0,
-              key_passes: matchStats.key_passes || 0,
-              chances_created: matchStats.chances_created || 0,
-              passes_completed: matchStats.passes_completed || 0,
-              passes_total: matchStats.passes_total || 0,
-              interceptions: matchStats.interceptions || 0,
-              recoveries: matchStats.recoveries || 0,
-              clearances: matchStats.clearances || 0,
-              tackles: matchStats.tackles || 0,
-              yellow_cards: matchStats.yellow_cards || 0,
-              red_cards: matchStats.red_cards || 0,
-              saves: matchStats.saves || 0,
-              goals_conceded: matchStats.goals_conceded || 0,
-              isGoalkeeper,
-            };
-
-            const ratingResult = calculateMatchRating(statsInput, officialMinutes);
-            if (ratingResult.hasRating && ratingResult.rating !== null) {
-              current.ratings.push(ratingResult.rating);
+              const ratingResult = calculateMatchRating(statsInput, officialMinutes);
+              if (ratingResult.hasRating && ratingResult.rating !== null) {
+                const current = ratingsMap.get(mp.player_id) || [];
+                current.push(ratingResult.rating);
+                ratingsMap.set(mp.player_id, current);
+              }
             }
           }
-        }
+        });
+      }
 
-        playerData.set(mp.player_id, current);
-      });
-
-      // Build final stats map with averageRating (same rounding as usePlayerMatchRatings)
-      const statsMap = new Map<string, { minutes: number; matches: number; averageRating: number | null }>();
-      playerData.forEach((data, playerId) => {
+      // Build final stats map combining season stats with calculated ratings
+      playerAggregates.forEach((data, playerId) => {
+        const ratings = ratingsMap.get(playerId) || [];
         let averageRating: number | null = null;
-        if (data.ratings.length > 0) {
-          const sum = data.ratings.reduce((acc, r) => acc + r, 0);
-          averageRating = Math.round((sum / data.ratings.length) * 10) / 10;
+        if (ratings.length > 0) {
+          const sum = ratings.reduce((acc, r) => acc + r, 0);
+          averageRating = Math.round((sum / ratings.length) * 10) / 10;
         }
         statsMap.set(playerId, {
           minutes: data.minutes,
@@ -308,12 +308,12 @@ const Players = () => {
 
       setPlayerStats(statsMap);
       
-      // Debug log for validation (remove after confirming)
+      // Debug log for validation
       if (import.meta.env.DEV) {
-        console.log("[Players.tsx] Official stats from match_players + ratings:", {
+        console.log("[Players.tsx] Season stats from player_stats + ratings:", {
           selectedYear,
           totalPlayers: statsMap.size,
-          sample: Array.from(statsMap.entries()).slice(0, 3).map(([id, s]) => ({
+          sample: Array.from(statsMap.entries()).slice(0, 5).map(([id, s]) => ({
             player_id: id,
             minutes: s.minutes,
             matches: s.matches,
@@ -323,7 +323,7 @@ const Players = () => {
       }
     };
 
-    fetchStats();
+    fetchSeasonStats();
   }, [players, selectedYear]);
 
   const filteredPlayers = useMemo(() => {
