@@ -75,46 +75,46 @@ const VARIANT_STYLES: Record<MetricVariant, {
   glow?: string;
 }> = {
   default: {
-    container: "from-zinc-900/80 to-zinc-950/80 border-white/[0.04]",
+    container: "from-zinc-900/80 to-zinc-950/80",
     value: "text-zinc-300",
     iconBg: "bg-zinc-800/60",
     iconColor: "text-zinc-500",
   },
   goals: {
-    container: "from-rose-500/[0.06] via-zinc-900/80 to-zinc-950/80 border-rose-500/15",
+    container: "from-rose-500/[0.06] via-zinc-900/80 to-zinc-950/80",
     value: "text-rose-400/90",
     iconBg: "bg-rose-500/10",
     iconColor: "text-rose-400/80",
     glow: "shadow-[0_0_20px_-4px_rgba(244,63,94,0.15)]",
   },
   assists: {
-    container: "from-blue-500/[0.06] via-zinc-900/80 to-zinc-950/80 border-blue-500/15",
+    container: "from-blue-500/[0.06] via-zinc-900/80 to-zinc-950/80",
     value: "text-blue-400/90",
     iconBg: "bg-blue-500/10",
     iconColor: "text-blue-400/80",
     glow: "shadow-[0_0_20px_-4px_rgba(59,130,246,0.15)]",
   },
   contribution: {
-    container: "from-emerald-500/[0.06] via-zinc-900/80 to-zinc-950/80 border-emerald-500/15",
+    container: "from-emerald-500/[0.06] via-zinc-900/80 to-zinc-950/80",
     value: "text-emerald-400/90",
     iconBg: "bg-emerald-500/10",
     iconColor: "text-emerald-400/80",
     glow: "shadow-[0_0_20px_-4px_rgba(16,185,129,0.15)]",
   },
   defensive: {
-    container: "from-cyan-500/[0.06] via-zinc-900/80 to-zinc-950/80 border-cyan-500/15",
+    container: "from-cyan-500/[0.06] via-zinc-900/80 to-zinc-950/80",
     value: "text-cyan-400/90",
     iconBg: "bg-cyan-500/10",
     iconColor: "text-cyan-400/80",
   },
   gk: {
-    container: "from-amber-500/[0.06] via-zinc-900/80 to-zinc-950/80 border-amber-500/15",
+    container: "from-amber-500/[0.06] via-zinc-900/80 to-zinc-950/80",
     value: "text-amber-400/90",
     iconBg: "bg-amber-500/10",
     iconColor: "text-amber-400/80",
   },
   negative: {
-    container: "from-rose-500/[0.04] via-zinc-900/80 to-zinc-950/80 border-rose-500/10",
+    container: "from-rose-500/[0.04] via-zinc-900/80 to-zinc-950/80",
     value: "text-rose-400/80",
     iconBg: "bg-rose-500/10",
     iconColor: "text-rose-400/70",
@@ -135,11 +135,11 @@ function MetricCard({ value, label, icon: Icon, variant = "default" }: MetricCar
   return (
     <div
       className={cn(
-        // Premium glass card
+        // Premium glass card - no visible border
         "group relative rounded-xl p-4 h-[96px]",
-        "bg-gradient-to-br border backdrop-blur-sm",
+        "bg-gradient-to-br backdrop-blur-sm",
         "transition-all duration-200",
-        "hover:border-white/[0.08] hover:translate-y-[-1px]",
+        "hover:translate-y-[-1px]",
         styles.container,
         styles.glow
       )}
@@ -184,10 +184,10 @@ function DerivedMetric({ value, label }: DerivedMetricProps) {
   return (
     <div className={cn(
       "flex items-center gap-2 px-4 py-2 rounded-full",
-      "bg-zinc-900/60 border border-white/[0.04]",
+      "bg-zinc-900/60",
       "backdrop-blur-sm",
       "transition-all duration-200",
-      "hover:border-white/[0.08] hover:bg-zinc-800/40"
+      "hover:bg-zinc-800/40"
     )}>
       <span className="text-sm font-semibold text-zinc-200">{value}</span>
       <span className="text-[11px] text-zinc-500 uppercase tracking-wide">{label}</span>
