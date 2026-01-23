@@ -397,6 +397,7 @@ function VisualModeCard({
   slug,
   name,
   position,
+  id,
   age,
   nationality,
   currentClub,
@@ -407,7 +408,8 @@ function VisualModeCard({
 }: AthleteCardPremiumProps & { priority: PriorityLevel }) {
   const [isHovered, setIsHovered] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
-  const href = isPublic ? `/players/${slug}` : `/app/players/${slug}`;
+  // Public routes use slug, app routes use id (as per App.tsx routing)
+  const href = isPublic ? `/players/${slug}` : `/app/players/${id}`;
   const priorityInfo = priorityConfig[priority];
   const status = getAthleteStatus(priority, createdAt);
 
@@ -601,6 +603,7 @@ function VisualModeCard({
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function ClubScoutingCard({
+  id,
   slug,
   name,
   position,
@@ -629,7 +632,8 @@ function ClubScoutingCard({
 }: AthleteCardPremiumProps & { priority: PriorityLevel }) {
   const [isHovered, setIsHovered] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
-  const href = isPublic ? `/players/${slug}` : `/app/players/${slug}`;
+  // Public routes use slug, app routes use id (as per App.tsx routing)
+  const href = isPublic ? `/players/${slug}` : `/app/players/${id}`;
   const priorityInfo = priorityConfig[priority];
   const physicalInfo = physicalStatusLabels[physicalStatus || "fit"];
   const status = getAthleteStatus(priority, createdAt);
