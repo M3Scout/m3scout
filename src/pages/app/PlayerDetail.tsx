@@ -50,7 +50,7 @@ import { MarketValueTab } from "@/components/players/sections/MarketValueTab";
 import { DataQualityPanel } from "@/components/players/DataQualityPanel";
 import { RecentReportsCard } from "@/components/players/sections/RecentReportsCard";
 import { MetadataCard } from "@/components/players/sections/MetadataCard";
-import { AthleteIndicatorHeader } from "@/components/players/sections/AthleteIndicatorHeader";
+
 
 import { UnifiedRadarCard } from "@/components/players/UnifiedRadarCard";
 
@@ -324,16 +324,6 @@ const PlayerDetail = () => {
             )}
           </Badge>
         </div>
-
-        {/* Row 4: Athlete Indicator Header */}
-        <AthleteIndicatorHeader
-          playerId={player.id}
-          playerPosition={player.position}
-          physicalStatus={player.physical_status}
-          playStyle={player.play_style}
-          primaryTacticalRole={player.primary_tactical_role}
-          secondaryTacticalRole={player.secondary_tactical_role}
-        />
 
         {/* Row 4: Actions - stacked on mobile */}
         <div className="flex flex-col gap-2 w-full">
