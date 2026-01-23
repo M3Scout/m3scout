@@ -253,7 +253,7 @@ const Dashboard = () => {
       {/* Competition Usage - Admin Only */}
       {isAdmin && (
         <motion.div variants={staggerItem}>
-          <div className="rounded-[var(--radius-card)] border border-[var(--border-glass)] bg-[var(--bg-glass)] backdrop-blur-sm overflow-hidden">
+           <div className="rounded-[var(--radius-card)] bg-[var(--bg-glass)] backdrop-blur-sm overflow-hidden">
             <CompetitionUsageWidget />
           </div>
         </motion.div>
