@@ -139,11 +139,11 @@ function HighlightCard({
   delay?: number;
 }) {
   const colorMap = {
-    red: "from-primary/20 to-primary/5 border-primary/30 hover:border-primary/50",
-    blue: "from-blue-500/20 to-blue-500/5 border-blue-500/30 hover:border-blue-500/50",
-    green: "from-emerald-500/20 to-emerald-500/5 border-emerald-500/30 hover:border-emerald-500/50",
-    purple: "from-purple-500/20 to-purple-500/5 border-purple-500/30 hover:border-purple-500/50",
-    amber: "from-amber-500/20 to-amber-500/5 border-amber-500/30 hover:border-amber-500/50",
+    red: "from-primary/20 to-primary/5",
+    blue: "from-blue-500/20 to-blue-500/5",
+    green: "from-emerald-500/20 to-emerald-500/5",
+    purple: "from-purple-500/20 to-purple-500/5",
+    amber: "from-amber-500/20 to-amber-500/5",
   };
 
   const iconColorMap = {
@@ -162,7 +162,7 @@ function HighlightCard({
       whileHover={cardHover}
       whileTap={cardTap}
       className={cn(
-        "relative p-4 md:p-5 rounded-[--radius-card] border bg-gradient-to-br cursor-default",
+        "relative p-4 md:p-5 rounded-[--radius-card] bg-gradient-to-br cursor-default",
         "transition-all duration-300 shadow-[--shadow-soft]",
         colorMap[color]
       )}
@@ -192,11 +192,11 @@ function Chip({
   icon?: React.ElementType;
 }) {
   const variants = {
-    default: "bg-[--bg-glass] text-muted-foreground border-[--border-glass]",
-    primary: "bg-primary/10 text-primary border-primary/30",
-    success: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
-    warning: "bg-amber-500/10 text-amber-400 border-amber-500/30",
-    info: "bg-blue-500/10 text-blue-400 border-blue-500/30",
+    default: "bg-[--bg-glass] text-muted-foreground",
+    primary: "bg-primary/10 text-primary",
+    success: "bg-emerald-500/10 text-emerald-400",
+    warning: "bg-amber-500/10 text-amber-400",
+    info: "bg-blue-500/10 text-blue-400",
   };
 
   return (
@@ -204,7 +204,7 @@ function Chip({
       whileHover={pillHover}
       className={cn(
         "inline-flex items-center gap-1.5 px-3 py-1.5",
-        "rounded-[--radius-pill] text-xs font-medium border",
+        "rounded-[--radius-pill] text-xs font-medium",
         "min-h-[36px] cursor-default transition-all",
         variants[variant]
       )}
@@ -234,12 +234,12 @@ function KPICard({
       onClick={onClick}
       className={cn(
         "flex flex-col items-center justify-center p-3 md:p-4",
-        "rounded-[--radius-button] border transition-all",
+        "rounded-[--radius-button] transition-all",
         "focus:outline-none focus-visible:ring-[--focus-ring]",
         "min-h-[--tap-target]",
         active 
-          ? "bg-primary/10 border-primary/40 shadow-[--shadow-soft]" 
-          : "bg-[--bg-glass] border-[--border-glass] hover:border-muted-foreground/30"
+          ? "bg-primary/10 shadow-[--shadow-soft]" 
+          : "bg-[--bg-glass] hover:bg-[--bg-glass-hover]"
       )}
     >
       <span className={cn(
@@ -266,10 +266,10 @@ function PhasePanel({
   stats: { label: string; value: number; max?: number }[];
 }) {
   const colorMap = {
-    orange: { bg: "from-orange-500/10", border: "border-orange-500/20", icon: "text-orange-400", bar: "bg-orange-500" },
-    purple: { bg: "from-purple-500/10", border: "border-purple-500/20", icon: "text-purple-400", bar: "bg-purple-500" },
-    green: { bg: "from-emerald-500/10", border: "border-emerald-500/20", icon: "text-emerald-400", bar: "bg-emerald-500" },
-    blue: { bg: "from-blue-500/10", border: "border-blue-500/20", icon: "text-blue-400", bar: "bg-blue-500" },
+    orange: { bg: "from-orange-500/10", icon: "text-orange-400", bar: "bg-orange-500" },
+    purple: { bg: "from-purple-500/10", icon: "text-purple-400", bar: "bg-purple-500" },
+    green: { bg: "from-emerald-500/10", icon: "text-emerald-400", bar: "bg-emerald-500" },
+    blue: { bg: "from-blue-500/10", icon: "text-blue-400", bar: "bg-blue-500" },
   };
 
   const c = colorMap[color];
@@ -281,8 +281,8 @@ function PhasePanel({
       viewport={{ once: true }}
       whileHover={cardHover}
       className={cn(
-        "p-4 md:p-5 rounded-[--radius-card] border bg-gradient-to-br to-transparent",
-        c.bg, c.border
+        "p-4 md:p-5 rounded-[--radius-card] bg-gradient-to-br to-transparent",
+        c.bg
       )}
     >
       <div className="flex items-center gap-2 mb-3 md:mb-4">
@@ -338,8 +338,8 @@ function AnimatedMetric({
       whileHover={cardHover}
       className={cn(
         "p-3 md:p-4 rounded-[--radius-button] transition-all",
-        "bg-[--bg-glass] border border-[--border-glass]",
-        "hover:border-muted-foreground/30"
+        "bg-[--bg-glass]",
+        "hover:bg-[--bg-glass-hover]"
       )}
     >
       <div className="flex items-center gap-2 mb-2 md:mb-3">
@@ -421,7 +421,7 @@ function VideoThumbnail({
       whileTap={cardTap}
       className={cn(
         "relative w-full aspect-video overflow-hidden group cursor-pointer",
-        "rounded-[--radius-card] bg-muted border border-[--border-glass]"
+        "rounded-[--radius-card] bg-muted"
       )}
     >
       {/* Real thumbnail image */}
@@ -779,8 +779,8 @@ const PlayerProfile = () => {
                     whileHover={cardHover}
                     className={cn(
                       "p-2.5 md:p-3 transition-all",
-                      "rounded-[--radius-button] bg-[--bg-glass] border border-[--border-glass]",
-                      "hover:border-muted-foreground/30"
+                      "rounded-[--radius-button] bg-[--bg-glass]",
+                      "hover:bg-[--bg-glass-hover]"
                     )}
                   >
                     <Calendar className="w-3.5 h-3.5 md:w-4 md:h-4 text-muted-foreground mb-1" />
@@ -793,8 +793,8 @@ const PlayerProfile = () => {
                     whileHover={cardHover}
                     className={cn(
                       "p-2.5 md:p-3 transition-all",
-                      "rounded-[--radius-button] bg-[--bg-glass] border border-[--border-glass]",
-                      "hover:border-muted-foreground/30"
+                      "rounded-[--radius-button] bg-[--bg-glass]",
+                      "hover:bg-[--bg-glass-hover]"
                     )}
                   >
                     <Ruler className="w-3.5 h-3.5 md:w-4 md:h-4 text-muted-foreground mb-1" />
@@ -807,8 +807,8 @@ const PlayerProfile = () => {
                     whileHover={cardHover}
                     className={cn(
                       "p-2.5 md:p-3 transition-all",
-                      "rounded-[--radius-button] bg-[--bg-glass] border border-[--border-glass]",
-                      "hover:border-muted-foreground/30"
+                      "rounded-[--radius-button] bg-[--bg-glass]",
+                      "hover:bg-[--bg-glass-hover]"
                     )}
                   >
                     <User className="w-3.5 h-3.5 md:w-4 md:h-4 text-muted-foreground mb-1" />
@@ -821,8 +821,8 @@ const PlayerProfile = () => {
                     whileHover={cardHover}
                     className={cn(
                       "p-2.5 md:p-3 transition-all",
-                      "rounded-[--radius-button] bg-[--bg-glass] border border-[--border-glass]",
-                      "hover:border-muted-foreground/30"
+                      "rounded-[--radius-button] bg-[--bg-glass]",
+                      "hover:bg-[--bg-glass-hover]"
                     )}
                   >
                     <MapPin className="w-3.5 h-3.5 md:w-4 md:h-4 text-muted-foreground mb-1" />
@@ -980,7 +980,7 @@ const PlayerProfile = () => {
                   transition={{ duration: 0.2 }}
                   className={cn(
                     "p-4 md:p-6",
-                    "rounded-[--radius-card] bg-[--bg-glass] border border-[--border-glass]"
+                    "rounded-[--radius-card] bg-[--bg-glass]"
                   )}
                 >
                   {activeTab === "current" && currentSeasonStats && (
@@ -1202,8 +1202,7 @@ const PlayerProfile = () => {
           <motion.section
             className={cn(
               "text-center py-8 md:py-12 mt-6 md:mt-8 px-4",
-              "rounded-[--radius-card] bg-gradient-to-br from-muted/50 to-muted/20",
-              "border border-[--border-glass]"
+              "rounded-[--radius-card] bg-gradient-to-br from-muted/50 to-muted/20"
             )}
             initial={{ opacity: 0, scale: 0.98 }}
             whileInView={{ opacity: 1, scale: 1 }}

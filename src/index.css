@@ -73,10 +73,10 @@ p, span, h1, h2, h3, h4, h5, h6, a, li {
     --radius-input: 12px;
     --radius-badge: 999px;
     
-    /* Border tokens - ultra subtle for premium separation */
-    --border-subtle: 1px solid hsl(222 30% 18% / 0.25);
-    --border-glass: 1px solid hsl(210 20% 98% / 0.04);
-    --border-card: 1px solid hsl(210 20% 98% / 0.03);
+    /* Border tokens - invisible for premium dark UI */
+    --border-subtle: 1px solid transparent;
+    --border-glass: 1px solid transparent;
+    --border-card: 1px solid transparent;
     
     /* Elevation backgrounds - executive layer system */
     --bg-elev-0: hsl(227 39% 5%);  /* #070910 */

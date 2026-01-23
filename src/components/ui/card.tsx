@@ -7,9 +7,7 @@ const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElemen
     ref={ref} 
     className={cn(
       "rounded-xl bg-card text-card-foreground",
-      // Premium layer separation - subtle border for definition
-      "border border-white/[0.03]",
-      // Deep, soft shadow for real elevation without being decorative
+      // Premium separation via shadow and background only - no visible border
       "shadow-[0_4px_24px_-6px_hsl(222_50%_3%/0.5),0_2px_8px_-2px_hsl(222_50%_3%/0.25)]",
       className
     )} 
