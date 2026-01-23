@@ -25,7 +25,7 @@ import RepresentacaoTalentos from "./pages/RepresentacaoTalentos";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import CompetitionRankingPublic from "./pages/CompetitionRankingPublic";
-
+import PendingAccess from "./pages/PendingAccess";
 // App Pages
 import Dashboard from "./pages/app/Dashboard";
 import AppPlayers from "./pages/app/AppPlayers";
@@ -81,6 +81,9 @@ const App = () => (
 
                 {/* Auth Route */}
                 <Route path="/app/auth" element={<Auth />} />
+                
+                {/* Pending Access - for users without valid role */}
+                <Route path="/pending-access" element={<PendingAccess />} />
 
                 {/* Protected App Routes */}
                 <Route
