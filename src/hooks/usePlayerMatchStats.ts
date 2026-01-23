@@ -139,25 +139,13 @@ interface MatchPlayerStats {
 }
 
 /**
- * Calculate minutes played using the standardized 90-minute logic
- * Starters: 0' → 90' (or exit minute)
- * Substitutes: entry minute → 90' (or exit minute)
+ * Get official minutes played from the stored field.
+ * IMPORTANT: Do NOT calculate minutes from entry/exit times.
+ * Always trust the official minutes_played field from match_players.
  */
-function calculateMinutesPlayed(
-  started: boolean,
-  enteredMinute: number | null,
-  exitedMinute: number | null,
-  storedMinutes: number | null,
-  matchDuration: number = 90
-): number {
-  // If we have stored minutes from the match system, trust them
-  if (storedMinutes !== null && storedMinutes > 0) {
-    return storedMinutes;
-  }
-  
-  const startMin = started ? 0 : (enteredMinute ?? 0);
-  const endMin = exitedMinute ?? matchDuration;
-  return Math.max(0, endMin - startMin);
+function getOfficialMinutesPlayed(storedMinutes: number | null): number {
+  // Use ONLY the official stored minutes - no calculation fallback
+  return storedMinutes ?? 0;
 }
 
 /**
@@ -257,14 +245,8 @@ export function usePlayerMatchStats({
       const stats = matchesData?.matchStats[mp.match_id];
       const competition = mp.match.competition;
       
-      // Calculate minutes using standardized logic
-      const minutesPlayed = calculateMinutesPlayed(
-        mp.started,
-        mp.entered_minute,
-        mp.exited_minute,
-        mp.minutes_played,
-        mp.match.duration_minutes
-      );
+      // Use official minutes_played field - no calculation
+      const minutesPlayed = getOfficialMinutesPlayed(mp.minutes_played);
 
       // Transform match_player_stats to our derived format
       const derivedStats: MatchDerivedStats = {
@@ -670,14 +652,8 @@ export function usePlayerMatchStatsBySeasonCompetition({
       const entry = statsBySeasonCompetition[key];
       const s = entry.stats;
 
-      // Calculate minutes using standardized logic
-      const minutesPlayed = calculateMinutesPlayed(
-        mp.started,
-        mp.entered_minute,
-        mp.exited_minute,
-        mp.minutes_played,
-        mp.match.duration_minutes
-      );
+      // Use official minutes_played field - no calculation
+      const minutesPlayed = getOfficialMinutesPlayed(mp.minutes_played);
 
       s.matches += 1;
       s.minutes += minutesPlayed;
