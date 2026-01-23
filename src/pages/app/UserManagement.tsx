@@ -164,6 +164,11 @@ export default function UserManagement() {
   const [saving, setSaving] = useState(false);
   const [editedPermissions, setEditedPermissions] = useState<Record<string, boolean>>({});
   const [editedRole, setEditedRole] = useState<AppRole | null>(null);
+  const [editedLinkedPlayerId, setEditedLinkedPlayerId] = useState<string | null>(null);
+  
+  // Available players for linking
+  const [availablePlayers, setAvailablePlayers] = useState<{id: string; full_name: string}[]>([]);
+  const [loadingPlayers, setLoadingPlayers] = useState(false);
   
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -315,11 +320,35 @@ export default function UserManagement() {
     });
   }, [users, searchQuery, statusFilter, roleFilter]);
 
+  // Fetch available players for linking
+  const fetchAvailablePlayers = async () => {
+    setLoadingPlayers(true);
+    try {
+      const { data, error } = await supabase
+        .from("players")
+        .select("id, full_name")
+        .or("is_archived.eq.false,is_archived.is.null")
+        .order("full_name");
+      
+      if (!error && data) {
+        setAvailablePlayers(data);
+      }
+    } catch (e) {
+      console.error("Error fetching players:", e);
+    } finally {
+      setLoadingPlayers(false);
+    }
+  };
+
   const openPermissions = (user: UserWithPermissions) => {
     setSelectedUser(user);
     setEditedRole(user.role);
     setEditedPermissions(user.permissions || {});
+    setEditedLinkedPlayerId(user.linked_player_id);
     setPermissionsOpen(true);
+    
+    // Fetch players for the dropdown if this is or could become a player role
+    fetchAvailablePlayers();
   };
 
   const handleRoleChange = (newRole: AppRole) => {
@@ -360,41 +389,69 @@ export default function UserManagement() {
       return;
     }
 
+    // Validate: player role needs a linked player
+    if (editedRole === "player" && !editedLinkedPlayerId) {
+      toast.error("Selecione um atleta para vincular ao usuário jogador");
+      return;
+    }
+
     setSaving(true);
     try {
+      // Update role and linked_player_id
+      const roleUpdateData: any = { role: editedRole };
+      
+      // Only set linked_player_id for player role
+      if (editedRole === "player") {
+        roleUpdateData.linked_player_id = editedLinkedPlayerId;
+      } else {
+        roleUpdateData.linked_player_id = null;
+      }
+      
       const { error: roleError } = await supabase
         .from("user_roles")
-        .update({ role: editedRole })
+        .update(roleUpdateData)
         .eq("user_id", selectedUser.user_id);
 
       if (roleError) throw roleError;
 
-      const permsToSave = { ...editedPermissions };
-      if (editedRole !== "admin") {
-        MODULES.forEach(module => {
-          if (module.actions.includes("delete")) {
-            permsToSave[`${module.key}_delete`] = false;
-          }
-        });
+      // Skip permission updates for player role (they have fixed read-only permissions)
+      if (editedRole !== "player") {
+        const permsToSave = { ...editedPermissions };
+        if (editedRole !== "admin") {
+          MODULES.forEach(module => {
+            if (module.actions.includes("delete")) {
+              permsToSave[`${module.key}_delete`] = false;
+            }
+          });
+        }
+        permsToSave.users_manage = editedRole === "admin";
+
+        const { error: permsError } = await supabase
+          .from("user_permissions")
+          .update({
+            ...permsToSave,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("user_id", selectedUser.user_id);
+
+        if (permsError) throw permsError;
       }
-      permsToSave.users_manage = editedRole === "admin";
-
-      const { error: permsError } = await supabase
-        .from("user_permissions")
-        .update({
-          ...permsToSave,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", selectedUser.user_id);
-
-      if (permsError) throw permsError;
 
       toast.success("Permissões atualizadas com sucesso");
       setPermissionsOpen(false);
 
+      // Get linked player name
+      const linkedPlayerName = availablePlayers.find(p => p.id === editedLinkedPlayerId)?.full_name || null;
+
       setUsers(prev => prev.map(u => 
         u.user_id === selectedUser.user_id 
-          ? { ...u, role: editedRole, permissions: permsToSave as any }
+          ? { 
+              ...u, 
+              role: editedRole, 
+              linked_player_id: editedRole === "player" ? editedLinkedPlayerId : null,
+              linked_player_name: editedRole === "player" ? linkedPlayerName : null,
+              permissions: editedRole === "player" ? u.permissions : editedPermissions as any 
+            }
           : u
       ));
     } catch (error) {
@@ -502,6 +559,7 @@ export default function UserManagement() {
                 <SelectItem value="admin">Admin</SelectItem>
                 <SelectItem value="editor">Editor</SelectItem>
                 <SelectItem value="viewer">Viewer</SelectItem>
+                <SelectItem value="player">Jogador</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -541,9 +599,16 @@ export default function UserManagement() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge className={ROLE_COLORS[user.role]} variant="outline">
-                      {ROLE_LABELS[user.role]}
-                    </Badge>
+                    <div className="flex flex-col gap-1">
+                      <Badge className={ROLE_COLORS[user.role]} variant="outline">
+                        {ROLE_LABELS[user.role]}
+                      </Badge>
+                      {user.role === "player" && (
+                        <span className="text-xs text-muted-foreground">
+                          {user.linked_player_name ? `→ ${user.linked_player_name}` : "⚠️ Não vinculado"}
+                        </span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Badge 
@@ -686,6 +751,11 @@ export default function UserManagement() {
                   <Badge className={ROLE_COLORS[user.role]} variant="outline">
                     {ROLE_LABELS[user.role]}
                   </Badge>
+                  {user.role === "player" && (
+                    <span className="text-xs text-muted-foreground">
+                      {user.linked_player_name ? `→ ${user.linked_player_name}` : "⚠️ Não vinculado"}
+                    </span>
+                  )}
                   <Badge 
                     variant="outline" 
                     className={user.status === "active" 
@@ -769,6 +839,7 @@ export default function UserManagement() {
                   <SelectItem value="admin">Admin (acesso total)</SelectItem>
                   <SelectItem value="editor">Editor (criar/editar, sem deletar)</SelectItem>
                   <SelectItem value="viewer">Viewer (somente leitura)</SelectItem>
+                  <SelectItem value="player">Jogador (acesso ao próprio perfil)</SelectItem>
                 </SelectContent>
               </Select>
               {editedRole === "admin" && (
@@ -777,60 +848,107 @@ export default function UserManagement() {
                   Admin tem acesso total, incluindo exclusão
                 </p>
               )}
-            </div>
-
-            <Separator className="bg-zinc-800/50" />
-
-            {/* Granular Permissions */}
-            <div className="space-y-4">
-              <Label>Permissões por Módulo</Label>
-              
-              {MODULES.map((module) => (
-                <div key={module.key} className="space-y-2 p-3 rounded-xl bg-zinc-900/30 border border-zinc-800/50">
-                  <p className="font-medium text-sm">{module.label}</p>
-                  <div className="flex flex-wrap gap-4">
-                    {module.actions.map((action) => {
-                      const key = `${module.key}_${action}`;
-                      const isDeleteAction = action === "delete";
-                      const isDisabled = isDeleteAction && editedRole !== "admin";
-                      const isChecked = editedPermissions[key] ?? false;
-
-                      return (
-                        <div key={key} className="flex items-center gap-2">
-                          <Checkbox
-                            id={key}
-                            checked={isChecked}
-                            onCheckedChange={(checked) => 
-                              handlePermissionChange(key, checked as boolean)
-                            }
-                            disabled={isDisabled}
-                          />
-                          <Label 
-                            htmlFor={key} 
-                            className={`text-sm cursor-pointer ${isDisabled ? "text-muted-foreground" : ""}`}
-                          >
-                            {ACTION_LABELS[action]}
-                            {isDeleteAction && editedRole !== "admin" && (
-                              <Lock className="w-3 h-3 inline ml-1 text-muted-foreground" />
-                            )}
-                          </Label>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {editedRole !== "admin" && (
-              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                <p className="text-xs text-amber-400 flex items-center gap-2">
-                  <Lock className="w-4 h-4 shrink-0" />
-                  <span>
-                    <strong>Exclusão bloqueada:</strong> Apenas usuários com função Admin podem excluir registros.
-                  </span>
+              {editedRole === "player" && (
+                <p className="text-xs text-emerald-400 flex items-center gap-1">
+                  <Users className="w-3 h-3" />
+                  Jogador vê apenas seu próprio perfil, relatórios e jogos
                 </p>
-              </div>
+              )}
+            </div>
+
+            {/* Player Linking - Only shown for player role */}
+            {editedRole === "player" && (
+              <>
+                <Separator className="bg-zinc-800/50" />
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-emerald-400" />
+                    Vincular a Atleta
+                  </Label>
+                  <Select
+                    value={editedLinkedPlayerId || ""}
+                    onValueChange={(value) => setEditedLinkedPlayerId(value || null)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={loadingPlayers ? "Carregando atletas..." : "Selecione o atleta"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availablePlayers.map((player) => (
+                        <SelectItem key={player.id} value={player.id}>
+                          {player.full_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    O usuário só poderá ver dados do atleta vinculado.
+                  </p>
+                  {!editedLinkedPlayerId && (
+                    <p className="text-xs text-amber-400 flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3" />
+                      É obrigatório vincular um atleta para salvar
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Granular Permissions - Not shown for player role */}
+            {editedRole !== "player" && (
+              <>
+                <Separator className="bg-zinc-800/50" />
+
+                <div className="space-y-4">
+                  <Label>Permissões por Módulo</Label>
+                  
+                  {MODULES.map((module) => (
+                    <div key={module.key} className="space-y-2 p-3 rounded-xl bg-zinc-900/30 border border-zinc-800/50">
+                      <p className="font-medium text-sm">{module.label}</p>
+                      <div className="flex flex-wrap gap-4">
+                        {module.actions.map((action) => {
+                          const key = `${module.key}_${action}`;
+                          const isDeleteAction = action === "delete";
+                          const isDisabled = isDeleteAction && editedRole !== "admin";
+                          const isChecked = editedPermissions[key] ?? false;
+
+                          return (
+                            <div key={key} className="flex items-center gap-2">
+                              <Checkbox
+                                id={key}
+                                checked={isChecked}
+                                onCheckedChange={(checked) => 
+                                  handlePermissionChange(key, checked as boolean)
+                                }
+                                disabled={isDisabled}
+                              />
+                              <Label 
+                                htmlFor={key} 
+                                className={`text-sm cursor-pointer ${isDisabled ? "text-muted-foreground" : ""}`}
+                              >
+                                {ACTION_LABELS[action]}
+                                {isDeleteAction && editedRole !== "admin" && (
+                                  <Lock className="w-3 h-3 inline ml-1 text-muted-foreground" />
+                                )}
+                              </Label>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {editedRole !== "admin" && (
+                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                    <p className="text-xs text-amber-400 flex items-center gap-2">
+                      <Lock className="w-4 h-4 shrink-0" />
+                      <span>
+                        <strong>Exclusão bloqueada:</strong> Apenas usuários com função Admin podem excluir registros.
+                      </span>
+                    </p>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
