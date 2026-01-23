@@ -824,7 +824,107 @@ export function MarketValueTab({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
+            {/* Mobile: Card layout (no horizontal scroll) */}
+            <div className="sm:hidden space-y-3">
+              {[...history].reverse().map((entry, index) => {
+                const isLatest = index === 0;
+                return (
+                  <div 
+                    key={entry.id}
+                    className={cn(
+                      "rounded-xl border border-zinc-800/40 p-4 transition-all duration-150",
+                      isLatest ? "bg-primary/[0.03] border-primary/20" : "bg-zinc-900/30",
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 space-y-3">
+                        {/* Date + Current badge */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm text-zinc-300 font-medium">
+                            {new Date(entry.recorded_at).toLocaleDateString("pt-BR")}
+                          </span>
+                          {isLatest && (
+                            <Badge 
+                              className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 bg-primary/10 text-primary border-primary/20"
+                            >
+                              Atual
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        {/* Value - prominent */}
+                        <div className={cn(
+                          "font-bold tabular-nums text-xl",
+                          isLatest ? "text-primary" : "text-zinc-200"
+                        )}>
+                          {formatFullValue(entry.value, entry.currency)}
+                        </div>
+                        
+                        {/* Metadata grid */}
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div>
+                            <span className="text-zinc-600 uppercase tracking-wider text-[10px]">Moeda</span>
+                            <div className="mt-0.5">
+                              <Badge variant="outline" className="text-[10px] bg-zinc-900/60 border-zinc-800/50 text-zinc-500">
+                                {entry.currency}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div>
+                            <span className="text-zinc-600 uppercase tracking-wider text-[10px]">Fonte</span>
+                            <div className="mt-0.5 text-zinc-400">
+                              {entry.source || "—"}
+                            </div>
+                          </div>
+                          {entry.note && (
+                            <div className="col-span-2">
+                              <span className="text-zinc-600 uppercase tracking-wider text-[10px]">Nota</span>
+                              <div className="mt-0.5 text-zinc-400 break-words">
+                                {entry.note}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Actions */}
+                      {canEdit && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800/40 shrink-0"
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-800">
+                            <DropdownMenuItem 
+                              onClick={() => handleEditClick(entry)}
+                              className="text-zinc-300 focus:text-white focus:bg-zinc-800"
+                            >
+                              <Pencil className="h-4 w-4 mr-2" />
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleDeleteClick(entry)}
+                              className="text-rose-400 focus:text-rose-300 focus:bg-rose-500/10"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop: Table layout */}
+            <div className="hidden sm:block">
               <div className="border border-zinc-800/40 rounded-xl overflow-hidden bg-zinc-900/30">
                 <Table>
                   <TableHeader>
