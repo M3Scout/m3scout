@@ -69,7 +69,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
 
-type AppRole = "admin" | "scout" | "member" | "partner" | "editor" | "viewer";
+type AppRole = "admin" | "scout" | "member" | "partner" | "editor" | "viewer" | "player";
 
 interface UserWithPermissions {
   user_id: string;
@@ -79,6 +79,8 @@ interface UserWithPermissions {
   is_owner: boolean;
   status: string;
   last_login_at: string | null;
+  linked_player_id: string | null;
+  linked_player_name?: string | null;
   permissions: {
     players_view: boolean;
     players_create: boolean;
@@ -118,6 +120,7 @@ const ROLE_LABELS: Record<AppRole, string> = {
   viewer: "Viewer",
   member: "Viewer",
   partner: "Partner",
+  player: "Jogador",
 };
 
 const ROLE_COLORS: Record<AppRole, string> = {
@@ -127,6 +130,7 @@ const ROLE_COLORS: Record<AppRole, string> = {
   viewer: "bg-zinc-500/20 text-zinc-400 border-zinc-500/30",
   member: "bg-zinc-500/20 text-zinc-400 border-zinc-500/30",
   partner: "bg-purple-500/20 text-purple-400 border-purple-500/30",
+  player: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
 };
 
 const MODULES = [
@@ -186,12 +190,13 @@ export default function UserManagement() {
       try {
         const { data: rolesData, error: rolesError } = await supabase
           .from("user_roles")
-          .select("user_id, role, is_owner, status")
+          .select("user_id, role, is_owner, status, linked_player_id")
           .order("created_at", { ascending: true });
 
         if (rolesError) throw rolesError;
 
         const userIds = [...new Set(rolesData?.map(r => r.user_id) || [])];
+        const playerIds = [...new Set(rolesData?.map(r => r.linked_player_id).filter(Boolean) || [])];
 
         if (userIds.length === 0) {
           setUsers([]);
@@ -213,6 +218,17 @@ export default function UserManagement() {
 
         if (permsError) throw permsError;
 
+        // Fetch linked player names
+        let playersMap = new Map<string, string>();
+        if (playerIds.length > 0) {
+          const { data: playersData } = await supabase
+            .from("players")
+            .select("id, full_name")
+            .in("id", playerIds);
+          
+          playersData?.forEach(p => playersMap.set(p.id, p.full_name));
+        }
+
         const usersMap = new Map<string, UserWithPermissions>();
 
         rolesData?.forEach(role => {
@@ -220,7 +236,7 @@ export default function UserManagement() {
           const perms = permsData?.find(p => p.user_id === role.user_id);
           
           const existing = usersMap.get(role.user_id);
-          const roleOrder: Record<AppRole, number> = { admin: 4, editor: 3, scout: 3, partner: 2, viewer: 1, member: 1 };
+          const roleOrder: Record<AppRole, number> = { admin: 4, editor: 3, scout: 3, partner: 2, player: 1, viewer: 1, member: 1 };
           
           if (!existing || roleOrder[role.role as AppRole] > roleOrder[existing.role]) {
             usersMap.set(role.user_id, {
@@ -231,6 +247,8 @@ export default function UserManagement() {
               is_owner: role.is_owner ?? false,
               status: role.status ?? "active",
               last_login_at: profile?.last_login_at,
+              linked_player_id: role.linked_player_id ?? null,
+              linked_player_name: role.linked_player_id ? playersMap.get(role.linked_player_id) : null,
               permissions: perms ? {
                 players_view: perms.players_view,
                 players_create: perms.players_create,

@@ -1669,6 +1669,7 @@ export type Database = {
           created_at: string
           id: string
           is_owner: boolean
+          linked_player_id: string | null
           role: Database["public"]["Enums"]["app_role"]
           status: string
           user_id: string
@@ -1677,6 +1678,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_owner?: boolean
+          linked_player_id?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           status?: string
           user_id: string
@@ -1685,11 +1687,20 @@ export type Database = {
           created_at?: string
           id?: string
           is_owner?: boolean
+          linked_player_id?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           status?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_linked_player_id_fkey"
+            columns: ["linked_player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -1741,6 +1752,7 @@ export type Database = {
       end_first_half_v2: { Args: { p_game_id: string }; Returns: Json }
       end_game_v2: { Args: { p_game_id: string }; Returns: Json }
       finish_live_game: { Args: { p_game_id: string }; Returns: Json }
+      get_linked_player_id: { Args: { _user_id: string }; Returns: string }
       get_live_game_clock_seconds: {
         Args: { p_match_id: string }
         Returns: number
@@ -1808,6 +1820,7 @@ export type Database = {
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_internal_user: { Args: { _user_id: string }; Returns: boolean }
       is_owner: { Args: { _user_id: string }; Returns: boolean }
+      is_player: { Args: { _user_id: string }; Returns: boolean }
       pause_live_game: { Args: { p_game_id: string }; Returns: Json }
       player_enter_field: {
         Args: { p_match_id: string; p_match_player_id: string; p_role?: string }
@@ -1907,7 +1920,14 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "scout" | "member" | "partner" | "editor" | "viewer"
+      app_role:
+        | "admin"
+        | "scout"
+        | "member"
+        | "partner"
+        | "editor"
+        | "viewer"
+        | "player"
       competition_type: "league" | "cup" | "state_league" | "continental"
       match_event_type:
         | "goal"
@@ -2076,7 +2096,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "scout", "member", "partner", "editor", "viewer"],
+      app_role: [
+        "admin",
+        "scout",
+        "member",
+        "partner",
+        "editor",
+        "viewer",
+        "player",
+      ],
       competition_type: ["league", "cup", "state_league", "continental"],
       match_event_type: [
         "goal",

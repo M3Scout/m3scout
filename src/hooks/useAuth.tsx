@@ -10,6 +10,7 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   roles: AppRole[];
+  linkedPlayerId: string | null;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, name: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -17,6 +18,7 @@ interface AuthContextType {
   isAdmin: boolean;
   isScout: boolean;
   isInternal: boolean;
+  isPlayer: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -26,15 +28,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [roles, setRoles] = useState<AppRole[]>([]);
+  const [linkedPlayerId, setLinkedPlayerId] = useState<string | null>(null);
 
   const fetchUserRoles = async (userId: string) => {
     const { data, error } = await supabase
       .from("user_roles")
-      .select("role")
+      .select("role, linked_player_id")
       .eq("user_id", userId);
 
     if (!error && data) {
       setRoles(data.map((r) => r.role));
+      // Get linked_player_id if user is a player
+      const playerRole = data.find((r) => r.role === "player");
+      setLinkedPlayerId(playerRole?.linked_player_id ?? null);
     }
   };
 
@@ -52,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }, 0);
         } else {
           setRoles([]);
+          setLinkedPlayerId(null);
         }
         
         setLoading(false);
@@ -102,11 +109,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setSession(null);
     setRoles([]);
+    setLinkedPlayerId(null);
   };
 
   const hasRole = (role: AppRole) => roles.includes(role);
   const isAdmin = hasRole("admin");
   const isScout = hasRole("scout");
+  const isPlayer = hasRole("player");
   const isInternal = isAdmin || isScout;
 
   return (
@@ -116,12 +125,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session,
         loading,
         roles,
+        linkedPlayerId,
         signIn,
         signUp,
         signOut,
         hasRole,
         isAdmin,
         isScout,
+        isPlayer,
         isInternal,
       }}
     >
