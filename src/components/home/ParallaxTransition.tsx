@@ -18,8 +18,23 @@ export function ParallaxTransition({ children }: ParallaxTransitionProps) {
     return () => mediaQuery.removeEventListener("change", handleChange);
   }, []);
 
+  // Detect mobile (< 768px) and tablet (768–1366px) to disable parallax effects
+  const [isMobileOrTablet, setIsMobileOrTablet] = useState(false);
+  
   useEffect(() => {
-    if (prefersReducedMotion) return;
+    const checkDevice = () => {
+      const width = window.innerWidth;
+      // Disable parallax/opacity effects on mobile (<768px) and tablet (768–1366px)
+      setIsMobileOrTablet(width <= 1366);
+    };
+    checkDevice();
+    window.addEventListener("resize", checkDevice);
+    return () => window.removeEventListener("resize", checkDevice);
+  }, []);
+
+  useEffect(() => {
+    // Don't run parallax on mobile/tablet
+    if (prefersReducedMotion || isMobileOrTablet) return;
 
     const handleScroll = () => {
       if (!ref.current) return;
@@ -38,36 +53,29 @@ export function ParallaxTransition({ children }: ParallaxTransitionProps) {
     window.addEventListener("scroll", handleScroll, { passive: true });
     handleScroll(); // Initial check
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [prefersReducedMotion]);
+  }, [prefersReducedMotion, isMobileOrTablet]);
 
-  // Detect tablet for iPad-specific fix
-  const [isTablet, setIsTablet] = useState(false);
-  
-  useEffect(() => {
-    const checkTablet = () => {
-      const width = window.innerWidth;
-      setIsTablet(width >= 768 && width <= 1366);
-    };
-    checkTablet();
-    window.addEventListener("resize", checkTablet);
-    return () => window.removeEventListener("resize", checkTablet);
-  }, []);
+  // Mobile/Tablet: No parallax, no opacity animation — sections render at full brightness
+  if (isMobileOrTablet || prefersReducedMotion) {
+    return (
+      <div ref={ref} className="relative">
+        {children}
+      </div>
+    );
+  }
 
-  const parallaxOffset = prefersReducedMotion ? 0 : (1 - scrollProgress) * 40;
-  // iPad fix: Ensure full opacity on tablet to prevent dark overlay appearance
-  const opacity = prefersReducedMotion || isTablet ? 1 : 0.3 + scrollProgress * 0.7;
+  // Desktop only: Apply parallax and opacity effects
+  const parallaxOffset = (1 - scrollProgress) * 40;
+  const opacity = 0.3 + scrollProgress * 0.7;
 
   return (
     <div 
       ref={ref}
       className="relative"
       style={{
-        transform: isTablet ? 'none' : `translateY(${parallaxOffset}px)`,
+        transform: `translateY(${parallaxOffset}px)`,
         opacity,
         transition: "opacity 0.1s ease-out",
-        // iPad fix: Reset any filters/backdrops that could cause darkening
-        filter: 'none',
-        backdropFilter: 'none',
       }}
     >
       {children}
