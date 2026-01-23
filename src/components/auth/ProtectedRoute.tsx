@@ -1,17 +1,63 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { Loader2 } from "lucide-react";
+import { usePermissions } from "@/hooks/usePermissions";
+import { Loader2, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
-export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { user, loading, rolesLoading, isApproved } = useAuth();
-  const location = useLocation();
+const LOADING_TIMEOUT_MS = 10000; // 10 seconds fail-safe
 
-  // Show loading while auth or roles are being fetched
-  if (loading || rolesLoading) {
+export function ProtectedRoute({ children }: ProtectedRouteProps) {
+  const { user, loading: authLoading, rolesLoading, isApproved, signOut } = useAuth();
+  const { loading: permissionsLoading } = usePermissions();
+  const location = useLocation();
+  const [timedOut, setTimedOut] = useState(false);
+
+  const isLoading = authLoading || rolesLoading || permissionsLoading;
+
+  // Fail-safe timeout: if loading takes too long, show error state
+  useEffect(() => {
+    if (!isLoading) {
+      setTimedOut(false);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setTimedOut(true);
+    }, LOADING_TIMEOUT_MS);
+
+    return () => clearTimeout(timer);
+  }, [isLoading]);
+
+  // Timeout reached - show error state with logout option
+  if (timedOut) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4 text-center max-w-md p-6">
+          <AlertCircle className="w-12 h-12 text-destructive" />
+          <h2 className="text-lg font-semibold">Falha ao carregar</h2>
+          <p className="text-muted-foreground text-sm">
+            Não foi possível carregar seu perfil. Isso pode ser um problema temporário.
+          </p>
+          <div className="flex gap-3 mt-2">
+            <Button variant="outline" onClick={() => window.location.reload()}>
+              Tentar novamente
+            </Button>
+            <Button variant="destructive" onClick={() => signOut()}>
+              Sair da conta
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading while auth, roles, or permissions are being fetched
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
