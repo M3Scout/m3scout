@@ -1,12 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { 
   Table, 
   TableBody, 
@@ -30,10 +31,40 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Shield, Settings, Users, Crown, AlertTriangle, Lock } from "lucide-react";
+import { 
+  Shield, 
+  Settings, 
+  Users, 
+  Crown, 
+  AlertTriangle, 
+  Lock, 
+  Search, 
+  MoreHorizontal,
+  UserCheck,
+  UserX,
+  UserCog,
+  Filter
+} from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -83,9 +114,9 @@ interface UserWithPermissions {
 const ROLE_LABELS: Record<AppRole, string> = {
   admin: "Admin",
   editor: "Editor",
-  scout: "Editor", // Map scout to Editor display
+  scout: "Editor",
   viewer: "Viewer",
-  member: "Viewer", // Map member to Viewer display
+  member: "Viewer",
   partner: "Partner",
 };
 
@@ -129,6 +160,17 @@ export default function UserManagement() {
   const [saving, setSaving] = useState(false);
   const [editedPermissions, setEditedPermissions] = useState<Record<string, boolean>>({});
   const [editedRole, setEditedRole] = useState<AppRole | null>(null);
+  
+  // Filters
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [roleFilter, setRoleFilter] = useState<string>("all");
+  
+  // Confirmation dialogs
+  const [confirmAction, setConfirmAction] = useState<{
+    type: "activate" | "suspend";
+    user: UserWithPermissions;
+  } | null>(null);
 
   // Check access
   useEffect(() => {
@@ -142,7 +184,6 @@ export default function UserManagement() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        // Get all user roles
         const { data: rolesData, error: rolesError } = await supabase
           .from("user_roles")
           .select("user_id, role, is_owner, status")
@@ -150,7 +191,6 @@ export default function UserManagement() {
 
         if (rolesError) throw rolesError;
 
-        // Get unique user IDs
         const userIds = [...new Set(rolesData?.map(r => r.user_id) || [])];
 
         if (userIds.length === 0) {
@@ -159,7 +199,6 @@ export default function UserManagement() {
           return;
         }
 
-        // Get profiles
         const { data: profilesData, error: profilesError } = await supabase
           .from("profiles")
           .select("user_id, full_name, last_login_at")
@@ -167,7 +206,6 @@ export default function UserManagement() {
 
         if (profilesError) throw profilesError;
 
-        // Get permissions
         const { data: permsData, error: permsError } = await supabase
           .from("user_permissions")
           .select("*")
@@ -175,15 +213,12 @@ export default function UserManagement() {
 
         if (permsError) throw permsError;
 
-        // Get auth users (emails) - we need to use admin functions for this
-        // For now, we'll use the profiles data and role data
         const usersMap = new Map<string, UserWithPermissions>();
 
         rolesData?.forEach(role => {
           const profile = profilesData?.find(p => p.user_id === role.user_id);
           const perms = permsData?.find(p => p.user_id === role.user_id);
           
-          // Only keep the highest role per user (admin > editor/scout > viewer)
           const existing = usersMap.get(role.user_id);
           const roleOrder: Record<AppRole, number> = { admin: 4, editor: 3, scout: 3, partner: 2, viewer: 1, member: 1 };
           
@@ -244,6 +279,24 @@ export default function UserManagement() {
     }
   }, [isAdmin]);
 
+  // Filtered users
+  const filteredUsers = useMemo(() => {
+    return users.filter(user => {
+      // Search filter
+      const searchMatch = !searchQuery || 
+        (user.full_name?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        user.user_id.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      // Status filter
+      const statusMatch = statusFilter === "all" || user.status === statusFilter;
+      
+      // Role filter
+      const roleMatch = roleFilter === "all" || user.role === roleFilter;
+      
+      return searchMatch && statusMatch && roleMatch;
+    });
+  }, [users, searchQuery, statusFilter, roleFilter]);
+
   const openPermissions = (user: UserWithPermissions) => {
     setSelectedUser(user);
     setEditedRole(user.role);
@@ -254,7 +307,6 @@ export default function UserManagement() {
   const handleRoleChange = (newRole: AppRole) => {
     setEditedRole(newRole);
     
-    // Apply default permissions for the new role
     const isAdminRole = newRole === "admin";
     const isEditorRole = newRole === "editor" || newRole === "scout";
     
@@ -263,10 +315,9 @@ export default function UserManagement() {
       module.actions.forEach(action => {
         const key = `${module.key}_${action}`;
         if (action === "delete") {
-          // DELETE is ADMIN-only
           defaults[key] = isAdminRole;
         } else if (action === "view") {
-          defaults[key] = true; // Everyone can view
+          defaults[key] = true;
         } else if (["create", "edit", "export", "log", "publish"].includes(action)) {
           defaults[key] = isAdminRole || isEditorRole;
         }
@@ -277,7 +328,6 @@ export default function UserManagement() {
   };
 
   const handlePermissionChange = (key: string, checked: boolean) => {
-    // Prevent enabling delete for non-admins
     if (key.endsWith("_delete") && editedRole !== "admin") {
       return;
     }
@@ -287,7 +337,6 @@ export default function UserManagement() {
   const handleSave = async () => {
     if (!selectedUser || !editedRole) return;
 
-    // Prevent changing owner's role by non-owner
     if (selectedUser.is_owner && !currentUserIsOwner) {
       toast.error("Você não pode alterar o usuário owner");
       return;
@@ -295,7 +344,6 @@ export default function UserManagement() {
 
     setSaving(true);
     try {
-      // Update role
       const { error: roleError } = await supabase
         .from("user_roles")
         .update({ role: editedRole })
@@ -303,7 +351,6 @@ export default function UserManagement() {
 
       if (roleError) throw roleError;
 
-      // Prepare permissions update - FORCE delete=false for non-admins
       const permsToSave = { ...editedPermissions };
       if (editedRole !== "admin") {
         MODULES.forEach(module => {
@@ -314,7 +361,6 @@ export default function UserManagement() {
       }
       permsToSave.users_manage = editedRole === "admin";
 
-      // Update permissions
       const { error: permsError } = await supabase
         .from("user_permissions")
         .update({
@@ -328,7 +374,6 @@ export default function UserManagement() {
       toast.success("Permissões atualizadas com sucesso");
       setPermissionsOpen(false);
 
-      // Refresh users list
       setUsers(prev => prev.map(u => 
         u.user_id === selectedUser.user_id 
           ? { ...u, role: editedRole, permissions: permsToSave as any }
@@ -355,139 +400,334 @@ export default function UserManagement() {
       setUsers(prev => prev.map(u => 
         u.user_id === userId ? { ...u, status: newStatus } : u
       ));
+      setConfirmAction(null);
     } catch (error) {
       console.error("Error updating status:", error);
       toast.error("Erro ao atualizar status");
     }
   };
 
+  // Counts
+  const activeCount = users.filter(u => u.status === "active").length;
+  const suspendedCount = users.filter(u => u.status === "suspended").length;
+
   if (loading) {
     return (
-      <div className="space-y-6 p-6">
-        <Skeleton className="h-10 w-64" />
-        <Skeleton className="h-[400px] w-full" />
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-10 w-64" />
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <Skeleton className="h-12 w-full" />
+        <div className="space-y-3">
+          {[1, 2, 3, 4].map(i => (
+            <Skeleton key={i} className="h-20 w-full" />
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
-      <div className="flex items-center gap-3">
-        <div className="p-2 rounded-lg bg-primary/10">
-          <Users className="w-6 h-6 text-primary" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold">Usuários & Permissões</h1>
-          <p className="text-sm text-muted-foreground">
-            Gerencie os usuários e suas permissões no sistema
-          </p>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-primary/10">
+            <Users className="w-6 h-6 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold">Usuários</h1>
+            <p className="text-sm text-muted-foreground">
+              {users.length} usuário{users.length !== 1 ? "s" : ""} • {activeCount} ativo{activeCount !== 1 ? "s" : ""}
+            </p>
+          </div>
         </div>
       </div>
 
-      <Card className="border-zinc-800/50 bg-zinc-900/50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="w-5 h-5" />
-            Controle de Acesso (RBAC)
-          </CardTitle>
-          <CardDescription>
-            Defina papéis e permissões granulares por módulo
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-lg border border-zinc-800 overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-zinc-800 hover:bg-zinc-800/30">
-                  <TableHead>Usuário</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Último Login</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.map((user) => (
-                  <TableRow key={user.user_id} className="border-zinc-800 hover:bg-zinc-800/30">
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {user.is_owner && (
-                          <Crown className="w-4 h-4 text-amber-400" />
-                        )}
-                        <div>
-                          <p className="font-medium">{user.full_name || "Sem nome"}</p>
-                          <p className="text-xs text-muted-foreground">{user.user_id.slice(0, 8)}...</p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={ROLE_COLORS[user.role]} variant="outline">
-                        {ROLE_LABELS[user.role]}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Select
-                        value={user.status}
-                        onValueChange={(value) => handleStatusChange(user.user_id, value)}
-                        disabled={user.is_owner || user.user_id === currentUser?.id}
-                      >
-                        <SelectTrigger className="w-28 h-8 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="active">
-                            <span className="flex items-center gap-1.5">
-                              <span className="w-2 h-2 rounded-full bg-green-500" />
-                              Ativo
-                            </span>
-                          </SelectItem>
-                          <SelectItem value="suspended">
-                            <span className="flex items-center gap-1.5">
-                              <span className="w-2 h-2 rounded-full bg-red-500" />
-                              Suspenso
-                            </span>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
-                      {user.last_login_at 
-                        ? format(new Date(user.last_login_at), "dd/MM/yyyy HH:mm", { locale: ptBR })
-                        : "Nunca"
-                      }
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openPermissions(user)}
-                        disabled={user.is_owner && !currentUserIsOwner}
-                      >
-                        <Settings className="w-4 h-4 mr-1.5" />
-                        Permissões
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {users.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                      Nenhum usuário encontrado
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+      {/* Search and Filters */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row gap-3">
+            {/* Search */}
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nome..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            
+            {/* Status Filter */}
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full sm:w-[140px]">
+                <Filter className="w-4 h-4 mr-2 text-muted-foreground" />
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="active">Ativos</SelectItem>
+                <SelectItem value="suspended">Suspensos</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            {/* Role Filter */}
+            <Select value={roleFilter} onValueChange={setRoleFilter}>
+              <SelectTrigger className="w-full sm:w-[140px]">
+                <Shield className="w-4 h-4 mr-2 text-muted-foreground" />
+                <SelectValue placeholder="Função" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="editor">Editor</SelectItem>
+                <SelectItem value="viewer">Viewer</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
+
+      {/* Desktop Table */}
+      <Card className="hidden md:block">
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-zinc-800/50 hover:bg-transparent">
+                <TableHead className="pl-6">Usuário</TableHead>
+                <TableHead>Função</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Último Login</TableHead>
+                <TableHead className="text-right pr-6">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredUsers.map((user) => (
+                <TableRow key={user.user_id} className="border-zinc-800/50 hover:bg-zinc-800/20">
+                  <TableCell className="pl-6">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-zinc-800 flex items-center justify-center text-sm font-medium">
+                        {user.full_name?.charAt(0).toUpperCase() || "U"}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{user.full_name || "Sem nome"}</p>
+                          {user.is_owner && (
+                            <Crown className="w-4 h-4 text-amber-400" />
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">{user.user_id.slice(0, 8)}...</p>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={ROLE_COLORS[user.role]} variant="outline">
+                      {ROLE_LABELS[user.role]}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge 
+                      variant="outline" 
+                      className={user.status === "active" 
+                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" 
+                        : "bg-red-500/10 text-red-400 border-red-500/30"
+                      }
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${user.status === "active" ? "bg-emerald-400" : "bg-red-400"}`} />
+                      {user.status === "active" ? "Ativo" : "Suspenso"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-sm">
+                    {user.last_login_at 
+                      ? format(new Date(user.last_login_at), "dd/MM/yyyy HH:mm", { locale: ptBR })
+                      : "Nunca"
+                    }
+                  </TableCell>
+                  <TableCell className="text-right pr-6">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreHorizontal className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem 
+                          onClick={() => openPermissions(user)}
+                          disabled={user.is_owner && !currentUserIsOwner}
+                        >
+                          <UserCog className="w-4 h-4 mr-2" />
+                          Editar Permissões
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        {user.status === "active" ? (
+                          <DropdownMenuItem 
+                            onClick={() => setConfirmAction({ type: "suspend", user })}
+                            disabled={user.is_owner || user.user_id === currentUser?.id}
+                            className="text-red-400 focus:text-red-400"
+                          >
+                            <UserX className="w-4 h-4 mr-2" />
+                            Suspender
+                          </DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem 
+                            onClick={() => setConfirmAction({ type: "activate", user })}
+                            disabled={user.is_owner}
+                            className="text-emerald-400 focus:text-emerald-400"
+                          >
+                            <UserCheck className="w-4 h-4 mr-2" />
+                            Ativar
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {filteredUsers.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
+                    <Users className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                    <p>Nenhum usuário encontrado</p>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Mobile Cards */}
+      <div className="md:hidden space-y-3">
+        {filteredUsers.length === 0 ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <Users className="w-12 h-12 mx-auto mb-3 opacity-20" />
+              <p className="text-muted-foreground">Nenhum usuário encontrado</p>
+            </CardContent>
+          </Card>
+        ) : (
+          filteredUsers.map((user) => (
+            <Card key={user.user_id}>
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-sm font-medium shrink-0">
+                      {user.full_name?.charAt(0).toUpperCase() || "U"}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium truncate">{user.full_name || "Sem nome"}</p>
+                        {user.is_owner && (
+                          <Crown className="w-4 h-4 text-amber-400 shrink-0" />
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">{user.user_id.slice(0, 8)}...</p>
+                    </div>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                        <MoreHorizontal className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem 
+                        onClick={() => openPermissions(user)}
+                        disabled={user.is_owner && !currentUserIsOwner}
+                      >
+                        <UserCog className="w-4 h-4 mr-2" />
+                        Editar Permissões
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      {user.status === "active" ? (
+                        <DropdownMenuItem 
+                          onClick={() => setConfirmAction({ type: "suspend", user })}
+                          disabled={user.is_owner || user.user_id === currentUser?.id}
+                          className="text-red-400 focus:text-red-400"
+                        >
+                          <UserX className="w-4 h-4 mr-2" />
+                          Suspender
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem 
+                          onClick={() => setConfirmAction({ type: "activate", user })}
+                          disabled={user.is_owner}
+                          className="text-emerald-400 focus:text-emerald-400"
+                        >
+                          <UserCheck className="w-4 h-4 mr-2" />
+                          Ativar
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+                
+                <div className="flex flex-wrap items-center gap-2 mt-3">
+                  <Badge className={ROLE_COLORS[user.role]} variant="outline">
+                    {ROLE_LABELS[user.role]}
+                  </Badge>
+                  <Badge 
+                    variant="outline" 
+                    className={user.status === "active" 
+                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" 
+                      : "bg-red-500/10 text-red-400 border-red-500/30"
+                    }
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${user.status === "active" ? "bg-emerald-400" : "bg-red-400"}`} />
+                    {user.status === "active" ? "Ativo" : "Suspenso"}
+                  </Badge>
+                </div>
+                
+                <p className="text-xs text-muted-foreground mt-3">
+                  Último login: {user.last_login_at 
+                    ? format(new Date(user.last_login_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
+                    : "Nunca"
+                  }
+                </p>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+
+      {/* Confirm Action Dialog */}
+      <AlertDialog open={!!confirmAction} onOpenChange={() => setConfirmAction(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-500" />
+              {confirmAction?.type === "suspend" ? "Suspender usuário" : "Ativar usuário"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmAction?.type === "suspend" 
+                ? `Tem certeza que deseja suspender "${confirmAction?.user.full_name || "este usuário"}"? Ele não poderá mais acessar o sistema.`
+                : `Tem certeza que deseja ativar "${confirmAction?.user.full_name || "este usuário"}"? Ele poderá acessar o sistema novamente.`
+              }
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => confirmAction && handleStatusChange(
+                confirmAction.user.user_id, 
+                confirmAction.type === "suspend" ? "suspended" : "active"
+              )}
+              className={confirmAction?.type === "suspend" ? "bg-red-600 hover:bg-red-700" : "bg-emerald-600 hover:bg-emerald-700"}
+            >
+              {confirmAction?.type === "suspend" ? "Suspender" : "Ativar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Permissions Modal */}
       <Dialog open={permissionsOpen} onOpenChange={setPermissionsOpen}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Shield className="w-5 h-5" />
+              <Shield className="w-5 h-5 text-primary" />
               Configurar Permissões
             </DialogTitle>
             <DialogDescription>
@@ -498,14 +738,14 @@ export default function UserManagement() {
           <div className="space-y-6 py-4">
             {/* Role Selection */}
             <div className="space-y-2">
-              <Label>Role</Label>
+              <Label>Função</Label>
               <Select
                 value={editedRole || undefined}
                 onValueChange={(value) => handleRoleChange(value as AppRole)}
                 disabled={selectedUser?.is_owner && !currentUserIsOwner}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione o role" />
+                  <SelectValue placeholder="Selecione a função" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="admin">Admin (acesso total)</SelectItem>
@@ -521,14 +761,14 @@ export default function UserManagement() {
               )}
             </div>
 
-            <Separator />
+            <Separator className="bg-zinc-800/50" />
 
             {/* Granular Permissions */}
             <div className="space-y-4">
               <Label>Permissões por Módulo</Label>
               
               {MODULES.map((module) => (
-                <div key={module.key} className="space-y-2 p-3 rounded-lg bg-zinc-900/50 border border-zinc-800">
+                <div key={module.key} className="space-y-2 p-3 rounded-xl bg-zinc-900/30 border border-zinc-800/50">
                   <p className="font-medium text-sm">{module.label}</p>
                   <div className="flex flex-wrap gap-4">
                     {module.actions.map((action) => {
@@ -565,12 +805,11 @@ export default function UserManagement() {
             </div>
 
             {editedRole !== "admin" && (
-              <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
                 <p className="text-xs text-amber-400 flex items-center gap-2">
                   <Lock className="w-4 h-4 shrink-0" />
                   <span>
-                    <strong>Exclusão bloqueada:</strong> Apenas usuários com role Admin podem excluir registros. 
-                    Esta restrição é aplicada no servidor e não pode ser contornada.
+                    <strong>Exclusão bloqueada:</strong> Apenas usuários com função Admin podem excluir registros.
                   </span>
                 </p>
               </div>

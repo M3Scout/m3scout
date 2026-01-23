@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useTheme } from "next-themes";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,7 +24,6 @@ import {
   Settings as SettingsIcon, 
   User, 
   Shield, 
-  Bell, 
   Loader2,
   Save,
   Mail,
@@ -36,66 +34,11 @@ import {
   Database,
   CheckCircle,
   AlertTriangle,
-  Moon,
-  Sun,
-  Monitor,
 } from "lucide-react";
 import { format } from "date-fns";
 import { recalculateAllAttributeScores } from "@/lib/attributeScores";
 import { BulkRecalculateGKButton } from "@/components/players/BulkRecalculateGKButton";
-import { TeamSettingsCard } from "@/components/settings/TeamSettingsCard";
 import { ptBR } from "date-fns/locale";
-
-function ThemeCard() {
-  const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) return null;
-
-  const themes = [
-    { value: "dark", label: "Escuro", icon: Moon },
-    { value: "light", label: "Claro", icon: Sun },
-    { value: "system", label: "Sistema", icon: Monitor },
-  ];
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Moon className="h-5 w-5" />
-          Aparência
-        </CardTitle>
-        <CardDescription>
-          Escolha o tema do painel
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-3 gap-2">
-          {themes.map(({ value, label, icon: Icon }) => (
-            <button
-              key={value}
-              onClick={() => setTheme(value)}
-              className={`
-                flex flex-col items-center gap-2 p-3 rounded-lg border transition-all duration-200
-                ${theme === value 
-                  ? "border-primary bg-primary/10 text-primary" 
-                  : "border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:border-zinc-700 hover:text-zinc-300"
-                }
-              `}
-            >
-              <Icon className="h-5 w-5" />
-              <span className="text-xs font-medium">{label}</span>
-            </button>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
 
 export default function Settings() {
   const { user, isAdmin, isScout } = useAuth();
@@ -312,10 +255,10 @@ export default function Settings() {
 
   const getRoleBadge = () => {
     if (isAdmin) {
-      return <Badge className="bg-red-500 text-white">Admin</Badge>;
+      return <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">Admin</Badge>;
     }
     if (isScout) {
-      return <Badge className="bg-blue-500 text-white">Scout</Badge>;
+      return <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">Editor</Badge>;
     }
     return <Badge variant="secondary">Membro</Badge>;
   };
@@ -337,7 +280,7 @@ export default function Settings() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3">
-          <SettingsIcon className="w-8 h-8 text-accent" />
+          <SettingsIcon className="w-8 h-8 text-primary" />
           Configurações
         </h1>
         <p className="text-muted-foreground">
@@ -345,12 +288,12 @@ export default function Settings() {
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-3">
         {/* Profile Card */}
-        <Card className="md:col-span-2">
+        <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
+              <User className="h-5 w-5 text-primary" />
               Perfil
             </CardTitle>
             <CardDescription>
@@ -362,7 +305,7 @@ export default function Settings() {
               <div className="relative">
                 <Avatar className="h-20 w-20">
                   <AvatarImage src={profile.avatar_url || undefined} />
-                  <AvatarFallback className="text-lg bg-primary text-primary-foreground">
+                  <AvatarFallback className="text-lg bg-primary/20 text-primary">
                     {getInitials(profile.full_name)}
                   </AvatarFallback>
                 </Avatar>
@@ -408,7 +351,7 @@ export default function Settings() {
               </div>
             </div>
 
-            <Separator />
+            <Separator className="bg-zinc-800/50" />
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
@@ -418,7 +361,6 @@ export default function Settings() {
                   value={profile.full_name || ""}
                   onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
                   placeholder="Seu nome completo"
-                  className="input-dark"
                 />
               </div>
               <div className="space-y-2">
@@ -427,7 +369,7 @@ export default function Settings() {
                   id="email"
                   value={user?.email || ""}
                   disabled
-                  className="input-dark opacity-60"
+                  className="opacity-60"
                 />
                 <p className="text-xs text-muted-foreground">
                   O email não pode ser alterado
@@ -438,7 +380,6 @@ export default function Settings() {
             <Button 
               onClick={handleSaveProfile} 
               disabled={saving}
-              variant="gradient"
             >
               {saving ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -455,7 +396,7 @@ export default function Settings() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
+                <Shield className="h-5 w-5 text-primary" />
                 Conta
               </CardTitle>
               <CardDescription>
@@ -467,7 +408,7 @@ export default function Settings() {
                 <p className="text-sm text-muted-foreground">Função</p>
                 <div>{getRoleBadge()}</div>
               </div>
-              <Separator />
+              <Separator className="bg-zinc-800/50" />
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground flex items-center gap-1">
                   <Mail className="h-3 w-3" />
@@ -475,7 +416,7 @@ export default function Settings() {
                 </p>
                 <p className="text-sm font-medium truncate">{user?.email}</p>
               </div>
-              <Separator />
+              <Separator className="bg-zinc-800/50" />
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground flex items-center gap-1">
                   <Calendar className="h-3 w-3" />
@@ -491,34 +432,12 @@ export default function Settings() {
             </CardContent>
           </Card>
 
-          <ThemeCard />
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bell className="h-5 w-5" />
-                Notificações
-              </CardTitle>
-              <CardDescription>
-                Preferências de notificação
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Em breve você poderá configurar suas preferências de notificação.
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Team Settings - Admin Only */}
-          {isAdmin && <TeamSettingsCard />}
-
           {/* Admin Tools */}
           {isAdmin && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Database className="h-5 w-5" />
+                  <Database className="h-5 w-5 text-primary" />
                   Ferramentas Admin
                 </CardTitle>
                 <CardDescription>
@@ -598,83 +517,83 @@ export default function Settings() {
                           <p className="text-xs text-muted-foreground">Novos</p>
                         </div>
                       </div>
+                    </div>
+                  )}
+                </div>
+
+                <Separator className="bg-zinc-800/50" />
+
+                {/* Recalculate Radar Attributes */}
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Recalcula os atributos do radar (ATA/TÉC/DEF/TÁT/CRI) de todos os atletas.
+                  </p>
+                  
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        disabled={recalculatingAttributes}
+                        className="w-full"
+                      >
+                        {recalculatingAttributes ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Recalculando...
+                          </>
+                        ) : (
+                          <>
+                            <RefreshCw className="h-4 w-4" />
+                            Recalcular Atributos (Radar)
+                          </>
+                        )}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle className="flex items-center gap-2">
+                          <AlertTriangle className="h-5 w-5 text-amber-500" />
+                          Confirmar Recálculo
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Esta ação irá recalcular os 5 atributos do radar para todos os atletas com estatísticas registradas.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleRecalculateAttributes}>
+                          Continuar
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+
+                  {attributeRecalculateResult && (
+                    <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4 text-emerald-500" />
+                        <span className="text-sm font-medium text-emerald-500">
+                          {attributeRecalculateResult.players_processed} atletas processados
+                        </span>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
+                </div>
 
-                  <Separator />
+                <Separator className="bg-zinc-800/50" />
 
-                  {/* Recalculate Radar Attributes */}
-                  <div className="space-y-3">
-                    <p className="text-sm text-muted-foreground">
-                      Recalcula os atributos do radar (ATA/TÉC/DEF/TÁT/CRI) de todos os atletas.
-                    </p>
-                    
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="outline"
-                          disabled={recalculatingAttributes}
-                          className="w-full"
-                        >
-                          {recalculatingAttributes ? (
-                            <>
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                              Recalculando...
-                            </>
-                          ) : (
-                            <>
-                              <RefreshCw className="h-4 w-4" />
-                              Recalcular Atributos (Radar)
-                            </>
-                          )}
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle className="flex items-center gap-2">
-                            <AlertTriangle className="h-5 w-5 text-amber-500" />
-                            Confirmar Recálculo
-                          </AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Esta ação irá recalcular os 5 atributos do radar para todos os atletas com estatísticas registradas.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={handleRecalculateAttributes}>
-                            Continuar
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-
-                    {attributeRecalculateResult && (
-                      <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                        <div className="flex items-center gap-2">
-                          <CheckCircle className="h-4 w-4 text-emerald-500" />
-                          <span className="text-sm font-medium text-emerald-500">
-                            {attributeRecalculateResult.players_processed} atletas processados
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <Separator />
-
-                  {/* Recalculate GK Radars */}
-                  <div className="space-y-3">
-                    <p className="text-sm text-muted-foreground">
-                      Recalcula os radares de goleiros (DEF/ANT/TAT/DIS/AER) com normalização por percentil.
-                    </p>
-                    <BulkRecalculateGKButton />
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+                {/* Recalculate GK Radars */}
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Recalcula os radares de goleiros (DEF/ANT/TAT/DIS/AER) com normalização por percentil.
+                  </p>
+                  <BulkRecalculateGKButton />
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
