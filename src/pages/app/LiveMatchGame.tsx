@@ -419,6 +419,7 @@ function LiveMatchGameInner({ matchId }: { matchId: string }) {
           onStartGame={() => startGame.mutate()}
           isPending={updateMatchStatus.isPending || startGame.isPending}
           startersCount={startersCount}
+          totalPlayersCount={matchPlayers.filter(mp => !mp.is_removed).length}
           playersOnField={playersOnField.length}
           pendingEventsCount={pendingEventsCount}
           isReviewMode={isReviewMode}

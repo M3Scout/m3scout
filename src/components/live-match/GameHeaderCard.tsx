@@ -27,6 +27,7 @@ interface GameHeaderCardProps {
   onStartGame?: () => void;
   isPending?: boolean;
   startersCount?: number;
+  totalPlayersCount?: number; // Total escalados (titulares + reservas)
   playersOnField?: number;
   pendingEventsCount?: number;
   isReviewMode?: boolean;
@@ -72,6 +73,7 @@ export function GameHeaderCard({
   onStartGame,
   isPending,
   startersCount = 0,
+  totalPlayersCount = 0,
   playersOnField = 0,
   pendingEventsCount = 0,
   isReviewMode = false,
@@ -155,14 +157,16 @@ export function GameHeaderCard({
                   <Users className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">
                     {isDraft 
-                      ? (startersCount > 0 ? `${startersCount} titular${startersCount !== 1 ? "es" : ""}` : "—")
-                      : (playersOnField > 0 ? `${playersOnField} em campo` : "—")
+                      ? (totalPlayersCount > 0 
+                          ? `${totalPlayersCount} jogador${totalPlayersCount !== 1 ? "es" : ""}${startersCount > 0 ? ` (${startersCount} titular${startersCount !== 1 ? "es" : ""})` : ""}`
+                          : "0 jogadores")
+                      : (playersOnField > 0 ? `${playersOnField} em campo` : "0 em campo")
                     }
                   </span>
                   <span className="sm:hidden">
                     {isDraft 
-                      ? (startersCount > 0 ? startersCount : "—")
-                      : (playersOnField > 0 ? playersOnField : "—")
+                      ? totalPlayersCount
+                      : playersOnField
                     }
                   </span>
                 </Badge>
