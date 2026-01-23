@@ -153,15 +153,15 @@ export function SubstitutionStatsCard({
   }
 
   return (
-    <Card ref={cardRef} data-export-target>
-      <CardHeader>
-        <div className="flex items-center justify-between">
+    <Card ref={cardRef} data-export-target className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95">
+      <CardHeader className="pb-4 sm:pb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <CardTitle className="flex items-center gap-2">
-              <ArrowRightLeft className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <ArrowRightLeft className="h-5 w-5 sm:h-6 sm:w-6" />
               Substituições e Tempo em Campo
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-sm mt-1">
               {summaryStats.totalSubs} substituição{summaryStats.totalSubs !== 1 ? "ões" : ""} • 
               {summaryStats.playersUsedCount} jogadores utilizados
             </CardDescription>
@@ -171,82 +171,82 @@ export function SubstitutionStatsCard({
             size="sm"
             onClick={() => exportToPng(cardRef.current)}
             disabled={isExporting}
-            className="shrink-0"
+            className="shrink-0 self-start sm:self-auto"
           >
             <Download className="h-4 w-4 mr-1" />
             {isExporting ? "..." : "PNG"}
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-5 sm:space-y-6 p-4 sm:p-6">
         {/* Summary Grid */}
-        <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
-          <div className="text-center p-3 rounded-lg bg-muted/50">
-            <p className="text-2xl font-bold">{summaryStats.totalSubs}</p>
-            <p className="text-xs text-muted-foreground">Substituições</p>
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          <div className="text-center p-4 sm:p-5 rounded-xl bg-zinc-900/60 border border-zinc-800/40">
+            <p className="text-2xl sm:text-3xl font-bold">{summaryStats.totalSubs}</p>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">Substituições</p>
           </div>
-          <div className="text-center p-3 rounded-lg bg-muted/50">
-            <p className="text-2xl font-bold">{summaryStats.startersCount}</p>
-            <p className="text-xs text-muted-foreground">Titulares</p>
+          <div className="text-center p-4 sm:p-5 rounded-xl bg-zinc-900/60 border border-zinc-800/40">
+            <p className="text-2xl sm:text-3xl font-bold">{summaryStats.startersCount}</p>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">Titulares</p>
           </div>
-          <div className="text-center p-3 rounded-lg bg-muted/50">
-            <p className="text-2xl font-bold">{summaryStats.playersUsedCount}</p>
-            <p className="text-xs text-muted-foreground">Jogadores</p>
+          <div className="text-center p-4 sm:p-5 rounded-xl bg-zinc-900/60 border border-zinc-800/40">
+            <p className="text-2xl sm:text-3xl font-bold">{summaryStats.playersUsedCount}</p>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">Jogadores</p>
           </div>
-          <div className="text-center p-3 rounded-lg bg-muted/50">
-            <p className="text-2xl font-bold">{summaryStats.avgMinutes}'</p>
-            <p className="text-xs text-muted-foreground">Média Min.</p>
+          <div className="text-center p-4 sm:p-5 rounded-xl bg-zinc-900/60 border border-zinc-800/40">
+            <p className="text-2xl sm:text-3xl font-bold">{summaryStats.avgMinutes}'</p>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">Média Min.</p>
           </div>
         </div>
 
         {/* Substitutions Timeline */}
         {substitutions.length > 0 && (
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium flex items-center gap-2">
-              <Timer className="h-4 w-4" />
+          <div className="space-y-3">
+            <h4 className="text-sm sm:text-base font-medium flex items-center gap-2">
+              <Timer className="h-4 w-4 sm:h-5 sm:w-5" />
               Timeline de Substituições
             </h4>
-            <div className="space-y-2">
+            <div className="space-y-2 sm:space-y-3">
               {substitutions.map((sub, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center gap-3 p-2 rounded-lg border bg-muted/30"
+                  className="flex items-center gap-3 p-3 sm:p-4 rounded-xl border border-zinc-800/40 bg-zinc-900/60"
                 >
-                  <Badge variant="outline" className="shrink-0 font-mono">
+                  <Badge variant="outline" className="shrink-0 font-mono text-xs sm:text-sm px-2 sm:px-3">
                     {sub.displayMinute}
                   </Badge>
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                     {/* Player Out */}
-                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                      <ArrowDown className="h-3.5 w-3.5 text-red-500 shrink-0" />
-                      <Avatar className="h-6 w-6 shrink-0">
+                    <div className="flex items-center gap-1.5 sm:gap-2 flex-1 min-w-0">
+                      <ArrowDown className="h-4 w-4 text-red-500 shrink-0" />
+                      <Avatar className="h-7 w-7 sm:h-8 sm:w-8 shrink-0">
                         <AvatarImage src={sub.playerOut.player?.photo_url || undefined} />
-                        <AvatarFallback className="text-[10px]">
+                        <AvatarFallback className="text-[10px] sm:text-xs">
                           {sub.playerOut.player?.full_name.slice(0, 2).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="text-xs truncate">
+                      <span className="text-xs sm:text-sm truncate">
                         {sub.playerOut.player?.full_name.split(" ").slice(-1)[0]}
                       </span>
                     </div>
                     
-                    <ArrowRightLeft className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <ArrowRightLeft className="h-4 w-4 text-muted-foreground shrink-0" />
                     
                     {/* Player In */}
-                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                      <ArrowUp className="h-3.5 w-3.5 text-green-500 shrink-0" />
-                      <Avatar className="h-6 w-6 shrink-0">
+                    <div className="flex items-center gap-1.5 sm:gap-2 flex-1 min-w-0">
+                      <ArrowUp className="h-4 w-4 text-emerald-500 shrink-0" />
+                      <Avatar className="h-7 w-7 sm:h-8 sm:w-8 shrink-0">
                         <AvatarImage src={sub.playerIn.player?.photo_url || undefined} />
-                        <AvatarFallback className="text-[10px]">
+                        <AvatarFallback className="text-[10px] sm:text-xs">
                           {sub.playerIn.player?.full_name.slice(0, 2).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="text-xs truncate">
+                      <span className="text-xs sm:text-sm truncate">
                         {sub.playerIn.player?.full_name.split(" ").slice(-1)[0]}
                       </span>
                     </div>
                   </div>
-                  <Badge variant="secondary" className="text-[10px] shrink-0">
+                  <Badge variant="secondary" className="text-[10px] sm:text-xs shrink-0">
                     {sub.half === 1 ? "1T" : "2T"}
                   </Badge>
                 </div>

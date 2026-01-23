@@ -499,7 +499,7 @@ export default function LiveMatchReview() {
   const infoCount = inconsistencies.filter((i) => i.type === "info").length;
 
   return (
-    <div className="container max-w-4xl py-6 space-y-6">
+    <div className="container max-w-6xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -527,35 +527,35 @@ export default function LiveMatchReview() {
       </div>
 
       {/* Summary card with stats by half */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
+      <Card className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95">
+        <CardHeader className="pb-4 sm:pb-6">
+          <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+            <Users className="h-5 w-5 sm:h-6 sm:w-6" />
             Resumo
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-5 sm:space-y-6">
           {/* Global summary */}
-          <div className="grid gap-4 sm:grid-cols-4">
-            <div className="text-center p-4 rounded-lg bg-muted/50">
-              <p className="text-3xl font-bold">{matchPlayers.length}</p>
-              <p className="text-sm text-muted-foreground">Jogadores</p>
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+            <div className="text-center p-4 sm:p-5 rounded-xl bg-zinc-900/60 border border-zinc-800/40">
+              <p className="text-2xl sm:text-3xl lg:text-4xl font-bold">{matchPlayers.length}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">Jogadores</p>
             </div>
-            <div className="text-center p-4 rounded-lg bg-muted/50">
-              <p className="text-3xl font-bold">{matchEvents.length}</p>
-              <p className="text-sm text-muted-foreground">Eventos</p>
+            <div className="text-center p-4 sm:p-5 rounded-xl bg-zinc-900/60 border border-zinc-800/40">
+              <p className="text-2xl sm:text-3xl lg:text-4xl font-bold">{matchEvents.length}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">Eventos</p>
             </div>
-            <div className="text-center p-4 rounded-lg bg-green-500/10">
-              <p className="text-3xl font-bold text-green-400">
+            <div className="text-center p-4 sm:p-5 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+              <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-emerald-400">
                 {matchEvents.filter((e) => e.event_type === "goal").length}
               </p>
-              <p className="text-sm text-muted-foreground">Gols</p>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">Gols</p>
             </div>
-            <div className="text-center p-4 rounded-lg bg-blue-500/10">
-              <p className="text-3xl font-bold text-blue-400">
+            <div className="text-center p-4 sm:p-5 rounded-xl bg-sky-500/10 border border-sky-500/20">
+              <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-sky-400">
                 {matchEvents.filter((e) => e.event_type === "assist").length}
               </p>
-              <p className="text-sm text-muted-foreground">Assistências</p>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">Assistências</p>
             </div>
           </div>
 
@@ -592,65 +592,65 @@ export default function LiveMatchReview() {
       />
 
       {/* Player Presence History */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
+      <Card className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95">
+        <CardHeader className="pb-4 sm:pb-6">
+          <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+            <Clock className="h-5 w-5 sm:h-6 sm:w-6" />
             Histórico de Presença em Campo
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-sm">
             Intervalos de tempo em que cada atleta esteve em campo
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 sm:p-6">
           <PlayerPresenceHistory matchId={matchId!} />
         </CardContent>
       </Card>
 
       {/* Inconsistencies */}
       {inconsistencies.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-500" />
+        <Card className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95">
+          <CardHeader className="pb-4 sm:pb-6">
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 text-amber-500" />
               Checklist de Inconsistências
             </CardTitle>
-            <CardDescription className="flex items-center gap-3">
+            <CardDescription className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2">
               {errorCount > 0 && (
-                <Badge variant="destructive" className="text-xs">
+                <Badge variant="destructive" className="text-xs sm:text-sm">
                   {errorCount} erro{errorCount > 1 ? "s" : ""}
                 </Badge>
               )}
               {warningCount > 0 && (
-                <Badge variant="outline" className="text-xs border-amber-500 text-amber-500">
+                <Badge variant="outline" className="text-xs sm:text-sm border-amber-500 text-amber-500">
                   {warningCount} aviso{warningCount > 1 ? "s" : ""}
                 </Badge>
               )}
               {infoCount > 0 && (
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="outline" className="text-xs sm:text-sm">
                   {infoCount} info{infoCount > 1 ? "s" : ""}
                 </Badge>
               )}
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-[250px]">
-              <div className="space-y-2">
+          <CardContent className="p-4 sm:p-6">
+            <ScrollArea className="h-[280px] sm:h-[320px]">
+              <div className="space-y-2 sm:space-y-3 pr-2">
                 {inconsistencies.map((issue, idx) => (
                   <Alert
                     key={idx}
                     variant={issue.type === "error" ? "destructive" : "default"}
-                    className={issue.type === "info" ? "border-muted" : ""}
+                    className={`p-3 sm:p-4 ${issue.type === "info" ? "border-zinc-800/40 bg-zinc-900/40" : issue.type === "warning" ? "border-amber-500/30 bg-amber-500/5" : ""}`}
                   >
                     {issue.type === "error" ? (
-                      <AlertTriangle className="h-4 w-4" />
+                      <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5" />
                     ) : issue.type === "warning" ? (
-                      <AlertTriangle className="h-4 w-4 text-amber-500" />
+                      <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500" />
                     ) : (
-                      <Info className="h-4 w-4 text-muted-foreground" />
+                      <Info className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
                     )}
-                    <AlertTitle className="text-sm">{issue.playerName}</AlertTitle>
-                    <AlertDescription className="text-xs">{issue.message}</AlertDescription>
+                    <AlertTitle className="text-sm sm:text-base">{issue.playerName}</AlertTitle>
+                    <AlertDescription className="text-xs sm:text-sm">{issue.message}</AlertDescription>
                   </Alert>
                 ))}
               </div>
@@ -660,19 +660,19 @@ export default function LiveMatchReview() {
       )}
 
       {/* Player stats preview */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
+      <Card className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95">
+        <CardHeader className="pb-4 sm:pb-6">
+          <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+            <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6" />
             Estatísticas por Jogador
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-sm mt-1">
             Valores que serão adicionados às estatísticas existentes
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <ScrollArea className="h-[400px]">
-            <div className="space-y-3">
+        <CardContent className="p-4 sm:p-6">
+          <ScrollArea className="h-[420px] sm:h-[480px]">
+            <div className="space-y-3 sm:space-y-4 pr-2">
               {matchPlayers.map((mp) => {
                 if (!mp.player) return null;
                 const counts = (playerEventCounts[mp.player_id] || {}) as Partial<Record<MatchEventType, number>>;
@@ -730,21 +730,23 @@ export default function LiveMatchReview() {
                 return (
                   <div
                     key={mp.id}
-                    className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${
-                      isApplied ? "border-green-500/50 bg-green-500/5" : ""
+                    className={`flex items-start gap-3 sm:gap-4 p-4 sm:p-5 rounded-xl border transition-all ${
+                      isApplied 
+                        ? "border-emerald-500/50 bg-emerald-500/5" 
+                        : "border-zinc-800/40 bg-zinc-900/40"
                     }`}
                   >
-                    <Avatar className="h-10 w-10 shrink-0">
+                    <Avatar className="h-10 w-10 sm:h-12 sm:w-12 shrink-0">
                       <AvatarImage src={mp.player.photo_url || undefined} />
-                      <AvatarFallback className="text-xs">
+                      <AvatarFallback className="text-xs sm:text-sm">
                         {mp.player.full_name.slice(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium text-sm">{mp.player.full_name}</p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-medium text-sm sm:text-base">{mp.player.full_name}</p>
                         {isApplied && (
-                          <CheckCircle2 className="h-4 w-4 text-green-500" />
+                          <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-500" />
                         )}
                         {/* Rating Badge - show for finished/applied matches */}
                         {(match.status === "finished" || match.status === "applied") && (() => {
@@ -758,11 +760,11 @@ export default function LiveMatchReview() {
                           return <PlayerRatingBadge rating={playerRating} playerName={mp.player.full_name} size="sm" />;
                         })()}
                       </div>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-xs text-muted-foreground">
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
+                        <span className="text-xs sm:text-sm text-muted-foreground">
                           {mp.player.position}
                         </span>
-                        <span className="text-xs text-muted-foreground">•</span>
+                        <span className="text-xs sm:text-sm text-muted-foreground">•</span>
                         
                         {isEditing ? (
                           <div className="flex items-center gap-1">
@@ -826,9 +828,9 @@ export default function LiveMatchReview() {
                           </>
                         )}
                       </div>
-                      <div className="flex flex-wrap gap-1 mt-2">
+                      <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-2 sm:mt-3">
                         {statEntries.length === 0 ? (
-                          <Badge variant="outline" className="text-xs">
+                          <Badge variant="outline" className="text-xs sm:text-sm">
                             Sem estatísticas
                           </Badge>
                         ) : (
@@ -836,14 +838,14 @@ export default function LiveMatchReview() {
                             <Badge 
                               key={type} 
                               variant="secondary" 
-                              className="text-[10px] px-1.5 py-0"
+                              className="text-[10px] sm:text-xs px-2 py-0.5"
                             >
                               {EVENT_LABELS[type as MatchEventType] || type}: +{value}
                             </Badge>
                           ))
                         )}
                         {statEntries.length > 8 && (
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                          <Badge variant="outline" className="text-[10px] sm:text-xs px-2 py-0.5">
                             +{statEntries.length - 8} mais
                           </Badge>
                         )}
@@ -852,11 +854,11 @@ export default function LiveMatchReview() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 shrink-0"
+                      className="h-9 w-9 sm:h-10 sm:w-10 shrink-0"
                       asChild
                     >
                       <Link to={`/app/players/${mp.player_id}`} target="_blank">
-                        <ExternalLink className="h-4 w-4" />
+                        <ExternalLink className="h-4 w-4 sm:h-5 sm:w-5" />
                       </Link>
                     </Button>
                   </div>
@@ -868,10 +870,10 @@ export default function LiveMatchReview() {
       </Card>
 
       {/* Actions */}
-      <div className="flex flex-col sm:flex-row gap-3 sticky bottom-4 bg-background/95 backdrop-blur p-4 -mx-4 rounded-lg border shadow-lg">
-        <Button variant="outline" asChild className="flex-1">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sticky bottom-4 bg-zinc-950/95 backdrop-blur-lg p-4 sm:p-5 -mx-4 rounded-xl border border-zinc-800/40 shadow-xl">
+        <Button variant="outline" asChild className="flex-1 h-11 sm:h-12 text-sm sm:text-base">
           <Link to={`/app/live-match/${matchId}`}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
+            <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
             Voltar e Corrigir
           </Link>
         </Button>
@@ -880,17 +882,17 @@ export default function LiveMatchReview() {
           <Button
             onClick={() => applyStats.mutate()}
             disabled={applyStats.isPending || hasErrors}
-            className="flex-1 bg-green-600 hover:bg-green-700"
+            className="flex-1 bg-emerald-600 hover:bg-emerald-700 h-11 sm:h-12 text-sm sm:text-base"
             size="lg"
           >
             {applyStats.isPending ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white mr-2" />
                 Aplicando...
               </>
             ) : (
               <>
-                <Upload className="h-4 w-4 mr-2" />
+                <Upload className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                 Aplicar Estatísticas
               </>
             )}
@@ -898,24 +900,24 @@ export default function LiveMatchReview() {
         )}
 
         {match.status === "applied" && (
-          <div className="flex-1 flex items-center justify-center gap-2 p-3 rounded-lg bg-green-500/10 text-green-500 border border-green-500/30">
-            <CheckCircle2 className="h-5 w-5" />
-            <span className="font-medium">Estatísticas Aplicadas!</span>
+          <div className="flex-1 flex items-center justify-center gap-2 p-4 sm:p-5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+            <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6" />
+            <span className="font-medium text-sm sm:text-base">Estatísticas Aplicadas!</span>
           </div>
         )}
       </div>
 
       {/* Success message with links */}
       {match.status === "applied" && appliedPlayerIds.length > 0 && (
-        <Card className="border-green-500/30 bg-green-500/5">
-          <CardContent className="py-4">
-            <p className="text-sm text-center text-muted-foreground mb-3">
+        <Card className="border-emerald-500/30 bg-emerald-500/5">
+          <CardContent className="py-5 sm:py-6 px-4 sm:px-6">
+            <p className="text-sm sm:text-base text-center text-muted-foreground mb-4">
               Os ratings dos jogadores foram recalculados automaticamente.
             </p>
-            <div className="flex flex-wrap justify-center gap-2">
+            <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
               {matchPlayers.slice(0, 5).map((mp) => (
                 mp.player && (
-                  <Button key={mp.id} variant="outline" size="sm" asChild>
+                  <Button key={mp.id} variant="outline" size="sm" asChild className="text-xs sm:text-sm">
                     <Link to={`/app/players/${mp.player_id}`}>
                       Ver {mp.player.full_name.split(" ")[0]}
                     </Link>
@@ -923,7 +925,7 @@ export default function LiveMatchReview() {
                 )
               ))}
               {matchPlayers.length > 5 && (
-                <Badge variant="outline">+{matchPlayers.length - 5} jogadores</Badge>
+                <Badge variant="outline" className="text-xs sm:text-sm">+{matchPlayers.length - 5} jogadores</Badge>
               )}
             </div>
           </CardContent>

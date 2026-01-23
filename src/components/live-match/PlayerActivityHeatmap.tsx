@@ -183,15 +183,15 @@ export function PlayerActivityHeatmap({
   const halfTimeInterval = Math.floor((matchDuration / 2) / INTERVAL_SIZE);
 
   return (
-    <Card ref={heatmapRef} data-export-target>
-      <CardHeader>
-        <div className="flex items-center justify-between">
+    <Card ref={heatmapRef} data-export-target className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95">
+      <CardHeader className="pb-4 sm:pb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <CardTitle className="flex items-center gap-2">
-              <Flame className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <Flame className="h-5 w-5 sm:h-6 sm:w-6" />
               Mapa de Atividade
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-sm mt-1">
               Intensidade de eventos por jogador a cada {INTERVAL_SIZE} minutos
             </CardDescription>
           </div>
@@ -200,41 +200,41 @@ export function PlayerActivityHeatmap({
             size="sm"
             onClick={() => exportToPng(heatmapRef.current)}
             disabled={isExporting}
-            className="shrink-0"
+            className="shrink-0 self-start sm:self-auto"
           >
             <Download className="h-4 w-4 mr-1" />
             {isExporting ? "..." : "PNG"}
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 sm:space-y-5 p-4 sm:p-6">
         {/* Legend */}
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
             <span>Menos ativo</span>
-            <div className="flex gap-0.5">
-              <div className="w-4 h-4 rounded bg-green-500/50" />
-              <div className="w-4 h-4 rounded bg-green-500" />
-              <div className="w-4 h-4 rounded bg-yellow-500" />
-              <div className="w-4 h-4 rounded bg-orange-500" />
-              <div className="w-4 h-4 rounded bg-red-500" />
+            <div className="flex gap-0.5 sm:gap-1">
+              <div className="w-4 h-4 sm:w-5 sm:h-5 rounded bg-green-500/50" />
+              <div className="w-4 h-4 sm:w-5 sm:h-5 rounded bg-green-500" />
+              <div className="w-4 h-4 sm:w-5 sm:h-5 rounded bg-yellow-500" />
+              <div className="w-4 h-4 sm:w-5 sm:h-5 rounded bg-orange-500" />
+              <div className="w-4 h-4 sm:w-5 sm:h-5 rounded bg-red-500" />
             </div>
             <span>Mais ativo</span>
           </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <div className="w-4 h-4 rounded bg-muted/30 border border-dashed border-muted-foreground/30" />
+          <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+            <div className="w-4 h-4 sm:w-5 sm:h-5 rounded bg-zinc-800/50 border border-dashed border-zinc-600/30" />
             <span>Fora de campo</span>
           </div>
         </div>
 
         {/* Time axis header */}
-        <div className="flex items-center gap-2">
-          <div className="w-[140px] shrink-0" /> {/* Spacer for player column */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="w-[100px] sm:w-[140px] lg:w-[160px] shrink-0" /> {/* Spacer for player column */}
           <div className="flex-1 flex">
             {intervals.map((interval, idx) => (
               <div
                 key={idx}
-                className={`flex-1 text-center text-[10px] text-muted-foreground ${
+                className={`flex-1 text-center text-[9px] sm:text-[10px] lg:text-xs text-muted-foreground ${
                   idx === halfTimeInterval ? "border-l-2 border-muted-foreground/50 pl-1" : ""
                 }`}
               >
@@ -242,14 +242,14 @@ export function PlayerActivityHeatmap({
               </div>
             ))}
           </div>
-          <div className="w-12 shrink-0 text-center text-[10px] text-muted-foreground font-medium">
+          <div className="w-10 sm:w-12 lg:w-14 shrink-0 text-center text-[9px] sm:text-[10px] lg:text-xs text-muted-foreground font-medium">
             Total
           </div>
         </div>
 
         {/* Heatmap rows */}
-        <ScrollArea className="h-[400px]">
-          <div className="space-y-1 pr-3">
+        <ScrollArea className="h-[350px] sm:h-[400px] lg:h-[450px]">
+          <div className="space-y-1.5 sm:space-y-2 pr-3">
             <TooltipProvider delayDuration={100}>
               {playerHeatmapData.map(({ player, intervalCounts, totalEvents }) => {
                 if (!player.player) return null;
@@ -257,33 +257,33 @@ export function PlayerActivityHeatmap({
                 return (
                   <div
                     key={player.id}
-                    className="flex items-center gap-2 py-1"
+                    className="flex items-center gap-2 sm:gap-3 py-1.5 sm:py-2"
                   >
                     {/* Player info */}
-                    <div className="w-[140px] shrink-0 flex items-center gap-2">
-                      <Avatar className="h-6 w-6 shrink-0">
+                    <div className="w-[100px] sm:w-[140px] lg:w-[160px] shrink-0 flex items-center gap-2">
+                      <Avatar className="h-7 w-7 sm:h-8 sm:w-8 shrink-0">
                         <AvatarImage src={player.player.photo_url || undefined} />
-                        <AvatarFallback className="text-[10px]">
+                        <AvatarFallback className="text-[10px] sm:text-xs">
                           {player.player.full_name.slice(0, 2).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       <div className="min-w-0 flex-1">
-                        <p className="text-xs font-medium truncate">
+                        <p className="text-xs sm:text-sm font-medium truncate">
                           {player.player.full_name.split(" ").slice(-1)[0]}
                         </p>
-                        <p className="text-[10px] text-muted-foreground truncate">
+                        <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
                           {player.player.position}
                         </p>
                       </div>
                     </div>
 
                     {/* Heatmap cells */}
-                    <div className="flex-1 flex gap-0.5">
+                    <div className="flex-1 flex gap-0.5 sm:gap-1">
                       {intervalCounts.map((ic, idx) => (
                         <Tooltip key={idx}>
                           <TooltipTrigger asChild>
                             <div
-                              className={`flex-1 h-6 rounded-sm cursor-default transition-colors ${getIntensityColor(
+                              className={`flex-1 h-6 sm:h-7 lg:h-8 rounded-sm cursor-default transition-colors ${getIntensityColor(
                                 ic.count,
                                 ic.wasOnField
                               )} ${
@@ -330,10 +330,10 @@ export function PlayerActivityHeatmap({
                     </div>
 
                     {/* Total events */}
-                    <div className="w-12 shrink-0 text-center">
+                    <div className="w-10 sm:w-12 lg:w-14 shrink-0 text-center">
                       <Badge
                         variant={totalEvents > 0 ? "secondary" : "outline"}
-                        className="text-[10px] px-1.5"
+                        className="text-[10px] sm:text-xs px-1.5 sm:px-2"
                       >
                         {totalEvents}
                       </Badge>
