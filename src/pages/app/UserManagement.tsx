@@ -177,9 +177,16 @@ export default function UserManagement() {
   
   // Confirmation dialogs
   const [confirmAction, setConfirmAction] = useState<{
-    type: "activate" | "suspend";
+    type: "activate" | "suspend" | "reject";
     user: UserWithPermissions;
   } | null>(null);
+  
+  // Approval modal state
+  const [approvalModalOpen, setApprovalModalOpen] = useState(false);
+  const [approvalUser, setApprovalUser] = useState<UserWithPermissions | null>(null);
+  const [approvalRole, setApprovalRole] = useState<AppRole>("scout");
+  const [approvalLinkedPlayerId, setApprovalLinkedPlayerId] = useState<string | null>(null);
+  const [approving, setApproving] = useState(false);
 
   // Check access
   useEffect(() => {
@@ -485,6 +492,156 @@ export default function UserManagement() {
   // Counts
   const activeCount = users.filter(u => u.status === "active").length;
   const suspendedCount = users.filter(u => u.status === "suspended").length;
+  const pendingCount = users.filter(u => u.status === "pending").length;
+  
+  // Open approval modal
+  const openApprovalModal = (user: UserWithPermissions) => {
+    setApprovalUser(user);
+    setApprovalRole("scout"); // Default to scout
+    setApprovalLinkedPlayerId(null);
+    setApprovalModalOpen(true);
+    fetchAvailablePlayers();
+  };
+  
+  // Handle approval
+  const handleApprove = async () => {
+    if (!approvalUser) return;
+    
+    // Validate: player role needs a linked player
+    if (approvalRole === "player" && !approvalLinkedPlayerId) {
+      toast.error("Selecione um atleta para vincular ao usuário jogador");
+      return;
+    }
+    
+    setApproving(true);
+    try {
+      // Update role and status to active
+      const updateData: any = { 
+        role: approvalRole,
+        status: "active"
+      };
+      
+      if (approvalRole === "player") {
+        updateData.linked_player_id = approvalLinkedPlayerId;
+      } else {
+        updateData.linked_player_id = null;
+      }
+      
+      const { error: roleError } = await supabase
+        .from("user_roles")
+        .update(updateData)
+        .eq("user_id", approvalUser.user_id);
+      
+      if (roleError) throw roleError;
+      
+      // Create default permissions for non-player roles
+      if (approvalRole !== "player") {
+        const isEditorRole = approvalRole === "editor" || approvalRole === "scout";
+        const isAdminRole = approvalRole === "admin";
+        
+        // Build permissions object
+        const permsToSave = {
+          user_id: approvalUser.user_id,
+          app_view: true,
+          players_view: true,
+          players_create: isAdminRole || isEditorRole,
+          players_edit: isAdminRole || isEditorRole,
+          players_delete: isAdminRole,
+          players_export: isAdminRole || isEditorRole,
+          compare_view: true,
+          reports_view: true,
+          reports_create: isAdminRole || isEditorRole,
+          reports_edit: isAdminRole || isEditorRole,
+          reports_delete: isAdminRole,
+          reports_export: isAdminRole || isEditorRole,
+          live_match_view: true,
+          live_match_log: isAdminRole || isEditorRole,
+          competitions_view: true,
+          competitions_create: isAdminRole || isEditorRole,
+          competitions_edit: isAdminRole || isEditorRole,
+          competitions_delete: isAdminRole,
+          news_view: true,
+          news_create: isAdminRole || isEditorRole,
+          news_edit: isAdminRole || isEditorRole,
+          news_delete: isAdminRole,
+          news_publish: isAdminRole || isEditorRole,
+          leads_view: true,
+          leads_create: isAdminRole || isEditorRole,
+          leads_edit: isAdminRole || isEditorRole,
+          leads_delete: isAdminRole,
+          leads_export: isAdminRole || isEditorRole,
+          users_manage: isAdminRole,
+        };
+        
+        // Upsert permissions - use insert with on conflict ignore approach
+        const { error: checkError, data: existingPerms } = await supabase
+          .from("user_permissions")
+          .select("id")
+          .eq("user_id", approvalUser.user_id)
+          .maybeSingle();
+        
+        if (existingPerms) {
+          // Update existing
+          const { error: updateError } = await supabase
+            .from("user_permissions")
+            .update(permsToSave)
+            .eq("user_id", approvalUser.user_id);
+          if (updateError) throw updateError;
+        } else {
+          // Insert new
+          const { error: insertError } = await supabase
+            .from("user_permissions")
+            .insert([permsToSave]);
+          if (insertError) throw insertError;
+        }
+      }
+      
+      // Get linked player name
+      const linkedPlayerName = availablePlayers.find(p => p.id === approvalLinkedPlayerId)?.full_name || null;
+      
+      toast.success(`Usuário ${approvalUser.full_name || ""}aprovado com sucesso!`);
+      setApprovalModalOpen(false);
+      
+      // Update local state
+      setUsers(prev => prev.map(u => 
+        u.user_id === approvalUser.user_id 
+          ? { 
+              ...u, 
+              role: approvalRole, 
+              status: "active",
+              linked_player_id: approvalRole === "player" ? approvalLinkedPlayerId : null,
+              linked_player_name: approvalRole === "player" ? linkedPlayerName : null,
+            }
+          : u
+      ));
+    } catch (error) {
+      console.error("Error approving user:", error);
+      toast.error("Erro ao aprovar usuário");
+    } finally {
+      setApproving(false);
+    }
+  };
+  
+  // Handle rejection
+  const handleReject = async (userId: string) => {
+    try {
+      const { error } = await supabase
+        .from("user_roles")
+        .update({ status: "rejected" })
+        .eq("user_id", userId);
+      
+      if (error) throw error;
+      
+      toast.success("Usuário rejeitado");
+      setUsers(prev => prev.map(u => 
+        u.user_id === userId ? { ...u, status: "rejected" } : u
+      ));
+      setConfirmAction(null);
+    } catch (error) {
+      console.error("Error rejecting user:", error);
+      toast.error("Erro ao rejeitar usuário");
+    }
+  };
 
   if (loading) {
     return (
@@ -515,9 +672,22 @@ export default function UserManagement() {
             <h1 className="text-2xl font-bold">Usuários</h1>
             <p className="text-sm text-muted-foreground">
               {users.length} usuário{users.length !== 1 ? "s" : ""} • {activeCount} ativo{activeCount !== 1 ? "s" : ""}
+              {pendingCount > 0 && (
+                <span className="text-amber-400 font-medium"> • {pendingCount} pendente{pendingCount !== 1 ? "s" : ""}</span>
+              )}
             </p>
           </div>
         </div>
+        {pendingCount > 0 && (
+          <Button 
+            variant="outline" 
+            className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+            onClick={() => setStatusFilter("pending")}
+          >
+            <AlertTriangle className="w-4 h-4 mr-2" />
+            Ver Pendentes ({pendingCount})
+          </Button>
+        )}
       </div>
 
       {/* Search and Filters */}
@@ -543,6 +713,11 @@ export default function UserManagement() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="pending">
+                  <span className="flex items-center gap-2">
+                    Pendentes {pendingCount > 0 && <Badge variant="outline" className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-[10px] h-4">{pendingCount}</Badge>}
+                  </span>
+                </SelectItem>
                 <SelectItem value="active">Ativos</SelectItem>
                 <SelectItem value="suspended">Suspensos</SelectItem>
               </SelectContent>
@@ -613,13 +788,19 @@ export default function UserManagement() {
                   <TableCell>
                     <Badge 
                       variant="outline" 
-                      className={user.status === "active" 
-                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" 
-                        : "bg-red-500/10 text-red-400 border-red-500/30"
+                      className={
+                        user.status === "active" 
+                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" 
+                          : user.status === "pending"
+                          ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                          : "bg-red-500/10 text-red-400 border-red-500/30"
                       }
                     >
-                      <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${user.status === "active" ? "bg-emerald-400" : "bg-red-400"}`} />
-                      {user.status === "active" ? "Ativo" : "Suspenso"}
+                      <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+                        user.status === "active" ? "bg-emerald-400" : 
+                        user.status === "pending" ? "bg-amber-400" : "bg-red-400"
+                      }`} />
+                      {user.status === "active" ? "Ativo" : user.status === "pending" ? "Pendente" : "Suspenso"}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
@@ -629,42 +810,64 @@ export default function UserManagement() {
                     }
                   </TableCell>
                   <TableCell className="text-right pr-6">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem 
-                          onClick={() => openPermissions(user)}
-                          disabled={user.is_owner && !currentUserIsOwner}
+                    {user.status === "pending" ? (
+                      <div className="flex items-center justify-end gap-2">
+                        <Button 
+                          size="sm" 
+                          onClick={() => openApprovalModal(user)}
+                          className="bg-emerald-600 hover:bg-emerald-700 h-7 text-xs"
                         >
-                          <UserCog className="w-4 h-4 mr-2" />
-                          Editar Permissões
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        {user.status === "active" ? (
+                          <UserCheck className="w-3.5 h-3.5 mr-1" />
+                          Aprovar
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          onClick={() => setConfirmAction({ type: "reject", user })}
+                          className="text-red-400 hover:text-red-300 hover:bg-red-500/10 h-7 text-xs"
+                        >
+                          <UserX className="w-3.5 h-3.5 mr-1" />
+                          Recusar
+                        </Button>
+                      </div>
+                    ) : (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
                           <DropdownMenuItem 
-                            onClick={() => setConfirmAction({ type: "suspend", user })}
-                            disabled={user.is_owner || user.user_id === currentUser?.id}
-                            className="text-red-400 focus:text-red-400"
+                            onClick={() => openPermissions(user)}
+                            disabled={user.is_owner && !currentUserIsOwner}
                           >
-                            <UserX className="w-4 h-4 mr-2" />
-                            Suspender
+                            <UserCog className="w-4 h-4 mr-2" />
+                            Editar Permissões
                           </DropdownMenuItem>
-                        ) : (
-                          <DropdownMenuItem 
-                            onClick={() => setConfirmAction({ type: "activate", user })}
-                            disabled={user.is_owner}
-                            className="text-emerald-400 focus:text-emerald-400"
-                          >
-                            <UserCheck className="w-4 h-4 mr-2" />
-                            Ativar
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                          <DropdownMenuSeparator />
+                          {user.status === "active" ? (
+                            <DropdownMenuItem 
+                              onClick={() => setConfirmAction({ type: "suspend", user })}
+                              disabled={user.is_owner || user.user_id === currentUser?.id}
+                              className="text-red-400 focus:text-red-400"
+                            >
+                              <UserX className="w-4 h-4 mr-2" />
+                              Suspender
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem 
+                              onClick={() => setConfirmAction({ type: "activate", user })}
+                              disabled={user.is_owner}
+                              className="text-emerald-400 focus:text-emerald-400"
+                            >
+                              <UserCheck className="w-4 h-4 mr-2" />
+                              Ativar
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
@@ -758,15 +961,43 @@ export default function UserManagement() {
                   )}
                   <Badge 
                     variant="outline" 
-                    className={user.status === "active" 
-                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" 
-                      : "bg-red-500/10 text-red-400 border-red-500/30"
+                    className={
+                      user.status === "active" 
+                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" 
+                        : user.status === "pending"
+                        ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                        : "bg-red-500/10 text-red-400 border-red-500/30"
                     }
                   >
-                    <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${user.status === "active" ? "bg-emerald-400" : "bg-red-400"}`} />
-                    {user.status === "active" ? "Ativo" : "Suspenso"}
+                    <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+                      user.status === "active" ? "bg-emerald-400" : 
+                      user.status === "pending" ? "bg-amber-400" : "bg-red-400"
+                    }`} />
+                    {user.status === "active" ? "Ativo" : user.status === "pending" ? "Pendente" : "Suspenso"}
                   </Badge>
                 </div>
+                
+                {/* Actions for pending users on mobile */}
+                {user.status === "pending" && (
+                  <div className="flex gap-2 mt-3">
+                    <Button 
+                      size="sm" 
+                      onClick={() => openApprovalModal(user)}
+                      className="bg-emerald-600 hover:bg-emerald-700 flex-1"
+                    >
+                      <UserCheck className="w-4 h-4 mr-2" />
+                      Aprovar
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => setConfirmAction({ type: "reject", user })}
+                      className="text-red-400 border-red-500/30 hover:bg-red-500/10"
+                    >
+                      <UserX className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
                 
                 <p className="text-xs text-muted-foreground mt-3">
                   Último login: {user.last_login_at 
@@ -786,11 +1017,18 @@ export default function UserManagement() {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-amber-500" />
-              {confirmAction?.type === "suspend" ? "Suspender usuário" : "Ativar usuário"}
+              {confirmAction?.type === "suspend" 
+                ? "Suspender usuário" 
+                : confirmAction?.type === "reject"
+                ? "Recusar usuário"
+                : "Ativar usuário"
+              }
             </AlertDialogTitle>
             <AlertDialogDescription>
               {confirmAction?.type === "suspend" 
                 ? `Tem certeza que deseja suspender "${confirmAction?.user.full_name || "este usuário"}"? Ele não poderá mais acessar o sistema.`
+                : confirmAction?.type === "reject"
+                ? `Tem certeza que deseja recusar "${confirmAction?.user.full_name || "este usuário"}"? A solicitação de acesso será rejeitada.`
                 : `Tem certeza que deseja ativar "${confirmAction?.user.full_name || "este usuário"}"? Ele poderá acessar o sistema novamente.`
               }
             </AlertDialogDescription>
@@ -798,17 +1036,119 @@ export default function UserManagement() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => confirmAction && handleStatusChange(
-                confirmAction.user.user_id, 
-                confirmAction.type === "suspend" ? "suspended" : "active"
-              )}
-              className={confirmAction?.type === "suspend" ? "bg-red-600 hover:bg-red-700" : "bg-emerald-600 hover:bg-emerald-700"}
+              onClick={() => {
+                if (!confirmAction) return;
+                if (confirmAction.type === "reject") {
+                  handleReject(confirmAction.user.user_id);
+                } else {
+                  handleStatusChange(
+                    confirmAction.user.user_id, 
+                    confirmAction.type === "suspend" ? "suspended" : "active"
+                  );
+                }
+              }}
+              className={
+                confirmAction?.type === "suspend" || confirmAction?.type === "reject"
+                  ? "bg-red-600 hover:bg-red-700" 
+                  : "bg-emerald-600 hover:bg-emerald-700"
+              }
             >
-              {confirmAction?.type === "suspend" ? "Suspender" : "Ativar"}
+              {confirmAction?.type === "suspend" 
+                ? "Suspender" 
+                : confirmAction?.type === "reject"
+                ? "Recusar"
+                : "Ativar"
+              }
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Approval Modal */}
+      <Dialog open={approvalModalOpen} onOpenChange={setApprovalModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserCheck className="w-5 h-5 text-emerald-400" />
+              Aprovar Usuário
+            </DialogTitle>
+            <DialogDescription>
+              {approvalUser?.full_name || approvalUser?.user_id.slice(0, 8)}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Role Selection */}
+            <div className="space-y-2">
+              <Label>Função a atribuir</Label>
+              <Select
+                value={approvalRole}
+                onValueChange={(value) => setApprovalRole(value as AppRole)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a função" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="scout">Editor (criar/editar, sem deletar)</SelectItem>
+                  <SelectItem value="viewer">Viewer (somente leitura)</SelectItem>
+                  <SelectItem value="player">Jogador (acesso ao próprio perfil)</SelectItem>
+                  <SelectItem value="admin">Admin (acesso total)</SelectItem>
+                </SelectContent>
+              </Select>
+              {approvalRole === "admin" && (
+                <p className="text-xs text-amber-400 flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" />
+                  Admin tem acesso total, incluindo exclusão
+                </p>
+              )}
+            </div>
+
+            {/* Player Linking - Only shown for player role */}
+            {approvalRole === "player" && (
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-emerald-400" />
+                  Vincular a Atleta
+                </Label>
+                <Select
+                  value={approvalLinkedPlayerId || ""}
+                  onValueChange={(value) => setApprovalLinkedPlayerId(value || null)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={loadingPlayers ? "Carregando..." : "Selecione o atleta"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availablePlayers.map((player) => (
+                      <SelectItem key={player.id} value={player.id}>
+                        {player.full_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {!approvalLinkedPlayerId && (
+                  <p className="text-xs text-amber-400 flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" />
+                    É obrigatório vincular um atleta
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setApprovalModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleApprove}
+              disabled={approving || (approvalRole === "player" && !approvalLinkedPlayerId)}
+              className="bg-emerald-600 hover:bg-emerald-700"
+            >
+              {approving ? "Aprovando..." : "Aprovar Usuário"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Permissions Modal */}
       <Dialog open={permissionsOpen} onOpenChange={setPermissionsOpen}>
