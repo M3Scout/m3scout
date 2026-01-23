@@ -26,7 +26,7 @@ export function AboutSection() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="py-24 md:py-32 lg:py-40 bg-[#f8f7f4]">
+    <section ref={sectionRef} className="py-24 md:py-32 lg:py-40 bg-[#f8f7f4] tablet:border-b-0 tablet:after:hidden">
       {/* Single column container - aligned with InstagramFeedSection */}
       <div className="mx-auto max-w-[1280px] px-6 lg:px-10">
         <div className="max-w-3xl">
