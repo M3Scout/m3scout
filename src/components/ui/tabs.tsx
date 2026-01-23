@@ -13,8 +13,8 @@ const TabsList = React.forwardRef<
     className={cn(
       // Floating container design
       "relative flex items-center gap-1",
-      // Increased height for premium feel
-      "w-full h-14 px-2 md:px-4",
+      // Increased height for premium feel - slightly shorter on mobile
+      "w-full h-12 sm:h-14 px-1.5 sm:px-2 md:px-4",
       // Rounded container with subtle border
       "rounded-xl",
       // Premium dark gradient background
@@ -26,8 +26,8 @@ const TabsList = React.forwardRef<
       // Top highlight line
       "before:absolute before:inset-x-2 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-zinc-600/20 before:to-transparent before:rounded-t-xl",
       "backdrop-blur-xl",
-      // Mobile: horizontal scroll with hidden scrollbar
-      "overflow-x-auto scrollbar-hide",
+      // Mobile: horizontal scroll with hidden scrollbar - NEVER wrap
+      "overflow-x-auto scrollbar-hide flex-nowrap",
       // Tablet/Desktop: better spacing
       "md:justify-start lg:justify-center",
       className,
@@ -44,17 +44,17 @@ const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      // Base structure with more breathing room
-      "group relative inline-flex items-center justify-center gap-2",
-      "h-10 px-4 md:px-5 mx-0.5",
-      "whitespace-nowrap",
+      // Base structure - NEVER shrink on mobile for scroll behavior
+      "group relative inline-flex items-center justify-center gap-1.5 sm:gap-2",
+      "h-9 sm:h-10 px-3 sm:px-4 md:px-5 mx-0.5",
+      "whitespace-nowrap flex-shrink-0",
       "rounded-lg",
       // Smooth transition - 150ms for snappy feel
       "transition-all duration-150 ease-out",
-      // Typography: refined hierarchy
-      "text-[12.5px] md:text-[13px] font-medium tracking-[0.015em]",
-      // Icon styling: smaller, thinner stroke, more subtle
-      "[&>svg]:w-3.5 [&>svg]:h-3.5 [&>svg]:shrink-0 [&>svg]:stroke-[1.5]",
+      // Typography: smaller on mobile for better fit
+      "text-[11px] sm:text-[12.5px] md:text-[13px] font-medium tracking-[0.015em]",
+      // Icon styling: smaller on mobile
+      "[&>svg]:w-3 [&>svg]:h-3 sm:[&>svg]:w-3.5 sm:[&>svg]:h-3.5 [&>svg]:shrink-0 [&>svg]:stroke-[1.5]",
       "[&>svg]:transition-all [&>svg]:duration-150",
       // Default state: very muted, clear secondary status
       "text-zinc-500",
