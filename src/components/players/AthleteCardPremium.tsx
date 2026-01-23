@@ -814,7 +814,7 @@ function ClubScoutingCard({
                 </div>
               ) : (
                 <div 
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-semibold uppercase"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-semibold uppercase tablet:hidden tablet-landscape:hidden"
                   style={{
                     background: "rgba(30, 215, 96, 0.08)",
                     border: "1px solid rgba(30, 215, 96, 0.2)",

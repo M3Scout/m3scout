@@ -147,8 +147,8 @@ function PlayerCardPremium({ player }: { player: Player }) {
             </div>
           </div>
 
-          {/* Status Badge - Top Right */}
-          <div className="absolute top-4 right-4">
+          {/* Status Badge - Top Right (hide on iPad/tablet) */}
+          <div className="absolute top-4 right-4 tablet:hidden tablet-landscape:hidden">
             <div 
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border border-white/[0.08]"
               style={{ 
@@ -258,8 +258,8 @@ function PlayerCardScout({ player }: { player: Player }) {
             </div>
           </div>
 
-          {/* Status Badge - Top Right */}
-          <div className="absolute top-4 right-4">
+          {/* Status Badge - Top Right (hide on iPad/tablet) */}
+          <div className="absolute top-4 right-4 tablet:hidden tablet-landscape:hidden">
             <div 
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border border-white/[0.08]"
               style={{ 
