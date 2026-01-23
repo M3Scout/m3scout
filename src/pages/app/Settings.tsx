@@ -290,7 +290,7 @@ export default function Settings() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Profile Card */}
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-2 bg-zinc-900/50 border border-zinc-800/50">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <User className="h-5 w-5 text-primary" />
@@ -393,7 +393,7 @@ export default function Settings() {
 
         {/* Account Info Card */}
         <div className="space-y-6">
-          <Card>
+          <Card className="bg-zinc-900/50 border border-zinc-800/50">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Shield className="h-5 w-5 text-primary" />
@@ -434,7 +434,7 @@ export default function Settings() {
 
           {/* Admin Tools */}
           {isAdmin && (
-            <Card>
+            <Card className="bg-zinc-900/50 border border-zinc-800/50">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Database className="h-5 w-5 text-primary" />
