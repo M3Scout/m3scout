@@ -416,8 +416,14 @@ p, span, h1, h2, h3, h4, h5, h6, a, li {
   }
 
   /* Legacy components - keep for compatibility */
+  /* Updated to use neutral charcoal gradient instead of blue-tinted bg-card */
   .glass-card {
-    @apply bg-card/60 backdrop-blur-xl border border-border/50 rounded-xl;
+    @apply backdrop-blur-xl border border-zinc-800/40 rounded-xl;
+    background: linear-gradient(to bottom, 
+      hsl(240 6% 6% / 0.95), 
+      hsl(240 5% 5% / 0.90), 
+      hsl(240 4% 4% / 0.95)
+    );
     box-shadow: var(--shadow-card);
   }
 
