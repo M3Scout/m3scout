@@ -150,10 +150,10 @@ export function InstagramFeedSection() {
   ];
 
   return (
-    // iPad-specific: Ensure no dark overlay or border-top inherited, match desktop appearance
+    // Mobile/Tablet fix: Ensure no dark overlay or border-top inherited, full brightness
     <section 
-      className="py-20 md:py-28 bg-[#f8f7f4] tablet:bg-[#f8f7f4] tablet:border-t-0 tablet:opacity-100 tablet:filter-none" 
-      style={{ isolation: 'isolate' }}
+      className="py-20 md:py-28 bg-[#f8f7f4] border-t-0" 
+      style={{ isolation: 'isolate', opacity: 1 }}
     >
       {/* Single container for entire section - consistent alignment */}
       <div className="mx-auto max-w-[1280px] px-6 lg:px-10">
