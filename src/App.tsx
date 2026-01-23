@@ -32,6 +32,7 @@ import AppPlayers from "./pages/app/AppPlayers";
 import NewPlayer from "./pages/app/NewPlayer";
 import EditPlayer from "./pages/app/EditPlayer";
 import PlayerDetail from "./pages/app/PlayerDetail";
+import MyProfile from "./pages/app/MyProfile";
 import ScoutingReports from "./pages/app/ScoutingReports";
 import NewScoutingReport from "./pages/app/NewScoutingReport";
 import EditScoutingReport from "./pages/app/EditScoutingReport";
@@ -91,6 +92,7 @@ const App = () => (
                   }
                 >
                   <Route index element={<Dashboard />} />
+                  <Route path="my-profile" element={<MyProfile />} />
                   <Route path="players" element={<RequirePermission module="players"><AppPlayers /></RequirePermission>} />
                   <Route path="players/new" element={<RequirePermission module="players" action="create"><NewPlayer /></RequirePermission>} />
                   <Route path="players/:id" element={<RequirePermission module="players"><PlayerDetail /></RequirePermission>} />

@@ -61,9 +61,9 @@ const internalNavGroups = [
 // Simplified navigation for player role (self-scoped, read-only)
 const playerNavGroups = [
   {
-    label: "Meu Perfil",
+    label: "Meu Espaço",
     items: [
-      { href: "/app/players", icon: Users, label: "Meu Perfil", module: "players" as const },
+      { href: "/app/my-profile", icon: Users, label: "Meu Perfil", module: "players" as const },
       { href: "/app/reports", icon: FileText, label: "Meus Relatórios", module: "reports" as const },
     ]
   },
