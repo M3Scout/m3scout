@@ -6,7 +6,7 @@ import {
   Info
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { usePlayerMatchStats } from "@/hooks/usePlayerMatchStats";
+import { usePlayerMatchRatings } from "@/hooks/usePlayerMatchRatings";
 import { 
   Tooltip,
   TooltipContent,
@@ -16,7 +16,7 @@ import {
 
 interface AthleteIndicatorHeaderProps {
   playerId: string;
-  autoRating: number | null;
+  playerPosition?: string; // Needed for GK detection in rating calc
   physicalStatus: string | null;
   playStyle: string | null;
   primaryTacticalRole?: string | null;
@@ -254,27 +254,53 @@ function PlayStylePill({ playStyle, primaryRole, secondaryRole }: PlayStylePillP
   );
 }
 
+/**
+ * AthleteIndicatorHeader
+ * 
+ * Uses the same data source as MatchRatingEvolutionChart (usePlayerMatchRatings)
+ * to ensure NOTA, JOGOS, and MINUTOS are perfectly synchronized.
+ */
 export function AthleteIndicatorHeader({
   playerId,
-  autoRating,
+  playerPosition,
   physicalStatus,
   playStyle,
   primaryTacticalRole,
   secondaryTacticalRole,
   seasonYear = new Date().getFullYear(),
 }: AthleteIndicatorHeaderProps) {
-  // Fetch match stats for the selected season
-  const { totals, isLoading } = usePlayerMatchStats({
+  // Use the SAME hook as MatchRatingEvolutionChart to ensure data consistency
+  const {
+    matches,
+    averageRating,
+    totals,
+    isLoading,
+  } = usePlayerMatchRatings({
     playerId,
+    playerPosition,
     seasonYear,
   });
 
-  const matches = totals?.matches ?? 0;
+  // Count only matches with rating (same as chartData.length in MatchRatingEvolutionChart)
+  const ratedMatchesCount = matches.filter((m) => m.rating.hasRating).length;
+  
+  // Total minutes from the period
   const minutes = totals?.minutes ?? 0;
 
-  // Determine rating display
-  const showRating = minutes > 0 && autoRating !== null && autoRating !== undefined;
-  const ratingDisplay = showRating ? formatRating(autoRating) : "—";
+  // Determine rating display: show averageRating if there are rated matches
+  const showRating = ratedMatchesCount > 0 && averageRating !== null;
+  const ratingDisplay = showRating ? formatRating(averageRating) : "—";
+
+  // Debug log for validation (can be removed in production)
+  if (import.meta.env.DEV) {
+    console.log("[AthleteIndicatorHeader] Data sync check:", {
+      seasonYear,
+      averageRating,
+      ratedMatchesCount,
+      minutes,
+      totalMatches: matches.length,
+    });
+  }
 
   return (
     <div
@@ -287,7 +313,7 @@ export function AthleteIndicatorHeader({
         "flex items-stretch gap-2",
         "min-w-max py-1" // Ensures horizontal scroll on mobile
       )}>
-        {/* 1. NOTA */}
+        {/* 1. NOTA - Average rating from matches with rating */}
         <IndicatorCard
           label="NOTA"
           value={ratingDisplay}
@@ -295,14 +321,14 @@ export function AthleteIndicatorHeader({
           tooltip="Nota baseada apenas no período selecionado"
         />
 
-        {/* 2. JOGOS */}
+        {/* 2. JOGOS - Count of matches with rating */}
         <IndicatorCard
           label="JOGOS"
-          value={matches}
+          value={ratedMatchesCount}
           icon={Gamepad2}
         />
 
-        {/* 3. MINUTOS */}
+        {/* 3. MINUTOS - Total minutes in period */}
         <IndicatorCard
           label="MINUTOS"
           value={formatMinutes(minutes)}

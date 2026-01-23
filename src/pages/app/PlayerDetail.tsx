@@ -328,7 +328,7 @@ const PlayerDetail = () => {
         {/* Row 4: Athlete Indicator Header */}
         <AthleteIndicatorHeader
           playerId={player.id}
-          autoRating={player.auto_rating}
+          playerPosition={player.position}
           physicalStatus={player.physical_status}
           playStyle={player.play_style}
           primaryTacticalRole={player.primary_tactical_role}
