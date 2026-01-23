@@ -94,7 +94,7 @@ export function SeasonStatsCard({
       whileHover={{ scale: 1.01 }}
       transition={{ duration: 0.15 }}
     >
-      <Card className="w-full max-w-full overflow-hidden">
+      <Card className="w-full max-w-full overflow-hidden border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95">
         <CardContent className="p-3 w-full max-w-full min-w-0">
           {/* Header: Competition name + actions */}
           <div className="flex items-start justify-between gap-2 mb-3 w-full min-w-0">
@@ -261,7 +261,7 @@ export function SeasonTotalsCard({ seasonStats, isGK, index = 0 }: SeasonTotalsC
       animate="visible"
       variants={cardVariants}
     >
-      <Card className="w-full max-w-full overflow-hidden bg-muted/30 border-dashed">
+      <Card className="w-full max-w-full overflow-hidden border-zinc-800/40 bg-gradient-to-b from-zinc-900/80 via-zinc-900/60 to-zinc-950/80 border-dashed">
         <CardContent className="p-3 w-full max-w-full min-w-0">
           <div className="flex items-center gap-2 mb-2">
             <Badge variant="secondary" className="text-xs">Total da Temporada</Badge>
