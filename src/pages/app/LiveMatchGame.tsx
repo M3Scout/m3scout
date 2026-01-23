@@ -615,7 +615,7 @@ function LiveMatchGameInner({ matchId }: { matchId: string }) {
           </motion.div>
         )}
 
-        {/* Players count */}
+        {/* Players count - derived from displayedPlayers (source of truth for rendered cards) */}
         <div className="flex items-center gap-2 text-xs text-zinc-500">
           <Users className="h-4 w-4" />
           {isDraft ? (
@@ -628,12 +628,22 @@ function LiveMatchGameInner({ matchId }: { matchId: string }) {
               )}
             </span>
           ) : (
-            <span>
-              {displayedPlayers.length} exibido{displayedPlayers.length !== 1 ? "s" : ""}
-              <span className="ml-1 text-zinc-400">
-                ({playersOnField.length} ⚽ em campo / {playersOffField.length} 🪑 banco)
-              </span>
-            </span>
+            (() => {
+              // Calculate breakdown from displayedPlayers (same list that renders cards)
+              const exibidos = displayedPlayers.length;
+              const emCampo = displayedPlayers.filter(p => p.is_on_field === true).length;
+              // banco = everyone displayed who is NOT on field (fallback for undefined/null)
+              const banco = exibidos - emCampo;
+              
+              return (
+                <span>
+                  {exibidos} exibido{exibidos !== 1 ? "s" : ""}
+                  <span className="ml-1 text-zinc-400">
+                    ({emCampo} ⚽ em campo / {banco} 🪑 banco)
+                  </span>
+                </span>
+              );
+            })()
           )}
         </div>
 
