@@ -503,10 +503,10 @@ function VisualModeCard({
               </span>
             </div>
 
-            {/* Right Pill: Status (Priority > New > Monitoring) */}
+            {/* Right Pill: Status (Priority > New > Monitoring) — Hidden on iPad */}
             {status === "priority" ? (
               <motion.div 
-                className="flex items-center gap-2 px-3 py-2 rounded-md min-h-[32px] tablet:shrink-0"
+                className="flex items-center gap-2 px-3 py-2 rounded-md min-h-[32px] tablet:hidden tablet-landscape:hidden"
                 style={{
                   background: "rgba(10, 12, 18, 0.92)",
                   border: "1px solid rgba(255, 107, 53, 0.35)",
@@ -525,7 +525,7 @@ function VisualModeCard({
               </motion.div>
             ) : status === "new" ? (
               <motion.div 
-                className="flex items-center gap-2 px-3 py-2 rounded-md min-h-[32px] tablet:shrink-0"
+                className="flex items-center gap-2 px-3 py-2 rounded-md min-h-[32px] tablet:hidden tablet-landscape:hidden"
                 style={{
                   background: "rgba(10, 12, 18, 0.92)",
                   border: "1px solid rgba(59, 130, 246, 0.35)",
@@ -545,7 +545,7 @@ function VisualModeCard({
               </motion.div>
             ) : (
               <div 
-                className="flex items-center gap-2 px-3 py-2 rounded-md min-h-[32px] tablet:shrink-0"
+                className="flex items-center gap-2 px-3 py-2 rounded-md min-h-[32px] tablet:hidden tablet-landscape:hidden"
                 style={{
                   background: "rgba(10, 12, 18, 0.92)",
                   border: "1px solid rgba(30, 215, 96, 0.25)",
