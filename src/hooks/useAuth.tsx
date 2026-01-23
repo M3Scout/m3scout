@@ -5,12 +5,19 @@ import { Database } from "@/integrations/supabase/types";
 
 export type AppRole = Database["public"]["Enums"]["app_role"];
 
+// Valid roles that grant app access
+const VALID_ROLES: AppRole[] = ["admin", "scout", "editor", "viewer", "player"];
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
   roles: AppRole[];
   linkedPlayerId: string | null;
+  /** True if user has at least one valid role (not pending/member) */
+  isApproved: boolean;
+  /** True while roles are still being fetched after auth */
+  rolesLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, name: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -27,20 +34,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [rolesLoading, setRolesLoading] = useState(true);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [linkedPlayerId, setLinkedPlayerId] = useState<string | null>(null);
 
   const fetchUserRoles = async (userId: string) => {
-    const { data, error } = await supabase
-      .from("user_roles")
-      .select("role, linked_player_id")
-      .eq("user_id", userId);
+    setRolesLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("role, linked_player_id, status")
+        .eq("user_id", userId);
 
-    if (!error && data) {
-      setRoles(data.map((r) => r.role));
-      // Get linked_player_id if user is a player
-      const playerRole = data.find((r) => r.role === "player");
-      setLinkedPlayerId(playerRole?.linked_player_id ?? null);
+      if (!error && data) {
+        // Only count active roles
+        const activeRoles = data.filter(r => r.status === 'active');
+        setRoles(activeRoles.map((r) => r.role));
+        // Get linked_player_id if user is a player
+        const playerRole = activeRoles.find((r) => r.role === "player");
+        setLinkedPlayerId(playerRole?.linked_player_id ?? null);
+      } else {
+        setRoles([]);
+        setLinkedPlayerId(null);
+      }
+    } catch (err) {
+      console.error("Error fetching user roles:", err);
+      setRoles([]);
+      setLinkedPlayerId(null);
+    } finally {
+      setRolesLoading(false);
     }
   };
 
@@ -59,6 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           setRoles([]);
           setLinkedPlayerId(null);
+          setRolesLoading(false);
         }
         
         setLoading(false);
@@ -72,6 +95,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (session?.user) {
         fetchUserRoles(session.user.id);
+      } else {
+        setRolesLoading(false);
       }
       
       setLoading(false);
@@ -117,6 +142,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isScout = hasRole("scout");
   const isPlayer = hasRole("player");
   const isInternal = isAdmin || isScout;
+  
+  // User is approved if they have at least one valid role
+  const isApproved = roles.some(role => VALID_ROLES.includes(role));
 
   return (
     <AuthContext.Provider
@@ -124,8 +152,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         session,
         loading,
+        rolesLoading,
         roles,
         linkedPlayerId,
+        isApproved,
         signIn,
         signUp,
         signOut,

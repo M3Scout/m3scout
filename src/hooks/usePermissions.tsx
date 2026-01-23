@@ -67,8 +67,9 @@ interface PermissionsContextType {
   refreshPermissions: () => Promise<void>;
 }
 
+// Default permissions: DENY BY DEFAULT - no access to anything
 const defaultPermissions: UserPermissions = {
-  app_view: true,
+  app_view: false,
   players_view: false,
   players_create: false,
   players_edit: false,
@@ -102,7 +103,7 @@ const defaultPermissions: UserPermissions = {
 const PermissionsContext = createContext<PermissionsContextType | undefined>(undefined);
 
 export function PermissionsProvider({ children }: { children: ReactNode }) {
-  const { user, isAdmin, isPlayer, linkedPlayerId: authLinkedPlayerId, loading: authLoading } = useAuth();
+  const { user, isAdmin, isPlayer, isApproved, linkedPlayerId: authLinkedPlayerId, loading: authLoading } = useAuth();
   const [permissions, setPermissions] = useState<UserPermissions | null>(null);
   const [loading, setLoading] = useState(true);
   const [isOwner, setIsOwner] = useState(false);
@@ -112,6 +113,16 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
   const fetchPermissions = useCallback(async () => {
     if (!user) {
       setPermissions(null);
+      setIsOwner(false);
+      setUserStatus(null);
+      setLinkedPlayerId(null);
+      setLoading(false);
+      return;
+    }
+
+    // CRITICAL: If user is not approved (no valid role), deny all access
+    if (!isApproved) {
+      setPermissions(defaultPermissions);
       setIsOwner(false);
       setUserStatus(null);
       setLinkedPlayerId(null);
@@ -236,7 +247,7 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [user, isAdmin, isPlayer, authLinkedPlayerId]);
+  }, [user, isAdmin, isPlayer, isApproved, authLinkedPlayerId]);
 
   useEffect(() => {
     if (!authLoading) {
