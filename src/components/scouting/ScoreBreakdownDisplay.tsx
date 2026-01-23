@@ -51,7 +51,7 @@ export function ScoreBreakdownDisplay({
       {/* Score Steps */}
       <div className="space-y-4">
         {/* Base Score */}
-        <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/30">
+        <div className="flex items-center justify-between p-3 rounded-lg bg-zinc-900/60">
           <div className="flex items-center gap-3">
             <Scale className="w-5 h-5 text-muted-foreground" />
             <div>
@@ -67,7 +67,7 @@ export function ScoreBreakdownDisplay({
         </div>
 
         {/* Competition Coefficient */}
-        <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/30">
+        <div className="flex items-center justify-between p-3 rounded-lg bg-zinc-900/60">
           <div className="flex items-center gap-3">
             <Trophy className="w-5 h-5 text-accent" />
             <div>
@@ -83,7 +83,7 @@ export function ScoreBreakdownDisplay({
         </div>
 
         {/* Adjusted Score */}
-        <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 border-l-2 border-primary">
+        <div className="flex items-center justify-between p-3 rounded-lg bg-zinc-900/80 border-l-2 border-primary">
           <div className="flex items-center gap-3">
             <TrendingUp className="w-5 h-5 text-primary" />
             <div>
@@ -100,7 +100,7 @@ export function ScoreBreakdownDisplay({
 
         {/* Modifiers */}
         {(breakdown.potentialBonus > 0 || breakdown.consistencyModifier !== 0) && (
-          <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/30">
+          <div className="flex items-center justify-between p-3 rounded-lg bg-zinc-900/60">
             <div className="flex items-center gap-3">
               <Sparkles className="w-5 h-5 text-amber-400" />
               <div>
@@ -119,7 +119,7 @@ export function ScoreBreakdownDisplay({
       </div>
 
       {/* Final Score & Rating */}
-      <div className="pt-4 border-t border-border/50">
+      <div className="pt-4 border-t border-zinc-800/50">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-muted-foreground mb-1">Score Final</p>
@@ -142,7 +142,7 @@ export function ScoreBreakdownDisplay({
 
       {/* Why This Score */}
       {showExplanation && (
-        <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
+        <div className="p-4 rounded-lg bg-zinc-900/60 border border-zinc-800/40">
           <h4 className="font-medium mb-2 flex items-center gap-2">
             <HelpCircle className="w-4 h-4 text-primary" />
             Por que essa nota?

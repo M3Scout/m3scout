@@ -391,7 +391,7 @@ const { user } = useAuth();
                 const Icon = cat.icon;
 
                 return (
-                  <div key={cat.key} className="p-4 rounded-lg bg-secondary/30">
+                  <div key={cat.key} className="p-4 rounded-lg bg-zinc-900/60">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-3">
                         <div 
