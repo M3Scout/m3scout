@@ -169,30 +169,55 @@ const Players = () => {
     fetchPlayers();
   }, []);
 
-  // Fetch minutes and matches for selected year
+  // Fetch minutes and matches for selected year from OFFICIAL source (match_players)
+  // This must match the same source used in PlayerDetail/AthleteIndicatorHeader
   useEffect(() => {
     const fetchStats = async () => {
       if (players.length === 0) return;
       
       const playerIds = players.map(p => p.id);
       
+      // Query match_players (official source) joined with matches for season filtering
+      // This is the SAME source that usePlayerMatchStats uses
       const { data, error } = await supabase
-        .from("player_stats")
-        .select("player_id, minutes, matches")
+        .from("match_players")
+        .select(`
+          player_id,
+          minutes_played,
+          match:matches!inner (
+            season_year,
+            status
+          )
+        `)
         .in("player_id", playerIds)
-        .eq("season_year", selectedYear);
+        .eq("is_removed", false)
+        .eq("match.season_year", selectedYear)
+        .in("match.status", ["finished", "applied"]);
 
       if (data) {
-        // Aggregate minutes and matches per player
+        // Aggregate official minutes_played and match count per player
         const statsMap = new Map<string, { minutes: number; matches: number }>();
-        data.forEach((stat) => {
-          const current = statsMap.get(stat.player_id) || { minutes: 0, matches: 0 };
-          statsMap.set(stat.player_id, {
-            minutes: current.minutes + (stat.minutes || 0),
-            matches: current.matches + (stat.matches || 0),
+        data.forEach((mp: any) => {
+          const current = statsMap.get(mp.player_id) || { minutes: 0, matches: 0 };
+          statsMap.set(mp.player_id, {
+            minutes: current.minutes + (mp.minutes_played || 0),
+            matches: current.matches + 1,
           });
         });
         setPlayerStats(statsMap);
+        
+        // Debug log for validation (remove after confirming)
+        if (import.meta.env.DEV) {
+          console.log("[Players.tsx] Official stats from match_players:", {
+            selectedYear,
+            totalPlayers: statsMap.size,
+            sample: Array.from(statsMap.entries()).slice(0, 3).map(([id, s]) => ({
+              player_id: id,
+              minutes: s.minutes,
+              matches: s.matches,
+            })),
+          });
+        }
       }
     };
 
