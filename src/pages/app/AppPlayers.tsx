@@ -40,7 +40,8 @@ import {
 } from "@/components/ui/collapsible";
 import { DeletePlayerDialog } from "@/components/players/DeletePlayerDialog";
 import { ScoutingPlayerCard } from "@/components/players/ScoutingPlayerCard";
-import { PlayerRowCard, PlayerMobileCard } from "@/components/players/PlayerRowCard";
+import { PlayerListRowPremium, PlayerListRowMobilePremium } from "@/components/players/PlayerListRowPremium";
+import { SortControlsPremium } from "@/components/players/SortControlsPremium";
 import { PositionIdentityCard, PositionIdentityCardMobile } from "@/components/players/PositionIdentityCard";
 import { BulkRecalculateButton } from "@/components/players/BulkRecalculateButton";
 import { Switch } from "@/components/ui/switch";
@@ -410,56 +411,61 @@ const AppPlayers = () => {
 
     return (
     <ErrorBoundary fallbackMessage="Não foi possível carregar os detalhes da competição.">
-    <div className="space-y-6 w-full min-w-0 overflow-x-hidden">
-      {/* Header - Mobile responsive */}
-      <header className="admin-header animate-fade-in flex-col gap-4">
-        <div className="w-full">
-          <h1 className="admin-title">Atletas</h1>
-          <p className="admin-subtitle">Gerencie todos os atletas da agência</p>
+    <div className="space-y-5 w-full min-w-0 overflow-x-hidden">
+      {/* Header - Premium compact */}
+      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in">
+        <div>
+          <h1 className="text-2xl font-bold text-zinc-100 tracking-tight">Atletas</h1>
+          <p className="text-sm text-zinc-500 mt-0.5">Gerencie todos os atletas da agência</p>
         </div>
-        {/* Actions - stack on mobile, row on desktop */}
-        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+        {/* Actions */}
+        <div className="flex items-center gap-2">
           {isAdmin && (
             <BulkRecalculateButton onComplete={fetchPlayers} />
           )}
-          <div className="grid grid-cols-2 sm:flex gap-2">
-            <Button variant="outline" asChild className="admin-btn-outline justify-center">
-              <Link to="/app/compare">
-                <GitCompare className="w-4 h-4 sm:mr-1" />
-                <span className="hidden sm:inline">Comparar</span>
-              </Link>
-            </Button>
-            <Button className="admin-btn-primary justify-center" asChild>
-              <Link to="/app/players/new">
-                <Plus className="w-4 h-4 sm:mr-1" />
-                <span className="hidden sm:inline">Novo Atleta</span>
-              </Link>
-            </Button>
-          </div>
+          <Button variant="outline" size="sm" asChild className="bg-zinc-900/60 border-zinc-800/50 hover:bg-zinc-800/80 hover:border-zinc-700">
+            <Link to="/app/compare">
+              <GitCompare className="w-4 h-4 sm:mr-1.5" />
+              <span className="hidden sm:inline text-xs">Comparar</span>
+            </Link>
+          </Button>
+          <Button size="sm" asChild className="bg-primary hover:bg-primary/90">
+            <Link to="/app/players/new">
+              <Plus className="w-4 h-4 sm:mr-1.5" />
+              <span className="hidden sm:inline text-xs">Novo Atleta</span>
+            </Link>
+          </Button>
         </div>
       </header>
 
-      {/* Search and Controls */}
-      <div className="space-y-4 animate-fade-in delay-75">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
+      {/* Search and Controls - Premium bar */}
+      <div className="space-y-3 animate-fade-in delay-75">
+        <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center">
+          {/* Search */}
+          <div className="relative flex-1 max-w-lg">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
             <Input
               type="text"
               placeholder="Buscar atleta..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="admin-input pl-10"
+              className="pl-10 h-10 bg-zinc-900/60 border-zinc-800/50 rounded-xl text-sm placeholder:text-zinc-600 focus-visible:ring-1 focus-visible:ring-zinc-700 focus-visible:border-zinc-700"
             />
           </div>
-          <div className="flex gap-2">
+          
+          {/* Controls cluster */}
+          <div className="flex items-center gap-2">
             <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
               <CollapsibleTrigger asChild>
-                <Button variant="outline" className="admin-btn-outline relative">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="h-10 px-3 bg-zinc-900/60 border-zinc-800/50 hover:bg-zinc-800/80 hover:border-zinc-700 rounded-xl"
+                >
                   <Filter className="w-4 h-4" />
-                  Filtros
+                  <span className="hidden sm:inline ml-1.5 text-xs">Filtros</span>
                   {activeFiltersCount > 0 && (
-                    <span className="ml-2 w-5 h-5 rounded-full bg-primary text-white text-[10px] flex items-center justify-center">
+                    <span className="ml-1.5 w-5 h-5 rounded-full bg-primary text-white text-[10px] flex items-center justify-center font-medium">
                       {activeFiltersCount}
                     </span>
                   )}
@@ -471,36 +477,44 @@ const AppPlayers = () => {
               type="single"
               value={viewMode}
               onValueChange={(value) => value && setViewMode(value as ViewMode)}
-              className="border border-zinc-800 rounded-lg bg-zinc-900/50"
+              className="h-10 p-1 rounded-xl bg-zinc-900/60"
             >
-              <ToggleGroupItem value="table" aria-label="Visualização em lista" className="px-3 rounded-r-none data-[state=on]:bg-zinc-800 data-[state=on]:text-white">
+              <ToggleGroupItem 
+                value="table" 
+                aria-label="Visualização em lista" 
+                className="px-2.5 h-8 rounded-lg data-[state=on]:bg-zinc-800 data-[state=on]:text-white data-[state=off]:text-zinc-500"
+              >
                 <LayoutList className="w-4 h-4" />
               </ToggleGroupItem>
-              <ToggleGroupItem value="scouting" aria-label="Visualização em cards" className="px-3 rounded-l-none data-[state=on]:bg-zinc-800 data-[state=on]:text-white">
+              <ToggleGroupItem 
+                value="scouting" 
+                aria-label="Visualização em cards" 
+                className="px-2.5 h-8 rounded-lg data-[state=on]:bg-zinc-800 data-[state=on]:text-white data-[state=off]:text-zinc-500"
+              >
                 <LayoutGrid className="w-4 h-4" />
               </ToggleGroupItem>
             </ToggleGroup>
           </div>
         </div>
 
-        {/* Advanced Filters */}
+        {/* Advanced Filters - Premium Panel */}
         <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
           <CollapsibleContent>
-            <div className="admin-card p-4 space-y-4">
+            <div className="p-4 space-y-4 rounded-xl bg-zinc-900/50 mt-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium text-white">Filtros Avançados</h3>
+                <h3 className="text-sm font-medium text-zinc-200">Filtros Avançados</h3>
                 {activeFiltersCount > 0 && (
-                  <Button variant="ghost" size="sm" onClick={clearFilters}>
-                    <X className="w-4 h-4 mr-1" />
-                    Limpar filtros
+                  <Button variant="ghost" size="sm" onClick={clearFilters} className="h-7 text-xs text-zinc-400 hover:text-white">
+                    <X className="w-3.5 h-3.5 mr-1" />
+                    Limpar
                   </Button>
                 )}
               </div>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <div className="space-y-2">
-                  <label className="text-sm text-muted-foreground">Posição</label>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="space-y-1.5">
+                  <label className="text-[11px] uppercase tracking-wide text-zinc-500 font-medium">Posição</label>
                   <Select value={positionFilter} onValueChange={setPositionFilter}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-9 bg-zinc-900/60 border-zinc-800/50 rounded-lg text-sm">
                       <SelectValue placeholder="Todas" />
                     </SelectTrigger>
                     <SelectContent>
@@ -514,10 +528,10 @@ const AppPlayers = () => {
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm text-muted-foreground">Nacionalidade</label>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] uppercase tracking-wide text-zinc-500 font-medium">Nacionalidade</label>
                   <Select value={nationalityFilter} onValueChange={setNationalityFilter}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-9 bg-zinc-900/60 border-zinc-800/50 rounded-lg text-sm">
                       <SelectValue placeholder="Todas" />
                     </SelectTrigger>
                     <SelectContent>
@@ -531,10 +545,10 @@ const AppPlayers = () => {
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm text-muted-foreground">Clube</label>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] uppercase tracking-wide text-zinc-500 font-medium">Clube</label>
                   <Select value={clubFilter} onValueChange={setClubFilter}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-9 bg-zinc-900/60 border-zinc-800/50 rounded-lg text-sm">
                       <SelectValue placeholder="Todos" />
                     </SelectTrigger>
                     <SelectContent>
@@ -548,10 +562,10 @@ const AppPlayers = () => {
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm text-muted-foreground">Status</label>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] uppercase tracking-wide text-zinc-500 font-medium">Status</label>
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-9 bg-zinc-900/60 border-zinc-800/50 rounded-lg text-sm">
                       <SelectValue placeholder="Todos" />
                     </SelectTrigger>
                     <SelectContent>
@@ -563,15 +577,15 @@ const AppPlayers = () => {
                 </div>
               </div>
 
-              {/* Show Archived Toggle */}
-              <div className="flex flex-wrap items-center gap-4 pt-2 border-t border-border/50">
+              {/* Toggles */}
+              <div className="flex flex-wrap items-center gap-4 pt-3 border-t border-zinc-800/50">
                 <div className="flex items-center gap-2">
                   <Switch
                     id="show-archived"
                     checked={showArchived}
                     onCheckedChange={setShowArchived}
                   />
-                  <Label htmlFor="show-archived" className="text-sm cursor-pointer">
+                  <Label htmlFor="show-archived" className="text-xs text-zinc-400 cursor-pointer">
                     Mostrar arquivados
                   </Label>
                 </div>
@@ -581,7 +595,7 @@ const AppPlayers = () => {
                     checked={paginationMode === "infinite"}
                     onCheckedChange={(checked) => setPaginationMode(checked ? "infinite" : "pages")}
                   />
-                  <Label htmlFor="infinite-scroll" className="text-sm cursor-pointer flex items-center gap-1">
+                  <Label htmlFor="infinite-scroll" className="text-xs text-zinc-400 cursor-pointer flex items-center gap-1">
                     <ChevronsDown className="w-3 h-3" />
                     Scroll infinito
                   </Label>
@@ -593,8 +607,8 @@ const AppPlayers = () => {
       </div>
 
       {/* Results count */}
-      <p className="text-xs text-zinc-500 animate-fade-in">
-        {filteredCount} atleta{filteredCount !== 1 ? "s" : ""} encontrado{filteredCount !== 1 ? "s" : ""}
+      <p className="text-[11px] uppercase tracking-wide text-zinc-600 font-medium animate-fade-in">
+        {filteredCount} atleta{filteredCount !== 1 ? "s" : ""}
         {showArchived && " (incluindo arquivados)"}
       </p>
 
@@ -659,72 +673,35 @@ const AppPlayers = () => {
           </div>
         </div>
       ) : viewMode === "table" ? (
-        /* LIST MODE - Compact rows, no position colors */
-        <div className="space-y-2 animate-fade-in delay-100 w-full min-w-0">
-          {/* Sort Controls - Compact dropdown on mobile, inline buttons on desktop */}
-          <div className="flex items-center justify-between mb-4 w-full min-w-0">
-            {/* Mobile: Dropdown sort */}
-            <div className="flex md:hidden items-center gap-2 w-full">
-              <span className="text-xs text-zinc-500 shrink-0">Ordenar:</span>
-              <Select 
-                value={`${sortField}-${sortDirection}`} 
-                onValueChange={(value) => {
-                  const [field, dir] = value.split('-') as [SortField, SortDirection];
+        /* LIST MODE - Premium rows */
+        <div className="space-y-3 animate-fade-in delay-100 w-full min-w-0">
+          {/* Sort Controls - Premium */}
+          <div className="flex items-center justify-between mb-2 w-full min-w-0">
+            {isMobile ? (
+              <SortControlsPremium
+                sortField={sortField}
+                sortDirection={sortDirection}
+                onSort={handleSort}
+                onSortChange={(field, dir) => {
                   setSortField(field);
                   setSortDirection(dir);
                 }}
-              >
-                <SelectTrigger className="flex-1 h-9 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="avg_score-desc">Score ↓</SelectItem>
-                  <SelectItem value="avg_score-asc">Score ↑</SelectItem>
-                  <SelectItem value="auto_rating-desc">Nota Global ↓</SelectItem>
-                  <SelectItem value="auto_rating-asc">Nota Global ↑</SelectItem>
-                  <SelectItem value="full_name-asc">Nome A-Z</SelectItem>
-                  <SelectItem value="full_name-desc">Nome Z-A</SelectItem>
-                  <SelectItem value="position-asc">Posição A-Z</SelectItem>
-                  <SelectItem value="position-desc">Posição Z-A</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            {/* Desktop: Inline buttons */}
-            <div className="hidden md:flex items-center gap-2 text-xs text-zinc-500">
-              <span>Ordenar por:</span>
-              <button 
-                onClick={() => handleSort("avg_score")}
-                className={`flex items-center gap-1 px-2 py-1 rounded hover:bg-zinc-800/50 transition-colors ${sortField === "avg_score" ? "text-primary" : ""}`}
-              >
-                Score <SortIcon field="avg_score" />
-              </button>
-              <button 
-                onClick={() => handleSort("auto_rating")}
-                className={`flex items-center gap-1 px-2 py-1 rounded hover:bg-zinc-800/50 transition-colors ${sortField === "auto_rating" ? "text-primary" : ""}`}
-              >
-                Nota Global <SortIcon field="auto_rating" />
-              </button>
-              <button 
-                onClick={() => handleSort("full_name")}
-                className={`flex items-center gap-1 px-2 py-1 rounded hover:bg-zinc-800/50 transition-colors ${sortField === "full_name" ? "text-primary" : ""}`}
-              >
-                Nome <SortIcon field="full_name" />
-              </button>
-              <button 
-                onClick={() => handleSort("position")}
-                className={`flex items-center gap-1 px-2 py-1 rounded hover:bg-zinc-800/50 transition-colors ${sortField === "position" ? "text-primary" : ""}`}
-              >
-                Posição <SortIcon field="position" />
-              </button>
-            </div>
+                isMobile
+              />
+            ) : (
+              <SortControlsPremium
+                sortField={sortField}
+                sortDirection={sortDirection}
+                onSort={handleSort}
+              />
+            )}
           </div>
           
-          {/* List View - Compact Rows */}
+          {/* List View - Premium Rows */}
           {isMobile ? (
             <div className="space-y-2">
               {safeArray(paginatedPlayers).map((player, index) => (
-                <PlayerMobileCard
+                <PlayerListRowMobilePremium
                   key={player.id}
                   id={player.id}
                   fullName={player.full_name}
@@ -747,9 +724,9 @@ const AppPlayers = () => {
               ))}
             </div>
           ) : (
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               {safeArray(paginatedPlayers).map((player, index) => (
-                <PlayerRowCard
+                <PlayerListRowPremium
                   key={player.id}
                   id={player.id}
                   fullName={player.full_name}
