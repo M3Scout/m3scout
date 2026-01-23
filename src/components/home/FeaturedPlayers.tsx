@@ -381,7 +381,8 @@ function MobileCarousel({ players, variant }: { players: Player[]; variant: "pre
 
   const scroll = (direction: "left" | "right") => {
     if (!containerRef.current) return;
-    const scrollAmount = 280;
+    // Scroll exactly 1 full card width
+    const scrollAmount = containerRef.current.clientWidth;
     containerRef.current.scrollBy({
       left: direction === "left" ? -scrollAmount : scrollAmount,
       behavior: "smooth",
@@ -390,10 +391,10 @@ function MobileCarousel({ players, variant }: { players: Player[]; variant: "pre
 
   return (
     <div className="md:hidden relative">
-      {/* Scroll Container */}
+      {/* Scroll Container — 1 card at a time, no peek */}
       <div
         ref={containerRef}
-        className="flex gap-3 overflow-x-auto scrollbar-hide scroll-smooth px-5 pb-4"
+        className="flex overflow-x-auto scrollbar-hide scroll-smooth pb-4"
         style={{
           scrollSnapType: "x mandatory",
           WebkitOverflowScrolling: "touch",
@@ -402,7 +403,7 @@ function MobileCarousel({ players, variant }: { players: Player[]; variant: "pre
         {players.map((player, index) => (
           <motion.div
             key={player.id}
-            className="flex-shrink-0 w-[260px]"
+            className="flex-shrink-0 w-full px-4"
             style={{ scrollSnapAlign: "start" }}
             variants={cardVariants}
             custom={index}
@@ -410,8 +411,6 @@ function MobileCarousel({ players, variant }: { players: Player[]; variant: "pre
             <CardComponent player={player} />
           </motion.div>
         ))}
-        {/* End spacer */}
-        <div className="flex-shrink-0 w-3" aria-hidden="true" />
       </div>
 
       {/* Left fade */}
