@@ -407,7 +407,6 @@ function VisualModeCard({
   createdAt,
 }: AthleteCardPremiumProps & { priority: PriorityLevel }) {
   const [isHovered, setIsHovered] = useState(false);
-  const [imageLoaded, setImageLoaded] = useState(false);
   // Public routes use slug, app routes use id (as per App.tsx routing)
   const href = isPublic ? `/players/${slug}` : `/app/players/${id}`;
   const priorityInfo = priorityConfig[priority];
@@ -450,27 +449,31 @@ function VisualModeCard({
         )}
 
         {/* Full-height Image Container - Image as hero element */}
+        {/* Mobile fix: removed opacity animation to prevent iOS Safari rendering bugs */}
         <div className="absolute inset-0 overflow-hidden">
-          {/* Placeholder */}
+          {/* Placeholder - shown behind the image */}
           <div
-            className={cn(
-              "absolute inset-0 transition-opacity duration-500",
-              imageLoaded ? "opacity-0" : "opacity-100"
-            )}
+            className="absolute inset-0"
             style={{ background: "linear-gradient(145deg, #12141a 0%, #070910 100%)" }}
           />
 
-          <motion.img
+          {/* 
+            Mobile fix: 
+            - Use regular img instead of motion.img to avoid iOS layer bugs
+            - No opacity toggle (always visible) to prevent disappearing on scroll
+            - loading="eager" on mobile to prevent lazy-load desync
+          */}
+          <img
             src={imageUrl}
             alt={name}
-            loading="lazy"
-            onLoad={() => setImageLoaded(true)}
-            className={cn(
-              "w-full h-full object-cover object-top",
-              imageLoaded ? "opacity-100" : "opacity-0"
-            )}
-            animate={{ scale: isHovered ? 1.04 : 1 }}
-            transition={{ duration: 0.32, ease: "easeOut" }}
+            loading="eager"
+            decoding="async"
+            className="absolute inset-0 w-full h-full object-cover object-top"
+            style={{
+              // Force GPU layer without causing Safari bugs
+              transform: isHovered ? 'scale(1.04)' : 'scale(1)',
+              transition: 'transform 0.32s ease-out',
+            }}
           />
 
           {/* Gradient overlays for depth and legibility */}
@@ -638,7 +641,6 @@ function ClubScoutingCard({
   secondaryTacticalRole,
 }: AthleteCardPremiumProps & { priority: PriorityLevel }) {
   const [isHovered, setIsHovered] = useState(false);
-  const [imageLoaded, setImageLoaded] = useState(false);
   // Public routes use slug, app routes use id (as per App.tsx routing)
   const href = isPublic ? `/players/${slug}` : `/app/players/${id}`;
   const priorityInfo = priorityConfig[priority];
@@ -705,21 +707,14 @@ function ClubScoutingCard({
                 border: "1px solid rgba(255, 255, 255, 0.06)",
               }}
             >
+              {/* Mobile fix: always visible image, no opacity toggle */}
               <img
                 src={imageUrl}
                 alt={name}
-                loading="lazy"
-                onLoad={() => setImageLoaded(true)}
-                className={cn(
-                  "w-full h-full object-cover object-top transition-opacity duration-300",
-                  imageLoaded ? "opacity-100" : "opacity-0"
-                )}
+                loading="eager"
+                decoding="async"
+                className="absolute inset-0 w-full h-full object-cover object-top"
               />
-              {!imageLoaded && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <User className="w-8 h-8 text-white/20" />
-                </div>
-              )}
             </div>
 
             {/* Identity */}
