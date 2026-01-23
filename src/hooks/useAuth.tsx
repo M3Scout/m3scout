@@ -69,15 +69,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Defer role fetching with setTimeout to avoid deadlock
         if (session?.user) {
-          setTimeout(() => {
-            fetchUserRoles(session.user.id);
-          }, 0);
+          // Fetch roles synchronously before setting loading to false
+          await fetchUserRoles(session.user.id);
         } else {
           setRoles([]);
           setLinkedPlayerId(null);
@@ -89,18 +87,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const initSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        fetchUserRoles(session.user.id);
+        // Fetch roles before setting loading to false
+        await fetchUserRoles(session.user.id);
       } else {
         setRolesLoading(false);
       }
       
       setLoading(false);
-    });
+    };
+    
+    initSession();
 
     return () => subscription.unsubscribe();
   }, []);
