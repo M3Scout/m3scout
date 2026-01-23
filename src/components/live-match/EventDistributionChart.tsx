@@ -187,15 +187,15 @@ export function EventDistributionChart({
   const halfTimeMinute = Math.floor(matchDuration / 2);
 
   return (
-    <Card ref={chartRef} data-export-target>
-      <CardHeader>
-        <div className="flex items-center justify-between">
+    <Card ref={chartRef} data-export-target className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95">
+      <CardHeader className="pb-4 sm:pb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <Activity className="h-5 w-5 sm:h-6 sm:w-6" />
               Distribuição de Eventos
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-sm mt-1">
               Intensidade do jogo ao longo do tempo
             </CardDescription>
           </div>
@@ -204,29 +204,29 @@ export function EventDistributionChart({
             size="sm"
             onClick={() => exportToPng(chartRef.current)}
             disabled={isExporting}
-            className="shrink-0"
+            className="shrink-0 self-start sm:self-auto"
           >
             <Download className="h-4 w-4 mr-1" />
             {isExporting ? "..." : "PNG"}
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 sm:space-y-5 p-4 sm:p-6">
         {/* Summary badges */}
-        <div className="flex flex-wrap gap-2">
-          <Badge variant="secondary">
+        <div className="flex flex-wrap gap-2 sm:gap-3">
+          <Badge variant="secondary" className="text-xs sm:text-sm px-2.5 sm:px-3 py-1">
             1º Tempo: {stats.firstHalf} eventos
           </Badge>
-          <Badge variant="secondary">
+          <Badge variant="secondary" className="text-xs sm:text-sm px-2.5 sm:px-3 py-1">
             2º Tempo: {stats.secondHalf} eventos
           </Badge>
-          <Badge variant="outline">
+          <Badge variant="outline" className="text-xs sm:text-sm px-2.5 sm:px-3 py-1">
             Pico: {stats.peakMinute}' ({stats.peakCount} eventos)
           </Badge>
         </div>
 
         {/* Chart */}
-        <div className="h-[250px] w-full">
+        <div className="h-[220px] sm:h-[280px] lg:h-[320px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart
               data={chartData}

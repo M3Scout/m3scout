@@ -122,31 +122,31 @@ export function HalfStatsComparison({ events, matchPlayers }: HalfStatsCompariso
   }
 
   return (
-    <div className="border rounded-lg overflow-hidden">
+    <div className="border border-zinc-800/40 rounded-xl overflow-hidden bg-zinc-900/40">
       {/* Header */}
-      <div className="grid grid-cols-4 bg-muted/50 text-center text-sm font-medium">
-        <div className="p-2 border-r">
-          <Badge variant="secondary" className="text-xs">
+      <div className="grid grid-cols-4 bg-zinc-900/60 text-center text-sm font-medium">
+        <div className="p-3 sm:p-4 border-r border-zinc-800/40">
+          <Badge variant="secondary" className="text-[10px] sm:text-xs">
             1º TEMPO
           </Badge>
         </div>
-        <div className="p-2 border-r text-muted-foreground text-xs">
+        <div className="p-3 sm:p-4 border-r border-zinc-800/40 text-muted-foreground text-[10px] sm:text-xs flex items-center justify-center">
           Estatística
         </div>
-        <div className="p-2 border-r">
-          <Badge variant="default" className="text-xs bg-primary">
+        <div className="p-3 sm:p-4 border-r border-zinc-800/40">
+          <Badge variant="default" className="text-[10px] sm:text-xs bg-primary">
             2º TEMPO
           </Badge>
         </div>
-        <div className="p-2">
-          <Badge variant="outline" className="text-xs">
+        <div className="p-3 sm:p-4">
+          <Badge variant="outline" className="text-[10px] sm:text-xs">
             TOTAL
           </Badge>
         </div>
       </div>
 
       {/* Stats rows */}
-      <div className="divide-y">
+      <div className="divide-y divide-zinc-800/40">
         {statsRows.map((row) => {
           const categoryColor = CATEGORY_COLORS[row.category];
           
@@ -175,7 +175,7 @@ export function HalfStatsComparison({ events, matchPlayers }: HalfStatsCompariso
       </div>
       
       {/* Summary footer */}
-      <div className="bg-muted/30 p-3 text-center text-xs text-muted-foreground">
+      <div className="bg-zinc-900/60 p-3 sm:p-4 text-center text-xs sm:text-sm text-muted-foreground">
         Total de tipos de estatística: {statsRows.length + (substitutions.first + substitutions.second > 0 ? 1 : 0)}
       </div>
     </div>
@@ -198,24 +198,24 @@ function StatRow({ label, first, second, total, highlightColor }: StatRowProps) 
     <div className="grid grid-cols-4 text-center">
       <div
         className={cn(
-          "p-3 text-lg font-bold border-r transition-colors",
+          "p-3 sm:p-4 text-base sm:text-lg lg:text-xl font-bold border-r border-zinc-800/40 transition-colors",
           isFirstHigher ? highlightColor || "text-foreground" : "text-muted-foreground"
         )}
       >
         {first}
       </div>
-      <div className="p-3 text-xs text-muted-foreground flex items-center justify-center border-r whitespace-nowrap overflow-hidden">
+      <div className="p-3 sm:p-4 text-[10px] sm:text-xs lg:text-sm text-muted-foreground flex items-center justify-center border-r border-zinc-800/40 whitespace-nowrap overflow-hidden">
         <span className="truncate">{label}</span>
       </div>
       <div
         className={cn(
-          "p-3 text-lg font-bold border-r transition-colors",
+          "p-3 sm:p-4 text-base sm:text-lg lg:text-xl font-bold border-r border-zinc-800/40 transition-colors",
           isSecondHigher ? highlightColor || "text-foreground" : "text-muted-foreground"
         )}
       >
         {second}
       </div>
-      <div className={cn("p-3 text-lg font-bold", highlightColor || "text-foreground")}>
+      <div className={cn("p-3 sm:p-4 text-base sm:text-lg lg:text-xl font-bold", highlightColor || "text-foreground")}>
         {total}
       </div>
     </div>
