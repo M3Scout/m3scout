@@ -23,7 +23,7 @@ import { usePermissions, ModuleKey } from "@/hooks/usePermissions";
 import { useSidebar } from "@/hooks/useSidebar";
 import { toast } from "sonner";
 import logoM3 from "@/assets/logo-m3.png";
-// Logo icon import removed - using single logo for brand consistency
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import {
   Tooltip,
   TooltipContent,
@@ -251,21 +251,24 @@ export function AppSidebar() {
         <Link to="/" className="flex items-center">
           <img src={logoM3} alt="M3 Agency" className="h-7 w-auto" />
         </Link>
-        <button 
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className={cn(
-            "w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-150",
-            mobileMenuOpen 
-              ? "bg-primary/10 text-primary" 
-              : "text-zinc-400 active:bg-white/5"
-          )}
-        >
-          {mobileMenuOpen ? (
-            <X className="w-5 h-5" strokeWidth={1.5} />
-          ) : (
-            <Menu className="w-5 h-5" strokeWidth={1.5} />
-          )}
-        </button>
+        <div className="flex items-center gap-1">
+          <NotificationBell />
+          <button 
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className={cn(
+              "w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-150",
+              mobileMenuOpen 
+                ? "bg-primary/10 text-primary" 
+                : "text-zinc-400 active:bg-white/5"
+            )}
+          >
+            {mobileMenuOpen ? (
+              <X className="w-5 h-5" strokeWidth={1.5} />
+            ) : (
+              <Menu className="w-5 h-5" strokeWidth={1.5} />
+            )}
+          </button>
+        </div>
       </header>
 
       {/* ===== MOBILE DRAWER BACKDROP ===== */}
@@ -398,14 +401,23 @@ export function AppSidebar() {
               )}
             />
           </Link>
-          {/* Only show toggle on desktop when expanded */}
+          {/* Notification bell and toggle on desktop when expanded */}
           {!isTablet && !isCollapsed && (
-            <button
-              onClick={toggleCollapsed}
-              className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-600 hover:text-zinc-300 hover:bg-white/5 transition-all duration-150"
-            >
-              <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
-            </button>
+            <div className="flex items-center gap-1">
+              <NotificationBell />
+              <button
+                onClick={toggleCollapsed}
+                className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-600 hover:text-zinc-300 hover:bg-white/5 transition-all duration-150"
+              >
+                <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
+              </button>
+            </div>
+          )}
+          {/* Notification bell on collapsed/tablet */}
+          {(isCollapsed || isTablet) && (
+            <div className="absolute top-4 right-2">
+              <NotificationBell />
+            </div>
           )}
         </div>
 
