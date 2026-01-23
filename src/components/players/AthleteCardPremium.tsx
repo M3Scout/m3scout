@@ -479,8 +479,9 @@ function VisualModeCard({
         </div>
 
         {/* ━━━ TOP HEADER — Two separate pills ━━━ */}
+        {/* iPad-specific: increased gap to prevent badge crowding */}
         <div className="absolute top-0 left-0 right-0 pt-3.5 px-3.5 z-20">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 tablet:gap-4 tablet-landscape:gap-5">
             {/* Left Pill: Position */}
             <div 
               className="flex items-center gap-2 px-3 py-2 rounded-md min-h-[32px]"

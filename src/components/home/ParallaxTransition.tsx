@@ -40,17 +40,34 @@ export function ParallaxTransition({ children }: ParallaxTransitionProps) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [prefersReducedMotion]);
 
+  // Detect tablet for iPad-specific fix
+  const [isTablet, setIsTablet] = useState(false);
+  
+  useEffect(() => {
+    const checkTablet = () => {
+      const width = window.innerWidth;
+      setIsTablet(width >= 768 && width <= 1366);
+    };
+    checkTablet();
+    window.addEventListener("resize", checkTablet);
+    return () => window.removeEventListener("resize", checkTablet);
+  }, []);
+
   const parallaxOffset = prefersReducedMotion ? 0 : (1 - scrollProgress) * 40;
-  const opacity = prefersReducedMotion ? 1 : 0.3 + scrollProgress * 0.7;
+  // iPad fix: Ensure full opacity on tablet to prevent dark overlay appearance
+  const opacity = prefersReducedMotion || isTablet ? 1 : 0.3 + scrollProgress * 0.7;
 
   return (
     <div 
       ref={ref}
       className="relative"
       style={{
-        transform: `translateY(${parallaxOffset}px)`,
+        transform: isTablet ? 'none' : `translateY(${parallaxOffset}px)`,
         opacity,
         transition: "opacity 0.1s ease-out",
+        // iPad fix: Reset any filters/backdrops that could cause darkening
+        filter: 'none',
+        backdropFilter: 'none',
       }}
     >
       {children}
