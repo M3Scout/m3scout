@@ -479,6 +479,7 @@ function LiveMatchGameInner({ matchId }: { matchId: string }) {
         {hookDebugFlags.header && !isDraft && (
           <GameScoreboard
             matchId={matchId}
+            teamName={match.team_name_display}
             opponentName={match.opponent_name}
             competitionName={competitionName}
             venue={match.venue}
@@ -525,8 +526,9 @@ function LiveMatchGameInner({ matchId }: { matchId: string }) {
               <Button
                 onClick={() => setAddPlayerOpen(true)}
                 size="sm"
+                variant="ghost"
                 className={cn(
-                  "gap-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700",
+                  "gap-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 shadow-none",
                   // Tablet: larger touch target
                   "h-10 tablet:h-11 tablet:px-4 tablet:text-sm"
                 )}

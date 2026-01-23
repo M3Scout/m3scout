@@ -48,6 +48,7 @@ export interface TimerInfo {
 
 interface GameScoreboardProps {
   matchId: string;
+  teamName?: string;
   opponentName: string;
   competitionName: string;
   venue?: string | null;
@@ -69,6 +70,7 @@ const ADDED_TIME_CHIPS = [1, 2, 3, 5];
 
 export function GameScoreboard({
   matchId,
+  teamName,
   opponentName,
   competitionName,
   venue,
@@ -306,7 +308,9 @@ export function GameScoreboard({
 
             {/* Match info */}
             <div className="text-right">
-              <p className="text-sm font-semibold text-zinc-200">vs {opponentName}</p>
+              <p className="text-sm font-semibold text-zinc-200">
+                {teamName || "Time"} <span className="text-zinc-500 font-medium">×</span> {opponentName || "Adversário"}
+              </p>
               <p className="text-xs text-zinc-500">{competitionName}</p>
             </div>
           </div>
