@@ -36,6 +36,7 @@ interface ChartDataPoint {
   dateFormatted: string;
   rating: number;
   opponent: string;
+  homeTeam: string | null;
   competition: string | null;
   matchId: string;
   isLast?: boolean;
@@ -91,11 +92,18 @@ const KPICard = ({
   );
 };
 
-// Premium Tooltip
+// Premium Tooltip with full matchup display
 const PremiumTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload as ChartDataPoint;
     const ratingColor = getRatingColor(data.rating);
+    
+    // Build matchup string: "HomeTeam vs AwayTeam" or fallback to "vs Opponent"
+    const matchupLabel = data.homeTeam && data.opponent 
+      ? `${data.homeTeam} vs ${data.opponent}`
+      : data.opponent 
+        ? `vs ${data.opponent}` 
+        : 'Partida';
     
     return (
       <div className="bg-zinc-900/95 border border-zinc-800/60 rounded-xl p-4 shadow-2xl backdrop-blur-sm">
@@ -118,9 +126,9 @@ const PremiumTooltip = ({ active, payload }: any) => {
           </span>
         </div>
         
-        {/* Match Info */}
+        {/* Match Info - Full Matchup */}
         <div className="space-y-1">
-          <p className="text-sm font-medium text-zinc-200">vs {data.opponent}</p>
+          <p className="text-sm font-medium text-zinc-200">{matchupLabel}</p>
           {data.competition && (
             <p className="text-xs text-zinc-500">{data.competition}</p>
           )}
@@ -163,6 +171,7 @@ export function MatchRatingEvolutionChart({ playerId, playerName }: MatchRatingE
       dateFormatted: format(new Date(match.match_date), "dd MMM yyyy", { locale: ptBR }),
       rating: match.rating.rating!,
       opponent: match.opponent_name,
+      homeTeam: match.team_name_display,
       competition: match.competition_name,
       matchId: match.match_id,
       isLast: idx === sorted.length - 1,

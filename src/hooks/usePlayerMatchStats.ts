@@ -69,6 +69,7 @@ export interface MatchWithStats {
   match_id: string;
   match_date: string;
   opponent_name: string;
+  team_name_display: string | null; // Home team name
   competition_id: string | null;
   competition_name: string | null;
   season_year: number;
@@ -95,6 +96,7 @@ interface MatchPlayerWithMatch {
     id: string;
     match_date: string;
     opponent_name: string;
+    team_name_display: string | null;
     competition_id: string | null;
     season_year: number;
     duration_minutes: number;
@@ -177,6 +179,7 @@ export function usePlayerMatchStats({
             id,
             match_date,
             opponent_name,
+            team_name_display,
             competition_id,
             season_year,
             duration_minutes,
@@ -290,6 +293,7 @@ export function usePlayerMatchStats({
         match_id: mp.match_id,
         match_date: mp.match.match_date,
         opponent_name: mp.match.opponent_name,
+        team_name_display: mp.match.team_name_display,
         competition_id: mp.match.competition_id,
         competition_name: competition?.display_name || competition?.name || null,
         season_year: mp.match.season_year,
