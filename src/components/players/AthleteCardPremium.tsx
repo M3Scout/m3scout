@@ -481,10 +481,16 @@ function VisualModeCard({
         {/* ━━━ TOP HEADER — Two separate pills ━━━ */}
         {/* iPad-specific: increased gap to prevent badge crowding */}
         <div className="absolute top-0 left-0 right-0 pt-3.5 px-3.5 z-20">
-          <div className="flex flex-wrap items-center justify-between gap-3 tablet:gap-4 tablet-landscape:gap-5">
+          {/*
+            iPad-only fix:
+            - Force a real, fixed gap between the two badges (position + status)
+            - Allow elegant wrap when the position text is long
+            - Avoid `justify-between` squeezing them together when space is tight
+          */}
+          <div className="flex flex-wrap items-center justify-between gap-3 tablet:justify-start tablet:items-center tablet:flex-wrap tablet:gap-x-3 tablet:gap-y-2 tablet:overflow-visible tablet-landscape:gap-x-3 tablet-landscape:gap-y-2">
             {/* Left Pill: Position */}
             <div 
-              className="flex items-center gap-2 px-3 py-2 rounded-md min-h-[32px]"
+              className="flex items-center gap-2 px-3 py-2 rounded-md min-h-[32px] tablet:min-w-0"
               style={{
                 background: "rgba(10, 12, 18, 0.92)",
                 border: "1px solid rgba(255, 255, 255, 0.1)",
@@ -492,7 +498,7 @@ function VisualModeCard({
               }}
             >
               <Zap className="w-3.5 h-3.5 text-white/60" />
-              <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/90">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/90 tablet:max-w-[160px] tablet:truncate">
                 {getPositionLabel(position)}
               </span>
             </div>
@@ -500,7 +506,7 @@ function VisualModeCard({
             {/* Right Pill: Status (Priority > New > Monitoring) */}
             {status === "priority" ? (
               <motion.div 
-                className="flex items-center gap-2 px-3 py-2 rounded-md min-h-[32px]"
+                className="flex items-center gap-2 px-3 py-2 rounded-md min-h-[32px] tablet:shrink-0"
                 style={{
                   background: "rgba(10, 12, 18, 0.92)",
                   border: "1px solid rgba(255, 107, 53, 0.35)",
@@ -519,7 +525,7 @@ function VisualModeCard({
               </motion.div>
             ) : status === "new" ? (
               <motion.div 
-                className="flex items-center gap-2 px-3 py-2 rounded-md min-h-[32px]"
+                className="flex items-center gap-2 px-3 py-2 rounded-md min-h-[32px] tablet:shrink-0"
                 style={{
                   background: "rgba(10, 12, 18, 0.92)",
                   border: "1px solid rgba(59, 130, 246, 0.35)",
@@ -539,7 +545,7 @@ function VisualModeCard({
               </motion.div>
             ) : (
               <div 
-                className="flex items-center gap-2 px-3 py-2 rounded-md min-h-[32px]"
+                className="flex items-center gap-2 px-3 py-2 rounded-md min-h-[32px] tablet:shrink-0"
                 style={{
                   background: "rgba(10, 12, 18, 0.92)",
                   border: "1px solid rgba(30, 215, 96, 0.25)",
