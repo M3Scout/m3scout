@@ -693,6 +693,7 @@ const Players = () => {
                     nationality={player.nationality}
                     currentClub={player.current_club || ""}
                     imageUrl={player.photo_url || "/placeholder.svg"}
+                    isPublic={true}
                     scoutingMode={scoutingMode}
                     clubMode={clubMode}
                     dominantFoot={player.dominant_foot}
