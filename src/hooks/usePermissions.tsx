@@ -60,6 +60,8 @@ interface PermissionsContextType {
   loading: boolean;
   isOwner: boolean;
   userStatus: "active" | "suspended" | null;
+  linkedPlayerId: string | null;
+  isPlayerRole: boolean;
   can: (module: ModuleKey, action: ActionKey) => boolean;
   canDelete: (module: ModuleKey) => boolean;
   refreshPermissions: () => Promise<void>;
@@ -100,20 +102,25 @@ const defaultPermissions: UserPermissions = {
 const PermissionsContext = createContext<PermissionsContextType | undefined>(undefined);
 
 export function PermissionsProvider({ children }: { children: ReactNode }) {
-  const { user, isAdmin, loading: authLoading } = useAuth();
+  const { user, isAdmin, isPlayer, linkedPlayerId: authLinkedPlayerId, loading: authLoading } = useAuth();
   const [permissions, setPermissions] = useState<UserPermissions | null>(null);
   const [loading, setLoading] = useState(true);
   const [isOwner, setIsOwner] = useState(false);
   const [userStatus, setUserStatus] = useState<"active" | "suspended" | null>(null);
+  const [linkedPlayerId, setLinkedPlayerId] = useState<string | null>(null);
 
   const fetchPermissions = useCallback(async () => {
     if (!user) {
       setPermissions(null);
       setIsOwner(false);
       setUserStatus(null);
+      setLinkedPlayerId(null);
       setLoading(false);
       return;
     }
+
+    // Set linked player ID from auth context
+    setLinkedPlayerId(authLinkedPlayerId);
 
     try {
       // Fetch permissions
@@ -173,6 +180,40 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
           users_manage: true,
         };
         setPermissions(adminPerms);
+      } else if (isPlayer) {
+        // Player role: read-only access to their own data
+        const playerPerms: UserPermissions = {
+          app_view: true,
+          players_view: true, // Only their own profile (filtered by RLS)
+          players_create: false,
+          players_edit: false,
+          players_delete: false,
+          players_export: false,
+          compare_view: false, // No comparison access
+          reports_view: true, // Only their own reports (filtered by RLS)
+          reports_create: false,
+          reports_edit: false,
+          reports_delete: false,
+          reports_export: false,
+          live_match_view: true, // Only matches they're in (filtered by RLS)
+          live_match_log: false, // Cannot log events
+          competitions_view: true, // Read-only
+          competitions_create: false,
+          competitions_edit: false,
+          competitions_delete: false,
+          news_view: false,
+          news_create: false,
+          news_edit: false,
+          news_delete: false,
+          news_publish: false,
+          leads_view: false,
+          leads_create: false,
+          leads_edit: false,
+          leads_delete: false,
+          leads_export: false,
+          users_manage: false,
+        };
+        setPermissions(playerPerms);
       } else if (permsData) {
         // Non-admin: use permissions from DB, but FORCE delete=false
         setPermissions({
@@ -195,7 +236,7 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [user, isAdmin]);
+  }, [user, isAdmin, isPlayer, authLinkedPlayerId]);
 
   useEffect(() => {
     if (!authLoading) {
@@ -241,6 +282,8 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
         loading,
         isOwner,
         userStatus,
+        linkedPlayerId,
+        isPlayerRole: isPlayer,
         can,
         canDelete,
         refreshPermissions,

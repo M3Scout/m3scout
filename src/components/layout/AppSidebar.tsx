@@ -31,8 +31,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-// Grouped navigation structure
-const navGroups = [
+// Navigation groups for internal users (admin/scout/editor/viewer)
+const internalNavGroups = [
   {
     label: "Análise",
     items: [
@@ -58,6 +58,24 @@ const navGroups = [
   }
 ];
 
+// Simplified navigation for player role (self-scoped, read-only)
+const playerNavGroups = [
+  {
+    label: "Meu Perfil",
+    items: [
+      { href: "/app/players", icon: Users, label: "Meu Perfil", module: "players" as const },
+      { href: "/app/reports", icon: FileText, label: "Meus Relatórios", module: "reports" as const },
+    ]
+  },
+  {
+    label: "Jogos",
+    items: [
+      { href: "/app/live-match", icon: Radio, label: "Meus Jogos", module: "live_match" as const },
+      { href: "/app/competitions", icon: Trophy, label: "Competições", module: "competitions" as const },
+    ]
+  }
+];
+
 const bottomNavItems = [
   { href: "/app/settings", icon: Settings, label: "Configurações", module: null },
 ];
@@ -65,8 +83,8 @@ const bottomNavItems = [
 export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut, user } = useAuth();
-  const { can } = usePermissions();
+  const { signOut, user, isPlayer } = useAuth();
+  const { can, isPlayerRole } = usePermissions();
   const { isCollapsed, toggleCollapsed, setIsCollapsed } = useSidebar();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
@@ -94,6 +112,9 @@ export function AppSidebar() {
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [location.pathname]);
+
+  // Choose navigation groups based on user role
+  const navGroups = isPlayerRole ? playerNavGroups : internalNavGroups;
 
   // Filter nav items based on permissions
   const visibleNavGroups = navGroups.map(group => ({
