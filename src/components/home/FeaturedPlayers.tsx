@@ -5,6 +5,64 @@ import { ArrowRight, Loader2, ChevronLeft, ChevronRight, Zap, Activity } from "l
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// IMAGE OPTIMIZATION HELPER
+// Generates srcSet for retina displays (2x/3x) using Supabase Storage transform
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function getOptimizedImageProps(photoUrl: string | null, baseWidth: number = 400) {
+  const fallback = "/placeholder.svg";
+  if (!photoUrl) return { src: fallback, srcSet: undefined, sizes: undefined };
+  
+  // Check if it's a Supabase storage URL that supports transforms
+  const isSupabaseStorage = photoUrl.includes("supabase") && photoUrl.includes("/storage/");
+  
+  if (isSupabaseStorage) {
+    // Use Supabase image transforms for optimized sizes
+    // Format: ?width=X&height=Y&quality=Q
+    const width1x = baseWidth;
+    const width2x = baseWidth * 2;
+    const width3x = baseWidth * 3;
+    
+    const getTransformUrl = (w: number) => {
+      const separator = photoUrl.includes("?") ? "&" : "?";
+      return `${photoUrl}${separator}width=${w}&quality=85`;
+    };
+    
+    return {
+      src: getTransformUrl(width2x), // Default to 2x for good quality baseline
+      srcSet: `${getTransformUrl(width1x)} ${width1x}w, ${getTransformUrl(width2x)} ${width2x}w, ${getTransformUrl(width3x)} ${width3x}w`,
+      sizes: "(max-width: 768px) 100vw, 400px",
+    };
+  }
+  
+  // For external URLs (like Unsplash), they often support similar transforms
+  if (photoUrl.includes("unsplash.com")) {
+    const width1x = baseWidth;
+    const width2x = baseWidth * 2;
+    const width3x = baseWidth * 3;
+    
+    const getUnsplashUrl = (w: number) => {
+      // Unsplash URL format: ?w=X&q=Y&fit=crop
+      const baseUrl = photoUrl.split("?")[0];
+      return `${baseUrl}?w=${w}&q=85&fit=crop&auto=format`;
+    };
+    
+    return {
+      src: getUnsplashUrl(width2x),
+      srcSet: `${getUnsplashUrl(width1x)} ${width1x}w, ${getUnsplashUrl(width2x)} ${width2x}w, ${getUnsplashUrl(width3x)} ${width3x}w`,
+      sizes: "(max-width: 768px) 100vw, 400px",
+    };
+  }
+  
+  // For other URLs, return as-is but still set sizes hint
+  return { 
+    src: photoUrl, 
+    srcSet: undefined, 
+    sizes: "(max-width: 768px) 100vw, 400px" 
+  };
+}
+
 // Position labels - professional format
 const positionLabels: Record<string, string> = {
   GK: "Goleiro",
@@ -102,6 +160,9 @@ const headerVariants = {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function PlayerCardPremium({ player }: { player: Player }) {
   const [isHovered, setIsHovered] = useState(false);
+  
+  // Get optimized image props for retina displays
+  const imageProps = getOptimizedImageProps(player.photo_url, 400);
 
   return (
     <Link
@@ -114,7 +175,9 @@ function PlayerCardPremium({ player }: { player: Player }) {
         {/* Image Container - 70% of card */}
         <div className="relative aspect-[3/4] overflow-hidden">
           <motion.img
-            src={player.photo_url || "/placeholder.svg"}
+            src={imageProps.src}
+            srcSet={imageProps.srcSet}
+            sizes={imageProps.sizes}
             alt={player.full_name}
             loading="lazy"
             className="absolute inset-0 w-full h-full object-cover object-top"
@@ -213,6 +276,9 @@ function PlayerCardPremium({ player }: { player: Player }) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function PlayerCardScout({ player }: { player: Player }) {
   const [isHovered, setIsHovered] = useState(false);
+  
+  // Get optimized image props for retina displays
+  const imageProps = getOptimizedImageProps(player.photo_url, 400);
 
   return (
     <Link
@@ -225,7 +291,9 @@ function PlayerCardScout({ player }: { player: Player }) {
         {/* Image Container */}
         <div className="relative aspect-[3/4] overflow-hidden">
           <motion.img
-            src={player.photo_url || "/placeholder.svg"}
+            src={imageProps.src}
+            srcSet={imageProps.srcSet}
+            sizes={imageProps.sizes}
             alt={player.full_name}
             loading="lazy"
             className="absolute inset-0 w-full h-full object-cover object-top"
