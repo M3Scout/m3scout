@@ -1,20 +1,31 @@
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Clock, LogOut, ArrowLeft } from "lucide-react";
+import { Clock, LogOut, ArrowLeft, Loader2 } from "lucide-react";
 import logoM3 from "@/assets/logo-m3.png";
+import { useState } from "react";
 
 export default function PendingAccess() {
-  const navigate = useNavigate();
   const { signOut, user } = useAuth();
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const handleLogout = async () => {
-    await signOut();
-    navigate("/app/auth");
+    console.log("[AUTH] signOut start");
+    setLoggingOut(true);
+    
+    try {
+      await signOut();
+      console.log("[AUTH] signOut success");
+    } catch (error) {
+      console.error("[AUTH] signOut error:", error);
+    } finally {
+      // Fallback garantido - força navegação mesmo se signOut falhar
+      console.log("[AUTH] signOut redirect fallback");
+      window.location.href = "/app/auth";
+    }
   };
 
   const handleBack = () => {
-    navigate("/");
+    window.location.href = "/";
   };
 
   return (
@@ -60,15 +71,21 @@ export default function PendingAccess() {
               onClick={handleLogout}
               variant="default"
               className="w-full gap-2"
+              disabled={loggingOut}
             >
-              <LogOut className="w-4 h-4" />
-              Sair da Conta
+              {loggingOut ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <LogOut className="w-4 h-4" />
+              )}
+              {loggingOut ? "Saindo..." : "Sair da Conta"}
             </Button>
             
             <Button
               onClick={handleBack}
               variant="ghost"
               className="w-full gap-2 text-zinc-400 hover:text-zinc-200"
+              disabled={loggingOut}
             >
               <ArrowLeft className="w-4 h-4" />
               Voltar ao Site
