@@ -5,6 +5,8 @@ import { InstagramFeedSection } from "@/components/home/InstagramFeedSection";
 import { ParallaxTransition } from "@/components/home/ParallaxTransition";
 
 const Index = () => {
+  if (import.meta.env.DEV) console.log("[MOUNT] Index (Home/Landing)");
+
   return (
     <>
       <CinematicHero />

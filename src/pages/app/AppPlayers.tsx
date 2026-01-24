@@ -87,6 +87,8 @@ const PAGE_SIZE_OPTIONS = [12, 24, 48];
 const INFINITE_SCROLL_PAGE_SIZE = 24;
 
 const AppPlayers = () => {
+  if (import.meta.env.DEV) console.log("[MOUNT] AppPlayers (Atletas)");
+
   const { isAdmin } = useAuth();
   const isMobile = useIsMobile();
   const [players, setPlayers] = useState<Player[]>([]);
@@ -122,6 +124,7 @@ const AppPlayers = () => {
   console.log("[AppPlayers DEBUG] searchQuery:", typeof searchQuery, `"${searchQuery}"`);
 
   const fetchPlayers = async () => {
+    if (import.meta.env.DEV) console.log("[FETCH] AppPlayers start");
     setLoading(true);
     setFetchError(null);
 
@@ -142,6 +145,7 @@ const AppPlayers = () => {
       const { data: playersData, error: playersError } = await query;
 
       if (playersError) {
+        if (import.meta.env.DEV) console.error("[FETCH] AppPlayers error", playersError);
         console.error("Error fetching players:", playersError);
         setPlayers([]);
         setFetchError(
@@ -201,8 +205,10 @@ const AppPlayers = () => {
         };
       });
 
+      if (import.meta.env.DEV) console.log("[FETCH] AppPlayers success", playersWithScores.length, "players");
       setPlayers(Array.isArray(playersWithScores) ? playersWithScores : []);
     } catch (error) {
+      if (import.meta.env.DEV) console.error("[FETCH] AppPlayers error", error);
       console.error("Unexpected error fetching players:", error);
       setPlayers([]);
       setFetchError("Ocorreu um erro inesperado ao carregar os atletas.");

@@ -67,6 +67,8 @@ function PlayerCardSkeleton({ index }: { index: number }) {
 
 // Inner content component that receives validated matchId
 function LiveMatchGameInner({ matchId }: { matchId: string }) {
+  if (import.meta.env.DEV) console.log("[MOUNT] LiveMatchGameInner", { matchId });
+
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { linkedPlayerId, isPlayer, isAdmin, isScout } = useAuth();

@@ -88,6 +88,8 @@ interface InstagramPost {
 }
 
 export function InstagramFeedSection() {
+  if (import.meta.env.DEV) console.log("[MOUNT] InstagramFeedSection");
+
   const [posts, setPosts] = useState<InstagramPost[]>(fallbackPosts);
   const [loading, setLoading] = useState(true);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -97,18 +99,22 @@ export function InstagramFeedSection() {
   // Fetch Instagram posts from edge function
   useEffect(() => {
     const fetchInstagramPosts = async () => {
+      if (import.meta.env.DEV) console.log("[FETCH] InstagramFeed start");
       try {
         const { data, error } = await supabase.functions.invoke('instagram-feed');
         
         if (error) {
+          if (import.meta.env.DEV) console.error("[FETCH] InstagramFeed error", error);
           console.error('Error fetching Instagram feed:', error);
           return;
         }
 
         if (data?.posts && data.posts.length > 0) {
+          if (import.meta.env.DEV) console.log("[FETCH] InstagramFeed success", data.posts.length, "posts");
           setPosts(data.posts);
         }
       } catch (err) {
+        if (import.meta.env.DEV) console.error("[FETCH] InstagramFeed error", err);
         console.error('Failed to fetch Instagram feed:', err);
       } finally {
         setLoading(false);
