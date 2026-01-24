@@ -10,6 +10,7 @@ import { RecentLeadsCard } from "@/components/dashboard/RecentLeadsCard";
 import { QuickActionsCard } from "@/components/dashboard/QuickActionsCard";
 import { PositionChartCard } from "@/components/dashboard/PositionChartCard";
 import { InsightsCard } from "@/components/dashboard/InsightsCard";
+import { AthleteDashboard } from "@/components/dashboard/athlete/AthleteDashboard";
 import CompetitionUsageWidget from "@/components/competitions/CompetitionUsageWidget";
 import { motion } from "framer-motion";
 import { staggerContainer, staggerItem } from "@/lib/animations";
@@ -48,7 +49,12 @@ interface RecentLead {
 const Dashboard = () => {
   if (import.meta.env.DEV) console.log("[MOUNT] Dashboard");
 
-  const { isAdmin } = useAuth();
+  const { isAdmin, isScout, isPlayer, rolesLoading } = useAuth();
+  
+  // If user is a Jogador (Player), show athlete-specific dashboard
+  if (!rolesLoading && isPlayer && !isAdmin && !isScout) {
+    return <AthleteDashboard />;
+  }
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats>({
     totalPlayers: 0,
