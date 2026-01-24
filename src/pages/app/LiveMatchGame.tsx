@@ -158,25 +158,13 @@ function LiveMatchGameInner({ matchId }: { matchId: string }) {
     });
   }, [finishGame, matchId, navigate]);
 
-  const startersCount = useMemo(() => {
-    return matchPlayers.filter((mp) => mp.started).length;
-  }, [matchPlayers]);
+  // ========================================================================
+  // CRITICAL: All useMemos that depend on match/matchPlayers MUST be declared
+  // AFTER the loading/error guards below. Moving them here caused #310 on refresh.
+  // ========================================================================
 
-  const playersOnField = useMemo(() => {
-    return matchPlayers.filter((mp) => mp.is_on_field && !mp.is_removed);
-  }, [matchPlayers]);
-
-  const playersOffField = useMemo(() => {
-    return matchPlayers.filter((mp) => !mp.is_on_field && !mp.is_removed && mp.exited_minute === null);
-  }, [matchPlayers]);
-
-  const displayedPlayers = useMemo(() => {
-    if (showOnlyOnField && match?.status !== "draft") {
-      return filteredPlayers.filter(mp => mp.is_on_field);
-    }
-    return filteredPlayers;
-  }, [filteredPlayers, showOnlyOnField, match?.status]);
-
+  // Guard #1: Show loading skeleton while data is being fetched
+  // This MUST come before any useMemo that accesses match/matchPlayers/filteredPlayers
   if (isLoading) {
     return (
       <div className="min-h-screen pb-20">
@@ -193,12 +181,7 @@ function LiveMatchGameInner({ matchId }: { matchId: string }) {
     );
   }
 
-  // Check if player is in lineup for this match (for PLAYER role access control)
-  const playerIsInLineup = useMemo(() => {
-    if (!isPlayerOnlyMode || !linkedPlayerId) return true; // Not player mode, no restriction
-    return matchPlayers.some(mp => mp.player_id === linkedPlayerId && !mp.is_removed);
-  }, [isPlayerOnlyMode, linkedPlayerId, matchPlayers]);
-
+  // Guard #2: Show error state if match failed to load or doesn't exist
   if (matchError || !match) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
@@ -219,8 +202,19 @@ function LiveMatchGameInner({ matchId }: { matchId: string }) {
     );
   }
 
+  // ========================================================================
+  // SAFE ZONE: match and matchPlayers are guaranteed to exist below this point
+  // ========================================================================
+
+  // Check if player is in lineup for this match (for PLAYER role access control)
+  // Now safe to access matchPlayers since we've already verified loading is complete
+  const playerIsInLineup = (() => {
+    if (!isPlayerOnlyMode || !linkedPlayerId) return true;
+    return matchPlayers.some(mp => mp.player_id === linkedPlayerId && !mp.is_removed);
+  })();
+
   // PLAYER role: check if they're in the lineup
-  if (isPlayerOnlyMode && !playerIsInLineup && !isLoading) {
+  if (isPlayerOnlyMode && !playerIsInLineup) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <div className="w-16 h-16 rounded-2xl bg-amber-500/10 flex items-center justify-center mb-2">
@@ -237,6 +231,17 @@ function LiveMatchGameInner({ matchId }: { matchId: string }) {
       </div>
     );
   }
+
+  // ========================================================================
+  // Derived data - NOW SAFE since guards above prevent access to undefined data
+  // Using IIFE instead of useMemo to avoid hook order issues with early returns
+  // ========================================================================
+  const startersCount = matchPlayers.filter((mp) => mp.started).length;
+  const playersOnField = matchPlayers.filter((mp) => mp.is_on_field && !mp.is_removed);
+  const playersOffField = matchPlayers.filter((mp) => !mp.is_on_field && !mp.is_removed && mp.exited_minute === null);
+  const displayedPlayers = (showOnlyOnField && match.status !== "draft")
+    ? filteredPlayers.filter(mp => mp.is_on_field)
+    : filteredPlayers;
 
   // For PLAYER role, always read-only (no event logging)
   const isReadOnlyPlayer = isPlayerOnlyMode;
