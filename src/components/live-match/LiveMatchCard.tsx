@@ -212,12 +212,13 @@ export function LiveMatchCard({ match, link, onDelete, index }: LiveMatchCardPro
   const addQuickEvent = useMutation({
     mutationFn: async ({ playerId, eventType }: { playerId: string; eventType: QuickEventType }) => {
       // Get current match state for accurate timing
-      const { data: currentMatch } = await supabase
+      const { data: matchArr } = await supabase
         .from("matches")
         .select("half, half_start_time, elapsed_seconds_in_half, duration_minutes, clock_status")
         .eq("id", match.id)
-        .single();
+        .limit(1);
 
+      const currentMatch = Array.isArray(matchArr) ? matchArr[0] ?? null : null;
       if (!currentMatch) throw new Error("Match not found");
 
       const halfDuration = (currentMatch.duration_minutes || 90) / 2;

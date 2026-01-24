@@ -16,10 +16,11 @@ const NewsDetail = () => {
         .select("*")
         .eq("slug", slug)
         .eq("status", "published")
-        .single();
+        .limit(1);
       
       if (error) throw error;
-      return data;
+      const article = Array.isArray(data) ? data[0] ?? null : null;
+      return article;
     },
     enabled: !!slug,
   });

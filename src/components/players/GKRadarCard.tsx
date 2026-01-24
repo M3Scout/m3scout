@@ -89,11 +89,13 @@ export function GKRadarCard({
       setLoading(true);
       try {
         // Check if player has gk_radar in auto_rating_details
-        const { data: player } = await supabase
+        const { data: playerArr } = await supabase
           .from("players")
           .select("auto_rating_details")
           .eq("id", playerId)
-          .maybeSingle();
+          .limit(1);
+
+        const player = Array.isArray(playerArr) ? playerArr[0] ?? null : null;
 
         // Fetch raw stats
         const { data: stats, error } = await supabase

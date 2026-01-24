@@ -77,35 +77,37 @@ export function SeasonStatsCard({ playerId, onStatsChange }: SeasonStatsCardProp
       .eq("player_id", playerId)
       .eq("season_year", currentYear)
       .is("competition_id", null)
-      .maybeSingle();
+      .limit(1);
+
+    const statsRow = Array.isArray(data) ? data[0] ?? null : null;
 
     if (error) {
       console.error("Error fetching stats:", error);
     }
 
-    if (data) {
+    if (statsRow) {
       setStats({
-        matches: data.matches,
-        minutes: data.minutes,
-        goals: data.goals,
-        assists: data.assists,
-        yellow_cards: data.yellow_cards,
-        red_cards: data.red_cards,
-        tackles: data.tackles,
-        interceptions: data.interceptions,
-        recoveries: data.recoveries,
+        matches: statsRow.matches,
+        minutes: statsRow.minutes,
+        goals: statsRow.goals,
+        assists: statsRow.assists,
+        yellow_cards: statsRow.yellow_cards,
+        red_cards: statsRow.red_cards,
+        tackles: statsRow.tackles,
+        interceptions: statsRow.interceptions,
+        recoveries: statsRow.recoveries,
       });
-      setExistingStatsId(data.id);
+      setExistingStatsId(statsRow.id);
       setFormData({
-        matches: data.matches,
-        minutes: data.minutes,
-        goals: data.goals,
-        assists: data.assists,
-        yellow_cards: data.yellow_cards,
-        red_cards: data.red_cards,
-        tackles: data.tackles,
-        interceptions: data.interceptions,
-        recoveries: data.recoveries,
+        matches: statsRow.matches,
+        minutes: statsRow.minutes,
+        goals: statsRow.goals,
+        assists: statsRow.assists,
+        yellow_cards: statsRow.yellow_cards,
+        red_cards: statsRow.red_cards,
+        tackles: statsRow.tackles,
+        interceptions: statsRow.interceptions,
+        recoveries: statsRow.recoveries,
       });
     } else {
       // If no stats without competition, aggregate all stats for the year

@@ -574,12 +574,13 @@ export default function UserManagement() {
         };
         
         // Upsert permissions - use insert with on conflict ignore approach
-        const { error: checkError, data: existingPerms } = await supabase
+        const { error: checkError, data: existingPermsArr } = await supabase
           .from("user_permissions")
           .select("id")
           .eq("user_id", approvalUser.user_id)
-          .maybeSingle();
+          .limit(1);
         
+        const existingPerms = Array.isArray(existingPermsArr) ? existingPermsArr[0] ?? null : null;
         if (existingPerms) {
           // Update existing
           const { error: updateError } = await supabase

@@ -129,20 +129,21 @@ const EditScoutingReport = () => {
           .order("visibility_score", { ascending: false })
           .order("name"),
         supabase.from("competition_phases").select("*").order("phase_order"),
-        supabase.from("scouting_reports").select("*").eq("id", id).maybeSingle(),
+        supabase.from("scouting_reports").select("*").eq("id", id).limit(1),
       ]);
 
       if (playersRes.data) setPlayers(playersRes.data);
       if (competitionsRes.data) setCompetitions(competitionsRes.data);
       if (phasesRes.data) setCompetitionPhases(phasesRes.data);
 
-      if (!reportRes.data) {
+      const reportRow = Array.isArray(reportRes.data) ? reportRes.data[0] ?? null : null;
+      if (!reportRow) {
         toast.error("Relatório não encontrado");
         navigate("/app/reports");
         return;
       }
 
-      const report = reportRes.data;
+      const report = reportRow;
 
       // Set form values
       setValue("playerId", report.player_id);

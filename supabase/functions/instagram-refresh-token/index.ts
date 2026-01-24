@@ -17,12 +17,13 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get current token from database
-    const { data: tokenData, error: tokenError } = await supabase
+    const { data: tokenArr, error: tokenError } = await supabase
       .from('instagram_tokens')
       .select('id, access_token, expires_at')
       .order('updated_at', { ascending: false })
-      .limit(1)
-      .single();
+      .limit(1);
+
+    const tokenData = Array.isArray(tokenArr) ? tokenArr[0] ?? null : null;
 
     if (tokenError || !tokenData || tokenData.access_token === 'pending') {
       // Try environment variable

@@ -90,14 +90,16 @@ const CompetitionsImport = () => {
           }
 
           // Upsert by unique key
-          const { data: existing } = await supabase
+          const { data: existingArr } = await supabase
             .from('competitions')
             .select('id')
             .eq('country', country)
             .eq('name', name)
             .eq('division', division)
             .eq('phase', phase)
-            .maybeSingle();
+            .limit(1);
+
+          const existing = Array.isArray(existingArr) ? existingArr[0] ?? null : null;
 
           const competitionData = {
             name,
@@ -181,13 +183,14 @@ const CompetitionsImport = () => {
           }
 
           // Upsert by state + tier
-          const { data: existing } = await supabase
+          const { data: existingArr } = await supabase
             .from('brazil_state_tiers')
             .select('id')
             .eq('state', tierData.state)
             .eq('tier', tierData.tier)
-            .maybeSingle();
+            .limit(1);
 
+          const existing = Array.isArray(existingArr) ? existingArr[0] ?? null : null;
           if (existing) {
             const { error } = await supabase
               .from('brazil_state_tiers')

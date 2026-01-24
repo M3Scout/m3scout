@@ -158,9 +158,10 @@ const PlayerDetail = () => {
       .from("players")
       .select("*")
       .eq("id", id)
-      .maybeSingle();
-    if (data) {
-      setPlayer(data as Player);
+      .limit(1);
+    const playerRow = Array.isArray(data) ? data[0] ?? null : null;
+    if (playerRow) {
+      setPlayer(playerRow as Player);
     }
   };
 
@@ -186,7 +187,7 @@ const PlayerDetail = () => {
           .from("players")
           .select("*")
           .eq("id", id)
-          .maybeSingle(),
+          .limit(1),
         supabase
           .from("player_injuries")
           .select("*")
@@ -200,14 +201,16 @@ const PlayerDetail = () => {
           .limit(5),
       ]);
 
+      const playerRow = Array.isArray(playerRes.data) ? playerRes.data[0] ?? null : null;
+
       if (import.meta.env.DEV) {
         console.log("[BREAKDOWN] fetched payload", {
           playerId: id,
-          hasAutoRatingDetails: Boolean(playerRes.data?.auto_rating_details),
-          autoRating: playerRes.data?.auto_rating,
-          position: playerRes.data?.position,
-          competitionsInDetails: Array.isArray((playerRes.data as any)?.auto_rating_details?.competitions)
-            ? (playerRes.data as any).auto_rating_details.competitions.map((c: any) => ({
+          hasAutoRatingDetails: Boolean(playerRow?.auto_rating_details),
+          autoRating: playerRow?.auto_rating,
+          position: playerRow?.position,
+          competitionsInDetails: Array.isArray((playerRow as any)?.auto_rating_details?.competitions)
+            ? (playerRow as any).auto_rating_details.competitions.map((c: any) => ({
                 competition_id: c?.competition_id,
                 season_year: c?.season_year,
                 stat_breakdown_len: Array.isArray(c?.stat_breakdown) ? c.stat_breakdown.length : 0,
@@ -216,8 +219,8 @@ const PlayerDetail = () => {
         });
       }
 
-      if (playerRes.data) {
-        setPlayer(playerRes.data as Player);
+      if (playerRow) {
+        setPlayer(playerRow as Player);
       }
       if (injuriesRes.data) {
         setInjuries(injuriesRes.data);
