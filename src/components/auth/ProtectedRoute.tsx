@@ -11,7 +11,9 @@ interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
-const LOADING_TIMEOUT_MS = 8000; // 8 seconds fail-safe
+// Thresholds for distinguishing slow loading from definitive error
+const SLOW_LOADING_THRESHOLD_MS = 1200; // After 1.2s show "Sincronizando..." (no buttons)
+const ERROR_FINAL_THRESHOLD_MS = 15000; // After 15s, consider it a final error (show buttons)
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const {
@@ -35,14 +37,17 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     debug: permissionsDebug,
   } = usePermissions();
   const location = useLocation();
-  const [timedOut, setTimedOut] = useState(false);
   const [showDevDetails, setShowDevDetails] = useState(false);
   const [retrying, setRetrying] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  
+  // New: separate states for slow loading vs final error
+  const [slowLoading, setSlowLoading] = useState(false);
+  const [errorFinal, setErrorFinal] = useState(false);
 
   const isLoading = authLoading || rolesLoading || permissionsLoading;
-  // Technical error (timeout/abort/network) is different from "not approved"
-  const hasTechnicalError = Boolean(rolesError || permissionsErrorFlag || permissionsError);
+  // Technical error from hooks (only set after retries exhausted)
+  const hasHookError = Boolean(rolesError || permissionsErrorFlag || permissionsError);
   const isDev = import.meta.env.DEV;
   const loadingSinceRef = useRef<number | null>(null);
 
@@ -58,9 +63,11 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const handleRetry = async () => {
     setRetrying(true);
     try {
-      // Reset timeout state so UI can show loading again
-      setTimedOut(false);
-      // Re-run the exact bootstrap fetches that commonly cause this screen
+      // Reset states so UI can show loading again
+      setSlowLoading(false);
+      setErrorFinal(false);
+      loadingSinceRef.current = null;
+      // Re-run the exact bootstrap fetches
       await Promise.all([refreshRoles(), refreshPermissions()]);
     } finally {
       setRetrying(false);
@@ -72,36 +79,58 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     await hardLogoutToAuth(1800);
   };
 
-  // Fail-safe timeout: don't allow "loading" to persist indefinitely.
-  // IMPORTANT: avoid timer reset loops if flags toggle briefly.
+  // Track loading duration to distinguish slow loading from final error
   useEffect(() => {
+    // Start tracking when loading begins
     if (isLoading && loadingSinceRef.current == null) {
       loadingSinceRef.current = Date.now();
     }
 
-    if (!isLoading) {
+    // Reset when loading completes successfully
+    if (!isLoading && !hasHookError) {
       loadingSinceRef.current = null;
-      setTimedOut(false);
+      setSlowLoading(false);
+      setErrorFinal(false);
     }
-  }, [isLoading]);
+  }, [isLoading, hasHookError]);
 
+  // Check elapsed time periodically to set slow/error states
   useEffect(() => {
     const interval = setInterval(() => {
-      if (!loadingSinceRef.current) return;
-      const elapsed = Date.now() - loadingSinceRef.current;
-      if (elapsed >= LOADING_TIMEOUT_MS) {
-        setTimedOut(true);
+      // If we got a hook error (after retries exhausted), that's final
+      if (hasHookError && !isLoading) {
+        setErrorFinal(true);
+        setSlowLoading(false);
+        return;
       }
-    }, 250);
+
+      // If not loading or we have user without loading, no need to show banners
+      if (!loadingSinceRef.current) return;
+
+      const elapsed = Date.now() - loadingSinceRef.current;
+
+      // After ERROR_FINAL_THRESHOLD_MS, consider it a final error
+      if (elapsed >= ERROR_FINAL_THRESHOLD_MS) {
+        setErrorFinal(true);
+        setSlowLoading(false);
+      }
+      // After SLOW_LOADING_THRESHOLD_MS, show "syncing" message (no buttons)
+      else if (elapsed >= SLOW_LOADING_THRESHOLD_MS) {
+        setSlowLoading(true);
+        setErrorFinal(false);
+      }
+    }, 200);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [hasHookError, isLoading]);
 
-  // ===== Technical error state (timeout/abort/network) =====
-  // IMPORTANT: In technical errors, pages MUST mount (no blocking fullscreen).
-  // We show a warning banner + keep a dev details panel.
-  if (timedOut || hasTechnicalError) {
-    const errorType = rolesError || (permissionsError as any) || (timedOut ? "timeout" : "exception");
+  // Determine what banner to show
+  const showSlowLoadingBanner = slowLoading && !errorFinal && isLoading && (user || session);
+  const showErrorFinalBanner = errorFinal || (hasHookError && !isLoading);
+
+  // ===== Error Final state (after all retries exhausted) =====
+  if (showErrorFinalBanner) {
+    const errorType = rolesError || (permissionsError as any) || "timeout";
 
     // Not logged in → redirect to login (even in error mode)
     if (!user) {
@@ -111,6 +140,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     return (
       <>
         <PermissionsWarningBanner
+          mode="errorFinal"
           errorType={errorType}
           retrying={retrying}
           loggingOut={loggingOut}
@@ -173,11 +203,23 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  // ===== Required RBAC order =====
-  // 1) rolesLoading/auth/permissions -> loader (no redirect)
+  // ===== Slow Loading state (still trying, no buttons) =====
+  if (showSlowLoadingBanner) {
+    return (
+      <>
+        <PermissionsWarningBanner
+          mode="slowLoading"
+          onRetry={handleRetry}
+          onLogout={handleLogout}
+        />
+        <div className="pt-10">{children}</div>
+      </>
+    );
+  }
+
+  // ===== Normal loading state =====
   if (isLoading) {
-    // CRITICAL: On refresh, don't block mount of the /app tree (otherwise pages never mount and no fetches fire).
-    // If there's already an authenticated session/user, keep children mounted and show a thin loading bar.
+    // If there's already an authenticated session/user, keep children mounted
     if (user || session) {
       return (
         <>
@@ -230,10 +272,10 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     });
   }
 
-  // 2) admin bypass -> allow immediately (do NOT check pending/status)
+  // Admin bypass -> allow immediately (do NOT check pending/status)
   if (isAdmin) return <>{children}</>;
 
-  // 3) non-admin: enforce approval + active status
+  // Non-admin: enforce approval + active status
   // Only redirect to pending if genuinely not approved (no technical error)
   if (!isApproved || userStatus !== "active") {
     return <Navigate to="/pending-access" replace />;

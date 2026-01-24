@@ -221,13 +221,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   // Fail-safe timeout: rolesLoading can hang if the roles fetch stalls after login.
+  // IMPORTANT: This is a LAST RESORT timeout. The ProtectedRoute handles slow loading display.
+  // We only set error here after a very long time (20s) to allow retries to complete.
   useEffect(() => {
     if (!rolesLoading) return;
 
     const timeout = setTimeout(() => {
-      console.warn("[Auth] rolesLoading timeout - forcing roles loading to complete");
+      console.warn("[Auth] rolesLoading timeout (20s) - forcing roles loading to complete");
       setRolesLoading(false);
-      setRolesError("timeout");
+      // Only set error if roles are still empty after this timeout
+      if (roles.length === 0) {
+        setRolesError("timeout");
+      }
 
       // Preserve existing debug if present; if it's still "start", flip to timeout error.
       setDebug((prev) => {
@@ -251,20 +256,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           },
         };
       });
-    }, 8000);
+    }, 20000); // 20 seconds - very last resort
 
     return () => clearTimeout(timeout);
-  }, [rolesLoading, user?.id]);
+  }, [rolesLoading, user?.id, roles.length]);
 
   // Fail-safe timeout: ensure loading state never hangs indefinitely
+  // This is a last resort - ProtectedRoute handles slow loading UI
   useEffect(() => {
     if (!loading) return; // Already finished loading
     
     const timeout = setTimeout(() => {
-      console.warn("[Auth] Loading timeout - forcing auth loading to complete");
+      console.warn("[Auth] Loading timeout (20s) - forcing auth loading to complete");
       setLoading(false);
       setRolesLoading(false);
-    }, 8000); // 8 seconds
+    }, 20000); // 20 seconds - last resort
 
     return () => clearTimeout(timeout);
   }, [loading]);
