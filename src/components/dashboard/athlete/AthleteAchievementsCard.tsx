@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { 
   Trophy, 
   Loader2, 
@@ -8,9 +7,9 @@ import {
   Users,
   Clock,
   Shield,
-  Zap
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import confetti from "canvas-confetti";
 import { fadeInUp } from "@/lib/animations";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -27,6 +26,64 @@ interface Achievement {
 
 interface AthleteAchievementsCardProps {
   athleteId: string;
+}
+
+// Storage key for seen achievements
+const getSeenAchievementsKey = (athleteId: string, year: number) => 
+  `achievements_seen_${athleteId}_${year}`;
+
+// Confetti celebration for new achievements
+function fireAchievementConfetti(tier: string) {
+  const tierColors: Record<string, string[]> = {
+    bronze: ["#CD7F32", "#B8860B", "#D2691E", "#ffffff"],
+    silver: ["#C0C0C0", "#A8A8A8", "#D3D3D3", "#ffffff"],
+    gold: ["#FFD700", "#FFA500", "#FFEC8B", "#ffffff", "#facc15"],
+    platinum: ["#00CED1", "#00BFFF", "#87CEEB", "#ffffff", "#E5E4E2"],
+  };
+
+  const colors = tierColors[tier] || tierColors.gold;
+  
+  // Multi-burst celebration
+  const defaults = {
+    particleCount: 100,
+    spread: 80,
+    startVelocity: 40,
+    colors,
+    zIndex: 9999,
+    disableForReducedMotion: true,
+  };
+
+  // Left burst
+  confetti({ ...defaults, origin: { x: 0.25, y: 0.6 }, angle: 60 });
+  
+  // Right burst
+  confetti({ ...defaults, origin: { x: 0.75, y: 0.6 }, angle: 120 });
+  
+  // Center burst with delay
+  setTimeout(() => {
+    confetti({ 
+      ...defaults, 
+      origin: { x: 0.5, y: 0.5 }, 
+      angle: 90,
+      particleCount: 80,
+      spread: 100,
+    });
+  }, 200);
+
+  // Extra sparkle for gold/platinum
+  if (tier === "gold" || tier === "platinum") {
+    setTimeout(() => {
+      confetti({
+        particleCount: 50,
+        spread: 120,
+        startVelocity: 25,
+        colors,
+        origin: { x: 0.5, y: 0.4 },
+        zIndex: 9999,
+        scalar: 0.8,
+      });
+    }, 400);
+  }
 }
 
 const ACHIEVEMENT_CONFIG: Record<string, {
@@ -124,7 +181,43 @@ const TIER_LABELS: Record<string, string> = {
 export function AthleteAchievementsCard({ athleteId }: AthleteAchievementsCardProps) {
   const [loading, setLoading] = useState(true);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [newlyUnlocked, setNewlyUnlocked] = useState<Set<string>>(new Set());
+  const hasCheckedNewRef = useRef(false);
   const currentYear = new Date().getFullYear();
+
+  // Check for new achievements and trigger celebration
+  const checkForNewAchievements = useCallback((fetchedAchievements: Achievement[]) => {
+    if (hasCheckedNewRef.current || fetchedAchievements.length === 0) return;
+    hasCheckedNewRef.current = true;
+
+    const storageKey = getSeenAchievementsKey(athleteId, currentYear);
+    const seenIds = new Set<string>(JSON.parse(localStorage.getItem(storageKey) || "[]"));
+    
+    const newAchievements = fetchedAchievements.filter(a => !seenIds.has(a.id));
+    
+    if (newAchievements.length > 0) {
+      // Mark as newly unlocked for animation
+      setNewlyUnlocked(new Set(newAchievements.map(a => a.id)));
+      
+      // Fire confetti for the highest tier new achievement
+      const tierPriority: Record<string, number> = { bronze: 1, silver: 2, gold: 3, platinum: 4 };
+      const highestTier = newAchievements.reduce((best, curr) => 
+        (tierPriority[curr.achievement_tier] || 0) > (tierPriority[best.achievement_tier] || 0) ? curr : best
+      );
+      
+      // Delay confetti slightly for dramatic effect
+      setTimeout(() => {
+        fireAchievementConfetti(highestTier.achievement_tier);
+      }, 500);
+      
+      // Update localStorage with all seen achievements
+      const allIds = fetchedAchievements.map(a => a.id);
+      localStorage.setItem(storageKey, JSON.stringify(allIds));
+      
+      // Clear newly unlocked highlight after animation
+      setTimeout(() => setNewlyUnlocked(new Set()), 3000);
+    }
+  }, [athleteId, currentYear]);
 
   useEffect(() => {
     const fetchAchievements = async () => {
@@ -137,10 +230,14 @@ export function AthleteAchievementsCard({ athleteId }: AthleteAchievementsCardPr
           .order("unlocked_at", { ascending: false });
 
         if (error) throw error;
-        setAchievements((data || []).map(d => ({
+        
+        const mapped = (data || []).map(d => ({
           ...d,
           metadata: (typeof d.metadata === 'object' && d.metadata !== null) ? d.metadata as Record<string, unknown> : null
-        })));
+        }));
+        
+        setAchievements(mapped);
+        checkForNewAchievements(mapped);
       } catch (error) {
         console.error("Error fetching achievements:", error);
       } finally {
@@ -149,7 +246,7 @@ export function AthleteAchievementsCard({ athleteId }: AthleteAchievementsCardPr
     };
 
     fetchAchievements();
-  }, [athleteId, currentYear]);
+  }, [athleteId, currentYear, checkForNewAchievements]);
 
   // Group achievements by type and get highest tier
   const achievementsByType = achievements.reduce((acc, ach) => {
@@ -218,10 +315,31 @@ export function AthleteAchievementsCard({ athleteId }: AthleteAchievementsCardPr
                   <TooltipTrigger asChild>
                     <motion.div
                       initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.1 * index }}
-                      className={`relative p-3 rounded-xl ${tierColors.bg} border ${tierColors.border} cursor-pointer hover:shadow-lg ${tierColors.glow} transition-all group`}
+                      animate={{ 
+                        opacity: 1, 
+                        scale: newlyUnlocked.has(achievement.id) ? [1, 1.1, 1] : 1,
+                      }}
+                      transition={{ 
+                        delay: 0.1 * index,
+                        scale: newlyUnlocked.has(achievement.id) ? { 
+                          duration: 0.6, 
+                          repeat: 2, 
+                          repeatType: "reverse" 
+                        } : undefined
+                      }}
+                      className={`relative p-3 rounded-xl ${tierColors.bg} border ${tierColors.border} cursor-pointer hover:shadow-lg ${tierColors.glow} transition-all group ${newlyUnlocked.has(achievement.id) ? 'ring-2 ring-offset-2 ring-offset-zinc-900 ring-yellow-400/70 shadow-lg shadow-yellow-500/20' : ''}`}
                     >
+                      {/* NEW badge for newly unlocked */}
+                      {newlyUnlocked.has(achievement.id) && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded bg-yellow-500 text-yellow-950 text-[8px] font-bold uppercase shadow-md"
+                        >
+                          NOVO!
+                        </motion.div>
+                      )}
+                      
                       {/* Tier badge */}
                       <div className={`absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase ${tierColors.bg} ${tierColors.text} border ${tierColors.border}`}>
                         {TIER_LABELS[achievement.achievement_tier]}
