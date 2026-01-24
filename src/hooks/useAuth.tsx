@@ -286,6 +286,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Track if we're currently doing a background revalidation
   const isBackgroundRef = useRef(false);
+  
+  // Track if document is visible (for pausing background fetches)
+  const isDocumentVisibleRef = useRef(true);
+  
+  // Track last known good permissions (for resilience)
+  const lastKnownGoodRef = useRef<RbacCachePayload | null>(null);
 
   // ============ CORE RBAC FETCH ============
   const doRbacFetch = useCallback(async (userId: string): Promise<RbacCachePayload | null> => {
@@ -465,20 +471,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const result = await fetchPromise;
         if (result) {
           writeCache(result);
+          lastKnownGoodRef.current = result;
           applyRbacPayload(result, background);
         }
       } catch (err: any) {
         const errorType = err?.errorType ?? classifyRbacError(err);
 
-        setRolesError(errorType);
-        setPermissionsError(errorType);
+        // CRITICAL FIX: Treat "abort" as a non-error (tab switch, navigation, etc.)
+        // Also, if we have last known good permissions, DON'T set error state
+        const hasGoodFallback = lastKnownGoodRef.current !== null || roles.length > 0;
+        const isAbortError = errorType === "abort";
+
+        if (isAbortError) {
+          if (import.meta.env.DEV) {
+            console.log("[RBAC] Ignoring abort error (tab switch or navigation)");
+          }
+          // DON'T set error state for aborts - just silently ignore
+          if (!background) {
+            setRolesLoading(false);
+            setPermissionsLoading(false);
+          }
+          return;
+        }
+
+        // If we have valid cached/known permissions, DON'T block UI with error
+        if (background && hasGoodFallback) {
+          if (import.meta.env.DEV) {
+            console.log("[RBAC] Background fetch failed but have fallback, ignoring error", { errorType });
+          }
+          // Keep current state, don't set error
+          return;
+        }
+
+        // Only set error if this is a foreground fetch without fallback
+        if (!hasGoodFallback) {
+          setRolesError(errorType);
+          setPermissionsError(errorType);
+        }
+        
         setDebug({
           fetchStage: "error",
           fetchSource: background ? "background" : "fresh",
           error: { code: errorType, message: err?.originalError?.message ?? String(err) },
         });
 
-        // Keep cached data if available
         if (!background) {
           setRolesLoading(false);
           setPermissionsLoading(false);
@@ -487,13 +523,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         inflightRbacPromise = null;
       }
     },
-    [doRbacFetch]
+    [doRbacFetch, roles.length]
   );
 
   const applyRbacPayload = useCallback(
     (payload: RbacCachePayload, fromCache: boolean) => {
       const isAdminRole = payload.roles.includes("admin");
       const isPlayerRole = payload.roles.includes("player");
+
+      // Store as last known good state (for resilience)
+      lastKnownGoodRef.current = payload;
 
       setRoles(payload.roles);
       setLinkedPlayerId(payload.linkedPlayerId);
@@ -632,7 +671,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.warn("[Auth] RBAC timeout (15s) - forcing completion");
       setRolesLoading(false);
       setPermissionsLoading(false);
-      if (roles.length === 0) {
+      // Only set error if we don't have any valid permissions
+      if (roles.length === 0 && !lastKnownGoodRef.current) {
         setRolesError("timeout");
         setPermissionsError("timeout");
       }
@@ -640,6 +680,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => clearTimeout(timeout);
   }, [rolesLoading, permissionsLoading, roles.length]);
+
+  // ============ VISIBILITY CHANGE HANDLER ============
+  // Revalidate permissions in BACKGROUND when user returns to tab
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      const isVisible = document.visibilityState === "visible";
+      isDocumentVisibleRef.current = isVisible;
+
+      if (isVisible && user?.id) {
+        if (import.meta.env.DEV) {
+          console.log("[RBAC] Tab became visible, revalidating in background...");
+        }
+        // Clear any existing error state when tab becomes visible
+        // This ensures we don't show stale errors
+        if (rolesError || permissionsError) {
+          setRolesError(null);
+          setPermissionsError(null);
+        }
+        // Revalidate in background (won't block UI or trigger error state)
+        void fetchRbac(user.id, { background: true });
+      }
+    };
+
+    const handleWindowFocus = () => {
+      if (user?.id && isDocumentVisibleRef.current) {
+        if (import.meta.env.DEV) {
+          console.log("[RBAC] Window focused, revalidating in background...");
+        }
+        // Clear errors on focus as well
+        if (rolesError || permissionsError) {
+          setRolesError(null);
+          setPermissionsError(null);
+        }
+        void fetchRbac(user.id, { background: true });
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleWindowFocus);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleWindowFocus);
+    };
+  }, [user?.id, fetchRbac, rolesError, permissionsError]);
 
   // ============ PUBLIC API ============
   const refreshRoles = useCallback(async () => {
