@@ -7,6 +7,7 @@ import { AthleteKPICards } from "./AthleteKPICards";
 import { AthleteInsightsCard } from "./AthleteInsightsCard";
 import { AthleteRatingEvolutionCard } from "./AthleteRatingEvolutionCard";
 import { AthleteRadarCard } from "./AthleteRadarCard";
+import { AthleteBodyMetricsCard } from "./AthleteBodyMetricsCard";
 import { AthleteReportsCard } from "./AthleteReportsCard";
 import { AthleteSeasonGoalsCard } from "./AthleteSeasonGoalsCard";
 import { AthleteAchievementsCard } from "./AthleteAchievementsCard";
@@ -186,12 +187,12 @@ export function AthleteDashboard() {
         />
       </motion.div>
 
-      {/* Insights + Rating Evolution Grid */}
+      {/* Row 1: Insights (50%) + Rating Evolution (50%) */}
       <motion.div 
         variants={staggerItem} 
-        className="grid grid-cols-1 lg:grid-cols-3 gap-[var(--gap-mobile)] md:gap-6 items-stretch w-full max-w-full"
+        className="grid grid-cols-1 lg:grid-cols-2 gap-[var(--gap-mobile)] md:gap-6 items-stretch w-full max-w-full"
       >
-        <div className="lg:col-span-1 flex min-w-0 w-full">
+        <div className="flex min-w-0 w-full">
           <AthleteInsightsCard 
             athleteId={athlete.id}
             athletePosition={athlete.position}
@@ -208,7 +209,7 @@ export function AthleteDashboard() {
           />
         </div>
 
-        <div className="lg:col-span-2 flex min-w-0 w-full">
+        <div className="flex min-w-0 w-full">
           <AthleteRatingEvolutionCard 
             matches={matchesForChart}
             athleteId={athlete.id}
@@ -218,35 +219,40 @@ export function AthleteDashboard() {
         </div>
       </motion.div>
 
-      {/* Season Goals + Radar Grid */}
+      {/* Row 2: Radar (50%) + Body Metrics (50%) */}
       <motion.div 
         variants={staggerItem} 
         className="grid grid-cols-1 lg:grid-cols-2 gap-[var(--gap-mobile)] md:gap-6 items-stretch w-full max-w-full"
       >
-        <div className="flex min-w-0 w-full">
-          <AthleteSeasonGoalsCard 
-            athleteId={athlete.id}
-            currentStats={{
-              goals: totals?.goals ?? 0,
-              assists: totals?.assists ?? 0,
-              matches: totals?.matches ?? 0,
-              minutes: totals?.minutes ?? 0,
-              saves: totals?.saves ?? 0,
-              clean_sheets: totals?.clean_sheets ?? 0,
-            }}
-            isGoalkeeper={isGoalkeeper}
-          />
-        </div>
-
         <div className="flex min-w-0 w-full">
           <AthleteRadarCard 
             athleteId={athlete.id}
             athletePosition={athlete.position}
           />
         </div>
+
+        <div className="flex min-w-0 w-full">
+          <AthleteBodyMetricsCard athleteId={athlete.id} />
+        </div>
       </motion.div>
 
-      {/* Achievements + Reports Grid */}
+      {/* Row 3: Season Goals (100% width) */}
+      <motion.div variants={staggerItem} className="w-full">
+        <AthleteSeasonGoalsCard 
+          athleteId={athlete.id}
+          currentStats={{
+            goals: totals?.goals ?? 0,
+            assists: totals?.assists ?? 0,
+            matches: totals?.matches ?? 0,
+            minutes: totals?.minutes ?? 0,
+            saves: totals?.saves ?? 0,
+            clean_sheets: totals?.clean_sheets ?? 0,
+          }}
+          isGoalkeeper={isGoalkeeper}
+        />
+      </motion.div>
+
+      {/* Row 4: Achievements + Reports */}
       <motion.div 
         variants={staggerItem} 
         className="grid grid-cols-1 lg:grid-cols-2 gap-[var(--gap-mobile)] md:gap-6 items-stretch w-full max-w-full"
