@@ -74,10 +74,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Fail-safe timeout: ensure loading state never hangs indefinitely
+  useEffect(() => {
+    if (!loading) return; // Already finished loading
+    
+    const timeout = setTimeout(() => {
+      console.warn("[Auth] Loading timeout - forcing auth loading to complete");
+      setLoading(false);
+      setRolesLoading(false);
+    }, 8000); // 8 seconds
+
+    return () => clearTimeout(timeout);
+  }, [loading]);
+
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log("[Auth] Auth state changed:", event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -96,18 +110,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // THEN check for existing session
     const initSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        // Fetch roles before setting loading to false
-        await fetchUserRoles(session.user.id);
-      } else {
+      try {
+        console.log("[Auth] Initializing session...");
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("[Auth] Error getting session:", error.code, error.message);
+          setLoading(false);
+          setRolesLoading(false);
+          return;
+        }
+        
+        console.log("[Auth] Session loaded:", session?.user?.id ?? "no session");
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          // Fetch roles before setting loading to false
+          await fetchUserRoles(session.user.id);
+        } else {
+          setRolesLoading(false);
+        }
+        
+        setLoading(false);
+      } catch (err) {
+        console.error("[Auth] Unexpected error initializing session:", err);
+        setLoading(false);
         setRolesLoading(false);
       }
-      
-      setLoading(false);
     };
     
     initSession();
