@@ -96,10 +96,13 @@ export function InstagramFeedSection() {
   const [canScrollRight, setCanScrollRight] = useState(true);
   const carouselRef = useRef<HTMLDivElement>(null);
 
-  // Fetch Instagram posts from edge function
+  // Fetch Instagram posts from edge function - NON-BLOCKING with lazy load
   useEffect(() => {
-    const fetchInstagramPosts = async () => {
-      if (import.meta.env.DEV) console.log("[FETCH] InstagramFeed start");
+    // Small delay to prioritize critical content (players, hero)
+    const timer = setTimeout(async () => {
+      if (import.meta.env.DEV) console.log("[TIMING] InstagramFeed fetch start (delayed)");
+      const fetchStart = performance.now();
+      
       try {
         const { data, error } = await supabase.functions.invoke('instagram-feed');
         
@@ -110,7 +113,12 @@ export function InstagramFeedSection() {
         }
 
         if (data?.posts && data.posts.length > 0) {
-          if (import.meta.env.DEV) console.log("[FETCH] InstagramFeed success", data.posts.length, "posts");
+          if (import.meta.env.DEV) {
+            console.log("[TIMING] InstagramFeed fetch complete", {
+              duration: `${Math.round(performance.now() - fetchStart)}ms`,
+              count: data.posts.length
+            });
+          }
           setPosts(data.posts);
         }
       } catch (err) {
@@ -119,9 +127,9 @@ export function InstagramFeedSection() {
       } finally {
         setLoading(false);
       }
-    };
+    }, 300); // 300ms delay to let critical content load first
 
-    fetchInstagramPosts();
+    return () => clearTimeout(timer);
   }, []);
 
   const checkScrollButtons = () => {

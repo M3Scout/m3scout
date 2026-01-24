@@ -554,6 +554,9 @@ export function FeaturedPlayers() {
 
   useEffect(() => {
     const fetchPlayers = async () => {
+      if (import.meta.env.DEV) console.log("[TIMING] FeaturedPlayers fetch start");
+      const fetchStart = performance.now();
+      
       const { data } = await supabase
         .from("players")
         .select("id, slug, full_name, position, age, nationality, current_club, photo_url, auto_rating, dominant_foot")
@@ -566,6 +569,13 @@ export function FeaturedPlayers() {
         setPlayers(data);
       }
       setLoading(false);
+      
+      if (import.meta.env.DEV) {
+        console.log("[TIMING] FeaturedPlayers fetch complete", { 
+          duration: `${Math.round(performance.now() - fetchStart)}ms`,
+          count: data?.length ?? 0
+        });
+      }
     };
 
     fetchPlayers();

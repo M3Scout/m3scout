@@ -14,20 +14,31 @@ export interface Notification {
 }
 
 export function useNotifications() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [hasFetched, setHasFetched] = useState(false);
 
   const fetchNotifications = useCallback(async () => {
-    if (!user) {
+    // Don't fetch if no user or auth is still loading
+    if (!user || authLoading) {
       setNotifications([]);
       setUnreadCount(0);
       setLoading(false);
       return;
     }
 
+    // Dedupe - don't fetch if already fetched for this user
+    if (hasFetched) {
+      setLoading(false);
+      return;
+    }
+
     try {
+      if (import.meta.env.DEV) console.log("[TIMING] Notifications fetch start");
+      const fetchStart = performance.now();
+      
       const { data, error } = await supabase
         .from("notifications")
         .select("*")
@@ -40,12 +51,20 @@ export function useNotifications() {
       const typedData = (data || []) as Notification[];
       setNotifications(typedData);
       setUnreadCount(typedData.filter((n) => !n.read).length);
+      setHasFetched(true);
+      
+      if (import.meta.env.DEV) {
+        console.log("[TIMING] Notifications fetch complete", {
+          duration: `${Math.round(performance.now() - fetchStart)}ms`,
+          count: typedData.length
+        });
+      }
     } catch (error) {
       console.error("Error fetching notifications:", error);
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, authLoading, hasFetched]);
 
   const markAsRead = useCallback(async (notificationId: string) => {
     try {
