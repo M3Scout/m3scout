@@ -146,10 +146,22 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
   const [debug, setDebug] = useState<PermissionsContextType["debug"]>({});
 
   const nowIso = () => new Date().toISOString();
+  const REQUEST_TIMEOUT_MS = 7000;
 
   const fetchPermissions = useCallback(async () => {
     // Always set loading false at the end, no matter what
     try {
+      if (import.meta.env.DEV) {
+        console.log("[Permissions] START permissions fetch", {
+          userId: user?.id ?? null,
+          email: user?.email ?? null,
+          isAdmin,
+          isPlayer,
+          isApproved,
+          authLoading,
+        });
+      }
+
       if (!user) {
         setPermissions(null);
         setIsOwner(false);
@@ -172,6 +184,24 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
       // Set linked player ID from auth context
       setLinkedPlayerId(authLinkedPlayerId);
 
+      // Supabase queries return a "thenable" (PromiseLike), not always a real Promise in TS.
+      // Wrap with Promise.resolve so we can race with a timeout reliably.
+      const withTimeout = async <T,>(promiseLike: PromiseLike<T>, label: string): Promise<T> => {
+        let timeoutId: number | undefined;
+        const timeoutPromise = new Promise<T>((_, reject) => {
+          timeoutId = window.setTimeout(() => {
+            reject(new Error(`Timeout ao buscar ${label}`));
+          }, REQUEST_TIMEOUT_MS);
+        });
+
+        const promise = Promise.resolve(promiseLike);
+        try {
+          return await Promise.race([promise, timeoutPromise]);
+        } finally {
+          if (timeoutId) window.clearTimeout(timeoutId);
+        }
+      };
+
       // Fetch permissions - this might fail for new users (no row yet)
       setDebug((prev) => ({
         ...prev,
@@ -183,11 +213,14 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
         },
       }));
 
-      const { data: permsData, error: permsError, status: permsStatus, statusText: permsStatusText } = await supabase
-        .from("user_permissions")
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle(); // Use maybeSingle to avoid error on no row
+      const { data: permsData, error: permsError, status: permsStatus, statusText: permsStatusText } = await withTimeout(
+        supabase
+          .from("user_permissions")
+          .select("*")
+          .eq("user_id", user.id)
+          .maybeSingle(), // Use maybeSingle to avoid error on no row
+        "user_permissions"
+      );
 
       if (permsError) {
         console.error("[Permissions] Error fetching permissions:", permsError.code, permsError.message);
@@ -235,11 +268,14 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
         },
       }));
 
-      const { data: roleData, error: roleError, status: roleStatus, statusText: roleStatusText } = await supabase
-        .from("user_roles")
-        .select("is_owner, status")
-        .eq("user_id", user.id)
-        .maybeSingle();
+      const { data: roleData, error: roleError, status: roleStatus, statusText: roleStatusText } = await withTimeout(
+        supabase
+          .from("user_roles")
+          .select("is_owner, status")
+          .eq("user_id", user.id)
+          .maybeSingle(),
+        "user_roles (role info)"
+      );
 
       if (roleError) {
         console.error("[Permissions] Error fetching role info:", roleError.code, roleError.message);
@@ -361,9 +397,67 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
 
       setIsOwner(roleData?.is_owner ?? false);
       setUserStatus((roleData?.status as "active" | "suspended") ?? "active");
+
+      if (import.meta.env.DEV) {
+        console.log("[Permissions] SUCCESS permissions fetch", {
+          userId: user.id,
+          isAdmin,
+          isPlayer,
+          isApproved,
+          status: (roleData?.status as string | undefined) ?? null,
+          isOwner: roleData?.is_owner ?? null,
+          hasDbPermissionsRow: Boolean(permsData),
+        });
+      }
     } catch (error) {
       console.error("[Permissions] Unexpected error in fetchPermissions:", error);
       setPermissions(defaultPermissions);
+
+      // Ensure debug reflects failure if we were in-flight
+      setDebug((prev) => {
+        const startedAtFallback = prev.permissionsFetch?.startedAt ?? nowIso();
+        return {
+          ...prev,
+          permissionsFetch:
+            prev.permissionsFetch?.stage === "start"
+              ? {
+                  ...prev.permissionsFetch,
+                  stage: "error",
+                  finishedAt: nowIso(),
+                  status: 0,
+                  statusText: "exception",
+                  error: {
+                    code: "EXCEPTION",
+                    message: (error as any)?.message ?? "Erro inesperado ao buscar permissões",
+                  },
+                }
+              : prev.permissionsFetch,
+          roleFetch:
+            prev.roleFetch?.stage === "start"
+              ? {
+                  ...prev.roleFetch,
+                  stage: "error",
+                  finishedAt: nowIso(),
+                  status: 0,
+                  statusText: "exception",
+                  error: {
+                    code: "EXCEPTION",
+                    message: (error as any)?.message ?? "Erro inesperado ao buscar role info",
+                  },
+                }
+              : prev.roleFetch,
+        };
+      });
+
+      if (import.meta.env.DEV) {
+        console.log("[Permissions] ERROR permissions fetch", {
+          userId: user?.id ?? null,
+          error: {
+            message: (error as any)?.message,
+            stack: (error as any)?.stack,
+          },
+        });
+      }
     } finally {
       // CRITICAL: Always set loading to false
       setLoading(false);

@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -26,6 +26,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   } = useAuth();
   const {
     loading: permissionsLoading,
+    userStatus,
     refreshPermissions,
     debug: permissionsDebug,
   } = usePermissions();
@@ -36,6 +37,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   const isLoading = authLoading || rolesLoading || permissionsLoading;
   const isDev = import.meta.env.DEV;
+  const loadingSinceRef = useRef<number | null>(null);
 
   const maskEmail = (email?: string | null) => {
     if (!email) return null;
@@ -58,19 +60,43 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     }
   };
 
-  // Fail-safe timeout: if loading takes too long, show error state
+  const handleLogout = async () => {
+    console.log("[AUTH] signOut start");
+    try {
+      await signOut();
+      console.log("[AUTH] signOut success");
+    } catch (error) {
+      console.error("[AUTH] signOut error:", error);
+    } finally {
+      console.log("[AUTH] signOut redirect fallback");
+      window.location.href = "/app/auth";
+    }
+  };
+
+  // Fail-safe timeout: don't allow "loading" to persist indefinitely.
+  // IMPORTANT: avoid timer reset loops if flags toggle briefly.
   useEffect(() => {
-    if (!isLoading) {
-      setTimedOut(false);
-      return;
+    if (isLoading && loadingSinceRef.current == null) {
+      loadingSinceRef.current = Date.now();
     }
 
-    const timer = setTimeout(() => {
-      setTimedOut(true);
-    }, LOADING_TIMEOUT_MS);
-
-    return () => clearTimeout(timer);
+    if (!isLoading) {
+      loadingSinceRef.current = null;
+      setTimedOut(false);
+    }
   }, [isLoading]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!loadingSinceRef.current) return;
+      const elapsed = Date.now() - loadingSinceRef.current;
+      if (elapsed >= LOADING_TIMEOUT_MS) {
+        setTimedOut(true);
+      }
+    }, 250);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Timeout reached - show error state with logout option
   if (timedOut) {
@@ -129,7 +155,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
             <Button variant="outline" onClick={handleRetry} disabled={retrying}>
               {retrying ? "Tentando..." : "Tentar novamente"}
             </Button>
-            <Button variant="destructive" onClick={() => signOut()}>
+            <Button variant="destructive" onClick={handleLogout}>
               Sair da conta
             </Button>
           </div>
@@ -138,7 +164,8 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  // Show loading while auth, roles, or permissions are being fetched
+  // ===== Required RBAC order =====
+  // 1) rolesLoading/auth/permissions -> loader (no redirect)
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -156,29 +183,32 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   }
 
   // RBAC Decision Log (dev only) - ALWAYS log before decision
-  const decision = isAdmin ? "ALLOW_ADMIN" : (isApproved ? "ALLOW" : "REDIRECT_PENDING");
+  const decision = isAdmin
+    ? "ALLOW_ADMIN"
+    : !isApproved || userStatus !== "active"
+      ? "REDIRECT_PENDING"
+      : "ALLOW";
   
   if (import.meta.env.DEV) {
     console.log("[RBAC] Access decision:", {
       userId: user.id,
       email: maskEmail(user.email),
-      roles,
+      resolvedRoles: roles,
       isAdmin,
       isApproved,
       rolesLoading,
+      permissionsLoading,
+      status: userStatus,
       decision,
       route: location.pathname,
     });
   }
 
-  // CRITICAL: Admin bypass - ADMIN never goes to pending-access
-  if (isAdmin) {
-    console.log("[RBAC] Admin bypass - allowing access");
-    return <>{children}</>;
-  }
+  // 2) admin bypass -> allow immediately (do NOT check pending/status)
+  if (isAdmin) return <>{children}</>;
 
-  // Logged in but no valid role → redirect to pending access page
-  if (!isApproved) {
+  // 3) non-admin: enforce approval + active status
+  if (!isApproved || userStatus !== "active") {
     return <Navigate to="/pending-access" replace />;
   }
 
