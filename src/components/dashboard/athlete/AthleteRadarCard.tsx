@@ -5,13 +5,6 @@ import { motion } from "framer-motion";
 import { fadeInUp } from "@/lib/animations";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import {
-  ResponsiveContainer,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  Radar,
-} from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 
 interface AthleteRadarCardProps {
@@ -28,12 +21,14 @@ interface AttributeScores {
   confidence: number | null;
 }
 
-const ATTRIBUTE_CONFIG = [
-  { key: "ata", label: "ATA", fullLabel: "Ataque", color: "hsl(var(--primary))" },
-  { key: "tec", label: "TÉC", fullLabel: "Técnica", color: "hsl(217, 91%, 60%)" },
-  { key: "tat", label: "TÁT", fullLabel: "Tática", color: "hsl(142, 71%, 45%)" },
-  { key: "def", label: "DEF", fullLabel: "Defesa", color: "hsl(45, 93%, 47%)" },
-  { key: "cri", label: "CRI", fullLabel: "Criatividade", color: "hsl(280, 87%, 60%)" },
+// Fixed positions for 5-point radar (pentagon)
+// Order: ATA (top), TÉC (right), TÁT (bottom-right), DEF (bottom-left), CRI (left)
+const ATTRIBUTES = [
+  { key: "ata", label: "ATA", fullLabel: "Ataque", angle: -90 },
+  { key: "tec", label: "TÉC", fullLabel: "Técnica", angle: -18 },
+  { key: "tat", label: "TÁT", fullLabel: "Tática", angle: 54 },
+  { key: "def", label: "DEF", fullLabel: "Defesa", angle: 126 },
+  { key: "cri", label: "CRI", fullLabel: "Criatividade", angle: 198 },
 ];
 
 const getConfidenceLabel = (confidence: number | null): { label: string; variant: "default" | "secondary" | "outline" } => {
@@ -42,6 +37,15 @@ const getConfidenceLabel = (confidence: number | null): { label: string; variant
   if (confidence >= 0.4) return { label: "Média Confiança", variant: "secondary" };
   return { label: "Baixa Confiança", variant: "outline" };
 };
+
+// Convert polar to cartesian coordinates
+function polarToCartesian(centerX: number, centerY: number, radius: number, angleInDegrees: number) {
+  const angleInRadians = (angleInDegrees * Math.PI) / 180;
+  return {
+    x: centerX + radius * Math.cos(angleInRadians),
+    y: centerY + radius * Math.sin(angleInRadians),
+  };
+}
 
 export function AthleteRadarCard({ athleteId, athletePosition }: AthleteRadarCardProps) {
   const [loading, setLoading] = useState(true);
@@ -77,23 +81,31 @@ export function AthleteRadarCard({ athleteId, athletePosition }: AthleteRadarCar
     fetchScores();
   }, [athleteId]);
 
-  const chartData = scores
-    ? ATTRIBUTE_CONFIG.map((attr) => ({
-        attribute: attr.label,
-        fullLabel: attr.fullLabel,
-        value: scores[attr.key as keyof AttributeScores] ?? 0,
-        fullMark: 100,
-      }))
-    : [];
-
-  const hasData = scores && chartData.some((d) => d.value > 0);
+  const hasData = scores && Object.values(scores).some((v) => v !== null && v > 0);
   const confidenceInfo = getConfidenceLabel(scores?.confidence ?? null);
+
+  // SVG dimensions
+  const size = 180;
+  const center = size / 2;
+  const maxRadius = 65;
+  const gridLevels = [0.33, 0.66, 1]; // 3 grid lines only
+
+  // Calculate polygon points based on scores
+  const getPolygonPoints = () => {
+    if (!scores) return "";
+    return ATTRIBUTES.map((attr) => {
+      const value = (scores[attr.key as keyof AttributeScores] as number) || 0;
+      const normalizedValue = Math.min(value / 100, 1);
+      const point = polarToCartesian(center, center, maxRadius * normalizedValue, attr.angle);
+      return `${point.x},${point.y}`;
+    }).join(" ");
+  };
 
   if (loading) {
     return (
       <motion.div 
         {...fadeInUp}
-        className="rounded-[var(--radius-card)] bg-zinc-900/60 backdrop-blur-sm shadow-sm overflow-hidden flex-1 flex items-center justify-center min-h-[300px]"
+        className="rounded-[var(--radius-card)] bg-zinc-900/60 backdrop-blur-sm shadow-sm overflow-hidden flex-1 flex items-center justify-center min-h-[280px]"
       >
         <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" />
       </motion.div>
@@ -132,53 +144,119 @@ export function AthleteRadarCard({ athleteId, athletePosition }: AthleteRadarCar
         </Tooltip>
       </div>
 
-      {/* Radar Chart */}
-      <div className="px-4 py-4 flex-1 flex items-center justify-center">
+      {/* Custom SVG Radar Chart */}
+      <div className="px-6 py-6 flex-1 flex items-center justify-center">
         {hasData ? (
-          <div className="w-full h-[220px] relative">
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart data={chartData} cx="50%" cy="50%" outerRadius="70%">
-                <PolarGrid stroke="hsl(var(--border))" strokeOpacity={0.3} />
-                <PolarAngleAxis
-                  dataKey="attribute"
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11, fontWeight: 500 }}
-                />
-                <Radar
-                  name="Atributos"
-                  dataKey="value"
-                  stroke="hsl(var(--primary))"
-                  fill="hsl(var(--primary))"
-                  fillOpacity={0.25}
-                  strokeWidth={2}
-                />
-              </RadarChart>
-            </ResponsiveContainer>
+          <div className="relative">
+            <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+              <defs>
+                {/* Gradient for polygon fill */}
+                <linearGradient id="radarGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.4" />
+                  <stop offset="100%" stopColor="hsl(270, 70%, 60%)" stopOpacity="0.25" />
+                </linearGradient>
+              </defs>
 
-            {/* Value badges around chart */}
-            <div className="absolute inset-0 pointer-events-none">
-              {chartData.map((item, index) => {
-                const angle = (index / chartData.length) * 2 * Math.PI - Math.PI / 2;
-                const radius = 85;
-                const x = 50 + Math.cos(angle) * (radius / 2.5);
-                const y = 50 + Math.sin(angle) * (radius / 2.5);
+              {/* Grid circles (low opacity) */}
+              {gridLevels.map((level, i) => {
+                const points = ATTRIBUTES.map((attr) => {
+                  const point = polarToCartesian(center, center, maxRadius * level, attr.angle);
+                  return `${point.x},${point.y}`;
+                }).join(" ");
                 
                 return (
-                  <div
-                    key={item.attribute}
-                    className="absolute transform -translate-x-1/2 -translate-y-1/2"
-                    style={{ left: `${x}%`, top: `${y}%` }}
-                  >
-                    <span className="text-[10px] font-bold text-foreground bg-zinc-900/80 px-1.5 py-0.5 rounded">
-                      {Math.round(item.value)}
-                    </span>
-                  </div>
+                  <polygon
+                    key={i}
+                    points={points}
+                    fill="none"
+                    stroke="hsl(var(--muted-foreground))"
+                    strokeOpacity={0.08}
+                    strokeWidth={1}
+                  />
                 );
               })}
-            </div>
+
+              {/* Axis lines (very subtle) */}
+              {ATTRIBUTES.map((attr) => {
+                const point = polarToCartesian(center, center, maxRadius, attr.angle);
+                return (
+                  <line
+                    key={attr.key}
+                    x1={center}
+                    y1={center}
+                    x2={point.x}
+                    y2={point.y}
+                    stroke="hsl(var(--muted-foreground))"
+                    strokeOpacity={0.06}
+                    strokeWidth={1}
+                  />
+                );
+              })}
+
+              {/* Data polygon */}
+              <polygon
+                points={getPolygonPoints()}
+                fill="url(#radarGradient)"
+                stroke="hsl(var(--primary))"
+                strokeWidth={1.5}
+                strokeLinejoin="round"
+              />
+
+              {/* Data points */}
+              {ATTRIBUTES.map((attr) => {
+                const value = (scores?.[attr.key as keyof AttributeScores] as number) || 0;
+                const normalizedValue = Math.min(value / 100, 1);
+                const point = polarToCartesian(center, center, maxRadius * normalizedValue, attr.angle);
+                
+                return (
+                  <circle
+                    key={attr.key}
+                    cx={point.x}
+                    cy={point.y}
+                    r={3}
+                    fill="hsl(var(--primary))"
+                    stroke="hsl(var(--background))"
+                    strokeWidth={1.5}
+                  />
+                );
+              })}
+            </svg>
+
+            {/* Labels positioned outside the radar */}
+            {ATTRIBUTES.map((attr) => {
+              const labelRadius = maxRadius + 28;
+              const point = polarToCartesian(center, center, labelRadius, attr.angle);
+              const value = (scores?.[attr.key as keyof AttributeScores] as number) || 0;
+              
+              return (
+                <Tooltip key={attr.key}>
+                  <TooltipTrigger asChild>
+                    <div
+                      className="absolute flex flex-col items-center cursor-help"
+                      style={{
+                        left: point.x,
+                        top: point.y,
+                        transform: "translate(-50%, -50%)",
+                      }}
+                    >
+                      <span className="text-[11px] font-semibold text-foreground">
+                        {attr.label}
+                      </span>
+                      <span className="text-[10px] font-medium text-primary">
+                        {Math.round(value)}
+                      </span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs">
+                    {attr.fullLabel}: {Math.round(value)}/100
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
           </div>
         ) : (
-          <div className="text-center py-8">
-            <Hexagon className="w-12 h-12 mx-auto mb-3 text-zinc-700" />
+          <div className="text-center py-6">
+            <Hexagon className="w-10 h-10 mx-auto mb-3 text-zinc-700" />
             <p className="text-sm text-muted-foreground">Sem dados suficientes</p>
             <p className="text-[11px] text-zinc-600 mt-1">
               Jogue mais partidas para gerar seu radar
@@ -191,7 +269,7 @@ export function AthleteRadarCard({ athleteId, athletePosition }: AthleteRadarCar
       <div className="px-4 py-3 border-t border-zinc-800/30 bg-zinc-900/30 flex items-center justify-between">
         <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
           <Info className="w-3 h-3" />
-          <span>Calculado a partir das estatísticas de jogo</span>
+          <span>Calculado das estatísticas</span>
         </div>
         <Link 
           to={`/app/players/${athleteId}?tab=technical`}
