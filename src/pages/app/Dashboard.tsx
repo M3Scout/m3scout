@@ -69,8 +69,16 @@ const Dashboard = () => {
 
   useEffect(() => {
     const fetchDashboardData = async () => {
-      if (import.meta.env.DEV) console.log("[FETCH] Dashboard start");
+      const fetchStart = performance.now();
+      if (import.meta.env.DEV) console.log("[TIMING] Dashboard fetch start");
+      
       try {
+        // Calculate first day of month for reportsThisMonth query
+        const firstDayOfMonth = new Date();
+        firstDayOfMonth.setDate(1);
+        firstDayOfMonth.setHours(0, 0, 0, 0);
+
+        // ALL queries in parallel (including reportsThisMonth) - no sequential
         const [
           playersResult,
           reportsResult,
@@ -79,9 +87,10 @@ const Dashboard = () => {
           positionsResult,
           recentReportsResult,
           recentLeadsResult,
+          reportsThisMonthResult,
         ] = await Promise.all([
           supabase.from("players").select("id", { count: "exact", head: true }).or("is_archived.is.null,is_archived.eq.false"),
-          supabase.from("scouting_reports").select("id", { count: "exact", head: true }),
+          supabase.from("scouting_reports").select("id", { count: "exact", head: true }).is("deleted_at", null),
           supabase.from("leads").select("id", { count: "exact", head: true }),
           supabase
             .from("players")
@@ -101,6 +110,7 @@ const Dashboard = () => {
               players (full_name),
               competitions (name)
             `)
+            .is("deleted_at", null)
             .order("created_at", { ascending: false })
             .limit(5),
           supabase
@@ -108,21 +118,24 @@ const Dashboard = () => {
             .select("id, name, subject, created_at, status")
             .order("created_at", { ascending: false })
             .limit(5),
+          // This was in series before - now parallel!
+          supabase
+            .from("scouting_reports")
+            .select("id", { count: "exact", head: true })
+            .is("deleted_at", null)
+            .gte("created_at", firstDayOfMonth.toISOString()),
         ]);
 
-        const firstDayOfMonth = new Date();
-        firstDayOfMonth.setDate(1);
-        firstDayOfMonth.setHours(0, 0, 0, 0);
-        
-        const { count: reportsThisMonth } = await supabase
-          .from("scouting_reports")
-          .select("id", { count: "exact", head: true })
-          .gte("created_at", firstDayOfMonth.toISOString());
+        if (import.meta.env.DEV) {
+          console.log("[TIMING] Dashboard queries complete", {
+            duration: `${Math.round(performance.now() - fetchStart)}ms`
+          });
+        }
 
         setStats({
           totalPlayers: playersResult.count || 0,
           totalReports: reportsResult.count || 0,
-          reportsThisMonth: reportsThisMonth || 0,
+          reportsThisMonth: reportsThisMonthResult.count || 0,
           totalLeads: leadsResult.count || 0,
           expiringContracts: contractsResult.count || 0,
         });
