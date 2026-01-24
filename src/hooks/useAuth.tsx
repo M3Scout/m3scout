@@ -15,9 +15,23 @@ const ROLE_PRIORITY: AppRole[] = ["admin", "scout", "editor", "viewer", "player"
 const RBAC_BACKOFF_MS = [500, 1200, 2500];
 const RBAC_ATTEMPT_TIMEOUT_MS = 4000;
 
-// Cache configuration
+// Cache configuration - use localStorage for persistence across tabs/sessions
 const RBAC_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 const RBAC_CACHE_KEY = "m3_rbac_v2";
+const RBAC_CACHE_KEY_PERSISTENT = "m3_rbac_v2_persistent"; // localStorage for cold starts
+
+// Performance timing helper
+const logTiming = (label: string, startTime?: number) => {
+  if (!import.meta.env.DEV) return;
+  const now = performance.now();
+  const appStart = (window as any).__APP_MOUNT_START ?? now;
+  const elapsed = startTime != null ? now - startTime : 0;
+  console.log(`[TIMING] ${label}`, {
+    sinceAppMount: `${Math.round(now - appStart)}ms`,
+    ...(startTime != null && { duration: `${Math.round(elapsed)}ms` }),
+  });
+  return now;
+};
 
 // ============ PERMISSIONS TYPES ============
 export interface UserPermissions {
@@ -164,12 +178,23 @@ type RbacCachePayload = {
 
 function readCache(userId: string): RbacCachePayload | null {
   try {
-    const raw = window.sessionStorage.getItem(RBAC_CACHE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as RbacCachePayload;
-    if (!parsed?.userId || parsed.userId !== userId) return null;
-    if (!parsed.fetchedAt || Date.now() - parsed.fetchedAt > RBAC_CACHE_TTL_MS) return null;
-    return parsed;
+    // First try sessionStorage (same-tab, more recent)
+    const rawSession = window.sessionStorage.getItem(RBAC_CACHE_KEY);
+    if (rawSession) {
+      const parsed = JSON.parse(rawSession) as RbacCachePayload;
+      if (parsed?.userId === userId && parsed.fetchedAt && Date.now() - parsed.fetchedAt <= RBAC_CACHE_TTL_MS) {
+        return parsed;
+      }
+    }
+    // Fallback to localStorage (persistent across tabs/cold starts)
+    const rawLocal = window.localStorage.getItem(RBAC_CACHE_KEY_PERSISTENT);
+    if (rawLocal) {
+      const parsed = JSON.parse(rawLocal) as RbacCachePayload;
+      if (parsed?.userId === userId && parsed.fetchedAt && Date.now() - parsed.fetchedAt <= RBAC_CACHE_TTL_MS) {
+        return parsed;
+      }
+    }
+    return null;
   } catch {
     return null;
   }
@@ -177,7 +202,9 @@ function readCache(userId: string): RbacCachePayload | null {
 
 function writeCache(payload: RbacCachePayload) {
   try {
-    window.sessionStorage.setItem(RBAC_CACHE_KEY, JSON.stringify(payload));
+    const json = JSON.stringify(payload);
+    window.sessionStorage.setItem(RBAC_CACHE_KEY, json);
+    window.localStorage.setItem(RBAC_CACHE_KEY_PERSISTENT, json);
   } catch {
     // ignore cache failures
   }
@@ -186,6 +213,7 @@ function writeCache(payload: RbacCachePayload) {
 function clearCache() {
   try {
     window.sessionStorage.removeItem(RBAC_CACHE_KEY);
+    window.localStorage.removeItem(RBAC_CACHE_KEY_PERSISTENT);
   } catch {
     // ignore
   }
@@ -579,24 +607,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ============ INIT + AUTH STATE CHANGE ============
   useEffect(() => {
+    const authStart = logTiming("Auth init start");
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (import.meta.env.DEV) {
-          console.log("[Auth] state changed:", event, session?.user?.id);
-        }
+        logTiming("Auth state changed: " + event);
         setSession(session);
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          // Fast path: use cache
+          // Fast path: use cache (now includes localStorage for cold starts!)
           const cached = readCache(session.user.id);
           if (cached) {
+            logTiming("RBAC cache hit (localStorage/sessionStorage)");
             applyRbacPayload(cached, true);
             setLoading(false);
-            // Revalidate in background
+            // Revalidate in background - NON-BLOCKING
             void fetchRbac(session.user.id, { background: true });
           } else {
+            const rbacStart = logTiming("RBAC fetch start (no cache)");
             await fetchRbac(session.user.id);
+            logTiming("RBAC fetch complete", rbacStart);
             setLoading(false);
           }
         } else {
@@ -619,10 +650,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Check for existing session
     const initSession = async () => {
       try {
-        if (import.meta.env.DEV) {
-          console.log("[Auth] init session...");
-        }
+        logTiming("Auth getSession start");
+        const sessionStart = performance.now();
         const { data: { session }, error } = await supabase.auth.getSession();
+        logTiming("Auth getSession complete", sessionStart);
 
         if (error) {
           console.error("[Auth] session error:", error.code, error.message);
@@ -638,14 +669,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (session?.user) {
           const cached = readCache(session.user.id);
           if (cached) {
+            logTiming("RBAC cache hit (init)");
             applyRbacPayload(cached, true);
             setLoading(false);
+            // Background revalidate - NON-BLOCKING
             void fetchRbac(session.user.id, { background: true });
           } else {
+            const rbacStart = logTiming("RBAC fetch start (init, no cache)");
             await fetchRbac(session.user.id);
+            logTiming("RBAC fetch complete (init)", rbacStart);
             setLoading(false);
           }
         } else {
+          logTiming("No session - public user");
           setRolesLoading(false);
           setPermissionsLoading(false);
           setLoading(false);

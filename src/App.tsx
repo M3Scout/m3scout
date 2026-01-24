@@ -52,7 +52,18 @@ import LiveMatchGame from "./pages/app/LiveMatchGame";
 import LiveMatchReview from "./pages/app/LiveMatchReview";
 import Teams from "./pages/app/Teams";
 
-const queryClient = new QueryClient();
+// React Query config - prevent refetching on mount/focus for better performance
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60 * 1000, // 1 minute - data stays fresh
+      gcTime: 5 * 60 * 1000, // 5 minutes - keep in cache (formerly cacheTime)
+      refetchOnWindowFocus: false, // Don't refetch on tab focus (we handle this manually for RBAC)
+      refetchOnMount: false, // Don't refetch if data exists
+      retry: 1, // Only 1 retry for failed queries
+    },
+  },
+});
 
 const App = () => (
   <ThemeProvider attribute="class" defaultTheme="dark" storageKey="m3-admin-theme">
