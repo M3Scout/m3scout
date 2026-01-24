@@ -26,16 +26,12 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     isAdmin,
     isApproved,
     refreshRoles,
+    permissionsLoading,
+    permissionsError,
+    userStatus,
     debug: authDebug,
   } = useAuth();
-  const {
-    loading: permissionsLoading,
-    error: permissionsError,
-    permissionsError: permissionsErrorFlag,
-    userStatus,
-    refreshPermissions,
-    debug: permissionsDebug,
-  } = usePermissions();
+  const { refreshPermissions } = usePermissions();
   const location = useLocation();
   const [showDevDetails, setShowDevDetails] = useState(false);
   const [retrying, setRetrying] = useState(false);
@@ -47,7 +43,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   const isLoading = authLoading || rolesLoading || permissionsLoading;
   // Technical error from hooks (only set after retries exhausted)
-  const hasHookError = Boolean(rolesError || permissionsErrorFlag || permissionsError);
+  const hasHookError = Boolean(rolesError || permissionsError);
   const isDev = import.meta.env.DEV;
   const loadingSinceRef = useRef<number | null>(null);
 
@@ -184,9 +180,9 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       isApproved,
     },
     requests: {
-      user_roles: authDebug?.rolesFetch ?? null,
-      user_permissions: permissionsDebug?.permissionsFetch ?? null,
-      user_roles_roleinfo: permissionsDebug?.roleFetch ?? null,
+      fetchStage: authDebug?.fetchStage ?? null,
+      fetchSource: authDebug?.fetchSource ?? null,
+      error: authDebug?.error ?? null,
     },
   },
   null,

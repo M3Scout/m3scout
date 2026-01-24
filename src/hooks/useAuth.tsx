@@ -1,8 +1,7 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
-import { retryWithBackoff } from "@/lib/retry";
 import { classifyRbacError } from "@/lib/rbacError";
 
 export type AppRole = Database["public"]["Enums"]["app_role"];
@@ -16,6 +15,183 @@ const ROLE_PRIORITY: AppRole[] = ["admin", "scout", "editor", "viewer", "player"
 const RBAC_BACKOFF_MS = [500, 1200, 2500];
 const RBAC_ATTEMPT_TIMEOUT_MS = 4000;
 
+// Cache configuration
+const RBAC_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const RBAC_CACHE_KEY = "m3_rbac_v2";
+
+// ============ PERMISSIONS TYPES ============
+export interface UserPermissions {
+  app_view: boolean;
+  players_view: boolean;
+  players_create: boolean;
+  players_edit: boolean;
+  players_delete: boolean;
+  players_export: boolean;
+  compare_view: boolean;
+  reports_view: boolean;
+  reports_create: boolean;
+  reports_edit: boolean;
+  reports_delete: boolean;
+  reports_export: boolean;
+  live_match_view: boolean;
+  live_match_log: boolean;
+  competitions_view: boolean;
+  competitions_create: boolean;
+  competitions_edit: boolean;
+  competitions_delete: boolean;
+  news_view: boolean;
+  news_create: boolean;
+  news_edit: boolean;
+  news_delete: boolean;
+  news_publish: boolean;
+  leads_view: boolean;
+  leads_create: boolean;
+  leads_edit: boolean;
+  leads_delete: boolean;
+  leads_export: boolean;
+  users_manage: boolean;
+}
+
+// Admin gets everything
+const ADMIN_PERMISSIONS: UserPermissions = {
+  app_view: true,
+  players_view: true,
+  players_create: true,
+  players_edit: true,
+  players_delete: true,
+  players_export: true,
+  compare_view: true,
+  reports_view: true,
+  reports_create: true,
+  reports_edit: true,
+  reports_delete: true,
+  reports_export: true,
+  live_match_view: true,
+  live_match_log: true,
+  competitions_view: true,
+  competitions_create: true,
+  competitions_edit: true,
+  competitions_delete: true,
+  news_view: true,
+  news_create: true,
+  news_edit: true,
+  news_delete: true,
+  news_publish: true,
+  leads_view: true,
+  leads_create: true,
+  leads_edit: true,
+  leads_delete: true,
+  leads_export: true,
+  users_manage: true,
+};
+
+// Player role: read-only access to their own data
+const PLAYER_PERMISSIONS: UserPermissions = {
+  app_view: true,
+  players_view: true,
+  players_create: false,
+  players_edit: false,
+  players_delete: false,
+  players_export: false,
+  compare_view: false,
+  reports_view: true,
+  reports_create: false,
+  reports_edit: false,
+  reports_delete: false,
+  reports_export: false,
+  live_match_view: true,
+  live_match_log: false,
+  competitions_view: true,
+  competitions_create: false,
+  competitions_edit: false,
+  competitions_delete: false,
+  news_view: false,
+  news_create: false,
+  news_edit: false,
+  news_delete: false,
+  news_publish: false,
+  leads_view: false,
+  leads_create: false,
+  leads_edit: false,
+  leads_delete: false,
+  leads_export: false,
+  users_manage: false,
+};
+
+// Default permissions: DENY BY DEFAULT
+const DEFAULT_PERMISSIONS: UserPermissions = {
+  app_view: false,
+  players_view: false,
+  players_create: false,
+  players_edit: false,
+  players_delete: false,
+  players_export: false,
+  compare_view: false,
+  reports_view: false,
+  reports_create: false,
+  reports_edit: false,
+  reports_delete: false,
+  reports_export: false,
+  live_match_view: false,
+  live_match_log: false,
+  competitions_view: false,
+  competitions_create: false,
+  competitions_edit: false,
+  competitions_delete: false,
+  news_view: false,
+  news_create: false,
+  news_edit: false,
+  news_delete: false,
+  news_publish: false,
+  leads_view: false,
+  leads_create: false,
+  leads_edit: false,
+  leads_delete: false,
+  leads_export: false,
+  users_manage: false,
+};
+
+// ============ CACHE TYPES ============
+type RbacCachePayload = {
+  userId: string;
+  roles: AppRole[];
+  linkedPlayerId: string | null;
+  isOwner: boolean;
+  userStatus: "active" | "suspended" | null;
+  permissions: UserPermissions | null; // null means use role-based defaults
+  fetchedAt: number;
+};
+
+function readCache(userId: string): RbacCachePayload | null {
+  try {
+    const raw = window.sessionStorage.getItem(RBAC_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as RbacCachePayload;
+    if (!parsed?.userId || parsed.userId !== userId) return null;
+    if (!parsed.fetchedAt || Date.now() - parsed.fetchedAt > RBAC_CACHE_TTL_MS) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function writeCache(payload: RbacCachePayload) {
+  try {
+    window.sessionStorage.setItem(RBAC_CACHE_KEY, JSON.stringify(payload));
+  } catch {
+    // ignore cache failures
+  }
+}
+
+function clearCache() {
+  try {
+    window.sessionStorage.removeItem(RBAC_CACHE_KEY);
+  } catch {
+    // ignore
+  }
+}
+
+// ============ HELPERS ============
 function withTimeout<T>(promiseLike: PromiseLike<T>, label: string, ms: number): Promise<T> {
   let timeoutId: number | undefined;
   const timeoutPromise = new Promise<T>((_, reject) => {
@@ -32,6 +208,15 @@ function sortRolesByPriority(roles: AppRole[]) {
   return [...roles].sort((a, b) => (idx.get(a) ?? 999) - (idx.get(b) ?? 999));
 }
 
+function sleep(ms: number) {
+  return new Promise<void>((resolve) => window.setTimeout(resolve, ms));
+}
+
+// ============ DEDUPE SINGLETON ============
+// Global promise to dedupe concurrent RBAC fetches
+let inflightRbacPromise: Promise<RbacCachePayload | null> | null = null;
+
+// ============ CONTEXT ============
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -44,6 +229,17 @@ interface AuthContextType {
   rolesLoading: boolean;
   /** Error type if roles fetch failed: 'timeout' | 'abort' | 'network' | 'exception' | null */
   rolesError: string | null;
+  /** Best-effort cache indicator */
+  rolesFromCache: boolean;
+  rolesFetchedAt: number | null;
+
+  // Permissions (now centralized)
+  permissions: UserPermissions | null;
+  permissionsLoading: boolean;
+  permissionsError: string | null;
+  isOwner: boolean;
+  userStatus: "active" | "suspended" | null;
+
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, name: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -54,23 +250,12 @@ interface AuthContextType {
   isInternal: boolean;
   isPlayer: boolean;
 
-  /** DEV diagnostics for profile/access bootstrap */
+  /** DEV diagnostics */
   debug: {
-    rolesFetch?: {
-      stage: "idle" | "start" | "success" | "error";
-      table: "user_roles";
-      query: { user_id: string };
-      startedAt: string;
-      finishedAt?: string;
-      status?: number;
-      statusText?: string;
-      error?: {
-        code?: string;
-        message?: string;
-        details?: string;
-        hint?: string;
-      };
-    };
+    fetchStage: "idle" | "start" | "success" | "error";
+    fetchSource: "fresh" | "cache" | "background" | null;
+    fetchDurationMs?: number;
+    error?: { code?: string; message?: string };
   };
 }
 
@@ -84,279 +269,398 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [rolesError, setRolesError] = useState<string | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [linkedPlayerId, setLinkedPlayerId] = useState<string | null>(null);
-  const [debug, setDebug] = useState<AuthContextType["debug"]>({});
+  const [rolesFromCache, setRolesFromCache] = useState(false);
+  const [rolesFetchedAt, setRolesFetchedAt] = useState<number | null>(null);
 
-  const nowIso = () => new Date().toISOString();
+  // Permissions state (centralized)
+  const [permissions, setPermissions] = useState<UserPermissions | null>(null);
+  const [permissionsLoading, setPermissionsLoading] = useState(true);
+  const [permissionsError, setPermissionsError] = useState<string | null>(null);
+  const [isOwner, setIsOwner] = useState(false);
+  const [userStatus, setUserStatus] = useState<"active" | "suspended" | null>(null);
 
-  const fetchUserRoles = async (userId: string) => {
-    setRolesLoading(true);
-    setRolesError(null); // Reset error at start
-    try {
-      setDebug({
-        rolesFetch: {
-          stage: "start",
-          table: "user_roles",
-          query: { user_id: userId },
-          startedAt: nowIso(),
-        },
-      });
+  const [debug, setDebug] = useState<AuthContextType["debug"]>({
+    fetchStage: "idle",
+    fetchSource: null,
+  });
 
-      if (import.meta.env.DEV) {
-        console.log("[RBAC][Roles] start", {
-          table: "user_roles",
-          query: { user_id: userId },
-          backoffMs: RBAC_BACKOFF_MS,
-          attemptTimeoutMs: RBAC_ATTEMPT_TIMEOUT_MS,
-        });
-      }
+  // Track if we're currently doing a background revalidation
+  const isBackgroundRef = useRef(false);
 
-      const { data, status, statusText } = await retryWithBackoff(
-        async (attempt) => {
-          if (import.meta.env.DEV) {
-            console.log("[RBAC][Roles] attempt", attempt + 1, {
-              table: "user_roles",
-              query: { user_id: userId },
-            });
-          }
+  // ============ CORE RBAC FETCH ============
+  const doRbacFetch = useCallback(async (userId: string): Promise<RbacCachePayload | null> => {
+    const startedMs = performance.now();
 
-          const res = await withTimeout(
-            supabase.from("user_roles").select("role, linked_player_id, status").eq("user_id", userId),
-            "user_roles",
+    if (import.meta.env.DEV) {
+      console.log("[RBAC] fetch start", { userId, backoffMs: RBAC_BACKOFF_MS });
+    }
+
+    let lastErr: unknown;
+
+    for (let attempt = 0; attempt < RBAC_BACKOFF_MS.length + 1; attempt++) {
+      try {
+        if (import.meta.env.DEV) {
+          console.log("[RBAC] attempt", attempt + 1, { userId });
+        }
+
+        // Fetch user_roles
+        const rolesRes = await withTimeout(
+          supabase
+            .from("user_roles")
+            .select("role, linked_player_id, status, is_owner")
+            .eq("user_id", userId),
+          "user_roles",
+          RBAC_ATTEMPT_TIMEOUT_MS
+        );
+
+        if (rolesRes.error) throw rolesRes.error;
+
+        const roleRows = Array.isArray(rolesRes.data) ? rolesRes.data : [];
+        const activeRoles = roleRows.filter((r: any) => r.status === "active");
+        const rolesList = sortRolesByPriority(
+          activeRoles.map((r: any) => r.role).filter(Boolean)
+        );
+
+        const isAdminRole = rolesList.includes("admin");
+        const isPlayerRole = rolesList.includes("player");
+
+        const playerRole = activeRoles.find((r: any) => r.role === "player");
+        const linkedPlayerIdValue = playerRole?.linked_player_id ?? null;
+
+        const isOwnerAny = roleRows.some((r: any) => Boolean(r?.is_owner));
+        const statusValues = roleRows.map((r: any) => r?.status).filter(Boolean);
+        const derivedStatus: "active" | "suspended" | null = statusValues.includes("suspended")
+          ? "suspended"
+          : statusValues.includes("active")
+            ? "active"
+            : null;
+
+        // ADMIN BYPASS: Don't fetch user_permissions for admin
+        let permsFromDb: UserPermissions | null = null;
+        if (!isAdminRole && !isPlayerRole && rolesList.length > 0) {
+          // Only fetch user_permissions for non-admin, non-player roles
+          const permsRes = await withTimeout(
+            supabase
+              .from("user_permissions")
+              .select("*")
+              .eq("user_id", userId)
+              .order("updated_at", { ascending: false })
+              .limit(1),
+            "user_permissions",
             RBAC_ATTEMPT_TIMEOUT_MS
           );
 
-          const { data, error, status, statusText } = res as any;
-          if (error) throw { ...error, status, statusText };
-          return { data, status, statusText };
-        },
-        { backoffMs: RBAC_BACKOFF_MS }
-      );
+          if (permsRes.error) throw permsRes.error;
 
-      if (data && data.length > 0) {
-        // Only count active roles
-        const activeRoles = data.filter((r: any) => r.status === "active");
-        const rolesListRaw = activeRoles.map((r: any) => r.role).filter((r: any) => Boolean(r));
-        const rolesList = sortRolesByPriority(rolesListRaw);
+          const permsRow = Array.isArray(permsRes.data) ? permsRes.data[0] ?? null : null;
+          if (permsRow) {
+            permsFromDb = {
+              ...permsRow,
+              // SECURITY: Force delete=false for non-admins
+              players_delete: false,
+              reports_delete: false,
+              competitions_delete: false,
+              news_delete: false,
+              leads_delete: false,
+            } as UserPermissions;
+          }
+        }
+
+        const fetchedAt = Date.now();
+        const payload: RbacCachePayload = {
+          userId,
+          roles: rolesList,
+          linkedPlayerId: linkedPlayerIdValue,
+          isOwner: isOwnerAny,
+          userStatus: derivedStatus,
+          permissions: permsFromDb,
+          fetchedAt,
+        };
 
         if (import.meta.env.DEV) {
-          console.log("[RBAC] Role resolution:", {
+          console.log("[RBAC] success", {
             userId,
-            rawData: data,
-            activeRoles,
-            resolvedRoles: rolesList,
-            primaryRole: rolesList[0] ?? null,
-            isAdmin: rolesList.includes("admin"),
-            isApproved: rolesList.length > 0,
-            source: "user_roles",
+            roles: rolesList,
+            isAdmin: isAdminRole,
+            isPlayer: isPlayerRole,
+            durationMs: Math.round(performance.now() - startedMs),
           });
         }
 
+        return payload;
+      } catch (e) {
+        lastErr = e;
+        const delay = RBAC_BACKOFF_MS[attempt];
+        if (delay == null) break;
+
+        // Don't retry on 401/403/400
+        const errObj = e as any;
+        const status = errObj?.status ?? errObj?.code;
+        if (status === 401 || status === 403 || status === 400) {
+          if (import.meta.env.DEV) {
+            console.warn("[RBAC] non-retryable error", { status });
+          }
+          break;
+        }
+
+        if (import.meta.env.DEV) {
+          console.log("[RBAC] retry after", delay, "ms");
+        }
+        await sleep(delay);
+      }
+    }
+
+    // All retries exhausted
+    const errorType = classifyRbacError(lastErr);
+    if (import.meta.env.DEV) {
+      console.error("[RBAC] fetch failed", {
+        errorType,
+        error: lastErr,
+        durationMs: Math.round(performance.now() - startedMs),
+      });
+    }
+
+    throw { errorType, originalError: lastErr };
+  }, []);
+
+  // ============ MAIN FETCH WITH DEDUPE + CACHE ============
+  const fetchRbac = useCallback(
+    async (userId: string, opts?: { background?: boolean }) => {
+      const background = Boolean(opts?.background);
+      isBackgroundRef.current = background;
+
+      if (!background) {
+        setRolesLoading(true);
+        setPermissionsLoading(true);
+        setRolesError(null);
+        setPermissionsError(null);
+      }
+
+      setDebug({
+        fetchStage: "start",
+        fetchSource: background ? "background" : "fresh",
+      });
+
+      // DEDUPE: If there's already a fetch in flight, await it
+      if (inflightRbacPromise) {
+        if (import.meta.env.DEV) {
+          console.log("[RBAC] dedupe - awaiting existing fetch");
+        }
+        try {
+          const result = await inflightRbacPromise;
+          if (result) {
+            applyRbacPayload(result, background);
+          }
+        } catch {
+          // Error already handled by original fetch
+        }
+        return;
+      }
+
+      // Start new fetch
+      const fetchPromise = doRbacFetch(userId);
+      inflightRbacPromise = fetchPromise;
+
+      try {
+        const result = await fetchPromise;
+        if (result) {
+          writeCache(result);
+          applyRbacPayload(result, background);
+        }
+      } catch (err: any) {
+        const errorType = err?.errorType ?? classifyRbacError(err);
+
+        setRolesError(errorType);
+        setPermissionsError(errorType);
         setDebug({
-          rolesFetch: {
-            stage: "success",
-            table: "user_roles",
-            query: { user_id: userId },
-            startedAt: nowIso(),
-            finishedAt: nowIso(),
-            status,
-            statusText,
-          },
+          fetchStage: "error",
+          fetchSource: background ? "background" : "fresh",
+          error: { code: errorType, message: err?.originalError?.message ?? String(err) },
         });
 
-        setRoles(rolesList);
-        const playerRole = activeRoles.find((r: any) => r.role === "player");
-        setLinkedPlayerId(playerRole?.linked_player_id ?? null);
-      } else {
-        if (import.meta.env.DEV) console.log("[RBAC][Roles] empty", { userId });
-        setDebug({
-          rolesFetch: {
-            stage: "success",
-            table: "user_roles",
-            query: { user_id: userId },
-            startedAt: nowIso(),
-            finishedAt: nowIso(),
-            status,
-            statusText,
-          },
-        });
-        setRoles([]);
-        setLinkedPlayerId(null);
+        // Keep cached data if available
+        if (!background) {
+          setRolesLoading(false);
+          setPermissionsLoading(false);
+        }
+      } finally {
+        inflightRbacPromise = null;
       }
-    } catch (err) {
-      const errorType = classifyRbacError(err);
-      const errorObj = err as any;
+    },
+    [doRbacFetch]
+  );
+
+  const applyRbacPayload = useCallback(
+    (payload: RbacCachePayload, fromCache: boolean) => {
+      const isAdminRole = payload.roles.includes("admin");
+      const isPlayerRole = payload.roles.includes("player");
+
+      setRoles(payload.roles);
+      setLinkedPlayerId(payload.linkedPlayerId);
+      setIsOwner(payload.isOwner);
+      setUserStatus(payload.userStatus);
+      setRolesFromCache(fromCache);
+      setRolesFetchedAt(payload.fetchedAt);
+      setRolesError(null);
+      setPermissionsError(null);
+
+      // Compute permissions based on role
+      if (isAdminRole) {
+        setPermissions(ADMIN_PERMISSIONS);
+      } else if (isPlayerRole) {
+        setPermissions(PLAYER_PERMISSIONS);
+      } else if (payload.permissions) {
+        setPermissions(payload.permissions);
+      } else {
+        setPermissions(DEFAULT_PERMISSIONS);
+      }
+
+      if (!isBackgroundRef.current) {
+        setRolesLoading(false);
+        setPermissionsLoading(false);
+      }
+
+      setDebug({
+        fetchStage: "success",
+        fetchSource: fromCache ? "cache" : "fresh",
+      });
 
       if (import.meta.env.DEV) {
-        console.error("[RBAC][Roles] error", {
-          errorType,
-          table: "user_roles",
-          query: { user_id: userId },
-          code: errorObj?.code,
-          message: errorObj?.message ?? String(err),
-          status: errorObj?.status,
-          statusText: errorObj?.statusText,
+        console.log("[RBAC] applied", {
+          userId: payload.userId,
+          roles: payload.roles,
+          isAdmin: isAdminRole,
+          isPlayer: isPlayerRole,
+          fromCache,
         });
       }
+    },
+    []
+  );
 
-      setRolesError(errorType);
-      setDebug({
-        rolesFetch: {
-          stage: "error",
-          table: "user_roles",
-          query: { user_id: userId },
-          startedAt: nowIso(),
-          finishedAt: nowIso(),
-          error: {
-            code: errorObj?.code ?? errorType.toUpperCase(),
-            message: errorObj?.message ?? String(err),
-            details: errorObj?.details,
-          },
-        },
-      });
-      setRoles([]);
-      setLinkedPlayerId(null);
-    } finally {
-      setRolesLoading(false);
-    }
-  };
-
-  // Fail-safe timeout: rolesLoading can hang if the roles fetch stalls after login.
-  // IMPORTANT: This is a LAST RESORT timeout. The ProtectedRoute handles slow loading display.
-  // We only set error here after a very long time (20s) to allow retries to complete.
+  // ============ INIT + AUTH STATE CHANGE ============
   useEffect(() => {
-    if (!rolesLoading) return;
-
-    const timeout = setTimeout(() => {
-      console.warn("[Auth] rolesLoading timeout (20s) - forcing roles loading to complete");
-      setRolesLoading(false);
-      // Only set error if roles are still empty after this timeout
-      if (roles.length === 0) {
-        setRolesError("timeout");
-      }
-
-      // Preserve existing debug if present; if it's still "start", flip to timeout error.
-      setDebug((prev) => {
-        const started = prev.rolesFetch?.startedAt ?? nowIso();
-        const isInFlight = prev.rolesFetch?.stage === "start";
-        if (!isInFlight) return prev;
-        return {
-          ...prev,
-          rolesFetch: {
-            stage: "error",
-            table: "user_roles",
-            query: prev.rolesFetch?.query ?? { user_id: user?.id ?? "unknown" },
-            startedAt: started,
-            finishedAt: nowIso(),
-            status: 0,
-            statusText: "timeout",
-            error: {
-              code: "TIMEOUT",
-              message: "Timeout ao buscar user_roles",
-            },
-          },
-        };
-      });
-    }, 20000); // 20 seconds - very last resort
-
-    return () => clearTimeout(timeout);
-  }, [rolesLoading, user?.id, roles.length]);
-
-  // Fail-safe timeout: ensure loading state never hangs indefinitely
-  // This is a last resort - ProtectedRoute handles slow loading UI
-  useEffect(() => {
-    if (!loading) return; // Already finished loading
-    
-    const timeout = setTimeout(() => {
-      console.warn("[Auth] Loading timeout (20s) - forcing auth loading to complete");
-      setLoading(false);
-      setRolesLoading(false);
-    }, 20000); // 20 seconds - last resort
-
-    return () => clearTimeout(timeout);
-  }, [loading]);
-
-  useEffect(() => {
-    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log("[Auth] Auth state changed:", event, session?.user?.id);
+        if (import.meta.env.DEV) {
+          console.log("[Auth] state changed:", event, session?.user?.id);
+        }
         setSession(session);
         setUser(session?.user ?? null);
-        
+
         if (session?.user) {
-          // Fetch roles synchronously before setting loading to false
-          await fetchUserRoles(session.user.id);
+          // Fast path: use cache
+          const cached = readCache(session.user.id);
+          if (cached) {
+            applyRbacPayload(cached, true);
+            setLoading(false);
+            // Revalidate in background
+            void fetchRbac(session.user.id, { background: true });
+          } else {
+            await fetchRbac(session.user.id);
+            setLoading(false);
+          }
         } else {
+          // Signed out
           setRoles([]);
           setLinkedPlayerId(null);
+          setIsOwner(false);
+          setUserStatus(null);
+          setPermissions(null);
+          setRolesFromCache(false);
+          setRolesFetchedAt(null);
           setRolesLoading(false);
+          setPermissionsLoading(false);
+          clearCache();
+          setLoading(false);
         }
-        
-        setLoading(false);
       }
     );
 
-    // THEN check for existing session
+    // Check for existing session
     const initSession = async () => {
       try {
-        console.log("[Auth] Initializing session...");
+        if (import.meta.env.DEV) {
+          console.log("[Auth] init session...");
+        }
         const { data: { session }, error } = await supabase.auth.getSession();
-        
+
         if (error) {
-          console.error("[Auth] Error getting session:", error.code, error.message);
+          console.error("[Auth] session error:", error.code, error.message);
           setLoading(false);
           setRolesLoading(false);
+          setPermissionsLoading(false);
           return;
         }
-        
-        console.log("[Auth] Session loaded:", session?.user?.id ?? "no session");
+
         setSession(session);
         setUser(session?.user ?? null);
-        
+
         if (session?.user) {
-          // Fetch roles before setting loading to false
-          await fetchUserRoles(session.user.id);
+          const cached = readCache(session.user.id);
+          if (cached) {
+            applyRbacPayload(cached, true);
+            setLoading(false);
+            void fetchRbac(session.user.id, { background: true });
+          } else {
+            await fetchRbac(session.user.id);
+            setLoading(false);
+          }
         } else {
           setRolesLoading(false);
+          setPermissionsLoading(false);
+          setLoading(false);
         }
-        
-        setLoading(false);
       } catch (err) {
-        console.error("[Auth] Unexpected error initializing session:", err);
+        console.error("[Auth] init error:", err);
         setLoading(false);
         setRolesLoading(false);
+        setPermissionsLoading(false);
       }
     };
-    
+
     initSession();
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [fetchRbac, applyRbacPayload]);
 
-  const refreshRoles = async () => {
+  // ============ FAIL-SAFE TIMEOUT ============
+  useEffect(() => {
+    if (!rolesLoading && !permissionsLoading) return;
+
+    const timeout = setTimeout(() => {
+      console.warn("[Auth] RBAC timeout (15s) - forcing completion");
+      setRolesLoading(false);
+      setPermissionsLoading(false);
+      if (roles.length === 0) {
+        setRolesError("timeout");
+        setPermissionsError("timeout");
+      }
+    }, 15000);
+
+    return () => clearTimeout(timeout);
+  }, [rolesLoading, permissionsLoading, roles.length]);
+
+  // ============ PUBLIC API ============
+  const refreshRoles = useCallback(async () => {
     if (!user?.id) return;
-    await fetchUserRoles(user.id);
-  };
+    clearCache();
+    await fetchRbac(user.id);
+  }, [user?.id, fetchRbac]);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error: error ? new Error(error.message) : null };
   };
 
   const signUp = async (email: string, password: string, name: string) => {
     const redirectUrl = `${window.location.origin}/app`;
-    
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: redirectUrl,
-        data: {
-          name,
-        },
+        data: { name },
       },
     });
     return { error: error ? new Error(error.message) : null };
@@ -368,6 +672,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null);
     setRoles([]);
     setLinkedPlayerId(null);
+    setIsOwner(false);
+    setUserStatus(null);
+    setPermissions(null);
+    clearCache();
   };
 
   const hasRole = (role: AppRole) => roles.includes(role);
@@ -375,9 +683,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isScout = hasRole("scout");
   const isPlayer = hasRole("player");
   const isInternal = isAdmin || isScout;
-  
-  // User is approved if they have at least one valid role
-  const isApproved = roles.some(role => VALID_ROLES.includes(role));
+  const isApproved = roles.some((role) => VALID_ROLES.includes(role));
 
   return (
     <AuthContext.Provider
@@ -389,7 +695,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         rolesError,
         roles,
         linkedPlayerId,
-        isApproved,
+        rolesFromCache,
+        rolesFetchedAt,
+        permissions,
+        permissionsLoading,
+        permissionsError,
+        isOwner,
+        userStatus,
         signIn,
         signUp,
         signOut,
@@ -397,8 +709,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         hasRole,
         isAdmin,
         isScout,
-        isPlayer,
         isInternal,
+        isPlayer,
+        isApproved,
         debug,
       }}
     >
