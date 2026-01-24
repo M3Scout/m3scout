@@ -161,9 +161,13 @@ export function RequirePermission({ module, action = "view", children }: Require
 
   // Still loading (before timeout)
   if (isLoading) {
+    // CRITICAL: don't block mount while RBAC is loading (otherwise pages won't fire their own fetches).
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      <div className="relative">
+        <div className="pointer-events-none opacity-70">{children}</div>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        </div>
       </div>
     );
   }

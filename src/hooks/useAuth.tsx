@@ -2,11 +2,35 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
+import { retryWithBackoff } from "@/lib/retry";
+import { classifyRbacError } from "@/lib/rbacError";
 
 export type AppRole = Database["public"]["Enums"]["app_role"];
 
 // Valid roles that grant app access
 const VALID_ROLES: AppRole[] = ["admin", "scout", "editor", "viewer", "player"];
+
+// Priority when user has multiple roles
+const ROLE_PRIORITY: AppRole[] = ["admin", "scout", "editor", "viewer", "player"];
+
+const RBAC_BACKOFF_MS = [300, 800, 1500];
+const RBAC_ATTEMPT_TIMEOUT_MS = 1200;
+
+function withTimeout<T>(promiseLike: PromiseLike<T>, label: string, ms: number): Promise<T> {
+  let timeoutId: number | undefined;
+  const timeoutPromise = new Promise<T>((_, reject) => {
+    timeoutId = window.setTimeout(() => reject(new Error(`Timeout ao buscar ${label}`)), ms);
+  });
+  const promise = Promise.resolve(promiseLike);
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    if (timeoutId) window.clearTimeout(timeoutId);
+  });
+}
+
+function sortRolesByPriority(roles: AppRole[]) {
+  const idx = new Map<AppRole, number>(ROLE_PRIORITY.map((r, i) => [r, i]));
+  return [...roles].sort((a, b) => (idx.get(a) ?? 999) - (idx.get(b) ?? 999));
+}
 
 interface AuthContextType {
   user: User | null;
@@ -77,53 +101,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
       });
 
-      console.log("[Auth] Fetching roles for user:", userId);
-      
-      const { data, error, status, statusText } = await supabase
-        .from("user_roles")
-        .select("role, linked_player_id, status")
-        .eq("user_id", userId);
+      if (import.meta.env.DEV) {
+        console.log("[RBAC][Roles] start", {
+          table: "user_roles",
+          query: { user_id: userId },
+          backoffMs: RBAC_BACKOFF_MS,
+          attemptTimeoutMs: RBAC_ATTEMPT_TIMEOUT_MS,
+        });
+      }
 
-      if (error) {
-        console.error("[Auth] Error fetching user roles:", error.code, error.message);
-        setRolesError("network");
-        setDebug({
-          rolesFetch: {
-            stage: "error",
-            table: "user_roles",
-            query: { user_id: userId },
-            startedAt: nowIso(),
-            finishedAt: nowIso(),
-            status,
-            statusText,
-            error: {
-              code: (error as any)?.code,
-              message: (error as any)?.message,
-              details: (error as any)?.details,
-              hint: (error as any)?.hint,
-            },
-          },
-        });
-        setRoles([]);
-        setLinkedPlayerId(null);
-      } else if (data && data.length > 0) {
-        console.log("[Auth] Roles fetched:", data);
-        
+      const { data, status, statusText } = await retryWithBackoff(
+        async (attempt) => {
+          if (import.meta.env.DEV) {
+            console.log("[RBAC][Roles] attempt", attempt + 1, {
+              table: "user_roles",
+              query: { user_id: userId },
+            });
+          }
+
+          const res = await withTimeout(
+            supabase.from("user_roles").select("role, linked_player_id, status").eq("user_id", userId),
+            "user_roles",
+            RBAC_ATTEMPT_TIMEOUT_MS
+          );
+
+          const { data, error, status, statusText } = res as any;
+          if (error) throw { ...error, status, statusText };
+          return { data, status, statusText };
+        },
+        { backoffMs: RBAC_BACKOFF_MS }
+      );
+
+      if (data && data.length > 0) {
         // Only count active roles
-        const activeRoles = data.filter(r => r.status === 'active');
-        const rolesList = activeRoles.map((r) => r.role);
-        
-        // RBAC Debug log
-        console.log("[RBAC] Role resolution:", {
-          userId,
-          rawData: data,
-          activeRoles,
-          resolvedRoles: rolesList,
-          isAdmin: rolesList.includes('admin'),
-          isApproved: rolesList.length > 0,
-          source: 'user_roles'
-        });
-        
+        const activeRoles = data.filter((r: any) => r.status === "active");
+        const rolesListRaw = activeRoles.map((r: any) => r.role).filter((r: any) => Boolean(r));
+        const rolesList = sortRolesByPriority(rolesListRaw);
+
+        if (import.meta.env.DEV) {
+          console.log("[RBAC] Role resolution:", {
+            userId,
+            rawData: data,
+            activeRoles,
+            resolvedRoles: rolesList,
+            primaryRole: rolesList[0] ?? null,
+            isAdmin: rolesList.includes("admin"),
+            isApproved: rolesList.length > 0,
+            source: "user_roles",
+          });
+        }
+
         setDebug({
           rolesFetch: {
             stage: "success",
@@ -135,13 +162,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             statusText,
           },
         });
-        
+
         setRoles(rolesList);
-        // Get linked_player_id if user is a player
-        const playerRole = activeRoles.find((r) => r.role === "player");
+        const playerRole = activeRoles.find((r: any) => r.role === "player");
         setLinkedPlayerId(playerRole?.linked_player_id ?? null);
       } else {
-        console.log("[Auth] No roles found for user");
+        if (import.meta.env.DEV) console.log("[RBAC][Roles] empty", { userId });
         setDebug({
           rolesFetch: {
             stage: "success",
@@ -157,12 +183,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLinkedPlayerId(null);
       }
     } catch (err) {
-      const errorObj = err as Error;
-      const isAbort = errorObj.name === "AbortError" || errorObj.message?.includes("aborted");
-      const isTimeout = errorObj.message?.includes("Timeout");
-      const errorType = isAbort ? "abort" : isTimeout ? "timeout" : "exception";
-      
-      console.error("[Auth] ERROR fetching user roles:", errorType, errorObj.message);
+      const errorType = classifyRbacError(err);
+      const errorObj = err as any;
+
+      if (import.meta.env.DEV) {
+        console.error("[RBAC][Roles] error", {
+          errorType,
+          table: "user_roles",
+          query: { user_id: userId },
+          code: errorObj?.code,
+          message: errorObj?.message ?? String(err),
+          status: errorObj?.status,
+          statusText: errorObj?.statusText,
+        });
+      }
+
       setRolesError(errorType);
       setDebug({
         rolesFetch: {
@@ -172,9 +207,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           startedAt: nowIso(),
           finishedAt: nowIso(),
           error: {
-            code: errorType.toUpperCase(),
-            message: errorObj.message ?? String(err),
-            details: (err as any)?.details,
+            code: errorObj?.code ?? errorType.toUpperCase(),
+            message: errorObj?.message ?? String(err),
+            details: errorObj?.details,
           },
         },
       });

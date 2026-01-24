@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { retryWithBackoff } from "@/lib/retry";
+import { classifyRbacError } from "@/lib/rbacError";
 
 export type ModuleKey = 
   | "app" 
@@ -151,7 +153,8 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
   const [debug, setDebug] = useState<PermissionsContextType["debug"]>({});
 
   const nowIso = () => new Date().toISOString();
-  const REQUEST_TIMEOUT_MS = 7000;
+  const REQUEST_TIMEOUT_MS = 1200;
+  const RBAC_BACKOFF_MS = [300, 800, 1500];
 
   const fetchPermissions = useCallback(async () => {
     // Reset error state at the start
@@ -224,115 +227,99 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
         }
       };
 
-      // Fetch permissions - this might fail for new users (no row yet)
-      setDebug((prev) => ({
-        ...prev,
-        permissionsFetch: {
-          stage: "start",
-          table: "user_permissions",
-          query: { user_id: user.id },
-          startedAt: nowIso(),
-        },
-      }));
-
-      const { data: permsData, error: permsError, status: permsStatus, statusText: permsStatusText } = await withTimeout(
-        supabase
-          .from("user_permissions")
-          .select("*")
-          .eq("user_id", user.id)
-          .maybeSingle(), // Use maybeSingle to avoid error on no row
-        "user_permissions"
-      );
-
-      if (permsError) {
-        console.error("[Permissions] Error fetching permissions:", permsError.code, permsError.message);
-        setDebug((prev) => ({
-          ...prev,
-          permissionsFetch: {
-            stage: "error",
-            table: "user_permissions",
-            query: { user_id: user.id },
-            startedAt: prev.permissionsFetch?.startedAt ?? nowIso(),
-            finishedAt: nowIso(),
-            status: permsStatus,
-            statusText: permsStatusText,
-            error: {
-              code: (permsError as any)?.code,
-              message: (permsError as any)?.message,
-              details: (permsError as any)?.details,
-              hint: (permsError as any)?.hint,
-            },
-          },
-        }));
-      } else {
-        setDebug((prev) => ({
-          ...prev,
-          permissionsFetch: {
-            stage: "success",
-            table: "user_permissions",
-            query: { user_id: user.id },
-            startedAt: prev.permissionsFetch?.startedAt ?? nowIso(),
-            finishedAt: nowIso(),
-            status: permsStatus,
-            statusText: permsStatusText,
-          },
-        }));
+      if (import.meta.env.DEV) {
+        console.log("[RBAC][Permissions] start", {
+          userId: user.id,
+          backoffMs: RBAC_BACKOFF_MS,
+          attemptTimeoutMs: REQUEST_TIMEOUT_MS,
+        });
       }
 
-      // Fetch role info - use maybeSingle to handle missing rows gracefully
-      setDebug((prev) => ({
-        ...prev,
-        roleFetch: {
-          stage: "start",
-          table: "user_roles",
-          query: { user_id: user.id },
-          startedAt: nowIso(),
-        },
-      }));
+      const { permsRow, roleRows } = await retryWithBackoff(
+        async (attempt) => {
+          if (import.meta.env.DEV) {
+            console.log("[RBAC][Permissions] attempt", attempt + 1, {
+              tables: ["user_permissions", "user_roles"],
+              query: { user_id: user.id },
+            });
+          }
 
-      const { data: roleData, error: roleError, status: roleStatus, statusText: roleStatusText } = await withTimeout(
-        supabase
-          .from("user_roles")
-          .select("is_owner, status")
-          .eq("user_id", user.id)
-          .maybeSingle(),
-        "user_roles (role info)"
-      );
-
-      if (roleError) {
-        console.error("[Permissions] Error fetching role info:", roleError.code, roleError.message);
-        setDebug((prev) => ({
-          ...prev,
-          roleFetch: {
-            stage: "error",
-            table: "user_roles",
-            query: { user_id: user.id },
-            startedAt: prev.roleFetch?.startedAt ?? nowIso(),
-            finishedAt: nowIso(),
-            status: roleStatus,
-            statusText: roleStatusText,
-            error: {
-              code: (roleError as any)?.code,
-              message: (roleError as any)?.message,
-              details: (roleError as any)?.details,
-              hint: (roleError as any)?.hint,
+          // Fetch permissions (0..N) WITHOUT maybeSingle/single; pick latest (if duplicated)
+          setDebug((prev) => ({
+            ...prev,
+            permissionsFetch: {
+              stage: "start",
+              table: "user_permissions",
+              query: { user_id: user.id },
+              startedAt: nowIso(),
             },
-          },
-        }));
-      } else {
-        setDebug((prev) => ({
-          ...prev,
-          roleFetch: {
-            stage: "success",
-            table: "user_roles",
-            query: { user_id: user.id },
-            startedAt: prev.roleFetch?.startedAt ?? nowIso(),
-            finishedAt: nowIso(),
-            status: roleStatus,
-            statusText: roleStatusText,
-          },
-        }));
-      }
+          }));
+
+          const permsRes = (await withTimeout(
+            supabase
+              .from("user_permissions")
+              .select("*")
+              .eq("user_id", user.id)
+              .order("updated_at", { ascending: false })
+              .limit(1),
+            "user_permissions",
+          )) as any;
+
+          if (permsRes.error) throw { ...permsRes.error, status: permsRes.status, statusText: permsRes.statusText };
+
+          setDebug((prev) => ({
+            ...prev,
+            permissionsFetch: {
+              stage: "success",
+              table: "user_permissions",
+              query: { user_id: user.id },
+              startedAt: prev.permissionsFetch?.startedAt ?? nowIso(),
+              finishedAt: nowIso(),
+              status: permsRes.status,
+              statusText: permsRes.statusText,
+            },
+          }));
+
+          // Fetch roles info (0..N) WITHOUT maybeSingle/single
+          setDebug((prev) => ({
+            ...prev,
+            roleFetch: {
+              stage: "start",
+              table: "user_roles",
+              query: { user_id: user.id },
+              startedAt: nowIso(),
+            },
+          }));
+
+          const roleRes = (await withTimeout(
+            supabase
+              .from("user_roles")
+              .select("role, status, is_owner, linked_player_id")
+              .eq("user_id", user.id),
+            "user_roles",
+          )) as any;
+
+          if (roleRes.error) throw { ...roleRes.error, status: roleRes.status, statusText: roleRes.statusText };
+
+          setDebug((prev) => ({
+            ...prev,
+            roleFetch: {
+              stage: "success",
+              table: "user_roles",
+              query: { user_id: user.id },
+              startedAt: prev.roleFetch?.startedAt ?? nowIso(),
+              finishedAt: nowIso(),
+              status: roleRes.status,
+              statusText: roleRes.statusText,
+            },
+          }));
+
+          const permsRow = Array.isArray(permsRes.data) ? permsRes.data[0] ?? null : null;
+          const roleRows = Array.isArray(roleRes.data) ? roleRes.data : [];
+          return { permsRow, roleRows };
+        },
+        { backoffMs: RBAC_BACKOFF_MS }
+      );
 
       // If admin, grant all permissions
       if (isAdmin) {
@@ -402,10 +389,10 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
           users_manage: false,
         };
         setPermissions(playerPerms);
-      } else if (permsData) {
+      } else if (permsRow) {
         // Non-admin: use permissions from DB, but FORCE delete=false
         setPermissions({
-          ...permsData,
+          ...permsRow,
           players_delete: false,
           reports_delete: false,
           competitions_delete: false,
@@ -417,8 +404,17 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
         setPermissions(defaultPermissions);
       }
 
-      setIsOwner(roleData?.is_owner ?? false);
-      setUserStatus((roleData?.status as "active" | "suspended") ?? "active");
+      // Derive owner + status from 0..N rows (no single-row assumption)
+      const isOwnerAny = roleRows.some((r: any) => Boolean(r?.is_owner));
+      const statusValues = roleRows.map((r: any) => r?.status).filter(Boolean);
+      const derivedStatus: "active" | "suspended" | null = statusValues.includes("suspended")
+        ? "suspended"
+        : statusValues.includes("active")
+          ? "active"
+          : null;
+
+      setIsOwner(isOwnerAny);
+      setUserStatus(derivedStatus);
 
       if (import.meta.env.DEV) {
         console.log("[Permissions] SUCCESS permissions fetch", {
@@ -426,18 +422,26 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
           isAdmin,
           isPlayer,
           isApproved,
-          status: (roleData?.status as string | undefined) ?? null,
-          isOwner: roleData?.is_owner ?? null,
-          hasDbPermissionsRow: Boolean(permsData),
+          status: derivedStatus,
+          isOwner: isOwnerAny,
+          hasDbPermissionsRow: Boolean(permsRow),
         });
       }
     } catch (err) {
-      const errorObj = err as Error;
-      const isAbort = errorObj.name === "AbortError" || errorObj.message?.includes("aborted");
-      const isTimeout = errorObj.message?.includes("Timeout");
-      const errorType = isAbort ? "abort" : isTimeout ? "timeout" : "exception";
-      
-      console.error("[Permissions] ERROR in fetchPermissions:", errorType, errorObj.message);
+      const errorType = classifyRbacError(err);
+      const errorObj = err as any;
+
+      if (import.meta.env.DEV) {
+        console.error("[RBAC][Permissions] error", {
+          errorType,
+          tables: ["user_permissions", "user_roles"],
+          query: { user_id: user?.id ?? null },
+          code: errorObj?.code,
+          message: errorObj?.message ?? String(err),
+          status: errorObj?.status,
+          statusText: errorObj?.statusText,
+        });
+      }
       
       // CRITICAL: Do NOT set defaultPermissions on error - set error state instead
       // This prevents "not approved" redirect on technical failures
@@ -484,8 +488,8 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
           userId: user?.id ?? null,
           errorType,
           error: {
-            message: errorObj.message,
-            stack: errorObj.stack,
+            message: errorObj?.message ?? String(err),
+            stack: errorObj?.stack,
           },
         });
       }
