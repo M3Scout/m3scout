@@ -36,6 +36,9 @@ interface AthleteSeasonGoalsCardProps {
     minutes: number;
     saves: number;
     clean_sheets: number;
+    shots?: number;
+    tackles?: number;
+    yellow_cards?: number;
   };
   isGoalkeeper?: boolean;
 }
@@ -48,21 +51,36 @@ interface GoalTypeConfig {
   maxValue: number;
   step: number;
   unit?: string;
+  type: "accumulation" | "limit"; // accumulation = more is better, limit = less is better
+  limitLabel?: string; // Label for limit type (e.g., "máx.")
 }
 
 const GOAL_TYPE_CONFIG: Record<string, GoalTypeConfig> = {
-  goals: { label: "Gols", icon: "⚽", color: "emerald", minValue: 1, maxValue: 50, step: 1 },
-  assists: { label: "Assistências", icon: "🅰️", color: "blue", minValue: 1, maxValue: 30, step: 1 },
-  matches: { label: "Partidas", icon: "🏟️", color: "violet", minValue: 5, maxValue: 60, step: 5 },
-  minutes: { label: "Minutos", icon: "⏱️", color: "amber", minValue: 500, maxValue: 5000, step: 100, unit: "min" },
-  saves: { label: "Defesas", icon: "🧤", color: "cyan", minValue: 10, maxValue: 200, step: 10 },
-  clean_sheets: { label: "Clean Sheets", icon: "🛡️", color: "green", minValue: 1, maxValue: 30, step: 1 },
+  goals: { label: "Gols", icon: "⚽", color: "emerald", minValue: 1, maxValue: 50, step: 1, type: "accumulation" },
+  assists: { label: "Assistências", icon: "🅰️", color: "blue", minValue: 1, maxValue: 30, step: 1, type: "accumulation" },
+  matches: { label: "Partidas", icon: "🏟️", color: "violet", minValue: 5, maxValue: 60, step: 5, type: "accumulation" },
+  minutes: { label: "Minutos", icon: "⏱️", color: "amber", minValue: 500, maxValue: 5000, step: 100, unit: "min", type: "accumulation" },
+  shots: { label: "Finalizações", icon: "🎯", color: "orange", minValue: 10, maxValue: 150, step: 5, type: "accumulation" },
+  tackles: { label: "Desarmes", icon: "🦵", color: "cyan", minValue: 10, maxValue: 150, step: 5, type: "accumulation" },
+  yellow_cards: { label: "Amarelos", icon: "🟨", color: "yellow", minValue: 1, maxValue: 15, step: 1, type: "limit", limitLabel: "máx." },
+  saves: { label: "Defesas", icon: "🧤", color: "cyan", minValue: 10, maxValue: 200, step: 10, type: "accumulation" },
+  clean_sheets: { label: "Clean Sheets", icon: "🛡️", color: "green", minValue: 1, maxValue: 30, step: 1, type: "accumulation" },
 };
 
-const OUTFIELD_GOAL_TYPES = ["goals", "assists", "matches", "minutes"];
-const GK_GOAL_TYPES = ["saves", "clean_sheets", "matches", "minutes"];
+const OUTFIELD_GOAL_TYPES = ["goals", "assists", "matches", "minutes", "shots", "tackles", "yellow_cards"];
+const GK_GOAL_TYPES = ["saves", "clean_sheets", "matches", "minutes", "yellow_cards"];
 
-const getProgressColor = (percentage: number): string => {
+// For accumulation: higher = better (green when complete)
+// For limit: lower = better (green when under limit, red/warning when approaching/exceeding)
+const getProgressColor = (percentage: number, isLimit: boolean): string => {
+  if (isLimit) {
+    // Limit type: invert logic - less is better
+    if (percentage >= 100) return "bg-red-500"; // Exceeded limit
+    if (percentage >= 75) return "bg-amber-500"; // Warning, approaching limit
+    if (percentage >= 50) return "bg-yellow-500"; // Halfway
+    return "bg-emerald-500"; // Safe zone
+  }
+  // Accumulation type: more is better
   if (percentage >= 100) return "bg-emerald-500";
   if (percentage >= 75) return "bg-blue-500";
   if (percentage >= 50) return "bg-amber-500";
@@ -115,6 +133,9 @@ export function AthleteSeasonGoalsCard({
       case "minutes": return currentStats.minutes;
       case "saves": return currentStats.saves;
       case "clean_sheets": return currentStats.clean_sheets;
+      case "shots": return currentStats.shots ?? 0;
+      case "tackles": return currentStats.tackles ?? 0;
+      case "yellow_cards": return currentStats.yellow_cards ?? 0;
       default: return 0;
     }
   };
@@ -223,7 +244,16 @@ export function AthleteSeasonGoalsCard({
     );
   }
 
-  const completedGoals = goals.filter(g => getCurrentValue(g.goal_type) >= g.target_value).length;
+  const completedGoals = goals.filter(g => {
+    const config = GOAL_TYPE_CONFIG[g.goal_type];
+    const current = getCurrentValue(g.goal_type);
+    if (config?.type === "limit") {
+      // For limit type: success = staying under limit
+      return current <= g.target_value;
+    }
+    // For accumulation type: success = reaching target
+    return current >= g.target_value;
+  }).length;
 
   return (
     <motion.div 
@@ -295,12 +325,17 @@ export function AthleteSeasonGoalsCard({
                 color: "zinc",
                 minValue: 1,
                 maxValue: 100,
-                step: 1
+                step: 1,
+                type: "accumulation" as const,
               };
               const current = getCurrentValue(goal.goal_type);
               const percentage = Math.min((current / goal.target_value) * 100, 100);
-              const isComplete = current >= goal.target_value;
+              const isLimit = config.type === "limit";
+              const isComplete = isLimit 
+                ? current <= goal.target_value  // Limit: success = under limit
+                : current >= goal.target_value; // Accumulation: success = reached target
               const isEditingThis = editingGoal?.id === goal.id;
+              const isOverLimit = isLimit && current > goal.target_value;
 
               return (
                 <motion.div
@@ -313,9 +348,18 @@ export function AthleteSeasonGoalsCard({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-base">{config.icon}</span>
-                      <span className="text-xs font-medium text-foreground">{config.label}</span>
-                      {isComplete && (
+                      <span className="text-xs font-medium text-foreground">
+                        {config.label}
+                        {isLimit && <span className="text-zinc-500 ml-1">({config.limitLabel})</span>}
+                      </span>
+                      {isComplete && !isLimit && (
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                      )}
+                      {isLimit && !isOverLimit && (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                      )}
+                      {isOverLimit && (
+                        <span className="text-[10px] text-red-400 font-medium">Excedido!</span>
                       )}
                     </div>
                     
@@ -351,12 +395,17 @@ export function AthleteSeasonGoalsCard({
                         </div>
                       ) : (
                         <>
-                          <span className={`text-sm font-bold tabular-nums ${isComplete ? 'text-emerald-400' : 'text-foreground'}`}>
+                          <span className={`text-sm font-bold tabular-nums ${
+                            isLimit 
+                              ? (isOverLimit ? 'text-red-400' : 'text-emerald-400')
+                              : (isComplete ? 'text-emerald-400' : 'text-foreground')
+                          }`}>
                             {goal.goal_type === "minutes" ? Math.round(current / 60) : current}
                           </span>
                           <span className="text-xs text-muted-foreground">/</span>
                           <span className="text-xs text-muted-foreground tabular-nums">
                             {goal.goal_type === "minutes" ? Math.round(goal.target_value / 60) + "h" : goal.target_value}
+                            {isLimit && " máx."}
                           </span>
                           <Button
                             variant="ghost"
@@ -374,17 +423,27 @@ export function AthleteSeasonGoalsCard({
                   <div className="relative">
                     <Progress 
                       value={percentage} 
-                      className="h-2 bg-zinc-800"
+                      className={`h-2 ${isLimit ? 'bg-emerald-900/30' : 'bg-zinc-800'}`}
                     />
                     <div 
-                      className={`absolute top-0 left-0 h-2 rounded-full transition-all duration-500 ${getProgressColor(percentage)}`}
+                      className={`absolute top-0 left-0 h-2 rounded-full transition-all duration-500 ${getProgressColor(percentage, isLimit)}`}
                       style={{ width: `${percentage}%` }}
                     />
                   </div>
 
                   <div className="flex items-center justify-between">
                     <p className="text-[10px] text-muted-foreground">
-                      {isComplete ? (
+                      {isLimit ? (
+                        isOverLimit ? (
+                          <span className="text-red-400">Limite excedido em {current - goal.target_value}!</span>
+                        ) : current === goal.target_value ? (
+                          <span className="text-amber-400">No limite exato ⚠️</span>
+                        ) : (
+                          <span className="text-emerald-400">
+                            Restam {goal.target_value - current} cartões ✓
+                          </span>
+                        )
+                      ) : isComplete ? (
                         <span className="text-emerald-400">Meta atingida! 🎉</span>
                       ) : (
                         <>Faltam {goal.goal_type === "minutes" 
