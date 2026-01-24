@@ -155,7 +155,9 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <Navigate to="/app/auth" state={{ from: location }} replace />;
   }
 
-  // RBAC Decision Log (dev only)
+  // RBAC Decision Log (dev only) - ALWAYS log before decision
+  const decision = isAdmin ? "ALLOW_ADMIN" : (isApproved ? "ALLOW" : "REDIRECT_PENDING");
+  
   if (import.meta.env.DEV) {
     console.log("[RBAC] Access decision:", {
       userId: user.id,
@@ -163,9 +165,16 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       roles,
       isAdmin,
       isApproved,
-      decision: isApproved ? "ALLOW" : "REDIRECT_PENDING",
+      rolesLoading,
+      decision,
       route: location.pathname,
     });
+  }
+
+  // CRITICAL: Admin bypass - ADMIN never goes to pending-access
+  if (isAdmin) {
+    console.log("[RBAC] Admin bypass - allowing access");
+    return <>{children}</>;
   }
 
   // Logged in but no valid role → redirect to pending access page
