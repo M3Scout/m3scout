@@ -24,6 +24,18 @@ export function SmartHeader({ variant = "default" }: SmartHeaderProps) {
   const scrollThreshold = 8;
   const location = useLocation();
 
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMenuOpen]);
+
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
@@ -143,7 +155,7 @@ export function SmartHeader({ variant = "default" }: SmartHeaderProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-40 lg:hidden"
+            className="fixed inset-0 z-40 lg:hidden overflow-hidden"
             style={{
               background: "linear-gradient(180deg, #000000 0%, #0A0A0A 100%)",
             }}
@@ -158,7 +170,7 @@ export function SmartHeader({ variant = "default" }: SmartHeaderProps) {
               <X size={24} />
             </motion.button>
 
-            <div className="flex flex-col items-center justify-center h-full">
+            <div className="flex flex-col items-center justify-center h-full px-6">
               {/* Logo */}
               <motion.img
                 src={logoM3}
@@ -178,8 +190,8 @@ export function SmartHeader({ variant = "default" }: SmartHeaderProps) {
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ 
-                      duration: 0.25, 
-                      delay: 0.15 + index * 0.04,
+                      duration: 0.2, 
+                      delay: 0.12 + index * 0.04,
                       ease: "easeOut"
                     }}
                     className="mb-7 last:mb-0"
@@ -187,21 +199,21 @@ export function SmartHeader({ variant = "default" }: SmartHeaderProps) {
                     <Link
                       to={link.href}
                       className={cn(
-                        "group relative flex items-center min-h-[44px] px-4",
+                        "group relative flex items-center min-h-[44px] px-5",
                         "text-[16px] font-medium uppercase tracking-[0.12em]",
-                        "transition-all duration-300 ease-out",
+                        "transition-all duration-200 ease-out",
                         isActive(link.href) 
-                          ? "text-white translate-x-1.5" 
-                          : "text-white/65 active:text-white active:translate-x-1.5"
+                          ? "text-white translate-x-[6px]" 
+                          : "text-white/65 active:text-white active:translate-x-[6px]"
                       )}
                       onClick={() => setIsMenuOpen(false)}
                     >
                       {/* Left accent line */}
                       <span 
                         className={cn(
-                          "absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-white",
-                          "transition-all duration-300 ease-out",
-                          "opacity-0 -translate-x-2",
+                          "absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-5 bg-white/90",
+                          "transition-all duration-200 ease-out",
+                          "opacity-0 -translate-x-1",
                           "group-active:opacity-100 group-active:translate-x-0",
                           isActive(link.href) && "opacity-100 translate-x-0"
                         )}
@@ -217,8 +229,8 @@ export function SmartHeader({ variant = "default" }: SmartHeaderProps) {
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ 
-                  duration: 0.25, 
-                  delay: 0.15 + navLinks.length * 0.04,
+                  duration: 0.2, 
+                  delay: 0.12 + navLinks.length * 0.04,
                   ease: "easeOut"
                 }}
                 className="mt-10"
@@ -226,9 +238,9 @@ export function SmartHeader({ variant = "default" }: SmartHeaderProps) {
                 <Link
                   to="/app/auth"
                   className={cn(
-                    "group flex items-center justify-center gap-2 min-h-[44px] px-6",
+                    "group flex items-center justify-center gap-2 min-h-[44px] px-6 py-3",
                     "text-[11px] font-medium uppercase tracking-[0.12em]",
-                    "text-white/65 transition-all duration-300",
+                    "text-white/65 transition-all duration-200",
                     "border border-white/15 rounded",
                     "active:bg-white/5 active:text-white/80"
                   )}
