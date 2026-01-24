@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { Menu, X, Lock } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import logoM3 from "@/assets/logo-m3.png";
 
@@ -135,51 +136,112 @@ export function SmartHeader({ variant = "default" }: SmartHeaderProps) {
       </header>
 
       {/* Mobile Navigation Overlay */}
-      <div
-        className={cn(
-          "fixed inset-0 z-40 bg-black transition-all duration-300 lg:hidden",
-          isMenuOpen 
-            ? "opacity-100 pointer-events-auto" 
-            : "opacity-0 pointer-events-none"
-        )}
-      >
-        <div className="flex flex-col items-center justify-center h-full pt-[76px]">
-          <nav className="flex flex-col items-center gap-6">
-            {navLinks.map((link, index) => (
-              <Link
-                key={link.href}
-                to={link.href}
-                className={cn(
-                  "min-h-[44px] flex items-center px-4",
-                  "text-base font-normal uppercase tracking-[0.18em]",
-                  "text-white/60 hover:text-white transition-all duration-300",
-                  isMenuOpen && "animate-fade-in",
-                  isActive(link.href) && "text-white"
-                )}
-                style={{ animationDelay: `${index * 50}ms` }}
-                onClick={() => setIsMenuOpen(false)}
-              >
-                {link.label}
-              </Link>
-            ))}
-            
-            {/* ÁREA RESTRITA - Mobile (discrete) */}
-            <Link
-              to="/app/auth"
-              className={cn(
-                "mt-8 min-h-[40px] flex items-center justify-center gap-2 px-6",
-                "text-[11px] font-medium uppercase tracking-[0.15em]",
-                "text-white/40 hover:text-white/70 transition-all duration-300",
-                "border border-white/15 hover:border-white/30 rounded"
-              )}
+      <AnimatePresence>
+        {isMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-40 lg:hidden"
+            style={{
+              background: "linear-gradient(180deg, #000000 0%, #0A0A0A 100%)",
+            }}
+          >
+            {/* Close button */}
+            <motion.button
+              className="absolute top-5 right-5 min-h-[48px] min-w-[48px] flex items-center justify-center text-white/70 z-50"
               onClick={() => setIsMenuOpen(false)}
+              whileTap={{ scale: 0.95 }}
+              aria-label="Fechar menu"
             >
-              <Lock size={12} className="opacity-50" />
-              ÁREA RESTRITA
-            </Link>
-          </nav>
-        </div>
-      </div>
+              <X size={24} />
+            </motion.button>
+
+            <div className="flex flex-col items-center justify-center h-full">
+              {/* Logo */}
+              <motion.img
+                src={logoM3}
+                alt="M3 Agency"
+                className="h-7 w-auto mb-12"
+                style={{ opacity: 0.9 }}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 0.9, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+              />
+
+              {/* Navigation Items */}
+              <nav className="flex flex-col items-center">
+                {navLinks.map((link, index) => (
+                  <motion.div
+                    key={link.href}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ 
+                      duration: 0.25, 
+                      delay: 0.15 + index * 0.04,
+                      ease: "easeOut"
+                    }}
+                    className="mb-7 last:mb-0"
+                  >
+                    <Link
+                      to={link.href}
+                      className={cn(
+                        "group relative flex items-center min-h-[44px] px-4",
+                        "text-[16px] font-medium uppercase tracking-[0.12em]",
+                        "transition-all duration-300 ease-out",
+                        isActive(link.href) 
+                          ? "text-white translate-x-1.5" 
+                          : "text-white/65 active:text-white active:translate-x-1.5"
+                      )}
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      {/* Left accent line */}
+                      <span 
+                        className={cn(
+                          "absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-white",
+                          "transition-all duration-300 ease-out",
+                          "opacity-0 -translate-x-2",
+                          "group-active:opacity-100 group-active:translate-x-0",
+                          isActive(link.href) && "opacity-100 translate-x-0"
+                        )}
+                      />
+                      {link.label}
+                    </Link>
+                  </motion.div>
+                ))}
+              </nav>
+
+              {/* ÁREA RESTRITA - Mobile */}
+              <motion.div
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ 
+                  duration: 0.25, 
+                  delay: 0.15 + navLinks.length * 0.04,
+                  ease: "easeOut"
+                }}
+                className="mt-10"
+              >
+                <Link
+                  to="/app/auth"
+                  className={cn(
+                    "group flex items-center justify-center gap-2 min-h-[44px] px-6",
+                    "text-[11px] font-medium uppercase tracking-[0.12em]",
+                    "text-white/65 transition-all duration-300",
+                    "border border-white/15 rounded",
+                    "active:bg-white/5 active:text-white/80"
+                  )}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <Lock size={12} className="opacity-70" />
+                  ÁREA RESTRITA
+                </Link>
+              </motion.div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }
