@@ -55,6 +55,8 @@ const Dashboard = () => {
   if (!rolesLoading && isPlayer && !isAdmin && !isScout) {
     return <AthleteDashboard />;
   }
+  // PROGRESSIVE LOADING: Start with zeros, update as data arrives
+  // This allows UI to render immediately with skeletons/placeholders
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats>({
     totalPlayers: 0,
@@ -66,6 +68,7 @@ const Dashboard = () => {
   const [positionData, setPositionData] = useState<PositionData[]>([]);
   const [recentReports, setRecentReports] = useState<RecentReport[]>([]);
   const [recentLeads, setRecentLeads] = useState<RecentLead[]>([]);
+  const [dataReady, setDataReady] = useState(false); // Track when data is truly loaded
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -201,13 +204,15 @@ const Dashboard = () => {
         console.error("Error fetching dashboard data:", error);
       } finally {
         setLoading(false);
+        setDataReady(true);
       }
     };
 
     fetchDashboardData();
   }, []);
 
-  if (loading) {
+  // PROGRESSIVE: Only show skeleton on initial mount, not on every role check
+  if (loading && !dataReady && stats.totalPlayers === 0) {
     return <AdminSkeletonDashboard />;
   }
 

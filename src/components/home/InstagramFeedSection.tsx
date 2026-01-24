@@ -90,8 +90,9 @@ interface InstagramPost {
 export function InstagramFeedSection() {
   if (import.meta.env.DEV) console.log("[MOUNT] InstagramFeedSection");
 
+  // Start with fallback posts immediately, fetch real ones in background
   const [posts, setPosts] = useState<InstagramPost[]>(fallbackPosts);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Don't block UI - start with fallback
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
   const carouselRef = useRef<HTMLDivElement>(null);

@@ -525,9 +525,44 @@ function MobileCarousel({ players, variant }: { players: Player[]; variant: "pre
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // MAIN SECTION
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Cache configuration for instant cold-start renders
+const PLAYERS_CACHE_KEY = "m3_featured_players_v1";
+const PLAYERS_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+interface CachedPlayers {
+  players: Player[];
+  fetchedAt: number;
+}
+
+function readPlayersCache(): Player[] | null {
+  try {
+    const raw = localStorage.getItem(PLAYERS_CACHE_KEY);
+    if (!raw) return null;
+    const parsed: CachedPlayers = JSON.parse(raw);
+    if (Date.now() - parsed.fetchedAt > PLAYERS_CACHE_TTL_MS) {
+      localStorage.removeItem(PLAYERS_CACHE_KEY);
+      return null;
+    }
+    return parsed.players;
+  } catch {
+    return null;
+  }
+}
+
+function writePlayersCache(players: Player[]) {
+  try {
+    const payload: CachedPlayers = { players, fetchedAt: Date.now() };
+    localStorage.setItem(PLAYERS_CACHE_KEY, JSON.stringify(payload));
+  } catch {
+    // Ignore storage errors
+  }
+}
+
 export function FeaturedPlayers() {
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [loading, setLoading] = useState(true);
+  // INSTANT: Try cache first for immediate render on cold start
+  const cachedPlayers = useRef(readPlayersCache());
+  const [players, setPlayers] = useState<Player[]>(cachedPlayers.current || []);
+  const [loading, setLoading] = useState(!cachedPlayers.current);
   const [isInView, setIsInView] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
 
@@ -565,15 +600,17 @@ export function FeaturedPlayers() {
         .order("auto_rating", { ascending: false })
         .limit(8);
 
-      if (data) {
+      if (data && data.length > 0) {
         setPlayers(data);
+        writePlayersCache(data);
       }
       setLoading(false);
       
       if (import.meta.env.DEV) {
         console.log("[TIMING] FeaturedPlayers fetch complete", { 
           duration: `${Math.round(performance.now() - fetchStart)}ms`,
-          count: data?.length ?? 0
+          count: data?.length ?? 0,
+          fromCache: cachedPlayers.current !== null
         });
       }
     };
@@ -621,17 +658,8 @@ export function FeaturedPlayers() {
           </motion.div>
         </motion.div>
 
-        {/* Players Display */}
-        {loading ? (
-          <div className="flex items-center justify-center py-24 px-6">
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            >
-              <Loader2 className="w-5 h-5 text-white/20" />
-            </motion.div>
-          </div>
-        ) : players.length > 0 ? (
+        {/* Players Display - PROGRESSIVE: show skeletons or cached data immediately */}
+        {players.length > 0 ? (
           <motion.div
             initial="hidden"
             animate={isInView ? "visible" : "hidden"}
@@ -640,6 +668,28 @@ export function FeaturedPlayers() {
             <DesktopGrid players={players} variant={variant} />
             <MobileCarousel players={players} variant={variant} />
           </motion.div>
+        ) : loading ? (
+          // SKELETON: show placeholder grid while loading (no spinner)
+          <div className="px-5 md:px-6 lg:px-8">
+            <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {[...Array(8)].map((_, i) => (
+                <div
+                  key={i}
+                  className="aspect-[3/4] bg-white/[0.03] animate-pulse rounded-lg"
+                  style={{ animationDelay: `${i * 80}ms` }}
+                />
+              ))}
+            </div>
+            <div className="md:hidden flex gap-3 overflow-hidden">
+              {[...Array(3)].map((_, i) => (
+                <div
+                  key={i}
+                  className="flex-shrink-0 w-[160px] aspect-[3/4] bg-white/[0.03] animate-pulse rounded-lg"
+                  style={{ animationDelay: `${i * 80}ms` }}
+                />
+              ))}
+            </div>
+          </div>
         ) : (
           <motion.div
             className="text-center py-24 px-6"

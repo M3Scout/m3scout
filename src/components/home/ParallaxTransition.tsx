@@ -65,8 +65,11 @@ export function ParallaxTransition({ children }: ParallaxTransitionProps) {
   }
 
   // Desktop only: Apply parallax and opacity effects
+  // START at full opacity (1.0) when near top, fade slightly as user scrolls past
   const parallaxOffset = (1 - scrollProgress) * 40;
-  const opacity = 0.3 + scrollProgress * 0.7;
+  // Opacity: starts at 0.85, goes to 1.0 as user scrolls to it
+  // This prevents "invisible" sections on cold load
+  const opacity = Math.min(1, 0.85 + scrollProgress * 0.15);
 
   return (
     <div 
