@@ -58,6 +58,8 @@ export interface UserPermissions {
 interface PermissionsContextType {
   permissions: UserPermissions | null;
   loading: boolean;
+  /** Error state: 'timeout' | 'abort' | 'network' | 'exception' | null */
+  error: string | null;
   isOwner: boolean;
   userStatus: "active" | "suspended" | null;
   linkedPlayerId: string | null;
@@ -137,9 +139,10 @@ const defaultPermissions: UserPermissions = {
 const PermissionsContext = createContext<PermissionsContextType | undefined>(undefined);
 
 export function PermissionsProvider({ children }: { children: ReactNode }) {
-  const { user, isAdmin, isPlayer, isApproved, linkedPlayerId: authLinkedPlayerId, loading: authLoading } = useAuth();
+  const { user, isAdmin, isPlayer, isApproved, linkedPlayerId: authLinkedPlayerId, loading: authLoading, rolesError } = useAuth();
   const [permissions, setPermissions] = useState<UserPermissions | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isOwner, setIsOwner] = useState(false);
   const [userStatus, setUserStatus] = useState<"active" | "suspended" | null>(null);
   const [linkedPlayerId, setLinkedPlayerId] = useState<string | null>(null);
@@ -149,6 +152,9 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
   const REQUEST_TIMEOUT_MS = 7000;
 
   const fetchPermissions = useCallback(async () => {
+    // Reset error state at the start
+    setError(null);
+    
     // Always set loading false at the end, no matter what
     try {
       if (import.meta.env.DEV) {
@@ -159,6 +165,7 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
           isPlayer,
           isApproved,
           authLoading,
+          rolesError,
         });
       }
 
@@ -170,10 +177,23 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      // CRITICAL: If user is not approved (no valid role), deny all access
-      // This is the expected state for pending users - not an error
+      // CRITICAL: If there was an error fetching roles (timeout/abort/network),
+      // do NOT treat as "not approved" - set error state instead
+      if (rolesError) {
+        console.warn("[Permissions] Auth had rolesError, not treating as 'not approved':", rolesError);
+        setError(rolesError);
+        // For admin (from cache or prior state), still allow - handled by ProtectedRoute
+        // For non-admin, permissions will be null and ProtectedRoute shows error UI
+        setPermissions(null);
+        return;
+      }
+
+      // CRITICAL: isApproved can be false for two reasons:
+      // 1. User genuinely not approved (status !== 'active' in DB)
+      // 2. Fetch failed/timed out (rolesError set above)
+      // Only deny access if genuinely not approved (no rolesError)
       if (!isApproved) {
-        console.log("[Permissions] User not approved, setting default permissions");
+        console.log("[Permissions] User not approved (confirmed by DB), setting default permissions");
         setPermissions(defaultPermissions);
         setIsOwner(false);
         setUserStatus(null);
@@ -409,13 +429,21 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
           hasDbPermissionsRow: Boolean(permsData),
         });
       }
-    } catch (error) {
-      console.error("[Permissions] Unexpected error in fetchPermissions:", error);
-      setPermissions(defaultPermissions);
+    } catch (err) {
+      const errorObj = err as Error;
+      const isAbort = errorObj.name === "AbortError" || errorObj.message?.includes("aborted");
+      const isTimeout = errorObj.message?.includes("Timeout");
+      const errorType = isAbort ? "abort" : isTimeout ? "timeout" : "exception";
+      
+      console.error("[Permissions] ERROR in fetchPermissions:", errorType, errorObj.message);
+      
+      // CRITICAL: Do NOT set defaultPermissions on error - set error state instead
+      // This prevents "not approved" redirect on technical failures
+      setError(errorType);
+      setPermissions(null);
 
       // Ensure debug reflects failure if we were in-flight
       setDebug((prev) => {
-        const startedAtFallback = prev.permissionsFetch?.startedAt ?? nowIso();
         return {
           ...prev,
           permissionsFetch:
@@ -425,10 +453,10 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
                   stage: "error",
                   finishedAt: nowIso(),
                   status: 0,
-                  statusText: "exception",
+                  statusText: errorType,
                   error: {
-                    code: "EXCEPTION",
-                    message: (error as any)?.message ?? "Erro inesperado ao buscar permissões",
+                    code: errorType.toUpperCase(),
+                    message: errorObj.message ?? "Erro inesperado ao buscar permissões",
                   },
                 }
               : prev.permissionsFetch,
@@ -439,10 +467,10 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
                   stage: "error",
                   finishedAt: nowIso(),
                   status: 0,
-                  statusText: "exception",
+                  statusText: errorType,
                   error: {
-                    code: "EXCEPTION",
-                    message: (error as any)?.message ?? "Erro inesperado ao buscar role info",
+                    code: errorType.toUpperCase(),
+                    message: errorObj.message ?? "Erro inesperado ao buscar role info",
                   },
                 }
               : prev.roleFetch,
@@ -452,9 +480,10 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
       if (import.meta.env.DEV) {
         console.log("[Permissions] ERROR permissions fetch", {
           userId: user?.id ?? null,
+          errorType,
           error: {
-            message: (error as any)?.message,
-            stack: (error as any)?.stack,
+            message: errorObj.message,
+            stack: errorObj.stack,
           },
         });
       }
@@ -462,7 +491,7 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
       // CRITICAL: Always set loading to false
       setLoading(false);
     }
-  }, [user, isAdmin, isPlayer, isApproved, authLinkedPlayerId]);
+  }, [user, isAdmin, isPlayer, isApproved, authLinkedPlayerId, rolesError]);
 
   useEffect(() => {
     if (!authLoading) {
@@ -558,6 +587,7 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
       value={{
         permissions,
         loading,
+        error,
         isOwner,
         userStatus,
         linkedPlayerId,

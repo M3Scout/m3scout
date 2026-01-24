@@ -18,6 +18,8 @@ interface AuthContextType {
   isApproved: boolean;
   /** True while roles are still being fetched after auth */
   rolesLoading: boolean;
+  /** Error type if roles fetch failed: 'timeout' | 'abort' | 'network' | 'exception' | null */
+  rolesError: string | null;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, name: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -55,6 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [rolesLoading, setRolesLoading] = useState(true);
+  const [rolesError, setRolesError] = useState<string | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [linkedPlayerId, setLinkedPlayerId] = useState<string | null>(null);
   const [debug, setDebug] = useState<AuthContextType["debug"]>({});
@@ -63,6 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUserRoles = async (userId: string) => {
     setRolesLoading(true);
+    setRolesError(null); // Reset error at start
     try {
       setDebug({
         rolesFetch: {
@@ -82,6 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (error) {
         console.error("[Auth] Error fetching user roles:", error.code, error.message);
+        setRolesError("network");
         setDebug({
           rolesFetch: {
             stage: "error",
@@ -152,7 +157,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLinkedPlayerId(null);
       }
     } catch (err) {
-      console.error("[Auth] Unexpected error fetching user roles:", err);
+      const errorObj = err as Error;
+      const isAbort = errorObj.name === "AbortError" || errorObj.message?.includes("aborted");
+      const isTimeout = errorObj.message?.includes("Timeout");
+      const errorType = isAbort ? "abort" : isTimeout ? "timeout" : "exception";
+      
+      console.error("[Auth] ERROR fetching user roles:", errorType, errorObj.message);
+      setRolesError(errorType);
       setDebug({
         rolesFetch: {
           stage: "error",
@@ -161,8 +172,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           startedAt: nowIso(),
           finishedAt: nowIso(),
           error: {
-            code: (err as any)?.code,
-            message: (err as any)?.message ?? String(err),
+            code: errorType.toUpperCase(),
+            message: errorObj.message ?? String(err),
             details: (err as any)?.details,
           },
         },
@@ -181,6 +192,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const timeout = setTimeout(() => {
       console.warn("[Auth] rolesLoading timeout - forcing roles loading to complete");
       setRolesLoading(false);
+      setRolesError("timeout");
 
       // Preserve existing debug if present; if it's still "start", flip to timeout error.
       setDebug((prev) => {
@@ -333,6 +345,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session,
         loading,
         rolesLoading,
+        rolesError,
         roles,
         linkedPlayerId,
         isApproved,
