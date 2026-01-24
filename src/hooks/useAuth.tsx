@@ -41,12 +41,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchUserRoles = async (userId: string) => {
     setRolesLoading(true);
     try {
+      console.log("[Auth] Fetching roles for user:", userId);
+      
       const { data, error } = await supabase
         .from("user_roles")
         .select("role, linked_player_id, status")
         .eq("user_id", userId);
 
-      if (!error && data) {
+      if (error) {
+        console.error("[Auth] Error fetching user roles:", error.code, error.message);
+        setRoles([]);
+        setLinkedPlayerId(null);
+      } else if (data && data.length > 0) {
+        console.log("[Auth] Roles fetched:", data);
         // Only count active roles
         const activeRoles = data.filter(r => r.status === 'active');
         setRoles(activeRoles.map((r) => r.role));
@@ -54,11 +61,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const playerRole = activeRoles.find((r) => r.role === "player");
         setLinkedPlayerId(playerRole?.linked_player_id ?? null);
       } else {
+        console.log("[Auth] No roles found for user");
         setRoles([]);
         setLinkedPlayerId(null);
       }
     } catch (err) {
-      console.error("Error fetching user roles:", err);
+      console.error("[Auth] Unexpected error fetching user roles:", err);
       setRoles([]);
       setLinkedPlayerId(null);
     } finally {
