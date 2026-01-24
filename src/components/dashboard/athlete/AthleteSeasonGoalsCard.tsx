@@ -55,20 +55,21 @@ interface GoalTypeConfig {
   limitLabel?: string; // Label for limit type (e.g., "máx.")
 }
 
+// Goal type keys MUST match exactly what's stored in the database
 const GOAL_TYPE_CONFIG: Record<string, GoalTypeConfig> = {
-  goals: { label: "Gols", icon: "⚽", color: "emerald", minValue: 1, maxValue: 50, step: 1, type: "accumulation" },
-  assists: { label: "Assistências", icon: "🅰️", color: "blue", minValue: 1, maxValue: 30, step: 1, type: "accumulation" },
-  matches: { label: "Partidas", icon: "🏟️", color: "violet", minValue: 5, maxValue: 60, step: 5, type: "accumulation" },
-  minutes: { label: "Minutos", icon: "⏱️", color: "amber", minValue: 500, maxValue: 5000, step: 100, unit: "min", type: "accumulation" },
-  shots: { label: "Finalizações", icon: "🎯", color: "orange", minValue: 10, maxValue: 150, step: 5, type: "accumulation" },
-  tackles: { label: "Desarmes", icon: "🦵", color: "cyan", minValue: 10, maxValue: 150, step: 5, type: "accumulation" },
-  yellow_cards: { label: "Amarelos", icon: "🟨", color: "yellow", minValue: 1, maxValue: 15, step: 1, type: "limit", limitLabel: "máx." },
-  saves: { label: "Defesas", icon: "🧤", color: "cyan", minValue: 10, maxValue: 200, step: 10, type: "accumulation" },
+  gols: { label: "Gols", icon: "⚽", color: "emerald", minValue: 1, maxValue: 50, step: 1, type: "accumulation" },
+  assistencias: { label: "Assistências", icon: "🅰️", color: "blue", minValue: 1, maxValue: 30, step: 1, type: "accumulation" },
+  partidas: { label: "Partidas", icon: "🏟️", color: "violet", minValue: 5, maxValue: 60, step: 5, type: "accumulation" },
+  minutos: { label: "Minutos", icon: "⏱️", color: "amber", minValue: 250, maxValue: 5000, step: 50, unit: "min", type: "accumulation" },
+  finalizacoes: { label: "Finalizações", icon: "🎯", color: "orange", minValue: 10, maxValue: 150, step: 5, type: "accumulation" },
+  desarmes: { label: "Desarmes", icon: "🦵", color: "cyan", minValue: 10, maxValue: 150, step: 5, type: "accumulation" },
+  cartoes_amarelos_max: { label: "Amarelos", icon: "🟨", color: "yellow", minValue: 1, maxValue: 15, step: 1, type: "limit", limitLabel: "máx." },
+  defesas: { label: "Defesas", icon: "🧤", color: "cyan", minValue: 10, maxValue: 200, step: 10, type: "accumulation" },
   clean_sheets: { label: "Clean Sheets", icon: "🛡️", color: "green", minValue: 1, maxValue: 30, step: 1, type: "accumulation" },
 };
 
-const OUTFIELD_GOAL_TYPES = ["goals", "assists", "matches", "minutes", "shots", "tackles", "yellow_cards"];
-const GK_GOAL_TYPES = ["saves", "clean_sheets", "matches", "minutes", "yellow_cards"];
+const OUTFIELD_GOAL_TYPES = ["gols", "assistencias", "partidas", "minutos", "finalizacoes", "desarmes", "cartoes_amarelos_max"];
+const GK_GOAL_TYPES = ["defesas", "clean_sheets", "partidas", "minutos", "cartoes_amarelos_max"];
 
 // For accumulation: higher = better (green when complete)
 // For limit: lower = better (green when under limit, red/warning when approaching/exceeding)
@@ -127,15 +128,15 @@ export function AthleteSeasonGoalsCard({
 
   const getCurrentValue = (goalType: string): number => {
     switch (goalType) {
-      case "goals": return currentStats.goals;
-      case "assists": return currentStats.assists;
-      case "matches": return currentStats.matches;
-      case "minutes": return currentStats.minutes;
-      case "saves": return currentStats.saves;
+      case "gols": return currentStats.goals;
+      case "assistencias": return currentStats.assists;
+      case "partidas": return currentStats.matches;
+      case "minutos": return currentStats.minutes;
+      case "defesas": return currentStats.saves;
       case "clean_sheets": return currentStats.clean_sheets;
-      case "shots": return currentStats.shots ?? 0;
-      case "tackles": return currentStats.tackles ?? 0;
-      case "yellow_cards": return currentStats.yellow_cards ?? 0;
+      case "finalizacoes": return currentStats.shots ?? 0;
+      case "desarmes": return currentStats.tackles ?? 0;
+      case "cartoes_amarelos_max": return currentStats.yellow_cards ?? 0;
       default: return 0;
     }
   };
@@ -400,11 +401,11 @@ export function AthleteSeasonGoalsCard({
                               ? (isOverLimit ? 'text-red-400' : 'text-emerald-400')
                               : (isComplete ? 'text-emerald-400' : 'text-foreground')
                           }`}>
-                            {goal.goal_type === "minutes" ? Math.round(current / 60) : current}
+                            {current}
                           </span>
                           <span className="text-xs text-muted-foreground">/</span>
                           <span className="text-xs text-muted-foreground tabular-nums">
-                            {goal.goal_type === "minutes" ? Math.round(goal.target_value / 60) + "h" : goal.target_value}
+                            {goal.target_value}{goal.goal_type === "minutos" ? " min" : ""}
                             {isLimit && " máx."}
                           </span>
                           <Button
@@ -446,8 +447,8 @@ export function AthleteSeasonGoalsCard({
                       ) : isComplete ? (
                         <span className="text-emerald-400">Meta atingida! 🎉</span>
                       ) : (
-                        <>Faltam {goal.goal_type === "minutes" 
-                          ? Math.round((goal.target_value - current) / 60) + " horas" 
+                        <>Faltam {goal.goal_type === "minutos" 
+                          ? (goal.target_value - current) + " minutos" 
                           : (goal.target_value - current) + ` ${config.label.toLowerCase()}`}</>
                       )}
                     </p>
