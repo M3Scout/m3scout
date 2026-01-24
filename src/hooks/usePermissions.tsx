@@ -111,50 +111,50 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
   const [linkedPlayerId, setLinkedPlayerId] = useState<string | null>(null);
 
   const fetchPermissions = useCallback(async () => {
-    if (!user) {
-      setPermissions(null);
-      setIsOwner(false);
-      setUserStatus(null);
-      setLinkedPlayerId(null);
-      setLoading(false);
-      return;
-    }
-
-    // CRITICAL: If user is not approved (no valid role), deny all access
-    if (!isApproved) {
-      setPermissions(defaultPermissions);
-      setIsOwner(false);
-      setUserStatus(null);
-      setLinkedPlayerId(null);
-      setLoading(false);
-      return;
-    }
-
-    // Set linked player ID from auth context
-    setLinkedPlayerId(authLinkedPlayerId);
-
+    // Always set loading false at the end, no matter what
     try {
-      // Fetch permissions
+      if (!user) {
+        setPermissions(null);
+        setIsOwner(false);
+        setUserStatus(null);
+        setLinkedPlayerId(null);
+        return;
+      }
+
+      // CRITICAL: If user is not approved (no valid role), deny all access
+      // This is the expected state for pending users - not an error
+      if (!isApproved) {
+        console.log("[Permissions] User not approved, setting default permissions");
+        setPermissions(defaultPermissions);
+        setIsOwner(false);
+        setUserStatus(null);
+        setLinkedPlayerId(null);
+        return;
+      }
+
+      // Set linked player ID from auth context
+      setLinkedPlayerId(authLinkedPlayerId);
+
+      // Fetch permissions - this might fail for new users (no row yet)
       const { data: permsData, error: permsError } = await supabase
         .from("user_permissions")
         .select("*")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle(); // Use maybeSingle to avoid error on no row
 
-      if (permsError && permsError.code !== "PGRST116") {
-        console.error("Error fetching permissions:", permsError);
+      if (permsError) {
+        console.error("[Permissions] Error fetching permissions:", permsError.code, permsError.message);
       }
 
-      // Fetch role info (owner status and status)
+      // Fetch role info - use maybeSingle to handle missing rows gracefully
       const { data: roleData, error: roleError } = await supabase
         .from("user_roles")
         .select("is_owner, status")
         .eq("user_id", user.id)
-        .limit(1)
-        .single();
+        .maybeSingle();
 
-      if (roleError && roleError.code !== "PGRST116") {
-        console.error("Error fetching role info:", roleError);
+      if (roleError) {
+        console.error("[Permissions] Error fetching role info:", roleError.code, roleError.message);
       }
 
       // If admin, grant all permissions
@@ -195,20 +195,20 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
         // Player role: read-only access to their own data
         const playerPerms: UserPermissions = {
           app_view: true,
-          players_view: true, // Only their own profile (filtered by RLS)
+          players_view: true,
           players_create: false,
           players_edit: false,
           players_delete: false,
           players_export: false,
-          compare_view: false, // No comparison access
-          reports_view: true, // Only their own reports (filtered by RLS)
+          compare_view: false,
+          reports_view: true,
           reports_create: false,
           reports_edit: false,
           reports_delete: false,
           reports_export: false,
-          live_match_view: true, // Only matches they're in (filtered by RLS)
-          live_match_log: false, // Cannot log events
-          competitions_view: true, // Read-only
+          live_match_view: true,
+          live_match_log: false,
+          competitions_view: true,
           competitions_create: false,
           competitions_edit: false,
           competitions_delete: false,
@@ -236,15 +236,17 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
           leads_delete: false,
         } as UserPermissions);
       } else {
+        // No permissions found - use defaults
         setPermissions(defaultPermissions);
       }
 
       setIsOwner(roleData?.is_owner ?? false);
       setUserStatus((roleData?.status as "active" | "suspended") ?? "active");
     } catch (error) {
-      console.error("Error in fetchPermissions:", error);
+      console.error("[Permissions] Unexpected error in fetchPermissions:", error);
       setPermissions(defaultPermissions);
     } finally {
+      // CRITICAL: Always set loading to false
       setLoading(false);
     }
   }, [user, isAdmin, isPlayer, isApproved, authLinkedPlayerId]);
