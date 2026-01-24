@@ -232,17 +232,22 @@ export function AthleteRadarCard({ athleteId, athletePosition }: AthleteRadarCar
                 <Tooltip key={attr.key}>
                   <TooltipTrigger asChild>
                     <div
-                      className="absolute flex flex-col items-center cursor-help"
+                      className="absolute flex flex-col items-center justify-center cursor-help"
                       style={{
                         left: point.x,
                         top: point.y,
                         transform: "translate(-50%, -50%)",
+                        minWidth: 36,
+                        whiteSpace: "nowrap",
                       }}
                     >
-                      <span className="text-[11px] font-semibold text-foreground">
+                      <span 
+                        className="text-[11px] font-semibold text-foreground leading-none tracking-wide"
+                        style={{ whiteSpace: "nowrap" }}
+                      >
                         {attr.label}
                       </span>
-                      <span className="text-[10px] font-medium text-primary">
+                      <span className="text-[10px] font-medium text-primary leading-none mt-0.5">
                         {Math.round(value)}
                       </span>
                     </div>
