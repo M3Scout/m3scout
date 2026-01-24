@@ -1009,6 +1009,47 @@ export type Database = {
           },
         ]
       }
+      player_season_goals: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          goal_type: string
+          id: string
+          player_id: string
+          season_year: number
+          target_value: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          goal_type: string
+          id?: string
+          player_id: string
+          season_year?: number
+          target_value: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          goal_type?: string
+          id?: string
+          player_id?: string
+          season_year?: number
+          target_value?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_season_goals_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_stats: {
         Row: {
           accurate_passes: number
