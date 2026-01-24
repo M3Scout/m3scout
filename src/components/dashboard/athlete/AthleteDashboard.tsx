@@ -128,6 +128,7 @@ export function AthleteDashboard() {
       id: m.match_id,
       match_date: m.match_date,
       opponent_name: m.opponent_name,
+      team_name_display: m.team_name_display,
       rating: m.rating?.rating ?? null,
       hasRating: m.rating?.hasRating ?? false,
     }));

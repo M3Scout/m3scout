@@ -20,6 +20,7 @@ interface MatchWithRating {
   id: string;
   match_date: string;
   opponent_name: string;
+  team_name_display?: string | null; // Home team name
   rating: number | null;
   hasRating: boolean;
 }
@@ -45,12 +46,20 @@ const getRatingBg = (rating: number): string => {
   return "bg-red-500/20";
 };
 
+// Build full matchup string: "Home vs Away" or fallback
+const getMatchupDisplay = (teamName: string | null | undefined, opponentName: string): string => {
+  if (teamName && teamName.trim()) {
+    return `${teamName} vs ${opponentName}`;
+  }
+  return `vs ${opponentName}`;
+};
+
 const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
       <div className="bg-zinc-900/95 backdrop-blur-sm border border-zinc-700/50 rounded-lg px-3 py-2 shadow-xl">
-        <p className="text-xs font-medium text-foreground">{data.opponent}</p>
+        <p className="text-xs font-medium text-foreground">{data.matchup}</p>
         <p className="text-[10px] text-muted-foreground">{data.fullDate}</p>
         <p className={`text-sm font-bold mt-1 ${getRatingColor(data.rating)}`}>
           Nota: {data.rating.toFixed(1)}
@@ -77,6 +86,7 @@ export function AthleteRatingEvolutionCard({
         date: format(new Date(match.match_date), "dd/MM", { locale: ptBR }),
         fullDate: format(new Date(match.match_date), "dd 'de' MMM", { locale: ptBR }),
         opponent: match.opponent_name,
+        matchup: getMatchupDisplay(match.team_name_display, match.opponent_name),
         rating: match.rating,
       }));
   }, [matches]);
@@ -174,11 +184,11 @@ export function AthleteRatingEvolutionCard({
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <Calendar className="w-3 h-3 text-muted-foreground shrink-0" />
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-xs text-muted-foreground shrink-0">
                     {format(new Date(match.match_date), "dd/MM", { locale: ptBR })}
                   </span>
                   <span className="text-xs text-foreground truncate">
-                    vs {match.opponent_name}
+                    {getMatchupDisplay(match.team_name_display, match.opponent_name)}
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">

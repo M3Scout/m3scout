@@ -63,6 +63,7 @@ const playerNavGroups = [
   {
     label: "Meu Espaço",
     items: [
+      { href: "/app", icon: LayoutDashboard, label: "Dashboard", module: "app" as const },
       { href: "/app/my-profile", icon: Users, label: "Meu Perfil", module: "players" as const },
       { href: "/app/reports", icon: FileText, label: "Meus Relatórios", module: "reports" as const },
     ]
