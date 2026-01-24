@@ -30,6 +30,7 @@ import {
   FileText as ContractIcon,
   BarChart3,
   DollarSign,
+  Lock,
 } from "lucide-react";
 import { DeletePlayerDialog } from "@/components/players/DeletePlayerDialog";
 import { PhysicalDataSection } from "@/components/players/sections/PhysicalDataSection";
@@ -142,14 +143,28 @@ interface ScoutingReport {
 const PlayerDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { isAdmin, isScout } = useAuth();
+  const { isAdmin, isScout, isPlayer, linkedPlayerId } = useAuth();
+  const { can } = usePermissions();
   const [player, setPlayer] = useState<Player | null>(null);
   const [injuries, setInjuries] = useState<Injury[]>([]);
   const [reports, setReports] = useState<ScoutingReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-  const canViewPrivate = isAdmin || isScout;
+  // === ROUTE-LEVEL ACCESS CONTROL ===
+  // Admin/Scout: full access to all athletes
+  // Player: access ONLY to their own athlete (linkedPlayerId === id)
+  const isOwnAthlete = isPlayer && linkedPlayerId === id;
+  const canAccessAthlete = isAdmin || isScout || isOwnAthlete;
+  
+  // Player role is read-only
+  const isReadOnly = isPlayer && !isAdmin && !isScout;
+  
+  // Can edit: Admin or Scout with edit permission
+  const canEdit = (isAdmin || isScout) && can("players", "edit");
+  
+  // Can create reports: Admin or Scout with create permission
+  const canCreateReport = (isAdmin || isScout) && can("reports", "create");
 
   // Refetch player to get updated auto_rating after stats change
   const refetchPlayer = async () => {
@@ -246,6 +261,22 @@ const PlayerDetail = () => {
     );
   }
 
+  // === ACCESS DENIED: Player trying to view another athlete ===
+  if (!canAccessAthlete && !loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
+        <div className="p-4 rounded-full bg-destructive/10">
+          <Lock className="w-10 h-10 text-destructive" />
+        </div>
+        <h2 className="text-xl font-semibold">Acesso Negado</h2>
+        <p className="text-muted-foreground text-center max-w-md">
+          Você só pode visualizar o perfil do seu próprio atleta.
+        </p>
+        <Button onClick={() => navigate("/app/my-profile")}>Ir para Meu Perfil</Button>
+      </div>
+    );
+  }
+
   if (!player) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
@@ -328,35 +359,41 @@ const PlayerDetail = () => {
           </Badge>
         </div>
 
-        {/* Row 4: Actions - stacked on mobile */}
-        <div className="flex flex-col gap-2 w-full">
-          <Button variant="outline" asChild className="w-full justify-center">
-            <Link to={`/app/reports/new?player=${player.id}`}>
-              <FileText className="w-4 h-4 mr-2" />
-              Novo Relatório
-            </Link>
-          </Button>
-          <div className="grid grid-cols-2 gap-2">
-            <Button variant="outline" asChild className="justify-center">
-              <Link to={`/app/players/${player.id}/edit`}>
-                <Edit className="w-4 h-4 mr-2" />
-                Editar
-              </Link>
-            </Button>
-            {isAdmin && (
-              <PermissionGate module="players" action="delete">
-                <Button
-                  variant="destructive"
-                  onClick={() => setDeleteDialogOpen(true)}
-                  className="justify-center"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Excluir
-                </Button>
-              </PermissionGate>
+        {/* Row 4: Actions - Only show for Admin/Scout (read-only for Player) */}
+        {!isReadOnly && (
+          <div className="flex flex-col gap-2 w-full">
+            {canCreateReport && (
+              <Button variant="outline" asChild className="w-full justify-center">
+                <Link to={`/app/reports/new?player=${player.id}`}>
+                  <FileText className="w-4 h-4 mr-2" />
+                  Novo Relatório
+                </Link>
+              </Button>
             )}
+            <div className="grid grid-cols-2 gap-2">
+              {canEdit && (
+                <Button variant="outline" asChild className="justify-center">
+                  <Link to={`/app/players/${player.id}/edit`}>
+                    <Edit className="w-4 h-4 mr-2" />
+                    Editar
+                  </Link>
+                </Button>
+              )}
+              {isAdmin && (
+                <PermissionGate module="players" action="delete">
+                  <Button
+                    variant="destructive"
+                    onClick={() => setDeleteDialogOpen(true)}
+                    className="justify-center"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Excluir
+                  </Button>
+                </PermissionGate>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Main Content with Tabs */}
@@ -449,10 +486,8 @@ const PlayerDetail = () => {
                 );
               })()}
 
-              {/* Internal Evaluation (visible only to Admin/Scout) */}
-              {canViewPrivate && (
-                <InternalEvaluationSection data={player} />
-              )}
+              {/* Internal Evaluation - Visible to ALL authorized users (Admin, Scout, Player viewing own profile) */}
+              <InternalEvaluationSection data={player} />
             </div>
 
             {/* Sidebar */}
