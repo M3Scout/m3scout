@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { 
   Target, 
   Trophy, 
@@ -8,7 +8,11 @@ import {
   Plus,
   Pencil,
   X,
-  Save
+  Save,
+  ChevronDown,
+  ChevronUp,
+  History,
+  Calendar
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { fadeInUp } from "@/lib/animations";
@@ -18,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -25,6 +30,7 @@ interface SeasonGoal {
   id: string;
   goal_type: string;
   target_value: number;
+  season_year?: number;
 }
 
 interface AthleteSeasonGoalsCardProps {
@@ -51,21 +57,105 @@ interface GoalTypeConfig {
   maxValue: number;
   step: number;
   unit?: string;
-  type: "accumulation" | "limit"; // accumulation = more is better, limit = less is better
-  limitLabel?: string; // Label for limit type (e.g., "máx.")
+  type: "accumulation" | "limit";
+  limitLabel?: string;
+  description: string; // Added for better UX
 }
 
 // Goal type keys MUST match exactly what's stored in the database
 const GOAL_TYPE_CONFIG: Record<string, GoalTypeConfig> = {
-  gols: { label: "Gols", icon: "⚽", color: "emerald", minValue: 1, maxValue: 50, step: 1, type: "accumulation" },
-  assistencias: { label: "Assistências", icon: "🅰️", color: "blue", minValue: 1, maxValue: 30, step: 1, type: "accumulation" },
-  partidas: { label: "Partidas", icon: "🏟️", color: "violet", minValue: 5, maxValue: 60, step: 5, type: "accumulation" },
-  minutos: { label: "Minutos", icon: "⏱️", color: "amber", minValue: 250, maxValue: 5000, step: 50, unit: "min", type: "accumulation" },
-  finalizacoes: { label: "Finalizações", icon: "🎯", color: "orange", minValue: 10, maxValue: 150, step: 5, type: "accumulation" },
-  desarmes: { label: "Desarmes", icon: "🦵", color: "cyan", minValue: 10, maxValue: 150, step: 5, type: "accumulation" },
-  cartoes_amarelos_max: { label: "Amarelos", icon: "🟨", color: "yellow", minValue: 1, maxValue: 15, step: 1, type: "limit", limitLabel: "máx." },
-  defesas: { label: "Defesas", icon: "🧤", color: "cyan", minValue: 10, maxValue: 200, step: 10, type: "accumulation" },
-  clean_sheets: { label: "Clean Sheets", icon: "🛡️", color: "green", minValue: 1, maxValue: 30, step: 1, type: "accumulation" },
+  gols: { 
+    label: "Gols", 
+    icon: "⚽", 
+    color: "emerald", 
+    minValue: 1, 
+    maxValue: 50, 
+    step: 1, 
+    type: "accumulation",
+    description: "Quantidade de gols marcados na temporada"
+  },
+  assistencias: { 
+    label: "Assistências", 
+    icon: "🅰️", 
+    color: "blue", 
+    minValue: 1, 
+    maxValue: 30, 
+    step: 1, 
+    type: "accumulation",
+    description: "Passes decisivos para gols"
+  },
+  partidas: { 
+    label: "Partidas", 
+    icon: "🏟️", 
+    color: "violet", 
+    minValue: 5, 
+    maxValue: 60, 
+    step: 5, 
+    type: "accumulation",
+    description: "Total de jogos disputados"
+  },
+  minutos: { 
+    label: "Minutos", 
+    icon: "⏱️", 
+    color: "amber", 
+    minValue: 250, 
+    maxValue: 5000, 
+    step: 50, 
+    unit: "min", 
+    type: "accumulation",
+    description: "Tempo total em campo (em minutos)"
+  },
+  finalizacoes: { 
+    label: "Finalizações", 
+    icon: "🎯", 
+    color: "orange", 
+    minValue: 10, 
+    maxValue: 150, 
+    step: 5, 
+    type: "accumulation",
+    description: "Chutes a gol durante a temporada"
+  },
+  desarmes: { 
+    label: "Desarmes", 
+    icon: "🦵", 
+    color: "cyan", 
+    minValue: 10, 
+    maxValue: 150, 
+    step: 5, 
+    type: "accumulation",
+    description: "Recuperações de bola com sucesso"
+  },
+  cartoes_amarelos_max: { 
+    label: "Amarelos", 
+    icon: "🟨", 
+    color: "yellow", 
+    minValue: 1, 
+    maxValue: 15, 
+    step: 1, 
+    type: "limit", 
+    limitLabel: "máx.",
+    description: "Limite máximo de cartões (quanto menos, melhor)"
+  },
+  defesas: { 
+    label: "Defesas", 
+    icon: "🧤", 
+    color: "cyan", 
+    minValue: 10, 
+    maxValue: 200, 
+    step: 10, 
+    type: "accumulation",
+    description: "Total de defesas realizadas"
+  },
+  clean_sheets: { 
+    label: "Clean Sheets", 
+    icon: "🛡️", 
+    color: "green", 
+    minValue: 1, 
+    maxValue: 30, 
+    step: 1, 
+    type: "accumulation",
+    description: "Jogos sem sofrer gols"
+  },
 };
 
 const OUTFIELD_GOAL_TYPES = ["gols", "assistencias", "partidas", "minutos", "finalizacoes", "desarmes", "cartoes_amarelos_max"];
@@ -75,13 +165,11 @@ const GK_GOAL_TYPES = ["defesas", "clean_sheets", "partidas", "minutos", "cartoe
 // For limit: lower = better (green when under limit, red/warning when approaching/exceeding)
 const getProgressColor = (percentage: number, isLimit: boolean): string => {
   if (isLimit) {
-    // Limit type: invert logic - less is better
-    if (percentage >= 100) return "bg-red-500"; // Exceeded limit
-    if (percentage >= 75) return "bg-amber-500"; // Warning, approaching limit
-    if (percentage >= 50) return "bg-yellow-500"; // Halfway
-    return "bg-emerald-500"; // Safe zone
+    if (percentage >= 100) return "bg-red-500";
+    if (percentage >= 75) return "bg-amber-500";
+    if (percentage >= 50) return "bg-yellow-500";
+    return "bg-emerald-500";
   }
-  // Accumulation type: more is better
   if (percentage >= 100) return "bg-emerald-500";
   if (percentage >= 75) return "bg-blue-500";
   if (percentage >= 50) return "bg-amber-500";
@@ -96,11 +184,12 @@ export function AthleteSeasonGoalsCard({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [goals, setGoals] = useState<SeasonGoal[]>([]);
-  const [isEditing, setIsEditing] = useState(false);
+  const [previousSeasonGoals, setPreviousSeasonGoals] = useState<Record<number, SeasonGoal[]>>({});
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [newGoalType, setNewGoalType] = useState<string>("");
   const [newGoalValue, setNewGoalValue] = useState<number>(0);
   const [editingGoal, setEditingGoal] = useState<SeasonGoal | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
   
   const currentYear = new Date().getFullYear();
   const availableGoalTypes = isGoalkeeper ? GK_GOAL_TYPES : OUTFIELD_GOAL_TYPES;
@@ -111,14 +200,38 @@ export function AthleteSeasonGoalsCard({
 
   const fetchGoals = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch current year goals
+      const { data: currentData, error: currentError } = await supabase
         .from("player_season_goals")
-        .select("id, goal_type, target_value")
+        .select("id, goal_type, target_value, season_year")
         .eq("player_id", athleteId)
         .eq("season_year", currentYear);
 
-      if (error) throw error;
-      setGoals(data || []);
+      if (currentError) throw currentError;
+      setGoals(currentData || []);
+
+      // Fetch previous seasons (last 3 years)
+      const { data: historyData, error: historyError } = await supabase
+        .from("player_season_goals")
+        .select("id, goal_type, target_value, season_year")
+        .eq("player_id", athleteId)
+        .lt("season_year", currentYear)
+        .gte("season_year", currentYear - 3)
+        .order("season_year", { ascending: false });
+
+      if (historyError) throw historyError;
+
+      // Group by season year
+      const grouped: Record<number, SeasonGoal[]> = {};
+      (historyData || []).forEach((goal) => {
+        if (goal.season_year) {
+          if (!grouped[goal.season_year]) {
+            grouped[goal.season_year] = [];
+          }
+          grouped[goal.season_year].push(goal);
+        }
+      });
+      setPreviousSeasonGoals(grouped);
     } catch (error) {
       console.error("Error fetching season goals:", error);
     } finally {
@@ -233,6 +346,7 @@ export function AthleteSeasonGoalsCard({
 
   const existingGoalTypes = goals.map(g => g.goal_type);
   const availableToAdd = availableGoalTypes.filter(t => !existingGoalTypes.includes(t));
+  const previousYears = Object.keys(previousSeasonGoals).map(Number).sort((a, b) => b - a);
 
   if (loading) {
     return (
@@ -249,10 +363,8 @@ export function AthleteSeasonGoalsCard({
     const config = GOAL_TYPE_CONFIG[g.goal_type];
     const current = getCurrentValue(g.goal_type);
     if (config?.type === "limit") {
-      // For limit type: success = staying under limit
       return current <= g.target_value;
     }
-    // For accumulation type: success = reaching target
     return current >= g.target_value;
   }).length;
 
@@ -284,6 +396,18 @@ export function AthleteSeasonGoalsCard({
             </Badge>
           )}
           
+          {previousYears.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowHistory(!showHistory)}
+              className="h-7 px-2 text-xs"
+            >
+              <History className="w-3.5 h-3.5 mr-1" />
+              Histórico
+            </Button>
+          )}
+          
           {availableToAdd.length > 0 && (
             <Button
               variant="ghost"
@@ -299,7 +423,7 @@ export function AthleteSeasonGoalsCard({
       </div>
 
       {/* Goals List */}
-      <div className="p-4 flex-1">
+      <div className="p-4 flex-1 overflow-auto">
         {goals.length === 0 ? (
           <div className="py-8 text-center">
             <Trophy className="w-10 h-10 mx-auto mb-3 text-zinc-700" />
@@ -328,13 +452,14 @@ export function AthleteSeasonGoalsCard({
                 maxValue: 100,
                 step: 1,
                 type: "accumulation" as const,
+                description: "",
               };
               const current = getCurrentValue(goal.goal_type);
               const percentage = Math.min((current / goal.target_value) * 100, 100);
               const isLimit = config.type === "limit";
               const isComplete = isLimit 
-                ? current <= goal.target_value  // Limit: success = under limit
-                : current >= goal.target_value; // Accumulation: success = reached target
+                ? current <= goal.target_value
+                : current >= goal.target_value;
               const isEditingThis = editingGoal?.id === goal.id;
               const isOverLimit = isLimit && current > goal.target_value;
 
@@ -467,6 +592,69 @@ export function AthleteSeasonGoalsCard({
             })}
           </div>
         )}
+
+        {/* Previous Seasons History */}
+        <AnimatePresence>
+          {showHistory && previousYears.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mt-6 pt-4 border-t border-zinc-800/40"
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <Calendar className="w-4 h-4 text-muted-foreground" />
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  Temporadas Anteriores
+                </h3>
+              </div>
+
+              <div className="space-y-4">
+                {previousYears.map((year) => (
+                  <Collapsible key={year}>
+                    <CollapsibleTrigger className="flex items-center justify-between w-full py-2 px-3 rounded-lg bg-zinc-800/30 hover:bg-zinc-800/50 transition-colors">
+                      <div className="flex items-center gap-2">
+                        <Trophy className="w-3.5 h-3.5 text-amber-500" />
+                        <span className="text-sm font-medium text-foreground">Temporada {year}</span>
+                        <Badge variant="secondary" className="text-[10px]">
+                          {previousSeasonGoals[year]?.length || 0} metas
+                        </Badge>
+                      </div>
+                      <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="pt-2 px-3">
+                      <div className="space-y-2">
+                        {previousSeasonGoals[year]?.map((goal) => {
+                          const config = GOAL_TYPE_CONFIG[goal.goal_type] || {
+                            label: goal.goal_type,
+                            icon: "🎯",
+                            type: "accumulation",
+                          };
+                          return (
+                            <div
+                              key={goal.id}
+                              className="flex items-center justify-between py-1.5 px-2 rounded bg-zinc-900/50"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm">{config.icon}</span>
+                                <span className="text-xs text-foreground">{config.label}</span>
+                              </div>
+                              <span className="text-xs text-muted-foreground tabular-nums">
+                                Meta: {goal.target_value}
+                                {goal.goal_type === "minutos" ? " min" : ""}
+                                {config.type === "limit" ? " máx." : ""}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Footer */}
@@ -479,9 +667,9 @@ export function AthleteSeasonGoalsCard({
         </div>
       )}
 
-      {/* Add Goal Dialog */}
+      {/* Add Goal Dialog with Enhanced Select */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent className="sm:max-w-[400px]">
+        <DialogContent className="sm:max-w-[420px]">
           <DialogHeader>
             <DialogTitle>Nova Meta</DialogTitle>
             <DialogDescription>
@@ -499,18 +687,50 @@ export function AthleteSeasonGoalsCard({
                   setNewGoalValue(config.minValue);
                 }
               }}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o tipo" />
+                <SelectTrigger className="h-auto py-2">
+                  <SelectValue placeholder="Selecione o tipo de meta">
+                    {newGoalType && GOAL_TYPE_CONFIG[newGoalType] && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{GOAL_TYPE_CONFIG[newGoalType].icon}</span>
+                        <div className="text-left">
+                          <span className="font-medium">{GOAL_TYPE_CONFIG[newGoalType].label}</span>
+                          {GOAL_TYPE_CONFIG[newGoalType].type === "limit" && (
+                            <span className="text-xs text-amber-500 ml-1">(limite)</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </SelectValue>
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-[300px]">
                   {availableToAdd.map((type) => {
                     const config = GOAL_TYPE_CONFIG[type];
                     return (
-                      <SelectItem key={type} value={type}>
-                        <span className="flex items-center gap-2">
-                          <span>{config.icon}</span>
-                          <span>{config.label}</span>
-                        </span>
+                      <SelectItem 
+                        key={type} 
+                        value={type}
+                        className="py-3 cursor-pointer"
+                      >
+                        <div className="flex items-start gap-3">
+                          <span className="text-xl mt-0.5">{config.icon}</span>
+                          <div className="flex flex-col">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-medium text-foreground">{config.label}</span>
+                              {config.type === "limit" && (
+                                <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-amber-500/50 text-amber-500">
+                                  limite
+                                </Badge>
+                              )}
+                            </div>
+                            <span className="text-[11px] text-muted-foreground mt-0.5 leading-tight">
+                              {config.description}
+                            </span>
+                            <span className="text-[10px] text-zinc-500 mt-1">
+                              {config.type === "limit" ? "Quanto menos, melhor" : `${config.minValue} – ${config.maxValue}`}
+                              {config.unit ? ` ${config.unit}` : ""}
+                            </span>
+                          </div>
+                        </div>
                       </SelectItem>
                     );
                   })}
@@ -519,28 +739,51 @@ export function AthleteSeasonGoalsCard({
             </div>
 
             {newGoalType && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium">
-                  Valor da Meta 
-                  <span className="text-xs text-muted-foreground ml-2">
-                    (mín: {GOAL_TYPE_CONFIG[newGoalType]?.minValue}, máx: {GOAL_TYPE_CONFIG[newGoalType]?.maxValue})
-                  </span>
-                </label>
-                <Input
-                  type="number"
-                  value={newGoalValue}
-                  onChange={(e) => setNewGoalValue(Number(e.target.value))}
-                  min={GOAL_TYPE_CONFIG[newGoalType]?.minValue}
-                  max={GOAL_TYPE_CONFIG[newGoalType]?.maxValue}
-                  step={GOAL_TYPE_CONFIG[newGoalType]?.step}
-                  className="text-lg font-bold"
-                />
-                <p className="text-xs text-muted-foreground">
-                  {newGoalType === "minutes" 
-                    ? `${Math.round(newGoalValue / 60)} horas de jogo`
-                    : `${newGoalValue} ${GOAL_TYPE_CONFIG[newGoalType]?.label.toLowerCase()}`}
-                </p>
-              </div>
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-3 p-4 rounded-lg bg-zinc-800/30 border border-zinc-700/30"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xl">{GOAL_TYPE_CONFIG[newGoalType]?.icon}</span>
+                  <span className="font-medium text-foreground">{GOAL_TYPE_CONFIG[newGoalType]?.label}</span>
+                  {GOAL_TYPE_CONFIG[newGoalType]?.type === "limit" && (
+                    <Badge variant="outline" className="text-[9px] px-1.5 border-amber-500/50 text-amber-500">
+                      limite máximo
+                    </Badge>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium flex items-center justify-between">
+                    <span>Valor da Meta</span>
+                    <span className="text-[10px] text-muted-foreground font-normal">
+                      {GOAL_TYPE_CONFIG[newGoalType]?.minValue} – {GOAL_TYPE_CONFIG[newGoalType]?.maxValue}
+                      {GOAL_TYPE_CONFIG[newGoalType]?.unit ? ` ${GOAL_TYPE_CONFIG[newGoalType]?.unit}` : ""}
+                    </span>
+                  </label>
+                  <Input
+                    type="number"
+                    value={newGoalValue}
+                    onChange={(e) => setNewGoalValue(Number(e.target.value))}
+                    min={GOAL_TYPE_CONFIG[newGoalType]?.minValue}
+                    max={GOAL_TYPE_CONFIG[newGoalType]?.maxValue}
+                    step={GOAL_TYPE_CONFIG[newGoalType]?.step}
+                    className="text-lg font-bold h-12"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {GOAL_TYPE_CONFIG[newGoalType]?.type === "limit" ? (
+                      <span className="text-amber-400">
+                        ⚠️ Meta de limite: você quer ficar abaixo de {newGoalValue} {GOAL_TYPE_CONFIG[newGoalType]?.label.toLowerCase()}
+                      </span>
+                    ) : newGoalType === "minutos" ? (
+                      `${newGoalValue} minutos em campo`
+                    ) : (
+                      `Alcançar ${newGoalValue} ${GOAL_TYPE_CONFIG[newGoalType]?.label.toLowerCase()}`
+                    )}
+                  </p>
+                </div>
+              </motion.div>
             )}
 
             <div className="flex justify-end gap-2 pt-4">
