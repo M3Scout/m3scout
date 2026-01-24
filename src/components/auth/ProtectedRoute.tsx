@@ -17,6 +17,8 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     session,
     loading: authLoading,
     rolesLoading,
+    roles,
+    isAdmin,
     isApproved,
     signOut,
     refreshRoles,
@@ -151,6 +153,19 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   // Not logged in → redirect to login
   if (!user) {
     return <Navigate to="/app/auth" state={{ from: location }} replace />;
+  }
+
+  // RBAC Decision Log (dev only)
+  if (import.meta.env.DEV) {
+    console.log("[RBAC] Access decision:", {
+      userId: user.id,
+      email: maskEmail(user.email),
+      roles,
+      isAdmin,
+      isApproved,
+      decision: isApproved ? "ALLOW" : "REDIRECT_PENDING",
+      route: location.pathname,
+    });
   }
 
   // Logged in but no valid role → redirect to pending access page
