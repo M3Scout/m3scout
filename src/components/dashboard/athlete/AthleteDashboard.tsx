@@ -8,6 +8,7 @@ import { AthleteInsightsCard } from "./AthleteInsightsCard";
 import { AthleteRatingEvolutionCard } from "./AthleteRatingEvolutionCard";
 import { AthleteRadarCard } from "./AthleteRadarCard";
 import { AthleteReportsCard } from "./AthleteReportsCard";
+import { AthleteSeasonGoalsCard } from "./AthleteSeasonGoalsCard";
 import { usePlayerMatchRatings } from "@/hooks/usePlayerMatchRatings";
 import { motion } from "framer-motion";
 import { staggerContainer, staggerItem } from "@/lib/animations";
@@ -210,24 +211,39 @@ export function AthleteDashboard() {
         </div>
       </motion.div>
 
-      {/* Radar + Reports Grid */}
+      {/* Season Goals + Radar Grid */}
       <motion.div 
         variants={staggerItem} 
-        className="grid grid-cols-1 lg:grid-cols-3 gap-[var(--gap-mobile)] md:gap-6 items-stretch w-full max-w-full"
+        className="grid grid-cols-1 lg:grid-cols-2 gap-[var(--gap-mobile)] md:gap-6 items-stretch w-full max-w-full"
       >
-        <div className="lg:col-span-1 flex min-w-0 w-full">
+        <div className="flex min-w-0 w-full">
+          <AthleteSeasonGoalsCard 
+            athleteId={athlete.id}
+            currentStats={{
+              goals: totals?.goals ?? 0,
+              assists: totals?.assists ?? 0,
+              matches: totals?.matches ?? 0,
+              minutes: totals?.minutes ?? 0,
+              saves: totals?.saves ?? 0,
+              clean_sheets: totals?.clean_sheets ?? 0,
+            }}
+          />
+        </div>
+
+        <div className="flex min-w-0 w-full">
           <AthleteRadarCard 
             athleteId={athlete.id}
             athletePosition={athlete.position}
           />
         </div>
+      </motion.div>
 
-        <div className="lg:col-span-2 flex min-w-0 w-full">
-          <AthleteReportsCard 
-            reports={reports}
-            athleteId={athlete.id}
-          />
-        </div>
+      {/* Reports */}
+      <motion.div variants={staggerItem}>
+        <AthleteReportsCard 
+          reports={reports}
+          athleteId={athlete.id}
+        />
       </motion.div>
     </motion.div>
   );
