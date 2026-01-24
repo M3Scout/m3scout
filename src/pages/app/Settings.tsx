@@ -78,12 +78,13 @@ export default function Settings() {
       .from("profiles")
       .select("full_name, avatar_url")
       .eq("user_id", user.id)
-      .single();
+      .limit(1);
 
-    if (data) {
+    const profileRow = Array.isArray(data) ? data[0] ?? null : null;
+    if (profileRow) {
       setProfile({
-        full_name: data.full_name || "",
-        avatar_url: data.avatar_url,
+        full_name: profileRow.full_name || "",
+        avatar_url: profileRow.avatar_url,
       });
     }
     setLoading(false);

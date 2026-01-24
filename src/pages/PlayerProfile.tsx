@@ -551,8 +551,9 @@ const PlayerProfile = () => {
         .select("*")
         .eq("slug", slug)
         .eq("is_public", true)
-        .maybeSingle();
-      if (data) setPlayer(data);
+        .limit(1);
+      const playerRow = Array.isArray(data) ? data[0] ?? null : null;
+      if (playerRow) setPlayer(playerRow);
       setLoading(false);
     };
     fetchPlayer();

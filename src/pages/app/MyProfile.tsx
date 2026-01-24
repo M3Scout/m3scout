@@ -228,10 +228,11 @@ export default function MyProfile() {
         .from("players")
         .select("*")
         .eq("id", linkedPlayerId)
-        .maybeSingle();
+        .limit(1);
 
-      if (data) {
-        setPlayer(data as Player);
+      const playerRow = Array.isArray(data) ? data[0] ?? null : null;
+      if (playerRow) {
+        setPlayer(playerRow as Player);
       }
       setLoading(false);
     };

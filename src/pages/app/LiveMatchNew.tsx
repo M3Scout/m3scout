@@ -241,10 +241,12 @@ export default function LiveMatchNew() {
           opponent_logo_url: opponentLogoUrl || null,
         })
         .select("id")
-        .single();
+        .limit(1);
 
       if (error) throw error;
-      return { id: data.id, startImmediately };
+      const row = Array.isArray(data) ? data[0] : null;
+      if (!row) throw new Error("Falha ao criar jogo");
+      return { id: row.id, startImmediately };
     },
     onSuccess: (data) => {
       if (data.startImmediately) {

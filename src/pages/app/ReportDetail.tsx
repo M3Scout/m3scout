@@ -120,7 +120,9 @@ const { user } = useAuth();
             competitions (name, country, division, phase)
           `)
           .eq("id", id)
-          .maybeSingle();
+          .limit(1);
+
+        const reportRow = Array.isArray(data) ? data[0] ?? null : null;
 
         if (queryError) {
           console.error("Error fetching report:", queryError);
@@ -129,7 +131,7 @@ const { user } = useAuth();
           return;
         }
         
-        if (!data) {
+        if (!reportRow) {
           setError("Relatório não encontrado ou sem permissão de acesso");
           setLoading(false);
           return;
@@ -137,17 +139,17 @@ const { user } = useAuth();
 
         // Fetch scout profile separately to avoid FK relationship issues
         let scoutProfile = null;
-        if (data.scout_id) {
+        if (reportRow.scout_id) {
           const { data: profileData } = await supabase
             .from("profiles")
             .select("full_name")
-            .eq("user_id", data.scout_id)
-            .maybeSingle();
-          scoutProfile = profileData;
+            .eq("user_id", reportRow.scout_id)
+            .limit(1);
+          scoutProfile = Array.isArray(profileData) ? profileData[0] ?? null : null;
         }
 
         setReport({
-          ...data,
+          ...reportRow,
           profiles: scoutProfile,
         } as any);
       } catch (err: any) {

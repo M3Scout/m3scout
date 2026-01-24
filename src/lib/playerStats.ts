@@ -244,13 +244,14 @@ export async function upsertPlayerStats(
         }
       )
       .select()
-      .single();
+      .limit(1);
 
     if (error) {
       return { data: null, error: new Error(error.message) };
     }
 
-    return { data: data as PlayerStats, error: null };
+    const row = Array.isArray(data) ? data[0] ?? null : null;
+    return { data: row as PlayerStats | null, error: null };
   } catch (err) {
     return { data: null, error: err as Error };
   }

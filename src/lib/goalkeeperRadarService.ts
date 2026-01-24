@@ -264,12 +264,13 @@ export async function calculateAndSaveGKRadar(
 
     // Save to auto_rating_details
     if (result.scores) {
-      const { data: player } = await supabase
+      const { data: playerArr } = await supabase
         .from("players")
         .select("auto_rating_details")
         .eq("id", playerId)
-        .maybeSingle();
+        .limit(1);
 
+      const player = Array.isArray(playerArr) ? playerArr[0] ?? null : null;
       const existingDetails = (player?.auto_rating_details as Record<string, unknown>) || {};
       const gkDetails = gkRadarToDetails(result);
       const newDetails = {

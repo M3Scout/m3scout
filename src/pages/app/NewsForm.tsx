@@ -75,9 +75,10 @@ const NewsForm = () => {
         .from("news_articles")
         .select("*")
         .eq("id", id)
-        .single();
+        .limit(1);
       if (error) throw error;
-      return data;
+      const article = Array.isArray(data) ? data[0] ?? null : null;
+      return article;
     },
     enabled: isEditing,
   });

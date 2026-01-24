@@ -189,68 +189,69 @@ export default function EditPlayer() {
         .from("players")
         .select("*")
         .eq("id", id)
-        .maybeSingle();
+        .limit(1);
 
-      if (error || !data) {
+      const playerRow = Array.isArray(data) ? data[0] ?? null : null;
+      if (error || !playerRow) {
         toast.error("Atleta não encontrado");
         navigate("/app/players");
         return;
       }
 
       setFormData({
-        full_name: data.full_name || "",
-        position: data.position || "",
-        secondary_positions: data.secondary_positions || [],
-        nationality: data.nationality || "Brasil",
-        birth_date: data.birth_date || "",
-        height: data.height?.toString() || "",
-        dominant_foot: data.dominant_foot || "",
-        current_club: data.current_club || "",
-        country: data.country || "Brasil",
-        bio_public: data.bio_public || "",
-        highlight_video_url: data.highlight_video_url || "",
-        is_public: data.is_public || false,
-        weight: data.weight?.toString() || "",
-        body_fat_percentage: data.body_fat_percentage?.toString() || "",
-        muscle_mass: data.muscle_mass?.toString() || "",
-        wingspan: data.wingspan?.toString() || "",
-        max_speed: data.max_speed?.toString() || "",
-        sprint_30m: data.sprint_30m?.toString() || "",
-        vo2_max: data.vo2_max?.toString() || "",
-        last_physical_evaluation: data.last_physical_evaluation || "",
-        playing_height_preference: data.playing_height_preference || "",
-        play_style: data.play_style || "",
-        primary_tactical_role: data.primary_tactical_role || "",
-        secondary_tactical_role: data.secondary_tactical_role || "",
-        strengths: data.strengths || [],
-        areas_to_develop: data.areas_to_develop || [],
-        contract_start: data.contract_start || "",
-        contract_end: data.contract_end || "",
-        contract_notes: data.contract_notes || "",
-        salary_amount: parseSalaryFromLegacy(data.salary_info),
-        salary_currency: parseCurrencyFromLegacy(data.salary_info),
-        release_clause_amount: parseSalaryFromLegacy(data.release_clause),
-        release_clause_currency: parseCurrencyFromLegacy(data.release_clause),
-        contract_status: data.contract_status || "contracted",
-        passports: data.passports || [],
-        agent_name: data.agent_name || "",
-        agent_contact: data.agent_contact || "",
-        physical_status: data.physical_status || "fit",
-        medical_notes: data.medical_notes || "",
-        overall_rating: data.overall_rating?.toString() || "",
-        potential_rating: data.potential_rating?.toString() || "",
-        ready_to_compete: data.ready_to_compete,
-        estimated_level: data.estimated_level || "",
-        internal_evaluation_notes: data.internal_evaluation_notes || "",
-        internal_notes: data.internal_notes || "",
+        full_name: playerRow.full_name || "",
+        position: playerRow.position || "",
+        secondary_positions: playerRow.secondary_positions || [],
+        nationality: playerRow.nationality || "Brasil",
+        birth_date: playerRow.birth_date || "",
+        height: playerRow.height?.toString() || "",
+        dominant_foot: playerRow.dominant_foot || "",
+        current_club: playerRow.current_club || "",
+        country: playerRow.country || "Brasil",
+        bio_public: playerRow.bio_public || "",
+        highlight_video_url: playerRow.highlight_video_url || "",
+        is_public: playerRow.is_public || false,
+        weight: playerRow.weight?.toString() || "",
+        body_fat_percentage: playerRow.body_fat_percentage?.toString() || "",
+        muscle_mass: playerRow.muscle_mass?.toString() || "",
+        wingspan: playerRow.wingspan?.toString() || "",
+        max_speed: playerRow.max_speed?.toString() || "",
+        sprint_30m: playerRow.sprint_30m?.toString() || "",
+        vo2_max: playerRow.vo2_max?.toString() || "",
+        last_physical_evaluation: playerRow.last_physical_evaluation || "",
+        playing_height_preference: playerRow.playing_height_preference || "",
+        play_style: playerRow.play_style || "",
+        primary_tactical_role: playerRow.primary_tactical_role || "",
+        secondary_tactical_role: playerRow.secondary_tactical_role || "",
+        strengths: playerRow.strengths || [],
+        areas_to_develop: playerRow.areas_to_develop || [],
+        contract_start: playerRow.contract_start || "",
+        contract_end: playerRow.contract_end || "",
+        contract_notes: playerRow.contract_notes || "",
+        salary_amount: parseSalaryFromLegacy(playerRow.salary_info),
+        salary_currency: parseCurrencyFromLegacy(playerRow.salary_info),
+        release_clause_amount: parseSalaryFromLegacy(playerRow.release_clause),
+        release_clause_currency: parseCurrencyFromLegacy(playerRow.release_clause),
+        contract_status: playerRow.contract_status || "contracted",
+        passports: playerRow.passports || [],
+        agent_name: playerRow.agent_name || "",
+        agent_contact: playerRow.agent_contact || "",
+        physical_status: playerRow.physical_status || "fit",
+        medical_notes: playerRow.medical_notes || "",
+        overall_rating: playerRow.overall_rating?.toString() || "",
+        potential_rating: playerRow.potential_rating?.toString() || "",
+        ready_to_compete: playerRow.ready_to_compete,
+        estimated_level: playerRow.estimated_level || "",
+        internal_evaluation_notes: playerRow.internal_evaluation_notes || "",
+        internal_notes: playerRow.internal_notes || "",
       });
 
-      if (data.photo_url) {
-        setExistingPhotoUrl(data.photo_url);
-        setPhotoPreview(data.photo_url);
+      if (playerRow.photo_url) {
+        setExistingPhotoUrl(playerRow.photo_url);
+        setPhotoPreview(playerRow.photo_url);
       }
 
-      setPlayerName(data.full_name);
+      setPlayerName(playerRow.full_name);
       setFetching(false);
     };
 

@@ -339,13 +339,15 @@ export default function LiveMatchReview() {
         const minutesPlayed = manualMinutes[mp.player_id] ?? calculateMinutesPlayedForPlayer(mp, durationMinutes);
 
         // First, try to get existing stats
-        const { data: existingStats } = await supabase
+        const { data: existingStatsArr } = await supabase
           .from("player_stats")
           .select("*")
           .eq("player_id", mp.player_id)
           .eq("competition_id", match.competition_id)
           .eq("season_year", match.season_year)
-          .maybeSingle();
+          .limit(1);
+
+        const existingStats = Array.isArray(existingStatsArr) ? existingStatsArr[0] ?? null : null;
 
         // Build update object with incremented values using match_player_stats
         // This ensures derived stats (goal → shots + shots_on_target) are correctly included
