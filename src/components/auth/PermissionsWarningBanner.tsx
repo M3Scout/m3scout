@@ -1,8 +1,10 @@
-import { AlertCircle, RefreshCw, LogOut } from "lucide-react";
+import { AlertCircle, RefreshCw, LogOut, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type PermissionsWarningBannerProps = {
-  errorType: "timeout" | "abort" | "network" | "exception" | string;
+  /** "slowLoading" = still trying (no buttons), "errorFinal" = failed after all retries */
+  mode: "slowLoading" | "errorFinal";
+  errorType?: "timeout" | "abort" | "network" | "exception" | string;
   retrying?: boolean;
   loggingOut?: boolean;
   onRetry: () => void;
@@ -10,12 +12,26 @@ type PermissionsWarningBannerProps = {
 };
 
 export function PermissionsWarningBanner({
+  mode,
   errorType,
   retrying,
   loggingOut,
   onRetry,
   onLogout,
 }: PermissionsWarningBannerProps) {
+  // Slow loading mode: just show discreet message, no buttons
+  if (mode === "slowLoading") {
+    return (
+      <div className="fixed inset-x-0 top-0 z-50 border-b border-border bg-background/80 backdrop-blur">
+        <div className="mx-auto flex w-full max-w-6xl items-center gap-3 px-4 py-2">
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+          <p className="text-xs text-muted-foreground">Sincronizando permissões...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error final mode: show full warning with buttons
   const message =
     errorType === "timeout"
       ? "A requisição demorou demais. Algumas permissões podem não ter sido carregadas."
@@ -50,4 +66,3 @@ export function PermissionsWarningBanner({
     </div>
   );
 }
-
