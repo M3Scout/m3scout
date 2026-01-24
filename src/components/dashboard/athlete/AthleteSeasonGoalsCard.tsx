@@ -62,9 +62,9 @@ interface GoalTypeConfig {
   description: string; // Added for better UX
 }
 
-// Goal type keys MUST match exactly what's stored in the database
+// Goal type keys MUST match exactly the database constraint values
 const GOAL_TYPE_CONFIG: Record<string, GoalTypeConfig> = {
-  gols: { 
+  goals: { 
     label: "Gols", 
     icon: "⚽", 
     color: "emerald", 
@@ -74,7 +74,7 @@ const GOAL_TYPE_CONFIG: Record<string, GoalTypeConfig> = {
     type: "accumulation",
     description: "Quantidade de gols marcados na temporada"
   },
-  assistencias: { 
+  assists: { 
     label: "Assistências", 
     icon: "🅰️", 
     color: "blue", 
@@ -84,7 +84,7 @@ const GOAL_TYPE_CONFIG: Record<string, GoalTypeConfig> = {
     type: "accumulation",
     description: "Passes decisivos para gols"
   },
-  partidas: { 
+  matches: { 
     label: "Partidas", 
     icon: "🏟️", 
     color: "violet", 
@@ -94,7 +94,7 @@ const GOAL_TYPE_CONFIG: Record<string, GoalTypeConfig> = {
     type: "accumulation",
     description: "Total de jogos disputados"
   },
-  minutos: { 
+  minutes: { 
     label: "Minutos", 
     icon: "⏱️", 
     color: "amber", 
@@ -105,7 +105,7 @@ const GOAL_TYPE_CONFIG: Record<string, GoalTypeConfig> = {
     type: "accumulation",
     description: "Tempo total em campo (em minutos)"
   },
-  finalizacoes: { 
+  shots: { 
     label: "Finalizações", 
     icon: "🎯", 
     color: "orange", 
@@ -115,7 +115,7 @@ const GOAL_TYPE_CONFIG: Record<string, GoalTypeConfig> = {
     type: "accumulation",
     description: "Chutes a gol durante a temporada"
   },
-  desarmes: { 
+  tackles: { 
     label: "Desarmes", 
     icon: "🦵", 
     color: "cyan", 
@@ -125,7 +125,7 @@ const GOAL_TYPE_CONFIG: Record<string, GoalTypeConfig> = {
     type: "accumulation",
     description: "Recuperações de bola com sucesso"
   },
-  cartoes_amarelos_max: { 
+  yellow_cards_max: { 
     label: "Amarelos", 
     icon: "🟨", 
     color: "yellow", 
@@ -136,7 +136,7 @@ const GOAL_TYPE_CONFIG: Record<string, GoalTypeConfig> = {
     limitLabel: "máx.",
     description: "Limite máximo de cartões (quanto menos, melhor)"
   },
-  defesas: { 
+  saves: { 
     label: "Defesas", 
     icon: "🧤", 
     color: "cyan", 
@@ -158,8 +158,9 @@ const GOAL_TYPE_CONFIG: Record<string, GoalTypeConfig> = {
   },
 };
 
-const OUTFIELD_GOAL_TYPES = ["gols", "assistencias", "partidas", "minutos", "finalizacoes", "desarmes", "cartoes_amarelos_max"];
-const GK_GOAL_TYPES = ["defesas", "clean_sheets", "partidas", "minutos", "cartoes_amarelos_max"];
+// These slugs must match DB constraint values
+const OUTFIELD_GOAL_TYPES = ["goals", "assists", "matches", "minutes", "shots", "tackles", "yellow_cards_max"];
+const GK_GOAL_TYPES = ["saves", "clean_sheets", "matches", "minutes", "yellow_cards_max"];
 
 // For accumulation: higher = better (green when complete)
 // For limit: lower = better (green when under limit, red/warning when approaching/exceeding)
@@ -241,15 +242,15 @@ export function AthleteSeasonGoalsCard({
 
   const getCurrentValue = (goalType: string): number => {
     switch (goalType) {
-      case "gols": return currentStats.goals;
-      case "assistencias": return currentStats.assists;
-      case "partidas": return currentStats.matches;
-      case "minutos": return currentStats.minutes;
-      case "defesas": return currentStats.saves;
+      case "goals": return currentStats.goals;
+      case "assists": return currentStats.assists;
+      case "matches": return currentStats.matches;
+      case "minutes": return currentStats.minutes;
+      case "saves": return currentStats.saves;
       case "clean_sheets": return currentStats.clean_sheets;
-      case "finalizacoes": return currentStats.shots ?? 0;
-      case "desarmes": return currentStats.tackles ?? 0;
-      case "cartoes_amarelos_max": return currentStats.yellow_cards ?? 0;
+      case "shots": return currentStats.shots ?? 0;
+      case "tackles": return currentStats.tackles ?? 0;
+      case "yellow_cards_max": return currentStats.yellow_cards ?? 0;
       default: return 0;
     }
   };
@@ -530,7 +531,7 @@ export function AthleteSeasonGoalsCard({
                           </span>
                           <span className="text-xs text-muted-foreground">/</span>
                           <span className="text-xs text-muted-foreground tabular-nums">
-                            {goal.target_value}{goal.goal_type === "minutos" ? " min" : ""}
+                            {goal.target_value}{goal.goal_type === "minutes" ? " min" : ""}
                             {isLimit && " máx."}
                           </span>
                           <Button
@@ -572,8 +573,8 @@ export function AthleteSeasonGoalsCard({
                       ) : isComplete ? (
                         <span className="text-emerald-400">Meta atingida! 🎉</span>
                       ) : (
-                        <>Faltam {goal.goal_type === "minutos" 
-                          ? (goal.target_value - current) + " minutos" 
+                        <>Faltam {goal.goal_type === "minutes" 
+                          ? (goal.target_value - current) + " minutos"
                           : (goal.target_value - current) + ` ${config.label.toLowerCase()}`}</>
                       )}
                     </p>
@@ -641,7 +642,7 @@ export function AthleteSeasonGoalsCard({
                               </div>
                               <span className="text-xs text-muted-foreground tabular-nums">
                                 Meta: {goal.target_value}
-                                {goal.goal_type === "minutos" ? " min" : ""}
+                                {goal.goal_type === "minutes" ? " min" : ""}
                                 {config.type === "limit" ? " máx." : ""}
                               </span>
                             </div>
@@ -776,7 +777,7 @@ export function AthleteSeasonGoalsCard({
                       <span className="text-amber-400">
                         ⚠️ Meta de limite: você quer ficar abaixo de {newGoalValue} {GOAL_TYPE_CONFIG[newGoalType]?.label.toLowerCase()}
                       </span>
-                    ) : newGoalType === "minutos" ? (
+                    ) : newGoalType === "minutes" ? (
                       `${newGoalValue} minutos em campo`
                     ) : (
                       `Alcançar ${newGoalValue} ${GOAL_TYPE_CONFIG[newGoalType]?.label.toLowerCase()}`
