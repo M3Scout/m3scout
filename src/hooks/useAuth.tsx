@@ -103,6 +103,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLinkedPlayerId(null);
       } else if (data && data.length > 0) {
         console.log("[Auth] Roles fetched:", data);
+        
+        // Only count active roles
+        const activeRoles = data.filter(r => r.status === 'active');
+        const rolesList = activeRoles.map((r) => r.role);
+        
+        // RBAC Debug log
+        console.log("[RBAC] Role resolution:", {
+          userId,
+          rawData: data,
+          activeRoles,
+          resolvedRoles: rolesList,
+          isAdmin: rolesList.includes('admin'),
+          isApproved: rolesList.length > 0,
+          source: 'user_roles'
+        });
+        
         setDebug({
           rolesFetch: {
             stage: "success",
@@ -114,9 +130,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             statusText,
           },
         });
-        // Only count active roles
-        const activeRoles = data.filter(r => r.status === 'active');
-        setRoles(activeRoles.map((r) => r.role));
+        
+        setRoles(rolesList);
         // Get linked_player_id if user is a player
         const playerRole = activeRoles.find((r) => r.role === "player");
         setLinkedPlayerId(playerRole?.linked_player_id ?? null);
