@@ -257,6 +257,18 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
     }
   }, [authLoading, fetchPermissions]);
 
+  // Fail-safe: if auth never finishes loading, stop permissions loading after timeout
+  useEffect(() => {
+    if (!authLoading) return; // Auth finished, no need for timeout
+    
+    const timeout = setTimeout(() => {
+      console.warn("[Permissions] Auth loading timeout - forcing permissions loading to complete");
+      setLoading(false);
+    }, 8000); // 8 seconds - before ProtectedRoute's 10s timeout
+
+    return () => clearTimeout(timeout);
+  }, [authLoading]);
+
   const can = useCallback((module: ModuleKey, action: ActionKey): boolean => {
     if (!permissions) return false;
     
