@@ -247,6 +247,9 @@ export function AthleteDashboard() {
             minutes: totals?.minutes ?? 0,
             saves: totals?.saves ?? 0,
             clean_sheets: totals?.clean_sheets ?? 0,
+            shots: totals?.shots ?? 0,
+            tackles: totals?.tackles ?? 0,
+            yellow_cards: yellowCards,
           }}
           isGoalkeeper={isGoalkeeper}
         />
