@@ -3,6 +3,8 @@ import { useParams, Navigate, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useLiveMatch, MatchEventType } from "@/hooks/useLiveMatch";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { HookDebugErrorBoundary, getHookMask, isBlockEnabled, getHookDebugState, setHookDebugState } from "@/components/HookDebugErrorBoundary";
 import { GameHeaderCard } from "@/components/live-match/GameHeaderCard";
@@ -21,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,7 +36,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { 
   UserPlus, Users, ArrowRightLeft, Filter, 
-  LayoutGrid, LayoutList, Zap, Edit3, Save, X, PlusCircle
+  LayoutGrid, LayoutList, Zap, Edit3, Save, X, PlusCircle, Eye, Lock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -66,6 +69,11 @@ function PlayerCardSkeleton({ index }: { index: number }) {
 function LiveMatchGameInner({ matchId }: { matchId: string }) {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { linkedPlayerId, isPlayer, isAdmin, isScout } = useAuth();
+  const { isPlayerRole } = usePermissions();
+  
+  // Determine if user is in player-only mode (read-only)
+  const isPlayerOnlyMode = (isPlayer || isPlayerRole) && !isAdmin && !isScout;
 
   // HookDebug (preview-only): helps isolate hook-order violations by mounting/unmounting blocks
   const hookDebugEnabled =
@@ -183,6 +191,12 @@ function LiveMatchGameInner({ matchId }: { matchId: string }) {
     );
   }
 
+  // Check if player is in lineup for this match (for PLAYER role access control)
+  const playerIsInLineup = useMemo(() => {
+    if (!isPlayerOnlyMode || !linkedPlayerId) return true; // Not player mode, no restriction
+    return matchPlayers.some(mp => mp.player_id === linkedPlayerId && !mp.is_removed);
+  }, [isPlayerOnlyMode, linkedPlayerId, matchPlayers]);
+
   if (matchError || !match) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
@@ -191,12 +205,39 @@ function LiveMatchGameInner({ matchId }: { matchId: string }) {
         </div>
         <h1 className="text-xl font-bold text-zinc-100">Jogo não encontrado</h1>
         <p className="text-sm text-zinc-500">O jogo pode ter sido excluído ou você não tem acesso.</p>
-        <Button asChild>
-          <Link to="/app/live-match/new">Criar novo jogo</Link>
+        {!isPlayerOnlyMode && (
+          <Button asChild>
+            <Link to="/app/live-match/new">Criar novo jogo</Link>
+          </Button>
+        )}
+        <Button variant="outline" asChild>
+          <Link to="/app/live-match">Voltar</Link>
         </Button>
       </div>
     );
   }
+
+  // PLAYER role: check if they're in the lineup
+  if (isPlayerOnlyMode && !playerIsInLineup && !isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <div className="w-16 h-16 rounded-2xl bg-amber-500/10 flex items-center justify-center mb-2">
+          <Lock className="w-8 h-8 text-amber-500" />
+        </div>
+        <h1 className="text-xl font-bold text-zinc-100">Acesso Restrito</h1>
+        <p className="text-sm text-zinc-500 text-center max-w-md">
+          Você não está escalado nesta partida. <br />
+          Apenas jogadores que participam do jogo podem visualizá-lo.
+        </p>
+        <Button variant="outline" asChild>
+          <Link to="/app/live-match">Ver Meus Jogos</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  // For PLAYER role, always read-only (no event logging)
+  const isReadOnlyPlayer = isPlayerOnlyMode;
 
   const handleAddEvent = (playerId: string, eventType: MatchEventType, forceMinute?: number) => {
     // Track for debug
@@ -300,13 +341,17 @@ function LiveMatchGameInner({ matchId }: { matchId: string }) {
   const isFinal = ["finished", "applied", "completed"].includes(statusStr);
   const isLocked = statusStr === "locked" || Boolean((match as any).is_locked);
   
-  // Can add events if: (live and clock running) OR (final and review mode and not locked)
-  const canAddEvents = !isLocked && ((isLive && match.clock_status === "running") || (isFinal && isReviewMode));
+  // Can add events if: (live and clock running) OR (final and review mode and not locked) AND not player-only mode
+  const canAddEvents = !isLocked && !isReadOnlyPlayer && ((isLive && match.clock_status === "running") || (isFinal && isReviewMode));
+  
+  // Can modify match (add players, substitute, etc.) - not for player-only mode
+  const canModifyMatch = !isLocked && !isReadOnlyPlayer;
 
   // Determine UI read-only reason for Debug HUD
   // NOTE: this must NOT be a hook (e.g., useMemo) because this component has early returns above.
   // Having a hook after an early return causes "Rendered more hooks than during the previous render" on refresh.
   const uiReadOnlyReason = (() => {
+    if (isReadOnlyPlayer) return "PLAYER_READONLY";
     if (isLocked) return "LOCKED";
     if (isDraft) return "DRAFT";
     if (isFinal && !isReviewMode) return "FINAL_NOT_REVIEW";
@@ -412,8 +457,23 @@ function LiveMatchGameInner({ matchId }: { matchId: string }) {
       {/* Event Visual Effects */}
       <EventEffects lastEvent={lastEvent} enabled={effectsEnabled} />
 
-      {/* Premium Header */}
-      {hookDebugFlags.header && (
+      {/* Read-only banner for player mode */}
+      {isReadOnlyPlayer && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mx-4 mt-4 flex items-center gap-3 rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-3"
+        >
+          <Eye className="w-5 h-5 text-blue-400 shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-blue-300">Modo Visualização</p>
+            <p className="text-xs text-blue-400/70">Você está vendo este jogo como jogador escalado. Não é possível editar.</p>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Premium Header - hide controls for player mode */}
+      {hookDebugFlags.header && !isReadOnlyPlayer && (
         <GameHeaderCard
           match={match}
           onStartGame={() => startGame.mutate()}
@@ -516,8 +576,8 @@ function LiveMatchGameInner({ matchId }: { matchId: string }) {
           <LiveStatsPanel events={matchEvents} />
         )}
 
-        {/* Controls bar - optimized for tablet touch */}
-        {hookDebugFlags.statsPanels && (
+        {/* Controls bar - hide for player read-only mode */}
+        {hookDebugFlags.statsPanels && !isReadOnlyPlayer && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -612,6 +672,36 @@ function LiveMatchGameInner({ matchId }: { matchId: string }) {
                   </Label>
                 </div>
               )}
+            </div>
+          </motion.div>
+        )}
+        
+        {/* Player mode: simplified filter only */}
+        {isReadOnlyPlayer && !isDraft && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center justify-end"
+          >
+            <div
+              className={cn(
+                "flex items-center gap-2 bg-zinc-800/60 rounded-lg border border-zinc-700/40",
+                "px-3 py-1.5"
+              )}
+            >
+              <Filter className="w-3.5 h-3.5 text-zinc-500" />
+              <Switch
+                id="only-on-field-player"
+                checked={showOnlyOnField}
+                onCheckedChange={setShowOnlyOnField}
+                className="data-[state=checked]:bg-green-600"
+              />
+              <Label
+                htmlFor="only-on-field-player"
+                className="text-xs text-zinc-400 cursor-pointer"
+              >
+                Em campo
+              </Label>
             </div>
           </motion.div>
         )}
@@ -722,22 +812,23 @@ function LiveMatchGameInner({ matchId }: { matchId: string }) {
                   eventCounts:
                     playerEventCounts[mp.player_id] || ({} as Record<MatchEventType, number>),
                   matchStats: playerStatsMap[mp.player_id],
-                  onAddEvent: (type: MatchEventType) => handleAddEvent(mp.player_id, type),
-                  onUndo: () => undoLastEvent(mp.player_id),
-                  onVoidLastEvent: (type: MatchEventType) =>
+                  // PLAYER role: disable all event/edit actions
+                  onAddEvent: isReadOnlyPlayer ? undefined : (type: MatchEventType) => handleAddEvent(mp.player_id, type),
+                  onUndo: isReadOnlyPlayer ? undefined : () => undoLastEvent(mp.player_id),
+                  onVoidLastEvent: isReadOnlyPlayer ? undefined : (type: MatchEventType) =>
                     voidLastEventByType.mutate({ playerId: mp.player_id, eventType: type }),
-                  onPlayerEnter: (matchPlayerId: string) => handlePlayerEnter(matchPlayerId),
-                  onPlayerExit: (matchPlayerId: string) => handlePlayerExit(matchPlayerId),
-                  onRemoveFromMatch: () => handleRemoveFromMatch(mp),
-                  onSaveNotes: async (notes: string) => {
+                  onPlayerEnter: isReadOnlyPlayer ? undefined : (matchPlayerId: string) => handlePlayerEnter(matchPlayerId),
+                  onPlayerExit: isReadOnlyPlayer ? undefined : (matchPlayerId: string) => handlePlayerExit(matchPlayerId),
+                  onRemoveFromMatch: isReadOnlyPlayer ? undefined : () => handleRemoveFromMatch(mp),
+                  onSaveNotes: isReadOnlyPlayer ? undefined : async (notes: string) => {
                     await updatePlayer.mutateAsync({ matchPlayerId: mp.id, updates: { notes } });
                   },
-                  onUpdateStarterStatus: async (matchPlayerId: string, started: boolean) => {
+                  onUpdateStarterStatus: isReadOnlyPlayer ? undefined : async (matchPlayerId: string, started: boolean) => {
                     await updatePlayer.mutateAsync({ matchPlayerId, updates: { started } });
                     toast.success(started ? "Definido como Titular" : "Definido como Reserva");
                   },
-                  disabled: isLocked,
-                  isReviewMode: isReviewMode,
+                  disabled: isLocked || isReadOnlyPlayer,
+                  isReviewMode: isReviewMode && !isReadOnlyPlayer,
                   index: index,
                 };
 
@@ -756,8 +847,8 @@ function LiveMatchGameInner({ matchId }: { matchId: string }) {
         )}
       </div>
 
-      {/* Modals */}
-      {hookDebugFlags.modals && (
+      {/* Modals - only for non-player modes */}
+      {hookDebugFlags.modals && !isReadOnlyPlayer && (
         <>
           <AddPlayerModal
             open={addPlayerOpen}
