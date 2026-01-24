@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 type PermissionsWarningBannerProps = {
   errorType: "timeout" | "abort" | "network" | "exception" | string;
   retrying?: boolean;
+  loggingOut?: boolean;
   onRetry: () => void;
   onLogout: () => void;
 };
@@ -11,6 +12,7 @@ type PermissionsWarningBannerProps = {
 export function PermissionsWarningBanner({
   errorType,
   retrying,
+  loggingOut,
   onRetry,
   onLogout,
 }: PermissionsWarningBannerProps) {
@@ -39,12 +41,13 @@ export function PermissionsWarningBanner({
             <RefreshCw className="mr-2 h-3.5 w-3.5" />
             {retrying ? "Tentando..." : "Tentar novamente"}
           </Button>
-          <Button variant="destructive" size="sm" onClick={onLogout}>
+          <Button variant="destructive" size="sm" onClick={onLogout} disabled={loggingOut}>
             <LogOut className="mr-2 h-3.5 w-3.5" />
-            Sair
+            {loggingOut ? "Saindo..." : "Sair"}
           </Button>
         </div>
       </div>
     </div>
   );
 }
+

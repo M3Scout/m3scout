@@ -5,6 +5,7 @@ import { Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState } from "react";
 import { PermissionsWarningBanner } from "@/components/auth/PermissionsWarningBanner";
+import { hardLogoutToAuth } from "@/lib/hardLogout";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -22,7 +23,6 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     roles,
     isAdmin,
     isApproved,
-    signOut,
     refreshRoles,
     debug: authDebug,
   } = useAuth();
@@ -38,6 +38,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const [timedOut, setTimedOut] = useState(false);
   const [showDevDetails, setShowDevDetails] = useState(false);
   const [retrying, setRetrying] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const isLoading = authLoading || rolesLoading || permissionsLoading;
   // Technical error (timeout/abort/network) is different from "not approved"
@@ -67,16 +68,8 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   };
 
   const handleLogout = async () => {
-    console.log("[AUTH] signOut start");
-    try {
-      await signOut();
-      console.log("[AUTH] signOut success");
-    } catch (error) {
-      console.error("[AUTH] signOut error:", error);
-    } finally {
-      console.log("[AUTH] signOut redirect fallback");
-      window.location.href = "/app/auth";
-    }
+    setLoggingOut(true);
+    await hardLogoutToAuth(1800);
   };
 
   // Fail-safe timeout: don't allow "loading" to persist indefinitely.
@@ -120,6 +113,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         <PermissionsWarningBanner
           errorType={errorType}
           retrying={retrying}
+          loggingOut={loggingOut}
           onRetry={handleRetry}
           onLogout={handleLogout}
         />
@@ -182,6 +176,21 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   // ===== Required RBAC order =====
   // 1) rolesLoading/auth/permissions -> loader (no redirect)
   if (isLoading) {
+    // CRITICAL: On refresh, don't block mount of the /app tree (otherwise pages never mount and no fetches fire).
+    // If there's already an authenticated session/user, keep children mounted and show a thin loading bar.
+    if (user || session) {
+      return (
+        <>
+          <div className="fixed inset-x-0 top-0 z-50 border-b border-border bg-background/80 backdrop-blur">
+            <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-2">
+              <p className="text-xs text-muted-foreground">Carregando permissões...</p>
+            </div>
+          </div>
+          <div className="pt-10">{children}</div>
+        </>
+      );
+    }
+
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
