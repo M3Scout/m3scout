@@ -659,6 +659,44 @@ export type Database = {
         }
         Relationships: []
       }
+      player_achievements: {
+        Row: {
+          achievement_tier: string
+          achievement_type: string
+          id: string
+          metadata: Json | null
+          player_id: string
+          season_year: number
+          unlocked_at: string
+        }
+        Insert: {
+          achievement_tier?: string
+          achievement_type: string
+          id?: string
+          metadata?: Json | null
+          player_id: string
+          season_year?: number
+          unlocked_at?: string
+        }
+        Update: {
+          achievement_tier?: string
+          achievement_type?: string
+          id?: string
+          metadata?: Json | null
+          player_id?: string
+          season_year?: number
+          unlocked_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_achievements_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_attribute_scores: {
         Row: {
           ata_score_100: number | null

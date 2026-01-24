@@ -9,6 +9,7 @@ import { AthleteRatingEvolutionCard } from "./AthleteRatingEvolutionCard";
 import { AthleteRadarCard } from "./AthleteRadarCard";
 import { AthleteReportsCard } from "./AthleteReportsCard";
 import { AthleteSeasonGoalsCard } from "./AthleteSeasonGoalsCard";
+import { AthleteAchievementsCard } from "./AthleteAchievementsCard";
 import { usePlayerMatchRatings } from "@/hooks/usePlayerMatchRatings";
 import { motion } from "framer-motion";
 import { staggerContainer, staggerItem } from "@/lib/animations";
@@ -134,6 +135,12 @@ export function AthleteDashboard() {
   // Calculate cards and discipline stats
   const yellowCards = totals?.yellow_cards ?? 0;
   const redCards = totals?.red_cards ?? 0;
+  
+  // Check if goalkeeper
+  const isGoalkeeper = useMemo(() => {
+    const pos = athlete?.position?.toLowerCase() ?? '';
+    return pos === 'gk' || pos === 'goleiro' || pos === 'goalkeeper';
+  }, [athlete?.position]);
 
   if (loading || ratingsLoading) {
     return <AdminSkeletonDashboard />;
@@ -227,6 +234,7 @@ export function AthleteDashboard() {
               saves: totals?.saves ?? 0,
               clean_sheets: totals?.clean_sheets ?? 0,
             }}
+            isGoalkeeper={isGoalkeeper}
           />
         </div>
 
@@ -238,12 +246,21 @@ export function AthleteDashboard() {
         </div>
       </motion.div>
 
-      {/* Reports */}
-      <motion.div variants={staggerItem}>
-        <AthleteReportsCard 
-          reports={reports}
-          athleteId={athlete.id}
-        />
+      {/* Achievements + Reports Grid */}
+      <motion.div 
+        variants={staggerItem} 
+        className="grid grid-cols-1 lg:grid-cols-2 gap-[var(--gap-mobile)] md:gap-6 items-stretch w-full max-w-full"
+      >
+        <div className="flex min-w-0 w-full">
+          <AthleteAchievementsCard athleteId={athlete.id} />
+        </div>
+
+        <div className="flex min-w-0 w-full">
+          <AthleteReportsCard 
+            reports={reports}
+            athleteId={athlete.id}
+          />
+        </div>
       </motion.div>
     </motion.div>
   );
