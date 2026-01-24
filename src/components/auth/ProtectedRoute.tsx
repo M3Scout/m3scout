@@ -17,6 +17,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     session,
     loading: authLoading,
     rolesLoading,
+    rolesError,
     roles,
     isAdmin,
     isApproved,
@@ -26,6 +27,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   } = useAuth();
   const {
     loading: permissionsLoading,
+    error: permissionsError,
     userStatus,
     refreshPermissions,
     debug: permissionsDebug,
@@ -36,6 +38,8 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const [retrying, setRetrying] = useState(false);
 
   const isLoading = authLoading || rolesLoading || permissionsLoading;
+  // Technical error (timeout/abort/network) is different from "not approved"
+  const hasTechnicalError = Boolean(rolesError || permissionsError);
   const isDev = import.meta.env.DEV;
   const loadingSinceRef = useRef<number | null>(null);
 
@@ -98,15 +102,20 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     return () => clearInterval(interval);
   }, []);
 
-  // Timeout reached - show error state with logout option
-  if (timedOut) {
+  // ===== Technical error state (timeout/abort/network) =====
+  // Show error UI with retry button - NOT /pending-access
+  if (timedOut || hasTechnicalError) {
+    const errorType = rolesError || permissionsError || "timeout";
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4 text-center max-w-md p-6">
           <AlertCircle className="w-12 h-12 text-destructive" />
-          <h2 className="text-lg font-semibold">Falha ao carregar</h2>
+          <h2 className="text-lg font-semibold">Erro ao carregar permissões</h2>
           <p className="text-muted-foreground text-sm">
-            Não foi possível carregar seu perfil. Isso pode ser um problema temporário.
+            {errorType === "timeout" && "A requisição demorou demais. Isso pode ser um problema temporário."}
+            {errorType === "abort" && "A requisição foi interrompida (provavelmente por reload). Tente novamente."}
+            {errorType === "network" && "Erro de rede ao carregar suas permissões."}
+            {errorType === "exception" && "Erro inesperado ao carregar permissões."}
           </p>
 
           {isDev && (
@@ -127,15 +136,22 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 {JSON.stringify(
   {
     route: location.pathname,
+    errorType,
     loadingFlags: {
       authLoading,
       rolesLoading,
       permissionsLoading,
     },
+    errors: {
+      rolesError,
+      permissionsError,
+    },
     auth: {
       userId: user?.id ?? null,
       email: maskEmail(user?.email) ?? null,
       hasSession: Boolean(session),
+      isAdmin,
+      isApproved,
     },
     requests: {
       user_roles: authDebug?.rolesFetch ?? null,
@@ -197,7 +213,9 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       isAdmin,
       isApproved,
       rolesLoading,
+      rolesError,
       permissionsLoading,
+      permissionsError,
       status: userStatus,
       decision,
       route: location.pathname,
@@ -208,6 +226,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   if (isAdmin) return <>{children}</>;
 
   // 3) non-admin: enforce approval + active status
+  // Only redirect to pending if genuinely not approved (no technical error)
   if (!isApproved || userStatus !== "active") {
     return <Navigate to="/pending-access" replace />;
   }
