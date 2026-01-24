@@ -100,10 +100,15 @@ const Players = () => {
     }
   }, []);
 
-  // Fetch players with scouting data
+  // OPTIMIZED: Fetch players with progressive loading
+  // Step 1: Load basic player data FAST (skeleton → cards)
+  // Step 2: Load enrichment data (competitions, reports) in PARALLEL
   useEffect(() => {
     const fetchPlayers = async () => {
-      // First, fetch all player data including new indicator fields
+      const fetchStart = performance.now();
+      if (import.meta.env.DEV) console.log("[TIMING] Players.tsx fetch start");
+
+      // STEP 1: Core player data only (FAST - no joins)
       const { data: playersData, error: playersError } = await supabase
         .from("players")
         .select(`
@@ -114,38 +119,67 @@ const Players = () => {
           created_at
         `)
         .eq("is_public", true)
+        .or("is_archived.is.null,is_archived.eq.false")
         .order("full_name");
+
+      if (import.meta.env.DEV) {
+        console.log("[TIMING] Players core data loaded", {
+          duration: `${Math.round(performance.now() - fetchStart)}ms`,
+          count: playersData?.length ?? 0
+        });
+      }
 
       if (!playersData) {
         setLoading(false);
         return;
       }
 
-      // Fetch competition data for each player
+      // IMMEDIATELY show players (no enrichment yet)
+      const basicPlayers: PlayerWithCompetition[] = playersData.map(player => ({
+        ...player,
+        competition_name: null,
+        last_report_date: null,
+      }));
+      setPlayers(basicPlayers);
+      setLoading(false);
+
+      // STEP 2: Enrichment data in PARALLEL (non-blocking)
       const playerIds = playersData.map(p => p.id);
-      const { data: statsData } = await supabase
-        .from("player_stats")
-        .select("player_id, competition_id")
-        .in("player_id", playerIds)
-        .eq("season_year", currentYear);
+      
+      const enrichStart = performance.now();
+      
+      // All enrichment queries in parallel
+      const [statsResult, reportsResult] = await Promise.allSettled([
+        supabase
+          .from("player_stats")
+          .select("player_id, competition_id")
+          .in("player_id", playerIds)
+          .eq("season_year", currentYear),
+        supabase
+          .from("scouting_reports")
+          .select("player_id, match_date")
+          .in("player_id", playerIds)
+          .is("deleted_at", null)
+          .order("match_date", { ascending: false })
+      ]);
 
-      // Fetch competition names
-      const competitionIds = [...new Set(statsData?.map(s => s.competition_id).filter(Boolean) || [])];
-      const { data: competitionsData } = await supabase
-        .from("competitions")
-        .select("id, name")
-        .in("id", competitionIds);
+      const statsData = statsResult.status === "fulfilled" ? statsResult.value.data : null;
+      const reportsData = reportsResult.status === "fulfilled" ? reportsResult.value.data : null;
 
-      // Fetch last report dates
-      const { data: reportsData } = await supabase
-        .from("scouting_reports")
-        .select("player_id, match_date")
-        .in("player_id", playerIds)
-        .is("deleted_at", null)
-        .order("match_date", { ascending: false });
+      // Fetch competition names if we have stats
+      let competitionMap = new Map<string, string>();
+      if (statsData && statsData.length > 0) {
+        const competitionIds = [...new Set(statsData.map(s => s.competition_id).filter(Boolean))];
+        if (competitionIds.length > 0) {
+          const { data: competitionsData } = await supabase
+            .from("competitions")
+            .select("id, name")
+            .in("id", competitionIds);
+          competitionMap = new Map(competitionsData?.map(c => [c.id, c.name]) || []);
+        }
+      }
 
-      // Build competition map
-      const competitionMap = new Map(competitionsData?.map(c => [c.id, c.name]) || []);
+      // Build enrichment maps
       const playerCompetitionMap = new Map<string, string>();
       statsData?.forEach(s => {
         if (s.competition_id && !playerCompetitionMap.has(s.player_id)) {
@@ -153,7 +187,6 @@ const Players = () => {
         }
       });
 
-      // Build last report map
       const lastReportMap = new Map<string, string>();
       reportsData?.forEach(r => {
         if (!lastReportMap.has(r.player_id)) {
@@ -161,15 +194,21 @@ const Players = () => {
         }
       });
 
-      // Combine data
+      // Update players with enrichment (second render)
       const enrichedPlayers: PlayerWithCompetition[] = playersData.map(player => ({
         ...player,
         competition_name: playerCompetitionMap.get(player.id) || null,
         last_report_date: lastReportMap.get(player.id) || null,
       }));
 
+      if (import.meta.env.DEV) {
+        console.log("[TIMING] Players enrichment complete", {
+          duration: `${Math.round(performance.now() - enrichStart)}ms`,
+          totalDuration: `${Math.round(performance.now() - fetchStart)}ms`
+        });
+      }
+
       setPlayers(enrichedPlayers);
-      setLoading(false);
     };
 
     fetchPlayers();
@@ -180,34 +219,50 @@ const Players = () => {
   // - Live stats (match_players.minutes_played) override manual stats (player_stats)
   //   for the same season + competition
   // - No derived minutes, no entered/exited calculations, no timeline
+  // OPTIMIZED: Fetch live + manual stats in PARALLEL
   useEffect(() => {
     const fetchSeasonTotals = async () => {
       if (players.length === 0) return;
 
       const playerIds = players.map((p) => p.id);
+      const fetchStart = performance.now();
+      if (import.meta.env.DEV) console.log("[TIMING] Players season totals fetch start");
 
-      // 1) Live match data (source of truth)
-      const { data: matchPlayersData, error: mpError } = await supabase
-        .from("match_players")
-        .select(
+      // PARALLEL: Fetch both live and manual stats at the same time
+      const [matchPlayersResult, manualStatsResult] = await Promise.allSettled([
+        supabase
+          .from("match_players")
+          .select(
+            `
+            player_id,
+            minutes_played,
+            match:matches!inner (
+              id,
+              season_year,
+              status,
+              competition_id
+            )
           `
-          player_id,
-          minutes_played,
-          match:matches!inner (
-            id,
-            season_year,
-            status,
-            competition_id
           )
-        `
-        )
-        .in("player_id", playerIds)
-        .eq("is_removed", false)
-        .eq("match.season_year", selectedYear)
-        .in("match.status", ["finished", "applied"]);
+          .in("player_id", playerIds)
+          .eq("is_removed", false)
+          .eq("match.season_year", selectedYear)
+          .in("match.status", ["finished", "applied"]),
+        supabase
+          .from("player_stats")
+          .select("player_id, season_year, competition_id, matches, minutes")
+          .in("player_id", playerIds)
+          .eq("season_year", selectedYear)
+      ]);
 
-      if (mpError) {
-        console.error("[Players.tsx] Error fetching match_players:", mpError);
+      const matchPlayersData = matchPlayersResult.status === "fulfilled" ? matchPlayersResult.value.data : null;
+      const manualStatsData = manualStatsResult.status === "fulfilled" ? manualStatsResult.value.data : null;
+
+      if (matchPlayersResult.status === "rejected") {
+        console.error("[Players.tsx] Error fetching match_players:", matchPlayersResult.reason);
+      }
+      if (manualStatsResult.status === "rejected") {
+        console.error("[Players.tsx] Error fetching player_stats:", manualStatsResult.reason);
       }
 
       // Aggregate live by (player_id, competition_id)
@@ -228,17 +283,6 @@ const Players = () => {
         });
         liveByPlayerComp.set(mp.player_id, perPlayer);
       });
-
-      // 2) Manual/legacy season stats (fallback only when there is no live row for that season+competition)
-      const { data: manualStatsData, error: statsError } = await supabase
-        .from("player_stats")
-        .select("player_id, season_year, competition_id, matches, minutes")
-        .in("player_id", playerIds)
-        .eq("season_year", selectedYear);
-
-      if (statsError) {
-        console.error("[Players.tsx] Error fetching player_stats:", statsError);
-      }
 
       const manualByPlayerComp = new Map<
         string,
@@ -369,8 +413,12 @@ const Players = () => {
 
       setPlayerStats(statsMap);
 
-      // DEBUG (temporary): compare sources for Joaquim
       if (import.meta.env.DEV) {
+        console.log("[TIMING] Players season totals complete", {
+          duration: `${Math.round(performance.now() - fetchStart)}ms`
+        });
+
+        // DEBUG (temporary): compare sources for Joaquim
         const joaquim = players.find((p) => p.full_name?.toLowerCase().includes("joaquim"));
         if (joaquim) {
           const liveComps = liveByPlayerComp.get(joaquim.id) || new Map();
