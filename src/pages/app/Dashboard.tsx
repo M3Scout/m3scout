@@ -46,6 +46,8 @@ interface RecentLead {
 }
 
 const Dashboard = () => {
+  if (import.meta.env.DEV) console.log("[MOUNT] Dashboard");
+
   const { isAdmin } = useAuth();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats>({
@@ -61,6 +63,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     const fetchDashboardData = async () => {
+      if (import.meta.env.DEV) console.log("[FETCH] Dashboard start");
       try {
         const [
           playersResult,
@@ -173,7 +176,9 @@ const Dashboard = () => {
           setRecentLeads(recentLeadsResult.data);
         }
 
+        if (import.meta.env.DEV) console.log("[FETCH] Dashboard success");
       } catch (error) {
+        if (import.meta.env.DEV) console.error("[FETCH] Dashboard error", error);
         console.error("Error fetching dashboard data:", error);
       } finally {
         setLoading(false);
