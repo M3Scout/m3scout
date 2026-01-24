@@ -164,10 +164,12 @@ export function useLiveMatch(matchId: string) {
           competition:competitions(id, name, display_name)
         `)
         .eq("id", matchId)
-        .single();
+        .limit(1);
 
       if (error) throw error;
-      return data as Match;
+      const row = Array.isArray(data) ? data[0] : null;
+      if (!row) throw new Error("Match not found");
+      return row as Match;
     },
   });
 
@@ -350,10 +352,11 @@ export function useLiveMatch(matchId: string) {
           is_on_field: false, // Will be set to true for starters when game starts
         })
         .select()
-        .single();
+        .limit(1);
 
       if (error) throw error;
-      return data;
+      const row = Array.isArray(data) ? data[0] : null;
+      return row;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["match-players", matchId] });

@@ -72,13 +72,14 @@ export async function fetchAttributeScores(
     .eq("player_id", playerId)
     .eq("competition_id", competitionId)
     .eq("season_year", seasonYear)
-    .single();
+    .limit(1);
 
   if (error || !data) {
     return null;
   }
 
-  return data as unknown as AttributeScoresData;
+  const row = Array.isArray(data) ? data[0] ?? null : null;
+  return row as unknown as AttributeScoresData | null;
 }
 
 /**

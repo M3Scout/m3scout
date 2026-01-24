@@ -34,15 +34,14 @@ interface TokenRecord {
 // Get the access token, preferring database over env var
 // deno-lint-ignore no-explicit-any
 async function getAccessToken(supabase: any): Promise<string | null> {
-  // First try to get from database
+  // First try to get from database (handle 0..N rows, no .single())
   const { data, error } = await supabase
     .from('instagram_tokens')
     .select('id, access_token, expires_at')
     .order('updated_at', { ascending: false })
-    .limit(1)
-    .single();
+    .limit(1);
 
-  const tokenData = data as TokenRecord | null;
+  const tokenData = (Array.isArray(data) ? data[0] ?? null : null) as TokenRecord | null;
 
   if (tokenData && tokenData.access_token && tokenData.access_token !== 'pending') {
     // Check if token is expiring soon (within 7 days)

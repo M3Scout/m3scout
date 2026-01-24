@@ -24,29 +24,25 @@ export function useTeamSettings() {
       const { data, error } = await supabase
         .from("team_settings")
         .select("*")
-        .limit(1)
-        .single();
+        .limit(1);
 
-      if (error) {
-        // If no settings exist, return defaults
-        if (error.code === "PGRST116") {
-          return null;
-        }
-        throw error;
-      }
-      return data as TeamSettings;
+      if (error) throw error;
+      // Handle 0..N rows - pick first or null
+      const row = Array.isArray(data) ? data[0] ?? null : null;
+      return row as TeamSettings | null;
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
   const updateSettings = useMutation({
     mutationFn: async (updates: Partial<Pick<TeamSettings, "team_name" | "logo_url">>) => {
-      // Get the current settings ID
-      const { data: current } = await supabase
+      // Get the current settings ID (handle 0..N rows)
+      const { data: currentRows } = await supabase
         .from("team_settings")
         .select("id")
-        .limit(1)
-        .single();
+        .limit(1);
+
+      const current = Array.isArray(currentRows) ? currentRows[0] ?? null : null;
 
       if (current) {
         // Update existing
@@ -55,10 +51,10 @@ export function useTeamSettings() {
           .update(updates)
           .eq("id", current.id)
           .select()
-          .single();
+          .limit(1);
 
         if (error) throw error;
-        return data;
+        return Array.isArray(data) ? data[0] ?? null : null;
       } else {
         // Insert new
         const { data, error } = await supabase
@@ -68,10 +64,10 @@ export function useTeamSettings() {
             logo_url: updates.logo_url || null,
           })
           .select()
-          .single();
+          .limit(1);
 
         if (error) throw error;
-        return data;
+        return Array.isArray(data) ? data[0] ?? null : null;
       }
     },
     onSuccess: () => {

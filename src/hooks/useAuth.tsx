@@ -13,8 +13,8 @@ const VALID_ROLES: AppRole[] = ["admin", "scout", "editor", "viewer", "player"];
 // Priority when user has multiple roles
 const ROLE_PRIORITY: AppRole[] = ["admin", "scout", "editor", "viewer", "player"];
 
-const RBAC_BACKOFF_MS = [300, 800, 1500];
-const RBAC_ATTEMPT_TIMEOUT_MS = 1200;
+const RBAC_BACKOFF_MS = [500, 1200, 2500];
+const RBAC_ATTEMPT_TIMEOUT_MS = 4000;
 
 function withTimeout<T>(promiseLike: PromiseLike<T>, label: string, ms: number): Promise<T> {
   let timeoutId: number | undefined;

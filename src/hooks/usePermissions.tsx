@@ -153,8 +153,8 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
   const [debug, setDebug] = useState<PermissionsContextType["debug"]>({});
 
   const nowIso = () => new Date().toISOString();
-  const REQUEST_TIMEOUT_MS = 1200;
-  const RBAC_BACKOFF_MS = [300, 800, 1500];
+  const REQUEST_TIMEOUT_MS = 4000;
+  const RBAC_BACKOFF_MS = [500, 1200, 2500];
 
   const fetchPermissions = useCallback(async () => {
     // Reset error state at the start
