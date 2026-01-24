@@ -43,7 +43,11 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   const isLoading = authLoading || rolesLoading || permissionsLoading;
   // Technical error from hooks (only set after retries exhausted)
+  // CRITICAL: Don't treat errors as blocking if we already have valid roles
   const hasHookError = Boolean(rolesError || permissionsError);
+  const hasValidPermissions = roles.length > 0;
+  // Only consider it a real error if we have an error AND no valid permissions
+  const isBlockingError = hasHookError && !hasValidPermissions;
   const isDev = import.meta.env.DEV;
   const loadingSinceRef = useRef<number | null>(null);
 
@@ -82,21 +86,28 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       loadingSinceRef.current = Date.now();
     }
 
-    // Reset when loading completes successfully
-    if (!isLoading && !hasHookError) {
+    // Reset when loading completes successfully OR when we have valid permissions
+    if ((!isLoading && !isBlockingError) || hasValidPermissions) {
       loadingSinceRef.current = null;
       setSlowLoading(false);
       setErrorFinal(false);
     }
-  }, [isLoading, hasHookError]);
+  }, [isLoading, isBlockingError, hasValidPermissions]);
 
   // Check elapsed time periodically to set slow/error states
   useEffect(() => {
     const interval = setInterval(() => {
-      // If we got a hook error (after retries exhausted), that's final
-      if (hasHookError && !isLoading) {
+      // If we got a blocking error (after retries exhausted AND no valid permissions), that's final
+      if (isBlockingError && !isLoading) {
         setErrorFinal(true);
         setSlowLoading(false);
+        return;
+      }
+
+      // If we have valid permissions, never show error banners
+      if (hasValidPermissions) {
+        setSlowLoading(false);
+        setErrorFinal(false);
         return;
       }
 
@@ -105,8 +116,8 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
       const elapsed = Date.now() - loadingSinceRef.current;
 
-      // After ERROR_FINAL_THRESHOLD_MS, consider it a final error
-      if (elapsed >= ERROR_FINAL_THRESHOLD_MS) {
+      // After ERROR_FINAL_THRESHOLD_MS, consider it a final error (only if no valid permissions)
+      if (elapsed >= ERROR_FINAL_THRESHOLD_MS && !hasValidPermissions) {
         setErrorFinal(true);
         setSlowLoading(false);
       }
@@ -118,11 +129,11 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     }, 200);
 
     return () => clearInterval(interval);
-  }, [hasHookError, isLoading]);
+  }, [isBlockingError, isLoading, hasValidPermissions]);
 
-  // Determine what banner to show
-  const showSlowLoadingBanner = slowLoading && !errorFinal && isLoading && (user || session);
-  const showErrorFinalBanner = errorFinal || (hasHookError && !isLoading);
+  // Determine what banner to show - NEVER show error banner if we have valid permissions
+  const showSlowLoadingBanner = slowLoading && !errorFinal && isLoading && (user || session) && !hasValidPermissions;
+  const showErrorFinalBanner = (errorFinal || (isBlockingError && !isLoading)) && !hasValidPermissions;
 
   // ===== Error Final state (after all retries exhausted) =====
   if (showErrorFinalBanner) {
