@@ -60,6 +60,8 @@ interface PermissionsContextType {
   loading: boolean;
   /** Error state: 'timeout' | 'abort' | 'network' | 'exception' | null */
   error: string | null;
+  /** Convenience boolean for guards: true when `error` is set */
+  permissionsError: boolean;
   isOwner: boolean;
   userStatus: "active" | "suspended" | null;
   linkedPlayerId: string | null;
@@ -588,6 +590,7 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
         permissions,
         loading,
         error,
+        permissionsError: Boolean(error),
         isOwner,
         userStatus,
         linkedPlayerId,

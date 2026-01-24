@@ -4,12 +4,13 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState } from "react";
+import { PermissionsWarningBanner } from "@/components/auth/PermissionsWarningBanner";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
-const LOADING_TIMEOUT_MS = 10000; // 10 seconds fail-safe
+const LOADING_TIMEOUT_MS = 8000; // 8 seconds fail-safe
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const {
@@ -28,6 +29,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const {
     loading: permissionsLoading,
     error: permissionsError,
+    permissionsError: permissionsErrorFlag,
     userStatus,
     refreshPermissions,
     debug: permissionsDebug,
@@ -39,7 +41,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   const isLoading = authLoading || rolesLoading || permissionsLoading;
   // Technical error (timeout/abort/network) is different from "not approved"
-  const hasTechnicalError = Boolean(rolesError || permissionsError);
+  const hasTechnicalError = Boolean(rolesError || permissionsErrorFlag || permissionsError);
   const isDev = import.meta.env.DEV;
   const loadingSinceRef = useRef<number | null>(null);
 
@@ -103,30 +105,34 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   }, []);
 
   // ===== Technical error state (timeout/abort/network) =====
-  // Show error UI with retry button - NOT /pending-access
+  // IMPORTANT: In technical errors, pages MUST mount (no blocking fullscreen).
+  // We show a warning banner + keep a dev details panel.
   if (timedOut || hasTechnicalError) {
-    const errorType = rolesError || permissionsError || "timeout";
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4 text-center max-w-md p-6">
-          <AlertCircle className="w-12 h-12 text-destructive" />
-          <h2 className="text-lg font-semibold">Erro ao carregar permissões</h2>
-          <p className="text-muted-foreground text-sm">
-            {errorType === "timeout" && "A requisição demorou demais. Isso pode ser um problema temporário."}
-            {errorType === "abort" && "A requisição foi interrompida (provavelmente por reload). Tente novamente."}
-            {errorType === "network" && "Erro de rede ao carregar suas permissões."}
-            {errorType === "exception" && "Erro inesperado ao carregar permissões."}
-          </p>
+    const errorType = rolesError || (permissionsError as any) || (timedOut ? "timeout" : "exception");
 
-          {isDev && (
-            <div className="w-full text-left rounded-lg border border-border bg-card p-3">
+    // Not logged in → redirect to login (even in error mode)
+    if (!user) {
+      return <Navigate to="/app/auth" state={{ from: location }} replace />;
+    }
+
+    return (
+      <>
+        <PermissionsWarningBanner
+          errorType={errorType}
+          retrying={retrying}
+          onRetry={handleRetry}
+          onLogout={handleLogout}
+        />
+
+        {isDev && (
+          <div className="mx-auto w-full max-w-6xl px-4 pt-16">
+            <div className="rounded-lg border border-border bg-card p-3">
               <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-medium">Detalhes técnicos (dev)</p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowDevDetails((v) => !v)}
-                >
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-destructive" />
+                  <p className="text-sm font-medium">Detalhes técnicos (dev)</p>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => setShowDevDetails((v) => !v)}>
                   {showDevDetails ? "Ocultar" : "Mostrar"}
                 </Button>
               </div>
@@ -165,18 +171,11 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
                 </pre>
               )}
             </div>
-          )}
-
-          <div className="flex gap-3 mt-2">
-            <Button variant="outline" onClick={handleRetry} disabled={retrying}>
-              {retrying ? "Tentando..." : "Tentar novamente"}
-            </Button>
-            <Button variant="destructive" onClick={handleLogout}>
-              Sair da conta
-            </Button>
           </div>
-        </div>
-      </div>
+        )}
+
+        <div className={isDev ? "pt-4" : "pt-16"}>{children}</div>
+      </>
     );
   }
 
