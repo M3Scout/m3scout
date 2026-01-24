@@ -21,11 +21,31 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, name: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  refreshRoles: () => Promise<void>;
   hasRole: (role: AppRole) => boolean;
   isAdmin: boolean;
   isScout: boolean;
   isInternal: boolean;
   isPlayer: boolean;
+
+  /** DEV diagnostics for profile/access bootstrap */
+  debug: {
+    rolesFetch?: {
+      stage: "idle" | "start" | "success" | "error";
+      table: "user_roles";
+      query: { user_id: string };
+      startedAt: string;
+      finishedAt?: string;
+      status?: number;
+      statusText?: string;
+      error?: {
+        code?: string;
+        message?: string;
+        details?: string;
+        hint?: string;
+      };
+    };
+  };
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -37,23 +57,63 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [rolesLoading, setRolesLoading] = useState(true);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [linkedPlayerId, setLinkedPlayerId] = useState<string | null>(null);
+  const [debug, setDebug] = useState<AuthContextType["debug"]>({});
+
+  const nowIso = () => new Date().toISOString();
 
   const fetchUserRoles = async (userId: string) => {
     setRolesLoading(true);
     try {
+      setDebug({
+        rolesFetch: {
+          stage: "start",
+          table: "user_roles",
+          query: { user_id: userId },
+          startedAt: nowIso(),
+        },
+      });
+
       console.log("[Auth] Fetching roles for user:", userId);
       
-      const { data, error } = await supabase
+      const { data, error, status, statusText } = await supabase
         .from("user_roles")
         .select("role, linked_player_id, status")
         .eq("user_id", userId);
 
       if (error) {
         console.error("[Auth] Error fetching user roles:", error.code, error.message);
+        setDebug({
+          rolesFetch: {
+            stage: "error",
+            table: "user_roles",
+            query: { user_id: userId },
+            startedAt: nowIso(),
+            finishedAt: nowIso(),
+            status,
+            statusText,
+            error: {
+              code: (error as any)?.code,
+              message: (error as any)?.message,
+              details: (error as any)?.details,
+              hint: (error as any)?.hint,
+            },
+          },
+        });
         setRoles([]);
         setLinkedPlayerId(null);
       } else if (data && data.length > 0) {
         console.log("[Auth] Roles fetched:", data);
+        setDebug({
+          rolesFetch: {
+            stage: "success",
+            table: "user_roles",
+            query: { user_id: userId },
+            startedAt: nowIso(),
+            finishedAt: nowIso(),
+            status,
+            statusText,
+          },
+        });
         // Only count active roles
         const activeRoles = data.filter(r => r.status === 'active');
         setRoles(activeRoles.map((r) => r.role));
@@ -62,17 +122,77 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLinkedPlayerId(playerRole?.linked_player_id ?? null);
       } else {
         console.log("[Auth] No roles found for user");
+        setDebug({
+          rolesFetch: {
+            stage: "success",
+            table: "user_roles",
+            query: { user_id: userId },
+            startedAt: nowIso(),
+            finishedAt: nowIso(),
+            status,
+            statusText,
+          },
+        });
         setRoles([]);
         setLinkedPlayerId(null);
       }
     } catch (err) {
       console.error("[Auth] Unexpected error fetching user roles:", err);
+      setDebug({
+        rolesFetch: {
+          stage: "error",
+          table: "user_roles",
+          query: { user_id: userId },
+          startedAt: nowIso(),
+          finishedAt: nowIso(),
+          error: {
+            code: (err as any)?.code,
+            message: (err as any)?.message ?? String(err),
+            details: (err as any)?.details,
+          },
+        },
+      });
       setRoles([]);
       setLinkedPlayerId(null);
     } finally {
       setRolesLoading(false);
     }
   };
+
+  // Fail-safe timeout: rolesLoading can hang if the roles fetch stalls after login.
+  useEffect(() => {
+    if (!rolesLoading) return;
+
+    const timeout = setTimeout(() => {
+      console.warn("[Auth] rolesLoading timeout - forcing roles loading to complete");
+      setRolesLoading(false);
+
+      // Preserve existing debug if present; if it's still "start", flip to timeout error.
+      setDebug((prev) => {
+        const started = prev.rolesFetch?.startedAt ?? nowIso();
+        const isInFlight = prev.rolesFetch?.stage === "start";
+        if (!isInFlight) return prev;
+        return {
+          ...prev,
+          rolesFetch: {
+            stage: "error",
+            table: "user_roles",
+            query: prev.rolesFetch?.query ?? { user_id: user?.id ?? "unknown" },
+            startedAt: started,
+            finishedAt: nowIso(),
+            status: 0,
+            statusText: "timeout",
+            error: {
+              code: "TIMEOUT",
+              message: "Timeout ao buscar user_roles",
+            },
+          },
+        };
+      });
+    }, 8000);
+
+    return () => clearTimeout(timeout);
+  }, [rolesLoading, user?.id]);
 
   // Fail-safe timeout: ensure loading state never hangs indefinitely
   useEffect(() => {
@@ -145,6 +265,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  const refreshRoles = async () => {
+    if (!user?.id) return;
+    await fetchUserRoles(user.id);
+  };
+
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
       email,
@@ -199,11 +324,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signIn,
         signUp,
         signOut,
+        refreshRoles,
         hasRole,
         isAdmin,
         isScout,
         isPlayer,
         isInternal,
+        debug,
       }}
     >
       {children}

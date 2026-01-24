@@ -65,6 +65,40 @@ interface PermissionsContextType {
   can: (module: ModuleKey, action: ActionKey) => boolean;
   canDelete: (module: ModuleKey) => boolean;
   refreshPermissions: () => Promise<void>;
+
+  /** DEV diagnostics for profile/access bootstrap */
+  debug: {
+    permissionsFetch?: {
+      stage: "idle" | "start" | "success" | "error";
+      table: "user_permissions";
+      query: { user_id: string };
+      startedAt: string;
+      finishedAt?: string;
+      status?: number;
+      statusText?: string;
+      error?: {
+        code?: string;
+        message?: string;
+        details?: string;
+        hint?: string;
+      };
+    };
+    roleFetch?: {
+      stage: "idle" | "start" | "success" | "error";
+      table: "user_roles";
+      query: { user_id: string };
+      startedAt: string;
+      finishedAt?: string;
+      status?: number;
+      statusText?: string;
+      error?: {
+        code?: string;
+        message?: string;
+        details?: string;
+        hint?: string;
+      };
+    };
+  };
 }
 
 // Default permissions: DENY BY DEFAULT - no access to anything
@@ -109,6 +143,9 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
   const [isOwner, setIsOwner] = useState(false);
   const [userStatus, setUserStatus] = useState<"active" | "suspended" | null>(null);
   const [linkedPlayerId, setLinkedPlayerId] = useState<string | null>(null);
+  const [debug, setDebug] = useState<PermissionsContextType["debug"]>({});
+
+  const nowIso = () => new Date().toISOString();
 
   const fetchPermissions = useCallback(async () => {
     // Always set loading false at the end, no matter what
@@ -136,7 +173,17 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
       setLinkedPlayerId(authLinkedPlayerId);
 
       // Fetch permissions - this might fail for new users (no row yet)
-      const { data: permsData, error: permsError } = await supabase
+      setDebug((prev) => ({
+        ...prev,
+        permissionsFetch: {
+          stage: "start",
+          table: "user_permissions",
+          query: { user_id: user.id },
+          startedAt: nowIso(),
+        },
+      }));
+
+      const { data: permsData, error: permsError, status: permsStatus, statusText: permsStatusText } = await supabase
         .from("user_permissions")
         .select("*")
         .eq("user_id", user.id)
@@ -144,10 +191,51 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
 
       if (permsError) {
         console.error("[Permissions] Error fetching permissions:", permsError.code, permsError.message);
+        setDebug((prev) => ({
+          ...prev,
+          permissionsFetch: {
+            stage: "error",
+            table: "user_permissions",
+            query: { user_id: user.id },
+            startedAt: prev.permissionsFetch?.startedAt ?? nowIso(),
+            finishedAt: nowIso(),
+            status: permsStatus,
+            statusText: permsStatusText,
+            error: {
+              code: (permsError as any)?.code,
+              message: (permsError as any)?.message,
+              details: (permsError as any)?.details,
+              hint: (permsError as any)?.hint,
+            },
+          },
+        }));
+      } else {
+        setDebug((prev) => ({
+          ...prev,
+          permissionsFetch: {
+            stage: "success",
+            table: "user_permissions",
+            query: { user_id: user.id },
+            startedAt: prev.permissionsFetch?.startedAt ?? nowIso(),
+            finishedAt: nowIso(),
+            status: permsStatus,
+            statusText: permsStatusText,
+          },
+        }));
       }
 
       // Fetch role info - use maybeSingle to handle missing rows gracefully
-      const { data: roleData, error: roleError } = await supabase
+      setDebug((prev) => ({
+        ...prev,
+        roleFetch: {
+          stage: "start",
+          table: "user_roles",
+          query: { user_id: user.id },
+          startedAt: nowIso(),
+        },
+      }));
+
+      const { data: roleData, error: roleError, status: roleStatus, statusText: roleStatusText } = await supabase
         .from("user_roles")
         .select("is_owner, status")
         .eq("user_id", user.id)
@@ -155,6 +243,37 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
 
       if (roleError) {
         console.error("[Permissions] Error fetching role info:", roleError.code, roleError.message);
+        setDebug((prev) => ({
+          ...prev,
+          roleFetch: {
+            stage: "error",
+            table: "user_roles",
+            query: { user_id: user.id },
+            startedAt: prev.roleFetch?.startedAt ?? nowIso(),
+            finishedAt: nowIso(),
+            status: roleStatus,
+            statusText: roleStatusText,
+            error: {
+              code: (roleError as any)?.code,
+              message: (roleError as any)?.message,
+              details: (roleError as any)?.details,
+              hint: (roleError as any)?.hint,
+            },
+          },
+        }));
+      } else {
+        setDebug((prev) => ({
+          ...prev,
+          roleFetch: {
+            stage: "success",
+            table: "user_roles",
+            query: { user_id: user.id },
+            startedAt: prev.roleFetch?.startedAt ?? nowIso(),
+            finishedAt: nowIso(),
+            status: roleStatus,
+            statusText: roleStatusText,
+          },
+        }));
       }
 
       // If admin, grant all permissions
@@ -269,6 +388,46 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
     return () => clearTimeout(timeout);
   }, [authLoading]);
 
+  // Fail-safe: permissions loading itself can hang even after authLoading completes.
+  useEffect(() => {
+    if (!loading) return;
+
+    const timeout = setTimeout(() => {
+      console.warn("[Permissions] Loading timeout - forcing permissions loading to complete");
+      setLoading(false);
+
+      setDebug((prev) => {
+        const isInFlight = prev.permissionsFetch?.stage === "start" || prev.roleFetch?.stage === "start";
+        if (!isInFlight) return prev;
+        return {
+          ...prev,
+          permissionsFetch: prev.permissionsFetch?.stage === "start"
+            ? {
+                ...prev.permissionsFetch,
+                stage: "error",
+                finishedAt: nowIso(),
+                status: 0,
+                statusText: "timeout",
+                error: { code: "TIMEOUT", message: "Timeout ao buscar user_permissions" },
+              }
+            : prev.permissionsFetch,
+          roleFetch: prev.roleFetch?.stage === "start"
+            ? {
+                ...prev.roleFetch,
+                stage: "error",
+                finishedAt: nowIso(),
+                status: 0,
+                statusText: "timeout",
+                error: { code: "TIMEOUT", message: "Timeout ao buscar user_roles (role info)" },
+              }
+            : prev.roleFetch,
+        };
+      });
+    }, 8000);
+
+    return () => clearTimeout(timeout);
+  }, [loading]);
+
   const can = useCallback((module: ModuleKey, action: ActionKey): boolean => {
     if (!permissions) return false;
     
@@ -312,6 +471,7 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
         can,
         canDelete,
         refreshPermissions,
+        debug,
       }}
     >
       {children}
