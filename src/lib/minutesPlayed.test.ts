@@ -70,18 +70,19 @@ describe("calculateMinutesPlayed", () => {
   });
 
   describe("Substitute entering at 71'", () => {
-    it("Case B: Entrou 71' e jogo foi até 90+8", () => {
+    it("Case B: Entrou 71' e jogo foi até 90+7 (97 effective)", () => {
       const result = calculateMinutesPlayed(
         { started: false, entered_minute: 71, exited_minute: null },
-        { baseDuration: 90, addedTime1H: 5, addedTime2H: 8 }
+        { baseDuration: 90, addedTime1H: 0, addedTime2H: 7 }
       );
 
-      // Regulatory: 90 - 71 = 19
+      // Regulatory: 90 - 71 = 19 (capped at 90)
       expect(result.minutesPlayed).toBe(19);
-      // Total: 103 - 71 = 32 (but effective duration is 103)
-      // Actually: end = 103, start normalized to 71, so 103 - 71 = 32
-      expect(result.minutesPlayedTotal).toBe(32);
+      // Total: 97 - 71 = 26
+      expect(result.minutesPlayedTotal).toBe(26);
       expect(result.hasAddedTime).toBe(true);
+      expect(result.rangeDisplay).toBe("71' → 90'");
+      expect(result.rangeDisplayTotal).toBe("71' → 90+7'");
     });
   });
 
@@ -146,6 +147,33 @@ describe("calculateMinutesPlayed", () => {
 
     it("~21% for 19 minutes", () => {
       expect(getMinutesPlayedPercent(19)).toBe(21);
+    });
+  });
+
+  describe("Edge cases with added time entry", () => {
+    it("Case: Entrou aos 90+2 (92) e jogo acabou 90+7 (97)", () => {
+      const result = calculateMinutesPlayed(
+        { started: false, entered_minute: 92, exited_minute: null },
+        { baseDuration: 90, addedTime1H: 0, addedTime2H: 7 }
+      );
+
+      // Regulatory: startReg = 90 (capped), endReg = 90, so 90 - 90 = 0
+      expect(result.minutesPlayed).toBe(0);
+      // Total: 97 - 92 = 5
+      expect(result.minutesPlayedTotal).toBe(5);
+      expect(result.rangeDisplay).toBe("90' → 90'");
+    });
+
+    it("Case: Saiu aos 45+3 (48)", () => {
+      const result = calculateMinutesPlayed(
+        { started: true, entered_minute: null, exited_minute: 48 },
+        { baseDuration: 90, addedTime1H: 3, addedTime2H: 5 }
+      );
+
+      // Regulatory: normalizeMinuteReg(48) = 48, so 48 - 0 = 48
+      expect(result.minutesPlayed).toBe(48);
+      // Total: normalizeMinuteTotal(48, 98) = 48
+      expect(result.minutesPlayedTotal).toBe(48);
     });
   });
 
