@@ -26,7 +26,9 @@ import { toOutfieldStatsFormat } from "@/hooks/usePlayerMatchStats";
 import { OutfieldPlayerStats } from "@/components/players/stats/OutfieldPlayerStats";
 import { getRatingBgColor, getRatingColor } from "@/lib/matchRatingEngine";
 import { classifyMatchProfile } from "@/lib/matchProfileEngine";
+import { calculateMatchEfficiency } from "@/lib/matchEfficiencyEngine";
 import { MatchProfileBadge } from "@/components/live-match/MatchProfileBadge";
+import { MatchEfficiencyBadge } from "@/components/live-match/MatchEfficiencyBadge";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -274,20 +276,28 @@ export function LiveMatchStatsSection({ playerId, playerPosition }: LiveMatchSta
                           </div>
                         </div>
                         
-                        {/* Match Profile - Perfil do Jogo */}
-                        {match.minutes_played >= 10 && (
-                          <div className="flex items-center gap-2">
-                            <MatchProfileBadge 
-                              profile={profile} 
-                              playerName={match.opponent_name} 
-                              size="sm" 
-                              showSummary={false}
-                            />
-                            <span className="text-[10px] text-muted-foreground truncate flex-1">
-                              {profile.summary.slice(0, 60)}{profile.summary.length > 60 ? '...' : ''}
-                            </span>
-                          </div>
-                        )}
+                        {/* Match Profile + Efficiency - Perfil e Eficiência do Jogo */}
+                        {match.minutes_played >= 10 && (() => {
+                          const efficiency = calculateMatchEfficiency(statsInput, match.minutes_played);
+                          return (
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <MatchProfileBadge 
+                                profile={profile} 
+                                playerName={match.opponent_name} 
+                                size="sm" 
+                                showSummary={false}
+                              />
+                              <MatchEfficiencyBadge 
+                                efficiency={efficiency} 
+                                size="sm" 
+                                showIcon={true}
+                              />
+                              <span className="text-[10px] text-muted-foreground truncate flex-1">
+                                {profile.summary.slice(0, 50)}{profile.summary.length > 50 ? '...' : ''}
+                              </span>
+                            </div>
+                          );
+                        })()}
                       </div>
                     </Link>
                   );
