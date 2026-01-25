@@ -119,16 +119,23 @@ export interface MatchPlayerStats {
   assists: number;
   shots: number;
   shots_on_target: number;
+  shots_blocked: number; // Offensive - shot blocked by defender
+  offsides: number;
   key_passes: number;
   chances_created: number;
   passes_completed: number;
   passes_total: number;
+  crosses_success: number;
+  crosses_failed: number;
+  ball_actions: number;
   dribbles_success: number;
   dribbles_total: number;
   tackles: number;
   interceptions: number;
   recoveries: number;
   clearances: number;
+  blocked_shots: number; // Defensive - blocking opponent's shot
+  was_dribbled: number;
   duels_won: number;
   duels_total: number;
   aerial_duels_won: number;

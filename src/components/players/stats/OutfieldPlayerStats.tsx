@@ -22,21 +22,26 @@ interface PlayerStatsData {
   chances_created: number;
   long_passes_accurate: number;
   long_passes_total: number;
-  // Shooting
+  crosses_success?: number;
+  crosses_failed?: number;
+  // Shooting (Attack)
   shots: number;
   shots_on_target: number;
-  shots_blocked: number;
+  shots_blocked: number; // Offensive - our shot was blocked
   offsides: number;
   // Defense & Duels
   tackles: number;
   interceptions: number;
   clearances: number;
   recoveries: number;
+  blocked_shots?: number; // Defensive - blocking opponent's shot
+  was_dribbled?: number;
   ground_duels_won: number;
   ground_duels_total: number;
   aerial_duels_won: number;
   aerial_duels_total: number;
-  // Ball control & Discipline
+  // Ball control & Discipline (Dribles/Posse)
+  ball_actions?: number;
   successful_dribbles: number;
   total_dribbles: number;
   possession_lost: number;
@@ -122,15 +127,23 @@ export function OutfieldPlayerStats({ stats }: OutfieldPlayerStatsProps) {
           total={safe(stats.total_passes)}
         />
         <StatCard 
-          label="Passes Longos" 
-          value={safe(stats.long_passes_accurate)} 
-          total={safe(stats.long_passes_total) || undefined}
-          showPercentage={safe(stats.long_passes_total) > 0}
+          label="Cruzamentos Certos" 
+          value={safe(stats.crosses_success)} 
+          total={(safe(stats.crosses_success) + safe(stats.crosses_failed)) || undefined}
+          showPercentage={(safe(stats.crosses_success) + safe(stats.crosses_failed)) > 0}
+        />
+        <StatCard 
+          label="Cruzamentos Errados" 
+          value={safe(stats.crosses_failed)} 
         />
       </StatGroup>
 
       {/* C) DRIBLES / POSSE - Controle de bola */}
       <StatGroup title="Dribles / Posse" icon={<Target className="w-4 h-4" />}>
+        <StatCard 
+          label="Ações com a Bola" 
+          value={safe(stats.ball_actions)} 
+        />
         <StatCard 
           label="Dribles Certos" 
           value={safe(stats.successful_dribbles)} 
@@ -169,6 +182,14 @@ export function OutfieldPlayerStats({ stats }: OutfieldPlayerStatsProps) {
           label="Recuperações" 
           value={safe(stats.recoveries)} 
         />
+        <StatCard 
+          label="Chutes Bloqueados" 
+          value={safe(stats.blocked_shots)} 
+        />
+        <StatCard 
+          label="Driblado" 
+          value={safe(stats.was_dribbled)} 
+        />
       </StatGroup>
 
       {/* Duelos */}
@@ -204,10 +225,6 @@ export function OutfieldPlayerStats({ stats }: OutfieldPlayerStatsProps) {
         <StatCard 
           label="Duelos Totais" 
           value={safe(stats.ground_duels_total) + safe(stats.aerial_duels_total)} 
-        />
-        <StatCard 
-          label="Driblado" 
-          value={safe(stats.times_dribbled_past)} 
         />
       </StatGroup>
 

@@ -21,10 +21,12 @@ export interface MatchDerivedStats {
   goals: number;
   assists: number;
   
-  // Shooting
+  // Shooting (Attack)
   shots: number;
   shots_on_target: number;
   shots_off_target: number; // derived: shots - shots_on_target
+  shots_blocked: number; // Offensive - our shot was blocked
+  offsides: number;
   
   // Passing (totals are derived)
   passes_completed: number;
@@ -32,8 +34,11 @@ export interface MatchDerivedStats {
   passes_total: number; // derived: completed + failed
   key_passes: number;
   chances_created: number;
+  crosses_success: number;
+  crosses_failed: number;
   
-  // Dribbles (totals are derived)
+  // Dribbles/Possession (totals are derived)
+  ball_actions: number;
   dribbles_success: number;
   dribbles_failed: number; // from dribble_attempt events
   dribbles_total: number; // derived: success + failed
@@ -43,6 +48,8 @@ export interface MatchDerivedStats {
   interceptions: number;
   recoveries: number;
   clearances: number;
+  blocked_shots: number; // Defensive - blocking opponent's shot
+  was_dribbled: number;
   
   // Duels (totals are derived)
   duels_won: number;
@@ -120,16 +127,23 @@ interface MatchPlayerStats {
   assists: number;
   shots: number;
   shots_on_target: number;
+  shots_blocked: number;
+  offsides: number;
   key_passes: number;
   chances_created: number;
   passes_completed: number;
   passes_total: number;
+  crosses_success: number;
+  crosses_failed: number;
+  ball_actions: number;
   dribbles_success: number;
   dribbles_total: number;
   tackles: number;
   interceptions: number;
   recoveries: number;
   clearances: number;
+  blocked_shots: number;
+  was_dribbled: number;
   duels_won: number;
   duels_total: number;
   aerial_duels_won: number;
@@ -294,11 +308,16 @@ export function usePlayerMatchStats({
         shots: stats?.shots ?? 0,
         shots_on_target: stats?.shots_on_target ?? 0,
         shots_off_target: Math.max(0, (stats?.shots ?? 0) - (stats?.shots_on_target ?? 0)),
+        shots_blocked: stats?.shots_blocked ?? 0,
+        offsides: stats?.offsides ?? 0,
         passes_completed: stats?.passes_completed ?? 0,
         passes_failed: Math.max(0, (stats?.passes_total ?? 0) - (stats?.passes_completed ?? 0)),
         passes_total: stats?.passes_total ?? 0,
         key_passes: stats?.key_passes ?? 0,
         chances_created: stats?.chances_created ?? 0,
+        crosses_success: stats?.crosses_success ?? 0,
+        crosses_failed: stats?.crosses_failed ?? 0,
+        ball_actions: stats?.ball_actions ?? 0,
         dribbles_success: stats?.dribbles_success ?? 0,
         dribbles_failed: Math.max(0, (stats?.dribbles_total ?? 0) - (stats?.dribbles_success ?? 0)),
         dribbles_total: stats?.dribbles_total ?? 0,
@@ -306,6 +325,8 @@ export function usePlayerMatchStats({
         interceptions: stats?.interceptions ?? 0,
         recoveries: stats?.recoveries ?? 0,
         clearances: stats?.clearances ?? 0,
+        blocked_shots: stats?.blocked_shots ?? 0,
+        was_dribbled: stats?.was_dribbled ?? 0,
         duels_won: stats?.duels_won ?? 0,
         duels_total: stats?.duels_total ?? 0,
         aerial_duels_won: stats?.aerial_duels_won ?? 0,
@@ -317,11 +338,11 @@ export function usePlayerMatchStats({
         fouls_committed: stats?.fouls_committed ?? 0,
         fouls_suffered: stats?.fouls_suffered ?? 0,
         possession_lost: stats?.possession_lost ?? 0,
-      saves: stats?.saves ?? 0,
-      goals_conceded: stats?.goals_conceded ?? 0,
-      clean_sheets: 0, // Would need to check if goals_conceded === 0 and played full match
-      penalties_saved: 0, // Not commonly tracked per-match, calculated separately
-    };
+        saves: stats?.saves ?? 0,
+        goals_conceded: stats?.goals_conceded ?? 0,
+        clean_sheets: 0, // Would need to check if goals_conceded === 0 and played full match
+        penalties_saved: 0, // Not commonly tracked per-match, calculated separately
+      };
 
       return {
         match_id: mp.match_id,
@@ -347,11 +368,16 @@ export function usePlayerMatchStats({
       shots: acc.shots + match.stats.shots,
       shots_on_target: acc.shots_on_target + match.stats.shots_on_target,
       shots_off_target: acc.shots_off_target + match.stats.shots_off_target,
+      shots_blocked: acc.shots_blocked + match.stats.shots_blocked,
+      offsides: acc.offsides + match.stats.offsides,
       passes_completed: acc.passes_completed + match.stats.passes_completed,
       passes_failed: acc.passes_failed + match.stats.passes_failed,
       passes_total: acc.passes_total + match.stats.passes_total,
       key_passes: acc.key_passes + match.stats.key_passes,
       chances_created: acc.chances_created + match.stats.chances_created,
+      crosses_success: acc.crosses_success + match.stats.crosses_success,
+      crosses_failed: acc.crosses_failed + match.stats.crosses_failed,
+      ball_actions: acc.ball_actions + match.stats.ball_actions,
       dribbles_success: acc.dribbles_success + match.stats.dribbles_success,
       dribbles_failed: acc.dribbles_failed + match.stats.dribbles_failed,
       dribbles_total: acc.dribbles_total + match.stats.dribbles_total,
@@ -359,6 +385,8 @@ export function usePlayerMatchStats({
       interceptions: acc.interceptions + match.stats.interceptions,
       recoveries: acc.recoveries + match.stats.recoveries,
       clearances: acc.clearances + match.stats.clearances,
+      blocked_shots: acc.blocked_shots + match.stats.blocked_shots,
+      was_dribbled: acc.was_dribbled + match.stats.was_dribbled,
       duels_won: acc.duels_won + match.stats.duels_won,
       duels_total: acc.duels_total + match.stats.duels_total,
       aerial_duels_won: acc.aerial_duels_won + match.stats.aerial_duels_won,
@@ -383,11 +411,16 @@ export function usePlayerMatchStats({
       shots: 0,
       shots_on_target: 0,
       shots_off_target: 0,
+      shots_blocked: 0,
+      offsides: 0,
       passes_completed: 0,
       passes_failed: 0,
       passes_total: 0,
       key_passes: 0,
       chances_created: 0,
+      crosses_success: 0,
+      crosses_failed: 0,
+      ball_actions: 0,
       dribbles_success: 0,
       dribbles_failed: 0,
       dribbles_total: 0,
@@ -395,6 +428,8 @@ export function usePlayerMatchStats({
       interceptions: 0,
       recoveries: 0,
       clearances: 0,
+      blocked_shots: 0,
+      was_dribbled: 0,
       duels_won: 0,
       duels_total: 0,
       aerial_duels_won: 0,
@@ -486,26 +521,31 @@ export function toOutfieldStatsFormat(stats: MatchDerivedStats) {
     total_passes: stats.passes_total,
     key_passes: stats.key_passes,
     chances_created: stats.chances_created,
-    long_passes_accurate: 0, // Not tracked in live match
-    long_passes_total: 0,
+    long_passes_accurate: stats.crosses_success, // Using crosses as a proxy
+    long_passes_total: stats.crosses_success + stats.crosses_failed,
     shots: stats.shots,
     shots_on_target: stats.shots_on_target,
-    shots_blocked: 0, // Not tracked
-    offsides: 0, // Not tracked
+    shots_blocked: stats.shots_blocked, // Now tracked: offensive blocked shots
+    offsides: stats.offsides, // Now tracked
     tackles: stats.tackles,
     interceptions: stats.interceptions,
     clearances: stats.clearances,
     recoveries: stats.recoveries,
+    blocked_shots: stats.blocked_shots, // Defensive: blocked opponent shots
+    was_dribbled: stats.was_dribbled, // Now tracked
     ground_duels_won: stats.ground_duels_won,
     ground_duels_total: stats.ground_duels_total,
     aerial_duels_won: stats.aerial_duels_won,
     aerial_duels_total: stats.aerial_duels_total,
     successful_dribbles: stats.dribbles_success,
     total_dribbles: stats.dribbles_total,
+    ball_actions: stats.ball_actions, // Now tracked
     possession_lost: stats.possession_lost,
     fouls_drawn: stats.fouls_suffered,
     fouls_committed: stats.fouls_committed,
-    times_dribbled_past: 0, // Not tracked
+    times_dribbled_past: stats.was_dribbled,
+    crosses_success: stats.crosses_success,
+    crosses_failed: stats.crosses_failed,
   };
 }
 
@@ -658,11 +698,16 @@ export function usePlayerMatchStatsBySeasonCompetition({
             shots: 0,
             shots_on_target: 0,
             shots_off_target: 0,
+            shots_blocked: 0,
+            offsides: 0,
             passes_completed: 0,
             passes_failed: 0,
             passes_total: 0,
             key_passes: 0,
             chances_created: 0,
+            crosses_success: 0,
+            crosses_failed: 0,
+            ball_actions: 0,
             dribbles_success: 0,
             dribbles_failed: 0,
             dribbles_total: 0,
@@ -670,6 +715,8 @@ export function usePlayerMatchStatsBySeasonCompetition({
             interceptions: 0,
             recoveries: 0,
             clearances: 0,
+            blocked_shots: 0,
+            was_dribbled: 0,
             duels_won: 0,
             duels_total: 0,
             aerial_duels_won: 0,
@@ -706,11 +753,16 @@ export function usePlayerMatchStatsBySeasonCompetition({
       s.shots += stats?.shots ?? 0;
       s.shots_on_target += stats?.shots_on_target ?? 0;
       s.shots_off_target += Math.max(0, (stats?.shots ?? 0) - (stats?.shots_on_target ?? 0));
+      s.shots_blocked += stats?.shots_blocked ?? 0;
+      s.offsides += stats?.offsides ?? 0;
       s.passes_completed += stats?.passes_completed ?? 0;
       s.passes_total += stats?.passes_total ?? 0;
       s.passes_failed += Math.max(0, (stats?.passes_total ?? 0) - (stats?.passes_completed ?? 0));
       s.key_passes += stats?.key_passes ?? 0;
       s.chances_created += stats?.chances_created ?? 0;
+      s.crosses_success += stats?.crosses_success ?? 0;
+      s.crosses_failed += stats?.crosses_failed ?? 0;
+      s.ball_actions += stats?.ball_actions ?? 0;
       s.dribbles_success += stats?.dribbles_success ?? 0;
       s.dribbles_total += stats?.dribbles_total ?? 0;
       s.dribbles_failed += Math.max(0, (stats?.dribbles_total ?? 0) - (stats?.dribbles_success ?? 0));
@@ -718,6 +770,8 @@ export function usePlayerMatchStatsBySeasonCompetition({
       s.interceptions += stats?.interceptions ?? 0;
       s.recoveries += stats?.recoveries ?? 0;
       s.clearances += stats?.clearances ?? 0;
+      s.blocked_shots += stats?.blocked_shots ?? 0;
+      s.was_dribbled += stats?.was_dribbled ?? 0;
       s.duels_won += stats?.duels_won ?? 0;
       s.duels_total += stats?.duels_total ?? 0;
       s.aerial_duels_won += stats?.aerial_duels_won ?? 0;
