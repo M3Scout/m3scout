@@ -36,31 +36,43 @@ const eventConfig: Record<MatchEventType, {
   color: string;
   bgColor: string;
 }> = {
+  // Attack
   goal: { icon: <Goal className="w-3.5 h-3.5" />, label: "Gol", color: "text-emerald-400", bgColor: "bg-emerald-500/20" },
-  assist: { icon: <HandHelping className="w-3.5 h-3.5" />, label: "Assistência", color: "text-blue-400", bgColor: "bg-blue-500/20" },
-  shot: { icon: <Target className="w-3.5 h-3.5" />, label: "Final. Fora", color: "text-orange-400", bgColor: "bg-orange-500/20" },
   shot_on_target: { icon: <Target className="w-3.5 h-3.5" />, label: "Final. Gol", color: "text-orange-400", bgColor: "bg-orange-500/20" },
+  shot: { icon: <Target className="w-3.5 h-3.5" />, label: "Final. Fora", color: "text-orange-400", bgColor: "bg-orange-500/20" },
+  shot_blocked: { icon: <Shield className="w-3.5 h-3.5" />, label: "Final. Bloqueada", color: "text-orange-400", bgColor: "bg-orange-500/20" },
+  offside: { icon: <AlertTriangle className="w-3.5 h-3.5" />, label: "Impedimento", color: "text-red-400", bgColor: "bg-red-500/20" },
+  // Passing
+  assist: { icon: <HandHelping className="w-3.5 h-3.5" />, label: "Assistência", color: "text-blue-400", bgColor: "bg-blue-500/20" },
   key_pass: { icon: <Footprints className="w-3.5 h-3.5" />, label: "Passe Decisivo", color: "text-purple-400", bgColor: "bg-purple-500/20" },
   chance_created: { icon: <Target className="w-3.5 h-3.5" />, label: "Chance Criada", color: "text-amber-400", bgColor: "bg-amber-500/20" },
+  pass_success: { icon: <Footprints className="w-3.5 h-3.5" />, label: "Passe Certo", color: "text-zinc-400", bgColor: "bg-zinc-500/20" },
+  pass_total: { icon: <Footprints className="w-3.5 h-3.5" />, label: "Passe Errado", color: "text-zinc-400", bgColor: "bg-zinc-500/20" },
+  cross_success: { icon: <Footprints className="w-3.5 h-3.5" />, label: "Cruz. Certo", color: "text-amber-400", bgColor: "bg-amber-500/20" },
+  cross_failed: { icon: <Footprints className="w-3.5 h-3.5" />, label: "Cruz. Errado", color: "text-zinc-400", bgColor: "bg-zinc-500/20" },
+  // Dribbles/Possession
+  ball_action: { icon: <Footprints className="w-3.5 h-3.5" />, label: "Ação c/ Bola", color: "text-cyan-400", bgColor: "bg-cyan-500/20" },
   dribble_success: { icon: <Footprints className="w-3.5 h-3.5" />, label: "Drible Certo", color: "text-purple-400", bgColor: "bg-purple-500/20" },
-  dribble_attempt: { icon: <Footprints className="w-3.5 h-3.5" />, label: "Drible", color: "text-purple-400", bgColor: "bg-purple-500/20" },
+  dribble_attempt: { icon: <Footprints className="w-3.5 h-3.5" />, label: "Drible Errado", color: "text-purple-400", bgColor: "bg-purple-500/20" },
+  foul_suffered: { icon: <AlertTriangle className="w-3.5 h-3.5" />, label: "Falta Sofrida", color: "text-amber-400", bgColor: "bg-amber-500/20" },
+  possession_lost: { icon: <AlertTriangle className="w-3.5 h-3.5" />, label: "Bola Perdida", color: "text-red-400", bgColor: "bg-red-500/20" },
+  // Defense
   tackle: { icon: <Shield className="w-3.5 h-3.5" />, label: "Desarme", color: "text-cyan-400", bgColor: "bg-cyan-500/20" },
   interception: { icon: <Shield className="w-3.5 h-3.5" />, label: "Interceptação", color: "text-cyan-400", bgColor: "bg-cyan-500/20" },
   recovery: { icon: <Shield className="w-3.5 h-3.5" />, label: "Recuperação", color: "text-cyan-400", bgColor: "bg-cyan-500/20" },
   clearance: { icon: <Shield className="w-3.5 h-3.5" />, label: "Corte", color: "text-blue-400", bgColor: "bg-blue-500/20" },
+  blocked_shot: { icon: <Shield className="w-3.5 h-3.5" />, label: "Chute Bloqueado", color: "text-blue-400", bgColor: "bg-blue-500/20" },
+  was_dribbled: { icon: <AlertTriangle className="w-3.5 h-3.5" />, label: "Driblado", color: "text-orange-400", bgColor: "bg-orange-500/20" },
   ground_duel_won: { icon: <Shield className="w-3.5 h-3.5" />, label: "Duelo no Chão", color: "text-green-400", bgColor: "bg-green-500/20" },
   ground_duel_total: { icon: <Shield className="w-3.5 h-3.5" />, label: "Duelo no Chão", color: "text-zinc-400", bgColor: "bg-zinc-500/20" },
   duel_won: { icon: <Shield className="w-3.5 h-3.5" />, label: "Duelo Ganho", color: "text-green-400", bgColor: "bg-green-500/20" },
   duel_total: { icon: <Shield className="w-3.5 h-3.5" />, label: "Duelo", color: "text-zinc-400", bgColor: "bg-zinc-500/20" },
   aerial_duel_won: { icon: <Shield className="w-3.5 h-3.5" />, label: "Duelo Aéreo", color: "text-green-400", bgColor: "bg-green-500/20" },
   aerial_duel_total: { icon: <Shield className="w-3.5 h-3.5" />, label: "Duelo Aéreo", color: "text-zinc-400", bgColor: "bg-zinc-500/20" },
+  foul_committed: { icon: <AlertTriangle className="w-3.5 h-3.5" />, label: "Falta Cometida", color: "text-orange-400", bgColor: "bg-orange-500/20" },
   yellow: { icon: <CreditCard className="w-3.5 h-3.5" />, label: "Cartão Amarelo", color: "text-yellow-400", bgColor: "bg-yellow-500/20" },
   red: { icon: <CreditCard className="w-3.5 h-3.5" />, label: "Cartão Vermelho", color: "text-red-400", bgColor: "bg-red-500/20" },
-  foul_committed: { icon: <AlertTriangle className="w-3.5 h-3.5" />, label: "Falta Cometida", color: "text-orange-400", bgColor: "bg-orange-500/20" },
-  foul_suffered: { icon: <AlertTriangle className="w-3.5 h-3.5" />, label: "Falta Sofrida", color: "text-amber-400", bgColor: "bg-amber-500/20" },
-  pass_success: { icon: <Footprints className="w-3.5 h-3.5" />, label: "Passe Certo", color: "text-zinc-400", bgColor: "bg-zinc-500/20" },
-  pass_total: { icon: <Footprints className="w-3.5 h-3.5" />, label: "Passe", color: "text-zinc-400", bgColor: "bg-zinc-500/20" },
-  possession_lost: { icon: <AlertTriangle className="w-3.5 h-3.5" />, label: "Bola Perdida", color: "text-red-400", bgColor: "bg-red-500/20" },
+  // Goalkeeper
   save: { icon: <Shield className="w-3.5 h-3.5" />, label: "Defesa", color: "text-emerald-400", bgColor: "bg-emerald-500/20" },
   goal_conceded: { icon: <Goal className="w-3.5 h-3.5" />, label: "Gol Sofrido", color: "text-red-400", bgColor: "bg-red-500/20" },
   clean_sheet: { icon: <Shield className="w-3.5 h-3.5" />, label: "Clean Sheet", color: "text-emerald-400", bgColor: "bg-emerald-500/20" },
@@ -70,8 +82,8 @@ const eventConfig: Record<MatchEventType, {
   punch: { icon: <Shield className="w-3.5 h-3.5" />, label: "Soco", color: "text-blue-400", bgColor: "bg-blue-500/20" },
   high_claim: { icon: <Shield className="w-3.5 h-3.5" />, label: "Bola Alta", color: "text-blue-400", bgColor: "bg-blue-500/20" },
   sweeper_action: { icon: <Footprints className="w-3.5 h-3.5" />, label: "Saída do Gol", color: "text-cyan-400", bgColor: "bg-cyan-500/20" },
+  // Meta
   substitution: { icon: <ArrowRightLeft className="w-3.5 h-3.5" />, label: "Substituição", color: "text-amber-400", bgColor: "bg-amber-500/20" },
-  // Player presence events
   player_on: { icon: <ArrowUp className="w-3.5 h-3.5" />, label: "Entrou em Campo", color: "text-green-400", bgColor: "bg-green-500/20" },
   player_off: { icon: <ArrowDown className="w-3.5 h-3.5" />, label: "Saiu de Campo", color: "text-orange-400", bgColor: "bg-orange-500/20" },
 };

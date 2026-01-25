@@ -9,15 +9,22 @@ export type MatchStatus = "draft" | "live" | "finished" | "applied";
 export type PositionTemplate = "outfield" | "goalkeeper";
 
 export type MatchEventType =
-  // Outfield
+  // Outfield - Attack
   | "goal" | "assist" | "shot" | "shot_on_target"
+  | "shot_blocked" | "offside"
+  // Outfield - Passing
   | "key_pass" | "chance_created"
+  | "pass_success" | "pass_total"
+  | "cross_success" | "cross_failed"
+  // Outfield - Dribbles/Possession
   | "dribble_success" | "dribble_attempt"
+  | "ball_action" | "foul_suffered" | "possession_lost"
+  // Outfield - Defense
   | "tackle" | "interception" | "recovery" | "clearance"
+  | "blocked_shot" | "was_dribbled"
   | "duel_won" | "duel_total" | "aerial_duel_won" | "aerial_duel_total"
   | "ground_duel_won" | "ground_duel_total"
-  | "yellow" | "red" | "foul_committed" | "foul_suffered"
-  | "pass_success" | "pass_total" | "possession_lost"
+  | "yellow" | "red" | "foul_committed"
   // Goalkeeper
   | "save" | "goal_conceded" | "clean_sheet"
   | "penalty_saved" | "error_led_to_goal"
