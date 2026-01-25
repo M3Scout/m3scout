@@ -34,12 +34,21 @@ import { Match, MatchPlayer, MatchEvent, MatchEventType, MatchPlayerStats } from
 import { calculateMinutesPlayed } from "@/lib/minutesPlayed";
 import { calculatePlayerMatchRating, getRatingBgColor, matchPlayerStatsToInput } from "@/lib/matchRatingEngine";
 import { classifyMatchProfile, type MatchProfileKey } from "@/lib/matchProfileEngine";
+import { calculateMatchEfficiency, getEfficiencyColorHex, getEfficiencyBgColorHex, type EfficiencyLevel } from "@/lib/matchEfficiencyEngine";
 import {
   EVENT_TYPE_CONFIG,
   COMPUTED_STATS,
   SUMMARY_EVENT_TYPES,
   EventCountsMap,
 } from "@/lib/matchStatsDefinitions";
+
+// Efficiency colors for PDF
+const EFFICIENCY_COLORS: Record<EfficiencyLevel | "none", { bg: string; text: string; label: string }> = {
+  high: { bg: "#D1FAE5", text: "#065F46", label: "Alta" },
+  medium: { bg: "#FEF3C7", text: "#92400E", label: "Média" },
+  low: { bg: "#FEE2E2", text: "#991B1B", label: "Baixa" },
+  none: { bg: "#E5E7EB", text: "#6B7280", label: "—" },
+};
 
 // Profile colors for PDF
 const PROFILE_COLORS: Record<MatchProfileKey, { bg: string; text: string }> = {
@@ -1434,27 +1443,42 @@ export function MatchSummaryVectorPdf({
                     );
                   })()}
                 </View>
-                {/* Match Profile - Perfil do Jogo */}
+                {/* Match Profile + Efficiency - Perfil e Eficiência do Jogo */}
                 {minutesPlayed >= 10 && (() => {
                   const stats = playerStatsMap[mp.player_id];
                   const statsInput = matchPlayerStatsToInput(stats);
                   const profile = classifyMatchProfile(statsInput, minutesPlayed);
-                  const colors = PROFILE_COLORS[profile.primary.key];
+                  const efficiency = calculateMatchEfficiency(statsInput, minutesPlayed);
+                  const profileColors = PROFILE_COLORS[profile.primary.key];
+                  const efficiencyColors = EFFICIENCY_COLORS[efficiency.level];
                   return (
                     <View style={{ marginBottom: 6 }}>
-                      <View style={{ 
-                        backgroundColor: colors.bg, 
-                        paddingHorizontal: 6, 
-                        paddingVertical: 3, 
-                        borderRadius: 4,
-                        alignSelf: 'flex-start'
-                      }}>
-                        <Text style={{ fontSize: 7, fontWeight: 600, color: colors.text }}>
-                          {profile.primary.label}
-                        </Text>
+                      <View style={{ flexDirection: "row", gap: 4, marginBottom: 3, flexWrap: "wrap" }}>
+                        {/* Profile Badge */}
+                        <View style={{ 
+                          backgroundColor: profileColors.bg, 
+                          paddingHorizontal: 5, 
+                          paddingVertical: 2, 
+                          borderRadius: 3,
+                        }}>
+                          <Text style={{ fontSize: 6, fontWeight: 600, color: profileColors.text }}>
+                            {profile.primary.label}
+                          </Text>
+                        </View>
+                        {/* Efficiency Badge */}
+                        <View style={{ 
+                          backgroundColor: efficiencyColors.bg, 
+                          paddingHorizontal: 5, 
+                          paddingVertical: 2, 
+                          borderRadius: 3,
+                        }}>
+                          <Text style={{ fontSize: 6, fontWeight: 600, color: efficiencyColors.text }}>
+                            Efic: {efficiencyColors.label}
+                          </Text>
+                        </View>
                       </View>
-                      <Text style={{ fontSize: 6, color: PDF_COLORS.gray500, marginTop: 2, lineHeight: 1.3 }}>
-                        {profile.summary.slice(0, 80)}{profile.summary.length > 80 ? '...' : ''}
+                      <Text style={{ fontSize: 5.5, color: PDF_COLORS.gray500, lineHeight: 1.3 }}>
+                        {profile.summary.slice(0, 60)}{profile.summary.length > 60 ? '...' : ''}
                       </Text>
                     </View>
                   );

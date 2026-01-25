@@ -4,6 +4,7 @@
  * 
  * Uses the matchRatingEngine and displays the SofaScore-style ratings.
  * Now includes Match Profile (Perfil do Jogo) - qualitative performance interpretation.
+ * Also includes Match Efficiency (Eficiência no Jogo) - quality vs risk indicator.
  */
 
 import { useMemo } from "react";
@@ -13,10 +14,12 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { PlayerRatingBadge } from "./PlayerRatingBadge";
 import { MatchProfileText } from "./MatchProfileBadge";
+import { MatchEfficiencyBadge } from "./MatchEfficiencyBadge";
 import { useSortedPlayersByRating, type MatchPlayer } from "@/hooks/useMatchRatings";
 import type { MatchPlayerStats } from "@/hooks/useLiveMatch";
 import { matchPlayerStatsToInput } from "@/lib/matchRatingEngine";
 import { classifyMatchProfile } from "@/lib/matchProfileEngine";
+import { calculateMatchEfficiency } from "@/lib/matchEfficiencyEngine";
 import { Star, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -156,13 +159,15 @@ export function MatchRatingsCard({
                     <span>•</span>
                     <span>{player.minutesInfo.durationDisplay}</span>
                   </div>
-                  {/* Match Profile - Perfil do Jogo */}
+                  {/* Match Profile + Efficiency - Perfil e Eficiência do Jogo */}
                   {player.rating.hasRating && (() => {
                     const statsInput = matchPlayerStatsToInput(playerStatsMap[player.playerId]);
                     const profile = classifyMatchProfile(statsInput, player.minutesInfo.minutesPlayed);
+                    const efficiency = calculateMatchEfficiency(statsInput, player.minutesInfo.minutesPlayed);
                     return (
-                      <div className="mt-0.5">
+                      <div className="mt-0.5 flex items-center gap-1.5 flex-wrap">
                         <MatchProfileText profile={profile} showIcon={false} className="text-[9px]" />
+                        <MatchEfficiencyBadge efficiency={efficiency} playerName={player.playerName} size="sm" showIcon={true} />
                       </div>
                     );
                   })()}
