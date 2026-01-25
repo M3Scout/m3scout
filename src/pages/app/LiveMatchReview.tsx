@@ -146,6 +146,14 @@ export default function LiveMatchReview() {
     if (!match) return [];
     const issues: Inconsistency[] = [];
     const duration = match.duration_minutes;
+    
+    // Calculate effective match duration including added time (acréscimos)
+    // matchEffectiveDuration = base duration + 1st half added time + 2nd half added time
+    const addedTime1T = match.added_time_first_half ?? 0;
+    const addedTime2T = match.added_time_second_half ?? 0;
+    const matchEffectiveDuration = duration + addedTime1T + addedTime2T;
+    // Add tolerance of +2 minutes for registration variations
+    const minutesTolerance = 2;
 
     matchPlayers.forEach((mp) => {
       if (!mp.player) return;
@@ -214,14 +222,16 @@ export default function LiveMatchReview() {
         });
       }
 
-      // Minutes checks
+      // Minutes checks - use effective duration with added time + tolerance
+      // Only flag as inconsistent if minutes exceed effective duration + tolerance
       const minutesPlayed = mp.minutes_played ?? duration;
-      if (minutesPlayed > duration) {
+      const maxAllowedMinutesPlayed = matchEffectiveDuration + minutesTolerance;
+      if (minutesPlayed > maxAllowedMinutesPlayed) {
         issues.push({
           playerId: mp.player_id,
           playerName: mp.player.full_name,
           type: "warning",
-          message: `Minutos jogados (${minutesPlayed}) > Duração do jogo (${duration})`,
+          message: `Minutos jogados (${minutesPlayed}) excedem a duração efetiva do jogo (${matchEffectiveDuration} min com acréscimos)`,
         });
       }
 
