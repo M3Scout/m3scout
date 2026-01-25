@@ -29,30 +29,37 @@ export const EVENT_GROUPS = {
   attack: {
     key: "attack",
     label: "Ataque",
-    color: "text-emerald-400",
-    bgColor: "bg-emerald-500/10",
-    borderColor: "border-emerald-500/20",
+    color: "text-red-400",
+    bgColor: "bg-red-500/10",
+    borderColor: "border-red-500/20",
   },
   passing: {
     key: "passing", 
-    label: "Passe",
-    color: "text-blue-400",
-    bgColor: "bg-blue-500/10",
-    borderColor: "border-blue-500/20",
+    label: "Passes",
+    color: "text-amber-400",
+    bgColor: "bg-amber-500/10",
+    borderColor: "border-amber-500/20",
   },
-  defense: {
-    key: "defense",
-    label: "Defesa",
+  dribbles: {
+    key: "dribbles",
+    label: "Dribles / Posse",
     color: "text-cyan-400",
     bgColor: "bg-cyan-500/10",
     borderColor: "border-cyan-500/20",
   },
+  defense: {
+    key: "defense",
+    label: "Defesa",
+    color: "text-blue-400",
+    bgColor: "bg-blue-500/10",
+    borderColor: "border-blue-500/20",
+  },
   discipline: {
     key: "discipline",
     label: "Disciplina",
-    color: "text-amber-400",
-    bgColor: "bg-amber-500/10",
-    borderColor: "border-amber-500/20",
+    color: "text-orange-400",
+    bgColor: "bg-orange-500/10",
+    borderColor: "border-orange-500/20",
   },
   goalkeeper: {
     key: "goalkeeper",
@@ -104,14 +111,6 @@ export const LIVE_EVENT_ACTIONS: LiveEventAction[] = [
     aliases: ["gol", "goal", "marcar"],
   },
   {
-    key: "assist",
-    type: "assist",
-    label: "Assistência",
-    group: "attack",
-    icon: HandHelping,
-    aliases: ["assist", "passe gol"],
-  },
-  {
     key: "shot_on_target",
     type: "shot_on_target",
     label: "Finalização no gol",
@@ -130,33 +129,51 @@ export const LIVE_EVENT_ACTIONS: LiveEventAction[] = [
     aliases: ["finalização fora", "para fora", "chute fora"],
   },
   {
+    key: "shot_blocked",
+    type: "shot_blocked",
+    label: "Finalização bloqueada",
+    group: "attack",
+    icon: Ban,
+    description: "Chute nosso bloqueado pelo adversário",
+    aliases: ["bloqueada", "bloqueado"],
+  },
+  {
+    key: "offside",
+    type: "offside",
+    label: "Impedimento",
+    group: "attack",
+    icon: AlertTriangle,
+    description: "Jogador em posição irregular",
+    aliases: ["impedido", "offside", "fora de jogo"],
+  },
+
+  // ========== PASSE ==========
+  {
+    key: "assist",
+    type: "assist",
+    label: "Assistência",
+    group: "passing",
+    icon: HandHelping,
+    aliases: ["assist", "passe gol"],
+  },
+  {
+    key: "key_pass",
+    type: "key_pass",
+    label: "Passe decisivo",
+    group: "passing",
+    icon: ArrowUpRight,
+    description: "Passe que gerou finalização",
+    aliases: ["passe chave", "key pass"],
+  },
+  {
     key: "chance_created",
     type: "chance_created",
     label: "Chance criada",
-    group: "attack",
+    group: "passing",
     icon: Zap,
     description: "Criou oportunidade clara",
     aliases: ["chance", "oportunidade"],
   },
-  {
-    key: "dribble_success",
-    type: "dribble_success",
-    label: "Drible certo",
-    group: "attack",
-    icon: Footprints,
-    aliases: ["drible", "finta", "drible ganho"],
-  },
-  {
-    key: "dribble_attempt",
-    type: "dribble_attempt",
-    label: "Drible perdido",
-    group: "attack",
-    icon: Footprints,
-    description: "Tentativa de drible falhou",
-    aliases: ["drible errado", "drible perdido"],
-  },
-
-  // ========== PASSE ==========
   {
     key: "pass_success",
     type: "pass_success",
@@ -175,13 +192,67 @@ export const LIVE_EVENT_ACTIONS: LiveEventAction[] = [
     aliases: ["passe errado", "tentativa"],
   },
   {
-    key: "key_pass",
-    type: "key_pass",
-    label: "Passe decisivo",
+    key: "cross_success",
+    type: "cross_success",
+    label: "Cruzamento certo",
     group: "passing",
     icon: ArrowUpRight,
-    description: "Passe que gerou finalização",
-    aliases: ["passe chave", "key pass"],
+    description: "Cruzamento que encontrou companheiro",
+    aliases: ["cruzamento", "cruz certo"],
+  },
+  {
+    key: "cross_failed",
+    type: "cross_failed",
+    label: "Cruzamento errado",
+    group: "passing",
+    icon: ArrowRight,
+    description: "Cruzamento que não chegou",
+    aliases: ["cruz errado", "cruzamento perdido"],
+  },
+
+  // ========== DRIBLES / POSSE ==========
+  {
+    key: "ball_action",
+    type: "ball_action",
+    label: "Ação com a bola",
+    group: "dribbles",
+    icon: Footprints,
+    description: "Qualquer ação relevante com a bola",
+    aliases: ["ação", "bola", "toque"],
+  },
+  {
+    key: "dribble_success",
+    type: "dribble_success",
+    label: "Drible certo",
+    group: "dribbles",
+    icon: Footprints,
+    aliases: ["drible", "finta", "drible ganho"],
+  },
+  {
+    key: "dribble_attempt",
+    type: "dribble_attempt",
+    label: "Drible perdido",
+    group: "dribbles",
+    icon: Footprints,
+    description: "Tentativa de drible falhou",
+    aliases: ["drible errado", "drible perdido"],
+  },
+  {
+    key: "foul_suffered",
+    type: "foul_suffered",
+    label: "Falta sofrida",
+    group: "dribbles",
+    icon: UserX,
+    aliases: ["sofreu falta"],
+  },
+  {
+    key: "possession_lost",
+    type: "possession_lost",
+    label: "Posse perdida",
+    group: "dribbles",
+    icon: CircleOff,
+    description: "Perdeu a bola",
+    aliases: ["perda", "entrega"],
   },
 
   // ========== DEFESA ==========
@@ -373,7 +444,7 @@ export const LIVE_EVENT_ACTIONS: LiveEventAction[] = [
 /**
  * Ordem de exibição das categorias
  */
-export const GROUP_ORDER: EventGroup[] = ["attack", "passing", "defense", "discipline", "goalkeeper"];
+export const GROUP_ORDER: EventGroup[] = ["attack", "passing", "dribbles", "defense", "discipline", "goalkeeper"];
 
 /**
  * Filtra eventos por tipo de jogador (goleiro ou linha)
@@ -396,6 +467,7 @@ export function groupEventsByCategory(events: LiveEventAction[]): Record<EventGr
   const grouped: Record<EventGroup, LiveEventAction[]> = {
     attack: [],
     passing: [],
+    dribbles: [],
     defense: [],
     discipline: [],
     goalkeeper: [],

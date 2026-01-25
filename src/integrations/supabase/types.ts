@@ -307,9 +307,13 @@ export type Database = {
           aerial_duels_total: number
           aerial_duels_won: number
           assists: number
+          ball_actions: number
+          blocked_shots: number
           chances_created: number
           clearances: number
           created_at: string
+          crosses_failed: number
+          crosses_success: number
           dribbles_success: number
           dribbles_total: number
           duels_total: number
@@ -322,6 +326,7 @@ export type Database = {
           interceptions: number
           key_passes: number
           match_id: string
+          offsides: number
           passes_completed: number
           passes_total: number
           player_id: string
@@ -330,18 +335,24 @@ export type Database = {
           red_cards: number
           saves: number
           shots: number
+          shots_blocked: number
           shots_on_target: number
           tackles: number
           updated_at: string
+          was_dribbled: number
           yellow_cards: number
         }
         Insert: {
           aerial_duels_total?: number
           aerial_duels_won?: number
           assists?: number
+          ball_actions?: number
+          blocked_shots?: number
           chances_created?: number
           clearances?: number
           created_at?: string
+          crosses_failed?: number
+          crosses_success?: number
           dribbles_success?: number
           dribbles_total?: number
           duels_total?: number
@@ -354,6 +365,7 @@ export type Database = {
           interceptions?: number
           key_passes?: number
           match_id: string
+          offsides?: number
           passes_completed?: number
           passes_total?: number
           player_id: string
@@ -362,18 +374,24 @@ export type Database = {
           red_cards?: number
           saves?: number
           shots?: number
+          shots_blocked?: number
           shots_on_target?: number
           tackles?: number
           updated_at?: string
+          was_dribbled?: number
           yellow_cards?: number
         }
         Update: {
           aerial_duels_total?: number
           aerial_duels_won?: number
           assists?: number
+          ball_actions?: number
+          blocked_shots?: number
           chances_created?: number
           clearances?: number
           created_at?: string
+          crosses_failed?: number
+          crosses_success?: number
           dribbles_success?: number
           dribbles_total?: number
           duels_total?: number
@@ -386,6 +404,7 @@ export type Database = {
           interceptions?: number
           key_passes?: number
           match_id?: string
+          offsides?: number
           passes_completed?: number
           passes_total?: number
           player_id?: string
@@ -394,9 +413,11 @@ export type Database = {
           red_cards?: number
           saves?: number
           shots?: number
+          shots_blocked?: number
           shots_on_target?: number
           tackles?: number
           updated_at?: string
+          was_dribbled?: number
           yellow_cards?: number
         }
         Relationships: [
@@ -1875,9 +1896,13 @@ export type Database = {
           aerial_duels_total: number
           aerial_duels_won: number
           assists: number
+          ball_actions: number
+          blocked_shots: number
           chances_created: number
           clearances: number
           created_at: string
+          crosses_failed: number
+          crosses_success: number
           dribbles_success: number
           dribbles_total: number
           duels_total: number
@@ -1890,6 +1915,7 @@ export type Database = {
           interceptions: number
           key_passes: number
           match_id: string
+          offsides: number
           passes_completed: number
           passes_total: number
           player_id: string
@@ -1898,9 +1924,11 @@ export type Database = {
           red_cards: number
           saves: number
           shots: number
+          shots_blocked: number
           shots_on_target: number
           tackles: number
           updated_at: string
+          was_dribbled: number
           yellow_cards: number
         }[]
         SetofOptions: {
@@ -2080,6 +2108,13 @@ export type Database = {
         | "aerial_duel_total"
         | "ground_duel_won"
         | "ground_duel_total"
+        | "offside"
+        | "shot_blocked"
+        | "cross_success"
+        | "cross_failed"
+        | "ball_action"
+        | "was_dribbled"
+        | "blocked_shot"
       match_status: "draft" | "live" | "finished" | "applied"
       position_template: "outfield" | "goalkeeper"
     }
@@ -2257,6 +2292,13 @@ export const Constants = {
         "aerial_duel_total",
         "ground_duel_won",
         "ground_duel_total",
+        "offside",
+        "shot_blocked",
+        "cross_success",
+        "cross_failed",
+        "ball_action",
+        "was_dribbled",
+        "blocked_shot",
       ],
       match_status: ["draft", "live", "finished", "applied"],
       position_template: ["outfield", "goalkeeper"],
