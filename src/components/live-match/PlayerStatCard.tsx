@@ -55,56 +55,59 @@ const POSITION_ABBREV: Record<string, string> = {
   "Forward": "FW",
 };
 
-// Stat categories configuration with colors
+// Stat categories configuration with colors - NEW STRUCTURE
 const OUTFIELD_STATS: { category: string; color: string; bgColor: string; stats: { type: MatchEventType; label: string }[] }[] = [
+  // ATAQUE - Finalizações e gols
   {
-    category: "ATA",
+    category: "ATAQUE",
     color: "text-red-400",
     bgColor: "bg-red-500/10 border-red-500/20",
     stats: [
       { type: "goal", label: "Gols" },
-      { type: "assist", label: "Assist." },
       { type: "shot_on_target", label: "Final. Gol" },
       { type: "shot", label: "Final. Fora" },
     ],
   },
+  // PASSES - Assistências e criação
   {
-    category: "CRI",
+    category: "PASSES",
     color: "text-amber-400",
     bgColor: "bg-amber-500/10 border-amber-500/20",
     stats: [
+      { type: "assist", label: "Assist." },
       { type: "key_pass", label: "Passes Dec." },
       { type: "chance_created", label: "Chances" },
-      { type: "dribble_success", label: "Dribles ✓" },
-      { type: "dribble_attempt", label: "Dribles Tot." },
+      { type: "pass_success", label: "Passes ✓" },
+      { type: "pass_total", label: "Passes ✗" },
     ],
   },
+  // DRIBLES / POSSE
   {
-    category: "DEF",
+    category: "DRIBLES",
+    color: "text-cyan-400",
+    bgColor: "bg-cyan-500/10 border-cyan-500/20",
+    stats: [
+      { type: "dribble_success", label: "Dribles ✓" },
+      { type: "dribble_attempt", label: "Dribles ✗" },
+      { type: "foul_suffered", label: "Faltas Sof." },
+      { type: "possession_lost", label: "Bolas Perd." },
+    ],
+  },
+  // DEFESA (inclui duelos e disciplina)
+  {
+    category: "DEFESA",
     color: "text-blue-400",
     bgColor: "bg-blue-500/10 border-blue-500/20",
     stats: [
       { type: "tackle", label: "Desarmes" },
       { type: "interception", label: "Interc." },
+      { type: "clearance", label: "Cortes" },
       { type: "recovery", label: "Recup." },
       { type: "duel_won", label: "Duelos ✓" },
-      { type: "duel_total", label: "Duelos Tot." },
       { type: "aerial_duel_won", label: "Aéreos ✓" },
-      { type: "clearance", label: "Cortes" },
-    ],
-  },
-  {
-    category: "TÁT",
-    color: "text-purple-400",
-    bgColor: "bg-purple-500/10 border-purple-500/20",
-    stats: [
+      { type: "foul_committed", label: "Faltas Com." },
       { type: "yellow", label: "Amarelos" },
       { type: "red", label: "Vermelhos" },
-      { type: "foul_committed", label: "Faltas Com." },
-      { type: "foul_suffered", label: "Faltas Sof." },
-      { type: "pass_success", label: "Passes ✓" },
-      { type: "pass_total", label: "Passes Tot." },
-      { type: "possession_lost", label: "Bolas Perd." },
     ],
   },
 ];

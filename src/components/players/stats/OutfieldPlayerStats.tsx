@@ -60,8 +60,8 @@ export function OutfieldPlayerStats({ stats }: OutfieldPlayerStatsProps) {
 
   return (
     <div className="space-y-6">
-      {/* A) General Statistics */}
-      <StatGroup title="Estatísticas Gerais" icon={<Target className="w-4 h-4" />}>
+      {/* A) ATAQUE - Finalizações e gols */}
+      <StatGroup title="Ataque" icon={<Crosshair className="w-4 h-4" />}>
         <StatCard 
           label="Jogos" 
           value={safe(stats.matches)} 
@@ -78,49 +78,7 @@ export function OutfieldPlayerStats({ stats }: OutfieldPlayerStatsProps) {
           highlight
         />
         <StatCard 
-          label="Assistências" 
-          value={safe(stats.assists)} 
-          variant="success"
-        />
-        <StatCard 
-          label="Amarelos" 
-          value={safe(stats.yellow_cards)} 
-          variant="warning"
-        />
-        <StatCard 
-          label="Vermelhos" 
-          value={safe(stats.red_cards)} 
-          variant="danger"
-        />
-      </StatGroup>
-
-      {/* B) Passing & Creation */}
-      <StatGroup title="Passe e Criação" icon={<Footprints className="w-4 h-4" />}>
-        <StatCard 
-          label="Passes" 
-          value={safe(stats.accurate_passes)} 
-          total={safe(stats.total_passes)}
-        />
-        <StatCard 
-          label="Passes Decisivos" 
-          value={safe(stats.key_passes)} 
-        />
-        <StatCard 
-          label="Chances Criadas" 
-          value={safe(stats.chances_created)} 
-        />
-        <StatCard 
-          label="Passes Longos" 
-          value={safe(stats.long_passes_accurate)} 
-          total={safe(stats.long_passes_total) || undefined}
-          showPercentage={safe(stats.long_passes_total) > 0}
-        />
-      </StatGroup>
-
-      {/* C) Shooting / Finalizações */}
-      <StatGroup title="Finalizações" icon={<Crosshair className="w-4 h-4" />}>
-        <StatCard 
-          label="Total" 
+          label="Finalizações" 
           value={safe(stats.shots)} 
         />
         <StatCard 
@@ -143,7 +101,57 @@ export function OutfieldPlayerStats({ stats }: OutfieldPlayerStatsProps) {
         />
       </StatGroup>
 
-      {/* D) Defense */}
+      {/* B) PASSES - Assistências, passes decisivos e criação */}
+      <StatGroup title="Passes" icon={<Footprints className="w-4 h-4" />}>
+        <StatCard 
+          label="Assistências" 
+          value={safe(stats.assists)} 
+          variant="success"
+        />
+        <StatCard 
+          label="Passes Decisivos" 
+          value={safe(stats.key_passes)} 
+        />
+        <StatCard 
+          label="Chances Criadas" 
+          value={safe(stats.chances_created)} 
+        />
+        <StatCard 
+          label="Passes Certos" 
+          value={safe(stats.accurate_passes)} 
+          total={safe(stats.total_passes)}
+        />
+        <StatCard 
+          label="Passes Longos" 
+          value={safe(stats.long_passes_accurate)} 
+          total={safe(stats.long_passes_total) || undefined}
+          showPercentage={safe(stats.long_passes_total) > 0}
+        />
+      </StatGroup>
+
+      {/* C) DRIBLES / POSSE - Controle de bola */}
+      <StatGroup title="Dribles / Posse" icon={<Target className="w-4 h-4" />}>
+        <StatCard 
+          label="Dribles Certos" 
+          value={safe(stats.successful_dribbles)} 
+          total={safe(stats.total_dribbles) || undefined}
+          showPercentage={safe(stats.total_dribbles) > 0}
+        />
+        <StatCard 
+          label="Dribles Errados" 
+          value={Math.max(0, safe(stats.total_dribbles) - safe(stats.successful_dribbles))} 
+        />
+        <StatCard 
+          label="Faltas Sofridas" 
+          value={safe(stats.fouls_drawn)} 
+        />
+        <StatCard 
+          label="Perda de Posse" 
+          value={safe(stats.possession_lost)} 
+        />
+      </StatGroup>
+
+      {/* D) DEFESA - Ações defensivas, duelos e disciplina */}
       <StatGroup title="Defesa" icon={<Shield className="w-4 h-4" />}>
         <StatCard 
           label="Desarmes" 
@@ -163,7 +171,7 @@ export function OutfieldPlayerStats({ stats }: OutfieldPlayerStatsProps) {
         />
       </StatGroup>
 
-      {/* E) Duelos */}
+      {/* Duelos */}
       <StatGroup title="Duelos" icon={<Target className="w-4 h-4" />}>
         <StatCard 
           label="Duelos no Chão" 
@@ -197,32 +205,28 @@ export function OutfieldPlayerStats({ stats }: OutfieldPlayerStatsProps) {
           label="Duelos Totais" 
           value={safe(stats.ground_duels_total) + safe(stats.aerial_duels_total)} 
         />
+        <StatCard 
+          label="Driblado" 
+          value={safe(stats.times_dribbled_past)} 
+        />
       </StatGroup>
 
-      {/* F) Ball Control & Discipline */}
-      <StatGroup title="Bola e Disciplina" icon={<AlertTriangle className="w-4 h-4" />}>
-        <StatCard 
-          label="Dribles" 
-          value={safe(stats.successful_dribbles)} 
-          total={safe(stats.total_dribbles) || undefined}
-          showPercentage={safe(stats.total_dribbles) > 0}
-        />
-        <StatCard 
-          label="Perda de Posse" 
-          value={safe(stats.possession_lost)} 
-        />
-        <StatCard 
-          label="Faltas Sofridas" 
-          value={safe(stats.fouls_drawn)} 
-        />
+      {/* Disciplina (sub-seção dentro de Defesa) */}
+      <StatGroup title="Disciplina" icon={<AlertTriangle className="w-4 h-4" />}>
         <StatCard 
           label="Faltas Cometidas" 
           value={safe(stats.fouls_committed)} 
           variant={safe(stats.fouls_committed) > 10 ? "warning" : "default"}
         />
         <StatCard 
-          label="Driblado" 
-          value={safe(stats.times_dribbled_past)} 
+          label="Amarelos" 
+          value={safe(stats.yellow_cards)} 
+          variant="warning"
+        />
+        <StatCard 
+          label="Vermelhos" 
+          value={safe(stats.red_cards)} 
+          variant="danger"
         />
       </StatGroup>
     </div>

@@ -27,60 +27,63 @@ export interface StatCategory {
 }
 
 export const OUTFIELD_STATS: StatCategory[] = [
+  // ATAQUE - Finalizações e gols
   {
-    category: "ATA",
+    category: "ATAQUE",
     categoryKey: "attack",
     color: "text-red-400",
     bgColor: "bg-red-500/10 border-red-500/20",
     stats: [
       { type: "goal", label: "Gols" },
-      { type: "assist", label: "Assistências" },
-      // Note: shots_total is computed (shot + shot_on_target) in summary
       { type: "shot_on_target", label: "Finalizações no Gol" },
       { type: "shot", label: "Finalizações Fora" },
     ],
   },
+  // PASSES - Passes, assistências e criação
   {
-    category: "CRI",
-    categoryKey: "creativity",
+    category: "PASSES",
+    categoryKey: "passing",
     color: "text-amber-400",
     bgColor: "bg-amber-500/10 border-amber-500/20",
     stats: [
+      { type: "assist", label: "Assistências" },
       { type: "key_pass", label: "Passes Decisivos" },
       { type: "chance_created", label: "Chances Criadas" },
-      { type: "dribble_success", label: "Dribles Certos" },
-      { type: "dribble_attempt", label: "Dribles Errados" },
+      { type: "pass_success", label: "Passes Certos" },
+      { type: "pass_total", label: "Passes Errados" },
     ],
   },
+  // DRIBLES / POSSE - Controle de bola e manutenção
   {
-    category: "DEF",
+    category: "DRIBLES",
+    categoryKey: "dribbles",
+    color: "text-cyan-400",
+    bgColor: "bg-cyan-500/10 border-cyan-500/20",
+    stats: [
+      { type: "dribble_success", label: "Dribles Certos" },
+      { type: "dribble_attempt", label: "Dribles Errados" },
+      { type: "foul_suffered", label: "Faltas Sofridas" },
+      { type: "possession_lost", label: "Perdas de Posse" },
+    ],
+  },
+  // DEFESA - Ações defensivas e duelos (inclui disciplina)
+  {
+    category: "DEFESA",
     categoryKey: "defense",
     color: "text-blue-400",
     bgColor: "bg-blue-500/10 border-blue-500/20",
     stats: [
       { type: "tackle", label: "Desarmes" },
       { type: "interception", label: "Interceptações" },
-      { type: "recovery", label: "Recuperações" },
       { type: "clearance", label: "Cortes" },
+      { type: "recovery", label: "Recuperações" },
       { type: "ground_duel_won", label: "Duelo Chão ✓" },
       { type: "ground_duel_total", label: "Duelo Chão ✗" },
       { type: "aerial_duel_won", label: "Duelo Aéreo ✓" },
       { type: "aerial_duel_total", label: "Duelo Aéreo ✗" },
-    ],
-  },
-  {
-    category: "DIS",
-    categoryKey: "discipline",
-    color: "text-purple-400",
-    bgColor: "bg-purple-500/10 border-purple-500/20",
-    stats: [
+      { type: "foul_committed", label: "Faltas Cometidas" },
       { type: "yellow", label: "Amarelos" },
       { type: "red", label: "Vermelhos" },
-      { type: "foul_committed", label: "Faltas Cometidas" },
-      { type: "foul_suffered", label: "Faltas Sofridas" },
-      { type: "pass_success", label: "Passes Certos" },
-      { type: "pass_total", label: "Passes Errados" },
-      { type: "possession_lost", label: "Perdas de Posse" },
     ],
   },
 ];
@@ -135,42 +138,40 @@ export interface SummaryEventConfig {
 }
 
 // Complete mapping of all event types to their display labels for summary
-// ORDER determines display sequence: attack (1-9), creativity (10-19), passing (20-29), defense (30-39), discipline (40-49), goalkeeper (50-59)
+// ORDER determines display sequence: attack (1-9), passing (10-19), dribbles (20-29), defense (30-49), goalkeeper (50-59)
 export const EVENT_TYPE_CONFIG: Record<MatchEventType, SummaryEventConfig> = {
-  // Attack - shots_total computed stat has order 2.5 (between assists and shot_on_target)
+  // ATAQUE - Finalizações e gols
   goal: { label: "Gols", icon: "⚽", category: "attack", order: 1 },
-  assist: { label: "Assistências", icon: "👟", category: "attack", order: 2 },
-  shot_on_target: { label: "Finalizações no Gol", icon: "🥅", category: "attack", order: 4 },
-  shot: { label: "Finalizações Fora", icon: "🎯", category: "attack", order: 5 },
+  shot_on_target: { label: "Finalizações no Gol", icon: "🥅", category: "attack", order: 2 },
+  shot: { label: "Finalizações Fora", icon: "🎯", category: "attack", order: 3 },
   
-  // Creativity
-  key_pass: { label: "Passes Decisivos", icon: "🎯", category: "creativity", order: 10 },
-  chance_created: { label: "Chances Criadas", icon: "💡", category: "creativity", order: 11 },
-  dribble_success: { label: "Dribles Certos", icon: "✓", category: "creativity", order: 12 },
-  dribble_attempt: { label: "Dribles Errados", icon: "✗", category: "creativity", order: 13 },
+  // PASSES - Assistências e criação
+  assist: { label: "Assistências", icon: "👟", category: "passing", order: 10 },
+  key_pass: { label: "Passes Decisivos", icon: "🎯", category: "passing", order: 11 },
+  chance_created: { label: "Chances Criadas", icon: "💡", category: "passing", order: 12 },
+  pass_success: { label: "Passes Certos", icon: "📤", category: "passing", order: 13 },
+  pass_total: { label: "Passes Errados", icon: "❌", category: "passing", order: 14 },
   
-  // Passing
-  pass_success: { label: "Passes Certos", icon: "📤", category: "passing", order: 20 },
-  pass_total: { label: "Passes Errados", icon: "❌", category: "passing", order: 21 },
-  possession_lost: { label: "Perdas de Posse", icon: "💨", category: "passing", order: 22 },
+  // DRIBLES / POSSE
+  dribble_success: { label: "Dribles Certos", icon: "✓", category: "dribbles", order: 20 },
+  dribble_attempt: { label: "Dribles Errados", icon: "✗", category: "dribbles", order: 21 },
+  foul_suffered: { label: "Faltas Sofridas", icon: "🤕", category: "dribbles", order: 22 },
+  possession_lost: { label: "Perdas de Posse", icon: "💨", category: "dribbles", order: 23 },
   
-  // Defense
+  // DEFESA (inclui duelos e disciplina)
   tackle: { label: "Desarmes", icon: "🦶", category: "defense", order: 30 },
   interception: { label: "Interceptações", icon: "🛡️", category: "defense", order: 31 },
-  recovery: { label: "Recuperações", icon: "↩️", category: "defense", order: 32 },
-  clearance: { label: "Cortes", icon: "🧹", category: "defense", order: 33 },
+  clearance: { label: "Cortes", icon: "🧹", category: "defense", order: 32 },
+  recovery: { label: "Recuperações", icon: "↩️", category: "defense", order: 33 },
   ground_duel_won: { label: "Duelos no Chão Ganhos", icon: "🤼", category: "defense", order: 34 },
   ground_duel_total: { label: "Duelos no Chão Perdidos", icon: "🤼", category: "defense", order: 35 },
   aerial_duel_won: { label: "Duelos Aéreos Ganhos", icon: "🦅", category: "defense", order: 36 },
   aerial_duel_total: { label: "Duelos Aéreos Perdidos", icon: "🦅", category: "defense", order: 37 },
   duel_won: { label: "Duelos Ganhos", icon: "💪", category: "defense", order: 38 },
   duel_total: { label: "Duelos Perdidos", icon: "⚔️", category: "defense", order: 39 },
-  
-  // Discipline
-  yellow: { label: "Cartões Amarelos", icon: "🟨", category: "discipline", order: 40 },
-  red: { label: "Cartões Vermelhos", icon: "🟥", category: "discipline", order: 41 },
-  foul_committed: { label: "Faltas Cometidas", icon: "⚠️", category: "discipline", order: 42 },
-  foul_suffered: { label: "Faltas Sofridas", icon: "🤕", category: "discipline", order: 43 },
+  foul_committed: { label: "Faltas Cometidas", icon: "⚠️", category: "defense", order: 40 },
+  yellow: { label: "Cartões Amarelos", icon: "🟨", category: "defense", order: 41 },
+  red: { label: "Cartões Vermelhos", icon: "🟥", category: "defense", order: 42 },
   
   // Goalkeeper
   save: { label: "Defesas", icon: "🧤", category: "goalkeeper", order: 50 },
@@ -192,12 +193,21 @@ export const EVENT_TYPE_CONFIG: Record<MatchEventType, SummaryEventConfig> = {
 // Category colors for visual grouping in summary
 export const CATEGORY_COLORS: Record<string, string> = {
   attack: "text-red-400",
-  creativity: "text-amber-400",
-  passing: "text-cyan-400",
+  passing: "text-amber-400",
+  dribbles: "text-cyan-400",
   defense: "text-blue-400",
-  discipline: "text-purple-400",
   goalkeeper: "text-green-400",
   meta: "text-muted-foreground",
+};
+
+// Category labels for display
+export const CATEGORY_LABELS: Record<string, string> = {
+  attack: "Ataque",
+  passing: "Passes",
+  dribbles: "Dribles / Posse",
+  defense: "Defesa",
+  goalkeeper: "Goleiro",
+  meta: "Meta",
 };
 
 // ============================================
@@ -246,8 +256,8 @@ export const COMPUTED_STATS: ComputedStatDefinition[] = [
     id: "dribbles_total_computed",
     label: "Dribles Tentados",
     icon: "👟",
-    category: "creativity",
-    order: 13.5, // After dribble_attempt
+    category: "dribbles",
+    order: 23.5, // After possession_lost in dribbles category
     compute: (counts) => ({
       // Total dribbles = dribble_success + dribble_attempt (failed)
       first: (counts.dribble_success?.first || 0) + (counts.dribble_attempt?.first || 0),
