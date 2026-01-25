@@ -40,6 +40,8 @@ interface SubstitutionStatsCardProps {
   matchPlayers: MatchPlayer[];
   matchEvents: MatchEvent[];
   matchDuration: number;
+  addedTime1H?: number;
+  addedTime2H?: number;
 }
 
 interface SubstitutionInfo {
@@ -53,20 +55,31 @@ interface SubstitutionInfo {
 interface PlayerTimeInfo {
   player: MatchPlayer;
   minutesPlayed: number;
+  minutesPlayedTotal: number;
   started: boolean;
   enteredMinute: number | null;
   exitedMinute: number | null;
   wasSubstitutedIn: boolean;
   wasSubstitutedOut: boolean;
   rangeDisplay: string;
+  rangeDisplayTotal: string;
   endMinute: number;
+  hasAddedTime: boolean;
 }
 
 export function SubstitutionStatsCard({
   matchPlayers,
   matchEvents,
   matchDuration,
+  addedTime1H = 0,
+  addedTime2H = 0,
 }: SubstitutionStatsCardProps) {
+  const hasMatchAddedTime = addedTime1H > 0 || addedTime2H > 0;
+  const matchContext = {
+    baseDuration: matchDuration,
+    addedTime1H,
+    addedTime2H,
+  };
   // Get all substitution events
   const substitutions = useMemo<SubstitutionInfo[]>(() => {
     const subEvents = matchEvents.filter((e) => e.event_type === "substitution");
@@ -95,12 +108,15 @@ export function SubstitutionStatsCard({
     return matchPlayers
       .filter((mp) => mp.player && !mp.is_removed)
       .map((mp) => {
-        const info = calculateMinutesPlayed({
-          started: mp.started,
-          entered_minute: mp.entered_minute,
-          exited_minute: mp.exited_minute,
-          minutes_played: mp.minutes_played,
-        });
+        const info = calculateMinutesPlayed(
+          {
+            started: mp.started,
+            entered_minute: mp.entered_minute,
+            exited_minute: mp.exited_minute,
+            minutes_played: mp.minutes_played,
+          },
+          matchContext
+        );
         
         const wasSubstitutedIn = mp.entered_minute !== null && !mp.started;
         const wasSubstitutedOut = mp.exited_minute !== null;
@@ -108,17 +124,20 @@ export function SubstitutionStatsCard({
         return {
           player: mp,
           minutesPlayed: info.minutesPlayed,
+          minutesPlayedTotal: info.minutesPlayedTotal,
           started: mp.started,
           enteredMinute: mp.entered_minute,
           exitedMinute: mp.exited_minute,
           wasSubstitutedIn,
           wasSubstitutedOut,
           rangeDisplay: info.rangeDisplay,
+          rangeDisplayTotal: info.rangeDisplayTotal,
           endMinute: info.endMinute,
+          hasAddedTime: info.hasAddedTime,
         };
       })
       .sort((a, b) => b.minutesPlayed - a.minutesPlayed);
-  }, [matchPlayers]);
+  }, [matchPlayers, matchContext]);
 
   // Summary stats
   const summaryStats = useMemo(() => {
@@ -311,11 +330,11 @@ export function SubstitutionStatsCard({
                         </span>
                       </div>
                       
-                      {/* Entry/Exit info - using standardized range display */}
+                      {/* Entry/Exit info - show regulatory range with total if different */}
                       {stat.rangeDisplay !== "—" && (
                         <div className="flex items-center gap-2 mt-0.5">
                           <span className="text-[10px] text-muted-foreground">
-                            {stat.rangeDisplay}
+                            {stat.hasAddedTime ? stat.rangeDisplayTotal : stat.rangeDisplay}
                           </span>
                         </div>
                       )}
@@ -323,6 +342,12 @@ export function SubstitutionStatsCard({
                     
                     <div className="text-right shrink-0">
                       <p className="text-sm font-bold">{stat.minutesPlayed} min</p>
+                      <p className="text-[9px] text-muted-foreground">(regulamentar)</p>
+                      {stat.hasAddedTime && stat.minutesPlayedTotal > stat.minutesPlayed && (
+                        <p className="text-[9px] text-muted-foreground/70">
+                          c/ acrés: {stat.minutesPlayedTotal} min
+                        </p>
+                      )}
                     </div>
                   </div>
                 );

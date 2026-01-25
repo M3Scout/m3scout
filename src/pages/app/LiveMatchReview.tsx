@@ -588,6 +588,8 @@ export default function LiveMatchReview() {
         matchPlayers={matchPlayers}
         matchEvents={matchEvents}
         matchDuration={match.duration_minutes}
+        addedTime1H={match.added_time_first_half ?? 0}
+        addedTime2H={match.added_time_second_half ?? 0}
       />
 
       {/* Event Distribution Chart */}
