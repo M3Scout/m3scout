@@ -5,72 +5,76 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Plus, Minus } from "lucide-react";
 
-// Category full names for headers
+// Category full names for headers - NEW STRUCTURE
 const CATEGORY_NAMES: Record<string, string> = {
-  ATA: "Ataque",
-  CRI: "Criação",
-  DEF: "Defesa",
-  DIS: "Disciplina",
+  ATAQUE: "Ataque",
+  PASSES: "Passes",
+  DRIBLES: "Dribles / Posse",
+  DEFESA: "Defesa",
   GK: "Goleiro",
   "GK+": "Goleiro Avançado",
 };
 
 // Stats categories for inline panel - SINGLE SOURCE OF TRUTH
-// These definitions are also mirrored in matchStatsDefinitions.ts for the summary
+// NEW STRUCTURE: ATAQUE, PASSES, DRIBLES/POSSE, DEFESA
 const OUTFIELD_STATS: { category: string; categoryKey: string; color: string; bgColor: string; stats: { type: MatchEventType; label: string }[] }[] = [
+  // ATAQUE - Finalizações e gols
   {
-    category: "ATA",
+    category: "ATAQUE",
     categoryKey: "attack",
     color: "text-red-400",
     bgColor: "bg-red-500/10 border-red-500/20",
     stats: [
       { type: "goal", label: "Gols" },
-      { type: "assist", label: "Assistências" },
       { type: "shot_on_target", label: "Finalizações no Gol" },
       { type: "shot", label: "Finalizações Fora" },
     ],
   },
+  // PASSES - Assistências e criação
   {
-    category: "CRI",
-    categoryKey: "creativity",
+    category: "PASSES",
+    categoryKey: "passing",
     color: "text-amber-400",
     bgColor: "bg-amber-500/10 border-amber-500/20",
     stats: [
+      { type: "assist", label: "Assistências" },
       { type: "key_pass", label: "Passes Decisivos" },
       { type: "chance_created", label: "Chances Criadas" },
-      { type: "dribble_success", label: "Dribles Certos" },
-      { type: "dribble_attempt", label: "Dribles Errados" },
+      { type: "pass_success", label: "Passes Certos" },
+      { type: "pass_total", label: "Passes Errados" },
     ],
   },
+  // DRIBLES / POSSE
   {
-    category: "DEF",
+    category: "DRIBLES",
+    categoryKey: "dribbles",
+    color: "text-cyan-400",
+    bgColor: "bg-cyan-500/10 border-cyan-500/20",
+    stats: [
+      { type: "dribble_success", label: "Dribles Certos" },
+      { type: "dribble_attempt", label: "Dribles Errados" },
+      { type: "foul_suffered", label: "Faltas Sofridas" },
+      { type: "possession_lost", label: "Perdas de Posse" },
+    ],
+  },
+  // DEFESA (inclui duelos e disciplina)
+  {
+    category: "DEFESA",
     categoryKey: "defense",
     color: "text-blue-400",
     bgColor: "bg-blue-500/10 border-blue-500/20",
     stats: [
       { type: "tackle", label: "Desarmes" },
       { type: "interception", label: "Interceptações" },
-      { type: "recovery", label: "Recuperações" },
       { type: "clearance", label: "Cortes" },
+      { type: "recovery", label: "Recuperações" },
       { type: "ground_duel_won", label: "Duelo Chão ✓" },
       { type: "ground_duel_total", label: "Duelo Chão ✗" },
       { type: "aerial_duel_won", label: "Duelo Aéreo ✓" },
       { type: "aerial_duel_total", label: "Duelo Aéreo ✗" },
-    ],
-  },
-  {
-    category: "DIS",
-    categoryKey: "discipline",
-    color: "text-purple-400",
-    bgColor: "bg-purple-500/10 border-purple-500/20",
-    stats: [
+      { type: "foul_committed", label: "Faltas Cometidas" },
       { type: "yellow", label: "Amarelos" },
       { type: "red", label: "Vermelhos" },
-      { type: "foul_committed", label: "Faltas Cometidas" },
-      { type: "foul_suffered", label: "Faltas Sofridas" },
-      { type: "pass_success", label: "Passes Certos" },
-      { type: "pass_total", label: "Passes Errados" },
-      { type: "possession_lost", label: "Perdas de Posse" },
     ],
   },
 ];

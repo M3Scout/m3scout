@@ -25,7 +25,7 @@ interface LiveStatsPanelProps {
   currentHalf?: number;
 }
 
-// Category configuration - CONSISTENT with InlineMoreStatsPanel colors
+// Category configuration - NEW STRUCTURE: ATAQUE, PASSES, DRIBLES, DEFESA
 const CATEGORY_CONFIG = {
   attack: {
     key: "attack",
@@ -36,23 +36,23 @@ const CATEGORY_CONFIG = {
     borderColor: "border-red-500/20",
     accentGradient: "from-red-500/20 to-orange-500/10",
   },
-  creativity: {
-    key: "creativity",
-    label: "Criação",
-    icon: Zap,
+  passing: {
+    key: "passing",
+    label: "Passes",
+    icon: ArrowRight,
     color: "text-amber-400",
     bgColor: "bg-amber-500/10",
     borderColor: "border-amber-500/20",
     accentGradient: "from-amber-500/20 to-yellow-500/10",
   },
-  passing: {
-    key: "passing",
-    label: "Passe",
-    icon: ArrowRight,
-    color: "text-emerald-400",
-    bgColor: "bg-emerald-500/10",
-    borderColor: "border-emerald-500/20",
-    accentGradient: "from-emerald-500/20 to-green-500/10",
+  dribbles: {
+    key: "dribbles",
+    label: "Dribles / Posse",
+    icon: Zap,
+    color: "text-cyan-400",
+    bgColor: "bg-cyan-500/10",
+    borderColor: "border-cyan-500/20",
+    accentGradient: "from-cyan-500/20 to-teal-500/10",
   },
   defense: {
     key: "defense",
@@ -62,15 +62,6 @@ const CATEGORY_CONFIG = {
     bgColor: "bg-blue-500/10",
     borderColor: "border-blue-500/20",
     accentGradient: "from-blue-500/20 to-cyan-500/10",
-  },
-  discipline: {
-    key: "discipline",
-    label: "Disciplina",
-    icon: AlertTriangle,
-    color: "text-purple-400",
-    bgColor: "bg-purple-500/10",
-    borderColor: "border-purple-500/20",
-    accentGradient: "from-purple-500/20 to-pink-500/10",
   },
 } as const;
 
@@ -279,12 +270,14 @@ export function LiveStatsPanel({ events, className, currentHalf }: LiveStatsPane
     const aerialDuelsTotal = aerialDuelsWon + aerialDuelsLost;
     const duelsWonTotal = groundDuelsWon + aerialDuelsWon;
     
-    // Creativity
+    // Dribbles / Possession
     const chancesCreated = getValue("chance_created");
     const keyPasses = getValue("key_pass");
     const dribblesSuccess = getValue("dribble_success");
+    const dribblesAttempt = getValue("dribble_attempt");
+    const possessionLost = getValue("possession_lost");
     
-    // Discipline
+    // Discipline (agora parte da DEFESA)
     const foulsCommitted = getValue("foul_committed");
     const foulsSuffered = getValue("foul_suffered");
     
@@ -313,46 +306,46 @@ export function LiveStatsPanel({ events, className, currentHalf }: LiveStatsPane
       chancesCreated,
       keyPasses,
       dribblesSuccess,
+      dribblesAttempt,
+      possessionLost,
       foulsCommitted,
       foulsSuffered,
     };
   }, [events]);
 
-  // Build stat items per category
+  // Build stat items per category - NEW STRUCTURE
   const attackStats: StatItem[] = [
     { key: "goals", label: "Gols", value: stats.goals, icon: <Goal className="w-3 h-3" />, category: "attack" as const, highlight: true },
     { key: "shots", label: "Finaliz.", value: stats.totalShots, icon: <Crosshair className="w-3 h-3" />, category: "attack" as const },
     { key: "shotsOn", label: "No Gol", value: stats.shotsOnTarget, icon: <Target className="w-3 h-3" />, category: "attack" as const },
   ];
 
-  const creativityStats: StatItem[] = [
-    { key: "assists", label: "Assist.", value: stats.assists, icon: <HandHelping className="w-3 h-3" />, category: "creativity" as const, highlight: true },
-    { key: "chances", label: "Chances", value: stats.chancesCreated, icon: <Zap className="w-3 h-3" />, category: "creativity" as const },
-    { key: "keyPasses", label: "P. Dec.", value: stats.keyPasses, icon: <ArrowRight className="w-3 h-3" />, category: "creativity" as const },
-    { key: "dribbles", label: "Dribles", value: stats.dribblesSuccess, icon: <Zap className="w-3 h-3" />, category: "creativity" as const },
+  const passingStats: StatItem[] = [
+    { key: "assists", label: "Assist.", value: stats.assists, icon: <HandHelping className="w-3 h-3" />, category: "passing" as const, highlight: true },
+    { key: "keyPasses", label: "P. Dec.", value: stats.keyPasses, icon: <ArrowRight className="w-3 h-3" />, category: "passing" as const },
+    { key: "chances", label: "Chances", value: stats.chancesCreated, icon: <Zap className="w-3 h-3" />, category: "passing" as const },
+    { key: "passSuccess", label: "Certos", value: stats.passSuccess, icon: <ArrowRight className="w-3 h-3" />, category: "passing" as const },
+    { key: "passTotal", label: "Errados", value: stats.passTotal, icon: <ArrowRight className="w-3 h-3" />, category: "passing" as const },
   ].filter(s => s.value > 0 || s.key === "assists");
 
-  const passingStats: StatItem[] = [
-    { key: "passSuccess", label: "Certos", value: stats.passSuccess, icon: <ArrowRight className="w-3 h-3" />, category: "passing" as const },
-    { key: "passTotal", label: "Total", value: stats.passTotal, icon: <ArrowRight className="w-3 h-3" />, category: "passing" as const },
-    { key: "passAcc", label: "Precisão", value: stats.passAccuracy, icon: <Target className="w-3 h-3" />, category: "passing" as const, suffix: "%" },
-  ].filter(s => s.value > 0 || s.key === "passAcc");
+  const dribblesStats: StatItem[] = [
+    { key: "dribbles", label: "Dribles ✓", value: stats.dribblesSuccess, icon: <Zap className="w-3 h-3" />, category: "dribbles" as const },
+    { key: "dribblesAttempt", label: "Dribles ✗", value: stats.dribblesAttempt, icon: <Zap className="w-3 h-3" />, category: "dribbles" as const },
+    { key: "foulsS", label: "F. Sof.", value: stats.foulsSuffered, icon: <AlertTriangle className="w-3 h-3" />, category: "dribbles" as const },
+    { key: "possessionLost", label: "Perdas", value: stats.possessionLost, icon: <AlertTriangle className="w-3 h-3" />, category: "dribbles" as const },
+  ].filter(s => s.value > 0);
 
   const defenseStats: StatItem[] = [
     { key: "tackles", label: "Desarmes", value: stats.tackles, icon: <Shield className="w-3 h-3" />, category: "defense" as const },
     { key: "interceptions", label: "Interc.", value: stats.interceptions, icon: <ShieldCheck className="w-3 h-3" />, category: "defense" as const },
-    { key: "recoveries", label: "Recup.", value: stats.recoveries, icon: <RotateCcw className="w-3 h-3" />, category: "defense" as const },
     { key: "clearances", label: "Cortes", value: stats.clearances, icon: <Ban className="w-3 h-3" />, category: "defense" as const },
+    { key: "recoveries", label: "Recup.", value: stats.recoveries, icon: <RotateCcw className="w-3 h-3" />, category: "defense" as const },
     { key: "groundDuels", label: "D.Chão", value: stats.groundDuelsWon, icon: <Users className="w-3 h-3" />, category: "defense" as const, suffix: `/${stats.groundDuelsTotal}` },
     { key: "aerialDuels", label: "D.Aéreo", value: stats.aerialDuelsWon, icon: <Users className="w-3 h-3" />, category: "defense" as const, suffix: `/${stats.aerialDuelsTotal}` },
-  ].filter(s => s.value > 0 || (s.key === "groundDuels" && stats.groundDuelsTotal > 0) || (s.key === "aerialDuels" && stats.aerialDuelsTotal > 0));
-
-  const disciplineStats: StatItem[] = [
-    { key: "yellow", label: "Amarelos", value: stats.yellowCards, icon: <Square className="w-3 h-3 fill-yellow-400" />, category: "discipline" as const },
-    { key: "red", label: "Vermelhos", value: stats.redCards, icon: <Square className="w-3 h-3 fill-red-500" />, category: "discipline" as const },
-    { key: "foulsC", label: "Faltas", value: stats.foulsCommitted, icon: <AlertTriangle className="w-3 h-3" />, category: "discipline" as const },
-    { key: "foulsS", label: "F. Sof.", value: stats.foulsSuffered, icon: <AlertTriangle className="w-3 h-3" />, category: "discipline" as const },
-  ].filter(s => s.value > 0 || s.key === "yellow" || s.key === "red");
+    { key: "foulsC", label: "Faltas", value: stats.foulsCommitted, icon: <AlertTriangle className="w-3 h-3" />, category: "defense" as const },
+    { key: "yellow", label: "Amarelos", value: stats.yellowCards, icon: <Square className="w-3 h-3 fill-yellow-400" />, category: "defense" as const },
+    { key: "red", label: "Vermelhos", value: stats.redCards, icon: <Square className="w-3 h-3 fill-red-500" />, category: "defense" as const },
+  ].filter(s => s.value > 0 || s.key === "yellow" || s.key === "red" || (s.key === "groundDuels" && stats.groundDuelsTotal > 0) || (s.key === "aerialDuels" && stats.aerialDuelsTotal > 0));
 
   const halfLabel = currentHalf === 1 ? "1º tempo" : currentHalf === 2 ? "2º tempo" : "";
 
@@ -391,28 +384,25 @@ export function LiveStatsPanel({ events, className, currentHalf }: LiveStatsPane
         </div>
       </div>
 
-      {/* Categories */}
+      {/* Categories - NEW STRUCTURE */}
       <div className="space-y-4">
-        {/* Attack - Always show */}
+        {/* Ataque - Always show */}
         <CategorySection category="attack" stats={attackStats} delay={0} />
         
-        {/* Creativity - Show if has assists or other data */}
-        {creativityStats.length > 0 && (
-          <CategorySection category="creativity" stats={creativityStats} delay={0.1} />
+        {/* Passes - Show if has assists or pass data */}
+        {passingStats.length > 0 && (
+          <CategorySection category="passing" stats={passingStats} delay={0.1} />
         )}
         
-        {/* Passing - Show if has pass data */}
-        {passingStats.length > 0 && stats.passTotal > 0 && (
-          <CategorySection category="passing" stats={passingStats} delay={0.2} />
+        {/* Dribles / Posse - Show if has any data */}
+        {dribblesStats.length > 0 && (
+          <CategorySection category="dribbles" stats={dribblesStats} delay={0.2} />
         )}
         
-        {/* Defense - Show if has any defensive actions */}
+        {/* Defesa (includes discipline) - Show if has any defensive actions */}
         {defenseStats.length > 0 && (
           <CategorySection category="defense" stats={defenseStats} delay={0.3} />
         )}
-        
-        {/* Discipline - Always show cards */}
-        <CategorySection category="discipline" stats={disciplineStats} delay={0.4} />
       </div>
 
       {/* Summary footer */}
