@@ -148,14 +148,18 @@ export function calculateMinutesPlayed(
   // If manual override is set, use it for regulatory (but still calculate range)
   const hasManualOverride = player.minutes_played !== null && player.minutes_played !== undefined;
   
-  let startMinute: number;
+  let startMinuteReg: number;
+  let startMinuteTotal: number;
   let endMinuteReg: number;
   let endMinuteTotal: number;
+  let rawStartDisplay: string;
   let rawEndDisplay: string;
   
   if (player.started) {
     // Starter: begins at 0'
-    startMinute = 0;
+    startMinuteReg = 0;
+    startMinuteTotal = 0;
+    rawStartDisplay = "0";
     
     if (player.exited_minute !== null) {
       // Was substituted out - use actual exit minute
@@ -176,7 +180,11 @@ export function calculateMinutesPlayed(
   } else {
     // Substitute: begins at entered_minute
     if (player.entered_minute !== null) {
-      startMinute = normalizeMinuteReg(player.entered_minute);
+      // Regulatory start: clamp to 0-90
+      startMinuteReg = normalizeMinuteReg(player.entered_minute);
+      // Total start: actual entry minute (for total calculation)
+      startMinuteTotal = normalizeMinuteTotal(player.entered_minute, effectiveDuration);
+      rawStartDisplay = String(player.entered_minute);
       
       if (player.exited_minute !== null) {
         // Was substituted out
@@ -195,16 +203,19 @@ export function calculateMinutesPlayed(
       }
     } else {
       // Never entered - 0 minutes
-      startMinute = 0;
+      startMinuteReg = 0;
+      startMinuteTotal = 0;
       endMinuteReg = 0;
       endMinuteTotal = 0;
+      rawStartDisplay = "—";
       rawEndDisplay = "—";
     }
   }
   
-  // Calculate minutes played
-  let minutesPlayedReg = Math.max(0, endMinuteReg - startMinute);
-  const minutesPlayedTotal = Math.max(0, endMinuteTotal - startMinute);
+  // Calculate minutes played - REGULATORY uses only regulatory start/end (capped at 90)
+  let minutesPlayedReg = Math.max(0, endMinuteReg - startMinuteReg);
+  // TOTAL uses actual start/end including added time
+  const minutesPlayedTotal = Math.max(0, endMinuteTotal - startMinuteTotal);
   
   // Cap regulatory at 90 (safety)
   minutesPlayedReg = Math.min(minutesPlayedReg, STANDARD_MATCH_DURATION);
@@ -219,12 +230,12 @@ export function calculateMinutesPlayed(
   
   // Regulatory range display (capped at 90)
   const rangeDisplay = didPlay
-    ? `${startMinute}' → ${endMinuteReg}'`
+    ? `${startMinuteReg}' → ${endMinuteReg}'`
     : "—";
   
   // Total range display (shows actual end with added time)
   const rangeDisplayTotal = didPlay
-    ? `${startMinute}' → ${rawEndDisplay}'`
+    ? `${rawStartDisplay}' → ${rawEndDisplay}'`
     : "—";
   
   const durationDisplay = `${minutesPlayedReg} min`;
@@ -233,7 +244,7 @@ export function calculateMinutesPlayed(
   return {
     minutesPlayed: minutesPlayedReg,
     minutesPlayedTotal,
-    startMinute,
+    startMinute: startMinuteReg,
     endMinute: endMinuteReg,
     endMinuteTotal,
     rangeDisplay,
