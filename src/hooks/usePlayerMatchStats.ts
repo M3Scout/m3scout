@@ -10,6 +10,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { calculateMinutesPlayed, STANDARD_MATCH_DURATION } from "@/lib/minutesPlayed";
 
 export interface MatchDerivedStats {
   // Match participation
@@ -100,6 +101,8 @@ interface MatchPlayerWithMatch {
     competition_id: string | null;
     season_year: number;
     duration_minutes: number;
+    added_time_first_half: number | null;
+    added_time_second_half: number | null;
     status: string;
     competition?: {
       id: string;
@@ -141,13 +144,38 @@ interface MatchPlayerStats {
 }
 
 /**
- * Get official minutes played from the stored field.
- * IMPORTANT: Do NOT calculate minutes from entry/exit times.
- * Always trust the official minutes_played field from match_players.
+ * Calculate regulatory minutes played (capped at 90).
+ * Uses the standardized calculateMinutesPlayed function for consistency.
+ * Falls back to stored minutes_played if entry/exit data unavailable.
  */
-function getOfficialMinutesPlayed(storedMinutes: number | null): number {
-  // Use ONLY the official stored minutes - no calculation fallback
-  return storedMinutes ?? 0;
+function getRegMinutesPlayed(
+  mp: MatchPlayerWithMatch,
+  addedTime1H: number = 0,
+  addedTime2H: number = 0
+): number {
+  // Use calculateMinutesPlayed for consistent regulatory calculation
+  const info = calculateMinutesPlayed(
+    {
+      started: mp.started,
+      entered_minute: mp.entered_minute,
+      exited_minute: mp.exited_minute,
+      minutes_played: null, // Force recalculation from entry/exit
+    },
+    {
+      baseDuration: STANDARD_MATCH_DURATION,
+      addedTime1H,
+      addedTime2H,
+    }
+  );
+  
+  // If we have valid entry/exit data, use calculated regulatory minutes
+  // Otherwise fall back to stored value (capped at 90)
+  if (mp.started || mp.entered_minute !== null) {
+    return info.minutesPlayed; // This is already regulatory (capped at 90)
+  }
+  
+  // Fallback: use stored minutes capped at 90
+  return Math.min(mp.minutes_played ?? 0, STANDARD_MATCH_DURATION);
 }
 
 /**
@@ -183,6 +211,8 @@ export function usePlayerMatchStats({
             competition_id,
             season_year,
             duration_minutes,
+            added_time_first_half,
+            added_time_second_half,
             status,
             competition:competitions (
               id,
@@ -248,8 +278,12 @@ export function usePlayerMatchStats({
       const stats = matchesData?.matchStats[mp.match_id];
       const competition = mp.match.competition;
       
-      // Use official minutes_played field - no calculation
-      const minutesPlayed = getOfficialMinutesPlayed(mp.minutes_played);
+      // Use regulatory minutes (capped at 90) - recalculated from entry/exit
+      const minutesPlayed = getRegMinutesPlayed(
+        mp, 
+        mp.match.added_time_first_half ?? 0, 
+        mp.match.added_time_second_half ?? 0
+      );
 
       // Transform match_player_stats to our derived format
       const derivedStats: MatchDerivedStats = {
@@ -656,8 +690,12 @@ export function usePlayerMatchStatsBySeasonCompetition({
       const entry = statsBySeasonCompetition[key];
       const s = entry.stats;
 
-      // Use official minutes_played field - no calculation
-      const minutesPlayed = getOfficialMinutesPlayed(mp.minutes_played);
+      // Use regulatory minutes (capped at 90) - recalculated from entry/exit
+      const minutesPlayed = getRegMinutesPlayed(
+        mp, 
+        mp.match.added_time_first_half ?? 0, 
+        mp.match.added_time_second_half ?? 0
+      );
 
       s.matches += 1;
       s.minutes += minutesPlayed;
