@@ -571,19 +571,21 @@ export function usePlayerMatchStatsBySeasonCompetition({
           entered_minute,
           exited_minute,
           minutes_played,
-          match:matches!inner (
-            id,
-            match_date,
-            opponent_name,
-            competition_id,
-            season_year,
-            duration_minutes,
-            status,
-            competition:competitions (
+            match:matches!inner (
               id,
-              name,
-              display_name
-            )
+              match_date,
+              opponent_name,
+              competition_id,
+              season_year,
+              duration_minutes,
+              added_time_first_half,
+              added_time_second_half,
+              status,
+              competition:competitions (
+                id,
+                name,
+                display_name
+              )
           )
         `)
         .eq("player_id", playerId)
