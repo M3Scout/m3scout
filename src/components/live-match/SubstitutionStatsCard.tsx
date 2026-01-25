@@ -330,11 +330,11 @@ export function SubstitutionStatsCard({
                         </span>
                       </div>
                       
-                      {/* Entry/Exit info - show regulatory range with total if different */}
+                      {/* Entry/Exit info - always show regulatory range (capped at 90) */}
                       {stat.rangeDisplay !== "—" && (
                         <div className="flex items-center gap-2 mt-0.5">
                           <span className="text-[10px] text-muted-foreground">
-                            {stat.hasAddedTime ? stat.rangeDisplayTotal : stat.rangeDisplay}
+                            {stat.rangeDisplay}
                           </span>
                         </div>
                       )}
