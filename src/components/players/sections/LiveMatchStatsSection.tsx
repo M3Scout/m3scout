@@ -27,6 +27,7 @@ import { OutfieldPlayerStats } from "@/components/players/stats/OutfieldPlayerSt
 import { getRatingBgColor, getRatingColor } from "@/lib/matchRatingEngine";
 import { classifyMatchProfile } from "@/lib/matchProfileEngine";
 import { calculateMatchEfficiency } from "@/lib/matchEfficiencyEngine";
+import { generateScoutingText } from "@/lib/scoutingTextEngine";
 import { MatchProfileBadge } from "@/components/live-match/MatchProfileBadge";
 import { MatchEfficiencyBadge } from "@/components/live-match/MatchEfficiencyBadge";
 import { cn } from "@/lib/utils";
@@ -276,25 +277,34 @@ export function LiveMatchStatsSection({ playerId, playerPosition }: LiveMatchSta
                           </div>
                         </div>
                         
-                        {/* Match Profile + Efficiency - Perfil e Eficiência do Jogo */}
+                        {/* Match Profile + Efficiency + Scouting Text */}
                         {match.minutes_played >= 10 && (() => {
                           const efficiency = calculateMatchEfficiency(statsInput, match.minutes_played);
+                          // Generate position-adapted scouting text
+                          const scoutingText = generateScoutingText(
+                            playerPosition ?? 'Meio-campista',
+                            profile.primary.key,
+                            efficiency.level,
+                            match.minutes_played < 10
+                          );
                           return (
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <MatchProfileBadge 
-                                profile={profile} 
-                                playerName={match.opponent_name} 
-                                size="sm" 
-                                showSummary={false}
-                              />
-                              <MatchEfficiencyBadge 
-                                efficiency={efficiency} 
-                                size="sm" 
-                                showIcon={true}
-                              />
-                              <span className="text-[10px] text-muted-foreground truncate flex-1">
-                                {profile.summary.slice(0, 50)}{profile.summary.length > 50 ? '...' : ''}
-                              </span>
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <MatchProfileBadge 
+                                  profile={profile} 
+                                  playerName={match.opponent_name} 
+                                  size="sm" 
+                                  showSummary={false}
+                                />
+                                <MatchEfficiencyBadge 
+                                  efficiency={efficiency} 
+                                  size="sm" 
+                                  showIcon={true}
+                                />
+                              </div>
+                              <p className="text-[9px] text-muted-foreground leading-tight line-clamp-2">
+                                {scoutingText.combinedText}
+                              </p>
                             </div>
                           );
                         })()}

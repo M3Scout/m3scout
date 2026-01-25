@@ -5,6 +5,7 @@
  * Uses the matchRatingEngine and displays the SofaScore-style ratings.
  * Now includes Match Profile (Perfil do Jogo) - qualitative performance interpretation.
  * Also includes Match Efficiency (Eficiência no Jogo) - quality vs risk indicator.
+ * Includes professional scouting text (position-adapted) combining profile + efficiency.
  */
 
 import { useMemo } from "react";
@@ -20,6 +21,7 @@ import type { MatchPlayerStats } from "@/hooks/useLiveMatch";
 import { matchPlayerStatsToInput } from "@/lib/matchRatingEngine";
 import { classifyMatchProfile } from "@/lib/matchProfileEngine";
 import { calculateMatchEfficiency } from "@/lib/matchEfficiencyEngine";
+import { generateScoutingText } from "@/lib/scoutingTextEngine";
 import { Star, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -159,15 +161,28 @@ export function MatchRatingsCard({
                     <span>•</span>
                     <span>{player.minutesInfo.durationDisplay}</span>
                   </div>
-                  {/* Match Profile + Efficiency - Perfil e Eficiência do Jogo */}
+                  {/* Match Profile + Efficiency + Scouting Text */}
                   {player.rating.hasRating && (() => {
                     const statsInput = matchPlayerStatsToInput(playerStatsMap[player.playerId]);
                     const profile = classifyMatchProfile(statsInput, player.minutesInfo.minutesPlayed);
                     const efficiency = calculateMatchEfficiency(statsInput, player.minutesInfo.minutesPlayed);
+                    const isInsufficientTime = player.minutesInfo.minutesPlayed < 10;
+                    const scoutingText = generateScoutingText(
+                      player.position,
+                      profile.primary.key,
+                      efficiency.level,
+                      isInsufficientTime
+                    );
                     return (
-                      <div className="mt-0.5 flex items-center gap-1.5 flex-wrap">
-                        <MatchProfileText profile={profile} showIcon={false} className="text-[9px]" />
-                        <MatchEfficiencyBadge efficiency={efficiency} playerName={player.playerName} size="sm" showIcon={true} />
+                      <div className="mt-1 space-y-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <MatchProfileText profile={profile} showIcon={false} className="text-[9px]" />
+                          <MatchEfficiencyBadge efficiency={efficiency} playerName={player.playerName} size="sm" showIcon={true} />
+                        </div>
+                        {/* Professional scouting text - position-adapted */}
+                        <p className="text-[9px] text-muted-foreground leading-tight line-clamp-2">
+                          {scoutingText.combinedText}
+                        </p>
                       </div>
                     );
                   })()}

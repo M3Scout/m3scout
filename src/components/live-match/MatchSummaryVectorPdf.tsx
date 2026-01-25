@@ -35,6 +35,7 @@ import { calculateMinutesPlayed } from "@/lib/minutesPlayed";
 import { calculatePlayerMatchRating, getRatingBgColor, matchPlayerStatsToInput } from "@/lib/matchRatingEngine";
 import { classifyMatchProfile, type MatchProfileKey } from "@/lib/matchProfileEngine";
 import { calculateMatchEfficiency, getEfficiencyColorHex, getEfficiencyBgColorHex, type EfficiencyLevel } from "@/lib/matchEfficiencyEngine";
+import { generateScoutingText } from "@/lib/scoutingTextEngine";
 import {
   EVENT_TYPE_CONFIG,
   COMPUTED_STATS,
@@ -1443,7 +1444,7 @@ export function MatchSummaryVectorPdf({
                     );
                   })()}
                 </View>
-                {/* Match Profile + Efficiency - Perfil e Eficiência do Jogo */}
+                {/* Match Profile + Efficiency + Professional Scouting Text */}
                 {minutesPlayed >= 10 && (() => {
                   const stats = playerStatsMap[mp.player_id];
                   const statsInput = matchPlayerStatsToInput(stats);
@@ -1451,6 +1452,13 @@ export function MatchSummaryVectorPdf({
                   const efficiency = calculateMatchEfficiency(statsInput, minutesPlayed);
                   const profileColors = PROFILE_COLORS[profile.primary.key];
                   const efficiencyColors = EFFICIENCY_COLORS[efficiency.level];
+                  // Generate professional position-adapted scouting text
+                  const scoutingText = generateScoutingText(
+                    mp.player.position,
+                    profile.primary.key,
+                    efficiency.level,
+                    minutesPlayed < 10
+                  );
                   return (
                     <View style={{ marginBottom: 6 }}>
                       <View style={{ flexDirection: "row", gap: 4, marginBottom: 3, flexWrap: "wrap" }}>
@@ -1477,8 +1485,9 @@ export function MatchSummaryVectorPdf({
                           </Text>
                         </View>
                       </View>
-                      <Text style={{ fontSize: 5.5, color: PDF_COLORS.gray500, lineHeight: 1.3 }}>
-                        {profile.summary.slice(0, 60)}{profile.summary.length > 60 ? '...' : ''}
+                      {/* Professional Scouting Text - Position-adapted */}
+                      <Text style={{ fontSize: 5.5, color: PDF_COLORS.gray600, lineHeight: 1.35 }}>
+                        {scoutingText.combinedText.slice(0, 120)}{scoutingText.combinedText.length > 120 ? '...' : ''}
                       </Text>
                     </View>
                   );
