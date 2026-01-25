@@ -25,6 +25,8 @@ import { usePlayerMatchRatings } from "@/hooks/usePlayerMatchRatings";
 import { toOutfieldStatsFormat } from "@/hooks/usePlayerMatchStats";
 import { OutfieldPlayerStats } from "@/components/players/stats/OutfieldPlayerStats";
 import { getRatingBgColor, getRatingColor } from "@/lib/matchRatingEngine";
+import { classifyMatchProfile } from "@/lib/matchProfileEngine";
+import { MatchProfileBadge } from "@/components/live-match/MatchProfileBadge";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -181,66 +183,115 @@ export function LiveMatchStatsSection({ playerId, playerPosition }: LiveMatchSta
           <CardContent>
             <ScrollArea className="h-[350px]">
               <div className="space-y-2">
-                {matches.map((match) => (
-                  <Link 
-                    key={match.match_id}
-                    to={`/app/live-match/${match.match_id}/review`}
-                    className="block"
-                  >
-                    <div 
-                      className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                {matches.map((match) => {
+                  // Calculate match profile for each match
+                  const statsInput = {
+                    goals: match.stats.goals,
+                    assists: match.stats.assists,
+                    shots_on_target: match.stats.shots_on_target,
+                    shots: match.stats.shots,
+                    dribbles_success: match.stats.dribbles_success,
+                    dribbles_total: match.stats.dribbles_total,
+                    key_passes: match.stats.key_passes,
+                    chances_created: match.stats.chances_created,
+                    passes_completed: match.stats.passes_completed,
+                    passes_total: match.stats.passes_total,
+                    interceptions: match.stats.interceptions,
+                    recoveries: match.stats.recoveries,
+                    clearances: match.stats.clearances,
+                    tackles: match.stats.tackles,
+                    yellow_cards: match.stats.yellow_cards,
+                    red_cards: match.stats.red_cards,
+                    saves: match.stats.saves,
+                    goals_conceded: match.stats.goals_conceded,
+                    duels_won: 0,
+                    duels_total: 0,
+                    aerial_duels_won: 0,
+                    aerial_duels_total: 0,
+                    fouls_committed: 0,
+                    fouls_suffered: 0,
+                    possession_lost: 0,
+                  };
+                  const profile = classifyMatchProfile(statsInput, match.minutes_played);
+                  
+                  return (
+                    <Link 
+                      key={match.match_id}
+                      to={`/app/live-match/${match.match_id}/review`}
+                      className="block"
                     >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium truncate">
-                            vs {match.opponent_name}
-                          </span>
-                          {match.competition_name && (
-                            <Badge variant="outline" className="text-xs truncate max-w-[100px]">
-                              {match.competition_name}
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {format(new Date(match.match_date), "dd MMM yyyy", { locale: ptBR })}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        {/* Minutes */}
-                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Clock className="w-3 h-3" />
-                          {match.minutes_played}'
-                        </span>
-                        
-                        {/* Goals/Assists badges */}
-                        {match.stats.goals > 0 && (
-                          <Badge variant="default" className="bg-green-600 text-xs h-5">
-                            {match.stats.goals}G
-                          </Badge>
-                        )}
-                        {match.stats.assists > 0 && (
-                          <Badge variant="secondary" className="text-xs h-5">
-                            {match.stats.assists}A
-                          </Badge>
-                        )}
-                        
-                        {/* Rating Badge */}
-                        {match.rating.hasRating ? (
-                          <div className={cn(
-                            "px-2 py-0.5 rounded text-white text-xs font-bold min-w-[36px] text-center",
-                            getRatingBgColor(match.rating.rating!)
-                          )}>
-                            {match.rating.rating!.toFixed(1)}
+                      <div 
+                        className="flex flex-col gap-2 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium truncate">
+                                vs {match.opponent_name}
+                              </span>
+                              {match.competition_name && (
+                                <Badge variant="outline" className="text-xs truncate max-w-[100px]">
+                                  {match.competition_name}
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {format(new Date(match.match_date), "dd MMM yyyy", { locale: ptBR })}
+                            </div>
                           </div>
-                        ) : (
-                          <div className="px-2 py-0.5 rounded bg-muted text-muted-foreground text-xs font-medium">
-                            —
+                          <div className="flex items-center gap-2 text-sm">
+                            {/* Minutes */}
+                            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <Clock className="w-3 h-3" />
+                              {match.minutes_played}'
+                            </span>
+                            
+                            {/* Goals/Assists badges */}
+                            {match.stats.goals > 0 && (
+                              <Badge variant="default" className="bg-green-600 text-xs h-5">
+                                {match.stats.goals}G
+                              </Badge>
+                            )}
+                            {match.stats.assists > 0 && (
+                              <Badge variant="secondary" className="text-xs h-5">
+                                {match.stats.assists}A
+                              </Badge>
+                            )}
+                            
+                            {/* Rating Badge */}
+                            {match.rating.hasRating ? (
+                              <div className={cn(
+                                "px-2 py-0.5 rounded text-white text-xs font-bold min-w-[36px] text-center",
+                                getRatingBgColor(match.rating.rating!)
+                              )}>
+                                {match.rating.rating!.toFixed(1)}
+                              </div>
+                            ) : (
+                              <div className="px-2 py-0.5 rounded bg-muted text-muted-foreground text-xs font-medium">
+                                —
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Match Profile - Perfil do Jogo */}
+                        {match.minutes_played >= 10 && (
+                          <div className="flex items-center gap-2">
+                            <MatchProfileBadge 
+                              profile={profile} 
+                              playerName={match.opponent_name} 
+                              size="sm" 
+                              showSummary={false}
+                            />
+                            <span className="text-[10px] text-muted-foreground truncate flex-1">
+                              {profile.summary.slice(0, 60)}{profile.summary.length > 60 ? '...' : ''}
+                            </span>
                           </div>
                         )}
                       </div>
-                    </div>
-                  </Link>
-                ))}
+                    </Link>
+                  );
+                })}
               </div>
             </ScrollArea>
           </CardContent>

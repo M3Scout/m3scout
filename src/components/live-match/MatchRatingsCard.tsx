@@ -3,6 +3,7 @@
  * Shows players sorted by rating (highest first).
  * 
  * Uses the matchRatingEngine and displays the SofaScore-style ratings.
+ * Now includes Match Profile (Perfil do Jogo) - qualitative performance interpretation.
  */
 
 import { useMemo } from "react";
@@ -11,8 +12,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { PlayerRatingBadge } from "./PlayerRatingBadge";
+import { MatchProfileText } from "./MatchProfileBadge";
 import { useSortedPlayersByRating, type MatchPlayer } from "@/hooks/useMatchRatings";
 import type { MatchPlayerStats } from "@/hooks/useLiveMatch";
+import { matchPlayerStatsToInput } from "@/lib/matchRatingEngine";
+import { classifyMatchProfile } from "@/lib/matchProfileEngine";
 import { Star, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -152,6 +156,16 @@ export function MatchRatingsCard({
                     <span>•</span>
                     <span>{player.minutesInfo.durationDisplay}</span>
                   </div>
+                  {/* Match Profile - Perfil do Jogo */}
+                  {player.rating.hasRating && (() => {
+                    const statsInput = matchPlayerStatsToInput(playerStatsMap[player.playerId]);
+                    const profile = classifyMatchProfile(statsInput, player.minutesInfo.minutesPlayed);
+                    return (
+                      <div className="mt-0.5">
+                        <MatchProfileText profile={profile} showIcon={false} className="text-[9px]" />
+                      </div>
+                    );
+                  })()}
                 </div>
                 
                 {/* Rating Badge */}
