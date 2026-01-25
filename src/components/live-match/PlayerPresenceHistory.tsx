@@ -61,8 +61,17 @@ export function PlayerPresenceHistory({ matchId, className }: PlayerPresenceHist
         player: record.player,
         records: [],
         totalMinutes: 0,
+        // Determine game role ONCE for the entire match:
+        // Player is "starter" if ANY of their stints has role === "starter"
+        gameRole: "substitute" as "starter" | "substitute",
       };
     }
+    
+    // Update game role if this record shows player as starter
+    if (record.role === "starter" && acc[playerId].gameRole === "substitute") {
+      acc[playerId].gameRole = "starter";
+    }
+    
     acc[playerId].records.push(record);
     
     // Calculate total minutes
@@ -71,7 +80,7 @@ export function PlayerPresenceHistory({ matchId, className }: PlayerPresenceHist
     }
     
     return acc;
-  }, {} as Record<string, { player: PresenceRecord["player"]; records: PresenceRecord[]; totalMinutes: number }>);
+  }, {} as Record<string, { player: PresenceRecord["player"]; records: PresenceRecord[]; totalMinutes: number; gameRole: "starter" | "substitute" }>);
 
   const togglePlayer = (playerId: string) => {
     setExpandedPlayers(prev => {
@@ -234,7 +243,7 @@ export function PlayerPresenceHistory({ matchId, className }: PlayerPresenceHist
                             )}
                           </div>
                           <p className="text-[10px] text-zinc-500 mt-0.5">
-                            {record.role === "starter" ? "Titular" : "Reserva"}
+                            {group.gameRole === "starter" ? "Titular" : "Reserva"}
                           </p>
                         </div>
 
