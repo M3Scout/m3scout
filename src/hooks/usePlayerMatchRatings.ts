@@ -41,6 +41,14 @@ function matchDerivedStatsToInput(stats: MatchDerivedStats, isGoalkeeper: boolea
     tackles: stats.tackles,
     yellow_cards: stats.yellow_cards,
     red_cards: stats.red_cards,
+    // Duels (Professional Scouting v2.0)
+    duels_won: (stats as any).duels_won ?? 0,
+    duels_total: (stats as any).duels_total ?? 0,
+    aerial_duels_won: (stats as any).aerial_duels_won ?? 0,
+    aerial_duels_total: (stats as any).aerial_duels_total ?? 0,
+    fouls_committed: (stats as any).fouls_committed ?? 0,
+    fouls_suffered: (stats as any).fouls_suffered ?? 0,
+    possession_lost: (stats as any).possession_lost ?? 0,
     // Goalkeeper stats
     saves: stats.saves,
     goals_conceded: stats.goals_conceded,

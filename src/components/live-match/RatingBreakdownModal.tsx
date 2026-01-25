@@ -1,12 +1,18 @@
 /**
  * Modal to display detailed rating breakdown for a player
  * Shows how the rating was calculated with all contributing factors
+ * 
+ * Professional Scouting Model v2.0:
+ * - Base: 6.0
+ * - Minutes Factor: 0-29m=×0.6, 30-59m=×0.8, 60-79m=×0.9, 80+m=×1.0
+ * - Anti-inflation: max 6.9 without goal/assist/relevant defensive action
+ * - Offensive cap: max +1.0 for attack+creation+passing
  */
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
-import { Info, TrendingUp, TrendingDown, Minus, Clock, AlertTriangle } from "lucide-react";
+import { Info, TrendingUp, TrendingDown, Minus, Clock, AlertTriangle, Shield, Target, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { MatchRatingResult, CategoryBreakdown, BreakdownItem } from "@/lib/matchRatingEngine";
 import { getRatingBgColor, getRatingColor } from "@/lib/matchRatingEngine";
@@ -39,8 +45,18 @@ function BreakdownItemRow({ item }: { item: BreakdownItem }) {
         <Badge variant="outline" className="text-[10px] h-4 px-1.5">
           {item.count}× ({item.weight > 0 ? "+" : ""}{item.weight})
         </Badge>
+        {item.capped && (
+          <Badge variant="secondary" className="text-[9px] h-3.5 px-1 bg-amber-500/20 text-amber-500 border-amber-500/30">
+            LIMITADO
+          </Badge>
+        )}
       </div>
       <div className="flex items-center gap-3 text-right">
+        {item.capped && item.originalDelta !== undefined && (
+          <span className="font-mono text-[10px] text-red-400 line-through">
+            {formatDelta(item.originalDelta)}
+          </span>
+        )}
         <span className={cn(
           "font-mono text-[11px]",
           item.rawDelta > 0 ? "text-green-500" : item.rawDelta < 0 ? "text-red-500" : "text-muted-foreground"
@@ -57,11 +73,22 @@ function CategorySection({ category }: { category: CategoryBreakdown }) {
   const isPositive = category.raw > 0;
   const isNegative = category.raw < 0;
   
+  // Category icons
+  const getCategoryIcon = () => {
+    switch (category.key) {
+      case "attack": return <Target className="h-3.5 w-3.5" />;
+      case "defense": return <Shield className="h-3.5 w-3.5" />;
+      case "creation": return <Zap className="h-3.5 w-3.5" />;
+      default: return null;
+    }
+  };
+  
   return (
     <AccordionItem value={category.key} className="border-b border-border/50">
       <AccordionTrigger className="py-2 hover:no-underline">
         <div className="flex items-center justify-between w-full pr-2">
           <div className="flex items-center gap-2">
+            {getCategoryIcon()}
             <span className="font-medium text-sm">{category.label}</span>
             {hasItems && (
               <Badge variant="secondary" className="text-[10px] h-4">
@@ -92,12 +119,20 @@ function CategorySection({ category }: { category: CategoryBreakdown }) {
   );
 }
 
+function getMinutesFactorLabel(minutesPlayed: number): string {
+  if (minutesPlayed < 30) return "0-29 min";
+  if (minutesPlayed < 60) return "30-59 min";
+  if (minutesPlayed < 80) return "60-79 min";
+  return "80+ min";
+}
+
 export function RatingBreakdownModal({ rating, playerName, children }: RatingBreakdownModalProps) {
   if (!rating.hasRating || !rating.detailedBreakdown) {
     return <>{children}</>;
   }
   
   const { detailedBreakdown, baseRating, rawImpact, impactAfterMinutes, minutesFactor, minutesPlayed } = rating;
+  const { antiInflationApplied, hasImpactfulAction } = detailedBreakdown;
   
   return (
     <Dialog>
@@ -129,6 +164,13 @@ export function RatingBreakdownModal({ rating, playerName, children }: RatingBre
             </div>
           </div>
           
+          {/* Professional Scouting Model Badge */}
+          <div className="flex items-center gap-2 px-2">
+            <Badge variant="outline" className="text-[10px] bg-zinc-800/50">
+              Modelo de Scouting Profissional v2.0
+            </Badge>
+          </div>
+          
           {/* Base & Minutes */}
           <div className="grid grid-cols-2 gap-3">
             <div className="p-3 rounded-lg border bg-card">
@@ -144,10 +186,35 @@ export function RatingBreakdownModal({ rating, playerName, children }: RatingBre
               </div>
               <div className="flex items-baseline gap-1">
                 <span className="text-lg font-bold">×{minutesFactor}</span>
-                <span className="text-xs text-muted-foreground">({minutesPlayed}/90)</span>
+                <span className="text-xs text-muted-foreground">
+                  ({getMinutesFactorLabel(minutesPlayed)})
+                </span>
               </div>
             </div>
           </div>
+          
+          {/* Anti-Inflation & Impact Status */}
+          {!hasImpactfulAction && (
+            <div className="p-3 rounded-lg border border-amber-500/30 bg-amber-500/10">
+              <div className="flex items-center gap-1.5 text-xs text-amber-500 mb-1">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                <span className="font-medium">Sem ação de impacto</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Sem gol, assistência ou ação defensiva relevante (2+ desarmes/interc./cortes).
+                {antiInflationApplied && " Nota limitada a 6.9."}
+              </p>
+            </div>
+          )}
+          
+          {hasImpactfulAction && (
+            <div className="p-3 rounded-lg border border-green-500/30 bg-green-500/10">
+              <div className="flex items-center gap-1.5 text-xs text-green-500">
+                <Target className="h-3.5 w-3.5" />
+                <span className="font-medium">Ação de impacto registrada</span>
+              </div>
+            </div>
+          )}
           
           {/* Caps Applied */}
           {detailedBreakdown.capsApplied.length > 0 && (
@@ -157,10 +224,10 @@ export function RatingBreakdownModal({ rating, playerName, children }: RatingBre
                 <span className="font-medium">Limites aplicados</span>
               </div>
               {detailedBreakdown.capsApplied.map((cap, idx) => (
-                <div key={idx} className="text-sm">
+                <div key={idx} className="text-sm mb-1 last:mb-0">
                   <span className="text-muted-foreground">{cap.label}:</span>{" "}
-                  <span className="text-red-400 line-through">+{cap.before.toFixed(2)}</span>{" "}
-                  <span className="text-green-500">→ +{cap.after.toFixed(2)}</span>
+                  <span className="text-red-400 line-through">{cap.before > 0 ? "+" : ""}{cap.before.toFixed(2)}</span>{" "}
+                  <span className="text-green-500">→ {cap.after > 0 ? "+" : ""}{cap.after.toFixed(2)}</span>
                 </div>
               ))}
             </div>
@@ -202,6 +269,23 @@ export function RatingBreakdownModal({ rating, playerName, children }: RatingBre
               <span className={rating.color}>
                 {baseRating} + ({formatDelta(impactAfterMinutes)}) = <strong>{rating.rating!.toFixed(1)}</strong>
               </span>
+            </div>
+          </div>
+          
+          {/* Scoring Legend */}
+          <div className="p-3 rounded-lg border bg-card text-xs space-y-1.5">
+            <p className="font-medium text-muted-foreground mb-2">Regras Anti-Inflação</p>
+            <div className="flex items-start gap-2">
+              <span className="text-amber-500">•</span>
+              <span className="text-muted-foreground">Limite ofensivo (Ataque + Criação + Passes): máx +1.0</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="text-amber-500">•</span>
+              <span className="text-muted-foreground">Sem gol/assist/defesa relevante: máx nota 6.9</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="text-green-500">•</span>
+              <span className="text-muted-foreground">Defesa NÃO possui teto positivo</span>
             </div>
           </div>
         </div>

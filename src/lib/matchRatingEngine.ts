@@ -1,58 +1,75 @@
 /**
- * Match Rating Engine v1.5 (SofaScore-style)
+ * Match Rating Engine v2.0 - Professional Scouting Model
  * 
- * Calculates a 0.0-10.0 rating for each player based on their live match stats.
+ * Sistema de avaliação de jogador estilo CLUBE PROFISSIONAL.
+ * Rígido, realista, não-inflacionado. Valoriza IMPACTO e EFICIÊNCIA.
  * 
- * BASE FORMULA:
- * - baseRating = 6.0
- * - minutesFactor = clamp(sqrt(minutesPlayed / 90), 0.35, 1.0)
- * - rawImpact = sum of (stat * weight) for all stats
- * - offensiveImpact = min(offensiveImpact, OFFENSIVE_CAP) // Anti-explosion
- * - impactTotal = rawImpact * minutesFactor
- * - ratingFinal = clamp(6.0 + impactTotal, 0.0, 10.0)
+ * FILOSOFIA:
+ * - Erro é punido mais do que volume é premiado
+ * - Sem gol, assistência ou ação defensiva relevante → max 6.9
+ * - Contribuições ofensivas têm teto de +1.0
+ * - Defesa NÃO tem teto positivo
  * 
- * COLOR BANDS (SofaScore-style):
- * - 0.0-5.9 = Red
- * - 6.0-6.4 = Orange
- * - 6.5-6.9 = Yellow/Amber
- * - 7.0-7.9 = Green
- * - 8.0-8.9 = Cyan
- * - 9.0-10.0 = Blue
- * 
- * CRITICAL: Only active events count (voided events are excluded)
+ * BASE: 6.0
+ * FATOR DE MINUTOS:
+ * - 0-29 min → ×0.6
+ * - 30-59 min → ×0.8
+ * - 60-79 min → ×0.9
+ * - 80+ min → ×1.0
  */
 
 import type { MatchPlayerStats } from "@/hooks/useLiveMatch";
 import type { MatchPlayerMinutesInput } from "./minutesPlayed";
 import { calculateMinutesPlayed } from "./minutesPlayed";
 
-// === WEIGHT CONSTANTS (Modelo Moderado v1.5 - Outfield) ===
+// === PROFESSIONAL SCOUTING WEIGHTS (v2.0) ===
 
 export const WEIGHTS = {
-  // ATTACK
-  goal: { weight: 0.45, label: "Gol", category: "attack" as const },
-  assist: { weight: 0.35, label: "Assistência", category: "attack" as const },
-  shot_on_target: { weight: 0.15, label: "Finalização no alvo", category: "attack" as const },
-  shot_off_target: { weight: 0.05, label: "Finalização fora", category: "attack" as const },
-  shot_blocked: { weight: 0.03, label: "Finalização bloqueada", category: "attack" as const },
+  // ==================
+  // 🟥 ATAQUE
+  // ==================
+  goal: { weight: 0.80, label: "Gol", category: "attack" as const },
+  shot_on_target: { weight: 0.08, label: "Finalização no alvo", category: "attack" as const, maxImpact: 0.40 },
+  shot_off_target: { weight: 0.00, label: "Finalização para fora", category: "attack" as const }, // NÃO pontuar
+  // Impedimento: NÃO pontuar (não temos tracking)
   
-  // CREATION / DRIBBLE
-  dribble_success: { weight: 0.10, label: "Drible certo", category: "creation" as const },
-  dribble_failed: { weight: -0.08, label: "Drible errado", category: "creation" as const },
-  key_pass: { weight: 0.10, label: "Passe-chave", category: "creation" as const },
-  chance_created: { weight: 0.14, label: "Chance criada", category: "creation" as const },
+  // ==================
+  // 🟨 PASSES / CRIAÇÃO
+  // ==================
+  assist: { weight: 0.60, label: "Assistência", category: "creation" as const },
+  key_pass: { weight: 0.12, label: "Passe decisivo", category: "creation" as const },
+  chance_created: { weight: 0.10, label: "Chance criada", category: "creation" as const },
+  pass_completed: { weight: 0.005, label: "Passe certo", category: "passing" as const, maxImpact: 0.20 },
+  pass_failed: { weight: -0.03, label: "Passe errado", category: "passing" as const },
+  cross_success: { weight: 0.06, label: "Cruzamento certo", category: "creation" as const },
+  cross_failed: { weight: -0.04, label: "Cruzamento errado", category: "creation" as const },
   
-  // PASSES
-  pass_completed: { weight: 0.01, label: "Passe certo", category: "passing" as const },
-  pass_failed: { weight: -0.02, label: "Passe errado", category: "passing" as const },
+  // ==================
+  // 🟦 DRIBLES / POSSE
+  // ==================
+  dribble_success: { weight: 0.06, label: "Drible certo", category: "creation" as const, maxImpact: 0.30 },
+  dribble_failed: { weight: -0.07, label: "Drible errado", category: "creation" as const },
+  foul_suffered: { weight: 0.04, label: "Falta sofrida", category: "creation" as const },
+  possession_lost: { weight: -0.05, label: "Perda de posse", category: "creation" as const },
   
-  // DEFENSE
-  interception: { weight: 0.10, label: "Interceptação", category: "defense" as const },
-  recovery: { weight: 0.07, label: "Recuperação", category: "defense" as const },
-  clearance: { weight: 0.06, label: "Corte", category: "defense" as const },
+  // ==================
+  // 🟩 DEFESA (sem teto)
+  // ==================
   tackle: { weight: 0.12, label: "Desarme", category: "defense" as const },
+  interception: { weight: 0.10, label: "Interceptação", category: "defense" as const },
+  clearance: { weight: 0.08, label: "Corte", category: "defense" as const },
+  shot_blocked: { weight: 0.10, label: "Chute bloqueado", category: "defense" as const },
+  recovery: { weight: 0.05, label: "Recuperação", category: "defense" as const },
+  ground_duel_won: { weight: 0.06, label: "Duelo no chão ganho", category: "defense" as const },
+  ground_duel_lost: { weight: -0.06, label: "Duelo no chão perdido", category: "defense" as const },
+  aerial_duel_won: { weight: 0.07, label: "Duelo aéreo ganho", category: "defense" as const },
+  aerial_duel_lost: { weight: -0.07, label: "Duelo aéreo perdido", category: "defense" as const },
+  foul_committed: { weight: -0.04, label: "Falta cometida", category: "defense" as const },
+  dribbled_past: { weight: -0.10, label: "Driblado", category: "defense" as const },
   
-  // DISCIPLINE
+  // ==================
+  // DISCIPLINA
+  // ==================
   yellow_card: { weight: -0.20, label: "Cartão amarelo", category: "discipline" as const },
   red_card: { weight: -0.80, label: "Cartão vermelho", category: "discipline" as const },
 } as const;
@@ -77,16 +94,20 @@ export const GK_WEIGHTS = {
   error_led_to_goal: { weight: -0.60, label: "Erro que gerou gol", category: "goalkeeper" as const },
   
   // Passes (GK uses same weights)
-  pass_completed: { weight: 0.01, label: "Passe certo", category: "passing" as const },
-  pass_failed: { weight: -0.02, label: "Passe errado", category: "passing" as const },
+  pass_completed: { weight: 0.005, label: "Passe certo", category: "passing" as const, maxImpact: 0.20 },
+  pass_failed: { weight: -0.03, label: "Passe errado", category: "passing" as const },
   
   // Discipline (same for all)
   yellow_card: { weight: -0.20, label: "Cartão amarelo", category: "discipline" as const },
   red_card: { weight: -0.80, label: "Cartão vermelho", category: "discipline" as const },
 } as const;
 
-// Anti-explosion cap for offensive stats (outfield) / saves (goalkeeper)
-const OFFENSIVE_CAP = 1.20;
+// === ANTI-INFLATION RULES ===
+// Soma máxima de contribuições ofensivas (Ataque + Passes + Dribles)
+const OFFENSIVE_CAP = 1.0;
+// Sem gol, assistência ou ação defensiva relevante → max 6.9
+const MAX_RATING_WITHOUT_IMPACT = 6.9;
+// GK cap
 const GK_SAVES_CAP = 1.50;
 
 // Base rating
@@ -103,6 +124,8 @@ export interface BreakdownItem {
   weight: number;
   rawDelta: number;
   afterMinutes: number;
+  capped?: boolean;
+  originalDelta?: number;
 }
 
 export interface CategoryBreakdown {
@@ -124,6 +147,8 @@ export interface DetailedBreakdown {
   categories: CategoryBreakdown[];
   items: BreakdownItem[];
   capsApplied: CapApplied[];
+  antiInflationApplied: boolean;
+  hasImpactfulAction: boolean;
 }
 
 export interface RatingBreakdown {
@@ -136,29 +161,17 @@ export interface RatingBreakdown {
 }
 
 export interface MatchRatingResult {
-  /** Whether the player has a valid rating (played > 0 minutes) */
   hasRating: boolean;
-  /** Final rating 0.0-10.0 (null if no rating) */
   rating: number | null;
-  /** Base rating (6.0) */
   baseRating: number;
-  /** Raw impact before minutes factor */
   rawImpact: number;
-  /** Impact after minutes factor applied */
   impactAfterMinutes: number;
-  /** Minutes factor applied (0.35-1.0) */
   minutesFactor: number;
-  /** Minutes played (0-90+) */
   minutesPlayed: number;
-  /** Simple impact breakdown by category (null if no rating) */
   breakdown: RatingBreakdown | null;
-  /** Detailed breakdown with items and caps (null if no rating) */
   detailedBreakdown: DetailedBreakdown | null;
-  /** Color class for display */
   color: string;
-  /** Background color class for badges */
   bgColor: string;
-  /** Label for display (Excepcional/Excelente/etc) */
   label: string;
 }
 
@@ -167,7 +180,7 @@ export interface PlayerStatsInput {
   goals: number;
   assists: number;
   shots_on_target: number;
-  shots: number; // Total shots (includes on_target)
+  shots: number;
   
   // Creation
   dribbles_success: number;
@@ -184,12 +197,21 @@ export interface PlayerStatsInput {
   recoveries: number;
   clearances: number;
   tackles: number;
+  duels_won: number;
+  duels_total: number;
+  aerial_duels_won: number;
+  aerial_duels_total: number;
+  fouls_committed: number;
+  fouls_suffered: number;
+  possession_lost: number;
+  shots_blocked?: number;
+  times_dribbled_past?: number;
   
   // Discipline
   yellow_cards: number;
   red_cards: number;
   
-  // Goalkeeper-specific (optional for outfield players)
+  // Goalkeeper-specific
   saves?: number;
   saves_inside_box?: number;
   penalty_saved?: number;
@@ -200,31 +222,31 @@ export interface PlayerStatsInput {
   sweeper_actions?: number;
   errors_led_to_goal?: number;
   
-  // Player type indicator
   isGoalkeeper?: boolean;
 }
 
 // === HELPER FUNCTIONS ===
 
-/**
- * Clamp a value between min and max
- */
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
 /**
- * Calculate minutes factor based on minutes played
- * sqrt(minutesPlayed / 90), clamped between 0.35 and 1.0
+ * Calculate minutes factor - PROFESSIONAL SCOUTING MODEL
+ * 0-29 min → ×0.6
+ * 30-59 min → ×0.8
+ * 60-79 min → ×0.9
+ * 80+ min → ×1.0
  */
 function calculateMinutesFactor(minutesPlayed: number): number {
-  if (minutesPlayed <= 0) return 0.35;
-  return clamp(Math.sqrt(minutesPlayed / 90), 0.35, 1.0);
+  if (minutesPlayed < 30) return 0.6;
+  if (minutesPlayed < 60) return 0.8;
+  if (minutesPlayed < 80) return 0.9;
+  return 1.0;
 }
 
 /**
  * Get rating color based on value (SofaScore bands)
- * 0.0-5.9 = Red, 6.0-6.4 = Orange, 6.5-6.9 = Amber, 7.0-7.9 = Green, 8.0-8.9 = Cyan, 9.0-10.0 = Blue
  */
 export function getRatingColor(rating: number): string {
   if (rating < 6.0) return "text-red-500";
@@ -236,7 +258,7 @@ export function getRatingColor(rating: number): string {
 }
 
 /**
- * Get rating background color for badges (SofaScore bands)
+ * Get rating background color for badges
  */
 export function getRatingBgColor(rating: number): string {
   if (rating < 6.0) return "bg-red-500";
@@ -248,19 +270,19 @@ export function getRatingBgColor(rating: number): string {
 }
 
 /**
- * Get hex color for PDF rendering (SofaScore bands)
+ * Get hex color for PDF rendering
  */
 export function getRatingHexColor(rating: number): string {
-  if (rating < 6.0) return "#ef4444"; // red-500
-  if (rating < 6.5) return "#f97316"; // orange-500
-  if (rating < 7.0) return "#f59e0b"; // amber-500
-  if (rating < 8.0) return "#22c55e"; // green-500
-  if (rating < 9.0) return "#06b6d4"; // cyan-500
-  return "#3b82f6"; // blue-500
+  if (rating < 6.0) return "#ef4444";
+  if (rating < 6.5) return "#f97316";
+  if (rating < 7.0) return "#f59e0b";
+  if (rating < 8.0) return "#22c55e";
+  if (rating < 9.0) return "#06b6d4";
+  return "#3b82f6";
 }
 
 /**
- * Get rating label based on value
+ * Get rating label
  */
 function getRatingLabel(rating: number): string {
   if (rating >= 9.0) return "Excepcional";
@@ -283,18 +305,11 @@ const CATEGORY_LABELS: Record<CategoryKey, string> = {
 
 // === MAIN CALCULATION ===
 
-/**
- * Calculate match rating for a player based on their stats
- * 
- * @param stats - Player stats from match_player_stats table
- * @param minutesPlayed - Minutes played in the match
- * @returns MatchRatingResult with rating, breakdown, and display info
- */
 export function calculateMatchRating(
   stats: PlayerStatsInput,
   minutesPlayed: number
 ): MatchRatingResult {
-  // CRITICAL: Players with 0 minutes don't get a rating
+  // Players with 0 minutes don't get a rating
   if (minutesPlayed <= 0) {
     return {
       hasRating: false,
@@ -317,13 +332,33 @@ export function calculateMatchRating(
   const allItems: BreakdownItem[] = [];
   const capsApplied: CapApplied[] = [];
   
-  // Helper to add breakdown item (supports both WEIGHTS and GK_WEIGHTS)
-  const addItem = (stat: string, count: number, isGkStat = false): BreakdownItem => {
+  // Track individual stat impacts for capping
+  const statImpacts: Record<string, { count: number; raw: number; capped: number }> = {};
+  
+  // Helper to add breakdown item with optional per-stat capping
+  const addItem = (
+    stat: string, 
+    count: number, 
+    isGkStat = false,
+    customCategory?: CategoryKey
+  ): BreakdownItem => {
     const weightSource = isGkStat ? GK_WEIGHTS : WEIGHTS;
     const weightInfo = weightSource[stat as keyof typeof weightSource];
     const weight = weightInfo?.weight ?? 0;
     const label = weightInfo?.label ?? stat;
-    const rawDelta = count * weight;
+    const maxImpact = (weightInfo as any)?.maxImpact;
+    
+    let rawDelta = count * weight;
+    let capped = false;
+    let originalDelta = rawDelta;
+    
+    // Apply per-stat max impact cap (e.g., max +0.40 for shots on target)
+    if (maxImpact !== undefined && rawDelta > maxImpact) {
+      capped = true;
+      originalDelta = rawDelta;
+      rawDelta = maxImpact;
+    }
+    
     const afterMinutes = rawDelta * minutesFactor;
     
     const item: BreakdownItem = {
@@ -333,10 +368,13 @@ export function calculateMatchRating(
       weight,
       rawDelta: Math.round(rawDelta * 1000) / 1000,
       afterMinutes: Math.round(afterMinutes * 1000) / 1000,
+      capped,
+      originalDelta: capped ? Math.round(originalDelta * 1000) / 1000 : undefined,
     };
     
     if (count !== 0) {
       allItems.push(item);
+      statImpacts[stat] = { count, raw: originalDelta, capped: rawDelta };
     }
     
     return item;
@@ -344,7 +382,6 @@ export function calculateMatchRating(
 
   // ===== GOALKEEPER CALCULATION =====
   if (isGK) {
-    // === GOALKEEPER ITEMS ===
     const saveItem = addItem("save", Math.max(0, stats.saves ?? 0), true);
     const saveInsideBoxItem = addItem("save_inside_box", Math.max(0, stats.saves_inside_box ?? 0), true);
     const penaltySavedItem = addItem("penalty_saved", Math.max(0, stats.penalty_saved ?? 0), true);
@@ -355,11 +392,9 @@ export function calculateMatchRating(
     const goalConcededItem = addItem("goal_conceded", Math.max(0, stats.goals_conceded ?? 0), true);
     const errorItem = addItem("error_led_to_goal", Math.max(0, stats.errors_led_to_goal ?? 0), true);
     
-    // Sum of all positive GK actions before cap
     let gkPositiveRaw = saveItem.rawDelta + saveInsideBoxItem.rawDelta + penaltySavedItem.rawDelta + 
                         cleanSheetItem.rawDelta + highClaimItem.rawDelta + punchItem.rawDelta + sweeperItem.rawDelta;
     
-    // Apply GK saves cap
     if (gkPositiveRaw > GK_SAVES_CAP) {
       capsApplied.push({
         key: "gkSavesCap",
@@ -374,21 +409,18 @@ export function calculateMatchRating(
     const goalkeeperRaw = gkPositiveRaw + gkNegativeRaw;
     const goalkeeperAfterMinutes = goalkeeperRaw * minutesFactor;
     
-    // === GK PASSING ITEMS ===
     const passCompletedItem = addItem("pass_completed", Math.max(0, stats.passes_completed), true);
     const passFailedItem = addItem("pass_failed", Math.max(0, stats.passes_total - stats.passes_completed), true);
     
     const passingRaw = passCompletedItem.rawDelta + passFailedItem.rawDelta;
     const passingAfterMinutes = passingRaw * minutesFactor;
     
-    // === GK DISCIPLINE ITEMS ===
     const yellowItem = addItem("yellow_card", Math.max(0, stats.yellow_cards), true);
     const redItem = addItem("red_card", Math.max(0, stats.red_cards), true);
     
     const disciplineRaw = yellowItem.rawDelta + redItem.rawDelta;
     const disciplineAfterMinutes = disciplineRaw * minutesFactor;
     
-    // === BUILD GK CATEGORY BREAKDOWN ===
     const categories: CategoryBreakdown[] = [
       {
         key: "goalkeeper",
@@ -413,15 +445,11 @@ export function calculateMatchRating(
       },
     ];
     
-    // === TOTAL RAW IMPACT ===
     const rawImpact = goalkeeperRaw + passingRaw + disciplineRaw;
     const impactAfterMinutes = rawImpact * minutesFactor;
-    
-    // === FINAL RATING ===
     const rating = clamp(BASE_RATING + impactAfterMinutes, 0.0, 10.0);
     const roundedRating = Math.round(rating * 10) / 10;
     
-    // Sort items by absolute impact (desc)
     const sortedItems = [...allItems].sort((a, b) => Math.abs(b.rawDelta) - Math.abs(a.rawDelta));
     
     return {
@@ -444,6 +472,8 @@ export function calculateMatchRating(
         categories,
         items: sortedItems,
         capsApplied,
+        antiInflationApplied: false,
+        hasImpactfulAction: true,
       },
       color: getRatingColor(roundedRating),
       bgColor: getRatingBgColor(roundedRating),
@@ -453,53 +483,84 @@ export function calculateMatchRating(
 
   // ===== OUTFIELD PLAYER CALCULATION =====
   
-  // === ATTACK ITEMS ===
+  // === ATTACK ===
   const goalItem = addItem("goal", Math.max(0, stats.goals));
-  const assistItem = addItem("assist", Math.max(0, stats.assists));
   const shotOnTargetItem = addItem("shot_on_target", Math.max(0, stats.shots_on_target));
-  const shotOffTargetItem = addItem("shot_off_target", Math.max(0, stats.shots - stats.shots_on_target));
+  // shot_off_target = 0 weight, não pontuar
+  addItem("shot_off_target", Math.max(0, stats.shots - stats.shots_on_target));
   
-  let attackRaw = goalItem.rawDelta + assistItem.rawDelta + shotOnTargetItem.rawDelta + shotOffTargetItem.rawDelta;
+  let attackRaw = goalItem.rawDelta + shotOnTargetItem.rawDelta;
   
-  // Apply offensive cap
-  if (attackRaw > OFFENSIVE_CAP) {
-    capsApplied.push({
-      key: "offensiveCap",
-      label: "Limite de ataque",
-      before: Math.round(attackRaw * 100) / 100,
-      after: OFFENSIVE_CAP,
-    });
-    attackRaw = OFFENSIVE_CAP;
-  }
-  
-  const attackAfterMinutes = attackRaw * minutesFactor;
-  
-  // === CREATION ITEMS ===
-  const dribbleSuccessItem = addItem("dribble_success", Math.max(0, stats.dribbles_success));
-  const dribbleFailedItem = addItem("dribble_failed", Math.max(0, stats.dribbles_total - stats.dribbles_success));
+  // === CREATION (includes assists, key passes, dribbles, fouls suffered) ===
+  const assistItem = addItem("assist", Math.max(0, stats.assists));
   const keyPassItem = addItem("key_pass", Math.max(0, stats.key_passes));
   const chanceCreatedItem = addItem("chance_created", Math.max(0, stats.chances_created));
+  const dribbleSuccessItem = addItem("dribble_success", Math.max(0, stats.dribbles_success));
+  const dribbleFailedItem = addItem("dribble_failed", Math.max(0, stats.dribbles_total - stats.dribbles_success));
+  const foulSufferedItem = addItem("foul_suffered", Math.max(0, stats.fouls_suffered));
+  const possessionLostItem = addItem("possession_lost", Math.max(0, stats.possession_lost));
   
-  const creationRaw = dribbleSuccessItem.rawDelta + dribbleFailedItem.rawDelta + keyPassItem.rawDelta + chanceCreatedItem.rawDelta;
-  const creationAfterMinutes = creationRaw * minutesFactor;
+  let creationRaw = assistItem.rawDelta + keyPassItem.rawDelta + chanceCreatedItem.rawDelta + 
+                    dribbleSuccessItem.rawDelta + dribbleFailedItem.rawDelta + 
+                    foulSufferedItem.rawDelta + possessionLostItem.rawDelta;
   
-  // === PASSING ITEMS ===
+  // === PASSING ===
   const passCompletedItem = addItem("pass_completed", Math.max(0, stats.passes_completed));
   const passFailedItem = addItem("pass_failed", Math.max(0, stats.passes_total - stats.passes_completed));
   
-  const passingRaw = passCompletedItem.rawDelta + passFailedItem.rawDelta;
+  let passingRaw = passCompletedItem.rawDelta + passFailedItem.rawDelta;
+  
+  // === OFFENSIVE CAP: Attack + Creation + Passing max +1.0 ===
+  const totalOffensiveRaw = attackRaw + creationRaw + passingRaw;
+  let offensiveCapped = false;
+  if (totalOffensiveRaw > OFFENSIVE_CAP) {
+    offensiveCapped = true;
+    capsApplied.push({
+      key: "offensiveCap",
+      label: "Limite ofensivo (Ataque + Criação + Passes)",
+      before: Math.round(totalOffensiveRaw * 100) / 100,
+      after: OFFENSIVE_CAP,
+    });
+    // Scale down proportionally
+    const scaleFactor = OFFENSIVE_CAP / totalOffensiveRaw;
+    attackRaw *= scaleFactor;
+    creationRaw *= scaleFactor;
+    passingRaw *= scaleFactor;
+  }
+  
+  const attackAfterMinutes = attackRaw * minutesFactor;
+  const creationAfterMinutes = creationRaw * minutesFactor;
   const passingAfterMinutes = passingRaw * minutesFactor;
   
-  // === DEFENSE ITEMS ===
-  const interceptionItem = addItem("interception", Math.max(0, stats.interceptions));
-  const recoveryItem = addItem("recovery", Math.max(0, stats.recoveries));
-  const clearanceItem = addItem("clearance", Math.max(0, stats.clearances));
+  // === DEFENSE (NO CAP) ===
   const tackleItem = addItem("tackle", Math.max(0, stats.tackles));
+  const interceptionItem = addItem("interception", Math.max(0, stats.interceptions));
+  const clearanceItem = addItem("clearance", Math.max(0, stats.clearances));
+  const recoveryItem = addItem("recovery", Math.max(0, stats.recoveries));
+  const shotBlockedItem = addItem("shot_blocked", Math.max(0, stats.shots_blocked ?? 0));
   
-  const defenseRaw = interceptionItem.rawDelta + recoveryItem.rawDelta + clearanceItem.rawDelta + tackleItem.rawDelta;
+  // Duels - calculate ground duels from total - aerial
+  const groundDuelsWon = Math.max(0, stats.duels_won - stats.aerial_duels_won);
+  const groundDuelsLost = Math.max(0, (stats.duels_total - stats.duels_won) - (stats.aerial_duels_total - stats.aerial_duels_won));
+  const aerialDuelsWon = Math.max(0, stats.aerial_duels_won);
+  const aerialDuelsLost = Math.max(0, stats.aerial_duels_total - stats.aerial_duels_won);
+  
+  const groundDuelWonItem = addItem("ground_duel_won", groundDuelsWon);
+  const groundDuelLostItem = addItem("ground_duel_lost", groundDuelsLost);
+  const aerialDuelWonItem = addItem("aerial_duel_won", aerialDuelsWon);
+  const aerialDuelLostItem = addItem("aerial_duel_lost", aerialDuelsLost);
+  const foulCommittedItem = addItem("foul_committed", Math.max(0, stats.fouls_committed));
+  const dribbledPastItem = addItem("dribbled_past", Math.max(0, stats.times_dribbled_past ?? 0));
+  
+  const defenseRaw = tackleItem.rawDelta + interceptionItem.rawDelta + clearanceItem.rawDelta + 
+                     recoveryItem.rawDelta + shotBlockedItem.rawDelta +
+                     groundDuelWonItem.rawDelta + groundDuelLostItem.rawDelta +
+                     aerialDuelWonItem.rawDelta + aerialDuelLostItem.rawDelta +
+                     foulCommittedItem.rawDelta + dribbledPastItem.rawDelta;
+  
   const defenseAfterMinutes = defenseRaw * minutesFactor;
   
-  // === DISCIPLINE ITEMS ===
+  // === DISCIPLINE ===
   const yellowItem = addItem("yellow_card", Math.max(0, stats.yellow_cards));
   const redItem = addItem("red_card", Math.max(0, stats.red_cards));
   
@@ -549,8 +610,28 @@ export function calculateMatchRating(
   const rawImpact = attackRaw + creationRaw + passingRaw + defenseRaw + disciplineRaw;
   const impactAfterMinutes = rawImpact * minutesFactor;
   
+  // === ANTI-INFLATION RULE ===
+  // Sem gol, assistência ou ação defensiva relevante → max 6.9
+  const hasGoal = stats.goals > 0;
+  const hasAssist = stats.assists > 0;
+  const hasRelevantDefensiveAction = (stats.tackles + stats.interceptions + stats.clearances + (stats.shots_blocked ?? 0)) >= 2;
+  const hasImpactfulAction = hasGoal || hasAssist || hasRelevantDefensiveAction;
+  
   // === FINAL RATING ===
-  const rating = clamp(BASE_RATING + impactAfterMinutes, 0.0, 10.0);
+  let rating = clamp(BASE_RATING + impactAfterMinutes, 0.0, 10.0);
+  let antiInflationApplied = false;
+  
+  if (!hasImpactfulAction && rating > MAX_RATING_WITHOUT_IMPACT) {
+    antiInflationApplied = true;
+    capsApplied.push({
+      key: "antiInflation",
+      label: "Sem gol/assist/defesa relevante",
+      before: Math.round(rating * 100) / 100,
+      after: MAX_RATING_WITHOUT_IMPACT,
+    });
+    rating = MAX_RATING_WITHOUT_IMPACT;
+  }
+  
   const roundedRating = Math.round(rating * 10) / 10;
   
   // Sort items by absolute impact (desc)
@@ -576,6 +657,8 @@ export function calculateMatchRating(
       categories,
       items: sortedItems,
       capsApplied,
+      antiInflationApplied,
+      hasImpactfulAction,
     },
     color: getRatingColor(roundedRating),
     bgColor: getRatingBgColor(roundedRating),
@@ -585,8 +668,6 @@ export function calculateMatchRating(
 
 /**
  * Convert MatchPlayerStats from the hook to PlayerStatsInput
- * @param stats - Stats from match_player_stats
- * @param isGoalkeeper - Whether the player is a goalkeeper
  */
 export function matchPlayerStatsToInput(
   stats: MatchPlayerStats | undefined,
@@ -608,6 +689,15 @@ export function matchPlayerStatsToInput(
       recoveries: 0,
       clearances: 0,
       tackles: 0,
+      duels_won: 0,
+      duels_total: 0,
+      aerial_duels_won: 0,
+      aerial_duels_total: 0,
+      fouls_committed: 0,
+      fouls_suffered: 0,
+      possession_lost: 0,
+      shots_blocked: 0,
+      times_dribbled_past: 0,
       yellow_cards: 0,
       red_cards: 0,
       saves: 0,
@@ -638,6 +728,15 @@ export function matchPlayerStatsToInput(
     recoveries: stats.recoveries ?? 0,
     clearances: stats.clearances ?? 0,
     tackles: stats.tackles ?? 0,
+    duels_won: stats.duels_won ?? 0,
+    duels_total: stats.duels_total ?? 0,
+    aerial_duels_won: stats.aerial_duels_won ?? 0,
+    aerial_duels_total: stats.aerial_duels_total ?? 0,
+    fouls_committed: stats.fouls_committed ?? 0,
+    fouls_suffered: stats.fouls_suffered ?? 0,
+    possession_lost: stats.possession_lost ?? 0,
+    shots_blocked: (stats as any).shots_blocked ?? 0,
+    times_dribbled_past: (stats as any).times_dribbled_past ?? 0,
     yellow_cards: stats.yellow_cards ?? 0,
     red_cards: stats.red_cards ?? 0,
     // Goalkeeper-specific stats
@@ -656,9 +755,6 @@ export function matchPlayerStatsToInput(
 
 /**
  * Calculate rating for a match player using standardized minutes calculation
- * @param stats - Stats from match_player_stats
- * @param playerMinutesInput - Input for minutes calculation
- * @param isGoalkeeper - Whether the player is a goalkeeper
  */
 export function calculatePlayerMatchRating(
   stats: MatchPlayerStats | undefined,
