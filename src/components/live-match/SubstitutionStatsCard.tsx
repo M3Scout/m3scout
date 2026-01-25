@@ -108,16 +108,18 @@ export function SubstitutionStatsCard({
     return matchPlayers
       .filter((mp) => mp.player && !mp.is_removed)
       .map((mp) => {
-        const info = calculateMinutesPlayed(
-          {
-            started: mp.started,
-            entered_minute: mp.entered_minute,
-            exited_minute: mp.exited_minute,
-            minutes_played: mp.minutes_played,
-          },
-          matchContext
-        );
-        
+      // Force recalculation from entry/exit times, don't use cached minutes_played
+      // This ensures consistency with the displayed range (e.g., 71' → 90' = 19 min)
+      const info = calculateMinutesPlayed(
+        {
+          started: mp.started,
+          entered_minute: mp.entered_minute,
+          exited_minute: mp.exited_minute,
+          minutes_played: null, // Ignore DB cache, calculate from actual times
+        },
+        matchContext
+      );
+      
         const wasSubstitutedIn = mp.entered_minute !== null && !mp.started;
         const wasSubstitutedOut = mp.exited_minute !== null;
         
