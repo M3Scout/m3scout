@@ -786,6 +786,34 @@ export function useLiveMatch(matchId: string) {
     },
   });
 
+  // Force finish game - emergency button for buggy matches
+  // Fixes matches stuck with status=applied/finished but clock_status=running
+  const forceFinishGame = useMutation({
+    mutationFn: async () => {
+      // Force stop all clock-related fields and set to finished state
+      const { error } = await supabase
+        .from("matches")
+        .update({
+          status: "finished" as MatchStatus,
+          clock_status: "stopped" as ClockStatus,
+          half_start_time: null,
+          // Cap elapsed seconds to maximum 45 minutes per half (2700 seconds)
+          elapsed_seconds_in_half: Math.min(match?.elapsed_seconds_in_half ?? 2700, 2700),
+        })
+        .eq("id", matchId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["match", matchId] });
+      queryClient.invalidateQueries({ queryKey: ["match-players", matchId] });
+      toast.success("Partida encerrada forçadamente!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao forçar encerramento");
+    },
+  });
+
   // Void event using RPC (instead of delete) - now also reverts stats
   const voidEvent = useMutation({
     mutationFn: async (params: { eventId: string; reason?: string }) => {
@@ -1154,6 +1182,7 @@ export function useLiveMatch(matchId: string) {
     startSecondHalf,
     updateAddedTime,
     finishGame,
+    forceFinishGame,
 
     // Local draft
     checkLocalDraft,

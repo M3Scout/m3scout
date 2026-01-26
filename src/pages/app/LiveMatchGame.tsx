@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { 
   UserPlus, Users, ArrowRightLeft, Filter, 
-  LayoutGrid, LayoutList, Zap, Edit3, Save, X, PlusCircle, Eye, Lock
+  LayoutGrid, LayoutList, Zap, Edit3, Save, X, PlusCircle, Eye, Lock, AlertTriangle, StopCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -139,6 +139,7 @@ function LiveMatchGameInner({ matchId }: { matchId: string }) {
     startSecondHalf,
     updateAddedTime,
     finishGame,
+    forceFinishGame,
     regenerateSummary,
   } = useLiveMatch(matchId);
 
@@ -476,6 +477,34 @@ function LiveMatchGameInner({ matchId }: { matchId: string }) {
             <p className="text-sm font-medium text-blue-300">Modo Visualização</p>
             <p className="text-xs text-blue-400/70">Você está vendo este jogo como jogador escalado. Não é possível editar.</p>
           </div>
+        </motion.div>
+      )}
+
+      {/* Emergency banner: Match stuck in buggy state (status=finished/applied but clock still running) */}
+      {!isReadOnlyPlayer && isAdmin && match.clock_status === "running" && 
+       (match.status === "finished" || match.status === "applied") && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mx-4 mt-4 flex items-center gap-3 rounded-xl border border-red-500/40 bg-red-500/15 px-4 py-3"
+        >
+          <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-red-300">⚠️ Partida com estado inconsistente</p>
+            <p className="text-xs text-red-400/70">
+              O jogo aparece como encerrado mas o cronômetro interno ainda está ativo. Use o botão para corrigir.
+            </p>
+          </div>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => forceFinishGame.mutate()}
+            disabled={forceFinishGame.isPending}
+            className="shrink-0 gap-2 bg-red-600 hover:bg-red-700 text-white"
+          >
+            <StopCircle className="w-4 h-4" />
+            {forceFinishGame.isPending ? "Encerrando..." : "Encerrar Agora"}
+          </Button>
         </motion.div>
       )}
 
