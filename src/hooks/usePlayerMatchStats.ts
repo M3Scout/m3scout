@@ -11,6 +11,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { calculateMinutesPlayed, STANDARD_MATCH_DURATION } from "@/lib/minutesPlayed";
+import { calculateDerivedBallActions } from "@/lib/derivedBallActions";
 
 export interface MatchDerivedStats {
   // Match participation
@@ -317,7 +318,25 @@ export function usePlayerMatchStats({
         chances_created: stats?.chances_created ?? 0,
         crosses_success: stats?.crosses_success ?? 0,
         crosses_failed: stats?.crosses_failed ?? 0,
-        ball_actions: stats?.ball_actions ?? 0,
+        // ball_actions is a DERIVED statistic - calculated from sum of eligible events
+        // See src/lib/derivedBallActions.ts for the list of events that count
+        ball_actions: calculateDerivedBallActions({
+          goals: stats?.goals ?? 0,
+          shots_on_target: stats?.shots_on_target ?? 0,
+          shots: stats?.shots ?? 0,
+          shots_blocked: stats?.shots_blocked ?? 0,
+          assists: stats?.assists ?? 0,
+          key_passes: stats?.key_passes ?? 0,
+          chances_created: stats?.chances_created ?? 0,
+          passes_completed: stats?.passes_completed ?? 0,
+          passes_total: stats?.passes_total ?? 0,
+          crosses_success: stats?.crosses_success ?? 0,
+          crosses_failed: stats?.crosses_failed ?? 0,
+          dribbles_success: stats?.dribbles_success ?? 0,
+          dribbles_total: stats?.dribbles_total ?? 0,
+          possession_lost: stats?.possession_lost ?? 0,
+          recoveries: stats?.recoveries ?? 0,
+        }, stats?.ball_actions ?? 0), // Pass manual value for backwards compat
         dribbles_success: stats?.dribbles_success ?? 0,
         dribbles_failed: Math.max(0, (stats?.dribbles_total ?? 0) - (stats?.dribbles_success ?? 0)),
         dribbles_total: stats?.dribbles_total ?? 0,

@@ -211,15 +211,8 @@ export const LIVE_EVENT_ACTIONS: LiveEventAction[] = [
   },
 
   // ========== DRIBLES / POSSE ==========
-  {
-    key: "ball_action",
-    type: "ball_action",
-    label: "Ação com a bola",
-    group: "dribbles",
-    icon: Footprints,
-    description: "Qualquer ação relevante com a bola",
-    aliases: ["ação", "bola", "toque"],
-  },
+  // NOTE: ball_action is now a DERIVED stat (auto-calculated from sum of eligible events)
+  // It should NOT be registered directly as an event - see src/lib/derivedBallActions.ts
   {
     key: "dribble_success",
     type: "dribble_success",
