@@ -73,11 +73,13 @@ function clamp(v: number, a: number, b: number): number {
  * - Adaptive scaling based on activity level
  * - Guaranteed minimum visibility for any participation
  * - High contrast for clear tactical reading
+ * - Support for both vertical (portrait) and horizontal (landscape) orientations
  */
 function generateHeatmapPoints(
   percentages: ZoneDistribution,
   seed: string,
-  totalPoints: number = 350 // Base point count for PDF
+  totalPoints: number = 350, // Base point count for PDF
+  orientation: "vertical" | "horizontal" = "vertical"
 ): HeatmapPoint[] {
   const rand = mulberry32(xfnv1a(seed));
   const randRange = (min: number, max: number) => min + (max - min) * rand();
@@ -94,11 +96,20 @@ function generateHeatmapPoints(
   const minPercent = Math.min(percentages.attack, percentages.midfield, percentages.defense);
   const range = maxPercent - minPercent || 1;
 
-  const zones: { name: keyof ZoneDistribution; yMin: number; yMax: number }[] = [
-    { name: "attack", yMin: 0.02, yMax: 0.33 },
-    { name: "midfield", yMin: 0.34, yMax: 0.66 },
-    { name: "defense", yMin: 0.67, yMax: 0.98 },
-  ];
+  // Zone definitions differ by orientation
+  // Vertical: zones arranged Y (top=attack, bottom=defense)
+  // Horizontal: zones arranged X (left=defense, right=attack)
+  const zones: { name: keyof ZoneDistribution; min: number; max: number }[] = orientation === "vertical"
+    ? [
+        { name: "attack", min: 0.02, max: 0.33 },
+        { name: "midfield", min: 0.34, max: 0.66 },
+        { name: "defense", min: 0.67, max: 0.98 },
+      ]
+    : [
+        { name: "defense", min: 0.02, max: 0.33 },
+        { name: "midfield", min: 0.34, max: 0.66 },
+        { name: "attack", min: 0.67, max: 0.98 },
+      ];
 
   // Scale points based on total activity
   const scaledTotal = Math.max(120, Math.round(totalPoints * (0.4 + (totalActivity / 150))));
@@ -113,7 +124,7 @@ function generateHeatmapPoints(
     attack: nAtt,
   };
 
-  zones.forEach(({ name, yMin, yMax }) => {
+  zones.forEach(({ name, min, max }) => {
     const nPoints = pointCounts[name];
     if (nPoints === 0) return;
     
@@ -127,11 +138,20 @@ function generateHeatmapPoints(
     const clusters: { cx: number; cy: number; weight: number }[] = [];
     
     for (let c = 0; c < numClusters; c++) {
-      clusters.push({
-        cx: randRange(0.15, 0.85),
-        cy: randRange(yMin + 0.05, yMax - 0.05),
-        weight: randRange(0.5, 1.0),
-      });
+      if (orientation === "vertical") {
+        clusters.push({
+          cx: randRange(0.15, 0.85),
+          cy: randRange(min + 0.05, max - 0.05),
+          weight: randRange(0.5, 1.0),
+        });
+      } else {
+        // Horizontal: X is the zone axis, Y is lateral spread
+        clusters.push({
+          cx: randRange(min + 0.05, max - 0.05),
+          cy: randRange(0.15, 0.85),
+          weight: randRange(0.5, 1.0),
+        });
+      }
     }
 
     for (let i = 0; i < nPoints; i++) {
@@ -149,11 +169,21 @@ function generateHeatmapPoints(
         }
         
         const spread = randRange(0.04, 0.10);
-        x = clamp(cluster.cx + (rand() - 0.5) * spread * 2, 0.05, 0.95);
-        y = clamp(cluster.cy + (rand() - 0.5) * spread * 1.5, yMin, yMax);
+        if (orientation === "vertical") {
+          x = clamp(cluster.cx + (rand() - 0.5) * spread * 2, 0.05, 0.95);
+          y = clamp(cluster.cy + (rand() - 0.5) * spread * 1.5, min, max);
+        } else {
+          x = clamp(cluster.cx + (rand() - 0.5) * spread * 1.5, min, max);
+          y = clamp(cluster.cy + (rand() - 0.5) * spread * 2, 0.05, 0.95);
+        }
       } else {
-        x = randRange(0.10, 0.90);
-        y = randRange(yMin, yMax);
+        if (orientation === "vertical") {
+          x = randRange(0.10, 0.90);
+          y = randRange(min, max);
+        } else {
+          x = randRange(min, max);
+          y = randRange(0.10, 0.90);
+        }
       }
 
       // Larger, more visible points with adaptive sizing
@@ -319,6 +349,12 @@ interface MiniFieldHeatmapPdfProps {
   height?: number;
   showLegend?: boolean;
   showIntensityBars?: boolean;
+  /** 
+   * Layout orientation for the field:
+   * - "vertical" (default): Portrait mode, attack at top, defense at bottom
+   * - "horizontal": Landscape mode, defense at left, attack at right
+   */
+  orientation?: "vertical" | "horizontal";
 }
 
 export function MiniFieldHeatmapPdf({
@@ -329,6 +365,7 @@ export function MiniFieldHeatmapPdf({
   height = 130,
   showLegend = true,
   showIntensityBars = true,
+  orientation = "vertical",
 }: MiniFieldHeatmapPdfProps) {
   const hasData = percentages.defense > 0 || percentages.midfield > 0 || percentages.attack > 0;
   
@@ -336,8 +373,8 @@ export function MiniFieldHeatmapPdf({
   const cleanSeed = seed.replace(/[^a-zA-Z0-9]/g, "");
 
   const points = useMemo(
-    () => hasData ? generateHeatmapPoints(percentages, seed, 100) : [],
-    [percentages.attack, percentages.midfield, percentages.defense, seed, hasData]
+    () => hasData ? generateHeatmapPoints(percentages, seed, 100, orientation) : [],
+    [percentages.attack, percentages.midfield, percentages.defense, seed, hasData, orientation]
   );
 
   // Determine dominant zone
@@ -367,13 +404,204 @@ export function MiniFieldHeatmapPdf({
     );
   }
 
-  const indicatorWidth = showIntensityBars ? 24 : 0;
-  const fieldWidth = width - (indicatorWidth * 2);
-  const fieldHeight = height;
+  // For horizontal layout, swap width/height logic for the field area
+  const isHorizontal = orientation === "horizontal";
+  const indicatorSize = showIntensityBars ? 20 : 0;
+  
+  // Horizontal: indicators at top/bottom, field fills width
+  // Vertical: indicators at left/right, field fills height
+  const fieldWidth = isHorizontal ? width : width - (indicatorSize * 2);
+  const fieldHeight = isHorizontal ? height - (indicatorSize * 2) : height;
   const fieldPadding = 3;
   const innerFieldWidth = fieldWidth - fieldPadding * 2;
   const innerFieldHeight = fieldHeight - fieldPadding * 2;
 
+  // ========== HORIZONTAL LAYOUT ==========
+  if (isHorizontal) {
+    return (
+      <View style={styles.container}>
+        {/* Top indicator row - DEF at left side of field */}
+        {showIntensityBars && (
+          <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4, width: fieldWidth }}>
+            <ZoneIndicatorPdf 
+              label="DEF" 
+              value={percentages.defense}
+              isDominant={dominantZone === "defense"}
+              color={HEAT_COLORS.high}
+            />
+            <ZoneIndicatorPdf 
+              label="MEI" 
+              value={percentages.midfield}
+              isDominant={dominantZone === "midfield"}
+              color={HEAT_COLORS.high}
+            />
+            <ZoneIndicatorPdf 
+              label="ATA" 
+              value={percentages.attack}
+              isDominant={dominantZone === "attack"}
+              color={HEAT_COLORS.high}
+            />
+          </View>
+        )}
+
+        {/* Field SVG - Horizontal (Landscape) */}
+        <Svg width={fieldWidth} height={fieldHeight} viewBox={`0 0 ${fieldWidth} ${fieldHeight}`}>
+          {/* Field background */}
+          <Rect
+            x={0}
+            y={0}
+            width={fieldWidth}
+            height={fieldHeight}
+            fill={FIELD_COLORS.background}
+            rx={3}
+          />
+
+          {/* Field outline */}
+          <Rect
+            x={fieldPadding + 1}
+            y={fieldPadding + 1}
+            width={innerFieldWidth - 2}
+            height={innerFieldHeight - 2}
+            stroke={FIELD_COLORS.lines}
+            strokeWidth={0.5}
+            fill="none"
+            rx={1}
+          />
+
+          {/* Center line - VERTICAL for horizontal field */}
+          <Line
+            x1={fieldPadding + innerFieldWidth / 2}
+            y1={fieldPadding + 1}
+            x2={fieldPadding + innerFieldWidth / 2}
+            y2={fieldPadding + innerFieldHeight - 1}
+            stroke={FIELD_COLORS.lines}
+            strokeWidth={0.5}
+          />
+
+          {/* Center circle */}
+          <Circle
+            cx={fieldPadding + innerFieldWidth / 2}
+            cy={fieldPadding + innerFieldHeight / 2}
+            r={Math.min(innerFieldWidth, innerFieldHeight) * 0.12}
+            stroke={FIELD_COLORS.lines}
+            strokeWidth={0.5}
+            fill="none"
+          />
+
+          {/* Center dot */}
+          <Circle
+            cx={fieldPadding + innerFieldWidth / 2}
+            cy={fieldPadding + innerFieldHeight / 2}
+            r={1}
+            fill={FIELD_COLORS.lines}
+          />
+
+          {/* LEFT penalty area (Defense goal) */}
+          <Rect
+            x={fieldPadding + 1}
+            y={fieldPadding + innerFieldHeight * 0.22}
+            width={innerFieldWidth * 0.12}
+            height={innerFieldHeight * 0.56}
+            stroke={FIELD_COLORS.lines}
+            strokeWidth={0.5}
+            fill="none"
+          />
+          <Rect
+            x={fieldPadding + 1}
+            y={fieldPadding + innerFieldHeight * 0.35}
+            width={innerFieldWidth * 0.05}
+            height={innerFieldHeight * 0.30}
+            stroke={FIELD_COLORS.lines}
+            strokeWidth={0.5}
+            fill="none"
+          />
+
+          {/* RIGHT penalty area (Attack goal) */}
+          <Rect
+            x={fieldPadding + innerFieldWidth - innerFieldWidth * 0.12 - 1}
+            y={fieldPadding + innerFieldHeight * 0.22}
+            width={innerFieldWidth * 0.12}
+            height={innerFieldHeight * 0.56}
+            stroke={FIELD_COLORS.lines}
+            strokeWidth={0.5}
+            fill="none"
+          />
+          <Rect
+            x={fieldPadding + innerFieldWidth - innerFieldWidth * 0.05 - 1}
+            y={fieldPadding + innerFieldHeight * 0.35}
+            width={innerFieldWidth * 0.05}
+            height={innerFieldHeight * 0.30}
+            stroke={FIELD_COLORS.lines}
+            strokeWidth={0.5}
+            fill="none"
+          />
+
+          {/* Zone divider lines - VERTICAL for horizontal field */}
+          <Line
+            x1={fieldPadding + innerFieldWidth * 0.33}
+            y1={fieldPadding + 1}
+            x2={fieldPadding + innerFieldWidth * 0.33}
+            y2={fieldPadding + innerFieldHeight - 1}
+            stroke={FIELD_COLORS.linesSubtle}
+            strokeWidth={0.3}
+            strokeDasharray="2,2"
+            opacity={0.4}
+          />
+          <Line
+            x1={fieldPadding + innerFieldWidth * 0.67}
+            y1={fieldPadding + 1}
+            x2={fieldPadding + innerFieldWidth * 0.67}
+            y2={fieldPadding + innerFieldHeight - 1}
+            stroke={FIELD_COLORS.linesSubtle}
+            strokeWidth={0.3}
+            strokeDasharray="2,2"
+            opacity={0.4}
+          />
+
+          {/* Heatmap points */}
+          <G>
+            {points.map((point, i) => (
+              <Circle
+                key={i}
+                cx={fieldPadding + point.x * innerFieldWidth}
+                cy={fieldPadding + point.y * innerFieldHeight}
+                r={point.radius}
+                fill={getHeatColor(point.intensity)}
+                opacity={point.opacity}
+              />
+            ))}
+          </G>
+
+          {/* Attack direction arrow - pointing RIGHT */}
+          <Polygon
+            points={`${fieldWidth - fieldPadding - 5},${fieldHeight / 2 - 3} ${fieldWidth - fieldPadding - 5},${fieldHeight / 2 + 3} ${fieldWidth - fieldPadding - 1},${fieldHeight / 2}`}
+            fill="#ffffff"
+            opacity={0.5}
+          />
+        </Svg>
+
+        {/* Heat intensity legend */}
+        {showLegend && (
+          <View style={styles.legend}>
+            <Text style={styles.legendText}>Baixa</Text>
+            <Svg width={50} height={6} viewBox="0 0 50 6">
+              <Defs>
+                <LinearGradient id={`heatLegend-${cleanSeed}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                  <Stop offset="0%" stopColor={HEAT_COLORS.low} />
+                  <Stop offset="50%" stopColor={HEAT_COLORS.medium} />
+                  <Stop offset="100%" stopColor={HEAT_COLORS.high} />
+                </LinearGradient>
+              </Defs>
+              <Rect x={0} y={0} width={50} height={6} fill={`url(#heatLegend-${cleanSeed})`} rx={3} />
+            </Svg>
+            <Text style={styles.legendText}>Alta</Text>
+          </View>
+        )}
+      </View>
+    );
+  }
+
+  // ========== VERTICAL LAYOUT (Original) ==========
   return (
     <View style={styles.container}>
       <View style={styles.mainRow}>

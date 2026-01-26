@@ -1708,52 +1708,41 @@ export function MatchSummaryVectorPdf({
               
               return (
                 <View key={mp.id} style={{
-                  flexDirection: "row",
-                  paddingVertical: 8,
-                  paddingHorizontal: 8,
+                  paddingVertical: 10,
+                  paddingHorizontal: 10,
                   backgroundColor: PDF_COLORS.gray50,
                   borderRadius: 4,
-                  marginBottom: 6,
+                  marginBottom: 8,
                   borderWidth: 1,
                   borderColor: PDF_COLORS.gray200,
                 }} wrap={false}>
-                  {/* Mini Field Heatmap */}
-                  <View style={{ width: 95, marginRight: 8, alignItems: "center" }}>
-                    <MiniFieldHeatmapPdf
-                      percentages={zoneHeatmap.percentages}
-                      matchId={match.id}
-                      playerId={mp.player_id}
-                      width={90}
-                      height={110}
-                      showLegend={true}
-                    />
-                  </View>
-                  
-                  {/* Content Column */}
-                  <View style={{ flex: 1 }}>
-                    {/* Player Info */}
-                    <Text style={{ fontSize: 10, fontWeight: 700, color: PDF_COLORS.gray900, marginBottom: 2 }}>
-                      {mp.player.full_name}
-                    </Text>
-                    <Text style={{ fontSize: 8, color: PDF_COLORS.gray500, marginBottom: 6 }}>
-                      {mp.player.position} • {minutesPlayed} min
-                    </Text>
+                  {/* Player Header Row */}
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                    <View>
+                      <Text style={{ fontSize: 11, fontWeight: 700, color: PDF_COLORS.gray900, marginBottom: 2 }}>
+                        {mp.player.full_name}
+                      </Text>
+                      <Text style={{ fontSize: 8, color: PDF_COLORS.gray500 }}>
+                        {mp.player.position} • {minutesPlayed} min
+                      </Text>
+                    </View>
                     
-                    {/* Quick Indicators - 4 in a row */}
+                    {/* Quick Indicators - Compact row */}
                     {quickIndicators.length > 0 && (
-                      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 3, marginBottom: 6 }}>
+                      <View style={{ flexDirection: "row", gap: 4 }}>
                         {quickIndicators.slice(0, 4).map((indicator) => {
                           const colors = getIndicatorColors(indicator.type);
                           return (
                             <View key={indicator.id} style={{
                               paddingVertical: 2,
-                              paddingHorizontal: 4,
+                              paddingHorizontal: 5,
                               borderRadius: 3,
                               backgroundColor: colors.bg,
                               borderWidth: 1,
                               borderColor: colors.border,
+                              alignItems: "center",
                             }}>
-                              <Text style={{ fontSize: 5, color: colors.text, marginBottom: 1 }}>
+                              <Text style={{ fontSize: 5, color: colors.text }}>
                                 {indicator.label}
                               </Text>
                               <Text style={{ fontSize: 7, fontWeight: 600, color: colors.text }}>
@@ -1764,30 +1753,44 @@ export function MatchSummaryVectorPdf({
                         })}
                       </View>
                     )}
-                    
-                    {/* Strengths & Improvements in columns */}
-                    <View style={{ flexDirection: "row", gap: 8 }}>
-                      {strengthsImprovements.strengths.length > 0 && (
-                        <View style={{ flex: 1 }}>
-                          <Text style={{ fontSize: 7, fontWeight: 700, color: "#065F46", marginBottom: 2 }}>✓ Pontos Fortes</Text>
-                          {strengthsImprovements.strengths.slice(0, 2).map((s, i) => (
-                            <Text key={i} style={{ fontSize: 6, color: PDF_COLORS.gray600, marginBottom: 1, paddingLeft: 4 }}>
-                              • {s.slice(0, 50)}{s.length > 50 ? '...' : ''}
-                            </Text>
-                          ))}
-                        </View>
-                      )}
-                      {strengthsImprovements.improvements.length > 0 && (
-                        <View style={{ flex: 1 }}>
-                          <Text style={{ fontSize: 7, fontWeight: 700, color: "#92400E", marginBottom: 2 }}>⚠ A Melhorar</Text>
-                          {strengthsImprovements.improvements.slice(0, 2).map((s, i) => (
-                            <Text key={i} style={{ fontSize: 6, color: PDF_COLORS.gray600, marginBottom: 1, paddingLeft: 4 }}>
-                              • {s.slice(0, 50)}{s.length > 50 ? '...' : ''}
-                            </Text>
-                          ))}
-                        </View>
-                      )}
-                    </View>
+                  </View>
+                  
+                  {/* Horizontal Heatmap - Main Visual (Landscape) */}
+                  <View style={{ alignItems: "center", marginBottom: 8 }}>
+                    <MiniFieldHeatmapPdf
+                      percentages={zoneHeatmap.percentages}
+                      matchId={match.id}
+                      playerId={mp.player_id}
+                      width={480}
+                      height={90}
+                      showLegend={true}
+                      showIntensityBars={true}
+                      orientation="horizontal"
+                    />
+                  </View>
+                  
+                  {/* Strengths & Improvements in columns */}
+                  <View style={{ flexDirection: "row", gap: 12 }}>
+                    {strengthsImprovements.strengths.length > 0 && (
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 7, fontWeight: 700, color: "#065F46", marginBottom: 3 }}>✓ Pontos Fortes</Text>
+                        {strengthsImprovements.strengths.slice(0, 2).map((s, i) => (
+                          <Text key={i} style={{ fontSize: 6, color: PDF_COLORS.gray600, marginBottom: 1, paddingLeft: 4 }}>
+                            • {s.slice(0, 60)}{s.length > 60 ? '...' : ''}
+                          </Text>
+                        ))}
+                      </View>
+                    )}
+                    {strengthsImprovements.improvements.length > 0 && (
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 7, fontWeight: 700, color: "#92400E", marginBottom: 3 }}>⚠ A Melhorar</Text>
+                        {strengthsImprovements.improvements.slice(0, 2).map((s, i) => (
+                          <Text key={i} style={{ fontSize: 6, color: PDF_COLORS.gray600, marginBottom: 1, paddingLeft: 4 }}>
+                            • {s.slice(0, 60)}{s.length > 60 ? '...' : ''}
+                          </Text>
+                        ))}
+                      </View>
+                    )}
                   </View>
                 </View>
               );
