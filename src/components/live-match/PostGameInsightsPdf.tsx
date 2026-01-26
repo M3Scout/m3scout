@@ -247,14 +247,15 @@ function HeatmapCardPdf({ playerName, position, photoUrl, analysis, matchId, pla
         </View>
       </View>
 
-      {/* Mini Field Heatmap - Main Visual */}
+      {/* Mini Field Heatmap - Horizontal Layout for PDF */}
       <MiniFieldHeatmapPdf
         percentages={analysis.zoneHeatmap.percentages}
         matchId={matchId}
         playerId={playerId}
-        width={100}
-        height={130}
+        width={180}
+        height={70}
         showLegend={true}
+        orientation="horizontal"
       />
     </View>
   );
