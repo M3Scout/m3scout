@@ -70,7 +70,7 @@ function clamp(v: number, a: number, b: number): number {
 function generateHeatmapPoints(
   percentages: ZoneDistribution,
   seed: string,
-  totalPoints: number = 100
+  totalPoints: number = 220 // More points for granularity
 ): HeatmapPoint[] {
   const rand = mulberry32(xfnv1a(seed));
   const randRange = (min: number, max: number) => min + (max - min) * rand();
@@ -103,13 +103,15 @@ function generateHeatmapPoints(
     const zonePercent = percentages[name];
     const intensity = (zonePercent - minPercent) / range;
     
-    const numClusters = 2 + Math.floor(rand() * 2);
-    const clusters: { cx: number; cy: number }[] = [];
+    // More clusters for better distribution
+    const numClusters = 3 + Math.floor(rand() * 3);
+    const clusters: { cx: number; cy: number; weight: number }[] = [];
     
     for (let c = 0; c < numClusters; c++) {
       clusters.push({
-        cx: randRange(0.15, 0.85),
-        cy: randRange(yMin + 0.05, yMax - 0.05),
+        cx: randRange(0.12, 0.88),
+        cy: randRange(yMin + 0.03, yMax - 0.03),
+        weight: randRange(0.5, 1.5),
       });
     }
 
@@ -117,21 +119,28 @@ function generateHeatmapPoints(
       let x: number;
       let y: number;
 
-      if (rand() < 0.7 && clusters.length > 0) {
+      // Higher clustering for more defined hotspots
+      if (rand() < 0.85 && clusters.length > 0) {
         const cluster = clusters[Math.floor(rand() * clusters.length)];
-        x = clamp(cluster.cx + (rand() - 0.5) * 0.18, 0.03, 0.97);
-        y = clamp(cluster.cy + (rand() - 0.5) * 0.14, yMin, yMax);
+        // Tighter clustering for defined spots
+        const spread = 0.08 + rand() * 0.06;
+        x = clamp(cluster.cx + (rand() - 0.5) * spread, 0.03, 0.97);
+        y = clamp(cluster.cy + (rand() - 0.5) * spread * 0.8, yMin, yMax);
       } else {
-        x = randRange(0.03, 0.97);
+        x = randRange(0.05, 0.95);
         y = randRange(yMin, yMax);
       }
 
-      // PDF: Larger radius, lower opacity for soft effect without blur
+      // Smaller, more defined points for PDF
+      const baseRadius = randRange(1.5, 3.2);
+      const intensityBonus = intensity * 0.6;
+
       points.push({
         x,
         y,
-        radius: randRange(5, 9),
-        opacity: randRange(0.20, 0.40) * (0.6 + intensity * 0.4),
+        radius: baseRadius + intensityBonus,
+        // Higher opacity for more visible individual points
+        opacity: randRange(0.45, 0.80) * (0.7 + intensity * 0.3),
         intensity,
       });
     }
