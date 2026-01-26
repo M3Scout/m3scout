@@ -251,13 +251,16 @@ const styles = StyleSheet.create({
     marginTop: 4,
     textAlign: "center",
   },
-  // Section
+  // Section - Anti-orphan container
+  sectionBlock: {
+    marginTop: 12,
+    marginBottom: 8,
+  },
   sectionTitle: {
     fontSize: 12,
     fontWeight: 700,
     color: PDF_COLORS.gray900,
     marginBottom: 8,
-    marginTop: 6,
   },
   sectionSubtitle: {
     fontSize: 8,
@@ -1373,39 +1376,41 @@ export function MatchSummaryVectorPdf({
           })}
         </View>
 
-        {/* Events by Half - FULL LIST for PDF */}
-        <Text style={styles.sectionTitle}>Eventos por Tempo</Text>
-        
-        {/* Event Summary Totals */}
-        {(() => {
-          // Calculate totals by event type
-          const allEvents = [...eventsByHalf.firstHalf, ...eventsByHalf.secondHalf];
-          const totals: Record<string, number> = {};
-          allEvents.forEach(event => {
-            const label = EVENT_LABELS[event.event_type] || event.event_type;
-            totals[label] = (totals[label] || 0) + 1;
-          });
+        {/* Events by Half - Section with anti-orphan header */}
+        <View style={styles.sectionBlock}>
+          <Text style={styles.sectionTitle}>Eventos por Tempo</Text>
           
-          // Sort by count descending
-          const sortedTotals = Object.entries(totals)
-            .sort((a, b) => b[1] - a[1]);
-          
-          if (sortedTotals.length === 0) return null;
-          
-          return (
-            <View style={styles.eventSummaryContainer}>
-              <Text style={styles.eventSummaryTitle}>
-                Resumo de Totais ({allEvents.length} eventos)
-              </Text>
-              {sortedTotals.map(([label, count]) => (
-                <View key={label} style={styles.eventSummaryChip}>
-                  <Text style={styles.eventSummaryChipLabel}>{label}:</Text>
-                  <Text style={styles.eventSummaryChipValue}>{count}</Text>
-                </View>
-              ))}
-            </View>
-          );
-        })()}
+          {/* Event Summary Totals - Kept with title */}
+          {(() => {
+            // Calculate totals by event type
+            const allEvents = [...eventsByHalf.firstHalf, ...eventsByHalf.secondHalf];
+            const totals: Record<string, number> = {};
+            allEvents.forEach(event => {
+              const label = EVENT_LABELS[event.event_type] || event.event_type;
+              totals[label] = (totals[label] || 0) + 1;
+            });
+            
+            // Sort by count descending
+            const sortedTotals = Object.entries(totals)
+              .sort((a, b) => b[1] - a[1]);
+            
+            if (sortedTotals.length === 0) return null;
+            
+            return (
+              <View style={styles.eventSummaryContainer} wrap={false}>
+                <Text style={styles.eventSummaryTitle}>
+                  Resumo de Totais ({allEvents.length} eventos)
+                </Text>
+                {sortedTotals.map(([label, count]) => (
+                  <View key={label} style={styles.eventSummaryChip}>
+                    <Text style={styles.eventSummaryChipLabel}>{label}:</Text>
+                    <Text style={styles.eventSummaryChipValue}>{count}</Text>
+                  </View>
+                ))}
+              </View>
+            );
+          })()}
+        </View>
         
         <View style={styles.eventsGrid}>
           {/* First Half - ALL EVENTS */}
@@ -1449,10 +1454,12 @@ export function MatchSummaryVectorPdf({
         <Text style={styles.footer}>
           Gerado por M3 Scouting • {format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
         </Text>
-        {/* Player Stats - flows from page 2 */}
-        <Text style={{ ...styles.sectionTitle, marginTop: 12 }}>Estatísticas por Jogador</Text>
+        {/* Player Stats Section - Title + first row together to prevent orphan */}
+        <View style={styles.sectionBlock}>
+          <Text style={styles.sectionTitle}>Estatísticas por Jogador</Text>
+        </View>
         <View style={styles.playersGrid}>
-          {filteredPlayers.slice(0, 16).map((mp) => {
+          {filteredPlayers.slice(0, 16).map((mp, idx) => {
             if (!mp.player) return null;
             const counts = playerEventCounts[mp.player_id] || {};
             const statEntries = Object.entries(counts)
@@ -1593,10 +1600,13 @@ export function MatchSummaryVectorPdf({
         {/* Post-Game Analysis Section - Only for finished matches */}
         {(match.status === "finished" || match.status === "applied") && (
           <View style={{ marginTop: 16 }} wrap={false}>
+          {/* Section Header - kept with first card */}
+          <View wrap={false}>
             <Text style={styles.sectionTitle}>Análise Pós-Jogo</Text>
             <Text style={styles.sectionSubtitle}>Zonas de atuação, indicadores rápidos e pontos-chave</Text>
-            
-            {filteredPlayers.slice(0, 12).map((mp) => {
+          </View>
+          
+          {filteredPlayers.slice(0, 12).map((mp) => {
               if (!mp.player) return null;
               
               const stats = playerStatsMap[mp.player_id];
