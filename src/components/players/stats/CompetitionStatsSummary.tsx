@@ -222,6 +222,7 @@ export function CompetitionStatsSummary({
             <StatChip label="Finalizações" value={safe(stats.shots)} />
             <StatChip label="No Gol" value={safe(stats.shots_on_target)} />
             <StatChip label="Fora" value={Math.max(0, safe(stats.shots) - safe(stats.shots_on_target))} />
+            <StatChip label="Bloqueadas" value={safe(stats.shots_blocked)} />
             <StatChip label="% Precisão" value={`${shotAccuracy}%`} />
             <StatChip label="Impedimentos" value={safe(stats.offsides)} />
           </StatSection>
@@ -230,6 +231,7 @@ export function CompetitionStatsSummary({
           <StatSection title="Criatividade" icon={<Sparkles className="w-4 h-4" />} iconColor="text-purple-500">
             <StatChip label="Passes Dec" value={safe(stats.key_passes)} highlight />
             <StatChip label="Chances" value={safe(stats.chances_created)} highlight />
+            <StatChip label="Ações c/ Bola" value={safe(stats.ball_actions)} />
             <StatChip label="Dribles" value={`${safe(stats.successful_dribbles)}/${safe(stats.total_dribbles)}`} />
             <StatChip label="% Dribles" value={`${dribbleSuccess}%`} />
           </StatSection>
@@ -238,7 +240,8 @@ export function CompetitionStatsSummary({
           <StatSection title="Passe" icon={<Footprints className="w-4 h-4" />} iconColor="text-green-500">
             <StatChip label="Passes" value={`${safe(stats.accurate_passes)}/${safe(stats.total_passes)}`} />
             <StatChip label="% Passes" value={`${passAccuracy}%`} />
-            <StatChip label="Pass Long" value={`${safe(stats.long_passes_accurate)}/${safe(stats.long_passes_total)}`} />
+            <StatChip label="Cruzamentos" value={`${safe(stats.crosses_success)}/${safe(stats.crosses_success) + safe(stats.crosses_failed)}`} />
+            <StatChip label="% Cruzamentos" value={`${(safe(stats.crosses_success) + safe(stats.crosses_failed)) > 0 ? Math.round((safe(stats.crosses_success) / (safe(stats.crosses_success) + safe(stats.crosses_failed))) * 100) : 0}%`} />
           </StatSection>
 
           {/* Defense */}
@@ -247,6 +250,8 @@ export function CompetitionStatsSummary({
             <StatChip label="Intercept" value={safe(stats.interceptions)} />
             <StatChip label="Recuper" value={safe(stats.recoveries)} />
             <StatChip label="Cortes" value={safe(stats.clearances)} />
+            <StatChip label="Chutes Bloq" value={safe(stats.blocked_shots)} />
+            <StatChip label="Driblado" value={safe(stats.was_dribbled)} />
           </StatSection>
 
           {/* Duels */}

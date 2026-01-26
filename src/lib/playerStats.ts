@@ -41,6 +41,8 @@ export interface PlayerStats {
   chances_created: number;
   long_passes_accurate: number;
   long_passes_total: number;
+  crosses_success?: number;
+  crosses_failed?: number;
   // Shooting stats
   shots: number;
   shots_on_target: number;
@@ -54,12 +56,16 @@ export interface PlayerStats {
   ground_duels_won: number;
   ground_duels_total: number;
   // Ball control & discipline
+  ball_actions?: number;
   successful_dribbles: number;
   total_dribbles: number;
   possession_lost: number;
   fouls_drawn: number;
   fouls_committed: number;
   times_dribbled_past: number;
+  // Defense - additional
+  blocked_shots?: number;
+  was_dribbled?: number;
   // Metadata
   created_at: string;
   updated_at: string;
