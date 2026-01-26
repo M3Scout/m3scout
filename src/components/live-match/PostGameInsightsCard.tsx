@@ -6,6 +6,12 @@
  * 2. "Resumo por Jogador" - Micro-insights and Strengths/Improvements (NO heatmaps)
  * 
  * Only renders when match is finished or applied.
+ * 
+ * NEW: Zone Deviation Analysis
+ * - Calculates deviation between current game zones vs season average
+ * - Requires >= 3 previous finished games
+ * - Only shows deviations >= 10%
+ * - Read-only, no DB writes
  */
 
 import { useMemo } from "react";
@@ -23,6 +29,9 @@ import {
 } from "@/lib/postGameAnalysis";
 import { getShortPosition, getPositionColor } from "@/lib/positionColors";
 import { MiniFieldHeatmap } from "./MiniFieldHeatmap";
+import { usePlayerZoneHistory } from "@/hooks/usePlayerZoneHistory";
+import { calculateZoneDeviation, type ZoneDeviationResult } from "@/lib/zoneDeviationEngine";
+import { ZoneDeviationBadge } from "./ZoneDeviationBadge";
 
 // ============================================
 // TYPES
@@ -52,6 +61,7 @@ interface PostGameInsightsCardProps {
   matchStatus: string;
   matchDuration?: number;
   matchId: string;
+  seasonYear?: number;
 }
 
 // ============================================
@@ -62,13 +72,32 @@ interface HeatmapCardProps {
   player: MatchPlayer;
   analysis: PostGameAnalysis;
   matchId: string;
+  seasonYear: number;
 }
 
-function HeatmapCard({ player, analysis, matchId }: HeatmapCardProps) {
+function HeatmapCard({ player, analysis, matchId, seasonYear }: HeatmapCardProps) {
   if (!player.player) return null;
 
   const positionColor = getPositionColor(player.player.position);
   const shortPos = getShortPosition(player.player.position);
+
+  // Fetch zone history for deviation calculation (read-only)
+  const { data: previousGames = [] } = usePlayerZoneHistory({
+    playerId: player.player_id,
+    seasonYear,
+    currentMatchId: matchId,
+    playerPosition: player.player.position,
+    enabled: true,
+  });
+
+  // Calculate deviation (in-memory, no DB writes)
+  const deviationResult: ZoneDeviationResult = useMemo(() => {
+    return calculateZoneDeviation(
+      analysis.zoneHeatmap.percentages,
+      previousGames,
+      matchId
+    );
+  }, [analysis.zoneHeatmap.percentages, previousGames, matchId]);
 
   return (
     <div className="p-3 rounded-lg bg-zinc-900/50 border border-zinc-800/40 flex flex-col items-center">
@@ -100,6 +129,9 @@ function HeatmapCard({ player, analysis, matchId }: HeatmapCardProps) {
         height={220}
         showLegend={true}
       />
+
+      {/* Zone Deviation Badge (only shows if deviation >= 10% and >= 3 previous games) */}
+      <ZoneDeviationBadge result={deviationResult} compact />
     </div>
   );
 }
@@ -249,6 +281,7 @@ export function PostGameInsightsCard({
   matchStatus,
   matchDuration = 90,
   matchId,
+  seasonYear = new Date().getFullYear(),
 }: PostGameInsightsCardProps) {
   // Only show for finished/applied matches
   const showInsights = matchStatus === "finished" || matchStatus === "applied";
@@ -306,6 +339,7 @@ export function PostGameInsightsCard({
                 player={player}
                 analysis={analysis}
                 matchId={matchId}
+                seasonYear={seasonYear}
               />
             ))}
           </div>

@@ -591,6 +591,7 @@ export default function LiveMatchReview() {
         matchStatus={match.status}
         matchDuration={match.duration_minutes}
         matchId={match.id}
+        seasonYear={match.season_year}
       />
 
       {/* Substitution Stats */}
