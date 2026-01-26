@@ -248,13 +248,36 @@ export function MiniFieldHeatmapPdf({
   showLegend = true,
   showIntensityBars = true,
 }: MiniFieldHeatmapPdfProps) {
+  // CRITICAL FIX: If all percentages are 0, player didn't play - don't generate points
+  const hasData = percentages.defense > 0 || percentages.midfield > 0 || percentages.attack > 0;
+  
   const seed = `${matchId}:${playerId}`;
   const cleanSeed = seed.replace(/[^a-zA-Z0-9]/g, "");
 
   const points = useMemo(
-    () => generateHeatmapPoints(percentages, seed, 120),
-    [percentages.attack, percentages.midfield, percentages.defense, seed]
+    () => hasData ? generateHeatmapPoints(percentages, seed, 120) : [],
+    [percentages.attack, percentages.midfield, percentages.defense, seed, hasData]
   );
+
+  // If no data, show empty state in PDF
+  if (!hasData) {
+    return (
+      <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+        <View style={{
+          width: width,
+          height: height * 0.6,
+          backgroundColor: "#18181b",
+          borderRadius: 4,
+          borderWidth: 1,
+          borderColor: "#27272a",
+          justifyContent: "center",
+          alignItems: "center",
+        }}>
+          <Text style={{ fontSize: 8, color: "#71717a" }}>Sem dados de campo</Text>
+        </View>
+      </View>
+    );
+  }
 
   const barThickness = 4;
   const barGap = 4;

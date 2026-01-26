@@ -509,17 +509,29 @@ export function PostGameInsightsPdf({
   matchId,
   playerZoneHistoryMap = {},
 }: PostGameInsightsPdfProps) {
-  // Filter players
+  // Filter players - CRITICAL: Only include players who actually played
   const filteredPlayers = selectedPlayerIds && selectedPlayerIds.length > 0
     ? matchPlayers.filter((mp) => selectedPlayerIds.includes(mp.player_id))
     : matchPlayers;
 
   // Generate analyses with deviation insights
+  // CRITICAL FIX: Filter out players with 0 minutes - they should NEVER have a heatmap
   const playerAnalyses = filteredPlayers
-    .filter((mp) => mp.player)
+    .filter((mp) => {
+      // Must have valid player data
+      if (!mp.player) return false;
+      
+      // CRITICAL: Player must have actually played (> 0 minutes)
+      // If minutes_played is null or 0, the player didn't enter the field
+      const minutesPlayed = mp.minutes_played ?? 0;
+      if (minutesPlayed <= 0) return false;
+      
+      return true;
+    })
     .map((mp) => {
       const stats = playerStatsMap[mp.player_id] ?? {};
-      const minutesPlayed = mp.minutes_played ?? matchDuration;
+      // Use actual minutes played (already validated > 0 in filter)
+      const minutesPlayed = mp.minutes_played ?? 0;
       const position = mp.player?.position ?? "Meio";
 
       const analysis = generatePostGameAnalysis(position, stats, minutesPlayed);

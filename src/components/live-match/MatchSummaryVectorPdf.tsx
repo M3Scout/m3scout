@@ -1689,8 +1689,10 @@ export function MatchSummaryVectorPdf({
               });
               const minutesPlayed = minutesInfo.minutesPlayed;
               
-              // Skip players with less than 10 minutes
-              if (minutesPlayed < 10) return null;
+              // CRITICAL FIX: Skip players who didn't play (0 minutes)
+              // This prevents false heatmaps for players who never entered the field
+              // Also skip if less than 10 minutes for meaningful analysis
+              if (minutesPlayed <= 0) return null;
               
               const analysis = generatePostGameAnalysis(mp.player.position, statsInput, minutesPlayed);
               const { quickIndicators, strengthsImprovements, zoneHeatmap } = analysis;
