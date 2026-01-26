@@ -19,6 +19,7 @@ import { PlayerPresenceHistory } from "@/components/live-match/PlayerPresenceHis
 import { MatchSummaryPdfButton } from "@/components/live-match/MatchSummaryPdfButton";
 import { MatchRatingsCard } from "@/components/live-match/MatchRatingsCard";
 import { PlayerRatingBadge } from "@/components/live-match/PlayerRatingBadge";
+import { PostGameInsightsCard } from "@/components/live-match/PostGameInsightsCard";
 import { calculateMinutesPlayed, STANDARD_MATCH_DURATION } from "@/lib/minutesPlayed";
 import { calculatePlayerMatchRating } from "@/lib/matchRatingEngine";
 import {
@@ -581,6 +582,14 @@ export default function LiveMatchReview() {
         matchPlayers={matchPlayers}
         playerStatsMap={playerStatsMap}
         matchStatus={match.status}
+      />
+
+      {/* Post-Game Insights - Zone heatmap, quick indicators, strengths/improvements */}
+      <PostGameInsightsCard
+        matchPlayers={matchPlayers}
+        playerStatsMap={playerStatsMap}
+        matchStatus={match.status}
+        matchDuration={match.duration_minutes}
       />
 
       {/* Substitution Stats */}
