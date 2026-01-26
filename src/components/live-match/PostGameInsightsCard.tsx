@@ -121,14 +121,13 @@ function HeatmapCard({ player, analysis, matchId, seasonYear }: HeatmapCardProps
         </div>
       </div>
 
-      {/* Mini Field Heatmap - Main Visual Element */}
+      {/* Mini Field Heatmap - Main Visual Element (full width) */}
       <MiniFieldHeatmap 
         percentages={analysis.zoneHeatmap.percentages}
         matchId={matchId}
         playerId={player.player_id}
-        width={160}
-        height={220}
         showLegend={true}
+        showIntensityBars={true}
       />
 
       {/* Zone Deviation Badge (only shows if deviation >= 10% and >= 3 previous games) */}
