@@ -44,9 +44,9 @@ const FIELD_COLORS = {
 };
 
 const HEAT_COLORS = {
-  low: "#fabe2e",      // Yellow - weak zones
-  medium: "#f7853a",   // Orange transition
-  high: "#f03530",     // Red-orange - dominant zones
+  low: "#fabe2e",      // Vivid yellow - weak zones
+  medium: "#ff6b35",   // Strong orange transition
+  high: "#f03530",     // Intense red-orange - dominant zones
 };
 
 // ============================================
@@ -75,7 +75,7 @@ function clamp(v: number, a: number, b: number): number {
 function generateHeatmapPoints(
   percentages: ZoneDistribution,
   seed: string,
-  totalPoints: number = 800 // High density like reference
+  totalPoints: number = 1200 // Very high density for sharp definition
 ): HeatmapPoint[] {
   const rand = mulberry32(xfnv1a(seed));
   const randRange = (min: number, max: number) => min + (max - min) * rand();
@@ -147,15 +147,15 @@ function generateHeatmapPoints(
         y = randRange(yMin, yMax);
       }
 
-      // Very small points - density comes from accumulation
-      const baseRadius = randRange(0.8, 1.8);
+      // Tiny crisp points - intensity purely from overlap
+      const baseRadius = randRange(0.6, 1.2);
       
       points.push({
         x,
         y,
         radius: baseRadius,
-        // Lower individual opacity, intensity through accumulation
-        opacity: randRange(0.15, 0.35) * (0.5 + intensity * 0.5),
+        // Higher individual opacity for visibility, boosted for dominant zones
+        opacity: randRange(0.25, 0.50) * (0.6 + intensity * 0.4),
         intensity,
       });
     }
@@ -332,8 +332,8 @@ export function MiniFieldHeatmap({
           >
             {/* Definitions - MINIMAL blur for crisp professional look */}
             <defs>
-              <filter id={filterId} x="-10%" y="-10%" width="120%" height="120%">
-                <feGaussianBlur in="SourceGraphic" stdDeviation="0.6" />
+              <filter id={filterId} x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="0.35" />
               </filter>
               {/* Gradient for field depth */}
               <linearGradient id={`fieldGrad-${filterId}`} x1="0%" y1="0%" x2="0%" y2="100%">
