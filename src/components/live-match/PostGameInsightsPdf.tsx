@@ -22,6 +22,7 @@ import {
   type PreviousGameZone,
 } from "@/lib/zoneDeviationEngine";
 import { generateCombinedInsight, type ZoneDeviationInsight } from "@/lib/zoneDeviationInsight";
+import { calculateHalfComparison, splitStatsByHalf, type MatchEvent, type HalfComparisonResult } from "@/lib/halfComparisonEngine";
 
 // ============================================
 // STYLES
@@ -168,6 +169,27 @@ const styles = StyleSheet.create({
     color: PDF_COLORS.gray700,
     flex: 1,
   },
+  // Half Comparison Insight
+  halfInsightContainer: {
+    marginTop: 3,
+    marginBottom: 4,
+    paddingVertical: 3,
+    paddingHorizontal: 5,
+    backgroundColor: "#fef3c7", // amber-100
+    borderRadius: 3,
+    borderWidth: 1,
+    borderColor: "#fcd34d", // amber-300
+  },
+  halfInsightTitle: {
+    fontSize: 6,
+    fontWeight: 600,
+    color: "#92400E", // amber-800
+    marginBottom: 2,
+  },
+  halfInsightText: {
+    fontSize: 7,
+    color: "#78350f", // amber-900
+  },
   noData: {
     fontSize: 9,
     color: PDF_COLORS.gray500,
@@ -277,6 +299,36 @@ function PerformanceProfileInsightPdf({ insight }: PerformanceProfileInsightPdfP
 }
 
 // ============================================
+// HALF COMPARISON INSIGHT PDF COMPONENT
+// ============================================
+
+interface HalfComparisonInsightPdfProps {
+  halfResult: HalfComparisonResult | null;
+}
+
+function HalfComparisonInsightPdf({ halfResult }: HalfComparisonInsightPdfProps) {
+  // Don't render if no change or no insight
+  if (!halfResult || !halfResult.hasChange || !halfResult.insightText) {
+    return null;
+  }
+
+  const icon = halfResult.primaryTrend === "more_offensive" 
+    ? "⚡" 
+    : halfResult.primaryTrend === "more_defensive" 
+      ? "🛡️" 
+      : "⚖️";
+
+  return (
+    <View style={styles.halfInsightContainer}>
+      <Text style={styles.halfInsightTitle}>Evolução por Tempo</Text>
+      <Text style={styles.halfInsightText}>
+        {icon} {halfResult.insightText}
+      </Text>
+    </View>
+  );
+}
+
+// ============================================
 // PLAYER SUMMARY ROW (NO heatmap)
 // ============================================
 
@@ -285,9 +337,10 @@ interface PlayerSummaryRowPdfProps {
   position: string;
   analysis: PostGameAnalysis;
   insight: ZoneDeviationInsight | null;
+  halfResult: HalfComparisonResult | null;
 }
 
-function PlayerSummaryRowPdf({ playerName, position, analysis, insight }: PlayerSummaryRowPdfProps) {
+function PlayerSummaryRowPdf({ playerName, position, analysis, insight, halfResult }: PlayerSummaryRowPdfProps) {
   const { quickIndicators, strengthsImprovements } = analysis;
 
   return (
@@ -301,6 +354,9 @@ function PlayerSummaryRowPdf({ playerName, position, analysis, insight }: Player
 
         {/* Performance Profile Insight - Contextual text */}
         <PerformanceProfileInsightPdf insight={insight} />
+
+        {/* Half Comparison Insight - 1st vs 2nd half */}
+        <HalfComparisonInsightPdf halfResult={halfResult} />
 
         {/* Quick Indicators */}
         {quickIndicators.length > 0 && (
@@ -415,10 +471,15 @@ export function PostGameInsightsPdf({
         insight = generateCombinedInsight(deviationResult);
       }
 
+      // Calculate half comparison (no events in PDF, use 50/50 split)
+      const { firstHalf, secondHalf } = splitStatsByHalf([], stats);
+      const halfResult = calculateHalfComparison(position, firstHalf, secondHalf);
+
       return {
         player: mp,
         analysis,
         insight,
+        halfResult,
         sortScore:
           analysis.quickIndicators.filter((i) => i.type === "positive").length * 2 +
           analysis.strengthsImprovements.strengths.length -
@@ -464,13 +525,14 @@ export function PostGameInsightsPdf({
       <Text style={styles.sectionTitle}>📊 Resumo por Jogador</Text>
       <Text style={styles.sectionSubtitle}>Indicadores rápidos e pontos-chave</Text>
 
-      {playerAnalyses.map(({ player, analysis, insight }) => (
+      {playerAnalyses.map(({ player, analysis, insight, halfResult }) => (
         <PlayerSummaryRowPdf
           key={player.id}
           playerName={player.player?.full_name ?? "Jogador"}
           position={player.player?.position ?? "N/A"}
           analysis={analysis}
           insight={insight}
+          halfResult={halfResult}
         />
       ))}
     </View>
