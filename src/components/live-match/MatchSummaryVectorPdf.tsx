@@ -36,6 +36,7 @@ import { calculatePlayerMatchRating, getRatingBgColor, matchPlayerStatsToInput }
 import { classifyMatchProfile, type MatchProfileKey } from "@/lib/matchProfileEngine";
 import { calculateMatchEfficiency, getEfficiencyColorHex, getEfficiencyBgColorHex, type EfficiencyLevel } from "@/lib/matchEfficiencyEngine";
 import { generateScoutingText } from "@/lib/scoutingTextEngine";
+import { generatePostGameAnalysis, type MatchStatsInput } from "@/lib/postGameAnalysis";
 import {
   EVENT_TYPE_CONFIG,
   COMPUTED_STATS,
@@ -1520,6 +1521,176 @@ export function MatchSummaryVectorPdf({
             );
           })}
         </View>
+
+        {/* Post-Game Analysis Section - Only for finished matches */}
+        {(match.status === "finished" || match.status === "applied") && (
+          <View style={{ marginTop: 16 }} wrap={false}>
+            <Text style={styles.sectionTitle}>Análise Pós-Jogo</Text>
+            <Text style={styles.sectionSubtitle}>Zonas de atuação, indicadores rápidos e pontos-chave</Text>
+            
+            {filteredPlayers.slice(0, 12).map((mp) => {
+              if (!mp.player) return null;
+              
+              const stats = playerStatsMap[mp.player_id];
+              const statsInput: MatchStatsInput = {
+                goals: stats?.goals ?? 0,
+                assists: stats?.assists ?? 0,
+                shots: stats?.shots ?? 0,
+                shots_on_target: stats?.shots_on_target ?? 0,
+                key_passes: stats?.key_passes ?? 0,
+                chances_created: stats?.chances_created ?? 0,
+                passes_completed: stats?.passes_completed ?? 0,
+                passes_total: stats?.passes_total ?? 0,
+                dribbles_success: stats?.dribbles_success ?? 0,
+                dribbles_total: stats?.dribbles_total ?? 0,
+                tackles: stats?.tackles ?? 0,
+                interceptions: stats?.interceptions ?? 0,
+                clearances: stats?.clearances ?? 0,
+                recoveries: stats?.recoveries ?? 0,
+                duels_won: stats?.duels_won ?? 0,
+                duels_total: stats?.duels_total ?? 0,
+                aerial_duels_won: stats?.aerial_duels_won ?? 0,
+                aerial_duels_total: stats?.aerial_duels_total ?? 0,
+                fouls_committed: stats?.fouls_committed ?? 0,
+                fouls_suffered: stats?.fouls_suffered ?? 0,
+                yellow_cards: stats?.yellow_cards ?? 0,
+                red_cards: stats?.red_cards ?? 0,
+                possession_lost: stats?.possession_lost ?? 0,
+                saves: stats?.saves ?? 0,
+                goals_conceded: stats?.goals_conceded ?? 0,
+                blocked_shots: stats?.blocked_shots ?? 0,
+                was_dribbled: stats?.was_dribbled ?? 0,
+                ball_actions: stats?.ball_actions ?? 0,
+                crosses_success: stats?.crosses_success ?? 0,
+                crosses_failed: stats?.crosses_failed ?? 0,
+                offsides: stats?.offsides ?? 0,
+                shots_blocked: stats?.shots_blocked ?? 0,
+              };
+              
+              const minutesInfo = calculateMinutesPlayed({
+                started: mp.started,
+                entered_minute: mp.entered_minute,
+                exited_minute: mp.exited_minute,
+                minutes_played: mp.minutes_played,
+              });
+              const minutesPlayed = minutesInfo.minutesPlayed;
+              
+              // Skip players with less than 10 minutes
+              if (minutesPlayed < 10) return null;
+              
+              const analysis = generatePostGameAnalysis(mp.player.position, statsInput, minutesPlayed);
+              const { quickIndicators, strengthsImprovements, zoneHeatmap } = analysis;
+              
+              // Skip if no meaningful data
+              if (quickIndicators.length === 0 && strengthsImprovements.strengths.length === 0 && strengthsImprovements.improvements.length === 0) {
+                return null;
+              }
+              
+              const getZoneColor = (intensity: "low" | "medium" | "high"): string => {
+                switch (intensity) {
+                  case "high": return "#10B981"; // emerald-500
+                  case "medium": return "#34D399"; // emerald-400
+                  case "low": return PDF_COLORS.gray300;
+                  default: return PDF_COLORS.gray200;
+                }
+              };
+              
+              const getIndicatorColors = (type: "positive" | "neutral" | "negative") => {
+                switch (type) {
+                  case "positive": return { bg: "#D1FAE5", text: "#065F46", border: "#A7F3D0" };
+                  case "negative": return { bg: "#FEE2E2", text: "#991B1B", border: "#FECACA" };
+                  default: return { bg: PDF_COLORS.gray100, text: PDF_COLORS.gray700, border: PDF_COLORS.gray300 };
+                }
+              };
+              
+              return (
+                <View key={mp.id} style={{
+                  flexDirection: "row",
+                  paddingVertical: 8,
+                  paddingHorizontal: 8,
+                  backgroundColor: PDF_COLORS.gray50,
+                  borderRadius: 4,
+                  marginBottom: 6,
+                  borderWidth: 1,
+                  borderColor: PDF_COLORS.gray200,
+                }} wrap={false}>
+                  {/* Zone Heatmap Mini */}
+                  <View style={{ width: 45, marginRight: 10, alignItems: "center" }}>
+                    <Svg width={36} height={44} viewBox="0 0 36 44">
+                      <Rect x={0} y={0} width={36} height={14} fill={getZoneColor(zoneHeatmap.intensities.attack)} rx={2} />
+                      <Rect x={0} y={15} width={36} height={14} fill={getZoneColor(zoneHeatmap.intensities.midfield)} rx={2} />
+                      <Rect x={0} y={30} width={36} height={14} fill={getZoneColor(zoneHeatmap.intensities.defense)} rx={2} />
+                    </Svg>
+                    <Text style={{ fontSize: 6, color: PDF_COLORS.gray500, marginTop: 2 }}>
+                      {zoneHeatmap.primaryZone === "attack" ? "ATA" : zoneHeatmap.primaryZone === "midfield" ? "MEI" : "DEF"}
+                    </Text>
+                  </View>
+                  
+                  {/* Content Column */}
+                  <View style={{ flex: 1 }}>
+                    {/* Player Info */}
+                    <Text style={{ fontSize: 10, fontWeight: 700, color: PDF_COLORS.gray900, marginBottom: 2 }}>
+                      {mp.player.full_name}
+                    </Text>
+                    <Text style={{ fontSize: 8, color: PDF_COLORS.gray500, marginBottom: 6 }}>
+                      {mp.player.position} • {minutesPlayed} min
+                    </Text>
+                    
+                    {/* Quick Indicators - 4 in a row */}
+                    {quickIndicators.length > 0 && (
+                      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 3, marginBottom: 6 }}>
+                        {quickIndicators.slice(0, 4).map((indicator) => {
+                          const colors = getIndicatorColors(indicator.type);
+                          return (
+                            <View key={indicator.id} style={{
+                              paddingVertical: 2,
+                              paddingHorizontal: 4,
+                              borderRadius: 3,
+                              backgroundColor: colors.bg,
+                              borderWidth: 1,
+                              borderColor: colors.border,
+                            }}>
+                              <Text style={{ fontSize: 5, color: colors.text, marginBottom: 1 }}>
+                                {indicator.label}
+                              </Text>
+                              <Text style={{ fontSize: 7, fontWeight: 600, color: colors.text }}>
+                                {indicator.value}
+                              </Text>
+                            </View>
+                          );
+                        })}
+                      </View>
+                    )}
+                    
+                    {/* Strengths & Improvements in columns */}
+                    <View style={{ flexDirection: "row", gap: 8 }}>
+                      {strengthsImprovements.strengths.length > 0 && (
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 7, fontWeight: 700, color: "#065F46", marginBottom: 2 }}>✓ Pontos Fortes</Text>
+                          {strengthsImprovements.strengths.slice(0, 2).map((s, i) => (
+                            <Text key={i} style={{ fontSize: 6, color: PDF_COLORS.gray600, marginBottom: 1, paddingLeft: 4 }}>
+                              • {s.slice(0, 50)}{s.length > 50 ? '...' : ''}
+                            </Text>
+                          ))}
+                        </View>
+                      )}
+                      {strengthsImprovements.improvements.length > 0 && (
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 7, fontWeight: 700, color: "#92400E", marginBottom: 2 }}>⚠ A Melhorar</Text>
+                          {strengthsImprovements.improvements.slice(0, 2).map((s, i) => (
+                            <Text key={i} style={{ fontSize: 6, color: PDF_COLORS.gray600, marginBottom: 1, paddingLeft: 4 }}>
+                              • {s.slice(0, 50)}{s.length > 50 ? '...' : ''}
+                            </Text>
+                          ))}
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
 
         {/* Footer */}
         <Text style={styles.footer} fixed>
