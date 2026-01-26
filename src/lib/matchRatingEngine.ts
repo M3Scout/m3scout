@@ -187,6 +187,8 @@ export interface PlayerStatsInput {
   dribbles_total: number;
   key_passes: number;
   chances_created: number;
+  crosses_success: number;
+  crosses_failed: number;
   
   // Passing
   passes_completed: number;
@@ -491,17 +493,20 @@ export function calculateMatchRating(
   
   let attackRaw = goalItem.rawDelta + shotOnTargetItem.rawDelta;
   
-  // === CREATION (includes assists, key passes, dribbles, fouls suffered) ===
+  // === CREATION (includes assists, key passes, dribbles, crosses, fouls suffered) ===
   const assistItem = addItem("assist", Math.max(0, stats.assists));
   const keyPassItem = addItem("key_pass", Math.max(0, stats.key_passes));
   const chanceCreatedItem = addItem("chance_created", Math.max(0, stats.chances_created));
   const dribbleSuccessItem = addItem("dribble_success", Math.max(0, stats.dribbles_success));
   const dribbleFailedItem = addItem("dribble_failed", Math.max(0, stats.dribbles_total - stats.dribbles_success));
+  const crossSuccessItem = addItem("cross_success", Math.max(0, stats.crosses_success));
+  const crossFailedItem = addItem("cross_failed", Math.max(0, stats.crosses_failed));
   const foulSufferedItem = addItem("foul_suffered", Math.max(0, stats.fouls_suffered));
   const possessionLostItem = addItem("possession_lost", Math.max(0, stats.possession_lost));
   
   let creationRaw = assistItem.rawDelta + keyPassItem.rawDelta + chanceCreatedItem.rawDelta + 
                     dribbleSuccessItem.rawDelta + dribbleFailedItem.rawDelta + 
+                    crossSuccessItem.rawDelta + crossFailedItem.rawDelta +
                     foulSufferedItem.rawDelta + possessionLostItem.rawDelta;
   
   // === PASSING ===
@@ -683,6 +688,8 @@ export function matchPlayerStatsToInput(
       dribbles_total: 0,
       key_passes: 0,
       chances_created: 0,
+      crosses_success: 0,
+      crosses_failed: 0,
       passes_completed: 0,
       passes_total: 0,
       interceptions: 0,
@@ -722,6 +729,8 @@ export function matchPlayerStatsToInput(
     dribbles_total: stats.dribbles_total ?? 0,
     key_passes: stats.key_passes ?? 0,
     chances_created: stats.chances_created ?? 0,
+    crosses_success: (stats as any).crosses_success ?? 0,
+    crosses_failed: (stats as any).crosses_failed ?? 0,
     passes_completed: stats.passes_completed ?? 0,
     passes_total: stats.passes_total ?? 0,
     interceptions: stats.interceptions ?? 0,
