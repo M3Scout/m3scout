@@ -34,6 +34,7 @@ import { calculateZoneDeviation, type ZoneDeviationResult } from "@/lib/zoneDevi
 import { ZoneDeviationBadge } from "./ZoneDeviationBadge";
 import { PerformanceProfileInsight } from "./PerformanceProfileInsight";
 import { PlayerHalfComparison } from "./PlayerHalfComparison";
+import { PlayerGameProfileBadge } from "./PlayerGameProfileBadge";
 import { type MatchEvent as HalfMatchEvent } from "@/lib/halfComparisonEngine";
 
 // ============================================
@@ -298,6 +299,15 @@ function PlayerSummaryRow({ player, analysis, matchId, seasonYear, playerEvents,
           </Badge>
         </div>
       </div>
+
+      {/* Game Profile Badge - Cluster classification */}
+      <PlayerGameProfileBadge
+        position={player.player.position}
+        stats={playerStats}
+        minutesPlayed={player.minutes_played ?? 90}
+        zoneDistribution={analysis.zoneHeatmap.percentages}
+        compact
+      />
 
       {/* Performance Profile Insight - Contextual text about deviation */}
       <PerformanceProfileInsight deviationResult={deviationResult} />
