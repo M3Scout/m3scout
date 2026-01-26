@@ -1756,13 +1756,15 @@ export function MatchSummaryVectorPdf({
                   </View>
                   
                   {/* Horizontal Heatmap - Main Visual (Landscape) */}
-                  <View style={{ alignItems: "center", marginBottom: 8 }}>
+                  {/* Real football field ratio: ~105m x 68m = 1.54:1 (length:width) */}
+                  {/* For horizontal layout: width = length, height = width → ratio ~1.5:1 */}
+                  <View style={{ alignItems: "center", marginBottom: 10 }}>
                     <MiniFieldHeatmapPdf
                       percentages={zoneHeatmap.percentages}
                       matchId={match.id}
                       playerId={mp.player_id}
-                      width={480}
-                      height={90}
+                      width={360}
+                      height={220}
                       showLegend={true}
                       showIntensityBars={true}
                       orientation="horizontal"
