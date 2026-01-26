@@ -107,6 +107,17 @@ export function calculateZoneHeatmap(
   stats: MatchStatsInput,
   minutesPlayed: number
 ): ZoneHeatmapResult {
+  // CRITICAL FIX: If player has 0 minutes, return empty heatmap
+  // This prevents false heatmaps for players who never entered the field
+  if (minutesPlayed <= 0) {
+    return {
+      zones: { defense: 0, midfield: 0, attack: 0 },
+      percentages: { defense: 0, midfield: 0, attack: 0 },
+      primaryZone: "midfield" as FieldZone,
+      intensities: { defense: "low", midfield: "low", attack: "low" },
+    };
+  }
+
   const positionGroup = getPositionGroup(position);
   
   // Start with base zone weights from position

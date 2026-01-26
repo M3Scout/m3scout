@@ -148,12 +148,31 @@ export function MiniFieldHeatmap({
   showLegend = true,
   showIntensityBars = true,
 }: MiniFieldHeatmapProps) {
+  // CRITICAL FIX: If all percentages are 0, player didn't play - don't render heatmap
+  const hasData = percentages.defense > 0 || percentages.midfield > 0 || percentages.attack > 0;
+  
   const seed = `${matchId}:${playerId}`;
   
   const points = useMemo(
-    () => generateHeatmapPoints(percentages, seed, 220),
-    [percentages.attack, percentages.midfield, percentages.defense, seed]
+    () => hasData ? generateHeatmapPoints(percentages, seed, 220) : [],
+    [percentages.attack, percentages.midfield, percentages.defense, seed, hasData]
   );
+
+  // If no data, show empty state
+  if (!hasData) {
+    return (
+      <div className={`flex flex-col items-center justify-center w-full ${className}`}>
+        <div 
+          className="relative w-full flex items-center justify-center text-muted-foreground text-sm"
+          style={{ paddingBottom: `${100 / 0.65}%` }}
+        >
+          <span className="absolute inset-0 flex items-center justify-center bg-zinc-900/50 rounded-lg border border-zinc-800/40">
+            Sem dados de campo
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   // Field uses full width, aspect ratio ~0.7 (width/height)
   const aspectRatio = 0.65;

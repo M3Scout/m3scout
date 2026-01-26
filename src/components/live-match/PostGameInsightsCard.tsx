@@ -349,14 +349,27 @@ export function PostGameInsightsCard({
   const showInsights = matchStatus === "finished" || matchStatus === "applied";
   
   // Generate analysis for each player
+  // CRITICAL: Only include players who actually played (minutes_played > 0)
+  // Players with 0 minutes should NEVER have a heatmap - this prevents false data display
   const playerAnalyses = useMemo(() => {
     if (!showInsights) return [];
     
     return matchPlayers
-      .filter((mp) => mp.player && !mp.player_id.startsWith("removed"))
+      .filter((mp) => {
+        // Must have valid player data
+        if (!mp.player || mp.player_id.startsWith("removed")) return false;
+        
+        // CRITICAL FIX: Player must have actually played (> 0 minutes)
+        // If minutes_played is null or 0, the player didn't enter the field
+        const minutesPlayed = mp.minutes_played ?? 0;
+        if (minutesPlayed <= 0) return false;
+        
+        return true;
+      })
       .map((mp) => {
         const stats = playerStatsMap[mp.player_id] ?? {};
-        const minutesPlayed = mp.minutes_played ?? matchDuration;
+        // Use actual minutes played (already validated > 0 in filter)
+        const minutesPlayed = mp.minutes_played ?? 0;
         const position = mp.player?.position ?? "Meio";
         
         const analysis = generatePostGameAnalysis(position, stats, minutesPlayed);
