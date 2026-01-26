@@ -18,7 +18,7 @@ const CATEGORY_NAMES: Record<string, string> = {
 // Stats categories for inline panel - SINGLE SOURCE OF TRUTH
 // NEW STRUCTURE: ATAQUE, PASSES, DRIBLES/POSSE, DEFESA
 const OUTFIELD_STATS: { category: string; categoryKey: string; color: string; bgColor: string; stats: { type: MatchEventType; label: string }[] }[] = [
-  // ATAQUE - Finalizações e gols
+  // ATAQUE - Finalizações, gols e impedimento
   {
     category: "ATAQUE",
     categoryKey: "attack",
@@ -28,9 +28,11 @@ const OUTFIELD_STATS: { category: string; categoryKey: string; color: string; bg
       { type: "goal", label: "Gols" },
       { type: "shot_on_target", label: "Finalizações no Gol" },
       { type: "shot", label: "Finalizações Fora" },
+      { type: "shot_blocked", label: "Finalização Bloqueada" },
+      { type: "offside", label: "Impedimento" },
     ],
   },
-  // PASSES - Assistências e criação
+  // PASSES - Assistências, criação e cruzamentos
   {
     category: "PASSES",
     categoryKey: "passing",
@@ -42,6 +44,8 @@ const OUTFIELD_STATS: { category: string; categoryKey: string; color: string; bg
       { type: "chance_created", label: "Chances Criadas" },
       { type: "pass_success", label: "Passes Certos" },
       { type: "pass_total", label: "Passes Errados" },
+      { type: "cross_success", label: "Cruzamentos Certos" },
+      { type: "cross_failed", label: "Cruzamentos Errados" },
     ],
   },
   // DRIBLES / POSSE
@@ -51,6 +55,7 @@ const OUTFIELD_STATS: { category: string; categoryKey: string; color: string; bg
     color: "text-cyan-400",
     bgColor: "bg-cyan-500/10 border-cyan-500/20",
     stats: [
+      { type: "ball_action", label: "Ações com a Bola" },
       { type: "dribble_success", label: "Dribles Certos" },
       { type: "dribble_attempt", label: "Dribles Errados" },
       { type: "foul_suffered", label: "Faltas Sofridas" },
@@ -68,6 +73,8 @@ const OUTFIELD_STATS: { category: string; categoryKey: string; color: string; bg
       { type: "interception", label: "Interceptações" },
       { type: "clearance", label: "Cortes" },
       { type: "recovery", label: "Recuperações" },
+      { type: "blocked_shot", label: "Chute Bloqueado" },
+      { type: "was_dribbled", label: "Driblado" },
       { type: "ground_duel_won", label: "Duelo Chão ✓" },
       { type: "ground_duel_total", label: "Duelo Chão ✗" },
       { type: "aerial_duel_won", label: "Duelo Aéreo ✓" },
@@ -163,14 +170,21 @@ export function InlineMoreStatsPanel({
         case "assist": return Math.max(0, matchStats.assists);
         case "shot_on_target": return Math.max(0, matchStats.shots_on_target);
         case "shot": return Math.max(0, matchStats.shots - matchStats.shots_on_target); // Shots outside = total shots - on target
+        case "shot_blocked": return Math.max(0, matchStats.shots_blocked ?? 0); // NEW: Finalização bloqueada (ataque)
+        case "offside": return Math.max(0, matchStats.offsides ?? 0); // NEW: Impedimento
         case "key_pass": return Math.max(0, matchStats.key_passes);
         case "chance_created": return Math.max(0, matchStats.chances_created);
+        case "cross_success": return Math.max(0, matchStats.crosses_success ?? 0); // NEW: Cruzamentos certos
+        case "cross_failed": return Math.max(0, matchStats.crosses_failed ?? 0); // NEW: Cruzamentos errados
+        case "ball_action": return Math.max(0, matchStats.ball_actions ?? 0); // NEW: Ações com a bola
         case "dribble_success": return Math.max(0, matchStats.dribbles_success);
         case "dribble_attempt": return Math.max(0, matchStats.dribbles_total - matchStats.dribbles_success); // Dribble attempts failed
         case "tackle": return Math.max(0, matchStats.tackles);
         case "interception": return Math.max(0, matchStats.interceptions);
         case "recovery": return Math.max(0, matchStats.recoveries);
         case "clearance": return Math.max(0, matchStats.clearances);
+        case "blocked_shot": return Math.max(0, matchStats.blocked_shots ?? 0); // NEW: Chute bloqueado (defesa)
+        case "was_dribbled": return Math.max(0, matchStats.was_dribbled ?? 0); // NEW: Driblado
         // Duels - now using dedicated fields for won/lost tracking
         case "ground_duel_won": return Math.max(0, matchStats.duels_won - matchStats.aerial_duels_won); // Ground duels won
         case "ground_duel_total": return Math.max(0, (matchStats.duels_total - matchStats.duels_won) - (matchStats.aerial_duels_total - matchStats.aerial_duels_won)); // Ground duels lost

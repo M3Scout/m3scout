@@ -57,7 +57,7 @@ const POSITION_ABBREV: Record<string, string> = {
 
 // Stat categories configuration with colors - NEW STRUCTURE
 const OUTFIELD_STATS: { category: string; color: string; bgColor: string; stats: { type: MatchEventType; label: string }[] }[] = [
-  // ATAQUE - Finalizações e gols
+  // ATAQUE - Finalizações, gols e impedimento
   {
     category: "ATAQUE",
     color: "text-red-400",
@@ -66,9 +66,11 @@ const OUTFIELD_STATS: { category: string; color: string; bgColor: string; stats:
       { type: "goal", label: "Gols" },
       { type: "shot_on_target", label: "Final. Gol" },
       { type: "shot", label: "Final. Fora" },
+      { type: "shot_blocked", label: "Final. Bloq." },
+      { type: "offside", label: "Impedim." },
     ],
   },
-  // PASSES - Assistências e criação
+  // PASSES - Assistências, criação e cruzamentos
   {
     category: "PASSES",
     color: "text-amber-400",
@@ -79,6 +81,8 @@ const OUTFIELD_STATS: { category: string; color: string; bgColor: string; stats:
       { type: "chance_created", label: "Chances" },
       { type: "pass_success", label: "Passes ✓" },
       { type: "pass_total", label: "Passes ✗" },
+      { type: "cross_success", label: "Cruz. ✓" },
+      { type: "cross_failed", label: "Cruz. ✗" },
     ],
   },
   // DRIBLES / POSSE
@@ -87,6 +91,7 @@ const OUTFIELD_STATS: { category: string; color: string; bgColor: string; stats:
     color: "text-cyan-400",
     bgColor: "bg-cyan-500/10 border-cyan-500/20",
     stats: [
+      { type: "ball_action", label: "Ações Bola" },
       { type: "dribble_success", label: "Dribles ✓" },
       { type: "dribble_attempt", label: "Dribles ✗" },
       { type: "foul_suffered", label: "Faltas Sof." },
@@ -103,6 +108,8 @@ const OUTFIELD_STATS: { category: string; color: string; bgColor: string; stats:
       { type: "interception", label: "Interc." },
       { type: "clearance", label: "Cortes" },
       { type: "recovery", label: "Recup." },
+      { type: "blocked_shot", label: "Chute Bloq." },
+      { type: "was_dribbled", label: "Driblado" },
       { type: "duel_won", label: "Duelos ✓" },
       { type: "aerial_duel_won", label: "Aéreos ✓" },
       { type: "foul_committed", label: "Faltas Com." },
