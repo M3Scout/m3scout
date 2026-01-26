@@ -133,146 +133,146 @@ const HEATMAP_COLORS = {
 
 const styles = StyleSheet.create({
   page: {
-    padding: 32,
+    padding: 28,
     fontFamily: "Helvetica",
     fontSize: 10,
     color: PDF_COLORS.gray900,
     backgroundColor: PDF_COLORS.white,
   },
-  // Header
+  // Header - Compact
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
-    paddingBottom: 12,
+    marginBottom: 12,
+    paddingBottom: 8,
     borderBottom: `2px solid ${PDF_COLORS.brandRed}`,
   },
   headerLeft: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 10,
   },
   logo: {
-    height: 44,
+    height: 36,
     objectFit: "contain" as const,
   },
   logoSmall: {
-    height: 28,
+    height: 24,
     objectFit: "contain" as const,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: 700,
     color: PDF_COLORS.gray900,
   },
   headerSubtitle: {
-    fontSize: 10,
+    fontSize: 9,
     color: PDF_COLORS.gray500,
-    marginTop: 2,
+    marginTop: 1,
   },
   headerRight: {
     alignItems: "flex-end",
   },
   matchTitle: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: 700,
     color: PDF_COLORS.gray900,
   },
   matchDate: {
-    fontSize: 10,
+    fontSize: 9,
     color: PDF_COLORS.gray500,
-    marginTop: 2,
+    marginTop: 1,
   },
   matchVenue: {
-    fontSize: 9,
+    fontSize: 8,
     color: PDF_COLORS.gray400,
-    marginTop: 2,
+    marginTop: 1,
   },
   playerFilter: {
-    fontSize: 10,
+    fontSize: 9,
     color: PDF_COLORS.brandRed,
-    marginTop: 4,
+    marginTop: 2,
     fontWeight: 700,
   },
   // Stats Grid
   statsGrid: {
     flexDirection: "row",
-    gap: 10,
-    marginBottom: 16,
+    gap: 8,
+    marginBottom: 12,
   },
   statCard: {
     flex: 1,
     backgroundColor: PDF_COLORS.gray100,
-    borderRadius: 6,
-    padding: 12,
+    borderRadius: 4,
+    padding: 8,
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 55,
+    minHeight: 45,
   },
   statCardGreen: {
     flex: 1,
     backgroundColor: "#DCFCE7",
-    borderRadius: 6,
-    padding: 12,
+    borderRadius: 4,
+    padding: 8,
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 55,
+    minHeight: 45,
   },
   statCardBlue: {
     flex: 1,
     backgroundColor: "#DBEAFE",
-    borderRadius: 6,
-    padding: 12,
+    borderRadius: 4,
+    padding: 8,
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 55,
+    minHeight: 45,
   },
   statValue: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: 700,
     color: PDF_COLORS.gray900,
     textAlign: "center",
   },
   statValueGreen: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: 700,
     color: PDF_COLORS.green,
     textAlign: "center",
   },
   statValueBlue: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: 700,
     color: PDF_COLORS.blue,
     textAlign: "center",
   },
   statLabel: {
-    fontSize: 8,
+    fontSize: 7,
     color: PDF_COLORS.gray500,
-    marginTop: 4,
+    marginTop: 2,
     textAlign: "center",
   },
   // Section - Anti-orphan container
   sectionBlock: {
-    marginTop: 12,
-    marginBottom: 8,
+    marginTop: 10,
+    marginBottom: 6,
   },
   sectionTitle: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 700,
     color: PDF_COLORS.gray900,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   sectionSubtitle: {
-    fontSize: 8,
+    fontSize: 7,
     color: PDF_COLORS.gray500,
-    marginBottom: 8,
-    marginTop: -6,
+    marginBottom: 6,
+    marginTop: -4,
   },
-  // Table
+  // Table - Compact
   table: {
-    marginBottom: 14,
-    borderRadius: 6,
+    marginBottom: 10,
+    borderRadius: 4,
     border: `1px solid ${PDF_COLORS.gray200}`,
     overflow: "hidden",
   },
@@ -282,8 +282,8 @@ const styles = StyleSheet.create({
   },
   tableHeaderCell: {
     flex: 1,
-    padding: 5,
-    fontSize: 9,
+    padding: 4,
+    fontSize: 8,
     fontWeight: 600,
     textAlign: "center",
     color: PDF_COLORS.gray600,
@@ -291,8 +291,8 @@ const styles = StyleSheet.create({
   },
   tableHeaderCellWide: {
     flex: 2,
-    padding: 5,
-    fontSize: 9,
+    padding: 4,
+    fontSize: 8,
     fontWeight: 600,
     textAlign: "center",
     color: PDF_COLORS.gray600,
@@ -304,24 +304,24 @@ const styles = StyleSheet.create({
   },
   tableCell: {
     flex: 1,
-    padding: 4,
-    fontSize: 10,
+    padding: 3,
+    fontSize: 9,
     fontWeight: 700,
     textAlign: "center",
     borderRight: `1px solid ${PDF_COLORS.gray200}`,
   },
   tableCellWide: {
     flex: 2,
-    padding: 4,
-    fontSize: 8,
+    padding: 3,
+    fontSize: 7,
     color: PDF_COLORS.gray600,
     textAlign: "center",
     borderRight: `1px solid ${PDF_COLORS.gray200}`,
   },
   tableCellLabel: {
     flex: 1,
-    padding: 4,
-    fontSize: 9,
+    padding: 3,
+    fontSize: 8,
     color: PDF_COLORS.gray600,
     textAlign: "center",
     borderRight: `1px solid ${PDF_COLORS.gray200}`,
@@ -520,32 +520,32 @@ const styles = StyleSheet.create({
   // Distribution summary
   distributionRow: {
     flexDirection: "row",
-    gap: 10,
-    marginBottom: 14,
+    gap: 8,
+    marginBottom: 8,
   },
   distributionCard: {
     flex: 1,
     backgroundColor: PDF_COLORS.gray100,
-    borderRadius: 4,
-    padding: 10,
+    borderRadius: 3,
+    padding: 6,
     alignItems: "center",
   },
   distributionCardHighlight: {
     flex: 1,
     backgroundColor: "#FEF3C7", // amber-100
-    borderRadius: 4,
-    padding: 10,
+    borderRadius: 3,
+    padding: 6,
     alignItems: "center",
   },
   distributionValue: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 700,
     color: PDF_COLORS.gray900,
   },
   distributionLabel: {
-    fontSize: 7,
+    fontSize: 6,
     color: PDF_COLORS.gray500,
-    marginTop: 3,
+    marginTop: 2,
   },
   // Heatmap
   heatmapContainer: {
@@ -974,10 +974,10 @@ export function MatchSummaryVectorPdf({
   const displayTeamName = match.team_name_display || teamName || "Time";
   const halfTimeMinute = Math.floor(matchDuration / 2);
 
-  // Chart dimensions for SVG
+  // Chart dimensions for SVG - compact to fit on page 1
   const CHART_WIDTH = 500;
-  const CHART_HEIGHT = 100;
-  const CHART_PADDING = { top: 10, right: 10, bottom: 20, left: 25 };
+  const CHART_HEIGHT = 80; // Reduced from 100 for better page fit
+  const CHART_PADDING = { top: 8, right: 10, bottom: 16, left: 25 };
   const plotWidth = CHART_WIDTH - CHART_PADDING.left - CHART_PADDING.right;
   const plotHeight = CHART_HEIGHT - CHART_PADDING.top - CHART_PADDING.bottom;
 
@@ -1127,14 +1127,14 @@ export function MatchSummaryVectorPdf({
           )}
         </View>
 
-        {/* Distribution Chart Section - Single unified block with smart pagination */}
-        {/* wrap={false} keeps title+badges+chart together; minPresenceAhead ensures space exists */}
-        <View wrap={false} minPresenceAhead={120}>
-          <Text style={styles.sectionTitle}>Distribuição de Eventos</Text>
-          <Text style={styles.sectionSubtitle}>Intensidade do jogo ao longo do tempo</Text>
+        {/* Distribution Chart Section - Compact block that stays together */}
+        {/* wrap={false} ensures title+cards+chart never split across pages */}
+        <View wrap={false} style={{ marginTop: 8 }}>
+          <Text style={{ ...styles.sectionTitle, marginBottom: 4 }}>Distribuição de Eventos</Text>
+          <Text style={{ ...styles.sectionSubtitle, marginBottom: 6 }}>Intensidade do jogo ao longo do tempo</Text>
           
-          {/* Distribution Summary Cards */}
-          <View style={styles.distributionRow}>
+          {/* Distribution Summary Cards - Compact */}
+          <View style={{ ...styles.distributionRow, marginBottom: 6 }}>
             <View style={styles.distributionCard}>
               <Text style={styles.distributionValue}>{distributionStats.firstHalf}</Text>
               <Text style={styles.distributionLabel}>1º TEMPO</Text>
@@ -1153,8 +1153,8 @@ export function MatchSummaryVectorPdf({
             </View>
           </View>
 
-          {/* SVG Chart */}
-          <View style={{ border: `1px solid ${PDF_COLORS.gray200}`, borderRadius: 6, padding: 8, backgroundColor: PDF_COLORS.white, marginTop: 8 }}>
+          {/* SVG Chart - Compact container */}
+          <View style={{ border: `1px solid ${PDF_COLORS.gray200}`, borderRadius: 4, padding: 6, backgroundColor: PDF_COLORS.white }}>
             <Svg width={CHART_WIDTH} height={CHART_HEIGHT} viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}>
               {/* Grid lines (horizontal) */}
               {[0, 0.25, 0.5, 0.75, 1].map((ratio, idx) => (
