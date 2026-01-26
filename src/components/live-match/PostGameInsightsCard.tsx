@@ -1,10 +1,9 @@
 /**
  * Post-Game Insights Card
  * 
- * Displays 3 derived analysis blocks for finished matches:
- * 1. Zone Heatmap (simplified field zones)
- * 2. Quick Indicators (micro-insights)
- * 3. Strengths / Areas to Improve
+ * Displays 2 separate sections for finished matches:
+ * 1. "Mapas de Calor da Partida" - Exclusive section for zone heatmaps
+ * 2. "Resumo por Jogador" - Micro-insights and Strengths/Improvements (NO heatmaps)
  * 
  * Only renders when match is finished or applied.
  */
@@ -14,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { BarChart3, CheckCircle2, AlertCircle } from "lucide-react";
+import { MapPin, BarChart3, CheckCircle2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   generatePostGameAnalysis,
@@ -56,6 +55,56 @@ interface PostGameInsightsCardProps {
 }
 
 // ============================================
+// HEATMAP MAP CARD (for exclusive heatmaps section)
+// ============================================
+
+interface HeatmapCardProps {
+  player: MatchPlayer;
+  analysis: PostGameAnalysis;
+  matchId: string;
+}
+
+function HeatmapCard({ player, analysis, matchId }: HeatmapCardProps) {
+  if (!player.player) return null;
+
+  const positionColor = getPositionColor(player.player.position);
+  const shortPos = getShortPosition(player.player.position);
+
+  return (
+    <div className="p-3 rounded-lg bg-zinc-900/50 border border-zinc-800/40 flex flex-col items-center">
+      {/* Player Header */}
+      <div className="flex items-center gap-2 mb-3 w-full">
+        <Avatar className="h-8 w-8">
+          <AvatarImage src={player.player.photo_url || undefined} />
+          <AvatarFallback className="text-[10px] bg-zinc-800">
+            {player.player.full_name.slice(0, 2).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium truncate">{player.player.full_name}</p>
+          <Badge 
+            variant="outline" 
+            className={cn("text-[9px] px-1 py-0", positionColor.textClass, positionColor.borderClass)}
+          >
+            {shortPos}
+          </Badge>
+        </div>
+      </div>
+
+      {/* Mini Field Heatmap - Main Visual Element */}
+      <MiniFieldHeatmap 
+        percentages={analysis.zoneHeatmap.percentages}
+        matchId={matchId}
+        playerId={player.player_id}
+        width={160}
+        height={220}
+        showLegend={true}
+      />
+    </div>
+  );
+}
+
+// ============================================
 // QUICK INDICATORS COMPONENT
 // ============================================
 
@@ -67,7 +116,7 @@ function QuickIndicatorsDisplay({ indicators }: QuickIndicatorsDisplayProps) {
   if (indicators.length === 0) return null;
 
   return (
-    <div className="grid grid-cols-2 gap-1.5 mt-2">
+    <div className="grid grid-cols-2 gap-1.5">
       {indicators.slice(0, 4).map((indicator) => (
         <div 
           key={indicator.id}
@@ -143,16 +192,15 @@ function StrengthsImprovementsDisplay({ strengths, improvements }: StrengthsImpr
 }
 
 // ============================================
-// PLAYER INSIGHT ROW
+// PLAYER SUMMARY ROW (NO heatmap - only insights)
 // ============================================
 
-interface PlayerInsightRowProps {
+interface PlayerSummaryRowProps {
   player: MatchPlayer;
   analysis: PostGameAnalysis;
-  matchId: string;
 }
 
-function PlayerInsightRow({ player, analysis, matchId }: PlayerInsightRowProps) {
+function PlayerSummaryRow({ player, analysis }: PlayerSummaryRowProps) {
   if (!player.player) return null;
 
   const positionColor = getPositionColor(player.player.position);
@@ -160,42 +208,27 @@ function PlayerInsightRow({ player, analysis, matchId }: PlayerInsightRowProps) 
 
   return (
     <div className="p-3 rounded-lg bg-zinc-900/40 border border-zinc-800/40 space-y-3">
-      {/* Header: Player info + Zone Heatmap */}
-      <div className="flex items-start gap-3">
-        {/* Mini Field Heatmap */}
-        <MiniFieldHeatmap 
-          percentages={analysis.zoneHeatmap.percentages}
-          matchId={matchId}
-          playerId={player.player_id}
-          width={100}
-          height={140}
-          showLegend={true}
-        />
-        
-        {/* Player Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <Avatar className="h-7 w-7">
-              <AvatarImage src={player.player.photo_url || undefined} />
-              <AvatarFallback className="text-[10px]">
-                {player.player.full_name.slice(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div className="min-w-0">
-              <p className="text-sm font-medium truncate">{player.player.full_name}</p>
-              <Badge 
-                variant="outline" 
-                className={cn("text-[9px] px-1 py-0", positionColor.textClass, positionColor.borderClass)}
-              >
-                {shortPos}
-              </Badge>
-            </div>
-          </div>
-          
-          {/* Quick Indicators */}
-          <QuickIndicatorsDisplay indicators={analysis.quickIndicators} />
+      {/* Player Header */}
+      <div className="flex items-center gap-2">
+        <Avatar className="h-7 w-7">
+          <AvatarImage src={player.player.photo_url || undefined} />
+          <AvatarFallback className="text-[10px]">
+            {player.player.full_name.slice(0, 2).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium truncate">{player.player.full_name}</p>
+          <Badge 
+            variant="outline" 
+            className={cn("text-[9px] px-1 py-0", positionColor.textClass, positionColor.borderClass)}
+          >
+            {shortPos}
+          </Badge>
         </div>
       </div>
+
+      {/* Quick Indicators */}
+      <QuickIndicatorsDisplay indicators={analysis.quickIndicators} />
       
       {/* Strengths / Improvements */}
       <StrengthsImprovementsDisplay 
@@ -250,22 +283,25 @@ export function PostGameInsightsCard({
   }
 
   return (
-    <Card className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95">
-      <CardHeader className="pb-4 sm:pb-6">
-        <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-          <BarChart3 className="h-5 w-5 sm:h-6 sm:w-6" />
-          Análise Pós-Jogo
-        </CardTitle>
-        <CardDescription className="text-sm mt-1">
-          Zonas de atuação, indicadores rápidos e pontos-chave por jogador
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="p-4 sm:p-6">
-        {/* Legend removed - now integrated in MiniFieldHeatmap */}
-        <ScrollArea className="h-[450px] sm:h-[520px]">
-          <div className="space-y-3 pr-3">
+    <div className="space-y-6">
+      {/* ============================================ */}
+      {/* SECTION 1: Mapas de Calor da Partida */}
+      {/* ============================================ */}
+      <Card className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+            <MapPin className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-400" />
+            Mapas de Calor da Partida
+          </CardTitle>
+          <CardDescription className="text-sm mt-1">
+            Distribuição de atuação por zonas do campo
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-4 sm:p-6">
+          {/* Responsive Grid: 1 col mobile, 2 cols tablet, 3 cols desktop */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {playerAnalyses.map(({ player, analysis }) => (
-              <PlayerInsightRow
+              <HeatmapCard
                 key={player.id}
                 player={player}
                 analysis={analysis}
@@ -273,8 +309,36 @@ export function PostGameInsightsCard({
               />
             ))}
           </div>
-        </ScrollArea>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      {/* ============================================ */}
+      {/* SECTION 2: Resumo por Jogador */}
+      {/* ============================================ */}
+      <Card className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+            <BarChart3 className="h-5 w-5 sm:h-6 sm:w-6" />
+            Resumo por Jogador
+          </CardTitle>
+          <CardDescription className="text-sm mt-1">
+            Indicadores rápidos e pontos-chave
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-4 sm:p-6">
+          <ScrollArea className="h-[400px] sm:h-[480px]">
+            <div className="space-y-3 pr-3">
+              {playerAnalyses.map(({ player, analysis }) => (
+                <PlayerSummaryRow
+                  key={player.id}
+                  player={player}
+                  analysis={analysis}
+                />
+              ))}
+            </div>
+          </ScrollArea>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

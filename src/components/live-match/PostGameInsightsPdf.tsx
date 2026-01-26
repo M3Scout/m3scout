@@ -2,13 +2,12 @@
  * Post-Game Insights PDF Section
  * 
  * PDF-compatible version of post-game analysis for @react-pdf/renderer:
- * - Mini-Field Heatmap (seeded points visualization)
- * - Quick Indicators (key metrics)
- * - Strengths / Areas to Improve
+ * - SECTION 1: "Mapas de Calor da Partida" - Exclusive heatmaps grid
+ * - SECTION 2: "Resumo por Jogador" - Micro-insights and Strengths/Improvements (NO heatmaps)
  */
 
 import React from "react";
-import { View, Text, StyleSheet } from "@react-pdf/renderer";
+import { View, Text, StyleSheet, Image } from "@react-pdf/renderer";
 import { PDF_COLORS } from "@/lib/pdfStyles";
 import {
   generatePostGameAnalysis,
@@ -23,50 +22,89 @@ import { MiniFieldHeatmapPdf } from "./MiniFieldHeatmapPdf";
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 12,
+    marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 11,
     fontWeight: 700,
     color: PDF_COLORS.gray900,
-    marginBottom: 8,
+    marginBottom: 6,
     paddingBottom: 4,
     borderBottomWidth: 1,
     borderBottomColor: PDF_COLORS.gray200,
   },
-  playerRow: {
+  sectionSubtitle: {
+    fontSize: 8,
+    color: PDF_COLORS.gray500,
+    marginBottom: 8,
+  },
+  // Heatmaps Grid
+  heatmapsGrid: {
     flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 16,
+  },
+  heatmapCard: {
+    width: "31%",
     paddingVertical: 8,
+    paddingHorizontal: 6,
+    backgroundColor: PDF_COLORS.gray50,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: PDF_COLORS.gray200,
+    alignItems: "center",
+  },
+  heatmapPlayerHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginBottom: 6,
+    width: "100%",
+  },
+  heatmapAvatar: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: PDF_COLORS.gray300,
+  },
+  heatmapPlayerName: {
+    fontSize: 8,
+    fontWeight: 600,
+    color: PDF_COLORS.gray900,
+  },
+  heatmapPlayerPosition: {
+    fontSize: 6,
+    color: PDF_COLORS.gray500,
+  },
+  // Summary section
+  summaryRow: {
+    flexDirection: "row",
+    paddingVertical: 6,
     paddingHorizontal: 8,
     backgroundColor: PDF_COLORS.gray50,
     borderRadius: 4,
-    marginBottom: 6,
+    marginBottom: 5,
     borderWidth: 1,
     borderColor: PDF_COLORS.gray200,
   },
-  zoneColumn: {
-    width: 95,
-    marginRight: 8,
-  },
-  contentColumn: {
-    flex: 1,
-  },
-  playerName: {
-    fontSize: 10,
-    fontWeight: 700,
-    color: PDF_COLORS.gray900,
+  summaryPlayerInfo: {
     marginBottom: 4,
   },
+  playerName: {
+    fontSize: 9,
+    fontWeight: 700,
+    color: PDF_COLORS.gray900,
+  },
   playerPosition: {
-    fontSize: 8,
+    fontSize: 7,
     color: PDF_COLORS.gray500,
-    marginBottom: 6,
   },
   indicatorsRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 4,
-    marginBottom: 6,
+    marginBottom: 4,
   },
   indicatorBadge: {
     paddingVertical: 2,
@@ -79,24 +117,18 @@ const styles = StyleSheet.create({
     fontWeight: 600,
   },
   strengthsSection: {
-    marginTop: 4,
+    marginTop: 3,
   },
   strengthsTitle: {
-    fontSize: 8,
+    fontSize: 7,
     fontWeight: 700,
     marginBottom: 2,
   },
   strengthItem: {
-    fontSize: 7,
+    fontSize: 6,
     color: PDF_COLORS.gray600,
     marginBottom: 1,
     paddingLeft: 6,
-  },
-  zoneLabel: {
-    fontSize: 7,
-    color: PDF_COLORS.gray500,
-    textAlign: "center",
-    marginTop: 2,
   },
   noData: {
     fontSize: 9,
@@ -106,6 +138,48 @@ const styles = StyleSheet.create({
     padding: 12,
   },
 });
+
+// ============================================
+// HEATMAP CARD (for exclusive heatmaps section)
+// ============================================
+
+interface HeatmapCardPdfProps {
+  playerName: string;
+  position: string;
+  photoUrl?: string | null;
+  analysis: PostGameAnalysis;
+  matchId: string;
+  playerId: string;
+}
+
+function HeatmapCardPdf({ playerName, position, photoUrl, analysis, matchId, playerId }: HeatmapCardPdfProps) {
+  return (
+    <View style={styles.heatmapCard} wrap={false}>
+      {/* Player Header */}
+      <View style={styles.heatmapPlayerHeader}>
+        {photoUrl ? (
+          <Image src={photoUrl} style={styles.heatmapAvatar} />
+        ) : (
+          <View style={styles.heatmapAvatar} />
+        )}
+        <View>
+          <Text style={styles.heatmapPlayerName}>{playerName}</Text>
+          <Text style={styles.heatmapPlayerPosition}>{position}</Text>
+        </View>
+      </View>
+
+      {/* Mini Field Heatmap - Main Visual */}
+      <MiniFieldHeatmapPdf
+        percentages={analysis.zoneHeatmap.percentages}
+        matchId={matchId}
+        playerId={playerId}
+        width={100}
+        height={130}
+        showLegend={true}
+      />
+    </View>
+  );
+}
 
 // ============================================
 // INDICATOR BADGE
@@ -136,39 +210,26 @@ function IndicatorBadge({ icon, value, type }: IndicatorBadgeProps) {
 }
 
 // ============================================
-// PLAYER INSIGHT ROW
+// PLAYER SUMMARY ROW (NO heatmap)
 // ============================================
 
-interface PlayerInsightRowPdfProps {
+interface PlayerSummaryRowPdfProps {
   playerName: string;
   position: string;
   analysis: PostGameAnalysis;
-  matchId: string;
-  playerId: string;
 }
 
-function PlayerInsightRowPdf({ playerName, position, analysis, matchId, playerId }: PlayerInsightRowPdfProps) {
+function PlayerSummaryRowPdf({ playerName, position, analysis }: PlayerSummaryRowPdfProps) {
   const { quickIndicators, strengthsImprovements } = analysis;
 
   return (
-    <View style={styles.playerRow} wrap={false}>
-      {/* Mini Field Heatmap */}
-      <View style={styles.zoneColumn}>
-        <MiniFieldHeatmapPdf
-          percentages={analysis.zoneHeatmap.percentages}
-          matchId={matchId}
-          playerId={playerId}
-          width={90}
-          height={120}
-          showLegend={true}
-        />
-      </View>
-
-      {/* Content */}
-      <View style={styles.contentColumn}>
+    <View style={styles.summaryRow} wrap={false}>
+      <View style={{ flex: 1 }}>
         {/* Player info */}
-        <Text style={styles.playerName}>{playerName}</Text>
-        <Text style={styles.playerPosition}>{position}</Text>
+        <View style={styles.summaryPlayerInfo}>
+          <Text style={styles.playerName}>{playerName}</Text>
+          <Text style={styles.playerPosition}>{position}</Text>
+        </View>
 
         {/* Quick Indicators */}
         {quickIndicators.length > 0 && (
@@ -184,25 +245,28 @@ function PlayerInsightRowPdf({ playerName, position, analysis, matchId, playerId
           </View>
         )}
 
-        {/* Strengths */}
-        {strengthsImprovements.strengths.length > 0 && (
-          <View style={styles.strengthsSection}>
-            <Text style={[styles.strengthsTitle, { color: "#065F46" }]}>✓ Pontos Fortes</Text>
-            {strengthsImprovements.strengths.slice(0, 2).map((s, i) => (
-              <Text key={i} style={styles.strengthItem}>• {s}</Text>
-            ))}
-          </View>
-        )}
+        {/* Two-column layout for strengths/improvements */}
+        <View style={{ flexDirection: "row", gap: 12 }}>
+          {/* Strengths */}
+          {strengthsImprovements.strengths.length > 0 && (
+            <View style={[styles.strengthsSection, { flex: 1 }]}>
+              <Text style={[styles.strengthsTitle, { color: "#065F46" }]}>✓ Pontos Fortes</Text>
+              {strengthsImprovements.strengths.slice(0, 2).map((s, i) => (
+                <Text key={i} style={styles.strengthItem}>• {s}</Text>
+              ))}
+            </View>
+          )}
 
-        {/* Improvements */}
-        {strengthsImprovements.improvements.length > 0 && (
-          <View style={styles.strengthsSection}>
-            <Text style={[styles.strengthsTitle, { color: "#92400E" }]}>⚠ A Melhorar</Text>
-            {strengthsImprovements.improvements.slice(0, 2).map((s, i) => (
-              <Text key={i} style={styles.strengthItem}>• {s}</Text>
-            ))}
-          </View>
-        )}
+          {/* Improvements */}
+          {strengthsImprovements.improvements.length > 0 && (
+            <View style={[styles.strengthsSection, { flex: 1 }]}>
+              <Text style={[styles.strengthsTitle, { color: "#92400E" }]}>⚠ A Melhorar</Text>
+              {strengthsImprovements.improvements.slice(0, 2).map((s, i) => (
+                <Text key={i} style={styles.strengthItem}>• {s}</Text>
+              ))}
+            </View>
+          )}
+        </View>
       </View>
     </View>
   );
@@ -263,7 +327,6 @@ export function PostGameInsightsPdf({
       return {
         player: mp,
         analysis,
-        // Sort score: positive indicators and strengths first
         sortScore:
           analysis.quickIndicators.filter((i) => i.type === "positive").length * 2 +
           analysis.strengthsImprovements.strengths.length -
@@ -283,16 +346,38 @@ export function PostGameInsightsPdf({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionTitle}>Análise Pós-Jogo — Zonas, Indicadores e Pontos-Chave</Text>
+      {/* ============================================ */}
+      {/* SECTION 1: Mapas de Calor da Partida */}
+      {/* ============================================ */}
+      <Text style={styles.sectionTitle}>📍 Mapas de Calor da Partida</Text>
+      <Text style={styles.sectionSubtitle}>Distribuição de atuação por zonas do campo</Text>
+      
+      <View style={styles.heatmapsGrid}>
+        {playerAnalyses.map(({ player, analysis }) => (
+          <HeatmapCardPdf
+            key={player.id}
+            playerName={player.player?.full_name ?? "Jogador"}
+            position={player.player?.position ?? "N/A"}
+            photoUrl={player.player?.photo_url}
+            analysis={analysis}
+            matchId={matchId}
+            playerId={player.player_id}
+          />
+        ))}
+      </View>
+
+      {/* ============================================ */}
+      {/* SECTION 2: Resumo por Jogador */}
+      {/* ============================================ */}
+      <Text style={styles.sectionTitle}>📊 Resumo por Jogador</Text>
+      <Text style={styles.sectionSubtitle}>Indicadores rápidos e pontos-chave</Text>
 
       {playerAnalyses.map(({ player, analysis }) => (
-        <PlayerInsightRowPdf
+        <PlayerSummaryRowPdf
           key={player.id}
           playerName={player.player?.full_name ?? "Jogador"}
           position={player.player?.position ?? "N/A"}
           analysis={analysis}
-          matchId={matchId}
-          playerId={player.player_id}
         />
       ))}
     </View>
