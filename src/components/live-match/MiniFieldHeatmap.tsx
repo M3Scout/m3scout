@@ -124,6 +124,92 @@ function generateHeatmapPoints(
 }
 
 // ============================================
+// INTENSITY BAR COMPONENT
+// ============================================
+
+interface IntensityBarProps {
+  /** Percentage value (0-100) */
+  value: number;
+  /** Orientation of the bar */
+  orientation: "vertical" | "horizontal";
+  /** Position relative to field */
+  position: "left" | "right" | "bottom";
+  /** Label for the bar */
+  label: string;
+  /** Max dimension (height for vertical, width for horizontal) */
+  maxDimension: number;
+  /** Bar thickness */
+  thickness?: number;
+}
+
+function IntensityBar({ 
+  value, 
+  orientation, 
+  position, 
+  label, 
+  maxDimension,
+  thickness = 6 
+}: IntensityBarProps) {
+  const fillSize = (value / 100) * maxDimension;
+  
+  // Color based on zone
+  const getBarColor = () => {
+    switch (position) {
+      case "left": return "from-sky-500/60 to-sky-400/40"; // Defense - blue
+      case "right": return "from-emerald-500/60 to-emerald-400/40"; // Attack - green
+      case "bottom": return "from-amber-500/60 to-amber-400/40"; // Midfield - amber
+      default: return "from-zinc-500/60 to-zinc-400/40";
+    }
+  };
+
+  if (orientation === "vertical") {
+    // Vertical bar (left or right side)
+    return (
+      <div 
+        className="flex flex-col items-center justify-end"
+        style={{ height: maxDimension }}
+      >
+        {/* Bar track */}
+        <div 
+          className="relative rounded-full bg-zinc-800/50 overflow-hidden"
+          style={{ width: thickness, height: maxDimension }}
+        >
+          {/* Bar fill - grows from bottom */}
+          <div 
+            className={`absolute bottom-0 left-0 right-0 rounded-full bg-gradient-to-t ${getBarColor()} transition-all`}
+            style={{ height: fillSize }}
+          />
+        </div>
+        {/* Label below */}
+        <span className="text-[8px] text-muted-foreground mt-1 font-medium">{label}</span>
+      </div>
+    );
+  }
+
+  // Horizontal bar (bottom)
+  return (
+    <div className="flex flex-col items-center w-full">
+      {/* Bar track */}
+      <div 
+        className="relative rounded-full bg-zinc-800/50 overflow-hidden"
+        style={{ height: thickness, width: maxDimension }}
+      >
+        {/* Bar fill - centered */}
+        <div 
+          className={`absolute top-0 bottom-0 rounded-full bg-gradient-to-r ${getBarColor()} transition-all`}
+          style={{ 
+            width: fillSize,
+            left: `${(maxDimension - fillSize) / 2}px`
+          }}
+        />
+      </div>
+      {/* Label below */}
+      <span className="text-[8px] text-muted-foreground mt-1 font-medium">{label}</span>
+    </div>
+  );
+}
+
+// ============================================
 // MINI FIELD SVG COMPONENT
 // ============================================
 
@@ -135,6 +221,8 @@ interface MiniFieldHeatmapProps {
   width?: number;
   height?: number;
   showLegend?: boolean;
+  /** Show intensity bars around the field */
+  showIntensityBars?: boolean;
 }
 
 export function MiniFieldHeatmap({
@@ -145,6 +233,7 @@ export function MiniFieldHeatmap({
   width = 140,
   height = 200,
   showLegend = true,
+  showIntensityBars = true,
 }: MiniFieldHeatmapProps) {
   const seed = `${matchId}:${playerId}`;
   
@@ -155,128 +244,173 @@ export function MiniFieldHeatmap({
 
   // Field dimensions
   const fieldPadding = 4;
-  const fieldWidth = width - fieldPadding * 2;
-  const fieldHeight = height - fieldPadding * 2 - (showLegend ? 20 : 0);
+  const legendHeight = showLegend ? 20 : 0;
+  const barSpace = showIntensityBars ? 24 : 0; // Space for side bars
+  const bottomBarSpace = showIntensityBars ? 22 : 0; // Space for bottom bar
+  
+  const svgWidth = width;
+  const svgHeight = height - legendHeight - bottomBarSpace;
+  const fieldWidth = svgWidth - fieldPadding * 2 - (showIntensityBars ? barSpace * 2 : 0);
+  const fieldHeight = svgHeight - fieldPadding * 2;
+  const fieldX = fieldPadding + (showIntensityBars ? barSpace : 0);
+  const fieldY = fieldPadding;
 
   return (
     <div className={`flex flex-col items-center ${className}`}>
-      <svg
-        width={width}
-        height={height - (showLegend ? 20 : 0)}
-        viewBox={`0 0 ${width} ${height - (showLegend ? 20 : 0)}`}
-        className="rounded-md overflow-hidden"
-      >
-        {/* Definitions: Blur filter and gradient */}
-        <defs>
-          <filter id={`heatBlur-${seed.replace(/[^a-zA-Z0-9]/g, '')}`} x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="6" />
-          </filter>
-          <radialGradient id={`heatGrad-${seed.replace(/[^a-zA-Z0-9]/g, '')}`}>
-            <stop offset="0%" stopColor="#10b981" stopOpacity="0.8" />
-            <stop offset="70%" stopColor="#10b981" stopOpacity="0.3" />
-            <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
-          </radialGradient>
-        </defs>
+      {/* Main container with field and side bars */}
+      <div className="flex items-center gap-2">
+        {/* Left bar - DEFENSE */}
+        {showIntensityBars && (
+          <IntensityBar
+            value={percentages.defense}
+            orientation="vertical"
+            position="left"
+            label="DEF"
+            maxDimension={fieldHeight}
+            thickness={6}
+          />
+        )}
 
-        {/* Field background */}
-        <rect
-          x={fieldPadding}
-          y={fieldPadding}
-          width={fieldWidth}
-          height={fieldHeight}
-          fill="#1a2f1a"
-          rx={3}
-        />
+        {/* Field SVG */}
+        <svg
+          width={width - (showIntensityBars ? barSpace * 2 + 16 : 0)}
+          height={svgHeight}
+          viewBox={`0 0 ${width - (showIntensityBars ? barSpace * 2 + 16 : 0)} ${svgHeight}`}
+          className="rounded-md overflow-hidden"
+        >
+          {/* Definitions: Blur filter */}
+          <defs>
+            <filter id={`heatBlur-${seed.replace(/[^a-zA-Z0-9]/g, '')}`} x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur in="SourceGraphic" stdDeviation="6" />
+            </filter>
+          </defs>
 
-        {/* Field markings */}
-        <g stroke="#3d5c3d" strokeWidth="1" fill="none">
-          {/* Field outline */}
+          {/* Field background */}
           <rect
-            x={fieldPadding + 2}
-            y={fieldPadding + 2}
-            width={fieldWidth - 4}
-            height={fieldHeight - 4}
-            rx={2}
+            x={fieldPadding}
+            y={fieldPadding}
+            width={fieldWidth}
+            height={fieldHeight}
+            fill="#1a2f1a"
+            rx={3}
           />
 
-          {/* Center line */}
-          <line
-            x1={fieldPadding + 2}
-            y1={fieldPadding + fieldHeight / 2}
-            x2={fieldPadding + fieldWidth - 2}
-            y2={fieldPadding + fieldHeight / 2}
-          />
-
-          {/* Center circle */}
-          <circle
-            cx={fieldPadding + fieldWidth / 2}
-            cy={fieldPadding + fieldHeight / 2}
-            r={Math.min(fieldWidth, fieldHeight) * 0.12}
-          />
-
-          {/* Top penalty area (attack) */}
-          <rect
-            x={fieldPadding + fieldWidth * 0.2}
-            y={fieldPadding + 2}
-            width={fieldWidth * 0.6}
-            height={fieldHeight * 0.15}
-          />
-          {/* Top goal area */}
-          <rect
-            x={fieldPadding + fieldWidth * 0.32}
-            y={fieldPadding + 2}
-            width={fieldWidth * 0.36}
-            height={fieldHeight * 0.06}
-          />
-
-          {/* Bottom penalty area (defense) */}
-          <rect
-            x={fieldPadding + fieldWidth * 0.2}
-            y={fieldPadding + fieldHeight - fieldHeight * 0.15 - 2}
-            width={fieldWidth * 0.6}
-            height={fieldHeight * 0.15}
-          />
-          {/* Bottom goal area */}
-          <rect
-            x={fieldPadding + fieldWidth * 0.32}
-            y={fieldPadding + fieldHeight - fieldHeight * 0.06 - 2}
-            width={fieldWidth * 0.36}
-            height={fieldHeight * 0.06}
-          />
-        </g>
-
-        {/* Heatmap points with blur */}
-        <g filter={`url(#heatBlur-${seed.replace(/[^a-zA-Z0-9]/g, '')})`}>
-          {points.map((point, i) => (
-            <circle
-              key={i}
-              cx={fieldPadding + point.x * fieldWidth}
-              cy={fieldPadding + point.y * fieldHeight}
-              r={point.radius}
-              fill="#10b981"
-              opacity={point.opacity}
+          {/* Field markings */}
+          <g stroke="#3d5c3d" strokeWidth="1" fill="none">
+            {/* Field outline */}
+            <rect
+              x={fieldPadding + 2}
+              y={fieldPadding + 2}
+              width={fieldWidth - 4}
+              height={fieldHeight - 4}
+              rx={2}
             />
-          ))}
-        </g>
 
-        {/* Attack direction arrow */}
-        <g fill="#4ade80" opacity="0.6">
-          <polygon
-            points={`${width / 2 - 6},${fieldPadding + 8} ${width / 2 + 6},${fieldPadding + 8} ${width / 2},${fieldPadding + 2}`}
+            {/* Center line */}
+            <line
+              x1={fieldPadding + 2}
+              y1={fieldPadding + fieldHeight / 2}
+              x2={fieldPadding + fieldWidth - 2}
+              y2={fieldPadding + fieldHeight / 2}
+            />
+
+            {/* Center circle */}
+            <circle
+              cx={fieldPadding + fieldWidth / 2}
+              cy={fieldPadding + fieldHeight / 2}
+              r={Math.min(fieldWidth, fieldHeight) * 0.12}
+            />
+
+            {/* Top penalty area (attack) */}
+            <rect
+              x={fieldPadding + fieldWidth * 0.2}
+              y={fieldPadding + 2}
+              width={fieldWidth * 0.6}
+              height={fieldHeight * 0.15}
+            />
+            {/* Top goal area */}
+            <rect
+              x={fieldPadding + fieldWidth * 0.32}
+              y={fieldPadding + 2}
+              width={fieldWidth * 0.36}
+              height={fieldHeight * 0.06}
+            />
+
+            {/* Bottom penalty area (defense) */}
+            <rect
+              x={fieldPadding + fieldWidth * 0.2}
+              y={fieldPadding + fieldHeight - fieldHeight * 0.15 - 2}
+              width={fieldWidth * 0.6}
+              height={fieldHeight * 0.15}
+            />
+            {/* Bottom goal area */}
+            <rect
+              x={fieldPadding + fieldWidth * 0.32}
+              y={fieldPadding + fieldHeight - fieldHeight * 0.06 - 2}
+              width={fieldWidth * 0.36}
+              height={fieldHeight * 0.06}
+            />
+          </g>
+
+          {/* Heatmap points with blur */}
+          <g filter={`url(#heatBlur-${seed.replace(/[^a-zA-Z0-9]/g, '')})`}>
+            {points.map((point, i) => (
+              <circle
+                key={i}
+                cx={fieldPadding + point.x * fieldWidth}
+                cy={fieldPadding + point.y * fieldHeight}
+                r={point.radius}
+                fill="#10b981"
+                opacity={point.opacity}
+              />
+            ))}
+          </g>
+
+          {/* Attack direction arrow */}
+          <g fill="#4ade80" opacity="0.6">
+            <polygon
+              points={`${fieldPadding + fieldWidth / 2 - 6},${fieldPadding + 8} ${fieldPadding + fieldWidth / 2 + 6},${fieldPadding + 8} ${fieldPadding + fieldWidth / 2},${fieldPadding + 2}`}
+            />
+          </g>
+        </svg>
+
+        {/* Right bar - ATTACK */}
+        {showIntensityBars && (
+          <IntensityBar
+            value={percentages.attack}
+            orientation="vertical"
+            position="right"
+            label="ATA"
+            maxDimension={fieldHeight}
+            thickness={6}
           />
-        </g>
-      </svg>
+        )}
+      </div>
 
-      {/* Legend */}
+      {/* Bottom bar - MIDFIELD */}
+      {showIntensityBars && (
+        <div className="mt-2 w-full flex justify-center">
+          <IntensityBar
+            value={percentages.midfield}
+            orientation="horizontal"
+            position="bottom"
+            label="MEI"
+            maxDimension={width - (showIntensityBars ? 60 : 0)}
+            thickness={6}
+          />
+        </div>
+      )}
+
+      {/* Legend (percentage text) */}
       {showLegend && (
         <div className="flex items-center gap-2 mt-1.5 text-[9px] text-muted-foreground">
           <span className="text-emerald-400 font-medium">ATA</span>
           <span>{percentages.attack}%</span>
           <span className="text-zinc-500">•</span>
-          <span className="text-emerald-400 font-medium">MEI</span>
+          <span className="text-amber-400 font-medium">MEI</span>
           <span>{percentages.midfield}%</span>
           <span className="text-zinc-500">•</span>
-          <span className="text-emerald-400 font-medium">DEF</span>
+          <span className="text-sky-400 font-medium">DEF</span>
           <span>{percentages.defense}%</span>
         </div>
       )}
