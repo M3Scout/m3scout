@@ -1,11 +1,11 @@
 /**
- * Mini-Field Heatmap Component
+ * Mini-Field Heatmap Component - Premium Scouting Design
  * 
- * Renders a mini soccer field SVG with seeded heatmap visualization:
- * - Football field markings (outline, center line, center circle, penalty areas)
- * - Seeded random points with blur for heatmap effect
+ * Professional soccer field SVG with premium heatmap visualization:
+ * - Matte green field (#446c46) with clean markings
+ * - Intensity gradient: Yellow (#fabe2e) → Orange (#f03530)
+ * - Integrated zone indicators with dominant zone highlight
  * - Deterministic rendering using match_id + player_id seed
- * - Zone distribution: Defense (bottom), Midfield (center), Attack (top)
  */
 
 import React, { useMemo } from "react";
@@ -15,7 +15,6 @@ import type { ZoneDistribution } from "@/lib/postGameAnalysis";
 // SEEDED RANDOM (xfnv1a hash + Mulberry32 PRNG)
 // ============================================
 
-/** FNV-1a hash: string -> uint32 */
 function xfnv1a(str: string): number {
   let h = 2166136261 >>> 0;
   for (let i = 0; i < str.length; i++) {
@@ -25,7 +24,6 @@ function xfnv1a(str: string): number {
   return h >>> 0;
 }
 
-/** Mulberry32 PRNG */
 function mulberry32(seed: number) {
   return function () {
     let t = (seed += 0x6d2b79f5);
@@ -36,7 +34,23 @@ function mulberry32(seed: number) {
 }
 
 // ============================================
-// HEATMAP POINT GENERATION (Exact Algorithm)
+// PREMIUM COLORS
+// ============================================
+
+const FIELD_COLORS = {
+  background: "#446c46",  // Matte green
+  lines: "#5a8a5c",       // Lighter green for markings
+  linesSubtle: "#3d5c3d", // Subtle markings
+};
+
+const HEAT_COLORS = {
+  low: "#fabe2e",      // Yellow - weak zones
+  medium: "#f7853a",   // Orange transition
+  high: "#f03530",     // Red-orange - dominant zones
+};
+
+// ============================================
+// HEATMAP POINT GENERATION
 // ============================================
 
 interface HeatmapPoint {
@@ -44,9 +58,9 @@ interface HeatmapPoint {
   y: number;
   radius: number;
   opacity: number;
+  intensity: number; // 0-1 for color interpolation
 }
 
-/** Helpers */
 function clamp(v: number, a: number, b: number): number {
   return Math.max(a, Math.min(b, v));
 }
@@ -54,21 +68,24 @@ function clamp(v: number, a: number, b: number): number {
 function generateHeatmapPoints(
   percentages: ZoneDistribution,
   seed: string,
-  totalPoints: number = 220
+  totalPoints: number = 180
 ): HeatmapPoint[] {
   const rand = mulberry32(xfnv1a(seed));
   const randRange = (min: number, max: number) => min + (max - min) * rand();
 
   const points: HeatmapPoint[] = [];
 
-  // Zone Y ranges (attack at top in SVG coordinates)
+  // Determine dominant zone for intensity scaling
+  const maxPercent = Math.max(percentages.attack, percentages.midfield, percentages.defense);
+  const minPercent = Math.min(percentages.attack, percentages.midfield, percentages.defense);
+  const range = maxPercent - minPercent || 1;
+
   const zones: { name: keyof ZoneDistribution; yMin: number; yMax: number }[] = [
-    { name: "attack", yMin: 0.02, yMax: 0.33 },    // Top third (attack)
-    { name: "midfield", yMin: 0.34, yMax: 0.66 },  // Middle third
-    { name: "defense", yMin: 0.67, yMax: 0.98 },   // Bottom third (defense)
+    { name: "attack", yMin: 0.02, yMax: 0.33 },
+    { name: "midfield", yMin: 0.34, yMax: 0.66 },
+    { name: "defense", yMin: 0.67, yMax: 0.98 },
   ];
 
-  // Calculate points per zone
   const N = totalPoints;
   const nDef = Math.round(N * percentages.defense / 100);
   const nMid = Math.round(N * percentages.midfield / 100);
@@ -82,9 +99,11 @@ function generateHeatmapPoints(
 
   zones.forEach(({ name, yMin, yMax }) => {
     const nPoints = pointCounts[name];
+    const zonePercent = percentages[name];
+    // Normalize intensity: 0 = lowest zone, 1 = highest zone
+    const intensity = (zonePercent - minPercent) / range;
     
-    // Create 2-3 cluster centers per zone
-    const numClusters = 2 + Math.floor(rand() * 2); // 2 or 3
+    const numClusters = 2 + Math.floor(rand() * 2);
     const clusters: { cx: number; cy: number }[] = [];
     
     for (let c = 0; c < numClusters; c++) {
@@ -98,15 +117,11 @@ function generateHeatmapPoints(
       let x: number;
       let y: number;
 
-      // 70% clustered, 30% uniform
       if (rand() < 0.7 && clusters.length > 0) {
-        // Pick random cluster center
         const cluster = clusters[Math.floor(rand() * clusters.length)];
-        // Gaussian-like fake distribution around center
         x = clamp(cluster.cx + (rand() - 0.5) * 0.18, 0.03, 0.97);
         y = clamp(cluster.cy + (rand() - 0.5) * 0.14, yMin, yMax);
       } else {
-        // Uniform distribution
         x = randRange(0.03, 0.97);
         y = randRange(yMin, yMax);
       }
@@ -114,13 +129,95 @@ function generateHeatmapPoints(
       points.push({
         x,
         y,
-        radius: randRange(2.5, 5.0),
-        opacity: randRange(0.08, 0.18),
+        radius: randRange(3.5, 6.5),
+        opacity: randRange(0.25, 0.5) * (0.6 + intensity * 0.4),
+        intensity,
       });
     }
   });
 
   return points;
+}
+
+// Color interpolation for heat gradient
+function getHeatColor(intensity: number): string {
+  if (intensity < 0.5) {
+    // Yellow to Orange
+    const t = intensity * 2;
+    return lerpColor(HEAT_COLORS.low, HEAT_COLORS.medium, t);
+  } else {
+    // Orange to Red
+    const t = (intensity - 0.5) * 2;
+    return lerpColor(HEAT_COLORS.medium, HEAT_COLORS.high, t);
+  }
+}
+
+function lerpColor(a: string, b: string, t: number): string {
+  const ah = parseInt(a.slice(1), 16);
+  const bh = parseInt(b.slice(1), 16);
+  
+  const ar = (ah >> 16) & 0xff;
+  const ag = (ah >> 8) & 0xff;
+  const ab = ah & 0xff;
+  
+  const br = (bh >> 16) & 0xff;
+  const bg = (bh >> 8) & 0xff;
+  const bb = bh & 0xff;
+  
+  const rr = Math.round(ar + (br - ar) * t);
+  const rg = Math.round(ag + (bg - ag) * t);
+  const rb = Math.round(ab + (bb - ab) * t);
+  
+  return `rgb(${rr}, ${rg}, ${rb})`;
+}
+
+// ============================================
+// ZONE INDICATOR COMPONENT
+// ============================================
+
+interface ZoneIndicatorProps {
+  label: string;
+  value: number;
+  isDominant: boolean;
+  color: string;
+  position: "left" | "right" | "bottom";
+}
+
+function ZoneIndicator({ label, value, isDominant, color, position }: ZoneIndicatorProps) {
+  const isVertical = position !== "bottom";
+  
+  return (
+    <div 
+      className={`flex items-center gap-1.5 ${
+        isVertical ? "flex-col" : "flex-row"
+      } ${isDominant ? "scale-105" : ""}`}
+    >
+      <div 
+        className={`
+          flex items-center justify-center font-bold text-[10px] tracking-wide
+          ${isDominant 
+            ? "bg-white/95 text-zinc-900 shadow-lg shadow-white/20" 
+            : "bg-zinc-900/80 text-zinc-300 border border-zinc-700/50"
+          }
+          ${isVertical ? "w-8 h-5 rounded" : "px-2 h-5 rounded"}
+        `}
+      >
+        {label}
+      </div>
+      <div 
+        className={`
+          flex items-center justify-center font-bold text-xs
+          ${isDominant 
+            ? "text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.5)]" 
+            : "text-zinc-400"
+          }
+        `}
+        style={{ color: isDominant ? color : undefined }}
+      >
+        {value}%
+      </div>
+    </div>
+  );
 }
 
 // ============================================
@@ -132,10 +229,8 @@ interface MiniFieldHeatmapProps {
   matchId: string;
   playerId: string;
   className?: string;
-  /** If true, field expands to fill container width */
   fullWidth?: boolean;
   showLegend?: boolean;
-  /** Show intensity bars as overlays */
   showIntensityBars?: boolean;
 }
 
@@ -148,17 +243,24 @@ export function MiniFieldHeatmap({
   showLegend = true,
   showIntensityBars = true,
 }: MiniFieldHeatmapProps) {
-  // CRITICAL FIX: If all percentages are 0, player didn't play - don't render heatmap
   const hasData = percentages.defense > 0 || percentages.midfield > 0 || percentages.attack > 0;
   
   const seed = `${matchId}:${playerId}`;
+  const filterId = `heatBlur-${seed.replace(/[^a-zA-Z0-9]/g, '')}`;
   
   const points = useMemo(
-    () => hasData ? generateHeatmapPoints(percentages, seed, 220) : [],
+    () => hasData ? generateHeatmapPoints(percentages, seed, 180) : [],
     [percentages.attack, percentages.midfield, percentages.defense, seed, hasData]
   );
 
-  // If no data, show empty state
+  // Determine dominant zone
+  const dominantZone = useMemo(() => {
+    if (!hasData) return null;
+    if (percentages.attack >= percentages.midfield && percentages.attack >= percentages.defense) return "attack";
+    if (percentages.midfield >= percentages.defense) return "midfield";
+    return "defense";
+  }, [percentages, hasData]);
+
   if (!hasData) {
     return (
       <div className={`flex flex-col items-center justify-center w-full ${className}`}>
@@ -174,123 +276,158 @@ export function MiniFieldHeatmap({
     );
   }
 
-  // Field uses full width, aspect ratio ~0.7 (width/height)
   const aspectRatio = 0.65;
 
   return (
     <div className={`flex flex-col items-center w-full ${className}`}>
-      {/* Field container - full width with aspect ratio */}
-      <div 
-        className="relative w-full"
-        style={{ paddingBottom: `${100 / aspectRatio}%` }}
-      >
-        {/* SVG fills container absolutely */}
-        <svg
-          className="absolute inset-0 w-full h-full rounded-lg overflow-hidden"
-          viewBox="0 0 100 154"
-          preserveAspectRatio="xMidYMid meet"
-        >
-          {/* Definitions: Blur filter */}
-          <defs>
-            <filter id={`heatBlur-${seed.replace(/[^a-zA-Z0-9]/g, '')}`} x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur in="SourceGraphic" stdDeviation="4" />
-            </filter>
-          </defs>
-
-          {/* Field background */}
-          <rect x="0" y="0" width="100" height="154" fill="#1a2f1a" rx="3" />
-
-          {/* Field markings */}
-          <g stroke="#3d5c3d" strokeWidth="0.8" fill="none">
-            {/* Field outline */}
-            <rect x="3" y="3" width="94" height="148" rx="2" />
-            {/* Center line */}
-            <line x1="3" y1="77" x2="97" y2="77" />
-            {/* Center circle */}
-            <circle cx="50" cy="77" r="12" />
-            {/* Top penalty area (attack) */}
-            <rect x="20" y="3" width="60" height="22" />
-            <rect x="32" y="3" width="36" height="9" />
-            {/* Bottom penalty area (defense) */}
-            <rect x="20" y="129" width="60" height="22" />
-            <rect x="32" y="142" width="36" height="9" />
-          </g>
-
-          {/* Heatmap points with blur */}
-          <g filter={`url(#heatBlur-${seed.replace(/[^a-zA-Z0-9]/g, '')})`}>
-            {points.map((point, i) => (
-              <circle
-                key={i}
-                cx={3 + point.x * 94}
-                cy={3 + point.y * 148}
-                r={point.radius * 0.8}
-                fill="#10b981"
-                opacity={point.opacity}
-              />
-            ))}
-          </g>
-
-          {/* Attack direction arrow */}
-          <polygon points="44,10 56,10 50,4" fill="#4ade80" opacity="0.6" />
-        </svg>
-
-        {/* OVERLAY: Left bar - DEFENSE */}
+      {/* Main container with integrated zone indicators */}
+      <div className="relative w-full flex items-stretch gap-2">
+        {/* Left zone indicator - DEF */}
         {showIntensityBars && (
-          <div className="absolute left-1 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1">
-            <div 
-              className="w-2 rounded-full bg-zinc-800/70 overflow-hidden"
-              style={{ height: '70%' }}
-            >
-              <div 
-                className="absolute bottom-0 left-0 right-0 rounded-full bg-gradient-to-t from-sky-500/80 to-sky-400/50"
-                style={{ height: `${percentages.defense}%` }}
-              />
-            </div>
-            <span className="text-[7px] font-bold text-sky-400/80">DEF</span>
+          <div className="flex flex-col items-center justify-center py-4">
+            <ZoneIndicator 
+              label="DEF" 
+              value={percentages.defense}
+              isDominant={dominantZone === "defense"}
+              color={HEAT_COLORS.high}
+              position="left"
+            />
           </div>
         )}
 
-        {/* OVERLAY: Right bar - ATTACK */}
-        {showIntensityBars && (
-          <div className="absolute right-1 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1">
-            <div 
-              className="w-2 rounded-full bg-zinc-800/70 overflow-hidden relative"
-              style={{ height: '70%' }}
-            >
-              <div 
-                className="absolute bottom-0 left-0 right-0 rounded-full bg-gradient-to-t from-emerald-500/80 to-emerald-400/50"
-                style={{ height: `${percentages.attack}%` }}
-              />
+        {/* Field container */}
+        <div 
+          className="relative flex-1"
+          style={{ paddingBottom: `${100 / aspectRatio}%` }}
+        >
+          <svg
+            className="absolute inset-0 w-full h-full rounded-lg overflow-hidden shadow-xl shadow-black/30"
+            viewBox="0 0 100 154"
+            preserveAspectRatio="xMidYMid meet"
+          >
+            {/* Definitions */}
+            <defs>
+              <filter id={filterId} x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="5" />
+              </filter>
+              {/* Gradient for field depth */}
+              <linearGradient id={`fieldGrad-${filterId}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor={FIELD_COLORS.background} stopOpacity="1" />
+                <stop offset="50%" stopColor="#3d5c3d" stopOpacity="1" />
+                <stop offset="100%" stopColor={FIELD_COLORS.background} stopOpacity="1" />
+              </linearGradient>
+            </defs>
+
+            {/* Field background with gradient */}
+            <rect x="0" y="0" width="100" height="154" fill={`url(#fieldGrad-${filterId})`} rx="4" />
+            
+            {/* Field texture overlay */}
+            <rect x="0" y="0" width="100" height="154" fill={FIELD_COLORS.background} opacity="0.85" rx="4" />
+
+            {/* Field markings - premium style */}
+            <g stroke={FIELD_COLORS.lines} strokeWidth="0.6" fill="none" opacity="0.7">
+              {/* Field outline */}
+              <rect x="4" y="4" width="92" height="146" rx="2" />
+              {/* Center line */}
+              <line x1="4" y1="77" x2="96" y2="77" />
+              {/* Center circle */}
+              <circle cx="50" cy="77" r="11" />
+              {/* Center dot */}
+              <circle cx="50" cy="77" r="1" fill={FIELD_COLORS.lines} />
+              {/* Top penalty area (attack) */}
+              <rect x="22" y="4" width="56" height="20" />
+              <rect x="34" y="4" width="32" height="8" />
+              <circle cx="50" cy="17" r="0.8" fill={FIELD_COLORS.lines} />
+              {/* Bottom penalty area (defense) */}
+              <rect x="22" y="130" width="56" height="20" />
+              <rect x="34" y="142" width="32" height="8" />
+              <circle cx="50" cy="137" r="0.8" fill={FIELD_COLORS.lines} />
+              {/* Corner arcs */}
+              <path d="M4,7 Q7,4 10,4" />
+              <path d="M90,4 Q93,4 96,7" />
+              <path d="M4,147 Q4,150 7,150" />
+              <path d="M96,147 Q96,150 93,150" />
+            </g>
+
+            {/* Zone divider lines (subtle) */}
+            <g stroke={FIELD_COLORS.linesSubtle} strokeWidth="0.3" strokeDasharray="2,2" opacity="0.4">
+              <line x1="4" y1="51" x2="96" y2="51" />
+              <line x1="4" y1="103" x2="96" y2="103" />
+            </g>
+
+            {/* Heatmap points with blur and color gradient */}
+            <g filter={`url(#${filterId})`}>
+              {points.map((point, i) => (
+                <circle
+                  key={i}
+                  cx={4 + point.x * 92}
+                  cy={4 + point.y * 146}
+                  r={point.radius}
+                  fill={getHeatColor(point.intensity)}
+                  opacity={point.opacity}
+                />
+              ))}
+            </g>
+
+            {/* Attack direction indicator */}
+            <g opacity="0.8">
+              <polygon points="44,9 56,9 50,3" fill="#ffffff" opacity="0.6" />
+              <text x="50" y="14" textAnchor="middle" fontSize="5" fill="#ffffff" opacity="0.5">▲</text>
+            </g>
+          </svg>
+
+          {/* Zone labels on field */}
+          <div className="absolute inset-0 flex flex-col justify-between py-6 pointer-events-none">
+            <div className="flex justify-center">
+              <span className="text-[9px] font-medium text-white/40 tracking-widest uppercase">Ataque</span>
             </div>
-            <span className="text-[7px] font-bold text-emerald-400/80">ATA</span>
+            <div className="flex justify-center">
+              <span className="text-[9px] font-medium text-white/40 tracking-widest uppercase">Meio</span>
+            </div>
+            <div className="flex justify-center">
+              <span className="text-[9px] font-medium text-white/40 tracking-widest uppercase">Defesa</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Right zone indicator - ATA */}
+        {showIntensityBars && (
+          <div className="flex flex-col items-center justify-center py-4">
+            <ZoneIndicator 
+              label="ATA" 
+              value={percentages.attack}
+              isDominant={dominantZone === "attack"}
+              color={HEAT_COLORS.high}
+              position="right"
+            />
           </div>
         )}
       </div>
 
-      {/* Bottom bar - MIDFIELD (below field) */}
+      {/* Bottom zone indicator - MEI */}
       {showIntensityBars && (
-        <div className="flex flex-col items-center mt-2 w-full px-4">
-          <div className="h-1.5 w-full rounded-full bg-zinc-800/70 overflow-hidden relative">
-            <div 
-              className="absolute top-0 bottom-0 rounded-full bg-gradient-to-r from-amber-500/60 via-amber-400/80 to-amber-500/60"
-              style={{ 
-                width: `${percentages.midfield}%`,
-                left: `${(100 - percentages.midfield) / 2}%`
-              }}
-            />
-          </div>
-          <span className="text-[7px] font-bold text-amber-400/80 mt-1">MEI</span>
+        <div className="flex justify-center mt-3">
+          <ZoneIndicator 
+            label="MEI" 
+            value={percentages.midfield}
+            isDominant={dominantZone === "midfield"}
+            color={HEAT_COLORS.high}
+            position="bottom"
+          />
         </div>
       )}
 
-      {/* Legend (percentage text) */}
+      {/* Heat intensity legend */}
       {showLegend && (
-        <div className="flex items-center justify-center gap-3 mt-2 text-[10px] text-muted-foreground">
-          <span><span className="text-emerald-400 font-semibold">ATA</span> {percentages.attack}%</span>
-          <span className="text-zinc-600">•</span>
-          <span><span className="text-amber-400 font-semibold">MEI</span> {percentages.midfield}%</span>
-          <span className="text-zinc-600">•</span>
-          <span><span className="text-sky-400 font-semibold">DEF</span> {percentages.defense}%</span>
+        <div className="flex items-center justify-center gap-2 mt-3">
+          <span className="text-[9px] text-zinc-500">Baixa</span>
+          <div 
+            className="w-20 h-2 rounded-full"
+            style={{
+              background: `linear-gradient(to right, ${HEAT_COLORS.low}, ${HEAT_COLORS.medium}, ${HEAT_COLORS.high})`
+            }}
+          />
+          <span className="text-[9px] text-zinc-500">Alta</span>
         </div>
       )}
     </div>
