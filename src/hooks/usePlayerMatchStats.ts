@@ -781,7 +781,24 @@ export function usePlayerMatchStatsBySeasonCompetition({
       s.chances_created += stats?.chances_created ?? 0;
       s.crosses_success += stats?.crosses_success ?? 0;
       s.crosses_failed += stats?.crosses_failed ?? 0;
-      s.ball_actions += stats?.ball_actions ?? 0;
+      // ball_actions is DERIVED, not stored - calculate from components for each match
+      s.ball_actions += calculateDerivedBallActions({
+        goals: stats?.goals ?? 0,
+        shots_on_target: stats?.shots_on_target ?? 0,
+        shots: stats?.shots ?? 0,
+        shots_blocked: stats?.shots_blocked ?? 0,
+        assists: stats?.assists ?? 0,
+        key_passes: stats?.key_passes ?? 0,
+        chances_created: stats?.chances_created ?? 0,
+        passes_completed: stats?.passes_completed ?? 0,
+        passes_total: stats?.passes_total ?? 0,
+        crosses_success: stats?.crosses_success ?? 0,
+        crosses_failed: stats?.crosses_failed ?? 0,
+        dribbles_success: stats?.dribbles_success ?? 0,
+        dribbles_total: stats?.dribbles_total ?? 0,
+        possession_lost: stats?.possession_lost ?? 0,
+        recoveries: stats?.recoveries ?? 0,
+      }, stats?.ball_actions ?? 0);
       s.dribbles_success += stats?.dribbles_success ?? 0;
       s.dribbles_total += stats?.dribbles_total ?? 0;
       s.dribbles_failed += Math.max(0, (stats?.dribbles_total ?? 0) - (stats?.dribbles_success ?? 0));
