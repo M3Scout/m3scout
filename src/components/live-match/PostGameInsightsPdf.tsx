@@ -23,6 +23,7 @@ import {
 } from "@/lib/zoneDeviationEngine";
 import { generateCombinedInsight, type ZoneDeviationInsight } from "@/lib/zoneDeviationInsight";
 import { calculateHalfComparison, splitStatsByHalf, type MatchEvent, type HalfComparisonResult } from "@/lib/halfComparisonEngine";
+import { classifyGameProfile, type GameProfileResult, GAME_PROFILES } from "@/lib/playerGameProfileEngine";
 
 // ============================================
 // STYLES
@@ -197,6 +198,24 @@ const styles = StyleSheet.create({
     textAlign: "center",
     padding: 12,
   },
+  // Game Profile Badge
+  gameProfileContainer: {
+    marginBottom: 4,
+    paddingVertical: 3,
+    paddingHorizontal: 6,
+    borderRadius: 3,
+    borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  gameProfileIcon: {
+    fontSize: 8,
+  },
+  gameProfileText: {
+    fontSize: 7,
+    fontWeight: 600,
+  },
 });
 
 // ============================================
@@ -332,15 +351,59 @@ function HalfComparisonInsightPdf({ halfResult }: HalfComparisonInsightPdfProps)
 // PLAYER SUMMARY ROW (NO heatmap)
 // ============================================
 
+// ============================================
+// GAME PROFILE BADGE PDF COMPONENT
+// ============================================
+
+interface GameProfileBadgePdfProps {
+  profileResult: GameProfileResult | null;
+}
+
+function GameProfileBadgePdf({ profileResult }: GameProfileBadgePdfProps) {
+  if (!profileResult || !profileResult.hasData) {
+    return null;
+  }
+
+  const { profile } = profileResult;
+  
+  // Map profile to PDF colors
+  const profileColors: Record<string, { bg: string; border: string; text: string }> = {
+    low_participation: { bg: "#71717a20", border: "#71717a50", text: "#71717a" },
+    defensive_active: { bg: "#0ea5e920", border: "#0ea5e950", text: "#0284c7" },
+    offensive_direct: { bg: "#10b98120", border: "#10b98150", text: "#059669" },
+    builder: { bg: "#f59e0b20", border: "#f59e0b50", text: "#d97706" },
+    balanced: { bg: "#8b5cf620", border: "#8b5cf650", text: "#7c3aed" },
+  };
+
+  const colors = profileColors[profile.key] || profileColors.balanced;
+
+  return (
+    <View style={[styles.gameProfileContainer, { 
+      backgroundColor: colors.bg, 
+      borderColor: colors.border 
+    }]}>
+      <Text style={styles.gameProfileIcon}>{profile.icon}</Text>
+      <Text style={[styles.gameProfileText, { color: colors.text }]}>
+        Perfil: {profile.label}
+      </Text>
+    </View>
+  );
+}
+
+// ============================================
+// PLAYER SUMMARY ROW (NO heatmap)
+// ============================================
+
 interface PlayerSummaryRowPdfProps {
   playerName: string;
   position: string;
   analysis: PostGameAnalysis;
   insight: ZoneDeviationInsight | null;
   halfResult: HalfComparisonResult | null;
+  profileResult: GameProfileResult | null;
 }
 
-function PlayerSummaryRowPdf({ playerName, position, analysis, insight, halfResult }: PlayerSummaryRowPdfProps) {
+function PlayerSummaryRowPdf({ playerName, position, analysis, insight, halfResult, profileResult }: PlayerSummaryRowPdfProps) {
   const { quickIndicators, strengthsImprovements } = analysis;
 
   return (
@@ -351,6 +414,9 @@ function PlayerSummaryRowPdf({ playerName, position, analysis, insight, halfResu
           <Text style={styles.playerName}>{playerName}</Text>
           <Text style={styles.playerPosition}>{position}</Text>
         </View>
+
+        {/* Game Profile Badge */}
+        <GameProfileBadgePdf profileResult={profileResult} />
 
         {/* Performance Profile Insight - Contextual text */}
         <PerformanceProfileInsightPdf insight={insight} />
@@ -475,11 +541,18 @@ export function PostGameInsightsPdf({
       const { firstHalf, secondHalf } = splitStatsByHalf([], stats);
       const halfResult = calculateHalfComparison(position, firstHalf, secondHalf);
 
+      // Calculate game profile
+      const profileResult = classifyGameProfile({
+        ...stats,
+        zoneDistribution: analysis.zoneHeatmap.percentages,
+      });
+
       return {
         player: mp,
         analysis,
         insight,
         halfResult,
+        profileResult,
         sortScore:
           analysis.quickIndicators.filter((i) => i.type === "positive").length * 2 +
           analysis.strengthsImprovements.strengths.length -
@@ -525,7 +598,7 @@ export function PostGameInsightsPdf({
       <Text style={styles.sectionTitle}>📊 Resumo por Jogador</Text>
       <Text style={styles.sectionSubtitle}>Indicadores rápidos e pontos-chave</Text>
 
-      {playerAnalyses.map(({ player, analysis, insight, halfResult }) => (
+      {playerAnalyses.map(({ player, analysis, insight, halfResult, profileResult }) => (
         <PlayerSummaryRowPdf
           key={player.id}
           playerName={player.player?.full_name ?? "Jogador"}
@@ -533,6 +606,7 @@ export function PostGameInsightsPdf({
           analysis={analysis}
           insight={insight}
           halfResult={halfResult}
+          profileResult={profileResult}
         />
       ))}
     </View>
