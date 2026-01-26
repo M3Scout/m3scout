@@ -1454,12 +1454,13 @@ export function MatchSummaryVectorPdf({
         <Text style={styles.footer}>
           Gerado por M3 Scouting • {format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
         </Text>
-        {/* Player Stats Section - Title + first row together to prevent orphan */}
-        <View style={styles.sectionBlock}>
-          <Text style={styles.sectionTitle}>Estatísticas por Jogador</Text>
-        </View>
-        <View style={styles.playersGrid}>
-          {filteredPlayers.slice(0, 16).map((mp, idx) => {
+        {/* Player Stats Section - Title + first cards grouped to prevent orphan title */}
+        {(() => {
+          // Split players into first row (2 cards) and rest to prevent orphan title
+          const firstRowPlayers = filteredPlayers.slice(0, 2);
+          const remainingPlayers = filteredPlayers.slice(2, 16);
+          
+          const renderPlayerCard = (mp: MatchPlayer) => {
             if (!mp.player) return null;
             const counts = playerEventCounts[mp.player_id] || {};
             const statEntries = Object.entries(counts)
@@ -1594,8 +1595,27 @@ export function MatchSummaryVectorPdf({
                 </View>
               </View>
             );
-          })}
-        </View>
+          };
+
+          return (
+            <>
+              {/* ATOMIC BLOCK: Title + First Row of Cards - NEVER SPLIT */}
+              <View wrap={false} style={styles.sectionBlock}>
+                <Text style={styles.sectionTitle}>Estatísticas por Jogador</Text>
+                <View style={styles.playersGrid}>
+                  {firstRowPlayers.map(renderPlayerCard)}
+                </View>
+              </View>
+              
+              {/* Remaining cards - can break between pages but not within cards */}
+              {remainingPlayers.length > 0 && (
+                <View style={styles.playersGrid}>
+                  {remainingPlayers.map(renderPlayerCard)}
+                </View>
+              )}
+            </>
+          );
+        })()}
 
         {/* Post-Game Analysis Section - Only for finished matches */}
         {(match.status === "finished" || match.status === "applied") && (
