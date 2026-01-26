@@ -489,6 +489,11 @@ export function useLiveMatch(matchId: string) {
         refetchType: 'all',
       });
       
+      // Additional aggressive invalidation: clear ALL player stats cache to ensure profile refresh
+      queryClient.removeQueries({
+        predicate: (query) => query.queryKey[0] === "player-match-stats",
+      });
+      
       // Show different toast based on event status
       if (data?.event_status === "draft") {
         toast.info("Evento registrado (pendente)", {
