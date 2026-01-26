@@ -283,6 +283,69 @@ export const COMPUTED_STATS: ComputedStatDefinition[] = [
       second: (counts.dribble_success?.second || 0) + (counts.dribble_attempt?.second || 0),
     }),
   },
+  {
+    id: "ball_actions_derived",
+    label: "Ações com a Bola",
+    icon: "⚽",
+    category: "dribbles",
+    order: 99, // Always at the end of the list
+    compute: (counts) => {
+      /**
+       * DERIVED BALL ACTIONS - Sum of all events representing controlled ball possession
+       * 
+       * Eligible events (same as derivedBallActions.ts):
+       * ATTACK: goal, shot_on_target, shot (off-target), shot_blocked (offensive), assist, key_pass, chance_created
+       * PASSING: pass_success, pass_total (failed), cross_success, cross_failed
+       * DRIBBLES: dribble_success, dribble_attempt (failed), possession_lost
+       * DEFENSE WITH POSSESSION: recovery
+       * 
+       * NOT counted: interception, clearance, blocked_shot (defensive), duels, fouls, was_dribbled, offside, cards, etc.
+       */
+      const first = 
+        // Attack/Creation
+        (counts.goal?.first || 0) +
+        (counts.shot_on_target?.first || 0) +
+        (counts.shot?.first || 0) +
+        (counts.shot_blocked?.first || 0) +
+        (counts.assist?.first || 0) +
+        (counts.key_pass?.first || 0) +
+        (counts.chance_created?.first || 0) +
+        // Passing
+        (counts.pass_success?.first || 0) +
+        (counts.pass_total?.first || 0) +
+        (counts.cross_success?.first || 0) +
+        (counts.cross_failed?.first || 0) +
+        // Dribbles
+        (counts.dribble_success?.first || 0) +
+        (counts.dribble_attempt?.first || 0) +
+        (counts.possession_lost?.first || 0) +
+        // Defense with possession
+        (counts.recovery?.first || 0);
+      
+      const second = 
+        // Attack/Creation
+        (counts.goal?.second || 0) +
+        (counts.shot_on_target?.second || 0) +
+        (counts.shot?.second || 0) +
+        (counts.shot_blocked?.second || 0) +
+        (counts.assist?.second || 0) +
+        (counts.key_pass?.second || 0) +
+        (counts.chance_created?.second || 0) +
+        // Passing
+        (counts.pass_success?.second || 0) +
+        (counts.pass_total?.second || 0) +
+        (counts.cross_success?.second || 0) +
+        (counts.cross_failed?.second || 0) +
+        // Dribbles
+        (counts.dribble_success?.second || 0) +
+        (counts.dribble_attempt?.second || 0) +
+        (counts.possession_lost?.second || 0) +
+        // Defense with possession
+        (counts.recovery?.second || 0);
+      
+      return { first, second };
+    },
+  },
 ];
 
 // Helper to get all event types that should be shown in the summary
