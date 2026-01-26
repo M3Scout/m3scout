@@ -32,6 +32,7 @@ import { MiniFieldHeatmap } from "./MiniFieldHeatmap";
 import { usePlayerZoneHistory } from "@/hooks/usePlayerZoneHistory";
 import { calculateZoneDeviation, type ZoneDeviationResult } from "@/lib/zoneDeviationEngine";
 import { ZoneDeviationBadge } from "./ZoneDeviationBadge";
+import { PerformanceProfileInsight } from "./PerformanceProfileInsight";
 
 // ============================================
 // TYPES
@@ -230,13 +231,33 @@ function StrengthsImprovementsDisplay({ strengths, improvements }: StrengthsImpr
 interface PlayerSummaryRowProps {
   player: MatchPlayer;
   analysis: PostGameAnalysis;
+  matchId: string;
+  seasonYear: number;
 }
 
-function PlayerSummaryRow({ player, analysis }: PlayerSummaryRowProps) {
+function PlayerSummaryRow({ player, analysis, matchId, seasonYear }: PlayerSummaryRowProps) {
   if (!player.player) return null;
 
   const positionColor = getPositionColor(player.player.position);
   const shortPos = getShortPosition(player.player.position);
+
+  // Fetch zone history for deviation calculation (read-only)
+  const { data: previousGames = [] } = usePlayerZoneHistory({
+    playerId: player.player_id,
+    seasonYear,
+    currentMatchId: matchId,
+    playerPosition: player.player.position,
+    enabled: true,
+  });
+
+  // Calculate deviation (in-memory, no DB writes)
+  const deviationResult: ZoneDeviationResult = useMemo(() => {
+    return calculateZoneDeviation(
+      analysis.zoneHeatmap.percentages,
+      previousGames,
+      matchId
+    );
+  }, [analysis.zoneHeatmap.percentages, previousGames, matchId]);
 
   return (
     <div className="p-3 rounded-lg bg-zinc-900/40 border border-zinc-800/40 space-y-3">
@@ -258,6 +279,9 @@ function PlayerSummaryRow({ player, analysis }: PlayerSummaryRowProps) {
           </Badge>
         </div>
       </div>
+
+      {/* Performance Profile Insight - Contextual text about deviation */}
+      <PerformanceProfileInsight deviationResult={deviationResult} />
 
       {/* Quick Indicators */}
       <QuickIndicatorsDisplay indicators={analysis.quickIndicators} />
@@ -367,6 +391,8 @@ export function PostGameInsightsCard({
                   key={player.id}
                   player={player}
                   analysis={analysis}
+                  matchId={matchId}
+                  seasonYear={seasonYear}
                 />
               ))}
             </div>

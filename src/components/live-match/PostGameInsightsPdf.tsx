@@ -15,6 +15,13 @@ import {
   type MatchStatsInput,
 } from "@/lib/postGameAnalysis";
 import { MiniFieldHeatmapPdf } from "./MiniFieldHeatmapPdf";
+import {
+  calculateZoneDeviation,
+  calculateSeasonAverage,
+  type ZoneDeviationResult,
+  type PreviousGameZone,
+} from "@/lib/zoneDeviationEngine";
+import { generateCombinedInsight, type ZoneDeviationInsight } from "@/lib/zoneDeviationInsight";
 
 // ============================================
 // STYLES
@@ -130,6 +137,37 @@ const styles = StyleSheet.create({
     marginBottom: 1,
     paddingLeft: 6,
   },
+  // Performance Profile Insight
+  insightContainer: {
+    marginTop: 3,
+    marginBottom: 4,
+    paddingVertical: 3,
+    paddingHorizontal: 5,
+    backgroundColor: PDF_COLORS.gray100,
+    borderRadius: 3,
+    borderWidth: 1,
+    borderColor: PDF_COLORS.gray200,
+  },
+  insightTitle: {
+    fontSize: 6,
+    fontWeight: 600,
+    color: PDF_COLORS.gray500,
+    marginBottom: 2,
+  },
+  insightTextRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 3,
+  },
+  insightArrow: {
+    fontSize: 8,
+    fontWeight: 700,
+  },
+  insightText: {
+    fontSize: 7,
+    color: PDF_COLORS.gray700,
+    flex: 1,
+  },
   noData: {
     fontSize: 9,
     color: PDF_COLORS.gray500,
@@ -210,6 +248,35 @@ function IndicatorBadge({ icon, value, type }: IndicatorBadgeProps) {
 }
 
 // ============================================
+// PERFORMANCE PROFILE INSIGHT PDF COMPONENT
+// ============================================
+
+interface PerformanceProfileInsightPdfProps {
+  insight: ZoneDeviationInsight | null;
+}
+
+function PerformanceProfileInsightPdf({ insight }: PerformanceProfileInsightPdfProps) {
+  // Don't render if no insight
+  if (!insight) {
+    return null;
+  }
+
+  const arrowColor = insight.direction === "up" ? "#065F46" : "#92400E";
+
+  return (
+    <View style={styles.insightContainer}>
+      <Text style={styles.insightTitle}>Perfil de Atuação</Text>
+      <View style={styles.insightTextRow}>
+        <Text style={[styles.insightArrow, { color: arrowColor }]}>
+          {insight.icon}
+        </Text>
+        <Text style={styles.insightText}>{insight.text}</Text>
+      </View>
+    </View>
+  );
+}
+
+// ============================================
 // PLAYER SUMMARY ROW (NO heatmap)
 // ============================================
 
@@ -217,9 +284,10 @@ interface PlayerSummaryRowPdfProps {
   playerName: string;
   position: string;
   analysis: PostGameAnalysis;
+  insight: ZoneDeviationInsight | null;
 }
 
-function PlayerSummaryRowPdf({ playerName, position, analysis }: PlayerSummaryRowPdfProps) {
+function PlayerSummaryRowPdf({ playerName, position, analysis, insight }: PlayerSummaryRowPdfProps) {
   const { quickIndicators, strengthsImprovements } = analysis;
 
   return (
@@ -230,6 +298,9 @@ function PlayerSummaryRowPdf({ playerName, position, analysis }: PlayerSummaryRo
           <Text style={styles.playerName}>{playerName}</Text>
           <Text style={styles.playerPosition}>{position}</Text>
         </View>
+
+        {/* Performance Profile Insight - Contextual text */}
+        <PerformanceProfileInsightPdf insight={insight} />
 
         {/* Quick Indicators */}
         {quickIndicators.length > 0 && (
@@ -294,12 +365,18 @@ interface PlayerStatsMap {
   [playerId: string]: MatchStatsInput | undefined;
 }
 
+interface PlayerZoneHistoryMap {
+  [playerId: string]: PreviousGameZone[] | undefined;
+}
+
 interface PostGameInsightsPdfProps {
   matchPlayers: MatchPlayer[];
   playerStatsMap: PlayerStatsMap;
   matchDuration?: number;
   selectedPlayerIds?: string[];
   matchId: string;
+  /** Optional: Pre-fetched zone history for each player */
+  playerZoneHistoryMap?: PlayerZoneHistoryMap;
 }
 
 export function PostGameInsightsPdf({
@@ -308,13 +385,14 @@ export function PostGameInsightsPdf({
   matchDuration = 90,
   selectedPlayerIds,
   matchId,
+  playerZoneHistoryMap = {},
 }: PostGameInsightsPdfProps) {
   // Filter players
   const filteredPlayers = selectedPlayerIds && selectedPlayerIds.length > 0
     ? matchPlayers.filter((mp) => selectedPlayerIds.includes(mp.player_id))
     : matchPlayers;
 
-  // Generate analyses
+  // Generate analyses with deviation insights
   const playerAnalyses = filteredPlayers
     .filter((mp) => mp.player)
     .map((mp) => {
@@ -324,9 +402,23 @@ export function PostGameInsightsPdf({
 
       const analysis = generatePostGameAnalysis(position, stats, minutesPlayed);
 
+      // Calculate deviation if zone history is available
+      const previousGames = playerZoneHistoryMap[mp.player_id] ?? [];
+      let insight: ZoneDeviationInsight | null = null;
+      
+      if (previousGames.length >= 3) {
+        const deviationResult = calculateZoneDeviation(
+          analysis.zoneHeatmap.percentages,
+          previousGames,
+          matchId
+        );
+        insight = generateCombinedInsight(deviationResult);
+      }
+
       return {
         player: mp,
         analysis,
+        insight,
         sortScore:
           analysis.quickIndicators.filter((i) => i.type === "positive").length * 2 +
           analysis.strengthsImprovements.strengths.length -
@@ -372,12 +464,13 @@ export function PostGameInsightsPdf({
       <Text style={styles.sectionTitle}>📊 Resumo por Jogador</Text>
       <Text style={styles.sectionSubtitle}>Indicadores rápidos e pontos-chave</Text>
 
-      {playerAnalyses.map(({ player, analysis }) => (
+      {playerAnalyses.map(({ player, analysis, insight }) => (
         <PlayerSummaryRowPdf
           key={player.id}
           playerName={player.player?.full_name ?? "Jogador"}
           position={player.player?.position ?? "N/A"}
           analysis={analysis}
+          insight={insight}
         />
       ))}
     </View>
