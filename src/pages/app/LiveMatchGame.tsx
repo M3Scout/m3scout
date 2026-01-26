@@ -790,17 +790,10 @@ function LiveMatchGameInner({ matchId }: { matchId: string }) {
           ) : (
             <div
               className={cn(
-                "grid",
-                // Mobile: single column
-                "grid-cols-1 gap-3",
-                // Tablet PORTRAIT: 1 column for horizontal card layout
-                "tablet:grid-cols-1 tablet:gap-4",
-                // Tablet LANDSCAPE (iPad rotated): 2 columns side by side
-                "tablet-landscape:grid-cols-2 tablet-landscape:gap-5",
-                // Desktop: 2 columns
-                "desktop:grid-cols-2 desktop:gap-4",
-                // Fallback for non-tablet breakpoints
-                isMobile ? "" : "md:grid-cols-2"
+                // VERTICAL LIST: Always 1 player per row, full width
+                "flex flex-col w-full",
+                // Consistent vertical gap between player cards
+                "gap-3 tablet:gap-4 desktop:gap-4"
               )}
             >
               {displayedPlayers.map((mp, index) => {
