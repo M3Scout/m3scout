@@ -87,16 +87,16 @@ describe("calculateMinutesPlayed", () => {
   });
 
   describe("Starter substituted out at first half added time", () => {
-    it("Case C: Saiu 0'→45+5'", () => {
+    it("Case C: Saiu 0'→45+5' (stored as 50) → regulatory shows 45, not 50", () => {
       const result = calculateMinutesPlayed(
         { started: true, entered_minute: null, exited_minute: 50 },
         { baseDuration: 90, addedTime1H: 5, addedTime2H: 8 }
       );
 
-      // Regulatory: min(50, 90) - 0 = 50, but 50 is the "45+5" value
-      // Using numeric exit: 50 caps at 90, so 50 → 50 for reg
-      // But wait, normalizeMinuteReg(50) = 50 (not over 90)
-      expect(result.minutesPlayed).toBe(50);
+      // CRITICAL FIX: Exit at 50 (meaning 45+5) should cap at 45 for regulatory
+      // because the player exited in first half stoppage time
+      expect(result.minutesPlayed).toBe(45);
+      // Total still shows actual minutes including stoppage
       expect(result.minutesPlayedTotal).toBe(50);
     });
 
@@ -164,16 +164,72 @@ describe("calculateMinutesPlayed", () => {
       expect(result.rangeDisplay).toBe("90' → 90'");
     });
 
-    it("Case: Saiu aos 45+3 (48)", () => {
+    it("Case: Saiu aos 45+3 (stored as 48) → regulatory shows 45", () => {
       const result = calculateMinutesPlayed(
         { started: true, entered_minute: null, exited_minute: 48 },
         { baseDuration: 90, addedTime1H: 3, addedTime2H: 5 }
       );
 
-      // Regulatory: normalizeMinuteReg(48) = 48, so 48 - 0 = 48
-      expect(result.minutesPlayed).toBe(48);
-      // Total: normalizeMinuteTotal(48, 98) = 48
+      // CRITICAL FIX: Exit at 48 (meaning 45+3) should cap at 45 for regulatory
+      // because the player exited in first half stoppage time
+      expect(result.minutesPlayed).toBe(45);
+      // Total shows actual minutes including stoppage
       expect(result.minutesPlayedTotal).toBe(48);
+    });
+  });
+
+  describe("Additional regulatory time scenarios", () => {
+    it("1º tempo completo com +5 acréscimos → regulatory 45, não 50", () => {
+      const result = calculateMinutesPlayed(
+        { started: true, entered_minute: null, exited_minute: 50 },
+        { baseDuration: 90, addedTime1H: 5, addedTime2H: 0 }
+      );
+      expect(result.minutesPlayed).toBe(45);
+    });
+
+    it("2º tempo completo com +6 acréscimos → regulatory 45 (90-45)", () => {
+      const result = calculateMinutesPlayed(
+        { started: false, entered_minute: 46, exited_minute: null },
+        { baseDuration: 90, addedTime1H: 0, addedTime2H: 6 }
+      );
+      // Entered at 46 (2nd half start), played until 90+6 (96)
+      // Regulatory: 90 - 46 = 44
+      expect(result.minutesPlayed).toBe(44);
+      // Total: 96 - 46 = 50
+      expect(result.minutesPlayedTotal).toBe(50);
+    });
+
+    it("Jogo inteiro com acréscimos → regulatory 90", () => {
+      const result = calculateMinutesPlayed(
+        { started: true, entered_minute: null, exited_minute: null },
+        { baseDuration: 90, addedTime1H: 5, addedTime2H: 8 }
+      );
+      expect(result.minutesPlayed).toBe(90);
+      expect(result.minutesPlayedTotal).toBe(103);
+    });
+
+    it("Entrou aos 30' e saiu no 45+4 (49) → regulatory 15 (30 a 45)", () => {
+      const result = calculateMinutesPlayed(
+        { started: false, entered_minute: 30, exited_minute: 49 },
+        { baseDuration: 90, addedTime1H: 4, addedTime2H: 0 }
+      );
+      // Exit at 49 = 45+4, so regulatory end = 45
+      // Regulatory: 45 - 30 = 15
+      expect(result.minutesPlayed).toBe(15);
+      // Total: 49 - 30 = 19
+      expect(result.minutesPlayedTotal).toBe(19);
+    });
+
+    it("Entrou aos 60' e saiu no 90+3 (93) → regulatory 30 (60 a 90)", () => {
+      const result = calculateMinutesPlayed(
+        { started: false, entered_minute: 60, exited_minute: 93 },
+        { baseDuration: 90, addedTime1H: 0, addedTime2H: 3 }
+      );
+      // Exit at 93 = 90+3, so regulatory end = 90
+      // Regulatory: 90 - 60 = 30
+      expect(result.minutesPlayed).toBe(30);
+      // Total: 93 - 60 = 33
+      expect(result.minutesPlayedTotal).toBe(33);
     });
   });
 
