@@ -1,14 +1,15 @@
 /**
- * Mini-Field Heatmap PDF Component
+ * Mini-Field Heatmap PDF Component - Premium Scouting Design
  * 
  * PDF-compatible version using @react-pdf/renderer:
- * - Uses Svg, Circle, Rect, Line, Polygon primitives
- * - No blur filter (PDF fallback: larger circles with lower opacity + gradient)
+ * - Matte green field (#446c46) with clean markings
+ * - Intensity gradient: Yellow (#fabe2e) → Orange (#f03530)
+ * - Integrated zone indicators with dominant zone highlight
  * - Seeded random points for deterministic rendering
  */
 
 import React, { useMemo } from "react";
-import { View, Text, Svg, Circle, Rect, Line, G, Polygon, Defs, RadialGradient, Stop, StyleSheet } from "@react-pdf/renderer";
+import { View, Text, Svg, Circle, Rect, Line, G, Polygon, Defs, LinearGradient, Stop, StyleSheet } from "@react-pdf/renderer";
 import { PDF_COLORS } from "@/lib/pdfStyles";
 import type { ZoneDistribution } from "@/lib/postGameAnalysis";
 
@@ -16,7 +17,6 @@ import type { ZoneDistribution } from "@/lib/postGameAnalysis";
 // SEEDED RANDOM (xfnv1a hash + Mulberry32 PRNG)
 // ============================================
 
-/** FNV-1a hash: string -> uint32 */
 function xfnv1a(str: string): number {
   let h = 2166136261 >>> 0;
   for (let i = 0; i < str.length; i++) {
@@ -26,7 +26,6 @@ function xfnv1a(str: string): number {
   return h >>> 0;
 }
 
-/** Mulberry32 PRNG */
 function mulberry32(seed: number) {
   return function () {
     let t = (seed += 0x6d2b79f5);
@@ -37,7 +36,23 @@ function mulberry32(seed: number) {
 }
 
 // ============================================
-// HEATMAP POINT GENERATION (Exact Algorithm - PDF Fallback)
+// PREMIUM COLORS
+// ============================================
+
+const FIELD_COLORS = {
+  background: "#446c46",
+  lines: "#5a8a5c",
+  linesSubtle: "#3d5c3d",
+};
+
+const HEAT_COLORS = {
+  low: "#fabe2e",
+  medium: "#f7853a",
+  high: "#f03530",
+};
+
+// ============================================
+// HEATMAP POINT GENERATION
 // ============================================
 
 interface HeatmapPoint {
@@ -45,37 +60,33 @@ interface HeatmapPoint {
   y: number;
   radius: number;
   opacity: number;
+  intensity: number;
 }
 
-/** Helpers */
 function clamp(v: number, a: number, b: number): number {
   return Math.max(a, Math.min(b, v));
 }
 
-/**
- * PDF Fallback: No blur support, so use:
- * - Larger radius (6-10)
- * - Lower opacity (0.15-0.30)
- * - Fewer points for cleaner output
- */
 function generateHeatmapPoints(
   percentages: ZoneDistribution,
   seed: string,
-  totalPoints: number = 120 // Fewer for PDF
+  totalPoints: number = 100
 ): HeatmapPoint[] {
   const rand = mulberry32(xfnv1a(seed));
   const randRange = (min: number, max: number) => min + (max - min) * rand();
 
   const points: HeatmapPoint[] = [];
 
-  // Zone Y ranges (attack at top in SVG coordinates)
+  const maxPercent = Math.max(percentages.attack, percentages.midfield, percentages.defense);
+  const minPercent = Math.min(percentages.attack, percentages.midfield, percentages.defense);
+  const range = maxPercent - minPercent || 1;
+
   const zones: { name: keyof ZoneDistribution; yMin: number; yMax: number }[] = [
     { name: "attack", yMin: 0.02, yMax: 0.33 },
     { name: "midfield", yMin: 0.34, yMax: 0.66 },
     { name: "defense", yMin: 0.67, yMax: 0.98 },
   ];
 
-  // Calculate points per zone
   const N = totalPoints;
   const nDef = Math.round(N * percentages.defense / 100);
   const nMid = Math.round(N * percentages.midfield / 100);
@@ -89,8 +100,9 @@ function generateHeatmapPoints(
 
   zones.forEach(({ name, yMin, yMax }) => {
     const nPoints = pointCounts[name];
+    const zonePercent = percentages[name];
+    const intensity = (zonePercent - minPercent) / range;
     
-    // Create 2-3 cluster centers per zone
     const numClusters = 2 + Math.floor(rand() * 2);
     const clusters: { cx: number; cy: number }[] = [];
     
@@ -105,7 +117,6 @@ function generateHeatmapPoints(
       let x: number;
       let y: number;
 
-      // 70% clustered, 30% uniform
       if (rand() < 0.7 && clusters.length > 0) {
         const cluster = clusters[Math.floor(rand() * clusters.length)];
         x = clamp(cluster.cx + (rand() - 0.5) * 0.18, 0.03, 0.97);
@@ -115,17 +126,48 @@ function generateHeatmapPoints(
         y = randRange(yMin, yMax);
       }
 
-      // PDF Fallback: larger radius, lower opacity (no blur)
+      // PDF: Larger radius, lower opacity for soft effect without blur
       points.push({
         x,
         y,
-        radius: randRange(6, 10),
-        opacity: randRange(0.15, 0.30),
+        radius: randRange(5, 9),
+        opacity: randRange(0.20, 0.40) * (0.6 + intensity * 0.4),
+        intensity,
       });
     }
   });
 
   return points;
+}
+
+// Color interpolation
+function getHeatColor(intensity: number): string {
+  if (intensity < 0.5) {
+    const t = intensity * 2;
+    return lerpColor(HEAT_COLORS.low, HEAT_COLORS.medium, t);
+  } else {
+    const t = (intensity - 0.5) * 2;
+    return lerpColor(HEAT_COLORS.medium, HEAT_COLORS.high, t);
+  }
+}
+
+function lerpColor(a: string, b: string, t: number): string {
+  const ah = parseInt(a.slice(1), 16);
+  const bh = parseInt(b.slice(1), 16);
+  
+  const ar = (ah >> 16) & 0xff;
+  const ag = (ah >> 8) & 0xff;
+  const ab = ah & 0xff;
+  
+  const br = (bh >> 16) & 0xff;
+  const bg = (bh >> 8) & 0xff;
+  const bb = bh & 0xff;
+  
+  const rr = Math.round(ar + (br - ar) * t);
+  const rg = Math.round(ag + (bg - ag) * t);
+  const rb = Math.round(ab + (bb - ab) * t);
+  
+  return `rgb(${rr}, ${rg}, ${rb})`;
 }
 
 // ============================================
@@ -139,89 +181,93 @@ const styles = StyleSheet.create({
   mainRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 6,
   },
-  barContainer: {
+  zoneIndicator: {
     alignItems: "center",
-    justifyContent: "flex-end",
+    gap: 2,
   },
-  barLabel: {
-    fontSize: 5,
+  zoneLabelNormal: {
+    paddingVertical: 2,
+    paddingHorizontal: 4,
+    backgroundColor: "#18181b",
+    borderRadius: 2,
+    borderWidth: 0.5,
+    borderColor: "#3f3f46",
+  },
+  zoneLabelDominant: {
+    paddingVertical: 2,
+    paddingHorizontal: 4,
+    backgroundColor: "#ffffff",
+    borderRadius: 2,
+  },
+  zoneLabelTextNormal: {
+    fontSize: 6,
+    fontWeight: 700,
+    color: "#a1a1aa",
+  },
+  zoneLabelTextDominant: {
+    fontSize: 6,
+    fontWeight: 700,
+    color: "#18181b",
+  },
+  zoneValueNormal: {
+    fontSize: 7,
     fontWeight: 600,
-    color: PDF_COLORS.gray500,
-    marginTop: 2,
+    color: "#71717a",
   },
-  bottomBarContainer: {
+  zoneValueDominant: {
+    fontSize: 7,
+    fontWeight: 700,
+  },
+  bottomZone: {
+    flexDirection: "row",
     alignItems: "center",
-    marginTop: 3,
+    justifyContent: "center",
+    marginTop: 4,
+    gap: 4,
   },
   legend: {
     flexDirection: "row",
     justifyContent: "center",
-    marginTop: 3,
-    gap: 6,
-  },
-  legendItem: {
-    flexDirection: "row",
     alignItems: "center",
-    gap: 2,
+    marginTop: 4,
+    gap: 4,
   },
-  legendLabel: {
+  legendText: {
     fontSize: 6,
-    fontWeight: 600,
-  },
-  legendValue: {
-    fontSize: 6,
-    color: PDF_COLORS.gray500,
-  },
-  legendSeparator: {
-    fontSize: 6,
-    color: PDF_COLORS.gray400,
+    color: "#71717a",
   },
 });
 
-// Colors for intensity bars
-const BAR_COLORS = {
-  defense: "#0ea5e9", // sky-500
-  attack: "#10b981", // emerald-500
-  midfield: "#f59e0b", // amber-500
-};
-
 // ============================================
-// INTENSITY BAR (PDF)
+// ZONE INDICATOR PDF COMPONENT
 // ============================================
 
-interface IntensityBarPdfProps {
+interface ZoneIndicatorPdfProps {
+  label: string;
   value: number;
-  maxDimension: number;
-  orientation: "vertical" | "horizontal";
+  isDominant: boolean;
   color: string;
-  thickness?: number;
 }
 
-function IntensityBarPdf({ value, maxDimension, orientation, color, thickness = 4 }: IntensityBarPdfProps) {
-  const fillSize = Math.max(2, (value / 100) * maxDimension);
-  const trackColor = "#27272a"; // zinc-800
-
-  if (orientation === "vertical") {
-    return (
-      <Svg width={thickness} height={maxDimension} viewBox={`0 0 ${thickness} ${maxDimension}`}>
-        {/* Track */}
-        <Rect x={0} y={0} width={thickness} height={maxDimension} fill={trackColor} rx={2} />
-        {/* Fill - from bottom */}
-        <Rect x={0} y={maxDimension - fillSize} width={thickness} height={fillSize} fill={color} rx={2} opacity={0.7} />
-      </Svg>
-    );
-  }
-
-  // Horizontal
+function ZoneIndicatorPdf({ label, value, isDominant, color }: ZoneIndicatorPdfProps) {
   return (
-    <Svg width={maxDimension} height={thickness} viewBox={`0 0 ${maxDimension} ${thickness}`}>
-      {/* Track */}
-      <Rect x={0} y={0} width={maxDimension} height={thickness} fill={trackColor} rx={2} />
-      {/* Fill - centered */}
-      <Rect x={(maxDimension - fillSize) / 2} y={0} width={fillSize} height={thickness} fill={color} rx={2} opacity={0.7} />
-    </Svg>
+    <View style={styles.zoneIndicator}>
+      <View style={isDominant ? styles.zoneLabelDominant : styles.zoneLabelNormal}>
+        <Text style={isDominant ? styles.zoneLabelTextDominant : styles.zoneLabelTextNormal}>
+          {label}
+        </Text>
+      </View>
+      <Text 
+        style={[
+          isDominant ? styles.zoneValueDominant : styles.zoneValueNormal,
+          isDominant ? { color } : {}
+        ]}
+      >
+        {value}%
+      </Text>
+    </View>
   );
 }
 
@@ -248,18 +294,24 @@ export function MiniFieldHeatmapPdf({
   showLegend = true,
   showIntensityBars = true,
 }: MiniFieldHeatmapPdfProps) {
-  // CRITICAL FIX: If all percentages are 0, player didn't play - don't generate points
   const hasData = percentages.defense > 0 || percentages.midfield > 0 || percentages.attack > 0;
   
   const seed = `${matchId}:${playerId}`;
   const cleanSeed = seed.replace(/[^a-zA-Z0-9]/g, "");
 
   const points = useMemo(
-    () => hasData ? generateHeatmapPoints(percentages, seed, 120) : [],
+    () => hasData ? generateHeatmapPoints(percentages, seed, 100) : [],
     [percentages.attack, percentages.midfield, percentages.defense, seed, hasData]
   );
 
-  // If no data, show empty state in PDF
+  // Determine dominant zone
+  const dominantZone = useMemo(() => {
+    if (!hasData) return null;
+    if (percentages.attack >= percentages.midfield && percentages.attack >= percentages.defense) return "attack";
+    if (percentages.midfield >= percentages.defense) return "midfield";
+    return "defense";
+  }, [percentages, hasData]);
+
   if (!hasData) {
     return (
       <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
@@ -279,68 +331,45 @@ export function MiniFieldHeatmapPdf({
     );
   }
 
-  const barThickness = 4;
-  const barGap = 4;
-  const sideBarSpace = showIntensityBars ? barThickness + barGap : 0;
-  
-  const fieldWidth = width - sideBarSpace * 2;
+  const indicatorWidth = showIntensityBars ? 24 : 0;
+  const fieldWidth = width - (indicatorWidth * 2);
   const fieldHeight = height;
   const fieldPadding = 3;
   const innerFieldWidth = fieldWidth - fieldPadding * 2;
   const innerFieldHeight = fieldHeight - fieldPadding * 2;
 
-  // Colors
-  const fieldBg = "#1a2f1a";
-  const lineColor = "#3d5c3d";
-  const heatColor = "#10b981";
-  const arrowColor = "#4ade80";
-
   return (
     <View style={styles.container}>
-      {/* Main row: left bar + field + right bar */}
       <View style={styles.mainRow}>
-        {/* Left bar - DEFENSE */}
+        {/* Left indicator - DEF */}
         {showIntensityBars && (
-          <View style={styles.barContainer}>
-            <IntensityBarPdf 
-              value={percentages.defense} 
-              maxDimension={fieldHeight} 
-              orientation="vertical" 
-              color={BAR_COLORS.defense}
-              thickness={barThickness}
-            />
-            <Text style={styles.barLabel}>DEF</Text>
-          </View>
+          <ZoneIndicatorPdf 
+            label="DEF" 
+            value={percentages.defense}
+            isDominant={dominantZone === "defense"}
+            color={HEAT_COLORS.high}
+          />
         )}
 
         {/* Field SVG */}
         <Svg width={fieldWidth} height={fieldHeight} viewBox={`0 0 ${fieldWidth} ${fieldHeight}`}>
-          {/* Gradient definition for heatmap points */}
-          <Defs>
-            <RadialGradient id={`heatGrad-${cleanSeed}`}>
-              <Stop offset="0%" stopColor={heatColor} stopOpacity={0.6} />
-              <Stop offset="60%" stopColor={heatColor} stopOpacity={0.3} />
-              <Stop offset="100%" stopColor={heatColor} stopOpacity={0} />
-            </RadialGradient>
-          </Defs>
-
           {/* Field background */}
           <Rect
-            x={fieldPadding}
-            y={fieldPadding}
-            width={innerFieldWidth}
-            height={innerFieldHeight}
-            fill={fieldBg}
-            rx={2}
+            x={0}
+            y={0}
+            width={fieldWidth}
+            height={fieldHeight}
+            fill={FIELD_COLORS.background}
+            rx={3}
           />
 
           {/* Field outline */}
           <Rect
-            x={fieldPadding + 2}
-            y={fieldPadding + 2}
-            width={innerFieldWidth - 4}
-            height={innerFieldHeight - 4}
-            stroke={lineColor}
+            x={fieldPadding + 1}
+            y={fieldPadding + 1}
+            width={innerFieldWidth - 2}
+            height={innerFieldHeight - 2}
+            stroke={FIELD_COLORS.lines}
             strokeWidth={0.5}
             fill="none"
             rx={1}
@@ -348,11 +377,11 @@ export function MiniFieldHeatmapPdf({
 
           {/* Center line */}
           <Line
-            x1={fieldPadding + 2}
+            x1={fieldPadding + 1}
             y1={fieldPadding + innerFieldHeight / 2}
-            x2={fieldPadding + innerFieldWidth - 2}
+            x2={fieldPadding + innerFieldWidth - 1}
             y2={fieldPadding + innerFieldHeight / 2}
-            stroke={lineColor}
+            stroke={FIELD_COLORS.lines}
             strokeWidth={0.5}
           />
 
@@ -360,35 +389,83 @@ export function MiniFieldHeatmapPdf({
           <Circle
             cx={fieldPadding + innerFieldWidth / 2}
             cy={fieldPadding + innerFieldHeight / 2}
-            r={Math.min(innerFieldWidth, innerFieldHeight) * 0.1}
-            stroke={lineColor}
+            r={Math.min(innerFieldWidth, innerFieldHeight) * 0.09}
+            stroke={FIELD_COLORS.lines}
             strokeWidth={0.5}
             fill="none"
           />
 
+          {/* Center dot */}
+          <Circle
+            cx={fieldPadding + innerFieldWidth / 2}
+            cy={fieldPadding + innerFieldHeight / 2}
+            r={0.8}
+            fill={FIELD_COLORS.lines}
+          />
+
           {/* Top penalty area */}
           <Rect
-            x={fieldPadding + innerFieldWidth * 0.2}
-            y={fieldPadding + 2}
-            width={innerFieldWidth * 0.6}
+            x={fieldPadding + innerFieldWidth * 0.22}
+            y={fieldPadding + 1}
+            width={innerFieldWidth * 0.56}
             height={innerFieldHeight * 0.13}
-            stroke={lineColor}
+            stroke={FIELD_COLORS.lines}
+            strokeWidth={0.5}
+            fill="none"
+          />
+          <Rect
+            x={fieldPadding + innerFieldWidth * 0.35}
+            y={fieldPadding + 1}
+            width={innerFieldWidth * 0.30}
+            height={innerFieldHeight * 0.05}
+            stroke={FIELD_COLORS.lines}
             strokeWidth={0.5}
             fill="none"
           />
 
           {/* Bottom penalty area */}
           <Rect
-            x={fieldPadding + innerFieldWidth * 0.2}
-            y={fieldPadding + innerFieldHeight - innerFieldHeight * 0.13 - 2}
-            width={innerFieldWidth * 0.6}
+            x={fieldPadding + innerFieldWidth * 0.22}
+            y={fieldPadding + innerFieldHeight - innerFieldHeight * 0.13 - 1}
+            width={innerFieldWidth * 0.56}
             height={innerFieldHeight * 0.13}
-            stroke={lineColor}
+            stroke={FIELD_COLORS.lines}
+            strokeWidth={0.5}
+            fill="none"
+          />
+          <Rect
+            x={fieldPadding + innerFieldWidth * 0.35}
+            y={fieldPadding + innerFieldHeight - innerFieldHeight * 0.05 - 1}
+            width={innerFieldWidth * 0.30}
+            height={innerFieldHeight * 0.05}
+            stroke={FIELD_COLORS.lines}
             strokeWidth={0.5}
             fill="none"
           />
 
-          {/* Heatmap points */}
+          {/* Zone divider lines (subtle dashed) */}
+          <Line
+            x1={fieldPadding + 1}
+            y1={fieldPadding + innerFieldHeight * 0.33}
+            x2={fieldPadding + innerFieldWidth - 1}
+            y2={fieldPadding + innerFieldHeight * 0.33}
+            stroke={FIELD_COLORS.linesSubtle}
+            strokeWidth={0.3}
+            strokeDasharray="2,2"
+            opacity={0.4}
+          />
+          <Line
+            x1={fieldPadding + 1}
+            y1={fieldPadding + innerFieldHeight * 0.67}
+            x2={fieldPadding + innerFieldWidth - 1}
+            y2={fieldPadding + innerFieldHeight * 0.67}
+            stroke={FIELD_COLORS.linesSubtle}
+            strokeWidth={0.3}
+            strokeDasharray="2,2"
+            opacity={0.4}
+          />
+
+          {/* Heatmap points with color gradient */}
           <G>
             {points.map((point, i) => (
               <Circle
@@ -396,7 +473,7 @@ export function MiniFieldHeatmapPdf({
                 cx={fieldPadding + point.x * innerFieldWidth}
                 cy={fieldPadding + point.y * innerFieldHeight}
                 r={point.radius}
-                fill={`url(#heatGrad-${cleanSeed})`}
+                fill={getHeatColor(point.intensity)}
                 opacity={point.opacity}
               />
             ))}
@@ -404,58 +481,50 @@ export function MiniFieldHeatmapPdf({
 
           {/* Attack direction arrow */}
           <Polygon
-            points={`${fieldWidth / 2 - 4},${fieldPadding + 6} ${fieldWidth / 2 + 4},${fieldPadding + 6} ${fieldWidth / 2},${fieldPadding + 1}`}
-            fill={arrowColor}
+            points={`${fieldWidth / 2 - 3},${fieldPadding + 5} ${fieldWidth / 2 + 3},${fieldPadding + 5} ${fieldWidth / 2},${fieldPadding + 1}`}
+            fill="#ffffff"
             opacity={0.5}
           />
         </Svg>
 
-        {/* Right bar - ATTACK */}
+        {/* Right indicator - ATA */}
         {showIntensityBars && (
-          <View style={styles.barContainer}>
-            <IntensityBarPdf 
-              value={percentages.attack} 
-              maxDimension={fieldHeight} 
-              orientation="vertical" 
-              color={BAR_COLORS.attack}
-              thickness={barThickness}
-            />
-            <Text style={styles.barLabel}>ATA</Text>
-          </View>
+          <ZoneIndicatorPdf 
+            label="ATA" 
+            value={percentages.attack}
+            isDominant={dominantZone === "attack"}
+            color={HEAT_COLORS.high}
+          />
         )}
       </View>
 
-      {/* Bottom bar - MIDFIELD */}
+      {/* Bottom indicator - MEI */}
       {showIntensityBars && (
-        <View style={styles.bottomBarContainer}>
-          <IntensityBarPdf 
-            value={percentages.midfield} 
-            maxDimension={fieldWidth - 10} 
-            orientation="horizontal" 
-            color={BAR_COLORS.midfield}
-            thickness={barThickness}
+        <View style={styles.bottomZone}>
+          <ZoneIndicatorPdf 
+            label="MEI" 
+            value={percentages.midfield}
+            isDominant={dominantZone === "midfield"}
+            color={HEAT_COLORS.high}
           />
-          <Text style={styles.barLabel}>MEI</Text>
         </View>
       )}
 
-      {/* Legend */}
+      {/* Heat intensity legend */}
       {showLegend && (
         <View style={styles.legend}>
-          <View style={styles.legendItem}>
-            <Text style={[styles.legendLabel, { color: BAR_COLORS.attack }]}>ATA</Text>
-            <Text style={styles.legendValue}>{percentages.attack}%</Text>
-          </View>
-          <Text style={styles.legendSeparator}>•</Text>
-          <View style={styles.legendItem}>
-            <Text style={[styles.legendLabel, { color: BAR_COLORS.midfield }]}>MEI</Text>
-            <Text style={styles.legendValue}>{percentages.midfield}%</Text>
-          </View>
-          <Text style={styles.legendSeparator}>•</Text>
-          <View style={styles.legendItem}>
-            <Text style={[styles.legendLabel, { color: BAR_COLORS.defense }]}>DEF</Text>
-            <Text style={styles.legendValue}>{percentages.defense}%</Text>
-          </View>
+          <Text style={styles.legendText}>Baixa</Text>
+          <Svg width={50} height={6} viewBox="0 0 50 6">
+            <Defs>
+              <LinearGradient id={`heatLegend-${cleanSeed}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                <Stop offset="0%" stopColor={HEAT_COLORS.low} />
+                <Stop offset="50%" stopColor={HEAT_COLORS.medium} />
+                <Stop offset="100%" stopColor={HEAT_COLORS.high} />
+              </LinearGradient>
+            </Defs>
+            <Rect x={0} y={0} width={50} height={6} fill={`url(#heatLegend-${cleanSeed})`} rx={3} />
+          </Svg>
+          <Text style={styles.legendText}>Alta</Text>
         </View>
       )}
     </View>
