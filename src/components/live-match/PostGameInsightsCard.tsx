@@ -14,23 +14,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { BarChart3, Target, TrendingUp, TrendingDown, CheckCircle2, AlertCircle } from "lucide-react";
+import { BarChart3, CheckCircle2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   generatePostGameAnalysis,
   type PostGameAnalysis,
-  type FieldZone,
   type QuickIndicator,
   type MatchStatsInput,
 } from "@/lib/postGameAnalysis";
 import { getShortPosition, getPositionColor } from "@/lib/positionColors";
+import { MiniFieldHeatmap } from "./MiniFieldHeatmap";
 
 // ============================================
 // TYPES
@@ -59,55 +52,7 @@ interface PostGameInsightsCardProps {
   playerStatsMap: PlayerStatsMap;
   matchStatus: string;
   matchDuration?: number;
-}
-
-// ============================================
-// ZONE HEATMAP COMPONENT
-// ============================================
-
-interface ZoneHeatmapMiniProps {
-  zones: PostGameAnalysis["zoneHeatmap"];
-}
-
-function ZoneHeatmapMini({ zones }: ZoneHeatmapMiniProps) {
-  const getZoneColor = (zone: FieldZone, intensity: "low" | "medium" | "high") => {
-    const colors = {
-      low: "bg-zinc-700/30",
-      medium: "bg-emerald-500/40",
-      high: "bg-emerald-500/80",
-    };
-    return colors[intensity];
-  };
-
-  return (
-    <div className="flex flex-col items-center gap-0.5">
-      {/* Field representation (vertical - attack on top) */}
-      <div className="flex flex-col gap-0.5 w-12">
-        <TooltipProvider delayDuration={100}>
-          {(["attack", "midfield", "defense"] as FieldZone[]).map((zone) => (
-            <Tooltip key={zone}>
-              <TooltipTrigger asChild>
-                <div
-                  className={cn(
-                    "h-4 rounded-sm transition-colors",
-                    getZoneColor(zone, zones.intensities[zone])
-                  )}
-                />
-              </TooltipTrigger>
-              <TooltipContent side="right" className="text-xs">
-                <p className="font-medium capitalize">{zone === "attack" ? "Ataque" : zone === "midfield" ? "Meio" : "Defesa"}</p>
-                <p className="text-muted-foreground">{zones.percentages[zone]}%</p>
-              </TooltipContent>
-            </Tooltip>
-          ))}
-        </TooltipProvider>
-      </div>
-      {/* Primary zone label */}
-      <span className="text-[9px] text-muted-foreground mt-1">
-        {zones.primaryZone === "attack" ? "ATA" : zones.primaryZone === "midfield" ? "MEI" : "DEF"}
-      </span>
-    </div>
-  );
+  matchId: string;
 }
 
 // ============================================
@@ -204,9 +149,10 @@ function StrengthsImprovementsDisplay({ strengths, improvements }: StrengthsImpr
 interface PlayerInsightRowProps {
   player: MatchPlayer;
   analysis: PostGameAnalysis;
+  matchId: string;
 }
 
-function PlayerInsightRow({ player, analysis }: PlayerInsightRowProps) {
+function PlayerInsightRow({ player, analysis, matchId }: PlayerInsightRowProps) {
   if (!player.player) return null;
 
   const positionColor = getPositionColor(player.player.position);
@@ -216,8 +162,15 @@ function PlayerInsightRow({ player, analysis }: PlayerInsightRowProps) {
     <div className="p-3 rounded-lg bg-zinc-900/40 border border-zinc-800/40 space-y-3">
       {/* Header: Player info + Zone Heatmap */}
       <div className="flex items-start gap-3">
-        {/* Zone Heatmap */}
-        <ZoneHeatmapMini zones={analysis.zoneHeatmap} />
+        {/* Mini Field Heatmap */}
+        <MiniFieldHeatmap 
+          percentages={analysis.zoneHeatmap.percentages}
+          matchId={matchId}
+          playerId={player.player_id}
+          width={100}
+          height={140}
+          showLegend={true}
+        />
         
         {/* Player Info */}
         <div className="flex-1 min-w-0">
@@ -262,6 +215,7 @@ export function PostGameInsightsCard({
   playerStatsMap,
   matchStatus,
   matchDuration = 90,
+  matchId,
 }: PostGameInsightsCardProps) {
   // Only show for finished/applied matches
   const showInsights = matchStatus === "finished" || matchStatus === "applied";
@@ -307,26 +261,7 @@ export function PostGameInsightsCard({
         </CardDescription>
       </CardHeader>
       <CardContent className="p-4 sm:p-6">
-        {/* Legend */}
-        <div className="flex flex-wrap items-center gap-4 mb-4 pb-4 border-b border-zinc-800/40">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="font-medium">Zonas:</span>
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded-sm bg-emerald-500/80" />
-              <span>Alta</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded-sm bg-emerald-500/40" />
-              <span>Média</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded-sm bg-zinc-700/30" />
-              <span>Baixa</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Player insights */}
+        {/* Legend removed - now integrated in MiniFieldHeatmap */}
         <ScrollArea className="h-[450px] sm:h-[520px]">
           <div className="space-y-3 pr-3">
             {playerAnalyses.map(({ player, analysis }) => (
@@ -334,6 +269,7 @@ export function PostGameInsightsCard({
                 key={player.id}
                 player={player}
                 analysis={analysis}
+                matchId={matchId}
               />
             ))}
           </div>
