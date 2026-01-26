@@ -225,11 +225,30 @@ function getIntensity(percentage: number): "low" | "medium" | "high" {
 }
 
 // ============================================
-// 2. QUICK INDICATORS ENGINE
+// 2. QUICK INDICATORS ENGINE (v2 - Specific Format)
 // ============================================
 
 /**
- * Generate quick micro-insights from stats
+ * Micro-indicator for compact display
+ */
+export interface MicroIndicator {
+  id: string;
+  label: string;
+  /** Format: "16/20 (80%)" or "4/6" or "—" */
+  value: string;
+  numerator: number;
+  denominator: number;
+  percentage: number | null;
+  type: "positive" | "neutral" | "negative";
+  icon: string;
+}
+
+/**
+ * Generate exactly 4 micro-indicators in the requested format
+ * - Eficiência de passes: passes_certos / total → "16/20 (80%)"
+ * - Eficiência no drible: dribles_certos / tentados → "4/6"
+ * - Duelo físico: duelos_ganhos / total → "6/9"
+ * - Segurança na posse: perdas / ações → "3/18"
  */
 export function generateQuickIndicators(
   stats: MatchStatsInput,
@@ -237,203 +256,128 @@ export function generateQuickIndicators(
   position: string
 ): QuickIndicator[] {
   const indicators: QuickIndicator[] = [];
-  const positionGroup = getPositionGroup(position);
-  const isGK = positionGroup === "goalkeeper";
   
-  // === OFFENSIVE INDICATORS ===
-  
-  // Goal involvement (G+A)
-  const goalInvolvement = (stats.goals ?? 0) + (stats.assists ?? 0);
-  if (goalInvolvement > 0) {
-    indicators.push({
-      id: "goal_involvement",
-      label: "Participação em Gols",
-      value: goalInvolvement,
-      type: "positive",
-      icon: "⚽",
-    });
-  }
-  
-  // Shot efficiency
-  const shots = stats.shots ?? 0;
-  const shotsOnTarget = stats.shots_on_target ?? 0;
-  const goals = stats.goals ?? 0;
-  if (shots > 0) {
-    const accuracy = Math.round((shotsOnTarget / shots) * 100);
-    indicators.push({
-      id: "shot_accuracy",
-      label: "Precisão de Finalizações",
-      value: `${accuracy}%`,
-      type: accuracy >= 50 ? "positive" : accuracy >= 25 ? "neutral" : "negative",
-      icon: "🎯",
-    });
-  }
-  
-  // Conversion rate (goals / shots)
-  if (shots >= 3 && goals > 0) {
-    const conversion = Math.round((goals / shots) * 100);
-    indicators.push({
-      id: "conversion",
-      label: "Taxa de Conversão",
-      value: `${conversion}%`,
-      type: conversion >= 25 ? "positive" : "neutral",
-      icon: "📊",
-    });
-  }
-  
-  // === PASSING INDICATORS ===
-  
+  // 1. Eficiência de Passes: passes_certos / (certos + errados)
   const passesCompleted = stats.passes_completed ?? 0;
   const passesTotal = stats.passes_total ?? 0;
-  if (passesTotal > 0) {
-    const passAccuracy = Math.round((passesCompleted / passesTotal) * 100);
+  // passes_total is already completed + failed in our system
+  const passesDenom = passesTotal > 0 ? passesTotal : passesCompleted;
+  
+  if (passesDenom > 0) {
+    const passPercentage = Math.round((passesCompleted / passesDenom) * 100);
     indicators.push({
-      id: "pass_accuracy",
-      label: "Precisão de Passes",
-      value: `${passAccuracy}%`,
-      type: passAccuracy >= 85 ? "positive" : passAccuracy >= 70 ? "neutral" : "negative",
+      id: "pass_efficiency",
+      label: "Eficiência de Passes",
+      value: `${passesCompleted}/${passesDenom} (${passPercentage}%)`,
+      type: passPercentage >= 80 ? "positive" : passPercentage >= 65 ? "neutral" : "negative",
+      icon: "📤",
+    });
+  } else {
+    indicators.push({
+      id: "pass_efficiency",
+      label: "Eficiência de Passes",
+      value: "—",
+      type: "neutral",
       icon: "📤",
     });
   }
   
-  // Key passes + chances created
-  const creativity = (stats.key_passes ?? 0) + (stats.chances_created ?? 0);
-  if (creativity >= 2) {
-    indicators.push({
-      id: "creativity",
-      label: "Ações Criativas",
-      value: creativity,
-      type: "positive",
-      icon: "💡",
-    });
-  }
-  
-  // === DRIBBLING INDICATORS ===
-  
+  // 2. Eficiência no Drible: dribles_certos / tentados
   const dribblesSuccess = stats.dribbles_success ?? 0;
   const dribblesTotal = stats.dribbles_total ?? 0;
-  if (dribblesTotal >= 2) {
-    const dribbleRate = Math.round((dribblesSuccess / dribblesTotal) * 100);
+  
+  if (dribblesTotal > 0) {
+    const dribblePercentage = Math.round((dribblesSuccess / dribblesTotal) * 100);
     indicators.push({
-      id: "dribble_success",
-      label: "Eficiência em Dribles",
-      value: `${dribbleRate}%`,
-      type: dribbleRate >= 60 ? "positive" : dribbleRate >= 40 ? "neutral" : "negative",
+      id: "dribble_efficiency",
+      label: "Eficiência no Drible",
+      value: `${dribblesSuccess}/${dribblesTotal}`,
+      type: dribblePercentage >= 60 ? "positive" : dribblePercentage >= 40 ? "neutral" : "negative",
+      icon: "👟",
+    });
+  } else {
+    indicators.push({
+      id: "dribble_efficiency",
+      label: "Eficiência no Drible",
+      value: "—",
+      type: "neutral",
       icon: "👟",
     });
   }
   
-  // === DEFENSIVE INDICATORS ===
-  
-  const defensiveActions = 
-    (stats.tackles ?? 0) + 
-    (stats.interceptions ?? 0) + 
-    (stats.clearances ?? 0) + 
-    (stats.recoveries ?? 0) +
-    (stats.blocked_shots ?? 0);
-  
-  if (defensiveActions >= 3) {
-    indicators.push({
-      id: "defensive_actions",
-      label: "Ações Defensivas",
-      value: defensiveActions,
-      type: "positive",
-      icon: "🛡️",
-    });
-  }
-  
-  // Duel success rate
+  // 3. Duelo Físico: duelos_ganhos / (ganhos + perdidos)
+  // Use duels_won and duels_total, or sum aerial + ground if available
   const duelsWon = stats.duels_won ?? 0;
   const duelsTotal = stats.duels_total ?? 0;
-  if (duelsTotal >= 3) {
-    const duelRate = Math.round((duelsWon / duelsTotal) * 100);
+  const aerialWon = stats.aerial_duels_won ?? 0;
+  const aerialTotal = stats.aerial_duels_total ?? 0;
+  
+  // Combine all duels
+  const totalDuelsWon = duelsWon + aerialWon;
+  const totalDuelsPlayed = duelsTotal + aerialTotal;
+  
+  if (totalDuelsPlayed > 0) {
+    const duelPercentage = Math.round((totalDuelsWon / totalDuelsPlayed) * 100);
     indicators.push({
-      id: "duel_rate",
-      label: "Duelos Ganhos",
-      value: `${duelRate}%`,
-      type: duelRate >= 55 ? "positive" : duelRate >= 40 ? "neutral" : "negative",
+      id: "duel_efficiency",
+      label: "Duelo Físico",
+      value: `${totalDuelsWon}/${totalDuelsPlayed}`,
+      type: duelPercentage >= 55 ? "positive" : duelPercentage >= 40 ? "neutral" : "negative",
+      icon: "💪",
+    });
+  } else {
+    indicators.push({
+      id: "duel_efficiency",
+      label: "Duelo Físico",
+      value: "—",
+      type: "neutral",
       icon: "💪",
     });
   }
   
-  // === RISK INDICATORS ===
-  
+  // 4. Segurança na Posse: perdas_de_posse / ações_com_a_bola
   const possessionLost = stats.possession_lost ?? 0;
-  if (possessionLost >= 4) {
+  const ballActions = stats.ball_actions ?? 0;
+  
+  // Fallback: perdas / (passes_total + dribles_tentados)
+  let posseDenom = ballActions;
+  if (posseDenom === 0) {
+    posseDenom = passesDenom + dribblesTotal;
+  }
+  
+  if (posseDenom > 0) {
+    const lossRate = Math.round((possessionLost / posseDenom) * 100);
     indicators.push({
-      id: "possession_lost",
-      label: "Perdas de Posse",
-      value: possessionLost,
-      type: possessionLost >= 7 ? "negative" : "neutral",
-      icon: "⚠️",
+      id: "possession_security",
+      label: "Segurança na Posse",
+      value: `${possessionLost}/${posseDenom}`,
+      // Lower loss rate = better
+      type: lossRate <= 15 ? "positive" : lossRate <= 25 ? "neutral" : "negative",
+      icon: "🔒",
+    });
+  } else {
+    indicators.push({
+      id: "possession_security",
+      label: "Segurança na Posse",
+      value: "—",
+      type: "neutral",
+      icon: "🔒",
     });
   }
   
-  const wasDribbled = stats.was_dribbled ?? 0;
-  if (wasDribbled >= 2) {
-    indicators.push({
-      id: "was_dribbled",
-      label: "Vezes Driblado",
-      value: wasDribbled,
-      type: wasDribbled >= 4 ? "negative" : "neutral",
-      icon: "💨",
-    });
-  }
-  
-  // === GOALKEEPER INDICATORS ===
-  
-  if (isGK) {
-    const saves = stats.saves ?? 0;
-    const goalsConceded = stats.goals_conceded ?? 0;
-    
-    if (saves > 0 || goalsConceded > 0) {
-      const saveRate = saves + goalsConceded > 0 
-        ? Math.round((saves / (saves + goalsConceded)) * 100)
-        : 0;
-      indicators.push({
-        id: "save_rate",
-        label: "Taxa de Defesas",
-        value: `${saveRate}%`,
-        type: saveRate >= 70 ? "positive" : saveRate >= 50 ? "neutral" : "negative",
-        icon: "🧤",
-      });
-    }
-    
-    if (goalsConceded === 0 && minutesPlayed >= 45) {
-      indicators.push({
-        id: "clean_sheet",
-        label: "Clean Sheet",
-        value: "✓",
-        type: "positive",
-        icon: "🏆",
-      });
-    }
-  }
-  
-  // === DISCIPLINE ===
-  
-  const yellows = stats.yellow_cards ?? 0;
-  const reds = stats.red_cards ?? 0;
-  if (yellows > 0 || reds > 0) {
-    indicators.push({
-      id: "discipline",
-      label: "Cartões",
-      value: reds > 0 ? `🟥 ${reds}` : `🟨 ${yellows}`,
-      type: reds > 0 ? "negative" : "neutral",
-      icon: reds > 0 ? "🟥" : "🟨",
-    });
-  }
-  
-  // Limit to top 6 indicators
-  return indicators.slice(0, 6);
+  // Return exactly 4 indicators
+  return indicators.slice(0, 4);
 }
 
 // ============================================
-// 3. STRENGTHS / IMPROVEMENTS ENGINE
+// 3. STRENGTHS / IMPROVEMENTS ENGINE (v2 - Professional)
 // ============================================
 
 /**
- * Generate automatic strengths and areas to improve
+ * Generate professional, neutral bullet points for strengths and improvements
+ * - 2-3 bullets max per section
+ * - Technical language, no emotional tones
+ * - Based on thresholds and context
  */
 export function generateStrengthsImprovements(
   stats: MatchStatsInput,
@@ -444,6 +388,8 @@ export function generateStrengthsImprovements(
   const improvements: string[] = [];
   const positionGroup = getPositionGroup(position);
   const isGK = positionGroup === "goalkeeper";
+  const isDefender = positionGroup === "defender" || positionGroup === "fullback";
+  const isAttacker = positionGroup === "attacker";
   
   // Min minutes for reliable analysis
   if (minutesPlayed < 15) {
@@ -454,141 +400,183 @@ export function generateStrengthsImprovements(
     };
   }
   
-  // === STRENGTHS ANALYSIS ===
-  
-  // Goal scorer
-  if ((stats.goals ?? 0) >= 1) {
-    strengths.push("Finalizador decisivo, marcou gol na partida");
-  }
-  
-  // Playmaker
-  if ((stats.assists ?? 0) >= 1) {
-    strengths.push("Criou jogadas de gol com assistência(s)");
-  }
-  
-  // High pass accuracy
-  const passesTotal = stats.passes_total ?? 0;
+  // === CALCULATED METRICS ===
   const passesCompleted = stats.passes_completed ?? 0;
-  if (passesTotal >= 15 && passesCompleted / passesTotal >= 0.85) {
-    strengths.push("Alta precisão nos passes, circulação segura");
-  }
+  const passesTotal = stats.passes_total ?? 0;
+  const passAccuracy = passesTotal > 0 ? (passesCompleted / passesTotal) * 100 : 0;
   
-  // Creative player
-  const creativity = (stats.key_passes ?? 0) + (stats.chances_created ?? 0);
-  if (creativity >= 3) {
-    strengths.push("Criatividade acima da média, gerou oportunidades");
-  }
-  
-  // Good dribbler
   const dribblesSuccess = stats.dribbles_success ?? 0;
   const dribblesTotal = stats.dribbles_total ?? 0;
-  if (dribblesTotal >= 3 && dribblesSuccess / dribblesTotal >= 0.6) {
-    strengths.push("Eficiente nos dribles, progressão com bola");
-  }
+  const dribbleAccuracy = dribblesTotal > 0 ? (dribblesSuccess / dribblesTotal) * 100 : 0;
   
-  // Defensive presence
   const defensiveActions = 
     (stats.tackles ?? 0) + 
     (stats.interceptions ?? 0) + 
-    (stats.recoveries ?? 0);
-  if (defensiveActions >= 5) {
-    strengths.push("Forte presença defensiva, recuperações importantes");
+    (stats.recoveries ?? 0) +
+    (stats.blocked_shots ?? 0);
+  
+  const offensiveActions =
+    (stats.shots ?? 0) +
+    (stats.chances_created ?? 0) +
+    (stats.key_passes ?? 0) +
+    (stats.crosses_success ?? 0);
+    
+  const crossesSuccess = stats.crosses_success ?? 0;
+  const crossesFailed = stats.crosses_failed ?? 0;
+  const crossesTotal = crossesSuccess + crossesFailed;
+  const crossAccuracy = crossesTotal > 0 ? (crossesSuccess / crossesTotal) * 100 : 0;
+  
+  const duelsWon = (stats.duels_won ?? 0) + (stats.aerial_duels_won ?? 0);
+  const duelsTotal = (stats.duels_total ?? 0) + (stats.aerial_duels_total ?? 0);
+  const duelRate = duelsTotal > 0 ? (duelsWon / duelsTotal) * 100 : 0;
+  
+  const possessionLost = stats.possession_lost ?? 0;
+  const ballActions = stats.ball_actions ?? 0;
+  const lossRate = ballActions > 0 ? (possessionLost / ballActions) * 100 : 0;
+  
+  // === STRENGTHS ANALYSIS (max 3) ===
+  
+  // Goal involvement
+  const goals = stats.goals ?? 0;
+  const assists = stats.assists ?? 0;
+  if (goals >= 1 && assists >= 1) {
+    strengths.push("Participação decisiva: gol e assistência na partida");
+  } else if (goals >= 1) {
+    strengths.push("Contribuição ofensiva direta com gol marcado");
+  } else if (assists >= 1) {
+    strengths.push("Visão de jogo: criou gol com assistência");
   }
   
-  // Aerial dominance
-  const aerialWon = stats.aerial_duels_won ?? 0;
-  const aerialTotal = stats.aerial_duels_total ?? 0;
-  if (aerialTotal >= 3 && aerialWon / aerialTotal >= 0.6) {
-    strengths.push("Dominante no jogo aéreo");
+  // High pass accuracy (>= 80% with volume)
+  if (passesTotal >= 15 && passAccuracy >= 80) {
+    strengths.push("Alta precisão nos passes, circulação segura de bola");
   }
   
-  // Duel winner
-  const duelsWon = stats.duels_won ?? 0;
-  const duelsTotal = stats.duels_total ?? 0;
-  if (duelsTotal >= 5 && duelsWon / duelsTotal >= 0.6) {
-    strengths.push("Alta taxa de sucesso em duelos");
+  // Strong defensive presence (for defenders/mids)
+  if (defensiveActions >= 5 && (isDefender || positionGroup === "defensive_mid")) {
+    strengths.push("Sólida presença defensiva com ações de recuperação");
+  } else if (defensiveActions >= 7) {
+    strengths.push("Contribuição defensiva relevante para a posição");
   }
   
-  // Clean tackler
-  if ((stats.tackles ?? 0) >= 3 && (stats.fouls_committed ?? 0) <= 1) {
-    strengths.push("Desarmes limpos, sem cometer faltas");
+  // Good dribbling (>= 60% with attempts)
+  if (dribblesTotal >= 3 && dribbleAccuracy >= 60) {
+    strengths.push("Eficiência nos dribles, progressão individual de qualidade");
   }
   
-  // GK: Good saves
-  if (isGK && (stats.saves ?? 0) >= 3) {
-    strengths.push("Bom número de defesas, seguro embaixo das traves");
+  // Creative output
+  const creativity = (stats.key_passes ?? 0) + (stats.chances_created ?? 0);
+  if (creativity >= 3) {
+    strengths.push("Capacidade criativa: gerou múltiplas oportunidades de gol");
   }
   
-  // GK: Clean sheet
-  if (isGK && (stats.goals_conceded ?? 0) === 0 && minutesPlayed >= 45) {
-    strengths.push("Manteve a meta sem sofrer gols");
+  // Duel dominance
+  if (duelsTotal >= 5 && duelRate >= 60) {
+    strengths.push("Domínio nos duelos, impôs superioridade física");
   }
   
-  // === IMPROVEMENTS ANALYSIS ===
-  
-  // Low pass accuracy
-  if (passesTotal >= 10 && passesCompleted / passesTotal < 0.70) {
-    improvements.push("Melhorar precisão nos passes");
+  // GK specific
+  if (isGK) {
+    const saves = stats.saves ?? 0;
+    const goalsConceded = stats.goals_conceded ?? 0;
+    if (goalsConceded === 0 && minutesPlayed >= 45) {
+      strengths.push("Meta mantida sem sofrer gols (clean sheet)");
+    } else if (saves >= 4) {
+      strengths.push("Boas defesas, participação ativa na proteção do gol");
+    }
   }
   
-  // Poor dribbling
-  if (dribblesTotal >= 3 && dribblesSuccess / dribblesTotal < 0.4) {
-    improvements.push("Reduzir tentativas de dribles mal sucedidas");
+  // Crossing efficiency (for fullbacks/wingers)
+  if ((positionGroup === "fullback" || isAttacker) && crossesTotal >= 3 && crossAccuracy >= 50) {
+    strengths.push("Cruzamentos com boa taxa de acerto");
   }
   
-  // Too many fouls
-  if ((stats.fouls_committed ?? 0) >= 3) {
-    improvements.push("Evitar faltas desnecessárias");
-  }
+  // === IMPROVEMENTS ANALYSIS (max 3) ===
   
-  // Lost duels
-  if (duelsTotal >= 4 && duelsWon / duelsTotal < 0.4) {
-    improvements.push("Melhorar desempenho em duelos");
+  // Low pass accuracy (< 70% with volume)
+  if (passesTotal >= 10 && passAccuracy < 70) {
+    improvements.push("Precisão nos passes abaixo do esperado para o volume");
   }
   
   // High possession loss
-  if ((stats.possession_lost ?? 0) >= 5) {
-    improvements.push("Reduzir perdas de posse de bola");
+  if (possessionLost >= 5 || (ballActions > 0 && lossRate > 25)) {
+    improvements.push("Perdas de posse frequentes, maior cuidado na transição");
   }
   
-  // Being dribbled past
-  if ((stats.was_dribbled ?? 0) >= 3) {
-    improvements.push("Melhorar posicionamento defensivo, evitar ser driblado");
+  // Poor dribbling efficiency
+  if (dribblesTotal >= 3 && dribbleAccuracy < 40) {
+    improvements.push("Tentativas de drible com baixa taxa de sucesso");
   }
   
-  // Poor shot accuracy
-  const shots = stats.shots ?? 0;
-  const shotsOnTarget = stats.shots_on_target ?? 0;
-  if (shots >= 3 && shotsOnTarget / shots < 0.33) {
-    improvements.push("Melhorar direção das finalizações");
+  // Lost duels
+  if (duelsTotal >= 4 && duelRate < 40) {
+    improvements.push("Dificuldade nos duelos, melhorar posicionamento/timing");
+  }
+  
+  // Poor crossing (for fullbacks/wingers)
+  if ((positionGroup === "fullback" || isAttacker) && crossesTotal >= 3 && crossAccuracy < 35) {
+    improvements.push("Cruzamentos com baixa precisão, ajustar qualidade");
+  }
+  
+  // Being dribbled past (for defenders)
+  const wasDribbled = stats.was_dribbled ?? 0;
+  if (isDefender && wasDribbled >= 3) {
+    improvements.push("Superado em dribles, atenção ao posicionamento defensivo");
+  }
+  
+  // Too many fouls
+  const foulsCommitted = stats.fouls_committed ?? 0;
+  if (foulsCommitted >= 3) {
+    improvements.push("Número de faltas acima do ideal, controle nas disputas");
   }
   
   // Cards
-  if ((stats.yellow_cards ?? 0) >= 1 || (stats.red_cards ?? 0) >= 1) {
-    improvements.push("Controlar agressividade, evitar cartões");
+  const yellows = stats.yellow_cards ?? 0;
+  const reds = stats.red_cards ?? 0;
+  if (reds > 0) {
+    improvements.push("Expulsão comprometeu a equipe, controle emocional necessário");
+  } else if (yellows >= 1 && improvements.length < 3) {
+    improvements.push("Cartão amarelo recebido, atenção à disciplina");
   }
   
-  // GK: Conceded goals
-  if (isGK && (stats.goals_conceded ?? 0) >= 2) {
-    improvements.push("Revisar posicionamento nos gols sofridos");
+  // Poor finishing (for attackers)
+  const shots = stats.shots ?? 0;
+  const shotsOnTarget = stats.shots_on_target ?? 0;
+  if (isAttacker && shots >= 3 && (shotsOnTarget / shots) < 0.33) {
+    improvements.push("Finalizações sem direção ao gol, calibrar pontaria");
+  }
+  
+  // Low offensive presence (context-sensitive)
+  if (isAttacker && offensiveActions <= 2 && minutesPlayed >= 30) {
+    improvements.push("Pouca participação ofensiva para a posição");
+  }
+  
+  // GK specific
+  if (isGK) {
+    const goalsConceded = stats.goals_conceded ?? 0;
+    if (goalsConceded >= 3) {
+      improvements.push("Múltiplos gols sofridos, revisar posicionamento");
+    }
   }
   
   // === GENERATE SUMMARY ===
   
   let summary = "";
   
-  if (strengths.length > 0 && improvements.length === 0) {
-    summary = "Atuação sólida sem pontos negativos relevantes.";
-  } else if (strengths.length === 0 && improvements.length > 0) {
-    summary = "Jogo abaixo do esperado, com pontos a desenvolver.";
+  if (strengths.length >= 2 && improvements.length === 0) {
+    summary = "Desempenho consistente sem pontos negativos relevantes.";
+  } else if (strengths.length === 0 && improvements.length >= 2) {
+    summary = "Atuação abaixo do esperado, com aspectos a desenvolver.";
   } else if (strengths.length > 0 && improvements.length > 0) {
-    summary = "Desempenho com pontos fortes e aspectos a melhorar.";
-  } else {
+    summary = "Atuação mista: pontos positivos e áreas de melhoria identificadas.";
+  } else if (strengths.length === 0 && improvements.length === 0) {
     summary = "Participação discreta, sem destaques significativos.";
+  } else {
+    summary = "Análise parcial baseada nos dados disponíveis.";
   }
   
   return {
-    strengths: strengths.slice(0, 4), // Max 4 strengths
+    strengths: strengths.slice(0, 3), // Max 3 strengths
     improvements: improvements.slice(0, 3), // Max 3 improvements
     summary,
   };

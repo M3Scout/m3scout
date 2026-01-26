@@ -122,29 +122,31 @@ function QuickIndicatorsDisplay({ indicators }: QuickIndicatorsDisplayProps) {
   if (indicators.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap gap-1.5">
+    <div className="grid grid-cols-2 gap-1.5 mt-2">
       {indicators.slice(0, 4).map((indicator) => (
-        <TooltipProvider key={indicator.id} delayDuration={100}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Badge
-                variant="outline"
-                className={cn(
-                  "text-[10px] px-1.5 py-0.5 gap-1",
-                  indicator.type === "positive" && "border-emerald-500/40 bg-emerald-500/10 text-emerald-400",
-                  indicator.type === "neutral" && "border-zinc-500/40 bg-zinc-500/10 text-zinc-400",
-                  indicator.type === "negative" && "border-red-500/40 bg-red-500/10 text-red-400"
-                )}
-              >
-                <span>{indicator.icon}</span>
-                <span className="font-medium">{indicator.value}</span>
-              </Badge>
-            </TooltipTrigger>
-            <TooltipContent side="top" className="text-xs">
-              {indicator.label}
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <div 
+          key={indicator.id}
+          className={cn(
+            "flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px]",
+            "border",
+            indicator.type === "positive" && "border-emerald-500/30 bg-emerald-500/5",
+            indicator.type === "neutral" && "border-zinc-600/30 bg-zinc-800/30",
+            indicator.type === "negative" && "border-red-500/30 bg-red-500/5"
+          )}
+        >
+          <span className="text-xs">{indicator.icon}</span>
+          <div className="flex flex-col min-w-0">
+            <span className="text-muted-foreground truncate text-[9px]">{indicator.label}</span>
+            <span className={cn(
+              "font-semibold",
+              indicator.type === "positive" && "text-emerald-400",
+              indicator.type === "neutral" && "text-zinc-300",
+              indicator.type === "negative" && "text-red-400"
+            )}>
+              {indicator.value}
+            </span>
+          </div>
+        </div>
       ))}
     </div>
   );
