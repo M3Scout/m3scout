@@ -346,35 +346,72 @@ const styles = StyleSheet.create({
   eventItem: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 4,
-    minHeight: 14,
+    marginBottom: 3,
+    minHeight: 12,
+  },
+  eventItemCompact: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 2,
+    minHeight: 10,
   },
   eventMinute: {
     backgroundColor: PDF_COLORS.gray200,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 3,
-    fontSize: 8,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 2,
+    fontSize: 7,
     fontWeight: 600,
-    marginRight: 8,
-    minWidth: 28,
+    marginRight: 6,
+    minWidth: 24,
     textAlign: "center",
   },
   eventType: {
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: 600,
     color: PDF_COLORS.gray800,
-    marginRight: 4,
+    marginRight: 3,
   },
   eventPlayer: {
-    fontSize: 9,
+    fontSize: 8,
     color: PDF_COLORS.gray500,
     flex: 1,
   },
-  eventMore: {
+  // Event Summary Totals
+  eventSummaryContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 4,
+    marginBottom: 10,
+    padding: 8,
+    backgroundColor: PDF_COLORS.gray100,
+    borderRadius: 4,
+  },
+  eventSummaryTitle: {
+    fontSize: 9,
+    fontWeight: 600,
+    color: PDF_COLORS.gray700,
+    marginBottom: 4,
+    width: "100%",
+  },
+  eventSummaryChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: PDF_COLORS.white,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 3,
+    border: `1px solid ${PDF_COLORS.gray200}`,
+  },
+  eventSummaryChipLabel: {
+    fontSize: 7,
+    color: PDF_COLORS.gray600,
+    marginRight: 4,
+  },
+  eventSummaryChipValue: {
     fontSize: 8,
-    color: PDF_COLORS.gray300,
-    marginTop: 6,
+    fontWeight: 700,
+    color: PDF_COLORS.gray900,
   },
   // Players Grid
   playersGrid: {
@@ -1336,45 +1373,75 @@ export function MatchSummaryVectorPdf({
           })}
         </View>
 
-        {/* Events by Half */}
+        {/* Events by Half - FULL LIST for PDF */}
         <Text style={styles.sectionTitle}>Eventos por Tempo</Text>
+        
+        {/* Event Summary Totals */}
+        {(() => {
+          // Calculate totals by event type
+          const allEvents = [...eventsByHalf.firstHalf, ...eventsByHalf.secondHalf];
+          const totals: Record<string, number> = {};
+          allEvents.forEach(event => {
+            const label = EVENT_LABELS[event.event_type] || event.event_type;
+            totals[label] = (totals[label] || 0) + 1;
+          });
+          
+          // Sort by count descending
+          const sortedTotals = Object.entries(totals)
+            .sort((a, b) => b[1] - a[1]);
+          
+          if (sortedTotals.length === 0) return null;
+          
+          return (
+            <View style={styles.eventSummaryContainer}>
+              <Text style={styles.eventSummaryTitle}>
+                Resumo de Totais ({allEvents.length} eventos)
+              </Text>
+              {sortedTotals.map(([label, count]) => (
+                <View key={label} style={styles.eventSummaryChip}>
+                  <Text style={styles.eventSummaryChipLabel}>{label}:</Text>
+                  <Text style={styles.eventSummaryChipValue}>{count}</Text>
+                </View>
+              ))}
+            </View>
+          );
+        })()}
+        
         <View style={styles.eventsGrid}>
-          {/* First Half */}
+          {/* First Half - ALL EVENTS */}
           <View style={styles.eventsColumn}>
             <Text style={styles.eventsColumnTitle}>
               1º TEMPO ({eventsByHalf.firstHalf.length})
             </Text>
-            {eventsByHalf.firstHalf.slice(0, 10).map((event) => (
-              <View key={event.id} style={styles.eventItem}>
-                <Text style={styles.eventMinute}>
-                  {event.display_minute || `${event.minute}'`}
-                </Text>
-                <Text style={styles.eventType}>{EVENT_LABELS[event.event_type]}</Text>
-                <Text style={styles.eventPlayer}>- {getPlayerName(event.player_id)}</Text>
-              </View>
-            ))}
-            {eventsByHalf.firstHalf.length > 10 && (
-              <Text style={styles.eventMore}>+{eventsByHalf.firstHalf.length - 10} eventos...</Text>
-            )}
+            {eventsByHalf.firstHalf
+              .sort((a, b) => (a.minute ?? 0) - (b.minute ?? 0))
+              .map((event) => (
+                <View key={event.id} style={styles.eventItem}>
+                  <Text style={styles.eventMinute}>
+                    {event.display_minute || `${event.minute}'`}
+                  </Text>
+                  <Text style={styles.eventType}>{EVENT_LABELS[event.event_type]}</Text>
+                  <Text style={styles.eventPlayer}>- {getPlayerName(event.player_id)}</Text>
+                </View>
+              ))}
           </View>
 
-          {/* Second Half */}
+          {/* Second Half - ALL EVENTS */}
           <View style={styles.eventsColumn}>
             <Text style={styles.eventsColumnTitle}>
               2º TEMPO ({eventsByHalf.secondHalf.length})
             </Text>
-            {eventsByHalf.secondHalf.slice(0, 10).map((event) => (
-              <View key={event.id} style={styles.eventItem}>
-                <Text style={styles.eventMinute}>
-                  {event.display_minute || `${event.minute}'`}
-                </Text>
-                <Text style={styles.eventType}>{EVENT_LABELS[event.event_type]}</Text>
-                <Text style={styles.eventPlayer}>- {getPlayerName(event.player_id)}</Text>
-              </View>
-            ))}
-            {eventsByHalf.secondHalf.length > 10 && (
-              <Text style={styles.eventMore}>+{eventsByHalf.secondHalf.length - 10} eventos...</Text>
-            )}
+            {eventsByHalf.secondHalf
+              .sort((a, b) => (a.minute ?? 0) - (b.minute ?? 0))
+              .map((event) => (
+                <View key={event.id} style={styles.eventItem}>
+                  <Text style={styles.eventMinute}>
+                    {event.display_minute || `${event.minute}'`}
+                  </Text>
+                  <Text style={styles.eventType}>{EVENT_LABELS[event.event_type]}</Text>
+                  <Text style={styles.eventPlayer}>- {getPlayerName(event.player_id)}</Text>
+                </View>
+              ))}
           </View>
         </View>
 
