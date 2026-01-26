@@ -136,6 +136,25 @@ const styles = StyleSheet.create({
   container: {
     alignItems: "center",
   },
+  mainRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  barContainer: {
+    alignItems: "center",
+    justifyContent: "flex-end",
+  },
+  barLabel: {
+    fontSize: 5,
+    fontWeight: 600,
+    color: PDF_COLORS.gray500,
+    marginTop: 2,
+  },
+  bottomBarContainer: {
+    alignItems: "center",
+    marginTop: 3,
+  },
   legend: {
     flexDirection: "row",
     justifyContent: "center",
@@ -150,7 +169,6 @@ const styles = StyleSheet.create({
   legendLabel: {
     fontSize: 6,
     fontWeight: 600,
-    color: PDF_COLORS.emerald,
   },
   legendValue: {
     fontSize: 6,
@@ -161,6 +179,51 @@ const styles = StyleSheet.create({
     color: PDF_COLORS.gray400,
   },
 });
+
+// Colors for intensity bars
+const BAR_COLORS = {
+  defense: "#0ea5e9", // sky-500
+  attack: "#10b981", // emerald-500
+  midfield: "#f59e0b", // amber-500
+};
+
+// ============================================
+// INTENSITY BAR (PDF)
+// ============================================
+
+interface IntensityBarPdfProps {
+  value: number;
+  maxDimension: number;
+  orientation: "vertical" | "horizontal";
+  color: string;
+  thickness?: number;
+}
+
+function IntensityBarPdf({ value, maxDimension, orientation, color, thickness = 4 }: IntensityBarPdfProps) {
+  const fillSize = Math.max(2, (value / 100) * maxDimension);
+  const trackColor = "#27272a"; // zinc-800
+
+  if (orientation === "vertical") {
+    return (
+      <Svg width={thickness} height={maxDimension} viewBox={`0 0 ${thickness} ${maxDimension}`}>
+        {/* Track */}
+        <Rect x={0} y={0} width={thickness} height={maxDimension} fill={trackColor} rx={2} />
+        {/* Fill - from bottom */}
+        <Rect x={0} y={maxDimension - fillSize} width={thickness} height={fillSize} fill={color} rx={2} opacity={0.7} />
+      </Svg>
+    );
+  }
+
+  // Horizontal
+  return (
+    <Svg width={maxDimension} height={thickness} viewBox={`0 0 ${maxDimension} ${thickness}`}>
+      {/* Track */}
+      <Rect x={0} y={0} width={maxDimension} height={thickness} fill={trackColor} rx={2} />
+      {/* Fill - centered */}
+      <Rect x={(maxDimension - fillSize) / 2} y={0} width={fillSize} height={thickness} fill={color} rx={2} opacity={0.7} />
+    </Svg>
+  );
+}
 
 // ============================================
 // COMPONENT
@@ -173,6 +236,7 @@ interface MiniFieldHeatmapPdfProps {
   width?: number;
   height?: number;
   showLegend?: boolean;
+  showIntensityBars?: boolean;
 }
 
 export function MiniFieldHeatmapPdf({
@@ -182,6 +246,7 @@ export function MiniFieldHeatmapPdf({
   width = 90,
   height = 130,
   showLegend = true,
+  showIntensityBars = true,
 }: MiniFieldHeatmapPdfProps) {
   const seed = `${matchId}:${playerId}`;
   const cleanSeed = seed.replace(/[^a-zA-Z0-9]/g, "");
@@ -191,9 +256,15 @@ export function MiniFieldHeatmapPdf({
     [percentages.attack, percentages.midfield, percentages.defense, seed]
   );
 
+  const barThickness = 4;
+  const barGap = 4;
+  const sideBarSpace = showIntensityBars ? barThickness + barGap : 0;
+  
+  const fieldWidth = width - sideBarSpace * 2;
+  const fieldHeight = height;
   const fieldPadding = 3;
-  const fieldWidth = width - fieldPadding * 2;
-  const fieldHeight = height - fieldPadding * 2;
+  const innerFieldWidth = fieldWidth - fieldPadding * 2;
+  const innerFieldHeight = fieldHeight - fieldPadding * 2;
 
   // Colors
   const fieldBg = "#1a2f1a";
@@ -203,117 +274,163 @@ export function MiniFieldHeatmapPdf({
 
   return (
     <View style={styles.container}>
-      <Svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
-        {/* Gradient definition for heatmap points */}
-        <Defs>
-          <RadialGradient id={`heatGrad-${cleanSeed}`}>
-            <Stop offset="0%" stopColor={heatColor} stopOpacity={0.6} />
-            <Stop offset="60%" stopColor={heatColor} stopOpacity={0.3} />
-            <Stop offset="100%" stopColor={heatColor} stopOpacity={0} />
-          </RadialGradient>
-        </Defs>
-
-        {/* Field background */}
-        <Rect
-          x={fieldPadding}
-          y={fieldPadding}
-          width={fieldWidth}
-          height={fieldHeight}
-          fill={fieldBg}
-          rx={2}
-        />
-
-        {/* Field outline */}
-        <Rect
-          x={fieldPadding + 2}
-          y={fieldPadding + 2}
-          width={fieldWidth - 4}
-          height={fieldHeight - 4}
-          stroke={lineColor}
-          strokeWidth={0.5}
-          fill="none"
-          rx={1}
-        />
-
-        {/* Center line */}
-        <Line
-          x1={fieldPadding + 2}
-          y1={fieldPadding + fieldHeight / 2}
-          x2={fieldPadding + fieldWidth - 2}
-          y2={fieldPadding + fieldHeight / 2}
-          stroke={lineColor}
-          strokeWidth={0.5}
-        />
-
-        {/* Center circle */}
-        <Circle
-          cx={fieldPadding + fieldWidth / 2}
-          cy={fieldPadding + fieldHeight / 2}
-          r={Math.min(fieldWidth, fieldHeight) * 0.1}
-          stroke={lineColor}
-          strokeWidth={0.5}
-          fill="none"
-        />
-
-        {/* Top penalty area */}
-        <Rect
-          x={fieldPadding + fieldWidth * 0.2}
-          y={fieldPadding + 2}
-          width={fieldWidth * 0.6}
-          height={fieldHeight * 0.13}
-          stroke={lineColor}
-          strokeWidth={0.5}
-          fill="none"
-        />
-
-        {/* Bottom penalty area */}
-        <Rect
-          x={fieldPadding + fieldWidth * 0.2}
-          y={fieldPadding + fieldHeight - fieldHeight * 0.13 - 2}
-          width={fieldWidth * 0.6}
-          height={fieldHeight * 0.13}
-          stroke={lineColor}
-          strokeWidth={0.5}
-          fill="none"
-        />
-
-        {/* Heatmap points (no blur filter in PDF, use gradient + larger circles) */}
-        <G>
-          {points.map((point, i) => (
-            <Circle
-              key={i}
-              cx={fieldPadding + point.x * fieldWidth}
-              cy={fieldPadding + point.y * fieldHeight}
-              r={point.radius}
-              fill={`url(#heatGrad-${cleanSeed})`}
-              opacity={point.opacity}
+      {/* Main row: left bar + field + right bar */}
+      <View style={styles.mainRow}>
+        {/* Left bar - DEFENSE */}
+        {showIntensityBars && (
+          <View style={styles.barContainer}>
+            <IntensityBarPdf 
+              value={percentages.defense} 
+              maxDimension={fieldHeight} 
+              orientation="vertical" 
+              color={BAR_COLORS.defense}
+              thickness={barThickness}
             />
-          ))}
-        </G>
+            <Text style={styles.barLabel}>DEF</Text>
+          </View>
+        )}
 
-        {/* Attack direction arrow */}
-        <Polygon
-          points={`${width / 2 - 4},${fieldPadding + 6} ${width / 2 + 4},${fieldPadding + 6} ${width / 2},${fieldPadding + 1}`}
-          fill={arrowColor}
-          opacity={0.5}
-        />
-      </Svg>
+        {/* Field SVG */}
+        <Svg width={fieldWidth} height={fieldHeight} viewBox={`0 0 ${fieldWidth} ${fieldHeight}`}>
+          {/* Gradient definition for heatmap points */}
+          <Defs>
+            <RadialGradient id={`heatGrad-${cleanSeed}`}>
+              <Stop offset="0%" stopColor={heatColor} stopOpacity={0.6} />
+              <Stop offset="60%" stopColor={heatColor} stopOpacity={0.3} />
+              <Stop offset="100%" stopColor={heatColor} stopOpacity={0} />
+            </RadialGradient>
+          </Defs>
+
+          {/* Field background */}
+          <Rect
+            x={fieldPadding}
+            y={fieldPadding}
+            width={innerFieldWidth}
+            height={innerFieldHeight}
+            fill={fieldBg}
+            rx={2}
+          />
+
+          {/* Field outline */}
+          <Rect
+            x={fieldPadding + 2}
+            y={fieldPadding + 2}
+            width={innerFieldWidth - 4}
+            height={innerFieldHeight - 4}
+            stroke={lineColor}
+            strokeWidth={0.5}
+            fill="none"
+            rx={1}
+          />
+
+          {/* Center line */}
+          <Line
+            x1={fieldPadding + 2}
+            y1={fieldPadding + innerFieldHeight / 2}
+            x2={fieldPadding + innerFieldWidth - 2}
+            y2={fieldPadding + innerFieldHeight / 2}
+            stroke={lineColor}
+            strokeWidth={0.5}
+          />
+
+          {/* Center circle */}
+          <Circle
+            cx={fieldPadding + innerFieldWidth / 2}
+            cy={fieldPadding + innerFieldHeight / 2}
+            r={Math.min(innerFieldWidth, innerFieldHeight) * 0.1}
+            stroke={lineColor}
+            strokeWidth={0.5}
+            fill="none"
+          />
+
+          {/* Top penalty area */}
+          <Rect
+            x={fieldPadding + innerFieldWidth * 0.2}
+            y={fieldPadding + 2}
+            width={innerFieldWidth * 0.6}
+            height={innerFieldHeight * 0.13}
+            stroke={lineColor}
+            strokeWidth={0.5}
+            fill="none"
+          />
+
+          {/* Bottom penalty area */}
+          <Rect
+            x={fieldPadding + innerFieldWidth * 0.2}
+            y={fieldPadding + innerFieldHeight - innerFieldHeight * 0.13 - 2}
+            width={innerFieldWidth * 0.6}
+            height={innerFieldHeight * 0.13}
+            stroke={lineColor}
+            strokeWidth={0.5}
+            fill="none"
+          />
+
+          {/* Heatmap points */}
+          <G>
+            {points.map((point, i) => (
+              <Circle
+                key={i}
+                cx={fieldPadding + point.x * innerFieldWidth}
+                cy={fieldPadding + point.y * innerFieldHeight}
+                r={point.radius}
+                fill={`url(#heatGrad-${cleanSeed})`}
+                opacity={point.opacity}
+              />
+            ))}
+          </G>
+
+          {/* Attack direction arrow */}
+          <Polygon
+            points={`${fieldWidth / 2 - 4},${fieldPadding + 6} ${fieldWidth / 2 + 4},${fieldPadding + 6} ${fieldWidth / 2},${fieldPadding + 1}`}
+            fill={arrowColor}
+            opacity={0.5}
+          />
+        </Svg>
+
+        {/* Right bar - ATTACK */}
+        {showIntensityBars && (
+          <View style={styles.barContainer}>
+            <IntensityBarPdf 
+              value={percentages.attack} 
+              maxDimension={fieldHeight} 
+              orientation="vertical" 
+              color={BAR_COLORS.attack}
+              thickness={barThickness}
+            />
+            <Text style={styles.barLabel}>ATA</Text>
+          </View>
+        )}
+      </View>
+
+      {/* Bottom bar - MIDFIELD */}
+      {showIntensityBars && (
+        <View style={styles.bottomBarContainer}>
+          <IntensityBarPdf 
+            value={percentages.midfield} 
+            maxDimension={fieldWidth - 10} 
+            orientation="horizontal" 
+            color={BAR_COLORS.midfield}
+            thickness={barThickness}
+          />
+          <Text style={styles.barLabel}>MEI</Text>
+        </View>
+      )}
 
       {/* Legend */}
       {showLegend && (
         <View style={styles.legend}>
           <View style={styles.legendItem}>
-            <Text style={styles.legendLabel}>ATA</Text>
+            <Text style={[styles.legendLabel, { color: BAR_COLORS.attack }]}>ATA</Text>
             <Text style={styles.legendValue}>{percentages.attack}%</Text>
           </View>
           <Text style={styles.legendSeparator}>•</Text>
           <View style={styles.legendItem}>
-            <Text style={styles.legendLabel}>MEI</Text>
+            <Text style={[styles.legendLabel, { color: BAR_COLORS.midfield }]}>MEI</Text>
             <Text style={styles.legendValue}>{percentages.midfield}%</Text>
           </View>
           <Text style={styles.legendSeparator}>•</Text>
           <View style={styles.legendItem}>
-            <Text style={styles.legendLabel}>DEF</Text>
+            <Text style={[styles.legendLabel, { color: BAR_COLORS.defense }]}>DEF</Text>
             <Text style={styles.legendValue}>{percentages.defense}%</Text>
           </View>
         </View>
