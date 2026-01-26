@@ -481,10 +481,12 @@ export function useLiveMatch(matchId: string) {
       });
       // Also invalidate player-match-stats cache for profile consistency
       // This ensures the Player Profile shows the same ratings as the Match Review
+      // Using refetchType: 'all' to force complete cache invalidation
       queryClient.invalidateQueries({ 
         predicate: (query) => 
           query.queryKey[0] === "player-match-stats" || 
           query.queryKey[0] === "player-match-stats-by-season-comp",
+        refetchType: 'all',
       });
       
       // Show different toast based on event status
@@ -576,6 +578,7 @@ export function useLiveMatch(matchId: string) {
         predicate: (query) => 
           query.queryKey[0] === "player-match-stats" || 
           query.queryKey[0] === "player-match-stats-by-season-comp",
+        refetchType: 'all',
       });
     },
     onError: (error: Error) => {
@@ -804,6 +807,7 @@ export function useLiveMatch(matchId: string) {
         predicate: (query) => 
           query.queryKey[0] === "player-match-stats" || 
           query.queryKey[0] === "player-match-stats-by-season-comp",
+        refetchType: 'all',
       });
       toast.success(data?.stats_reverted ? "Evento anulado e estatísticas revertidas" : "Evento anulado");
     },
@@ -847,6 +851,7 @@ export function useLiveMatch(matchId: string) {
         predicate: (query) => 
           query.queryKey[0] === "player-match-stats" || 
           query.queryKey[0] === "player-match-stats-by-season-comp",
+        refetchType: 'all',
       });
       const displayMinute = data?.game_time_seconds != null 
         ? `${Math.floor(data.game_time_seconds / 60)}'` 
@@ -1089,6 +1094,7 @@ export function useLiveMatch(matchId: string) {
         predicate: (query) => 
           query.queryKey[0] === "player-match-stats" || 
           query.queryKey[0] === "player-match-stats-by-season-comp",
+        refetchType: 'all',
       });
       toast.success(`Resumo regenerado! ${data.playersProcessed} jogadores processados.`);
     },

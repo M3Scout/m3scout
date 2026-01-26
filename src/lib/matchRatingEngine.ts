@@ -729,8 +729,8 @@ export function matchPlayerStatsToInput(
     dribbles_total: stats.dribbles_total ?? 0,
     key_passes: stats.key_passes ?? 0,
     chances_created: stats.chances_created ?? 0,
-    crosses_success: (stats as any).crosses_success ?? 0,
-    crosses_failed: (stats as any).crosses_failed ?? 0,
+    crosses_success: stats.crosses_success ?? 0,
+    crosses_failed: stats.crosses_failed ?? 0,
     passes_completed: stats.passes_completed ?? 0,
     passes_total: stats.passes_total ?? 0,
     interceptions: stats.interceptions ?? 0,
@@ -744,20 +744,20 @@ export function matchPlayerStatsToInput(
     fouls_committed: stats.fouls_committed ?? 0,
     fouls_suffered: stats.fouls_suffered ?? 0,
     possession_lost: stats.possession_lost ?? 0,
-    shots_blocked: (stats as any).shots_blocked ?? 0,
-    times_dribbled_past: (stats as any).times_dribbled_past ?? 0,
+    shots_blocked: stats.shots_blocked ?? 0,
+    times_dribbled_past: stats.was_dribbled ?? 0,
     yellow_cards: stats.yellow_cards ?? 0,
     red_cards: stats.red_cards ?? 0,
     // Goalkeeper-specific stats
-    saves: (stats as any).saves ?? 0,
-    saves_inside_box: (stats as any).saves_inside_box ?? 0,
-    penalty_saved: (stats as any).penalty_saved ?? 0,
-    goals_conceded: (stats as any).goals_conceded ?? 0,
-    clean_sheets: (stats as any).clean_sheets ?? 0,
-    high_claims: (stats as any).high_claims ?? 0,
-    punches: (stats as any).punches ?? 0,
-    sweeper_actions: (stats as any).sweeper_actions ?? 0,
-    errors_led_to_goal: (stats as any).errors_led_to_goal ?? 0,
+    saves: stats.saves ?? 0,
+    saves_inside_box: 0, // Not tracked per-match in current schema
+    penalty_saved: 0, // Not tracked per-match in current schema
+    goals_conceded: stats.goals_conceded ?? 0,
+    clean_sheets: 0, // Calculated separately
+    high_claims: 0, // Not tracked per-match in current schema
+    punches: 0, // Not tracked per-match in current schema
+    sweeper_actions: 0, // Not tracked per-match in current schema
+    errors_led_to_goal: 0, // Not tracked per-match in current schema
     isGoalkeeper,
   };
 }
