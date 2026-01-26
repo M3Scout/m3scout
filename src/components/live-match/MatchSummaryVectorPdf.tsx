@@ -37,6 +37,7 @@ import { classifyMatchProfile, type MatchProfileKey } from "@/lib/matchProfileEn
 import { calculateMatchEfficiency, getEfficiencyColorHex, getEfficiencyBgColorHex, type EfficiencyLevel } from "@/lib/matchEfficiencyEngine";
 import { generateScoutingText } from "@/lib/scoutingTextEngine";
 import { generatePostGameAnalysis, type MatchStatsInput } from "@/lib/postGameAnalysis";
+import { MiniFieldHeatmapPdf } from "./MiniFieldHeatmapPdf";
 import {
   EVENT_TYPE_CONFIG,
   COMPUTED_STATS,
@@ -1614,16 +1615,16 @@ export function MatchSummaryVectorPdf({
                   borderWidth: 1,
                   borderColor: PDF_COLORS.gray200,
                 }} wrap={false}>
-                  {/* Zone Heatmap Mini */}
-                  <View style={{ width: 45, marginRight: 10, alignItems: "center" }}>
-                    <Svg width={36} height={44} viewBox="0 0 36 44">
-                      <Rect x={0} y={0} width={36} height={14} fill={getZoneColor(zoneHeatmap.intensities.attack)} rx={2} />
-                      <Rect x={0} y={15} width={36} height={14} fill={getZoneColor(zoneHeatmap.intensities.midfield)} rx={2} />
-                      <Rect x={0} y={30} width={36} height={14} fill={getZoneColor(zoneHeatmap.intensities.defense)} rx={2} />
-                    </Svg>
-                    <Text style={{ fontSize: 6, color: PDF_COLORS.gray500, marginTop: 2 }}>
-                      {zoneHeatmap.primaryZone === "attack" ? "ATA" : zoneHeatmap.primaryZone === "midfield" ? "MEI" : "DEF"}
-                    </Text>
+                  {/* Mini Field Heatmap */}
+                  <View style={{ width: 95, marginRight: 8, alignItems: "center" }}>
+                    <MiniFieldHeatmapPdf
+                      percentages={zoneHeatmap.percentages}
+                      matchId={match.id}
+                      playerId={mp.player_id}
+                      width={90}
+                      height={110}
+                      showLegend={true}
+                    />
                   </View>
                   
                   {/* Content Column */}

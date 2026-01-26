@@ -2,20 +2,20 @@
  * Post-Game Insights PDF Section
  * 
  * PDF-compatible version of post-game analysis for @react-pdf/renderer:
- * - Zone Heatmap (simplified field representation)
+ * - Mini-Field Heatmap (seeded points visualization)
  * - Quick Indicators (key metrics)
  * - Strengths / Areas to Improve
  */
 
 import React from "react";
-import { View, Text, StyleSheet, Svg, Rect as SvgRect } from "@react-pdf/renderer";
+import { View, Text, StyleSheet } from "@react-pdf/renderer";
 import { PDF_COLORS } from "@/lib/pdfStyles";
 import {
   generatePostGameAnalysis,
   type PostGameAnalysis,
-  type FieldZone,
   type MatchStatsInput,
 } from "@/lib/postGameAnalysis";
+import { MiniFieldHeatmapPdf } from "./MiniFieldHeatmapPdf";
 
 // ============================================
 // STYLES
@@ -45,8 +45,8 @@ const styles = StyleSheet.create({
     borderColor: PDF_COLORS.gray200,
   },
   zoneColumn: {
-    width: 50,
-    marginRight: 10,
+    width: 95,
+    marginRight: 8,
   },
   contentColumn: {
     flex: 1,
@@ -108,51 +108,6 @@ const styles = StyleSheet.create({
 });
 
 // ============================================
-// ZONE HEATMAP SVG
-// ============================================
-
-interface ZoneHeatmapSvgProps {
-  zones: PostGameAnalysis["zoneHeatmap"];
-}
-
-function ZoneHeatmapSvg({ zones }: ZoneHeatmapSvgProps) {
-  const getZoneColor = (intensity: "low" | "medium" | "high"): string => {
-    switch (intensity) {
-      case "high": return PDF_COLORS.emerald;
-      case "medium": return "#34D399"; // emerald-400
-      case "low": return PDF_COLORS.gray300;
-      default: return PDF_COLORS.gray200;
-    }
-  };
-
-  const zoneOrder: FieldZone[] = ["attack", "midfield", "defense"];
-  const zoneHeight = 14;
-  const gap = 2;
-  const totalHeight = zoneOrder.length * zoneHeight + (zoneOrder.length - 1) * gap;
-
-  return (
-    <View style={styles.zoneColumn}>
-      <Svg width={40} height={totalHeight} viewBox={`0 0 40 ${totalHeight}`}>
-        {zoneOrder.map((zone, idx) => (
-          <SvgRect
-            key={zone}
-            x={0}
-            y={idx * (zoneHeight + gap)}
-            width={40}
-            height={zoneHeight}
-            fill={getZoneColor(zones.intensities[zone])}
-            rx={2}
-          />
-        ))}
-      </Svg>
-      <Text style={styles.zoneLabel}>
-        {zones.primaryZone === "attack" ? "ATA" : zones.primaryZone === "midfield" ? "MEI" : "DEF"}
-      </Text>
-    </View>
-  );
-}
-
-// ============================================
 // INDICATOR BADGE
 // ============================================
 
@@ -188,15 +143,26 @@ interface PlayerInsightRowPdfProps {
   playerName: string;
   position: string;
   analysis: PostGameAnalysis;
+  matchId: string;
+  playerId: string;
 }
 
-function PlayerInsightRowPdf({ playerName, position, analysis }: PlayerInsightRowPdfProps) {
+function PlayerInsightRowPdf({ playerName, position, analysis, matchId, playerId }: PlayerInsightRowPdfProps) {
   const { quickIndicators, strengthsImprovements } = analysis;
 
   return (
     <View style={styles.playerRow} wrap={false}>
-      {/* Zone Heatmap */}
-      <ZoneHeatmapSvg zones={analysis.zoneHeatmap} />
+      {/* Mini Field Heatmap */}
+      <View style={styles.zoneColumn}>
+        <MiniFieldHeatmapPdf
+          percentages={analysis.zoneHeatmap.percentages}
+          matchId={matchId}
+          playerId={playerId}
+          width={90}
+          height={120}
+          showLegend={true}
+        />
+      </View>
 
       {/* Content */}
       <View style={styles.contentColumn}>
@@ -269,6 +235,7 @@ interface PostGameInsightsPdfProps {
   playerStatsMap: PlayerStatsMap;
   matchDuration?: number;
   selectedPlayerIds?: string[];
+  matchId: string;
 }
 
 export function PostGameInsightsPdf({
@@ -276,6 +243,7 @@ export function PostGameInsightsPdf({
   playerStatsMap,
   matchDuration = 90,
   selectedPlayerIds,
+  matchId,
 }: PostGameInsightsPdfProps) {
   // Filter players
   const filteredPlayers = selectedPlayerIds && selectedPlayerIds.length > 0
@@ -323,6 +291,8 @@ export function PostGameInsightsPdf({
           playerName={player.player?.full_name ?? "Jogador"}
           position={player.player?.position ?? "N/A"}
           analysis={analysis}
+          matchId={matchId}
+          playerId={player.player_id}
         />
       ))}
     </View>
