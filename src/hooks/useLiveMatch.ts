@@ -479,6 +479,13 @@ export function useLiveMatch(matchId: string) {
         queryKey: ["match-player-stats", matchId],
         refetchType: 'active',
       });
+      // Also invalidate player-match-stats cache for profile consistency
+      // This ensures the Player Profile shows the same ratings as the Match Review
+      queryClient.invalidateQueries({ 
+        predicate: (query) => 
+          query.queryKey[0] === "player-match-stats" || 
+          query.queryKey[0] === "player-match-stats-by-season-comp",
+      });
       
       // Show different toast based on event status
       if (data?.event_status === "draft") {
@@ -563,6 +570,12 @@ export function useLiveMatch(matchId: string) {
       queryClient.invalidateQueries({ 
         queryKey: ["match-player-stats", matchId],
         refetchType: 'active',
+      });
+      // Invalidate player profile stats for consistency
+      queryClient.invalidateQueries({ 
+        predicate: (query) => 
+          query.queryKey[0] === "player-match-stats" || 
+          query.queryKey[0] === "player-match-stats-by-season-comp",
       });
     },
     onError: (error: Error) => {
@@ -786,6 +799,12 @@ export function useLiveMatch(matchId: string) {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["match-events", matchId] });
       queryClient.invalidateQueries({ queryKey: ["match-player-stats", matchId] });
+      // Invalidate player profile stats for consistency
+      queryClient.invalidateQueries({ 
+        predicate: (query) => 
+          query.queryKey[0] === "player-match-stats" || 
+          query.queryKey[0] === "player-match-stats-by-season-comp",
+      });
       toast.success(data?.stats_reverted ? "Evento anulado e estatísticas revertidas" : "Evento anulado");
     },
     onError: (error: Error) => {
@@ -823,6 +842,12 @@ export function useLiveMatch(matchId: string) {
       queryClient.invalidateQueries({ queryKey: ["match-events", matchId] });
       queryClient.invalidateQueries({ queryKey: ["match-players", matchId] });
       queryClient.invalidateQueries({ queryKey: ["match-player-stats", matchId] });
+      // Invalidate player profile stats for consistency
+      queryClient.invalidateQueries({ 
+        predicate: (query) => 
+          query.queryKey[0] === "player-match-stats" || 
+          query.queryKey[0] === "player-match-stats-by-season-comp",
+      });
       const displayMinute = data?.game_time_seconds != null 
         ? `${Math.floor(data.game_time_seconds / 60)}'` 
         : "";
@@ -1059,6 +1084,12 @@ export function useLiveMatch(matchId: string) {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["match-player-stats", matchId] });
+      // Invalidate player profile stats for consistency
+      queryClient.invalidateQueries({ 
+        predicate: (query) => 
+          query.queryKey[0] === "player-match-stats" || 
+          query.queryKey[0] === "player-match-stats-by-season-comp",
+      });
       toast.success(`Resumo regenerado! ${data.playersProcessed} jogadores processados.`);
     },
     onError: (error: Error) => {
