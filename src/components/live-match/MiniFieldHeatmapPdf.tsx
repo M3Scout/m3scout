@@ -70,19 +70,25 @@ function clamp(v: number, a: number, b: number): number {
 /**
  * Professional-grade heatmap point generation for PDF
  * Mimics Wyscout/SofaScore style with:
- * - High point density (600+ points)
- * - No blur (crisp points via accumulation)
- * - Intensity from overlapping, not spread
+ * - Adaptive scaling based on activity level
+ * - Guaranteed minimum visibility for any participation
+ * - High contrast for clear tactical reading
  */
 function generateHeatmapPoints(
   percentages: ZoneDistribution,
   seed: string,
-  totalPoints: number = 600 // High density
+  totalPoints: number = 350 // Base point count for PDF
 ): HeatmapPoint[] {
   const rand = mulberry32(xfnv1a(seed));
   const randRange = (min: number, max: number) => min + (max - min) * rand();
 
   const points: HeatmapPoint[] = [];
+
+  // Calculate total activity to determine adaptive scaling
+  const totalActivity = percentages.attack + percentages.midfield + percentages.defense;
+  
+  // Adaptive intensity multiplier: boost visibility for low activity
+  const activityBoost = totalActivity > 0 ? Math.max(1.0, 2.5 - (totalActivity / 100)) : 0;
 
   const maxPercent = Math.max(percentages.attack, percentages.midfield, percentages.defense);
   const minPercent = Math.min(percentages.attack, percentages.midfield, percentages.defense);
@@ -94,10 +100,12 @@ function generateHeatmapPoints(
     { name: "defense", yMin: 0.67, yMax: 0.98 },
   ];
 
-  const N = totalPoints;
-  const nDef = Math.round(N * percentages.defense / 100);
-  const nMid = Math.round(N * percentages.midfield / 100);
-  const nAtt = N - nDef - nMid;
+  // Scale points based on total activity
+  const scaledTotal = Math.max(120, Math.round(totalPoints * (0.4 + (totalActivity / 150))));
+  
+  const nDef = Math.round(scaledTotal * percentages.defense / 100);
+  const nMid = Math.round(scaledTotal * percentages.midfield / 100);
+  const nAtt = scaledTotal - nDef - nMid;
 
   const pointCounts: Record<keyof ZoneDistribution, number> = {
     defense: nDef,
@@ -107,18 +115,22 @@ function generateHeatmapPoints(
 
   zones.forEach(({ name, yMin, yMax }) => {
     const nPoints = pointCounts[name];
-    const zonePercent = percentages[name];
-    const intensity = (zonePercent - minPercent) / range;
+    if (nPoints === 0) return;
     
-    // Multiple hotspot clusters for realistic distribution
-    const numClusters = 4 + Math.floor(rand() * 4);
+    const zonePercent = percentages[name];
+    // Ensure minimum intensity of 0.3 so even low zones are visible
+    const rawIntensity = (zonePercent - minPercent) / range;
+    const intensity = 0.3 + rawIntensity * 0.7;
+    
+    // Fewer, more concentrated clusters
+    const numClusters = 2 + Math.floor(rand() * 3);
     const clusters: { cx: number; cy: number; weight: number }[] = [];
     
     for (let c = 0; c < numClusters; c++) {
       clusters.push({
-        cx: randRange(0.08, 0.92),
-        cy: randRange(yMin + 0.02, yMax - 0.02),
-        weight: randRange(0.3, 1.0),
+        cx: randRange(0.15, 0.85),
+        cy: randRange(yMin + 0.05, yMax - 0.05),
+        weight: randRange(0.5, 1.0),
       });
     }
 
@@ -126,8 +138,8 @@ function generateHeatmapPoints(
       let x: number;
       let y: number;
 
-      // 90% clustered for dense hotspots
-      if (rand() < 0.90 && clusters.length > 0) {
+      // 95% clustered for dense hotspots
+      if (rand() < 0.95 && clusters.length > 0) {
         const totalWeight = clusters.reduce((sum, c) => sum + c.weight, 0);
         let r = rand() * totalWeight;
         let cluster = clusters[0];
@@ -136,23 +148,26 @@ function generateHeatmapPoints(
           if (r <= 0) { cluster = c; break; }
         }
         
-        const spread = randRange(0.03, 0.08);
-        x = clamp(cluster.cx + (rand() - 0.5) * spread * 2, 0.02, 0.98);
+        const spread = randRange(0.04, 0.10);
+        x = clamp(cluster.cx + (rand() - 0.5) * spread * 2, 0.05, 0.95);
         y = clamp(cluster.cy + (rand() - 0.5) * spread * 1.5, yMin, yMax);
       } else {
-        x = randRange(0.05, 0.95);
+        x = randRange(0.10, 0.90);
         y = randRange(yMin, yMax);
       }
 
-      // Very small points for PDF - density through accumulation
-      const baseRadius = randRange(1.0, 2.0);
+      // Larger, more visible points with adaptive sizing
+      const baseRadius = randRange(1.4, 2.4) * (0.8 + activityBoost * 0.3);
+      
+      // High opacity with activity boost
+      const baseOpacity = randRange(0.45, 0.75);
+      const boostedOpacity = Math.min(0.90, baseOpacity * activityBoost * intensity);
 
       points.push({
         x,
         y,
         radius: baseRadius,
-        // Lower opacity, intensity through accumulation
-        opacity: randRange(0.18, 0.40) * (0.5 + intensity * 0.5),
+        opacity: Math.max(0.40, boostedOpacity),
         intensity,
       });
     }

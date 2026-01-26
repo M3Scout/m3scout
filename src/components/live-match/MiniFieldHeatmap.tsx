@@ -68,20 +68,27 @@ function clamp(v: number, a: number, b: number): number {
 /**
  * Professional-grade heatmap point generation
  * Mimics Wyscout/SofaScore style with:
- * - High point density (800+ points)
- * - Minimal blur (crisp points)
- * - Intensity from accumulation, not spread
+ * - Adaptive scaling based on activity level
+ * - Guaranteed minimum visibility for any participation
+ * - High contrast for clear tactical reading
  */
 function generateHeatmapPoints(
   percentages: ZoneDistribution,
   seed: string,
-  totalPoints: number = 1200 // Very high density for sharp definition
+  totalPoints: number = 400 // Base point count
 ): HeatmapPoint[] {
   const rand = mulberry32(xfnv1a(seed));
   const randRange = (min: number, max: number) => min + (max - min) * rand();
 
   const points: HeatmapPoint[] = [];
 
+  // Calculate total activity to determine adaptive scaling
+  const totalActivity = percentages.attack + percentages.midfield + percentages.defense;
+  
+  // Adaptive intensity multiplier: boost visibility for low activity
+  // Players with any activity should always be visible
+  const activityBoost = totalActivity > 0 ? Math.max(1.0, 2.5 - (totalActivity / 100)) : 0;
+  
   // Determine dominant zone for intensity scaling
   const maxPercent = Math.max(percentages.attack, percentages.midfield, percentages.defense);
   const minPercent = Math.min(percentages.attack, percentages.midfield, percentages.defense);
@@ -93,10 +100,12 @@ function generateHeatmapPoints(
     { name: "defense", yMin: 0.67, yMax: 0.98 },
   ];
 
-  const N = totalPoints;
-  const nDef = Math.round(N * percentages.defense / 100);
-  const nMid = Math.round(N * percentages.midfield / 100);
-  const nAtt = N - nDef - nMid;
+  // Scale points based on total activity - more activity = more points
+  const scaledTotal = Math.max(150, Math.round(totalPoints * (0.4 + (totalActivity / 150))));
+  
+  const nDef = Math.round(scaledTotal * percentages.defense / 100);
+  const nMid = Math.round(scaledTotal * percentages.midfield / 100);
+  const nAtt = scaledTotal - nDef - nMid;
 
   const pointCounts: Record<keyof ZoneDistribution, number> = {
     defense: nDef,
@@ -106,19 +115,23 @@ function generateHeatmapPoints(
 
   zones.forEach(({ name, yMin, yMax }) => {
     const nPoints = pointCounts[name];
+    if (nPoints === 0) return;
+    
     const zonePercent = percentages[name];
     // Normalize intensity: 0 = lowest zone, 1 = highest zone
-    const intensity = (zonePercent - minPercent) / range;
+    // But ensure minimum of 0.3 so even low zones are visible
+    const rawIntensity = (zonePercent - minPercent) / range;
+    const intensity = 0.3 + rawIntensity * 0.7; // Range: 0.3 to 1.0
     
-    // Create multiple hotspot clusters for realistic distribution
-    const numClusters = 4 + Math.floor(rand() * 4); // 4-7 clusters per zone
+    // Create fewer, more concentrated clusters for stronger hotspots
+    const numClusters = 2 + Math.floor(rand() * 3); // 2-4 clusters per zone
     const clusters: { cx: number; cy: number; weight: number }[] = [];
     
     for (let c = 0; c < numClusters; c++) {
       clusters.push({
-        cx: randRange(0.08, 0.92),
-        cy: randRange(yMin + 0.02, yMax - 0.02),
-        weight: randRange(0.3, 1.0),
+        cx: randRange(0.15, 0.85),
+        cy: randRange(yMin + 0.05, yMax - 0.05),
+        weight: randRange(0.5, 1.0),
       });
     }
 
@@ -126,9 +139,8 @@ function generateHeatmapPoints(
       let x: number;
       let y: number;
 
-      // 90% of points clustered around hotspots (creates dense areas)
-      if (rand() < 0.90 && clusters.length > 0) {
-        // Weight-biased cluster selection
+      // 95% clustered for very dense, visible hotspots
+      if (rand() < 0.95 && clusters.length > 0) {
         const totalWeight = clusters.reduce((sum, c) => sum + c.weight, 0);
         let r = rand() * totalWeight;
         let cluster = clusters[0];
@@ -137,25 +149,28 @@ function generateHeatmapPoints(
           if (r <= 0) { cluster = c; break; }
         }
         
-        // Very tight clustering for crisp hotspots
-        const spread = randRange(0.03, 0.08);
-        x = clamp(cluster.cx + (rand() - 0.5) * spread * 2, 0.02, 0.98);
+        // Tight clustering for concentrated hotspots
+        const spread = randRange(0.04, 0.10);
+        x = clamp(cluster.cx + (rand() - 0.5) * spread * 2, 0.05, 0.95);
         y = clamp(cluster.cy + (rand() - 0.5) * spread * 1.5, yMin, yMax);
       } else {
-        // 10% scattered for background texture
-        x = randRange(0.05, 0.95);
+        x = randRange(0.10, 0.90);
         y = randRange(yMin, yMax);
       }
 
-      // Tiny crisp points - intensity purely from overlap
-      const baseRadius = randRange(0.6, 1.2);
+      // Larger, more visible points with adaptive sizing
+      const baseRadius = randRange(1.2, 2.2) * (0.8 + activityBoost * 0.3);
+      
+      // High opacity with activity boost for guaranteed visibility
+      // Minimum opacity of 0.35 ensures every point is seen
+      const baseOpacity = randRange(0.40, 0.70);
+      const boostedOpacity = Math.min(0.85, baseOpacity * activityBoost * intensity);
       
       points.push({
         x,
         y,
         radius: baseRadius,
-        // Higher individual opacity for visibility, boosted for dominant zones
-        opacity: randRange(0.25, 0.50) * (0.6 + intensity * 0.4),
+        opacity: Math.max(0.35, boostedOpacity),
         intensity,
       });
     }
@@ -274,7 +289,7 @@ export function MiniFieldHeatmap({
   const filterId = `heatBlur-${seed.replace(/[^a-zA-Z0-9]/g, '')}`;
   
   const points = useMemo(
-    () => hasData ? generateHeatmapPoints(percentages, seed, 180) : [],
+    () => hasData ? generateHeatmapPoints(percentages, seed, 400) : [],
     [percentages.attack, percentages.midfield, percentages.defense, seed, hasData]
   );
 
@@ -333,7 +348,7 @@ export function MiniFieldHeatmap({
             {/* Definitions - MINIMAL blur for crisp professional look */}
             <defs>
               <filter id={filterId} x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur in="SourceGraphic" stdDeviation="0.35" />
+                <feGaussianBlur in="SourceGraphic" stdDeviation="0.5" />
               </filter>
               {/* Gradient for field depth */}
               <linearGradient id={`fieldGrad-${filterId}`} x1="0%" y1="0%" x2="0%" y2="100%">
