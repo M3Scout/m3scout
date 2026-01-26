@@ -24,25 +24,28 @@ interface UsePlayerMatchRatingsOptions {
  */
 function matchDerivedStatsToInput(stats: MatchDerivedStats, isGoalkeeper: boolean): PlayerStatsInput {
   return {
-    // Outfield stats
+    // Outfield stats - Attacking
     goals: stats.goals,
     assists: stats.assists,
     shots_on_target: stats.shots_on_target,
     shots: stats.shots,
+    // Outfield stats - Creation
     dribbles_success: stats.dribbles_success,
     dribbles_total: stats.dribbles_total,
     key_passes: stats.key_passes,
     chances_created: stats.chances_created,
     crosses_success: stats.crosses_success,
     crosses_failed: stats.crosses_failed,
+    // Outfield stats - Passing
     passes_completed: stats.passes_completed,
     passes_total: stats.passes_total,
+    // Outfield stats - Defense
     interceptions: stats.interceptions,
     recoveries: stats.recoveries,
     clearances: stats.clearances,
     tackles: stats.tackles,
-    yellow_cards: stats.yellow_cards,
-    red_cards: stats.red_cards,
+    shots_blocked: stats.blocked_shots, // Defensive blocked shot (mapped from blocked_shots)
+    times_dribbled_past: stats.was_dribbled, // Negative: got dribbled past (mapped from was_dribbled)
     // Duels (Professional Scouting v2.0)
     duels_won: stats.duels_won,
     duels_total: stats.duels_total,
@@ -51,6 +54,9 @@ function matchDerivedStatsToInput(stats: MatchDerivedStats, isGoalkeeper: boolea
     fouls_committed: stats.fouls_committed,
     fouls_suffered: stats.fouls_suffered,
     possession_lost: stats.possession_lost,
+    // Cards
+    yellow_cards: stats.yellow_cards,
+    red_cards: stats.red_cards,
     // Goalkeeper stats
     saves: stats.saves,
     goals_conceded: stats.goals_conceded,
