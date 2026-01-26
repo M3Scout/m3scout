@@ -33,6 +33,8 @@ function matchDerivedStatsToInput(stats: MatchDerivedStats, isGoalkeeper: boolea
     dribbles_total: stats.dribbles_total,
     key_passes: stats.key_passes,
     chances_created: stats.chances_created,
+    crosses_success: (stats as any).crosses_success ?? 0,
+    crosses_failed: (stats as any).crosses_failed ?? 0,
     passes_completed: stats.passes_completed,
     passes_total: stats.passes_total,
     interceptions: stats.interceptions,

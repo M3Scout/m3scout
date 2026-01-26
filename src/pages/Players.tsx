@@ -349,6 +349,8 @@ const Players = () => {
             dribbles_total: matchStats.dribbles_total || 0,
             key_passes: matchStats.key_passes || 0,
             chances_created: matchStats.chances_created || 0,
+            crosses_success: matchStats.crosses_success || 0,
+            crosses_failed: matchStats.crosses_failed || 0,
             passes_completed: matchStats.passes_completed || 0,
             passes_total: matchStats.passes_total || 0,
             interceptions: matchStats.interceptions || 0,

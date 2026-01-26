@@ -197,6 +197,8 @@ export function LiveMatchStatsSection({ playerId, playerPosition }: LiveMatchSta
                     dribbles_total: match.stats.dribbles_total,
                     key_passes: match.stats.key_passes,
                     chances_created: match.stats.chances_created,
+                    crosses_success: (match.stats as any).crosses_success ?? 0,
+                    crosses_failed: (match.stats as any).crosses_failed ?? 0,
                     passes_completed: match.stats.passes_completed,
                     passes_total: match.stats.passes_total,
                     interceptions: match.stats.interceptions,
