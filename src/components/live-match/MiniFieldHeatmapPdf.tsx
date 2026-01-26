@@ -67,10 +67,17 @@ function clamp(v: number, a: number, b: number): number {
   return Math.max(a, Math.min(b, v));
 }
 
+/**
+ * Professional-grade heatmap point generation for PDF
+ * Mimics Wyscout/SofaScore style with:
+ * - High point density (600+ points)
+ * - No blur (crisp points via accumulation)
+ * - Intensity from overlapping, not spread
+ */
 function generateHeatmapPoints(
   percentages: ZoneDistribution,
   seed: string,
-  totalPoints: number = 220 // More points for granularity
+  totalPoints: number = 600 // High density
 ): HeatmapPoint[] {
   const rand = mulberry32(xfnv1a(seed));
   const randRange = (min: number, max: number) => min + (max - min) * rand();
@@ -103,15 +110,15 @@ function generateHeatmapPoints(
     const zonePercent = percentages[name];
     const intensity = (zonePercent - minPercent) / range;
     
-    // More clusters for better distribution
-    const numClusters = 3 + Math.floor(rand() * 3);
+    // Multiple hotspot clusters for realistic distribution
+    const numClusters = 4 + Math.floor(rand() * 4);
     const clusters: { cx: number; cy: number; weight: number }[] = [];
     
     for (let c = 0; c < numClusters; c++) {
       clusters.push({
-        cx: randRange(0.12, 0.88),
-        cy: randRange(yMin + 0.03, yMax - 0.03),
-        weight: randRange(0.5, 1.5),
+        cx: randRange(0.08, 0.92),
+        cy: randRange(yMin + 0.02, yMax - 0.02),
+        weight: randRange(0.3, 1.0),
       });
     }
 
@@ -119,28 +126,33 @@ function generateHeatmapPoints(
       let x: number;
       let y: number;
 
-      // Higher clustering for more defined hotspots
-      if (rand() < 0.85 && clusters.length > 0) {
-        const cluster = clusters[Math.floor(rand() * clusters.length)];
-        // Tighter clustering for defined spots
-        const spread = 0.08 + rand() * 0.06;
-        x = clamp(cluster.cx + (rand() - 0.5) * spread, 0.03, 0.97);
-        y = clamp(cluster.cy + (rand() - 0.5) * spread * 0.8, yMin, yMax);
+      // 90% clustered for dense hotspots
+      if (rand() < 0.90 && clusters.length > 0) {
+        const totalWeight = clusters.reduce((sum, c) => sum + c.weight, 0);
+        let r = rand() * totalWeight;
+        let cluster = clusters[0];
+        for (const c of clusters) {
+          r -= c.weight;
+          if (r <= 0) { cluster = c; break; }
+        }
+        
+        const spread = randRange(0.03, 0.08);
+        x = clamp(cluster.cx + (rand() - 0.5) * spread * 2, 0.02, 0.98);
+        y = clamp(cluster.cy + (rand() - 0.5) * spread * 1.5, yMin, yMax);
       } else {
         x = randRange(0.05, 0.95);
         y = randRange(yMin, yMax);
       }
 
-      // Smaller, more defined points for PDF
-      const baseRadius = randRange(1.5, 3.2);
-      const intensityBonus = intensity * 0.6;
+      // Very small points for PDF - density through accumulation
+      const baseRadius = randRange(1.0, 2.0);
 
       points.push({
         x,
         y,
-        radius: baseRadius + intensityBonus,
-        // Higher opacity for more visible individual points
-        opacity: randRange(0.45, 0.80) * (0.7 + intensity * 0.3),
+        radius: baseRadius,
+        // Lower opacity, intensity through accumulation
+        opacity: randRange(0.18, 0.40) * (0.5 + intensity * 0.5),
         intensity,
       });
     }

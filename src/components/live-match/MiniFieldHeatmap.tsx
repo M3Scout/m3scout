@@ -65,10 +65,17 @@ function clamp(v: number, a: number, b: number): number {
   return Math.max(a, Math.min(b, v));
 }
 
+/**
+ * Professional-grade heatmap point generation
+ * Mimics Wyscout/SofaScore style with:
+ * - High point density (800+ points)
+ * - Minimal blur (crisp points)
+ * - Intensity from accumulation, not spread
+ */
 function generateHeatmapPoints(
   percentages: ZoneDistribution,
   seed: string,
-  totalPoints: number = 320 // More points for granularity
+  totalPoints: number = 800 // High density like reference
 ): HeatmapPoint[] {
   const rand = mulberry32(xfnv1a(seed));
   const randRange = (min: number, max: number) => min + (max - min) * rand();
@@ -103,15 +110,15 @@ function generateHeatmapPoints(
     // Normalize intensity: 0 = lowest zone, 1 = highest zone
     const intensity = (zonePercent - minPercent) / range;
     
-    // More clusters for better distribution
-    const numClusters = 3 + Math.floor(rand() * 3);
+    // Create multiple hotspot clusters for realistic distribution
+    const numClusters = 4 + Math.floor(rand() * 4); // 4-7 clusters per zone
     const clusters: { cx: number; cy: number; weight: number }[] = [];
     
     for (let c = 0; c < numClusters; c++) {
       clusters.push({
-        cx: randRange(0.12, 0.88),
-        cy: randRange(yMin + 0.03, yMax - 0.03),
-        weight: randRange(0.5, 1.5),
+        cx: randRange(0.08, 0.92),
+        cy: randRange(yMin + 0.02, yMax - 0.02),
+        weight: randRange(0.3, 1.0),
       });
     }
 
@@ -119,28 +126,36 @@ function generateHeatmapPoints(
       let x: number;
       let y: number;
 
-      // Higher clustering for more defined hotspots
-      if (rand() < 0.85 && clusters.length > 0) {
-        const cluster = clusters[Math.floor(rand() * clusters.length)];
-        // Tighter clustering for defined spots
-        const spread = 0.08 + rand() * 0.06;
-        x = clamp(cluster.cx + (rand() - 0.5) * spread, 0.03, 0.97);
-        y = clamp(cluster.cy + (rand() - 0.5) * spread * 0.8, yMin, yMax);
+      // 90% of points clustered around hotspots (creates dense areas)
+      if (rand() < 0.90 && clusters.length > 0) {
+        // Weight-biased cluster selection
+        const totalWeight = clusters.reduce((sum, c) => sum + c.weight, 0);
+        let r = rand() * totalWeight;
+        let cluster = clusters[0];
+        for (const c of clusters) {
+          r -= c.weight;
+          if (r <= 0) { cluster = c; break; }
+        }
+        
+        // Very tight clustering for crisp hotspots
+        const spread = randRange(0.03, 0.08);
+        x = clamp(cluster.cx + (rand() - 0.5) * spread * 2, 0.02, 0.98);
+        y = clamp(cluster.cy + (rand() - 0.5) * spread * 1.5, yMin, yMax);
       } else {
+        // 10% scattered for background texture
         x = randRange(0.05, 0.95);
         y = randRange(yMin, yMax);
       }
 
-      // Smaller, more defined points
-      const baseRadius = randRange(1.2, 2.8);
-      const intensityBonus = intensity * 0.8;
+      // Very small points - density comes from accumulation
+      const baseRadius = randRange(0.8, 1.8);
       
       points.push({
         x,
         y,
-        radius: baseRadius + intensityBonus,
-        // Higher opacity for more visible individual points
-        opacity: randRange(0.4, 0.75) * (0.7 + intensity * 0.3),
+        radius: baseRadius,
+        // Lower individual opacity, intensity through accumulation
+        opacity: randRange(0.15, 0.35) * (0.5 + intensity * 0.5),
         intensity,
       });
     }
@@ -315,11 +330,10 @@ export function MiniFieldHeatmap({
             viewBox="0 0 100 154"
             preserveAspectRatio="xMidYMid meet"
           >
-            {/* Definitions */}
+            {/* Definitions - MINIMAL blur for crisp professional look */}
             <defs>
-              {/* Reduced blur for more defined points */}
-              <filter id={filterId} x="-30%" y="-30%" width="160%" height="160%">
-                <feGaussianBlur in="SourceGraphic" stdDeviation="1.8" />
+              <filter id={filterId} x="-10%" y="-10%" width="120%" height="120%">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="0.6" />
               </filter>
               {/* Gradient for field depth */}
               <linearGradient id={`fieldGrad-${filterId}`} x1="0%" y1="0%" x2="0%" y2="100%">
