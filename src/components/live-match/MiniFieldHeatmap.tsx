@@ -12,9 +12,20 @@ import React, { useMemo } from "react";
 import type { ZoneDistribution } from "@/lib/postGameAnalysis";
 
 // ============================================
-// SEEDED RANDOM NUMBER GENERATOR (Mulberry32)
+// SEEDED RANDOM (xfnv1a hash + Mulberry32 PRNG)
 // ============================================
 
+/** FNV-1a hash: string -> uint32 */
+function xfnv1a(str: string): number {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+/** Mulberry32 PRNG */
 function mulberry32(seed: number) {
   return function () {
     let t = (seed += 0x6d2b79f5);
@@ -24,18 +35,8 @@ function mulberry32(seed: number) {
   };
 }
 
-function hashString(str: string): number {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash |= 0; // Convert to 32bit integer
-  }
-  return Math.abs(hash);
-}
-
 // ============================================
-// HEATMAP POINT GENERATION
+// HEATMAP POINT GENERATION (Exact Algorithm)
 // ============================================
 
 interface HeatmapPoint {
@@ -45,65 +46,76 @@ interface HeatmapPoint {
   opacity: number;
 }
 
+/** Helpers */
+function clamp(v: number, a: number, b: number): number {
+  return Math.max(a, Math.min(b, v));
+}
+
 function generateHeatmapPoints(
   percentages: ZoneDistribution,
   seed: string,
-  totalPoints: number = 180
+  totalPoints: number = 220
 ): HeatmapPoint[] {
-  const rng = mulberry32(hashString(seed));
+  const rand = mulberry32(xfnv1a(seed));
+  const randRange = (min: number, max: number) => min + (max - min) * rand();
+
   const points: HeatmapPoint[] = [];
 
-  // Zone Y ranges (field is rendered with attack at top, defense at bottom)
-  // SVG coordinate system: y=0 at top
+  // Zone Y ranges (attack at top in SVG coordinates)
   const zones: { name: keyof ZoneDistribution; yMin: number; yMax: number }[] = [
-    { name: "attack", yMin: 0, yMax: 0.33 },    // Top third
-    { name: "midfield", yMin: 0.33, yMax: 0.66 }, // Middle third
-    { name: "defense", yMin: 0.66, yMax: 1 },   // Bottom third
+    { name: "attack", yMin: 0.02, yMax: 0.33 },    // Top third (attack)
+    { name: "midfield", yMin: 0.34, yMax: 0.66 },  // Middle third
+    { name: "defense", yMin: 0.67, yMax: 0.98 },   // Bottom third (defense)
   ];
 
-  zones.forEach(({ name, yMin, yMax }) => {
-    const zonePercent = percentages[name] / 100;
-    const nPoints = Math.round(totalPoints * zonePercent);
+  // Calculate points per zone
+  const N = totalPoints;
+  const nDef = Math.round(N * percentages.defense / 100);
+  const nMid = Math.round(N * percentages.midfield / 100);
+  const nAtt = N - nDef - nMid;
 
-    // Generate cluster centers for more natural distribution
-    const numClusters = Math.max(1, Math.floor(rng() * 3) + 1);
+  const pointCounts: Record<keyof ZoneDistribution, number> = {
+    defense: nDef,
+    midfield: nMid,
+    attack: nAtt,
+  };
+
+  zones.forEach(({ name, yMin, yMax }) => {
+    const nPoints = pointCounts[name];
+    
+    // Create 2-3 cluster centers per zone
+    const numClusters = 2 + Math.floor(rand() * 2); // 2 or 3
     const clusters: { cx: number; cy: number }[] = [];
     
     for (let c = 0; c < numClusters; c++) {
       clusters.push({
-        cx: 0.15 + rng() * 0.7, // Avoid edges
-        cy: yMin + 0.1 + rng() * (yMax - yMin - 0.2),
+        cx: randRange(0.15, 0.85),
+        cy: randRange(yMin + 0.05, yMax - 0.05),
       });
     }
 
     for (let i = 0; i < nPoints; i++) {
-      // 30% of points cluster around centers, 70% random in zone
-      const useCluster = rng() < 0.3 && clusters.length > 0;
-
       let x: number;
       let y: number;
 
-      if (useCluster) {
-        const cluster = clusters[Math.floor(rng() * clusters.length)];
-        // Gaussian-like distribution around cluster
-        const angle = rng() * Math.PI * 2;
-        const radius = rng() * 0.15;
-        x = cluster.cx + Math.cos(angle) * radius;
-        y = cluster.cy + Math.sin(angle) * radius * 0.5; // Flatten vertically
+      // 70% clustered, 30% uniform
+      if (rand() < 0.7 && clusters.length > 0) {
+        // Pick random cluster center
+        const cluster = clusters[Math.floor(rand() * clusters.length)];
+        // Gaussian-like fake distribution around center
+        x = clamp(cluster.cx + (rand() - 0.5) * 0.18, 0.03, 0.97);
+        y = clamp(cluster.cy + (rand() - 0.5) * 0.14, yMin, yMax);
       } else {
-        x = 0.05 + rng() * 0.9;
-        y = yMin + rng() * (yMax - yMin);
+        // Uniform distribution
+        x = randRange(0.03, 0.97);
+        y = randRange(yMin, yMax);
       }
-
-      // Clamp to valid range
-      x = Math.max(0.02, Math.min(0.98, x));
-      y = Math.max(yMin + 0.02, Math.min(yMax - 0.02, y));
 
       points.push({
         x,
         y,
-        radius: 2 + rng() * 2.5, // 2-4.5
-        opacity: 0.4 + rng() * 0.35, // 0.4-0.75
+        radius: randRange(2.5, 5.0),
+        opacity: randRange(0.08, 0.18),
       });
     }
   });
@@ -137,7 +149,7 @@ export function MiniFieldHeatmap({
   const seed = `${matchId}:${playerId}`;
   
   const points = useMemo(
-    () => generateHeatmapPoints(percentages, seed, 180),
+    () => generateHeatmapPoints(percentages, seed, 220),
     [percentages.attack, percentages.midfield, percentages.defense, seed]
   );
 
@@ -157,7 +169,7 @@ export function MiniFieldHeatmap({
         {/* Definitions: Blur filter and gradient */}
         <defs>
           <filter id={`heatBlur-${seed.replace(/[^a-zA-Z0-9]/g, '')}`} x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="4" />
+            <feGaussianBlur in="SourceGraphic" stdDeviation="6" />
           </filter>
           <radialGradient id={`heatGrad-${seed.replace(/[^a-zA-Z0-9]/g, '')}`}>
             <stop offset="0%" stopColor="#10b981" stopOpacity="0.8" />
