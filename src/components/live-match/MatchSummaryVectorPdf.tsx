@@ -1100,28 +1100,7 @@ export function MatchSummaryVectorPdf({
           </View>
         </View>
 
-        {/* Distribution Summary */}
-        <Text style={styles.sectionTitle}>Distribuição de Eventos</Text>
-        <View style={styles.distributionRow}>
-          <View style={styles.distributionCard}>
-            <Text style={styles.distributionValue}>{distributionStats.firstHalf}</Text>
-            <Text style={styles.distributionLabel}>1º TEMPO</Text>
-          </View>
-          <View style={styles.distributionCard}>
-            <Text style={styles.distributionValue}>{distributionStats.secondHalf}</Text>
-            <Text style={styles.distributionLabel}>2º TEMPO</Text>
-          </View>
-          <View style={styles.distributionCardHighlight}>
-            <Text style={styles.distributionValue}>{distributionStats.peakMinute}'</Text>
-            <Text style={styles.distributionLabel}>PICO ({distributionStats.peakCount} eventos)</Text>
-          </View>
-          <View style={styles.distributionCard}>
-            <Text style={styles.distributionValue}>{distributionStats.total}</Text>
-            <Text style={styles.distributionLabel}>TOTAL</Text>
-          </View>
-        </View>
-
-        {/* Stats by Half - Complete Table */}
+        {/* Stats by Half - Complete Table (wrap allowed - can break across pages) */}
         <Text style={styles.sectionTitle}>Estatísticas por Tempo</Text>
         <View style={styles.table}>
           <View style={styles.tableHeaderRow}>
@@ -1131,7 +1110,7 @@ export function MatchSummaryVectorPdf({
             <Text style={styles.tableHeaderCell}>TOTAL</Text>
           </View>
           {halfStats.rows.map((row) => (
-            <View key={row.id} style={styles.tableRow}>
+            <View key={row.id} style={styles.tableRow} wrap={false}>
               <Text style={styles.tableCell}>{row.first}</Text>
               <Text style={styles.tableCellWide}>{row.label}</Text>
               <Text style={styles.tableCell}>{row.second}</Text>
@@ -1139,7 +1118,7 @@ export function MatchSummaryVectorPdf({
             </View>
           ))}
           {(halfStats.substitutions.first > 0 || halfStats.substitutions.second > 0) && (
-            <View style={styles.tableRow}>
+            <View style={styles.tableRow} wrap={false}>
               <Text style={styles.tableCell}>{halfStats.substitutions.first}</Text>
               <Text style={styles.tableCellWide}>Substituições</Text>
               <Text style={styles.tableCell}>{halfStats.substitutions.second}</Text>
@@ -1148,26 +1127,34 @@ export function MatchSummaryVectorPdf({
           )}
         </View>
 
-        {/* Distribution Chart Section */}
-        <View wrap={false}>
+        {/* Distribution Chart Section - Single unified block with smart pagination */}
+        {/* wrap={false} keeps title+badges+chart together; minPresenceAhead ensures space exists */}
+        <View wrap={false} minPresenceAhead={120}>
           <Text style={styles.sectionTitle}>Distribuição de Eventos</Text>
           <Text style={styles.sectionSubtitle}>Intensidade do jogo ao longo do tempo</Text>
           
-          {/* Summary Badges Row */}
-          <View style={{ flexDirection: "row", gap: 8, marginBottom: 10 }}>
-            <View style={{ backgroundColor: PDF_COLORS.gray100, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 }}>
-              <Text style={{ fontSize: 8, color: PDF_COLORS.gray700 }}>1º Tempo: {distributionStats.firstHalf} eventos</Text>
+          {/* Distribution Summary Cards */}
+          <View style={styles.distributionRow}>
+            <View style={styles.distributionCard}>
+              <Text style={styles.distributionValue}>{distributionStats.firstHalf}</Text>
+              <Text style={styles.distributionLabel}>1º TEMPO</Text>
             </View>
-            <View style={{ backgroundColor: PDF_COLORS.gray100, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 }}>
-              <Text style={{ fontSize: 8, color: PDF_COLORS.gray700 }}>2º Tempo: {distributionStats.secondHalf} eventos</Text>
+            <View style={styles.distributionCard}>
+              <Text style={styles.distributionValue}>{distributionStats.secondHalf}</Text>
+              <Text style={styles.distributionLabel}>2º TEMPO</Text>
             </View>
-            <View style={{ backgroundColor: "#FEF3C7", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 }}>
-              <Text style={{ fontSize: 8, color: "#92400E" }}>Pico: {distributionStats.peakMinute}' ({distributionStats.peakCount} eventos)</Text>
+            <View style={styles.distributionCardHighlight}>
+              <Text style={styles.distributionValue}>{distributionStats.peakMinute}'</Text>
+              <Text style={styles.distributionLabel}>PICO ({distributionStats.peakCount} eventos)</Text>
+            </View>
+            <View style={styles.distributionCard}>
+              <Text style={styles.distributionValue}>{distributionStats.total}</Text>
+              <Text style={styles.distributionLabel}>TOTAL</Text>
             </View>
           </View>
 
           {/* SVG Chart */}
-          <View style={{ border: `1px solid ${PDF_COLORS.gray200}`, borderRadius: 6, padding: 8, backgroundColor: PDF_COLORS.white }}>
+          <View style={{ border: `1px solid ${PDF_COLORS.gray200}`, borderRadius: 6, padding: 8, backgroundColor: PDF_COLORS.white, marginTop: 8 }}>
             <Svg width={CHART_WIDTH} height={CHART_HEIGHT} viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}>
               {/* Grid lines (horizontal) */}
               {[0, 0.25, 0.5, 0.75, 1].map((ratio, idx) => (
