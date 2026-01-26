@@ -33,6 +33,8 @@ import { usePlayerZoneHistory } from "@/hooks/usePlayerZoneHistory";
 import { calculateZoneDeviation, type ZoneDeviationResult } from "@/lib/zoneDeviationEngine";
 import { ZoneDeviationBadge } from "./ZoneDeviationBadge";
 import { PerformanceProfileInsight } from "./PerformanceProfileInsight";
+import { PlayerHalfComparison } from "./PlayerHalfComparison";
+import { type MatchEvent as HalfMatchEvent } from "@/lib/halfComparisonEngine";
 
 // ============================================
 // TYPES
@@ -56,6 +58,18 @@ interface PlayerStatsMap {
   [playerId: string]: MatchStatsInput | undefined;
 }
 
+interface MatchEventForHalf {
+  minute?: number | null;
+  game_time_seconds?: number | null;
+  half?: number | null;
+  period?: number | null;
+  event_type: string;
+  player_id: string;
+  value?: number;
+  count_in_stats?: boolean;
+  event_status?: string;
+}
+
 interface PostGameInsightsCardProps {
   matchPlayers: MatchPlayer[];
   playerStatsMap: PlayerStatsMap;
@@ -63,6 +77,8 @@ interface PostGameInsightsCardProps {
   matchDuration?: number;
   matchId: string;
   seasonYear?: number;
+  /** Match events for half comparison (optional) */
+  matchEvents?: MatchEventForHalf[];
 }
 
 // ============================================
@@ -232,9 +248,13 @@ interface PlayerSummaryRowProps {
   analysis: PostGameAnalysis;
   matchId: string;
   seasonYear: number;
+  /** Player-specific events for half comparison */
+  playerEvents: MatchEventForHalf[];
+  /** Aggregated stats for this player */
+  playerStats: MatchStatsInput;
 }
 
-function PlayerSummaryRow({ player, analysis, matchId, seasonYear }: PlayerSummaryRowProps) {
+function PlayerSummaryRow({ player, analysis, matchId, seasonYear, playerEvents, playerStats }: PlayerSummaryRowProps) {
   if (!player.player) return null;
 
   const positionColor = getPositionColor(player.player.position);
@@ -282,6 +302,14 @@ function PlayerSummaryRow({ player, analysis, matchId, seasonYear }: PlayerSumma
       {/* Performance Profile Insight - Contextual text about deviation */}
       <PerformanceProfileInsight deviationResult={deviationResult} />
 
+      {/* Half Comparison - 1st vs 2nd half zone evolution */}
+      <PlayerHalfComparison
+        position={player.player.position}
+        events={playerEvents as HalfMatchEvent[]}
+        playerStats={playerStats}
+        compact
+      />
+
       {/* Quick Indicators */}
       <QuickIndicatorsDisplay indicators={analysis.quickIndicators} />
       
@@ -305,6 +333,7 @@ export function PostGameInsightsCard({
   matchDuration = 90,
   matchId,
   seasonYear = new Date().getFullYear(),
+  matchEvents = [],
 }: PostGameInsightsCardProps) {
   // Only show for finished/applied matches
   const showInsights = matchStatus === "finished" || matchStatus === "applied";
@@ -385,15 +414,23 @@ export function PostGameInsightsCard({
         <CardContent className="p-4 sm:p-6">
           <ScrollArea className="h-[400px] sm:h-[480px]">
             <div className="space-y-3 pr-3">
-              {playerAnalyses.map(({ player, analysis }) => (
-                <PlayerSummaryRow
-                  key={player.id}
-                  player={player}
-                  analysis={analysis}
-                  matchId={matchId}
-                  seasonYear={seasonYear}
-                />
-              ))}
+              {playerAnalyses.map(({ player, analysis }) => {
+                // Filter events for this specific player
+                const playerEvents = matchEvents.filter(e => e.player_id === player.player_id);
+                const playerStats = playerStatsMap[player.player_id] ?? {};
+                
+                return (
+                  <PlayerSummaryRow
+                    key={player.id}
+                    player={player}
+                    analysis={analysis}
+                    matchId={matchId}
+                    seasonYear={seasonYear}
+                    playerEvents={playerEvents}
+                    playerStats={playerStats}
+                  />
+                );
+              })}
             </div>
           </ScrollArea>
         </CardContent>
