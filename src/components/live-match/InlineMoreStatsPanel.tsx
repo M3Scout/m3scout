@@ -3,7 +3,8 @@ import { motion } from "framer-motion";
 import { MatchEventType, MatchStatus, MatchPlayerStats } from "@/hooks/useLiveMatch";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { Plus, Minus } from "lucide-react";
+import { Plus, Minus, Calculator } from "lucide-react";
+import { calculateBallActionsFromMatchStats } from "@/lib/derivedBallActions";
 
 // Category full names for headers - NEW STRUCTURE
 const CATEGORY_NAMES: Record<string, string> = {
@@ -49,13 +50,15 @@ const OUTFIELD_STATS: { category: string; categoryKey: string; color: string; bg
     ],
   },
   // DRIBLES / POSSE
+  // NOTE: ball_action is now a DERIVED stat - calculated automatically from other events
+  // It is handled separately in the rendering logic as display-only (no +/- buttons)
   {
     category: "DRIBLES",
     categoryKey: "dribbles",
     color: "text-cyan-400",
     bgColor: "bg-cyan-500/10 border-cyan-500/20",
     stats: [
-      { type: "ball_action", label: "Ações com a Bola" },
+      // ball_action is NOT here - it's rendered separately as derived/display-only
       { type: "dribble_success", label: "Dribles Certos" },
       { type: "dribble_attempt", label: "Dribles Errados" },
       { type: "foul_suffered", label: "Faltas Sofridas" },
@@ -176,7 +179,8 @@ export function InlineMoreStatsPanel({
         case "chance_created": return Math.max(0, matchStats.chances_created);
         case "cross_success": return Math.max(0, matchStats.crosses_success ?? 0); // NEW: Cruzamentos certos
         case "cross_failed": return Math.max(0, matchStats.crosses_failed ?? 0); // NEW: Cruzamentos errados
-        case "ball_action": return Math.max(0, matchStats.ball_actions ?? 0); // NEW: Ações com a bola
+        // ball_action is DERIVED - calculated from sum of eligible events (not directly recorded)
+        case "ball_action": return calculateBallActionsFromMatchStats(matchStats);
         case "dribble_success": return Math.max(0, matchStats.dribbles_success);
         case "dribble_attempt": return Math.max(0, matchStats.dribbles_total - matchStats.dribbles_success); // Dribble attempts failed
         case "tackle": return Math.max(0, matchStats.tackles);
@@ -362,6 +366,59 @@ export function InlineMoreStatsPanel({
               // Desktop: 4 columns
               "desktop:grid-cols-4"
             )}>
+              {/* DERIVED STAT: "Ações com a Bola" - display-only, no +/- buttons */}
+              {/* Only shown in DRIBLES category */}
+              {category.categoryKey === "dribbles" && (
+                <motion.div
+                  whileHover={{ scale: 1.01 }}
+                  className={cn(
+                    "rounded-xl transition-all duration-200",
+                    "bg-gradient-to-br from-cyan-900/30 to-zinc-900/80 border-2 border-cyan-500/30",
+                    "hover:border-cyan-400/50 hover:shadow-xl",
+                    "flex flex-col",
+                    "min-h-[110px] tablet:min-h-[120px] desktop:min-h-[130px]",
+                    "relative overflow-hidden"
+                  )}
+                >
+                  {/* Derived indicator badge */}
+                  <div className="absolute top-2 right-2 flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-cyan-500/20 border border-cyan-500/30">
+                    <Calculator className="w-3 h-3 text-cyan-400" />
+                    <span className="text-[9px] font-bold text-cyan-400 uppercase tracking-wider">Auto</span>
+                  </div>
+                  
+                  {/* VALUE + LABEL SECTION */}
+                  <div className="flex-1 flex flex-col items-center justify-center py-3 px-2 tablet:py-4 tablet:px-3">
+                    <motion.p 
+                      key={getDisplayCount("ball_action")}
+                      initial={{ scale: 1.1, opacity: 0.8 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      className={cn(
+                        "font-black tabular-nums leading-none",
+                        "text-[28px] tablet:text-[36px] desktop:text-[38px]",
+                        getDisplayCount("ball_action") > 0 ? "text-cyan-400" : "text-zinc-500"
+                      )}
+                    >
+                      {getDisplayCount("ball_action")}
+                    </motion.p>
+                    
+                    <p className={cn(
+                      "text-center mt-2 leading-tight font-medium tracking-tight",
+                      "text-[11px] min-h-[26px] tablet:text-[13px] tablet:min-h-[32px] tablet:mt-2.5 desktop:text-[13px] desktop:min-h-[34px]",
+                      getDisplayCount("ball_action") > 0 ? "text-zinc-200" : "text-zinc-500"
+                    )}>
+                      Ações com a Bola
+                    </p>
+                  </div>
+                  
+                  {/* Info footer - instead of action buttons */}
+                  <div className="flex items-center justify-center border-t-2 border-cyan-500/20 h-10 tablet:h-12 desktop:h-11 bg-cyan-500/5">
+                    <span className="text-[10px] tablet:text-xs text-cyan-400/70 font-medium">
+                      Soma automática
+                    </span>
+                  </div>
+                </motion.div>
+              )}
+              
               {category.stats.map((stat) => {
                 const count = getDisplayCount(stat.type);
                 const isHighlight = (stat.type === "goal" || stat.type === "assist" || stat.type === "save") && count > 0;

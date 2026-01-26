@@ -58,13 +58,15 @@ export const OUTFIELD_STATS: StatCategory[] = [
     ],
   },
   // DRIBLES / POSSE - Controle de bola e manutenção
+  // NOTE: ball_action is a DERIVED stat (auto-calculated from sum of eligible events)
+  // It should NOT be in this list as it has no direct event recording
   {
     category: "DRIBLES",
     categoryKey: "dribbles",
     color: "text-cyan-400",
     bgColor: "bg-cyan-500/10 border-cyan-500/20",
     stats: [
-      { type: "ball_action", label: "Ações com a Bola" },
+      // ball_action is NOT here - it's derived/display-only
       { type: "dribble_success", label: "Dribles Certos" },
       { type: "dribble_attempt", label: "Dribles Errados" },
       { type: "foul_suffered", label: "Faltas Sofridas" },
@@ -164,6 +166,9 @@ export const EVENT_TYPE_CONFIG: Record<MatchEventType, SummaryEventConfig> = {
   cross_failed: { label: "Cruzamentos Errados", icon: "❌", category: "passing", order: 16 },
   
   // DRIBLES / POSSE
+  // NOTE: ball_action is a DERIVED stat - it exists in the enum but should not be recorded directly
+  // It's calculated as the sum of eligible events (passes, dribbles, shots, etc.)
+  // Kept here for backwards compatibility with old data, but UI should show as display-only
   ball_action: { label: "Ações com a Bola", icon: "⚽", category: "dribbles", order: 19 },
   dribble_success: { label: "Dribles Certos", icon: "✓", category: "dribbles", order: 20 },
   dribble_attempt: { label: "Dribles Errados", icon: "✗", category: "dribbles", order: 21 },
