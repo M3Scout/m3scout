@@ -3,6 +3,7 @@ import { useParams, useNavigate, Navigate, Link } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLiveMatch, MatchEventType } from "@/hooks/useLiveMatch";
+import { calculateBallActionsFromMatchStats } from "@/lib/derivedBallActions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -855,7 +856,25 @@ export default function LiveMatchReview() {
                         )}
                       </div>
                       <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-2 sm:mt-3">
-                        {statEntries.length === 0 ? (
+                        {/* Derived stat: Ações com a Bola - always show first */}
+                        {(() => {
+                          const stats = playerStatsMap[mp.player_id];
+                          const ballActions = stats ? calculateBallActionsFromMatchStats(stats) : 0;
+                          return ballActions > 0 ? (
+                            <Badge 
+                              variant="secondary" 
+                              className="text-[10px] sm:text-xs px-2 py-0.5 bg-cyan-500/10 border-cyan-500/30 text-cyan-400"
+                              title="Estatística derivada automaticamente"
+                            >
+                              Ações com a Bola: {ballActions}
+                            </Badge>
+                          ) : null;
+                        })()}
+                        {statEntries.length === 0 && !(() => {
+                          const stats = playerStatsMap[mp.player_id];
+                          const ballActions = stats ? calculateBallActionsFromMatchStats(stats) : 0;
+                          return ballActions > 0;
+                        })() ? (
                           <Badge variant="outline" className="text-xs sm:text-sm">
                             Sem estatísticas
                           </Badge>

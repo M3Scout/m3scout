@@ -37,6 +37,7 @@ import { classifyMatchProfile, type MatchProfileKey } from "@/lib/matchProfileEn
 import { calculateMatchEfficiency, getEfficiencyColorHex, getEfficiencyBgColorHex, type EfficiencyLevel } from "@/lib/matchEfficiencyEngine";
 import { generateScoutingText } from "@/lib/scoutingTextEngine";
 import { generatePostGameAnalysis, type MatchStatsInput } from "@/lib/postGameAnalysis";
+import { calculateBallActionsFromMatchStats } from "@/lib/derivedBallActions";
 import { MiniFieldHeatmapPdf } from "./MiniFieldHeatmapPdf";
 import {
   EVENT_TYPE_CONFIG,
@@ -1463,9 +1464,14 @@ export function MatchSummaryVectorPdf({
           const renderPlayerCard = (mp: MatchPlayer) => {
             if (!mp.player) return null;
             const counts = playerEventCounts[mp.player_id] || {};
+            const stats = playerStatsMap[mp.player_id];
+            
+            // Calculate derived ball_actions
+            const ballActions = stats ? calculateBallActionsFromMatchStats(stats) : 0;
+            
             const statEntries = Object.entries(counts)
               .filter(([_, v]) => (v ?? 0) > 0)
-              .slice(0, 5);
+              .slice(0, 4); // Reduced to 4 to make room for ball_actions
             
             const initials = mp.player.full_name
               .split(" ")
@@ -1583,7 +1589,17 @@ export function MatchSummaryVectorPdf({
                   );
                 })()}
                 <View style={styles.playerStats}>
-                  {statEntries.length > 0 ? (
+                  {/* Derived stat: Ações com a Bola - always first if > 0 */}
+                  {ballActions > 0 && (
+                    <Text key="ball_actions" style={{
+                      ...styles.playerStatBadge,
+                      backgroundColor: '#164E63', // cyan-900
+                      color: '#22D3EE', // cyan-400
+                    }}>
+                      Ações: {ballActions}
+                    </Text>
+                  )}
+                  {statEntries.length > 0 || ballActions > 0 ? (
                     statEntries.map(([type, value]) => (
                       <Text key={type} style={styles.playerStatBadge}>
                         {EVENT_LABELS[type as MatchEventType]}: {value}
