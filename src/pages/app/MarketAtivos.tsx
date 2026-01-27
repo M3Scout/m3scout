@@ -398,8 +398,9 @@ export default function MarketAtivos() {
               <Card
                 key={athlete.id}
                 className={cn(
-                  "transition-all hover:border-primary/30 cursor-pointer",
-                  index < 3 && hasScore && "ring-1 ring-primary/20"
+                  "bg-zinc-900/80 border border-white/[0.06] cursor-pointer",
+                  "transition-all duration-150 ease-out",
+                  "hover:translate-y-[-2px] hover:shadow-lg hover:shadow-black/30 hover:border-white/10"
                 )}
                 onClick={() => navigate(`/app/players/${athlete.id}`)}
               >
