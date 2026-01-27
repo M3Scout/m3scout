@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "prompt",
-      includeAssets: ["favicon.png", "logoapp-512.png", "logo-m3.png"],
+      includeAssets: ["favicon2.png"],
       manifest: {
         name: "M3 Scout",
         short_name: "M3",
@@ -28,14 +28,8 @@ export default defineConfig(({ mode }) => ({
         background_color: "#000000",
         icons: [
           {
-            src: "/logoapp-512.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "any maskable",
-          },
-          {
-            src: "/logoapp-512.png",
-            sizes: "192x192",
+            src: "/favicon2.png",
+            sizes: "any",
             type: "image/png",
             purpose: "any",
           },
