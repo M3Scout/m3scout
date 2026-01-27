@@ -63,7 +63,8 @@ function getScoreColor(score: number) {
 function TrendIcon({ trend }: { trend: MarketScoreTrend }) {
   if (trend === "UP") return <TrendingUp className="w-3 h-3 text-emerald-400" />;
   if (trend === "DOWN") return <TrendingDown className="w-3 h-3 text-red-400" />;
-  return <Minus className="w-3 h-3 text-muted-foreground" />;
+  // FLAT trend - no visual indicator needed (avoid showing a dash/line)
+  return null;
 }
 
 const POSITIONS = [
