@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AthleteCardPremium } from "@/components/players/AthleteCardPremium";
 import { calculateMatchRating, type PlayerStatsInput } from "@/lib/matchRatingEngine";
-import { STANDARD_MATCH_DURATION } from "@/lib/minutesPlayed";
+import { STANDARD_MATCH_DURATION, calculateMinutesPlayed } from "@/lib/minutesPlayed";
 import { ControlBarPremium } from "@/components/players/ControlBarPremium";
 import {
   Select,
@@ -230,18 +230,25 @@ const Players = () => {
       if (import.meta.env.DEV) console.log("[TIMING] Players season totals fetch start");
 
       // PARALLEL: Fetch both live and manual stats at the same time
+      // IMPORTANT: Fetch started, entered_minute, exited_minute for regulatory minutes recalculation
+      // This matches the profile's getRegMinutesPlayed logic exactly
       const [matchPlayersResult, manualStatsResult] = await Promise.allSettled([
         supabase
           .from("match_players")
           .select(
             `
             player_id,
+            started,
+            entered_minute,
+            exited_minute,
             minutes_played,
             match:matches!inner (
               id,
               season_year,
               status,
-              competition_id
+              competition_id,
+              added_time_first_half,
+              added_time_second_half
             )
           `
           )
@@ -274,9 +281,34 @@ const Players = () => {
 
       (matchPlayersData || []).forEach((mp: any) => {
         const compKey = mp.match?.competition_id ?? "none";
-        // Apply regulatory minutes cap (max 90) to match player profile calculations
-        const rawMinutes = mp.minutes_played ?? 0;
-        const minutes = Math.min(rawMinutes, STANDARD_MATCH_DURATION);
+        
+        // CRITICAL: Use the SAME regulatory minutes calculation as the profile
+        // This recalculates from started/entered_minute/exited_minute using calculateMinutesPlayed
+        // Falls back to stored minutes_played (capped at 90) if entry/exit data unavailable
+        const addedTime1H = mp.match?.added_time_first_half ?? 0;
+        const addedTime2H = mp.match?.added_time_second_half ?? 0;
+        
+        let minutes: number;
+        if (mp.started || mp.entered_minute !== null) {
+          // Recalculate regulatory minutes from entry/exit data (same as profile)
+          const info = calculateMinutesPlayed(
+            {
+              started: mp.started ?? false,
+              entered_minute: mp.entered_minute,
+              exited_minute: mp.exited_minute,
+              minutes_played: null, // Force recalculation from entry/exit
+            },
+            {
+              baseDuration: STANDARD_MATCH_DURATION,
+              addedTime1H,
+              addedTime2H,
+            }
+          );
+          minutes = info.minutesPlayed; // This is already regulatory (capped at 90)
+        } else {
+          // Fallback: use stored minutes capped at 90
+          minutes = Math.min(mp.minutes_played ?? 0, STANDARD_MATCH_DURATION);
+        }
 
         const perPlayer = liveByPlayerComp.get(mp.player_id) || new Map();
         const current = perPlayer.get(compKey) || { minutes: 0, matches: 0 };
@@ -330,7 +362,30 @@ const Players = () => {
         players.forEach((p) => playerPositionMap.set(p.id, p.position?.toLowerCase() || ""));
 
         (matchPlayersData || []).forEach((mp: any) => {
-          const officialMinutes = mp.minutes_played ?? 0;
+          // Use the SAME regulatory minutes calculation for rating as for minutes aggregation
+          const addedTime1H = mp.match?.added_time_first_half ?? 0;
+          const addedTime2H = mp.match?.added_time_second_half ?? 0;
+          
+          let officialMinutes: number;
+          if (mp.started || mp.entered_minute !== null) {
+            const info = calculateMinutesPlayed(
+              {
+                started: mp.started ?? false,
+                entered_minute: mp.entered_minute,
+                exited_minute: mp.exited_minute,
+                minutes_played: null,
+              },
+              {
+                baseDuration: STANDARD_MATCH_DURATION,
+                addedTime1H,
+                addedTime2H,
+              }
+            );
+            officialMinutes = info.minutesPlayed;
+          } else {
+            officialMinutes = Math.min(mp.minutes_played ?? 0, STANDARD_MATCH_DURATION);
+          }
+          
           if (officialMinutes <= 0) return;
 
           const matchId = mp.match?.id;
