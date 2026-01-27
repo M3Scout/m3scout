@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AthleteCardPremium } from "@/components/players/AthleteCardPremium";
 import { calculateMatchRating, type PlayerStatsInput } from "@/lib/matchRatingEngine";
+import { STANDARD_MATCH_DURATION } from "@/lib/minutesPlayed";
 import { ControlBarPremium } from "@/components/players/ControlBarPremium";
 import {
   Select,
@@ -273,7 +274,9 @@ const Players = () => {
 
       (matchPlayersData || []).forEach((mp: any) => {
         const compKey = mp.match?.competition_id ?? "none";
-        const minutes = mp.minutes_played ?? 0;
+        // Apply regulatory minutes cap (max 90) to match player profile calculations
+        const rawMinutes = mp.minutes_played ?? 0;
+        const minutes = Math.min(rawMinutes, STANDARD_MATCH_DURATION);
 
         const perPlayer = liveByPlayerComp.get(mp.player_id) || new Map();
         const current = perPlayer.get(compKey) || { minutes: 0, matches: 0 };
