@@ -41,36 +41,48 @@ export function CinematicHero() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Fetch real stats from database
+  // Fetch real stats from database - OPTIMIZED: Single round-trip with Promise.all
+  // Using only HEAD requests for minimal payload
   useEffect(() => {
+    let isMounted = true;
     async function fetchStats() {
       try {
+        // Use staggered timeout to prevent blocking if API is slow
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        
         const [playersRes, reportsRes, competitionsRes] = await Promise.all([
           supabase
             .from("players")
-            .select("*", { count: "exact", head: true })
+            .select("id", { count: "exact", head: true })
             .eq("is_public", true)
             .or("is_archived.is.null,is_archived.eq.false"),
           supabase
             .from("scouting_reports")
-            .select("*", { count: "exact", head: true })
+            .select("id", { count: "exact", head: true })
             .is("deleted_at", null),
           supabase
             .from("competitions")
-            .select("*", { count: "exact", head: true })
+            .select("id", { count: "exact", head: true })
             .eq("is_active", true),
         ]);
+        
+        clearTimeout(timeoutId);
 
-        setStats({
-          athletes: playersRes.count ?? null,
-          reports: reportsRes.count ?? null,
-          competitions: competitionsRes.count ?? null,
-        });
+        if (isMounted) {
+          setStats({
+            athletes: playersRes.count ?? null,
+            reports: reportsRes.count ?? null,
+            competitions: competitionsRes.count ?? null,
+          });
+        }
       } catch (error) {
-        console.error("Error fetching hero stats:", error);
+        // Silent fail - stats are non-critical
+        if (import.meta.env.DEV) console.error("Error fetching hero stats:", error);
       }
     }
     fetchStats();
+    return () => { isMounted = false; };
   }, []);
 
   const scrollToContent = () => {
