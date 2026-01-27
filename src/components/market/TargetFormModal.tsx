@@ -404,14 +404,14 @@ export function TargetFormModal({
             <div className="space-y-2">
               <Label>Posição secundária</Label>
               <Select
-                value={form.watch("secondary_position") || ""}
-                onValueChange={(v) => form.setValue("secondary_position", v)}
+                value={form.watch("secondary_position") || "_none"}
+                onValueChange={(v) => form.setValue("secondary_position", v === "_none" ? "" : v)}
               >
                 <SelectTrigger className="bg-zinc-800/50 border-white/[0.06]">
                   <SelectValue placeholder="Opcional" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Nenhuma</SelectItem>
+                  <SelectItem value="_none">Nenhuma</SelectItem>
                   {POSITIONS.map((pos) => (
                     <SelectItem key={pos} value={pos}>{pos}</SelectItem>
                   ))}
@@ -467,14 +467,14 @@ export function TargetFormModal({
             <div className="space-y-2">
               <Label>Competição / Liga</Label>
               <Select
-                value={form.watch("competition_id") || ""}
-                onValueChange={(v) => form.setValue("competition_id", v)}
+                value={form.watch("competition_id") || "_none"}
+                onValueChange={(v) => form.setValue("competition_id", v === "_none" ? "" : v)}
               >
                 <SelectTrigger className="bg-zinc-800/50 border-white/[0.06]">
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent className="max-h-[200px]">
-                  <SelectItem value="">Não especificado</SelectItem>
+                  <SelectItem value="_none">Não especificado</SelectItem>
                   {competitions.map((comp: any) => (
                     <SelectItem key={comp.id} value={comp.id}>
                       {comp.display_name || comp.name} ({comp.country})
