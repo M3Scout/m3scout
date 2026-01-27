@@ -226,6 +226,128 @@ export type Database = {
         }
         Relationships: []
       }
+      market_score_events: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          delta: number
+          details: Json | null
+          id: string
+          market_score_id: string
+          new_score_total: number
+          previous_score_total: number | null
+          reason: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          delta?: number
+          details?: Json | null
+          id?: string
+          market_score_id: string
+          new_score_total: number
+          previous_score_total?: number | null
+          reason: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          delta?: number
+          details?: Json | null
+          id?: string
+          market_score_id?: string
+          new_score_total?: number
+          previous_score_total?: number | null
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "market_score_events_market_score_id_fkey"
+            columns: ["market_score_id"]
+            isOneToOne: false
+            referencedRelation: "market_scores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      market_scores: {
+        Row: {
+          athlete_id: string | null
+          calculated_from_range: string | null
+          calculation_details: Json | null
+          confidence_level: number
+          created_at: string
+          id: string
+          last_calculated_at: string
+          notes_internal: string | null
+          score_age_window: number
+          score_competitive_context: number
+          score_consistency_reliability: number
+          score_market_profile: number
+          score_performance_impact: number
+          score_total: number
+          target_id: string | null
+          trend_30d: Database["public"]["Enums"]["market_score_trend"] | null
+          type: Database["public"]["Enums"]["market_score_type"]
+          updated_at: string
+        }
+        Insert: {
+          athlete_id?: string | null
+          calculated_from_range?: string | null
+          calculation_details?: Json | null
+          confidence_level?: number
+          created_at?: string
+          id?: string
+          last_calculated_at?: string
+          notes_internal?: string | null
+          score_age_window?: number
+          score_competitive_context?: number
+          score_consistency_reliability?: number
+          score_market_profile?: number
+          score_performance_impact?: number
+          score_total?: number
+          target_id?: string | null
+          trend_30d?: Database["public"]["Enums"]["market_score_trend"] | null
+          type: Database["public"]["Enums"]["market_score_type"]
+          updated_at?: string
+        }
+        Update: {
+          athlete_id?: string | null
+          calculated_from_range?: string | null
+          calculation_details?: Json | null
+          confidence_level?: number
+          created_at?: string
+          id?: string
+          last_calculated_at?: string
+          notes_internal?: string | null
+          score_age_window?: number
+          score_competitive_context?: number
+          score_consistency_reliability?: number
+          score_market_profile?: number
+          score_performance_impact?: number
+          score_total?: number
+          target_id?: string | null
+          trend_30d?: Database["public"]["Enums"]["market_score_trend"] | null
+          type?: Database["public"]["Enums"]["market_score_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "market_scores_athlete_id_fkey"
+            columns: ["athlete_id"]
+            isOneToOne: true
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "market_scores_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: true
+            referencedRelation: "targets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_events: {
         Row: {
           count_in_stats: boolean
@@ -1629,6 +1751,137 @@ export type Database = {
           },
         ]
       }
+      target_observations: {
+        Row: {
+          competition: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          match_context: string | null
+          minutes_observed: number | null
+          observation_date: string
+          opponent: string | null
+          performance_rating: number | null
+          qualitative_notes: string | null
+          result: string | null
+          target_id: string
+        }
+        Insert: {
+          competition?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          match_context?: string | null
+          minutes_observed?: number | null
+          observation_date?: string
+          opponent?: string | null
+          performance_rating?: number | null
+          qualitative_notes?: string | null
+          result?: string | null
+          target_id: string
+        }
+        Update: {
+          competition?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          match_context?: string | null
+          minutes_observed?: number | null
+          observation_date?: string
+          opponent?: string | null
+          performance_rating?: number | null
+          qualitative_notes?: string | null
+          result?: string | null
+          target_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "target_observations_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "targets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      targets: {
+        Row: {
+          age_estimate: number | null
+          birth_date: string | null
+          city: string | null
+          country: string | null
+          created_at: string
+          created_by: string | null
+          current_club: string | null
+          dominant_foot: string | null
+          height: number | null
+          highlight_video_url: string | null
+          id: string
+          league_competition: string | null
+          name: string
+          notes_internal: string | null
+          photo_url: string | null
+          position: string
+          priority: Database["public"]["Enums"]["target_priority"]
+          source: string | null
+          state: string | null
+          status: Database["public"]["Enums"]["target_status"]
+          tags: string[] | null
+          updated_at: string
+          weight: number | null
+        }
+        Insert: {
+          age_estimate?: number | null
+          birth_date?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_club?: string | null
+          dominant_foot?: string | null
+          height?: number | null
+          highlight_video_url?: string | null
+          id?: string
+          league_competition?: string | null
+          name: string
+          notes_internal?: string | null
+          photo_url?: string | null
+          position: string
+          priority?: Database["public"]["Enums"]["target_priority"]
+          source?: string | null
+          state?: string | null
+          status?: Database["public"]["Enums"]["target_status"]
+          tags?: string[] | null
+          updated_at?: string
+          weight?: number | null
+        }
+        Update: {
+          age_estimate?: number | null
+          birth_date?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_club?: string | null
+          dominant_foot?: string | null
+          height?: number | null
+          highlight_video_url?: string | null
+          id?: string
+          league_competition?: string | null
+          name?: string
+          notes_internal?: string | null
+          photo_url?: string | null
+          position?: string
+          priority?: Database["public"]["Enums"]["target_priority"]
+          source?: string | null
+          state?: string | null
+          status?: Database["public"]["Enums"]["target_status"]
+          tags?: string[] | null
+          updated_at?: string
+          weight?: number | null
+        }
+        Relationships: []
+      }
       team_settings: {
         Row: {
           created_at: string
@@ -2070,6 +2323,8 @@ export type Database = {
         | "viewer"
         | "player"
       competition_type: "league" | "cup" | "state_league" | "continental"
+      market_score_trend: "UP" | "DOWN" | "FLAT"
+      market_score_type: "ACTIVE" | "TARGET"
       match_event_type:
         | "goal"
         | "assist"
@@ -2117,6 +2372,13 @@ export type Database = {
         | "blocked_shot"
       match_status: "draft" | "live" | "finished" | "applied"
       position_template: "outfield" | "goalkeeper"
+      target_priority: "HIGH" | "MEDIUM" | "LOW"
+      target_status:
+        | "MONITORING"
+        | "APPROACH"
+        | "NEGOTIATION"
+        | "DROPPED"
+        | "SIGNED"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2254,6 +2516,8 @@ export const Constants = {
         "player",
       ],
       competition_type: ["league", "cup", "state_league", "continental"],
+      market_score_trend: ["UP", "DOWN", "FLAT"],
+      market_score_type: ["ACTIVE", "TARGET"],
       match_event_type: [
         "goal",
         "assist",
@@ -2302,6 +2566,14 @@ export const Constants = {
       ],
       match_status: ["draft", "live", "finished", "applied"],
       position_template: ["outfield", "goalkeeper"],
+      target_priority: ["HIGH", "MEDIUM", "LOW"],
+      target_status: [
+        "MONITORING",
+        "APPROACH",
+        "NEGOTIATION",
+        "DROPPED",
+        "SIGNED",
+      ],
     },
   },
 } as const
