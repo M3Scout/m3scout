@@ -45,6 +45,8 @@ export default defineConfig(({ mode }) => ({
         // Precache all static assets
         globPatterns: ["**/*.{js,css,html,ico,png,jpg,jpeg,svg,woff,woff2}"],
         
+        // Increase max file size for large bundles (6MB)
+        maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         // Runtime caching strategies
         runtimeCaching: [
           // Static assets: Cache First (fonts, images)
