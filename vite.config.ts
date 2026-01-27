@@ -47,6 +47,7 @@ export default defineConfig(({ mode }) => ({
         
         // Increase max file size for large bundles (6MB)
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
+        
         // Runtime caching strategies
         runtimeCaching: [
           // Static assets: Cache First (fonts, images)
@@ -94,10 +95,11 @@ export default defineConfig(({ mode }) => ({
               },
             },
           },
-          // API calls (REST): Network First with fallback
+          // API calls (REST): Network First with fallback - GET only
           {
             urlPattern: /^https:\/\/httxbfcvzknyncprzcuy\.supabase\.co\/rest\/.*/i,
             handler: "NetworkFirst",
+            method: "GET",
             options: {
               cacheName: "supabase-api-cache",
               networkTimeoutSeconds: 5,
@@ -110,10 +112,11 @@ export default defineConfig(({ mode }) => ({
               },
             },
           },
-          // Edge functions: Network First (no aggressive caching)
+          // Edge functions: Network First (no aggressive caching) - GET only
           {
             urlPattern: /^https:\/\/httxbfcvzknyncprzcuy\.supabase\.co\/functions\/.*/i,
             handler: "NetworkFirst",
+            method: "GET",
             options: {
               cacheName: "supabase-functions-cache",
               networkTimeoutSeconds: 10,
@@ -131,35 +134,19 @@ export default defineConfig(({ mode }) => ({
             urlPattern: /^https:\/\/httxbfcvzknyncprzcuy\.supabase\.co\/auth\/.*/i,
             handler: "NetworkOnly",
           },
-          // Public pages: Stale While Revalidate
-          {
-            urlPattern: ({ request }) => request.mode === "navigate",
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "pages-cache",
-              networkTimeoutSeconds: 3,
-              expiration: {
-                maxEntries: 30,
-                maxAgeSeconds: 60 * 60 * 24, // 1 day
-              },
-            },
-          },
         ],
         
         // Clean up old caches
         cleanupOutdatedCaches: true,
         
-        // Skip waiting for new service worker
-        skipWaiting: false,
+        // Activate new SW immediately
+        skipWaiting: true,
         clientsClaim: true,
         
-        // Offline fallback
-        navigateFallback: "/offline.html",
-        navigateFallbackDenylist: [
-          /^\/api/,
-          /^\/auth/,
-          /^\/__/,
-        ],
+        // IMPORTANT: Disable automatic navigateFallback
+        // This prevents false offline screens when online
+        // We handle offline detection in the app itself
+        navigateFallback: null,
       },
       devOptions: {
         enabled: false, // Disable in dev for stability
