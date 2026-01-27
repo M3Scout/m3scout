@@ -6,6 +6,7 @@
  * - 30-day trend indicator
  * - Expandable breakdown by pillar
  * - Auto-generated insights
+ * - Confidence factor transparency
  * - Internal notes and history modals
  */
 
@@ -21,6 +22,12 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   TrendingUp,
   TrendingDown,
   Minus,
@@ -33,6 +40,8 @@ import {
   AlertTriangle,
   Sparkles,
   BarChart3,
+  Info,
+  ShieldCheck,
 } from "lucide-react";
 import { useMarketScore } from "@/hooks/useMarketScore";
 import { MarketScoreBreakdown, MarketScoreTrend } from "@/types/marketScore";
@@ -133,6 +142,68 @@ function PillarRow({
       </div>
     </div>
   );
+}
+
+// Calculate base score (before sample penalty adjustment)
+// This shows what the score would be with full sample confidence
+function calculateBaseScore(breakdown: MarketScoreBreakdown | null): number | null {
+  if (!breakdown) return null;
+  
+  const { consistencyReliabilityDetails, weightsUsed } = breakdown;
+  const samplePenalty = consistencyReliabilityDetails.samplePenalty;
+  
+  // If no penalty applied, base = final
+  if (samplePenalty >= 1.0) return null;
+  
+  // Reverse-engineer the base consistency score (before penalty)
+  // The penalty affects only the consistency pillar
+  const actualConsistencyScore = breakdown.scoreConsistencyReliability;
+  const baseConsistencyScore = Math.min(100, actualConsistencyScore / samplePenalty);
+  
+  // Calculate what scoreTotal would be with full confidence
+  const baseScore = Math.round(
+    breakdown.scoreAgeWindow * weightsUsed.ageWindow +
+    breakdown.scorePerformanceImpact * weightsUsed.performanceImpact +
+    breakdown.scoreCompetitiveContext * weightsUsed.competitiveContext +
+    baseConsistencyScore * weightsUsed.consistencyReliability +
+    breakdown.scoreMarketProfile * weightsUsed.marketProfile
+  );
+  
+  return Math.min(100, baseScore);
+}
+
+// Get confidence explanation based on data quality
+function getConfidenceExplanation(breakdown: MarketScoreBreakdown | null): string {
+  if (!breakdown) return '';
+  
+  const { consistencyReliabilityDetails, performanceImpactDetails } = breakdown;
+  const matches = consistencyReliabilityDetails.totalMatches;
+  const samplePenalty = consistencyReliabilityDetails.samplePenalty;
+  const ratingVariance = consistencyReliabilityDetails.ratingVariance;
+  
+  const reasons: string[] = [];
+  
+  if (matches < 3) {
+    reasons.push(`poucos jogos analisados (${matches})`);
+  } else if (matches < 5) {
+    reasons.push(`amostra moderada (${matches} jogos)`);
+  }
+  
+  if (ratingVariance !== null && ratingVariance > 1.0) {
+    reasons.push('alta variação de notas');
+  }
+  
+  if (performanceImpactDetails.averageRating === null) {
+    reasons.push('sem notas de jogo registradas');
+  }
+  
+  if (consistencyReliabilityDetails.matchesLast30Days === 0) {
+    reasons.push('sem jogos nos últimos 30 dias');
+  }
+  
+  if (reasons.length === 0) return 'Dados suficientes para análise confiável.';
+  
+  return `Ajuste aplicado por: ${reasons.join(', ')}.`;
 }
 
 // Generate insights from breakdown
@@ -250,6 +321,12 @@ export function MarketScoreCard({
     ? format(new Date(score.last_calculated_at), "dd MMM yyyy, HH:mm", { locale: ptBR })
     : null;
 
+  // Calculate confidence transparency data
+  const baseScore = useMemo(() => calculateBaseScore(breakdown), [breakdown]);
+  const confidenceExplanation = useMemo(() => getConfidenceExplanation(breakdown), [breakdown]);
+  const samplePenalty = breakdown?.consistencyReliabilityDetails.samplePenalty ?? 1.0;
+  const hasConfidenceAdjustment = samplePenalty < 1.0 && baseScore !== null && baseScore > scoreTotal;
+
   // Loading state
   if (scoreLoading || breakdownLoading) {
     return (
@@ -326,16 +403,74 @@ export function MarketScoreCard({
 
             {/* Trend & Info */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center flex-wrap gap-2 mb-2">
                 <Badge variant="secondary" className="text-xs gap-1">
                   <TrendIndicator trend={trend} className="w-3 h-3" />
                   <span>30 dias</span>
                 </Badge>
+                
+                {/* Confidence Badge with Tooltip */}
                 {dataConfidence < 60 && (
-                  <Badge variant="outline" className="text-xs gap-1 border-yellow-500/50 text-yellow-400">
-                    <AlertTriangle className="w-3 h-3" />
-                    Amostra reduzida
-                  </Badge>
+                  <TooltipProvider>
+                    <Tooltip delayDuration={200}>
+                      <TooltipTrigger asChild>
+                        <Badge 
+                          variant="outline" 
+                          className="text-xs gap-1 border-yellow-500/50 text-yellow-400 cursor-help"
+                        >
+                          <AlertTriangle className="w-3 h-3" />
+                          Amostra reduzida
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent 
+                        side="bottom" 
+                        className="max-w-[280px] bg-zinc-900 border-zinc-800 p-3"
+                      >
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 font-medium text-yellow-400">
+                            <ShieldCheck className="w-4 h-4" />
+                            Fator de Confiabilidade: {dataConfidence}%
+                          </div>
+                          <p className="text-xs text-muted-foreground leading-relaxed">
+                            {confidenceExplanation}
+                          </p>
+                          {hasConfidenceAdjustment && baseScore && (
+                            <div className="pt-1 border-t border-zinc-800 text-xs">
+                              <span className="text-muted-foreground">Score base: </span>
+                              <span className="font-medium">{baseScore}</span>
+                              <span className="text-muted-foreground"> → Ajustado: </span>
+                              <span className="font-medium text-yellow-400">{scoreTotal}</span>
+                            </div>
+                          )}
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+                
+                {/* High confidence badge */}
+                {dataConfidence >= 60 && (
+                  <TooltipProvider>
+                    <Tooltip delayDuration={200}>
+                      <TooltipTrigger asChild>
+                        <Badge 
+                          variant="outline" 
+                          className="text-xs gap-1 border-emerald-500/30 text-emerald-400/80 cursor-help"
+                        >
+                          <ShieldCheck className="w-3 h-3" />
+                          {dataConfidence}% confiança
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent 
+                        side="bottom" 
+                        className="max-w-[240px] bg-zinc-900 border-zinc-800 p-3"
+                      >
+                        <p className="text-xs text-muted-foreground">
+                          Dados suficientes para análise confiável. Score calculado com amostra adequada de jogos e minutos.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 )}
               </div>
 
@@ -363,8 +498,28 @@ export function MarketScoreCard({
             </div>
           </div>
 
-          {/* Sample Warning */}
-          {!hasEnoughData && (
+          {/* Confidence Adjustment Explanation (shown when there's a meaningful adjustment) */}
+          {hasConfidenceAdjustment && baseScore && (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-zinc-800/50 border border-zinc-700/50">
+              <Info className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+              <div className="text-xs space-y-1">
+                <div className="flex items-baseline gap-2 flex-wrap">
+                  <span className="text-muted-foreground">Score Base:</span>
+                  <span className="font-semibold text-foreground">{baseScore}</span>
+                  <span className="text-muted-foreground mx-1">→</span>
+                  <span className="text-muted-foreground">Score Ajustado:</span>
+                  <span className={cn("font-semibold", scoreColor.text)}>{scoreTotal}</span>
+                </div>
+                <p className="text-muted-foreground leading-relaxed">
+                  Fator de confiabilidade de <span className="font-medium text-yellow-400">{Math.round(samplePenalty * 100)}%</span> aplicado.{' '}
+                  {confidenceExplanation}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Sample Warning (only show if no adjustment explanation and not enough data) */}
+          {!hasEnoughData && !hasConfidenceAdjustment && (
             <div className="flex items-start gap-2 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
               <AlertTriangle className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
               <p className="text-xs text-yellow-400/90">
