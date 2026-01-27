@@ -4,9 +4,9 @@
  * Displays ranking of internal athletes by Market Score (ACTIVE)
  */
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,19 +26,22 @@ import {
   Minus,
   Search,
   User,
-  ExternalLink,
   Sparkles,
   Filter,
   RefreshCw,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MarketScoreTrend } from "@/types/marketScore";
+import { computeScoreForAthleteById } from "@/lib/marketScoreService";
+import { toast } from "sonner";
 
 interface AthleteWithScore {
   id: string;
   full_name: string;
   position: string;
   age: number | null;
+  birth_date: string | null;
   photo_url: string | null;
   current_club: string | null;
   score: {
@@ -51,16 +54,16 @@ interface AthleteWithScore {
 
 // Score color helper
 function getScoreColor(score: number) {
-  if (score >= 85) return { bg: "bg-emerald-500/20", text: "text-emerald-400", border: "border-emerald-500/50" };
-  if (score >= 70) return { bg: "bg-green-500/20", text: "text-green-400", border: "border-green-500/50" };
-  if (score >= 50) return { bg: "bg-yellow-500/20", text: "text-yellow-400", border: "border-yellow-500/50" };
-  return { bg: "bg-red-500/20", text: "text-red-400", border: "border-red-500/50" };
+  if (score >= 85) return { bg: "bg-emerald-500/20", text: "text-emerald-400", border: "border-emerald-500/50", label: "Elite" };
+  if (score >= 70) return { bg: "bg-green-500/20", text: "text-green-400", border: "border-green-500/50", label: "Alto" };
+  if (score >= 50) return { bg: "bg-yellow-500/20", text: "text-yellow-400", border: "border-yellow-500/50", label: "Médio" };
+  return { bg: "bg-red-500/20", text: "text-red-400", border: "border-red-500/50", label: "Baixo" };
 }
 
 function TrendIcon({ trend }: { trend: MarketScoreTrend }) {
-  if (trend === "UP") return <TrendingUp className="w-4 h-4 text-emerald-400" />;
-  if (trend === "DOWN") return <TrendingDown className="w-4 h-4 text-red-400" />;
-  return <Minus className="w-4 h-4 text-muted-foreground" />;
+  if (trend === "UP") return <TrendingUp className="w-3 h-3 text-emerald-400" />;
+  if (trend === "DOWN") return <TrendingDown className="w-3 h-3 text-red-400" />;
+  return <Minus className="w-3 h-3 text-muted-foreground" />;
 }
 
 const POSITIONS = [
@@ -95,6 +98,7 @@ export default function MarketAtivos() {
   const [ageRangeIndex, setAgeRangeIndex] = useState(0);
   const [minScore, setMinScore] = useState(0);
   const [trendFilter, setTrendFilter] = useState<"ALL" | MarketScoreTrend>("ALL");
+  const [calculatingIds, setCalculatingIds] = useState<Set<string>>(new Set());
 
   // Fetch athletes with their market scores
   const { data: athletes = [], isLoading, refetch } = useQuery({
@@ -103,7 +107,7 @@ export default function MarketAtivos() {
       // Fetch all active athletes
       const { data: playersData, error: playersError } = await supabase
         .from("players")
-        .select("id, full_name, position, age, photo_url, current_club")
+        .select("id, full_name, position, age, birth_date, photo_url, current_club")
         .or("is_archived.is.null,is_archived.eq.false")
         .order("full_name");
 
@@ -128,6 +132,7 @@ export default function MarketAtivos() {
         full_name: p.full_name,
         position: p.position,
         age: p.age,
+        birth_date: p.birth_date,
         photo_url: p.photo_url,
         current_club: p.current_club,
         score: scoreMap.get(p.id) ? {
@@ -142,6 +147,42 @@ export default function MarketAtivos() {
     },
     staleTime: 2 * 60 * 1000,
   });
+
+  // Mutation for calculating score
+  const calculateScoreMutation = useMutation({
+    mutationFn: async (athlete: AthleteWithScore) => {
+      return await computeScoreForAthleteById(athlete.id, {
+        fullName: athlete.full_name,
+        position: athlete.position,
+        birthDate: athlete.birth_date ?? undefined,
+        age: athlete.age ?? undefined,
+      });
+    },
+    onSuccess: (_, athlete) => {
+      setCalculatingIds(prev => {
+        const next = new Set(prev);
+        next.delete(athlete.id);
+        return next;
+      });
+      queryClient.invalidateQueries({ queryKey: ["market-ativos"] });
+      toast.success("Score calculado com sucesso");
+    },
+    onError: (error, athlete) => {
+      setCalculatingIds(prev => {
+        const next = new Set(prev);
+        next.delete(athlete.id);
+        return next;
+      });
+      console.error("Error calculating score:", error);
+      toast.error("Erro ao calcular score");
+    },
+  });
+
+  const handleCalculateScore = (e: React.MouseEvent, athlete: AthleteWithScore) => {
+    e.stopPropagation(); // Prevent card click
+    setCalculatingIds(prev => new Set(prev).add(athlete.id));
+    calculateScoreMutation.mutate(athlete);
+  };
 
   // Filter and sort athletes
   const filteredAthletes = useMemo(() => {
@@ -406,34 +447,46 @@ export default function MarketAtivos() {
                     {hasScore ? (
                       <div
                         className={cn(
-                          "relative flex flex-col items-center justify-center w-14 h-14 rounded-lg border",
+                          "relative flex flex-col items-center justify-center min-w-[70px] px-2 py-2 rounded-lg border",
                           scoreColor.bg,
                           scoreColor.border
                         )}
                       >
-                        <span className={cn("text-lg font-bold", scoreColor.text)}>
-                          {score.toFixed(0)}
+                        <div className="flex items-center gap-1">
+                          <span className={cn("text-lg font-bold", scoreColor.text)}>
+                            {score.toFixed(0)}
+                          </span>
+                          <TrendIcon trend={athlete.score!.trend_30d} />
+                        </div>
+                        <span className={cn("text-[10px] font-medium", scoreColor.text)}>
+                          {scoreColor.label}
                         </span>
-                        <TrendIcon trend={athlete.score!.trend_30d} />
-                        {/* Stale indicator - small refresh icon */}
+                        {/* Stale indicator */}
                         {isStale && (
                           <div 
                             className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-yellow-500/80 flex items-center justify-center"
-                            title="Score pode estar desatualizado. Abra o perfil para recalcular."
+                            title="Score pode estar desatualizado"
                           >
                             <RefreshCw className="w-2.5 h-2.5 text-yellow-950" />
                           </div>
                         )}
                       </div>
                     ) : (
-                      // No score in DB yet - show placeholder indicating user should open profile
-                      <div 
-                        className="flex flex-col items-center justify-center w-14 h-14 rounded-lg border border-dashed border-zinc-700 bg-zinc-800/30"
-                        title="Abra o perfil para calcular o Market Score"
+                      // No score in DB yet - show Calculate button
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="min-w-[70px] gap-1 text-xs border-dashed border-zinc-600 hover:border-primary hover:bg-primary/10"
+                        onClick={(e) => handleCalculateScore(e, athlete)}
+                        disabled={calculatingIds.has(athlete.id)}
                       >
-                        <Sparkles className="w-4 h-4 text-zinc-500" />
-                        <span className="text-[9px] text-zinc-500 mt-0.5">Abrir</span>
-                      </div>
+                        {calculatingIds.has(athlete.id) ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <Sparkles className="w-3 h-3" />
+                        )}
+                        {calculatingIds.has(athlete.id) ? "..." : "Calcular"}
+                      </Button>
                     )}
                   </div>
                 </CardContent>
