@@ -152,6 +152,29 @@
   </div>
   
   <script>
+    // Emergency SW cleanup: this offline page can get stuck in a loop if an old
+    // Service Worker keeps serving it as a fallback even when the user is online.
+    // We do NOT register any SW here; we only remove old ones and clear caches.
+    (async function cleanupOldServiceWorkers() {
+      try {
+        if ('serviceWorker' in navigator) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(regs.map(r => r.unregister()));
+        }
+      } catch (e) {
+        // ignore
+      }
+
+      try {
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map(k => caches.delete(k)));
+        }
+      } catch (e) {
+        // ignore
+      }
+    })();
+
     let isChecking = false;
     let retryCount = 0;
     const MAX_RETRIES = 3;

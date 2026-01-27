@@ -4,6 +4,8 @@
  * Will be reintroduced from scratch after site is stable
  */
 
+import type { ReactNode } from "react";
+
 // Disabled - no-op component
 export function PWAUpdateToast() {
   return null;
@@ -11,10 +13,11 @@ export function PWAUpdateToast() {
 
 // Disabled - no-op hook  
 export function useOnlineStatus() {
-  // No-op - online/offline detection disabled temporarily
+  // Keep a stable return shape for any future consumers.
+  return { isOnline: true };
 }
 
 // Minimal provider that just renders children
-export function PWAProvider({ children }: { children: React.ReactNode }) {
+export function PWAProvider({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
