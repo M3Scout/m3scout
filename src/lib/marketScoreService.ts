@@ -221,10 +221,11 @@ export async function computeAndPersistActiveScore(
   data: ActivePlayerData,
   reason: string = 'Atualização automática',
   weights: MarketScoreWeights = DEFAULT_MARKET_SCORE_WEIGHTS
-): Promise<{ breakdown: MarketScoreBreakdown; score: MarketScore | null; error: Error | null }> {
+): Promise<{ breakdown: MarketScoreBreakdown; score: MarketScore | null; error: Error | null; isNew: boolean }> {
   // Get previous score for trend calculation
   const existingScore = await fetchMarketScoreForAthlete(data.playerId);
   const previousTotal = existingScore?.score_total ?? null;
+  const isNew = existingScore === null;
   
   // Compute the score
   const breakdown = computeMarketScoreActive(data, previousTotal, weights);
@@ -238,7 +239,7 @@ export async function computeAndPersistActiveScore(
     reason
   );
   
-  return { breakdown, score, error };
+  return { breakdown, score, error, isNew };
 }
 
 // =====================================================

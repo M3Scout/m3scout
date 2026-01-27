@@ -347,6 +347,11 @@ export default function MarketAtivos() {
             const score = athlete.score?.score_total ?? 0;
             const scoreColor = getScoreColor(score);
             const hasScore = athlete.score !== null;
+            
+            // Check if score is stale (older than 7 days)
+            const isStale = hasScore && athlete.score?.last_calculated_at
+              ? (Date.now() - new Date(athlete.score.last_calculated_at).getTime()) > 7 * 24 * 60 * 60 * 1000
+              : false;
 
             return (
               <Card
@@ -397,11 +402,11 @@ export default function MarketAtivos() {
                       )}
                     </div>
 
-                    {/* Score */}
+                    {/* Score Badge - Shows when score exists in DB */}
                     {hasScore ? (
                       <div
                         className={cn(
-                          "flex flex-col items-center justify-center w-14 h-14 rounded-lg border",
+                          "relative flex flex-col items-center justify-center w-14 h-14 rounded-lg border",
                           scoreColor.bg,
                           scoreColor.border
                         )}
@@ -410,11 +415,24 @@ export default function MarketAtivos() {
                           {score.toFixed(0)}
                         </span>
                         <TrendIcon trend={athlete.score!.trend_30d} />
+                        {/* Stale indicator - small refresh icon */}
+                        {isStale && (
+                          <div 
+                            className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-yellow-500/80 flex items-center justify-center"
+                            title="Score pode estar desatualizado. Abra o perfil para recalcular."
+                          >
+                            <RefreshCw className="w-2.5 h-2.5 text-yellow-950" />
+                          </div>
+                        )}
                       </div>
                     ) : (
-                      <div className="flex flex-col items-center justify-center w-14 h-14 rounded-lg border border-dashed border-zinc-700 bg-zinc-800/30">
-                        <Sparkles className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-[10px] text-muted-foreground">Calcular</span>
+                      // No score in DB yet - show placeholder indicating user should open profile
+                      <div 
+                        className="flex flex-col items-center justify-center w-14 h-14 rounded-lg border border-dashed border-zinc-700 bg-zinc-800/30"
+                        title="Abra o perfil para calcular o Market Score"
+                      >
+                        <Sparkles className="w-4 h-4 text-zinc-500" />
+                        <span className="text-[9px] text-zinc-500 mt-0.5">Abrir</span>
                       </div>
                     )}
                   </div>
