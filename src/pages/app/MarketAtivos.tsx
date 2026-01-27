@@ -447,24 +447,27 @@ export default function MarketAtivos() {
                     {hasScore ? (
                       <div
                         className={cn(
-                          "relative flex flex-col items-center justify-center min-w-[70px] px-2 py-2 rounded-lg border",
+                          "relative flex flex-col items-center justify-center min-w-[60px] px-3 py-2 rounded-lg border",
                           scoreColor.bg,
                           scoreColor.border
                         )}
                       >
-                        <div className="flex items-center gap-1">
-                          <span className={cn("text-lg font-bold", scoreColor.text)}>
-                            {score.toFixed(0)}
-                          </span>
-                          <TrendIcon trend={athlete.score!.trend_30d} />
-                        </div>
-                        <span className={cn("text-[10px] font-medium", scoreColor.text)}>
+                        {/* Score number - prominent */}
+                        <span className={cn("text-xl font-bold leading-none", scoreColor.text)}>
+                          {score.toFixed(0)}
+                        </span>
+                        {/* Label - smaller with reduced opacity */}
+                        <span className={cn("text-[10px] font-medium mt-0.5 opacity-70", scoreColor.text)}>
                           {scoreColor.label}
                         </span>
+                        {/* Trend indicator - subtle, positioned in corner */}
+                        <div className="absolute -top-1 -right-1">
+                          <TrendIcon trend={athlete.score!.trend_30d} />
+                        </div>
                         {/* Stale indicator */}
                         {isStale && (
                           <div 
-                            className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-yellow-500/80 flex items-center justify-center"
+                            className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-yellow-500/80 flex items-center justify-center"
                             title="Score pode estar desatualizado"
                           >
                             <RefreshCw className="w-2.5 h-2.5 text-yellow-950" />
