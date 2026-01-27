@@ -559,6 +559,16 @@ function writePlayersCache(players: Player[]) {
 }
 
 export function FeaturedPlayers() {
+  // PERFORMANCE: Add mount timing
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      const appStart = (window as any).__APP_MOUNT_START ?? performance.now();
+      console.log("[TIMING] FeaturedPlayers mounted", {
+        sinceAppMount: `${Math.round(performance.now() - appStart)}ms`
+      });
+    }
+  }, []);
+
   // INSTANT: Try cache first for immediate render on cold start
   const cachedPlayers = useRef(readPlayersCache());
   const [players, setPlayers] = useState<Player[]>(cachedPlayers.current || []);

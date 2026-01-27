@@ -75,7 +75,8 @@ interface RequirePermissionProps {
   children: ReactNode;
 }
 
-const REQUIRE_PERMISSION_TIMEOUT_MS = 8000;
+// PERFORMANCE: Reduced from 8s to 4s for faster error detection
+const REQUIRE_PERMISSION_TIMEOUT_MS = 4000;
 
 /**
  * Route-level permission check component.
@@ -160,15 +161,17 @@ export function RequirePermission({ module, action = "view", children }: Require
   }
 
   // Still loading (before timeout)
+  // CRITICAL PERFORMANCE FIX: Render children immediately without any blocking overlay.
+  // This allows pages to fire their own data fetches in parallel with RBAC.
+  // The opacity reduction was causing perceived slowness - now fully transparent.
   if (isLoading) {
-    // CRITICAL: don't block mount while RBAC is loading (otherwise pages won't fire their own fetches).
+    // Mount children immediately - no visual blocking. Just a subtle top banner.
     return (
-      <div className="relative">
-        <div className="pointer-events-none opacity-70">{children}</div>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-        </div>
-      </div>
+      <>
+        {/* Minimal non-blocking loading indicator */}
+        <div className="fixed top-0 left-0 right-0 z-50 h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent animate-pulse" />
+        {children}
+      </>
     );
   }
 

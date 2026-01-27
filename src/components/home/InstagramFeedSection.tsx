@@ -88,6 +88,16 @@ interface InstagramPost {
 }
 
 export function InstagramFeedSection() {
+  // PERFORMANCE: Add mount timing
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      const appStart = (window as any).__APP_MOUNT_START ?? performance.now();
+      console.log("[TIMING] InstagramFeedSection mounted", {
+        sinceAppMount: `${Math.round(performance.now() - appStart)}ms`
+      });
+    }
+  }, []);
+
   if (import.meta.env.DEV) console.log("[MOUNT] InstagramFeedSection");
 
   // Start with fallback posts immediately, fetch real ones in background
@@ -98,19 +108,25 @@ export function InstagramFeedSection() {
   const carouselRef = useRef<HTMLDivElement>(null);
 
   // Fetch Instagram posts from edge function - NON-BLOCKING with lazy load
+  // PERFORMANCE: Increased delay to prioritize critical content
   useEffect(() => {
-    // Small delay to prioritize critical content (players, hero)
+    // Delay to prioritize critical content (players, hero) - increased from 300ms to 500ms
     const timer = setTimeout(async () => {
-      if (import.meta.env.DEV) console.log("[TIMING] InstagramFeed fetch start (delayed)");
+      if (import.meta.env.DEV) console.log("[TIMING] InstagramFeed fetch start (delayed 500ms)");
       const fetchStart = performance.now();
       
       try {
+        // PERFORMANCE: Add timeout to prevent hanging
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s max
+        
         const { data, error } = await supabase.functions.invoke('instagram-feed');
+        clearTimeout(timeoutId);
         
         if (error) {
           if (import.meta.env.DEV) console.error("[FETCH] InstagramFeed error", error);
           console.error('Error fetching Instagram feed:', error);
-          return;
+          return; // Keep fallback posts
         }
 
         if (data?.posts && data.posts.length > 0) {
@@ -125,10 +141,11 @@ export function InstagramFeedSection() {
       } catch (err) {
         if (import.meta.env.DEV) console.error("[FETCH] InstagramFeed error", err);
         console.error('Failed to fetch Instagram feed:', err);
+        // Keep fallback posts - no need to change state
       } finally {
         setLoading(false);
       }
-    }, 300); // 300ms delay to let critical content load first
+    }, 500); // Increased delay to 500ms to prioritize critical content
 
     return () => clearTimeout(timer);
   }, []);

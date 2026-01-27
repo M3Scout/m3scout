@@ -12,8 +12,9 @@ interface ProtectedRouteProps {
 }
 
 // Thresholds for distinguishing slow loading from definitive error
-const SLOW_LOADING_THRESHOLD_MS = 1200; // After 1.2s show "Sincronizando..." (no buttons)
-const ERROR_FINAL_THRESHOLD_MS = 15000; // After 15s, consider it a final error (show buttons)
+// PERFORMANCE: Reduced thresholds for faster perceived loading
+const SLOW_LOADING_THRESHOLD_MS = 800; // After 0.8s show "Sincronizando..." (reduced from 1.2s)
+const ERROR_FINAL_THRESHOLD_MS = 6000; // After 6s, consider it a final error (reduced from 15s)
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const {
@@ -225,21 +226,22 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   }
 
   // ===== Normal loading state =====
+  // PERFORMANCE FIX: Always render children when we have a session.
+  // This prevents the "checando permissões" delay from blocking the UI.
   if (isLoading) {
-    // If there's already an authenticated session/user, keep children mounted
+    // If there's already an authenticated session/user, render children IMMEDIATELY
+    // with just a minimal non-blocking indicator
     if (user || session) {
       return (
         <>
-          <div className="fixed inset-x-0 top-0 z-50 border-b border-border bg-background/80 backdrop-blur">
-            <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-2">
-              <p className="text-xs text-muted-foreground">Carregando permissões...</p>
-            </div>
-          </div>
-          <div className="pt-10">{children}</div>
+          {/* Minimal progress bar - doesn't block content */}
+          <div className="fixed top-0 left-0 right-0 z-50 h-0.5 bg-gradient-to-r from-transparent via-primary/40 to-transparent animate-pulse" />
+          {children}
         </>
       );
     }
 
+    // Only show full loading screen for initial auth check (no session yet)
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">

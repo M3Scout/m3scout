@@ -18,6 +18,16 @@ export function CinematicHero() {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const [stats, setStats] = useState<HeroStats>({ athletes: null, reports: null, competitions: null });
 
+  // PERFORMANCE: Add mount timing
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      const appStart = (window as any).__APP_MOUNT_START ?? performance.now();
+      console.log("[TIMING] CinematicHero mounted", {
+        sinceAppMount: `${Math.round(performance.now() - appStart)}ms`
+      });
+    }
+  }, []);
+
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     setPrefersReducedMotion(mediaQuery.matches);
