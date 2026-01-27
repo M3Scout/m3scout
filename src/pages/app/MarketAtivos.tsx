@@ -260,7 +260,7 @@ export default function MarketAtivos() {
       )}
 
       {/* Filters */}
-      <Card>
+      <Card className="bg-zinc-900/80 border border-white/[0.06]">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm flex items-center gap-2">
             <Filter className="w-4 h-4" />
@@ -276,16 +276,16 @@ export default function MarketAtivos() {
                 placeholder="Buscar atleta..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
+                className="pl-9 bg-zinc-800/50 border-white/[0.06]"
               />
             </div>
 
             {/* Position */}
             <Select value={positionFilter} onValueChange={setPositionFilter}>
-              <SelectTrigger>
+              <SelectTrigger className="bg-zinc-800/50 border-white/[0.06]">
                 <SelectValue placeholder="Posição" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-zinc-900 border-white/[0.06]">
                 {POSITIONS.map((pos) => (
                   <SelectItem key={pos} value={pos}>
                     {pos}
@@ -299,10 +299,10 @@ export default function MarketAtivos() {
               value={String(ageRangeIndex)}
               onValueChange={(v) => setAgeRangeIndex(Number(v))}
             >
-              <SelectTrigger>
+              <SelectTrigger className="bg-zinc-800/50 border-white/[0.06]">
                 <SelectValue placeholder="Idade" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-zinc-900 border-white/[0.06]">
                 {AGE_RANGES.map((range, idx) => (
                   <SelectItem key={idx} value={String(idx)}>
                     {range.label}
@@ -313,10 +313,10 @@ export default function MarketAtivos() {
 
             {/* Min Score */}
             <Select value={String(minScore)} onValueChange={(v) => setMinScore(Number(v))}>
-              <SelectTrigger>
+              <SelectTrigger className="bg-zinc-800/50 border-white/[0.06]">
                 <SelectValue placeholder="Score mínimo" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-zinc-900 border-white/[0.06]">
                 <SelectItem value="0">Score ≥ 0</SelectItem>
                 <SelectItem value="30">Score ≥ 30</SelectItem>
                 <SelectItem value="50">Score ≥ 50</SelectItem>
@@ -328,10 +328,10 @@ export default function MarketAtivos() {
 
             {/* Trend */}
             <Select value={trendFilter} onValueChange={(v) => setTrendFilter(v as typeof trendFilter)}>
-              <SelectTrigger>
+              <SelectTrigger className="bg-zinc-800/50 border-white/[0.06]">
                 <SelectValue placeholder="Tendência" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-zinc-900 border-white/[0.06]">
                 <SelectItem value="ALL">Todas tendências</SelectItem>
                 <SelectItem value="UP">
                   <span className="flex items-center gap-2">
