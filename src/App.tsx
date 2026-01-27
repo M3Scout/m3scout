@@ -8,6 +8,7 @@ import { PermissionsProvider } from "@/hooks/usePermissions";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { RequirePermission } from "@/components/auth/PermissionGate";
 import { ThemeProvider } from "next-themes";
+import { PWAProvider } from "@/components/pwa/PWAUpdateToast";
 
 // Layouts
 import { PublicLayout } from "@/components/layout/PublicLayout";
@@ -75,6 +76,7 @@ const App = () => (
           <TooltipProvider>
             <Toaster />
             <Sonner />
+            <PWAProvider>
             <BrowserRouter>
               <Routes>
                 {/* Public Routes */}
@@ -141,6 +143,7 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
+            </PWAProvider>
           </TooltipProvider>
         </PermissionsProvider>
       </AuthProvider>

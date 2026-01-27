@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sem Conexão | M3 Scout</title>
+  <meta name="theme-color" content="#000000" />
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0a0e17 0%, #1a1f2e 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      padding: 20px;
+    }
+    
+    .container {
+      text-align: center;
+      max-width: 400px;
+    }
+    
+    .logo {
+      width: 80px;
+      height: 80px;
+      margin-bottom: 24px;
+      opacity: 0.9;
+    }
+    
+    .icon {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 24px;
+      opacity: 0.6;
+    }
+    
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: #fff;
+    }
+    
+    p {
+      font-size: 1rem;
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1.6;
+      margin-bottom: 32px;
+    }
+    
+    .retry-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .retry-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(220, 38, 38, 0.3);
+    }
+    
+    .retry-btn:active {
+      transform: translateY(0);
+    }
+    
+    .status {
+      margin-top: 32px;
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      font-size: 0.875rem;
+      color: rgba(255, 255, 255, 0.5);
+    }
+    
+    .status.online {
+      background: rgba(34, 197, 94, 0.1);
+      color: #22c55e;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; }
+    }
+    
+    .pulse {
+      animation: pulse 2s ease-in-out infinite;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <img src="/logoapp-512.png" alt="M3 Scout" class="logo" />
+    
+    <svg class="icon pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" stroke-linecap="round" stroke-linejoin="round"/>
+      <line x1="4" y1="4" x2="20" y2="20" stroke="#dc2626" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    
+    <h1>Sem Conexão</h1>
+    <p>
+      Você está offline. Verifique sua conexão com a internet e tente novamente.
+    </p>
+    
+    <button class="retry-btn" onclick="location.reload()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 12a9 9 0 11-9-9c2.52 0 4.93 1 6.74 2.74L21 8" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M21 3v5h-5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Tentar Novamente
+    </button>
+    
+    <div class="status" id="status">
+      Aguardando conexão...
+    </div>
+  </div>
+  
+  <script>
+    // Check connection status
+    function updateStatus() {
+      const statusEl = document.getElementById('status');
+      if (navigator.onLine) {
+        statusEl.textContent = 'Conexão detectada! Recarregando...';
+        statusEl.classList.add('online');
+        setTimeout(() => location.reload(), 1000);
+      } else {
+        statusEl.textContent = 'Aguardando conexão...';
+        statusEl.classList.remove('online');
+      }
+    }
+    
+    window.addEventListener('online', updateStatus);
+    window.addEventListener('offline', updateStatus);
+    updateStatus();
+  </script>
+</body>
+</html>
