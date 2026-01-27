@@ -1809,20 +1809,31 @@ export type Database = {
           age_estimate: number | null
           birth_date: string | null
           city: string | null
+          competition_id: string | null
           country: string | null
           created_at: string
           created_by: string | null
           current_club: string | null
           dominant_foot: string | null
+          games_observed: number | null
           height: number | null
           highlight_video_url: string | null
           id: string
+          ideal_approach_window: string | null
+          interest_reason: string | null
           league_competition: string | null
+          market_strategy: string | null
+          minutes_observed: number | null
           name: string
+          notable_characteristics: string[] | null
           notes_internal: string | null
+          observation_context: string | null
+          observation_type: string | null
+          perceived_profile: string | null
           photo_url: string | null
           position: string
           priority: Database["public"]["Enums"]["target_priority"]
+          secondary_position: string | null
           source: string | null
           state: string | null
           status: Database["public"]["Enums"]["target_status"]
@@ -1834,20 +1845,31 @@ export type Database = {
           age_estimate?: number | null
           birth_date?: string | null
           city?: string | null
+          competition_id?: string | null
           country?: string | null
           created_at?: string
           created_by?: string | null
           current_club?: string | null
           dominant_foot?: string | null
+          games_observed?: number | null
           height?: number | null
           highlight_video_url?: string | null
           id?: string
+          ideal_approach_window?: string | null
+          interest_reason?: string | null
           league_competition?: string | null
+          market_strategy?: string | null
+          minutes_observed?: number | null
           name: string
+          notable_characteristics?: string[] | null
           notes_internal?: string | null
+          observation_context?: string | null
+          observation_type?: string | null
+          perceived_profile?: string | null
           photo_url?: string | null
           position: string
           priority?: Database["public"]["Enums"]["target_priority"]
+          secondary_position?: string | null
           source?: string | null
           state?: string | null
           status?: Database["public"]["Enums"]["target_status"]
@@ -1859,20 +1881,31 @@ export type Database = {
           age_estimate?: number | null
           birth_date?: string | null
           city?: string | null
+          competition_id?: string | null
           country?: string | null
           created_at?: string
           created_by?: string | null
           current_club?: string | null
           dominant_foot?: string | null
+          games_observed?: number | null
           height?: number | null
           highlight_video_url?: string | null
           id?: string
+          ideal_approach_window?: string | null
+          interest_reason?: string | null
           league_competition?: string | null
+          market_strategy?: string | null
+          minutes_observed?: number | null
           name?: string
+          notable_characteristics?: string[] | null
           notes_internal?: string | null
+          observation_context?: string | null
+          observation_type?: string | null
+          perceived_profile?: string | null
           photo_url?: string | null
           position?: string
           priority?: Database["public"]["Enums"]["target_priority"]
+          secondary_position?: string | null
           source?: string | null
           state?: string | null
           status?: Database["public"]["Enums"]["target_status"]
@@ -1880,7 +1913,15 @@ export type Database = {
           updated_at?: string
           weight?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "targets_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       team_settings: {
         Row: {
