@@ -51,6 +51,7 @@ import { MarketValueTab } from "@/components/players/sections/MarketValueTab";
 import { DataQualityPanel } from "@/components/players/DataQualityPanel";
 import { RecentReportsCard } from "@/components/players/sections/RecentReportsCard";
 import { MetadataCard } from "@/components/players/sections/MetadataCard";
+import { MarketScoreCard } from "@/components/players/sections/MarketScoreCard";
 
 
 import { UnifiedRadarCard } from "@/components/players/UnifiedRadarCard";
@@ -492,6 +493,16 @@ const PlayerDetail = () => {
 
             {/* Sidebar */}
             <div className="space-y-6">
+              {/* M3 Market Score - Premium internal score */}
+              <MarketScoreCard
+                athleteId={player.id}
+                athleteName={player.full_name}
+                position={player.position}
+                secondaryPositions={player.secondary_positions ?? []}
+                birthDate={player.birth_date}
+                age={player.age}
+              />
+
               {/* Overall Rating Card */}
               <OverallRatingCard
                 autoRating={player.auto_rating}

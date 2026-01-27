@@ -11,6 +11,7 @@ import { AthleteBodyMetricsCard } from "./AthleteBodyMetricsCard";
 import { AthleteReportsCard } from "./AthleteReportsCard";
 import { AthleteSeasonGoalsCard } from "./AthleteSeasonGoalsCard";
 import { AthleteAchievementsCard } from "./AthleteAchievementsCard";
+import { MarketScoreCard } from "@/components/players/sections/MarketScoreCard";
 import { usePlayerMatchRatings } from "@/hooks/usePlayerMatchRatings";
 import { motion } from "framer-motion";
 import { staggerContainer, staggerItem } from "@/lib/animations";
@@ -19,7 +20,10 @@ interface AthleteData {
   id: string;
   full_name: string;
   position: string;
+  secondary_positions: string[];
   current_club: string | null;
+  birth_date: string | null;
+  age: number | null;
   strengths: string[];
   areas_to_develop: string[];
 }
@@ -69,7 +73,7 @@ export function AthleteDashboard() {
         // Fetch athlete profile
         const { data: playerData, error: playerError } = await supabase
           .from("players")
-          .select("id, full_name, position, current_club, strengths, areas_to_develop")
+          .select("id, full_name, position, secondary_positions, current_club, birth_date, age, strengths, areas_to_develop")
           .eq("id", linkedPlayerId)
           .single();
 
@@ -79,7 +83,10 @@ export function AthleteDashboard() {
           id: playerData.id,
           full_name: playerData.full_name,
           position: playerData.position,
+          secondary_positions: playerData.secondary_positions || [],
           current_club: playerData.current_club,
+          birth_date: playerData.birth_date,
+          age: playerData.age,
           strengths: playerData.strengths || [],
           areas_to_develop: playerData.areas_to_develop || [],
         });
@@ -220,24 +227,36 @@ export function AthleteDashboard() {
         </div>
       </motion.div>
 
-      {/* Row 2: Radar (50%) + Body Metrics (50%) */}
+      {/* Row 2: Market Score (50%) + Radar (50%) */}
       <motion.div 
         variants={staggerItem} 
         className="grid grid-cols-1 lg:grid-cols-2 gap-[var(--gap-mobile)] md:gap-6 items-stretch w-full max-w-full"
       >
+        <div className="flex min-w-0 w-full">
+          <MarketScoreCard
+            athleteId={athlete.id}
+            athleteName={athlete.full_name}
+            position={athlete.position}
+            secondaryPositions={athlete.secondary_positions}
+            birthDate={athlete.birth_date}
+            age={athlete.age}
+          />
+        </div>
+
         <div className="flex min-w-0 w-full">
           <AthleteRadarCard 
             athleteId={athlete.id}
             athletePosition={athlete.position}
           />
         </div>
-
-        <div className="flex min-w-0 w-full">
-          <AthleteBodyMetricsCard athleteId={athlete.id} />
-        </div>
       </motion.div>
 
-      {/* Row 3: Season Goals (100% width) */}
+      {/* Row 3: Body Metrics (100% width) */}
+      <motion.div variants={staggerItem} className="w-full">
+        <AthleteBodyMetricsCard athleteId={athlete.id} />
+      </motion.div>
+
+      {/* Row 4: Season Goals (100% width) */}
       <motion.div variants={staggerItem} className="w-full">
         <AthleteSeasonGoalsCard 
           athleteId={athlete.id}
@@ -256,7 +275,7 @@ export function AthleteDashboard() {
         />
       </motion.div>
 
-      {/* Row 4: Achievements + Reports */}
+      {/* Row 5: Achievements + Reports */}
       <motion.div 
         variants={staggerItem} 
         className="grid grid-cols-1 lg:grid-cols-2 gap-[var(--gap-mobile)] md:gap-6 items-stretch w-full max-w-full"
