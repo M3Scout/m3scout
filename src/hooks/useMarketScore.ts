@@ -1,0 +1,225 @@
+/**
+ * useMarketScore Hook
+ * 
+ * React hook to fetch, compute, and manage Market Scores for athletes.
+ * Integrates with existing usePlayerMatchStats and usePlayerMatchRatings hooks.
+ */
+
+import { useState, useCallback, useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { usePlayerMatchStats } from './usePlayerMatchStats';
+import { usePlayerMatchRatings } from './usePlayerMatchRatings';
+import { 
+  MarketScore, 
+  MarketScoreBreakdown, 
+  MarketScoreEvent,
+  ActivePlayerData,
+  DEFAULT_MARKET_SCORE_WEIGHTS,
+  MarketScoreWeights,
+} from '@/types/marketScore';
+import { 
+  fetchMarketScoreForAthlete,
+  fetchMarketScoreHistory,
+  computeAndPersistActiveScore,
+} from '@/lib/marketScoreService';
+import { computeMarketScoreActive } from '@/lib/marketScoreEngine';
+
+interface UseMarketScoreOptions {
+  playerId: string;
+  playerName?: string;
+  position?: string;
+  secondaryPositions?: string[];
+  birthDate?: string | null;
+  age?: number | null;
+  seasonYear?: number;
+  enabled?: boolean;
+  weights?: MarketScoreWeights;
+}
+
+interface UseMarketScoreReturn {
+  // Current persisted score
+  score: MarketScore | null;
+  scoreLoading: boolean;
+  scoreError: Error | null;
+  
+  // Computed breakdown (may differ from persisted if data changed)
+  breakdown: MarketScoreBreakdown | null;
+  breakdownLoading: boolean;
+  
+  // Score history/audit log
+  history: MarketScoreEvent[];
+  historyLoading: boolean;
+  
+  // Actions
+  recalculate: (reason?: string) => Promise<void>;
+  isRecalculating: boolean;
+  
+  // Raw data availability
+  hasEnoughData: boolean;
+  dataConfidence: number;
+}
+
+export function useMarketScore({
+  playerId,
+  playerName = '',
+  position = '',
+  secondaryPositions = [],
+  birthDate = null,
+  age = null,
+  seasonYear,
+  enabled = true,
+  weights = DEFAULT_MARKET_SCORE_WEIGHTS,
+}: UseMarketScoreOptions): UseMarketScoreReturn {
+  const queryClient = useQueryClient();
+  const currentYear = seasonYear ?? new Date().getFullYear();
+  
+  // Fetch existing score from DB
+  const {
+    data: score,
+    isLoading: scoreLoading,
+    error: scoreError,
+  } = useQuery({
+    queryKey: ['market-score', playerId],
+    queryFn: () => fetchMarketScoreForAthlete(playerId),
+    enabled: enabled && !!playerId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+  
+  // Fetch score history
+  const {
+    data: history = [],
+    isLoading: historyLoading,
+  } = useQuery({
+    queryKey: ['market-score-history', score?.id],
+    queryFn: () => score?.id ? fetchMarketScoreHistory(score.id) : [],
+    enabled: enabled && !!score?.id,
+    staleTime: 5 * 60 * 1000,
+  });
+  
+  // Fetch player stats using existing hook
+  const {
+    totals: seasonStats,
+    isLoading: statsLoading,
+  } = usePlayerMatchStats({
+    playerId,
+    seasonYear: currentYear,
+    enabled: enabled && !!playerId,
+  });
+  
+  // Fetch player ratings using existing hook
+  const {
+    matches: matchesWithRatings,
+    isLoading: ratingsLoading,
+  } = usePlayerMatchRatings({
+    playerId,
+    playerPosition: position,
+    seasonYear: currentYear,
+    enabled: enabled && !!playerId,
+  });
+  
+  // Calculate matches in last 30 days
+  const matchesLast30Days = useMemo(() => {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    return matchesWithRatings.filter(m => {
+      const matchDate = new Date(m.match_date);
+      return matchDate >= thirtyDaysAgo;
+    }).length;
+  }, [matchesWithRatings]);
+  
+  // Build ActivePlayerData from existing hooks
+  const activePlayerData: ActivePlayerData | null = useMemo(() => {
+    if (!playerId || !seasonStats) return null;
+    
+    return {
+      playerId,
+      fullName: playerName,
+      position: position || 'Meia',
+      secondaryPositions: secondaryPositions || [],
+      birthDate,
+      age,
+      seasonStats: {
+        matches: seasonStats.matches || 0,
+        minutes: seasonStats.minutes || 0,
+        goals: seasonStats.goals || 0,
+        assists: seasonStats.assists || 0,
+        keyPasses: seasonStats.key_passes || 0,
+        chancesCreated: seasonStats.chances_created || 0,
+        tackles: seasonStats.tackles || 0,
+        interceptions: seasonStats.interceptions || 0,
+        recoveries: seasonStats.recoveries || 0,
+        clearances: seasonStats.clearances || 0,
+        duelsWon: seasonStats.duels_won || 0,
+        duelsTotal: seasonStats.duels_total || 0,
+        aerialDuelsWon: seasonStats.aerial_duels_won || 0,
+        aerialDuelsTotal: seasonStats.aerial_duels_total || 0,
+        dribblesSuccess: seasonStats.dribbles_success || 0,
+        dribblesTotal: seasonStats.dribbles_total || 0,
+        passesCompleted: seasonStats.passes_completed || 0,
+        passesTotal: seasonStats.passes_total || 0,
+        crossesSuccess: seasonStats.crosses_success || 0,
+        crossesFailed: seasonStats.crosses_failed || 0,
+      },
+      matchRatings: matchesWithRatings.map(m => ({
+        matchId: m.match_id,
+        matchDate: m.match_date,
+        rating: m.rating.rating ?? 0,
+        competitionId: m.competition_id ?? null,
+        competitionCoefficient: 1.0, // Default coefficient - will be enhanced when competition data is joined
+      })),
+      matchesLast30Days,
+    };
+  }, [
+    playerId, playerName, position, secondaryPositions, birthDate, age,
+    seasonStats, matchesWithRatings, matchesLast30Days
+  ]);
+  
+  // Compute breakdown in real-time (not persisted until recalculate)
+  const breakdown: MarketScoreBreakdown | null = useMemo(() => {
+    if (!activePlayerData) return null;
+    
+    const previousScore = score?.score_total ?? null;
+    return computeMarketScoreActive(activePlayerData, previousScore, weights);
+  }, [activePlayerData, score?.score_total, weights]);
+  
+  // Recalculate and persist mutation
+  const recalculateMutation = useMutation({
+    mutationFn: async (reason: string) => {
+      if (!activePlayerData) throw new Error('No player data available');
+      return computeAndPersistActiveScore(activePlayerData, reason, weights);
+    },
+    onSuccess: () => {
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['market-score', playerId] });
+      queryClient.invalidateQueries({ queryKey: ['market-score-history'] });
+    },
+  });
+  
+  const recalculate = useCallback(async (reason: string = 'Recálculo manual') => {
+    await recalculateMutation.mutateAsync(reason);
+  }, [recalculateMutation]);
+  
+  // Determine if we have enough data for a meaningful score
+  const hasEnoughData = useMemo(() => {
+    if (!seasonStats) return false;
+    return seasonStats.matches >= 1;
+  }, [seasonStats]);
+  
+  const breakdownLoading = statsLoading || ratingsLoading;
+  
+  return {
+    score: score ?? null,
+    scoreLoading,
+    scoreError: scoreError as Error | null,
+    breakdown,
+    breakdownLoading,
+    history,
+    historyLoading,
+    recalculate,
+    isRecalculating: recalculateMutation.isPending,
+    hasEnoughData,
+    dataConfidence: breakdown?.confidenceLevel ?? 0,
+  };
+}
