@@ -12,12 +12,13 @@ const VALID_ROLES: AppRole[] = ["admin", "scout", "editor", "viewer", "player"];
 // Priority when user has multiple roles
 const ROLE_PRIORITY: AppRole[] = ["admin", "scout", "editor", "viewer", "player"];
 
-// PERFORMANCE OPTIMIZED: Reduced retries and timeouts for faster cold starts
-const RBAC_BACKOFF_MS = [300, 800]; // Only 2 retries, faster intervals
-const RBAC_ATTEMPT_TIMEOUT_MS = 3000; // 3s per attempt (down from 4s)
+// PERFORMANCE OPTIMIZED: Single attempt with fast timeout for cold starts
+const RBAC_BACKOFF_MS = [500]; // Only 1 retry, fast interval
+const RBAC_ATTEMPT_TIMEOUT_MS = 2500; // 2.5s per attempt (reduced further)
+const RBAC_TOTAL_TIMEOUT_MS = 4000; // 4s max total (down from 6s)
 
 // Cache configuration - use localStorage for persistence across tabs/sessions
-const RBAC_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes (increased for better cold start)
+const RBAC_CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes (increased for better cold start)
 const RBAC_CACHE_KEY = "m3_rbac_v2";
 const RBAC_CACHE_KEY_PERSISTENT = "m3_rbac_v2_persistent"; // localStorage for cold starts
 
@@ -607,43 +608,63 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   // ============ INIT + AUTH STATE CHANGE ============
+  // CRITICAL FIX: Empty dependency array to run ONCE only
+  // This prevents the loop caused by fetchRbac being recreated
   useEffect(() => {
     const authStart = logTiming("Auth init start");
+    let isMounted = true;
+    let hasInitialized = false;
+    
+    // Stable reference to avoid closure issues
+    const handleRbac = async (userId: string, isBackground: boolean) => {
+      const cached = readCache(userId);
+      if (cached) {
+        logTiming(`RBAC cache hit (${isBackground ? 'background' : 'init'})`);
+        applyRbacPayload(cached, true);
+        if (!isBackground) setLoading(false);
+        // Background revalidate - NON-BLOCKING
+        void fetchRbac(userId, { background: true });
+      } else {
+        const rbacStart = logTiming("RBAC fetch start (no cache)");
+        await fetchRbac(userId);
+        logTiming("RBAC fetch complete", rbacStart);
+        if (!isBackground) setLoading(false);
+      }
+    };
+
+    const handleSignOut = () => {
+      setRoles([]);
+      setLinkedPlayerId(null);
+      setIsOwner(false);
+      setUserStatus(null);
+      setPermissions(null);
+      setRolesFromCache(false);
+      setRolesFetchedAt(null);
+      setRolesLoading(false);
+      setPermissionsLoading(false);
+      clearCache();
+      setLoading(false);
+    };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!isMounted) return;
+        
+        // CRITICAL: Skip initial session event if we already initialized
+        // This prevents duplicate RBAC fetches
+        if (event === 'INITIAL_SESSION' && hasInitialized) {
+          if (import.meta.env.DEV) console.log("[Auth] Skipping duplicate INITIAL_SESSION");
+          return;
+        }
+        
         logTiming("Auth state changed: " + event);
         setSession(session);
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          // Fast path: use cache (now includes localStorage for cold starts!)
-          const cached = readCache(session.user.id);
-          if (cached) {
-            logTiming("RBAC cache hit (localStorage/sessionStorage)");
-            applyRbacPayload(cached, true);
-            setLoading(false);
-            // Revalidate in background - NON-BLOCKING
-            void fetchRbac(session.user.id, { background: true });
-          } else {
-            const rbacStart = logTiming("RBAC fetch start (no cache)");
-            await fetchRbac(session.user.id);
-            logTiming("RBAC fetch complete", rbacStart);
-            setLoading(false);
-          }
+          await handleRbac(session.user.id, false);
         } else {
-          // Signed out
-          setRoles([]);
-          setLinkedPlayerId(null);
-          setIsOwner(false);
-          setUserStatus(null);
-          setPermissions(null);
-          setRolesFromCache(false);
-          setRolesFetchedAt(null);
-          setRolesLoading(false);
-          setPermissionsLoading(false);
-          clearCache();
-          setLoading(false);
+          handleSignOut();
         }
       }
     );
@@ -655,6 +676,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const sessionStart = performance.now();
         const { data: { session }, error } = await supabase.auth.getSession();
         logTiming("Auth getSession complete", sessionStart);
+
+        if (!isMounted) return;
+        hasInitialized = true;
 
         if (error) {
           console.error("[Auth] session error:", error.code, error.message);
@@ -668,19 +692,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          const cached = readCache(session.user.id);
-          if (cached) {
-            logTiming("RBAC cache hit (init)");
-            applyRbacPayload(cached, true);
-            setLoading(false);
-            // Background revalidate - NON-BLOCKING
-            void fetchRbac(session.user.id, { background: true });
-          } else {
-            const rbacStart = logTiming("RBAC fetch start (init, no cache)");
-            await fetchRbac(session.user.id);
-            logTiming("RBAC fetch complete (init)", rbacStart);
-            setLoading(false);
-          }
+          await handleRbac(session.user.id, false);
         } else {
           logTiming("No session - public user");
           setRolesLoading(false);
@@ -689,24 +701,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } catch (err) {
         console.error("[Auth] init error:", err);
-        setLoading(false);
-        setRolesLoading(false);
-        setPermissionsLoading(false);
+        if (isMounted) {
+          setLoading(false);
+          setRolesLoading(false);
+          setPermissionsLoading(false);
+        }
       }
     };
 
     initSession();
 
-    return () => subscription.unsubscribe();
-  }, [fetchRbac, applyRbacPayload]);
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // INTENTIONALLY EMPTY - run once only to prevent loops
 
-  // ============ FAIL-SAFE TIMEOUT (REDUCED FOR PERFORMANCE) ============
+  // ============ FAIL-SAFE TIMEOUT (4 SECONDS MAX) ============
   useEffect(() => {
     if (!rolesLoading && !permissionsLoading) return;
 
-    // CRITICAL: Reduced from 15s to 6s for much faster cold starts
+    // CRITICAL: 4s max timeout for fastest cold starts
     const timeout = setTimeout(() => {
-      console.warn("[Auth] RBAC timeout (6s) - forcing completion");
+      console.warn("[Auth] RBAC timeout (4s) - forcing completion");
       setRolesLoading(false);
       setPermissionsLoading(false);
       // Only set error if we don't have any valid permissions
@@ -714,55 +732,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setRolesError("timeout");
         setPermissionsError("timeout");
       }
-    }, 6000);
+    }, RBAC_TOTAL_TIMEOUT_MS);
 
     return () => clearTimeout(timeout);
   }, [rolesLoading, permissionsLoading, roles.length]);
 
   // ============ VISIBILITY CHANGE HANDLER ============
-  // Revalidate permissions in BACKGROUND when user returns to tab
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      const isVisible = document.visibilityState === "visible";
-      isDocumentVisibleRef.current = isVisible;
-
-      if (isVisible && user?.id) {
-        if (import.meta.env.DEV) {
-          console.log("[RBAC] Tab became visible, revalidating in background...");
-        }
-        // Clear any existing error state when tab becomes visible
-        // This ensures we don't show stale errors
-        if (rolesError || permissionsError) {
-          setRolesError(null);
-          setPermissionsError(null);
-        }
-        // Revalidate in background (won't block UI or trigger error state)
-        void fetchRbac(user.id, { background: true });
-      }
-    };
-
-    const handleWindowFocus = () => {
-      if (user?.id && isDocumentVisibleRef.current) {
-        if (import.meta.env.DEV) {
-          console.log("[RBAC] Window focused, revalidating in background...");
-        }
-        // Clear errors on focus as well
-        if (rolesError || permissionsError) {
-          setRolesError(null);
-          setPermissionsError(null);
-        }
-        void fetchRbac(user.id, { background: true });
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    window.addEventListener("focus", handleWindowFocus);
-
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.removeEventListener("focus", handleWindowFocus);
-    };
-  }, [user?.id, fetchRbac, rolesError, permissionsError]);
+  // REMOVED: Automatic revalidation on focus/visibility was causing extra requests
+  // Cache TTL of 15 minutes is sufficient; users can manually refresh if needed
 
   // ============ PUBLIC API ============
   const refreshRoles = useCallback(async () => {

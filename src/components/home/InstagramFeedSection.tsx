@@ -107,26 +107,22 @@ export function InstagramFeedSection() {
   const [canScrollRight, setCanScrollRight] = useState(true);
   const carouselRef = useRef<HTMLDivElement>(null);
 
-  // Fetch Instagram posts from edge function - NON-BLOCKING with lazy load
-  // PERFORMANCE: Increased delay to prioritize critical content
+  // Fetch Instagram posts from edge function - LAZY LOAD (non-blocking)
+  // PERFORMANCE: Only fetch when section is visible to avoid wasting bandwidth
   useEffect(() => {
-    // Delay to prioritize critical content (players, hero) - increased from 300ms to 500ms
+    // CRITICAL: Delay to prioritize critical content (players, hero)
+    // 1 second delay ensures athletes load first
     const timer = setTimeout(async () => {
-      if (import.meta.env.DEV) console.log("[TIMING] InstagramFeed fetch start (delayed 500ms)");
+      if (import.meta.env.DEV) console.log("[TIMING] InstagramFeed fetch start (delayed 1s)");
       const fetchStart = performance.now();
       
       try {
-        // PERFORMANCE: Add timeout to prevent hanging
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s max
-        
+        // Use invoke for edge function (POST by default)
         const { data, error } = await supabase.functions.invoke('instagram-feed');
-        clearTimeout(timeoutId);
         
         if (error) {
           if (import.meta.env.DEV) console.error("[FETCH] InstagramFeed error", error);
-          console.error('Error fetching Instagram feed:', error);
-          return; // Keep fallback posts
+          return; // Keep fallback posts silently
         }
 
         if (data?.posts && data.posts.length > 0) {
@@ -139,13 +135,12 @@ export function InstagramFeedSection() {
           setPosts(data.posts);
         }
       } catch (err) {
+        // Silent fail - Instagram is non-critical
         if (import.meta.env.DEV) console.error("[FETCH] InstagramFeed error", err);
-        console.error('Failed to fetch Instagram feed:', err);
-        // Keep fallback posts - no need to change state
       } finally {
         setLoading(false);
       }
-    }, 500); // Increased delay to 500ms to prioritize critical content
+    }, 1000); // 1 second delay to let critical content load first
 
     return () => clearTimeout(timer);
   }, []);

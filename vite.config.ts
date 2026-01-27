@@ -42,8 +42,9 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       workbox: {
-        // Precache all static assets
-        globPatterns: ["**/*.{js,css,html,ico,png,jpg,jpeg,svg,woff,woff2}"],
+        // OPTIMIZED: Only precache essential files (not all images)
+        // This reduces first-load time significantly
+        globPatterns: ["**/*.{js,css,html,ico,woff,woff2}"],
         
         // Increase max file size for large bundles (6MB)
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
