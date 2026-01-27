@@ -271,6 +271,129 @@ export async function computeAndPersistTargetScore(
 }
 
 // =====================================================
+// COMPUTE SCORE FOR ATHLETE BY ID (fetches all required data)
+// =====================================================
+
+export async function computeScoreForAthleteById(
+  athleteId: string,
+  athleteInfo: {
+    fullName?: string;
+    position: string;
+    secondaryPositions?: string[];
+    birthDate?: string | null;
+    age?: number | null;
+  },
+  reason: string = 'Cálculo inicial'
+): Promise<{ breakdown: MarketScoreBreakdown; score: MarketScore | null; error: Error | null; isNew: boolean }> {
+  try {
+    const currentYear = new Date().getFullYear();
+    
+    // Fetch match player stats for this athlete
+    const { data: matchPlayerStats, error: statsError } = await supabase
+      .from('match_player_stats')
+      .select(`
+        *,
+        matches!inner(
+          id,
+          match_date,
+          status,
+          season_year,
+          competition_id
+        )
+      `)
+      .eq('player_id', athleteId)
+      .eq('matches.season_year', currentYear)
+      .eq('matches.status', 'finished');
+    
+    if (statsError) {
+      console.error('[MarketScoreService] Error fetching match stats:', statsError);
+    }
+    
+    // Aggregate stats
+    const stats = matchPlayerStats || [];
+    const seasonStats = {
+      matches: stats.length,
+      minutes: stats.reduce((acc, s) => acc + (s.dribbles_total > 0 || s.passes_total > 0 ? 90 : 0), 0), // Approximate
+      goals: stats.reduce((acc, s) => acc + (s.goals || 0), 0),
+      assists: stats.reduce((acc, s) => acc + (s.assists || 0), 0),
+      keyPasses: stats.reduce((acc, s) => acc + (s.key_passes || 0), 0),
+      chancesCreated: stats.reduce((acc, s) => acc + (s.chances_created || 0), 0),
+      tackles: stats.reduce((acc, s) => acc + (s.tackles || 0), 0),
+      interceptions: stats.reduce((acc, s) => acc + (s.interceptions || 0), 0),
+      recoveries: stats.reduce((acc, s) => acc + (s.recoveries || 0), 0),
+      clearances: stats.reduce((acc, s) => acc + (s.clearances || 0), 0),
+      duelsWon: stats.reduce((acc, s) => acc + (s.duels_won || 0), 0),
+      duelsTotal: stats.reduce((acc, s) => acc + (s.duels_total || 0), 0),
+      aerialDuelsWon: stats.reduce((acc, s) => acc + (s.aerial_duels_won || 0), 0),
+      aerialDuelsTotal: stats.reduce((acc, s) => acc + (s.aerial_duels_total || 0), 0),
+      dribblesSuccess: stats.reduce((acc, s) => acc + (s.dribbles_success || 0), 0),
+      dribblesTotal: stats.reduce((acc, s) => acc + (s.dribbles_total || 0), 0),
+      passesCompleted: stats.reduce((acc, s) => acc + (s.passes_completed || 0), 0),
+      passesTotal: stats.reduce((acc, s) => acc + (s.passes_total || 0), 0),
+      crossesSuccess: stats.reduce((acc, s) => acc + (s.crosses_success || 0), 0),
+      crossesFailed: stats.reduce((acc, s) => acc + (s.crosses_failed || 0), 0),
+    };
+    
+    // Calculate matches in last 30 days
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const matchesLast30Days = stats.filter(s => {
+      const matchDate = new Date((s.matches as any)?.match_date);
+      return matchDate >= thirtyDaysAgo;
+    }).length;
+    
+    // Build match ratings (simplified - using default rating if not calculated)
+    const matchRatings = stats.map(s => ({
+      matchId: (s.matches as any)?.id || s.match_id,
+      matchDate: (s.matches as any)?.match_date || new Date().toISOString(),
+      rating: 6.5, // Default rating - the real rating would require full calculation
+      competitionId: (s.matches as any)?.competition_id || null,
+      competitionCoefficient: 1.0,
+    }));
+    
+    // Build ActivePlayerData
+    const activePlayerData: ActivePlayerData = {
+      playerId: athleteId,
+      fullName: athleteInfo.fullName || 'Atleta',
+      position: athleteInfo.position || 'Meia',
+      secondaryPositions: athleteInfo.secondaryPositions || [],
+      birthDate: athleteInfo.birthDate || null,
+      age: athleteInfo.age || null,
+      seasonStats,
+      matchRatings,
+      matchesLast30Days,
+    };
+    
+    // Get previous score for trend calculation
+    const existingScore = await fetchMarketScoreForAthlete(athleteId);
+    const previousTotal = existingScore?.score_total ?? null;
+    const isNew = existingScore === null;
+    
+    // Compute the score
+    const breakdown = computeMarketScoreActive(activePlayerData, previousTotal, DEFAULT_MARKET_SCORE_WEIGHTS);
+    
+    // Persist
+    const { score, error } = await persistMarketScore(
+      breakdown,
+      'ACTIVE',
+      athleteId,
+      undefined,
+      reason
+    );
+    
+    return { breakdown, score, error, isNew };
+  } catch (err) {
+    console.error('[MarketScoreService] Error computing score for athlete:', err);
+    return { 
+      breakdown: null as any, 
+      score: null, 
+      error: err instanceof Error ? err : new Error('Unknown error'), 
+      isNew: false 
+    };
+  }
+}
+
+// =====================================================
 // BATCH RECALCULATE ALL ACTIVE ATHLETES
 // =====================================================
 
