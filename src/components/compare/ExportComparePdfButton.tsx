@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ComparePdfVector } from "./ComparePdfVector";
 import { exportVectorPdf } from "@/lib/vectorPdfExport";
+import { batchConvertImagesToBase64 } from "@/lib/imageToBase64";
 import type { PlayerStatRow } from "@/lib/attributeRadar";
 
 // Use the new logo for PDF reports
@@ -61,6 +62,21 @@ export function ExportComparePdfButton({ players, disabled }: ExportComparePdfBu
 
     setIsExporting(true);
     try {
+      // Pre-convert all player photos to base64 for reliable PDF embedding
+      const photoUrls = players.map(p => p.photo_url).filter((url): url is string => !!url);
+      const base64Map = await batchConvertImagesToBase64(photoUrls);
+      
+      // Create player_id -> base64 map
+      const playerPhotoBase64: Record<string, string> = {};
+      players.forEach(p => {
+        if (p.photo_url) {
+          const base64 = base64Map.get(p.photo_url);
+          if (base64) {
+            playerPhotoBase64[p.id] = base64;
+          }
+        }
+      });
+
       const playerNames = players
         .map((p) => p.full_name.split(" ")[0])
         .join("-vs-")
@@ -73,6 +89,7 @@ export function ExportComparePdfButton({ players, disabled }: ExportComparePdfBu
         <ComparePdfVector
           players={players}
           logoUrl={LOGO_URL}
+          playerPhotoBase64={playerPhotoBase64}
         />
       );
 

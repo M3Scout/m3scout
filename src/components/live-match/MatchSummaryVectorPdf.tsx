@@ -664,6 +664,8 @@ interface MatchSummaryVectorPdfProps {
   teamName: string;
   logoUrl?: string;
   selectedPlayerIds?: string[]; // Filter for specific players
+  /** Pre-converted player photos as base64 data URLs (player_id -> base64) */
+  playerPhotoBase64?: Record<string, string>;
 }
 
 // Heatmap interval size in minutes
@@ -678,6 +680,7 @@ export function MatchSummaryVectorPdf({
   teamName,
   logoUrl,
   selectedPlayerIds,
+  playerPhotoBase64 = {},
 }: MatchSummaryVectorPdfProps) {
   // Determine match duration
   const matchDuration = match.duration_minutes || 90;
@@ -1479,7 +1482,10 @@ export function MatchSummaryVectorPdf({
             return (
               <View key={mp.id} style={styles.playerCard} wrap={false}>
                 <View style={styles.playerCardHeader}>
-                  {mp.player.photo_url ? (
+                  {/* Use pre-converted base64 photo, fallback to direct URL, then placeholder */}
+                  {playerPhotoBase64[mp.player_id] ? (
+                    <Image src={playerPhotoBase64[mp.player_id]} style={styles.playerPhoto} />
+                  ) : mp.player.photo_url ? (
                     <Image src={mp.player.photo_url} style={styles.playerPhoto} />
                   ) : (
                     <View style={styles.playerPhotoPlaceholder}>

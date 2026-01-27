@@ -65,6 +65,8 @@ interface ComparePdfVectorProps {
   players: PlayerWithStats[];
   generatedAt?: Date;
   logoUrl?: string;
+  /** Pre-converted player photos as base64 data URLs (player_id -> base64) */
+  playerPhotoBase64?: Record<string, string>;
 }
 
 const styles = StyleSheet.create({
@@ -480,6 +482,7 @@ export function ComparePdfVector({
   players,
   generatedAt = new Date(),
   logoUrl,
+  playerPhotoBase64 = {},
 }: ComparePdfVectorProps) {
   // Find best value for highlighting
   const getBestIdx = (
@@ -611,7 +614,10 @@ export function ComparePdfVector({
               <View key={player.id} style={[styles.playerCard, { borderColor: color }]}>
                 <View style={[styles.playerAccent, { backgroundColor: color }]} />
                 <View style={styles.playerContent}>
-                  {player.photo_url ? (
+                  {/* Use pre-converted base64 photo, fallback to direct URL, then placeholder */}
+                  {playerPhotoBase64[player.id] ? (
+                    <Image src={playerPhotoBase64[player.id]} style={[styles.playerPhoto, { borderColor: color, borderWidth: 2 }]} />
+                  ) : player.photo_url ? (
                     <Image src={player.photo_url} style={[styles.playerPhoto, { borderColor: color, borderWidth: 2 }]} />
                   ) : (
                     <View style={styles.playerPhotoPlaceholder}>
