@@ -5,6 +5,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  // CACHE: Stale-while-revalidate strategy - serve cached, update in background
+  'Cache-Control': 'public, max-age=600, stale-while-revalidate=1200', // 10min fresh, 20min stale OK
 };
 
 interface InstagramMedia {
@@ -31,11 +33,32 @@ interface TokenRecord {
   expires_at: string | null;
 }
 
+interface CachedFeed {
+  posts: Array<{
+    id: string;
+    imageUrl: string;
+    permalink: string;
+    caption: string;
+    mediaType: string;
+    timestamp: string;
+  }>;
+  cached_at: string;
+}
+
+// In-memory cache for edge function (persists between warm invocations)
+let memoryCache: CachedFeed | null = null;
+const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
+
+function isCacheValid(): boolean {
+  if (!memoryCache) return false;
+  const cachedAt = new Date(memoryCache.cached_at).getTime();
+  return Date.now() - cachedAt < CACHE_TTL_MS;
+}
+
 // Get the access token, preferring database over env var
 // deno-lint-ignore no-explicit-any
 async function getAccessToken(supabase: any): Promise<string | null> {
-  // First try to get from database (handle 0..N rows, no .single())
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from('instagram_tokens')
     .select('id, access_token, expires_at')
     .order('updated_at', { ascending: false })
@@ -44,11 +67,9 @@ async function getAccessToken(supabase: any): Promise<string | null> {
   const tokenData = (Array.isArray(data) ? data[0] ?? null : null) as TokenRecord | null;
 
   if (tokenData && tokenData.access_token && tokenData.access_token !== 'pending') {
-    // Check if token is expiring soon (within 7 days)
     if (tokenData.expires_at) {
       const expiresAt = new Date(tokenData.expires_at);
-      const now = new Date();
-      const daysUntilExpiry = (expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+      const daysUntilExpiry = (expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
       
       if (daysUntilExpiry < 7 && daysUntilExpiry > 0) {
         console.log(`Token expires in ${daysUntilExpiry.toFixed(1)} days, attempting refresh...`);
@@ -59,10 +80,8 @@ async function getAccessToken(supabase: any): Promise<string | null> {
     return tokenData.access_token;
   }
 
-  // Fall back to environment variable
   const envToken = Deno.env.get('INSTAGRAM_ACCESS_TOKEN');
   if (envToken) {
-    // Store env token in database for future use
     await supabase.from('instagram_tokens').upsert({
       id: tokenData?.id || undefined,
       access_token: envToken,
@@ -74,12 +93,12 @@ async function getAccessToken(supabase: any): Promise<string | null> {
   return null;
 }
 
-// Refresh a long-lived token
 // deno-lint-ignore no-explicit-any
 async function refreshToken(supabase: any, currentToken: string): Promise<string | null> {
   try {
-    const refreshUrl = `https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=${currentToken}`;
-    const response = await fetch(refreshUrl);
+    const response = await fetch(
+      `https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=${currentToken}`
+    );
     
     if (!response.ok) {
       console.error('Token refresh failed:', await response.text());
@@ -88,18 +107,16 @@ async function refreshToken(supabase: any, currentToken: string): Promise<string
 
     const data = await response.json();
     const newToken = data.access_token;
-    const expiresIn = data.expires_in || 5184000; // Default 60 days
+    const expiresIn = data.expires_in || 5184000;
 
-    // Update token in database
     await supabase.from('instagram_tokens').update({
       access_token: newToken,
       expires_at: new Date(Date.now() + expiresIn * 1000).toISOString(),
       last_refreshed_at: new Date().toISOString(),
     }).eq('access_token', currentToken);
 
-    console.log('Token refreshed successfully, expires in', Math.floor(expiresIn / 86400), 'days');
+    console.log('Token refreshed successfully');
     return newToken;
-
   } catch (err) {
     console.error('Error refreshing token:', err);
     return null;
@@ -111,8 +128,19 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // CACHE HIT: Return cached data immediately if valid
+  if (isCacheValid() && memoryCache) {
+    console.log('[CACHE HIT] Returning cached Instagram feed');
+    return new Response(
+      JSON.stringify({ posts: memoryCache.posts, cached: true }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // STALE CACHE: If we have stale data, return it and refresh in background
+  const hasStaleData = memoryCache !== null;
+
   try {
-    // Create Supabase client with service role for database access
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -121,29 +149,43 @@ serve(async (req) => {
     
     if (!accessToken) {
       console.error('No Instagram access token available');
+      // Return stale data if available
+      if (hasStaleData) {
+        return new Response(
+          JSON.stringify({ posts: memoryCache!.posts, cached: true, stale: true }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
       return new Response(
         JSON.stringify({ error: 'Instagram access token not configured', posts: [] }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('Fetching Instagram feed...');
-
+    console.log('Fetching fresh Instagram feed...');
     const fields = 'id,media_type,media_url,thumbnail_url,permalink,caption,timestamp';
     const limit = 12;
-    const instagramUrl = `https://graph.instagram.com/me/media?fields=${fields}&limit=${limit}&access_token=${accessToken}`;
     
-    const response = await fetch(instagramUrl);
+    const response = await fetch(
+      `https://graph.instagram.com/me/media?fields=${fields}&limit=${limit}&access_token=${accessToken}`
+    );
     
     if (!response.ok) {
       const errorData = await response.text();
       console.error('Instagram API error:', response.status, errorData);
       
-      // If token is invalid, try refreshing
+      // Return stale data if available
+      if (hasStaleData) {
+        console.log('[STALE] Returning stale cache due to API error');
+        return new Response(
+          JSON.stringify({ posts: memoryCache!.posts, cached: true, stale: true }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       if (response.status === 400 || response.status === 401) {
         const refreshed = await refreshToken(supabase, accessToken);
         if (refreshed) {
-          // Retry with new token
           const retryResponse = await fetch(
             `https://graph.instagram.com/me/media?fields=${fields}&limit=${limit}&access_token=${refreshed}`
           );
@@ -151,12 +193,16 @@ serve(async (req) => {
             const retryData: InstagramResponse = await retryResponse.json();
             const posts = (retryData.data || []).map((media) => ({
               id: media.id,
-              imageUrl: media.media_type === 'VIDEO' ? media.thumbnail_url : media.media_url,
+              imageUrl: (media.media_type === 'VIDEO' ? media.thumbnail_url : media.media_url) || '',
               permalink: media.permalink,
               caption: media.caption?.substring(0, 100) || '',
               mediaType: media.media_type,
               timestamp: media.timestamp,
             }));
+            
+            // Update cache
+            memoryCache = { posts, cached_at: new Date().toISOString() };
+            
             return new Response(
               JSON.stringify({ posts }),
               { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -165,7 +211,7 @@ serve(async (req) => {
         }
         
         return new Response(
-          JSON.stringify({ error: 'Instagram token invalid or expired', posts: [] }),
+          JSON.stringify({ error: 'Instagram token invalid', posts: [] }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -174,16 +220,19 @@ serve(async (req) => {
     }
 
     const data: InstagramResponse = await response.json();
-    console.log(`Successfully fetched ${data.data?.length || 0} posts from Instagram`);
+    console.log(`[FRESH] Fetched ${data.data?.length || 0} posts from Instagram`);
 
     const posts = (data.data || []).map((media) => ({
       id: media.id,
-      imageUrl: media.media_type === 'VIDEO' ? media.thumbnail_url : media.media_url,
+      imageUrl: (media.media_type === 'VIDEO' ? media.thumbnail_url : media.media_url) || '',
       permalink: media.permalink,
       caption: media.caption?.substring(0, 100) || '',
       mediaType: media.media_type,
       timestamp: media.timestamp,
     }));
+
+    // Update cache
+    memoryCache = { posts, cached_at: new Date().toISOString() };
 
     return new Response(
       JSON.stringify({ posts }),
@@ -193,6 +242,15 @@ serve(async (req) => {
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Failed to fetch Instagram feed';
     console.error('Error fetching Instagram feed:', errorMessage);
+    
+    // Return stale data if available
+    if (hasStaleData) {
+      console.log('[STALE] Returning stale cache due to error');
+      return new Response(
+        JSON.stringify({ posts: memoryCache!.posts, cached: true, stale: true }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
     
     return new Response(
       JSON.stringify({ error: errorMessage, posts: [] }),
