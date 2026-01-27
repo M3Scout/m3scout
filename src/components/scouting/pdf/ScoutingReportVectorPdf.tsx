@@ -635,9 +635,11 @@ function StarRating({ rating }: { rating: number }) {
 interface ScoutingReportVectorPdfProps {
   report: ScoutingReportData;
   logoUrl?: string;
+  /** Pre-converted player photo as base64 data URL */
+  playerPhotoBase64?: string | null;
 }
 
-export function ScoutingReportVectorPdf({ report, logoUrl }: ScoutingReportVectorPdfProps) {
+export function ScoutingReportVectorPdf({ report, logoUrl, playerPhotoBase64 }: ScoutingReportVectorPdfProps) {
   const radarData = SCOUTING_CATEGORY_CONFIG.map((cat) => ({
     label: cat.label,
     score: report[`${cat.key}_score` as keyof ScoutingReportData] as number,
@@ -705,7 +707,10 @@ export function ScoutingReportVectorPdf({ report, logoUrl }: ScoutingReportVecto
         {/* Player Card */}
         <View style={styles.playerCard}>
           <View style={styles.playerInfo}>
-            {report.players?.photo_url ? (
+            {/* Use pre-converted base64 photo, fallback to direct URL, then placeholder */}
+            {playerPhotoBase64 ? (
+              <Image src={playerPhotoBase64} style={styles.playerPhoto} />
+            ) : report.players?.photo_url ? (
               <Image src={report.players.photo_url} style={styles.playerPhoto} />
             ) : (
               <View style={styles.playerPhotoPlaceholder}>

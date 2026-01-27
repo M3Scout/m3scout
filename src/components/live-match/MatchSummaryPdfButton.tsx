@@ -5,6 +5,10 @@
  * Supports:
  * - Export all players (general PDF)
  * - Export specific players (filtered PDF via modal)
+ * 
+ * FIX: Pre-converts player photos to base64 before PDF generation
+ * to ensure images load correctly in the PDF renderer (especially
+ * for Supabase Storage URLs that may have auth/expiry issues).
  */
 import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
@@ -23,6 +27,7 @@ import { useTeamSettings } from "@/hooks/useTeamSettings";
 import { MatchSummaryVectorPdf } from "./MatchSummaryVectorPdf";
 import { PlayerSelectPdfModal } from "./PlayerSelectPdfModal";
 import { exportVectorPdf } from "@/lib/vectorPdfExport";
+import { preparePlayerPhotosForPdf, imageUrlToBase64 } from "@/lib/imageToBase64";
 
 // Use the new logo for PDF reports
 const LOGO_URL = "/logo-relatorio-pdf.png";
@@ -51,13 +56,10 @@ export function MatchSummaryPdfButton({
   useEffect(() => {
     const loadLogo = async () => {
       try {
-        const response = await fetch(LOGO_URL);
-        const blob = await response.blob();
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setLogoBase64(reader.result as string);
-        };
-        reader.readAsDataURL(blob);
+        const base64 = await imageUrlToBase64(LOGO_URL);
+        if (base64) {
+          setLogoBase64(base64);
+        }
       } catch (error) {
         console.warn("Failed to load logo:", error);
       }
@@ -78,6 +80,21 @@ export function MatchSummaryPdfButton({
     try {
       const teamName = match.team_name_display || settingsTeamName || "Time";
       
+      // Determine which players to include
+      const playersToExport = selectedPlayerIds && selectedPlayerIds.length > 0
+        ? matchPlayers.filter(mp => selectedPlayerIds.includes(mp.player_id))
+        : matchPlayers;
+      
+      // Pre-convert all player photos to base64 BEFORE generating PDF
+      // This ensures images load correctly even with signed/private storage URLs
+      console.log(`Converting ${playersToExport.length} player photos to base64...`);
+      const playerPhotoBase64Map = await preparePlayerPhotosForPdf(playersToExport, {
+        onProgress: (completed, total) => {
+          console.log(`Photo conversion: ${completed}/${total}`);
+        },
+      });
+      console.log(`Converted ${playerPhotoBase64Map.size} photos successfully`);
+      
       // Generate filename
       let filename: string;
       if (selectedPlayerIds && selectedPlayerIds.length === 1) {
@@ -97,7 +114,13 @@ export function MatchSummaryPdfButton({
         filename = `resumo-jogo-${match.opponent_name.replace(/\s+/g, '-').toLowerCase()}-${format(new Date(match.match_date), 'yyyy-MM-dd')}.pdf`;
       }
       
-      // Create the PDF document
+      // Convert Map to Record for component props
+      const playerPhotoBase64Record: Record<string, string> = {};
+      playerPhotoBase64Map.forEach((value, key) => {
+        playerPhotoBase64Record[key] = value;
+      });
+      
+      // Create the PDF document with pre-converted photos
       const pdfDocument = (
         <MatchSummaryVectorPdf
           match={match}
@@ -108,6 +131,7 @@ export function MatchSummaryPdfButton({
           teamName={teamName}
           logoUrl={logoBase64 || undefined}
           selectedPlayerIds={selectedPlayerIds}
+          playerPhotoBase64={playerPhotoBase64Record}
         />
       );
       

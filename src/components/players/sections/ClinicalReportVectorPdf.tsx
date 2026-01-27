@@ -39,6 +39,8 @@ interface ClinicalReportVectorPdfProps {
   injuries: Injury[];
   physicalStatus?: string | null;
   medicalNotes?: string | null;
+  /** Pre-converted player photo as base64 data URL */
+  playerPhotoBase64?: string | null;
 }
 
 const styles = StyleSheet.create({
@@ -328,6 +330,7 @@ export function ClinicalReportVectorPdf({
   injuries,
   physicalStatus,
   medicalNotes,
+  playerPhotoBase64,
 }: ClinicalReportVectorPdfProps) {
   const safeInjuries = injuries || [];
   const sortedInjuries = [...safeInjuries].sort(
@@ -379,7 +382,10 @@ export function ClinicalReportVectorPdf({
 
         {/* Player Info */}
         <View style={styles.playerSection}>
-          {player.photo_url ? (
+          {/* Use pre-converted base64 photo, fallback to direct URL, then placeholder */}
+          {playerPhotoBase64 ? (
+            <Image src={playerPhotoBase64} style={styles.playerPhoto} />
+          ) : player.photo_url ? (
             <Image src={player.photo_url} style={styles.playerPhoto} />
           ) : (
             <View style={styles.playerPhotoPlaceholder}>

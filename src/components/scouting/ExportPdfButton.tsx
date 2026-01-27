@@ -7,6 +7,7 @@ import { exportVectorPdf } from "@/lib/vectorPdfExport";
 import { generateReportFilename } from "@/lib/pdfExport";
 import { PdfPreviewModal } from "./PdfPreviewModal";
 import type { ScoutingReportData } from "@/types/scouting";
+import { imageUrlToBase64 } from "@/lib/imageToBase64";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,13 +35,10 @@ export function ExportPdfButton({ report, variant = "outline", size = "sm" }: Ex
   useEffect(() => {
     const loadLogo = async () => {
       try {
-        const response = await fetch(LOGO_URL);
-        const blob = await response.blob();
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setLogoBase64(reader.result as string);
-        };
-        reader.readAsDataURL(blob);
+        const base64 = await imageUrlToBase64(LOGO_URL);
+        if (base64) {
+          setLogoBase64(base64);
+        }
       } catch (error) {
         console.warn("Failed to load logo:", error);
       }
@@ -65,6 +63,14 @@ export function ExportPdfButton({ report, variant = "outline", size = "sm" }: Ex
     setIsExporting(true);
 
     try {
+      // Pre-convert player photo to base64 for reliable PDF embedding
+      let playerPhotoBase64: string | null = null;
+      if (report.players?.photo_url) {
+        console.log("Converting player photo to base64...");
+        playerPhotoBase64 = await imageUrlToBase64(report.players.photo_url);
+        console.log(playerPhotoBase64 ? "Photo converted successfully" : "Photo conversion failed, using fallback");
+      }
+
       const filename = generateReportFilename(
         report.players.full_name,
         report.match_date
@@ -74,6 +80,7 @@ export function ExportPdfButton({ report, variant = "outline", size = "sm" }: Ex
         <ScoutingReportVectorPdf
           report={report}
           logoUrl={logoBase64 || undefined}
+          playerPhotoBase64={playerPhotoBase64}
         />
       );
 

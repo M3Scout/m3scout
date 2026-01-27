@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ClinicalReportVectorPdf } from "./ClinicalReportVectorPdf";
 import { exportVectorPdf } from "@/lib/vectorPdfExport";
+import { imageUrlToBase64 } from "@/lib/imageToBase64";
 
 interface Injury {
   id: string;
@@ -42,6 +43,14 @@ export function ExportClinicalPdfButton({
   const handleExport = async () => {
     setIsExporting(true);
     try {
+      // Pre-convert player photo to base64 for reliable PDF embedding
+      let playerPhotoBase64: string | null = null;
+      if (player.photo_url) {
+        console.log("Converting player photo to base64...");
+        playerPhotoBase64 = await imageUrlToBase64(player.photo_url);
+        console.log(playerPhotoBase64 ? "Photo converted successfully" : "Photo conversion failed, using fallback");
+      }
+
       const fileName = `relatorio-clinico-${player.full_name.toLowerCase().replace(/\s+/g, "-")}-${new Date().toISOString().split("T")[0]}.pdf`;
 
       const pdfDocument = (
@@ -50,6 +59,7 @@ export function ExportClinicalPdfButton({
           injuries={injuries}
           physicalStatus={physicalStatus}
           medicalNotes={medicalNotes}
+          playerPhotoBase64={playerPhotoBase64}
         />
       );
 
