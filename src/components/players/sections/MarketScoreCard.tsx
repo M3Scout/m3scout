@@ -210,6 +210,7 @@ export function MarketScoreCard({
     scoreLoading,
     breakdown,
     breakdownLoading,
+    displayScore, // SINGLE SOURCE OF TRUTH - always from database
     history,
     historyLoading,
     recalculate,
@@ -239,10 +240,12 @@ export function MarketScoreCard({
   // Compute insights
   const insights = useMemo(() => generateInsights(breakdown), [breakdown]);
 
-  // Score colors
-  const scoreTotal = breakdown?.scoreTotal ?? score?.score_total ?? 0;
+  // CRITICAL: Always use displayScore (persisted DB value) - not computed breakdown
+  // This ensures consistency between Profile and Listing pages
+  const scoreTotal = displayScore ?? 0;
   const scoreColor = getScoreColor(scoreTotal);
-  const trend = breakdown?.trend30d ?? score?.trend_30d ?? "FLAT";
+  // Trend also comes from persisted DB value only
+  const trend = score?.trend_30d ?? "FLAT";
   const lastCalculated = score?.last_calculated_at
     ? format(new Date(score.last_calculated_at), "dd MMM yyyy, HH:mm", { locale: ptBR })
     : null;
@@ -291,20 +294,34 @@ export function MarketScoreCard({
         <CardContent className="space-y-4">
           {/* Main Score Display */}
           <div className="flex items-start gap-4">
-            {/* Score Badge */}
+            {/* Score Badge - show loading state when recalculating */}
             <div
               className={cn(
-                "flex flex-col items-center justify-center w-20 h-20 rounded-xl border-2",
+                "relative flex flex-col items-center justify-center w-20 h-20 rounded-xl border-2 transition-opacity",
                 scoreColor.bg,
-                scoreColor.border
+                scoreColor.border,
+                isRecalculating && "opacity-60"
               )}
             >
-              <span className={cn("text-3xl font-bold", scoreColor.text)}>
-                {scoreTotal.toFixed(0)}
-              </span>
-              <span className={cn("text-[10px] font-medium uppercase tracking-wider", scoreColor.text)}>
-                {scoreColor.label}
-              </span>
+              {isRecalculating ? (
+                <>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  </div>
+                  <span className={cn("text-3xl font-bold opacity-30", scoreColor.text)}>
+                    {scoreTotal.toFixed(0)}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className={cn("text-3xl font-bold", scoreColor.text)}>
+                    {scoreTotal.toFixed(0)}
+                  </span>
+                  <span className={cn("text-[10px] font-medium uppercase tracking-wider", scoreColor.text)}>
+                    {scoreColor.label}
+                  </span>
+                </>
+              )}
             </div>
 
             {/* Trend & Info */}

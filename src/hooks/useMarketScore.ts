@@ -38,14 +38,17 @@ interface UseMarketScoreOptions {
 }
 
 interface UseMarketScoreReturn {
-  // Current persisted score
+  // Current persisted score (SINGLE SOURCE OF TRUTH)
   score: MarketScore | null;
   scoreLoading: boolean;
   scoreError: Error | null;
   
-  // Computed breakdown (may differ from persisted if data changed)
+  // Computed breakdown for display (uses persisted score_total as reference)
   breakdown: MarketScoreBreakdown | null;
   breakdownLoading: boolean;
+  
+  // The AUTHORITATIVE score value - always from database
+  displayScore: number | null;
   
   // Score history/audit log
   history: MarketScoreEvent[];
@@ -211,17 +214,22 @@ export function useMarketScore({
   
   const breakdownLoading = statsLoading || ratingsLoading;
   
+  // SINGLE SOURCE OF TRUTH: Always use the persisted score from database
+  const displayScore = score?.score_total ?? null;
+  
   return {
     score: score ?? null,
     scoreLoading,
     scoreError: scoreError as Error | null,
     breakdown,
     breakdownLoading,
+    // The AUTHORITATIVE display score - always from database, never computed
+    displayScore,
     history,
     historyLoading,
     recalculate,
     isRecalculating: recalculateMutation.isPending,
     hasEnoughData,
-    dataConfidence: breakdown?.confidenceLevel ?? 0,
+    dataConfidence: score?.confidence_level ?? breakdown?.confidenceLevel ?? 0,
   };
 }
