@@ -191,9 +191,11 @@ export function useMarketScore({
       return computeAndPersistActiveScore(activePlayerData, reason, weights);
     },
     onSuccess: () => {
-      // Invalidate queries to refresh data
+      // Invalidate queries to refresh data across all views
       queryClient.invalidateQueries({ queryKey: ['market-score', playerId] });
       queryClient.invalidateQueries({ queryKey: ['market-score-history'] });
+      // CRITICAL: Also invalidate the listing query for sync between profile and list
+      queryClient.invalidateQueries({ queryKey: ['market-ativos'] });
     },
   });
   

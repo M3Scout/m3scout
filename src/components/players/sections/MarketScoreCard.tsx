@@ -9,7 +9,7 @@
  * - Internal notes and history modals
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -225,6 +225,16 @@ export function MarketScoreCard({
     age,
     enabled: true,
   });
+
+  // Auto-calculate score if not persisted yet (first time opening profile)
+  const hasAutoCalculated = useRef(false);
+  useEffect(() => {
+    // If score is not persisted but breakdown is available, auto-persist
+    if (!scoreLoading && !breakdownLoading && breakdown && !score && !hasAutoCalculated.current && !isRecalculating) {
+      hasAutoCalculated.current = true;
+      recalculate('Cálculo inicial ao abrir perfil');
+    }
+  }, [score, breakdown, scoreLoading, breakdownLoading, recalculate, isRecalculating]);
 
   // Compute insights
   const insights = useMemo(() => generateInsights(breakdown), [breakdown]);
