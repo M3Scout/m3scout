@@ -103,45 +103,56 @@ export function InstagramFeedSection() {
   // Start with fallback posts immediately, fetch real ones in background
   const [posts, setPosts] = useState<InstagramPost[]>(fallbackPosts);
   const [loading, setLoading] = useState(false); // Don't block UI - start with fallback
+  const [fetchError, setFetchError] = useState(false);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
   const carouselRef = useRef<HTMLDivElement>(null);
 
-  // Fetch Instagram posts from edge function - LAZY LOAD (non-blocking)
-  // PERFORMANCE: Only fetch when section is visible to avoid wasting bandwidth
-  useEffect(() => {
-    // CRITICAL: Delay to prioritize critical content (players, hero)
-    // 1 second delay ensures athletes load first
-    const timer = setTimeout(async () => {
-      if (import.meta.env.DEV) console.log("[TIMING] InstagramFeed fetch start (delayed 1s)");
-      const fetchStart = performance.now();
+  // Fetch Instagram posts - LAZY with TIMEOUT and RETRY
+  const fetchInstagram = async () => {
+    if (import.meta.env.DEV) console.log("[TIMING] InstagramFeed fetch start");
+    const fetchStart = performance.now();
+    setFetchError(false);
+    
+    try {
+      // TIMEOUT: 3 seconds max - never block the UI
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
       
-      try {
-        // Use invoke for edge function (POST by default)
-        const { data, error } = await supabase.functions.invoke('instagram-feed');
-        
-        if (error) {
-          if (import.meta.env.DEV) console.error("[FETCH] InstagramFeed error", error);
-          return; // Keep fallback posts silently
-        }
-
-        if (data?.posts && data.posts.length > 0) {
-          if (import.meta.env.DEV) {
-            console.log("[TIMING] InstagramFeed fetch complete", {
-              duration: `${Math.round(performance.now() - fetchStart)}ms`,
-              count: data.posts.length
-            });
-          }
-          setPosts(data.posts);
-        }
-      } catch (err) {
-        // Silent fail - Instagram is non-critical
-        if (import.meta.env.DEV) console.error("[FETCH] InstagramFeed error", err);
-      } finally {
-        setLoading(false);
+      const { data, error } = await supabase.functions.invoke('instagram-feed', {
+        body: {}
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (error) {
+        if (import.meta.env.DEV) console.error("[FETCH] InstagramFeed error", error);
+        setFetchError(true);
+        return;
       }
-    }, 1000); // 1 second delay to let critical content load first
 
+      if (data?.posts && data.posts.length > 0) {
+        if (import.meta.env.DEV) {
+          console.log("[TIMING] InstagramFeed fetch complete", {
+            duration: `${Math.round(performance.now() - fetchStart)}ms`,
+            count: data.posts.length,
+            cached: data.cached || false
+          });
+        }
+        setPosts(data.posts);
+        setFetchError(false);
+      }
+    } catch (err) {
+      if (import.meta.env.DEV) console.error("[FETCH] InstagramFeed error", err);
+      setFetchError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // LAZY: Delay fetch to prioritize critical content
+  useEffect(() => {
+    const timer = setTimeout(fetchInstagram, 1000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -220,8 +231,21 @@ export function InstagramFeedSection() {
 
         {/* Carousel Container - within same padding context */}
         <div className="relative">
+          {/* Error State with Retry Button */}
+          {fetchError && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#f8f7f4]/90 z-20 gap-3">
+              <p className="text-sm text-neutral-500">Não foi possível carregar agora</p>
+              <button
+                onClick={fetchInstagram}
+                className="px-4 py-2 text-sm font-medium text-white bg-neutral-900 hover:bg-neutral-800 rounded-full transition-colors"
+              >
+                Tentar novamente
+              </button>
+            </div>
+          )}
+          
           {/* Loading State */}
-          {loading && (
+          {loading && !fetchError && (
             <div className="absolute inset-0 flex items-center justify-center bg-[#f8f7f4]/80 z-20">
               <Loader2 className="w-6 h-6 animate-spin text-neutral-400" />
             </div>

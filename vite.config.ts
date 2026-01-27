@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === "development" && componentTagger(),
     VitePWA({
-      registerType: "prompt", // Prompt user for updates
+      registerType: "prompt",
       includeAssets: ["favicon.png", "logoapp-512.png", "logo-m3.png"],
       manifest: {
         name: "M3 Scout",
@@ -42,16 +42,47 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       workbox: {
-        // OPTIMIZED: Only precache essential files (not all images)
-        // This reduces first-load time significantly
+        // OPTIMIZED: Only precache essential files (not images)
         globPatterns: ["**/*.{js,css,html,ico,woff,woff2}"],
         
-        // Increase max file size for large bundles (6MB)
+        // Increase max file size for large bundles
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         
         // Runtime caching strategies
         runtimeCaching: [
-          // Static assets: Cache First (fonts, images)
+          // ============ NETWORK ONLY FOR ALL APIS ============
+          // CRITICAL: These MUST NOT be cached by Service Worker
+          // This ensures the app (not workbox) initiates API requests
+          
+          // Supabase REST API - NETWORK ONLY (never cache)
+          {
+            urlPattern: /^https:\/\/httxbfcvzknyncprzcuy\.supabase\.co\/rest\/.*/i,
+            handler: "NetworkOnly",
+          },
+          // Supabase Edge Functions - NETWORK ONLY (never cache)
+          {
+            urlPattern: /^https:\/\/httxbfcvzknyncprzcuy\.supabase\.co\/functions\/.*/i,
+            handler: "NetworkOnly",
+          },
+          // Supabase Auth - NETWORK ONLY (never cache)
+          {
+            urlPattern: /^https:\/\/httxbfcvzknyncprzcuy\.supabase\.co\/auth\/.*/i,
+            handler: "NetworkOnly",
+          },
+          // Supabase Realtime - NETWORK ONLY
+          {
+            urlPattern: /^https:\/\/httxbfcvzknyncprzcuy\.supabase\.co\/realtime\/.*/i,
+            handler: "NetworkOnly",
+          },
+          // Any other Supabase API endpoint - NETWORK ONLY
+          {
+            urlPattern: /^https:\/\/httxbfcvzknyncprzcuy\.supabase\.co\/.*$/i,
+            handler: "NetworkOnly",
+          },
+          
+          // ============ CACHEABLE STATIC ASSETS ============
+          
+          // Google Fonts: Cache First (static, rarely changes)
           {
             urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
             handler: "CacheFirst",
@@ -66,7 +97,7 @@ export default defineConfig(({ mode }) => ({
               },
             },
           },
-          // Storage bucket images: Stale While Revalidate
+          // Supabase Storage bucket images: Stale While Revalidate
           {
             urlPattern: /^https:\/\/httxbfcvzknyncprzcuy\.supabase\.co\/storage\/.*/i,
             handler: "StaleWhileRevalidate",
@@ -96,45 +127,6 @@ export default defineConfig(({ mode }) => ({
               },
             },
           },
-          // API calls (REST): Network First with fallback - GET only
-          {
-            urlPattern: /^https:\/\/httxbfcvzknyncprzcuy\.supabase\.co\/rest\/.*/i,
-            handler: "NetworkFirst",
-            method: "GET",
-            options: {
-              cacheName: "supabase-api-cache",
-              networkTimeoutSeconds: 5,
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24, // 1 day
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
-          },
-          // Edge functions: Network First (no aggressive caching) - GET only
-          {
-            urlPattern: /^https:\/\/httxbfcvzknyncprzcuy\.supabase\.co\/functions\/.*/i,
-            handler: "NetworkFirst",
-            method: "GET",
-            options: {
-              cacheName: "supabase-functions-cache",
-              networkTimeoutSeconds: 10,
-              expiration: {
-                maxEntries: 20,
-                maxAgeSeconds: 60 * 60, // 1 hour
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
-          },
-          // Auth endpoints: Network Only (never cache)
-          {
-            urlPattern: /^https:\/\/httxbfcvzknyncprzcuy\.supabase\.co\/auth\/.*/i,
-            handler: "NetworkOnly",
-          },
         ],
         
         // Clean up old caches
@@ -144,13 +136,11 @@ export default defineConfig(({ mode }) => ({
         skipWaiting: true,
         clientsClaim: true,
         
-        // IMPORTANT: Disable automatic navigateFallback
-        // This prevents false offline screens when online
-        // We handle offline detection in the app itself
+        // Disable navigateFallback - we handle offline in app
         navigateFallback: null,
       },
       devOptions: {
-        enabled: false, // Disable in dev for stability
+        enabled: false,
       },
     }),
   ].filter(Boolean),
