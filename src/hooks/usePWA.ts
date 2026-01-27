@@ -16,6 +16,9 @@ export function usePWA(): PWAUpdateState {
       // Tell waiting SW to skip waiting and activate
       registration.waiting.postMessage({ type: "SKIP_WAITING" });
       setNeedRefresh(false);
+    } else if (registration) {
+      // Force check for updates
+      await registration.update();
     }
   }, [registration]);
 
@@ -80,9 +83,18 @@ export function usePWA(): PWAUpdateState {
     });
 
     // Listen for controller change (SW activated)
-    navigator.serviceWorker?.addEventListener("controllerchange", () => {
-      window.location.reload();
-    });
+    const handleControllerChange = () => {
+      // Reload with cache-busting
+      const url = new URL(window.location.href);
+      url.searchParams.set("_sw", Date.now().toString());
+      window.location.href = url.toString();
+    };
+
+    navigator.serviceWorker?.addEventListener("controllerchange", handleControllerChange);
+    
+    return () => {
+      navigator.serviceWorker?.removeEventListener("controllerchange", handleControllerChange);
+    };
   }, [registration]);
 
   return {
@@ -90,4 +102,27 @@ export function usePWA(): PWAUpdateState {
     offlineReady,
     updateServiceWorker,
   };
+}
+
+/**
+ * Check if we're really online by making a real network request
+ * navigator.onLine is unreliable, especially on Safari
+ */
+export async function checkRealConnectivity(): Promise<boolean> {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    
+    // Try to fetch our own favicon with cache busting
+    const response = await fetch(`/favicon.png?_=${Date.now()}`, {
+      method: "HEAD",
+      cache: "no-store",
+      signal: controller.signal,
+    });
+    
+    clearTimeout(timeoutId);
+    return response.ok;
+  } catch {
+    return false;
+  }
 }
