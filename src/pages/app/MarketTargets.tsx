@@ -40,42 +40,43 @@ interface TargetWithScore extends TargetType {
   } | null;
 }
 
-// Status configuration
+// Status configuration with top-border colors for premium look
 const STATUS_CONFIG = {
   MONITORING: {
     label: "Monitorando",
     icon: Eye,
     color: "text-blue-400",
-    bgColor: "bg-blue-500/10",
-    borderColor: "border-blue-500/30",
+    topBorder: "border-t-blue-500/60",
+    pillBg: "bg-blue-500/15",
   },
   APPROACH: {
     label: "Abordagem",
     icon: Users,
     color: "text-purple-400",
-    bgColor: "bg-purple-500/10",
-    borderColor: "border-purple-500/30",
+    topBorder: "border-t-purple-500/60",
+    pillBg: "bg-purple-500/15",
   },
   NEGOTIATION: {
     label: "Negociação",
     icon: Handshake,
     color: "text-amber-400",
-    bgColor: "bg-amber-500/10",
-    borderColor: "border-amber-500/30",
+    topBorder: "border-t-amber-500/80",
+    pillBg: "bg-amber-500/15",
+    isHighlight: true, // Visual priority
   },
   DROPPED: {
     label: "Descartado",
     icon: XCircle,
-    color: "text-zinc-400",
-    bgColor: "bg-zinc-500/10",
-    borderColor: "border-zinc-500/30",
+    color: "text-zinc-500",
+    topBorder: "border-t-zinc-600/60",
+    pillBg: "bg-zinc-500/15",
   },
   SIGNED: {
     label: "Contratado",
     icon: CheckCircle2,
     color: "text-emerald-400",
-    bgColor: "bg-emerald-500/10",
-    borderColor: "border-emerald-500/30",
+    topBorder: "border-t-emerald-500/60",
+    pillBg: "bg-emerald-500/15",
   },
 };
 
@@ -229,10 +230,10 @@ export default function MarketTargets() {
           const config = STATUS_CONFIG[status];
           const Icon = config.icon;
           return (
-            <Card key={status} className={cn("border", config.borderColor)}>
+            <Card key={status} className="bg-zinc-900/80 border border-white/[0.06]">
               <CardContent className="py-4 px-4">
                 <div className="flex items-center gap-3">
-                  <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", config.bgColor)}>
+                  <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", config.pillBg)}>
                     <Icon className={cn("w-5 h-5", config.color)} />
                   </div>
                   <div>
@@ -248,7 +249,7 @@ export default function MarketTargets() {
 
       {/* Top 5 */}
       {top5.length > 0 && (
-        <Card>
+        <Card className="bg-zinc-900/80 border border-white/[0.06]">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-primary" />
@@ -262,7 +263,12 @@ export default function MarketTargets() {
                 return (
                   <div
                     key={target.id}
-                    className="flex-shrink-0 flex items-center gap-3 p-3 rounded-lg bg-secondary/30 border border-zinc-800/50 cursor-pointer hover:border-primary/30 transition-colors"
+                    className={cn(
+                      "flex-shrink-0 flex items-center gap-3 p-3 rounded-lg cursor-pointer",
+                      "bg-zinc-800/50 border border-white/[0.06]",
+                      "transition-all duration-150 ease-out",
+                      "hover:translate-y-[-1px] hover:shadow-md hover:shadow-black/20 hover:border-white/10"
+                    )}
                     onClick={() => handleOpenDetail(target)}
                   >
                     <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
@@ -308,26 +314,40 @@ export default function MarketTargets() {
               const config = STATUS_CONFIG[status];
               const Icon = config.icon;
               const statusTargets = targetsByStatus[status];
+              const isHighlight = 'isHighlight' in config && config.isHighlight;
 
               return (
                 <div
                   key={status}
-                  className="w-[280px] flex-shrink-0"
+                  className={cn(
+                    "w-[280px] flex-shrink-0",
+                    isHighlight && "relative"
+                  )}
                 >
-                  {/* Column Header */}
-                  <div className={cn("flex items-center gap-2 px-3 py-2 rounded-t-lg", config.bgColor)}>
-                    <Icon className={cn("w-4 h-4", config.color)} />
-                    <span className={cn("text-sm font-medium", config.color)}>{config.label}</span>
-                    <Badge variant="secondary" className="ml-auto text-[10px]">
-                      {statusTargets.length}
-                    </Badge>
+                  {/* Column with top border accent */}
+                  <div className={cn(
+                    "border-t-2 rounded-t-sm",
+                    config.topBorder
+                  )}>
+                    {/* Column Header - compact and elegant */}
+                    <div className="flex items-center gap-2 px-3 py-2.5">
+                      <Icon className={cn("w-4 h-4", config.color)} />
+                      <span className={cn("text-sm font-medium", config.color)}>{config.label}</span>
+                      <Badge 
+                        variant="secondary" 
+                        className={cn("ml-auto text-[10px] px-2", config.pillBg)}
+                      >
+                        {statusTargets.length}
+                      </Badge>
+                    </div>
                   </div>
 
-                  {/* Column Content */}
-                  <div className={cn("border rounded-b-lg p-2 space-y-2 min-h-[300px] bg-zinc-900/50", config.borderColor)}>
+                  {/* Column Content - transparent background */}
+                  <div className="p-1.5 space-y-2 min-h-[300px]">
                     {statusTargets.length === 0 ? (
-                      <div className="flex items-center justify-center h-24 text-muted-foreground text-xs">
-                        Nenhum target
+                      <div className="flex flex-col items-center justify-center h-20 text-muted-foreground/60">
+                        <User className="w-5 h-5 mb-1 opacity-40" />
+                        <span className="text-[11px]">Nenhum target ainda</span>
                       </div>
                     ) : (
                       statusTargets.map((target) => {
@@ -337,7 +357,11 @@ export default function MarketTargets() {
                         return (
                           <Card
                             key={target.id}
-                            className="cursor-pointer hover:border-primary/30 transition-colors"
+                            className={cn(
+                              "bg-zinc-900/80 border border-white/[0.06] cursor-pointer",
+                              "transition-all duration-150 ease-out",
+                              "hover:translate-y-[-2px] hover:shadow-lg hover:shadow-black/30 hover:border-white/10"
+                            )}
                             onClick={() => handleOpenDetail(target)}
                           >
                             <CardContent className="p-3 space-y-2">
@@ -346,7 +370,7 @@ export default function MarketTargets() {
                                 <div className="min-w-0 flex-1">
                                   <p className="font-medium text-sm truncate">{target.name}</p>
                                   <div className="flex items-center gap-1.5 mt-0.5">
-                                    <Badge variant="outline" className="text-[10px]">
+                                    <Badge variant="outline" className="text-[10px] border-white/[0.06]">
                                       {target.position}
                                     </Badge>
                                     {(target.age_estimate || target.birth_date) && (
@@ -373,7 +397,7 @@ export default function MarketTargets() {
 
                               {/* Score & Confidence */}
                               {hasScore ? (
-                                <div className="flex items-center justify-between pt-1 border-t border-zinc-800/50">
+                                <div className="flex items-center justify-between pt-1.5 border-t border-white/[0.04]">
                                   <div className="flex items-center gap-1.5">
                                     <Sparkles className="w-3 h-3 text-primary" />
                                     <span className={cn("text-sm font-bold", scoreColor?.text)}>
@@ -386,9 +410,9 @@ export default function MarketTargets() {
                                   </span>
                                 </div>
                               ) : (
-                                <div className="flex items-center gap-1.5 pt-1 border-t border-zinc-800/50">
-                                  <Sparkles className="w-3 h-3 text-muted-foreground" />
-                                  <span className="text-[10px] text-muted-foreground">
+                                <div className="flex items-center gap-1.5 pt-1.5 border-t border-white/[0.04]">
+                                  <Sparkles className="w-3 h-3 text-muted-foreground/50" />
+                                  <span className="text-[10px] text-muted-foreground/60">
                                     Score não calculado
                                   </span>
                                 </div>
@@ -398,12 +422,12 @@ export default function MarketTargets() {
                               {target.tags.length > 0 && (
                                 <div className="flex flex-wrap gap-1">
                                   {target.tags.slice(0, 3).map((tag, idx) => (
-                                    <Badge key={idx} variant="secondary" className="text-[9px] px-1.5 py-0">
+                                    <Badge key={idx} variant="secondary" className="text-[9px] px-1.5 py-0 bg-zinc-800/50">
                                       {tag}
                                     </Badge>
                                   ))}
                                   {target.tags.length > 3 && (
-                                    <Badge variant="secondary" className="text-[9px] px-1.5 py-0">
+                                    <Badge variant="secondary" className="text-[9px] px-1.5 py-0 bg-zinc-800/50">
                                       +{target.tags.length - 3}
                                     </Badge>
                                   )}
