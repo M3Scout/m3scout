@@ -114,7 +114,7 @@ export async function checkRealConnectivity(): Promise<boolean> {
     const timeoutId = setTimeout(() => controller.abort(), 5000);
     
     // Try to fetch our own favicon with cache busting
-    const response = await fetch(`/favicon.png?_=${Date.now()}`, {
+    const response = await fetch(`/favicon2.png?_=${Date.now()}`, {
       method: "HEAD",
       cache: "no-store",
       signal: controller.signal,
