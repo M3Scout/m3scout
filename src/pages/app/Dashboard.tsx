@@ -47,14 +47,20 @@ interface RecentLead {
 }
 
 const Dashboard = () => {
+  // PERFORMANCE: Add timing instrumentation
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      const appStart = (window as any).__APP_MOUNT_START ?? performance.now();
+      console.log("[TIMING] Dashboard page mounted", {
+        sinceAppMount: `${Math.round(performance.now() - appStart)}ms`
+      });
+    }
+  }, []);
+
   if (import.meta.env.DEV) console.log("[MOUNT] Dashboard");
 
   const { isAdmin, isScout, isPlayer, rolesLoading } = useAuth();
   
-  // If user is a Jogador (Player), show athlete-specific dashboard
-  if (!rolesLoading && isPlayer && !isAdmin && !isScout) {
-    return <AthleteDashboard />;
-  }
   // PROGRESSIVE LOADING: Start with zeros, update as data arrives
   // This allows UI to render immediately with skeletons/placeholders
   const [loading, setLoading] = useState(true);
@@ -69,7 +75,9 @@ const Dashboard = () => {
   const [recentReports, setRecentReports] = useState<RecentReport[]>([]);
   const [recentLeads, setRecentLeads] = useState<RecentLead[]>([]);
   const [dataReady, setDataReady] = useState(false); // Track when data is truly loaded
-
+  
+  // CRITICAL CHANGE: Start fetching data IMMEDIATELY, don't wait for roles
+  // This cuts perceived loading time significantly
   useEffect(() => {
     const fetchDashboardData = async () => {
       const fetchStart = performance.now();
@@ -208,8 +216,15 @@ const Dashboard = () => {
       }
     };
 
+    // Start fetch IMMEDIATELY - don't wait for roles
     fetchDashboardData();
   }, []);
+  
+  // PLAYER DASHBOARD: Show athlete dashboard once roles are confirmed
+  // This check happens AFTER data fetching has started
+  if (!rolesLoading && isPlayer && !isAdmin && !isScout) {
+    return <AthleteDashboard />;
+  }
 
   // PROGRESSIVE: Only show skeleton on initial mount, not on every role check
   if (loading && !dataReady && stats.totalPlayers === 0) {

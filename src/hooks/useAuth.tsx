@@ -12,11 +12,12 @@ const VALID_ROLES: AppRole[] = ["admin", "scout", "editor", "viewer", "player"];
 // Priority when user has multiple roles
 const ROLE_PRIORITY: AppRole[] = ["admin", "scout", "editor", "viewer", "player"];
 
-const RBAC_BACKOFF_MS = [500, 1200, 2500];
-const RBAC_ATTEMPT_TIMEOUT_MS = 4000;
+// PERFORMANCE OPTIMIZED: Reduced retries and timeouts for faster cold starts
+const RBAC_BACKOFF_MS = [300, 800]; // Only 2 retries, faster intervals
+const RBAC_ATTEMPT_TIMEOUT_MS = 3000; // 3s per attempt (down from 4s)
 
 // Cache configuration - use localStorage for persistence across tabs/sessions
-const RBAC_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const RBAC_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes (increased for better cold start)
 const RBAC_CACHE_KEY = "m3_rbac_v2";
 const RBAC_CACHE_KEY_PERSISTENT = "m3_rbac_v2_persistent"; // localStorage for cold starts
 
@@ -699,12 +700,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, [fetchRbac, applyRbacPayload]);
 
-  // ============ FAIL-SAFE TIMEOUT ============
+  // ============ FAIL-SAFE TIMEOUT (REDUCED FOR PERFORMANCE) ============
   useEffect(() => {
     if (!rolesLoading && !permissionsLoading) return;
 
+    // CRITICAL: Reduced from 15s to 6s for much faster cold starts
     const timeout = setTimeout(() => {
-      console.warn("[Auth] RBAC timeout (15s) - forcing completion");
+      console.warn("[Auth] RBAC timeout (6s) - forcing completion");
       setRolesLoading(false);
       setPermissionsLoading(false);
       // Only set error if we don't have any valid permissions
@@ -712,7 +714,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setRolesError("timeout");
         setPermissionsError("timeout");
       }
-    }, 15000);
+    }, 6000);
 
     return () => clearTimeout(timeout);
   }, [rolesLoading, permissionsLoading, roles.length]);
