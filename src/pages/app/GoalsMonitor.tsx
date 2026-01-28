@@ -192,15 +192,11 @@ export default function GoalsMonitor() {
         throw error;
       }
       
-      console.log("[GoalsMonitor] Fetched goals:", data?.length ?? 0);
+      console.log("[GoalsMonitor] Fetched goals:", data?.length ?? 0, data);
       return data as GoalWithPlayer[];
     },
   });
 
-  // Debug logging
-  if (goalsError) {
-    console.error("[GoalsMonitor] Error state:", goalsError);
-  }
 
   // Fetch stats for each unique player to calculate progress
   const playerIds = useMemo(() => {
@@ -208,7 +204,7 @@ export default function GoalsMonitor() {
     return [...new Set(goalsRaw.map(g => g.player_id))];
   }, [goalsRaw]);
 
-  const { data: playerStats, isLoading: statsLoading } = useQuery({
+  const { data: playerStats, isLoading: statsLoading, fetchStatus: statsFetchStatus } = useQuery({
     queryKey: ["admin-goals-player-stats", playerIds],
     queryFn: async () => {
       if (playerIds.length === 0) return {};
@@ -378,7 +374,13 @@ export default function GoalsMonitor() {
     return { total, completed, inProgress, exceeded };
   }, [goalsWithProgress]);
 
-  const isLoading = goalsLoading || statsLoading;
+  // Fix: statsLoading stays true when query is disabled (enabled: false)
+  // Check fetchStatus to know if the query is actually fetching
+  const isStatsActuallyLoading = statsLoading && statsFetchStatus === "fetching";
+  const isLoading = goalsLoading || (playerIds.length > 0 && isStatsActuallyLoading);
+  
+  // Debug log (dev only)
+  console.log("[GoalsMonitor] Render:", { goalsLoading, statsLoading, statsFetchStatus, playerIdsLength: playerIds.length, isLoading, filteredGoalsLength: filteredGoals?.length });
 
   return (
     <div className="min-h-screen bg-background">
