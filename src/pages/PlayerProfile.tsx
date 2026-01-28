@@ -598,9 +598,16 @@ const PlayerProfile = () => {
       .sort((a, b) => b.season_year - a.season_year);
   }, [bySeason]);
 
+  // Derive the latest season year with actual data (for default display)
+  const latestAvailableSeasonYear: number | null = useMemo(() => {
+    if (careerStats.length === 0) return null;
+    return careerStats[0].season_year; // careerStats is sorted descending by season_year
+  }, [careerStats]);
+
   const currentSeasonStats: SeasonStats | null = useMemo(() => {
     if (careerStats.length === 0) return null;
-    return careerStats.find((s) => s.season_year === currentYear) || careerStats[0] || null;
+    // Default to the latest available season (not the calendar year)
+    return careerStats[0] || null;
   }, [careerStats]);
 
   const competitionStats: CompetitionStats[] = useMemo(() => {
@@ -960,7 +967,7 @@ const PlayerProfile = () => {
               {/* Tabs */}
               <div className="flex gap-1 md:gap-2 border-b border-border mb-4 md:mb-6 overflow-x-auto pb-px -mx-[--padding-mobile] px-[--padding-mobile] md:mx-0 md:px-0">
                 <TabButton active={activeTab === "current"} onClick={() => setActiveTab("current")}>
-                  Temporada {currentYear}
+                  Temporada {latestAvailableSeasonYear ?? currentYear}
                 </TabButton>
                 <TabButton active={activeTab === "per90"} onClick={() => setActiveTab("per90")}>
                   Por 90 min
@@ -1001,6 +1008,12 @@ const PlayerProfile = () => {
                           <div className="text-[9px] md:text-[10px] uppercase tracking-widest text-muted-foreground">{stat.label}</div>
                         </div>
                       ))}
+                    </div>
+                  )}
+
+                  {activeTab === "current" && !currentSeasonStats && (
+                    <div className="text-center py-8 text-muted-foreground text-sm">
+                      Sem estatísticas disponíveis ainda.
                     </div>
                   )}
 
@@ -1085,14 +1098,21 @@ const PlayerProfile = () => {
           )}
 
           {/* ==================== GAME PHASES ==================== */}
-          {currentSeasonStats && (
-            <motion.section 
-              className="mb-8 md:mb-12"
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-            >
-              <h2 className="text-lg md:text-xl font-bold text-foreground mb-4 md:mb-6">Fases do Jogo</h2>
+          <motion.section 
+            className="mb-8 md:mb-12"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-lg md:text-xl font-bold text-foreground mb-4 md:mb-6">
+              Fases do Jogo
+              {latestAvailableSeasonYear && (
+                <span className="text-sm font-normal text-muted-foreground ml-2">
+                  ({latestAvailableSeasonYear})
+                </span>
+              )}
+            </h2>
+            {currentSeasonStats ? (
               <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                 <PhasePanel 
                   title="Ataque" 
@@ -1134,8 +1154,12 @@ const PlayerProfile = () => {
                   ]}
                 />
               </div>
-            </motion.section>
-          )}
+            ) : (
+              <div className="text-center py-8 text-muted-foreground text-sm rounded-[--radius-card] bg-[--bg-glass]">
+                Sem estatísticas disponíveis ainda.
+              </div>
+            )}
+          </motion.section>
 
           {/* ==================== PHYSICAL DATA ==================== */}
           {(player.height || player.weight || player.wingspan || player.body_fat_percentage || player.max_speed) && (
