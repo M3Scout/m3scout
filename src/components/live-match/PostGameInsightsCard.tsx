@@ -14,7 +14,7 @@
  * - Read-only, no DB writes
  */
 
-import { useMemo } from "react";
+ import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -27,6 +27,7 @@ import {
   type QuickIndicator,
   type MatchStatsInput,
 } from "@/lib/postGameAnalysis";
+ import { calculateMinutesPlayed } from "@/lib/minutesPlayed";
 import { getShortPosition, getPositionColor } from "@/lib/positionColors";
 import { MiniFieldHeatmap } from "./MiniFieldHeatmap";
 import { usePlayerZoneHistory } from "@/hooks/usePlayerZoneHistory";
@@ -45,8 +46,11 @@ interface MatchPlayer {
   id: string;
   player_id: string;
   started: boolean;
+  entered_minute?: number | null;
+  exited_minute?: number | null;
   minutes_played: number | null;
   position_template: string;
+  is_removed?: boolean | null;
   player?: {
     id: string;
     full_name: string;
@@ -357,22 +361,48 @@ export function PostGameInsightsCard({
   // Sem filtros de mínimo de minutos, eventos ou volume de ações
   const playerAnalyses = useMemo(() => {
     if (!showInsights) return [];
+
+     const getEffectiveMinutesPlayed = (mp: MatchPlayer): number => {
+       // IMPORTANT: minutes_played pode vir null no match_players mesmo quando houve participação
+       // (ex.: jogador saiu aos 20'). Para o resumo pós-jogo, usamos o cálculo padronizado.
+       return calculateMinutesPlayed({
+         started: mp.started,
+         entered_minute: mp.entered_minute ?? null,
+         exited_minute: mp.exited_minute ?? null,
+         minutes_played: mp.minutes_played,
+       }).minutesPlayed;
+     };
+
+     if (import.meta.env.DEV) {
+       console.log(
+         "[LiveSummary] players input:",
+         matchPlayers.map((p) => ({
+           match_player_id: p.id,
+           player_name: p.player?.full_name ?? "(sem player)",
+           minutes_played: getEffectiveMinutesPlayed(p),
+           minutes_played_raw: p.minutes_played,
+         }))
+       );
+     }
     
-    return matchPlayers
+     const analyses = matchPlayers
       .filter((mp) => {
         // Must have valid player data
-        if (!mp.player || mp.player_id.startsWith("removed")) return false;
+         if (!mp.player) return false;
+
+         // Não incluir removidos do jogo
+         if (mp.is_removed) return false;
         
         // REGRA: Incluir todo jogador com minutes_played > 0
         // Remover qualquer filtro por mínimo de minutos, eventos ou volume
-        const minutesPlayed = mp.minutes_played ?? 0;
-        if (minutesPlayed <= 0) return false;
+         const minutesPlayed = getEffectiveMinutesPlayed(mp);
+         if (minutesPlayed <= 0) return false;
         
         return true;
       })
       .map((mp) => {
         const stats = playerStatsMap[mp.player_id] ?? {};
-        const minutesPlayed = mp.minutes_played ?? 0;
+         const minutesPlayed = getEffectiveMinutesPlayed(mp);
         const position = mp.player?.position ?? "Meio";
         
         const analysis = generatePostGameAnalysis(position, stats, minutesPlayed);
@@ -381,14 +411,22 @@ export function PostGameInsightsCard({
           player: mp,
           analysis,
           minutesPlayed, // Passar para componentes filhos
-          // Sort by total indicators quality
-          sortScore: analysis.quickIndicators.filter(i => i.type === "positive").length * 2 +
-                     analysis.strengthsImprovements.strengths.length -
-                     analysis.strengthsImprovements.improvements.length,
         };
-      })
-      .sort((a, b) => b.sortScore - a.sortScore);
-  }, [matchPlayers, playerStatsMap, showInsights, matchDuration]);
+       });
+
+     if (import.meta.env.DEV) {
+       console.log(
+         "[LiveSummary] players after filter:",
+         analyses.map((a) => ({
+           match_player_id: a.player.id,
+           player_name: a.player.player?.full_name ?? "(sem player)",
+           minutes_played: a.minutesPlayed,
+         }))
+       );
+     }
+
+     return analyses;
+   }, [matchPlayers, playerStatsMap, showInsights]);
   
   if (!showInsights || playerAnalyses.length === 0) {
     return null;
@@ -414,7 +452,7 @@ export function PostGameInsightsCard({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {playerAnalyses.map(({ player, analysis, minutesPlayed }) => (
               <HeatmapCard
-                key={player.id}
+                 key={`${matchId}:${player.id}`}
                 player={{ ...player, minutes_played: minutesPlayed }}
                 analysis={analysis}
                 matchId={matchId}
@@ -448,7 +486,7 @@ export function PostGameInsightsCard({
                 
                 return (
                   <PlayerSummaryRow
-                    key={player.id}
+                    key={`${matchId}:${player.id}`}
                     player={player}
                     analysis={analysis}
                     matchId={matchId}
