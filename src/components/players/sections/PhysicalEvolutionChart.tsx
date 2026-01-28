@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -55,6 +55,7 @@ const METRIC_CONFIG = {
 type MetricKey = keyof typeof METRIC_CONFIG;
 
 export const PhysicalEvolutionChart = ({ playerId, playerName = "Atleta", currentData }: PhysicalEvolutionChartProps) => {
+  const queryClient = useQueryClient();
   const { user, isAdmin, isScout } = useAuth();
   const [selectedMetrics, setSelectedMetrics] = useState<MetricKey[]>(["weight", "body_fat_percentage"]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -143,6 +144,8 @@ export const PhysicalEvolutionChart = ({ playerId, playerName = "Atleta", curren
       setIsAddDialogOpen(false);
       setNewRecord(emptyFormState);
       refetch();
+      // Invalidate latest-physical-evaluation so PhysicalDataSection cards update
+      queryClient.invalidateQueries({ queryKey: ["latest-physical-evaluation", playerId] });
     } catch (error) {
       console.error("Error adding physical record:", error);
       toast.error("Erro ao adicionar registro");
@@ -166,6 +169,8 @@ export const PhysicalEvolutionChart = ({ playerId, playerName = "Atleta", curren
       toast.success("Avaliação excluída com sucesso");
       setDeleteRecord(null);
       refetch();
+      // Invalidate latest-physical-evaluation so PhysicalDataSection cards update
+      queryClient.invalidateQueries({ queryKey: ["latest-physical-evaluation", playerId] });
     } catch (error) {
       console.error("Error deleting physical record:", error);
       toast.error("Erro ao excluir avaliação");
@@ -225,6 +230,8 @@ export const PhysicalEvolutionChart = ({ playerId, playerName = "Atleta", curren
       setIsEditDialogOpen(false);
       setEditRecord(null);
       refetch();
+      // Invalidate latest-physical-evaluation so PhysicalDataSection cards update
+      queryClient.invalidateQueries({ queryKey: ["latest-physical-evaluation", playerId] });
     } catch (error) {
       console.error("Error updating physical record:", error);
       toast.error("Erro ao atualizar avaliação");
