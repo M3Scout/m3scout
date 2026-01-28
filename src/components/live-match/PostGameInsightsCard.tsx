@@ -14,7 +14,7 @@
  * - Read-only, no DB writes
  */
 
- import { useMemo } from "react";
+import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -27,7 +27,8 @@ import {
   type QuickIndicator,
   type MatchStatsInput,
 } from "@/lib/postGameAnalysis";
- import { calculateMinutesPlayed } from "@/lib/minutesPlayed";
+import { calculateMinutesPlayed } from "@/lib/minutesPlayed";
+import { normalizeMatchStats, debugLogNormalizedStats, type RawMatchStats, type NormalizedMatchStats } from "@/lib/normalizeMatchStats";
 import { getShortPosition, getPositionColor } from "@/lib/positionColors";
 import { MiniFieldHeatmap } from "./MiniFieldHeatmap";
 import { usePlayerZoneHistory } from "@/hooks/usePlayerZoneHistory";
@@ -60,7 +61,7 @@ interface MatchPlayer {
 }
 
 interface PlayerStatsMap {
-  [playerId: string]: MatchStatsInput | undefined;
+  [playerId: string]: RawMatchStats | undefined;
 }
 
 interface MatchEventForHalf {
@@ -362,71 +363,125 @@ export function PostGameInsightsCard({
   const playerAnalyses = useMemo(() => {
     if (!showInsights) return [];
 
-     const getEffectiveMinutesPlayed = (mp: MatchPlayer): number => {
-       // IMPORTANT: minutes_played pode vir null no match_players mesmo quando houve participação
-       // (ex.: jogador saiu aos 20'). Para o resumo pós-jogo, usamos o cálculo padronizado.
-       return calculateMinutesPlayed({
-         started: mp.started,
-         entered_minute: mp.entered_minute ?? null,
-         exited_minute: mp.exited_minute ?? null,
-         minutes_played: mp.minutes_played,
-       }).minutesPlayed;
-     };
+    // Use normalized stats for ALL calculations to ensure consistency
+    const getEffectiveMinutesPlayed = (mp: MatchPlayer): number => {
+      // IMPORTANT: minutes_played pode vir null no match_players mesmo quando houve participação
+      // (ex.: jogador saiu aos 20'). Para o resumo pós-jogo, usamos o cálculo padronizado.
+      return calculateMinutesPlayed({
+        started: mp.started,
+        entered_minute: mp.entered_minute ?? null,
+        exited_minute: mp.exited_minute ?? null,
+        minutes_played: mp.minutes_played,
+      }).minutesPlayed;
+    };
 
-     if (import.meta.env.DEV) {
-       console.log(
-         "[LiveSummary] players input:",
-         matchPlayers.map((p) => ({
-           match_player_id: p.id,
-           player_name: p.player?.full_name ?? "(sem player)",
-           minutes_played: getEffectiveMinutesPlayed(p),
-           minutes_played_raw: p.minutes_played,
-         }))
-       );
-     }
-    
-     const analyses = matchPlayers
+    // Normalize stats for each player to ensure consistency (total >= success)
+    const getNormalizedStats = (mp: MatchPlayer): MatchStatsInput => {
+      const raw = playerStatsMap[mp.player_id];
+      const normalized = normalizeMatchStats(raw, {
+        started: mp.started,
+        entered_minute: mp.entered_minute ?? null,
+        exited_minute: mp.exited_minute ?? null,
+        minutes_played: mp.minutes_played,
+      });
+
+      // Log for debugging
+      if (import.meta.env.DEV && mp.player) {
+        debugLogNormalizedStats(mp.player_id, mp.player.full_name, raw, normalized);
+      }
+
+      // Convert to MatchStatsInput format with derived totals
+      return {
+        goals: normalized.goals ?? 0,
+        assists: normalized.assists ?? 0,
+        shots: normalized.shots_total, // Use derived total
+        shots_on_target: normalized.shots_on_target ?? 0,
+        shots_blocked: normalized.shots_blocked ?? 0,
+        offsides: normalized.offsides ?? 0,
+        key_passes: normalized.key_passes ?? 0,
+        chances_created: normalized.chances_created ?? 0,
+        passes_completed: normalized.passes_completed ?? 0,
+        passes_total: normalized.passes_total_derived, // Use derived total
+        dribbles_success: normalized.dribbles_success ?? 0,
+        dribbles_total: normalized.dribbles_total_derived, // Use derived total
+        tackles: normalized.tackles ?? 0,
+        interceptions: normalized.interceptions ?? 0,
+        clearances: normalized.clearances ?? 0,
+        recoveries: normalized.recoveries ?? 0,
+        duels_won: normalized.duels_won ?? 0,
+        duels_total: normalized.duels_total_derived, // Use derived total
+        aerial_duels_won: normalized.aerial_duels_won ?? 0,
+        aerial_duels_total: normalized.aerial_duels_total_derived, // Use derived total
+        fouls_committed: normalized.fouls_committed ?? 0,
+        fouls_suffered: normalized.fouls_suffered ?? 0,
+        yellow_cards: normalized.yellow_cards ?? 0,
+        red_cards: normalized.red_cards ?? 0,
+        possession_lost: normalized.possession_lost ?? 0,
+        saves: normalized.saves ?? 0,
+        goals_conceded: normalized.goals_conceded ?? 0,
+        blocked_shots: normalized.blocked_shots ?? 0,
+        was_dribbled: normalized.was_dribbled ?? 0,
+        ball_actions: normalized.ball_actions ?? 0,
+        crosses_success: normalized.crosses_success ?? 0,
+        crosses_failed: normalized.crosses_failed ?? 0,
+      };
+    };
+
+    if (import.meta.env.DEV) {
+      console.log(
+        "[LiveSummary] players input:",
+        matchPlayers.map((p) => ({
+          match_player_id: p.id,
+          player_name: p.player?.full_name ?? "(sem player)",
+          minutes_played: getEffectiveMinutesPlayed(p),
+          minutes_played_raw: p.minutes_played,
+        }))
+      );
+    }
+
+    const analyses = matchPlayers
       .filter((mp) => {
         // Must have valid player data
-         if (!mp.player) return false;
+        if (!mp.player) return false;
 
-         // Não incluir removidos do jogo
-         if (mp.is_removed) return false;
-        
+        // Não incluir removidos do jogo
+        if (mp.is_removed) return false;
+
         // REGRA: Incluir todo jogador com minutes_played > 0
         // Remover qualquer filtro por mínimo de minutos, eventos ou volume
-         const minutesPlayed = getEffectiveMinutesPlayed(mp);
-         if (minutesPlayed <= 0) return false;
-        
+        const minutesPlayed = getEffectiveMinutesPlayed(mp);
+        if (minutesPlayed <= 0) return false;
+
         return true;
       })
       .map((mp) => {
-        const stats = playerStatsMap[mp.player_id] ?? {};
-         const minutesPlayed = getEffectiveMinutesPlayed(mp);
+        const normalizedStats = getNormalizedStats(mp);
+        const minutesPlayed = getEffectiveMinutesPlayed(mp);
         const position = mp.player?.position ?? "Meio";
-        
-        const analysis = generatePostGameAnalysis(position, stats, minutesPlayed);
-        
+
+        const analysis = generatePostGameAnalysis(position, normalizedStats, minutesPlayed);
+
         return {
           player: mp,
           analysis,
-          minutesPlayed, // Passar para componentes filhos
+          minutesPlayed,
+          normalizedStats, // Pass normalized stats to child components
         };
-       });
+      });
 
-     if (import.meta.env.DEV) {
-       console.log(
-         "[LiveSummary] players after filter:",
-         analyses.map((a) => ({
-           match_player_id: a.player.id,
-           player_name: a.player.player?.full_name ?? "(sem player)",
-           minutes_played: a.minutesPlayed,
-         }))
-       );
-     }
+    if (import.meta.env.DEV) {
+      console.log(
+        "[LiveSummary] players after filter:",
+        analyses.map((a) => ({
+          match_player_id: a.player.id,
+          player_name: a.player.player?.full_name ?? "(sem player)",
+          minutes_played: a.minutesPlayed,
+        }))
+      );
+    }
 
-     return analyses;
-   }, [matchPlayers, playerStatsMap, showInsights]);
+    return analyses;
+  }, [matchPlayers, playerStatsMap, showInsights]);
   
   if (!showInsights || playerAnalyses.length === 0) {
     return null;
@@ -479,10 +534,10 @@ export function PostGameInsightsCard({
         <CardContent className="p-4 sm:p-6">
           <ScrollArea className="h-[400px] sm:h-[480px]">
             <div className="space-y-3 pr-3">
-              {playerAnalyses.map(({ player, analysis }) => {
+              {playerAnalyses.map(({ player, analysis, normalizedStats }) => {
                 // Filter events for this specific player
                 const playerEvents = matchEvents.filter(e => e.player_id === player.player_id);
-                const playerStats = playerStatsMap[player.player_id] ?? {};
+                // Use normalized stats instead of raw stats for consistency
                 
                 return (
                   <PlayerSummaryRow
@@ -492,7 +547,7 @@ export function PostGameInsightsCard({
                     matchId={matchId}
                     seasonYear={seasonYear}
                     playerEvents={playerEvents}
-                    playerStats={playerStats}
+                    playerStats={normalizedStats}
                   />
                 );
               })}
