@@ -6,6 +6,7 @@ import {
   AlertTriangle 
 } from "lucide-react";
 import { StatCard, StatGroup } from "./StatCard";
+import { normalizePlayerStats } from "@/lib/normalizePlayerStats";
 
 interface PlayerStatsData {
   // General
@@ -58,10 +59,13 @@ interface OutfieldPlayerStatsProps {
  * Stats display for outfield (non-goalkeeper) players
  * Shows: General, Passing, Shooting, Defense, and Discipline stats
  */
-export function OutfieldPlayerStats({ stats }: OutfieldPlayerStatsProps) {
+export function OutfieldPlayerStats({ stats: rawStats }: OutfieldPlayerStatsProps) {
+  // CRITICAL: Normalize stats to ensure consistency (total >= sum of parts)
+  const normalized = normalizePlayerStats(rawStats as any);
+  
   // Ensure all values are safe (never undefined/NaN)
   const safe = (val: number | undefined | null): number => 
-    typeof val === "number" && !isNaN(val) ? val : 0;
+    typeof val === "number" && !isNaN(val) ? Math.max(0, val) : 0;
 
   return (
     <div className="space-y-6">
@@ -69,40 +73,42 @@ export function OutfieldPlayerStats({ stats }: OutfieldPlayerStatsProps) {
       <StatGroup title="Ataque" icon={<Crosshair className="w-4 h-4" />}>
         <StatCard 
           label="Jogos" 
-          value={safe(stats.matches)} 
+          value={safe(rawStats.matches)} 
           highlight 
         />
         <StatCard 
           label="Minutos" 
-          value={safe(stats.minutes)} 
+          value={safe(rawStats.minutes)} 
         />
         <StatCard 
           label="Gols" 
-          value={safe(stats.goals)} 
+          value={safe(rawStats.goals)} 
           variant="success"
           highlight
         />
+        {/* CRITICAL: Use normalized shots_total_derived to ensure total >= on_target + blocked */}
         <StatCard 
           label="Finalizações" 
-          value={safe(stats.shots)} 
+          value={normalized.shots_total_derived} 
         />
         <StatCard 
           label="No Gol" 
-          value={safe(stats.shots_on_target)} 
-          total={safe(stats.shots) || undefined}
-          showPercentage={safe(stats.shots) > 0}
+          value={safe(rawStats.shots_on_target)} 
+          total={normalized.shots_total_derived || undefined}
+          showPercentage={normalized.shots_total_derived > 0}
         />
+        {/* Use derived shots_off_target for consistency */}
         <StatCard 
           label="Fora" 
-          value={Math.max(0, safe(stats.shots) - safe(stats.shots_on_target))} 
+          value={normalized.shots_off_target} 
         />
         <StatCard 
           label="Bloqueados" 
-          value={safe(stats.shots_blocked)} 
+          value={safe(rawStats.shots_blocked)} 
         />
         <StatCard 
           label="Impedimentos" 
-          value={safe(stats.offsides)} 
+          value={safe(rawStats.offsides)} 
         />
       </StatGroup>
 
@@ -110,31 +116,31 @@ export function OutfieldPlayerStats({ stats }: OutfieldPlayerStatsProps) {
       <StatGroup title="Passes" icon={<Footprints className="w-4 h-4" />}>
         <StatCard 
           label="Assistências" 
-          value={safe(stats.assists)} 
+          value={safe(rawStats.assists)} 
           variant="success"
         />
         <StatCard 
           label="Passes Decisivos" 
-          value={safe(stats.key_passes)} 
+          value={safe(rawStats.key_passes)} 
         />
         <StatCard 
           label="Chances Criadas" 
-          value={safe(stats.chances_created)} 
+          value={safe(rawStats.chances_created)} 
         />
         <StatCard 
           label="Passes Certos" 
-          value={safe(stats.accurate_passes)} 
-          total={safe(stats.total_passes)}
+          value={safe(rawStats.accurate_passes)} 
+          total={normalized.passes_total_derived}
         />
         <StatCard 
           label="Cruzamentos Certos" 
-          value={safe(stats.crosses_success)} 
-          total={(safe(stats.crosses_success) + safe(stats.crosses_failed)) || undefined}
-          showPercentage={(safe(stats.crosses_success) + safe(stats.crosses_failed)) > 0}
+          value={safe(rawStats.crosses_success)} 
+          total={normalized.crosses_total || undefined}
+          showPercentage={normalized.crosses_total > 0}
         />
         <StatCard 
           label="Cruzamentos Errados" 
-          value={safe(stats.crosses_failed)} 
+          value={safe(rawStats.crosses_failed)} 
         />
       </StatGroup>
 
@@ -142,25 +148,25 @@ export function OutfieldPlayerStats({ stats }: OutfieldPlayerStatsProps) {
       <StatGroup title="Dribles / Posse" icon={<Target className="w-4 h-4" />}>
         <StatCard 
           label="Ações com a Bola" 
-          value={safe(stats.ball_actions)} 
+          value={safe(rawStats.ball_actions)} 
         />
         <StatCard 
           label="Dribles Certos" 
-          value={safe(stats.successful_dribbles)} 
-          total={safe(stats.total_dribbles) || undefined}
-          showPercentage={safe(stats.total_dribbles) > 0}
+          value={safe(rawStats.successful_dribbles)} 
+          total={normalized.dribbles_total_derived || undefined}
+          showPercentage={normalized.dribbles_total_derived > 0}
         />
         <StatCard 
           label="Dribles Errados" 
-          value={Math.max(0, safe(stats.total_dribbles) - safe(stats.successful_dribbles))} 
+          value={Math.max(0, normalized.dribbles_total_derived - safe(rawStats.successful_dribbles))} 
         />
         <StatCard 
           label="Faltas Sofridas" 
-          value={safe(stats.fouls_drawn)} 
+          value={safe(rawStats.fouls_drawn)} 
         />
         <StatCard 
           label="Perda de Posse" 
-          value={safe(stats.possession_lost)} 
+          value={safe(rawStats.possession_lost)} 
         />
       </StatGroup>
 
@@ -168,27 +174,27 @@ export function OutfieldPlayerStats({ stats }: OutfieldPlayerStatsProps) {
       <StatGroup title="Defesa" icon={<Shield className="w-4 h-4" />}>
         <StatCard 
           label="Desarmes" 
-          value={safe(stats.tackles)} 
+          value={safe(rawStats.tackles)} 
         />
         <StatCard 
           label="Interceptações" 
-          value={safe(stats.interceptions)} 
+          value={safe(rawStats.interceptions)} 
         />
         <StatCard 
           label="Cortes" 
-          value={safe(stats.clearances)} 
+          value={safe(rawStats.clearances)} 
         />
         <StatCard 
           label="Recuperações" 
-          value={safe(stats.recoveries)} 
+          value={safe(rawStats.recoveries)} 
         />
         <StatCard 
           label="Chutes Bloqueados" 
-          value={safe(stats.blocked_shots)} 
+          value={safe(rawStats.blocked_shots)} 
         />
         <StatCard 
           label="Driblado" 
-          value={safe(stats.was_dribbled)} 
+          value={safe(rawStats.was_dribbled)} 
         />
       </StatGroup>
 
@@ -196,35 +202,35 @@ export function OutfieldPlayerStats({ stats }: OutfieldPlayerStatsProps) {
       <StatGroup title="Duelos" icon={<Target className="w-4 h-4" />}>
         <StatCard 
           label="Duelos no Chão" 
-          value={safe(stats.ground_duels_won)} 
-          total={safe(stats.ground_duels_total) || undefined}
-          showPercentage={safe(stats.ground_duels_total) > 0}
+          value={safe(rawStats.ground_duels_won)} 
+          total={safe(rawStats.ground_duels_total) || undefined}
+          showPercentage={safe(rawStats.ground_duels_total) > 0}
         />
         <StatCard 
           label="% Chão" 
-          value={safe(stats.ground_duels_total) > 0 
-            ? Math.round((safe(stats.ground_duels_won) / safe(stats.ground_duels_total)) * 100) 
+          value={safe(rawStats.ground_duels_total) > 0 
+            ? Math.round((safe(rawStats.ground_duels_won) / safe(rawStats.ground_duels_total)) * 100) 
             : 0}
         />
         <StatCard 
           label="Duelos Aéreos" 
-          value={safe(stats.aerial_duels_won)} 
-          total={safe(stats.aerial_duels_total) || undefined}
-          showPercentage={safe(stats.aerial_duels_total) > 0}
+          value={safe(rawStats.aerial_duels_won)} 
+          total={normalized.aerial_duels_total_derived || undefined}
+          showPercentage={normalized.aerial_duels_total_derived > 0}
         />
         <StatCard 
           label="% Aéreo" 
-          value={safe(stats.aerial_duels_total) > 0 
-            ? Math.round((safe(stats.aerial_duels_won) / safe(stats.aerial_duels_total)) * 100) 
+          value={normalized.aerial_duels_total_derived > 0 
+            ? Math.round((safe(rawStats.aerial_duels_won) / normalized.aerial_duels_total_derived) * 100) 
             : 0}
         />
         <StatCard 
           label="Duelos Ganhos" 
-          value={safe(stats.ground_duels_won) + safe(stats.aerial_duels_won)} 
+          value={safe(rawStats.ground_duels_won) + safe(rawStats.aerial_duels_won)} 
         />
         <StatCard 
           label="Duelos Totais" 
-          value={safe(stats.ground_duels_total) + safe(stats.aerial_duels_total)} 
+          value={safe(rawStats.ground_duels_total) + normalized.aerial_duels_total_derived} 
         />
       </StatGroup>
 
@@ -232,17 +238,17 @@ export function OutfieldPlayerStats({ stats }: OutfieldPlayerStatsProps) {
       <StatGroup title="Disciplina" icon={<AlertTriangle className="w-4 h-4" />}>
         <StatCard 
           label="Faltas Cometidas" 
-          value={safe(stats.fouls_committed)} 
-          variant={safe(stats.fouls_committed) > 10 ? "warning" : "default"}
+          value={safe(rawStats.fouls_committed)} 
+          variant={safe(rawStats.fouls_committed) > 10 ? "warning" : "default"}
         />
         <StatCard 
           label="Amarelos" 
-          value={safe(stats.yellow_cards)} 
+          value={safe(rawStats.yellow_cards)} 
           variant="warning"
         />
         <StatCard 
           label="Vermelhos" 
-          value={safe(stats.red_cards)} 
+          value={safe(rawStats.red_cards)} 
           variant="danger"
         />
       </StatGroup>
