@@ -9,6 +9,7 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Menu,
   X,
   MessageSquare,
@@ -19,19 +20,27 @@ import {
   TrendingUp,
   Target,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions, ModuleKey } from "@/hooks/usePermissions";
 import { useSidebar } from "@/hooks/useSidebar";
+import { useSidebarSections } from "@/hooks/useSidebarSections";
 import { toast } from "sonner";
 import logoM3 from "@/assets/logo-m3.png";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { SidebarSearch } from "@/components/layout/SidebarSearch";
+import { SidebarGroupPopover } from "@/components/layout/SidebarGroupPopover";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 // Navigation groups for internal users (admin/scout/editor/viewer)
 const internalNavGroups = [
@@ -143,18 +152,41 @@ export function AppSidebar() {
     })
   })).filter(group => group.items.length > 0);
 
-  const allVisibleItems = visibleNavGroups.flatMap(g => g.items);
+  const allVisibleItems = useMemo(() => 
+    visibleNavGroups.flatMap(g => g.items),
+    [visibleNavGroups]
+  );
 
   const isActive = (href: string) => {
     if (href === "/app") return location.pathname === "/app";
     return location.pathname.startsWith(href);
   };
 
+  // Determine which group is active based on current route
+  const activeGroupLabel = useMemo(() => {
+    for (const group of visibleNavGroups) {
+      for (const item of group.items) {
+        if (isActive(item.href)) {
+          return group.label;
+        }
+      }
+    }
+    return undefined;
+  }, [location.pathname, visibleNavGroups]);
+
+  // Section state with persistence
+  const { isSectionOpen, toggleSection } = useSidebarSections(
+    visibleNavGroups.map(g => g.label),
+    activeGroupLabel
+  );
+
   const handleLogout = async () => {
     await signOut();
     toast.success("Você saiu do sistema");
     navigate("/app/auth");
   };
+
+  const showCollapsed = isCollapsed || isTablet;
 
   // Render nav item for desktop/tablet
   const NavItemDesktop = ({ 
@@ -171,7 +203,7 @@ export function AppSidebar() {
         to={item.href}
         className={cn(
           "group relative flex items-center gap-3 rounded-lg transition-all duration-150",
-          collapsed ? "px-3 py-2.5 justify-center" : "px-3 py-2.5",
+          collapsed ? "px-3 py-2.5 justify-center" : "px-3 py-2",
           active
             ? "bg-gradient-to-r from-primary/12 to-primary/6 text-white"
             : "text-zinc-400 hover:text-zinc-100 hover:translate-x-0.5"
@@ -262,6 +294,94 @@ export function AppSidebar() {
     );
   };
 
+  // Collapsible group for expanded sidebar
+  const CollapsibleGroup = ({ group }: { group: typeof visibleNavGroups[0] }) => {
+    const isGroupActive = group.label === activeGroupLabel;
+    const isOpen = isSectionOpen(group.label);
+
+    return (
+      <Collapsible open={isOpen} onOpenChange={() => toggleSection(group.label)}>
+        <CollapsibleTrigger className="w-full group">
+          <div className={cn(
+            "flex items-center justify-between px-3 py-2 rounded-lg transition-all duration-150",
+            isGroupActive 
+              ? "text-zinc-200" 
+              : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.02]"
+          )}>
+            <span className={cn(
+              "text-[11px] font-semibold uppercase tracking-[0.12em]",
+              isGroupActive && "text-primary/80"
+            )}>
+              {group.label}
+            </span>
+            <ChevronDown 
+              className={cn(
+                "w-3.5 h-3.5 transition-transform duration-200",
+                isOpen && "rotate-180"
+              )} 
+              strokeWidth={2}
+            />
+          </div>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
+          <div className="pt-1 space-y-0.5">
+            {group.items.map((item) => (
+              <NavItemDesktop 
+                key={item.href} 
+                item={item} 
+                collapsed={false} 
+              />
+            ))}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+    );
+  };
+
+  // Mobile collapsible group
+  const MobileCollapsibleGroup = ({ group }: { group: typeof visibleNavGroups[0] }) => {
+    const isGroupActive = group.label === activeGroupLabel;
+    const isOpen = isSectionOpen(group.label);
+
+    return (
+      <Collapsible open={isOpen} onOpenChange={() => toggleSection(group.label)}>
+        <CollapsibleTrigger className="w-full">
+          <div className={cn(
+            "flex items-center justify-between px-4 py-2.5 rounded-lg",
+            isGroupActive 
+              ? "text-zinc-200" 
+              : "text-zinc-500"
+          )}>
+            <span className={cn(
+              "text-[11px] font-semibold uppercase tracking-[0.12em]",
+              isGroupActive && "text-primary/80"
+            )}>
+              {group.label}
+            </span>
+            <ChevronDown 
+              className={cn(
+                "w-4 h-4 transition-transform duration-200",
+                isOpen && "rotate-180"
+              )} 
+              strokeWidth={2}
+            />
+          </div>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
+          <div className="pt-1 space-y-0.5">
+            {group.items.map((item) => (
+              <NavItemMobile 
+                key={item.href} 
+                item={item} 
+                onClick={() => setMobileMenuOpen(false)} 
+              />
+            ))}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+    );
+  };
+
   return (
     <>
       {/* ===== MOBILE HEADER (< 768px) ===== */}
@@ -308,40 +428,36 @@ export function AppSidebar() {
           mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        {/* Drawer Header */}
-        <div className="h-14 flex items-center justify-between px-4 border-b border-white/5 shrink-0">
-          <Link to="/" className="flex items-center" onClick={() => setMobileMenuOpen(false)}>
-            <img src={logoM3} alt="M3 Agency" className="h-7 w-auto" />
-          </Link>
-          <button 
-            onClick={() => setMobileMenuOpen(false)}
-            className="w-9 h-9 flex items-center justify-center rounded-lg text-zinc-500 active:bg-white/5 transition-colors"
-          >
-            <X className="w-5 h-5" strokeWidth={1.5} />
-          </button>
+        {/* Drawer Header - STICKY */}
+        <div className="shrink-0 border-b border-white/5">
+          <div className="h-14 flex items-center justify-between px-4">
+            <Link to="/" className="flex items-center" onClick={() => setMobileMenuOpen(false)}>
+              <img src={logoM3} alt="M3 Agency" className="h-7 w-auto" />
+            </Link>
+            <button 
+              onClick={() => setMobileMenuOpen(false)}
+              className="w-9 h-9 flex items-center justify-center rounded-lg text-zinc-500 active:bg-white/5 transition-colors"
+            >
+              <X className="w-5 h-5" strokeWidth={1.5} />
+            </button>
+          </div>
+          {/* Search in mobile */}
+          <div className="px-3 pb-3">
+            <SidebarSearch 
+              items={allVisibleItems} 
+              onNavigate={() => setMobileMenuOpen(false)}
+            />
+          </div>
         </div>
 
-        {/* Drawer Content */}
-        <div className="flex-1 overflow-y-auto overscroll-contain px-3 py-4 space-y-5">
+        {/* Drawer Content - SCROLLABLE */}
+        <div className="flex-1 overflow-y-auto overscroll-contain px-3 py-4 space-y-3">
           {visibleNavGroups.map((group) => (
-            <div key={group.label}>
-              <p className="px-4 pb-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-zinc-600">
-                {group.label}
-              </p>
-              <div className="space-y-0.5">
-                {group.items.map((item) => (
-                  <NavItemMobile 
-                    key={item.href} 
-                    item={item} 
-                    onClick={() => setMobileMenuOpen(false)} 
-                  />
-                ))}
-              </div>
-            </div>
+            <MobileCollapsibleGroup key={group.label} group={group} />
           ))}
         </div>
 
-        {/* Drawer Footer */}
+        {/* Drawer Footer - STICKY */}
         <div className="px-3 py-4 border-t border-white/5 space-y-0.5 shrink-0">
           {bottomNavItems.map((item) => (
             <NavItemMobile 
@@ -375,115 +491,118 @@ export function AppSidebar() {
           "hidden md:flex flex-col fixed left-0 top-0 bottom-0 z-40 transition-all duration-200 ease-out",
           "bg-gradient-to-b from-[hsl(225,35%,6%)] via-[hsl(225,40%,5%)] to-[hsl(225,45%,4%)]",
           "border-r border-white/[0.04]",
-          // Tablet: always collapsed at 72px, Desktop: responsive
-          isTablet ? "w-[72px]" : (isCollapsed ? "w-[72px]" : "w-60")
+          showCollapsed ? "w-[72px]" : "w-60"
         )}
       >
-        {/* Logo Section */}
-        <div className={cn(
-          "h-16 flex items-center border-b border-white/[0.04] shrink-0 transition-all duration-200",
-          (isCollapsed || isTablet) ? "justify-center px-2" : "justify-between px-4"
-        )}>
-          <Link 
-            to="/" 
-            className={cn(
-              "flex items-center hover:opacity-80 transition-all duration-200",
-              (isCollapsed || isTablet) && "justify-center"
-            )}
-          >
-            <img 
-              src={logoM3} 
-              alt="M3 Agency" 
+        {/* ===== STICKY HEADER ===== */}
+        <div className="shrink-0 border-b border-white/[0.04]">
+          {/* Logo Section */}
+          <div className={cn(
+            "h-14 flex items-center transition-all duration-200",
+            showCollapsed ? "justify-center px-2" : "justify-between px-4"
+          )}>
+            <Link 
+              to="/" 
               className={cn(
-                "w-auto object-contain transition-all duration-200",
-                (isCollapsed || isTablet) ? "h-6 max-w-[48px]" : "h-8"
+                "flex items-center hover:opacity-80 transition-all duration-200",
+                showCollapsed && "justify-center"
               )}
-            />
-          </Link>
-          {/* Notification bell and toggle on desktop when expanded */}
-          {!isTablet && !isCollapsed && (
-            <div className="flex items-center gap-1">
-              <NotificationBell />
-              <button
-                onClick={toggleCollapsed}
-                className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-600 hover:text-zinc-300 hover:bg-white/5 transition-all duration-150"
-              >
-                <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
-              </button>
+            >
+              <img 
+                src={logoM3} 
+                alt="M3 Agency" 
+                className={cn(
+                  "w-auto object-contain transition-all duration-200",
+                  showCollapsed ? "h-6 max-w-[48px]" : "h-8"
+                )}
+              />
+            </Link>
+            {/* Notification bell and toggle on desktop when expanded */}
+            {!isTablet && !isCollapsed && (
+              <div className="flex items-center gap-1">
+                <NotificationBell />
+                <button
+                  onClick={toggleCollapsed}
+                  className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-600 hover:text-zinc-300 hover:bg-white/5 transition-all duration-150"
+                >
+                  <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
+                </button>
+              </div>
+            )}
+            {/* Notification bell on collapsed/tablet */}
+            {showCollapsed && (
+              <div className="absolute top-3.5 right-2">
+                <NotificationBell />
+              </div>
+            )}
+          </div>
+
+          {/* Search + Toggle when expanded */}
+          {!showCollapsed && (
+            <div className="px-3 pb-3">
+              <SidebarSearch items={allVisibleItems} />
             </div>
           )}
-          {/* Notification bell on collapsed/tablet */}
-          {(isCollapsed || isTablet) && (
-            <div className="absolute top-4 right-2">
-              <NotificationBell />
+
+          {/* Expand button when collapsed */}
+          {showCollapsed && (
+            <div className="py-2 flex justify-center">
+              <button
+                onClick={toggleCollapsed}
+                className="w-9 h-9 flex items-center justify-center rounded-lg text-zinc-600 hover:text-zinc-300 hover:bg-white/5 transition-all duration-150"
+              >
+                <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
+              </button>
             </div>
           )}
         </div>
 
-        {/* Expand button when collapsed (desktop only) */}
-        {!isTablet && isCollapsed && (
-          <button
-            onClick={toggleCollapsed}
-            className="mx-auto mt-3 w-9 h-9 flex items-center justify-center rounded-lg text-zinc-600 hover:text-zinc-300 hover:bg-white/5 transition-all duration-150"
-          >
-            <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
-          </button>
-        )}
-
-        {/* Tablet expand toggle */}
-        {isTablet && (
-          <button
-            onClick={toggleCollapsed}
-            className="mx-auto mt-3 w-9 h-9 flex items-center justify-center rounded-lg text-zinc-600 hover:text-zinc-300 hover:bg-white/5 transition-all duration-150"
-          >
-            <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
-          </button>
-        )}
-
-        {/* Navigation */}
-        <nav className="flex-1 px-3 py-4 space-y-6 overflow-y-auto">
+        {/* ===== SCROLLABLE NAVIGATION ===== */}
+        <nav className="flex-1 px-3 py-3 space-y-2 overflow-y-auto">
           <TooltipProvider delayDuration={0}>
-            {visibleNavGroups.map((group) => (
-              <div key={group.label}>
-                {!(isCollapsed || isTablet) && (
-                  <p className="px-3 pb-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-zinc-600">
-                    {group.label}
-                  </p>
-                )}
-                <div className="space-y-1">
-                  {group.items.map((item) => (
-                    <NavItemDesktop 
-                      key={item.href} 
-                      item={item} 
-                      collapsed={isCollapsed || isTablet} 
+            {showCollapsed ? (
+              // Collapsed mode: show group popovers
+              visibleNavGroups.map((group) => {
+                const isGroupActive = group.label === activeGroupLabel;
+                return (
+                  <div key={group.label} className="space-y-1">
+                    <SidebarGroupPopover 
+                      label={group.label}
+                      items={group.items}
+                      isActive={isGroupActive}
                     />
-                  ))}
-                </div>
-              </div>
-            ))}
+                  </div>
+                );
+              })
+            ) : (
+              // Expanded mode: show collapsible groups
+              visibleNavGroups.map((group) => (
+                <CollapsibleGroup key={group.label} group={group} />
+              ))
+            )}
           </TooltipProvider>
         </nav>
 
-        {/* Bottom Section */}
-        <div className="px-3 py-4 border-t border-white/[0.04] space-y-1 shrink-0">
+        {/* ===== STICKY FOOTER ===== */}
+        <div className="px-3 py-3 border-t border-white/[0.04] space-y-1 shrink-0">
           <TooltipProvider delayDuration={0}>
             {bottomNavItems.map((item) => (
               <NavItemDesktop 
                 key={item.href} 
                 item={item} 
-                collapsed={isCollapsed || isTablet} 
+                collapsed={showCollapsed} 
               />
             ))}
 
             {/* User email - only when expanded on desktop */}
-            {!(isCollapsed || isTablet) && user && (
+            {!showCollapsed && user && (
               <div className="px-3 py-2 text-[11px] text-zinc-600 truncate">
                 {user.email}
               </div>
             )}
             
             {/* Logout */}
-            {(isCollapsed || isTablet) ? (
+            {showCollapsed ? (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
