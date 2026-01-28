@@ -103,8 +103,7 @@ export function usePlayerZoneHistory({
         .eq("player_id", playerId)
         .neq("match_id", currentMatchId)
         .in("match.status", ["finished", "applied"])
-        .eq("match.season_year", seasonYear)
-        .order("match.match_date", { ascending: false });
+        .eq("match.season_year", seasonYear);
 
       if (matchError) {
         console.error("[ZoneHistory] Error fetching matches:", matchError);

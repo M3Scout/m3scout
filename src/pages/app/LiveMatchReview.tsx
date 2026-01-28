@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLiveMatch, MatchEventType } from "@/hooks/useLiveMatch";
 import { calculateBallActionsFromMatchStats } from "@/lib/derivedBallActions";
+import { normalizeMatchStats, type RawMatchStats } from "@/lib/normalizeMatchStats";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -159,40 +160,54 @@ export default function LiveMatchReview() {
 
     matchPlayers.forEach((mp) => {
       if (!mp.player) return;
-      // Use playerStatsMap which contains the aggregated stats from match_player_stats table
-      // This reflects the correct derived values (e.g., dribbles_total includes dribbles_success)
-      const stats = playerStatsMap[mp.player_id];
+      
+      // Use NORMALIZED stats which derive totals correctly
+      // This prevents false positives like "dribbles_success > dribbles_total"
+      // when the database has dribbles_total = 0 but dribbles_success = 3
+      const rawStats = playerStatsMap[mp.player_id] as RawMatchStats | undefined;
+      const normalizedStats = normalizeMatchStats(rawStats, {
+        started: mp.started,
+        entered_minute: mp.entered_minute ?? null,
+        exited_minute: mp.exited_minute ?? null,
+        minutes_played: mp.minutes_played,
+      });
+      
       const isGK = mp.position_template === "goalkeeper";
 
-      // Common checks - use stats from match_player_stats (already aggregated correctly)
-      // Shots on target > Shots
-      const shots = stats?.shots ?? 0;
-      const shotsOnTarget = stats?.shots_on_target ?? 0;
-      if (shotsOnTarget > shots) {
+      // ===== CHECKS USING DERIVED TOTALS =====
+      // These use the normalized values which guarantee total >= success
+      
+      // Shots on target vs total shots (derived)
+      const shotsTotal = normalizedStats.shots_total;
+      const shotsOnTarget = normalizedStats.shots_on_target ?? 0;
+      // Only flag if shots_on_target exceeds even the derived total (shouldn't happen)
+      if (shotsOnTarget > shotsTotal && shotsTotal > 0) {
         issues.push({
           playerId: mp.player_id,
           playerName: mp.player.full_name,
           type: "warning",
-          message: `Chutes no gol (${shotsOnTarget}) > Chutes totais (${shots})`,
+          message: `Chutes no gol (${shotsOnTarget}) > Chutes totais (${shotsTotal})`,
         });
       }
 
-      // Dribbles success > total (from match_player_stats)
-      const dribbleSuccess = stats?.dribbles_success ?? 0;
-      const dribbleTotal = stats?.dribbles_total ?? 0;
-      if (dribbleSuccess > dribbleTotal) {
+      // Dribbles - derived total always >= success, so no false warnings
+      // Only check if the RAW data has the issue (for info purposes)
+      const rawDribbleSuccess = rawStats?.dribbles_success ?? 0;
+      const rawDribbleTotal = rawStats?.dribbles_total ?? 0;
+      if (rawDribbleSuccess > 0 && rawDribbleTotal === 0) {
         issues.push({
           playerId: mp.player_id,
           playerName: mp.player.full_name,
-          type: "warning",
-          message: `Dribles certos (${dribbleSuccess}) > Dribles tentados (${dribbleTotal})`,
+          type: "info",
+          message: `Dribles tentados não registrados (derivado: ${normalizedStats.dribbles_total_derived})`,
         });
       }
 
-      // Duels won > total duels (from match_player_stats)
-      const duelsWon = stats?.duels_won ?? 0;
-      const duelsTotal = stats?.duels_total ?? 0;
-      if (duelsWon > duelsTotal) {
+      // Duels won vs total (derived)
+      const duelsWon = normalizedStats.duels_won ?? 0;
+      const duelsTotal = normalizedStats.duels_total_derived;
+      // Only flag if won > derived total (shouldn't happen after normalization)
+      if (duelsWon > duelsTotal && duelsTotal > 0) {
         issues.push({
           playerId: mp.player_id,
           playerName: mp.player.full_name,
@@ -201,26 +216,15 @@ export default function LiveMatchReview() {
         });
       }
 
-      // Aerial duels won > total duels (warning only)
-      const aerialWon = stats?.aerial_duels_won ?? 0;
-      if (aerialWon > duelsTotal && duelsTotal > 0) {
+      // Passes - derived total always >= completed
+      const rawPassesCompleted = rawStats?.passes_completed ?? 0;
+      const rawPassesTotal = rawStats?.passes_total ?? 0;
+      if (rawPassesCompleted > 0 && rawPassesTotal === 0) {
         issues.push({
           playerId: mp.player_id,
           playerName: mp.player.full_name,
           type: "info",
-          message: `Duelos aéreos ganhos (${aerialWon}) > Duelos totais (${duelsTotal})`,
-        });
-      }
-
-      // Passes accurate > total (from match_player_stats)
-      const passesAcc = stats?.passes_completed ?? 0;
-      const passesTotal = stats?.passes_total ?? 0;
-      if (passesAcc > passesTotal) {
-        issues.push({
-          playerId: mp.player_id,
-          playerName: mp.player.full_name,
-          type: "warning",
-          message: `Passes certos (${passesAcc}) > Passes totais (${passesTotal})`,
+          message: `Passes totais não registrados (derivado: ${normalizedStats.passes_total_derived})`,
         });
       }
 
@@ -261,7 +265,7 @@ export default function LiveMatchReview() {
       if (isGK) {
         const counts = (playerEventCounts[mp.player_id] || {}) as Partial<Record<MatchEventType, number>>;
         const cleanSheets = counts.clean_sheet ?? 0;
-        const goalsConceded = stats?.goals_conceded ?? 0;
+        const goalsConceded = normalizedStats.goals_conceded ?? 0;
 
         // Clean sheet > 1 (can only have 1 per game)
         if (cleanSheets > 1) {
@@ -284,7 +288,7 @@ export default function LiveMatchReview() {
         }
 
         // Saves/goals ratio check (info only)
-        const saves = stats?.saves ?? 0;
+        const saves = normalizedStats.saves ?? 0;
         if (saves === 0 && goalsConceded > 2) {
           issues.push({
             playerId: mp.player_id,
@@ -296,16 +300,16 @@ export default function LiveMatchReview() {
       }
 
       // Player has no stats recorded
-      const hasAnyStats = stats && (
-        (stats.goals ?? 0) > 0 ||
-        (stats.assists ?? 0) > 0 ||
-        (stats.shots ?? 0) > 0 ||
-        (stats.tackles ?? 0) > 0 ||
-        (stats.interceptions ?? 0) > 0 ||
-        (stats.recoveries ?? 0) > 0 ||
-        (stats.passes_completed ?? 0) > 0 ||
-        (stats.dribbles_success ?? 0) > 0 ||
-        (stats.saves ?? 0) > 0
+      const hasAnyStats = rawStats && (
+        (rawStats.goals ?? 0) > 0 ||
+        (rawStats.assists ?? 0) > 0 ||
+        (rawStats.shots ?? 0) > 0 ||
+        (rawStats.tackles ?? 0) > 0 ||
+        (rawStats.interceptions ?? 0) > 0 ||
+        (rawStats.recoveries ?? 0) > 0 ||
+        (rawStats.passes_completed ?? 0) > 0 ||
+        (rawStats.dribbles_success ?? 0) > 0 ||
+        (rawStats.saves ?? 0) > 0
       );
       if (!hasAnyStats) {
         issues.push({
