@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { isGoalkeeper } from "@/lib/positionUtils";
 import type { PlayerStats } from "@/lib/playerStats";
+import { normalizePlayerStats, type NormalizedPlayerStats } from "@/lib/normalizePlayerStats";
 
 interface StatChipProps {
   label: string;
@@ -76,36 +77,41 @@ interface CompetitionStatsSummaryProps {
  * Shows all available stats in a chip-based layout
  */
 export function CompetitionStatsSummary({ 
-  stats, 
+  stats: rawStats, 
   playerPosition = "",
   competitionName,
   compact = false 
 }: CompetitionStatsSummaryProps) {
   const isGK = isGoalkeeper(playerPosition);
   
+  // CRITICAL: Normalize stats to ensure consistency (total >= sum of parts)
+  const stats = normalizePlayerStats(rawStats);
+  
   // Safe number helper
   const safe = (val: number | undefined | null): number => 
-    typeof val === "number" && !isNaN(val) ? val : 0;
+    typeof val === "number" && !isNaN(val) ? Math.max(0, val) : 0;
 
-  // Calculate percentages
-  const passAccuracy = safe(stats.total_passes) > 0 
-    ? Math.round((safe(stats.accurate_passes) / safe(stats.total_passes)) * 100) 
+  // Calculate percentages using normalized totals
+  const passAccuracy = stats.passes_total_derived > 0 
+    ? Math.round((safe(stats.accurate_passes) / stats.passes_total_derived) * 100) 
     : 0;
   
-  const shotAccuracy = safe(stats.shots) > 0 
-    ? Math.round((safe(stats.shots_on_target) / safe(stats.shots)) * 100) 
+  // Use normalized shots_total_derived for accuracy calculation
+  const shotAccuracy = stats.shots_total_derived > 0 
+    ? Math.round((safe(stats.shots_on_target) / stats.shots_total_derived) * 100) 
     : 0;
 
-  const dribbleSuccess = safe(stats.total_dribbles) > 0 
-    ? Math.round((safe(stats.successful_dribbles) / safe(stats.total_dribbles)) * 100) 
+  // Use normalized totals for percentage calculations
+  const dribbleSuccess = stats.dribbles_total_derived > 0 
+    ? Math.round((safe(stats.successful_dribbles) / stats.dribbles_total_derived) * 100) 
     : 0;
 
   const groundDuelSuccess = safe(stats.ground_duels_total) > 0 
     ? Math.round((safe(stats.ground_duels_won) / safe(stats.ground_duels_total)) * 100) 
     : 0;
 
-  const aerialDuelSuccess = safe(stats.aerial_duels_total) > 0 
-    ? Math.round((safe(stats.aerial_duels_won) / safe(stats.aerial_duels_total)) * 100) 
+  const aerialDuelSuccess = stats.aerial_duels_total_derived > 0 
+    ? Math.round((safe(stats.aerial_duels_won) / stats.aerial_duels_total_derived) * 100) 
     : 0;
 
   // GK specific
@@ -213,15 +219,17 @@ export function CompetitionStatsSummary({
       ) : (
         // Outfield Player Stats
         <>
-          {/* Attack / Finalizações */}
+          {/* Attack / Finalizações - Using normalized totals */}
           <StatSection title="Ataque / Finalizações" icon={<Crosshair className="w-4 h-4" />} iconColor="text-orange-500">
             <StatChip label="Jogos" value={safe(stats.matches)} highlight />
             <StatChip label="Minutos" value={safe(stats.minutes)} />
             <StatChip label="Gols" value={safe(stats.goals)} variant="success" />
             <StatChip label="Assistências" value={safe(stats.assists)} variant="success" />
-            <StatChip label="Finalizações" value={safe(stats.shots)} />
+            {/* CRITICAL: Use shots_total_derived to ensure total >= on_target + blocked */}
+            <StatChip label="Finalizações" value={stats.shots_total_derived} />
             <StatChip label="No Gol" value={safe(stats.shots_on_target)} />
-            <StatChip label="Fora" value={Math.max(0, safe(stats.shots) - safe(stats.shots_on_target))} />
+            {/* Use derived shots_off_target for consistency */}
+            <StatChip label="Fora" value={stats.shots_off_target} />
             <StatChip label="Bloqueadas" value={safe(stats.shots_blocked)} />
             <StatChip label="% Precisão" value={`${shotAccuracy}%`} />
             <StatChip label="Impedimentos" value={safe(stats.offsides)} />
