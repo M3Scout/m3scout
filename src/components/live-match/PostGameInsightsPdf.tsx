@@ -229,9 +229,10 @@ interface HeatmapCardPdfProps {
   analysis: PostGameAnalysis;
   matchId: string;
   playerId: string;
+  minutesPlayed?: number;
 }
 
-function HeatmapCardPdf({ playerName, position, photoUrl, analysis, matchId, playerId }: HeatmapCardPdfProps) {
+function HeatmapCardPdf({ playerName, position, photoUrl, analysis, matchId, playerId, minutesPlayed }: HeatmapCardPdfProps) {
   return (
     <View style={styles.heatmapCard} wrap={false}>
       {/* Player Header */}
@@ -248,6 +249,7 @@ function HeatmapCardPdf({ playerName, position, photoUrl, analysis, matchId, pla
       </View>
 
       {/* Mini Field Heatmap - Horizontal Layout for PDF */}
+      {/* Renderizar mesmo com poucos pontos */}
       <MiniFieldHeatmapPdf
         percentages={analysis.zoneHeatmap.percentages}
         matchId={matchId}
@@ -256,6 +258,7 @@ function HeatmapCardPdf({ playerName, position, photoUrl, analysis, matchId, pla
         height={70}
         showLegend={true}
         orientation="horizontal"
+        minutesPlayed={minutesPlayed}
       />
     </View>
   );
@@ -515,15 +518,14 @@ export function PostGameInsightsPdf({
     ? matchPlayers.filter((mp) => selectedPlayerIds.includes(mp.player_id))
     : matchPlayers;
 
-  // Generate analyses with deviation insights
-  // CRITICAL FIX: Filter out players with 0 minutes - they should NEVER have a heatmap
+  // REGRA OBRIGATÓRIA: Incluir TODO jogador com minutes_played > 0
+  // Sem filtros de mínimo de minutos, eventos ou volume de ações
   const playerAnalyses = filteredPlayers
     .filter((mp) => {
       // Must have valid player data
       if (!mp.player) return false;
       
-      // CRITICAL: Player must have actually played (> 0 minutes)
-      // If minutes_played is null or 0, the player didn't enter the field
+      // REGRA: Incluir todo jogador com minutes_played > 0
       const minutesPlayed = mp.minutes_played ?? 0;
       if (minutesPlayed <= 0) return false;
       
@@ -531,7 +533,6 @@ export function PostGameInsightsPdf({
     })
     .map((mp) => {
       const stats = playerStatsMap[mp.player_id] ?? {};
-      // Use actual minutes played (already validated > 0 in filter)
       const minutesPlayed = mp.minutes_played ?? 0;
       const position = mp.player?.position ?? "Meio";
 
@@ -566,6 +567,7 @@ export function PostGameInsightsPdf({
         insight,
         halfResult,
         profileResult,
+        minutesPlayed, // Passar para componentes filhos (badge "Amostra reduzida")
         sortScore:
           analysis.quickIndicators.filter((i) => i.type === "positive").length * 2 +
           analysis.strengthsImprovements.strengths.length -
@@ -592,7 +594,7 @@ export function PostGameInsightsPdf({
       <Text style={styles.sectionSubtitle}>Distribuição de atuação por zonas do campo</Text>
       
       <View style={styles.heatmapsGrid}>
-        {playerAnalyses.map(({ player, analysis }) => (
+        {playerAnalyses.map(({ player, analysis, minutesPlayed }) => (
           <HeatmapCardPdf
             key={player.id}
             playerName={player.player?.full_name ?? "Jogador"}
@@ -601,6 +603,7 @@ export function PostGameInsightsPdf({
             analysis={analysis}
             matchId={matchId}
             playerId={player.player_id}
+            minutesPlayed={minutesPlayed}
           />
         ))}
       </View>

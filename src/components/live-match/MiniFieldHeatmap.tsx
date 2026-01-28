@@ -272,6 +272,8 @@ interface MiniFieldHeatmapProps {
   fullWidth?: boolean;
   showLegend?: boolean;
   showIntensityBars?: boolean;
+  /** Minutes played - used to show "Amostra reduzida" badge when < 30 */
+  minutesPlayed?: number;
 }
 
 export function MiniFieldHeatmap({
@@ -282,6 +284,7 @@ export function MiniFieldHeatmap({
   fullWidth = true,
   showLegend = true,
   showIntensityBars = true,
+  minutesPlayed,
 }: MiniFieldHeatmapProps) {
   const hasData = percentages.defense > 0 || percentages.midfield > 0 || percentages.attack > 0;
   
@@ -454,6 +457,15 @@ export function MiniFieldHeatmap({
             color={HEAT_COLORS.high}
             position="bottom"
           />
+        </div>
+      )}
+
+      {/* Badge "Amostra reduzida" quando minutes_played < 30 */}
+      {minutesPlayed !== undefined && minutesPlayed < 30 && (
+        <div className="flex items-center justify-center mt-2">
+          <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
+            ⚠ Amostra reduzida ({minutesPlayed} min)
+          </span>
         </div>
       )}
 
