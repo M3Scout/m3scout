@@ -139,12 +139,14 @@ function HeatmapCard({ player, analysis, matchId, seasonYear }: HeatmapCardProps
       </div>
 
       {/* Mini Field Heatmap - Main Visual Element (full width) */}
+      {/* Renderizar mesmo com poucos pontos, exibir badge "Amostra reduzida" quando < 30 min */}
       <MiniFieldHeatmap 
         percentages={analysis.zoneHeatmap.percentages}
         matchId={matchId}
         playerId={player.player_id}
         showLegend={true}
         showIntensityBars={true}
+        minutesPlayed={player.minutes_played ?? 0}
       />
 
       {/* Zone Deviation Badge (only shows if deviation >= 10% and >= 3 previous games) */}
@@ -351,6 +353,8 @@ export function PostGameInsightsCard({
   // Generate analysis for each player
   // CRITICAL: Only include players who actually played (minutes_played > 0)
   // Players with 0 minutes should NEVER have a heatmap - this prevents false data display
+  // REGRA OBRIGATÓRIA: Incluir TODO jogador com minutes_played > 0
+  // Sem filtros de mínimo de minutos, eventos ou volume de ações
   const playerAnalyses = useMemo(() => {
     if (!showInsights) return [];
     
@@ -359,8 +363,8 @@ export function PostGameInsightsCard({
         // Must have valid player data
         if (!mp.player || mp.player_id.startsWith("removed")) return false;
         
-        // CRITICAL FIX: Player must have actually played (> 0 minutes)
-        // If minutes_played is null or 0, the player didn't enter the field
+        // REGRA: Incluir todo jogador com minutes_played > 0
+        // Remover qualquer filtro por mínimo de minutos, eventos ou volume
         const minutesPlayed = mp.minutes_played ?? 0;
         if (minutesPlayed <= 0) return false;
         
@@ -368,7 +372,6 @@ export function PostGameInsightsCard({
       })
       .map((mp) => {
         const stats = playerStatsMap[mp.player_id] ?? {};
-        // Use actual minutes played (already validated > 0 in filter)
         const minutesPlayed = mp.minutes_played ?? 0;
         const position = mp.player?.position ?? "Meio";
         
@@ -377,6 +380,7 @@ export function PostGameInsightsCard({
         return {
           player: mp,
           analysis,
+          minutesPlayed, // Passar para componentes filhos
           // Sort by total indicators quality
           sortScore: analysis.quickIndicators.filter(i => i.type === "positive").length * 2 +
                      analysis.strengthsImprovements.strengths.length -
@@ -408,10 +412,10 @@ export function PostGameInsightsCard({
         <CardContent className="p-4 sm:p-6">
           {/* Responsive Grid: 1 col mobile, 2 cols tablet, 3 cols desktop */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {playerAnalyses.map(({ player, analysis }) => (
+            {playerAnalyses.map(({ player, analysis, minutesPlayed }) => (
               <HeatmapCard
                 key={player.id}
-                player={player}
+                player={{ ...player, minutes_played: minutesPlayed }}
                 analysis={analysis}
                 matchId={matchId}
                 seasonYear={seasonYear}

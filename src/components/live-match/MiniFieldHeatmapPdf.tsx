@@ -355,6 +355,8 @@ interface MiniFieldHeatmapPdfProps {
    * - "horizontal": Landscape mode, defense at left, attack at right
    */
   orientation?: "vertical" | "horizontal";
+  /** Minutes played - used to show "Amostra reduzida" badge when < 30 */
+  minutesPlayed?: number;
 }
 
 export function MiniFieldHeatmapPdf({
@@ -366,6 +368,7 @@ export function MiniFieldHeatmapPdf({
   showLegend = true,
   showIntensityBars = true,
   orientation = "vertical",
+  minutesPlayed,
 }: MiniFieldHeatmapPdfProps) {
   const hasData = percentages.defense > 0 || percentages.midfield > 0 || percentages.attack > 0;
   
@@ -580,6 +583,32 @@ export function MiniFieldHeatmapPdf({
           />
         </Svg>
 
+        {/* Badge "Amostra reduzida" quando minutes_played < 30 */}
+        {minutesPlayed !== undefined && minutesPlayed < 30 && (
+          <View style={{
+            flexDirection: "row",
+            justifyContent: "center",
+            marginTop: 3,
+          }}>
+            <View style={{
+              paddingVertical: 2,
+              paddingHorizontal: 6,
+              backgroundColor: "#fef3c7",
+              borderRadius: 8,
+              borderWidth: 0.5,
+              borderColor: "#fcd34d",
+            }}>
+              <Text style={{
+                fontSize: 6,
+                color: "#92400e",
+                fontWeight: 500,
+              }}>
+                ⚠ Amostra reduzida ({minutesPlayed} min)
+              </Text>
+            </View>
+          </View>
+        )}
+
         {/* Heat intensity legend */}
         {showLegend && (
           <View style={styles.legend}>
@@ -771,6 +800,32 @@ export function MiniFieldHeatmapPdf({
             isDominant={dominantZone === "midfield"}
             color={HEAT_COLORS.high}
           />
+        </View>
+      )}
+
+      {/* Badge "Amostra reduzida" quando minutes_played < 30 */}
+      {minutesPlayed !== undefined && minutesPlayed < 30 && (
+        <View style={{
+          flexDirection: "row",
+          justifyContent: "center",
+          marginTop: 3,
+        }}>
+          <View style={{
+            paddingVertical: 2,
+            paddingHorizontal: 6,
+            backgroundColor: "#fef3c7",
+            borderRadius: 8,
+            borderWidth: 0.5,
+            borderColor: "#fcd34d",
+          }}>
+            <Text style={{
+              fontSize: 6,
+              color: "#92400e",
+              fontWeight: 500,
+            }}>
+              ⚠ Amostra reduzida ({minutesPlayed} min)
+            </Text>
+          </View>
         </View>
       )}
 
