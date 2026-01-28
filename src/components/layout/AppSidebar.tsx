@@ -17,6 +17,7 @@ import {
   Radio,
   Shield,
   TrendingUp,
+  Target,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -62,6 +63,12 @@ const internalNavGroups = [
     items: [
       { href: "/app/market/ativos", icon: TrendingUp, label: "Ativos M3", module: "players" as const },
       { href: "/app/market/targets", icon: Users, label: "Targets", module: "players" as const },
+    ]
+  },
+  {
+    label: "Administração",
+    items: [
+      { href: "/app/goals-monitor", icon: Target, label: "Metas (Monitor)", module: "users" as const },
     ]
   }
 ];

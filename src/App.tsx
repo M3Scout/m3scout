@@ -54,6 +54,7 @@ import LiveMatchReview from "./pages/app/LiveMatchReview";
 import Teams from "./pages/app/Teams";
 import MarketAtivos from "./pages/app/MarketAtivos";
 import MarketTargets from "./pages/app/MarketTargets";
+import GoalsMonitor from "./pages/app/GoalsMonitor";
 
 // React Query config - prevent refetching on mount/focus for better performance
 const queryClient = new QueryClient({
@@ -135,6 +136,7 @@ const App = () => (
                   <Route path="teams" element={<Teams />} />
                   <Route path="market/ativos" element={<RequirePermission module="players"><MarketAtivos /></RequirePermission>} />
                   <Route path="market/targets" element={<RequirePermission module="players"><MarketTargets /></RequirePermission>} />
+                  <Route path="goals-monitor" element={<RequirePermission module="users" action="manage"><GoalsMonitor /></RequirePermission>} />
                   <Route path="settings" element={<Settings />} />
                   <Route path="settings/users" element={<RequirePermission module="users" action="manage"><UserManagement /></RequirePermission>} />
                 </Route>
