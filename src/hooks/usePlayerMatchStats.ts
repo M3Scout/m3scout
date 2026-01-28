@@ -12,6 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { calculateMinutesPlayed, STANDARD_MATCH_DURATION } from "@/lib/minutesPlayed";
 import { calculateDerivedBallActions } from "@/lib/derivedBallActions";
+import { fetchPlayerMatchStatsRaw } from "@/lib/playerMatchStatsProvider";
 
 export interface MatchDerivedStats {
   // Match participation
@@ -207,77 +208,38 @@ export function usePlayerMatchStats({
   const { data: matchesData, isLoading: matchesLoading, error: matchesError, refetch } = useQuery({
     queryKey: ["player-match-stats", playerId, seasonYear, competitionId],
     queryFn: async () => {
-      // Get all match_players entries for this player (only finished/applied matches)
-      let matchPlayersQuery = supabase
-        .from("match_players")
-        .select(`
-          id,
-          match_id,
-          player_id,
-          started,
-          entered_minute,
-          exited_minute,
-          minutes_played,
-          match:matches!inner (
-            id,
-            match_date,
-            opponent_name,
-            team_name_display,
-            competition_id,
-            season_year,
-            duration_minutes,
-            added_time_first_half,
-            added_time_second_half,
-            status,
-            competition:competitions (
-              id,
-              name,
-              display_name
-            )
-          )
-        `)
-        .eq("player_id", playerId)
-        .eq("is_removed", false)
-        .in("match.status", ["finished", "applied"]);
-
-      if (seasonYear) {
-        matchPlayersQuery = matchPlayersQuery.eq("match.season_year", seasonYear);
-      }
-      
-      if (competitionId) {
-        matchPlayersQuery = matchPlayersQuery.eq("match.competition_id", competitionId);
-      }
-
-      const { data: matchPlayers, error: mpError } = await matchPlayersQuery;
-      if (mpError) throw mpError;
-
-      // Get the match IDs to fetch stats
-      const matchIds = (matchPlayers as unknown as MatchPlayerWithMatch[] || [])
-        .filter(mp => mp.match)
-        .map(mp => mp.match_id);
-
-      if (matchIds.length === 0) {
-        return { matchPlayers: [], matchStats: {} };
-      }
-
-      // Get all match_player_stats for these matches
-      const { data: statsData, error: statsError } = await supabase
-        .from("match_player_stats")
-        .select("*")
-        .eq("player_id", playerId)
-        .in("match_id", matchIds);
-
-      if (statsError) throw statsError;
-
-      // Create a map of match_id -> stats
-      const statsMap: Record<string, MatchPlayerStats> = {};
-      (statsData || []).forEach((stat) => {
-        statsMap[stat.match_id] = stat as MatchPlayerStats;
+      const { matchPlayers, matchStats } = await fetchPlayerMatchStatsRaw({
+        playerId,
+        seasonYear,
+        competitionId,
       });
 
-      return { 
-        matchPlayers: matchPlayers as unknown as MatchPlayerWithMatch[], 
-        matchStats: statsMap 
+      // Create a map of match_id -> aggregated stats (defensive against duplicate rows)
+      const statsMap: Record<string, MatchPlayerStats> = {};
+      (matchStats || []).forEach((row) => {
+        const matchId = row.match_id as string;
+        const current = statsMap[matchId];
+
+        if (!current) {
+          statsMap[matchId] = row as unknown as MatchPlayerStats;
+          return;
+        }
+
+        // Sum numeric fields; keep identifiers from the first row.
+        const next: any = { ...current };
+        Object.keys(row).forEach((k) => {
+          const a = (current as any)[k];
+          const b = (row as any)[k];
+          if (typeof a === "number" && typeof b === "number") {
+            next[k] = a + b;
+          }
+        });
+        statsMap[matchId] = next as MatchPlayerStats;
+      });
+
+      return {
+        matchPlayers: matchPlayers as unknown as MatchPlayerWithMatch[],
+        matchStats: statsMap,
       };
     },
     enabled: enabled && !!playerId,
@@ -287,22 +249,41 @@ export function usePlayerMatchStats({
   });
 
   // Transform raw data into MatchWithStats format
-  const matchesWithStats: MatchWithStats[] = (matchesData?.matchPlayers || [])
-    .filter((mp): mp is MatchPlayerWithMatch & { match: NonNullable<MatchPlayerWithMatch["match"]> } => 
-      mp.match !== null
-    )
-    .map((mp) => {
-      const stats = matchesData?.matchStats[mp.match_id];
+  const matchesWithStats: MatchWithStats[] = (() => {
+    const matchPlayers = (matchesData?.matchPlayers || []).filter(
+      (mp): mp is MatchPlayerWithMatch & { match: NonNullable<MatchPlayerWithMatch["match"]> } => mp.match !== null
+    );
+
+    // Group by match_id to ensure UNIQUE matches (defensive against join/duplication)
+    const grouped = new Map<string, (MatchPlayerWithMatch & { match: NonNullable<MatchPlayerWithMatch["match"]> })[]>();
+    for (const mp of matchPlayers) {
+      const list = grouped.get(mp.match_id) ?? [];
+      list.push(mp);
+      grouped.set(mp.match_id, list);
+    }
+
+    const uniqueMatches: MatchWithStats[] = [];
+    for (const [matchId, entries] of grouped.entries()) {
+      const mp = entries[0];
+      const stats = matchesData?.matchStats[matchId];
       const competition = mp.match.competition;
-      
-      // Use regulatory minutes (capped at 90) - recalculated from entry/exit
-      const minutesPlayed = getRegMinutesPlayed(
-        mp, 
-        mp.match.added_time_first_half ?? 0, 
-        mp.match.added_time_second_half ?? 0
+
+      // Sum minutes across duplicated rows, cap at 90
+      const minutesPlayed = Math.min(
+        entries.reduce((sum, e) => {
+          const m = getRegMinutesPlayed(
+            e,
+            e.match.added_time_first_half ?? 0,
+            e.match.added_time_second_half ?? 0
+          );
+          return sum + m;
+        }, 0),
+        STANDARD_MATCH_DURATION
       );
 
-      // Transform match_player_stats to our derived format
+      // Skip zero-minute participations (games = DISTINCT match_id where minutes > 0)
+      if (minutesPlayed <= 0) continue;
+
       const derivedStats: MatchDerivedStats = {
         matches: 1,
         minutes: minutesPlayed,
@@ -322,23 +303,26 @@ export function usePlayerMatchStats({
         crosses_failed: stats?.crosses_failed ?? 0,
         // ball_actions is a DERIVED statistic - calculated from sum of eligible events
         // See src/lib/derivedBallActions.ts for the list of events that count
-        ball_actions: calculateDerivedBallActions({
-          goals: stats?.goals ?? 0,
-          shots_on_target: stats?.shots_on_target ?? 0,
-          shots: stats?.shots ?? 0,
-          shots_blocked: stats?.shots_blocked ?? 0,
-          assists: stats?.assists ?? 0,
-          key_passes: stats?.key_passes ?? 0,
-          chances_created: stats?.chances_created ?? 0,
-          passes_completed: stats?.passes_completed ?? 0,
-          passes_total: stats?.passes_total ?? 0,
-          crosses_success: stats?.crosses_success ?? 0,
-          crosses_failed: stats?.crosses_failed ?? 0,
-          dribbles_success: stats?.dribbles_success ?? 0,
-          dribbles_total: stats?.dribbles_total ?? 0,
-          possession_lost: stats?.possession_lost ?? 0,
-          recoveries: stats?.recoveries ?? 0,
-        }, stats?.ball_actions ?? 0), // Pass manual value for backwards compat
+        ball_actions: calculateDerivedBallActions(
+          {
+            goals: stats?.goals ?? 0,
+            shots_on_target: stats?.shots_on_target ?? 0,
+            shots: stats?.shots ?? 0,
+            shots_blocked: stats?.shots_blocked ?? 0,
+            assists: stats?.assists ?? 0,
+            key_passes: stats?.key_passes ?? 0,
+            chances_created: stats?.chances_created ?? 0,
+            passes_completed: stats?.passes_completed ?? 0,
+            passes_total: stats?.passes_total ?? 0,
+            crosses_success: stats?.crosses_success ?? 0,
+            crosses_failed: stats?.crosses_failed ?? 0,
+            dribbles_success: stats?.dribbles_success ?? 0,
+            dribbles_total: stats?.dribbles_total ?? 0,
+            possession_lost: stats?.possession_lost ?? 0,
+            recoveries: stats?.recoveries ?? 0,
+          },
+          stats?.ball_actions ?? 0
+        ), // Pass manual value for backwards compat
         dribbles_success: stats?.dribbles_success ?? 0,
         dribbles_failed: Math.max(0, (stats?.dribbles_total ?? 0) - (stats?.dribbles_success ?? 0)),
         dribbles_total: stats?.dribbles_total ?? 0,
@@ -361,12 +345,12 @@ export function usePlayerMatchStats({
         possession_lost: stats?.possession_lost ?? 0,
         saves: stats?.saves ?? 0,
         goals_conceded: stats?.goals_conceded ?? 0,
-        clean_sheets: 0, // Would need to check if goals_conceded === 0 and played full match
-        penalties_saved: 0, // Not commonly tracked per-match, calculated separately
+        clean_sheets: 0,
+        penalties_saved: 0,
       };
 
-      return {
-        match_id: mp.match_id,
+      uniqueMatches.push({
+        match_id: matchId,
         match_date: mp.match.match_date,
         opponent_name: mp.match.opponent_name,
         team_name_display: mp.match.team_name_display,
@@ -375,9 +359,11 @@ export function usePlayerMatchStats({
         season_year: mp.match.season_year,
         minutes_played: minutesPlayed,
         stats: derivedStats,
-      };
-    })
-    .sort((a, b) => new Date(b.match_date).getTime() - new Date(a.match_date).getTime());
+      });
+    }
+
+    return uniqueMatches.sort((a, b) => new Date(b.match_date).getTime() - new Date(a.match_date).getTime());
+  })();
 
   // Aggregate stats across all matches
   const aggregatedStats: MatchDerivedStats = matchesWithStats.reduce(
