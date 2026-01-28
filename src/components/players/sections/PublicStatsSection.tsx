@@ -1,38 +1,21 @@
-import { useState, useEffect } from "react";
-import {
-  Loader2,
-} from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+/**
+ * Public Stats Section
+ * 
+ * IMPORTANT: This component uses the SAME data source as the athlete dashboard
+ * (usePlayerMatchStats hook) to ensure 100% consistency between public profile
+ * and internal dashboard statistics.
+ * 
+ * Source of truth: match_players + match_player_stats tables
+ * NOT the player_stats table (which may have stale/manual data)
+ */
+
+import { useState, useMemo } from "react";
+import { Loader2 } from "lucide-react";
 import { formatFixed } from "@/lib/formatters";
-import { safeArray } from "@/lib/utils";
+import { usePlayerMatchStats } from "@/hooks/usePlayerMatchStats";
 
 interface PublicStatsSectionProps {
   playerId: string;
-}
-
-interface SeasonStats {
-  season_year: number;
-  matches: number;
-  minutes: number;
-  goals: number;
-  assists: number;
-  yellow_cards: number;
-  red_cards: number;
-  tackles: number;
-  interceptions: number;
-  recoveries: number;
-}
-
-interface CompetitionStats {
-  competition_id: string;
-  competition_name: string;
-  competition_type: string;
-  matches: number;
-  minutes: number;
-  goals: number;
-  assists: number;
-  yellow_cards: number;
-  red_cards: number;
 }
 
 const currentYear = new Date().getFullYear();
@@ -40,136 +23,52 @@ const currentYear = new Date().getFullYear();
 type TabValue = "current" | "per90" | "competition" | "career";
 
 export function PublicStatsSection({ playerId }: PublicStatsSectionProps) {
-  const [currentSeasonStats, setCurrentSeasonStats] = useState<SeasonStats | null>(null);
-  const [careerStats, setCareerStats] = useState<SeasonStats[]>([]);
-  const [competitionStats, setCompetitionStats] = useState<CompetitionStats[]>([]);
-  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabValue>("current");
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      // Fetch stats with competition info
-      const { data, error } = await supabase
-        .from("player_stats")
-        .select(`
-          *,
-          competitions:competition_id (
-            id,
-            name,
-            display_name,
-            type
-          )
-        `)
-        .eq("player_id", playerId)
-        .order("season_year", { ascending: false });
+  // Use the SAME hook as the dashboard for data consistency
+  const {
+    matches,
+    totals,
+    bySeason,
+    byCompetition,
+    isLoading,
+  } = usePlayerMatchStats({
+    playerId,
+    enabled: !!playerId,
+  });
 
-      if (error) {
-        console.error("Error fetching stats:", error);
-        setLoading(false);
-        return;
-      }
+  // Get current season stats
+  const currentSeasonStats = useMemo(() => {
+    return bySeason[currentYear] || null;
+  }, [bySeason]);
 
-      if (Array.isArray(data) && data.length > 0) {
-        // Aggregate by season
-        const statsBySeason = data.reduce((acc, stat) => {
-          const year = stat.season_year;
-          if (!acc[year]) {
-            acc[year] = {
-              season_year: year,
-              matches: 0,
-              minutes: 0,
-              goals: 0,
-              assists: 0,
-              yellow_cards: 0,
-              red_cards: 0,
-              tackles: 0,
-              interceptions: 0,
-              recoveries: 0,
-            };
-          }
-          acc[year].matches += stat.matches || 0;
-          acc[year].minutes += stat.minutes || 0;
-          acc[year].goals += stat.goals || 0;
-          acc[year].assists += stat.assists || 0;
-          acc[year].yellow_cards += stat.yellow_cards || 0;
-          acc[year].red_cards += stat.red_cards || 0;
-          acc[year].tackles += stat.tackles || 0;
-          acc[year].interceptions += stat.interceptions || 0;
-          acc[year].recoveries += stat.recoveries || 0;
-          return acc;
-        }, {} as Record<number, SeasonStats>);
+  // Get all seasons sorted descending
+  const careerStats = useMemo(() => {
+    return Object.entries(bySeason)
+      .map(([year, stats]) => ({
+        season_year: Number(year),
+        ...stats,
+      }))
+      .sort((a, b) => b.season_year - a.season_year);
+  }, [bySeason]);
 
-        const seasons = Object.values(statsBySeason).sort(
-          (a, b) => b.season_year - a.season_year
-        );
-
-        setCareerStats(seasons);
-        
-        const current = seasons.find((s) => s.season_year === currentYear);
-        if (current) {
-          setCurrentSeasonStats(current);
-        }
-
-        // Aggregate by competition (all time)
-        const statsByCompetition = data.reduce((acc, stat) => {
-          const compId = stat.competition_id;
-          if (!compId) return acc;
-          
-          const competition = stat.competitions as { id: string; name: string; display_name: string | null; type: string } | null;
-          const compName = competition?.display_name || competition?.name || "Competição";
-          const compType = competition?.type || "league";
-          
-          if (!acc[compId]) {
-            acc[compId] = {
-              competition_id: compId,
-              competition_name: compName,
-              competition_type: compType,
-              matches: 0,
-              minutes: 0,
-              goals: 0,
-              assists: 0,
-              yellow_cards: 0,
-              red_cards: 0,
-            };
-          }
-          acc[compId].matches += stat.matches || 0;
-          acc[compId].minutes += stat.minutes || 0;
-          acc[compId].goals += stat.goals || 0;
-          acc[compId].assists += stat.assists || 0;
-          acc[compId].yellow_cards += stat.yellow_cards || 0;
-          acc[compId].red_cards += stat.red_cards || 0;
-          return acc;
-        }, {} as Record<string, CompetitionStats>);
-
-        // Sort by goals+assists descending
-        const competitions = Object.values(statsByCompetition).sort(
-          (a, b) => (b.goals + b.assists) - (a.goals + a.assists)
-        );
-        setCompetitionStats(competitions);
-      }
-
-      setLoading(false);
-    };
-
-    fetchStats();
-  }, [playerId]);
+  // Get competition stats
+  const competitionStats = useMemo(() => {
+    return Object.entries(byCompetition)
+      .map(([compId, data]) => ({
+        competition_id: compId,
+        competition_name: data.name,
+        ...data.stats,
+      }))
+      .sort((a, b) => (b.goals + b.assists) - (a.goals + a.assists));
+  }, [byCompetition]);
 
   const calculatePer90 = (value: number, minutes: number): string => {
     if (minutes < 90) return "—";
     return formatFixed((value / minutes) * 90, 2);
   };
 
-  const getCompetitionTypeLabel = (type: string): string => {
-    const typeMap: Record<string, string> = {
-      league: "Liga",
-      cup: "Copa",
-      state_league: "Estadual",
-      continental: "Continental",
-    };
-    return typeMap[type] || type;
-  };
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-16">
         <Loader2 className="w-5 h-5 animate-spin text-zinc-500" />
@@ -177,8 +76,7 @@ export function PublicStatsSection({ playerId }: PublicStatsSectionProps) {
     );
   }
 
-  const safeCareerStats = Array.isArray(careerStats) ? careerStats : [];
-  if (safeCareerStats.length === 0) {
+  if (careerStats.length === 0) {
     return (
       <div>
         <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 mb-4">Estatísticas</p>
@@ -358,14 +256,9 @@ export function PublicStatsSection({ playerId }: PublicStatsSectionProps) {
                     {competitionStats.map((comp) => (
                       <tr key={comp.competition_id} className="border-b border-zinc-900/50">
                         <td className="py-3 pr-4">
-                          <div className="flex flex-col gap-0.5">
-                            <span className="text-white text-sm font-medium truncate max-w-[180px] sm:max-w-none">
-                              {comp.competition_name}
-                            </span>
-                            <span className="text-[9px] uppercase tracking-widest text-zinc-600">
-                              {getCompetitionTypeLabel(comp.competition_type)}
-                            </span>
-                          </div>
+                          <span className="text-white text-sm font-medium truncate max-w-[180px] sm:max-w-none block">
+                            {comp.competition_name}
+                          </span>
                         </td>
                         <td className="py-3 text-center text-zinc-400 text-sm">{comp.matches}</td>
                         <td className="py-3 text-center text-zinc-400 text-sm hidden sm:table-cell">{comp.minutes}</td>
@@ -388,23 +281,23 @@ export function PublicStatsSection({ playerId }: PublicStatsSectionProps) {
                 <div className="grid grid-cols-4 gap-4 sm:gap-6">
                   <StatRow 
                     label="Jogos" 
-                    value={competitionStats.reduce((sum, c) => sum + c.matches, 0)} 
+                    value={totals?.matches ?? 0} 
                     small 
                   />
                   <StatRow 
                     label="Gols" 
-                    value={competitionStats.reduce((sum, c) => sum + c.goals, 0)} 
+                    value={totals?.goals ?? 0} 
                     highlight 
                     small 
                   />
                   <StatRow 
                     label="Assist." 
-                    value={competitionStats.reduce((sum, c) => sum + c.assists, 0)} 
+                    value={totals?.assists ?? 0} 
                     small 
                   />
                   <StatRow 
                     label="G+A" 
-                    value={competitionStats.reduce((sum, c) => sum + c.goals + c.assists, 0)} 
+                    value={(totals?.goals ?? 0) + (totals?.assists ?? 0)} 
                     highlight 
                     small 
                   />
@@ -448,7 +341,7 @@ export function PublicStatsSection({ playerId }: PublicStatsSectionProps) {
                 </tr>
               </thead>
               <tbody>
-                {safeArray(careerStats).map((season) => (
+                {careerStats.map((season) => (
                   <tr key={season.season_year} className="border-b border-zinc-900/50">
                     <td className="py-3 text-white text-sm font-medium">
                       {season.season_year}
@@ -466,9 +359,9 @@ export function PublicStatsSection({ playerId }: PublicStatsSectionProps) {
                       {season.goals + season.assists}
                     </td>
                     <td className="py-3 text-center text-sm hidden sm:table-cell">
-                      <span className="text-amber-500">{season.yellow_cards}</span>
+                      <span className="text-amber-400">{season.yellow_cards}</span>
                       <span className="text-zinc-700 mx-1">/</span>
-                      <span className="text-red-500">{season.red_cards}</span>
+                      <span className="text-red-400">{season.red_cards}</span>
                     </td>
                   </tr>
                 ))}
@@ -478,29 +371,18 @@ export function PublicStatsSection({ playerId }: PublicStatsSectionProps) {
 
           {/* Career Totals */}
           <div className="pt-6 border-t border-zinc-900">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 mb-4">Totais</p>
-            <div className="grid grid-cols-4 gap-4 sm:gap-6">
-              <StatRow 
-                label="Jogos" 
-                value={careerStats.reduce((sum, s) => sum + s.matches, 0)} 
-                small 
-              />
-              <StatRow 
-                label="Gols" 
-                value={careerStats.reduce((sum, s) => sum + s.goals, 0)} 
-                highlight 
-                small 
-              />
-              <StatRow 
-                label="Assist." 
-                value={careerStats.reduce((sum, s) => sum + s.assists, 0)} 
-                small 
-              />
+            <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 mb-4">
+              Total na Carreira ({careerStats.length} temporada{careerStats.length !== 1 ? "s" : ""})
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 sm:gap-6">
+              <StatRow label="Jogos" value={totals?.matches ?? 0} />
+              <StatRow label="Minutos" value={totals?.minutes ?? 0} />
+              <StatRow label="Gols" value={totals?.goals ?? 0} highlight />
+              <StatRow label="Assistências" value={totals?.assists ?? 0} />
               <StatRow 
                 label="G+A" 
-                value={careerStats.reduce((sum, s) => sum + s.goals + s.assists, 0)} 
+                value={(totals?.goals ?? 0) + (totals?.assists ?? 0)} 
                 highlight 
-                small 
               />
             </div>
           </div>
@@ -510,7 +392,8 @@ export function PublicStatsSection({ playerId }: PublicStatsSectionProps) {
   );
 }
 
-/* ========== MINIMAL STAT ROW ========== */
+// =============== Helper Components ===============
+
 interface StatRowProps {
   label: string;
   value: number | string;
@@ -519,31 +402,27 @@ interface StatRowProps {
   small?: boolean;
 }
 
-function StatRow({ label, value, highlight, variant, small }: StatRowProps) {
-  const valueClass =
-    variant === "warning"
-      ? "text-amber-500"
-      : variant === "danger"
-      ? "text-red-500"
-      : highlight
-      ? "text-white"
-      : "text-zinc-300";
+function StatRow({ label, value, highlight, variant = "default", small }: StatRowProps) {
+  const valueClasses = {
+    default: highlight ? "text-white" : "text-zinc-400",
+    warning: "text-amber-400",
+    danger: "text-red-400",
+  };
 
   return (
     <div>
-      <p className={`font-semibold tabular-nums ${small ? "text-lg" : "text-2xl"} ${valueClass}`}>
+      <p className={`${small ? "text-xl" : "text-2xl sm:text-3xl"} font-light tabular-nums ${valueClasses[variant]}`}>
         {value}
       </p>
-      <p className="text-[10px] uppercase tracking-widest text-zinc-600 mt-1">{label}</p>
+      <p className="text-[9px] sm:text-[10px] uppercase tracking-[0.15em] text-zinc-600 mt-1">
+        {label}
+      </p>
     </div>
   );
 }
 
-/* ========== EMPTY STATE ========== */
 function EmptyState({ message }: { message: string }) {
   return (
-    <p className="text-center text-zinc-600 text-sm py-12">
-      {message}
-    </p>
+    <p className="text-center text-zinc-600 text-sm py-12">{message}</p>
   );
 }
