@@ -24,6 +24,7 @@ import {
 import { generateCombinedInsight, type ZoneDeviationInsight } from "@/lib/zoneDeviationInsight";
 import { calculateHalfComparison, splitStatsByHalf, type MatchEvent, type HalfComparisonResult } from "@/lib/halfComparisonEngine";
 import { classifyGameProfile, type GameProfileResult, GAME_PROFILES } from "@/lib/playerGameProfileEngine";
+import { calculateMinutesPlayed } from "@/lib/minutesPlayed";
 
 // ============================================
 // STYLES
@@ -477,6 +478,8 @@ interface MatchPlayer {
   id: string;
   player_id: string;
   started: boolean;
+  entered_minute?: number | null;
+  exited_minute?: number | null;
   minutes_played: number | null;
   position_template: string;
   player?: {
@@ -518,6 +521,18 @@ export function PostGameInsightsPdf({
     ? matchPlayers.filter((mp) => selectedPlayerIds.includes(mp.player_id))
     : matchPlayers;
 
+  // Helper: Calculate minutes from timeline (ignoring stale minutes_played)
+  // This ensures PDF matches the web UI exactly
+  const getEffectiveMinutesPlayed = (mp: MatchPlayer): number => {
+    const info = calculateMinutesPlayed({
+      started: mp.started,
+      entered_minute: mp.entered_minute ?? null,
+      exited_minute: mp.exited_minute ?? null,
+      minutes_played: null, // Force calculation from timeline
+    });
+    return info.minutesPlayed;
+  };
+
   // REGRA OBRIGATÓRIA: Incluir TODO jogador com minutes_played > 0
   // Sem filtros de mínimo de minutos, eventos ou volume de ações
   const playerAnalyses = filteredPlayers
@@ -525,15 +540,15 @@ export function PostGameInsightsPdf({
       // Must have valid player data
       if (!mp.player) return false;
       
-      // REGRA: Incluir todo jogador com minutes_played > 0
-      const minutesPlayed = mp.minutes_played ?? 0;
+      // REGRA: Incluir todo jogador com minutes_played > 0 (calculated from timeline)
+      const minutesPlayed = getEffectiveMinutesPlayed(mp);
       if (minutesPlayed <= 0) return false;
       
       return true;
     })
     .map((mp) => {
       const stats = playerStatsMap[mp.player_id] ?? {};
-      const minutesPlayed = mp.minutes_played ?? 0;
+      const minutesPlayed = getEffectiveMinutesPlayed(mp);
       const position = mp.player?.position ?? "Meio";
 
       const analysis = generatePostGameAnalysis(position, stats, minutesPlayed);

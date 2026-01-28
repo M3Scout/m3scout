@@ -1471,11 +1471,13 @@ export function MatchSummaryVectorPdf({
               .toUpperCase();
             
             // Calculate minutes played using standardized logic
+            // CRITICAL: Calculate from timeline (ignoring stale minutes_played)
+            // This ensures PDF matches the web UI exactly
             const minutesInfo = calculateMinutesPlayed({
               started: mp.started,
               entered_minute: mp.entered_minute,
               exited_minute: mp.exited_minute,
-              minutes_played: mp.minutes_played,
+              minutes_played: null, // Force calculation from timeline
             });
             const minutesPlayed = minutesInfo.minutesPlayed;
 
