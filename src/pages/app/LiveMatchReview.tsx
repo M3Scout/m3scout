@@ -190,18 +190,9 @@ export default function LiveMatchReview() {
         });
       }
 
-      // Dribbles - derived total always >= success, so no false warnings
-      // Only check if the RAW data has the issue (for info purposes)
-      const rawDribbleSuccess = rawStats?.dribbles_success ?? 0;
-      const rawDribbleTotal = rawStats?.dribbles_total ?? 0;
-      if (rawDribbleSuccess > 0 && rawDribbleTotal === 0) {
-        issues.push({
-          playerId: mp.player_id,
-          playerName: mp.player.full_name,
-          type: "info",
-          message: `Dribles tentados não registrados (derivado: ${normalizedStats.dribbles_total_derived})`,
-        });
-      }
+      // Dribbles - auto-derived totals, no warning needed
+      // The normalization engine guarantees total >= success
+      // REMOVED: Info messages for derived totals pollute the checklist
 
       // Duels won vs total (derived)
       const duelsWon = normalizedStats.duels_won ?? 0;
@@ -216,17 +207,9 @@ export default function LiveMatchReview() {
         });
       }
 
-      // Passes - derived total always >= completed
-      const rawPassesCompleted = rawStats?.passes_completed ?? 0;
-      const rawPassesTotal = rawStats?.passes_total ?? 0;
-      if (rawPassesCompleted > 0 && rawPassesTotal === 0) {
-        issues.push({
-          playerId: mp.player_id,
-          playerName: mp.player.full_name,
-          type: "info",
-          message: `Passes totais não registrados (derivado: ${normalizedStats.passes_total_derived})`,
-        });
-      }
+      // Passes - auto-derived totals, no warning needed
+      // The normalization engine guarantees total >= success
+      // REMOVED: Info messages for derived totals pollute the checklist
 
       // Minutes checks - use effective duration with added time + tolerance
       // Only flag as inconsistent if minutes exceed effective duration + tolerance
@@ -714,20 +697,27 @@ export default function LiveMatchReview() {
                 const isEditing = editingPlayerId === mp.player_id;
                 
                 // Use standardized minutes calculation
-                const hasManualOverride = manualMinutes[mp.player_id] !== undefined;
+                // CRITICAL: Calculate minutes from timeline (started, entered, exited)
+                // Do NOT use mp.minutes_played as source of truth - it may be stale
+                const hasSessionOverride = manualMinutes[mp.player_id] !== undefined;
+                
+                // Calculate from timeline only (ignoring any stale minutes_played value)
                 const minutesInfo = calculateMinutesPlayed({
                   started: mp.started,
                   entered_minute: mp.entered_minute,
                   exited_minute: mp.exited_minute,
-                  minutes_played: mp.minutes_played,
+                  minutes_played: null, // Force calculation from timeline
                 });
-                const displayMinutes = manualMinutes[mp.player_id] ?? minutesInfo.minutesPlayed;
+                
+                // Display: session override > calculated from timeline
+                const displayMinutes = hasSessionOverride 
+                  ? manualMinutes[mp.player_id]
+                  : minutesInfo.minutesPlayed;
                 
                 // Determine how minutes were calculated for display
                 const getMinutesLabel = () => {
-                  if (hasManualOverride) return "editado";
-                  if (mp.minutes_played !== null) return "manual";
-                  // Show standardized range display
+                  if (hasSessionOverride) return "editado";
+                  // Show the timeline range instead of "(manual)"
                   return minutesInfo.rangeDisplay;
                 };
 
@@ -833,9 +823,9 @@ export default function LiveMatchReview() {
                         ) : (
                           <>
                             <Badge 
-                              variant={hasManualOverride ? "default" : "secondary"} 
+                              variant={hasSessionOverride ? "default" : "secondary"} 
                               className={`text-[10px] px-1.5 py-0 h-4 font-medium cursor-pointer hover:opacity-80 ${
-                                hasManualOverride ? "bg-primary" : ""
+                                hasSessionOverride ? "bg-primary" : ""
                               }`}
                               onClick={handleStartEdit}
                             >
@@ -845,7 +835,7 @@ export default function LiveMatchReview() {
                             <span className="text-[10px] text-muted-foreground italic">
                               ({getMinutesLabel()})
                             </span>
-                            {hasManualOverride && (
+                            {hasSessionOverride && (
                               <Button
                                 variant="ghost"
                                 size="icon"
