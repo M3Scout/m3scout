@@ -68,7 +68,8 @@ const internalNavGroups = [
   {
     label: "Administração",
     items: [
-      { href: "/app/goals-monitor", icon: Target, label: "Metas (Monitor)", module: "users" as const },
+      { href: "/app/goals-monitor", icon: Target, label: "Metas (Monitor)", module: "users" as const, action: "manage" as const },
+      { href: "/app/settings/users", icon: Shield, label: "Usuários", module: "users" as const, action: "manage" as const },
     ]
   }
 ];
@@ -137,7 +138,8 @@ export function AppSidebar() {
     ...group,
     items: group.items.filter(item => {
       if (!item.module) return true;
-      return can(item.module as ModuleKey, "view");
+      const action = (item as any).action || "view";
+      return can(item.module as ModuleKey, action);
     })
   })).filter(group => group.items.length > 0);
 
@@ -348,25 +350,6 @@ export function AppSidebar() {
               onClick={() => setMobileMenuOpen(false)} 
             />
           ))}
-          
-          {can("users", "manage") && (
-            <Link
-              to="/app/settings/users"
-              onClick={() => setMobileMenuOpen(false)}
-              className={cn(
-                "group relative flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all duration-150 active:scale-[0.98]",
-                isActive("/app/settings/users")
-                  ? "bg-gradient-to-r from-primary/15 to-primary/5 text-white"
-                  : "text-zinc-400 active:bg-white/5"
-              )}
-            >
-              {isActive("/app/settings/users") && (
-                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-primary rounded-full" />
-              )}
-              <Shield className="w-5 h-5 shrink-0" strokeWidth={1.5} />
-              <span className="text-[14px] tracking-wide">Usuários</span>
-            </Link>
-          )}
 
           <div className="h-px bg-gradient-to-r from-transparent via-zinc-800 to-transparent my-2" />
 
@@ -492,55 +475,6 @@ export function AppSidebar() {
               />
             ))}
 
-            {/* User Management - Admin Only */}
-            {can("users", "manage") && (
-              <>
-                {(isCollapsed || isTablet) ? (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Link
-                        to="/app/settings/users"
-                        className={cn(
-                          "group relative flex items-center justify-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150",
-                          isActive("/app/settings/users")
-                            ? "bg-gradient-to-r from-primary/12 to-primary/6 text-white"
-                            : "text-zinc-400 hover:text-zinc-100"
-                        )}
-                      >
-                        {isActive("/app/settings/users") && (
-                          <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-5 bg-primary rounded-full" />
-                        )}
-                        <Shield className="w-[18px] h-[18px]" strokeWidth={1.5} />
-                      </Link>
-                    </TooltipTrigger>
-                    <TooltipContent 
-                      side="right" 
-                      sideOffset={12}
-                      className="bg-zinc-900 border-zinc-800 text-zinc-100 text-xs font-medium"
-                    >
-                      Usuários & Permissões
-                    </TooltipContent>
-                  </Tooltip>
-                ) : (
-                  <Link
-                    to="/app/settings/users"
-                    className={cn(
-                      "group relative flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150",
-                      isActive("/app/settings/users")
-                        ? "bg-gradient-to-r from-primary/12 to-primary/6 text-white"
-                        : "text-zinc-400 hover:text-zinc-100 hover:translate-x-0.5"
-                    )}
-                  >
-                    {isActive("/app/settings/users") && (
-                      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-5 bg-primary rounded-full" />
-                    )}
-                    <Shield className="w-[18px] h-[18px]" strokeWidth={1.5} />
-                    <span className="text-[13px] tracking-wide">Usuários</span>
-                  </Link>
-                )}
-              </>
-            )}
-            
             {/* User email - only when expanded on desktop */}
             {!(isCollapsed || isTablet) && user && (
               <div className="px-3 py-2 text-[11px] text-zinc-600 truncate">
