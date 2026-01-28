@@ -9,6 +9,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 import { PhysicalEvolutionChart } from "./PhysicalEvolutionChart";
 
@@ -653,12 +655,47 @@ const PhysicalRadarChart = ({ data }: { data: PhysicalData }) => {
 };
 
 export const PhysicalDataSection = ({ data, playerId, playerName }: PhysicalDataSectionProps) => {
-  const bmi = calculateBMI(data.weight, data.height);
+  // Fetch the latest physical evaluation from history for real-time updates
+  const { data: latestEvaluation } = useQuery({
+    queryKey: ["latest-physical-evaluation", playerId],
+    queryFn: async () => {
+      if (!playerId) return null;
+      const { data: records, error } = await supabase
+        .from("player_physical_history")
+        .select("*")
+        .eq("player_id", playerId)
+        .order("recorded_at", { ascending: false })
+        .limit(1);
+      
+      if (error) throw error;
+      return Array.isArray(records) && records.length > 0 ? records[0] : null;
+    },
+    enabled: !!playerId,
+    staleTime: 0, // Always check for updates
+  });
+
+  // Merge: use latest evaluation data if available, otherwise fallback to player static data
+  // Priority: latestEvaluation > data (player static fields)
+  const mergedData: PhysicalData = {
+    height: data.height, // Height and wingspan are static, not in evaluations
+    wingspan: data.wingspan,
+    position: data.position,
+    // For evaluation fields: use latest if exists and has value, else fallback
+    weight: latestEvaluation?.weight ?? data.weight,
+    body_fat_percentage: latestEvaluation?.body_fat_percentage ?? data.body_fat_percentage,
+    muscle_mass: latestEvaluation?.muscle_mass ?? data.muscle_mass,
+    max_speed: latestEvaluation?.max_speed ?? data.max_speed,
+    sprint_30m: latestEvaluation?.sprint_30m ?? data.sprint_30m,
+    vo2_max: latestEvaluation?.vo2_max ?? data.vo2_max,
+    last_physical_evaluation: latestEvaluation?.recorded_at ?? data.last_physical_evaluation,
+  };
+
+  const bmi = calculateBMI(mergedData.weight, mergedData.height);
   
   // Calculate derived values for body composition
-  const leanMass = calculateLeanMass(data.weight, data.body_fat_percentage);
+  const leanMass = calculateLeanMass(mergedData.weight, mergedData.body_fat_percentage);
   const estimatedMuscleMass = calculateEstimatedMuscleMass(leanMass);
-  const muscleMassPercentage = calculateMuscleMassPercentage(estimatedMuscleMass, data.weight);
+  const muscleMassPercentage = calculateMuscleMassPercentage(estimatedMuscleMass, mergedData.weight);
 
   return (
     <div className="space-y-6">
@@ -668,12 +705,12 @@ export const PhysicalDataSection = ({ data, playerId, playerName }: PhysicalData
           playerId={playerId}
           playerName={playerName}
           currentData={{
-            weight: data.weight,
-            body_fat_percentage: data.body_fat_percentage,
-            muscle_mass: data.muscle_mass,
-            max_speed: data.max_speed,
-            sprint_30m: data.sprint_30m,
-            vo2_max: data.vo2_max,
+            weight: mergedData.weight,
+            body_fat_percentage: mergedData.body_fat_percentage,
+            muscle_mass: mergedData.muscle_mass,
+            max_speed: mergedData.max_speed,
+            sprint_30m: mergedData.sprint_30m,
+            vo2_max: mergedData.vo2_max,
           }}
         />
       )}
@@ -694,7 +731,7 @@ export const PhysicalDataSection = ({ data, playerId, playerName }: PhysicalData
           <div>
             <BlockTitle icon={TrendingUp} title="Performance vs Elite" />
             <div className="rounded-xl bg-zinc-900/40 border border-zinc-800/40 p-4">
-              <PhysicalRadarChart data={data} />
+              <PhysicalRadarChart data={mergedData} />
               <p className="text-[10px] text-zinc-700 text-center mt-2 uppercase tracking-wider">
                 Comparação com benchmarks elite (100% = nível elite)
               </p>
@@ -705,9 +742,9 @@ export const PhysicalDataSection = ({ data, playerId, playerName }: PhysicalData
           <div>
             <BlockTitle icon={Ruler} title="Medidas Corporais" />
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              <MetricCard icon={Ruler} label="Altura" value={data.height} unit="cm" metricKey="height" />
-              <MetricCard icon={Scale} label="Peso" value={data.weight} unit="kg" metricKey="weight" />
-              <MetricCard icon={Ruler} label="Envergadura" value={data.wingspan} unit="cm" metricKey="wingspan" />
+              <MetricCard icon={Ruler} label="Altura" value={mergedData.height} unit="cm" metricKey="height" />
+              <MetricCard icon={Scale} label="Peso" value={mergedData.weight} unit="kg" metricKey="weight" />
+              <MetricCard icon={Ruler} label="Envergadura" value={mergedData.wingspan} unit="cm" metricKey="wingspan" />
             </div>
           </div>
 
@@ -718,9 +755,9 @@ export const PhysicalDataSection = ({ data, playerId, playerName }: PhysicalData
               <BodyCompositionCard 
                 icon={Percent} 
                 label="% Gordura" 
-                value={data.body_fat_percentage} 
+                value={mergedData.body_fat_percentage} 
                 unit="%" 
-                position={data.position}
+                position={mergedData.position}
                 metricType="body_fat"
               />
               <BodyCompositionCard 
@@ -728,13 +765,13 @@ export const PhysicalDataSection = ({ data, playerId, playerName }: PhysicalData
                 label="% Massa Muscular" 
                 value={muscleMassPercentage} 
                 unit="%" 
-                position={data.position}
+                position={mergedData.position}
                 metricType="muscle_mass"
               />
               <MetricCard icon={Target} label="IMC" value={bmi} unit="" metricKey="bmi" />
             </div>
             {/* Calculation info - Discrete */}
-            {data.weight && data.body_fat_percentage && (
+            {mergedData.weight && mergedData.body_fat_percentage && (
               <div className="mt-3 p-3 rounded-lg bg-zinc-900/30 border border-zinc-800/30">
                 <p className="text-[9px] text-zinc-700 uppercase tracking-wider">
                   <span className="text-zinc-600">Cálculos:</span>{" "}
@@ -749,19 +786,19 @@ export const PhysicalDataSection = ({ data, playerId, playerName }: PhysicalData
           <div>
             <BlockTitle icon={Zap} title="Performance" />
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              <MetricCard icon={Zap} label="Velocidade Máx." value={data.max_speed} unit="km/h" metricKey="max_speed" />
-              <MetricCard icon={Timer} label="Sprint 30m" value={data.sprint_30m} unit="s" metricKey="sprint_30m" />
-              <MetricCard icon={Heart} label="VO2 Máx" value={data.vo2_max} unit="ml/kg/min" metricKey="vo2_max" />
+              <MetricCard icon={Zap} label="Velocidade Máx." value={mergedData.max_speed} unit="km/h" metricKey="max_speed" />
+              <MetricCard icon={Timer} label="Sprint 30m" value={mergedData.sprint_30m} unit="s" metricKey="sprint_30m" />
+              <MetricCard icon={Heart} label="VO2 Máx" value={mergedData.vo2_max} unit="ml/kg/min" metricKey="vo2_max" />
             </div>
           </div>
 
           {/* Last evaluation footer - Discrete */}
-          {data.last_physical_evaluation && (
+          {mergedData.last_physical_evaluation && (
             <div className="pt-4 border-t border-zinc-800/40 flex items-center gap-2 text-xs text-zinc-600">
               <Calendar className="w-3.5 h-3.5" />
               <span>Última avaliação:</span>
               <span className="font-medium text-zinc-400">
-                {new Date(data.last_physical_evaluation).toLocaleDateString("pt-BR")}
+                {new Date(mergedData.last_physical_evaluation).toLocaleDateString("pt-BR")}
               </span>
             </div>
           )}
