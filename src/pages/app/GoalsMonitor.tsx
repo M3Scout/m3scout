@@ -164,9 +164,10 @@ export default function GoalsMonitor() {
   const currentYear = new Date().getFullYear();
 
   // Fetch all goals with player info
-  const { data: goalsRaw, isLoading: goalsLoading } = useQuery({
+  const { data: goalsRaw, isLoading: goalsLoading, error: goalsError } = useQuery({
     queryKey: ["admin-goals-monitor"],
     queryFn: async () => {
+      // Use left join (no !inner) to avoid RLS filtering issues
       const { data, error } = await supabase
         .from("player_season_goals")
         .select(`
@@ -176,7 +177,7 @@ export default function GoalsMonitor() {
           season_year,
           created_at,
           player_id,
-          player:players!inner(
+          player:players(
             id,
             full_name,
             position,
@@ -186,10 +187,20 @@ export default function GoalsMonitor() {
         `)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("[GoalsMonitor] Query error:", error);
+        throw error;
+      }
+      
+      console.log("[GoalsMonitor] Fetched goals:", data?.length ?? 0);
       return data as GoalWithPlayer[];
     },
   });
+
+  // Debug logging
+  if (goalsError) {
+    console.error("[GoalsMonitor] Error state:", goalsError);
+  }
 
   // Fetch stats for each unique player to calculate progress
   const playerIds = useMemo(() => {
