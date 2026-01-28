@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getYouTubeEmbedUrl, getYouTubeThumbnailUrl, cn } from "@/lib/utils";
@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
+import { usePlayerMatchStats } from "@/hooks/usePlayerMatchStats";
 import { 
   ArrowLeft, 
   MapPin, 
@@ -523,11 +524,7 @@ const PlayerProfile = () => {
   const { slug } = useParams();
   const [player, setPlayer] = useState<Player | null>(null);
   const [loading, setLoading] = useState(true);
-  const [currentSeasonStats, setCurrentSeasonStats] = useState<SeasonStats | null>(null);
-  const [careerStats, setCareerStats] = useState<SeasonStats[]>([]);
-  const [competitionStats, setCompetitionStats] = useState<CompetitionStats[]>([]);
   const [activeTab, setActiveTab] = useState<TabValue>("current");
-  const [statsLoading, setStatsLoading] = useState(true);
   const [videoOpen, setVideoOpen] = useState(false);
   const [showStickyCTA, setShowStickyCTA] = useState(false);
 
@@ -559,114 +556,119 @@ const PlayerProfile = () => {
     fetchPlayer();
   }, [slug]);
 
-  // Fetch stats
+  // ==================== MATCH-DERIVED STATS (Single Source of Truth) ====================
+  const {
+    matches: matchDerivedMatches,
+    totals: matchTotals,
+    bySeason,
+    isLoading: statsLoading,
+  } = usePlayerMatchStats({
+    playerId: player?.id ?? "",
+    enabled: !!player?.id,
+  });
+
+  // Convert hook aggregates into the local UI shape (keeps UI unchanged)
+  const careerStats: SeasonStats[] = useMemo(() => {
+    return Object.entries(bySeason)
+      .map(([year, s]) => ({
+        season_year: Number(year),
+        matches: s.matches,
+        minutes: s.minutes,
+        goals: s.goals,
+        assists: s.assists,
+        yellow_cards: s.yellow_cards,
+        red_cards: s.red_cards,
+        tackles: s.tackles,
+        interceptions: s.interceptions,
+        recoveries: s.recoveries,
+        shots: s.shots,
+        shots_on_target: s.shots_on_target,
+        key_passes: s.key_passes,
+        chances_created: s.chances_created,
+        successful_dribbles: s.dribbles_success,
+        total_dribbles: s.dribbles_total,
+        accurate_passes: s.passes_completed,
+        total_passes: s.passes_total,
+        clearances: s.clearances,
+        saves: s.saves,
+        goals_conceded: s.goals_conceded,
+        clean_sheets: s.clean_sheets,
+        penalties_saved: s.penalties_saved,
+      }))
+      .sort((a, b) => b.season_year - a.season_year);
+  }, [bySeason]);
+
+  const currentSeasonStats: SeasonStats | null = useMemo(() => {
+    if (careerStats.length === 0) return null;
+    return careerStats.find((s) => s.season_year === currentYear) || careerStats[0] || null;
+  }, [careerStats]);
+
+  const competitionStats: CompetitionStats[] = useMemo(() => {
+    const acc: Record<string, CompetitionStats> = {};
+    for (const m of matchDerivedMatches) {
+      if (!m.competition_id) continue;
+      const key = `${m.competition_id}-${m.season_year}`;
+      if (!acc[key]) {
+        acc[key] = {
+          competition_id: m.competition_id,
+          competition_name: m.competition_name || "Competição",
+          competition_type: "league",
+          season_year: m.season_year,
+          matches: 0,
+          minutes: 0,
+          goals: 0,
+          assists: 0,
+        };
+      }
+      const c = acc[key];
+      c.matches += 1;
+      c.minutes += m.minutes_played;
+      c.goals += m.stats.goals;
+      c.assists += m.stats.assists;
+    }
+    return Object.values(acc).sort((a, b) => b.season_year - a.season_year);
+  }, [matchDerivedMatches]);
+
+  const careerTotals = useMemo(
+    () => ({
+      matches: matchTotals.matches,
+      minutes: matchTotals.minutes,
+      goals: matchTotals.goals,
+      assists: matchTotals.assists,
+      shots: matchTotals.shots,
+      key_passes: matchTotals.key_passes,
+      tackles: matchTotals.tackles,
+      interceptions: matchTotals.interceptions,
+      recoveries: matchTotals.recoveries,
+      yellow_cards: matchTotals.yellow_cards,
+      red_cards: matchTotals.red_cards,
+    }),
+    [matchTotals]
+  );
+
+  // DEV-only debug logs (remove after validation)
   useEffect(() => {
+    if (!import.meta.env.DEV) return;
     if (!player?.id) return;
 
-    const fetchStats = async () => {
-      setStatsLoading(true);
-      
-      const { data } = await supabase
-        .from("player_stats")
-        .select(`*, competitions:competition_id (id, name, display_name, type)`)
-        .eq("player_id", player.id)
-        .order("season_year", { ascending: false });
+    const matchIds = matchDerivedMatches.map((m) => m.match_id);
+    const minutesByMatch = matchDerivedMatches.map((m) => ({ match_id: m.match_id, minutes: m.minutes_played }));
+    const counts = matchIds.reduce((acc, id) => {
+      acc[id] = (acc[id] ?? 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
 
-      if (Array.isArray(data) && data.length > 0) {
-        // Aggregate by season
-        const statsBySeason = data.reduce((acc, stat) => {
-          const year = stat.season_year;
-          if (!acc[year]) {
-            acc[year] = {
-              season_year: year,
-              matches: 0, minutes: 0, goals: 0, assists: 0,
-              yellow_cards: 0, red_cards: 0, tackles: 0, interceptions: 0,
-              recoveries: 0, shots: 0, shots_on_target: 0, key_passes: 0,
-              chances_created: 0, successful_dribbles: 0, total_dribbles: 0,
-              accurate_passes: 0, total_passes: 0, clearances: 0,
-              saves: 0, goals_conceded: 0, clean_sheets: 0, penalties_saved: 0,
-            };
-          }
-          const s = acc[year];
-          s.matches += stat.matches || 0;
-          s.minutes += stat.minutes || 0;
-          s.goals += stat.goals || 0;
-          s.assists += stat.assists || 0;
-          s.yellow_cards += stat.yellow_cards || 0;
-          s.red_cards += stat.red_cards || 0;
-          s.tackles += stat.tackles || 0;
-          s.interceptions += stat.interceptions || 0;
-          s.recoveries += stat.recoveries || 0;
-          s.shots += stat.shots || 0;
-          s.shots_on_target += stat.shots_on_target || 0;
-          s.key_passes += stat.key_passes || 0;
-          s.chances_created += stat.chances_created || 0;
-          s.successful_dribbles += stat.successful_dribbles || 0;
-          s.total_dribbles += stat.total_dribbles || 0;
-          s.accurate_passes += stat.accurate_passes || 0;
-          s.total_passes += stat.total_passes || 0;
-          s.clearances += stat.clearances || 0;
-          s.saves += stat.saves || 0;
-          s.goals_conceded += stat.goals_conceded || 0;
-          s.clean_sheets += stat.clean_sheets || 0;
-          s.penalties_saved += stat.penalties_saved || 0;
-          return acc;
-        }, {} as Record<number, SeasonStats>);
-
-        const seasons = Object.values(statsBySeason).sort((a, b) => b.season_year - a.season_year);
-        setCareerStats(seasons);
-        
-        const current = seasons.find((s) => s.season_year === currentYear) || seasons[0];
-        if (current) setCurrentSeasonStats(current);
-
-        // Aggregate by competition
-        const statsByCompetition = data.reduce((acc, stat) => {
-          const compId = stat.competition_id;
-          if (!compId) return acc;
-          const competition = stat.competitions as { id: string; name: string; display_name: string | null; type: string } | null;
-          const key = `${compId}-${stat.season_year}`;
-          if (!acc[key]) {
-            acc[key] = {
-              competition_id: compId,
-              competition_name: competition?.display_name || competition?.name || "Competição",
-              competition_type: competition?.type || "league",
-              season_year: stat.season_year,
-              matches: 0, minutes: 0, goals: 0, assists: 0,
-            };
-          }
-          const c = acc[key];
-          c.matches += stat.matches || 0;
-          c.minutes += stat.minutes || 0;
-          c.goals += stat.goals || 0;
-          c.assists += stat.assists || 0;
-          return acc;
-        }, {} as Record<string, CompetitionStats>);
-
-        setCompetitionStats(Object.values(statsByCompetition).sort((a, b) => b.season_year - a.season_year));
-      }
-      setStatsLoading(false);
-    };
-
-    fetchStats();
-  }, [player?.id]);
-
-  // Calculations
-  const careerTotals = careerStats.reduce((acc, s) => ({
-    matches: acc.matches + s.matches,
-    minutes: acc.minutes + s.minutes,
-    goals: acc.goals + s.goals,
-    assists: acc.assists + s.assists,
-    shots: acc.shots + s.shots,
-    key_passes: acc.key_passes + s.key_passes,
-    tackles: acc.tackles + s.tackles,
-    interceptions: acc.interceptions + s.interceptions,
-    recoveries: acc.recoveries + s.recoveries,
-    yellow_cards: acc.yellow_cards + s.yellow_cards,
-    red_cards: acc.red_cards + s.red_cards,
-  }), {
-    matches: 0, minutes: 0, goals: 0, assists: 0, shots: 0, key_passes: 0,
-    tackles: 0, interceptions: 0, recoveries: 0, yellow_cards: 0, red_cards: 0,
-  });
+    // eslint-disable-next-line no-console
+    console.log("[PUBLIC_STATS_DEBUG]", {
+      playerId: player.id,
+      seasonYear: currentYear,
+      competitionFilter: null,
+      matchesLength: matchDerivedMatches.length,
+      matchIds,
+      minutesByMatch,
+      matchIdCounts: counts,
+    });
+  }, [player?.id, matchDerivedMatches]);
 
   const calculatePer90 = (value: number, minutes: number): string => {
     if (minutes < 90) return "—";
