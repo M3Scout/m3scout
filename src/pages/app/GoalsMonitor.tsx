@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { 
   Target, 
@@ -47,6 +47,8 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { fetchPlayerMatchStatsRaw } from "@/lib/playerMatchStatsProvider";
+import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 
 // Goal type configuration (mirrored from AthleteSeasonGoalsCard)
 interface GoalTypeConfig {
@@ -154,6 +156,10 @@ function StatusBadge({ status, isLimit }: { status: GoalStatus; isLimit: boolean
 }
 
 export default function GoalsMonitor() {
+  const isDev = import.meta.env.DEV;
+  const { isAdmin } = useAuth();
+  const { can, loading: permissionsLoading, permissionsError } = usePermissions();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [goalTypeFilter, setGoalTypeFilter] = useState<string>("_all");
   const [seasonFilter, setSeasonFilter] = useState<string>("_all");
@@ -192,7 +198,9 @@ export default function GoalsMonitor() {
         throw error;
       }
       
-      console.log("[GoalsMonitor] Fetched goals:", data?.length ?? 0, data);
+      if (isDev) {
+        console.log("[GoalsMonitor] Fetched goals:", data?.length ?? 0, data);
+      }
       return data as GoalWithPlayer[];
     },
   });
@@ -378,16 +386,64 @@ export default function GoalsMonitor() {
   // Check fetchStatus to know if the query is actually fetching
   const isStatsActuallyLoading = statsLoading && statsFetchStatus === "fetching";
   const isLoading = goalsLoading || (playerIds.length > 0 && isStatsActuallyLoading);
-  
+
+  const goals = goalsRaw ?? [];
+  const rbacAllowed = isAdmin || can("users", "manage");
+
   // Debug log (dev only)
-  console.log("[GoalsMonitor] Render:", { goalsLoading, statsLoading, statsFetchStatus, playerIdsLength: playerIds.length, isLoading, filteredGoalsLength: filteredGoals?.length });
+  if (isDev) {
+    console.log("[GoalsMonitor] Render:", {
+      permissionsLoading,
+      permissionsError,
+      rbacAllowed,
+      goalsLoading,
+      goalsError: goalsError ? String(goalsError) : null,
+      statsLoading,
+      statsFetchStatus,
+      playerIdsLength: playerIds.length,
+      isLoading,
+      goalsLength: goals.length,
+      firstGoal: goals[0] ?? null,
+      filteredGoalsLength: filteredGoals.length,
+    });
+  }
 
   return (
-    <div className="min-h-screen bg-background">
-      <motion.div 
-        {...fadeInUp}
-        className="container max-w-7xl mx-auto px-4 py-6 space-y-6"
-      >
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="container max-w-7xl mx-auto px-4 py-6 space-y-6">
+        {/* ===== ALWAYS VISIBLE HEADER (even during RBAC/loading) ===== */}
+        <header className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-xl font-semibold">Metas (Monitor)</h1>
+            <p className="text-sm text-muted-foreground">Total: {goals.length}</p>
+            {isDev && (
+              <pre className="mt-3 max-w-full overflow-auto rounded-lg border border-border/50 bg-card/50 p-3 text-[11px] leading-snug text-muted-foreground">
+{JSON.stringify(goals?.[0] ?? null, null, 2)}
+              </pre>
+            )}
+          </div>
+
+          {/* Small non-blocking RBAC indicator */}
+          {permissionsLoading && (
+            <div className="text-xs text-muted-foreground">Sincronizando permissões…</div>
+          )}
+        </header>
+
+        {/* ===== RBAC DENY (never blank) ===== */}
+        {!permissionsLoading && !permissionsError && !rbacAllowed ? (
+          <div className="rounded-xl border border-border/50 bg-card/50 p-4">
+            <p className="text-sm font-medium">Sem permissão</p>
+            <p className="text-xs text-muted-foreground">Você não tem acesso ao monitor de metas.</p>
+          </div>
+        ) : (
+          /* ===== MAIN CONTENT ===== */
+          /* Keep existing UI below (filters/table/cards). */
+          <motion.div
+            variants={fadeInUp}
+            initial="hidden"
+            animate="visible"
+            className="space-y-6"
+          >
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -395,7 +451,7 @@ export default function GoalsMonitor() {
               <Target className="w-5 h-5 text-emerald-400" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-foreground">Metas dos Jogadores</h1>
+              <h2 className="text-xl font-semibold text-foreground">Metas dos Jogadores</h2>
               <p className="text-xs text-muted-foreground">Monitoramento em tempo real (somente leitura)</p>
             </div>
           </div>
@@ -500,6 +556,11 @@ export default function GoalsMonitor() {
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-8 h-8 text-muted-foreground animate-spin" />
+          </div>
+        ) : goalsError ? (
+          <div className="rounded-xl border border-border/50 bg-card/50 p-4">
+            <p className="text-sm font-medium">Erro ao carregar metas</p>
+            <p className="mt-1 text-xs text-muted-foreground">{String(goalsError)}</p>
           </div>
         ) : filteredGoals.length === 0 ? (
           <div className="py-20 text-center">
@@ -709,7 +770,9 @@ export default function GoalsMonitor() {
             </div>
           </>
         )}
-      </motion.div>
+          </motion.div>
+        )}
+      </div>
 
       {/* Detail Modal */}
       <Dialog open={!!selectedGoal} onOpenChange={() => setSelectedGoal(null)}>
