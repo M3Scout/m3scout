@@ -31,6 +31,7 @@ import {
 import { cn } from "@/lib/utils";
 import { playSound, getSoundForEvent } from "@/lib/sounds";
 import { getPositionColor, getShortPosition } from "@/lib/positionColors";
+import { getEventLabel } from "@/lib/eventLabels";
 import { PlayerNotesModal } from "./PlayerNotesModal";
 import { InlineMoreStatsPanel } from "./InlineMoreStatsPanel";
 

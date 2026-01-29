@@ -360,6 +360,7 @@ export function useLiveMatch(matchId: string) {
   }, [matchPlayers, onlyOnField]);
 
   // Compute event counts per player (only counting official events)
+  // CRITICAL: Also calculates derived ball_action count from eligible events
   const playerEventCounts = useMemo(() => {
     const counts: Record<string, Record<MatchEventType, number>> = {};
     
@@ -372,6 +373,27 @@ export function useLiveMatch(matchId: string) {
       }
       const current = counts[event.player_id][event.event_type] || 0;
       counts[event.player_id][event.event_type] = current + event.value;
+    });
+
+    // DERIVED STAT: Calculate ball_action for each player from eligible events
+    // Uses the same list as derivedBallActions.ts for consistency with post-game summary
+    const BALL_ACTION_EVENTS: MatchEventType[] = [
+      // Attack
+      "goal", "shot_on_target", "shot", "shot_blocked", "assist", "key_pass", "chance_created",
+      // Passing
+      "pass_success", "pass_total", "cross_success", "cross_failed",
+      // Dribbles
+      "dribble_success", "dribble_attempt", "possession_lost",
+      // Defense with possession
+      "recovery",
+    ];
+    
+    Object.keys(counts).forEach((playerId) => {
+      let ballActions = 0;
+      BALL_ACTION_EVENTS.forEach((eventType) => {
+        ballActions += counts[playerId][eventType] || 0;
+      });
+      counts[playerId]["ball_action" as MatchEventType] = ballActions;
     });
 
     return counts;

@@ -24,6 +24,7 @@ import {
 import { cn } from "@/lib/utils";
 import { playSound, getSoundForEvent } from "@/lib/sounds";
 import { getPositionColor, getShortPosition } from "@/lib/positionColors";
+import { getEventLabel } from "@/lib/eventLabels";
 import { PlayerNotesModal } from "./PlayerNotesModal";
 import { InlineMoreStatsPanel } from "./InlineMoreStatsPanel";
 import { toast } from "sonner";
@@ -152,13 +153,13 @@ export function MobilePlayerCard({
     setTimeout(() => setLastEvent(null), 800);
     onAddEvent(eventType);
     
-    toast.success(`Evento registrado`, {
+    toast.success(`${getEventLabel(eventType)} +1`, {
       description: matchStatus === "draft" ? "Pendente até iniciar o jogo" : undefined,
       action: {
         label: "Desfazer",
         onClick: () => onUndo(),
       },
-      duration: 5000,
+      duration: 3000,
     });
     
     // Debounce
