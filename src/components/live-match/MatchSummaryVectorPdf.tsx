@@ -32,7 +32,7 @@ import { ptBR } from "date-fns/locale";
 import { PDF_COLORS } from "@/lib/pdfStyles";
 import { Match, MatchPlayer, MatchEvent, MatchEventType, MatchPlayerStats } from "@/hooks/useLiveMatch";
 import { calculateMinutesPlayed } from "@/lib/minutesPlayed";
-import { calculatePlayerMatchRating, getRatingBgColor, matchPlayerStatsToInput } from "@/lib/matchRatingEngine";
+import { persistedRatingToResult, getRatingBgColor, matchPlayerStatsToInput } from "@/lib/matchRatingEngine";
 import { classifyMatchProfile, type MatchProfileKey } from "@/lib/matchProfileEngine";
 import { calculateMatchEfficiency, getEfficiencyColorHex, getEfficiencyBgColorHex, type EfficiencyLevel } from "@/lib/matchEfficiencyEngine";
 import { generateScoutingText } from "@/lib/scoutingTextEngine";
@@ -1509,15 +1509,10 @@ export function MatchSummaryVectorPdf({
                   {/* Match Rating Badge */}
                   {(match.status === "finished" || match.status === "applied") && (() => {
                     const stats = playerStatsMap[mp.player_id];
-                    const rating = calculatePlayerMatchRating(stats, {
-                      started: mp.started,
-                      entered_minute: mp.entered_minute,
-                      exited_minute: mp.exited_minute,
-                      minutes_played: mp.minutes_played,
-                    });
                     
-                    // Players with no rating (0 minutes) show "—"
-                    if (!rating.hasRating) {
+                    // SINGLE SOURCE OF TRUTH: Read persisted rating, never recalculate
+                    // Players with no rating (0 minutes or null) show "—"
+                    if (!stats?.rating || minutesPlayed === 0) {
                       return (
                         <View style={{ backgroundColor: "#6b7280", paddingLeft: 4, paddingRight: 4, paddingTop: 2, paddingBottom: 2, borderRadius: 3 }}>
                           <Text style={{ fontSize: 8, fontWeight: 700, color: "#ffffff" }}>—</Text>
@@ -1525,12 +1520,13 @@ export function MatchSummaryVectorPdf({
                       );
                     }
                     
+                    // Use persisted rating value
+                    const r = stats.rating;
                     // SofaScore color bands: <6=red, 6-6.4=orange, 6.5-6.9=amber, 7-7.9=green, 8-8.9=cyan, 9+=blue
-                    const r = rating.rating!;
                     const bgColor = r < 6.0 ? "#ef4444" : r < 6.5 ? "#f97316" : r < 7.0 ? "#f59e0b" : r < 8.0 ? "#22c55e" : r < 9.0 ? "#06b6d4" : "#3b82f6";
                     return (
                       <View style={{ backgroundColor: bgColor, paddingLeft: 4, paddingRight: 4, paddingTop: 2, paddingBottom: 2, borderRadius: 3 }}>
-                        <Text style={{ fontSize: 8, fontWeight: 700, color: "#ffffff" }}>{rating.rating!.toFixed(1)}</Text>
+                        <Text style={{ fontSize: 8, fontWeight: 700, color: "#ffffff" }}>{r.toFixed(1)}</Text>
                       </View>
                     );
                   })()}

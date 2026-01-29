@@ -780,3 +780,64 @@ export function calculatePlayerMatchRating(
   const statsInput = matchPlayerStatsToInput(stats, isGoalkeeper);
   return calculateMatchRating(statsInput, minutesInfo.minutesPlayed);
 }
+
+/**
+ * Convert persisted rating to MatchRatingResult format for display
+ * 
+ * SINGLE SOURCE OF TRUTH: Use this to display ratings from match_player_stats.rating
+ * instead of recalculating. This ensures consistency across all screens.
+ * 
+ * @param rating - The persisted rating value (e.g., 6.3)
+ * @param minutesPlayed - Minutes the player was on field
+ * @param minutesFactor - The factor used during calculation (optional)
+ */
+export function persistedRatingToResult(
+  rating: number,
+  minutesPlayed: number,
+  minutesFactor: number | null = null
+): MatchRatingResult {
+  const getLabel = (r: number): string => {
+    if (r >= 9.0) return "Excepcional";
+    if (r >= 8.0) return "Excelente";
+    if (r >= 7.0) return "Muito Bom";
+    if (r >= 6.5) return "Bom";
+    if (r >= 6.0) return "Regular";
+    if (r >= 5.0) return "Fraco";
+    return "Muito Fraco";
+  };
+
+  return {
+    hasRating: true,
+    rating,
+    baseRating: 6.0,
+    rawImpact: rating - 6.0,
+    impactAfterMinutes: rating - 6.0,
+    minutesFactor: minutesFactor ?? 1.0,
+    minutesPlayed,
+    breakdown: null,
+    detailedBreakdown: null,
+    color: getRatingColor(rating),
+    bgColor: getRatingBgColor(rating),
+    label: getLabel(rating),
+  };
+}
+
+/**
+ * Get a "no rating" result for players with 0 minutes
+ */
+export function noRatingResult(): MatchRatingResult {
+  return {
+    hasRating: false,
+    rating: null,
+    baseRating: 6.0,
+    rawImpact: 0,
+    impactAfterMinutes: 0,
+    minutesFactor: 1.0,
+    minutesPlayed: 0,
+    breakdown: null,
+    detailedBreakdown: null,
+    color: "text-muted-foreground",
+    bgColor: "bg-muted",
+    label: "Sem nota",
+  };
+}

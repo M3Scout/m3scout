@@ -150,6 +150,12 @@ export interface MatchPlayerStats {
   goals_conceded: number;
   created_at: string;
   updated_at: string;
+  // Rating fields (persisted by rebuild_match_ratings SQL function)
+  rating: number | null;
+  rating_minutes_played: number | null;
+  rating_minutes_factor: number | null;
+  rating_computed_at: string | null;
+  rating_engine_version: string;
 }
 
 // Local storage key for offline draft

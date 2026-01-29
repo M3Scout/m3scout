@@ -1,4 +1,30 @@
-# Memory: technical/rating-breakdown-modal-policy
+# Memory: technical/rating-persistence-policy
+Updated: 2026-01-29
+
+## SINGLE SOURCE OF TRUTH: match_player_stats.rating
+
+A nota oficial do atleta por partida é persistida exclusivamente no campo `match_player_stats.rating`. 
+
+### Regras Absolutas
+1. **PROIBIDO recalcular nota em UI** - Toda tela deve ler `match_player_stats.rating`
+2. **persistedRatingToResult()** - Função canônica em `matchRatingEngine.ts` para converter rating persistido em objeto de display
+3. **rebuild_match_ratings(matchId)** - Função SQL que recalcula e persiste ratings para todos os atletas de uma partida
+
+### Fluxo de Persistência
+- Match finalizado → `rebuildSingleMatchRatings(matchId)` é chamado
+- Edição na Revisão do Jogo → `rebuildSingleMatchRatings(matchId)` é chamado
+- Ambos invalidam caches do React Query
+
+### Componentes Corrigidos (2026-01-29)
+- `LiveMatchReview.tsx` - Agora usa `persistedRatingToResult()` ao invés de `calculatePlayerMatchRating()`
+- `MatchSummaryVectorPdf.tsx` - Agora lê `stats.rating` diretamente
+- `MatchRatingsCard.tsx` - Usa `useSortedPlayersByRating()` que lê ratings persistidos
+- `PlayerRatingBadge.tsx` - Componente de display puro
+
+### Anti-Regressão
+- Nunca usar `calculatePlayerMatchRating()` em telas de resumo/perfil
+- Sempre usar rating persistido para displays finais
+- Divergências entre telas indicam bug de fonte de dados
 Updated: 2026-01-29
 
 ## Rating Breakdown Modal ("!" Icon)
