@@ -106,20 +106,26 @@ export function normalizePlayerStats(
   const passes_failed = Math.max(0, passes_total_derived - passesCompleted);
   
   // === DRIBBLES ===
-  // REGRA: dribbles_total = successful_dribbles + dribbles_failed
+  // The field "total_dribbles" has INCONSISTENT semantics across the codebase:
+  // - In raw player_stats table: stores FAILED dribbles count
+  // - When coming from usePlayerMatchStats via toOutfieldStatsFormat: already normalized (success + failed)
+  // 
+  // STRATEGY: If total_dribbles >= successful_dribbles, assume it's already the correct total
+  // Otherwise, treat it as the failed count and derive total = success + failed
   const dribblesSuccess = safe(stats.successful_dribbles);
   const dribblesStoredTotal = safe(stats.total_dribbles);
   
-  // If stored total < success, use success as total (no failures recorded)
   let dribbles_total_derived: number;
   let dribbles_failed: number;
   
   if (dribblesStoredTotal >= dribblesSuccess) {
+    // Already normalized OR legacy data with real total
     dribbles_total_derived = dribblesStoredTotal;
-    dribbles_failed = dribblesStoredTotal - dribblesSuccess;
+    dribbles_failed = Math.max(0, dribblesStoredTotal - dribblesSuccess);
   } else {
-    dribbles_total_derived = dribblesSuccess;
-    dribbles_failed = 0;
+    // Stored "total" is actually the failed count (e.g., success=6, total=4 means 4 failed)
+    dribbles_failed = dribblesStoredTotal;
+    dribbles_total_derived = dribblesSuccess + dribbles_failed;
   }
   
   // === DUELS ===
