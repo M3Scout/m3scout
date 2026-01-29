@@ -127,12 +127,16 @@ function getMinutesFactorLabel(minutesPlayed: number): string {
 }
 
 export function RatingBreakdownModal({ rating, playerName, children }: RatingBreakdownModalProps) {
-  if (!rating.hasRating || !rating.detailedBreakdown) {
+  // Don't show modal for players without rating (0 minutes)
+  if (!rating.hasRating) {
     return <>{children}</>;
   }
   
+  // If rating exists but no breakdown (persisted rating), show abbreviated modal
+  const hasBreakdown = !!rating.detailedBreakdown;
   const { detailedBreakdown, baseRating, rawImpact, impactAfterMinutes, minutesFactor, minutesPlayed } = rating;
-  const { antiInflationApplied, hasImpactfulAction } = detailedBreakdown;
+  const antiInflationApplied = detailedBreakdown?.antiInflationApplied ?? false;
+  const hasImpactfulAction = detailedBreakdown?.hasImpactfulAction ?? true;
   
   return (
     <Dialog>
@@ -193,8 +197,8 @@ export function RatingBreakdownModal({ rating, playerName, children }: RatingBre
             </div>
           </div>
           
-          {/* Anti-Inflation & Impact Status */}
-          {!hasImpactfulAction && (
+          {/* Anti-Inflation & Impact Status - only show if we have breakdown data */}
+          {hasBreakdown && !hasImpactfulAction && (
             <div className="p-3 rounded-lg border border-amber-500/30 bg-amber-500/10">
               <div className="flex items-center gap-1.5 text-xs text-amber-500 mb-1">
                 <AlertTriangle className="h-3.5 w-3.5" />
@@ -207,7 +211,7 @@ export function RatingBreakdownModal({ rating, playerName, children }: RatingBre
             </div>
           )}
           
-          {hasImpactfulAction && (
+          {hasBreakdown && hasImpactfulAction && (
             <div className="p-3 rounded-lg border border-green-500/30 bg-green-500/10">
               <div className="flex items-center gap-1.5 text-xs text-green-500">
                 <Target className="h-3.5 w-3.5" />
@@ -216,14 +220,14 @@ export function RatingBreakdownModal({ rating, playerName, children }: RatingBre
             </div>
           )}
           
-          {/* Caps Applied */}
-          {detailedBreakdown.capsApplied.length > 0 && (
+          {/* Caps Applied - only if we have breakdown data */}
+          {hasBreakdown && detailedBreakdown!.capsApplied.length > 0 && (
             <div className="p-3 rounded-lg border border-amber-500/30 bg-amber-500/10">
               <div className="flex items-center gap-1.5 text-xs text-amber-500 mb-2">
                 <AlertTriangle className="h-3.5 w-3.5" />
                 <span className="font-medium">Limites aplicados</span>
               </div>
-              {detailedBreakdown.capsApplied.map((cap, idx) => (
+              {detailedBreakdown!.capsApplied.map((cap, idx) => (
                 <div key={idx} className="text-sm mb-1 last:mb-0">
                   <span className="text-muted-foreground">{cap.label}:</span>{" "}
                   <span className="text-red-400 line-through">{cap.before > 0 ? "+" : ""}{cap.before.toFixed(2)}</span>{" "}
@@ -233,15 +237,32 @@ export function RatingBreakdownModal({ rating, playerName, children }: RatingBre
             </div>
           )}
           
-          {/* Category Breakdown */}
-          <div>
-            <h4 className="text-sm font-medium mb-2">Contribuição por Categoria</h4>
-            <Accordion type="multiple" className="border rounded-lg">
-              {detailedBreakdown.categories.map((category) => (
-                <CategorySection key={category.key} category={category} />
-              ))}
-            </Accordion>
-          </div>
+          {/* Category Breakdown - only if we have data */}
+          {hasBreakdown ? (
+            <div>
+              <h4 className="text-sm font-medium mb-2">Contribuição por Categoria</h4>
+              <Accordion type="multiple" className="border rounded-lg">
+                {detailedBreakdown!.categories.map((category) => (
+                  <CategorySection key={category.key} category={category} />
+                ))}
+              </Accordion>
+            </div>
+          ) : (
+            <div className="p-4 rounded-lg border border-zinc-700/50 bg-zinc-900/50 text-center">
+              <Info className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">
+                Detalhamento indisponível para esta partida.
+              </p>
+              <p className="text-xs text-muted-foreground/70 mt-1">
+                A nota foi calculada pelo motor de scouting e persistida no banco de dados.
+              </p>
+              {process.env.NODE_ENV === 'development' && (
+                <p className="text-[10px] text-amber-500/70 mt-2 font-mono">
+                  [DEV] Rating persistido sem breakdown - considere rebuild
+                </p>
+              )}
+            </div>
+          )}
           
           {/* Summary Calculation */}
           <div className="p-3 rounded-lg border bg-muted/30 space-y-2 text-sm">
