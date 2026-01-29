@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { isGoalkeeper } from "@/lib/positionUtils";
 import type { PlayerStats } from "@/lib/playerStats";
-import { normalizePlayerStats, type NormalizedPlayerStats } from "@/lib/normalizePlayerStats";
+import { normalizePlayerStats, calculatePercentage, type NormalizedPlayerStats } from "@/lib/normalizePlayerStats";
 
 interface StatChipProps {
   label: string;
@@ -75,6 +75,10 @@ interface CompetitionStatsSummaryProps {
 /**
  * Read-only display of complete player statistics for a competition/season
  * Shows all available stats in a chip-based layout
+ * 
+ * REGRA MATEMÁTICA ÚNICA:
+ * - total = success + failed
+ * - percentage = (success / total) * 100, capped at 100%
  */
 export function CompetitionStatsSummary({ 
   stats: rawStats, 
@@ -84,40 +88,26 @@ export function CompetitionStatsSummary({
 }: CompetitionStatsSummaryProps) {
   const isGK = isGoalkeeper(playerPosition);
   
-  // CRITICAL: Normalize stats to ensure consistency (total >= sum of parts)
+  // CRITICAL: Normalize stats to ensure consistency (total = success + failed)
   const stats = normalizePlayerStats(rawStats);
   
   // Safe number helper
   const safe = (val: number | undefined | null): number => 
     typeof val === "number" && !isNaN(val) ? Math.max(0, val) : 0;
 
-  // Calculate percentages using normalized totals
-  const passAccuracy = stats.passes_total_derived > 0 
-    ? Math.round((safe(stats.accurate_passes) / stats.passes_total_derived) * 100) 
-    : 0;
+  // Calculate percentages using centralized function (NEVER > 100%)
+  const passAccuracy = calculatePercentage(safe(stats.accurate_passes), stats.passes_total_derived);
+  const shotAccuracy = calculatePercentage(safe(stats.shots_on_target), stats.shots_total_derived);
+  const dribbleSuccess = calculatePercentage(safe(stats.successful_dribbles), stats.dribbles_total_derived);
+  const groundDuelSuccess = calculatePercentage(safe(stats.ground_duels_won), stats.ground_duels_total_derived);
+  const aerialDuelSuccess = calculatePercentage(safe(stats.aerial_duels_won), stats.aerial_duels_total_derived);
   
-  // Use normalized shots_total_derived for accuracy calculation
-  const shotAccuracy = stats.shots_total_derived > 0 
-    ? Math.round((safe(stats.shots_on_target) / stats.shots_total_derived) * 100) 
-    : 0;
-
-  // Use normalized totals for percentage calculations
-  const dribbleSuccess = stats.dribbles_total_derived > 0 
-    ? Math.round((safe(stats.successful_dribbles) / stats.dribbles_total_derived) * 100) 
-    : 0;
-
-  const groundDuelSuccess = safe(stats.ground_duels_total) > 0 
-    ? Math.round((safe(stats.ground_duels_won) / safe(stats.ground_duels_total)) * 100) 
-    : 0;
-
-  const aerialDuelSuccess = stats.aerial_duels_total_derived > 0 
-    ? Math.round((safe(stats.aerial_duels_won) / stats.aerial_duels_total_derived) * 100) 
-    : 0;
+  // Crosses percentage using centralized function
+  const crossesTotal = stats.crosses_total;
+  const crossesSuccess = calculatePercentage(safe(stats.crosses_success), crossesTotal);
 
   // GK specific
-  const savePct = (safe(stats.saves) + safe(stats.goals_conceded)) > 0
-    ? Math.round((safe(stats.saves) / (safe(stats.saves) + safe(stats.goals_conceded))) * 100)
-    : 0;
+  const savePct = calculatePercentage(safe(stats.saves), safe(stats.saves) + safe(stats.goals_conceded));
 
   if (compact) {
     // Quick summary chips
@@ -240,16 +230,16 @@ export function CompetitionStatsSummary({
             <StatChip label="Passes Dec" value={safe(stats.key_passes)} highlight />
             <StatChip label="Chances" value={safe(stats.chances_created)} highlight />
             <StatChip label="Ações c/ Bola" value={safe(stats.ball_actions)} />
-            <StatChip label="Dribles" value={`${safe(stats.successful_dribbles)}/${safe(stats.total_dribbles)}`} />
+            <StatChip label="Dribles" value={`${safe(stats.successful_dribbles)}/${stats.dribbles_total_derived}`} />
             <StatChip label="% Dribles" value={`${dribbleSuccess}%`} />
           </StatSection>
 
-          {/* Passing */}
+          {/* Passing - REGRA: total = success + failed */}
           <StatSection title="Passe" icon={<Footprints className="w-4 h-4" />} iconColor="text-green-500">
-            <StatChip label="Passes" value={`${safe(stats.accurate_passes)}/${safe(stats.total_passes)}`} />
+            <StatChip label="Passes" value={`${safe(stats.accurate_passes)}/${stats.passes_total_derived}`} />
             <StatChip label="% Passes" value={`${passAccuracy}%`} />
-            <StatChip label="Cruzamentos" value={`${safe(stats.crosses_success)}/${safe(stats.crosses_success) + safe(stats.crosses_failed)}`} />
-            <StatChip label="% Cruzamentos" value={`${(safe(stats.crosses_success) + safe(stats.crosses_failed)) > 0 ? Math.round((safe(stats.crosses_success) / (safe(stats.crosses_success) + safe(stats.crosses_failed))) * 100) : 0}%`} />
+            <StatChip label="Cruzamentos" value={`${safe(stats.crosses_success)}/${crossesTotal}`} />
+            <StatChip label="% Cruzamentos" value={`${crossesSuccess}%`} />
           </StatSection>
 
           {/* Defense */}
@@ -262,11 +252,11 @@ export function CompetitionStatsSummary({
             <StatChip label="Driblado" value={safe(stats.was_dribbled)} />
           </StatSection>
 
-          {/* Duels */}
+          {/* Duels - REGRA: total = won + lost */}
           <StatSection title="Duelos" icon={<Target className="w-4 h-4" />} iconColor="text-cyan-500">
-            <StatChip label="Duelos Chão" value={`${safe(stats.ground_duels_won)}/${safe(stats.ground_duels_total)}`} />
+            <StatChip label="Duelos Chão" value={`${safe(stats.ground_duels_won)}/${stats.ground_duels_total_derived}`} />
             <StatChip label="% Chão" value={`${groundDuelSuccess}%`} />
-            <StatChip label="Duelos Aér" value={`${safe(stats.aerial_duels_won)}/${safe(stats.aerial_duels_total)}`} />
+            <StatChip label="Duelos Aér" value={`${safe(stats.aerial_duels_won)}/${stats.aerial_duels_total_derived}`} />
             <StatChip label="% Aéreo" value={`${aerialDuelSuccess}%`} />
             <StatChip label="Driblado" value={safe(stats.times_dribbled_past)} />
           </StatSection>

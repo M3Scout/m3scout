@@ -14,7 +14,11 @@ interface StatCardProps {
 /**
  * Reusable stat card component
  * Supports format "X/Y (Z%)" when total is provided
- * Never renders undefined or NaN - shows 0 instead
+ * 
+ * REGRA MATEMÁTICA:
+ * - percentage = (value / total) * 100
+ * - Nunca exibe percentual > 100%
+ * - Never renders undefined or NaN - shows 0 instead
  */
 export function StatCard({
   label,
@@ -27,16 +31,16 @@ export function StatCard({
   size = "md",
 }: StatCardProps) {
   // Ensure value is never undefined/NaN
-  const safeValue = typeof value === "number" && !isNaN(value) ? value : 0;
-  const safeTotal = typeof total === "number" && !isNaN(total) ? total : 0;
+  const safeValue = typeof value === "number" && !isNaN(value) ? Math.max(0, value) : 0;
+  const safeTotal = typeof total === "number" && !isNaN(total) ? Math.max(0, total) : 0;
 
-  // Calculate percentage if total provided
-  const percentage = safeTotal > 0 ? Math.round((safeValue / safeTotal) * 100) : 0;
+  // Calculate percentage if total provided - CAPPED AT 100%
+  const percentage = safeTotal > 0 ? Math.min(Math.round((safeValue / safeTotal) * 100), 100) : 0;
 
   // Format display value
   const displayValue = total !== undefined 
     ? `${safeValue}/${safeTotal}${showPercentage ? ` (${percentage}%)` : ""}`
-    : safeValue.toString();
+    : (typeof value === "string" ? value : safeValue.toString());
 
   const variantStyles = {
     default: "text-foreground",
