@@ -106,6 +106,24 @@ const EVENT_LABELS: Record<string, string> = {
   substitution: "Substituição",
 };
 
+/**
+ * Humanize snake_case event type as fallback
+ * Example: "was_dribbled" -> "Was dribbled"
+ */
+function humanizeEventType(type: string): string {
+  return type
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+/**
+ * Get human-readable label for an event type
+ * Uses canonical labels first, then falls back to humanized snake_case
+ */
+function getEventLabel(eventType: string): string {
+  return EVENT_LABELS[eventType] || humanizeEventType(eventType);
+}
+
 // Interval size in minutes for the heatmap
 const INTERVAL_SIZE = 5;
 
@@ -341,7 +359,7 @@ export function PlayerActivityHeatmap({
                                   </p>
                                   {ic.events.slice(0, 5).map((e, i) => (
                                     <p key={i} className="text-muted-foreground">
-                                      • {EVENT_LABELS[e.event_type] || e.event_type}
+                                      • {getEventLabel(e.event_type)}
                                     </p>
                                   ))}
                                   {ic.events.length > 5 && (
