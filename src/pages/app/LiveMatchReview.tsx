@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLiveMatch, MatchEventType } from "@/hooks/useLiveMatch";
 import { calculateBallActionsFromMatchStats } from "@/lib/derivedBallActions";
 import { normalizeMatchStats, type RawMatchStats } from "@/lib/normalizeMatchStats";
+import { EVENT_LABELS_PTBR } from "@/lib/eventLabels";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -79,49 +80,8 @@ const EVENT_TO_STAT_COLUMN: Partial<Record<MatchEventType, string>> = {
   sweeper_action: "successful_runs_out",
 };
 
-// Event type labels for display
-const EVENT_LABELS: Partial<Record<MatchEventType, string>> = {
-  goal: "Gols",
-  assist: "Assistências",
-  shot: "Chutes",
-  shot_on_target: "Chutes no Gol",
-  shot_blocked: "Finalização Bloqueada",
-  offside: "Impedimento",
-  key_pass: "Passes Decisivos",
-  chance_created: "Chances Criadas",
-  dribble_success: "Dribles Certos",
-  dribble_attempt: "Dribles Errados",
-  tackle: "Desarmes",
-  interception: "Interceptações",
-  recovery: "Recuperações",
-  clearance: "Cortes",
-  blocked_shot: "Chute Bloqueado",
-  was_dribbled: "Driblado",
-  ground_duel_won: "Duelo Chão ✓",
-  ground_duel_total: "Duelo Chão ✗",
-  duel_won: "Duelos Ganhos",
-  duel_total: "Duelos Perdidos",
-  aerial_duel_won: "Aéreos Ganhos",
-  aerial_duel_total: "Aéreos Perdidos",
-  yellow: "Amarelos",
-  red: "Vermelhos",
-  foul_committed: "Faltas Cometidas",
-  foul_suffered: "Faltas Sofridas",
-  pass_success: "Passes Certos",
-  pass_total: "Passes Errados",
-  cross_success: "Cruzamentos Certos",
-  cross_failed: "Cruzamentos Errados",
-  possession_lost: "Bolas Perdidas",
-  save: "Defesas",
-  goal_conceded: "Gols Sofridos",
-  clean_sheet: "Clean Sheets",
-  penalty_saved: "Pênaltis Defendidos",
-  error_led_to_goal: "Erros→Gol",
-  box_save: "Defesas na Área",
-  punch: "Socos",
-  high_claim: "Bolas Altas",
-  sweeper_action: "Saídas do Gol",
-};
+// Event type labels for display - use centralized labels
+const EVENT_LABELS: Partial<Record<MatchEventType, string>> = EVENT_LABELS_PTBR;
 
 interface Inconsistency {
   playerId: string;
