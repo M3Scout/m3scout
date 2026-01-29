@@ -162,68 +162,14 @@ export function InlineMoreStatsPanel({
 
   const stats = isGoalkeeper ? GOALKEEPER_STATS : OUTFIELD_STATS;
   
-  // Use matchStats (from match_player_stats table) for display - this includes derived stats
-  // Fall back to eventCounts for event-based counting
+  // CRITICAL: Live Match displays stats from EVENTS ONLY (current match).
+  // DO NOT use persisted match_player_stats as source - it can contain stale/accumulated values.
+  // The eventCounts is the single source of truth for live match display.
   const getDisplayCount = useCallback((type: MatchEventType): number => {
-    if (matchStats) {
-      // For some legacy/misaligned fields we prefer the MAX between persisted stats and event counts.
-      // This prevents UI desync when the event exists (timeline) but match_player_stats hasn't refreshed yet.
-      const maxStat = (statValue: number | undefined | null) =>
-        Math.max(0, Number(statValue ?? 0), Number(eventCounts[type] ?? 0));
-
-      // Map event types to matchStats fields - using the persisted stats that include derived values
-      // All subtraction-based calculations must be clamped to >= 0 to prevent negative values
-      switch (type) {
-        case "goal": return Math.max(0, matchStats.goals);
-        case "assist": return Math.max(0, matchStats.assists);
-        case "shot_on_target": return Math.max(0, matchStats.shots_on_target);
-        case "shot": return Math.max(0, matchStats.shots - matchStats.shots_on_target); // Shots outside = total shots - on target
-        case "shot_blocked": return Math.max(0, matchStats.shots_blocked ?? 0); // NEW: Finalização bloqueada (ataque)
-        case "offside": return Math.max(0, matchStats.offsides ?? 0); // NEW: Impedimento
-        case "key_pass": return Math.max(0, matchStats.key_passes);
-        case "chance_created": return Math.max(0, matchStats.chances_created);
-        case "cross_success": return Math.max(0, matchStats.crosses_success ?? 0); // NEW: Cruzamentos certos
-        case "cross_failed": return Math.max(0, matchStats.crosses_failed ?? 0); // NEW: Cruzamentos errados
-        // ball_action is DERIVED - calculated from sum of eligible events (not directly recorded)
-        case "ball_action": return calculateBallActionsFromMatchStats(matchStats);
-        case "dribble_success": return Math.max(0, matchStats.dribbles_success);
-        // CRITICAL: dribbles_total stores FAILED dribbles count (naming is legacy/misleading)
-        case "dribble_attempt": return Math.max(0, matchStats.dribbles_total);
-        case "tackle": return Math.max(0, matchStats.tackles);
-        case "interception": return Math.max(0, matchStats.interceptions);
-        case "recovery": return Math.max(0, matchStats.recoveries);
-        case "clearance": return Math.max(0, matchStats.clearances);
-        case "blocked_shot": return Math.max(0, matchStats.blocked_shots ?? 0); // NEW: Chute bloqueado (defesa)
-        case "was_dribbled": return Math.max(0, matchStats.was_dribbled ?? 0); // NEW: Driblado
-        // Duels - now using dedicated fields for won/lost tracking
-        case "ground_duel_won": return Math.max(0, matchStats.duels_won - matchStats.aerial_duels_won); // Ground duels won
-        case "ground_duel_total": return Math.max(0, (matchStats.duels_total - matchStats.duels_won) - (matchStats.aerial_duels_total - matchStats.aerial_duels_won)); // Ground duels lost
-        case "aerial_duel_won": return Math.max(0, matchStats.aerial_duels_won);
-        case "aerial_duel_total": return Math.max(0, matchStats.aerial_duels_total - matchStats.aerial_duels_won); // Aerial duels lost
-        // Legacy generic duels (for backward compatibility)
-        case "duel_won": return Math.max(0, matchStats.duels_won);
-        case "duel_total": return Math.max(0, matchStats.duels_total - matchStats.duels_won); // All lost duels
-        case "yellow": return Math.max(0, matchStats.yellow_cards);
-        case "red": return Math.max(0, matchStats.red_cards);
-        case "foul_committed": return Math.max(0, matchStats.fouls_committed);
-        case "foul_suffered": return Math.max(0, matchStats.fouls_suffered);
-        case "pass_success": return Math.max(0, matchStats.passes_completed);
-        // CRITICAL: passes_total stores FAILED passes count (naming is legacy/misleading)
-        // Use MAX(persisted, eventCounts) to avoid live UI showing 0 while timeline already has events.
-        case "pass_total": return maxStat(matchStats.passes_total);
-        case "possession_lost": return Math.max(0, matchStats.possession_lost);
-        case "save": return Math.max(0, matchStats.saves);
-        case "goal_conceded": return Math.max(0, matchStats.goals_conceded);
-        // Goalkeeper specific
-        case "box_save": return 0; // Not in matchStats currently
-        case "punch": return 0;
-        case "high_claim": return 0;
-        case "sweeper_action": return 0;
-        default: return Math.max(0, eventCounts[type] || 0);
-      }
-    }
+    // RULE: Live Match = Event Source of Truth
+    // All display counts come directly from eventCounts (current match events only)
     return Math.max(0, eventCounts[type] || 0);
-  }, [matchStats, eventCounts]);
+  }, [eventCounts]);
   
   // For the "-" button, we need to check if there are events to remove (event-based)
   const getEventCount = (type: MatchEventType) => eventCounts[type] || 0;
