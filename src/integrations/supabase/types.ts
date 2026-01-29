@@ -2281,7 +2281,47 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      unified_player_season_stats: {
+        Row: {
+          accurate_passes: number | null
+          aerial_duels_total: number | null
+          aerial_duels_won: number | null
+          assists: number | null
+          chances_created: number | null
+          clean_sheets: number | null
+          competition_id: string | null
+          competition_name: string | null
+          data_source: string | null
+          duels_won: number | null
+          errors_leading_to_goal: number | null
+          final_coefficient: number | null
+          fouls_committed: number | null
+          fouls_drawn: number | null
+          goals: number | null
+          goals_conceded: number | null
+          ground_duels_total: number | null
+          ground_duels_won: number | null
+          interceptions: number | null
+          key_passes: number | null
+          matches: number | null
+          minutes: number | null
+          penalties_saved: number | null
+          player_id: string | null
+          recoveries: number | null
+          red_cards: number | null
+          saves: number | null
+          season_year: number | null
+          shots: number | null
+          shots_on_target: number | null
+          successful_dribbles: number | null
+          tackles: number | null
+          total_dribbles: number | null
+          total_duels: number | null
+          total_passes: number | null
+          yellow_cards: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       apply_event_stats: {

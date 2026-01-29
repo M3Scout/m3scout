@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { fetchUnifiedCompetitions, UnifiedCompetition } from "@/lib/unifiedCompetitions";
+import { fetchPlayerMatchStatsRaw } from "@/lib/playerMatchStatsProvider";
 
 // Position group mapping
 type PositionGroup = 'goalkeeper' | 'center_back' | 'defensive_mid' | 'midfielder' | 'forward';
@@ -129,36 +131,13 @@ const POSITION_GROUP_LABELS: Record<PositionGroup, string> = {
   forward: 'Atacante',
 };
 
-interface PlayerStats {
+interface UnifiedCompetitionStats {
   id: string;
-  season_year: number;
-  competition_id: string | null;
+  seasonYear: number;
+  competitionName: string;
   matches: number;
   minutes: number;
-  goals: number;
-  assists: number;
-  yellow_cards: number;
-  red_cards: number;
-  tackles: number;
-  interceptions: number;
-  recoveries: number;
-  saves: number;
-  goals_conceded: number;
-  clean_sheets: number;
-  penalties_saved: number;
-  errors_leading_to_goal: number;
-  aerial_duels_won: number;
-  accurate_passes: number;
-  total_passes: number;
-  duels_won: number;
-  total_duels: number;
-  chances_created: number;
-  key_passes: number;
-  shots: number;
-  shots_on_target: number;
-  competition?: {
-    name: string;
-  } | null;
+  stats: Record<string, number>;
 }
 
 interface DataQualityPanelProps {
@@ -167,7 +146,7 @@ interface DataQualityPanelProps {
 }
 
 export function DataQualityPanel({ playerId, position }: DataQualityPanelProps) {
-  const [stats, setStats] = useState<PlayerStats[]>([]);
+  const [unifiedStats, setUnifiedStats] = useState<UnifiedCompetitionStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
 
@@ -175,61 +154,227 @@ export function DataQualityPanel({ playerId, position }: DataQualityPanelProps) 
   const expectedStats = EXPECTED_STATS[positionGroup];
 
   useEffect(() => {
-    const fetchStats = async () => {
-      const { data, error } = await supabase
-        .from('player_stats')
-        .select(`
-          id,
-          season_year,
-          competition_id,
-          matches,
-          minutes,
-          goals,
-          assists,
-          yellow_cards,
-          red_cards,
-          tackles,
-          interceptions,
-          recoveries,
-          saves,
-          goals_conceded,
-          clean_sheets,
-          penalties_saved,
-          errors_leading_to_goal,
-          aerial_duels_won,
-          accurate_passes,
-          total_passes,
-          duels_won,
-          total_duels,
-          chances_created,
-          key_passes,
-          shots,
-          shots_on_target,
-          competition:competitions(name)
-        `)
-        .eq('player_id', playerId)
-        .order('season_year', { ascending: false });
-
-      if (!error && data) {
-        setStats(data as PlayerStats[]);
+    const fetchAllStats = async () => {
+      try {
+        // Fetch unified competitions (manual + live)
+        const { competitions } = await fetchUnifiedCompetitions(playerId);
+        
+        // Fetch manual stats
+        const { data: manualData } = await supabase
+          .from('player_stats')
+          .select(`
+            id,
+            season_year,
+            competition_id,
+            matches,
+            minutes,
+            goals,
+            assists,
+            yellow_cards,
+            red_cards,
+            tackles,
+            interceptions,
+            recoveries,
+            saves,
+            goals_conceded,
+            clean_sheets,
+            penalties_saved,
+            errors_leading_to_goal,
+            aerial_duels_won,
+            accurate_passes,
+            total_passes,
+            duels_won,
+            total_duels,
+            chances_created,
+            key_passes,
+            shots,
+            shots_on_target,
+            competition:competitions(name, display_name)
+          `)
+          .eq('player_id', playerId)
+          .order('season_year', { ascending: false });
+        
+        // Fetch live match stats
+        const { matchPlayers, matchStats } = await fetchPlayerMatchStatsRaw({ playerId });
+        
+        // Build unified stats map by competition_id + season_year
+        const statsMap = new Map<string, UnifiedCompetitionStats>();
+        
+        // Add manual stats
+        (manualData || []).forEach((s: any) => {
+          const compId = s.competition_id;
+          if (!compId) return;
+          
+          const key = `${compId}-${s.season_year}`;
+          const compName = s.competition?.display_name || s.competition?.name || 'Sem Competição';
+          
+          statsMap.set(key, {
+            id: key,
+            seasonYear: s.season_year,
+            competitionName: compName,
+            matches: s.matches || 0,
+            minutes: s.minutes || 0,
+            stats: {
+              matches: s.matches || 0,
+              minutes: s.minutes || 0,
+              goals: s.goals || 0,
+              assists: s.assists || 0,
+              yellow_cards: s.yellow_cards || 0,
+              red_cards: s.red_cards || 0,
+              tackles: s.tackles || 0,
+              interceptions: s.interceptions || 0,
+              recoveries: s.recoveries || 0,
+              saves: s.saves || 0,
+              goals_conceded: s.goals_conceded || 0,
+              clean_sheets: s.clean_sheets || 0,
+              penalties_saved: s.penalties_saved || 0,
+              errors_leading_to_goal: s.errors_leading_to_goal || 0,
+              aerial_duels_won: s.aerial_duels_won || 0,
+              accurate_passes: s.accurate_passes || 0,
+              total_passes: s.total_passes || 0,
+              duels_won: s.duels_won || 0,
+              total_duels: s.total_duels || 0,
+              chances_created: s.chances_created || 0,
+              key_passes: s.key_passes || 0,
+              shots: s.shots || 0,
+              shots_on_target: s.shots_on_target || 0,
+            },
+          });
+        });
+        
+        // Aggregate live match stats by competition
+        const liveAggMap = new Map<string, {
+          competitionId: string;
+          seasonYear: number;
+          competitionName: string;
+          matches: number;
+          minutes: number;
+          stats: Record<string, number>;
+        }>();
+        
+        (matchPlayers || []).forEach((mp: any) => {
+          const match = mp.match;
+          if (!match || !match.competition_id) return;
+          if (!['finished', 'applied'].includes(match.status)) return;
+          
+          const compId = match.competition_id;
+          const seasonYear = match.season_year;
+          const key = `${compId}-${seasonYear}`;
+          const compName = match.competition?.display_name || match.competition?.name || 'Competição';
+          
+          const existingLive = liveAggMap.get(key);
+          const matchStatRow = matchStats.find((ms: any) => ms.match_id === mp.match_id);
+          
+          const minutesPlayed = Math.min(mp.minutes_played ?? 0, 90);
+          if (minutesPlayed <= 0) return;
+          
+          if (!existingLive) {
+            liveAggMap.set(key, {
+              competitionId: compId,
+              seasonYear,
+              competitionName: compName,
+              matches: 1,
+              minutes: minutesPlayed,
+              stats: {
+                matches: 1,
+                minutes: minutesPlayed,
+                goals: matchStatRow?.goals ?? 0,
+                assists: matchStatRow?.assists ?? 0,
+                yellow_cards: matchStatRow?.yellow_cards ?? 0,
+                red_cards: matchStatRow?.red_cards ?? 0,
+                tackles: matchStatRow?.tackles ?? 0,
+                interceptions: matchStatRow?.interceptions ?? 0,
+                recoveries: matchStatRow?.recoveries ?? 0,
+                saves: matchStatRow?.saves ?? 0,
+                goals_conceded: matchStatRow?.goals_conceded ?? 0,
+                clean_sheets: 0,
+                penalties_saved: 0,
+                errors_leading_to_goal: 0,
+                aerial_duels_won: matchStatRow?.aerial_duels_won ?? 0,
+                accurate_passes: matchStatRow?.passes_completed ?? 0,
+                total_passes: (matchStatRow?.passes_completed ?? 0) + (matchStatRow?.passes_total ?? 0),
+                duels_won: matchStatRow?.duels_won ?? 0,
+                total_duels: matchStatRow?.duels_total ?? 0,
+                chances_created: matchStatRow?.chances_created ?? 0,
+                key_passes: matchStatRow?.key_passes ?? 0,
+                shots: matchStatRow?.shots ?? 0,
+                shots_on_target: matchStatRow?.shots_on_target ?? 0,
+              },
+            });
+          } else {
+            existingLive.matches += 1;
+            existingLive.minutes += minutesPlayed;
+            existingLive.stats.matches += 1;
+            existingLive.stats.minutes += minutesPlayed;
+            if (matchStatRow) {
+              existingLive.stats.goals += matchStatRow.goals ?? 0;
+              existingLive.stats.assists += matchStatRow.assists ?? 0;
+              existingLive.stats.yellow_cards += matchStatRow.yellow_cards ?? 0;
+              existingLive.stats.red_cards += matchStatRow.red_cards ?? 0;
+              existingLive.stats.tackles += matchStatRow.tackles ?? 0;
+              existingLive.stats.interceptions += matchStatRow.interceptions ?? 0;
+              existingLive.stats.recoveries += matchStatRow.recoveries ?? 0;
+              existingLive.stats.saves += matchStatRow.saves ?? 0;
+              existingLive.stats.goals_conceded += matchStatRow.goals_conceded ?? 0;
+              existingLive.stats.aerial_duels_won += matchStatRow.aerial_duels_won ?? 0;
+              existingLive.stats.accurate_passes += matchStatRow.passes_completed ?? 0;
+              existingLive.stats.total_passes += (matchStatRow.passes_completed ?? 0) + (matchStatRow.passes_total ?? 0);
+              existingLive.stats.duels_won += matchStatRow.duels_won ?? 0;
+              existingLive.stats.total_duels += matchStatRow.duels_total ?? 0;
+              existingLive.stats.chances_created += matchStatRow.chances_created ?? 0;
+              existingLive.stats.key_passes += matchStatRow.key_passes ?? 0;
+              existingLive.stats.shots += matchStatRow.shots ?? 0;
+              existingLive.stats.shots_on_target += matchStatRow.shots_on_target ?? 0;
+            }
+          }
+        });
+        
+        // Merge live stats into the stats map
+        liveAggMap.forEach((liveEntry, key) => {
+          const existing = statsMap.get(key);
+          if (existing) {
+            // Sum the values
+            existing.matches += liveEntry.matches;
+            existing.minutes += liveEntry.minutes;
+            Object.keys(liveEntry.stats).forEach((statKey) => {
+              existing.stats[statKey] = (existing.stats[statKey] || 0) + (liveEntry.stats[statKey] || 0);
+            });
+          } else {
+            statsMap.set(key, {
+              id: key,
+              seasonYear: liveEntry.seasonYear,
+              competitionName: liveEntry.competitionName,
+              matches: liveEntry.matches,
+              minutes: liveEntry.minutes,
+              stats: liveEntry.stats,
+            });
+          }
+        });
+        
+        // Convert to array and sort by season desc
+        const result = Array.from(statsMap.values()).sort((a, b) => b.seasonYear - a.seasonYear);
+        setUnifiedStats(result);
+      } catch (error) {
+        console.error("[DataQualityPanel] Error fetching unified stats:", error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
-    fetchStats();
+    fetchAllStats();
   }, [playerId]);
 
   const qualityData = useMemo(() => {
-    if (stats.length === 0) {
+    if (unifiedStats.length === 0) {
       return {
         overall: 0,
         byCompetition: [],
       };
     }
 
-    const byCompetition = stats.map((s) => {
+    const byCompetition = unifiedStats.map((s) => {
       const presentStats = expectedStats.filter((expected) => {
-        const value = (s as any)[expected.key];
+        const value = s.stats[expected.key];
         return value !== null && value !== undefined && value > 0;
       });
 
@@ -237,18 +382,18 @@ export function DataQualityPanel({ playerId, position }: DataQualityPanelProps) 
 
       return {
         id: s.id,
-        year: s.season_year,
-        competition: s.competition?.name || 'Sem Competição',
+        year: s.seasonYear,
+        competition: s.competitionName,
         presentCount: presentStats.length,
         expectedCount: expectedStats.length,
         percentage,
-        presentStats: presentStats.map((s) => s.label),
+        presentStats: presentStats.map((st) => st.label),
         missingStats: expectedStats
           .filter((expected) => {
-            const value = (s as any)[expected.key];
+            const value = s.stats[expected.key];
             return value === null || value === undefined || value === 0;
           })
-          .map((s) => s.label),
+          .map((st) => st.label),
         matches: s.matches,
         minutes: s.minutes,
       };
@@ -262,7 +407,7 @@ export function DataQualityPanel({ playerId, position }: DataQualityPanelProps) 
       overall,
       byCompetition,
     };
-  }, [stats, expectedStats]);
+  }, [unifiedStats, expectedStats]);
 
   const getQualityColor = (percentage: number) => {
     if (percentage >= 80) return 'text-emerald-400/90';
@@ -305,7 +450,7 @@ export function DataQualityPanel({ playerId, position }: DataQualityPanelProps) 
     );
   }
 
-  if (stats.length === 0) {
+  if (unifiedStats.length === 0) {
     return (
       <Card className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)]">
         <CardHeader className="pb-3">
