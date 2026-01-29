@@ -248,10 +248,12 @@ export function LiveStatsPanel({ events, className, currentHalf }: LiveStatsPane
     const totalShotsOnTarget = shotsOnTarget + goals;
     const totalShots = shotsOff + totalShotsOnTarget;
     
-    // Passes
+    // Passes - REGRA: total = success + failed
     const passSuccess = getValue("pass_success");
-    const passTotal = getValue("pass_total");
-    const passAccuracy = passTotal > 0 ? Math.round((passSuccess / passTotal) * 100) : 0;
+    const passFailed = getValue("pass_total"); // pass_total event = failed passes
+    const passTotal = passSuccess + passFailed;
+    // REGRA: percentage = (success / total) * 100, capped at 100%
+    const passAccuracy = passTotal > 0 ? Math.min(Math.round((passSuccess / passTotal) * 100), 100) : 0;
     
     // Defense
     const tackles = getValue("tackle");
@@ -259,22 +261,23 @@ export function LiveStatsPanel({ events, className, currentHalf }: LiveStatsPane
     const recoveries = getValue("recovery");
     const clearances = getValue("clearance");
     
-    // Duels - separated by type
+    // Duels - REGRA: total = won + lost
     const groundDuelsWon = getValue("ground_duel_won");
-    const groundDuelsLost = getValue("ground_duel_total");
+    const groundDuelsLost = getValue("ground_duel_total"); // ground_duel_total event = lost duels
     const aerialDuelsWon = getValue("aerial_duel_won");
-    const aerialDuelsLost = getValue("aerial_duel_total");
+    const aerialDuelsLost = getValue("aerial_duel_total"); // aerial_duel_total event = lost duels
     
-    // Calculated totals
+    // Calculated totals: total = won + lost
     const groundDuelsTotal = groundDuelsWon + groundDuelsLost;
     const aerialDuelsTotal = aerialDuelsWon + aerialDuelsLost;
     const duelsWonTotal = groundDuelsWon + aerialDuelsWon;
     
-    // Dribbles / Possession
+    // Dribbles / Possession - REGRA: total = success + failed
     const chancesCreated = getValue("chance_created");
     const keyPasses = getValue("key_pass");
     const dribblesSuccess = getValue("dribble_success");
-    const dribblesAttempt = getValue("dribble_attempt");
+    const dribblesFailed = getValue("dribble_attempt"); // dribble_attempt event = failed dribbles
+    const dribblesTotal = dribblesSuccess + dribblesFailed;
     const possessionLost = getValue("possession_lost");
     
     // Discipline (agora parte da DEFESA)
@@ -290,6 +293,7 @@ export function LiveStatsPanel({ events, className, currentHalf }: LiveStatsPane
       shotsOnTarget: totalShotsOnTarget,
       totalShots,
       passSuccess,
+      passFailed,
       passTotal,
       passAccuracy,
       tackles,
@@ -306,14 +310,22 @@ export function LiveStatsPanel({ events, className, currentHalf }: LiveStatsPane
       chancesCreated,
       keyPasses,
       dribblesSuccess,
-      dribblesAttempt,
+      dribblesFailed,
+      dribblesTotal,
       possessionLost,
       foulsCommitted,
       foulsSuffered,
     };
   }, [events]);
 
-  // Build stat items per category - NEW STRUCTURE
+  // Build stat items per category - REGRA: total = success + failed
+  const dribblesStats: StatItem[] = [
+    { key: "dribbles", label: "Dribles ✓", value: stats.dribblesSuccess, icon: <Zap className="w-3 h-3" />, category: "dribbles" as const },
+    { key: "dribblesFailed", label: "Dribles ✗", value: stats.dribblesFailed, icon: <Zap className="w-3 h-3" />, category: "dribbles" as const },
+    { key: "foulsS", label: "F. Sof.", value: stats.foulsSuffered, icon: <AlertTriangle className="w-3 h-3" />, category: "dribbles" as const },
+    { key: "possessionLost", label: "Perdas", value: stats.possessionLost, icon: <AlertTriangle className="w-3 h-3" />, category: "dribbles" as const },
+  ].filter(s => s.value > 0);
+
   const attackStats: StatItem[] = [
     { key: "goals", label: "Gols", value: stats.goals, icon: <Goal className="w-3 h-3" />, category: "attack" as const, highlight: true },
     { key: "shots", label: "Finaliz.", value: stats.totalShots, icon: <Crosshair className="w-3 h-3" />, category: "attack" as const },
@@ -325,15 +337,8 @@ export function LiveStatsPanel({ events, className, currentHalf }: LiveStatsPane
     { key: "keyPasses", label: "P. Dec.", value: stats.keyPasses, icon: <ArrowRight className="w-3 h-3" />, category: "passing" as const },
     { key: "chances", label: "Chances", value: stats.chancesCreated, icon: <Zap className="w-3 h-3" />, category: "passing" as const },
     { key: "passSuccess", label: "Certos", value: stats.passSuccess, icon: <ArrowRight className="w-3 h-3" />, category: "passing" as const },
-    { key: "passTotal", label: "Errados", value: stats.passTotal, icon: <ArrowRight className="w-3 h-3" />, category: "passing" as const },
+    { key: "passFailed", label: "Errados", value: stats.passFailed, icon: <ArrowRight className="w-3 h-3" />, category: "passing" as const },
   ].filter(s => s.value > 0 || s.key === "assists");
-
-  const dribblesStats: StatItem[] = [
-    { key: "dribbles", label: "Dribles ✓", value: stats.dribblesSuccess, icon: <Zap className="w-3 h-3" />, category: "dribbles" as const },
-    { key: "dribblesAttempt", label: "Dribles ✗", value: stats.dribblesAttempt, icon: <Zap className="w-3 h-3" />, category: "dribbles" as const },
-    { key: "foulsS", label: "F. Sof.", value: stats.foulsSuffered, icon: <AlertTriangle className="w-3 h-3" />, category: "dribbles" as const },
-    { key: "possessionLost", label: "Perdas", value: stats.possessionLost, icon: <AlertTriangle className="w-3 h-3" />, category: "dribbles" as const },
-  ].filter(s => s.value > 0);
 
   const defenseStats: StatItem[] = [
     { key: "tackles", label: "Desarmes", value: stats.tackles, icon: <Shield className="w-3 h-3" />, category: "defense" as const },

@@ -11,10 +11,15 @@
  * This utility ensures ALL components display consistent, derived totals.
  * 
  * RULES:
- * 1. total >= success (always)
+ * 1. total = success + failed (sempre)
  * 2. If only success exists, total = success
- * 3. If both exist and total < success, total = success
- * 4. Never modify original data, return derived copy
+ * 3. If total < success, total = success
+ * 4. Percentage = (success / total) * 100
+ * 5. Never modify original data, return derived copy
+ * 
+ * FORMATO VISUAL OBRIGATÓRIO:
+ * - Exibir sempre como: success / total (X%)
+ * - Nunca exibir percentual > 100%
  */
 
 import { calculateMinutesPlayed, type MatchPlayerMinutesInput, type MatchContextInput } from "./minutesPlayed";
@@ -57,19 +62,47 @@ export interface RawMatchStats {
 
 // Normalized stats with guaranteed consistent totals
 export interface NormalizedMatchStats extends RawMatchStats {
-  // Derived fields that ALWAYS respect: total >= success
+  // Derived fields that ALWAYS respect: total = success + failed
   shots_total: number;
+  shots_off_target: number;
   passes_total_derived: number;
+  passes_failed: number;
   dribbles_total_derived: number;
+  dribbles_failed: number;
   duels_total_derived: number;
+  duels_lost: number;
   aerial_duels_total_derived: number;
+  aerial_duels_lost: number;
   crosses_total: number;
   // Minutes (official, capped at 90)
   minutes_played: number;
 }
 
 /**
+ * Safe number helper - ensures value is never undefined/NaN/negative
+ */
+function safe(val: number | undefined | null): number {
+  return typeof val === "number" && !isNaN(val) ? Math.max(0, val) : 0;
+}
+
+/**
+ * Calculate percentage safely
+ * REGRA: percentage = (success / total) * 100
+ * NUNCA retorna > 100
+ */
+export function calculatePercentage(success: number, total: number): number {
+  if (total <= 0) return 0;
+  const pct = Math.round((success / total) * 100);
+  return Math.min(pct, 100); // Cap at 100%
+}
+
+/**
  * Normalize match stats to ensure consistency
+ * 
+ * REGRA MATEMÁTICA ÚNICA:
+ * - total = success + failed
+ * - Se total < success, total = success
+ * - Percentual = (success / total) * 100
  * 
  * @param raw - Raw stats from match_player_stats
  * @param minutesInput - Player entry/exit data for minutes calculation
@@ -90,40 +123,76 @@ export function normalizeMatchStats(
     minutesPlayed = info.minutesPlayed;
   }
   
-  // === SHOTS: shots_total >= shots + shots_on_target ===
-  const shotsOff = stats.shots ?? 0; // shots off target
-  const shotsOnTarget = stats.shots_on_target ?? 0;
-  const shotsBlocked = stats.shots_blocked ?? 0;
-  const goals = stats.goals ?? 0;
-  // Total shots = off target + on target + blocked
-  // Goals are counted IN shots_on_target, not additive
-  const shots_total = Math.max(shotsOff + shotsOnTarget + shotsBlocked, shotsOnTarget + goals);
+  // === SHOTS ===
+  // REGRA: shots_total = shots_on_target + shots_blocked + shots_off_target
+  const shotsOnTarget = safe(stats.shots_on_target);
+  const shotsBlocked = safe(stats.shots_blocked);
+  const storedShots = safe(stats.shots); // This may be "off target" or "total" depending on source
   
-  // === PASSES: passes_total >= passes_completed ===
-  const passesCompleted = stats.passes_completed ?? 0;
-  const passesStoredTotal = stats.passes_total ?? 0;
-  // Total = stored total OR at least completed (whichever is higher)
+  // Derive shots_off_target: if stored shots > on_target, difference is off target
+  // Otherwise, off target = 0 and we recalculate total
+  const shotsOffTarget = Math.max(0, storedShots - shotsOnTarget);
+  
+  // Total must be >= sum of all components
+  const shots_total = Math.max(
+    storedShots,
+    shotsOnTarget + shotsBlocked + shotsOffTarget,
+    shotsOnTarget + shotsBlocked
+  );
+  
+  // Recalculate off target for consistency
+  const shots_off_target = Math.max(0, shots_total - shotsOnTarget - shotsBlocked);
+  
+  // === PASSES ===
+  // REGRA: passes_total = passes_completed + passes_failed
+  const passesCompleted = safe(stats.passes_completed);
+  const passesStoredTotal = safe(stats.passes_total);
+  
+  // If stored total < completed, use completed as minimum
+  // passes_failed is derived
   const passes_total_derived = Math.max(passesStoredTotal, passesCompleted);
+  const passes_failed = Math.max(0, passes_total_derived - passesCompleted);
   
-  // === DRIBBLES: dribbles_total >= dribbles_success ===
-  const dribblesSuccess = stats.dribbles_success ?? 0;
-  const dribblesStoredTotal = stats.dribbles_total ?? 0;
-  // Total = stored total OR at least success (whichever is higher)
-  const dribbles_total_derived = Math.max(dribblesStoredTotal, dribblesSuccess);
+  // === DRIBBLES ===
+  // REGRA: dribbles_total = dribbles_success + dribbles_failed
+  const dribblesSuccess = safe(stats.dribbles_success);
+  const dribblesStoredTotal = safe(stats.dribbles_total);
   
-  // === DUELS: duels_total >= duels_won ===
-  const duelsWon = stats.duels_won ?? 0;
-  const duelsStoredTotal = stats.duels_total ?? 0;
+  // CRITICAL FIX: If stored total is the "failed" count, add to success
+  // If stored total < success, it's definitely wrong
+  // If stored total > success but close, it might be total or failed
+  let dribbles_total_derived: number;
+  let dribbles_failed: number;
+  
+  if (dribblesStoredTotal >= dribblesSuccess) {
+    // Stored total seems like actual total
+    dribbles_total_derived = dribblesStoredTotal;
+    dribbles_failed = dribblesStoredTotal - dribblesSuccess;
+  } else {
+    // Stored total < success: stored value might be "failed" count
+    // OR it's just missing data - assume total = success (no failures recorded)
+    dribbles_total_derived = dribblesSuccess;
+    dribbles_failed = 0;
+  }
+  
+  // === DUELS ===
+  // REGRA: duels_total = duels_won + duels_lost
+  const duelsWon = safe(stats.duels_won);
+  const duelsStoredTotal = safe(stats.duels_total);
   const duels_total_derived = Math.max(duelsStoredTotal, duelsWon);
+  const duels_lost = Math.max(0, duels_total_derived - duelsWon);
   
-  // === AERIAL DUELS: aerial_duels_total >= aerial_duels_won ===
-  const aerialWon = stats.aerial_duels_won ?? 0;
-  const aerialStoredTotal = stats.aerial_duels_total ?? 0;
+  // === AERIAL DUELS ===
+  // REGRA: aerial_total = aerial_won + aerial_lost
+  const aerialWon = safe(stats.aerial_duels_won);
+  const aerialStoredTotal = safe(stats.aerial_duels_total);
   const aerial_duels_total_derived = Math.max(aerialStoredTotal, aerialWon);
+  const aerial_duels_lost = Math.max(0, aerial_duels_total_derived - aerialWon);
   
-  // === CROSSES: crosses_total = success + failed ===
-  const crossesSuccess = stats.crosses_success ?? 0;
-  const crossesFailed = stats.crosses_failed ?? 0;
+  // === CROSSES ===
+  // REGRA: crosses_total = crosses_success + crosses_failed
+  const crossesSuccess = safe(stats.crosses_success);
+  const crossesFailed = safe(stats.crosses_failed);
   const crosses_total = crossesSuccess + crossesFailed;
   
   return {
@@ -131,10 +200,15 @@ export function normalizeMatchStats(
     ...stats,
     // Override with derived values
     shots_total,
+    shots_off_target,
     passes_total_derived,
+    passes_failed,
     dribbles_total_derived,
+    dribbles_failed,
     duels_total_derived,
+    duels_lost,
     aerial_duels_total_derived,
+    aerial_duels_lost,
     crosses_total,
     minutes_played: minutesPlayed,
   };
@@ -194,9 +268,9 @@ export function debugLogNormalizedStats(
         passes: `${raw?.passes_completed ?? 0}/${raw?.passes_total ?? 0}`,
       },
       normalized: {
-        dribbles: `${normalized.dribbles_success ?? 0}/${normalized.dribbles_total_derived}`,
-        shots: `${normalized.shots_on_target ?? 0}/${normalized.shots_total}`,
-        passes: `${normalized.passes_completed ?? 0}/${normalized.passes_total_derived}`,
+        dribbles: `${normalized.dribbles_success ?? 0}/${normalized.dribbles_total_derived} (${calculatePercentage(normalized.dribbles_success ?? 0, normalized.dribbles_total_derived)}%)`,
+        shots: `${normalized.shots_on_target ?? 0}/${normalized.shots_total} (${calculatePercentage(normalized.shots_on_target ?? 0, normalized.shots_total)}%)`,
+        passes: `${normalized.passes_completed ?? 0}/${normalized.passes_total_derived} (${calculatePercentage(normalized.passes_completed ?? 0, normalized.passes_total_derived)}%)`,
       },
     });
   }

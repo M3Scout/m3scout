@@ -6,7 +6,7 @@ import {
   AlertTriangle 
 } from "lucide-react";
 import { StatCard, StatGroup } from "./StatCard";
-import { normalizePlayerStats } from "@/lib/normalizePlayerStats";
+import { normalizePlayerStats, calculatePercentage } from "@/lib/normalizePlayerStats";
 
 interface PlayerStatsData {
   // General
@@ -58,9 +58,13 @@ interface OutfieldPlayerStatsProps {
 /**
  * Stats display for outfield (non-goalkeeper) players
  * Shows: General, Passing, Shooting, Defense, and Discipline stats
+ * 
+ * REGRA MATEMÁTICA ÚNICA:
+ * - total = success + failed
+ * - percentage = (success / total) * 100, capped at 100%
  */
 export function OutfieldPlayerStats({ stats: rawStats }: OutfieldPlayerStatsProps) {
-  // CRITICAL: Normalize stats to ensure consistency (total >= sum of parts)
+  // CRITICAL: Normalize stats to ensure consistency (total = success + failed)
   const normalized = normalizePlayerStats(rawStats as any);
   
   // Ensure all values are safe (never undefined/NaN)
@@ -150,6 +154,7 @@ export function OutfieldPlayerStats({ stats: rawStats }: OutfieldPlayerStatsProp
           label="Ações com a Bola" 
           value={safe(rawStats.ball_actions)} 
         />
+        {/* REGRA: Dribles = success / (success + failed) */}
         <StatCard 
           label="Dribles Certos" 
           value={safe(rawStats.successful_dribbles)} 
@@ -158,7 +163,7 @@ export function OutfieldPlayerStats({ stats: rawStats }: OutfieldPlayerStatsProp
         />
         <StatCard 
           label="Dribles Errados" 
-          value={Math.max(0, normalized.dribbles_total_derived - safe(rawStats.successful_dribbles))} 
+          value={normalized.dribbles_failed} 
         />
         <StatCard 
           label="Faltas Sofridas" 
@@ -198,19 +203,17 @@ export function OutfieldPlayerStats({ stats: rawStats }: OutfieldPlayerStatsProp
         />
       </StatGroup>
 
-      {/* Duelos */}
+      {/* Duelos - REGRA: total = won + lost */}
       <StatGroup title="Duelos" icon={<Target className="w-4 h-4" />}>
         <StatCard 
           label="Duelos no Chão" 
           value={safe(rawStats.ground_duels_won)} 
-          total={safe(rawStats.ground_duels_total) || undefined}
-          showPercentage={safe(rawStats.ground_duels_total) > 0}
+          total={normalized.ground_duels_total_derived || undefined}
+          showPercentage={normalized.ground_duels_total_derived > 0}
         />
         <StatCard 
           label="% Chão" 
-          value={safe(rawStats.ground_duels_total) > 0 
-            ? Math.round((safe(rawStats.ground_duels_won) / safe(rawStats.ground_duels_total)) * 100) 
-            : 0}
+          value={calculatePercentage(safe(rawStats.ground_duels_won), normalized.ground_duels_total_derived)}
         />
         <StatCard 
           label="Duelos Aéreos" 
@@ -220,9 +223,7 @@ export function OutfieldPlayerStats({ stats: rawStats }: OutfieldPlayerStatsProp
         />
         <StatCard 
           label="% Aéreo" 
-          value={normalized.aerial_duels_total_derived > 0 
-            ? Math.round((safe(rawStats.aerial_duels_won) / normalized.aerial_duels_total_derived) * 100) 
-            : 0}
+          value={calculatePercentage(safe(rawStats.aerial_duels_won), normalized.aerial_duels_total_derived)}
         />
         <StatCard 
           label="Duelos Ganhos" 
@@ -230,7 +231,7 @@ export function OutfieldPlayerStats({ stats: rawStats }: OutfieldPlayerStatsProp
         />
         <StatCard 
           label="Duelos Totais" 
-          value={safe(rawStats.ground_duels_total) + normalized.aerial_duels_total_derived} 
+          value={normalized.ground_duels_total_derived + normalized.aerial_duels_total_derived} 
         />
       </StatGroup>
 
