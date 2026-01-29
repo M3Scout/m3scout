@@ -145,7 +145,7 @@ const PlayerDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { isAdmin, isScout, isPlayer, linkedPlayerId } = useAuth();
-  const { can } = usePermissions();
+  const { can, isPlayerRole } = usePermissions();
   const [player, setPlayer] = useState<Player | null>(null);
   const [injuries, setInjuries] = useState<Injury[]>([]);
   const [reports, setReports] = useState<ScoutingReport[]>([]);
@@ -153,19 +153,26 @@ const PlayerDetail = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // === ROUTE-LEVEL ACCESS CONTROL ===
-  // Admin/Scout: full access to all athletes
-  // Player: access ONLY to their own athlete (linkedPlayerId === id)
-  const isOwnAthlete = isPlayer && linkedPlayerId === id;
-  const canAccessAthlete = isAdmin || isScout || isOwnAthlete;
+  // Permission-based: anyone with players_view can see athletes
+  // Player role (athlete): can ONLY see their own athlete (self-only rule)
+  const hasViewPermission = can("players", "view");
+  const isOwnAthlete = (isPlayer || isPlayerRole) && linkedPlayerId === id;
   
-  // Player role is read-only
-  const isReadOnly = isPlayer && !isAdmin && !isScout;
+  // Access rules:
+  // 1. Player/Athlete role: can ONLY see their own athlete (self-only)
+  // 2. All other roles: check players_view permission
+  const isPlayerRoleOnly = (isPlayer || isPlayerRole) && !isAdmin && !isScout;
+  const canAccessAthlete = isPlayerRoleOnly ? isOwnAthlete : hasViewPermission;
   
-  // Can edit: Admin or Scout with edit permission
-  const canEdit = (isAdmin || isScout) && can("players", "edit");
+  // Read-only: Player role OR viewer (anyone without edit permission)
+  const canEditPlayer = can("players", "edit");
+  const isReadOnly = !canEditPlayer;
   
-  // Can create reports: Admin or Scout with create permission
-  const canCreateReport = (isAdmin || isScout) && can("reports", "create");
+  // Can edit: requires edit permission
+  const canEdit = canEditPlayer;
+  
+  // Can create reports: requires reports create permission
+  const canCreateReport = can("reports", "create");
 
   // Refetch player to get updated auto_rating after stats change
   const refetchPlayer = async () => {
