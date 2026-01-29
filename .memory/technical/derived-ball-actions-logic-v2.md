@@ -31,8 +31,14 @@ Ball actions = sum of:
 - Uses `Math.max(derived, manual)` for backwards compatibility with legacy matches
 
 ## Anti-Regression Rules
-- NEVER trust stored `ball_actions` directly - always recalculate
+- NEVER trust stored `ball_actions` directly - always recalculate for display
 - `PostGameInsightsCard` uses `calculateDerivedBallActions()` 
 - `MatchSummaryVectorPdf` uses `calculateBallActionsFromMatchStats()`
 - `usePlayerMatchStats` calculates derived value for each match
 - `usePlayerMatchStatsBySeasonCompetition` calculates derived value during aggregation
+
+## Rating Persistence (2026-01-29)
+- Official rating stored in `match_player_stats.rating`
+- All summary/profile screens read persisted rating via `persistedRatingToResult()`
+- `calculatePlayerMatchRating()` is ONLY for live matches (not yet persisted)
+- After match finish/edit, `rebuildSingleMatchRatings(matchId)` updates all ratings

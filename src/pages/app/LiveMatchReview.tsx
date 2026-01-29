@@ -23,7 +23,8 @@ import { MatchRatingsCard } from "@/components/live-match/MatchRatingsCard";
 import { PlayerRatingBadge } from "@/components/live-match/PlayerRatingBadge";
 import { PostGameInsightsCard } from "@/components/live-match/PostGameInsightsCard";
 import { calculateMinutesPlayed, STANDARD_MATCH_DURATION } from "@/lib/minutesPlayed";
-import { calculatePlayerMatchRating } from "@/lib/matchRatingEngine";
+import { persistedRatingToResult, noRatingResult } from "@/lib/matchRatingEngine";
+import { calculateMinutesPlayed as calcMinutesForRating } from "@/lib/minutesPlayed";
 import {
   CheckCircle2,
   AlertTriangle,
@@ -772,12 +773,24 @@ export default function LiveMatchReview() {
                         {/* Rating Badge - show for finished/applied matches */}
                         {(match.status === "finished" || match.status === "applied") && (() => {
                           const stats = playerStatsMap[mp.player_id];
-                          const playerRating = calculatePlayerMatchRating(stats, {
+                          // SINGLE SOURCE OF TRUTH: Read persisted rating, never recalculate
+                          const minutesInfo = calcMinutesForRating({
                             started: mp.started,
                             entered_minute: mp.entered_minute,
                             exited_minute: mp.exited_minute,
                             minutes_played: mp.minutes_played,
                           });
+                          
+                          // If no rating persisted or 0 minutes, show "no rating"
+                          if (!stats?.rating || minutesInfo.minutesPlayed === 0) {
+                            return <PlayerRatingBadge rating={noRatingResult()} playerName={mp.player.full_name} size="sm" />;
+                          }
+                          
+                          const playerRating = persistedRatingToResult(
+                            stats.rating,
+                            stats.rating_minutes_played ?? minutesInfo.minutesPlayed,
+                            stats.rating_minutes_factor ?? null
+                          );
                           return <PlayerRatingBadge rating={playerRating} playerName={mp.player.full_name} size="sm" />;
                         })()}
                       </div>

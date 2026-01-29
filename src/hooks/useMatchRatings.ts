@@ -44,16 +44,12 @@ export interface PlayerRatingData {
   minutesInfo: ReturnType<typeof calculateMinutesPlayed>;
 }
 
-// Extended stats type with persisted rating
-interface MatchPlayerStatsWithRating extends MatchPlayerStats {
-  rating?: number | null;
-  rating_minutes_played?: number | null;
-  rating_minutes_factor?: number | null;
-}
+// MatchPlayerStats now includes rating fields directly (rating, rating_minutes_played, rating_minutes_factor)
+// No need for extended type
 
 interface UseMatchRatingsOptions {
   matchPlayers: MatchPlayer[];
-  playerStatsMap: Record<string, MatchPlayerStatsWithRating>;
+  playerStatsMap: Record<string, MatchPlayerStats>;
   usePersistedRating?: boolean; // If true, prefer persisted rating
 }
 
@@ -176,7 +172,7 @@ export function useMatchRatings({
 export function usePlayerMatchRating(
   playerId: string | undefined,
   matchPlayers: MatchPlayer[],
-  playerStatsMap: Record<string, MatchPlayerStatsWithRating>,
+  playerStatsMap: Record<string, MatchPlayerStats>,
   usePersistedRating = true
 ): PlayerRatingData | null {
   const ratings = useMatchRatings({ matchPlayers, playerStatsMap, usePersistedRating });
@@ -191,7 +187,7 @@ export function usePlayerMatchRating(
  */
 export function useSortedPlayersByRating(
   matchPlayers: MatchPlayer[],
-  playerStatsMap: Record<string, MatchPlayerStatsWithRating>,
+  playerStatsMap: Record<string, MatchPlayerStats>,
   usePersistedRating = true
 ): PlayerRatingData[] {
   const ratings = useMatchRatings({ matchPlayers, playerStatsMap, usePersistedRating });
