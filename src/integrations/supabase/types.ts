@@ -585,6 +585,11 @@ export type Database = {
           passes_total: number
           player_id: string
           possession_lost: number
+          rating: number | null
+          rating_computed_at: string | null
+          rating_engine_version: string
+          rating_minutes_factor: number | null
+          rating_minutes_played: number | null
           recoveries: number
           red_cards: number
           saves: number
@@ -624,6 +629,11 @@ export type Database = {
           passes_total?: number
           player_id: string
           possession_lost?: number
+          rating?: number | null
+          rating_computed_at?: string | null
+          rating_engine_version?: string
+          rating_minutes_factor?: number | null
+          rating_minutes_played?: number | null
           recoveries?: number
           red_cards?: number
           saves?: number
@@ -663,6 +673,11 @@ export type Database = {
           passes_total?: number
           player_id?: string
           possession_lost?: number
+          rating?: number | null
+          rating_computed_at?: string | null
+          rating_engine_version?: string
+          rating_minutes_factor?: number | null
+          rating_minutes_played?: number | null
           recoveries?: number
           red_cards?: number
           saves?: number
@@ -2346,6 +2361,11 @@ export type Database = {
           passes_total: number
           player_id: string
           possession_lost: number
+          rating: number | null
+          rating_computed_at: string | null
+          rating_engine_version: string
+          rating_minutes_factor: number | null
+          rating_minutes_played: number | null
           recoveries: number
           red_cards: number
           saves: number
