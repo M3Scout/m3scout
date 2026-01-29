@@ -182,7 +182,8 @@ export function InlineMoreStatsPanel({
         // ball_action is DERIVED - calculated from sum of eligible events (not directly recorded)
         case "ball_action": return calculateBallActionsFromMatchStats(matchStats);
         case "dribble_success": return Math.max(0, matchStats.dribbles_success);
-        case "dribble_attempt": return Math.max(0, matchStats.dribbles_total - matchStats.dribbles_success); // Dribble attempts failed
+        // CRITICAL: dribbles_total stores FAILED dribbles count (naming is legacy/misleading)
+        case "dribble_attempt": return Math.max(0, matchStats.dribbles_total);
         case "tackle": return Math.max(0, matchStats.tackles);
         case "interception": return Math.max(0, matchStats.interceptions);
         case "recovery": return Math.max(0, matchStats.recoveries);
@@ -202,7 +203,8 @@ export function InlineMoreStatsPanel({
         case "foul_committed": return Math.max(0, matchStats.fouls_committed);
         case "foul_suffered": return Math.max(0, matchStats.fouls_suffered);
         case "pass_success": return Math.max(0, matchStats.passes_completed);
-        case "pass_total": return Math.max(0, matchStats.passes_total - matchStats.passes_completed); // Failed passes
+        // CRITICAL: passes_total stores FAILED passes count (naming is legacy/misleading)
+        case "pass_total": return Math.max(0, matchStats.passes_total);
         case "possession_lost": return Math.max(0, matchStats.possession_lost);
         case "save": return Math.max(0, matchStats.saves);
         case "goal_conceded": return Math.max(0, matchStats.goals_conceded);
