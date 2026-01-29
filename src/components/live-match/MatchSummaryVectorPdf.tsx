@@ -38,6 +38,7 @@ import { calculateMatchEfficiency, getEfficiencyColorHex, getEfficiencyBgColorHe
 import { generateScoutingText } from "@/lib/scoutingTextEngine";
 import { generatePostGameAnalysis, type MatchStatsInput } from "@/lib/postGameAnalysis";
 import { calculateBallActionsFromMatchStats } from "@/lib/derivedBallActions";
+import { normalizeMatchStats } from "@/lib/normalizeMatchStats";
 import { MiniFieldHeatmapPdf } from "./MiniFieldHeatmapPdf";
 import {
   EVENT_TYPE_CONFIG,
@@ -1637,39 +1638,53 @@ export function MatchSummaryVectorPdf({
               if (!mp.player) return null;
               
               const stats = playerStatsMap[mp.player_id];
+              const minutesInput = {
+                started: mp.started,
+                entered_minute: mp.entered_minute ?? null,
+                exited_minute: mp.exited_minute ?? null,
+                minutes_played: mp.minutes_played,
+              };
+
+              // IMPORTANT: Normalize stats exactly like the web summary does.
+              // In our schema, passes_total/dribbles_total store FAILED counts, so we must use derived totals.
+              const normalized = normalizeMatchStats(stats, minutesInput);
+
+              // Match Summary uses derived ball actions (never trust stored value)
+              const ballActions = stats ? calculateBallActionsFromMatchStats(stats) : 0;
+
               const statsInput: MatchStatsInput = {
-                goals: stats?.goals ?? 0,
-                assists: stats?.assists ?? 0,
-                shots: stats?.shots ?? 0,
-                shots_on_target: stats?.shots_on_target ?? 0,
-                key_passes: stats?.key_passes ?? 0,
-                chances_created: stats?.chances_created ?? 0,
-                passes_completed: stats?.passes_completed ?? 0,
-                passes_total: stats?.passes_total ?? 0,
-                dribbles_success: stats?.dribbles_success ?? 0,
-                dribbles_total: stats?.dribbles_total ?? 0,
-                tackles: stats?.tackles ?? 0,
-                interceptions: stats?.interceptions ?? 0,
-                clearances: stats?.clearances ?? 0,
-                recoveries: stats?.recoveries ?? 0,
-                duels_won: stats?.duels_won ?? 0,
-                duels_total: stats?.duels_total ?? 0,
-                aerial_duels_won: stats?.aerial_duels_won ?? 0,
-                aerial_duels_total: stats?.aerial_duels_total ?? 0,
-                fouls_committed: stats?.fouls_committed ?? 0,
-                fouls_suffered: stats?.fouls_suffered ?? 0,
-                yellow_cards: stats?.yellow_cards ?? 0,
-                red_cards: stats?.red_cards ?? 0,
-                possession_lost: stats?.possession_lost ?? 0,
-                saves: stats?.saves ?? 0,
-                goals_conceded: stats?.goals_conceded ?? 0,
-                blocked_shots: stats?.blocked_shots ?? 0,
-                was_dribbled: stats?.was_dribbled ?? 0,
-                ball_actions: stats?.ball_actions ?? 0,
-                crosses_success: stats?.crosses_success ?? 0,
-                crosses_failed: stats?.crosses_failed ?? 0,
-                offsides: stats?.offsides ?? 0,
-                shots_blocked: stats?.shots_blocked ?? 0,
+                goals: normalized.goals ?? 0,
+                assists: normalized.assists ?? 0,
+                shots: normalized.shots_total,
+                shots_on_target: normalized.shots_on_target ?? 0,
+                shots_blocked: normalized.shots_blocked ?? 0,
+                key_passes: normalized.key_passes ?? 0,
+                chances_created: normalized.chances_created ?? 0,
+                passes_completed: normalized.passes_completed ?? 0,
+                passes_total: normalized.passes_total_derived,
+                dribbles_success: normalized.dribbles_success ?? 0,
+                dribbles_total: normalized.dribbles_total_derived,
+                tackles: normalized.tackles ?? 0,
+                interceptions: normalized.interceptions ?? 0,
+                clearances: normalized.clearances ?? 0,
+                recoveries: normalized.recoveries ?? 0,
+                duels_won: normalized.duels_won ?? 0,
+                duels_total: normalized.duels_total_derived,
+                aerial_duels_won: normalized.aerial_duels_won ?? 0,
+                aerial_duels_total: normalized.aerial_duels_total_derived,
+                fouls_committed: normalized.fouls_committed ?? 0,
+                fouls_suffered: normalized.fouls_suffered ?? 0,
+                yellow_cards: normalized.yellow_cards ?? 0,
+                red_cards: normalized.red_cards ?? 0,
+                possession_lost: normalized.possession_lost ?? 0,
+                saves: normalized.saves ?? 0,
+                goals_conceded: normalized.goals_conceded ?? 0,
+                blocked_shots: normalized.blocked_shots ?? 0,
+                was_dribbled: normalized.was_dribbled ?? 0,
+                ball_actions: ballActions,
+                crosses_success: normalized.crosses_success ?? 0,
+                crosses_failed: normalized.crosses_failed ?? 0,
+                offsides: normalized.offsides ?? 0,
               };
               
               const minutesInfo = calculateMinutesPlayed({
