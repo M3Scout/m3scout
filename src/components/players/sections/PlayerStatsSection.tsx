@@ -74,12 +74,12 @@ import {
   upsertPlayerStats, 
   deletePlayerStats,
   type PlayerStats,
-  type AggregatedStats,
 } from "@/lib/playerStats";
 import { isGoalkeeper } from "@/lib/positionUtils";
 import { CompetitionStatsSummary, SeasonEvolutionChart, SeasonStatsCard, SeasonTotalsCard } from "@/components/players/stats";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { usePlayerMatchStatsBySeasonCompetition, type SeasonCompetitionStats } from "@/hooks/usePlayerMatchStats";
+import { useManualPlayerStats } from "@/hooks/useManualPlayerStats";
 
 interface Competition {
   id: string;
@@ -98,7 +98,6 @@ interface StatsWithCompetition extends PlayerStats {
     name: string;
     computed_coefficient: number;
   } | null;
-  // Origin tracking for consolidated stats display
   _isLiveData?: boolean;
   _isManualData?: boolean;
   _isCombined?: boolean;
@@ -115,9 +114,7 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
   const isGK = isGoalkeeper(playerPosition);
   const isMobile = useIsMobile();
 
-  // ========================================
-  // SINGLE SOURCE OF TRUTH: match_player_stats
-  // ========================================
+  // LIVE STATS: From match_player_stats
   const { 
     stats: liveMatchStats, 
     bySeason: liveStatsBySeason, 
@@ -126,7 +123,7 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
     refetch: refetchLiveStats,
   } = usePlayerMatchStatsBySeasonCompetition({ playerId });
 
-  // Legacy manual stats (kept for backwards compatibility and manual entries)
+  // Legacy manual stats from player_stats table
   const [manualStats, setManualStats] = useState<StatsWithCompetition[]>([]);
   const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [loading, setLoading] = useState(true);
@@ -137,7 +134,6 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
   const [statsToDelete, setStatsToDelete] = useState<string | null>(null);
   const [expandedStats, setExpandedStats] = useState<Set<string>>(new Set());
 
-  // Toggle expanded state for a stat row
   const toggleStatExpanded = (statId: string) => {
     setExpandedStats(prev => {
       const newSet = new Set(prev);
@@ -150,7 +146,6 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
     });
   };
 
-  // Form state - includes goalkeeper stats
   const [formData, setFormData] = useState({
     season_year: currentYear,
     competition_id: "",
@@ -158,7 +153,6 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
     minutes: 0,
     goals: 0,
     assists: 0,
-    // Shooting stats
     shots: 0,
     shots_on_target: 0,
     yellow_cards: 0,
@@ -166,7 +160,6 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
     tackles: 0,
     interceptions: 0,
     recoveries: 0,
-    // Goalkeeper-specific stats
     saves: 0,
     goals_conceded: 0,
     clean_sheets: 0,
@@ -180,32 +173,16 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
 
   const fetchData = async () => {
     setLoading(true);
-    
     const [statsRes, competitionsRes] = await Promise.all([
       getAllPlayerStats(playerId),
       supabase.from("competitions").select("id, name, computed_coefficient").eq("is_active", true).order("name"),
     ]);
-
-    if (statsRes.data) {
-      setManualStats(statsRes.data as StatsWithCompetition[]);
-    }
-    if (competitionsRes.data) {
-      setCompetitions(competitionsRes.data);
-    }
-
+    if (statsRes.data) setManualStats(statsRes.data as StatsWithCompetition[]);
+    if (competitionsRes.data) setCompetitions(competitionsRes.data);
     setLoading(false);
   };
 
-  // ========================================
-  // MERGE: Live match stats + Manual stats
-  // Priority: Live match stats override manual for same season/competition
-  // ========================================
-  // ========================================
   // STATS CONSOLIDATION: Live + Manual = Combined
-  // - Live stats: derived from match_events (readonly, used for ratings)
-  // - Manual stats: entered via form (editable, NOT used for ratings)
-  // - Combined: SUM of both for display (transparent origin tracking)
-  // ========================================
   const stats = useMemo(() => {
     type ExtendedStats = StatsWithCompetition & { 
       _isLiveData?: boolean;
@@ -215,7 +192,7 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
       _manualStats?: Partial<StatsWithCompetition>;
     };
 
-    // Convert live match stats to the format expected by the UI
+    // Convert live match stats to format expected by UI
     const liveAsPlayerStats: ExtendedStats[] = liveMatchStats.map((ls) => ({
       id: `live_${ls.id}`,
       player_id: playerId,
@@ -237,16 +214,12 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
       clean_sheets: ls.stats.clean_sheets,
       penalties_saved: ls.stats.penalties_saved,
       errors_leading_to_goal: 0,
-      punches: 0,
-      successful_runs_out: 0,
-      total_runs_out: 0,
-      high_claims: 0,
+      punches: 0, successful_runs_out: 0, total_runs_out: 0, high_claims: 0,
       accurate_passes: ls.stats.passes_completed,
       total_passes: ls.stats.passes_total,
       key_passes: ls.stats.key_passes,
       chances_created: ls.stats.chances_created,
-      long_passes_accurate: 0,
-      long_passes_total: 0,
+      long_passes_accurate: 0, long_passes_total: 0,
       crosses_success: ls.stats.crosses_success ?? 0,
       crosses_failed: ls.stats.crosses_failed ?? 0,
       shots: ls.stats.shots,
@@ -270,31 +243,19 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
       was_dribbled: ls.stats.was_dribbled ?? 0,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      competitions: ls.competition_name ? {
-        name: ls.competition_name,
-        computed_coefficient: 1.0,
-      } : null,
+      competitions: ls.competition_name ? { name: ls.competition_name, computed_coefficient: 1.0 } : null,
       _isLiveData: true,
     } as ExtendedStats));
 
-    // Create a map of live stats by season/competition for merging
     const liveByKey = new Map<string, ExtendedStats>();
     liveAsPlayerStats.forEach(ls => {
-      const key = `${ls.season_year}_${ls.competition_id || 'none'}`;
-      liveByKey.set(key, ls);
+      liveByKey.set(`${ls.season_year}_${ls.competition_id || 'none'}`, ls);
     });
 
-    // Mark manual stats
-    const manualWithFlag: ExtendedStats[] = manualStats.map(ms => ({
-      ...ms,
-      _isManualData: true,
-    }));
-
-    // Create a map of manual stats by season/competition
+    const manualWithFlag: ExtendedStats[] = manualStats.map(ms => ({ ...ms, _isManualData: true }));
     const manualByKey = new Map<string, ExtendedStats>();
     manualWithFlag.forEach(ms => {
-      const key = `${ms.season_year}_${ms.competition_id || 'none'}`;
-      manualByKey.set(key, ms);
+      manualByKey.set(`${ms.season_year}_${ms.competition_id || 'none'}`, ms);
     });
 
     // Get all unique keys

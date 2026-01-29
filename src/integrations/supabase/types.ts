@@ -226,6 +226,138 @@ export type Database = {
         }
         Relationships: []
       }
+      manual_player_stats: {
+        Row: {
+          aerial_duels_lost: number
+          aerial_duels_won: number
+          assists: number
+          chances_created: number
+          clean_sheets: number
+          clearances: number
+          competition_id: string | null
+          created_at: string
+          created_by: string | null
+          dribbles_failed: number
+          dribbles_success: number
+          duels_lost: number
+          duels_won: number
+          fouls_committed: number
+          fouls_suffered: number
+          games: number
+          goals: number
+          goals_conceded: number
+          id: string
+          interceptions: number
+          key_passes: number
+          minutes: number
+          notes: string | null
+          passes_completed: number
+          passes_failed: number
+          penalties_saved: number
+          player_id: string
+          recoveries: number
+          red_cards: number
+          saves: number
+          season_year: number
+          shots: number
+          shots_on_target: number
+          tackles: number
+          updated_at: string
+          yellow_cards: number
+        }
+        Insert: {
+          aerial_duels_lost?: number
+          aerial_duels_won?: number
+          assists?: number
+          chances_created?: number
+          clean_sheets?: number
+          clearances?: number
+          competition_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          dribbles_failed?: number
+          dribbles_success?: number
+          duels_lost?: number
+          duels_won?: number
+          fouls_committed?: number
+          fouls_suffered?: number
+          games?: number
+          goals?: number
+          goals_conceded?: number
+          id?: string
+          interceptions?: number
+          key_passes?: number
+          minutes?: number
+          notes?: string | null
+          passes_completed?: number
+          passes_failed?: number
+          penalties_saved?: number
+          player_id: string
+          recoveries?: number
+          red_cards?: number
+          saves?: number
+          season_year?: number
+          shots?: number
+          shots_on_target?: number
+          tackles?: number
+          updated_at?: string
+          yellow_cards?: number
+        }
+        Update: {
+          aerial_duels_lost?: number
+          aerial_duels_won?: number
+          assists?: number
+          chances_created?: number
+          clean_sheets?: number
+          clearances?: number
+          competition_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          dribbles_failed?: number
+          dribbles_success?: number
+          duels_lost?: number
+          duels_won?: number
+          fouls_committed?: number
+          fouls_suffered?: number
+          games?: number
+          goals?: number
+          goals_conceded?: number
+          id?: string
+          interceptions?: number
+          key_passes?: number
+          minutes?: number
+          notes?: string | null
+          passes_completed?: number
+          passes_failed?: number
+          penalties_saved?: number
+          player_id?: string
+          recoveries?: number
+          red_cards?: number
+          saves?: number
+          season_year?: number
+          shots?: number
+          shots_on_target?: number
+          tackles?: number
+          updated_at?: string
+          yellow_cards?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manual_player_stats_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manual_player_stats_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       market_score_events: {
         Row: {
           created_at: string
