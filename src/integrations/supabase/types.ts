@@ -1386,6 +1386,8 @@ export type Database = {
           accurate_passes: number
           aerial_duels_total: number
           aerial_duels_won: number
+          archived_at: string | null
+          archived_reason: string | null
           assists: number
           chances_created: number
           claims: number
@@ -1407,6 +1409,7 @@ export type Database = {
           high_claims: number
           id: string
           interceptions: number
+          is_archived: boolean | null
           key_passes: number
           long_passes_accurate: number
           long_passes_total: number
@@ -1442,6 +1445,8 @@ export type Database = {
           accurate_passes?: number
           aerial_duels_total?: number
           aerial_duels_won?: number
+          archived_at?: string | null
+          archived_reason?: string | null
           assists?: number
           chances_created?: number
           claims?: number
@@ -1463,6 +1468,7 @@ export type Database = {
           high_claims?: number
           id?: string
           interceptions?: number
+          is_archived?: boolean | null
           key_passes?: number
           long_passes_accurate?: number
           long_passes_total?: number
@@ -1498,6 +1504,8 @@ export type Database = {
           accurate_passes?: number
           aerial_duels_total?: number
           aerial_duels_won?: number
+          archived_at?: string | null
+          archived_reason?: string | null
           assists?: number
           chances_created?: number
           claims?: number
@@ -1519,6 +1527,7 @@ export type Database = {
           high_claims?: number
           id?: string
           interceptions?: number
+          is_archived?: boolean | null
           key_passes?: number
           long_passes_accurate?: number
           long_passes_total?: number
