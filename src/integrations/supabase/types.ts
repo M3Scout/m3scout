@@ -2265,6 +2265,16 @@ export type Database = {
         Args: { p_match_id: string; p_match_player_id: string }
         Returns: Json
       }
+      rebuild_match_player_stats_from_events: {
+        Args: { p_match_id?: string; p_player_id?: string }
+        Returns: {
+          events_processed: number
+          match_id: string
+          player_id: string
+          stats_after: Json
+          stats_before: Json
+        }[]
+      }
       recalculate_all_attribute_scores: {
         Args: never
         Returns: {
