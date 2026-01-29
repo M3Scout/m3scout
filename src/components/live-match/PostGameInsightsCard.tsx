@@ -28,6 +28,7 @@ import {
   type MatchStatsInput,
 } from "@/lib/postGameAnalysis";
 import { calculateMinutesPlayed } from "@/lib/minutesPlayed";
+import { calculateDerivedBallActions } from "@/lib/derivedBallActions";
 import { normalizeMatchStats, debugLogNormalizedStats, type RawMatchStats, type NormalizedMatchStats } from "@/lib/normalizeMatchStats";
 import { getShortPosition, getPositionColor } from "@/lib/positionColors";
 import { MiniFieldHeatmap } from "./MiniFieldHeatmap";
@@ -421,7 +422,24 @@ export function PostGameInsightsCard({
         goals_conceded: normalized.goals_conceded ?? 0,
         blocked_shots: normalized.blocked_shots ?? 0,
         was_dribbled: normalized.was_dribbled ?? 0,
-        ball_actions: normalized.ball_actions ?? 0,
+        // ball_actions is DERIVED from component stats - never use stored value
+        ball_actions: calculateDerivedBallActions({
+          goals: normalized.goals ?? 0,
+          shots_on_target: normalized.shots_on_target ?? 0,
+          shots: normalized.shots_total ?? 0,
+          shots_blocked: normalized.shots_blocked ?? 0,
+          assists: normalized.assists ?? 0,
+          key_passes: normalized.key_passes ?? 0,
+          chances_created: normalized.chances_created ?? 0,
+          passes_completed: normalized.passes_completed ?? 0,
+          passes_total: normalized.passes_failed ?? 0, // passes_failed is the "failed" count in our schema
+          crosses_success: normalized.crosses_success ?? 0,
+          crosses_failed: normalized.crosses_failed ?? 0,
+          dribbles_success: normalized.dribbles_success ?? 0,
+          dribbles_total: normalized.dribbles_failed ?? 0, // dribbles_failed is the "failed" count
+          possession_lost: normalized.possession_lost ?? 0,
+          recoveries: normalized.recoveries ?? 0,
+        }, normalized.ball_actions ?? 0),
         crosses_success: normalized.crosses_success ?? 0,
         crosses_failed: normalized.crosses_failed ?? 0,
       };
