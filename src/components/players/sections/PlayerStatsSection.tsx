@@ -308,6 +308,42 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
       const manual = manualByKey.get(key);
 
       if (live && manual) {
+        // ==============================================
+        // DUPLICATION DETECTION (Phase 5 - Assert)
+        // ==============================================
+        // If manual values are EXACTLY equal to live values for core metrics,
+        // this likely indicates the manual was seeded incorrectly from live data
+        const coreMetricsMatch = 
+          manual.matches === live.matches &&
+          manual.goals === live.goals &&
+          manual.assists === live.assists &&
+          (manual.accurate_passes || 0) === (live.accurate_passes || 0) &&
+          (manual.successful_dribbles || 0) === (live.successful_dribbles || 0);
+        
+        if (coreMetricsMatch && (manual.matches ?? 0) > 0) {
+          console.error('[STATS DUPLICATION DETECTED]', {
+            playerId,
+            seasonYear: live.season_year,
+            competitionId: live.competition_id,
+            liveStats: {
+              matches: live.matches,
+              goals: live.goals,
+              assists: live.assists,
+              passes: live.accurate_passes,
+              dribbles: live.successful_dribbles,
+            },
+            manualStats: {
+              id: manual.id,
+              matches: manual.matches,
+              goals: manual.goals,
+              assists: manual.assists,
+              passes: manual.accurate_passes,
+              dribbles: manual.successful_dribbles,
+            },
+            message: 'Manual stats match live stats exactly - possible seeding bug. Manual should be user-entered only.',
+          });
+        }
+        
         // BOTH exist: Create combined entry that SUMS the values
         const combined: ExtendedStats = {
           id: `combined_${live.id}_${manual.id}`,
@@ -415,34 +451,57 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
 
   const handleOpenDialog = (stat?: StatsWithCompetition) => {
     if (stat) {
-      // For combined stats, only load the MANUAL portion for editing
-      const statsToEdit = (stat as any)._isCombined 
-        ? ((stat as any)._manualStats as StatsWithCompetition) 
-        : stat;
+      const extStat = stat as StatsWithCompetition & { 
+        _isLiveData?: boolean;
+        _isCombined?: boolean;
+        _manualStats?: StatsWithCompetition;
+      };
       
-      setSelectedStats(statsToEdit || stat);
+      // CRITICAL: For combined or live-only stats, determine the manual portion
+      // - Combined: load only manual values (NEVER fall back to live/combined totals)
+      // - Live-only: if editing, start with zeros (manual portion = 0)
+      // - Manual-only: load the values directly
+      
+      let manualStatsToEdit: StatsWithCompetition | null = null;
+      
+      if (extStat._isCombined && extStat._manualStats) {
+        // Combined: edit only the manual portion
+        manualStatsToEdit = extStat._manualStats;
+      } else if (extStat._isLiveData) {
+        // Pure live data: if user wants to add manual, start with zeros
+        // This should NOT happen as edit is disabled for pure live, but safety fallback
+        manualStatsToEdit = null;
+      } else {
+        // Pure manual data: load as-is
+        manualStatsToEdit = stat;
+      }
+      
+      // Set selected stats for update - use the ACTUAL manual record if exists
+      setSelectedStats(manualStatsToEdit);
+      
       setFormData({
         season_year: stat.season_year,
         competition_id: stat.competition_id || "",
-        // Use manual stats values if combined, otherwise use the stat values
-        matches: statsToEdit?.matches ?? stat.matches ?? 0,
-        minutes: statsToEdit?.minutes ?? stat.minutes ?? 0,
-        goals: statsToEdit?.goals ?? stat.goals ?? 0,
-        assists: statsToEdit?.assists ?? stat.assists ?? 0,
+        // CRITICAL FIX: Only use manual stats values, NEVER fall back to combined/live totals
+        // If manualStatsToEdit is null, default to 0 (no manual data exists)
+        matches: manualStatsToEdit?.matches ?? 0,
+        minutes: manualStatsToEdit?.minutes ?? 0,
+        goals: manualStatsToEdit?.goals ?? 0,
+        assists: manualStatsToEdit?.assists ?? 0,
         // Shooting stats
-        shots: statsToEdit?.shots ?? stat.shots ?? 0,
-        shots_on_target: statsToEdit?.shots_on_target ?? stat.shots_on_target ?? 0,
-        yellow_cards: statsToEdit?.yellow_cards ?? stat.yellow_cards ?? 0,
-        red_cards: statsToEdit?.red_cards ?? stat.red_cards ?? 0,
-        tackles: statsToEdit?.tackles ?? stat.tackles ?? 0,
-        interceptions: statsToEdit?.interceptions ?? stat.interceptions ?? 0,
-        recoveries: statsToEdit?.recoveries ?? stat.recoveries ?? 0,
+        shots: manualStatsToEdit?.shots ?? 0,
+        shots_on_target: manualStatsToEdit?.shots_on_target ?? 0,
+        yellow_cards: manualStatsToEdit?.yellow_cards ?? 0,
+        red_cards: manualStatsToEdit?.red_cards ?? 0,
+        tackles: manualStatsToEdit?.tackles ?? 0,
+        interceptions: manualStatsToEdit?.interceptions ?? 0,
+        recoveries: manualStatsToEdit?.recoveries ?? 0,
         // Goalkeeper-specific stats
-        saves: statsToEdit?.saves ?? stat.saves ?? 0,
-        goals_conceded: statsToEdit?.goals_conceded ?? stat.goals_conceded ?? 0,
-        clean_sheets: statsToEdit?.clean_sheets ?? stat.clean_sheets ?? 0,
-        penalties_saved: statsToEdit?.penalties_saved ?? stat.penalties_saved ?? 0,
-        errors_leading_to_goal: statsToEdit?.errors_leading_to_goal ?? stat.errors_leading_to_goal ?? 0,
+        saves: manualStatsToEdit?.saves ?? 0,
+        goals_conceded: manualStatsToEdit?.goals_conceded ?? 0,
+        clean_sheets: manualStatsToEdit?.clean_sheets ?? 0,
+        penalties_saved: manualStatsToEdit?.penalties_saved ?? 0,
+        errors_leading_to_goal: manualStatsToEdit?.errors_leading_to_goal ?? 0,
       });
     } else {
       resetForm();
