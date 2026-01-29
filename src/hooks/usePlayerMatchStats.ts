@@ -295,8 +295,11 @@ export function usePlayerMatchStats({
         shots_blocked: stats?.shots_blocked ?? 0,
         offsides: stats?.offsides ?? 0,
         passes_completed: stats?.passes_completed ?? 0,
-        passes_failed: Math.max(0, (stats?.passes_total ?? 0) - (stats?.passes_completed ?? 0)),
-        passes_total: stats?.passes_total ?? 0,
+        // CRITICAL: In our DB schema, passes_total stores FAILED passes count, NOT actual total
+        // passes_failed = passes_total (the stored "total" IS the failed count)
+        // Actual total = passes_completed + passes_total (success + failed)
+        passes_failed: stats?.passes_total ?? 0,
+        passes_total: (stats?.passes_completed ?? 0) + (stats?.passes_total ?? 0),
         key_passes: stats?.key_passes ?? 0,
         chances_created: stats?.chances_created ?? 0,
         crosses_success: stats?.crosses_success ?? 0,
@@ -324,8 +327,11 @@ export function usePlayerMatchStats({
           stats?.ball_actions ?? 0
         ), // Pass manual value for backwards compat
         dribbles_success: stats?.dribbles_success ?? 0,
-        dribbles_failed: Math.max(0, (stats?.dribbles_total ?? 0) - (stats?.dribbles_success ?? 0)),
-        dribbles_total: stats?.dribbles_total ?? 0,
+        // CRITICAL: In our DB schema, dribbles_total stores FAILED dribbles count, NOT actual total
+        // dribbles_failed = dribbles_total (the stored "total" IS the failed count)
+        // Actual total = dribbles_success + dribbles_total (success + failed)
+        dribbles_failed: stats?.dribbles_total ?? 0,
+        dribbles_total: (stats?.dribbles_success ?? 0) + (stats?.dribbles_total ?? 0),
         tackles: stats?.tackles ?? 0,
         interceptions: stats?.interceptions ?? 0,
         recoveries: stats?.recoveries ?? 0,
@@ -763,8 +769,11 @@ export function usePlayerMatchStatsBySeasonCompetition({
       s.shots_blocked += stats?.shots_blocked ?? 0;
       s.offsides += stats?.offsides ?? 0;
       s.passes_completed += stats?.passes_completed ?? 0;
-      s.passes_total += stats?.passes_total ?? 0;
-      s.passes_failed += Math.max(0, (stats?.passes_total ?? 0) - (stats?.passes_completed ?? 0));
+      // CRITICAL: In DB schema, passes_total stores FAILED passes, not actual total
+      // passes_failed = passes_total (the stored "total" IS the failed count)
+      // Actual total = passes_completed + passes_total
+      s.passes_failed += stats?.passes_total ?? 0;
+      s.passes_total += (stats?.passes_completed ?? 0) + (stats?.passes_total ?? 0);
       s.key_passes += stats?.key_passes ?? 0;
       s.chances_created += stats?.chances_created ?? 0;
       s.crosses_success += stats?.crosses_success ?? 0;
@@ -788,8 +797,11 @@ export function usePlayerMatchStatsBySeasonCompetition({
         recoveries: stats?.recoveries ?? 0,
       }, stats?.ball_actions ?? 0);
       s.dribbles_success += stats?.dribbles_success ?? 0;
-      s.dribbles_total += stats?.dribbles_total ?? 0;
-      s.dribbles_failed += Math.max(0, (stats?.dribbles_total ?? 0) - (stats?.dribbles_success ?? 0));
+      // CRITICAL: In DB schema, dribbles_total stores FAILED dribbles, not actual total
+      // dribbles_failed = dribbles_total (the stored "total" IS the failed count)
+      // Actual total = dribbles_success + dribbles_total
+      s.dribbles_failed += stats?.dribbles_total ?? 0;
+      s.dribbles_total += (stats?.dribbles_success ?? 0) + (stats?.dribbles_total ?? 0);
       s.tackles += stats?.tackles ?? 0;
       s.interceptions += stats?.interceptions ?? 0;
       s.recoveries += stats?.recoveries ?? 0;
