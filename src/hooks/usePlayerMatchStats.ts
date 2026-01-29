@@ -157,6 +157,12 @@ interface MatchPlayerStats {
   possession_lost: number;
   saves: number;
   goals_conceded: number;
+  // Official persisted rating (Single Source of Truth)
+  rating: number | null;
+  rating_minutes_played: number | null;
+  rating_minutes_factor: number | null;
+  rating_computed_at: string | null;
+  rating_engine_version: string;
 }
 
 /**
@@ -509,6 +515,9 @@ export function usePlayerMatchStats({
     // Grouped breakdowns
     bySeason: statsBySeason,
     byCompetition: statsByCompetition,
+    
+    // Raw stats map for accessing persisted rating
+    rawStatsMap: matchesData?.matchStats ?? {},
     
     // Loading state
     isLoading: matchesLoading,

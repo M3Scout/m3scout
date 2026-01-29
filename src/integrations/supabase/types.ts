@@ -2294,6 +2294,10 @@ export type Database = {
         Args: { p_player_id: string }
         Returns: number
       }
+      calculate_minutes_factor: {
+        Args: { minutes_played: number }
+        Returns: number
+      }
       calculate_player_attribute_scores: {
         Args: {
           p_competition_id: string
@@ -2425,6 +2429,18 @@ export type Database = {
           player_id: string
           stats_after: Json
           stats_before: Json
+        }[]
+      }
+      rebuild_match_ratings: {
+        Args: { p_match_id?: string }
+        Returns: {
+          match_id: string
+          match_player_stats_id: string
+          minutes_factor: number
+          minutes_played: number
+          new_rating: number
+          old_rating: number
+          player_id: string
         }[]
       }
       recalculate_all_attribute_scores: {

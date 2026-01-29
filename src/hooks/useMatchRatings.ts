@@ -1,17 +1,22 @@
 /**
- * Hook to calculate match ratings for all players in a match.
+ * Hook to get match ratings for all players in a match.
  * 
- * Uses the matchRatingEngine to compute ratings based on:
- * - match_player_stats (single source of truth)
- * - Standardized minutes calculation
+ * SINGLE SOURCE OF TRUTH: Ratings are read from the persisted 
+ * match_player_stats.rating field. If not yet persisted, calculates
+ * on-the-fly and should be persisted after match finishes.
  * 
- * Ratings automatically update when stats or minutes change.
+ * The rating is stored by:
+ * - Match Summary page (on game finish/apply)
+ * - Match Review page (after any stat edit)
+ * - rebuild_match_ratings() SQL function
  */
 
 import { useMemo } from "react";
 import type { MatchPlayerStats } from "@/hooks/useLiveMatch";
 import { 
   calculatePlayerMatchRating, 
+  getRatingColor,
+  getRatingBgColor,
   type MatchRatingResult 
 } from "@/lib/matchRatingEngine";
 import { calculateMinutesPlayed, type MatchPlayerMinutesInput } from "@/lib/minutesPlayed";
@@ -39,17 +44,64 @@ export interface PlayerRatingData {
   minutesInfo: ReturnType<typeof calculateMinutesPlayed>;
 }
 
+// Extended stats type with persisted rating
+interface MatchPlayerStatsWithRating extends MatchPlayerStats {
+  rating?: number | null;
+  rating_minutes_played?: number | null;
+  rating_minutes_factor?: number | null;
+}
+
 interface UseMatchRatingsOptions {
   matchPlayers: MatchPlayer[];
-  playerStatsMap: Record<string, MatchPlayerStats>;
+  playerStatsMap: Record<string, MatchPlayerStatsWithRating>;
+  usePersistedRating?: boolean; // If true, prefer persisted rating
+}
+
+/**
+ * Convert persisted rating to MatchRatingResult format (for display)
+ */
+function persistedRatingToResult(
+  rating: number,
+  minutesPlayed: number,
+  minutesFactor: number | null
+): MatchRatingResult {
+  // Get label based on rating value
+  const getLabel = (r: number): string => {
+    if (r >= 9.0) return "Excepcional";
+    if (r >= 8.0) return "Excelente";
+    if (r >= 7.0) return "Muito Bom";
+    if (r >= 6.5) return "Bom";
+    if (r >= 6.0) return "Regular";
+    if (r >= 5.0) return "Fraco";
+    return "Muito Fraco";
+  };
+
+  return {
+    hasRating: true,
+    rating,
+    baseRating: 6.0,
+    rawImpact: rating - 6.0,
+    impactAfterMinutes: rating - 6.0,
+    minutesFactor: minutesFactor ?? 1.0,
+    minutesPlayed,
+    breakdown: null,
+    detailedBreakdown: null,
+    color: getRatingColor(rating),
+    bgColor: getRatingBgColor(rating),
+    label: getLabel(rating),
+  };
 }
 
 /**
  * Calculate ratings for all players in a match
+ * 
+ * @param usePersistedRating - If true, read from match_player_stats.rating
+ *                            If false, calculate on-the-fly (for live matches)
  */
 export function useMatchRatings({ 
   matchPlayers, 
-  playerStatsMap 
+  playerStatsMap,
+  usePersistedRating = true 
 }: UseMatchRatingsOptions): Map<string, PlayerRatingData> {
   return useMemo(() => {
     const ratingsMap = new Map<string, PlayerRatingData>();
@@ -72,7 +124,37 @@ export function useMatchRatings({
       };
       
       const minutesInfo = calculateMinutesPlayed(minutesInput);
-      const rating = calculatePlayerMatchRating(stats, minutesInput, isGoalkeeper);
+      
+      let rating: MatchRatingResult;
+      
+      // Prefer persisted rating if available and requested
+      const persistedRating = stats?.rating;
+      if (usePersistedRating && persistedRating != null && minutesInfo.minutesPlayed > 0) {
+        rating = persistedRatingToResult(
+          persistedRating,
+          minutesInfo.minutesPlayed,
+          stats?.rating_minutes_factor ?? null
+        );
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.debug('[RATING MATCH SUMMARY - PERSISTED]', {
+            playerId: mp.player_id.slice(0, 8),
+            rating: persistedRating,
+            source: 'match_player_stats.rating'
+          });
+        }
+      } else {
+        // Calculate on-the-fly (for live matches or missing persisted rating)
+        rating = calculatePlayerMatchRating(stats, minutesInput, isGoalkeeper);
+        
+        if (process.env.NODE_ENV === 'development' && rating.hasRating) {
+          console.debug('[RATING MATCH SUMMARY - CALCULATED]', {
+            playerId: mp.player_id.slice(0, 8),
+            rating: rating.rating,
+            source: 'on-the-fly calculation'
+          });
+        }
+      }
       
       ratingsMap.set(mp.player_id, {
         playerId: mp.player_id,
@@ -85,7 +167,7 @@ export function useMatchRatings({
     }
     
     return ratingsMap;
-  }, [matchPlayers, playerStatsMap]);
+  }, [matchPlayers, playerStatsMap, usePersistedRating]);
 }
 
 /**
@@ -94,9 +176,10 @@ export function useMatchRatings({
 export function usePlayerMatchRating(
   playerId: string | undefined,
   matchPlayers: MatchPlayer[],
-  playerStatsMap: Record<string, MatchPlayerStats>
+  playerStatsMap: Record<string, MatchPlayerStatsWithRating>,
+  usePersistedRating = true
 ): PlayerRatingData | null {
-  const ratings = useMatchRatings({ matchPlayers, playerStatsMap });
+  const ratings = useMatchRatings({ matchPlayers, playerStatsMap, usePersistedRating });
   
   if (!playerId) return null;
   return ratings.get(playerId) ?? null;
@@ -108,9 +191,10 @@ export function usePlayerMatchRating(
  */
 export function useSortedPlayersByRating(
   matchPlayers: MatchPlayer[],
-  playerStatsMap: Record<string, MatchPlayerStats>
+  playerStatsMap: Record<string, MatchPlayerStatsWithRating>,
+  usePersistedRating = true
 ): PlayerRatingData[] {
-  const ratings = useMatchRatings({ matchPlayers, playerStatsMap });
+  const ratings = useMatchRatings({ matchPlayers, playerStatsMap, usePersistedRating });
   
   return useMemo(() => {
     return Array.from(ratings.values())
