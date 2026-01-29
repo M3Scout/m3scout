@@ -144,36 +144,28 @@ export function normalizeMatchStats(
   const shots_off_target = Math.max(0, shots_total - shotsOnTarget - shotsBlocked);
   
   // === PASSES ===
-  // REGRA: passes_total = passes_completed + passes_failed
+  // CRITICAL FIX: In our database schema:
+  // - passes_completed = count of 'pass_success' events (successful passes)
+  // - passes_total = count of 'pass_total' events (FAILED passes, NOT actual total!)
+  // The naming is misleading. passes_total actually stores failed pass count.
   const passesCompleted = safe(stats.passes_completed);
-  const passesStoredTotal = safe(stats.passes_total);
+  const passesFailed = safe(stats.passes_total); // passes_total IS the failed count
   
-  // If stored total < completed, use completed as minimum
-  // passes_failed is derived
-  const passes_total_derived = Math.max(passesStoredTotal, passesCompleted);
-  const passes_failed = Math.max(0, passes_total_derived - passesCompleted);
+  // Derive the actual total: success + failed
+  const passes_total_derived = passesCompleted + passesFailed;
+  const passes_failed = passesFailed; // Already the failed count
   
   // === DRIBBLES ===
-  // REGRA: dribbles_total = dribbles_success + dribbles_failed
+  // CRITICAL FIX: In our database schema:
+  // - dribbles_success = count of 'dribble_success' events (successful dribbles)
+  // - dribbles_total = count of 'dribble_attempt' events (FAILED dribbles, NOT actual total!)
+  // The naming is misleading. dribbles_total actually stores failed dribble count.
   const dribblesSuccess = safe(stats.dribbles_success);
-  const dribblesStoredTotal = safe(stats.dribbles_total);
+  const dribblesFailed = safe(stats.dribbles_total); // dribbles_total IS the failed count
   
-  // CRITICAL FIX: If stored total is the "failed" count, add to success
-  // If stored total < success, it's definitely wrong
-  // If stored total > success but close, it might be total or failed
-  let dribbles_total_derived: number;
-  let dribbles_failed: number;
-  
-  if (dribblesStoredTotal >= dribblesSuccess) {
-    // Stored total seems like actual total
-    dribbles_total_derived = dribblesStoredTotal;
-    dribbles_failed = dribblesStoredTotal - dribblesSuccess;
-  } else {
-    // Stored total < success: stored value might be "failed" count
-    // OR it's just missing data - assume total = success (no failures recorded)
-    dribbles_total_derived = dribblesSuccess;
-    dribbles_failed = 0;
-  }
+  // Derive the actual total: success + failed
+  const dribbles_total_derived = dribblesSuccess + dribblesFailed;
+  const dribbles_failed = dribblesFailed; // Already the failed count
   
   // === DUELS ===
   // REGRA: duels_total = duels_won + duels_lost

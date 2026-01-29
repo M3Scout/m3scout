@@ -411,8 +411,9 @@ export function calculateMatchRating(
     const goalkeeperRaw = gkPositiveRaw + gkNegativeRaw;
     const goalkeeperAfterMinutes = goalkeeperRaw * minutesFactor;
     
+    // CRITICAL FIX: passes_total stores failed passes count, NOT actual total
     const passCompletedItem = addItem("pass_completed", Math.max(0, stats.passes_completed), true);
-    const passFailedItem = addItem("pass_failed", Math.max(0, stats.passes_total - stats.passes_completed), true);
+    const passFailedItem = addItem("pass_failed", Math.max(0, stats.passes_total), true); // passes_total IS the failed count
     
     const passingRaw = passCompletedItem.rawDelta + passFailedItem.rawDelta;
     const passingAfterMinutes = passingRaw * minutesFactor;
@@ -498,7 +499,8 @@ export function calculateMatchRating(
   const keyPassItem = addItem("key_pass", Math.max(0, stats.key_passes));
   const chanceCreatedItem = addItem("chance_created", Math.max(0, stats.chances_created));
   const dribbleSuccessItem = addItem("dribble_success", Math.max(0, stats.dribbles_success));
-  const dribbleFailedItem = addItem("dribble_failed", Math.max(0, stats.dribbles_total - stats.dribbles_success));
+  // CRITICAL FIX: dribbles_total stores FAILED dribbles count, NOT actual total!
+  const dribbleFailedItem = addItem("dribble_failed", Math.max(0, stats.dribbles_total));
   const crossSuccessItem = addItem("cross_success", Math.max(0, stats.crosses_success));
   const crossFailedItem = addItem("cross_failed", Math.max(0, stats.crosses_failed));
   const foulSufferedItem = addItem("foul_suffered", Math.max(0, stats.fouls_suffered));
@@ -510,8 +512,12 @@ export function calculateMatchRating(
                     foulSufferedItem.rawDelta + possessionLostItem.rawDelta;
   
   // === PASSING ===
+  // CRITICAL FIX: In our database schema:
+  // - passes_completed = count of 'pass_success' events (successful passes)
+  // - passes_total = count of 'pass_total' events (FAILED passes, NOT actual total!)
+  // The naming is misleading. passes_total actually stores failed pass count.
   const passCompletedItem = addItem("pass_completed", Math.max(0, stats.passes_completed));
-  const passFailedItem = addItem("pass_failed", Math.max(0, stats.passes_total - stats.passes_completed));
+  const passFailedItem = addItem("pass_failed", Math.max(0, stats.passes_total)); // passes_total IS the failed count
   
   let passingRaw = passCompletedItem.rawDelta + passFailedItem.rawDelta;
   

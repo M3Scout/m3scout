@@ -29,13 +29,15 @@
  * 
  * PASSING:
  * - pass_success (passe certo) - mapped to passes_completed
- * - pass_failed (passe errado) - derived from passes_total - passes_completed
+ * - pass_failed (passe errado) - mapped directly to passes_total
+ *   NOTE: In our DB schema, passes_total stores FAILED passes count, not actual total!
  * - cross_success (cruzamento certo)
  * - cross_failed (cruzamento errado)
  * 
  * DRIBBLES / POSSESSION:
- * - dribble_success (drible certo)
- * - dribble_failed (drible errado) - mapped to dribbles_total - dribbles_success
+ * - dribble_success (drible certo) - mapped to dribbles_success
+ * - dribble_failed (drible errado) - mapped directly to dribbles_total
+ *   NOTE: In our DB schema, dribbles_total stores FAILED dribbles count, not actual total!
  * - possession_lost (perda da posse)
  * 
  * DEFENSE WITH POSSESSION:
@@ -62,13 +64,13 @@ export interface BallActionsInput {
   
   // Passing
   passes_completed?: number;
-  passes_total?: number; // passes_completed + passes_failed (we derive failed from this)
+  passes_total?: number; // CRITICAL: This stores FAILED passes count, NOT actual total!
   crosses_success?: number;
   crosses_failed?: number;
   
   // Dribbles
   dribbles_success?: number;
-  dribbles_total?: number; // dribbles_success + dribbles_failed (we derive failed from this)
+  dribbles_total?: number; // CRITICAL: This stores FAILED dribbles count, NOT actual total!
   
   // Possession
   possession_lost?: number;
@@ -107,15 +109,17 @@ export function calculateDerivedBallActions(
   
   // === PASSING ===
   const passesCompleted = s(stats.passes_completed);
-  // passes_failed = passes_total - passes_completed
-  const passesFailed = Math.max(0, s(stats.passes_total) - passesCompleted);
+  // CRITICAL FIX: passes_total stores FAILED passes count, NOT actual total!
+  // Use it directly as the failed pass count
+  const passesFailed = s(stats.passes_total);
   const crossesSuccess = s(stats.crosses_success);
   const crossesFailed = s(stats.crosses_failed);
   
   // === DRIBBLES ===
   const dribblesSuccess = s(stats.dribbles_success);
-  // dribbles_failed = dribbles_total - dribbles_success
-  const dribblesFailed = Math.max(0, s(stats.dribbles_total) - dribblesSuccess);
+  // CRITICAL FIX: dribbles_total stores FAILED dribbles count, NOT actual total!
+  // Use it directly as the failed dribble count
+  const dribblesFailed = s(stats.dribbles_total);
   const possessionLost = s(stats.possession_lost);
   
   // === DEFENSE WITH POSSESSION ===
