@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { RealtimeChannel } from "@supabase/supabase-js";
+import { rebuildSingleMatchRatings } from "@/lib/rebuildMatchRatings";
 
 // Types
 export type MatchStatus = "draft" | "live" | "finished" | "applied";
@@ -832,7 +833,7 @@ export function useLiveMatch(matchId: string) {
       
       return result;
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ["match-events", matchId] });
       queryClient.invalidateQueries({ queryKey: ["match-player-stats", matchId] });
       // Invalidate player profile stats for consistency
@@ -842,6 +843,12 @@ export function useLiveMatch(matchId: string) {
           query.queryKey[0] === "player-match-stats-by-season-comp",
         refetchType: 'all',
       });
+      
+      // SINGLE SOURCE OF TRUTH: Rebuild ratings after stat change
+      if (matchId) {
+        await rebuildSingleMatchRatings(matchId);
+      }
+      
       toast.success(data?.stats_reverted ? "Evento anulado e estatísticas revertidas" : "Evento anulado");
     },
     onError: (error: Error) => {
@@ -873,7 +880,7 @@ export function useLiveMatch(matchId: string) {
       
       return result;
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       // Invalidate all relevant queries - including match-players since
       // player_on/player_off events now sync to match_players.entered_minute/exited_minute
       queryClient.invalidateQueries({ queryKey: ["match-events", matchId] });
@@ -886,6 +893,12 @@ export function useLiveMatch(matchId: string) {
           query.queryKey[0] === "player-match-stats-by-season-comp",
         refetchType: 'all',
       });
+      
+      // SINGLE SOURCE OF TRUTH: Rebuild ratings after time change (affects minutes)
+      if (matchId) {
+        await rebuildSingleMatchRatings(matchId);
+      }
+      
       const displayMinute = data?.game_time_seconds != null 
         ? `${Math.floor(data.game_time_seconds / 60)}'` 
         : "";

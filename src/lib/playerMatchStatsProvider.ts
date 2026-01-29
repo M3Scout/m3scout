@@ -45,6 +45,12 @@ export type MatchPlayerStatsRow = Record<string, any> & {
   id: string;
   match_id: string;
   player_id: string;
+  // Official persisted rating (Single Source of Truth)
+  rating: number | null;
+  rating_minutes_played: number | null;
+  rating_minutes_factor: number | null;
+  rating_computed_at: string | null;
+  rating_engine_version: string;
 };
 
 export interface PlayerMatchStatsRawResult {

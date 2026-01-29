@@ -1,26 +1,18 @@
 /**
- * Hook to fetch and calculate match ratings for a player's matches
- * Uses the match rating engine to compute ratings from match_player_stats
+ * Hook to fetch match ratings for a player's matches
  * 
- * CRITICAL: This hook uses the SAME canonical rating function (calculateMatchRating)
- * with the SAME data transformation as the Match Summary to ensure 100% parity.
+ * SINGLE SOURCE OF TRUTH: Ratings are read from the persisted 
+ * match_player_stats.rating field - NO on-the-fly calculation.
  * 
- * The key insight is that the DB stores:
- * - passes_total = FAILED passes count (not actual total)
- * - dribbles_total = FAILED dribbles count (not actual total)
- * 
- * The usePlayerMatchStats hook DERIVES:
- * - passes_total = completed + failed (actual total)
- * - passes_failed = DB.passes_total
- * 
- * But the rating engine expects the RAW DB values, so we must pass:
- * - passes_total = passes_failed (the failed count)
- * - dribbles_total = dribbles_failed (the failed count)
+ * The rating is pre-calculated and stored by:
+ * - Match Summary page (on game finish/apply)
+ * - Match Review page (after any stat edit)
+ * - rebuild_match_ratings() SQL function (for global rebuild)
  */
 
 import { useMemo } from "react";
 import { usePlayerMatchStats, type MatchWithStats, type MatchDerivedStats } from "./usePlayerMatchStats";
-import { calculateMatchRating, type MatchRatingResult, type PlayerStatsInput } from "@/lib/matchRatingEngine";
+import { getRatingColor, getRatingBgColor, type MatchRatingResult } from "@/lib/matchRatingEngine";
 
 export interface MatchWithRating extends MatchWithStats {
   rating: MatchRatingResult;
@@ -35,70 +27,63 @@ interface UsePlayerMatchRatingsOptions {
 }
 
 /**
- * Convert MatchDerivedStats to PlayerStatsInput format for rating calculation.
- * 
- * CRITICAL: The rating engine's passes_total and dribbles_total fields expect
- * the FAILED count (as stored in DB), NOT the derived total.
- * 
- * MatchDerivedStats has:
- * - passes_completed: success count
- * - passes_failed: failed count (from DB.passes_total)
- * - passes_total: success + failed (derived, NOT what engine expects)
- * 
- * We must map to engine format:
- * - passes_completed → passes_completed
- * - passes_total → passes_failed (the FAILED count)
+ * Convert persisted rating to MatchRatingResult format
  */
-function matchDerivedStatsToInput(stats: MatchDerivedStats, isGoalkeeper: boolean): PlayerStatsInput {
+function persistedRatingToResult(
+  rating: number | null,
+  minutesPlayed: number,
+  minutesFactor: number | null
+): MatchRatingResult {
+  // No rating for 0 minutes
+  if (minutesPlayed <= 0 || rating === null) {
+    return {
+      hasRating: false,
+      rating: null,
+      baseRating: 6.0,
+      rawImpact: 0,
+      impactAfterMinutes: 0,
+      minutesFactor: 0,
+      minutesPlayed: 0,
+      breakdown: null,
+      detailedBreakdown: null,
+      color: "text-muted-foreground",
+      bgColor: "bg-muted",
+      label: "Sem nota",
+    };
+  }
+
+  // Get label based on rating value
+  const getLabel = (r: number): string => {
+    if (r >= 9.0) return "Excepcional";
+    if (r >= 8.0) return "Excelente";
+    if (r >= 7.0) return "Muito Bom";
+    if (r >= 6.5) return "Bom";
+    if (r >= 6.0) return "Regular";
+    if (r >= 5.0) return "Fraco";
+    return "Muito Fraco";
+  };
+
   return {
-    // Outfield stats - Attacking
-    goals: stats.goals,
-    assists: stats.assists,
-    shots_on_target: stats.shots_on_target,
-    shots: stats.shots,
-    // Outfield stats - Creation
-    dribbles_success: stats.dribbles_success,
-    // CRITICAL FIX: Engine expects FAILED count in dribbles_total, not derived total
-    dribbles_total: stats.dribbles_failed,
-    key_passes: stats.key_passes,
-    chances_created: stats.chances_created,
-    crosses_success: stats.crosses_success,
-    crosses_failed: stats.crosses_failed,
-    // Outfield stats - Passing
-    passes_completed: stats.passes_completed,
-    // CRITICAL FIX: Engine expects FAILED count in passes_total, not derived total
-    passes_total: stats.passes_failed,
-    // Outfield stats - Defense
-    interceptions: stats.interceptions,
-    recoveries: stats.recoveries,
-    clearances: stats.clearances,
-    tackles: stats.tackles,
-    shots_blocked: stats.blocked_shots, // Defensive blocked shot (mapped from blocked_shots)
-    times_dribbled_past: stats.was_dribbled, // Negative: got dribbled past (mapped from was_dribbled)
-    // Duels (Professional Scouting v2.0)
-    // NOTE: For duels, the DB stores REAL totals (won + lost), and the engine calculates lost = total - won
-    duels_won: stats.duels_won,
-    duels_total: stats.duels_total, // Real total, engine calculates lost
-    aerial_duels_won: stats.aerial_duels_won,
-    aerial_duels_total: stats.aerial_duels_total, // Real total, engine calculates lost
-    fouls_committed: stats.fouls_committed,
-    fouls_suffered: stats.fouls_suffered,
-    possession_lost: stats.possession_lost,
-    // Cards
-    yellow_cards: stats.yellow_cards,
-    red_cards: stats.red_cards,
-    // Goalkeeper stats
-    saves: stats.saves,
-    goals_conceded: stats.goals_conceded,
-    clean_sheets: stats.clean_sheets,
-    penalty_saved: stats.penalties_saved,
-    // Flag for rating engine
-    isGoalkeeper,
+    hasRating: true,
+    rating,
+    baseRating: 6.0,
+    rawImpact: rating - 6.0, // Approximation (actual impact not stored)
+    impactAfterMinutes: rating - 6.0,
+    minutesFactor: minutesFactor ?? 1.0,
+    minutesPlayed,
+    breakdown: null, // Not stored - recalculate if needed for breakdown modal
+    detailedBreakdown: null,
+    color: getRatingColor(rating),
+    bgColor: getRatingBgColor(rating),
+    label: getLabel(rating),
   };
 }
 
 /**
- * Hook to fetch player matches with their calculated ratings
+ * Hook to fetch player matches with their OFFICIAL ratings
+ * 
+ * READS FROM: match_player_stats.rating (persisted)
+ * DOES NOT: calculate ratings on-the-fly
  */
 export function usePlayerMatchRatings({
   playerId,
@@ -115,6 +100,7 @@ export function usePlayerMatchRatings({
     isLoading,
     error,
     refetch,
+    rawStatsMap, // Now includes rating fields
   } = usePlayerMatchStats({
     playerId,
     seasonYear,
@@ -128,27 +114,29 @@ export function usePlayerMatchRatings({
     return pos === 'gk' || pos === 'goleiro' || pos === 'goalkeeper';
   }, [playerPosition]);
 
-  // Calculate ratings for each match
+  // Get ratings from persisted data (no calculation)
   const matchesWithRatings: MatchWithRating[] = useMemo(() => {
     return matches.map((match) => {
-      const statsInput = matchDerivedStatsToInput(match.stats, isGoalkeeper);
-      const rating = calculateMatchRating(statsInput, match.minutes_played);
+      const rawStats = rawStatsMap?.[match.match_id];
       
-      // DEBUG: Log canonical rating calculation for traceability
+      // Read persisted rating from DB
+      const persistedRating = rawStats?.rating ?? null;
+      const persistedMinutesFactor = rawStats?.rating_minutes_factor ?? null;
+      
+      const rating = persistedRatingToResult(
+        persistedRating,
+        match.minutes_played,
+        persistedMinutesFactor
+      );
+      
+      // DEBUG: Log rating source for parity verification
       if (process.env.NODE_ENV === 'development' && rating.hasRating) {
-        console.debug('[RATING PARITY]', {
+        console.debug('[RATING OFFICIAL]', {
           matchId: match.match_id,
           opponent: match.opponent_name,
-          canonicalRating: rating.rating,
+          officialRating: persistedRating,
           minutesPlayed: match.minutes_played,
-          statsInput: {
-            goals: statsInput.goals,
-            assists: statsInput.assists,
-            passes_completed: statsInput.passes_completed,
-            passes_total_failed: statsInput.passes_total, // This is the failed count
-            dribbles_success: statsInput.dribbles_success,
-            dribbles_total_failed: statsInput.dribbles_total, // This is the failed count
-          }
+          source: 'match_player_stats.rating (persisted)',
         });
       }
       
@@ -157,7 +145,7 @@ export function usePlayerMatchRatings({
         rating,
       };
     });
-  }, [matches, isGoalkeeper]);
+  }, [matches, rawStatsMap]);
 
   // Get average rating (only from matches where player has a rating)
   const averageRating = useMemo(() => {
