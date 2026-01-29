@@ -35,6 +35,7 @@ import {
   Layers,
   Plus,
   Equal,
+  Trash2,
 } from "lucide-react";
 import { checkDuplicationWarning, type ManualStatsInput } from "@/hooks/useManualPlayerStats";
 import { cn } from "@/lib/utils";
@@ -170,16 +171,24 @@ export function ManualStatsFormDialog({
     setConfirmDuplication(false);
   }, [formData.games, formData.goals, formData.assists]);
 
+  // Check if this is a cleanup operation (all zeros = delete)
+  const isCleanupOperation = isEdit && formData.games === 0;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate required fields
+    // Validate required fields (competition always required for context)
     if (!formData.competition_id) {
       return;
     }
 
-    // Check for duplication warning
-    if (duplicationCheck.isDuplicate && !confirmDuplication) {
+    // For NEW entries, require at least 1 game
+    if (!isEdit && formData.games === 0) {
+      return; // Don't submit empty new records
+    }
+
+    // Check for duplication warning (skip for cleanup)
+    if (duplicationCheck.isDuplicate && !confirmDuplication && !isCleanupOperation) {
       return;
     }
 
@@ -426,6 +435,18 @@ export function ManualStatsFormDialog({
 
           <Separator className="bg-zinc-800/50" />
 
+          {/* Cleanup Warning: When setting games=0 */}
+          {isEdit && formData.games === 0 && (
+            <Alert className="border-amber-500/30 bg-amber-500/5">
+              <AlertTriangle className="h-4 w-4 text-amber-400" />
+              <AlertTitle className="text-amber-400 text-sm">Remover Estatísticas Manuais</AlertTitle>
+              <AlertDescription className="text-amber-300/80 text-xs">
+                Definir <strong>Jogos = 0</strong> irá <strong>remover</strong> este registro manual.
+                O sistema voltará a exibir apenas dados do Live Match.
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Preview: Live + Manual = Combined */}
           {hasLiveStats && formData.games > 0 && (
             <div className="bg-zinc-900/50 rounded-lg p-3 space-y-2">
@@ -505,19 +526,27 @@ export function ManualStatsFormDialog({
             </Button>
             <Button
               type="submit"
+              variant={isCleanupOperation ? "destructive" : "default"}
               disabled={
                 isSubmitting || 
                 !formData.competition_id || 
-                (duplicationCheck.isDuplicate && !confirmDuplication)
+                (duplicationCheck.isDuplicate && !confirmDuplication && !isCleanupOperation) ||
+                (!isEdit && formData.games === 0) // New entries require at least 1 game
               }
               className="gap-1.5"
             >
               {isSubmitting ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
+              ) : isCleanupOperation ? (
+                <Trash2 className="w-4 h-4" />
               ) : (
                 <FileEdit className="w-4 h-4" />
               )}
-              {isEdit ? "Atualizar" : "Salvar Jogos Externos"}
+              {isCleanupOperation 
+                ? "Remover Manual" 
+                : isEdit 
+                  ? "Atualizar" 
+                  : "Salvar Jogos Externos"}
             </Button>
           </DialogFooter>
         </form>
