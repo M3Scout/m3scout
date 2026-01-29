@@ -1,6 +1,21 @@
 /**
  * Hook to fetch and calculate match ratings for a player's matches
  * Uses the match rating engine to compute ratings from match_player_stats
+ * 
+ * CRITICAL: This hook uses the SAME canonical rating function (calculateMatchRating)
+ * with the SAME data transformation as the Match Summary to ensure 100% parity.
+ * 
+ * The key insight is that the DB stores:
+ * - passes_total = FAILED passes count (not actual total)
+ * - dribbles_total = FAILED dribbles count (not actual total)
+ * 
+ * The usePlayerMatchStats hook DERIVES:
+ * - passes_total = completed + failed (actual total)
+ * - passes_failed = DB.passes_total
+ * 
+ * But the rating engine expects the RAW DB values, so we must pass:
+ * - passes_total = passes_failed (the failed count)
+ * - dribbles_total = dribbles_failed (the failed count)
  */
 
 import { useMemo } from "react";
@@ -20,7 +35,19 @@ interface UsePlayerMatchRatingsOptions {
 }
 
 /**
- * Convert MatchDerivedStats to PlayerStatsInput format for rating calculation
+ * Convert MatchDerivedStats to PlayerStatsInput format for rating calculation.
+ * 
+ * CRITICAL: The rating engine's passes_total and dribbles_total fields expect
+ * the FAILED count (as stored in DB), NOT the derived total.
+ * 
+ * MatchDerivedStats has:
+ * - passes_completed: success count
+ * - passes_failed: failed count (from DB.passes_total)
+ * - passes_total: success + failed (derived, NOT what engine expects)
+ * 
+ * We must map to engine format:
+ * - passes_completed → passes_completed
+ * - passes_total → passes_failed (the FAILED count)
  */
 function matchDerivedStatsToInput(stats: MatchDerivedStats, isGoalkeeper: boolean): PlayerStatsInput {
   return {
@@ -31,14 +58,16 @@ function matchDerivedStatsToInput(stats: MatchDerivedStats, isGoalkeeper: boolea
     shots: stats.shots,
     // Outfield stats - Creation
     dribbles_success: stats.dribbles_success,
-    dribbles_total: stats.dribbles_total,
+    // CRITICAL FIX: Engine expects FAILED count in dribbles_total, not derived total
+    dribbles_total: stats.dribbles_failed,
     key_passes: stats.key_passes,
     chances_created: stats.chances_created,
     crosses_success: stats.crosses_success,
     crosses_failed: stats.crosses_failed,
     // Outfield stats - Passing
     passes_completed: stats.passes_completed,
-    passes_total: stats.passes_total,
+    // CRITICAL FIX: Engine expects FAILED count in passes_total, not derived total
+    passes_total: stats.passes_failed,
     // Outfield stats - Defense
     interceptions: stats.interceptions,
     recoveries: stats.recoveries,
@@ -47,10 +76,11 @@ function matchDerivedStatsToInput(stats: MatchDerivedStats, isGoalkeeper: boolea
     shots_blocked: stats.blocked_shots, // Defensive blocked shot (mapped from blocked_shots)
     times_dribbled_past: stats.was_dribbled, // Negative: got dribbled past (mapped from was_dribbled)
     // Duels (Professional Scouting v2.0)
+    // NOTE: For duels, the DB stores REAL totals (won + lost), and the engine calculates lost = total - won
     duels_won: stats.duels_won,
-    duels_total: stats.duels_total,
+    duels_total: stats.duels_total, // Real total, engine calculates lost
     aerial_duels_won: stats.aerial_duels_won,
-    aerial_duels_total: stats.aerial_duels_total,
+    aerial_duels_total: stats.aerial_duels_total, // Real total, engine calculates lost
     fouls_committed: stats.fouls_committed,
     fouls_suffered: stats.fouls_suffered,
     possession_lost: stats.possession_lost,
@@ -103,6 +133,25 @@ export function usePlayerMatchRatings({
     return matches.map((match) => {
       const statsInput = matchDerivedStatsToInput(match.stats, isGoalkeeper);
       const rating = calculateMatchRating(statsInput, match.minutes_played);
+      
+      // DEBUG: Log canonical rating calculation for traceability
+      if (process.env.NODE_ENV === 'development' && rating.hasRating) {
+        console.debug('[RATING PARITY]', {
+          matchId: match.match_id,
+          opponent: match.opponent_name,
+          canonicalRating: rating.rating,
+          minutesPlayed: match.minutes_played,
+          statsInput: {
+            goals: statsInput.goals,
+            assists: statsInput.assists,
+            passes_completed: statsInput.passes_completed,
+            passes_total_failed: statsInput.passes_total, // This is the failed count
+            dribbles_success: statsInput.dribbles_success,
+            dribbles_total_failed: statsInput.dribbles_total, // This is the failed count
+          }
+        });
+      }
+      
       return {
         ...match,
         rating,
