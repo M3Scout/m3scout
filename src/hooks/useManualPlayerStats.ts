@@ -134,9 +134,71 @@ export function useManualPlayerStats({ playerId, enabled = true }: UseManualPlay
     manualStatsByKey.set(key, ms);
   });
 
+  /**
+   * Check if all stats fields are zero (cleanup trigger)
+   */
+  const isAllFieldsZero = (input: ManualStatsInput): boolean => {
+    return (
+      input.games === 0 &&
+      input.minutes === 0 &&
+      (input.goals ?? 0) === 0 &&
+      (input.assists ?? 0) === 0 &&
+      (input.shots ?? 0) === 0 &&
+      (input.shots_on_target ?? 0) === 0 &&
+      (input.passes_completed ?? 0) === 0 &&
+      (input.passes_failed ?? 0) === 0 &&
+      (input.key_passes ?? 0) === 0 &&
+      (input.chances_created ?? 0) === 0 &&
+      (input.dribbles_success ?? 0) === 0 &&
+      (input.dribbles_failed ?? 0) === 0 &&
+      (input.tackles ?? 0) === 0 &&
+      (input.interceptions ?? 0) === 0 &&
+      (input.recoveries ?? 0) === 0 &&
+      (input.clearances ?? 0) === 0 &&
+      (input.duels_won ?? 0) === 0 &&
+      (input.duels_lost ?? 0) === 0 &&
+      (input.aerial_duels_won ?? 0) === 0 &&
+      (input.aerial_duels_lost ?? 0) === 0 &&
+      (input.yellow_cards ?? 0) === 0 &&
+      (input.red_cards ?? 0) === 0 &&
+      (input.fouls_committed ?? 0) === 0 &&
+      (input.fouls_suffered ?? 0) === 0 &&
+      (input.saves ?? 0) === 0 &&
+      (input.goals_conceded ?? 0) === 0 &&
+      (input.clean_sheets ?? 0) === 0 &&
+      (input.penalties_saved ?? 0) === 0
+    );
+  };
+
   // Upsert mutation (uses UNIQUE constraint)
+  // CLEANUP RULE: If all fields are zero, DELETE the record instead
   const upsertMutation = useMutation({
     mutationFn: async (input: ManualStatsInput) => {
+      // CLEANUP: If games=0 AND all fields=0, DELETE the record
+      if (isAllFieldsZero(input)) {
+        // Find existing record to delete
+        const existing = manualStats.find(
+          ms => 
+            ms.player_id === input.player_id &&
+            ms.season_year === input.season_year &&
+            ms.competition_id === input.competition_id
+        );
+        
+        if (existing) {
+          const { error } = await supabase
+            .from("manual_player_stats")
+            .delete()
+            .eq("id", existing.id);
+
+          if (error) throw error;
+          
+          return { deleted: true, id: existing.id };
+        }
+        
+        // No existing record and all zeros = no-op
+        return { deleted: false, noOp: true };
+      }
+
       // UPSERT: if exists, update; if not, insert
       const { data, error } = await supabase
         .from("manual_player_stats")
