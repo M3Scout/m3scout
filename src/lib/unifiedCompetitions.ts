@@ -149,15 +149,17 @@ async function fetchLiveCompetitions(playerId: string): Promise<UnifiedCompetiti
 }
 
 /**
- * Fetches competitions from manual/legacy player_stats
+ * Fetches competitions from manual_player_stats (not player_stats!)
+ * Manual stats are a FALLBACK - only used if no live data exists for that competition/season
  */
 async function fetchManualCompetitions(playerId: string): Promise<UnifiedCompetition[]> {
   const { data, error } = await supabase
-    .from("player_stats")
+    .from("manual_player_stats")
     .select(`
       season_year,
       competition_id,
       minutes,
+      games,
       competitions:competition_id (
         id,
         name,
@@ -166,7 +168,7 @@ async function fetchManualCompetitions(playerId: string): Promise<UnifiedCompeti
     `)
     .eq("player_id", playerId)
     .not("competition_id", "is", null)
-    .gt("minutes", 0);
+    .gt("games", 0);
 
   if (error || !data) {
     console.error("[UnifiedCompetitions] Error fetching manual:", error);

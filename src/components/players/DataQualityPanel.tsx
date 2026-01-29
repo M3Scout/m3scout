@@ -156,17 +156,17 @@ export function DataQualityPanel({ playerId, position }: DataQualityPanelProps) 
   useEffect(() => {
     const fetchAllStats = async () => {
       try {
-        // Fetch unified competitions (manual + live)
-        const { competitions } = await fetchUnifiedCompetitions(playerId);
+        // Fetch live match stats (PRIMARY SOURCE)
+        const { matchPlayers, matchStats } = await fetchPlayerMatchStatsRaw({ playerId });
         
-        // Fetch manual stats
+        // Fetch manual stats from manual_player_stats (FALLBACK ONLY)
         const { data: manualData } = await supabase
-          .from('player_stats')
+          .from('manual_player_stats')
           .select(`
             id,
             season_year,
             competition_id,
-            matches,
+            games,
             minutes,
             goals,
             assists,
@@ -179,12 +179,12 @@ export function DataQualityPanel({ playerId, position }: DataQualityPanelProps) 
             goals_conceded,
             clean_sheets,
             penalties_saved,
-            errors_leading_to_goal,
             aerial_duels_won,
-            accurate_passes,
-            total_passes,
+            aerial_duels_lost,
+            passes_completed,
+            passes_failed,
             duels_won,
-            total_duels,
+            duels_lost,
             chances_created,
             key_passes,
             shots,
@@ -194,64 +194,10 @@ export function DataQualityPanel({ playerId, position }: DataQualityPanelProps) 
           .eq('player_id', playerId)
           .order('season_year', { ascending: false });
         
-        // Fetch live match stats
-        const { matchPlayers, matchStats } = await fetchPlayerMatchStatsRaw({ playerId });
+        // Build unified stats map with PRIORITY: live > manual
+        const statsMap = new Map<string, UnifiedCompetitionStats & { source: 'live' | 'manual' }>();
         
-        // Build unified stats map by competition_id + season_year
-        const statsMap = new Map<string, UnifiedCompetitionStats>();
-        
-        // Add manual stats
-        (manualData || []).forEach((s: any) => {
-          const compId = s.competition_id;
-          if (!compId) return;
-          
-          const key = `${compId}-${s.season_year}`;
-          const compName = s.competition?.display_name || s.competition?.name || 'Sem Competição';
-          
-          statsMap.set(key, {
-            id: key,
-            seasonYear: s.season_year,
-            competitionName: compName,
-            matches: s.matches || 0,
-            minutes: s.minutes || 0,
-            stats: {
-              matches: s.matches || 0,
-              minutes: s.minutes || 0,
-              goals: s.goals || 0,
-              assists: s.assists || 0,
-              yellow_cards: s.yellow_cards || 0,
-              red_cards: s.red_cards || 0,
-              tackles: s.tackles || 0,
-              interceptions: s.interceptions || 0,
-              recoveries: s.recoveries || 0,
-              saves: s.saves || 0,
-              goals_conceded: s.goals_conceded || 0,
-              clean_sheets: s.clean_sheets || 0,
-              penalties_saved: s.penalties_saved || 0,
-              errors_leading_to_goal: s.errors_leading_to_goal || 0,
-              aerial_duels_won: s.aerial_duels_won || 0,
-              accurate_passes: s.accurate_passes || 0,
-              total_passes: s.total_passes || 0,
-              duels_won: s.duels_won || 0,
-              total_duels: s.total_duels || 0,
-              chances_created: s.chances_created || 0,
-              key_passes: s.key_passes || 0,
-              shots: s.shots || 0,
-              shots_on_target: s.shots_on_target || 0,
-            },
-          });
-        });
-        
-        // Aggregate live match stats by competition
-        const liveAggMap = new Map<string, {
-          competitionId: string;
-          seasonYear: number;
-          competitionName: string;
-          matches: number;
-          minutes: number;
-          stats: Record<string, number>;
-        }>();
-        
+        // STEP 1: Aggregate live match stats by competition (PRIMARY)
         (matchPlayers || []).forEach((mp: any) => {
           const match = mp.match;
           if (!match || !match.competition_id) return;
@@ -262,19 +208,20 @@ export function DataQualityPanel({ playerId, position }: DataQualityPanelProps) 
           const key = `${compId}-${seasonYear}`;
           const compName = match.competition?.display_name || match.competition?.name || 'Competição';
           
-          const existingLive = liveAggMap.get(key);
+          const existingLive = statsMap.get(key);
           const matchStatRow = matchStats.find((ms: any) => ms.match_id === mp.match_id);
           
           const minutesPlayed = Math.min(mp.minutes_played ?? 0, 90);
           if (minutesPlayed <= 0) return;
           
           if (!existingLive) {
-            liveAggMap.set(key, {
-              competitionId: compId,
+            statsMap.set(key, {
+              id: key,
               seasonYear,
               competitionName: compName,
               matches: 1,
               minutes: minutesPlayed,
+              source: 'live',
               stats: {
                 matches: 1,
                 minutes: minutesPlayed,
@@ -301,7 +248,8 @@ export function DataQualityPanel({ playerId, position }: DataQualityPanelProps) 
                 shots_on_target: matchStatRow?.shots_on_target ?? 0,
               },
             });
-          } else {
+          } else if (existingLive.source === 'live') {
+            // Sum multiple live matches for the same competition/season
             existingLive.matches += 1;
             existingLive.minutes += minutesPlayed;
             existingLive.stats.matches += 1;
@@ -327,32 +275,65 @@ export function DataQualityPanel({ playerId, position }: DataQualityPanelProps) 
               existingLive.stats.shots_on_target += matchStatRow.shots_on_target ?? 0;
             }
           }
+          // If existing source is 'live', we only sum live data (never mix with manual)
         });
         
-        // Merge live stats into the stats map
-        liveAggMap.forEach((liveEntry, key) => {
-          const existing = statsMap.get(key);
-          if (existing) {
-            // Sum the values
-            existing.matches += liveEntry.matches;
-            existing.minutes += liveEntry.minutes;
-            Object.keys(liveEntry.stats).forEach((statKey) => {
-              existing.stats[statKey] = (existing.stats[statKey] || 0) + (liveEntry.stats[statKey] || 0);
-            });
-          } else {
-            statsMap.set(key, {
-              id: key,
-              seasonYear: liveEntry.seasonYear,
-              competitionName: liveEntry.competitionName,
-              matches: liveEntry.matches,
-              minutes: liveEntry.minutes,
-              stats: liveEntry.stats,
-            });
+        // STEP 2: Add manual stats ONLY for competitions that have NO live data
+        (manualData || []).forEach((s: any) => {
+          const compId = s.competition_id;
+          if (!compId) return;
+          
+          const key = `${compId}-${s.season_year}`;
+          
+          // PRIORITY: If live data exists for this key, SKIP manual
+          if (statsMap.has(key)) {
+            if (import.meta.env.DEV) {
+              console.log(`[DataQuality] Skipping manual for ${key} - live data takes priority`);
+            }
+            return;
           }
+          
+          const compName = s.competition?.display_name || s.competition?.name || 'Sem Competição';
+          
+          statsMap.set(key, {
+            id: key,
+            seasonYear: s.season_year,
+            competitionName: compName,
+            matches: s.games || 0,
+            minutes: s.minutes || 0,
+            source: 'manual',
+            stats: {
+              matches: s.games || 0,
+              minutes: s.minutes || 0,
+              goals: s.goals || 0,
+              assists: s.assists || 0,
+              yellow_cards: s.yellow_cards || 0,
+              red_cards: s.red_cards || 0,
+              tackles: s.tackles || 0,
+              interceptions: s.interceptions || 0,
+              recoveries: s.recoveries || 0,
+              saves: s.saves || 0,
+              goals_conceded: s.goals_conceded || 0,
+              clean_sheets: s.clean_sheets || 0,
+              penalties_saved: s.penalties_saved || 0,
+              errors_leading_to_goal: 0,
+              aerial_duels_won: s.aerial_duels_won || 0,
+              accurate_passes: s.passes_completed || 0,
+              total_passes: (s.passes_completed || 0) + (s.passes_failed || 0),
+              duels_won: s.duels_won || 0,
+              total_duels: (s.duels_won || 0) + (s.duels_lost || 0),
+              chances_created: s.chances_created || 0,
+              key_passes: s.key_passes || 0,
+              shots: s.shots || 0,
+              shots_on_target: s.shots_on_target || 0,
+            },
+          });
         });
         
         // Convert to array and sort by season desc
-        const result = Array.from(statsMap.values()).sort((a, b) => b.seasonYear - a.seasonYear);
+        const result = Array.from(statsMap.values())
+          .map(({ source, ...rest }) => rest) // Remove source field for output
+          .sort((a, b) => b.seasonYear - a.seasonYear);
         setUnifiedStats(result);
       } catch (error) {
         console.error("[DataQualityPanel] Error fetching unified stats:", error);
