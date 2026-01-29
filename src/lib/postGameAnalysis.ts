@@ -268,20 +268,19 @@ export function generateQuickIndicators(
 ): QuickIndicator[] {
   const indicators: QuickIndicator[] = [];
   
-  // 1. Eficiência de Passes: passes_certos / (certos + errados)
-  // CRITICAL: passes_total in DB stores FAILED passes (legacy semantic), NOT actual total!
-  // Total real = completed + failed (passes_total)
+  // 1. Eficiência de Passes: passes_certos / total
+  // NOTE: Caller (PostGameInsightsCard) already normalizes data and passes
+  // passes_total as the REAL total (completed + failed). Trust that value directly.
   const passesCompleted = stats.passes_completed ?? 0;
-  const passesFailed = stats.passes_total ?? 0; // This is FAILED passes count
-  const passesRealTotal = passesCompleted + passesFailed;
+  const passesTotal = stats.passes_total ?? 0; // Already normalized to real total by caller
   
-  if (passesRealTotal > 0) {
+  if (passesTotal > 0) {
     // Safety: percentage can never exceed 100%
-    const passPercentage = Math.min(100, Math.round((passesCompleted / passesRealTotal) * 100));
+    const passPercentage = Math.min(100, Math.round((passesCompleted / passesTotal) * 100));
     indicators.push({
       id: "pass_efficiency",
       label: "Eficiência de Passes",
-      value: `${passesCompleted}/${passesRealTotal} (${passPercentage}%)`,
+      value: `${passesCompleted}/${passesTotal} (${passPercentage}%)`,
       type: passPercentage >= 80 ? "positive" : passPercentage >= 65 ? "neutral" : "negative",
       icon: "📤",
     });
@@ -295,19 +294,18 @@ export function generateQuickIndicators(
     });
   }
   
-  // 2. Eficiência no Drible: dribles_certos / (certos + errados)
-  // CRITICAL: dribbles_total in DB stores FAILED dribbles (legacy semantic), NOT actual total!
+  // 2. Eficiência no Drible: dribles_certos / total
+  // NOTE: Caller already normalizes data and passes dribbles_total as the REAL total
   const dribblesSuccess = stats.dribbles_success ?? 0;
-  const dribblesFailed = stats.dribbles_total ?? 0; // This is FAILED dribbles count
-  const dribblesRealTotal = dribblesSuccess + dribblesFailed;
+  const dribblesTotal = stats.dribbles_total ?? 0; // Already normalized to real total by caller
   
-  if (dribblesRealTotal > 0) {
+  if (dribblesTotal > 0) {
     // Safety: percentage can never exceed 100%
-    const dribblePercentage = Math.min(100, Math.round((dribblesSuccess / dribblesRealTotal) * 100));
+    const dribblePercentage = Math.min(100, Math.round((dribblesSuccess / dribblesTotal) * 100));
     indicators.push({
       id: "dribble_efficiency",
       label: "Eficiência no Drible",
-      value: `${dribblesSuccess}/${dribblesRealTotal}`,
+      value: `${dribblesSuccess}/${dribblesTotal}`,
       type: dribblePercentage >= 60 ? "positive" : dribblePercentage >= 40 ? "neutral" : "negative",
       icon: "👟",
     });
@@ -321,17 +319,16 @@ export function generateQuickIndicators(
     });
   }
   
-  // 3. Duelo Físico: duelos_ganhos / (ganhos + perdidos)
-  // CRITICAL: duels_total and aerial_duels_total in DB store LOST duels (legacy semantic)
+  // 3. Duelo Físico: duelos_ganhos / total
+  // NOTE: Caller already normalizes data and passes duels_total as the REAL total
   const duelsWon = stats.duels_won ?? 0;
-  const duelsLost = stats.duels_total ?? 0; // This is LOST duels count
+  const duelsTotal = stats.duels_total ?? 0; // Already normalized to real total by caller
   const aerialWon = stats.aerial_duels_won ?? 0;
-  const aerialLost = stats.aerial_duels_total ?? 0; // This is LOST aerial duels count
+  const aerialTotal = stats.aerial_duels_total ?? 0; // Already normalized to real total by caller
   
-  // Combine all duels: real total = won + lost
+  // Combine all duels
   const totalDuelsWon = duelsWon + aerialWon;
-  const totalDuelsLost = duelsLost + aerialLost;
-  const totalDuelsPlayed = totalDuelsWon + totalDuelsLost;
+  const totalDuelsPlayed = duelsTotal + aerialTotal;
   
   if (totalDuelsPlayed > 0) {
     // Safety: percentage can never exceed 100%
@@ -357,10 +354,10 @@ export function generateQuickIndicators(
   const possessionLost = stats.possession_lost ?? 0;
   const ballActions = stats.ball_actions ?? 0;
   
-  // Fallback: perdas / (passes_real_total + dribles_real_total)
+  // Fallback: perdas / (passes_total + dribles_total)
   let posseDenom = ballActions;
   if (posseDenom === 0) {
-    posseDenom = passesRealTotal + dribblesRealTotal;
+    posseDenom = passesTotal + dribblesTotal;
   }
   
   if (posseDenom > 0) {
@@ -419,17 +416,17 @@ export function generateStrengthsImprovements(
   }
   
   // === CALCULATED METRICS ===
-  // CRITICAL: passes_total stores FAILED passes, dribbles_total stores FAILED dribbles
-  // duels_total and aerial_duels_total store LOST duels (legacy semantic)
+  // NOTE: Caller (PostGameInsightsCard) already normalizes data:
+  // - passes_total is already the REAL total (completed + failed)
+  // - dribbles_total is already the REAL total (success + failed)
+  // - duels_total is already the REAL total (won + lost)
   const passesCompleted = stats.passes_completed ?? 0;
-  const passesFailed = stats.passes_total ?? 0; // FAILED passes
-  const passesRealTotal = passesCompleted + passesFailed;
-  const passAccuracy = passesRealTotal > 0 ? Math.min(100, (passesCompleted / passesRealTotal) * 100) : 0;
+  const passesTotal = stats.passes_total ?? 0; // Already normalized
+  const passAccuracy = passesTotal > 0 ? Math.min(100, (passesCompleted / passesTotal) * 100) : 0;
   
   const dribblesSuccess = stats.dribbles_success ?? 0;
-  const dribblesFailed = stats.dribbles_total ?? 0; // FAILED dribbles
-  const dribblesRealTotal = dribblesSuccess + dribblesFailed;
-  const dribbleAccuracy = dribblesRealTotal > 0 ? Math.min(100, (dribblesSuccess / dribblesRealTotal) * 100) : 0;
+  const dribblesTotal = stats.dribbles_total ?? 0; // Already normalized
+  const dribbleAccuracy = dribblesTotal > 0 ? Math.min(100, (dribblesSuccess / dribblesTotal) * 100) : 0;
   
   const defensiveActions = 
     (stats.tackles ?? 0) + 
@@ -448,11 +445,14 @@ export function generateStrengthsImprovements(
   const crossesTotal = crossesSuccess + crossesFailed;
   const crossAccuracy = crossesTotal > 0 ? Math.min(100, (crossesSuccess / crossesTotal) * 100) : 0;
   
-  // Duels: duels_total and aerial_duels_total store LOST duels
-  const duelsWon = (stats.duels_won ?? 0) + (stats.aerial_duels_won ?? 0);
-  const duelsLost = (stats.duels_total ?? 0) + (stats.aerial_duels_total ?? 0);
-  const duelsRealTotal = duelsWon + duelsLost;
-  const duelRate = duelsRealTotal > 0 ? Math.min(100, (duelsWon / duelsRealTotal) * 100) : 0;
+  // Duels: already normalized to real totals
+  const duelsWon = stats.duels_won ?? 0;
+  const duelsTotal = stats.duels_total ?? 0; // Already normalized
+  const aerialDuelsWon = stats.aerial_duels_won ?? 0;
+  const aerialDuelsTotal = stats.aerial_duels_total ?? 0; // Already normalized
+  const totalDuelsWon = duelsWon + aerialDuelsWon;
+  const totalDuelsPlayed = duelsTotal + aerialDuelsTotal;
+  const duelRate = totalDuelsPlayed > 0 ? Math.min(100, (totalDuelsWon / totalDuelsPlayed) * 100) : 0;
   
   const possessionLost = stats.possession_lost ?? 0;
   const ballActions = stats.ball_actions ?? 0;
@@ -472,7 +472,7 @@ export function generateStrengthsImprovements(
   }
   
   // High pass accuracy (>= 80% with volume)
-  if (passesRealTotal >= 15 && passAccuracy >= 80) {
+  if (passesTotal >= 15 && passAccuracy >= 80) {
     strengths.push("Alta precisão nos passes, circulação segura de bola");
   }
   
@@ -484,7 +484,7 @@ export function generateStrengthsImprovements(
   }
   
   // Good dribbling (>= 60% with attempts)
-  if (dribblesRealTotal >= 3 && dribbleAccuracy >= 60) {
+  if (dribblesTotal >= 3 && dribbleAccuracy >= 60) {
     strengths.push("Eficiência nos dribles, progressão individual de qualidade");
   }
   
@@ -495,7 +495,7 @@ export function generateStrengthsImprovements(
   }
   
   // Duel dominance
-  if (duelsRealTotal >= 5 && duelRate >= 60) {
+  if (totalDuelsPlayed >= 5 && duelRate >= 60) {
     strengths.push("Domínio nos duelos, impôs superioridade física");
   }
   
@@ -518,7 +518,7 @@ export function generateStrengthsImprovements(
   // === IMPROVEMENTS ANALYSIS (max 3) ===
   
   // Low pass accuracy (< 70% with volume)
-  if (passesRealTotal >= 10 && passAccuracy < 70) {
+  if (passesTotal >= 10 && passAccuracy < 70) {
     improvements.push("Precisão nos passes abaixo do esperado para o volume");
   }
   
@@ -528,12 +528,12 @@ export function generateStrengthsImprovements(
   }
   
   // Poor dribbling efficiency
-  if (dribblesRealTotal >= 3 && dribbleAccuracy < 40) {
+  if (dribblesTotal >= 3 && dribbleAccuracy < 40) {
     improvements.push("Tentativas de drible com baixa taxa de sucesso");
   }
   
   // Lost duels
-  if (duelsRealTotal >= 4 && duelRate < 40) {
+  if (totalDuelsPlayed >= 4 && duelRate < 40) {
     improvements.push("Dificuldade nos duelos, melhorar posicionamento/timing");
   }
   
