@@ -45,30 +45,53 @@ interface PlayerActivityHeatmapProps {
   matchDuration: number;
 }
 
-// Event labels for tooltip
+// Event labels for tooltip - Canonical mapping for all event types
+// CRITICAL: pass_total in DB means FAILED passes, not total passes
+// CRITICAL: dribbles_total in DB means FAILED dribbles, not total dribbles  
+// CRITICAL: aerial_duel_total in DB means LOST aerial duels
 const EVENT_LABELS: Record<string, string> = {
+  // Attack
   goal: "Gol",
   assist: "Assistência",
-  shot: "Chute",
-  shot_on_target: "Chute no gol",
+  shot: "Finalização",
+  shot_on_target: "Finalização no gol",
+  shot_blocked: "Finalização bloqueada",
+  offside: "Impedimento",
+  
+  // Creation/Passing
   key_pass: "Passe decisivo",
   chance_created: "Chance criada",
+  pass_success: "Passe certo",
+  pass_total: "Passe errado", // IMPORTANT: pass_total stores FAILED passes
+  cross_success: "Cruzamento certo",
+  cross_failed: "Cruzamento errado",
+  
+  // Dribbles/Possession
   dribble_success: "Drible certo",
-  dribble_attempt: "Drible tentado",
+  dribble_attempt: "Drible errado", // Failed dribble attempt
+  possession_lost: "Bola perdida",
+  
+  // Defense
   tackle: "Desarme",
   interception: "Interceptação",
   recovery: "Recuperação",
   clearance: "Corte",
+  was_dribbled: "Driblado",
+  blocked_shot: "Chute bloqueado (def)",
+  
+  // Duels
   duel_won: "Duelo ganho",
-  duel_total: "Duelo total",
+  duel_total: "Duelo perdido", // duel_total stores LOST duels
   aerial_duel_won: "Aéreo ganho",
+  aerial_duel_total: "Aéreo perdido", // aerial_duel_total stores LOST duels
+  
+  // Fouls/Cards
   yellow: "Amarelo",
   red: "Vermelho",
   foul_committed: "Falta cometida",
   foul_suffered: "Falta sofrida",
-  pass_success: "Passe certo",
-  pass_total: "Passe total",
-  possession_lost: "Bola perdida",
+  
+  // Goalkeeper
   save: "Defesa",
   goal_conceded: "Gol sofrido",
   penalty_saved: "Pênalti defendido",
@@ -76,6 +99,11 @@ const EVENT_LABELS: Record<string, string> = {
   punch: "Soco",
   high_claim: "Bola alta",
   sweeper_action: "Saída do gol",
+  
+  // Meta events (excluded from heatmap but label for safety)
+  player_on: "Entrou",
+  player_off: "Saiu",
+  substitution: "Substituição",
 };
 
 // Interval size in minutes for the heatmap
