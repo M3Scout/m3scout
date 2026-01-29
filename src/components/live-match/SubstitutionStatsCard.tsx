@@ -1,4 +1,6 @@
 import { useMemo, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,12 +38,22 @@ interface MatchEvent {
   half: number | null;
 }
 
+interface PresenceRecord {
+  id: string;
+  player_id: string;
+  period: number;
+  entered_at_seconds: number;
+  exited_at_seconds: number | null;
+  role: string;
+}
+
 interface SubstitutionStatsCardProps {
   matchPlayers: MatchPlayer[];
   matchEvents: MatchEvent[];
   matchDuration: number;
   addedTime1H?: number;
   addedTime2H?: number;
+  matchId?: string;
 }
 
 interface SubstitutionInfo {
@@ -73,6 +85,7 @@ export function SubstitutionStatsCard({
   matchDuration,
   addedTime1H = 0,
   addedTime2H = 0,
+  matchId,
 }: SubstitutionStatsCardProps) {
   const hasMatchAddedTime = addedTime1H > 0 || addedTime2H > 0;
   const matchContext = {
@@ -80,6 +93,40 @@ export function SubstitutionStatsCard({
     addedTime1H,
     addedTime2H,
   };
+
+  // Fetch player_field_presence as SOURCE OF TRUTH for minutes
+  const { data: presenceRecords = [] } = useQuery({
+    queryKey: ["player-field-presence", matchId],
+    queryFn: async () => {
+      if (!matchId) return [];
+      const { data, error } = await supabase
+        .from("player_field_presence")
+        .select("*")
+        .eq("match_id", matchId);
+      if (error) throw error;
+      return data as PresenceRecord[];
+    },
+    enabled: !!matchId,
+    staleTime: 0,
+  });
+
+  // Build a map of player_id -> total minutes from presence records
+  const presenceMinutesMap = useMemo(() => {
+    const map: Record<string, { totalMinutes: number; started: boolean }> = {};
+    for (const record of presenceRecords) {
+      if (!map[record.player_id]) {
+        map[record.player_id] = { totalMinutes: 0, started: record.role === "starter" };
+      }
+      if (record.role === "starter") {
+        map[record.player_id].started = true;
+      }
+      const exitSeconds = record.exited_at_seconds ?? (matchDuration * 60);
+      const minutes = Math.floor((exitSeconds - record.entered_at_seconds) / 60);
+      map[record.player_id].totalMinutes += minutes;
+    }
+    return map;
+  }, [presenceRecords, matchDuration]);
+
   // Get all substitution events
   const substitutions = useMemo<SubstitutionInfo[]>(() => {
     const subEvents = matchEvents.filter((e) => e.event_type === "substitution");
@@ -103,43 +150,69 @@ export function SubstitutionStatsCard({
       .sort((a, b) => a.minute - b.minute);
   }, [matchEvents, matchPlayers]);
 
-  // Calculate time on field for each player using standardized logic
+  // Calculate time on field for each player
+  // PRIORITY: Use player_field_presence if available, fallback to match_players calculation
   const playerTimeStats = useMemo<PlayerTimeInfo[]>(() => {
     return matchPlayers
       .filter((mp) => mp.player && !mp.is_removed)
       .map((mp) => {
-      // Force recalculation from entry/exit times, don't use cached minutes_played
-      // This ensures consistency with the displayed range (e.g., 71' → 90' = 19 min)
-      const info = calculateMinutesPlayed(
-        {
-          started: mp.started,
-          entered_minute: mp.entered_minute,
-          exited_minute: mp.exited_minute,
-          minutes_played: null, // Ignore DB cache, calculate from actual times
-        },
-        matchContext
-      );
-      
-        const wasSubstitutedIn = mp.entered_minute !== null && !mp.started;
+        // Try to get minutes from presence records first (SOURCE OF TRUTH)
+        const presenceData = presenceMinutesMap[mp.player_id];
+        
+        let minutesPlayed: number;
+        let started: boolean;
+        let rangeDisplay: string;
+        
+        if (presenceData && presenceData.totalMinutes > 0) {
+          // Use presence-based data (more accurate)
+          minutesPlayed = Math.min(presenceData.totalMinutes, STANDARD_MATCH_DURATION);
+          started = presenceData.started;
+          
+          // Build range display from presence
+          const playerRecords = presenceRecords.filter(r => r.player_id === mp.player_id);
+          if (playerRecords.length > 0) {
+            const firstEntry = Math.min(...playerRecords.map(r => Math.floor(r.entered_at_seconds / 60)));
+            const lastExit = Math.max(...playerRecords.map(r => Math.floor((r.exited_at_seconds ?? matchDuration * 60) / 60)));
+            rangeDisplay = `${firstEntry}' → ${Math.min(lastExit, 90)}'`;
+          } else {
+            rangeDisplay = "—";
+          }
+        } else {
+          // Fallback to match_players calculation
+          const info = calculateMinutesPlayed(
+            {
+              started: mp.started,
+              entered_minute: mp.entered_minute,
+              exited_minute: mp.exited_minute,
+              minutes_played: null,
+            },
+            matchContext
+          );
+          minutesPlayed = info.minutesPlayed;
+          started = mp.started;
+          rangeDisplay = info.rangeDisplay;
+        }
+        
+        const wasSubstitutedIn = mp.entered_minute !== null && !started;
         const wasSubstitutedOut = mp.exited_minute !== null;
         
         return {
           player: mp,
-          minutesPlayed: info.minutesPlayed,
-          minutesPlayedTotal: info.minutesPlayedTotal,
-          started: mp.started,
+          minutesPlayed,
+          minutesPlayedTotal: minutesPlayed,
+          started,
           enteredMinute: mp.entered_minute,
           exitedMinute: mp.exited_minute,
           wasSubstitutedIn,
           wasSubstitutedOut,
-          rangeDisplay: info.rangeDisplay,
-          rangeDisplayTotal: info.rangeDisplayTotal,
-          endMinute: info.endMinute,
-          hasAddedTime: info.hasAddedTime,
+          rangeDisplay,
+          rangeDisplayTotal: rangeDisplay,
+          endMinute: 90,
+          hasAddedTime: hasMatchAddedTime,
         };
       })
       .sort((a, b) => b.minutesPlayed - a.minutesPlayed);
-  }, [matchPlayers, matchContext]);
+  }, [matchPlayers, matchContext, presenceMinutesMap, presenceRecords, matchDuration, hasMatchAddedTime]);
 
   // Summary stats
   const summaryStats = useMemo(() => {

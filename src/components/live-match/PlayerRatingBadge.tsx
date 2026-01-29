@@ -87,7 +87,7 @@ export function PlayerRatingBadge({
             </div>
           </TooltipTrigger>
           <TooltipContent side="top">
-            <p className="text-xs text-muted-foreground">Não entrou em campo</p>
+            <p className="text-xs text-muted-foreground">Sem nota disponível</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>

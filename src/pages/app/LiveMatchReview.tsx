@@ -291,10 +291,19 @@ export default function LiveMatchReview() {
     return info.minutesPlayed;
   };
 
-  // Apply stats mutation - now properly INCREMENTS existing stats
+  // Apply stats mutation - IDEMPOTENT: prevents duplicate applications
   const applyStats = useMutation({
     mutationFn: async () => {
       if (!match) throw new Error("Jogo não encontrado");
+
+      // IDEMPOTENCY CHECK: If match is already applied, just rebuild ratings and skip stats
+      if (match.status === "applied") {
+        console.log("[APPLY STATS] Match already applied, skipping stat update");
+        // Still rebuild ratings in case they need refreshing
+        const { rebuildSingleMatchRatings } = await import("@/lib/rebuildMatchRatings");
+        await rebuildSingleMatchRatings(match.id);
+        return matchPlayers.map(mp => mp.player_id);
+      }
 
       const appliedIds: string[] = [];
       const durationMinutes = match.duration_minutes;
@@ -342,7 +351,7 @@ export default function LiveMatchReview() {
           duels_won: "duels_won",
           duels_total: "total_duels",
           aerial_duels_won: "aerial_duels_won",
-          aerial_duels_total: "aerial_duels_total", // NEW: Map aerial duels total
+          aerial_duels_total: "aerial_duels_total",
           yellow_cards: "yellow_cards",
           red_cards: "red_cards",
           fouls_committed: "fouls_committed",
@@ -422,6 +431,10 @@ export default function LiveMatchReview() {
         .eq("id", match.id);
 
       if (statusError) throw statusError;
+
+      // CRITICAL: Rebuild ratings for this match to persist them
+      const { rebuildSingleMatchRatings } = await import("@/lib/rebuildMatchRatings");
+      await rebuildSingleMatchRatings(match.id);
 
       return appliedIds;
     },
@@ -560,6 +573,7 @@ export default function LiveMatchReview() {
         matchDuration={match.duration_minutes}
         addedTime1H={match.added_time_first_half ?? 0}
         addedTime2H={match.added_time_second_half ?? 0}
+        matchId={match.id}
       />
 
       {/* Event Distribution Chart */}
