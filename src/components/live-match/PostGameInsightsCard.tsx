@@ -465,10 +465,12 @@ export function PostGameInsightsCard({
         // Não incluir removidos do jogo
         if (mp.is_removed) return false;
 
-        // REGRA: Incluir todo jogador com minutes_played > 0
-        // Remover qualquer filtro por mínimo de minutos, eventos ou volume
+        // REGRA: didPlay = TRUE se minutos > 0 OU qualquer evento registrado
         const minutesPlayed = getEffectiveMinutesPlayed(mp);
-        if (minutesPlayed <= 0) return false;
+        const hasEvents = matchEvents.some(e => e.player_id === mp.player_id);
+        
+        // Jogador participou se tem minutos OU eventos
+        if (minutesPlayed <= 0 && !hasEvents) return false;
 
         return true;
       })

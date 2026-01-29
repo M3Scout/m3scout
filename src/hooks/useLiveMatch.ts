@@ -832,7 +832,7 @@ export function useLiveMatch(matchId: string) {
     },
   });
 
-  // Finish game using RPC V3
+  // Finish game using RPC V3 - also persists ratings
   const finishGame = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.rpc("end_game_v2", {
@@ -842,9 +842,26 @@ export function useLiveMatch(matchId: string) {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ["match", matchId] });
       queryClient.invalidateQueries({ queryKey: ["match-players", matchId] });
+      
+      // CRITICAL: Persist ratings after game finishes
+      try {
+        await rebuildSingleMatchRatings(matchId);
+        console.log("[FINISH GAME] Ratings persisted for match", matchId);
+      } catch (ratingError) {
+        console.warn("[FINISH GAME] Failed to persist ratings:", ratingError);
+      }
+      
+      // Invalidate player profile stats to reflect updated ratings
+      queryClient.invalidateQueries({ 
+        predicate: (query) => 
+          query.queryKey[0] === "player-match-stats" || 
+          query.queryKey[0] === "player-match-ratings",
+        refetchType: 'all',
+      });
+      
       toast.success("Jogo finalizado!");
     },
     onError: (error: Error) => {

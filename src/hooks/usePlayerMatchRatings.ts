@@ -34,8 +34,9 @@ function persistedRatingToResult(
   minutesPlayed: number,
   minutesFactor: number | null
 ): MatchRatingResult {
-  // No rating for 0 minutes
-  if (minutesPlayed <= 0 || rating === null) {
+  // No rating if no persisted value
+  // Note: Players with minimal minutes CAN have a rating if calculated and persisted
+  if (rating === null) {
     return {
       hasRating: false,
       rating: null,
@@ -43,7 +44,7 @@ function persistedRatingToResult(
       rawImpact: 0,
       impactAfterMinutes: 0,
       minutesFactor: 0,
-      minutesPlayed: 0,
+      minutesPlayed: minutesPlayed,
       breakdown: null,
       detailedBreakdown: null,
       color: "text-muted-foreground",
