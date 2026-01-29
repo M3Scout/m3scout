@@ -304,30 +304,21 @@ export default function LiveMatchReview() {
 
   // Apply stats mutation - IDEMPOTENT: prevents duplicate applications
   // INSTRUMENTED: logs before/after, asserts idempotency and invariants (DEV only)
+  // 
+  // CRITICAL FIX: Apply does NOT write to player_stats anymore!
+  // Live match data lives ONLY in match_player_stats (already populated during the game).
+  // This prevents duplication with manual_player_stats.
   const applyStats = useMutation({
     mutationFn: async () => {
       if (!match) throw new Error("Jogo não encontrado");
 
       const alreadyApplied = match.status === "applied";
-      let appliedCount = 0;
-      let skippedCount = 0;
-      let assertionFailures = 0;
 
-      // IDEMPOTENCY CHECK: If match is already applied, just rebuild ratings and skip stats
+      // IDEMPOTENCY CHECK: If match is already applied, just rebuild ratings
       if (alreadyApplied) {
         logApplySkipped(match.id, "all", "all players", "Match already applied");
+        logApplySummary(match.id, match.status, matchPlayers.length, 0, matchPlayers.length, 0);
         
-        // Log summary for already applied match
-        logApplySummary(
-          match.id,
-          match.status,
-          matchPlayers.length,
-          0,
-          matchPlayers.length,
-          0
-        );
-        
-        // Still rebuild ratings in case they need refreshing
         const { rebuildSingleMatchRatings } = await import("@/lib/rebuildMatchRatings");
         await rebuildSingleMatchRatings(match.id);
         return matchPlayers.map(mp => mp.player_id);
@@ -339,167 +330,25 @@ export default function LiveMatchReview() {
       for (const mp of matchPlayers) {
         const playerName = mp.player?.full_name ?? "Unknown";
         
-        // Use match_player_stats (calculated by RPC with proper derivations like goal→shot_on_target)
-        // instead of counting raw events which misses derived stats
-        const matchStats = playerStatsMap[mp.player_id];
-        
-        // Use manual minutes if set, otherwise calculate automatically using standardized logic
+        // Use manual minutes if set, otherwise calculate automatically
         const minutesPlayed = manualMinutes[mp.player_id] ?? calculateMinutesPlayedForPlayer(mp, durationMinutes);
 
-        // First, try to get existing stats
-        const { data: existingStatsArr } = await supabase
-          .from("player_stats")
-          .select("*")
-          .eq("player_id", mp.player_id)
-          .eq("competition_id", match.competition_id)
-          .eq("season_year", match.season_year)
-          .limit(1);
+        // Update match_players with calculated minutes (persisted source of truth for minutes)
+        const { error: mpUpdateError } = await supabase
+          .from("match_players")
+          .update({ minutes_played: minutesPlayed })
+          .eq("id", mp.id);
 
-        const existingStats = Array.isArray(existingStatsArr) ? existingStatsArr[0] ?? null : null;
-        const isUpdate = existingStats !== null;
-
-        // === INSTRUMENTATION: Log BEFORE ===
-        logApplyBefore(
-          match.id,
-          mp.player_id,
-          playerName,
-          alreadyApplied,
-          existingStats as Record<string, unknown> | null
-        );
-
-        // Capture stats_before snapshot
-        const statsBefore = createStatsSnapshot(existingStats as Record<string, unknown> | null);
-
-        // Build update object with incremented values using match_player_stats
-        // This ensures derived stats (goal → shots + shots_on_target) are correctly included
-        const statsData: Record<string, number> = {
-          matches: (existingStats?.matches ?? 0) + 1,
-          minutes: (existingStats?.minutes ?? 0) + minutesPlayed,
-        };
-
-        // Track delta for instrumentation
-        const delta: Record<string, number> = {
-          matches: 1,
-          minutes: minutesPlayed,
-        };
-
-        // Map from match_player_stats columns to player_stats columns
-        const MATCH_STATS_TO_PLAYER_STATS: Record<string, string> = {
-          goals: "goals",
-          assists: "assists",
-          shots: "shots",
-          shots_on_target: "shots_on_target",
-          key_passes: "key_passes",
-          chances_created: "chances_created",
-          dribbles_success: "successful_dribbles",
-          dribbles_total: "total_dribbles",
-          tackles: "tackles",
-          interceptions: "interceptions",
-          recoveries: "recoveries",
-          clearances: "clearances",
-          duels_won: "duels_won",
-          duels_total: "total_duels",
-          aerial_duels_won: "aerial_duels_won",
-          aerial_duels_total: "aerial_duels_total",
-          yellow_cards: "yellow_cards",
-          red_cards: "red_cards",
-          fouls_committed: "fouls_committed",
-          fouls_suffered: "fouls_drawn",
-          passes_completed: "accurate_passes",
-          passes_total: "total_passes",
-          possession_lost: "possession_lost",
-          saves: "saves",
-          goals_conceded: "goals_conceded",
-        };
-
-        if (matchStats) {
-          // Use pre-calculated stats from match_player_stats (includes derived values)
-          for (const [matchCol, playerCol] of Object.entries(MATCH_STATS_TO_PLAYER_STATS)) {
-            const newValue = (matchStats as unknown as Record<string, number>)[matchCol] ?? 0;
-            const existingValue = existingStats?.[playerCol as keyof typeof existingStats] ?? 0;
-            statsData[playerCol] = (typeof existingValue === 'number' ? existingValue : 0) + newValue;
-            delta[playerCol] = newValue;
-          }
-        } else {
-          // Fallback to event counting if no match_player_stats exist
-          const counts = (playerEventCounts[mp.player_id] || {}) as Partial<Record<MatchEventType, number>>;
-          for (const [eventType, column] of Object.entries(EVENT_TO_STAT_COLUMN)) {
-            const newValue = counts[eventType as MatchEventType] ?? 0;
-            if (column) {
-              const existingValue = existingStats?.[column as keyof typeof existingStats] ?? 0;
-              statsData[column] = (typeof existingValue === 'number' ? existingValue : 0) + newValue;
-              delta[column] = newValue;
-            }
-          }
-          
-          // CRITICAL: Derive total_dribbles and total_passes from success + failed counts
-          // Since dribble_attempt and pass_total are FAILED attempts, not totals
-          const dribbleSuccess = counts.dribble_success ?? 0;
-          const dribbleFailed = counts.dribble_attempt ?? 0;
-          const passSuccess = counts.pass_success ?? 0;
-          const passFailed = counts.pass_total ?? 0;
-          
-          statsData.total_dribbles = (existingStats?.total_dribbles ?? 0) + dribbleSuccess + dribbleFailed;
-          statsData.total_passes = (existingStats?.total_passes ?? 0) + passSuccess + passFailed;
-          delta.total_dribbles = dribbleSuccess + dribbleFailed;
-          delta.total_passes = passSuccess + passFailed;
+        if (mpUpdateError) {
+          console.warn("Error updating match_players minutes:", mpUpdateError);
         }
 
-        // === INSTRUMENTATION: Log DELTA ===
-        logApplyDelta(mp.player_id, playerName, delta);
-
-        // Upsert with the new totals
-        const { error: upsertError } = await supabase
-          .from("player_stats")
-          .upsert(
-            {
-              player_id: mp.player_id,
-              competition_id: match.competition_id,
-              season_year: match.season_year,
-              ...statsData,
-            },
-            {
-              onConflict: "player_id,competition_id,season_year",
-            }
-          );
-
-        if (upsertError) {
-          console.error("Error upserting stats:", upsertError);
-          throw upsertError;
+        // Log what we're doing
+        if (import.meta.env.DEV) {
+          console.log(`[APPLY] ${playerName}: ${minutesPlayed} min - stats in match_player_stats (no player_stats write)`);
         }
 
-        // Fetch stats_after for assertion
-        const { data: statsAfterArr } = await supabase
-          .from("player_stats")
-          .select("*")
-          .eq("player_id", mp.player_id)
-          .eq("competition_id", match.competition_id)
-          .eq("season_year", match.season_year)
-          .limit(1);
-
-        const statsAfterRecord = Array.isArray(statsAfterArr) ? statsAfterArr[0] ?? null : null;
-        const statsAfter = createStatsSnapshot(statsAfterRecord as Record<string, unknown> | null);
-
-        // === INSTRUMENTATION: Log AFTER ===
-        logApplyAfter(
-          mp.player_id,
-          playerName,
-          statsAfterRecord as Record<string, unknown>,
-          isUpdate ? 'update' : 'insert'
-        );
-
-        // === ASSERTIONS (DEV ONLY) ===
-        // For first apply: assert delta was applied correctly
-        const deltaOk = assertDeltaAppliedCorrectly(playerName, statsBefore, delta, statsAfter);
-        if (!deltaOk) assertionFailures++;
-
-        // Validate invariants
-        const invariantsResult = validateInvariants(playerName, statsAfter);
-        if (!invariantsResult.valid) assertionFailures++;
-
-        appliedCount++;
-
-        // Recalculate player rating
+        // Recalculate player auto rating
         try {
           await supabase.rpc("update_player_auto_rating", {
             p_player_id: mp.player_id,
@@ -524,14 +373,7 @@ export default function LiveMatchReview() {
       await rebuildSingleMatchRatings(match.id);
 
       // === INSTRUMENTATION: Log SUMMARY ===
-      logApplySummary(
-        match.id,
-        "applied",
-        matchPlayers.length,
-        appliedCount,
-        skippedCount,
-        assertionFailures
-      );
+      logApplySummary(match.id, "applied", matchPlayers.length, appliedIds.length, 0, 0);
 
       return appliedIds;
     },

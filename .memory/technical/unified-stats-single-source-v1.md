@@ -1,41 +1,57 @@
 # Memory: technical/unified-stats-single-source-v1
 Updated: now
 
-## Unified Stats Architecture (Manual + Live Match)
+## Unified Stats Architecture (Manual + Live Match) - v2
 
-The system now uses a **Single Source of Truth** for all player statistics across both manual (player_stats) and live match (match_player_stats) data sources.
+The system enforces **strict source separation** for player statistics:
+
+### Data Sources
+
+1. **Live Match Stats** (`match_player_stats` table):
+   - Primary source for games tracked via Live Match
+   - Stats populated during live games, ratings calculated on finish
+   - Apply does NOT write to any other table—data stays here
+
+2. **Manual Stats** (`manual_player_stats` table):
+   - Fallback for external games not tracked via Live Match
+   - User-editable via "Adicionar Jogos Externos" form
+   - UNIQUE constraint per `(player_id, competition_id, season_year)`
+
+### Priority Rule
+
+**Live data ALWAYS takes precedence over manual data.**
+
+For the same `(player_id, competition_id, season_year)`:
+- If live data exists → use live, ignore manual
+- If only manual exists → use manual as fallback
+- NEVER sum live + manual together
 
 ### Database View: `unified_player_season_stats`
 
-A PostgreSQL view that combines:
-- **Manual Stats**: From `player_stats` table (externally entered data)
-- **Live Match Stats**: From `match_players` + `match_player_stats` (recorded during live games)
+A PostgreSQL view that:
+- Aggregates live stats from `match_player_stats` + `match_players`
+- Uses `manual_player_stats` as fallback (not `player_stats`!)
+- Returns `data_source` field: `'live'`, `'manual'`, or `'both'`
+- Uses FULL OUTER JOIN with COALESCE priority for live
 
-The view performs a FULL OUTER JOIN by `player_id + competition_id + season_year`, summing values where both sources have data.
+### Apply Flow (Critical)
 
-Each row includes a `data_source` field: `'manual'`, `'live'`, or `'both'`.
-
-### Components Using Unified Data
-
-1. **DataQualityPanel** (`src/components/players/DataQualityPanel.tsx`)
-   - Fetches unified competitions via `fetchUnifiedCompetitions` + direct aggregation
-   - Shows combined games/minutes/stats from both sources
-
-2. **OverallRatingCard / Auto Rating** (via `calculate_athlete_auto_rating` RPC)
-   - Now queries `unified_player_season_stats` view instead of just `player_stats`
-   - Rating considers all player activity regardless of data origin
-
-3. **Attribute Radar Filters** (`SofaScoreRadarCard`, `GKRadarCard`)
-   - Uses `fetchUnifiedCompetitions` from `src/lib/unifiedCompetitions.ts`
-   - Dropdown shows single list without live/manual distinction
+The `applyStats` mutation in `LiveMatchReview.tsx`:
+- Does NOT write to `player_stats` or `manual_player_stats`
+- Only updates `match_players.minutes_played` with calculated values
+- Marks match as `status = 'applied'`
+- Triggers rating rebuild via `rebuildSingleMatchRatings`
 
 ### Key Files
 
-- `src/lib/unifiedCompetitions.ts` - Client-side competition list fetcher
-- `src/components/players/DataQualityPanel.tsx` - Stats completeness panel
-- Database: `unified_player_season_stats` view (SECURITY INVOKER)
-- Database: `calculate_athlete_auto_rating` function (uses unified view)
+- `src/pages/app/LiveMatchReview.tsx` - Apply logic (no player_stats writes)
+- `src/components/players/DataQualityPanel.tsx` - Priority aggregation
+- `src/lib/unifiedCompetitions.ts` - Uses `manual_player_stats` for manual source
+- `src/hooks/useManualPlayerStats.ts` - CRUD for manual stats only
+- Database: `unified_player_season_stats` view (uses priority, not sum)
 
 ### UI Principle
 
-**No distinction between "live" and "manual" data in the UI.** Users see a unified view of the athlete's career without knowing the data origin.
+- Live Match badge (⚡) for games from Live Match
+- Manual badge (📝) for manually entered external games
+- "Combinado" only refers to multiple live games, NEVER live + manual
