@@ -153,18 +153,23 @@ export function splitStatsByHalf(
       }
     });
 
-    // Fix totals
-    if (stats.passes_completed) {
-      stats.passes_total = (stats.passes_total ?? 0) + stats.passes_completed;
+    // Derive real totals: total = success + failed
+    // CRITICAL: The aggregation above already counts success and failed separately,
+    // so we just need to derive the totals for display purposes.
+    // passes_total in this context = passes_completed + passes_failed (already accumulated separately)
+    // dribbles_total = dribbles_success + dribbles_failed (already accumulated separately)
+    // We DON'T add success to total again - that would double-count!
+    
+    // For duels, we need to derive total from won + lost
+    if (stats.duels_won !== undefined || stats.duels_total !== undefined) {
+      const won = stats.duels_won ?? 0;
+      const lost = stats.duels_total ?? 0; // duels_total stores LOST count
+      stats.duels_total = won + lost;
     }
-    if (stats.dribbles_success) {
-      stats.dribbles_total = (stats.dribbles_total ?? 0) + stats.dribbles_success;
-    }
-    if (stats.duels_won) {
-      stats.duels_total = (stats.duels_total ?? 0) + stats.duels_won;
-    }
-    if (stats.aerial_duels_won) {
-      stats.aerial_duels_total = (stats.aerial_duels_total ?? 0) + stats.aerial_duels_won;
+    if (stats.aerial_duels_won !== undefined || stats.aerial_duels_total !== undefined) {
+      const won = stats.aerial_duels_won ?? 0;
+      const lost = stats.aerial_duels_total ?? 0; // aerial_duels_total stores LOST count
+      stats.aerial_duels_total = won + lost;
     }
 
     return stats as MatchStatsInput;
