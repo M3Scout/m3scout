@@ -855,7 +855,11 @@ export default function LiveMatchReview() {
                             Sem estatísticas
                           </Badge>
                         ) : (
-                          statEntries.slice(0, 8).map(([type, value]) => (
+                          statEntries
+                            // Filter out ball_action since it's already shown as derived stat above
+                            .filter(([type]) => type !== "ball_action")
+                            .slice(0, 8)
+                            .map(([type, value]) => (
                             <Badge 
                               key={type} 
                               variant="secondary" 
