@@ -6,6 +6,7 @@ import { ptBR } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -123,7 +124,7 @@ function MatchCardSkeleton({ index }: { index: number }) {
 }
 
 // Live Hub Empty State Card
-function LiveHubEmptyState() {
+function LiveHubEmptyState({ canCreate }: { canCreate: boolean }) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
@@ -156,23 +157,27 @@ function LiveHubEmptyState() {
 
           {/* Description */}
           <p className="text-sm sm:text-base text-zinc-500 max-w-md mb-8 leading-relaxed">
-            Crie um jogo para registrar eventos, estatísticas e desempenho em tempo real durante as partidas.
+            {canCreate 
+              ? "Crie um jogo para registrar eventos, estatísticas e desempenho em tempo real durante as partidas."
+              : "Não há jogos disponíveis para visualização no momento."}
           </p>
 
-          {/* CTA Button with pulse */}
-          <Link to="/app/live-match/new">
-            <Button 
-              size="lg" 
-              className="relative bg-red-600 hover:bg-red-700 text-white gap-2.5 px-8 h-12 text-base font-semibold rounded-xl shadow-lg shadow-red-600/20 transition-all hover:shadow-xl hover:shadow-red-600/30 hover:scale-[1.02]"
-            >
-              <span className="absolute inset-0 rounded-xl bg-red-500/20 animate-pulse" style={{ animationDuration: '2s' }} />
-              <Radio className="w-5 h-5 relative z-10" />
-              <span className="relative z-10">Criar primeiro jogo</span>
-            </Button>
-          </Link>
+          {/* CTA Button with pulse - only show if user can create */}
+          {canCreate && (
+            <Link to="/app/live-match/new">
+              <Button 
+                size="lg" 
+                className="relative bg-red-600 hover:bg-red-700 text-white gap-2.5 px-8 h-12 text-base font-semibold rounded-xl shadow-lg shadow-red-600/20 transition-all hover:shadow-xl hover:shadow-red-600/30 hover:scale-[1.02]"
+              >
+                <span className="absolute inset-0 rounded-xl bg-red-500/20 animate-pulse" style={{ animationDuration: '2s' }} />
+                <Radio className="w-5 h-5 relative z-10" />
+                <span className="relative z-10">Criar primeiro jogo</span>
+              </Button>
+            </Link>
+          )}
 
           {/* Features hint */}
-          <div className="flex items-center gap-6 mt-8 pt-8 border-t border-zinc-800/60">
+          <div className={cn("flex items-center gap-6 pt-8 border-t border-zinc-800/60", canCreate ? "mt-8" : "mt-4")}>
             <div className="flex items-center gap-2 text-xs text-zinc-500">
               <Activity className="w-3.5 h-3.5 text-zinc-600" />
               Estatísticas em tempo real
@@ -196,11 +201,12 @@ function LiveHubEmptyState() {
 interface MatchCardProps {
   match: MatchWithCompetition;
   link: string;
-  onDelete: () => void;
+  onDelete?: () => void;
+  canDelete?: boolean;
   index: number;
 }
 
-function MatchCard({ match, link, onDelete, index }: MatchCardProps) {
+function MatchCard({ match, link, onDelete, canDelete = false, index }: MatchCardProps) {
   const config = statusConfig[match.status];
   const competitionName = match.competition?.display_name || match.competition?.name || "Competição";
   const isLive = match.status === "live";
@@ -359,17 +365,19 @@ function MatchCard({ match, link, onDelete, index }: MatchCardProps) {
                     )}
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={(e) => { 
-                    e.preventDefault(); 
-                    e.stopPropagation();
-                    onDelete(); 
-                  }}
-                  className="text-red-400 focus:text-red-400 focus:bg-red-500/10 cursor-pointer"
-                >
-                  <Trash2 className="w-3.5 h-3.5 mr-2" />
-                  Excluir
-                </DropdownMenuItem>
+                {canDelete && onDelete && (
+                  <DropdownMenuItem 
+                    onClick={(e) => { 
+                      e.preventDefault(); 
+                      e.stopPropagation();
+                      onDelete(); 
+                    }}
+                    className="text-red-400 focus:text-red-400 focus:bg-red-500/10 cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 mr-2" />
+                    Excluir
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -387,7 +395,8 @@ interface MatchSectionProps {
   borderColorClass?: string;
   matches: MatchWithCompetition[];
   getMatchLink: (match: MatchWithCompetition) => string;
-  onDeleteClick: (match: MatchWithCompetition) => void;
+  onDeleteClick?: (match: MatchWithCompetition) => void;
+  canDelete?: boolean;
 }
 
 function MatchSection({ 
@@ -397,7 +406,8 @@ function MatchSection({
   borderColorClass = "border-zinc-800/60",
   matches, 
   getMatchLink, 
-  onDeleteClick 
+  onDeleteClick,
+  canDelete = false,
 }: MatchSectionProps) {
   if (matches.length === 0) return null;
 
@@ -430,7 +440,8 @@ function MatchSection({
             key={match.id}
             match={match}
             link={getMatchLink(match)}
-            onDelete={() => onDeleteClick(match)}
+            onDelete={onDeleteClick ? () => onDeleteClick(match) : undefined}
+            canDelete={canDelete}
             index={i}
           />
         ))}
@@ -441,8 +452,13 @@ function MatchSection({
 
 export default function LiveMatchHistory() {
   const { user } = useAuth();
+  const { can } = usePermissions();
   const queryClient = useQueryClient();
   const [deleteMatch, setDeleteMatch] = useState<MatchWithCompetition | null>(null);
+  
+  // Check permissions for actions
+  const canLogEvents = can("live_match", "log");
+  const canDeleteMatches = canLogEvents; // Same permission for simplicity
 
   const { data: matches = [], isLoading } = useQuery({
     // Key includes user.id for cache separation, but query relies on RLS for filtering
@@ -567,12 +583,14 @@ export default function LiveMatchHistory() {
           </div>
         </div>
 
-        <Link to="/app/live-match/new">
-          <Button className="bg-red-600 hover:bg-red-700 text-white gap-2">
-            <Plus className="w-4 h-4" />
-            Novo Jogo
-          </Button>
-        </Link>
+        {canLogEvents && (
+          <Link to="/app/live-match/new">
+            <Button className="bg-red-600 hover:bg-red-700 text-white gap-2">
+              <Plus className="w-4 h-4" />
+              Novo Jogo
+            </Button>
+          </Link>
+        )}
       </header>
 
       {/* Content */}
@@ -583,7 +601,7 @@ export default function LiveMatchHistory() {
           ))}
         </div>
       ) : matches.length === 0 ? (
-        <LiveHubEmptyState />
+        <LiveHubEmptyState canCreate={canLogEvents} />
       ) : (
         <div className="space-y-6">
           <AnimatePresence mode="popLayout">
@@ -613,6 +631,7 @@ export default function LiveMatchHistory() {
                       match={match}
                       link={getMatchLink(match)}
                       onDelete={() => setDeleteMatch(match)}
+                      canDelete={canDeleteMatches}
                       index={i}
                     />
                   ))}
@@ -629,6 +648,7 @@ export default function LiveMatchHistory() {
               matches={finishedMatches}
               getMatchLink={getMatchLink}
               onDeleteClick={setDeleteMatch}
+              canDelete={canDeleteMatches}
             />
 
             {/* Applied matches (history) */}
@@ -639,6 +659,7 @@ export default function LiveMatchHistory() {
               matches={appliedMatches}
               getMatchLink={getMatchLink}
               onDeleteClick={setDeleteMatch}
+              canDelete={canDeleteMatches}
             />
 
             {/* Draft matches */}
@@ -649,6 +670,7 @@ export default function LiveMatchHistory() {
               matches={draftMatches}
               getMatchLink={getMatchLink}
               onDeleteClick={setDeleteMatch}
+              canDelete={canDeleteMatches}
             />
           </AnimatePresence>
         </div>

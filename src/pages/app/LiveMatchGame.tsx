@@ -72,10 +72,14 @@ function LiveMatchGameInner({ matchId }: { matchId: string }) {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { linkedPlayerId, isPlayer, isAdmin, isScout } = useAuth();
-  const { isPlayerRole } = usePermissions();
+  const { isPlayerRole, can } = usePermissions();
   
   // Determine if user is in player-only mode (read-only)
+  // Player role = self-scoped, read-only access
   const isPlayerOnlyMode = (isPlayer || isPlayerRole) && !isAdmin && !isScout;
+  
+  // Check if user has log permission (can add events)
+  const hasLogPermission = can("live_match", "log");
 
   // HookDebug (preview-only): helps isolate hook-order violations by mounting/unmounting blocks
   const hookDebugEnabled =
@@ -245,7 +249,8 @@ function LiveMatchGameInner({ matchId }: { matchId: string }) {
     : filteredPlayers;
 
   // For PLAYER role, always read-only (no event logging)
-  const isReadOnlyPlayer = isPlayerOnlyMode;
+  // Also read-only if user doesn't have log permission
+  const isReadOnlyPlayer = isPlayerOnlyMode || !hasLogPermission;
 
   const handleAddEvent = (playerId: string, eventType: MatchEventType, forceMinute?: number) => {
     // Track for debug
@@ -359,7 +364,8 @@ function LiveMatchGameInner({ matchId }: { matchId: string }) {
   // NOTE: this must NOT be a hook (e.g., useMemo) because this component has early returns above.
   // Having a hook after an early return causes "Rendered more hooks than during the previous render" on refresh.
   const uiReadOnlyReason = (() => {
-    if (isReadOnlyPlayer) return "PLAYER_READONLY";
+    if (isPlayerOnlyMode) return "PLAYER_READONLY";
+    if (!hasLogPermission) return "NO_LOG_PERMISSION";
     if (isLocked) return "LOCKED";
     if (isDraft) return "DRAFT";
     if (isFinal && !isReviewMode) return "FINAL_NOT_REVIEW";

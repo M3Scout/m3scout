@@ -6,11 +6,12 @@ import LiveMatchHistory from "./LiveMatchHistory";
 import MyGames from "./MyGames";
 
 export default function LiveMatch() {
-  const { isAdmin, isScout, isPlayer, loading } = useAuth();
-  const { isPlayerRole } = usePermissions();
+  const { isPlayer, loading } = useAuth();
+  const { isPlayerRole, can, loading: permissionsLoading } = usePermissions();
   const location = useLocation();
   
-  if (loading) {
+  // Wait for both auth and permissions to load
+  if (loading || permissionsLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -28,8 +29,10 @@ export default function LiveMatch() {
     return <Outlet />;
   }
 
-  // For internal roles (admin/scout), they need proper permissions
-  if (!isAdmin && !isScout) {
+  // Check permission using can() - works for admin, scout, editor, viewer
+  const hasLiveMatchAccess = can("live_match", "view");
+
+  if (!hasLiveMatchAccess) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <Radio className="h-16 w-16 text-muted-foreground" />
@@ -41,7 +44,7 @@ export default function LiveMatch() {
     );
   }
 
-  // If at /app/live-match exactly, show history for internal users
+  // If at /app/live-match exactly, show history for internal users with permission
   if (location.pathname === "/app/live-match") {
     return <LiveMatchHistory />;
   }

@@ -78,7 +78,8 @@ interface MatchPlayer {
 interface LiveMatchCardProps {
   match: MatchWithCompetition;
   link: string;
-  onDelete: () => void;
+  onDelete?: () => void;
+  canDelete?: boolean;
   index: number;
 }
 
@@ -175,7 +176,7 @@ const quickEventConfig: Record<QuickEventType, {
   },
 };
 
-export function LiveMatchCard({ match, link, onDelete, index }: LiveMatchCardProps) {
+export function LiveMatchCard({ match, link, onDelete, canDelete = false, index }: LiveMatchCardProps) {
   const queryClient = useQueryClient();
   const { displayTime, displayMinute, half } = useLiveTimer(match);
   const [quickEventType, setQuickEventType] = useState<QuickEventType | null>(null);
@@ -393,13 +394,15 @@ export function LiveMatchCard({ match, link, onDelete, index }: LiveMatchCardPro
                         Continuar
                       </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={onDelete}
-                      className="text-red-400 focus:text-red-400 focus:bg-red-500/10 cursor-pointer"
-                    >
-                      <Trash2 className="w-3.5 h-3.5 mr-2" />
-                      Excluir
-                    </DropdownMenuItem>
+                    {canDelete && onDelete && (
+                      <DropdownMenuItem 
+                        onClick={onDelete}
+                        className="text-red-400 focus:text-red-400 focus:bg-red-500/10 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 mr-2" />
+                        Excluir
+                      </DropdownMenuItem>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
 
