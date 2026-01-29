@@ -6,6 +6,17 @@ import { useLiveMatch, MatchEventType } from "@/hooks/useLiveMatch";
 import { calculateBallActionsFromMatchStats } from "@/lib/derivedBallActions";
 import { normalizeMatchStats, type RawMatchStats } from "@/lib/normalizeMatchStats";
 import { EVENT_LABELS_PTBR } from "@/lib/eventLabels";
+import {
+  logApplyBefore,
+  logApplyDelta,
+  logApplyAfter,
+  logApplySkipped,
+  logApplySummary,
+  assertIdempotencyNoChange,
+  assertDeltaAppliedCorrectly,
+  validateInvariants,
+  createStatsSnapshot,
+} from "@/lib/applyStatsInstrumentation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -292,13 +303,30 @@ export default function LiveMatchReview() {
   };
 
   // Apply stats mutation - IDEMPOTENT: prevents duplicate applications
+  // INSTRUMENTED: logs before/after, asserts idempotency and invariants (DEV only)
   const applyStats = useMutation({
     mutationFn: async () => {
       if (!match) throw new Error("Jogo não encontrado");
 
+      const alreadyApplied = match.status === "applied";
+      let appliedCount = 0;
+      let skippedCount = 0;
+      let assertionFailures = 0;
+
       // IDEMPOTENCY CHECK: If match is already applied, just rebuild ratings and skip stats
-      if (match.status === "applied") {
-        console.log("[APPLY STATS] Match already applied, skipping stat update");
+      if (alreadyApplied) {
+        logApplySkipped(match.id, "all", "all players", "Match already applied");
+        
+        // Log summary for already applied match
+        logApplySummary(
+          match.id,
+          match.status,
+          matchPlayers.length,
+          0,
+          matchPlayers.length,
+          0
+        );
+        
         // Still rebuild ratings in case they need refreshing
         const { rebuildSingleMatchRatings } = await import("@/lib/rebuildMatchRatings");
         await rebuildSingleMatchRatings(match.id);
@@ -309,6 +337,8 @@ export default function LiveMatchReview() {
       const durationMinutes = match.duration_minutes;
 
       for (const mp of matchPlayers) {
+        const playerName = mp.player?.full_name ?? "Unknown";
+        
         // Use match_player_stats (calculated by RPC with proper derivations like goal→shot_on_target)
         // instead of counting raw events which misses derived stats
         const matchStats = playerStatsMap[mp.player_id];
@@ -326,12 +356,31 @@ export default function LiveMatchReview() {
           .limit(1);
 
         const existingStats = Array.isArray(existingStatsArr) ? existingStatsArr[0] ?? null : null;
+        const isUpdate = existingStats !== null;
+
+        // === INSTRUMENTATION: Log BEFORE ===
+        logApplyBefore(
+          match.id,
+          mp.player_id,
+          playerName,
+          alreadyApplied,
+          existingStats as Record<string, unknown> | null
+        );
+
+        // Capture stats_before snapshot
+        const statsBefore = createStatsSnapshot(existingStats as Record<string, unknown> | null);
 
         // Build update object with incremented values using match_player_stats
         // This ensures derived stats (goal → shots + shots_on_target) are correctly included
         const statsData: Record<string, number> = {
           matches: (existingStats?.matches ?? 0) + 1,
           minutes: (existingStats?.minutes ?? 0) + minutesPlayed,
+        };
+
+        // Track delta for instrumentation
+        const delta: Record<string, number> = {
+          matches: 1,
+          minutes: minutesPlayed,
         };
 
         // Map from match_player_stats columns to player_stats columns
@@ -369,6 +418,7 @@ export default function LiveMatchReview() {
             const newValue = (matchStats as unknown as Record<string, number>)[matchCol] ?? 0;
             const existingValue = existingStats?.[playerCol as keyof typeof existingStats] ?? 0;
             statsData[playerCol] = (typeof existingValue === 'number' ? existingValue : 0) + newValue;
+            delta[playerCol] = newValue;
           }
         } else {
           // Fallback to event counting if no match_player_stats exist
@@ -378,6 +428,7 @@ export default function LiveMatchReview() {
             if (column) {
               const existingValue = existingStats?.[column as keyof typeof existingStats] ?? 0;
               statsData[column] = (typeof existingValue === 'number' ? existingValue : 0) + newValue;
+              delta[column] = newValue;
             }
           }
           
@@ -390,7 +441,12 @@ export default function LiveMatchReview() {
           
           statsData.total_dribbles = (existingStats?.total_dribbles ?? 0) + dribbleSuccess + dribbleFailed;
           statsData.total_passes = (existingStats?.total_passes ?? 0) + passSuccess + passFailed;
+          delta.total_dribbles = dribbleSuccess + dribbleFailed;
+          delta.total_passes = passSuccess + passFailed;
         }
+
+        // === INSTRUMENTATION: Log DELTA ===
+        logApplyDelta(mp.player_id, playerName, delta);
 
         // Upsert with the new totals
         const { error: upsertError } = await supabase
@@ -411,6 +467,37 @@ export default function LiveMatchReview() {
           console.error("Error upserting stats:", upsertError);
           throw upsertError;
         }
+
+        // Fetch stats_after for assertion
+        const { data: statsAfterArr } = await supabase
+          .from("player_stats")
+          .select("*")
+          .eq("player_id", mp.player_id)
+          .eq("competition_id", match.competition_id)
+          .eq("season_year", match.season_year)
+          .limit(1);
+
+        const statsAfterRecord = Array.isArray(statsAfterArr) ? statsAfterArr[0] ?? null : null;
+        const statsAfter = createStatsSnapshot(statsAfterRecord as Record<string, unknown> | null);
+
+        // === INSTRUMENTATION: Log AFTER ===
+        logApplyAfter(
+          mp.player_id,
+          playerName,
+          statsAfterRecord as Record<string, unknown>,
+          isUpdate ? 'update' : 'insert'
+        );
+
+        // === ASSERTIONS (DEV ONLY) ===
+        // For first apply: assert delta was applied correctly
+        const deltaOk = assertDeltaAppliedCorrectly(playerName, statsBefore, delta, statsAfter);
+        if (!deltaOk) assertionFailures++;
+
+        // Validate invariants
+        const invariantsResult = validateInvariants(playerName, statsAfter);
+        if (!invariantsResult.valid) assertionFailures++;
+
+        appliedCount++;
 
         // Recalculate player rating
         try {
@@ -435,6 +522,16 @@ export default function LiveMatchReview() {
       // CRITICAL: Rebuild ratings for this match to persist them
       const { rebuildSingleMatchRatings } = await import("@/lib/rebuildMatchRatings");
       await rebuildSingleMatchRatings(match.id);
+
+      // === INSTRUMENTATION: Log SUMMARY ===
+      logApplySummary(
+        match.id,
+        "applied",
+        matchPlayers.length,
+        appliedCount,
+        skippedCount,
+        assertionFailures
+      );
 
       return appliedIds;
     },
