@@ -112,6 +112,41 @@ export interface MatchEvent {
   period: number;
 }
 
+// Persisted rating breakdown from SQL rebuild (matches the JSON structure from DB)
+export interface PersistedRatingBreakdown {
+  baseRating: number;
+  minutesPlayed: number;
+  minutesFactor: number;
+  rawImpact: number;
+  isGoalkeeper: boolean;
+  hasImpact: boolean;
+  offensiveCapped: number;
+  categories: {
+    attack: { value: number; label: string };
+    creation: { value: number; label: string };
+    passing: { value: number; label: string };
+    defense: { value: number; label: string };
+    discipline: { value: number; label: string };
+    goalkeeper: { value: number; label: string };
+  };
+  computedAt: string;
+}
+
+// Helper to safely parse rating_breakdown from JSON
+export function parseRatingBreakdown(raw: unknown): PersistedRatingBreakdown | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const obj = raw as Record<string, unknown>;
+  
+  // Validate required fields
+  if (typeof obj.baseRating !== 'number' || 
+      typeof obj.minutesPlayed !== 'number' ||
+      typeof obj.rawImpact !== 'number') {
+    return null;
+  }
+  
+  return obj as unknown as PersistedRatingBreakdown;
+}
+
 export interface MatchPlayerStats {
   id: string;
   match_id: string;
@@ -156,6 +191,8 @@ export interface MatchPlayerStats {
   rating_minutes_factor: number | null;
   rating_computed_at: string | null;
   rating_engine_version: string;
+  // Full breakdown JSON from SQL rebuild (raw JSON, needs parsing)
+  rating_breakdown: unknown;
 }
 
 // Local storage key for offline draft

@@ -12,12 +12,15 @@
  */
 
 import { useMemo } from "react";
-import type { MatchPlayerStats } from "@/hooks/useLiveMatch";
+import type { MatchPlayerStats, PersistedRatingBreakdown } from "@/hooks/useLiveMatch";
+import { parseRatingBreakdown } from "@/hooks/useLiveMatch";
 import { 
   calculatePlayerMatchRating, 
   getRatingColor,
   getRatingBgColor,
-  type MatchRatingResult 
+  type MatchRatingResult,
+  type DetailedBreakdown,
+  type CategoryBreakdown 
 } from "@/lib/matchRatingEngine";
 import { calculateMinutesPlayed, type MatchPlayerMinutesInput } from "@/lib/minutesPlayed";
 
@@ -54,12 +57,72 @@ interface UseMatchRatingsOptions {
 }
 
 /**
+ * Convert persisted breakdown from SQL to DetailedBreakdown format for UI
+ */
+function convertPersistedBreakdown(persisted: PersistedRatingBreakdown): DetailedBreakdown {
+  const categories: CategoryBreakdown[] = [
+    {
+      key: "attack" as const,
+      label: persisted.categories.attack.label,
+      raw: persisted.categories.attack.value,
+      afterMinutes: persisted.categories.attack.value * persisted.minutesFactor,
+      items: []
+    },
+    {
+      key: "creation" as const,
+      label: persisted.categories.creation.label,
+      raw: persisted.categories.creation.value,
+      afterMinutes: persisted.categories.creation.value * persisted.minutesFactor,
+      items: []
+    },
+    {
+      key: "passing" as const,
+      label: persisted.categories.passing.label,
+      raw: persisted.categories.passing.value,
+      afterMinutes: persisted.categories.passing.value * persisted.minutesFactor,
+      items: []
+    },
+    {
+      key: "defense" as const,
+      label: persisted.categories.defense.label,
+      raw: persisted.categories.defense.value,
+      afterMinutes: persisted.categories.defense.value * persisted.minutesFactor,
+      items: []
+    },
+    {
+      key: "discipline" as const,
+      label: persisted.categories.discipline.label,
+      raw: persisted.categories.discipline.value,
+      afterMinutes: persisted.categories.discipline.value * persisted.minutesFactor,
+      items: []
+    },
+    {
+      key: "goalkeeper" as const,
+      label: persisted.categories.goalkeeper.label,
+      raw: persisted.categories.goalkeeper.value,
+      afterMinutes: persisted.categories.goalkeeper.value * persisted.minutesFactor,
+      items: []
+    }
+  ].filter(cat => cat.raw !== 0 || cat.key === "attack" || cat.key === "defense");
+
+  return {
+    categories,
+    items: [],
+    capsApplied: [],
+    antiInflationApplied: !persisted.hasImpact && persisted.rawImpact > 0.9,
+    hasImpactfulAction: persisted.hasImpact
+  };
+}
+
+/**
  * Convert persisted rating to MatchRatingResult format (for display)
+ * Now includes breakdown conversion from SQL-persisted JSON
  */
 function persistedRatingToResult(
   rating: number,
   minutesPlayed: number,
-  minutesFactor: number | null
+  minutesFactor: number | null,
+  rawBreakdown: unknown
 ): MatchRatingResult {
   // Get label based on rating value
   const getLabel = (r: number): string => {
@@ -72,16 +135,30 @@ function persistedRatingToResult(
     return "Muito Fraco";
   };
 
+  // Parse and convert the breakdown
+  const parsedBreakdown = parseRatingBreakdown(rawBreakdown);
+  const detailedBreakdown = parsedBreakdown ? convertPersistedBreakdown(parsedBreakdown) : null;
+  
+  // If we have parsed breakdown, use its rawImpact for accuracy
+  const rawImpact = parsedBreakdown?.rawImpact ?? (rating - 6.0);
+
   return {
     hasRating: true,
     rating,
     baseRating: 6.0,
-    rawImpact: rating - 6.0,
-    impactAfterMinutes: rating - 6.0,
+    rawImpact,
+    impactAfterMinutes: rawImpact * (minutesFactor ?? 1.0),
     minutesFactor: minutesFactor ?? 1.0,
     minutesPlayed,
-    breakdown: null,
-    detailedBreakdown: null,
+    breakdown: parsedBreakdown ? {
+      attack: parsedBreakdown.categories.attack.value,
+      creation: parsedBreakdown.categories.creation.value,
+      passing: parsedBreakdown.categories.passing.value,
+      defense: parsedBreakdown.categories.defense.value,
+      discipline: parsedBreakdown.categories.discipline.value,
+      goalkeeper: parsedBreakdown.categories.goalkeeper.value
+    } : null,
+    detailedBreakdown,
     color: getRatingColor(rating),
     bgColor: getRatingBgColor(rating),
     label: getLabel(rating),
@@ -129,7 +206,8 @@ export function useMatchRatings({
         rating = persistedRatingToResult(
           persistedRating,
           minutesInfo.minutesPlayed,
-          stats?.rating_minutes_factor ?? null
+          stats?.rating_minutes_factor ?? null,
+          stats?.rating_breakdown ?? null
         );
         
         if (process.env.NODE_ENV === 'development') {

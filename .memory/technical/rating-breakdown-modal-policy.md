@@ -1,62 +1,45 @@
-# Memory: technical/rating-persistence-policy
+# Memory: technical/rating-breakdown-modal-policy
 Updated: 2026-01-29
 
-## SINGLE SOURCE OF TRUTH: match_player_stats.rating
+## Rating Breakdown Modal ("!" Icon) Policy
 
-A nota oficial do atleta por partida é persistida exclusivamente no campo `match_player_stats.rating`. 
+### Visibility Rule
+The "!" icon that opens the "Como a nota foi calculada" modal MUST be visible for ANY athlete with a valid rating (`hasRating: true`), regardless of whether detailed breakdown data exists.
 
-### Regras Absolutas
-1. **PROIBIDO recalcular nota em UI** - Toda tela deve ler `match_player_stats.rating`
-2. **persistedRatingToResult()** - Função canônica em `matchRatingEngine.ts` para converter rating persistido em objeto de display
-3. **rebuild_match_ratings(matchId)** - Função SQL que recalcula e persiste ratings para todos os atletas de uma partida
+### Data Sources (Priority Order)
+1. **Persisted Breakdown (preferred)**: Read from `match_player_stats.rating_breakdown` JSONB column
+   - Converted by `convertPersistedBreakdown()` in `useMatchRatings.ts`
+   - Contains category contributions (attack, defense, creation, etc.)
+   
+2. **On-the-fly Calculation (fallback for live matches)**: Calculated by `calculatePlayerMatchRating()` in `matchRatingEngine.ts`
+   - Full detailed breakdown with individual items
 
-### Fluxo de Persistência
-- Match finalizado → `rebuildSingleMatchRatings(matchId)` é chamado
-- Edição na Revisão do Jogo → `rebuildSingleMatchRatings(matchId)` é chamado
-- Ambos invalidam caches do React Query
+### Modal Behavior
+- If `detailedBreakdown` exists → Show full breakdown with accordion categories
+- If `detailedBreakdown` is null but rating exists → Show abbreviated mode with:
+  - Final rating and label
+  - Minutes factor
+  - Message: "Detalhamento indisponível para esta partida"
+  - DEV log for debugging
 
-### Componentes Corrigidos (2026-01-29)
-- `LiveMatchReview.tsx` - Agora usa `persistedRatingToResult()` ao invés de `calculatePlayerMatchRating()`
-- `MatchSummaryVectorPdf.tsx` - Agora lê `stats.rating` diretamente
-- `MatchRatingsCard.tsx` - Usa `useSortedPlayersByRating()` que lê ratings persistidos
-- `PlayerRatingBadge.tsx` - Componente de display puro
+### Rebuild Guarantees
+After running `rebuild_match_ratings()`:
+- ALL players with calculated ratings will have `rating_breakdown` populated
+- The JSONB includes: baseRating, minutesPlayed, minutesFactor, rawImpact, hasImpact, categories, computedAt
+- No player should show "indisponível" for newly rebuilt matches
 
-### Anti-Regressão
-- Nunca usar `calculatePlayerMatchRating()` em telas de resumo/perfil
-- Sempre usar rating persistido para displays finais
-- Divergências entre telas indicam bug de fonte de dados
-Updated: 2026-01-29
+### Minutes Derivation (Critical for Bug 2)
+The rebuild function derives minutes from match_players when `minutes_played` is NULL:
+1. If `started=true` and `exited_minute` exists → use `exited_minute`
+2. If `started=true` and no exit → assume 90 minutes
+3. If `entered_minute` and `exited_minute` exist → `exited - entered`
+4. If only `entered_minute` → `90 - entered`
+5. Otherwise → 0 minutes (no rating)
 
-## Rating Breakdown Modal ("!" Icon)
+This ensures players like Gustavo (started=true, exited_minute=20) get proper ratings even when `minutes_played` field is NULL.
 
-The rating breakdown modal (accessible via "!" icon) shows how a player's match rating was calculated.
-
-### Availability
-- The "!" icon ALWAYS appears for any player with a valid rating (hasRating = true)
-- Works for both live-calculated ratings AND persisted ratings
-- Never silently hides the button
-
-### Two Display Modes
-
-**1. Full Breakdown (Live/Calculated Ratings)**
-When `detailedBreakdown` is available:
-- Shows full category breakdown (Ataque, Criação, Passes, Defesa, Disciplina)
-- Shows individual stat contributions with weights
-- Shows caps applied and anti-inflation status
-- Shows impact calculations step-by-step
-
-**2. Abbreviated Mode (Persisted Ratings)**
-When `detailedBreakdown` is null (rating read from DB):
-- Shows the player name and final rating
-- Shows base rating (6.0) and minutes factor
-- Shows "Detalhamento indisponível para esta partida"
-- Explains: "A nota foi calculada pelo motor de scouting e persistida no banco"
-- In DEV mode: Shows hint about rebuild
-
-### Implementation
-- `RatingBreakdownModal` in `src/components/live-match/RatingBreakdownModal.tsx`
-- `PlayerRatingBadge` wraps ratings with the modal trigger
-- Modal now handles `hasBreakdown` boolean to switch display modes
-
-### Future Enhancement
-When running `rebuild_match_ratings()`, consider persisting `detailedBreakdown` as JSON in `match_player_stats` for full historical audit trail.
+### Anti-Regression
+- Never hide the "!" icon based on breakdown availability
+- Always allow opening the modal to show at least the final rating
+- Log warnings in DEV when breakdown is missing for a rated player
+- A player with events in match_events MUST have a rating (never "Não entrou em campo")

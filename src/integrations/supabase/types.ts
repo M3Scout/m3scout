@@ -586,6 +586,7 @@ export type Database = {
           player_id: string
           possession_lost: number
           rating: number | null
+          rating_breakdown: Json | null
           rating_computed_at: string | null
           rating_engine_version: string
           rating_minutes_factor: number | null
@@ -630,6 +631,7 @@ export type Database = {
           player_id: string
           possession_lost?: number
           rating?: number | null
+          rating_breakdown?: Json | null
           rating_computed_at?: string | null
           rating_engine_version?: string
           rating_minutes_factor?: number | null
@@ -674,6 +676,7 @@ export type Database = {
           player_id?: string
           possession_lost?: number
           rating?: number | null
+          rating_breakdown?: Json | null
           rating_computed_at?: string | null
           rating_engine_version?: string
           rating_minutes_factor?: number | null
@@ -2366,6 +2369,7 @@ export type Database = {
           player_id: string
           possession_lost: number
           rating: number | null
+          rating_breakdown: Json | null
           rating_computed_at: string | null
           rating_engine_version: string
           rating_minutes_factor: number | null
