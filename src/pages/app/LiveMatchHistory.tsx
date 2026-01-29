@@ -445,10 +445,15 @@ export default function LiveMatchHistory() {
   const [deleteMatch, setDeleteMatch] = useState<MatchWithCompetition | null>(null);
 
   const { data: matches = [], isLoading } = useQuery({
+    // Key includes user.id for cache separation, but query relies on RLS for filtering
     queryKey: ["matches-history", user?.id],
     queryFn: async () => {
       if (!user) return [];
 
+      // IMPORTANT: Do NOT filter by created_by here.
+      // RLS policies handle visibility based on user role:
+      // - Admin/Scout/Editor/Viewer: see all organization matches
+      // - Player: sees only matches they participated in
       const { data, error } = await supabase
         .from("matches")
         .select(`
@@ -471,7 +476,6 @@ export default function LiveMatchHistory() {
           opponent_logo_url,
           competition:competitions(id, name, display_name)
         `)
-        .eq("created_by", user.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -489,14 +493,14 @@ export default function LiveMatchHistory() {
       .on(
         'postgres_changes',
         {
-          event: 'UPDATE',
+          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
           schema: 'public',
           table: 'matches',
-          filter: `created_by=eq.${user.id}`,
+          // No filter - RLS handles visibility, and we invalidate to refetch filtered data
         },
         (payload) => {
-          // Invalidate query to refetch with updated clock state
-          queryClient.invalidateQueries({ queryKey: ["matches-history", user.id] });
+          // Invalidate query to refetch with updated data (RLS will filter appropriately)
+          queryClient.invalidateQueries({ queryKey: ["matches-history"] });
         }
       )
       .subscribe();
