@@ -166,6 +166,11 @@ export function InlineMoreStatsPanel({
   // Fall back to eventCounts for event-based counting
   const getDisplayCount = useCallback((type: MatchEventType): number => {
     if (matchStats) {
+      // For some legacy/misaligned fields we prefer the MAX between persisted stats and event counts.
+      // This prevents UI desync when the event exists (timeline) but match_player_stats hasn't refreshed yet.
+      const maxStat = (statValue: number | undefined | null) =>
+        Math.max(0, Number(statValue ?? 0), Number(eventCounts[type] ?? 0));
+
       // Map event types to matchStats fields - using the persisted stats that include derived values
       // All subtraction-based calculations must be clamped to >= 0 to prevent negative values
       switch (type) {
@@ -204,7 +209,8 @@ export function InlineMoreStatsPanel({
         case "foul_suffered": return Math.max(0, matchStats.fouls_suffered);
         case "pass_success": return Math.max(0, matchStats.passes_completed);
         // CRITICAL: passes_total stores FAILED passes count (naming is legacy/misleading)
-        case "pass_total": return Math.max(0, matchStats.passes_total);
+        // Use MAX(persisted, eventCounts) to avoid live UI showing 0 while timeline already has events.
+        case "pass_total": return maxStat(matchStats.passes_total);
         case "possession_lost": return Math.max(0, matchStats.possession_lost);
         case "save": return Math.max(0, matchStats.saves);
         case "goal_conceded": return Math.max(0, matchStats.goals_conceded);
@@ -423,6 +429,7 @@ export function InlineMoreStatsPanel({
               
               {category.stats.map((stat) => {
                 const count = getDisplayCount(stat.type);
+                const eventCount = getEventCount(stat.type);
                 const isHighlight = (stat.type === "goal" || stat.type === "assist" || stat.type === "save") && count > 0;
                 
                 return (
@@ -488,7 +495,9 @@ export function InlineMoreStatsPanel({
                       <motion.button
                         whileTap={{ scale: 0.9 }}
                         onClick={() => handleRemoveStat(stat.type, stat.label)}
-                        disabled={disabled || isSubmitting || count === 0 || !onVoidLastEvent}
+                        // IMPORTANT: gating must be based on real event count, not display count.
+                        // Display can lag behind events due to async refresh.
+                        disabled={disabled || isSubmitting || eventCount === 0 || !onVoidLastEvent}
                         className={cn(
                           "flex-1 flex items-center justify-center",
                           "border-r border-zinc-700/40",
