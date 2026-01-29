@@ -34,6 +34,7 @@ import {
   type AttributeScoresData,
 } from "@/lib/attributeScores";
 import { computeRadarAttributes, type PlayerStatRow } from "@/lib/attributeRadar";
+import { fetchUnifiedCompetitions, type UnifiedCompetition } from "@/lib/unifiedCompetitions";
 
 // Scores data structure for comparison support
 export interface RadarScoresData {
@@ -112,6 +113,10 @@ export function SofaScoreRadarCard({
   const [rawStats, setRawStats] = useState<PlayerStatRow[]>([]);
   const [infoOpen, setInfoOpen] = useState(false);
   
+  // Unified competitions (live + manual merged)
+  const [unifiedCompetitions, setUnifiedCompetitions] = useState<UnifiedCompetition[]>([]);
+  const [unifiedYears, setUnifiedYears] = useState<number[]>([]);
+  
   // Filters
   const [selectedYear, setSelectedYear] = useState<string>("all");
   const [selectedCompetition, setSelectedCompetition] = useState<string>("all");
@@ -126,10 +131,16 @@ export function SofaScoreRadarCard({
     console.log("[RADAR] Fetching data for player:", playerId);
     
     try {
-      // Fetch attribute scores
-      const scoresData = await fetchPlayerAllAttributeScores(playerId);
+      // Fetch unified competitions (live + manual merged) AND attribute scores in parallel
+      const [unifiedResult, scoresData] = await Promise.all([
+        fetchUnifiedCompetitions(playerId),
+        fetchPlayerAllAttributeScores(playerId),
+      ]);
+      
+      setUnifiedCompetitions(unifiedResult.competitions);
+      setUnifiedYears(unifiedResult.years);
       setScores(scoresData);
-      console.log("[RADAR] Fetched scores:", scoresData.length, "rows");
+      console.log("[RADAR] Unified competitions:", unifiedResult.competitions.length, "| Scores:", scoresData.length);
 
       // Fetch ALL stats rows with full data for local calculation fallback
       const { data: statsData, error } = await supabase
@@ -201,24 +212,25 @@ export function SofaScoreRadarCard({
     }
   };
 
-  // Filter options
+  // Filter options - NOW USING UNIFIED COMPETITIONS (live + manual)
   const yearOptions = useMemo<FilterOption[]>(() => {
-    const years = [...new Set(statsRows.map((r) => r.season_year))].sort((a, b) => b - a);
     return [
       { value: "all", label: "Geral" },
-      ...years.map((y) => ({ value: String(y), label: String(y) })),
+      ...unifiedYears.map((y) => ({ value: String(y), label: String(y) })),
     ];
-  }, [statsRows]);
+  }, [unifiedYears]);
 
   const competitionOptions = useMemo<FilterOption[]>(() => {
-    const filteredStats = selectedYear === "all"
-      ? statsRows
-      : statsRows.filter((r) => String(r.season_year) === selectedYear);
+    // Filter by selected year if not "all"
+    const filtered = selectedYear === "all"
+      ? unifiedCompetitions
+      : unifiedCompetitions.filter((c) => String(c.seasonYear) === selectedYear);
 
+    // Deduplicate by competition ID (same comp can appear in multiple seasons)
     const comps = new Map<string, string>();
-    filteredStats.forEach((r) => {
-      if (!comps.has(r.competition_id)) {
-        comps.set(r.competition_id, r.competition_name);
+    filtered.forEach((c) => {
+      if (!comps.has(c.id)) {
+        comps.set(c.id, c.name);
       }
     });
 
@@ -226,7 +238,7 @@ export function SofaScoreRadarCard({
       { value: "all", label: "Todas" },
       ...Array.from(comps.entries()).map(([id, name]) => ({ value: id, label: name })),
     ];
-  }, [statsRows, selectedYear]);
+  }, [unifiedCompetitions, selectedYear]);
 
   // Calculate aggregated scores based on filters
   // Uses persisted scores when available, falls back to local calculation

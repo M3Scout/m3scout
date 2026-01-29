@@ -46,6 +46,7 @@ import {
   GK_RADAR_LABELS,
 } from "@/lib/goalkeeperRadar";
 import { calculateAndSaveGKRadar } from "@/lib/goalkeeperRadarService";
+import { fetchUnifiedCompetitions, type UnifiedCompetition } from "@/lib/unifiedCompetitions";
 
 interface GKRadarCardProps {
   playerId: string;
@@ -82,21 +83,26 @@ export function GKRadarCard({
   const [selectedYear, setSelectedYear] = useState<string>("all");
   const [selectedCompetition, setSelectedCompetition] = useState<string>("all");
   const [animationKey, setAnimationKey] = useState(0);
+  
+  // Unified competitions (live + manual merged)
+  const [unifiedCompetitions, setUnifiedCompetitions] = useState<UnifiedCompetition[]>([]);
+  const [unifiedYears, setUnifiedYears] = useState<number[]>([]);
 
   // Fetch GK stats
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        // Check if player has gk_radar in auto_rating_details
-        const { data: playerArr } = await supabase
-          .from("players")
-          .select("auto_rating_details")
-          .eq("id", playerId)
-          .limit(1);
+        // Fetch unified competitions (live + manual) in parallel with player data
+        const [unifiedResult, playerArr] = await Promise.all([
+          fetchUnifiedCompetitions(playerId),
+          supabase.from("players").select("auto_rating_details").eq("id", playerId).limit(1).then(r => r.data),
+        ]);
+        
+        setUnifiedCompetitions(unifiedResult.competitions);
+        setUnifiedYears(unifiedResult.years);
 
         const player = Array.isArray(playerArr) ? playerArr[0] ?? null : null;
-
         // Fetch raw stats
         const { data: stats, error } = await supabase
           .from("player_stats")
@@ -177,25 +183,33 @@ export function GKRadarCard({
     fetchData();
   }, [playerId]);
 
-  // Filter options
+  // Filter options - NOW USING UNIFIED COMPETITIONS (live + manual)
   const yearOptions = useMemo<FilterOption[]>(() => {
-    const years = new Set(rawStats.map(s => s.season_year));
-    const opts: FilterOption[] = [{ value: "all", label: "Todos os anos" }];
-    [...years].sort((a, b) => (b || 0) - (a || 0)).forEach(y => {
-      if (y) opts.push({ value: String(y), label: String(y) });
-    });
-    return opts;
-  }, [rawStats]);
+    return [
+      { value: "all", label: "Todos os anos" },
+      ...unifiedYears.map((y) => ({ value: String(y), label: String(y) })),
+    ];
+  }, [unifiedYears]);
 
   const competitionOptions = useMemo<FilterOption[]>(() => {
-    const comps = new Set<string>();
-    rawStats.forEach(s => {
-      if ((s as any)._competitionName) comps.add((s as any)._competitionName);
+    // Filter by selected year if not "all"
+    const filtered = selectedYear === "all"
+      ? unifiedCompetitions
+      : unifiedCompetitions.filter((c) => String(c.seasonYear) === selectedYear);
+
+    // Deduplicate by competition ID
+    const comps = new Map<string, string>();
+    filtered.forEach((c) => {
+      if (!comps.has(c.id)) {
+        comps.set(c.id, c.name);
+      }
     });
-    const opts: FilterOption[] = [{ value: "all", label: "Todas competições" }];
-    [...comps].sort().forEach(c => opts.push({ value: c, label: c }));
-    return opts;
-  }, [rawStats]);
+
+    return [
+      { value: "all", label: "Todas competições" },
+      ...Array.from(comps.entries()).map(([id, name]) => ({ value: id, label: name })),
+    ];
+  }, [unifiedCompetitions, selectedYear]);
 
   // Filter stats and recalculate
   const filteredScores = useMemo(() => {
@@ -205,7 +219,8 @@ export function GKRadarCard({
       filtered = filtered.filter(s => String(s.season_year) === selectedYear);
     }
     if (selectedCompetition !== "all") {
-      filtered = filtered.filter(s => (s as any)._competitionName === selectedCompetition);
+      // Filter by competition_id (unified dropdown now uses IDs)
+      filtered = filtered.filter(s => s.competition_id === selectedCompetition);
     }
 
     if (filtered.length === 0) return null;
