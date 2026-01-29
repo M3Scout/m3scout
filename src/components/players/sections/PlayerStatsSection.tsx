@@ -56,7 +56,16 @@ import {
   ChevronsUpDown,
   TrendingUp,
   Zap,
+  FileEdit,
+  Layers,
+  Lock,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -89,6 +98,12 @@ interface StatsWithCompetition extends PlayerStats {
     name: string;
     computed_coefficient: number;
   } | null;
+  // Origin tracking for consolidated stats display
+  _isLiveData?: boolean;
+  _isManualData?: boolean;
+  _isCombined?: boolean;
+  _liveStats?: Partial<StatsWithCompetition>;
+  _manualStats?: Partial<StatsWithCompetition>;
 }
 
 const currentYear = new Date().getFullYear();
@@ -185,10 +200,24 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
   // MERGE: Live match stats + Manual stats
   // Priority: Live match stats override manual for same season/competition
   // ========================================
+  // ========================================
+  // STATS CONSOLIDATION: Live + Manual = Combined
+  // - Live stats: derived from match_events (readonly, used for ratings)
+  // - Manual stats: entered via form (editable, NOT used for ratings)
+  // - Combined: SUM of both for display (transparent origin tracking)
+  // ========================================
   const stats = useMemo(() => {
+    type ExtendedStats = StatsWithCompetition & { 
+      _isLiveData?: boolean;
+      _isManualData?: boolean;
+      _isCombined?: boolean;
+      _liveStats?: Partial<StatsWithCompetition>;
+      _manualStats?: Partial<StatsWithCompetition>;
+    };
+
     // Convert live match stats to the format expected by the UI
-    const liveAsPlayerStats: StatsWithCompetition[] = liveMatchStats.map((ls) => ({
-      id: ls.id,
+    const liveAsPlayerStats: ExtendedStats[] = liveMatchStats.map((ls) => ({
+      id: `live_${ls.id}`,
       player_id: playerId,
       season_year: ls.season_year,
       competition_id: ls.competition_id,
@@ -245,21 +274,114 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
         name: ls.competition_name,
         computed_coefficient: 1.0,
       } : null,
-      // Mark as live data for UI differentiation
       _isLiveData: true,
-    } as StatsWithCompetition & { _isLiveData?: boolean }));
+    } as ExtendedStats));
 
-    // Create a set of keys for live stats to filter out duplicates from manual
-    const liveKeys = new Set(liveAsPlayerStats.map(s => `${s.season_year}_${s.competition_id || 'none'}`));
-
-    // Filter manual stats that don't overlap with live stats
-    const nonOverlappingManual = manualStats.filter(ms => {
-      const key = `${ms.season_year}_${ms.competition_id || 'none'}`;
-      return !liveKeys.has(key);
+    // Create a map of live stats by season/competition for merging
+    const liveByKey = new Map<string, ExtendedStats>();
+    liveAsPlayerStats.forEach(ls => {
+      const key = `${ls.season_year}_${ls.competition_id || 'none'}`;
+      liveByKey.set(key, ls);
     });
 
-    // Combine: live stats first (most accurate), then non-overlapping manual
-    return [...liveAsPlayerStats, ...nonOverlappingManual].sort((a, b) => {
+    // Mark manual stats
+    const manualWithFlag: ExtendedStats[] = manualStats.map(ms => ({
+      ...ms,
+      _isManualData: true,
+    }));
+
+    // Create a map of manual stats by season/competition
+    const manualByKey = new Map<string, ExtendedStats>();
+    manualWithFlag.forEach(ms => {
+      const key = `${ms.season_year}_${ms.competition_id || 'none'}`;
+      manualByKey.set(key, ms);
+    });
+
+    // Get all unique keys
+    const allKeys = new Set([...liveByKey.keys(), ...manualByKey.keys()]);
+
+    // Merge stats: COMBINE live + manual for display
+    const combinedStats: ExtendedStats[] = [];
+    
+    allKeys.forEach(key => {
+      const live = liveByKey.get(key);
+      const manual = manualByKey.get(key);
+
+      if (live && manual) {
+        // BOTH exist: Create combined entry that SUMS the values
+        const combined: ExtendedStats = {
+          id: `combined_${live.id}_${manual.id}`,
+          player_id: playerId,
+          season_year: live.season_year,
+          competition_id: live.competition_id,
+          // Sum all numeric stats
+          matches: (live.matches || 0) + (manual.matches || 0),
+          minutes: (live.minutes || 0) + (manual.minutes || 0),
+          goals: (live.goals || 0) + (manual.goals || 0),
+          assists: (live.assists || 0) + (manual.assists || 0),
+          yellow_cards: (live.yellow_cards || 0) + (manual.yellow_cards || 0),
+          red_cards: (live.red_cards || 0) + (manual.red_cards || 0),
+          tackles: (live.tackles || 0) + (manual.tackles || 0),
+          interceptions: (live.interceptions || 0) + (manual.interceptions || 0),
+          recoveries: (live.recoveries || 0) + (manual.recoveries || 0),
+          clearances: (live.clearances || 0) + (manual.clearances || 0),
+          saves: (live.saves || 0) + (manual.saves || 0),
+          saves_inside_box: (live.saves_inside_box || 0) + (manual.saves_inside_box || 0),
+          goals_conceded: (live.goals_conceded || 0) + (manual.goals_conceded || 0),
+          clean_sheets: (live.clean_sheets || 0) + (manual.clean_sheets || 0),
+          penalties_saved: (live.penalties_saved || 0) + (manual.penalties_saved || 0),
+          errors_leading_to_goal: (live.errors_leading_to_goal || 0) + (manual.errors_leading_to_goal || 0),
+          punches: (live.punches || 0) + (manual.punches || 0),
+          successful_runs_out: (live.successful_runs_out || 0) + (manual.successful_runs_out || 0),
+          total_runs_out: (live.total_runs_out || 0) + (manual.total_runs_out || 0),
+          high_claims: (live.high_claims || 0) + (manual.high_claims || 0),
+          accurate_passes: (live.accurate_passes || 0) + (manual.accurate_passes || 0),
+          total_passes: (live.total_passes || 0) + (manual.total_passes || 0),
+          key_passes: (live.key_passes || 0) + (manual.key_passes || 0),
+          chances_created: (live.chances_created || 0) + (manual.chances_created || 0),
+          long_passes_accurate: (live.long_passes_accurate || 0) + (manual.long_passes_accurate || 0),
+          long_passes_total: (live.long_passes_total || 0) + (manual.long_passes_total || 0),
+          crosses_success: (live.crosses_success || 0) + (manual.crosses_success || 0),
+          crosses_failed: (live.crosses_failed || 0) + (manual.crosses_failed || 0),
+          shots: (live.shots || 0) + (manual.shots || 0),
+          shots_on_target: (live.shots_on_target || 0) + (manual.shots_on_target || 0),
+          shots_blocked: (live.shots_blocked || 0) + (manual.shots_blocked || 0),
+          offsides: (live.offsides || 0) + (manual.offsides || 0),
+          duels_won: (live.duels_won || 0) + (manual.duels_won || 0),
+          total_duels: (live.total_duels || 0) + (manual.total_duels || 0),
+          aerial_duels_won: (live.aerial_duels_won || 0) + (manual.aerial_duels_won || 0),
+          aerial_duels_total: (live.aerial_duels_total || 0) + (manual.aerial_duels_total || 0),
+          ground_duels_won: (live.ground_duels_won || 0) + (manual.ground_duels_won || 0),
+          ground_duels_total: (live.ground_duels_total || 0) + (manual.ground_duels_total || 0),
+          ball_actions: (live.ball_actions || 0) + (manual.ball_actions || 0),
+          successful_dribbles: (live.successful_dribbles || 0) + (manual.successful_dribbles || 0),
+          total_dribbles: (live.total_dribbles || 0) + (manual.total_dribbles || 0),
+          possession_lost: (live.possession_lost || 0) + (manual.possession_lost || 0),
+          fouls_drawn: (live.fouls_drawn || 0) + (manual.fouls_drawn || 0),
+          fouls_committed: (live.fouls_committed || 0) + (manual.fouls_committed || 0),
+          times_dribbled_past: (live.times_dribbled_past || 0) + (manual.times_dribbled_past || 0),
+          blocked_shots: (live.blocked_shots || 0) + (manual.blocked_shots || 0),
+          was_dribbled: (live.was_dribbled || 0) + (manual.was_dribbled || 0),
+          created_at: live.created_at,
+          updated_at: new Date().toISOString(),
+          competitions: live.competitions || manual.competitions,
+          // Track origin
+          _isCombined: true,
+          _liveStats: live,
+          _manualStats: manual,
+        };
+        combinedStats.push(combined);
+      } else if (live) {
+        // Only live exists
+        combinedStats.push(live);
+      } else if (manual) {
+        // Only manual exists
+        combinedStats.push(manual);
+      }
+    });
+
+    // Sort by season (descending) then competition name
+    return combinedStats.sort((a, b) => {
       if (b.season_year !== a.season_year) return b.season_year - a.season_year;
       return (a.competitions?.name || "").localeCompare(b.competitions?.name || "");
     });
@@ -293,28 +415,34 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
 
   const handleOpenDialog = (stat?: StatsWithCompetition) => {
     if (stat) {
-      setSelectedStats(stat);
+      // For combined stats, only load the MANUAL portion for editing
+      const statsToEdit = (stat as any)._isCombined 
+        ? ((stat as any)._manualStats as StatsWithCompetition) 
+        : stat;
+      
+      setSelectedStats(statsToEdit || stat);
       setFormData({
         season_year: stat.season_year,
         competition_id: stat.competition_id || "",
-        matches: stat.matches,
-        minutes: stat.minutes,
-        goals: stat.goals,
-        assists: stat.assists,
+        // Use manual stats values if combined, otherwise use the stat values
+        matches: statsToEdit?.matches ?? stat.matches ?? 0,
+        minutes: statsToEdit?.minutes ?? stat.minutes ?? 0,
+        goals: statsToEdit?.goals ?? stat.goals ?? 0,
+        assists: statsToEdit?.assists ?? stat.assists ?? 0,
         // Shooting stats
-        shots: stat.shots || 0,
-        shots_on_target: stat.shots_on_target || 0,
-        yellow_cards: stat.yellow_cards,
-        red_cards: stat.red_cards,
-        tackles: stat.tackles,
-        interceptions: stat.interceptions,
-        recoveries: stat.recoveries,
+        shots: statsToEdit?.shots ?? stat.shots ?? 0,
+        shots_on_target: statsToEdit?.shots_on_target ?? stat.shots_on_target ?? 0,
+        yellow_cards: statsToEdit?.yellow_cards ?? stat.yellow_cards ?? 0,
+        red_cards: statsToEdit?.red_cards ?? stat.red_cards ?? 0,
+        tackles: statsToEdit?.tackles ?? stat.tackles ?? 0,
+        interceptions: statsToEdit?.interceptions ?? stat.interceptions ?? 0,
+        recoveries: statsToEdit?.recoveries ?? stat.recoveries ?? 0,
         // Goalkeeper-specific stats
-        saves: stat.saves || 0,
-        goals_conceded: stat.goals_conceded || 0,
-        clean_sheets: stat.clean_sheets || 0,
-        penalties_saved: stat.penalties_saved || 0,
-        errors_leading_to_goal: stat.errors_leading_to_goal || 0,
+        saves: statsToEdit?.saves ?? stat.saves ?? 0,
+        goals_conceded: statsToEdit?.goals_conceded ?? stat.goals_conceded ?? 0,
+        clean_sheets: statsToEdit?.clean_sheets ?? stat.clean_sheets ?? 0,
+        penalties_saved: statsToEdit?.penalties_saved ?? stat.penalties_saved ?? 0,
+        errors_leading_to_goal: statsToEdit?.errors_leading_to_goal ?? stat.errors_leading_to_goal ?? 0,
       });
     } else {
       resetForm();
@@ -938,8 +1066,14 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
                           onToggleExpand={() => toggleStatExpanded(stat.id)}
                           onEdit={() => handleOpenDialog(stat)}
                           onDelete={() => {
-                            setStatsToDelete(stat.id);
-                            setDeleteDialogOpen(true);
+                            // For combined stats, delete only the manual portion
+                            const idToDelete = stat._isCombined 
+                              ? (stat._manualStats as any)?.id 
+                              : stat.id;
+                            if (idToDelete && !String(idToDelete).startsWith('live_')) {
+                              setStatsToDelete(idToDelete);
+                              setDeleteDialogOpen(true);
+                            }
                           }}
                         />
                       ))}
@@ -1004,6 +1138,54 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
                                       )} 
                                     />
                                     <span className="text-sm text-zinc-300">{stat.competitions?.name || "Sem competição"}</span>
+                                    {/* Origin Badge */}
+                                    {stat._isCombined ? (
+                                      <TooltipProvider>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <Badge variant="outline" className="text-[9px] border-purple-500/40 text-purple-400 bg-purple-500/10 gap-1">
+                                              <Layers className="w-2.5 h-2.5" />
+                                              Combinado
+                                            </Badge>
+                                          </TooltipTrigger>
+                                          <TooltipContent side="top" className="text-xs max-w-xs">
+                                            <p className="font-medium mb-1">Live Match + Manual</p>
+                                            <p className="text-muted-foreground">
+                                              Valores somados de partidas ao vivo ({stat._liveStats?.matches || 0} jogos) 
+                                              e entrada manual ({stat._manualStats?.matches || 0} jogos).
+                                            </p>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
+                                    ) : stat._isLiveData ? (
+                                      <TooltipProvider>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <Badge variant="outline" className="text-[9px] border-emerald-500/40 text-emerald-400 bg-emerald-500/10 gap-1">
+                                              <Zap className="w-2.5 h-2.5" />
+                                              Live
+                                            </Badge>
+                                          </TooltipTrigger>
+                                          <TooltipContent side="top" className="text-xs">
+                                            Dados de partidas ao vivo (não editável aqui)
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
+                                    ) : stat._isManualData ? (
+                                      <TooltipProvider>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <Badge variant="outline" className="text-[9px] border-blue-500/40 text-blue-400 bg-blue-500/10 gap-1">
+                                              <FileEdit className="w-2.5 h-2.5" />
+                                              Manual
+                                            </Badge>
+                                          </TooltipTrigger>
+                                          <TooltipContent side="top" className="text-xs">
+                                            Dados inseridos manualmente
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
+                                    ) : null}
                                   </div>
                                 </TableCell>
                                 <TableCell className="text-center text-sm text-zinc-400 tabular-nums">{stat.matches}</TableCell>
@@ -1035,14 +1217,55 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
                                 {canEdit && (
                                   <TableCell>
                                     <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => handleOpenDialog(stat)}
-                                      >
-                                        <Pencil className="w-4 h-4" />
-                                      </Button>
-                                      {isAdmin && (
+                                      {/* Only show edit for manual or combined stats */}
+                                      {(stat._isManualData || stat._isCombined) ? (
+                                        <TooltipProvider>
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => handleOpenDialog(stat)}
+                                              >
+                                                <Pencil className="w-4 h-4" />
+                                              </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top" className="text-xs">
+                                              {stat._isCombined 
+                                                ? "Editar parte manual"
+                                                : "Editar estatísticas"
+                                              }
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        </TooltipProvider>
+                                      ) : stat._isLiveData ? (
+                                        <TooltipProvider>
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="opacity-40 cursor-not-allowed"
+                                                disabled
+                                              >
+                                                <Lock className="w-4 h-4" />
+                                              </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top" className="text-xs">
+                                              Use o Modo Revisão da partida para editar
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        </TooltipProvider>
+                                      ) : (
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          onClick={() => handleOpenDialog(stat)}
+                                        >
+                                          <Pencil className="w-4 h-4" />
+                                        </Button>
+                                      )}
+                                      {isAdmin && stat._isManualData && (
                                         <Button
                                           variant="ghost"
                                           size="icon"

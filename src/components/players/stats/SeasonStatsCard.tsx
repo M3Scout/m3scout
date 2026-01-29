@@ -1,16 +1,23 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ChevronDown, Pencil, Trash2 } from "lucide-react";
+import { ChevronDown, Pencil, Trash2, Zap, FileEdit, Layers } from "lucide-react";
 import { CompetitionStatsSummary } from "@/components/players/stats";
 import type { PlayerStats } from "@/lib/playerStats";
 import { motion, AnimatePresence } from "framer-motion";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface StatsWithCompetition extends PlayerStats {
   competitions?: {
     name: string;
     computed_coefficient: number;
   } | null;
+  // Origin tracking
+  _isLiveData?: boolean;
+  _isManualData?: boolean;
+  _isCombined?: boolean;
+  _liveStats?: Partial<PlayerStats>;
+  _manualStats?: Partial<PlayerStats>;
 }
 
 interface SeasonStatsCardProps {
@@ -96,7 +103,7 @@ export function SeasonStatsCard({
     >
       <Card className="w-full max-w-full overflow-hidden border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95">
         <CardContent className="p-3 w-full max-w-full min-w-0">
-          {/* Header: Competition name + actions */}
+          {/* Header: Competition name + Origin Badge + actions */}
           <div className="flex items-start justify-between gap-2 mb-3 w-full min-w-0">
             <button
               type="button"
@@ -112,18 +119,97 @@ export function SeasonStatsCard({
               <span className="font-medium text-sm break-words line-clamp-2 min-w-0">
                 {stat.competitions?.name || "Sem competição"}
               </span>
+              {/* Origin Badge */}
+              {stat._isCombined ? (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge variant="outline" className="text-[9px] border-purple-500/40 text-purple-400 bg-purple-500/10 gap-1 shrink-0">
+                        <Layers className="w-2.5 h-2.5" />
+                        Combinado
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="text-xs max-w-xs">
+                      <p className="font-medium mb-1">Live Match + Manual</p>
+                      <p className="text-muted-foreground">
+                        Valores somados de partidas ao vivo ({stat._liveStats?.matches || 0} jogos) 
+                        e entrada manual ({stat._manualStats?.matches || 0} jogos).
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ) : stat._isLiveData ? (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge variant="outline" className="text-[9px] border-emerald-500/40 text-emerald-400 bg-emerald-500/10 gap-1 shrink-0">
+                        <Zap className="w-2.5 h-2.5" />
+                        Live
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="text-xs">
+                      Dados sincronizados automaticamente de partidas ao vivo (não editável)
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ) : stat._isManualData ? (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge variant="outline" className="text-[9px] border-blue-500/40 text-blue-400 bg-blue-500/10 gap-1 shrink-0">
+                        <FileEdit className="w-2.5 h-2.5" />
+                        Manual
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="text-xs">
+                      Dados inseridos manualmente via formulário de edição
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ) : null}
             </button>
-            {canEdit && (
+            {/* Actions: Only show edit for manual or combined stats */}
+            {canEdit && (stat._isManualData || stat._isCombined) && (
               <div className="flex gap-1 flex-shrink-0">
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onEdit}>
-                  <Pencil className="w-3.5 h-3.5" />
-                </Button>
-                {isAdmin && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onEdit}>
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="text-xs">
+                      {stat._isCombined 
+                        ? "Editar apenas a parte manual (não altera dados de Live Match)"
+                        : "Editar estatísticas manuais"
+                      }
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                {isAdmin && stat._isManualData && (
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onDelete}>
                     <Trash2 className="w-3.5 h-3.5 text-destructive" />
                   </Button>
                 )}
               </div>
+            )}
+            {/* For pure live data, show lock indicator */}
+            {stat._isLiveData && !stat._isCombined && canEdit && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex gap-1 flex-shrink-0 opacity-50">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 cursor-not-allowed" disabled>
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs">
+                    Dados de Live Match não podem ser editados diretamente. 
+                    Use o Modo Revisão da partida para correções.
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
           </div>
 
