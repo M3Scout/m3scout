@@ -87,6 +87,7 @@ const currentYear = new Date().getFullYear();
 const ComparePlayers = () => {
   const [searchParams] = useSearchParams();
   const debugMode = searchParams.get("debugCompare") === "1";
+  const debugStats = searchParams.get("debugStats") === "1";
   
   const [allPlayers, setAllPlayers] = useState<Player[]>([]);
   const [selectedPlayers, setSelectedPlayers] = useState<Player[]>([]);
@@ -104,6 +105,13 @@ const ComparePlayers = () => {
       console.log(`[Compare Debug] ${label}:`, data);
     }
   }, [debugMode]);
+  
+  // Detailed stats debug logging (guarded by ?debugStats=1)
+  const debugStatsLog = useCallback((label: string, data: any) => {
+    if (debugStats) {
+      console.log(`[COMPARE_STATS_RAW] ${label}`, JSON.stringify(data, null, 2));
+    }
+  }, [debugStats]);
 
   // === SINGLE SOURCE OF TRUTH (same as Profile) ===
   // We intentionally do NOT query unified_player_season_stats here.
@@ -241,6 +249,57 @@ const ComparePlayers = () => {
     if (value === null || minutes === null || minutes === 0) return null;
     return (value / minutes) * 90;
   };
+  
+  // === INSTRUMENTATION: Log raw stats for each player (guarded by ?debugStats=1) ===
+  useEffect(() => {
+    if (!debugStats || playersWithStats.length === 0) return;
+    
+    playersWithStats.forEach((p) => {
+      const agg = p.aggregatedStats;
+      if (!agg) return;
+      
+      // Calculate shots total (should be shots + shots_on_target + shots_blocked in profile)
+      const shotsRaw = agg.shots ?? 0;
+      const shotsOnTargetRaw = agg.shots_on_target ?? 0;
+      
+      // Pass calculations
+      const passesCompleted = agg.accurate_passes ?? 0;
+      const passesTotal = agg.total_passes ?? 0;
+      const passesPct = passesTotal > 0 ? Math.min(100, Math.round((passesCompleted / passesTotal) * 100)) : null;
+      
+      // Dribble calculations
+      const dribblesCompleted = agg.successful_dribbles ?? 0;
+      const dribblesTotal = agg.total_dribbles ?? 0;
+      const dribblesPct = dribblesTotal > 0 ? Math.min(100, Math.round((dribblesCompleted / dribblesTotal) * 100)) : null;
+      
+      // Per90 calculations for shots
+      const minutesPlayed = agg.minutes ?? 0;
+      const shotsPer90 = minutesPlayed > 0 ? (shotsRaw / minutesPlayed) * 90 : null;
+      
+      debugStatsLog(`Player: ${p.full_name}`, {
+        mode: viewMode,
+        filters: { season: seasonFilter, competition: competitionFilter },
+        raw_fields: {
+          minutes_played: minutesPlayed,
+          shots: shotsRaw,
+          shots_on_target: shotsOnTargetRaw,
+          // Note: shots_blocked is NOT in unified view - this is the bug
+          passes_completed: passesCompleted,
+          passes_total: passesTotal,
+          dribbles_completed: dribblesCompleted,
+          dribbles_total: dribblesTotal,
+        },
+        calculated_display: {
+          shots_display_absolute: shotsRaw,
+          shots_display_per90: shotsPer90 !== null ? Number(shotsPer90.toFixed(2)) : null,
+          passes_pct_display: passesPct,
+          dribbles_pct_display: dribblesPct,
+        },
+        per90_mode_active: viewMode === "per90",
+        note: "If shots changes when toggling per90, check if different field is used",
+      });
+    });
+  }, [playersWithStats, viewMode, seasonFilter, competitionFilter, debugStats, debugStatsLog]);
 
   // Create stat values array - USES filteredPlayers for current filter context
   const createStatValues = (
