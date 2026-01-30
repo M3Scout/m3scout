@@ -138,44 +138,74 @@ export function useComparePlayerStats(params: {
   const mergedRows = useMemo((): CompareStatRow[] => {
     if (!playerId || !unifiedQuery.data) return [];
 
-    return (unifiedQuery.data || []).map((row: any): CompareStatRow => ({
-      season_year: row.season_year,
-      competition_id: row.competition_id,
-      competition_name: row.competition_name,
-      source: row.data_source === "live" ? "live" : "manual",
-      matches: safeInt(row.matches),
-      minutes: safeInt(row.minutes),
-      goals: safeInt(row.goals),
-      assists: safeInt(row.assists),
-      shots: safeInt(row.shots),
-      shots_on_target: safeInt(row.shots_on_target),
-      key_passes: safeInt(row.key_passes),
-      chances_created: safeInt(row.chances_created),
-      accurate_passes: safeInt(row.accurate_passes),
-      total_passes: safeInt(row.total_passes),
-      successful_dribbles: safeInt(row.successful_dribbles),
-      total_dribbles: safeInt(row.total_dribbles),
-      tackles: safeInt(row.tackles),
-      interceptions: safeInt(row.interceptions),
-      recoveries: safeInt(row.recoveries),
-      duels_won: safeInt(row.duels_won),
-      total_duels: safeInt(row.total_duels),
-      aerial_duels_won: safeInt(row.aerial_duels_won),
-      aerial_duels_total: safeInt(row.aerial_duels_total),
-      ground_duels_won: safeInt(row.ground_duels_won),
-      ground_duels_total: safeInt(row.ground_duels_total),
-      yellow_cards: safeInt(row.yellow_cards),
-      red_cards: safeInt(row.red_cards),
-      fouls_committed: safeInt(row.fouls_committed),
-      fouls_drawn: safeInt(row.fouls_drawn),
-      saves: safeInt(row.saves),
-      goals_conceded: safeInt(row.goals_conceded),
-      clean_sheets: safeInt(row.clean_sheets),
-      penalties_saved: safeInt(row.penalties_saved),
-      errors_leading_to_goal: safeInt(row.errors_leading_to_goal),
-      clearances: 0,
-      ball_actions: 0,
-    })).sort((a, b) => {
+    // Debug: log raw DB rows to confirm field availability
+    const debugStats = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debugStats') === '1';
+
+    return (unifiedQuery.data || []).map((row: any): CompareStatRow => {
+      // Log raw row fields if debug mode
+      if (debugStats) {
+        console.log('[COMPARE_STATS_DB_ROW]', JSON.stringify({
+          player_id: row.player_id,
+          season_year: row.season_year,
+          competition_name: row.competition_name,
+          data_source: row.data_source,
+          raw_fields: {
+            matches: row.matches,
+            minutes: row.minutes,
+            goals: row.goals,
+            assists: row.assists,
+            shots: row.shots,
+            shots_on_target: row.shots_on_target,
+            shots_blocked: row.shots_blocked, // May be undefined if not in view
+            accurate_passes: row.accurate_passes,
+            total_passes: row.total_passes,
+            successful_dribbles: row.successful_dribbles,
+            total_dribbles: row.total_dribbles,
+          },
+        }, null, 2));
+      }
+
+      return {
+        season_year: row.season_year,
+        competition_id: row.competition_id,
+        competition_name: row.competition_name,
+        source: row.data_source === "live" ? "live" : "manual",
+        matches: safeInt(row.matches),
+        minutes: safeInt(row.minutes),
+        goals: safeInt(row.goals),
+        assists: safeInt(row.assists),
+        // SHOTS: unified view should provide total shots (shots + shots_on_target + shots_blocked)
+        // If the view only provides "shots" as one field, we use it as-is
+        shots: safeInt(row.shots),
+        shots_on_target: safeInt(row.shots_on_target),
+        key_passes: safeInt(row.key_passes),
+        chances_created: safeInt(row.chances_created),
+        accurate_passes: safeInt(row.accurate_passes),
+        total_passes: safeInt(row.total_passes),
+        successful_dribbles: safeInt(row.successful_dribbles),
+        total_dribbles: safeInt(row.total_dribbles),
+        tackles: safeInt(row.tackles),
+        interceptions: safeInt(row.interceptions),
+        recoveries: safeInt(row.recoveries),
+        duels_won: safeInt(row.duels_won),
+        total_duels: safeInt(row.total_duels),
+        aerial_duels_won: safeInt(row.aerial_duels_won),
+        aerial_duels_total: safeInt(row.aerial_duels_total),
+        ground_duels_won: safeInt(row.ground_duels_won),
+        ground_duels_total: safeInt(row.ground_duels_total),
+        yellow_cards: safeInt(row.yellow_cards),
+        red_cards: safeInt(row.red_cards),
+        fouls_committed: safeInt(row.fouls_committed),
+        fouls_drawn: safeInt(row.fouls_drawn),
+        saves: safeInt(row.saves),
+        goals_conceded: safeInt(row.goals_conceded),
+        clean_sheets: safeInt(row.clean_sheets),
+        penalties_saved: safeInt(row.penalties_saved),
+        errors_leading_to_goal: safeInt(row.errors_leading_to_goal),
+        clearances: 0,
+        ball_actions: 0,
+      };
+    }).sort((a, b) => {
       if (b.season_year !== a.season_year) return b.season_year - a.season_year;
       return (a.competition_name || "").localeCompare(b.competition_name || "");
     });
