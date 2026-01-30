@@ -342,15 +342,23 @@ export function usePlayerMatchStats({
       // Skip zero-minute participations (games = DISTINCT match_id where minutes > 0)
       if (minutesPlayed <= 0) continue;
 
+      // CRITICAL: In our DB schema, `shots` field stores shots OFF TARGET (not total)
+      // shots_total = shots (off target) + shots_on_target + shots_blocked
+      const shotsOffTarget = stats?.shots ?? 0;
+      const shotsOnTarget = stats?.shots_on_target ?? 0;
+      const shotsBlocked = stats?.shots_blocked ?? 0;
+      const shotsTotal = shotsOffTarget + shotsOnTarget + shotsBlocked;
+
       const derivedStats: MatchDerivedStats = {
         matches: 1,
         minutes: minutesPlayed,
         goals: stats?.goals ?? 0,
         assists: stats?.assists ?? 0,
-        shots: stats?.shots ?? 0,
-        shots_on_target: stats?.shots_on_target ?? 0,
-        shots_off_target: Math.max(0, (stats?.shots ?? 0) - (stats?.shots_on_target ?? 0)),
-        shots_blocked: stats?.shots_blocked ?? 0,
+        // shots = TOTAL finalizações (off + on_target + blocked)
+        shots: shotsTotal,
+        shots_on_target: shotsOnTarget,
+        shots_off_target: shotsOffTarget,
+        shots_blocked: shotsBlocked,
         offsides: stats?.offsides ?? 0,
         passes_completed: stats?.passes_completed ?? 0,
         // CRITICAL: In our DB schema, passes_total stores FAILED passes count, NOT actual total
@@ -364,12 +372,14 @@ export function usePlayerMatchStats({
         crosses_failed: stats?.crosses_failed ?? 0,
         // ball_actions is a DERIVED statistic - calculated from sum of eligible events
         // See src/lib/derivedBallActions.ts for the list of events that count
+        // NOTE: We pass shotsTotal (the true total) so that calculateDerivedBallActions
+        // can correctly compute shots_off_target = shotsTotal - shots_on_target
         ball_actions: calculateDerivedBallActions(
           {
             goals: stats?.goals ?? 0,
-            shots_on_target: stats?.shots_on_target ?? 0,
-            shots: stats?.shots ?? 0,
-            shots_blocked: stats?.shots_blocked ?? 0,
+            shots_on_target: shotsOnTarget,
+            shots: shotsTotal, // Pass the TOTAL, not just off-target
+            shots_blocked: shotsBlocked,
             assists: stats?.assists ?? 0,
             key_passes: stats?.key_passes ?? 0,
             chances_created: stats?.chances_created ?? 0,
