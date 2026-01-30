@@ -276,6 +276,8 @@ export async function getPlayerStatsBySeason(
       .select('*, competitions(name, computed_coefficient)')
       .eq('player_id', playerId)
       .eq('season_year', seasonYear)
+      // Exclude archived rows (safety: keep NULLs)
+      .or('is_archived.is.null,is_archived.eq.false')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -300,7 +302,9 @@ export async function getAggregatedPlayerStats(
       .from('player_stats')
       .select('*')
       .eq('player_id', playerId)
-      .eq('season_year', seasonYear);
+      .eq('season_year', seasonYear)
+      // Exclude archived rows (safety: keep NULLs)
+      .or('is_archived.is.null,is_archived.eq.false');
 
     if (error) {
       return { data: null, error: new Error(error.message) };
@@ -445,6 +449,8 @@ export async function getAllPlayerStats(
       .from('player_stats')
       .select('*, competitions(name, computed_coefficient)')
       .eq('player_id', playerId)
+      // Exclude archived rows (safety: keep NULLs)
+      .or('is_archived.is.null,is_archived.eq.false')
       .order('season_year', { ascending: false })
       .order('created_at', { ascending: false });
 
@@ -469,6 +475,8 @@ export async function getCareerAggregatedStats(
       .from('player_stats')
       .select('*')
       .eq('player_id', playerId)
+      // Exclude archived rows (safety: keep NULLs)
+      .or('is_archived.is.null,is_archived.eq.false')
       .order('season_year', { ascending: false });
 
     if (error) {
