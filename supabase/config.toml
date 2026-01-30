@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.cleanup-ghost-stats]
 verify_jwt = false
+
+[functions.check-contract-notifications]
+verify_jwt = false

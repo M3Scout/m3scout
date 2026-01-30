@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useContractNotificationCheck } from "@/hooks/useContractNotificationCheck";
 import { AdminSkeletonDashboard } from "@/components/admin/AdminSkeleton";
 import { DashboardHero } from "@/components/dashboard/DashboardHero";
 import { KPICards } from "@/components/dashboard/KPICards";
@@ -60,6 +61,9 @@ const Dashboard = () => {
   if (import.meta.env.DEV) console.log("[MOUNT] Dashboard");
 
   const { isAdmin, isScout, isPlayer, rolesLoading } = useAuth();
+  
+  // Trigger daily contract notification check (fallback for no cron)
+  useContractNotificationCheck();
   
   // PROGRESSIVE LOADING: Start with zeros, update as data arrives
   // This allows UI to render immediately with skeletons/placeholders

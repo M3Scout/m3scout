@@ -151,6 +151,48 @@ export type Database = {
         }
         Relationships: []
       }
+      contract_notifications: {
+        Row: {
+          contract_id: string
+          created_at: string
+          id: string
+          milestone_days: number
+          notification_id: string | null
+          notified_at: string
+        }
+        Insert: {
+          contract_id: string
+          created_at?: string
+          id?: string
+          milestone_days: number
+          notification_id?: string | null
+          notified_at?: string
+        }
+        Update: {
+          contract_id?: string
+          created_at?: string
+          id?: string
+          milestone_days?: number
+          notification_id?: string | null
+          notified_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_notifications_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "player_contract_history"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_notifications_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "notifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       instagram_tokens: {
         Row: {
           access_token: string

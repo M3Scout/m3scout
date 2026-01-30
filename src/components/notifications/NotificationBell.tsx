@@ -1,4 +1,4 @@
-import { Bell, Check, CheckCheck, FileText, Trophy, User } from "lucide-react";
+import { Bell, Check, CheckCheck, FileText, Trophy, ScrollText, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +19,8 @@ function NotificationIcon({ type }: { type: string }) {
       return <FileText className="h-4 w-4 text-primary" />;
     case "match":
       return <Trophy className="h-4 w-4 text-amber-500" />;
+    case "contract":
+      return <ScrollText className="h-4 w-4 text-emerald-500" />;
     default:
       return <Bell className="h-4 w-4 text-muted-foreground" />;
   }
