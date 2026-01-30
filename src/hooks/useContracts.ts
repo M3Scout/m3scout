@@ -68,7 +68,7 @@ export function useContracts(filterStatus?: string, filterDays?: number) {
 
               if (daysToExpire < 0) {
                 status = "expired";
-              } else if (daysToExpire <= 30) {
+              } else if (daysToExpire <= 90) {
                 status = "expiring";
               } else {
                 status = "active";
@@ -109,6 +109,11 @@ export function useContracts(filterStatus?: string, filterDays?: number) {
           if (filterStatus === "expiring" && filterDays) {
             filtered = processed.filter(
               (c) => c.days_to_expire !== null && c.days_to_expire >= 0 && c.days_to_expire <= filterDays
+            );
+          } else if (filterStatus === "expiring") {
+            // Default to 90 days if no filterDays specified
+            filtered = processed.filter(
+              (c) => c.days_to_expire !== null && c.days_to_expire >= 0 && c.days_to_expire <= 90
             );
           } else {
             filtered = processed.filter((c) => c.status === filterStatus);

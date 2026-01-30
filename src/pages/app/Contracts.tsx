@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { FileText, ScrollText } from "lucide-react";
 import {
@@ -23,7 +23,7 @@ import { ContractRow } from "@/components/contracts/ContractRow";
 export default function Contracts() {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialStatus = searchParams.get("status");
-  const initialDays = searchParams.get("days") ? parseInt(searchParams.get("days")!) : undefined;
+  const initialDays = searchParams.get("days") ? parseInt(searchParams.get("days")!) : 90;
 
   const [filterStatus, setFilterStatus] = useState<string | null>(initialStatus);
 
@@ -38,7 +38,7 @@ export default function Contracts() {
     if (status) {
       searchParams.set("status", status);
       if (status === "expiring") {
-        searchParams.set("days", "30");
+        searchParams.set("days", "90");
       } else {
         searchParams.delete("days");
       }
@@ -74,7 +74,7 @@ export default function Contracts() {
       />
 
       {/* Table */}
-      <Card>
+      <Card className="bg-card border-white/[0.06]">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
             <FileText className="h-5 w-5" />
@@ -82,11 +82,11 @@ export default function Contracts() {
           </CardTitle>
           <CardDescription>
             {filterStatus === "expiring"
-              ? "Contratos que expiram nos próximos 30 dias"
+              ? "Contratos que expiram nos próximos 90 dias"
               : filterStatus === "expired"
               ? "Contratos já vencidos"
               : filterStatus === "active"
-              ? "Contratos ativos (mais de 30 dias)"
+              ? "Contratos ativos (mais de 90 dias)"
               : "Todos os contratos registrados"}
           </CardDescription>
         </CardHeader>
@@ -100,7 +100,7 @@ export default function Contracts() {
           ) : error ? (
             <div className="text-center py-8 text-destructive">{error}</div>
           ) : contracts.length === 0 ? (
-            <div className="text-center py-12">
+            <div className="text-center py-12 rounded-lg bg-zinc-900/50 border border-white/[0.06]">
               <ScrollText className="h-12 w-12 mx-auto text-muted-foreground/40 mb-3" />
               <p className="text-muted-foreground">
                 {filterStatus
@@ -112,7 +112,7 @@ export default function Contracts() {
             <div className="overflow-x-auto -mx-6">
               <Table>
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="border-white/[0.06]">
                     <TableHead className="pl-6">Atleta</TableHead>
                     <TableHead>Clube</TableHead>
                     <TableHead>Tipo</TableHead>
