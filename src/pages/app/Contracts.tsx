@@ -2,13 +2,6 @@ import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { FileText, ScrollText } from "lucide-react";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
   Table,
   TableBody,
   TableHead,
@@ -74,13 +67,13 @@ export default function Contracts() {
       />
 
       {/* Table */}
-      <Card className="bg-card border-white/[0.06]">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <FileText className="h-5 w-5" />
+      <div className="rounded-xl bg-zinc-900/80 backdrop-blur-sm border border-white/[0.04] shadow-[0_4px_24px_-6px_hsl(222_50%_3%/0.5)]">
+        <div className="p-6 pb-3">
+          <h2 className="text-lg font-semibold flex items-center gap-2 text-foreground">
+            <FileText className="h-5 w-5 text-muted-foreground" />
             Lista de Contratos
-          </CardTitle>
-          <CardDescription>
+          </h2>
+          <p className="text-sm text-muted-foreground mt-1">
             {filterStatus === "expiring"
               ? "Contratos que expiram nos próximos 90 dias"
               : filterStatus === "expired"
@@ -88,21 +81,21 @@ export default function Contracts() {
               : filterStatus === "active"
               ? "Contratos ativos (mais de 90 dias)"
               : "Todos os contratos registrados"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+          </p>
+        </div>
+        <div className="px-6 pb-6">
           {loading ? (
             <div className="space-y-3">
               {[...Array(5)].map((_, i) => (
-                <Skeleton key={i} className="h-14 w-full" />
+                <Skeleton key={i} className="h-14 w-full bg-zinc-800/50" />
               ))}
             </div>
           ) : error ? (
             <div className="text-center py-8 text-destructive">{error}</div>
           ) : contracts.length === 0 ? (
-            <div className="text-center py-12 rounded-lg bg-zinc-900/50 border border-white/[0.06]">
-              <ScrollText className="h-12 w-12 mx-auto text-muted-foreground/40 mb-3" />
-              <p className="text-muted-foreground">
+            <div className="text-center py-12 rounded-lg bg-zinc-950/60 border border-white/[0.04]">
+              <ScrollText className="h-12 w-12 mx-auto text-zinc-600 mb-3" />
+              <p className="text-zinc-500">
                 {filterStatus
                   ? "Nenhum contrato encontrado com este filtro"
                   : "Nenhum contrato cadastrado"}
@@ -112,13 +105,13 @@ export default function Contracts() {
             <div className="overflow-x-auto -mx-6">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-white/[0.06]">
-                    <TableHead className="pl-6">Atleta</TableHead>
-                    <TableHead>Clube</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Vencimento</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="pr-6">Ações</TableHead>
+                  <TableRow className="border-white/[0.04] hover:bg-transparent">
+                    <TableHead className="pl-6 text-zinc-400">Atleta</TableHead>
+                    <TableHead className="text-zinc-400">Clube</TableHead>
+                    <TableHead className="text-zinc-400">Tipo</TableHead>
+                    <TableHead className="text-zinc-400">Vencimento</TableHead>
+                    <TableHead className="text-zinc-400">Status</TableHead>
+                    <TableHead className="pr-6 text-zinc-400">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -129,8 +122,8 @@ export default function Contracts() {
               </Table>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
