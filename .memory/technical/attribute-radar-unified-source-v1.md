@@ -3,7 +3,7 @@ Updated: 2026-01-30
 
 ## Attribute Radar Unified Data Source
 
-The "Visão Geral dos Atributos" (Attribute Radar) in the Player Profile now uses a SEPARATE aggregator from the Compare page.
+The "Visão Geral dos Atributos" (Attribute Radar) in the Player Profile uses a SEPARATE aggregator from the Compare page.
 
 ### Data Sources
 
@@ -11,9 +11,18 @@ The "Visão Geral dos Atributos" (Attribute Radar) in the Player Profile now use
    - Games tracked via Live Match system
    - Minutes from `player_field_presence` (authoritative)
 
-2. **Manual Stats** (`player_stats` table):
-   - Historical/external games entered via admin
-   - "Estatísticas por Temporada" section
+2. **Manual Stats** (TWO tables):
+   - `player_stats`: Legacy "Estatísticas por Temporada" section
+   - `manual_player_stats`: Newer manual entry system
+
+### Competition Dropdown
+
+The competition filter in the radar uses `unifiedCompetitions.ts` which fetches from:
+- `match_players` → `matches` → `competitions` (for Live Match data)
+- `player_stats` (legacy admin stats)
+- `manual_player_stats` (newer manual stats)
+
+All three sources are merged and deduplicated by `competition_id + season_year`.
 
 ### Aggregation Rule
 
@@ -24,8 +33,9 @@ The "Visão Geral dos Atributos" (Attribute Radar) in the Player Profile now use
 
 ### Key Files
 
-- `src/hooks/useAttributeUnifiedStats.ts` - New dedicated hook for attributes
-- `src/components/players/sections/PlayerAttributeRadarSection.tsx` - Consumes the hook
+- `src/lib/unifiedCompetitions.ts` - Fetches competitions from all 3 sources
+- `src/hooks/useAttributeUnifiedStats.ts` - Aggregates Live + Manual stats
+- `src/components/players/SofaScoreRadarCard.tsx` - Radar with filters
 - `src/lib/attributeRadar.ts` - Computes radar scores from aggregated data
 
 ### Debug

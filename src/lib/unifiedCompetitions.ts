@@ -149,50 +149,98 @@ async function fetchLiveCompetitions(playerId: string): Promise<UnifiedCompetiti
 }
 
 /**
- * Fetches competitions from manual_player_stats (not player_stats!)
- * Manual stats are a FALLBACK - only used if no live data exists for that competition/season
+ * Fetches competitions from BOTH manual_player_stats AND player_stats tables
+ * This covers:
+ * - manual_player_stats: newer manual entry system
+ * - player_stats: legacy "Estatísticas por Temporada" admin section
  */
 async function fetchManualCompetitions(playerId: string): Promise<UnifiedCompetition[]> {
-  const { data, error } = await supabase
-    .from("manual_player_stats")
-    .select(`
-      season_year,
-      competition_id,
-      minutes,
-      games,
-      competitions:competition_id (
-        id,
-        name,
-        display_name
-      )
-    `)
-    .eq("player_id", playerId)
-    .not("competition_id", "is", null)
-    .gt("games", 0);
-
-  if (error || !data) {
-    console.error("[UnifiedCompetitions] Error fetching manual:", error);
-    return [];
-  }
+  // Fetch from BOTH manual tables in parallel
+  const [manualResult, legacyResult] = await Promise.all([
+    // manual_player_stats (newer system)
+    supabase
+      .from("manual_player_stats")
+      .select(`
+        season_year,
+        competition_id,
+        minutes,
+        games,
+        competitions:competition_id (
+          id,
+          name,
+          display_name
+        )
+      `)
+      .eq("player_id", playerId)
+      .not("competition_id", "is", null)
+      .gt("games", 0),
+    
+    // player_stats (legacy "Estatísticas por Temporada")
+    supabase
+      .from("player_stats")
+      .select(`
+        season_year,
+        competition_id,
+        minutes,
+        matches,
+        competitions:competition_id (
+          id,
+          name,
+          display_name
+        )
+      `)
+      .eq("player_id", playerId)
+      .not("competition_id", "is", null)
+      .or("is_archived.is.null,is_archived.eq.false")
+      .gt("matches", 0),
+  ]);
 
   const compMap = new Map<string, UnifiedCompetition>();
 
-  for (const row of data) {
-    const comp = (row as any).competitions;
-    if (!comp?.id) continue;
+  // Process manual_player_stats
+  if (!manualResult.error && manualResult.data) {
+    for (const row of manualResult.data) {
+      const comp = (row as any).competitions;
+      if (!comp?.id) continue;
 
-    const seasonYear = row.season_year as number;
-    const key = `${comp.id}-${seasonYear}`;
+      const seasonYear = row.season_year as number;
+      const key = `${comp.id}-${seasonYear}`;
 
-    if (!compMap.has(key)) {
-      compMap.set(key, {
-        id: comp.id,
-        name: comp.display_name || comp.name,
-        seasonYear,
-        lastMatchDate: null, // Manual stats don't have match dates
-        _origin: "manual",
-      });
+      if (!compMap.has(key)) {
+        compMap.set(key, {
+          id: comp.id,
+          name: comp.display_name || comp.name,
+          seasonYear,
+          lastMatchDate: null,
+          _origin: "manual",
+        });
+      }
     }
+  } else if (manualResult.error) {
+    console.error("[UnifiedCompetitions] Error fetching manual_player_stats:", manualResult.error);
+  }
+
+  // Process player_stats (legacy)
+  if (!legacyResult.error && legacyResult.data) {
+    for (const row of legacyResult.data) {
+      const comp = (row as any).competitions;
+      if (!comp?.id) continue;
+
+      const seasonYear = row.season_year as number;
+      const key = `${comp.id}-${seasonYear}`;
+
+      if (!compMap.has(key)) {
+        compMap.set(key, {
+          id: comp.id,
+          name: comp.display_name || comp.name,
+          seasonYear,
+          lastMatchDate: null,
+          _origin: "manual",
+        });
+      }
+    }
+  } else if (legacyResult.error) {
+    console.error("[UnifiedCompetitions] Error fetching player_stats:", legacyResult.error);
   }
 
   return Array.from(compMap.values());
