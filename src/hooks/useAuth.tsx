@@ -2,38 +2,16 @@ import { createContext, useContext, useEffect, useState, ReactNode, useCallback,
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
-import { classifyRbacError } from "@/lib/rbacError";
 
 export type AppRole = Database["public"]["Enums"]["app_role"];
 
 // Valid roles that grant app access
 const VALID_ROLES: AppRole[] = ["admin", "scout", "editor", "viewer", "player"];
 
-// Priority when user has multiple roles
-const ROLE_PRIORITY: AppRole[] = ["admin", "scout", "editor", "viewer", "player"];
-
-// PERFORMANCE OPTIMIZED: Single attempt with fast timeout for cold starts
-const RBAC_BACKOFF_MS = [500]; // Only 1 retry, fast interval
-const RBAC_ATTEMPT_TIMEOUT_MS = 2500; // 2.5s per attempt (reduced further)
-const RBAC_TOTAL_TIMEOUT_MS = 4000; // 4s max total (down from 6s)
-
-// Cache configuration - use localStorage for persistence across tabs/sessions
-const RBAC_CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes (increased for better cold start)
-const RBAC_CACHE_KEY = "m3_rbac_v2";
-const RBAC_CACHE_KEY_PERSISTENT = "m3_rbac_v2_persistent"; // localStorage for cold starts
-
-// Performance timing helper
-const logTiming = (label: string, startTime?: number) => {
-  if (!import.meta.env.DEV) return;
-  const now = performance.now();
-  const appStart = (window as any).__APP_MOUNT_START ?? now;
-  const elapsed = startTime != null ? now - startTime : 0;
-  console.log(`[TIMING] ${label}`, {
-    sinceAppMount: `${Math.round(now - appStart)}ms`,
-    ...(startTime != null && { duration: `${Math.round(elapsed)}ms` }),
-  });
-  return now;
-};
+// ============ CACHE CONFIGURATION ============
+// 30 minute TTL as requested
+const RBAC_CACHE_TTL_MS = 30 * 60 * 1000;
+const RBAC_CACHE_KEY = "m3_rbac_v3"; // New version for clean migration
 
 // ============ PERMISSIONS TYPES ============
 export interface UserPermissions {
@@ -168,108 +146,80 @@ const DEFAULT_PERMISSIONS: UserPermissions = {
 };
 
 // ============ CACHE TYPES ============
-type RbacCachePayload = {
+interface RbacCachePayload {
   userId: string;
   roles: AppRole[];
-  linkedPlayerId: string | null;
+  isAdmin: boolean;
+  isPlayer: boolean;
   isOwner: boolean;
+  linkedPlayerId: string | null;
   userStatus: "active" | "suspended" | null;
-  permissions: UserPermissions | null; // null means use role-based defaults
+  permissions: UserPermissions | null;
   fetchedAt: number;
-};
+  expiresAt: number;
+}
 
+// ============ CACHE FUNCTIONS ============
 function readCache(userId: string): RbacCachePayload | null {
   try {
-    // First try sessionStorage (same-tab, more recent)
-    const rawSession = window.sessionStorage.getItem(RBAC_CACHE_KEY);
-    if (rawSession) {
-      const parsed = JSON.parse(rawSession) as RbacCachePayload;
-      if (parsed?.userId === userId && parsed.fetchedAt && Date.now() - parsed.fetchedAt <= RBAC_CACHE_TTL_MS) {
-        return parsed;
-      }
+    const raw = localStorage.getItem(RBAC_CACHE_KEY);
+    if (!raw) return null;
+    
+    const parsed = JSON.parse(raw) as RbacCachePayload;
+    
+    // Validate cache
+    if (parsed?.userId !== userId) return null;
+    if (Date.now() > parsed.expiresAt) {
+      localStorage.removeItem(RBAC_CACHE_KEY);
+      return null;
     }
-    // Fallback to localStorage (persistent across tabs/cold starts)
-    const rawLocal = window.localStorage.getItem(RBAC_CACHE_KEY_PERSISTENT);
-    if (rawLocal) {
-      const parsed = JSON.parse(rawLocal) as RbacCachePayload;
-      if (parsed?.userId === userId && parsed.fetchedAt && Date.now() - parsed.fetchedAt <= RBAC_CACHE_TTL_MS) {
-        return parsed;
-      }
-    }
-    return null;
+    
+    return parsed;
   } catch {
     return null;
   }
 }
 
-function writeCache(payload: RbacCachePayload) {
+function writeCache(payload: RbacCachePayload): void {
   try {
-    const json = JSON.stringify(payload);
-    window.sessionStorage.setItem(RBAC_CACHE_KEY, json);
-    window.localStorage.setItem(RBAC_CACHE_KEY_PERSISTENT, json);
+    localStorage.setItem(RBAC_CACHE_KEY, JSON.stringify(payload));
   } catch {
-    // ignore cache failures
+    // Ignore cache write failures
   }
 }
 
-function clearCache() {
+function clearCache(): void {
   try {
-    window.sessionStorage.removeItem(RBAC_CACHE_KEY);
-    window.localStorage.removeItem(RBAC_CACHE_KEY_PERSISTENT);
+    localStorage.removeItem(RBAC_CACHE_KEY);
+    // Also clear old cache versions
+    localStorage.removeItem("m3_rbac_v2");
+    localStorage.removeItem("m3_rbac_v2_persistent");
   } catch {
-    // ignore
+    // Ignore
   }
-}
-
-// ============ HELPERS ============
-function withTimeout<T>(promiseLike: PromiseLike<T>, label: string, ms: number): Promise<T> {
-  let timeoutId: number | undefined;
-  const timeoutPromise = new Promise<T>((_, reject) => {
-    timeoutId = window.setTimeout(() => reject(new Error(`Timeout ao buscar ${label}`)), ms);
-  });
-  const promise = Promise.resolve(promiseLike);
-  return Promise.race([promise, timeoutPromise]).finally(() => {
-    if (timeoutId) window.clearTimeout(timeoutId);
-  });
-}
-
-function sortRolesByPriority(roles: AppRole[]) {
-  const idx = new Map<AppRole, number>(ROLE_PRIORITY.map((r, i) => [r, i]));
-  return [...roles].sort((a, b) => (idx.get(a) ?? 999) - (idx.get(b) ?? 999));
-}
-
-function sleep(ms: number) {
-  return new Promise<void>((resolve) => window.setTimeout(resolve, ms));
 }
 
 // ============ DEDUPE SINGLETON ============
-// Global promise to dedupe concurrent RBAC fetches
-let inflightRbacPromise: Promise<RbacCachePayload | null> | null = null;
+let inflightPromise: Promise<RbacCachePayload | null> | null = null;
+let rbacCallCount = 0;
 
-// ============ CONTEXT ============
+// ============ CONTEXT TYPE ============
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
   roles: AppRole[];
   linkedPlayerId: string | null;
-  /** True if user has at least one valid role (not pending/member) */
   isApproved: boolean;
-  /** True while roles are still being fetched after auth */
   rolesLoading: boolean;
-  /** Error type if roles fetch failed: 'timeout' | 'abort' | 'network' | 'exception' | null */
   rolesError: string | null;
-  /** Best-effort cache indicator */
   rolesFromCache: boolean;
   rolesFetchedAt: number | null;
-
-  // Permissions (now centralized)
   permissions: UserPermissions | null;
   permissionsLoading: boolean;
   permissionsError: string | null;
   isOwner: boolean;
   userStatus: "active" | "suspended" | null;
-
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, name: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -279,8 +229,6 @@ interface AuthContextType {
   isScout: boolean;
   isInternal: boolean;
   isPlayer: boolean;
-
-  /** DEV diagnostics */
   debug: {
     fetchStage: "idle" | "start" | "success" | "error";
     fetchSource: "fresh" | "cache" | "background" | null;
@@ -302,7 +250,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [rolesFromCache, setRolesFromCache] = useState(false);
   const [rolesFetchedAt, setRolesFetchedAt] = useState<number | null>(null);
 
-  // Permissions state (centralized)
   const [permissions, setPermissions] = useState<UserPermissions | null>(null);
   const [permissionsLoading, setPermissionsLoading] = useState(true);
   const [permissionsError, setPermissionsError] = useState<string | null>(null);
@@ -314,324 +261,204 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     fetchSource: null,
   });
 
-  // Track if we're currently doing a background revalidation
-  const isBackgroundRef = useRef(false);
-  
-  // Track if document is visible (for pausing background fetches)
-  const isDocumentVisibleRef = useRef(true);
-  
-  // Track last known good permissions (for resilience)
-  const lastKnownGoodRef = useRef<RbacCachePayload | null>(null);
+  const isMountedRef = useRef(true);
+  const hasInitializedRef = useRef(false);
 
-  // ============ CORE RBAC FETCH ============
-  const doRbacFetch = useCallback(async (userId: string): Promise<RbacCachePayload | null> => {
-    const startedMs = performance.now();
+  // ============ APPLY RBAC PAYLOAD ============
+  const applyPayload = useCallback((payload: RbacCachePayload, fromCache: boolean) => {
+    if (!isMountedRef.current) return;
 
-    if (import.meta.env.DEV) {
-      console.log("[RBAC] fetch start", { userId, backoffMs: RBAC_BACKOFF_MS });
+    setRoles(payload.roles);
+    setLinkedPlayerId(payload.linkedPlayerId);
+    setIsOwner(payload.isOwner);
+    setUserStatus(payload.userStatus);
+    setRolesFromCache(fromCache);
+    setRolesFetchedAt(payload.fetchedAt);
+    setRolesError(null);
+    setPermissionsError(null);
+
+    // Compute permissions based on role
+    if (payload.isAdmin) {
+      setPermissions(ADMIN_PERMISSIONS);
+    } else if (payload.isPlayer) {
+      setPermissions(PLAYER_PERMISSIONS);
+    } else if (payload.permissions) {
+      setPermissions(payload.permissions);
+    } else {
+      setPermissions(DEFAULT_PERMISSIONS);
     }
 
-    let lastErr: unknown;
+    setRolesLoading(false);
+    setPermissionsLoading(false);
 
-    for (let attempt = 0; attempt < RBAC_BACKOFF_MS.length + 1; attempt++) {
-      try {
-        if (import.meta.env.DEV) {
-          console.log("[RBAC] attempt", attempt + 1, { userId });
-        }
+    setDebug({
+      fetchStage: "success",
+      fetchSource: fromCache ? "cache" : "fresh",
+    });
 
-        // Fetch user_roles
-        const rolesRes = await withTimeout(
-          supabase
-            .from("user_roles")
-            .select("role, linked_player_id, status, is_owner")
-            .eq("user_id", userId),
-          "user_roles",
-          RBAC_ATTEMPT_TIMEOUT_MS
-        );
-
-        if (rolesRes.error) throw rolesRes.error;
-
-        const roleRows = Array.isArray(rolesRes.data) ? rolesRes.data : [];
-        const activeRoles = roleRows.filter((r: any) => r.status === "active");
-        const rolesList = sortRolesByPriority(
-          activeRoles.map((r: any) => r.role).filter(Boolean)
-        );
-
-        const isAdminRole = rolesList.includes("admin");
-        const isPlayerRole = rolesList.includes("player");
-
-        const playerRole = activeRoles.find((r: any) => r.role === "player");
-        const linkedPlayerIdValue = playerRole?.linked_player_id ?? null;
-
-        const isOwnerAny = roleRows.some((r: any) => Boolean(r?.is_owner));
-        const statusValues = roleRows.map((r: any) => r?.status).filter(Boolean);
-        const derivedStatus: "active" | "suspended" | null = statusValues.includes("suspended")
-          ? "suspended"
-          : statusValues.includes("active")
-            ? "active"
-            : null;
-
-        // ADMIN BYPASS: Don't fetch user_permissions for admin
-        let permsFromDb: UserPermissions | null = null;
-        if (!isAdminRole && !isPlayerRole && rolesList.length > 0) {
-          // Only fetch user_permissions for non-admin, non-player roles
-          const permsRes = await withTimeout(
-            supabase
-              .from("user_permissions")
-              .select("*")
-              .eq("user_id", userId)
-              .order("updated_at", { ascending: false })
-              .limit(1),
-            "user_permissions",
-            RBAC_ATTEMPT_TIMEOUT_MS
-          );
-
-          if (permsRes.error) throw permsRes.error;
-
-          const permsRow = Array.isArray(permsRes.data) ? permsRes.data[0] ?? null : null;
-          if (permsRow) {
-            permsFromDb = {
-              ...permsRow,
-              // SECURITY: Force delete=false for non-admins
-              players_delete: false,
-              reports_delete: false,
-              competitions_delete: false,
-              news_delete: false,
-              leads_delete: false,
-            } as UserPermissions;
-          }
-        }
-
-        const fetchedAt = Date.now();
-        const payload: RbacCachePayload = {
-          userId,
-          roles: rolesList,
-          linkedPlayerId: linkedPlayerIdValue,
-          isOwner: isOwnerAny,
-          userStatus: derivedStatus,
-          permissions: permsFromDb,
-          fetchedAt,
-        };
-
-        if (import.meta.env.DEV) {
-          console.log("[RBAC] success", {
-            userId,
-            roles: rolesList,
-            isAdmin: isAdminRole,
-            isPlayer: isPlayerRole,
-            durationMs: Math.round(performance.now() - startedMs),
-          });
-        }
-
-        return payload;
-      } catch (e) {
-        lastErr = e;
-        const delay = RBAC_BACKOFF_MS[attempt];
-        if (delay == null) break;
-
-        // Don't retry on 401/403/400
-        const errObj = e as any;
-        const status = errObj?.status ?? errObj?.code;
-        if (status === 401 || status === 403 || status === 400) {
-          if (import.meta.env.DEV) {
-            console.warn("[RBAC] non-retryable error", { status });
-          }
-          break;
-        }
-
-        if (import.meta.env.DEV) {
-          console.log("[RBAC] retry after", delay, "ms");
-        }
-        await sleep(delay);
-      }
-    }
-
-    // All retries exhausted
-    const errorType = classifyRbacError(lastErr);
-    if (import.meta.env.DEV) {
-      console.error("[RBAC] fetch failed", {
-        errorType,
-        error: lastErr,
-        durationMs: Math.round(performance.now() - startedMs),
-      });
-    }
-
-    throw { errorType, originalError: lastErr };
+    console.log(`[RBAC] ${fromCache ? "cache HIT" : "applied"}`, {
+      userId: payload.userId,
+      roles: payload.roles,
+      isAdmin: payload.isAdmin,
+      isPlayer: payload.isPlayer,
+      cacheAge: fromCache ? `${Math.round((Date.now() - payload.fetchedAt) / 1000)}s` : "N/A",
+    });
   }, []);
 
-  // ============ MAIN FETCH WITH DEDUPE + CACHE ============
-  const fetchRbac = useCallback(
-    async (userId: string, opts?: { background?: boolean }) => {
-      const background = Boolean(opts?.background);
-      isBackgroundRef.current = background;
+  // ============ FETCH RBAC (SINGLE RPC) ============
+  const doFetch = useCallback(async (userId: string): Promise<RbacCachePayload | null> => {
+    console.time("rbac_fetch");
+    rbacCallCount++;
+    console.log("[RBAC] fetch start", { userId, callNumber: rbacCallCount, source: "supabase_rpc" });
 
-      if (!background) {
-        setRolesLoading(true);
-        setPermissionsLoading(true);
-        setRolesError(null);
-        setPermissionsError(null);
+    try {
+      const { data, error } = await supabase.rpc("get_user_rbac", { p_user_id: userId });
+
+      console.timeEnd("rbac_fetch");
+
+      if (error) {
+        console.error("[RBAC] RPC error", error);
+        throw error;
       }
 
-      setDebug({
-        fetchStage: "start",
-        fetchSource: background ? "background" : "fresh",
+      if (!data) {
+        console.warn("[RBAC] No data returned");
+        return null;
+      }
+
+      // Cast through unknown for RPC response
+      const rbacData = data as unknown as {
+        userId: string;
+        roles: AppRole[];
+        isAdmin: boolean;
+        isPlayer: boolean;
+        isOwner: boolean;
+        linkedPlayerId: string | null;
+        userStatus: string | null;
+        permissions: UserPermissions | null;
+        fetchedAt: number;
+        ttlSeconds: number;
+      };
+
+      const payload: RbacCachePayload = {
+        userId: rbacData.userId,
+        roles: rbacData.roles || [],
+        isAdmin: rbacData.isAdmin,
+        isPlayer: rbacData.isPlayer,
+        isOwner: rbacData.isOwner,
+        linkedPlayerId: rbacData.linkedPlayerId,
+        userStatus: (rbacData.userStatus as "active" | "suspended") || null,
+        permissions: rbacData.permissions,
+        fetchedAt: rbacData.fetchedAt,
+        expiresAt: rbacData.fetchedAt + (rbacData.ttlSeconds * 1000),
+      };
+
+      console.log("[RBAC] fetch success", {
+        roles: payload.roles,
+        isAdmin: payload.isAdmin,
+        ttlMinutes: rbacData.ttlSeconds / 60,
       });
 
-      // DEDUPE: If there's already a fetch in flight, await it
-      if (inflightRbacPromise) {
-        if (import.meta.env.DEV) {
-          console.log("[RBAC] dedupe - awaiting existing fetch");
-        }
-        try {
-          const result = await inflightRbacPromise;
-          if (result) {
-            applyRbacPayload(result, background);
-          }
-        } catch {
-          // Error already handled by original fetch
-        }
-        return;
-      }
+      return payload;
+    } catch (err) {
+      console.timeEnd("rbac_fetch");
+      console.error("[RBAC] fetch failed", err);
+      throw err;
+    }
+  }, []);
 
-      // Start new fetch
-      const fetchPromise = doRbacFetch(userId);
-      inflightRbacPromise = fetchPromise;
+  // ============ FETCH WITH DEDUPE ============
+  const fetchRbac = useCallback(async (userId: string, opts?: { background?: boolean }) => {
+    const background = opts?.background ?? false;
 
+    if (!background) {
+      setRolesLoading(true);
+      setPermissionsLoading(true);
+      setDebug({ fetchStage: "start", fetchSource: "fresh" });
+    }
+
+    // DEDUPE: Reuse existing promise if in flight
+    if (inflightPromise) {
+      console.log("[RBAC] dedupe - awaiting existing fetch");
       try {
-        const result = await fetchPromise;
+        const result = await inflightPromise;
         if (result) {
           writeCache(result);
-          lastKnownGoodRef.current = result;
-          applyRbacPayload(result, background);
+          applyPayload(result, false);
         }
-      } catch (err: any) {
-        const errorType = err?.errorType ?? classifyRbacError(err);
-
-        // CRITICAL FIX: Treat "abort" as a non-error (tab switch, navigation, etc.)
-        // Also, if we have last known good permissions, DON'T set error state
-        const hasGoodFallback = lastKnownGoodRef.current !== null || roles.length > 0;
-        const isAbortError = errorType === "abort";
-
-        if (isAbortError) {
-          if (import.meta.env.DEV) {
-            console.log("[RBAC] Ignoring abort error (tab switch or navigation)");
-          }
-          // DON'T set error state for aborts - just silently ignore
-          if (!background) {
-            setRolesLoading(false);
-            setPermissionsLoading(false);
-          }
-          return;
-        }
-
-        // If we have valid cached/known permissions, DON'T block UI with error
-        if (background && hasGoodFallback) {
-          if (import.meta.env.DEV) {
-            console.log("[RBAC] Background fetch failed but have fallback, ignoring error", { errorType });
-          }
-          // Keep current state, don't set error
-          return;
-        }
-
-        // Only set error if this is a foreground fetch without fallback
-        if (!hasGoodFallback) {
-          setRolesError(errorType);
-          setPermissionsError(errorType);
-        }
-        
-        setDebug({
-          fetchStage: "error",
-          fetchSource: background ? "background" : "fresh",
-          error: { code: errorType, message: err?.originalError?.message ?? String(err) },
-        });
-
-        if (!background) {
-          setRolesLoading(false);
-          setPermissionsLoading(false);
-        }
-      } finally {
-        inflightRbacPromise = null;
+      } catch {
+        // Error handled by original fetch
       }
-    },
-    [doRbacFetch, roles.length]
-  );
+      return;
+    }
 
-  const applyRbacPayload = useCallback(
-    (payload: RbacCachePayload, fromCache: boolean) => {
-      const isAdminRole = payload.roles.includes("admin");
-      const isPlayerRole = payload.roles.includes("player");
+    // Start new fetch
+    const promise = doFetch(userId);
+    inflightPromise = promise;
 
-      // Store as last known good state (for resilience)
-      lastKnownGoodRef.current = payload;
-
-      setRoles(payload.roles);
-      setLinkedPlayerId(payload.linkedPlayerId);
-      setIsOwner(payload.isOwner);
-      setUserStatus(payload.userStatus);
-      setRolesFromCache(fromCache);
-      setRolesFetchedAt(payload.fetchedAt);
-      setRolesError(null);
-      setPermissionsError(null);
-
-      // Compute permissions based on role
-      if (isAdminRole) {
-        setPermissions(ADMIN_PERMISSIONS);
-      } else if (isPlayerRole) {
-        setPermissions(PLAYER_PERMISSIONS);
-      } else if (payload.permissions) {
-        setPermissions(payload.permissions);
-      } else {
-        setPermissions(DEFAULT_PERMISSIONS);
-      }
-
-      if (!isBackgroundRef.current) {
+    try {
+      const result = await promise;
+      if (result) {
+        writeCache(result);
+        applyPayload(result, false);
+      } else if (!background) {
         setRolesLoading(false);
         setPermissionsLoading(false);
       }
-
-      setDebug({
-        fetchStage: "success",
-        fetchSource: fromCache ? "cache" : "fresh",
-      });
-
-      if (import.meta.env.DEV) {
-        console.log("[RBAC] applied", {
-          userId: payload.userId,
-          roles: payload.roles,
-          isAdmin: isAdminRole,
-          isPlayer: isPlayerRole,
-          fromCache,
+    } catch (err: any) {
+      console.error("[RBAC] fetch error", err);
+      
+      if (!background) {
+        setRolesError(err?.code || "exception");
+        setPermissionsError(err?.code || "exception");
+        setRolesLoading(false);
+        setPermissionsLoading(false);
+        setDebug({
+          fetchStage: "error",
+          fetchSource: background ? "background" : "fresh",
+          error: { code: err?.code, message: err?.message },
         });
       }
-    },
-    []
-  );
+    } finally {
+      inflightPromise = null;
+    }
+  }, [doFetch, applyPayload]);
 
-  // ============ INIT + AUTH STATE CHANGE ============
-  // CRITICAL FIX: Empty dependency array to run ONCE only
-  // This prevents the loop caused by fetchRbac being recreated
-  useEffect(() => {
-    const authStart = logTiming("Auth init start");
-    let isMounted = true;
-    let hasInitialized = false;
+  // ============ HANDLE RBAC (CACHE FIRST) ============
+  const handleRbac = useCallback(async (userId: string) => {
+    rbacCallCount = 0; // Reset counter per page load
     
-    // Stable reference to avoid closure issues
-    const handleRbac = async (userId: string, isBackground: boolean) => {
-      const cached = readCache(userId);
-      if (cached) {
-        logTiming(`RBAC cache hit (${isBackground ? 'background' : 'init'})`);
-        applyRbacPayload(cached, true);
-        if (!isBackground) setLoading(false);
-        // Background revalidate - NON-BLOCKING
+    // Try cache first - instant read
+    const cached = readCache(userId);
+    if (cached) {
+      console.log("[RBAC] cache HIT", {
+        cacheAge: `${Math.round((Date.now() - cached.fetchedAt) / 1000)}s`,
+        expiresIn: `${Math.round((cached.expiresAt - Date.now()) / 1000)}s`,
+      });
+      console.log("[RBAC] calls count: 0 (cache hit)");
+      applyPayload(cached, true);
+      setLoading(false);
+      
+      // Background revalidate if cache is older than 5 minutes
+      const cacheAge = Date.now() - cached.fetchedAt;
+      if (cacheAge > 5 * 60 * 1000) {
+        console.log("[RBAC] background revalidation triggered");
         void fetchRbac(userId, { background: true });
-      } else {
-        const rbacStart = logTiming("RBAC fetch start (no cache)");
-        await fetchRbac(userId);
-        logTiming("RBAC fetch complete", rbacStart);
-        if (!isBackground) setLoading(false);
       }
-    };
+      return;
+    }
 
+    // Cache miss - fetch fresh
+    console.log("[RBAC] cache MISS - fetching fresh");
+    await fetchRbac(userId);
+    console.log("[RBAC] calls count:", rbacCallCount, "(cache miss)");
+    setLoading(false);
+  }, [applyPayload, fetchRbac]);
+
+  // ============ INIT EFFECT ============
+  useEffect(() => {
+    isMountedRef.current = true;
+    
     const handleSignOut = () => {
       setRoles([]);
       setLinkedPlayerId(null);
@@ -642,46 +469,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setRolesFetchedAt(null);
       setRolesLoading(false);
       setPermissionsLoading(false);
+      setRolesError(null);
+      setPermissionsError(null);
       clearCache();
       setLoading(false);
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (!isMounted) return;
+        if (!isMountedRef.current) return;
         
-        // CRITICAL: Skip initial session event if we already initialized
-        // This prevents duplicate RBAC fetches
-        if (event === 'INITIAL_SESSION' && hasInitialized) {
-          if (import.meta.env.DEV) console.log("[Auth] Skipping duplicate INITIAL_SESSION");
+        // Skip duplicate INITIAL_SESSION
+        if (event === "INITIAL_SESSION" && hasInitializedRef.current) {
           return;
         }
         
-        logTiming("Auth state changed: " + event);
+        console.log("[Auth] state changed:", event);
         setSession(session);
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          await handleRbac(session.user.id, false);
+          await handleRbac(session.user.id);
         } else {
           handleSignOut();
         }
       }
     );
 
-    // Check for existing session
+    // Initial session check
     const initSession = async () => {
       try {
-        logTiming("Auth getSession start");
-        const sessionStart = performance.now();
         const { data: { session }, error } = await supabase.auth.getSession();
-        logTiming("Auth getSession complete", sessionStart);
-
-        if (!isMounted) return;
-        hasInitialized = true;
+        
+        if (!isMountedRef.current) return;
+        hasInitializedRef.current = true;
 
         if (error) {
-          console.error("[Auth] session error:", error.code, error.message);
+          console.error("[Auth] session error:", error);
           setLoading(false);
           setRolesLoading(false);
           setPermissionsLoading(false);
@@ -692,16 +516,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          await handleRbac(session.user.id, false);
+          await handleRbac(session.user.id);
         } else {
-          logTiming("No session - public user");
           setRolesLoading(false);
           setPermissionsLoading(false);
           setLoading(false);
         }
       } catch (err) {
         console.error("[Auth] init error:", err);
-        if (isMounted) {
+        if (isMountedRef.current) {
           setLoading(false);
           setRolesLoading(false);
           setPermissionsLoading(false);
@@ -712,34 +535,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initSession();
 
     return () => {
-      isMounted = false;
+      isMountedRef.current = false;
       subscription.unsubscribe();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // INTENTIONALLY EMPTY - run once only to prevent loops
-
-  // ============ FAIL-SAFE TIMEOUT (4 SECONDS MAX) ============
-  useEffect(() => {
-    if (!rolesLoading && !permissionsLoading) return;
-
-    // CRITICAL: 4s max timeout for fastest cold starts
-    const timeout = setTimeout(() => {
-      console.warn("[Auth] RBAC timeout (4s) - forcing completion");
-      setRolesLoading(false);
-      setPermissionsLoading(false);
-      // Only set error if we don't have any valid permissions
-      if (roles.length === 0 && !lastKnownGoodRef.current) {
-        setRolesError("timeout");
-        setPermissionsError("timeout");
-      }
-    }, RBAC_TOTAL_TIMEOUT_MS);
-
-    return () => clearTimeout(timeout);
-  }, [rolesLoading, permissionsLoading, roles.length]);
-
-  // ============ VISIBILITY CHANGE HANDLER ============
-  // REMOVED: Automatic revalidation on focus/visibility was causing extra requests
-  // Cache TTL of 15 minutes is sufficient; users can manually refresh if needed
+  }, [handleRbac]);
 
   // ============ PUBLIC API ============
   const refreshRoles = useCallback(async () => {

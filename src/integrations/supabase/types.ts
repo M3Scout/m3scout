@@ -2503,6 +2503,7 @@ export type Database = {
         Args: { p_match_id: string }
         Returns: number
       }
+      get_user_rbac: { Args: { p_user_id: string }; Returns: Json }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
