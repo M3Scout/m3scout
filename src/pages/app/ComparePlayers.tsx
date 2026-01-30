@@ -56,13 +56,10 @@ import { ExportComparePdfButton } from "@/components/compare/ExportComparePdfBut
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Input } from "@/components/ui/input";
 import {
-  fetchUnifiedPlayerStats,
-  aggregateUnifiedStats,
-  getAvailableYears,
-  getAvailableCompetitions,
-  type UnifiedStats,
-  type AggregatedUnifiedStats,
-} from "@/hooks/useUnifiedPlayerStats";
+  useComparePlayerStats,
+  type CompareStatRow as CompareSeasonRow,
+  type CompareAggregatedStats,
+} from "@/hooks/useComparePlayerStats";
 import type { PlayerStatRow } from "@/lib/attributeRadar";
 
 interface Player {
@@ -80,9 +77,9 @@ interface Player {
 }
 
 interface PlayerWithStats extends Player {
-  stats: UnifiedStats[];
-  filteredStats: UnifiedStats[];
-  aggregatedStats: AggregatedUnifiedStats | null;
+  rows: CompareSeasonRow[];
+  filteredRows: CompareSeasonRow[];
+  aggregatedStats: CompareAggregatedStats | null;
 }
 
 const currentYear = new Date().getFullYear();
@@ -92,9 +89,8 @@ const ComparePlayers = () => {
   const debugMode = searchParams.get("debugCompare") === "1";
   
   const [allPlayers, setAllPlayers] = useState<Player[]>([]);
-  const [selectedPlayers, setSelectedPlayers] = useState<PlayerWithStats[]>([]);
+  const [selectedPlayers, setSelectedPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadingStats, setLoadingStats] = useState(false);
   const [openSelector, setOpenSelector] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<"absolute" | "per90">("absolute");
   
@@ -108,6 +104,33 @@ const ComparePlayers = () => {
       console.log(`[Compare Debug] ${label}:`, data);
     }
   }, [debugMode]);
+
+  // === SINGLE SOURCE OF TRUTH (same as Profile) ===
+  // We intentionally do NOT query unified_player_season_stats here.
+  // Compare consumes the same live aggregation + same merge rule used by the profile UI.
+  const slot0 = useComparePlayerStats({
+    playerId: selectedPlayers[0]?.id ?? null,
+    seasonFilter,
+    competitionFilter,
+  });
+  const slot1 = useComparePlayerStats({
+    playerId: selectedPlayers[1]?.id ?? null,
+    seasonFilter,
+    competitionFilter,
+  });
+  const slot2 = useComparePlayerStats({
+    playerId: selectedPlayers[2]?.id ?? null,
+    seasonFilter,
+    competitionFilter,
+  });
+  const slot3 = useComparePlayerStats({
+    playerId: selectedPlayers[3]?.id ?? null,
+    seasonFilter,
+    competitionFilter,
+  });
+
+  const slotStats = [slot0, slot1, slot2, slot3];
+  const loadingStats = slotStats.some((s) => s.isLoading);
 
   useEffect(() => {
     fetchPlayers();
@@ -126,20 +149,30 @@ const ComparePlayers = () => {
     setLoading(false);
   };
 
-  // Compute available years/competitions from all selected players
+  // Compute available years/competitions from merged rows (same universe as Profile)
   const availableYears = useMemo(() => {
-    const allStats = selectedPlayers.flatMap(p => p.stats);
-    return getAvailableYears(allStats);
-  }, [selectedPlayers]);
+    const years = new Set<number>();
+    for (const s of slotStats) {
+      for (const r of s.rows) years.add(r.season_year);
+    }
+    return Array.from(years).sort((a, b) => b - a);
+  }, [slot0.rows, slot1.rows, slot2.rows, slot3.rows]);
 
   const availableCompetitions = useMemo(() => {
-    const allStats = selectedPlayers.flatMap(p => p.stats);
-    // Filter by season if set
-    const filtered = seasonFilter !== "all" 
-      ? allStats.filter(s => s.season_year === parseInt(seasonFilter))
-      : allStats;
-    return getAvailableCompetitions(filtered);
-  }, [selectedPlayers, seasonFilter]);
+    const map = new Map<string, string>();
+    const rows = slotStats.flatMap((s) => s.rows);
+    const seasonFiltered = seasonFilter !== "all"
+      ? rows.filter((r) => r.season_year === Number(seasonFilter))
+      : rows;
+
+    for (const r of seasonFiltered) {
+      if (r.competition_id && r.competition_name) {
+        map.set(r.competition_id, r.competition_name);
+      }
+    }
+
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [slot0.rows, slot1.rows, slot2.rows, slot3.rows, seasonFilter]);
 
   // No auto-select of season - respect user's "all" choice for career view
   // Users can manually change to specific seasons if needed
@@ -149,46 +182,35 @@ const ComparePlayers = () => {
     setCompetitionFilter("all");
   }, [seasonFilter]);
 
-  // Apply filters to player stats
-  const filteredPlayers = useMemo(() => {
-    return selectedPlayers.map(player => {
-      let filteredStats = player.stats;
+  const playersWithStats = useMemo((): PlayerWithStats[] => {
+    return selectedPlayers.map((player, idx) => {
+      const s = slotStats[idx];
 
-      // Filter by season
-      if (seasonFilter !== "all") {
-        filteredStats = filteredStats.filter(s => s.season_year === parseInt(seasonFilter));
+      if (debugMode) {
+        debugLog(`Player ${player.full_name} rows`, {
+          seasonFilter,
+          competitionFilter,
+          rowsCount: s.rows.length,
+          filteredRowsCount: s.filteredRows.length,
+          sources: s.filteredRows.map((r) => ({
+            season: r.season_year,
+            competition: r.competition_name,
+            source: r.source,
+            matches: r.matches,
+            minutes: r.minutes,
+          })),
+          aggregated: s.aggregatedStats,
+        });
       }
-
-      // Filter by competition
-      if (competitionFilter !== "all") {
-        filteredStats = filteredStats.filter(s => s.competition_id === competitionFilter);
-      }
-
-      // Re-aggregate with filtered stats
-      const aggregatedStats = aggregateUnifiedStats(filteredStats);
-
-      debugLog(`Player ${player.full_name} filtered stats`, {
-        seasonFilter,
-        competitionFilter,
-        originalCount: player.stats.length,
-        filteredCount: filteredStats.length,
-        sources: filteredStats.map(s => ({ 
-          competition: s.competition_name, 
-          season: s.season_year,
-          source: s.data_source,
-          matches: s.matches,
-          minutes: s.minutes
-        })),
-        aggregated: aggregatedStats
-      });
 
       return {
         ...player,
-        filteredStats,
-        aggregatedStats,
+        rows: s.rows,
+        filteredRows: s.filteredRows,
+        aggregatedStats: s.aggregatedStats,
       };
     });
-  }, [selectedPlayers, seasonFilter, competitionFilter, debugLog]);
+  }, [selectedPlayers, slot0, slot1, slot2, slot3, seasonFilter, competitionFilter, debugMode, debugLog]);
 
   const handleSelectPlayer = async (player: Player, slotIndex: number) => {
     if (selectedPlayers.find((p) => p.id === player.id)) {
@@ -196,48 +218,13 @@ const ComparePlayers = () => {
       return;
     }
 
-    setLoadingStats(true);
-    
-    // Fetch unified stats (LIVE priority over MANUAL, never combined)
-    const stats = await fetchUnifiedPlayerStats(player.id);
-    
-    debugLog(`Fetched stats for ${player.full_name}`, {
-      totalRows: stats.length,
-      bySource: stats.reduce((acc, s) => {
-        acc[s.data_source] = (acc[s.data_source] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>),
-      details: stats.map(s => ({
-        competition: s.competition_name,
-        season: s.season_year,
-        source: s.data_source,
-        matches: s.matches,
-        minutes: s.minutes,
-        goals: s.goals,
-        assists: s.assists,
-        passes: `${s.accurate_passes}/${s.total_passes}`,
-        shots: s.shots
-      }))
-    });
-    
-    // Initial aggregation (will be re-filtered by useMemo)
-    const aggregatedStats = aggregateUnifiedStats(stats);
-
-    const playerWithStats: PlayerWithStats = {
-      ...player,
-      stats,
-      filteredStats: stats,
-      aggregatedStats,
-    };
-
     const newSelected = [...selectedPlayers];
     if (slotIndex < newSelected.length) {
-      newSelected[slotIndex] = playerWithStats;
+      newSelected[slotIndex] = player;
     } else {
-      newSelected.push(playerWithStats);
+      newSelected.push(player);
     }
     setSelectedPlayers(newSelected);
-    setLoadingStats(false);
     setOpenSelector(null);
   };
 
@@ -260,7 +247,7 @@ const ComparePlayers = () => {
     getValue: (p: PlayerWithStats) => number | string | null,
     getPer90Value?: (p: PlayerWithStats) => number | null
   ) => {
-    return filteredPlayers.map((p) => ({
+    return playersWithStats.map((p) => ({
       playerId: p.id,
       playerName: p.full_name,
       position: p.position,
@@ -268,6 +255,42 @@ const ComparePlayers = () => {
       per90: getPer90Value ? getPer90Value(p) : undefined,
     }));
   };
+
+  const toRadarRow = (r: CompareSeasonRow): PlayerStatRow => ({
+    season_year: r.season_year,
+    competition_id: r.competition_id,
+    matches: r.matches,
+    minutes: r.minutes,
+    goals: r.goals,
+    assists: r.assists,
+    shots: r.shots,
+    shots_on_target: r.shots_on_target,
+    key_passes: r.key_passes,
+    chances_created: r.chances_created,
+    tackles: r.tackles,
+    interceptions: r.interceptions,
+    recoveries: r.recoveries,
+    duels_won: r.duels_won,
+    total_duels: r.total_duels,
+    yellow_cards: r.yellow_cards,
+    red_cards: r.red_cards,
+    accurate_passes: r.accurate_passes,
+    total_passes: r.total_passes,
+    successful_dribbles: r.successful_dribbles,
+    total_dribbles: r.total_dribbles,
+    clearances: r.clearances,
+    aerial_duels_won: r.aerial_duels_won,
+    aerial_duels_total: r.aerial_duels_total,
+    ground_duels_won: r.ground_duels_won,
+    ground_duels_total: r.ground_duels_total,
+    saves: r.saves,
+    goals_conceded: r.goals_conceded,
+    clean_sheets: r.clean_sheets,
+    penalties_saved: r.penalties_saved,
+    errors_leading_to_goal: r.errors_leading_to_goal,
+    fouls_committed: r.fouls_committed,
+    fouls_drawn: r.fouls_drawn,
+  });
 
   if (loading) {
     return (
@@ -604,82 +627,22 @@ const ComparePlayers = () => {
                 <Info className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Melhor valor destacado automaticamente</span>
               </div>
-              <ExportComparePdfButton 
-                players={filteredPlayers.map((p) => ({
-                  ...p,
-                  statsRows: p.filteredStats.map((s) => ({
-                    matches: s.matches,
-                    minutes: s.minutes,
-                    goals: s.goals,
-                    assists: s.assists,
-                    shots: s.shots ?? 0,
-                    shots_on_target: s.shots_on_target ?? 0,
-                    key_passes: s.key_passes ?? 0,
-                    chances_created: s.chances_created ?? 0,
-                    tackles: s.tackles,
-                    interceptions: s.interceptions,
-                    recoveries: s.recoveries,
-                    duels_won: s.duels_won ?? 0,
-                    total_duels: s.total_duels ?? 0,
-                    yellow_cards: s.yellow_cards,
-                    red_cards: s.red_cards,
-                    accurate_passes: s.accurate_passes ?? 0,
-                    total_passes: s.total_passes ?? 0,
-                    successful_dribbles: s.successful_dribbles ?? 0,
-                    total_dribbles: s.total_dribbles ?? 0,
-                    clearances: 0, // Not in unified view, use recoveries
-                    aerial_duels_won: s.aerial_duels_won ?? 0,
-                    aerial_duels_total: s.aerial_duels_total ?? 0,
-                    ground_duels_won: s.ground_duels_won ?? 0,
-                    ground_duels_total: s.ground_duels_total ?? 0,
-                    saves: s.saves ?? 0,
-                    goals_conceded: s.goals_conceded ?? 0,
-                    clean_sheets: s.clean_sheets ?? 0,
-                    penalties_saved: s.penalties_saved ?? 0,
-                    errors_leading_to_goal: s.errors_leading_to_goal ?? 0,
-                  })),
-                }))}
-              />
+               <ExportComparePdfButton
+                 players={playersWithStats.map((p) => ({
+                   ...p,
+                   statsRows: p.filteredRows.map(toRadarRow),
+                 }))}
+               />
             </div>
           </div>
 
           {/* Radar Comparison */}
           <ComparisonRadarOverlay
-            players={filteredPlayers.map((p) => ({
+            players={playersWithStats.map((p) => ({
               id: p.id,
               name: p.full_name,
               position: p.position,
-              statsRows: p.filteredStats.map((s) => ({
-                matches: s.matches,
-                minutes: s.minutes,
-                goals: s.goals,
-                assists: s.assists,
-                shots: s.shots ?? 0,
-                shots_on_target: s.shots_on_target ?? 0,
-                key_passes: s.key_passes ?? 0,
-                chances_created: s.chances_created ?? 0,
-                tackles: s.tackles,
-                interceptions: s.interceptions,
-                recoveries: s.recoveries,
-                duels_won: s.duels_won ?? 0,
-                total_duels: s.total_duels ?? 0,
-                yellow_cards: s.yellow_cards,
-                red_cards: s.red_cards,
-                accurate_passes: s.accurate_passes ?? 0,
-                total_passes: s.total_passes ?? 0,
-                successful_dribbles: s.successful_dribbles ?? 0,
-                total_dribbles: s.total_dribbles ?? 0,
-                clearances: 0, // Not in unified view, use recoveries
-                aerial_duels_won: s.aerial_duels_won ?? 0,
-                aerial_duels_total: s.aerial_duels_total ?? 0,
-                ground_duels_won: s.ground_duels_won ?? 0,
-                ground_duels_total: s.ground_duels_total ?? 0,
-                saves: s.saves ?? 0,
-                goals_conceded: s.goals_conceded ?? 0,
-                clean_sheets: s.clean_sheets ?? 0,
-                penalties_saved: s.penalties_saved ?? 0,
-                errors_leading_to_goal: s.errors_leading_to_goal ?? 0,
-              })),
+              statsRows: p.filteredRows.map(toRadarRow),
             }))}
             loading={loadingStats}
           />
