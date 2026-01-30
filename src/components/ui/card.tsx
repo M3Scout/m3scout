@@ -6,9 +6,13 @@ const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElemen
   <div 
     ref={ref} 
     className={cn(
-      "rounded-xl bg-card text-card-foreground",
-      // Premium separation via shadow and background only - no visible border
-      "shadow-[0_4px_24px_-6px_hsl(222_50%_3%/0.5),0_2px_8px_-2px_hsl(222_50%_3%/0.25)]",
+      "rounded-xl text-card-foreground",
+      // Premium charcoal gradient background - NO blue tint
+      "bg-gradient-to-b from-zinc-900/95 via-zinc-900/90 to-zinc-950/95",
+      // Subtle neutral border
+      "border border-zinc-800/40",
+      // Deep shadow for elevation
+      "shadow-[0_4px_24px_-6px_hsl(0_0%_0%/0.5),0_2px_8px_-2px_hsl(0_0%_0%/0.25)]",
       className
     )} 
     {...props} 
