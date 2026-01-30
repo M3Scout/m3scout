@@ -1,7 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { 
   ChevronDown, 
@@ -11,10 +10,11 @@ import {
   BarChart3,
   AlertCircle 
 } from "lucide-react";
-import { cn, safeArray } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 import { AttributePentagonRadar, type PlayerStatRow } from "@/components/players/AttributePentagonRadar";
 import { computeRadarAttributes, type ConfidenceLevel } from "@/lib/attributeRadar";
+import { useAttributeUnifiedStats } from "@/hooks/useAttributeUnifiedStats";
+import { useState } from "react";
 
 interface PlayerAttributeRadarSectionProps {
   playerId: string;
@@ -127,40 +127,15 @@ export function PlayerAttributeRadarSection({
   seasonFilter,
   competitionFilter,
 }: PlayerAttributeRadarSectionProps) {
-  const [stats, setStats] = useState<PlayerStatRow[]>([]);
-  const [loading, setLoading] = useState(true);
   const [detailsOpen, setDetailsOpen] = useState(false);
 
-  useEffect(() => {
-    fetchStats();
-  }, [playerId, seasonFilter, competitionFilter]);
-
-  const fetchStats = async () => {
-    setLoading(true);
-    try {
-      let query = supabase
-        .from("player_stats")
-        .select("*")
-        .eq("player_id", playerId);
-
-      if (seasonFilter) {
-        query = query.eq("season_year", seasonFilter);
-      }
-      if (competitionFilter) {
-        query = query.eq("competition_id", competitionFilter);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      setStats((data || []) as PlayerStatRow[]);
-    } catch (error) {
-      console.error("Error fetching player stats:", error);
-      setStats([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Use the NEW unified stats hook that aggregates Live + Manual
+  const { stats, isLoading: loading, debugInfo } = useAttributeUnifiedStats({
+    playerId,
+    seasonYear: seasonFilter,
+    competitionId: competitionFilter,
+    enabled: !!playerId,
+  });
 
   // Compute radar result
   const radarResult = useMemo(() => {
