@@ -1094,6 +1094,7 @@ export type Database = {
       }
       player_contract_history: {
         Row: {
+          archived_at: string | null
           club_country: string | null
           club_name: string
           contract_type: string
@@ -1101,14 +1102,18 @@ export type Database = {
           created_by: string | null
           end_date: string | null
           id: string
+          is_archived: boolean | null
+          is_current: boolean | null
           notes: string | null
           player_id: string
           salary_info: string | null
+          sort_order: number | null
           start_date: string
           transfer_fee: string | null
           updated_at: string
         }
         Insert: {
+          archived_at?: string | null
           club_country?: string | null
           club_name: string
           contract_type?: string
@@ -1116,14 +1121,18 @@ export type Database = {
           created_by?: string | null
           end_date?: string | null
           id?: string
+          is_archived?: boolean | null
+          is_current?: boolean | null
           notes?: string | null
           player_id: string
           salary_info?: string | null
+          sort_order?: number | null
           start_date: string
           transfer_fee?: string | null
           updated_at?: string
         }
         Update: {
+          archived_at?: string | null
           club_country?: string | null
           club_name?: string
           contract_type?: string
@@ -1131,9 +1140,12 @@ export type Database = {
           created_by?: string | null
           end_date?: string | null
           id?: string
+          is_archived?: boolean | null
+          is_current?: boolean | null
           notes?: string | null
           player_id?: string
           salary_info?: string | null
+          sort_order?: number | null
           start_date?: string
           transfer_fee?: string | null
           updated_at?: string
