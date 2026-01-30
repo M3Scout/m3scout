@@ -24,6 +24,7 @@ export default defineConfig(({ mode }) => ({
       manifest: false, // Use manual manifest.webmanifest
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff,woff2}"],
+        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10 MB limit for large bundles
         runtimeCaching: [
           {
             // Cache Google Fonts
