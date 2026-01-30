@@ -497,10 +497,10 @@ export function AppSidebar() {
         )}
       >
         {/* ===== STICKY HEADER ===== */}
-        <div className="shrink-0 border-b border-white/[0.04] flex flex-col">
-          {/* SidebarHeader - Logo only with fixed height */}
+        <div className="shrink-0 border-b border-white/[0.04] flex flex-col overflow-hidden">
+          {/* SidebarHeader - Logo with fixed height */}
           <div className={cn(
-            "h-16 flex items-center overflow-hidden transition-all duration-200",
+            "h-16 flex items-center transition-all duration-200",
             showCollapsed ? "justify-center px-2" : "justify-between px-4"
           )}>
             <Link 
@@ -519,24 +519,28 @@ export function AppSidebar() {
                 )}
               />
             </Link>
-            {/* Toggle button only when expanded */}
-            {!isTablet && !isCollapsed && (
-              <button
-                onClick={toggleCollapsed}
-                className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-600 hover:text-zinc-300 hover:bg-white/5 transition-all duration-150"
-              >
-                <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
-              </button>
+            {/* Notification bell + toggle on same line when EXPANDED */}
+            {!showCollapsed && (
+              <div className="flex items-center gap-1">
+                <NotificationBell />
+                {!isTablet && (
+                  <button
+                    onClick={toggleCollapsed}
+                    className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-600 hover:text-zinc-300 hover:bg-white/5 transition-all duration-150"
+                  >
+                    <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
+                  </button>
+                )}
+              </div>
             )}
           </div>
 
-          {/* SidebarTopActions - Notification bell in separate row */}
-          <div className={cn(
-            "flex mt-1 mb-2 transition-all duration-200",
-            showCollapsed ? "justify-center px-2" : "justify-start px-4"
-          )}>
-            <NotificationBell />
-          </div>
+          {/* Notification bell in separate row ONLY when COLLAPSED */}
+          {showCollapsed && (
+            <div className="flex justify-center mt-2 mb-2">
+              <NotificationBell />
+            </div>
+          )}
 
           {/* Search when expanded */}
           {!showCollapsed && (
