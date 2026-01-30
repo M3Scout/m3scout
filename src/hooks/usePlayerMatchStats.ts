@@ -14,6 +14,12 @@ import { calculateMinutesPlayed, STANDARD_MATCH_DURATION } from "@/lib/minutesPl
 import { calculateDerivedBallActions } from "@/lib/derivedBallActions";
 import { fetchPlayerMatchStatsRaw } from "@/lib/playerMatchStatsProvider";
 
+interface PresenceRow {
+  match_id: string;
+  entered_at_seconds: number;
+  exited_at_seconds: number | null;
+}
+
 export interface MatchDerivedStats {
   // Match participation
   matches: number;
@@ -201,6 +207,27 @@ function getRegMinutesPlayed(
 }
 
 /**
+ * Minutes for the athlete profile MUST come from player_field_presence when available.
+ * We floor seconds->minutes to avoid inflating minutes with partial segments.
+ */
+function computePresenceMinutesByMatch(rows: PresenceRow[]): Record<string, number> {
+  const secondsByMatch: Record<string, number> = {};
+  for (const r of rows) {
+    const start = r.entered_at_seconds ?? 0;
+    const end = r.exited_at_seconds;
+    if (typeof end !== "number") continue;
+    const delta = Math.max(0, end - start);
+    secondsByMatch[r.match_id] = (secondsByMatch[r.match_id] ?? 0) + delta;
+  }
+
+  const minutesByMatch: Record<string, number> = {};
+  for (const [matchId, seconds] of Object.entries(secondsByMatch)) {
+    minutesByMatch[matchId] = Math.min(Math.floor(seconds / 60), STANDARD_MATCH_DURATION);
+  }
+  return minutesByMatch;
+}
+
+/**
  * Hook to fetch and aggregate player statistics from match_player_stats
  * This is the SINGLE SOURCE OF TRUTH for match-derived statistics
  */
@@ -219,6 +246,26 @@ export function usePlayerMatchStats({
         seasonYear,
         competitionId,
       });
+
+      const typedMatchPlayers = (matchPlayers as unknown as MatchPlayerWithMatch[]) ?? [];
+      const matchIds = Array.from(new Set(typedMatchPlayers.filter((mp) => mp.match).map((mp) => mp.match_id)));
+
+      // Fetch player_field_presence minutes (authoritative minutes for profile)
+      let presenceMinutesByMatch: Record<string, number> = {};
+      if (matchIds.length > 0) {
+        const { data: presenceRows, error: presenceError } = await supabase
+          .from("player_field_presence")
+          .select("match_id, entered_at_seconds, exited_at_seconds")
+          .eq("player_id", playerId)
+          .in("match_id", matchIds);
+
+        if (presenceError) {
+          // Non-fatal: fallback to regulatory minutes from started/entered/exited
+          console.warn("[usePlayerMatchStats] presence fetch failed", presenceError);
+        } else {
+          presenceMinutesByMatch = computePresenceMinutesByMatch((presenceRows || []) as unknown as PresenceRow[]);
+        }
+      }
 
       // Create a map of match_id -> aggregated stats (defensive against duplicate rows)
       const statsMap: Record<string, MatchPlayerStats> = {};
@@ -244,8 +291,9 @@ export function usePlayerMatchStats({
       });
 
       return {
-        matchPlayers: matchPlayers as unknown as MatchPlayerWithMatch[],
+        matchPlayers: typedMatchPlayers,
         matchStats: statsMap,
+        presenceMinutesByMatch,
       };
     },
     enabled: enabled && !!playerId,
@@ -274,18 +322,22 @@ export function usePlayerMatchStats({
       const stats = matchesData?.matchStats[matchId];
       const competition = mp.match.competition;
 
+      const presenceMinutes = matchesData?.presenceMinutesByMatch?.[matchId];
+
       // Sum minutes across duplicated rows, cap at 90
-      const minutesPlayed = Math.min(
-        entries.reduce((sum, e) => {
-          const m = getRegMinutesPlayed(
-            e,
-            e.match.added_time_first_half ?? 0,
-            e.match.added_time_second_half ?? 0
+      const minutesPlayed = typeof presenceMinutes === "number"
+        ? presenceMinutes
+        : Math.min(
+            entries.reduce((sum, e) => {
+              const m = getRegMinutesPlayed(
+                e,
+                e.match.added_time_first_half ?? 0,
+                e.match.added_time_second_half ?? 0
+              );
+              return sum + m;
+            }, 0),
+            STANDARD_MATCH_DURATION
           );
-          return sum + m;
-        }, 0),
-        STANDARD_MATCH_DURATION
-      );
 
       // Skip zero-minute participations (games = DISTINCT match_id where minutes > 0)
       if (minutesPlayed <= 0) continue;
@@ -376,6 +428,36 @@ export function usePlayerMatchStats({
 
     return uniqueMatches.sort((a, b) => new Date(b.match_date).getTime() - new Date(a.match_date).getTime());
   })();
+
+  // DEV-only breakdown for debugging profile aggregation
+  if (import.meta.env.DEV) {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has("debugStats")) {
+      console.log("[ProfileStatsBreakdown] matches", {
+        playerId,
+        seasonYear,
+        competitionId,
+        matches: matchesWithStats.map((m) => ({
+          match_id: m.match_id,
+          minutes_played: m.minutes_played,
+          competition_id: m.competition_id,
+          season_year: m.season_year,
+        })),
+        totals: {
+          matches: matchesWithStats.length,
+          minutes: matchesWithStats.reduce((s, m) => s + m.minutes_played, 0),
+        },
+        presenceMinutesByMatch: matchesData?.presenceMinutesByMatch,
+        rawMatchPlayers: (matchesData?.matchPlayers || []).map((mp) => ({
+          match_id: mp.match_id,
+          started: mp.started,
+          entered_minute: mp.entered_minute,
+          exited_minute: mp.exited_minute,
+          minutes_played: mp.minutes_played,
+        })),
+      });
+    }
+  }
 
   // Aggregate stats across all matches
   const aggregatedStats: MatchDerivedStats = matchesWithStats.reduce(
@@ -662,7 +744,23 @@ export function usePlayerMatchStatsBySeasonCompetition({
         .map(mp => mp.match_id);
 
       if (matchIds.length === 0) {
-        return { matchPlayers: [], matchStats: {} };
+        return { matchPlayers: [], matchStats: {}, presenceMinutesByMatch: {} };
+      }
+
+      // Fetch player_field_presence minutes (authoritative minutes for profile)
+      let presenceMinutesByMatch: Record<string, number> = {};
+      {
+        const { data: presenceRows, error: presenceError } = await supabase
+          .from("player_field_presence")
+          .select("match_id, entered_at_seconds, exited_at_seconds")
+          .eq("player_id", playerId)
+          .in("match_id", matchIds);
+
+        if (presenceError) {
+          console.warn("[usePlayerMatchStatsBySeasonCompetition] presence fetch failed", presenceError);
+        } else {
+          presenceMinutesByMatch = computePresenceMinutesByMatch((presenceRows || []) as unknown as PresenceRow[]);
+        }
       }
 
       // Get all match_player_stats for these matches
@@ -682,7 +780,8 @@ export function usePlayerMatchStatsBySeasonCompetition({
 
       return { 
         matchPlayers: typedPlayers, 
-        matchStats: statsMap 
+        matchStats: statsMap,
+        presenceMinutesByMatch,
       };
     },
     enabled: enabled && !!playerId,
@@ -693,11 +792,19 @@ export function usePlayerMatchStatsBySeasonCompetition({
   const statsBySeasonCompetition: Record<string, SeasonCompetitionStats> = {};
   const seasonYears = new Set<number>();
 
-  (matchesData?.matchPlayers || [])
-    .filter((mp): mp is MatchPlayerWithMatch & { match: NonNullable<MatchPlayerWithMatch["match"]> } => 
-      mp.match !== null
-    )
-    .forEach((mp) => {
+  const uniqueMatchPlayers = (() => {
+    const out: (MatchPlayerWithMatch & { match: NonNullable<MatchPlayerWithMatch["match"]> })[] = [];
+    const seen = new Set<string>();
+    for (const mp of (matchesData?.matchPlayers || []) as MatchPlayerWithMatch[]) {
+      if (!mp.match) continue;
+      if (seen.has(mp.match_id)) continue;
+      seen.add(mp.match_id);
+      out.push(mp as any);
+    }
+    return out;
+  })();
+
+  uniqueMatchPlayers.forEach((mp) => {
       const stats = matchesData?.matchStats[mp.match_id];
       const season = mp.match.season_year;
       const compId = mp.match.competition_id || "no-competition";
@@ -761,12 +868,16 @@ export function usePlayerMatchStatsBySeasonCompetition({
       const entry = statsBySeasonCompetition[key];
       const s = entry.stats;
 
-      // Use regulatory minutes (capped at 90) - recalculated from entry/exit
-      const minutesPlayed = getRegMinutesPlayed(
-        mp, 
-        mp.match.added_time_first_half ?? 0, 
-        mp.match.added_time_second_half ?? 0
-      );
+      const presenceMinutes = (matchesData as any)?.presenceMinutesByMatch?.[mp.match_id];
+
+      // Minutes priority: player_field_presence > regulatory minutes from entry/exit
+      const minutesPlayed = typeof presenceMinutes === "number"
+        ? presenceMinutes
+        : getRegMinutesPlayed(
+            mp,
+            mp.match.added_time_first_half ?? 0,
+            mp.match.added_time_second_half ?? 0
+          );
 
       s.matches += 1;
       s.minutes += minutesPlayed;

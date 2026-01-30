@@ -182,7 +182,8 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
     setLoading(false);
   };
 
-  // STATS CONSOLIDATION: Live + Manual = Combined
+  // STATS CONSOLIDATION (RULE): Live has absolute priority.
+  // If Live exists for (season_year, competition_id), manual MUST NOT be summed or shown as "Combinado".
   const stats = useMemo(() => {
     type ExtendedStats = StatsWithCompetition & { 
       _isLiveData?: boolean;
@@ -261,124 +262,45 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
     // Get all unique keys
     const allKeys = new Set([...liveByKey.keys(), ...manualByKey.keys()]);
 
-    // Merge stats: COMBINE live + manual for display
-    const combinedStats: ExtendedStats[] = [];
-    
-    allKeys.forEach(key => {
+    // Merge with PRIORITY: live > manual (no summing across sources)
+    const merged: ExtendedStats[] = [];
+
+    allKeys.forEach((key) => {
       const live = liveByKey.get(key);
       const manual = manualByKey.get(key);
 
-      if (live && manual) {
-        // ==============================================
-        // DUPLICATION DETECTION (Phase 5 - Assert)
-        // ==============================================
-        // If manual values are EXACTLY equal to live values for core metrics,
-        // this likely indicates the manual was seeded incorrectly from live data
-        const coreMetricsMatch = 
-          manual.matches === live.matches &&
-          manual.goals === live.goals &&
-          manual.assists === live.assists &&
-          (manual.accurate_passes || 0) === (live.accurate_passes || 0) &&
-          (manual.successful_dribbles || 0) === (live.successful_dribbles || 0);
-        
-        if (coreMetricsMatch && (manual.matches ?? 0) > 0) {
-          console.error('[STATS DUPLICATION DETECTED]', {
-            playerId,
-            seasonYear: live.season_year,
-            competitionId: live.competition_id,
-            liveStats: {
-              matches: live.matches,
-              goals: live.goals,
-              assists: live.assists,
-              passes: live.accurate_passes,
-              dribbles: live.successful_dribbles,
-            },
-            manualStats: {
-              id: manual.id,
-              matches: manual.matches,
-              goals: manual.goals,
-              assists: manual.assists,
-              passes: manual.accurate_passes,
-              dribbles: manual.successful_dribbles,
-            },
-            message: 'Manual stats match live stats exactly - possible seeding bug. Manual should be user-entered only.',
-          });
-        }
-        
-        // BOTH exist: Create combined entry that SUMS the values
-        const combined: ExtendedStats = {
-          id: `combined_${live.id}_${manual.id}`,
-          player_id: playerId,
-          season_year: live.season_year,
-          competition_id: live.competition_id,
-          // Sum all numeric stats
-          matches: (live.matches || 0) + (manual.matches || 0),
-          minutes: (live.minutes || 0) + (manual.minutes || 0),
-          goals: (live.goals || 0) + (manual.goals || 0),
-          assists: (live.assists || 0) + (manual.assists || 0),
-          yellow_cards: (live.yellow_cards || 0) + (manual.yellow_cards || 0),
-          red_cards: (live.red_cards || 0) + (manual.red_cards || 0),
-          tackles: (live.tackles || 0) + (manual.tackles || 0),
-          interceptions: (live.interceptions || 0) + (manual.interceptions || 0),
-          recoveries: (live.recoveries || 0) + (manual.recoveries || 0),
-          clearances: (live.clearances || 0) + (manual.clearances || 0),
-          saves: (live.saves || 0) + (manual.saves || 0),
-          saves_inside_box: (live.saves_inside_box || 0) + (manual.saves_inside_box || 0),
-          goals_conceded: (live.goals_conceded || 0) + (manual.goals_conceded || 0),
-          clean_sheets: (live.clean_sheets || 0) + (manual.clean_sheets || 0),
-          penalties_saved: (live.penalties_saved || 0) + (manual.penalties_saved || 0),
-          errors_leading_to_goal: (live.errors_leading_to_goal || 0) + (manual.errors_leading_to_goal || 0),
-          punches: (live.punches || 0) + (manual.punches || 0),
-          successful_runs_out: (live.successful_runs_out || 0) + (manual.successful_runs_out || 0),
-          total_runs_out: (live.total_runs_out || 0) + (manual.total_runs_out || 0),
-          high_claims: (live.high_claims || 0) + (manual.high_claims || 0),
-          accurate_passes: (live.accurate_passes || 0) + (manual.accurate_passes || 0),
-          total_passes: (live.total_passes || 0) + (manual.total_passes || 0),
-          key_passes: (live.key_passes || 0) + (manual.key_passes || 0),
-          chances_created: (live.chances_created || 0) + (manual.chances_created || 0),
-          long_passes_accurate: (live.long_passes_accurate || 0) + (manual.long_passes_accurate || 0),
-          long_passes_total: (live.long_passes_total || 0) + (manual.long_passes_total || 0),
-          crosses_success: (live.crosses_success || 0) + (manual.crosses_success || 0),
-          crosses_failed: (live.crosses_failed || 0) + (manual.crosses_failed || 0),
-          shots: (live.shots || 0) + (manual.shots || 0),
-          shots_on_target: (live.shots_on_target || 0) + (manual.shots_on_target || 0),
-          shots_blocked: (live.shots_blocked || 0) + (manual.shots_blocked || 0),
-          offsides: (live.offsides || 0) + (manual.offsides || 0),
-          duels_won: (live.duels_won || 0) + (manual.duels_won || 0),
-          total_duels: (live.total_duels || 0) + (manual.total_duels || 0),
-          aerial_duels_won: (live.aerial_duels_won || 0) + (manual.aerial_duels_won || 0),
-          aerial_duels_total: (live.aerial_duels_total || 0) + (manual.aerial_duels_total || 0),
-          ground_duels_won: (live.ground_duels_won || 0) + (manual.ground_duels_won || 0),
-          ground_duels_total: (live.ground_duels_total || 0) + (manual.ground_duels_total || 0),
-          ball_actions: (live.ball_actions || 0) + (manual.ball_actions || 0),
-          successful_dribbles: (live.successful_dribbles || 0) + (manual.successful_dribbles || 0),
-          total_dribbles: (live.total_dribbles || 0) + (manual.total_dribbles || 0),
-          possession_lost: (live.possession_lost || 0) + (manual.possession_lost || 0),
-          fouls_drawn: (live.fouls_drawn || 0) + (manual.fouls_drawn || 0),
-          fouls_committed: (live.fouls_committed || 0) + (manual.fouls_committed || 0),
-          times_dribbled_past: (live.times_dribbled_past || 0) + (manual.times_dribbled_past || 0),
-          blocked_shots: (live.blocked_shots || 0) + (manual.blocked_shots || 0),
-          was_dribbled: (live.was_dribbled || 0) + (manual.was_dribbled || 0),
-          created_at: live.created_at,
-          updated_at: new Date().toISOString(),
-          competitions: live.competitions || manual.competitions,
-          // Track origin
-          _isCombined: true,
-          _liveStats: live,
-          _manualStats: manual,
-        };
-        combinedStats.push(combined);
-      } else if (live) {
-        // Only live exists
-        combinedStats.push(live);
-      } else if (manual) {
-        // Only manual exists
-        combinedStats.push(manual);
+      if (live) {
+        merged.push(live);
+        return;
+      }
+
+      if (manual) {
+        merged.push(manual);
       }
     });
 
+    // DEV-only breakdown for the unified list
+    if (import.meta.env.DEV && typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('debugStats')) {
+        console.log('[PlayerStatsSectionBreakdown]', {
+          playerId,
+          liveKeys: Array.from(liveByKey.keys()),
+          manualKeys: Array.from(manualByKey.keys()),
+          merged: merged.map((s) => ({
+            id: s.id,
+            season_year: s.season_year,
+            competition_id: s.competition_id,
+            matches: s.matches,
+            minutes: s.minutes,
+            source: s._isLiveData ? 'live' : 'manual',
+          })),
+        });
+      }
+    }
+
     // Sort by season (descending) then competition name
-    return combinedStats.sort((a, b) => {
+    return merged.sort((a, b) => {
       if (b.season_year !== a.season_year) return b.season_year - a.season_year;
       return (a.competitions?.name || "").localeCompare(b.competitions?.name || "");
     });
