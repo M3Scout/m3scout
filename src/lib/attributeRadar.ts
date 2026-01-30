@@ -272,7 +272,7 @@ function ratio(numerator: number, denominator: number, fallback = 0): number {
  * Determine confidence level based on total minutes.
  */
 function getConfidenceLevel(minutes: number): ConfidenceLevel {
-  if (minutes < 90) return "none";    // Reduced threshold for Compare page
+  if (minutes < 100) return "none";   // ~1 match minimum
   if (minutes < 270) return "low";    // 3 matches worth
   if (minutes < 540) return "medium"; // 6 matches worth
   return "high";
