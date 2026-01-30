@@ -174,16 +174,17 @@ export function useComparePlayerStats(params: {
         minutes: safeInt(row.minutes),
         goals: safeInt(row.goals),
         assists: safeInt(row.assists),
-        // SHOTS: unified view should provide total shots (shots + shots_on_target + shots_blocked)
-        // If the view only provides "shots" as one field, we use it as-is
+        // SHOTS: unified view provides total shots (shots + shots_on_target + shots_blocked)
         shots: safeInt(row.shots),
         shots_on_target: safeInt(row.shots_on_target),
         key_passes: safeInt(row.key_passes),
         chances_created: safeInt(row.chances_created),
-        accurate_passes: safeInt(row.accurate_passes),
-        total_passes: safeInt(row.total_passes),
-        successful_dribbles: safeInt(row.successful_dribbles),
-        total_dribbles: safeInt(row.total_dribbles),
+        // PASSES: use new semantic fields (passes_completed, passes_attempted)
+        accurate_passes: safeInt(row.passes_completed),
+        total_passes: safeInt(row.passes_attempted),
+        // DRIBBLES: use new semantic fields (dribbles_completed, dribbles_attempted)
+        successful_dribbles: safeInt(row.dribbles_completed),
+        total_dribbles: safeInt(row.dribbles_attempted),
         tackles: safeInt(row.tackles),
         interceptions: safeInt(row.interceptions),
         recoveries: safeInt(row.recoveries),

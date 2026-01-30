@@ -2355,6 +2355,8 @@ export type Database = {
           competition_id: string | null
           competition_name: string | null
           data_source: string | null
+          dribbles_attempted: number | null
+          dribbles_completed: number | null
           duels_won: number | null
           errors_leading_to_goal: number | null
           final_coefficient: number | null
@@ -2368,6 +2370,8 @@ export type Database = {
           key_passes: number | null
           matches: number | null
           minutes: number | null
+          passes_attempted: number | null
+          passes_completed: number | null
           penalties_saved: number | null
           player_id: string | null
           recoveries: number | null
