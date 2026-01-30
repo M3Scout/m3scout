@@ -1,23 +1,58 @@
 /**
- * PWA functionality DISABLED
- * Was causing critical performance issues
- * Will be reintroduced from scratch after site is stable
+ * PWA Update Toast Component
+ * Shows a toast when a new version is available
  */
 
 import type { ReactNode } from "react";
+import { useEffect } from "react";
+import { toast } from "sonner";
+import { usePWA } from "@/hooks/usePWA";
+import { RefreshCw, Wifi } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-// Disabled - no-op component
 export function PWAUpdateToast() {
+  const { needRefresh, offlineReady, updateServiceWorker } = usePWA();
+
+  useEffect(() => {
+    if (offlineReady) {
+      toast.success("App pronto para uso offline!", {
+        description: "O M3 Scout agora funciona mesmo sem conexão.",
+        icon: <Wifi className="h-4 w-4" />,
+        duration: 4000,
+      });
+    }
+  }, [offlineReady]);
+
+  useEffect(() => {
+    if (needRefresh) {
+      toast("Nova versão disponível", {
+        description: "Clique para atualizar o app.",
+        icon: <RefreshCw className="h-4 w-4" />,
+        duration: Infinity,
+        action: {
+          label: "Atualizar",
+          onClick: () => {
+            updateServiceWorker();
+          },
+        },
+      });
+    }
+  }, [needRefresh, updateServiceWorker]);
+
   return null;
 }
 
-// Disabled - no-op hook  
+// Simple hook for online status
 export function useOnlineStatus() {
-  // Keep a stable return shape for any future consumers.
-  return { isOnline: true };
+  return { isOnline: typeof navigator !== "undefined" ? navigator.onLine : true };
 }
 
-// Minimal provider that just renders children
+// Provider that wraps children
 export function PWAProvider({ children }: { children: ReactNode }) {
-  return <>{children}</>;
+  return (
+    <>
+      <PWAUpdateToast />
+      {children}
+    </>
+  );
 }
