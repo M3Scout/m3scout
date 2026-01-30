@@ -497,10 +497,10 @@ export function AppSidebar() {
         )}
       >
         {/* ===== STICKY HEADER ===== */}
-        <div className="shrink-0 border-b border-white/[0.04]">
-          {/* Logo Section */}
+        <div className="shrink-0 border-b border-white/[0.04] flex flex-col">
+          {/* SidebarHeader - Logo only with fixed height */}
           <div className={cn(
-            "h-14 flex items-center transition-all duration-200",
+            "h-16 flex items-center overflow-hidden transition-all duration-200",
             showCollapsed ? "justify-center px-2" : "justify-between px-4"
           )}>
             <Link 
@@ -519,27 +519,26 @@ export function AppSidebar() {
                 )}
               />
             </Link>
-            {/* Notification bell and toggle on desktop when expanded */}
+            {/* Toggle button only when expanded */}
             {!isTablet && !isCollapsed && (
-              <div className="flex items-center gap-1">
-                <NotificationBell />
-                <button
-                  onClick={toggleCollapsed}
-                  className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-600 hover:text-zinc-300 hover:bg-white/5 transition-all duration-150"
-                >
-                  <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
-                </button>
-              </div>
-            )}
-            {/* Notification bell on collapsed/tablet */}
-            {showCollapsed && (
-              <div className="absolute top-3.5 right-2">
-                <NotificationBell />
-              </div>
+              <button
+                onClick={toggleCollapsed}
+                className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-600 hover:text-zinc-300 hover:bg-white/5 transition-all duration-150"
+              >
+                <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
+              </button>
             )}
           </div>
 
-          {/* Search + Toggle when expanded */}
+          {/* SidebarTopActions - Notification bell in separate row */}
+          <div className={cn(
+            "flex mt-1 mb-2 transition-all duration-200",
+            showCollapsed ? "justify-center px-2" : "justify-start px-4"
+          )}>
+            <NotificationBell />
+          </div>
+
+          {/* Search when expanded */}
           {!showCollapsed && (
             <div className="px-3 pb-3">
               <SidebarSearch items={allVisibleItems} />
