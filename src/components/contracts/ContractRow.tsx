@@ -28,7 +28,7 @@ export function ContractRow({ contract }: ContractRowProps) {
     .toUpperCase();
 
   return (
-    <TableRow>
+    <TableRow className="border-white/[0.06]">
       {/* Athlete */}
       <TableCell>
         <Link
