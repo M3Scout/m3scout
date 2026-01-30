@@ -53,6 +53,12 @@ import { SimilarPlayerSuggestions } from "@/components/compare/SimilarPlayerSugg
 import { ExportComparePdfButton } from "@/components/compare/ExportComparePdfButton";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Input } from "@/components/ui/input";
+import {
+  fetchUnifiedPlayerStats,
+  aggregateUnifiedStats,
+  type UnifiedStats,
+  type AggregatedUnifiedStats,
+} from "@/hooks/useUnifiedPlayerStats";
 import type { PlayerStatRow } from "@/lib/attributeRadar";
 
 interface Player {
@@ -69,68 +75,9 @@ interface Player {
   dominant_foot: string | null;
 }
 
-interface FullPlayerStats {
-  player_id: string;
-  season_year: number;
-  matches: number;
-  minutes: number;
-  goals: number;
-  assists: number;
-  yellow_cards: number;
-  red_cards: number;
-  tackles: number;
-  interceptions: number;
-  recoveries: number;
-  shots: number;
-  shots_on_target: number;
-  key_passes: number;
-  chances_created: number;
-  duels_won: number;
-  total_duels: number;
-  accurate_passes: number;
-  total_passes: number;
-  successful_dribbles: number;
-  total_dribbles: number;
-  clearances: number;
-  aerial_duels_won: number;
-  aerial_duels_total: number;
-  ground_duels_won: number;
-  ground_duels_total: number;
-  saves: number;
-  goals_conceded: number;
-  clean_sheets: number;
-  penalties_saved: number;
-  errors_leading_to_goal: number;
-}
-
 interface PlayerWithStats extends Player {
-  stats: FullPlayerStats[];
-  aggregatedStats: AggregatedStats | null;
-}
-
-interface AggregatedStats {
-  matches: number;
-  minutes: number;
-  goals: number;
-  assists: number;
-  yellow_cards: number;
-  red_cards: number;
-  tackles: number;
-  interceptions: number;
-  recoveries: number;
-  shots: number;
-  shots_on_target: number;
-  key_passes: number;
-  chances_created: number;
-  duels_won: number;
-  total_duels: number;
-  accurate_passes: number;
-  total_passes: number;
-  successful_dribbles: number;
-  total_dribbles: number;
-  clearances: number;
-  aerial_duels_won: number;
-  aerial_duels_total: number;
+  stats: UnifiedStats[];
+  aggregatedStats: AggregatedUnifiedStats | null;
 }
 
 const currentYear = new Date().getFullYear();
@@ -161,15 +108,6 @@ const ComparePlayers = () => {
     setLoading(false);
   };
 
-  const fetchPlayerStats = async (playerId: string): Promise<FullPlayerStats[]> => {
-    const { data } = await supabase
-      .from("player_stats")
-      .select("*")
-      .eq("player_id", playerId);
-
-    return (data as FullPlayerStats[]) || [];
-  };
-
   const handleSelectPlayer = async (player: Player, slotIndex: number) => {
     if (selectedPlayers.find((p) => p.id === player.id)) {
       setOpenSelector(null);
@@ -177,61 +115,12 @@ const ComparePlayers = () => {
     }
 
     setLoadingStats(true);
-    const stats = await fetchPlayerStats(player.id);
     
-    // Aggregate all stats
-    const aggregatedStats = stats.length > 0
-      ? stats.reduce(
-          (acc, s) => ({
-            matches: acc.matches + s.matches,
-            minutes: acc.minutes + s.minutes,
-            goals: acc.goals + s.goals,
-            assists: acc.assists + s.assists,
-            yellow_cards: acc.yellow_cards + s.yellow_cards,
-            red_cards: acc.red_cards + s.red_cards,
-            tackles: acc.tackles + s.tackles,
-            interceptions: acc.interceptions + s.interceptions,
-            recoveries: acc.recoveries + s.recoveries,
-            shots: acc.shots + (s.shots ?? 0),
-            shots_on_target: acc.shots_on_target + (s.shots_on_target ?? 0),
-            key_passes: acc.key_passes + (s.key_passes ?? 0),
-            chances_created: acc.chances_created + (s.chances_created ?? 0),
-            duels_won: acc.duels_won + (s.duels_won ?? 0),
-            total_duels: acc.total_duels + (s.total_duels ?? 0),
-            accurate_passes: acc.accurate_passes + (s.accurate_passes ?? 0),
-            total_passes: acc.total_passes + (s.total_passes ?? 0),
-            successful_dribbles: acc.successful_dribbles + (s.successful_dribbles ?? 0),
-            total_dribbles: acc.total_dribbles + (s.total_dribbles ?? 0),
-            clearances: acc.clearances + (s.clearances ?? 0),
-            aerial_duels_won: acc.aerial_duels_won + (s.aerial_duels_won ?? 0),
-            aerial_duels_total: acc.aerial_duels_total + (s.aerial_duels_total ?? 0),
-          }),
-          {
-            matches: 0,
-            minutes: 0,
-            goals: 0,
-            assists: 0,
-            yellow_cards: 0,
-            red_cards: 0,
-            tackles: 0,
-            interceptions: 0,
-            recoveries: 0,
-            shots: 0,
-            shots_on_target: 0,
-            key_passes: 0,
-            chances_created: 0,
-            duels_won: 0,
-            total_duels: 0,
-            accurate_passes: 0,
-            total_passes: 0,
-            successful_dribbles: 0,
-            total_dribbles: 0,
-            clearances: 0,
-            aerial_duels_won: 0,
-            aerial_duels_total: 0,
-          }
-        )
-      : null;
+    // Fetch unified stats (LIVE priority over MANUAL, never combined)
+    const stats = await fetchUnifiedPlayerStats(player.id);
+    
+    // Aggregate using the unified aggregator
+    const aggregatedStats = aggregateUnifiedStats(stats);
 
     const playerWithStats: PlayerWithStats = {
       ...player,
@@ -602,7 +491,7 @@ const ComparePlayers = () => {
                     total_passes: s.total_passes ?? 0,
                     successful_dribbles: s.successful_dribbles ?? 0,
                     total_dribbles: s.total_dribbles ?? 0,
-                    clearances: s.clearances ?? 0,
+                    clearances: 0, // Not in unified view, use recoveries
                     aerial_duels_won: s.aerial_duels_won ?? 0,
                     aerial_duels_total: s.aerial_duels_total ?? 0,
                     ground_duels_won: s.ground_duels_won ?? 0,
@@ -644,7 +533,7 @@ const ComparePlayers = () => {
                 total_passes: s.total_passes ?? 0,
                 successful_dribbles: s.successful_dribbles ?? 0,
                 total_dribbles: s.total_dribbles ?? 0,
-                clearances: s.clearances ?? 0,
+                clearances: 0, // Not in unified view, use recoveries
                 aerial_duels_won: s.aerial_duels_won ?? 0,
                 aerial_duels_total: s.aerial_duels_total ?? 0,
                 ground_duels_won: s.ground_duels_won ?? 0,
