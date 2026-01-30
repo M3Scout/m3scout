@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,8 @@ import {
   Footprints,
   Info,
   Search,
+  Calendar,
+  Filter,
 } from "lucide-react";
 import { cn, safeArray } from "@/lib/utils";
 import { formatFixed } from "@/lib/formatters";
@@ -56,6 +58,8 @@ import { Input } from "@/components/ui/input";
 import {
   fetchUnifiedPlayerStats,
   aggregateUnifiedStats,
+  getAvailableYears,
+  getAvailableCompetitions,
   type UnifiedStats,
   type AggregatedUnifiedStats,
 } from "@/hooks/useUnifiedPlayerStats";
@@ -77,19 +81,33 @@ interface Player {
 
 interface PlayerWithStats extends Player {
   stats: UnifiedStats[];
+  filteredStats: UnifiedStats[];
   aggregatedStats: AggregatedUnifiedStats | null;
 }
 
 const currentYear = new Date().getFullYear();
 
 const ComparePlayers = () => {
+  const [searchParams] = useSearchParams();
+  const debugMode = searchParams.get("debugCompare") === "1";
+  
   const [allPlayers, setAllPlayers] = useState<Player[]>([]);
   const [selectedPlayers, setSelectedPlayers] = useState<PlayerWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingStats, setLoadingStats] = useState(false);
   const [openSelector, setOpenSelector] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<"absolute" | "per90">("absolute");
-  const [seasonFilter, setSeasonFilter] = useState<string>(currentYear.toString());
+  
+  // Filters - season and competition
+  const [seasonFilter, setSeasonFilter] = useState<string>("all");
+  const [competitionFilter, setCompetitionFilter] = useState<string>("all");
+
+  // Debug logging helper
+  const debugLog = useCallback((label: string, data: any) => {
+    if (debugMode) {
+      console.log(`[Compare Debug] ${label}:`, data);
+    }
+  }, [debugMode]);
 
   useEffect(() => {
     fetchPlayers();
@@ -108,6 +126,76 @@ const ComparePlayers = () => {
     setLoading(false);
   };
 
+  // Compute available years/competitions from all selected players
+  const availableYears = useMemo(() => {
+    const allStats = selectedPlayers.flatMap(p => p.stats);
+    return getAvailableYears(allStats);
+  }, [selectedPlayers]);
+
+  const availableCompetitions = useMemo(() => {
+    const allStats = selectedPlayers.flatMap(p => p.stats);
+    // Filter by season if set
+    const filtered = seasonFilter !== "all" 
+      ? allStats.filter(s => s.season_year === parseInt(seasonFilter))
+      : allStats;
+    return getAvailableCompetitions(filtered);
+  }, [selectedPlayers, seasonFilter]);
+
+  // Auto-select most recent season when players change
+  useEffect(() => {
+    if (availableYears.length > 0 && seasonFilter === "all") {
+      // Default to most recent season with data
+      setSeasonFilter(availableYears[0].toString());
+      debugLog("Auto-selected season", availableYears[0]);
+    }
+  }, [availableYears, debugLog]);
+
+  // Reset competition filter when season changes
+  useEffect(() => {
+    setCompetitionFilter("all");
+  }, [seasonFilter]);
+
+  // Apply filters to player stats
+  const filteredPlayers = useMemo(() => {
+    return selectedPlayers.map(player => {
+      let filteredStats = player.stats;
+
+      // Filter by season
+      if (seasonFilter !== "all") {
+        filteredStats = filteredStats.filter(s => s.season_year === parseInt(seasonFilter));
+      }
+
+      // Filter by competition
+      if (competitionFilter !== "all") {
+        filteredStats = filteredStats.filter(s => s.competition_id === competitionFilter);
+      }
+
+      // Re-aggregate with filtered stats
+      const aggregatedStats = aggregateUnifiedStats(filteredStats);
+
+      debugLog(`Player ${player.full_name} filtered stats`, {
+        seasonFilter,
+        competitionFilter,
+        originalCount: player.stats.length,
+        filteredCount: filteredStats.length,
+        sources: filteredStats.map(s => ({ 
+          competition: s.competition_name, 
+          season: s.season_year,
+          source: s.data_source,
+          matches: s.matches,
+          minutes: s.minutes
+        })),
+        aggregated: aggregatedStats
+      });
+
+      return {
+        ...player,
+        filteredStats,
+        aggregatedStats,
+      };
+    });
+  }, [selectedPlayers, seasonFilter, competitionFilter, debugLog]);
+
   const handleSelectPlayer = async (player: Player, slotIndex: number) => {
     if (selectedPlayers.find((p) => p.id === player.id)) {
       setOpenSelector(null);
@@ -119,12 +207,32 @@ const ComparePlayers = () => {
     // Fetch unified stats (LIVE priority over MANUAL, never combined)
     const stats = await fetchUnifiedPlayerStats(player.id);
     
-    // Aggregate using the unified aggregator
+    debugLog(`Fetched stats for ${player.full_name}`, {
+      totalRows: stats.length,
+      bySource: stats.reduce((acc, s) => {
+        acc[s.data_source] = (acc[s.data_source] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>),
+      details: stats.map(s => ({
+        competition: s.competition_name,
+        season: s.season_year,
+        source: s.data_source,
+        matches: s.matches,
+        minutes: s.minutes,
+        goals: s.goals,
+        assists: s.assists,
+        passes: `${s.accurate_passes}/${s.total_passes}`,
+        shots: s.shots
+      }))
+    });
+    
+    // Initial aggregation (will be re-filtered by useMemo)
     const aggregatedStats = aggregateUnifiedStats(stats);
 
     const playerWithStats: PlayerWithStats = {
       ...player,
       stats,
+      filteredStats: stats,
       aggregatedStats,
     };
 
@@ -153,12 +261,12 @@ const ComparePlayers = () => {
     return (value / minutes) * 90;
   };
 
-  // Create stat values array
+  // Create stat values array - USES filteredPlayers for current filter context
   const createStatValues = (
     getValue: (p: PlayerWithStats) => number | string | null,
     getPer90Value?: (p: PlayerWithStats) => number | null
   ) => {
-    return selectedPlayers.map((p) => ({
+    return filteredPlayers.map((p) => ({
       playerId: p.id,
       playerName: p.full_name,
       position: p.position,
@@ -451,6 +559,40 @@ const ComparePlayers = () => {
         >
           {/* Controls */}
           <div className="flex flex-wrap items-center gap-4 p-4 rounded-xl bg-zinc-900/50 border border-zinc-800/50">
+            {/* Season Filter */}
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-zinc-500" />
+              <Select value={seasonFilter} onValueChange={setSeasonFilter}>
+                <SelectTrigger className="h-8 w-[120px] text-xs bg-zinc-800 border-zinc-700">
+                  <SelectValue placeholder="Temporada" />
+                </SelectTrigger>
+                <SelectContent className="bg-zinc-900 border-zinc-800">
+                  <SelectItem value="all">Todas</SelectItem>
+                  {availableYears.map(year => (
+                    <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Competition Filter */}
+            {availableCompetitions.length > 0 && (
+              <div className="flex items-center gap-2">
+                <Filter className="w-4 h-4 text-zinc-500" />
+                <Select value={competitionFilter} onValueChange={setCompetitionFilter}>
+                  <SelectTrigger className="h-8 w-[180px] text-xs bg-zinc-800 border-zinc-700">
+                    <SelectValue placeholder="Competição" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-zinc-900 border-zinc-800">
+                    <SelectItem value="all">Todas</SelectItem>
+                    {availableCompetitions.map(comp => (
+                      <SelectItem key={comp.id} value={comp.id}>{comp.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             {/* View Mode Toggle */}
             <div className="flex items-center gap-2">
               <span className="text-xs text-zinc-500 uppercase tracking-wider">Modo:</span>
@@ -469,9 +611,9 @@ const ComparePlayers = () => {
                 <span className="hidden sm:inline">Melhor valor destacado automaticamente</span>
               </div>
               <ExportComparePdfButton 
-                players={selectedPlayers.map((p) => ({
+                players={filteredPlayers.map((p) => ({
                   ...p,
-                  statsRows: p.stats.map((s) => ({
+                  statsRows: p.filteredStats.map((s) => ({
                     matches: s.matches,
                     minutes: s.minutes,
                     goals: s.goals,
@@ -509,11 +651,11 @@ const ComparePlayers = () => {
 
           {/* Radar Comparison */}
           <ComparisonRadarOverlay
-            players={selectedPlayers.map((p) => ({
+            players={filteredPlayers.map((p) => ({
               id: p.id,
               name: p.full_name,
               position: p.position,
-              statsRows: p.stats.map((s) => ({
+              statsRows: p.filteredStats.map((s) => ({
                 matches: s.matches,
                 minutes: s.minutes,
                 goals: s.goals,
