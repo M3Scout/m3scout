@@ -156,43 +156,90 @@ export function DataQualityPanel({ playerId, position }: DataQualityPanelProps) 
   useEffect(() => {
     const fetchAllStats = async () => {
       try {
-        // Fetch live match stats (PRIMARY SOURCE)
-        const { matchPlayers, matchStats } = await fetchPlayerMatchStatsRaw({ playerId });
-        
-        // Fetch manual stats from manual_player_stats (FALLBACK ONLY)
-        const { data: manualData } = await supabase
-          .from('manual_player_stats')
-          .select(`
-            id,
-            season_year,
-            competition_id,
-            games,
-            minutes,
-            goals,
-            assists,
-            yellow_cards,
-            red_cards,
-            tackles,
-            interceptions,
-            recoveries,
-            saves,
-            goals_conceded,
-            clean_sheets,
-            penalties_saved,
-            aerial_duels_won,
-            aerial_duels_lost,
-            passes_completed,
-            passes_failed,
-            duels_won,
-            duels_lost,
-            chances_created,
-            key_passes,
-            shots,
-            shots_on_target,
-            competition:competitions(name, display_name)
-          `)
-          .eq('player_id', playerId)
-          .order('season_year', { ascending: false });
+        // Fetch from ALL sources in parallel
+        const [liveResult, manualResult, legacyResult] = await Promise.all([
+          // 1. Live match stats (PRIMARY SOURCE)
+          fetchPlayerMatchStatsRaw({ playerId }),
+          
+          // 2. manual_player_stats (newer manual system)
+          supabase
+            .from('manual_player_stats')
+            .select(`
+              id,
+              season_year,
+              competition_id,
+              games,
+              minutes,
+              goals,
+              assists,
+              yellow_cards,
+              red_cards,
+              tackles,
+              interceptions,
+              recoveries,
+              saves,
+              goals_conceded,
+              clean_sheets,
+              penalties_saved,
+              aerial_duels_won,
+              aerial_duels_lost,
+              passes_completed,
+              passes_failed,
+              duels_won,
+              duels_lost,
+              chances_created,
+              key_passes,
+              shots,
+              shots_on_target,
+              competition:competitions(name, display_name)
+            `)
+            .eq('player_id', playerId)
+            .order('season_year', { ascending: false }),
+          
+          // 3. player_stats (legacy "Estatísticas por Temporada")
+          supabase
+            .from('player_stats')
+            .select(`
+              id,
+              season_year,
+              competition_id,
+              matches,
+              minutes,
+              goals,
+              assists,
+              yellow_cards,
+              red_cards,
+              tackles,
+              interceptions,
+              recoveries,
+              saves,
+              goals_conceded,
+              clean_sheets,
+              penalties_saved,
+              errors_leading_to_goal,
+              aerial_duels_won,
+              aerial_duels_total,
+              accurate_passes,
+              total_passes,
+              duels_won,
+              total_duels,
+              chances_created,
+              key_passes,
+              shots,
+              shots_on_target,
+              successful_dribbles,
+              total_dribbles,
+              competition:competitions(name, display_name)
+            `)
+            .eq('player_id', playerId)
+            .or('is_archived.is.null,is_archived.eq.false')
+            .not('competition_id', 'is', null)
+            .order('season_year', { ascending: false }),
+        ]);
+
+        const { matchPlayers, matchStats } = liveResult;
+        const manualData = manualResult.data;
+        const legacyData = legacyResult.data;
         
         // Build unified stats map with PRIORITY: live > manual
         const statsMap = new Map<string, UnifiedCompetitionStats & { source: 'live' | 'manual' }>();
@@ -279,6 +326,7 @@ export function DataQualityPanel({ playerId, position }: DataQualityPanelProps) 
         });
         
         // STEP 2: Add manual stats ONLY for competitions that have NO live data
+        // Process manual_player_stats
         (manualData || []).forEach((s: any) => {
           const compId = s.competition_id;
           if (!compId) return;
@@ -288,7 +336,7 @@ export function DataQualityPanel({ playerId, position }: DataQualityPanelProps) 
           // PRIORITY: If live data exists for this key, SKIP manual
           if (statsMap.has(key)) {
             if (import.meta.env.DEV) {
-              console.log(`[DataQuality] Skipping manual for ${key} - live data takes priority`);
+              console.log(`[DataQuality] Skipping manual_player_stats for ${key} - live data takes priority`);
             }
             return;
           }
@@ -322,6 +370,58 @@ export function DataQualityPanel({ playerId, position }: DataQualityPanelProps) 
               total_passes: (s.passes_completed || 0) + (s.passes_failed || 0),
               duels_won: s.duels_won || 0,
               total_duels: (s.duels_won || 0) + (s.duels_lost || 0),
+              chances_created: s.chances_created || 0,
+              key_passes: s.key_passes || 0,
+              shots: s.shots || 0,
+              shots_on_target: s.shots_on_target || 0,
+            },
+          });
+        });
+        
+        // STEP 3: Add legacy player_stats ONLY for competitions that have NO live OR manual data
+        (legacyData || []).forEach((s: any) => {
+          const compId = s.competition_id;
+          if (!compId) return;
+          
+          const key = `${compId}-${s.season_year}`;
+          
+          // PRIORITY: If live or manual data exists for this key, SKIP legacy
+          if (statsMap.has(key)) {
+            if (import.meta.env.DEV) {
+              console.log(`[DataQuality] Skipping player_stats for ${key} - higher priority data exists`);
+            }
+            return;
+          }
+          
+          const compName = s.competition?.display_name || s.competition?.name || 'Sem Competição';
+          
+          statsMap.set(key, {
+            id: key,
+            seasonYear: s.season_year,
+            competitionName: compName,
+            matches: s.matches || 0,
+            minutes: s.minutes || 0,
+            source: 'manual',
+            stats: {
+              matches: s.matches || 0,
+              minutes: s.minutes || 0,
+              goals: s.goals || 0,
+              assists: s.assists || 0,
+              yellow_cards: s.yellow_cards || 0,
+              red_cards: s.red_cards || 0,
+              tackles: s.tackles || 0,
+              interceptions: s.interceptions || 0,
+              recoveries: s.recoveries || 0,
+              saves: s.saves || 0,
+              goals_conceded: s.goals_conceded || 0,
+              clean_sheets: s.clean_sheets || 0,
+              penalties_saved: s.penalties_saved || 0,
+              errors_leading_to_goal: s.errors_leading_to_goal || 0,
+              aerial_duels_won: s.aerial_duels_won || 0,
+              accurate_passes: s.accurate_passes || 0,
+              total_passes: s.total_passes || 0,
+              duels_won: s.duels_won || 0,
+              total_duels: s.total_duels || 0,
               chances_created: s.chances_created || 0,
               key_passes: s.key_passes || 0,
               shots: s.shots || 0,
