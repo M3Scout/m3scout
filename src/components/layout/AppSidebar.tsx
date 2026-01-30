@@ -19,6 +19,7 @@ import {
   Shield,
   TrendingUp,
   Target,
+  ScrollText,
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -72,6 +73,7 @@ const internalNavGroups = [
     items: [
       { href: "/app/market/ativos", icon: TrendingUp, label: "Ativos M3", module: "players" as const },
       { href: "/app/market/targets", icon: Users, label: "Targets", module: "players" as const },
+      { href: "/app/contratos", icon: ScrollText, label: "Contratos", module: "players" as const },
     ]
   },
   {

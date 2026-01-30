@@ -51,7 +51,7 @@ const kpiConfig = [
     iconColor: "text-emerald-400",
     borderColor: "border-emerald-500/20",
     glowColor: "group-hover:shadow-emerald-500/10",
-    link: "/app/players?contract=expiring",
+    link: "/app/contratos?status=expiring&days=30",
     warningThreshold: 0,
   },
 ];
