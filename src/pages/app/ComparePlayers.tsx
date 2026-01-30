@@ -141,14 +141,8 @@ const ComparePlayers = () => {
     return getAvailableCompetitions(filtered);
   }, [selectedPlayers, seasonFilter]);
 
-  // Auto-select most recent season when players change
-  useEffect(() => {
-    if (availableYears.length > 0 && seasonFilter === "all") {
-      // Default to most recent season with data
-      setSeasonFilter(availableYears[0].toString());
-      debugLog("Auto-selected season", availableYears[0]);
-    }
-  }, [availableYears, debugLog]);
+  // No auto-select of season - respect user's "all" choice for career view
+  // Users can manually change to specific seasons if needed
 
   // Reset competition filter when season changes
   useEffect(() => {
