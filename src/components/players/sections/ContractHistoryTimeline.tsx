@@ -108,32 +108,25 @@ const calculateDuration = (start: string, end: string | null): string => {
   return duration || "< 1m";
 };
 
-// Draggable contract card component
-function DraggableContractCard({ 
+// Contract card content (shared between reorder and static modes)
+function ContractCardContent({ 
   contract, 
   isReordering, 
   canEdit,
   onEdit,
-  onSetCurrent
+  dragControls
 }: { 
   contract: ContractHistoryRecord;
   isReordering: boolean;
   canEdit: boolean;
   onEdit: (contract: ContractHistoryRecord) => void;
-  onSetCurrent: (contractId: string) => void;
+  dragControls?: ReturnType<typeof useDragControls>;
 }) {
-  const dragControls = useDragControls();
   const typeConfig = CONTRACT_TYPE_CONFIG[contract.contract_type] || CONTRACT_TYPE_CONFIG.permanent;
   const TypeIcon = typeConfig.icon;
 
   return (
-    <Reorder.Item
-      value={contract}
-      id={contract.id}
-      dragListener={false}
-      dragControls={dragControls}
-      className="relative pl-11"
-    >
+    <>
       {/* Timeline dot */}
       <div className={cn(
         "absolute left-2 top-4 w-5 h-5 rounded-full border flex items-center justify-center z-10",
@@ -168,7 +161,7 @@ function DraggableContractCard({
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             {/* Drag handle */}
-            {isReordering && (
+            {isReordering && dragControls && (
               <button
                 className="touch-none p-1 -ml-1 text-zinc-600 hover:text-zinc-400 cursor-grab active:cursor-grabbing"
                 onPointerDown={(e) => dragControls.start(e)}
@@ -255,7 +248,60 @@ function DraggableContractCard({
           </div>
         )}
       </div>
+    </>
+  );
+}
+
+// Draggable contract card (used inside Reorder.Group)
+function ReorderableContractCard({ 
+  contract, 
+  canEdit,
+  onEdit
+}: { 
+  contract: ContractHistoryRecord;
+  canEdit: boolean;
+  onEdit: (contract: ContractHistoryRecord) => void;
+}) {
+  const dragControls = useDragControls();
+
+  return (
+    <Reorder.Item
+      value={contract}
+      id={contract.id}
+      dragListener={false}
+      dragControls={dragControls}
+      className="relative pl-11"
+    >
+      <ContractCardContent
+        contract={contract}
+        isReordering={true}
+        canEdit={canEdit}
+        onEdit={onEdit}
+        dragControls={dragControls}
+      />
     </Reorder.Item>
+  );
+}
+
+// Static contract card (used outside Reorder.Group)
+function StaticContractCard({ 
+  contract, 
+  canEdit,
+  onEdit
+}: { 
+  contract: ContractHistoryRecord;
+  canEdit: boolean;
+  onEdit: (contract: ContractHistoryRecord) => void;
+}) {
+  return (
+    <div className="relative pl-11">
+      <ContractCardContent
+        contract={contract}
+        isReordering={false}
+        canEdit={canEdit}
+        onEdit={onEdit}
+      />
+    </div>
   );
 }
 
@@ -650,26 +696,22 @@ export const ContractHistoryTimeline = ({ playerId }: ContractHistoryTimelinePro
                   className="space-y-4"
                 >
                   {reorderedItems.map((contract) => (
-                    <DraggableContractCard
+                    <ReorderableContractCard
                       key={contract.id}
                       contract={contract}
-                      isReordering={true}
                       canEdit={canEdit}
                       onEdit={setEditingContract}
-                      onSetCurrent={handleSetAsCurrent}
                     />
                   ))}
                 </Reorder.Group>
               ) : (
                 <div className="space-y-4">
                   {displayItems.map((contract) => (
-                    <DraggableContractCard
+                    <StaticContractCard
                       key={contract.id}
                       contract={contract}
-                      isReordering={false}
                       canEdit={canEdit}
                       onEdit={setEditingContract}
-                      onSetCurrent={handleSetAsCurrent}
                     />
                   ))}
                 </div>
