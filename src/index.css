@@ -30,37 +30,37 @@ p, span, h1, h2, h3, h4, h5, h6, a, li {
 @layer base {
   :root {
     /* ========== PREMIUM EXECUTIVE PALETTE ========== */
-    /* Base layer - #070910 deep charcoal-navy */
-    --background: 227 39% 5%;
+    /* Base layer - pure charcoal-black #070709 */
+    --background: 270 8% 3%;
     --foreground: 210 40% 98%;
 
-    /* Card layer - #0F172A slate navy */
-    --card: 222 47% 11%;
+    /* Card layer - charcoal black #0D0D0F (neutral, no blue) */
+    --card: 240 6% 6%;
     --card-foreground: 210 40% 98%;
 
     /* Popover - slightly elevated from cards */
-    --popover: 222 45% 12%;
+    --popover: 240 5% 8%;
     --popover-foreground: 210 40% 98%;
 
     --primary: 0 72% 51%;
     --primary-foreground: 210 40% 98%;
 
-    /* Secondary - #0B0F1A for headers/nav */
-    --secondary: 224 41% 7%;
+    /* Secondary - #0A0A0C for headers/nav (neutral charcoal) */
+    --secondary: 240 5% 4%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 222 35% 14%;
-    --muted-foreground: 215 20% 55%;
+    --muted: 240 4% 12%;
+    --muted-foreground: 0 0% 55%;
 
     --accent: 45 93% 58%;
-    --accent-foreground: 222 47% 6%;
+    --accent-foreground: 240 6% 6%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 210 40% 98%;
 
-    /* Subtle separation border */
-    --border: 222 30% 16%;
-    --input: 224 41% 10%;
+    /* Subtle separation border - neutral gray */
+    --border: 240 4% 14%;
+    --input: 240 5% 8%;
     --ring: 0 72% 51%;
 
     --radius: 0.75rem;
@@ -78,19 +78,19 @@ p, span, h1, h2, h3, h4, h5, h6, a, li {
     --border-glass: 1px solid transparent;
     --border-card: 1px solid transparent;
     
-    /* Elevation backgrounds - executive layer system */
-    --bg-elev-0: hsl(227 39% 5%);  /* #070910 */
-    --bg-elev-1: hsl(224 41% 7%);  /* #0B0F1A */
-    --bg-elev-2: hsl(222 47% 11%); /* #0F172A */
-    --bg-elev-3: hsl(222 42% 14%);
-    --bg-glass: hsl(210 20% 98% / 0.03);
-    --bg-glass-hover: hsl(210 20% 98% / 0.06);
+    /* Elevation backgrounds - executive layer system (neutral charcoal) */
+    --bg-elev-0: hsl(270 8% 3%);    /* pure black-charcoal */
+    --bg-elev-1: hsl(240 5% 5%);    /* very dark neutral */
+    --bg-elev-2: hsl(240 6% 7%);    /* card level */
+    --bg-elev-3: hsl(240 5% 10%);   /* elevated */
+    --bg-glass: hsl(0 0% 98% / 0.03);
+    --bg-glass-hover: hsl(0 0% 98% / 0.06);
     
     /* Shadow tokens - deep and subtle for real elevation */
-    --shadow-soft: 0 2px 8px -2px hsl(227 50% 2% / 0.5);
-    --shadow-medium: 0 4px 16px -4px hsl(227 50% 2% / 0.6);
-    --shadow-card: 0 4px 24px -6px hsl(227 50% 2% / 0.7), 0 2px 8px -2px hsl(227 50% 2% / 0.4);
-    --shadow-elevated: 0 8px 40px -8px hsl(227 50% 2% / 0.8), 0 4px 16px -4px hsl(227 50% 2% / 0.5);
+    --shadow-soft: 0 2px 8px -2px hsl(0 0% 0% / 0.5);
+    --shadow-medium: 0 4px 16px -4px hsl(0 0% 0% / 0.6);
+    --shadow-card: 0 4px 24px -6px hsl(0 0% 0% / 0.7), 0 2px 8px -2px hsl(0 0% 0% / 0.4);
+    --shadow-elevated: 0 8px 40px -8px hsl(0 0% 0% / 0.8), 0 4px 16px -4px hsl(0 0% 0% / 0.5);
     --shadow-glow-green: 0 0 20px -5px hsl(142 76% 36% / 0.4);
     --shadow-glow-red: 0 0 20px -5px hsl(0 72% 51% / 0.4);
     --shadow-glow-blue: 0 0 20px -5px hsl(199 89% 48% / 0.4);
@@ -115,32 +115,32 @@ p, span, h1, h2, h3, h4, h5, h6, a, li {
     
     /* Custom tokens */
     --gold: 45 93% 58%;
-    --gold-foreground: 222 47% 6%;
+    --gold-foreground: 240 6% 6%;
     --emerald: 142 76% 36%;
     --emerald-light: 142 70% 50%;
-    --navy: 227 39% 5%;
-    --navy-light: 224 41% 7%;
+    --navy: 270 8% 3%;
+    --navy-light: 240 5% 5%;
     
-    /* Gradients - cohesive with executive palette */
+    /* Gradients - cohesive with executive palette (neutral charcoal) */
     --gradient-primary: linear-gradient(135deg, hsl(0 72% 51%), hsl(0 72% 42%));
     --gradient-gold: linear-gradient(135deg, hsl(45 93% 58%), hsl(38 92% 50%));
-    --gradient-dark: linear-gradient(180deg, hsl(222 47% 11%), hsl(227 39% 5%));
-    --gradient-card: linear-gradient(180deg, hsl(222 47% 12% / 0.95), hsl(222 47% 10% / 0.9));
-    --gradient-hero: linear-gradient(180deg, hsl(227 39% 5%) 0%, hsl(227 42% 4%) 100%);
-    --gradient-background: hsl(227 39% 5%);
+    --gradient-dark: linear-gradient(180deg, hsl(240 6% 7%), hsl(270 8% 3%));
+    --gradient-card: linear-gradient(180deg, hsl(240 6% 8% / 0.95), hsl(240 5% 6% / 0.9));
+    --gradient-hero: linear-gradient(180deg, hsl(270 8% 3%) 0%, hsl(270 6% 2%) 100%);
+    --gradient-background: hsl(270 8% 3%);
     
     /* Shadows - refined for depth */
     --shadow-glow: 0 0 40px -10px hsl(0 72% 51% / 0.4);
     --shadow-gold: 0 0 30px -5px hsl(45 93% 58% / 0.3);
 
-    /* Sidebar - #0B0F1A base */
-    --sidebar-background: 224 41% 6%;
+    /* Sidebar - neutral charcoal base */
+    --sidebar-background: 240 5% 4%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 0 72% 51%;
     --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 222 42% 12%;
+    --sidebar-accent: 240 5% 10%;
     --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 222 30% 14%;
+    --sidebar-border: 240 4% 12%;
     --sidebar-ring: 0 72% 51%;
   }
 }
