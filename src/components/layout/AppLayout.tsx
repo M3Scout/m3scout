@@ -16,8 +16,8 @@ function AppLayoutContent() {
       <main 
         className={cn(
           "flex-1 pt-14 lg:pt-0 min-h-screen transition-[margin] duration-200 ease-out overflow-x-hidden max-w-full",
-          // Desktop: dynamic margin based on sidebar state
-          isCollapsed ? "lg:ml-[60px]" : "lg:ml-56"
+          // Desktop: dynamic margin based on sidebar state (64px collapsed, 224px expanded)
+          isCollapsed ? "lg:ml-16" : "lg:ml-56"
         )}
       >
         <div className="p-[var(--padding-mobile)] md:p-6 lg:p-8 w-full max-w-full overflow-x-hidden">
