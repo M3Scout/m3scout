@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +27,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { BarChart3, TrendingUp, Users, Calendar, Eye, Edit, ExternalLink, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { logFetchSuccess, logFetchError, logFetchSkipped, isAbortError } from "@/lib/fetchLogger";
 
 interface CompetitionUsage {
   id: string;
@@ -43,8 +45,12 @@ interface CompetitionUsage {
 import { TIER_COLORS, getTierFromCoefficient } from "@/lib/tierClassification";
 
 const CompetitionUsageWidget = () => {
+  const { session, permissionsLoading, rolesLoading } = useAuth();
+  const rbacReady = Boolean(session?.user) && !permissionsLoading && !rolesLoading;
+  
   const [usageData, setUsageData] = useState<CompetitionUsage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasFetched, setHasFetched] = useState(false);
   
   // Edit dialog state
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -53,28 +59,43 @@ const CompetitionUsageWidget = () => {
   const [editVisibility, setEditVisibility] = useState(50);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    fetchUsageData();
-  }, []);
-
-  const fetchUsageData = async () => {
+  const fetchUsageData = useCallback(async () => {
+    // GUARD: Only fetch when RBAC is ready
+    if (!session?.user) {
+      logFetchSkipped("CompetitionUsageWidget", "no session");
+      return;
+    }
+    if (!rbacReady) {
+      logFetchSkipped("CompetitionUsageWidget", "rbac not ready");
+      return;
+    }
+    
+    // Prevent duplicate fetches
+    if (hasFetched) return;
+    setHasFetched(true);
+    
     setLoading(true);
+    const fetchStart = performance.now();
     
     try {
-      // Get usage from player_stats (competition_id is used there)
+      // Get usage from player_stats
       const { data: statsData, error: statsError } = await supabase
         .from("player_stats")
         .select("competition_id, player_id, updated_at")
         .not("competition_id", "is", null);
 
-      if (statsError) throw statsError;
+      if (statsError) {
+        logFetchError(statsError, { endpoint: "CompetitionUsageWidget.player_stats" });
+      }
 
       // Get usage from scouting_reports
       const { data: reportsData, error: reportsError } = await supabase
         .from("scouting_reports")
         .select("competition_id, player_id, updated_at");
 
-      if (reportsError) throw reportsError;
+      if (reportsError) {
+        logFetchError(reportsError, { endpoint: "CompetitionUsageWidget.scouting_reports" });
+      }
 
       // Aggregate usage by competition
       const usageMap = new Map<string, { count: number; players: Set<string>; lastUsed: string | null }>();
@@ -102,7 +123,10 @@ const CompetitionUsageWidget = () => {
         .select("id, name, display_name, tier, final_coefficient, base_coefficient, visibility_score")
         .in("id", competitionIds);
 
-      if (compsError) throw compsError;
+      if (compsError) {
+        logFetchError(compsError, { endpoint: "CompetitionUsageWidget.competitions" });
+        return;
+      }
 
       // Combine data
       const combined: CompetitionUsage[] = (compsData || []).map((comp) => {
@@ -118,14 +142,29 @@ const CompetitionUsageWidget = () => {
       // Sort by usage_count DESC
       combined.sort((a, b) => b.usage_count - a.usage_count);
 
-      // Keep top 20
+      logFetchSuccess({ endpoint: "CompetitionUsageWidget" }, performance.now() - fetchStart);
       setUsageData(combined.slice(0, 20));
     } catch (error) {
-      console.error("Error fetching usage data:", error);
+      // Handle AbortError gracefully
+      if (isAbortError(error)) {
+        if (import.meta.env.DEV) {
+          console.log("[FETCH ABORT] CompetitionUsageWidget - request cancelled");
+        }
+        setHasFetched(false);
+        return;
+      }
+      logFetchError(error, { endpoint: "CompetitionUsageWidget" });
     } finally {
       setLoading(false);
     }
-  };
+  }, [session?.user, rbacReady, hasFetched]);
+
+  // Fetch when RBAC is ready
+  useEffect(() => {
+    if (rbacReady && !hasFetched) {
+      fetchUsageData();
+    }
+  }, [rbacReady, hasFetched, fetchUsageData]);
 
   const openEditDialog = (comp: CompetitionUsage) => {
     setSelectedComp(comp);
@@ -147,13 +186,15 @@ const CompetitionUsageWidget = () => {
         })
         .eq("id", selectedComp.id);
 
-      if (error) throw error;
+      if (error) {
+        logFetchError(error, { endpoint: "CompetitionUsageWidget.update" });
+        throw error;
+      }
 
       toast.success("Competição atualizada!");
       setEditDialogOpen(false);
-      fetchUsageData();
+      setHasFetched(false); // Allow re-fetch
     } catch (error: any) {
-      console.error("Error updating competition:", error);
       toast.error(error.message || "Erro ao atualizar competição");
     } finally {
       setSaving(false);
@@ -169,12 +210,14 @@ const CompetitionUsageWidget = () => {
         .update({ visibility_score: newVisibility })
         .eq("id", comp.id);
 
-      if (error) throw error;
+      if (error) {
+        logFetchError(error, { endpoint: "CompetitionUsageWidget.toggleVisibility" });
+        throw error;
+      }
 
       toast.success(newVisibility > 0 ? "Competição visível" : "Competição oculta");
-      fetchUsageData();
+      setHasFetched(false); // Allow re-fetch
     } catch (error: any) {
-      console.error("Error toggling visibility:", error);
       toast.error("Erro ao alterar visibilidade");
     }
   };

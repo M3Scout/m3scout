@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useContractNotificationCheck } from "@/hooks/useContractNotificationCheck";
@@ -15,6 +15,12 @@ import { AthleteDashboard } from "@/components/dashboard/athlete/AthleteDashboar
 import CompetitionUsageWidget from "@/components/competitions/CompetitionUsageWidget";
 import { motion } from "framer-motion";
 import { staggerContainer, staggerItem } from "@/lib/animations";
+import { 
+  logFetchSuccess, 
+  logFetchError, 
+  logFetchSkipped,
+  isAbortError 
+} from "@/lib/fetchLogger";
 
 interface DashboardStats {
   totalPlayers: number;
@@ -60,13 +66,15 @@ const Dashboard = () => {
 
   if (import.meta.env.DEV) console.log("[MOUNT] Dashboard");
 
-  const { isAdmin, isScout, isPlayer, rolesLoading } = useAuth();
+  const { isAdmin, isScout, isPlayer, rolesLoading, session, permissionsLoading } = useAuth();
+  
+  // RBAC Ready = session exists AND permissions have loaded
+  const rbacReady = Boolean(session?.user) && !permissionsLoading && !rolesLoading;
   
   // Trigger daily contract notification check (fallback for no cron)
   useContractNotificationCheck();
   
   // PROGRESSIVE LOADING: Start with zeros, update as data arrives
-  // This allows UI to render immediately with skeletons/placeholders
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats>({
     totalPlayers: 0,
@@ -78,160 +86,196 @@ const Dashboard = () => {
   const [positionData, setPositionData] = useState<PositionData[]>([]);
   const [recentReports, setRecentReports] = useState<RecentReport[]>([]);
   const [recentLeads, setRecentLeads] = useState<RecentLead[]>([]);
-  const [dataReady, setDataReady] = useState(false); // Track when data is truly loaded
+  const [dataReady, setDataReady] = useState(false);
+  const [hasFetched, setHasFetched] = useState(false);
   
-  // CRITICAL CHANGE: Start fetching data IMMEDIATELY, don't wait for roles
-  // This cuts perceived loading time significantly
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      const fetchStart = performance.now();
-      if (import.meta.env.DEV) console.log("[TIMING] Dashboard fetch start");
-      
-      try {
-        // Calculate first day of month for reportsThisMonth query
-        const firstDayOfMonth = new Date();
-        firstDayOfMonth.setDate(1);
-        firstDayOfMonth.setHours(0, 0, 0, 0);
+  const fetchDashboardData = useCallback(async () => {
+    // GUARD: Only fetch when session is valid and RBAC is ready
+    if (!session?.user) {
+      logFetchSkipped("Dashboard", "no session");
+      return;
+    }
+    if (!rbacReady) {
+      logFetchSkipped("Dashboard", "rbac not ready");
+      return;
+    }
+    
+    // Prevent duplicate fetches
+    if (hasFetched) return;
+    setHasFetched(true);
+    
+    const fetchStart = performance.now();
+    if (import.meta.env.DEV) console.log("[TIMING] Dashboard fetch start");
+    
+    try {
+      // Calculate first day of month for reportsThisMonth query
+      const firstDayOfMonth = new Date();
+      firstDayOfMonth.setDate(1);
+      firstDayOfMonth.setHours(0, 0, 0, 0);
 
-        // ALL queries in parallel (including reportsThisMonth) - no sequential
-        const [
-          playersResult,
-          reportsResult,
-          leadsResult,
-          contractsResult,
-          positionsResult,
-          recentReportsResult,
-          recentLeadsResult,
-          reportsThisMonthResult,
-        ] = await Promise.all([
-          supabase.from("players").select("id", { count: "exact", head: true }).or("is_archived.is.null,is_archived.eq.false"),
-          supabase.from("scouting_reports").select("id", { count: "exact", head: true }).is("deleted_at", null),
-          supabase.from("leads").select("id", { count: "exact", head: true }),
-          supabase
-            .from("players")
-            .select("id", { count: "exact", head: true })
-            .gte("contract_end", new Date().toISOString().split("T")[0])
-            .lte("contract_end", new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]),
-          supabase.from("players").select("position").or("is_archived.is.null,is_archived.eq.false"),
-          supabase
-            .from("scouting_reports")
-            .select(`
-              id,
-              match_date,
-              rating,
-              final_score,
-              created_at,
-              scout_id,
-              players (full_name),
-              competitions (name)
-            `)
-            .is("deleted_at", null)
-            .order("created_at", { ascending: false })
-            .limit(5),
-          supabase
-            .from("leads")
-            .select("id, name, subject, created_at, status")
-            .order("created_at", { ascending: false })
-            .limit(5),
-          // This was in series before - now parallel!
-          supabase
-            .from("scouting_reports")
-            .select("id", { count: "exact", head: true })
-            .is("deleted_at", null)
-            .gte("created_at", firstDayOfMonth.toISOString()),
-        ]);
+      // ALL queries in parallel
+      const [
+        playersResult,
+        reportsResult,
+        leadsResult,
+        contractsResult,
+        positionsResult,
+        recentReportsResult,
+        recentLeadsResult,
+        reportsThisMonthResult,
+      ] = await Promise.all([
+        supabase.from("players").select("id", { count: "exact", head: true }).or("is_archived.is.null,is_archived.eq.false"),
+        supabase.from("scouting_reports").select("id", { count: "exact", head: true }).is("deleted_at", null),
+        supabase.from("leads").select("id", { count: "exact", head: true }),
+        supabase
+          .from("players")
+          .select("id", { count: "exact", head: true })
+          .gte("contract_end", new Date().toISOString().split("T")[0])
+          .lte("contract_end", new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]),
+        supabase.from("players").select("position").or("is_archived.is.null,is_archived.eq.false"),
+        supabase
+          .from("scouting_reports")
+          .select(`
+            id,
+            match_date,
+            rating,
+            final_score,
+            created_at,
+            scout_id,
+            players (full_name),
+            competitions (name)
+          `)
+          .is("deleted_at", null)
+          .order("created_at", { ascending: false })
+          .limit(5),
+        supabase
+          .from("leads")
+          .select("id, name, subject, created_at, status")
+          .order("created_at", { ascending: false })
+          .limit(5),
+        supabase
+          .from("scouting_reports")
+          .select("id", { count: "exact", head: true })
+          .is("deleted_at", null)
+          .gte("created_at", firstDayOfMonth.toISOString()),
+      ]);
 
-        if (import.meta.env.DEV) {
-          console.log("[TIMING] Dashboard queries complete", {
-            duration: `${Math.round(performance.now() - fetchStart)}ms`
-          });
+      // Check for errors in results (with detailed logging)
+      const results = [
+        { name: "players", result: playersResult },
+        { name: "scouting_reports", result: reportsResult },
+        { name: "leads", result: leadsResult },
+        { name: "contracts", result: contractsResult },
+        { name: "positions", result: positionsResult },
+        { name: "recent_reports", result: recentReportsResult },
+        { name: "recent_leads", result: recentLeadsResult },
+        { name: "reports_this_month", result: reportsThisMonthResult },
+      ];
+
+      for (const { name, result } of results) {
+        if (result.error) {
+          logFetchError(result.error, { endpoint: `Dashboard.${name}` });
         }
-
-        setStats({
-          totalPlayers: playersResult.count || 0,
-          totalReports: reportsResult.count || 0,
-          reportsThisMonth: reportsThisMonthResult.count || 0,
-          totalLeads: leadsResult.count || 0,
-          expiringContracts: contractsResult.count || 0,
-        });
-
-        if (positionsResult.data) {
-          const positionCounts: Record<string, number> = {};
-          positionsResult.data.forEach((p) => {
-            const pos = p.position || "N/D";
-            positionCounts[pos] = (positionCounts[pos] || 0) + 1;
-          });
-          
-          const sortedPositions = Object.entries(positionCounts)
-            .map(([name, value]) => ({ name, value }))
-            .sort((a, b) => b.value - a.value)
-            .slice(0, 5);
-          
-          setPositionData(sortedPositions);
-        }
-
-        if (recentReportsResult.data) {
-          const scoutIds = [
-            ...new Set(
-              recentReportsResult.data
-                .map((r: any) => r.scout_id)
-                .filter(Boolean)
-            ),
-          ];
-
-          let scoutNames: Record<string, string> = {};
-          if (scoutIds.length) {
-            const { data: profiles } = await supabase
-              .from("profiles")
-              .select("user_id, full_name")
-              .in("user_id", scoutIds);
-
-            if (profiles) {
-              profiles.forEach((p) => {
-                scoutNames[p.user_id] = p.full_name || "Scout";
-              });
-            }
-          }
-
-          const reports = recentReportsResult.data.map((r: any) => ({
-            id: r.id,
-            player_name: r.players?.full_name || "Atleta desconhecido",
-            competition_name: r.competitions?.name || "—",
-            match_date: r.match_date,
-            scout_name: scoutNames[r.scout_id] || "—",
-            rating: r.rating,
-            final_score: r.final_score,
-          }));
-
-          setRecentReports(reports);
-        }
-
-        if (recentLeadsResult.data) {
-          setRecentLeads(recentLeadsResult.data);
-        }
-
-        if (import.meta.env.DEV) console.log("[FETCH] Dashboard success");
-      } catch (error) {
-        if (import.meta.env.DEV) console.error("[FETCH] Dashboard error", error);
-        console.error("Error fetching dashboard data:", error);
-      } finally {
-        setLoading(false);
-        setDataReady(true);
       }
-    };
 
-    // Start fetch IMMEDIATELY - don't wait for roles
-    fetchDashboardData();
-  }, []);
+      logFetchSuccess({ endpoint: "Dashboard" }, performance.now() - fetchStart);
+
+      setStats({
+        totalPlayers: playersResult.count || 0,
+        totalReports: reportsResult.count || 0,
+        reportsThisMonth: reportsThisMonthResult.count || 0,
+        totalLeads: leadsResult.count || 0,
+        expiringContracts: contractsResult.count || 0,
+      });
+
+      if (positionsResult.data) {
+        const positionCounts: Record<string, number> = {};
+        positionsResult.data.forEach((p) => {
+          const pos = p.position || "N/D";
+          positionCounts[pos] = (positionCounts[pos] || 0) + 1;
+        });
+        
+        const sortedPositions = Object.entries(positionCounts)
+          .map(([name, value]) => ({ name, value }))
+          .sort((a, b) => b.value - a.value)
+          .slice(0, 5);
+        
+        setPositionData(sortedPositions);
+      }
+
+      if (recentReportsResult.data) {
+        const scoutIds = [
+          ...new Set(
+            recentReportsResult.data
+              .map((r: any) => r.scout_id)
+              .filter(Boolean)
+          ),
+        ];
+
+        let scoutNames: Record<string, string> = {};
+        if (scoutIds.length) {
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("user_id, full_name")
+            .in("user_id", scoutIds);
+
+          if (profiles) {
+            profiles.forEach((p) => {
+              scoutNames[p.user_id] = p.full_name || "Scout";
+            });
+          }
+        }
+
+        const reports = recentReportsResult.data.map((r: any) => ({
+          id: r.id,
+          player_name: r.players?.full_name || "Atleta desconhecido",
+          competition_name: r.competitions?.name || "—",
+          match_date: r.match_date,
+          scout_name: scoutNames[r.scout_id] || "—",
+          rating: r.rating,
+          final_score: r.final_score,
+        }));
+
+        setRecentReports(reports);
+      }
+
+      if (recentLeadsResult.data) {
+        setRecentLeads(recentLeadsResult.data);
+      }
+
+    } catch (error) {
+      // Handle AbortError gracefully - NOT an error
+      if (isAbortError(error)) {
+        if (import.meta.env.DEV) {
+          console.log("[FETCH ABORT] Dashboard - request cancelled");
+        }
+        // Reset hasFetched so user can retry on next navigation
+        setHasFetched(false);
+        return;
+      }
+      
+      // Log actual errors with details
+      logFetchError(error, { endpoint: "Dashboard" });
+    } finally {
+      setLoading(false);
+      setDataReady(true);
+    }
+  }, [session?.user, rbacReady, hasFetched]);
+  
+  // Trigger fetch when RBAC is ready
+  useEffect(() => {
+    if (rbacReady && !hasFetched) {
+      fetchDashboardData();
+    }
+  }, [rbacReady, hasFetched, fetchDashboardData]);
   
   // PLAYER DASHBOARD: Show athlete dashboard once roles are confirmed
-  // This check happens AFTER data fetching has started
   if (!rolesLoading && isPlayer && !isAdmin && !isScout) {
     return <AthleteDashboard />;
   }
 
-  // PROGRESSIVE: Only show skeleton on initial mount, not on every role check
-  if (loading && !dataReady && stats.totalPlayers === 0) {
+  // PROGRESSIVE: Show skeleton while loading OR while waiting for RBAC
+  if ((loading && !dataReady && stats.totalPlayers === 0) || (!rbacReady && !dataReady)) {
     return <AdminSkeletonDashboard />;
   }
 
@@ -257,33 +301,27 @@ const Dashboard = () => {
         />
       </motion.div>
 
-      {/* Insights + Top Players Grid - Shared container with equal heights */}
+      {/* Insights + Top Players Grid */}
       <motion.div 
         variants={staggerItem} 
         className="grid grid-cols-1 lg:grid-cols-3 gap-[var(--gap-mobile)] md:gap-6 items-stretch w-full max-w-full"
       >
-        {/* Insights - New strategic section */}
         <div className="lg:col-span-1 flex min-w-0 w-full">
           <InsightsCard />
         </div>
-
-        {/* Top Players */}
         <div className="lg:col-span-2 flex min-w-0 w-full">
           <TopPlayersCard />
         </div>
       </motion.div>
 
-      {/* Position Chart + Reports Grid - Shared container with equal heights */}
+      {/* Position Chart + Reports Grid */}
       <motion.div 
         variants={staggerItem} 
         className="grid grid-cols-1 lg:grid-cols-3 gap-[var(--gap-mobile)] md:gap-6 items-stretch w-full max-w-full"
       >
-        {/* Position Chart */}
         <div className="lg:col-span-1 flex min-w-0 w-full">
           <PositionChartCard data={positionData} />
         </div>
-
-        {/* Recent Reports */}
         <div className="lg:col-span-2 flex min-w-0 w-full">
           <RecentReportsCard reports={recentReports} />
         </div>
@@ -291,10 +329,7 @@ const Dashboard = () => {
 
       {/* Leads + Quick Actions Grid */}
       <motion.div variants={staggerItem} className="grid grid-cols-1 lg:grid-cols-2 gap-[var(--gap-mobile)] md:gap-6 w-full max-w-full">
-        {/* Recent Leads */}
         <RecentLeadsCard leads={recentLeads} />
-
-        {/* Quick Actions */}
         <QuickActionsCard />
       </motion.div>
 

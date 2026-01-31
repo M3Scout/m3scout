@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { 
   Flame, 
@@ -17,12 +17,14 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { logFetchSuccess, logFetchError, logFetchSkipped, isAbortError } from "@/lib/fetchLogger";
 
 type TrendDirection = "up" | "down" | "stable" | "new";
 type InsightType = "rising" | "alert" | "market" | "profile" | "competition" | "balance" | "neutral";
@@ -214,12 +216,31 @@ const TrendBadge = ({ trend }: { trend: Insight["trend"] }) => {
 };
 
 export const InsightsCard = () => {
+  const { session, permissionsLoading, rolesLoading } = useAuth();
+  const rbacReady = Boolean(session?.user) && !permissionsLoading && !rolesLoading;
+  
   const [insights, setInsights] = useState<Insight[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasFetched, setHasFetched] = useState(false);
 
-  useEffect(() => {
-    const generateInsights = async () => {
-      try {
+  const generateInsights = useCallback(async () => {
+    // GUARD: Only fetch when RBAC is ready
+    if (!session?.user) {
+      logFetchSkipped("InsightsCard", "no session");
+      return;
+    }
+    if (!rbacReady) {
+      logFetchSkipped("InsightsCard", "rbac not ready");
+      return;
+    }
+    
+    // Prevent duplicate fetches
+    if (hasFetched) return;
+    setHasFetched(true);
+    
+    const fetchStart = performance.now();
+    
+    try {
         const generatedInsights: Insight[] = [];
 
         // Fetch all necessary data in parallel
@@ -480,16 +501,29 @@ export const InsightsCard = () => {
         }
 
         // Always set exactly 5 insights
+        logFetchSuccess({ endpoint: "InsightsCard" }, performance.now() - fetchStart);
         setInsights(generatedInsights.slice(0, TARGET_INSIGHTS));
       } catch (error) {
-        console.error("Error generating insights:", error);
+        // Handle AbortError gracefully
+        if (isAbortError(error)) {
+          if (import.meta.env.DEV) {
+            console.log("[FETCH ABORT] InsightsCard - request cancelled");
+          }
+          setHasFetched(false);
+          return;
+        }
+        logFetchError(error, { endpoint: "InsightsCard" });
       } finally {
         setLoading(false);
       }
-    };
+  }, [session?.user, rbacReady, hasFetched]);
 
-    generateInsights();
-  }, []);
+  // Fetch when RBAC is ready
+  useEffect(() => {
+    if (rbacReady && !hasFetched) {
+      generateInsights();
+    }
+  }, [rbacReady, hasFetched, generateInsights]);
 
   if (loading) {
     return (

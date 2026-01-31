@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Trophy, Star, ChevronRight, Filter } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -11,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatFixed } from "@/lib/formatters";
+import { logFetchSuccess, logFetchError, logFetchSkipped, isAbortError } from "@/lib/fetchLogger";
 
 interface RankedPlayer {
   id: string;
@@ -59,39 +61,72 @@ const getRatingBgColor = (rating: number | null) => {
 };
 
 export const PlayerRankingCard = () => {
+  const { session, permissionsLoading, rolesLoading } = useAuth();
+  const rbacReady = Boolean(session?.user) && !permissionsLoading && !rolesLoading;
+  
   const [players, setPlayers] = useState<RankedPlayer[]>([]);
   const [loading, setLoading] = useState(true);
   const [positionFilter, setPositionFilter] = useState("all");
 
-  useEffect(() => {
-    const fetchRankedPlayers = async () => {
-      setLoading(true);
-      try {
-        let query = supabase
-          .from("players")
-          .select("id, full_name, position, auto_rating, current_club, age")
-          .not("auto_rating", "is", null)
-          .or("is_archived.is.null,is_archived.eq.false")
-          .order("auto_rating", { ascending: false })
-          .limit(10);
+  const fetchRankedPlayers = useCallback(async () => {
+    // GUARD: Only fetch when RBAC is ready
+    if (!session?.user) {
+      logFetchSkipped("PlayerRankingCard", "no session");
+      return;
+    }
+    if (!rbacReady) {
+      logFetchSkipped("PlayerRankingCard", "rbac not ready");
+      return;
+    }
+    
+    setLoading(true);
+    const fetchStart = performance.now();
+    
+    try {
+      let query = supabase
+        .from("players")
+        .select("id, full_name, position, auto_rating, current_club, age")
+        .not("auto_rating", "is", null)
+        .or("is_archived.is.null,is_archived.eq.false")
+        .order("auto_rating", { ascending: false })
+        .limit(10);
 
-        if (positionFilter !== "all") {
-          query = query.eq("position", positionFilter);
-        }
-
-        const { data, error } = await query;
-
-        if (error) throw error;
-        setPlayers(data || []);
-      } catch (error) {
-        console.error("Error fetching ranked players:", error);
-      } finally {
-        setLoading(false);
+      if (positionFilter !== "all") {
+        query = query.eq("position", positionFilter);
       }
-    };
 
-    fetchRankedPlayers();
-  }, [positionFilter]);
+      const { data, error } = await query;
+
+      if (error) {
+        logFetchError(error, { 
+          endpoint: "PlayerRankingCard.players",
+          context: { positionFilter }
+        });
+        return;
+      }
+      
+      logFetchSuccess({ endpoint: "PlayerRankingCard" }, performance.now() - fetchStart);
+      setPlayers(data || []);
+    } catch (error) {
+      // Handle AbortError gracefully
+      if (isAbortError(error)) {
+        if (import.meta.env.DEV) {
+          console.log("[FETCH ABORT] PlayerRankingCard - request cancelled");
+        }
+        return;
+      }
+      logFetchError(error, { endpoint: "PlayerRankingCard" });
+    } finally {
+      setLoading(false);
+    }
+  }, [session?.user, rbacReady, positionFilter]);
+
+  // Fetch when RBAC is ready or filter changes
+  useEffect(() => {
+    if (rbacReady) {
+      fetchRankedPlayers();
+    }
+  }, [rbacReady, positionFilter, fetchRankedPlayers]);
 
   return (
     <div className="glass-card p-6">

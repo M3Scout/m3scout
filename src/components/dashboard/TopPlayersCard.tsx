@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Trophy, Star, ChevronRight, Filter, Crown, Medal, Award } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -13,6 +14,7 @@ import {
 import { formatFixed } from "@/lib/formatters";
 import { motion } from "framer-motion";
 import { fadeInUp, playerRankItemVariants, subtleHover, subtleTap } from "@/lib/animations";
+import { logFetchSuccess, logFetchError, logFetchSkipped, isAbortError } from "@/lib/fetchLogger";
 
 interface RankedPlayer {
   id: string;
@@ -73,38 +75,72 @@ const getRatingColor = (rating: number | null) => {
 };
 
 export const TopPlayersCard = () => {
+  const { session, permissionsLoading, rolesLoading } = useAuth();
+  const rbacReady = Boolean(session?.user) && !permissionsLoading && !rolesLoading;
+  
   const [players, setPlayers] = useState<RankedPlayer[]>([]);
   const [loading, setLoading] = useState(true);
   const [positionFilter, setPositionFilter] = useState("all");
 
-  useEffect(() => {
-    const fetchRankedPlayers = async () => {
-      setLoading(true);
-      try {
-        let query = supabase
-          .from("players")
-          .select("id, full_name, position, auto_rating, current_club, age")
-          .not("auto_rating", "is", null)
-          .or("is_archived.is.null,is_archived.eq.false")
-          .order("auto_rating", { ascending: false })
-          .limit(8);
+  const fetchRankedPlayers = useCallback(async () => {
+    // GUARD: Only fetch when RBAC is ready
+    if (!session?.user) {
+      logFetchSkipped("TopPlayersCard", "no session");
+      return;
+    }
+    if (!rbacReady) {
+      logFetchSkipped("TopPlayersCard", "rbac not ready");
+      return;
+    }
+    
+    setLoading(true);
+    const fetchStart = performance.now();
+    
+    try {
+      let query = supabase
+        .from("players")
+        .select("id, full_name, position, auto_rating, current_club, age")
+        .not("auto_rating", "is", null)
+        .or("is_archived.is.null,is_archived.eq.false")
+        .order("auto_rating", { ascending: false })
+        .limit(8);
 
-        if (positionFilter !== "all") {
-          query = query.eq("position", positionFilter);
-        }
-
-        const { data, error } = await query;
-        if (error) throw error;
-        setPlayers(data || []);
-      } catch (error) {
-        console.error("Error fetching ranked players:", error);
-      } finally {
-        setLoading(false);
+      if (positionFilter !== "all") {
+        query = query.eq("position", positionFilter);
       }
-    };
 
-    fetchRankedPlayers();
-  }, [positionFilter]);
+      const { data, error } = await query;
+      
+      if (error) {
+        logFetchError(error, { 
+          endpoint: "TopPlayersCard.players",
+          context: { positionFilter }
+        });
+        return;
+      }
+      
+      logFetchSuccess({ endpoint: "TopPlayersCard" }, performance.now() - fetchStart);
+      setPlayers(data || []);
+    } catch (error) {
+      // Handle AbortError gracefully
+      if (isAbortError(error)) {
+        if (import.meta.env.DEV) {
+          console.log("[FETCH ABORT] TopPlayersCard - request cancelled");
+        }
+        return;
+      }
+      logFetchError(error, { endpoint: "TopPlayersCard" });
+    } finally {
+      setLoading(false);
+    }
+  }, [session?.user, rbacReady, positionFilter]);
+
+  // Fetch when RBAC is ready or filter changes
+  useEffect(() => {
+    if (rbacReady) {
+      fetchRankedPlayers();
+    }
+  }, [rbacReady, positionFilter, fetchRankedPlayers]);
 
   return (
     <motion.div 
@@ -141,7 +177,7 @@ export const TopPlayersCard = () => {
         </div>
       </div>
 
-      {/* Content - flex-1 to fill available height */}
+      {/* Content */}
       <div className="p-3 flex-1 flex flex-col min-h-0">
         {loading ? (
           <div className="flex flex-col justify-between h-full gap-1.5">
