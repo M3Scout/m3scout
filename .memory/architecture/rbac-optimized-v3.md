@@ -1,42 +1,69 @@
 # Memory: architecture/rbac-optimized-v3
 
-Updated: 2026-01-30
+Updated: 2026-01-31
 
-## RBAC Performance Optimization v3
+## RBAC Performance Optimization v3 - "Big Site" Behavior
 
-### Changes Made
+### Overview
 
-1. **Consolidated RPC Function (`get_user_rbac`)**:
-   - Single database call returns all RBAC data
-   - Eliminates N+1 queries (was: user_roles + user_permissions separately)
-   - Returns: `userId`, `roles[]`, `isAdmin`, `isPlayer`, `isOwner`, `linkedPlayerId`, `userStatus`, `permissions`, `fetchedAt`, `ttlSeconds`
+Implements Instagram/Google-style resilience: silent recovery, SWR caching, automatic revalidation on tab focus, and login only as last resort.
 
-2. **Cache Configuration**:
-   - TTL: 30 minutes (up from 15 min)
-   - Storage: localStorage only (simplified from session+local)
-   - Key: `m3_rbac_v3` (new version for clean migration)
-   - Old keys cleaned up on cache clear
+### Key Architecture
 
-3. **Dedupe Singleton**:
-   - Global `inflightPromise` prevents duplicate fetches
-   - If fetch in progress, await it instead of starting new one
+1. **Auth Recovery Service (`src/lib/authRecovery.ts`)**:
+   - Single unified `recoverAuthAndRbac(reason)` function
+   - Handles: focus, visible, manual-retry, init, token-refresh
+   - Auto-refreshes token if expiring within 5 minutes
+   - Clears stuck dedupe state before fetching
+   - Returns `{ success, payload }` or `{ success: false, reason, shouldLogout }`
 
-4. **Instrumentation**:
-   - `console.time('rbac_fetch')` / `console.timeEnd('rbac_fetch')` for fetch duration
-   - Logs: "RBAC cache HIT" vs "RBAC cache MISS"
-   - Logs: "RBAC calls count" per page load (should be 0 on HIT, 1 on MISS)
-   - Logs: source as "supabase_rpc"
+2. **SWR (Stale-While-Revalidate) Cache**:
+   - TTL: 24 hours (localStorage + memory cache)
+   - Key: `m3_rbac_v3`
+   - If cache exists: apply immediately, revalidate in background
+   - Shows subtle "progress bar" during background update, NOT skeleton
 
-5. **Background Revalidation**:
-   - Only triggers if cache > 5 minutes old
-   - Non-blocking, UI renders immediately from cache
+3. **Visibility/Focus Listeners**:
+   - Auto-triggered on `focus` and `visibilitychange`
+   - Uses `shouldTriggerRecovery()` to check cache freshness (5 min threshold)
+   - Throttled to min 2s between recoveries
 
-6. **Removed**:
-   - 4s timeout warning (no longer needed - RPC is fast)
-   - Visibility/focus listeners (TTL is sufficient)
-   - Retry backoff logic (single fast call)
+4. **Retry Button Behavior**:
+   - Calls `triggerRecovery("manual-retry")`
+   - Clears cache and dedupe state first
+   - Shows "Reconectando..." with 10s timeout
+   - Only redirects to login if recovery truly fails AND no cache
+
+5. **Dedupe State Management**:
+   - `resetInflightState()` clears stuck promises
+   - Called on any error/abort/timeout
+   - Prevents "dedupe - awaiting existing fetch" infinite block
+
+### Error Handling Rules
+
+- **401/403**: Immediate logout redirect
+- **Network/Timeout with cache**: Keep UI working, retry in background (30s interval)
+- **Network/Timeout without cache**: After 3 retries → logout redirect
+- **AbortError**: Silently ignored, not an error
+
+### Service Worker Config
+
+Auth/RBAC endpoints use `NetworkOnly` strategy:
+- `/auth/*`
+- `/rest/v1/rpc/*`
+- `/rest/v1/user_roles*`
+- `/rest/v1/user_permissions*`
 
 ### Performance Targets
-- Cache HIT: <50ms (instant localStorage read)
-- Cache MISS: <1s (single RPC call)
-- Network requests: 1 per session (0 on navigation)
+
+- Cache HIT: <10ms (memory cache first, then localStorage)
+- Cache MISS: <10s (3 retries with backoff: 0, 800, 2000ms)
+- Background revalidation: 30s intervals on failure
+- Token refresh threshold: 5 minutes before expiry
+
+### Files
+
+- `src/lib/authRecovery.ts` - Core recovery service
+- `src/hooks/useAuth.tsx` - Integrated auth hook
+- `src/components/auth/ProtectedRoute.tsx` - SWR-aware route guard
+- `vite.config.ts` - Service worker exclusions

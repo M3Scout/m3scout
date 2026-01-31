@@ -2,16 +2,23 @@ import { createContext, useContext, useEffect, useState, ReactNode, useCallback,
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
+import {
+  recoverAuthAndRbac,
+  readRbacCache,
+  writeRbacCache,
+  clearRbacCache,
+  resetInflightState,
+  initRecoveryListeners,
+  shouldTriggerRecovery,
+  cleanupLegacyCaches,
+  type RbacPayload,
+  type RecoveryReason,
+} from "@/lib/authRecovery";
 
 export type AppRole = Database["public"]["Enums"]["app_role"];
 
 // Valid roles that grant app access
 const VALID_ROLES: AppRole[] = ["admin", "scout", "editor", "viewer", "player"];
-
-// ============ CACHE CONFIGURATION ============
-// 30 minute TTL as requested
-const RBAC_CACHE_TTL_MS = 30 * 60 * 1000;
-const RBAC_CACHE_KEY = "m3_rbac_v3"; // New version for clean migration
 
 // ============ PERMISSIONS TYPES ============
 export interface UserPermissions {
@@ -119,7 +126,6 @@ const PLAYER_PERMISSIONS: UserPermissions = {
  * All permissions are FALSE to prevent privilege escalation.
  * 
  * NOTE: Client-side RBAC is UX ONLY. Real security is enforced by RLS policies on the database.
- * Never trust client-side permission checks for security decisions.
  */
 const DEFAULT_PERMISSIONS: UserPermissions = {
   app_view: false,
@@ -153,122 +159,8 @@ const DEFAULT_PERMISSIONS: UserPermissions = {
   users_manage: false,
 };
 
-// ============ CACHE TYPES ============
-interface RbacCachePayload {
-  userId: string;
-  roles: AppRole[];
-  isAdmin: boolean;
-  isPlayer: boolean;
-  isOwner: boolean;
-  linkedPlayerId: string | null;
-  userStatus: "active" | "suspended" | null;
-  permissions: UserPermissions | null;
-  fetchedAt: number;
-  expiresAt: number;
-}
-
-// ============ CACHE FUNCTIONS ============
-
-/**
- * Clean up ALL legacy cache keys on startup.
- * This prevents infinite loading from stale/incompatible cache formats.
- */
-function cleanupLegacyCaches(): void {
-  try {
-    const keysToRemove: string[] = [];
-    
-    // Scan localStorage for any legacy RBAC keys
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && (
-        key.startsWith("m3_rbac_v1") ||
-        key.startsWith("m3_rbac_v2") ||
-        key === "m3_rbac_v2_persistent"
-      )) {
-        keysToRemove.push(key);
-      }
-    }
-    
-    // Remove legacy keys
-    for (const key of keysToRemove) {
-      localStorage.removeItem(key);
-      console.log("[RBAC] Removed legacy cache key:", key);
-    }
-  } catch {
-    // Ignore errors during cleanup
-  }
-}
-
-// Run cleanup immediately on module load
+// Cleanup legacy caches on module load
 cleanupLegacyCaches();
-
-function readCache(userId: string): RbacCachePayload | null {
-  try {
-    const raw = localStorage.getItem(RBAC_CACHE_KEY);
-    if (!raw) return null;
-    
-    const parsed = JSON.parse(raw) as RbacCachePayload;
-    
-    // Validate cache schema - if missing required fields, treat as miss
-    if (!parsed || typeof parsed !== "object") {
-      console.warn("[RBAC] Invalid cache format - clearing");
-      localStorage.removeItem(RBAC_CACHE_KEY);
-      return null;
-    }
-    
-    // Check required fields exist
-    if (!parsed.userId || !parsed.expiresAt || !Array.isArray(parsed.roles)) {
-      console.warn("[RBAC] Cache schema mismatch - clearing");
-      localStorage.removeItem(RBAC_CACHE_KEY);
-      return null;
-    }
-    
-    // Validate user match
-    if (parsed.userId !== userId) {
-      console.log("[RBAC] Cache userId mismatch - clearing");
-      localStorage.removeItem(RBAC_CACHE_KEY);
-      return null;
-    }
-    
-    // Check expiration
-    if (Date.now() > parsed.expiresAt) {
-      console.log("[RBAC] Cache expired - clearing");
-      localStorage.removeItem(RBAC_CACHE_KEY);
-      return null;
-    }
-    
-    return parsed;
-  } catch (err) {
-    // Parse error - clear corrupted cache
-    console.warn("[RBAC] Cache parse error - clearing:", err);
-    try {
-      localStorage.removeItem(RBAC_CACHE_KEY);
-    } catch {
-      // Ignore
-    }
-    return null;
-  }
-}
-
-function writeCache(payload: RbacCachePayload): void {
-  try {
-    localStorage.setItem(RBAC_CACHE_KEY, JSON.stringify(payload));
-  } catch {
-    // Ignore cache write failures
-  }
-}
-
-function clearCache(): void {
-  try {
-    localStorage.removeItem(RBAC_CACHE_KEY);
-  } catch {
-    // Ignore
-  }
-}
-
-// ============ DEDUPE SINGLETON ============
-let inflightPromise: Promise<RbacCachePayload | null> | null = null;
-let rbacCallCount = 0;
 
 // ============ CONTEXT TYPE ============
 interface AuthContextType {
@@ -287,10 +179,14 @@ interface AuthContextType {
   permissionsError: string | null;
   isOwner: boolean;
   userStatus: "active" | "suspended" | null;
+  /** True when recovery is running in background (SWR mode) */
+  isRecovering: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, name: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshRoles: () => Promise<void>;
+  /** Manual recovery function - exposed for Retry button */
+  triggerRecovery: (reason: RecoveryReason) => Promise<boolean>;
   hasRole: (role: AppRole) => boolean;
   isAdmin: boolean;
   isScout: boolean;
@@ -322,6 +218,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [permissionsError, setPermissionsError] = useState<string | null>(null);
   const [isOwner, setIsOwner] = useState(false);
   const [userStatus, setUserStatus] = useState<"active" | "suspended" | null>(null);
+  const [isRecovering, setIsRecovering] = useState(false);
 
   const [debug, setDebug] = useState<AuthContextType["debug"]>({
     fetchStage: "idle",
@@ -330,12 +227,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const isMountedRef = useRef(true);
   const hasInitializedRef = useRef(false);
+  const lastRecoveryRef = useRef<number>(0);
 
   // ============ APPLY RBAC PAYLOAD ============
-  const applyPayload = useCallback((payload: RbacCachePayload, fromCache: boolean) => {
+  const applyPayload = useCallback((payload: RbacPayload, fromCache: boolean) => {
     if (!isMountedRef.current) return;
 
-    setRoles(payload.roles);
+    setRoles(payload.roles as AppRole[]);
     setLinkedPlayerId(payload.linkedPlayerId);
     setIsOwner(payload.isOwner);
     setUserStatus(payload.userStatus);
@@ -350,7 +248,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else if (payload.isPlayer) {
       setPermissions(PLAYER_PERMISSIONS);
     } else if (payload.permissions) {
-      setPermissions(payload.permissions);
+      // Cast through unknown for dynamic permissions from RPC
+      setPermissions(payload.permissions as unknown as UserPermissions);
     } else {
       setPermissions(DEFAULT_PERMISSIONS);
     }
@@ -363,198 +262,149 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       fetchSource: fromCache ? "cache" : "fresh",
     });
 
-    console.log(`[RBAC] ${fromCache ? "cache HIT" : "applied"}`, {
-      userId: payload.userId,
-      roles: payload.roles,
-      isAdmin: payload.isAdmin,
-      isPlayer: payload.isPlayer,
-      cacheAge: fromCache ? `${Math.round((Date.now() - payload.fetchedAt) / 1000)}s` : "N/A",
-    });
-  }, []);
-
-  // ============ FETCH RBAC (SINGLE RPC) ============
-  const doFetch = useCallback(async (userId: string): Promise<RbacCachePayload | null> => {
-    console.time("rbac_fetch");
-    rbacCallCount++;
-    console.log("[RBAC] fetch start", { userId, callNumber: rbacCallCount, source: "supabase_rpc" });
-
-    try {
-      const { data, error } = await supabase.rpc("get_user_rbac", { p_user_id: userId });
-
-      console.timeEnd("rbac_fetch");
-
-      if (error) {
-        console.error("[RBAC] RPC error", error);
-        throw error;
-      }
-
-      if (!data) {
-        console.warn("[RBAC] No data returned");
-        return null;
-      }
-
-      // Cast through unknown for RPC response
-      const rbacData = data as unknown as {
-        userId: string;
-        roles: AppRole[];
-        isAdmin: boolean;
-        isPlayer: boolean;
-        isOwner: boolean;
-        linkedPlayerId: string | null;
-        userStatus: string | null;
-        permissions: UserPermissions | null;
-        fetchedAt: number;
-        ttlSeconds: number;
-      };
-
-      const payload: RbacCachePayload = {
-        userId: rbacData.userId,
-        roles: rbacData.roles || [],
-        isAdmin: rbacData.isAdmin,
-        isPlayer: rbacData.isPlayer,
-        isOwner: rbacData.isOwner,
-        linkedPlayerId: rbacData.linkedPlayerId,
-        userStatus: (rbacData.userStatus as "active" | "suspended") || null,
-        permissions: rbacData.permissions,
-        fetchedAt: rbacData.fetchedAt,
-        expiresAt: rbacData.fetchedAt + (rbacData.ttlSeconds * 1000),
-      };
-
-      console.log("[RBAC] fetch success", {
+    if (import.meta.env.DEV) {
+      console.log(`[Auth] RBAC ${fromCache ? "cache HIT" : "applied"}`, {
+        userId: payload.userId,
         roles: payload.roles,
         isAdmin: payload.isAdmin,
-        ttlMinutes: rbacData.ttlSeconds / 60,
+        isPlayer: payload.isPlayer,
+        cacheAge: fromCache ? `${Math.round((Date.now() - payload.fetchedAt) / 1000)}s` : "N/A",
       });
-
-      return payload;
-    } catch (err: any) {
-      console.timeEnd("rbac_fetch");
-      
-      // CRITICAL: Handle AbortError gracefully - NOT a real error
-      if (err?.name === "AbortError" || err?.message?.toLowerCase()?.includes("aborted")) {
-        console.log("[RBAC] fetch aborted - not an error, ignoring");
-        return null;
-      }
-      
-      console.error("[RBAC] fetch failed", err);
-      throw err;
     }
   }, []);
 
-  // ============ FETCH WITH DEDUPE ============
-  const fetchRbac = useCallback(async (userId: string, opts?: { background?: boolean }) => {
-    const background = opts?.background ?? false;
+  // ============ TRIGGER RECOVERY ============
+  const triggerRecovery = useCallback(async (reason: RecoveryReason): Promise<boolean> => {
+    // Throttle recovery to prevent spam (min 2s between recoveries)
+    const now = Date.now();
+    if (now - lastRecoveryRef.current < 2000 && reason !== "manual-retry") {
+      console.log("[Auth] Recovery throttled");
+      return false;
+    }
+    lastRecoveryRef.current = now;
 
-    if (!background) {
+    // Check if recovery is needed (based on cache state)
+    const userId = user?.id ?? session?.user?.id;
+    if (userId && !shouldTriggerRecovery(userId) && reason !== "manual-retry") {
+      // Cache is fresh enough, no recovery needed
+      const cached = readRbacCache(userId);
+      if (cached) {
+        applyPayload(cached, true);
+        return true;
+      }
+    }
+
+    // If we already have valid roles, use SWR approach (show existing data, update in background)
+    const hasValidRoles = roles.length > 0;
+    if (hasValidRoles && reason !== "manual-retry") {
+      setIsRecovering(true);
+    } else {
       setRolesLoading(true);
       setPermissionsLoading(true);
-      setDebug({ fetchStage: "start", fetchSource: "fresh" });
     }
 
-    // DEDUPE: Reuse existing promise if in flight
-    if (inflightPromise) {
-      console.log("[RBAC] dedupe - awaiting existing fetch");
-      try {
-        const result = await inflightPromise;
-        if (result) {
-          writeCache(result);
-          applyPayload(result, false);
+    setDebug({ fetchStage: "start", fetchSource: "fresh" });
+
+    const result = await recoverAuthAndRbac(reason, {
+      onRecovering: () => {
+        if (!hasValidRoles) {
+          setRolesLoading(true);
+          setPermissionsLoading(true);
         }
-      } catch {
-        // Error handled by original fetch
-      }
-      return;
-    }
-
-    // Start new fetch
-    const promise = doFetch(userId);
-    inflightPromise = promise;
-
-    try {
-      const result = await promise;
-      if (result) {
-        writeCache(result);
-        applyPayload(result, false);
-      } else if (!background) {
-        // SECURITY: No data returned - apply RESTRICTIVE fallback (deny all)
-        console.warn("[RBAC] No data returned - applying RESTRICTIVE fallback (deny all)");
-        setPermissions(DEFAULT_PERMISSIONS);
-        setRoles([]);
-        setRolesLoading(false);
-        setPermissionsLoading(false);
-      }
-    } catch (err: any) {
-      // CRITICAL: AbortError is NOT a real error - don't show error UI
-      if (err?.name === "AbortError" || err?.message?.toLowerCase()?.includes("aborted")) {
-        console.log("[RBAC] fetch aborted during navigation - ignoring");
-        // Reset loading states without setting error
-        if (!background) {
-          setRolesLoading(false);
-          setPermissionsLoading(false);
+      },
+      onSuccess: (payload) => {
+        if (isMountedRef.current) {
+          applyPayload(payload, false);
+          setIsRecovering(false);
         }
-        return;
-      }
-      
-      console.error("[RBAC] fetch error - applying RESTRICTIVE fallback", err);
-      
-      if (!background) {
-        // SECURITY CRITICAL: On error, apply DENY-ALL permissions
-        // Never grant elevated permissions without confirmed RBAC data
-        // Real security is enforced by RLS - this is UX only
-        setRolesError(err?.code || "exception");
-        setPermissionsError(err?.code || "exception");
-        setPermissions(DEFAULT_PERMISSIONS); // RESTRICTIVE fallback
-        setRoles([]);
-        setRolesLoading(false);
-        setPermissionsLoading(false);
-        setDebug({
-          fetchStage: "error",
-          fetchSource: background ? "background" : "fresh",
-          error: { code: err?.code, message: err?.message },
-        });
-        
-        console.warn("[RBAC] RESTRICTIVE fallback applied - user has NO permissions until refresh succeeds");
-      }
-    } finally {
-      inflightPromise = null;
-    }
-  }, [doFetch, applyPayload]);
+      },
+      onError: (error) => {
+        if (isMountedRef.current) {
+          setRolesError(error);
+          setPermissionsError(error);
+          setDebug({
+            fetchStage: "error",
+            fetchSource: null,
+            error: { message: error },
+          });
+        }
+      },
+    });
 
-  // ============ HANDLE RBAC (CACHE FIRST) ============
+    if (isMountedRef.current) {
+      setRolesLoading(false);
+      setPermissionsLoading(false);
+      setIsRecovering(false);
+    }
+
+    // Handle logout redirect as last resort
+    if (!result.success) {
+      // Type narrowing: result is now the failure variant
+      const failureResult = result as { success: false; reason: string; shouldLogout: boolean };
+      if (failureResult.shouldLogout) {
+        console.warn("[Auth] Recovery failed, redirecting to login", { reason: failureResult.reason });
+        // Clear local state
+        setUser(null);
+        setSession(null);
+        setRoles([]);
+        setPermissions(null);
+        clearRbacCache();
+        // Hard redirect
+        window.location.href = "/app/auth";
+        return false;
+      }
+    }
+
+    return result.success;
+  }, [user?.id, session?.user?.id, roles.length, applyPayload]);
+
+  // ============ HANDLE RBAC (CACHE FIRST + SWR) ============
   const handleRbac = useCallback(async (userId: string) => {
-    rbacCallCount = 0; // Reset counter per page load
-    
-    // Try cache first - instant read
-    const cached = readCache(userId);
+    // Try cache first for instant UI
+    const cached = readRbacCache(userId);
     if (cached) {
-      console.log("[RBAC] cache HIT", {
+      console.log("[Auth] cache HIT - applying immediately", {
         cacheAge: `${Math.round((Date.now() - cached.fetchedAt) / 1000)}s`,
-        expiresIn: `${Math.round((cached.expiresAt - Date.now()) / 1000)}s`,
       });
-      console.log("[RBAC] calls count: 0 (cache hit)");
       applyPayload(cached, true);
       setLoading(false);
-      
-      // Background revalidate if cache is older than 5 minutes
+
+      // Background revalidation if cache is older than 5 minutes
       const cacheAge = Date.now() - cached.fetchedAt;
       if (cacheAge > 5 * 60 * 1000) {
-        console.log("[RBAC] background revalidation triggered");
-        void fetchRbac(userId, { background: true });
+        console.log("[Auth] background revalidation triggered");
+        setIsRecovering(true);
+        triggerRecovery("init").finally(() => {
+          if (isMountedRef.current) {
+            setIsRecovering(false);
+          }
+        });
       }
       return;
     }
 
-    // Cache miss - fetch fresh
-    console.log("[RBAC] cache MISS - fetching fresh");
-    await fetchRbac(userId);
-    console.log("[RBAC] calls count:", rbacCallCount, "(cache miss)");
+    // Cache miss - do full recovery
+    console.log("[Auth] cache MISS - fetching fresh");
+    await triggerRecovery("init");
     setLoading(false);
-  }, [applyPayload, fetchRbac]);
+  }, [applyPayload, triggerRecovery]);
+
+  // ============ VISIBILITY/FOCUS RECOVERY ============
+  useEffect(() => {
+    const cleanup = initRecoveryListeners((reason) => {
+      // Only trigger if we have a user
+      if (user?.id) {
+        triggerRecovery(reason);
+      }
+    });
+
+    return cleanup;
+  }, [user?.id, triggerRecovery]);
 
   // ============ INIT EFFECT ============
   useEffect(() => {
     isMountedRef.current = true;
-    
+
     const handleSignOut = () => {
       setRoles([]);
       setLinkedPlayerId(null);
@@ -567,24 +417,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setPermissionsLoading(false);
       setRolesError(null);
       setPermissionsError(null);
-      clearCache();
+      setIsRecovering(false);
+      clearRbacCache();
+      resetInflightState();
       setLoading(false);
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!isMountedRef.current) return;
-        
+
         // Skip duplicate INITIAL_SESSION
         if (event === "INITIAL_SESSION" && hasInitializedRef.current) {
           return;
         }
-        
+
         console.log("[Auth] state changed:", event);
         setSession(session);
         setUser(session?.user ?? null);
 
-        if (session?.user) {
+        if (event === "TOKEN_REFRESHED") {
+          console.log("[Auth] token refreshed - triggering recovery");
+          if (session?.user) {
+            triggerRecovery("token-refresh");
+          }
+        } else if (session?.user) {
           await handleRbac(session.user.id);
         } else {
           handleSignOut();
@@ -596,7 +453,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const initSession = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
-        
+
         if (!isMountedRef.current) return;
         hasInitializedRef.current = true;
 
@@ -634,14 +491,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isMountedRef.current = false;
       subscription.unsubscribe();
     };
-  }, [handleRbac]);
+  }, [handleRbac, triggerRecovery]);
 
   // ============ PUBLIC API ============
   const refreshRoles = useCallback(async () => {
     if (!user?.id) return;
-    clearCache();
-    await fetchRbac(user.id);
-  }, [user?.id, fetchRbac]);
+    clearRbacCache();
+    resetInflightState();
+    await triggerRecovery("manual-retry");
+  }, [user?.id, triggerRecovery]);
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -670,7 +528,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsOwner(false);
     setUserStatus(null);
     setPermissions(null);
-    clearCache();
+    clearRbacCache();
+    resetInflightState();
   };
 
   const hasRole = (role: AppRole) => roles.includes(role);
@@ -697,10 +556,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         permissionsError,
         isOwner,
         userStatus,
+        isRecovering,
         signIn,
         signUp,
         signOut,
         refreshRoles,
+        triggerRecovery,
         hasRole,
         isAdmin,
         isScout,

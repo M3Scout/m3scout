@@ -27,6 +27,24 @@ export default defineConfig(({ mode }) => ({
         // Skip precaching of large JS files - they'll be loaded on demand
         globIgnores: ["**/index-*.js"],
         runtimeCaching: [
+          // CRITICAL: Auth/RBAC endpoints must NEVER be cached
+          // NetworkOnly strategy for Supabase auth and RPC calls
+          {
+            urlPattern: /supabase\.co\/auth\/.*/i,
+            handler: "NetworkOnly",
+          },
+          {
+            urlPattern: /supabase\.co\/rest\/v1\/rpc\/.*/i,
+            handler: "NetworkOnly",
+          },
+          {
+            urlPattern: /supabase\.co\/rest\/v1\/user_roles.*/i,
+            handler: "NetworkOnly",
+          },
+          {
+            urlPattern: /supabase\.co\/rest\/v1\/user_permissions.*/i,
+            handler: "NetworkOnly",
+          },
           {
             // Cache Google Fonts
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -95,13 +113,14 @@ export default defineConfig(({ mode }) => ({
             },
           },
         ],
-        // Don't cache Supabase API requests
+        // Don't cache Supabase API requests (fallback denylist)
         navigateFallbackDenylist: [
           /^\/rest\//,
           /^\/auth\//,
           /^\/storage\//,
           /^\/functions\//,
           /supabase\.co/,
+          /\/rpc\//,
         ],
       },
       devOptions: {
