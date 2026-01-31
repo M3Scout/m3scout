@@ -1,20 +1,16 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { usePermissions } from "@/hooks/usePermissions";
-import { Loader2, AlertCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { PermissionsWarningBanner } from "@/components/auth/PermissionsWarningBanner";
-import { hardLogoutToAuth } from "@/lib/hardLogout";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
-// Thresholds for distinguishing slow loading from definitive error
-// PERFORMANCE: Reduced thresholds for faster perceived loading
-const SLOW_LOADING_THRESHOLD_MS = 800; // After 0.8s show "Sincronizando..." (reduced from 1.2s)
-const ERROR_FINAL_THRESHOLD_MS = 6000; // After 6s, consider it a final error (reduced from 15s)
+// Thresholds for feedback - now much more lenient with SWR
+const SLOW_LOADING_THRESHOLD_MS = 2000; // After 2s show "Sincronizando..." (only if no cache)
+const ERROR_FINAL_THRESHOLD_MS = 15000; // After 15s, consider it a final error (only if no cache)
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const {
@@ -26,50 +22,44 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     roles,
     isAdmin,
     isApproved,
-    refreshRoles,
+    triggerRecovery,
     permissionsLoading,
     permissionsError,
     userStatus,
-    debug: authDebug,
+    isRecovering,
   } = useAuth();
-  const { refreshPermissions } = usePermissions();
   const location = useLocation();
-  const [showDevDetails, setShowDevDetails] = useState(false);
   const [retrying, setRetrying] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   
-  // New: separate states for slow loading vs final error
+  // Separate states for slow loading vs final error
   const [slowLoading, setSlowLoading] = useState(false);
   const [errorFinal, setErrorFinal] = useState(false);
 
   const isLoading = authLoading || rolesLoading || permissionsLoading;
-  // Technical error from hooks (only set after retries exhausted)
-  // CRITICAL: Don't treat errors as blocking if we already have valid roles
-  const hasHookError = Boolean(rolesError || permissionsError);
+  
+  // CRITICAL: We have valid permissions if roles exist (SWR approach)
   const hasValidPermissions = roles.length > 0;
-  // Only consider it a real error if we have an error AND no valid permissions
+  
+  // Only blocking error if we have hook error AND no valid permissions
+  const hasHookError = Boolean(rolesError || permissionsError);
   const isBlockingError = hasHookError && !hasValidPermissions;
-  const isDev = import.meta.env.DEV;
-  const loadingSinceRef = useRef<number | null>(null);
 
-  const maskEmail = (email?: string | null) => {
-    if (!email) return null;
-    const [local, domain] = email.split("@");
-    if (!domain) return "***";
-    if (!local) return `***@${domain}`;
-    const head = local.slice(0, 2);
-    return `${head}***@${domain}`;
-  };
+  const loadingSinceRef = useRef<number | null>(null);
 
   const handleRetry = async () => {
     setRetrying(true);
     try {
-      // Reset states so UI can show loading again
       setSlowLoading(false);
       setErrorFinal(false);
       loadingSinceRef.current = null;
-      // Re-run the exact bootstrap fetches
-      await Promise.all([refreshRoles(), refreshPermissions()]);
+      
+      // Use the unified recovery function (clears stuck state, retries with backoff)
+      const success = await triggerRecovery("manual-retry");
+      
+      if (!success) {
+        console.warn("[ProtectedRoute] Manual retry failed");
+      }
     } finally {
       setRetrying(false);
     }
@@ -77,17 +67,19 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   const handleLogout = async () => {
     setLoggingOut(true);
+    // Import dynamically to avoid circular deps
+    const { hardLogoutToAuth } = await import("@/lib/hardLogout");
     await hardLogoutToAuth(1800);
   };
 
-  // Track loading duration to distinguish slow loading from final error
+  // Track loading duration (only relevant if NO cache)
   useEffect(() => {
-    // Start tracking when loading begins
-    if (isLoading && loadingSinceRef.current == null) {
+    // Start tracking when loading begins AND we don't have valid permissions
+    if (isLoading && !hasValidPermissions && loadingSinceRef.current == null) {
       loadingSinceRef.current = Date.now();
     }
 
-    // Reset when loading completes successfully OR when we have valid permissions
+    // Reset when loading completes OR when we have valid permissions (SWR success)
     if ((!isLoading && !isBlockingError) || hasValidPermissions) {
       loadingSinceRef.current = null;
       setSlowLoading(false);
@@ -95,34 +87,33 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     }
   }, [isLoading, isBlockingError, hasValidPermissions]);
 
-  // Check elapsed time periodically to set slow/error states
+  // Periodic check for slow/error states (only if no cache)
   useEffect(() => {
     const interval = setInterval(() => {
-      // If we got a blocking error (after retries exhausted AND no valid permissions), that's final
+      // If we got a blocking error AND no valid permissions, that's final
       if (isBlockingError && !isLoading) {
         setErrorFinal(true);
         setSlowLoading(false);
         return;
       }
 
-      // If we have valid permissions, never show error banners
+      // If we have valid permissions, never show error banners (SWR working)
       if (hasValidPermissions) {
         setSlowLoading(false);
         setErrorFinal(false);
         return;
       }
 
-      // If not loading or we have user without loading, no need to show banners
       if (!loadingSinceRef.current) return;
 
       const elapsed = Date.now() - loadingSinceRef.current;
 
-      // After ERROR_FINAL_THRESHOLD_MS, consider it a final error (only if no valid permissions)
+      // After ERROR_FINAL_THRESHOLD_MS with no cache
       if (elapsed >= ERROR_FINAL_THRESHOLD_MS && !hasValidPermissions) {
         setErrorFinal(true);
         setSlowLoading(false);
       }
-      // After SLOW_LOADING_THRESHOLD_MS, show "syncing" message (no buttons)
+      // After SLOW_LOADING_THRESHOLD_MS
       else if (elapsed >= SLOW_LOADING_THRESHOLD_MS) {
         setSlowLoading(true);
         setErrorFinal(false);
@@ -132,15 +123,18 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     return () => clearInterval(interval);
   }, [isBlockingError, isLoading, hasValidPermissions]);
 
-  // Determine what banner to show - NEVER show error banner if we have valid permissions
+  // Determine banners - NEVER show error if we have valid permissions (SWR)
   const showSlowLoadingBanner = slowLoading && !errorFinal && isLoading && (user || session) && !hasValidPermissions;
   const showErrorFinalBanner = (errorFinal || (isBlockingError && !isLoading)) && !hasValidPermissions;
 
-  // ===== Error Final state (after all retries exhausted) =====
-  if (showErrorFinalBanner) {
-    const errorType = rolesError || (permissionsError as any) || "timeout";
+  // ===== SWR Recovering indicator (background update with existing data) =====
+  // Show subtle indicator when recovering in background but we have valid data
+  const showRecoveringIndicator = isRecovering && hasValidPermissions;
 
-    // Not logged in → redirect to login (even in error mode)
+  // ===== Error Final state (after all retries exhausted AND no cache) =====
+  if (showErrorFinalBanner) {
+    const errorType = rolesError || (permissionsError as string) || "timeout";
+
     if (!user) {
       return <Navigate to="/app/auth" state={{ from: location }} replace />;
     }
@@ -155,63 +149,12 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
           onRetry={handleRetry}
           onLogout={handleLogout}
         />
-
-        {isDev && (
-          <div className="mx-auto w-full max-w-6xl px-4 pt-16">
-            <div className="rounded-lg border border-border bg-card p-3">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4 text-destructive" />
-                  <p className="text-sm font-medium">Detalhes técnicos (dev)</p>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => setShowDevDetails((v) => !v)}>
-                  {showDevDetails ? "Ocultar" : "Mostrar"}
-                </Button>
-              </div>
-
-              {showDevDetails && (
-                <pre className="mt-3 text-xs whitespace-pre-wrap break-words text-muted-foreground">
-{JSON.stringify(
-  {
-    route: location.pathname,
-    errorType,
-    loadingFlags: {
-      authLoading,
-      rolesLoading,
-      permissionsLoading,
-    },
-    errors: {
-      rolesError,
-      permissionsError,
-    },
-    auth: {
-      userId: user?.id ?? null,
-      email: maskEmail(user?.email) ?? null,
-      hasSession: Boolean(session),
-      isAdmin,
-      isApproved,
-    },
-    requests: {
-      fetchStage: authDebug?.fetchStage ?? null,
-      fetchSource: authDebug?.fetchSource ?? null,
-      error: authDebug?.error ?? null,
-    },
-  },
-  null,
-  2
-)}
-                </pre>
-              )}
-            </div>
-          </div>
-        )}
-
-        <div className={isDev ? "pt-4" : "pt-16"}>{children}</div>
+        <div className="pt-16">{children}</div>
       </>
     );
   }
 
-  // ===== Slow Loading state (still trying, no buttons) =====
+  // ===== Slow Loading state (still trying, no cache) =====
   if (showSlowLoadingBanner) {
     return (
       <>
@@ -226,15 +169,24 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   }
 
   // ===== Normal loading state =====
-  // PERFORMANCE FIX: Always render children when we have a session.
-  // This prevents the "checando permissões" delay from blocking the UI.
   if (isLoading) {
-    // If there's already an authenticated session/user, render children IMMEDIATELY
-    // with just a minimal non-blocking indicator
+    // If there's already a session/user AND we have valid roles (SWR), render children immediately
+    if ((user || session) && hasValidPermissions) {
+      return (
+        <>
+          {/* SWR: Subtle progress indicator - doesn't block content */}
+          {showRecoveringIndicator && (
+            <div className="fixed top-0 left-0 right-0 z-50 h-0.5 bg-gradient-to-r from-transparent via-primary/40 to-transparent animate-pulse" />
+          )}
+          {children}
+        </>
+      );
+    }
+
+    // If session exists but no roles yet (initial load), show minimal loading with content attempt
     if (user || session) {
       return (
         <>
-          {/* Minimal progress bar - doesn't block content */}
           <div className="fixed top-0 left-0 right-0 z-50 h-0.5 bg-gradient-to-r from-transparent via-primary/40 to-transparent animate-pulse" />
           {children}
         </>
@@ -257,38 +209,29 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <Navigate to="/app/auth" state={{ from: location }} replace />;
   }
 
-  // RBAC Decision Log (dev only) - ALWAYS log before decision
-  const decision = isAdmin
-    ? "ALLOW_ADMIN"
-    : !isApproved || userStatus !== "active"
-      ? "REDIRECT_PENDING"
-      : "ALLOW";
-  
-  if (import.meta.env.DEV) {
-    console.log("[RBAC] Access decision:", {
-      userId: user.id,
-      email: maskEmail(user.email),
-      resolvedRoles: roles,
-      isAdmin,
-      isApproved,
-      rolesLoading,
-      rolesError,
-      permissionsLoading,
-      permissionsError,
-      status: userStatus,
-      decision,
-      route: location.pathname,
-    });
+  // Admin bypass → allow immediately
+  if (isAdmin) {
+    return (
+      <>
+        {showRecoveringIndicator && (
+          <div className="fixed top-0 left-0 right-0 z-50 h-0.5 bg-gradient-to-r from-transparent via-primary/40 to-transparent animate-pulse" />
+        )}
+        {children}
+      </>
+    );
   }
 
-  // Admin bypass -> allow immediately (do NOT check pending/status)
-  if (isAdmin) return <>{children}</>;
-
   // Non-admin: enforce approval + active status
-  // Only redirect to pending if genuinely not approved (no technical error)
   if (!isApproved || userStatus !== "active") {
     return <Navigate to="/pending-access" replace />;
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      {showRecoveringIndicator && (
+        <div className="fixed top-0 left-0 right-0 z-50 h-0.5 bg-gradient-to-r from-transparent via-primary/40 to-transparent animate-pulse" />
+      )}
+      {children}
+    </>
+  );
 }
