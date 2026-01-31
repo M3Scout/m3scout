@@ -17,6 +17,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, Activity, Clock } from "lucide-react";
+import { parseDateSafe, daysBetween } from "@/lib/dateUtils";
 import { safeArray } from "@/lib/utils";
 
 interface Injury {
@@ -42,10 +43,9 @@ interface YearlyStats {
   totalDaysAway: number;
 }
 
+// Use timezone-safe daysBetween utility
 const calculateRecoveryDays = (startDate: string, returnDate: string | null): number => {
-  const start = new Date(startDate);
-  const end = returnDate ? new Date(returnDate) : new Date();
-  return Math.ceil(Math.abs(end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+  return daysBetween(startDate, returnDate);
 };
 
 const normalizeSeverity = (severity: string): "leve" | "media" | "grave" => {
@@ -64,11 +64,11 @@ export function InjuryEvolutionChart({ injuries }: InjuryEvolutionChartProps) {
       return { yearlyData: [], totalStats: null };
     }
 
-    // Group injuries by year
+    // Group injuries by year using timezone-safe parsing
     const byYear: Record<string, Injury[]> = {};
     
     safeInjuries.forEach((injury) => {
-      const year = new Date(injury.start_date).getFullYear().toString();
+      const year = parseDateSafe(injury.start_date).getFullYear().toString();
       if (!byYear[year]) byYear[year] = [];
       byYear[year].push(injury);
     });

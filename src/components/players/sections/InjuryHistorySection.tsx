@@ -16,6 +16,7 @@ import {
   Trash2
 } from "lucide-react";
 import { safeArray } from "@/lib/utils";
+import { formatDateMediumBR, daysBetween } from "@/lib/dateUtils";
 import { AddInjuryModal } from "./AddInjuryModal";
 import { EditInjuryModal } from "./EditInjuryModal";
 import { DeleteInjuryDialog } from "./DeleteInjuryDialog";
@@ -177,11 +178,9 @@ const getSeverityConfig = (severity: string) => {
   };
 };
 
+// Use timezone-safe date utilities
 const calculateDaysAway = (startDate: string, returnDate: string | null): string => {
-  const start = new Date(startDate);
-  const end = returnDate ? new Date(returnDate) : new Date();
-  const diffTime = Math.abs(end.getTime() - start.getTime());
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  const diffDays = daysBetween(startDate, returnDate);
   
   if (diffDays === 1) return "1 dia";
   if (diffDays < 7) return `${diffDays} dias`;
@@ -193,12 +192,9 @@ const calculateDaysAway = (startDate: string, returnDate: string | null): string
   return months === 1 ? "1 mês" : `${months} meses`;
 };
 
+// Use timezone-safe formatDateMediumBR instead of new Date(dateString)
 const formatDate = (dateString: string): string => {
-  return new Date(dateString).toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  return formatDateMediumBR(dateString);
 };
 
 // Premium Clinical Section Card
