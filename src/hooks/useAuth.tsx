@@ -112,7 +112,15 @@ const PLAYER_PERMISSIONS: UserPermissions = {
   users_manage: false,
 };
 
-// Default permissions: DENY BY DEFAULT
+/**
+ * DEFAULT PERMISSIONS: DENY BY DEFAULT
+ * 
+ * SECURITY CRITICAL: This is the fallback when RBAC fails, times out, or returns no data.
+ * All permissions are FALSE to prevent privilege escalation.
+ * 
+ * NOTE: Client-side RBAC is UX ONLY. Real security is enforced by RLS policies on the database.
+ * Never trust client-side permission checks for security decisions.
+ */
 const DEFAULT_PERMISSIONS: UserPermissions = {
   app_view: false,
   players_view: false,
@@ -402,15 +410,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         writeCache(result);
         applyPayload(result, false);
       } else if (!background) {
+        // SECURITY: No data returned - apply RESTRICTIVE fallback (deny all)
+        console.warn("[RBAC] No data returned - applying RESTRICTIVE fallback (deny all)");
+        setPermissions(DEFAULT_PERMISSIONS);
+        setRoles([]);
         setRolesLoading(false);
         setPermissionsLoading(false);
       }
     } catch (err: any) {
-      console.error("[RBAC] fetch error", err);
+      console.error("[RBAC] fetch error - applying RESTRICTIVE fallback", err);
       
       if (!background) {
+        // SECURITY CRITICAL: On error, apply DENY-ALL permissions
+        // Never grant elevated permissions without confirmed RBAC data
+        // Real security is enforced by RLS - this is UX only
         setRolesError(err?.code || "exception");
         setPermissionsError(err?.code || "exception");
+        setPermissions(DEFAULT_PERMISSIONS); // RESTRICTIVE fallback
+        setRoles([]);
         setRolesLoading(false);
         setPermissionsLoading(false);
         setDebug({
@@ -418,6 +435,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           fetchSource: background ? "background" : "fresh",
           error: { code: err?.code, message: err?.message },
         });
+        
+        console.warn("[RBAC] RESTRICTIVE fallback applied - user has NO permissions until refresh succeeds");
       }
     } finally {
       inflightPromise = null;
