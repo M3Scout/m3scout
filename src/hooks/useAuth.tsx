@@ -427,8 +427,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       return payload;
-    } catch (err) {
+    } catch (err: any) {
       console.timeEnd("rbac_fetch");
+      
+      // CRITICAL: Handle AbortError gracefully - NOT a real error
+      if (err?.name === "AbortError" || err?.message?.toLowerCase()?.includes("aborted")) {
+        console.log("[RBAC] fetch aborted - not an error, ignoring");
+        return null;
+      }
+      
       console.error("[RBAC] fetch failed", err);
       throw err;
     }
@@ -477,6 +484,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setPermissionsLoading(false);
       }
     } catch (err: any) {
+      // CRITICAL: AbortError is NOT a real error - don't show error UI
+      if (err?.name === "AbortError" || err?.message?.toLowerCase()?.includes("aborted")) {
+        console.log("[RBAC] fetch aborted during navigation - ignoring");
+        // Reset loading states without setting error
+        if (!background) {
+          setRolesLoading(false);
+          setPermissionsLoading(false);
+        }
+        return;
+      }
+      
       console.error("[RBAC] fetch error - applying RESTRICTIVE fallback", err);
       
       if (!background) {
