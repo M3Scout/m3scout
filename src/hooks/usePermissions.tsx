@@ -47,8 +47,14 @@ interface PermissionsContextType {
 const PermissionsContext = createContext<PermissionsContextType | undefined>(undefined);
 
 /**
- * PermissionsProvider is now a thin wrapper around useAuth.
+ * PermissionsProvider is a thin wrapper around useAuth.
  * All RBAC data is centralized in AuthProvider to avoid N+1 calls.
+ * 
+ * SECURITY CRITICAL:
+ * - Client-side permissions are for UX ONLY (hide/show UI elements)
+ * - Real security is enforced by RLS policies on the database
+ * - On error/timeout, permissions default to DENY ALL (restrictive fallback)
+ * - Never trust client-side checks for security decisions
  */
 export function PermissionsProvider({ children }: { children: ReactNode }) {
   const {
