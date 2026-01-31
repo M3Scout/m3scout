@@ -8,6 +8,7 @@ import { ptBR } from "date-fns/locale";
 import { CalendarIcon, Pencil, Stethoscope } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { parseDateSafe, formatDateForDB } from "@/lib/dateUtils";
 
 import {
   Dialog,
@@ -103,8 +104,9 @@ export function EditInjuryModal({ injury, onInjuryUpdated, trigger }: EditInjury
     defaultValues: {
       injury_type: injury.injury_type,
       severity: normalizeSeverity(injury.severity),
-      start_date: new Date(injury.start_date),
-      return_date: injury.return_date ? new Date(injury.return_date) : null,
+      // Use parseDateSafe to avoid UTC shift when loading date-only strings
+      start_date: parseDateSafe(injury.start_date),
+      return_date: injury.return_date ? parseDateSafe(injury.return_date) : null,
       notes: injury.notes || "",
     },
   });
@@ -121,8 +123,9 @@ export function EditInjuryModal({ injury, onInjuryUpdated, trigger }: EditInjury
     form.reset({
       injury_type: injury.injury_type,
       severity: normalizeSeverity(injury.severity),
-      start_date: new Date(injury.start_date),
-      return_date: injury.return_date ? new Date(injury.return_date) : null,
+      // Use parseDateSafe to avoid UTC shift when loading date-only strings
+      start_date: parseDateSafe(injury.start_date),
+      return_date: injury.return_date ? parseDateSafe(injury.return_date) : null,
       notes: injury.notes || "",
     });
   }, [injury, form]);
@@ -130,13 +133,14 @@ export function EditInjuryModal({ injury, onInjuryUpdated, trigger }: EditInjury
   const onSubmit = async (data: InjuryFormValues) => {
     setIsSubmitting(true);
     try {
+      // Use formatDateForDB to ensure correct local date is saved (no UTC shift)
       const { error } = await supabase
         .from("player_injuries")
         .update({
           injury_type: data.injury_type,
           severity: data.severity,
-          start_date: format(data.start_date, "yyyy-MM-dd"),
-          return_date: data.return_date ? format(data.return_date, "yyyy-MM-dd") : null,
+          start_date: formatDateForDB(data.start_date),
+          return_date: data.return_date ? formatDateForDB(data.return_date) : null,
           notes: data.notes || null,
         })
         .eq("id", injury.id);

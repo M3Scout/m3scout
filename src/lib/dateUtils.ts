@@ -62,3 +62,48 @@ export function formatDateBR(
 export function formatDateShortBR(dateStr: string | null | undefined): string {
   return formatDateBR(dateStr, "dd/MM/yyyy");
 }
+
+/**
+ * Format a date in abbreviated Brazilian format (dd/MMM/yyyy).
+ * Uses timezone-safe parsing.
+ * 
+ * @param dateStr - ISO date string or date-only string
+ * @returns Formatted date string like "18 jan. 2026"
+ */
+export function formatDateMediumBR(dateStr: string | null | undefined): string {
+  const date = parseDateSafe(dateStr);
+  return date.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+/**
+ * Convert a Date object to YYYY-MM-DD string for database storage.
+ * This ensures we're storing the local date, not a UTC-shifted date.
+ * 
+ * @param date - JavaScript Date object
+ * @returns String in YYYY-MM-DD format
+ */
+export function formatDateForDB(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Calculate the difference in days between two date strings.
+ * Uses timezone-safe parsing to ensure accurate calculations.
+ * 
+ * @param startDateStr - Start date string (YYYY-MM-DD)
+ * @param endDateStr - End date string (YYYY-MM-DD), defaults to today
+ * @returns Number of days between the dates
+ */
+export function daysBetween(startDateStr: string, endDateStr?: string | null): number {
+  const start = parseDateSafe(startDateStr);
+  const end = endDateStr ? parseDateSafe(endDateStr) : new Date();
+  const diffTime = Math.abs(end.getTime() - start.getTime());
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+}

@@ -4,6 +4,7 @@ import { AlertTriangle, TrendingUp } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { safeArray } from "@/lib/utils";
+import { parseDateSafe } from "@/lib/dateUtils";
 
 interface Injury {
   id: string;
@@ -79,9 +80,9 @@ export function RecurrentInjuryAlert({ injuries, threshold = 3 }: RecurrentInjur
     const recurrent: RecurrenceData[] = [];
     Object.entries(grouped).forEach(([type, typeInjuries]) => {
       if (typeInjuries.length >= threshold) {
-        // Sort by date to get the most recent
+        // Sort by date to get the most recent using timezone-safe parsing
         const sorted = [...typeInjuries].sort(
-          (a, b) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime()
+          (a, b) => parseDateSafe(b.start_date).getTime() - parseDateSafe(a.start_date).getTime()
         );
         recurrent.push({
           type,

@@ -17,6 +17,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import jsPDF from "jspdf";
+import { parseDateSafe, formatDateShortBR, formatDateForDB } from "@/lib/dateUtils";
 
 interface PhysicalHistoryRecord {
   id: string;
@@ -296,8 +297,9 @@ export const PhysicalEvolutionChart = ({ playerId, playerName = "Atleta", curren
       yPos += 5;
       
       if (history.length > 0) {
-        const firstDate = format(new Date(history[0].recorded_at), "dd/MM/yyyy");
-        const lastDate = format(new Date(history[history.length - 1].recorded_at), "dd/MM/yyyy");
+        // Use timezone-safe date formatting
+        const firstDate = formatDateShortBR(history[0].recorded_at);
+        const lastDate = formatDateShortBR(history[history.length - 1].recorded_at);
         doc.text(`Período: ${firstDate} a ${lastDate}`, margin, yPos);
       }
       yPos += 15;
@@ -322,8 +324,9 @@ export const PhysicalEvolutionChart = ({ playerId, playerName = "Atleta", curren
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
 
+      // Use timezone-safe sorting
       const sortedHistory = [...history].sort((a, b) => 
-        new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime()
+        parseDateSafe(b.recorded_at).getTime() - parseDateSafe(a.recorded_at).getTime()
       );
 
       sortedHistory.forEach((record, index) => {
@@ -340,8 +343,9 @@ export const PhysicalEvolutionChart = ({ playerId, playerName = "Atleta", curren
         }
 
         xPos = margin;
+        // Use timezone-safe date formatting
         const rowData = [
-          format(new Date(record.recorded_at), "dd/MM/yyyy"),
+          formatDateShortBR(record.recorded_at),
           record.weight ? `${record.weight} kg` : "-",
           record.body_fat_percentage ? `${record.body_fat_percentage}%` : "-",
           record.muscle_mass ? `${record.muscle_mass} kg` : "-",
@@ -424,8 +428,9 @@ export const PhysicalEvolutionChart = ({ playerId, playerName = "Atleta", curren
     }
   };
 
+  // Use timezone-safe date parsing for chart display
   const chartData = (history || []).map((record) => ({
-    date: format(new Date(record.recorded_at), "dd/MM/yy"),
+    date: format(parseDateSafe(record.recorded_at), "dd/MM/yy"),
     fullDate: record.recorded_at,
     weight: record.weight,
     body_fat_percentage: record.body_fat_percentage,

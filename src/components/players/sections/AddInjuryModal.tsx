@@ -8,6 +8,7 @@ import { ptBR } from "date-fns/locale";
 import { CalendarIcon, Plus, Stethoscope } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { formatDateForDB } from "@/lib/dateUtils";
 
 import {
   Dialog,
@@ -94,12 +95,13 @@ export function AddInjuryModal({ playerId, onInjuryAdded }: AddInjuryModalProps)
   const onSubmit = async (data: InjuryFormValues) => {
     setIsSubmitting(true);
     try {
+      // Use formatDateForDB to ensure correct local date is saved (no UTC shift)
       const { error } = await supabase.from("player_injuries").insert({
         player_id: playerId,
         injury_type: data.injury_type,
         severity: data.severity,
-        start_date: format(data.start_date, "yyyy-MM-dd"),
-        return_date: data.return_date ? format(data.return_date, "yyyy-MM-dd") : null,
+        start_date: formatDateForDB(data.start_date),
+        return_date: data.return_date ? formatDateForDB(data.return_date) : null,
         notes: data.notes || null,
       });
 
