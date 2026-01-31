@@ -1,7 +1,8 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+import { logFetchSkipped, logFetchError, logFetchSuccess, isAbortError } from "@/lib/fetchLogger";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
@@ -89,10 +90,13 @@ const INFINITE_SCROLL_PAGE_SIZE = 24;
 const AppPlayers = () => {
   if (import.meta.env.DEV) console.log("[MOUNT] AppPlayers (Atletas)");
 
-  const { isAdmin } = useAuth();
+  const { isAdmin, session, permissionsLoading, rolesLoading } = useAuth();
+  const rbacReady = Boolean(session?.user) && !permissionsLoading && !rolesLoading;
+  
   const isMobile = useIsMobile();
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isRefetching, setIsRefetching] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -117,16 +121,40 @@ const AppPlayers = () => {
   const [showArchived, setShowArchived] = useState(false);
 
   const safePlayers = useMemo(() => (Array.isArray(players) ? players : []), [players]);
+  
+  // Ref to track last successful fetch (for stale-while-revalidate logging)
+  const lastFetchRef = useRef<{ count: number; timestamp: number } | null>(null);
 
   // Debug (para identificar variável que está vindo indefinida e causando crash com `.length`)
-  console.log("[AppPlayers DEBUG] players:", typeof players, Array.isArray(players), "length:", Array.isArray(players) ? players.length : "N/A");
-  console.log("[AppPlayers DEBUG] filters:", { positionFilter, nationalityFilter, clubFilter, statusFilter, showArchived });
-  console.log("[AppPlayers DEBUG] searchQuery:", typeof searchQuery, `"${searchQuery}"`);
+  if (import.meta.env.DEV) {
+    console.log("[AppPlayers DEBUG] players:", typeof players, Array.isArray(players), "length:", Array.isArray(players) ? players.length : "N/A");
+  }
 
-  const fetchPlayers = async () => {
-    if (import.meta.env.DEV) console.log("[FETCH] AppPlayers start");
-    setLoading(true);
+  const fetchPlayers = useCallback(async (isBackground = false) => {
+    // GUARD: Only fetch when session and RBAC are ready
+    if (!session?.user) {
+      logFetchSkipped("AppPlayers", "no session");
+      return;
+    }
+    if (!rbacReady) {
+      logFetchSkipped("AppPlayers", "rbac not ready");
+      return;
+    }
+    
+    if (import.meta.env.DEV) console.log("[FETCH] AppPlayers start", { isBackground, hasCachedData: players.length > 0 });
+    
+    // STALE-WHILE-REVALIDATE: Only show loading if no cached data
+    if (players.length === 0) {
+      setLoading(true);
+    } else {
+      // Background refetch - show subtle indicator but keep data
+      setIsRefetching(true);
+    }
+    
+    // DO NOT clear players here - keep stale data while fetching
     setFetchError(null);
+    
+    const fetchStart = performance.now();
 
     try {
       // Fetch players with auto_rating and details from database
@@ -145,12 +173,13 @@ const AppPlayers = () => {
       const { data: playersData, error: playersError } = await query;
 
       if (playersError) {
-        if (import.meta.env.DEV) console.error("[FETCH] AppPlayers error", playersError);
-        console.error("Error fetching players:", playersError);
-        setPlayers([]);
-        setFetchError(
-          "Não foi possível carregar os atletas. Verifique sua conexão e tente novamente."
-        );
+        logFetchError(playersError, { endpoint: "AppPlayers.players" });
+        // Only set error if we have no cached data to show
+        if (players.length === 0) {
+          setFetchError(
+            "Não foi possível carregar os atletas. Verifique sua conexão e tente novamente."
+          );
+        }
         return;
       }
 
@@ -164,6 +193,7 @@ const AppPlayers = () => {
         const { data: scoresData } = await supabase
           .from("scouting_reports")
           .select("player_id, final_score, match_date")
+          .is("deleted_at", null)
           .order("match_date", { ascending: true });
 
         if (Array.isArray(scoresData)) {
@@ -178,7 +208,10 @@ const AppPlayers = () => {
           });
         }
       } catch (e) {
-        console.error("Error fetching scores (non-blocking):", e);
+        // Non-blocking - just log
+        if (!isAbortError(e)) {
+          logFetchError(e, { endpoint: "AppPlayers.scores" });
+        }
       }
 
       const playersWithScores = safePlayersData.map((player) => {
@@ -205,21 +238,47 @@ const AppPlayers = () => {
         };
       });
 
-      if (import.meta.env.DEV) console.log("[FETCH] AppPlayers success", playersWithScores.length, "players");
-      setPlayers(Array.isArray(playersWithScores) ? playersWithScores : []);
+      logFetchSuccess({ endpoint: "AppPlayers" }, performance.now() - fetchStart);
+      
+      // Log when updating (for debugging stale-while-revalidate)
+      const prevCount = lastFetchRef.current?.count ?? 0;
+      const newCount = playersWithScores.length;
+      if (import.meta.env.DEV && prevCount > 0 && prevCount !== newCount) {
+        console.log(`[AppPlayers] Data updated: ${prevCount} → ${newCount} players`);
+      }
+      
+      lastFetchRef.current = { count: newCount, timestamp: Date.now() };
+      
+      // Only update if we got valid data
+      if (Array.isArray(playersWithScores)) {
+        setPlayers(playersWithScores);
+      }
     } catch (error) {
-      if (import.meta.env.DEV) console.error("[FETCH] AppPlayers error", error);
-      console.error("Unexpected error fetching players:", error);
-      setPlayers([]);
-      setFetchError("Ocorreu um erro inesperado ao carregar os atletas.");
+      // Handle AbortError gracefully
+      if (isAbortError(error)) {
+        if (import.meta.env.DEV) {
+          console.log("[FETCH ABORT] AppPlayers - request cancelled");
+        }
+        return;
+      }
+      
+      logFetchError(error, { endpoint: "AppPlayers" });
+      // Only set error if we have no cached data to show
+      if (players.length === 0) {
+        setFetchError("Ocorreu um erro inesperado ao carregar os atletas.");
+      }
     } finally {
       setLoading(false);
+      setIsRefetching(false);
     }
-  };
+  }, [session?.user, rbacReady, showArchived, players.length]);
 
+  // Trigger fetch when RBAC becomes ready
   useEffect(() => {
-    fetchPlayers();
-  }, [showArchived]);
+    if (rbacReady) {
+      fetchPlayers();
+    }
+  }, [rbacReady, showArchived]);
 
   // Extract unique values for filter options with null safety
   const filterOptions = useMemo(() => {
@@ -385,11 +444,11 @@ const AppPlayers = () => {
     }
 
     toast.success(isArchived ? "Atleta restaurado!" : "Atleta arquivado!");
-    fetchPlayers();
+    fetchPlayers(true); // Background refetch
   };
 
   const handleDeleteSuccess = () => {
-    fetchPlayers();
+    fetchPlayers(true); // Background refetch
   };
 
   const goToPage = (page: number) => {
@@ -420,14 +479,23 @@ const AppPlayers = () => {
     <div className="space-y-5 w-full min-w-0 overflow-x-hidden">
       {/* Header - Premium compact */}
       <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in">
-        <div>
-          <h1 className="text-2xl font-bold text-zinc-100 tracking-tight">Atletas</h1>
-          <p className="text-sm text-zinc-500 mt-0.5">Gerencie todos os atletas da agência</p>
+        <div className="flex items-center gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-zinc-100 tracking-tight">Atletas</h1>
+            <p className="text-sm text-zinc-500 mt-0.5">Gerencie todos os atletas da agência</p>
+          </div>
+          {/* Subtle refetching indicator */}
+          {isRefetching && (
+            <div className="flex items-center gap-1.5 text-xs text-zinc-500">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <span className="hidden sm:inline">Atualizando...</span>
+            </div>
+          )}
         </div>
         {/* Actions */}
         <div className="flex items-center gap-2">
           {isAdmin && (
-            <BulkRecalculateButton onComplete={fetchPlayers} />
+            <BulkRecalculateButton onComplete={() => fetchPlayers(true)} />
           )}
           <Button variant="outline" size="sm" asChild className="bg-zinc-900/60 border-zinc-800/50 hover:bg-zinc-800/80 hover:border-zinc-700">
             <Link to="/app/compare">
@@ -632,7 +700,7 @@ const AppPlayers = () => {
               <h3 className="text-xl font-semibold mb-2">Erro ao carregar atletas</h3>
               <p className="text-muted-foreground">{fetchError}</p>
             </div>
-            <Button variant="outline" onClick={fetchPlayers} className="mt-2">
+            <Button variant="outline" onClick={() => fetchPlayers()} className="mt-2">
               <RefreshCw className="w-4 h-4 mr-2" />
               Tentar Novamente
             </Button>
