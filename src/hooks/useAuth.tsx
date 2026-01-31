@@ -168,6 +168,40 @@ interface RbacCachePayload {
 }
 
 // ============ CACHE FUNCTIONS ============
+
+/**
+ * Clean up ALL legacy cache keys on startup.
+ * This prevents infinite loading from stale/incompatible cache formats.
+ */
+function cleanupLegacyCaches(): void {
+  try {
+    const keysToRemove: string[] = [];
+    
+    // Scan localStorage for any legacy RBAC keys
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (
+        key.startsWith("m3_rbac_v1") ||
+        key.startsWith("m3_rbac_v2") ||
+        key === "m3_rbac_v2_persistent"
+      )) {
+        keysToRemove.push(key);
+      }
+    }
+    
+    // Remove legacy keys
+    for (const key of keysToRemove) {
+      localStorage.removeItem(key);
+      console.log("[RBAC] Removed legacy cache key:", key);
+    }
+  } catch {
+    // Ignore errors during cleanup
+  }
+}
+
+// Run cleanup immediately on module load
+cleanupLegacyCaches();
+
 function readCache(userId: string): RbacCachePayload | null {
   try {
     const raw = localStorage.getItem(RBAC_CACHE_KEY);
@@ -175,15 +209,43 @@ function readCache(userId: string): RbacCachePayload | null {
     
     const parsed = JSON.parse(raw) as RbacCachePayload;
     
-    // Validate cache
-    if (parsed?.userId !== userId) return null;
+    // Validate cache schema - if missing required fields, treat as miss
+    if (!parsed || typeof parsed !== "object") {
+      console.warn("[RBAC] Invalid cache format - clearing");
+      localStorage.removeItem(RBAC_CACHE_KEY);
+      return null;
+    }
+    
+    // Check required fields exist
+    if (!parsed.userId || !parsed.expiresAt || !Array.isArray(parsed.roles)) {
+      console.warn("[RBAC] Cache schema mismatch - clearing");
+      localStorage.removeItem(RBAC_CACHE_KEY);
+      return null;
+    }
+    
+    // Validate user match
+    if (parsed.userId !== userId) {
+      console.log("[RBAC] Cache userId mismatch - clearing");
+      localStorage.removeItem(RBAC_CACHE_KEY);
+      return null;
+    }
+    
+    // Check expiration
     if (Date.now() > parsed.expiresAt) {
+      console.log("[RBAC] Cache expired - clearing");
       localStorage.removeItem(RBAC_CACHE_KEY);
       return null;
     }
     
     return parsed;
-  } catch {
+  } catch (err) {
+    // Parse error - clear corrupted cache
+    console.warn("[RBAC] Cache parse error - clearing:", err);
+    try {
+      localStorage.removeItem(RBAC_CACHE_KEY);
+    } catch {
+      // Ignore
+    }
     return null;
   }
 }
@@ -199,9 +261,6 @@ function writeCache(payload: RbacCachePayload): void {
 function clearCache(): void {
   try {
     localStorage.removeItem(RBAC_CACHE_KEY);
-    // Also clear old cache versions
-    localStorage.removeItem("m3_rbac_v2");
-    localStorage.removeItem("m3_rbac_v2_persistent");
   } catch {
     // Ignore
   }
