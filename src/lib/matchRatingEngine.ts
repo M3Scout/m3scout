@@ -149,6 +149,8 @@ export interface DetailedBreakdown {
   capsApplied: CapApplied[];
   antiInflationApplied: boolean;
   hasImpactfulAction: boolean;
+  /** True when breakdown was generated from persisted aggregated data (not live events) */
+  isPersistedBreakdown?: boolean;
 }
 
 export interface RatingBreakdown {

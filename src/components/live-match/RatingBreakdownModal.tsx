@@ -68,7 +68,7 @@ function BreakdownItemRow({ item }: { item: BreakdownItem }) {
   );
 }
 
-function CategorySection({ category }: { category: CategoryBreakdown }) {
+function CategorySection({ category, isPersistedBreakdown }: { category: CategoryBreakdown; isPersistedBreakdown?: boolean }) {
   const hasItems = category.items.length > 0;
   const isPositive = category.raw > 0;
   const isNegative = category.raw < 0;
@@ -83,6 +83,9 @@ function CategorySection({ category }: { category: CategoryBreakdown }) {
     }
   };
   
+  // Check if this is a synthetic aggregated item (from persisted breakdown)
+  const isAggregatedItem = hasItems && category.items[0]?.stat?.endsWith('_aggregated');
+  
   return (
     <AccordionItem value={category.key} className="border-b border-border/50">
       <AccordionTrigger className="py-2 hover:no-underline">
@@ -90,7 +93,7 @@ function CategorySection({ category }: { category: CategoryBreakdown }) {
           <div className="flex items-center gap-2">
             {getCategoryIcon()}
             <span className="font-medium text-sm">{category.label}</span>
-            {hasItems && (
+            {hasItems && !isAggregatedItem && (
               <Badge variant="secondary" className="text-[10px] h-4">
                 {category.items.length}
               </Badge>
@@ -105,14 +108,52 @@ function CategorySection({ category }: { category: CategoryBreakdown }) {
         </div>
       </AccordionTrigger>
       <AccordionContent className="pb-2">
-        {hasItems ? (
+        {isAggregatedItem ? (
+          // Show aggregated data explanation
+          <div className="pl-2 space-y-2">
+            <div className="flex items-center justify-between py-1.5 text-xs border-b border-border/30">
+              <div className="flex items-center gap-2">
+                <DeltaIcon value={category.raw} />
+                <span className="text-muted-foreground">Contribuição total da categoria</span>
+              </div>
+              <span className={cn(
+                "font-mono text-[11px]",
+                isPositive ? "text-green-500" : isNegative ? "text-red-500" : "text-muted-foreground"
+              )}>
+                {formatDelta(category.raw)}
+              </span>
+            </div>
+            <p className="text-[10px] text-muted-foreground/70 italic">
+              Pontuação baseada em estatísticas agregadas (eventos individuais não disponíveis para esta partida)
+            </p>
+          </div>
+        ) : hasItems ? (
           <div className="pl-2 space-y-0">
             {category.items.map((item, idx) => (
               <BreakdownItemRow key={idx} item={item} />
             ))}
           </div>
+        ) : category.raw !== 0 ? (
+          // Has score but no items - show generic contribution message
+          <div className="pl-2 space-y-2">
+            <div className="flex items-center justify-between py-1.5 text-xs">
+              <div className="flex items-center gap-2">
+                <DeltaIcon value={category.raw} />
+                <span className="text-muted-foreground">Contribuição total</span>
+              </div>
+              <span className={cn(
+                "font-mono text-[11px]",
+                isPositive ? "text-green-500" : isNegative ? "text-red-500" : "text-muted-foreground"
+              )}>
+                {formatDelta(category.raw)}
+              </span>
+            </div>
+            <p className="text-[10px] text-muted-foreground/70 italic">
+              Detalhamento de eventos não disponível
+            </p>
+          </div>
         ) : (
-          <p className="text-xs text-muted-foreground pl-2">Nenhum evento nesta categoria</p>
+          <p className="text-xs text-muted-foreground pl-2">Sem contribuição nesta categoria</p>
         )}
       </AccordionContent>
     </AccordionItem>
@@ -241,9 +282,18 @@ export function RatingBreakdownModal({ rating, playerName, children }: RatingBre
           {hasBreakdown ? (
             <div>
               <h4 className="text-sm font-medium mb-2">Contribuição por Categoria</h4>
+              {detailedBreakdown!.isPersistedBreakdown && (
+                <p className="text-[10px] text-muted-foreground/70 mb-2 italic">
+                  Detalhamento baseado em estatísticas agregadas da partida
+                </p>
+              )}
               <Accordion type="multiple" className="border rounded-lg">
                 {detailedBreakdown!.categories.map((category) => (
-                  <CategorySection key={category.key} category={category} />
+                  <CategorySection 
+                    key={category.key} 
+                    category={category} 
+                    isPersistedBreakdown={detailedBreakdown!.isPersistedBreakdown}
+                  />
                 ))}
               </Accordion>
             </div>

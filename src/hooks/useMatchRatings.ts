@@ -58,59 +58,97 @@ interface UseMatchRatingsOptions {
 
 /**
  * Convert persisted breakdown from SQL to DetailedBreakdown format for UI
+ * 
+ * IMPORTANT: Persisted breakdowns only contain category aggregates, not individual items.
+ * We generate synthetic "summary" items to explain where the score came from,
+ * ensuring consistency between the category score and the expanded details.
  */
 function convertPersistedBreakdown(persisted: PersistedRatingBreakdown): DetailedBreakdown {
+  // Helper to create a synthetic summary item for a category
+  // This prevents the "score exists but no events" contradiction
+  const createSummaryItem = (
+    categoryKey: string,
+    label: string,
+    value: number,
+    minutesFactor: number
+  ): import("@/lib/matchRatingEngine").BreakdownItem | null => {
+    if (value === 0) return null;
+    return {
+      stat: `${categoryKey}_aggregated`,
+      label: `${label} (agregado)`,
+      count: 1,
+      weight: value,
+      rawDelta: value,
+      afterMinutes: value * minutesFactor,
+      capped: false,
+    };
+  };
+
   const categories: CategoryBreakdown[] = [
     {
       key: "attack" as const,
       label: persisted.categories.attack.label,
       raw: persisted.categories.attack.value,
       afterMinutes: persisted.categories.attack.value * persisted.minutesFactor,
-      items: []
+      items: persisted.categories.attack.value !== 0 
+        ? [createSummaryItem("attack", persisted.categories.attack.label, persisted.categories.attack.value, persisted.minutesFactor)!]
+        : []
     },
     {
       key: "creation" as const,
       label: persisted.categories.creation.label,
       raw: persisted.categories.creation.value,
       afterMinutes: persisted.categories.creation.value * persisted.minutesFactor,
-      items: []
+      items: persisted.categories.creation.value !== 0
+        ? [createSummaryItem("creation", persisted.categories.creation.label, persisted.categories.creation.value, persisted.minutesFactor)!]
+        : []
     },
     {
       key: "passing" as const,
       label: persisted.categories.passing.label,
       raw: persisted.categories.passing.value,
       afterMinutes: persisted.categories.passing.value * persisted.minutesFactor,
-      items: []
+      items: persisted.categories.passing.value !== 0
+        ? [createSummaryItem("passing", persisted.categories.passing.label, persisted.categories.passing.value, persisted.minutesFactor)!]
+        : []
     },
     {
       key: "defense" as const,
       label: persisted.categories.defense.label,
       raw: persisted.categories.defense.value,
       afterMinutes: persisted.categories.defense.value * persisted.minutesFactor,
-      items: []
+      items: persisted.categories.defense.value !== 0
+        ? [createSummaryItem("defense", persisted.categories.defense.label, persisted.categories.defense.value, persisted.minutesFactor)!]
+        : []
     },
     {
       key: "discipline" as const,
       label: persisted.categories.discipline.label,
       raw: persisted.categories.discipline.value,
       afterMinutes: persisted.categories.discipline.value * persisted.minutesFactor,
-      items: []
+      items: persisted.categories.discipline.value !== 0
+        ? [createSummaryItem("discipline", persisted.categories.discipline.label, persisted.categories.discipline.value, persisted.minutesFactor)!]
+        : []
     },
     {
       key: "goalkeeper" as const,
       label: persisted.categories.goalkeeper.label,
       raw: persisted.categories.goalkeeper.value,
       afterMinutes: persisted.categories.goalkeeper.value * persisted.minutesFactor,
-      items: []
+      items: persisted.categories.goalkeeper.value !== 0
+        ? [createSummaryItem("goalkeeper", persisted.categories.goalkeeper.label, persisted.categories.goalkeeper.value, persisted.minutesFactor)!]
+        : []
     }
   ].filter(cat => cat.raw !== 0 || cat.key === "attack" || cat.key === "defense");
 
+  // Mark this breakdown as coming from persisted/aggregated data
   return {
     categories,
     items: [],
     capsApplied: [],
     antiInflationApplied: !persisted.hasImpact && persisted.rawImpact > 0.9,
-    hasImpactfulAction: persisted.hasImpact
+    hasImpactfulAction: persisted.hasImpact,
+    isPersistedBreakdown: true // Flag to indicate this is from persisted data
   };
 }
 
