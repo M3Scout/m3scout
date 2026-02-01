@@ -540,7 +540,7 @@ export default function LiveMatchReview() {
           </CardDescription>
         </CardHeader>
         <CardContent className="p-4 sm:p-6">
-          <PlayerPresenceHistory matchId={matchId!} />
+          <PlayerPresenceHistory matchId={matchId!} matchPlayers={matchPlayers} />
         </CardContent>
       </Card>
 
