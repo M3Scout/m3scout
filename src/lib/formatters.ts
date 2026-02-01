@@ -251,6 +251,35 @@ export const formatGameMinute = (
 };
 
 /**
+ * Format game minute in REGULATION TIME ONLY:
+ * - First half: 0–45
+ * - Second half: 45–90
+ * - Never shows 45+X / 90+X
+ */
+export const getRegulationGameMinute = (seconds: number, period: number = 1): number => {
+  if (!Number.isFinite(seconds) || seconds < 0) return 0;
+
+  const periodMinute = getFootballMinute(seconds);
+  const isSecondHalf = period === 2;
+  const baseMinute = isSecondHalf ? 45 : 0;
+  const maxMinute = isSecondHalf ? 90 : 45;
+
+  const minute = baseMinute + periodMinute;
+  return Math.min(Math.max(0, minute), maxMinute);
+};
+
+export const formatGameMinuteReg = (
+  seconds: number | null | undefined,
+  period: number = 1
+): string => {
+  if (seconds === null || seconds === undefined || !Number.isFinite(seconds)) {
+    return "—";
+  }
+
+  return `${getRegulationGameMinute(seconds, period)}'`;
+};
+
+/**
  * Format seconds to display minute for an event
  * Takes into account period to show correct game minute
  * Uses rounding to nearest minute (rounds at 30s)
@@ -281,3 +310,4 @@ export const formatPresenceInterval = (
   const durationMinutes = Math.round(durationSeconds / 60); // Round duration to nearest minute
   return `${entryMin} → ${exitMin} (${durationMinutes} min)`;
 };
+

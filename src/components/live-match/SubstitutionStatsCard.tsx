@@ -1,6 +1,4 @@
 import { useMemo, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,6 +7,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowRightLeft, Clock, ArrowDown, ArrowUp, Timer, Download } from "lucide-react";
 import { useExportPng } from "@/hooks/useExportPng";
 import { calculateMinutesPlayed, getMinutesPlayedPercent, STANDARD_MATCH_DURATION } from "@/lib/minutesPlayed";
+import { usePlayerFieldPresence } from "@/hooks/usePlayerFieldPresence";
+import { getRegulationGameMinute } from "@/lib/formatters";
 
 interface MatchPlayer {
   id: string;
@@ -95,20 +95,10 @@ export function SubstitutionStatsCard({
   };
 
   // Fetch player_field_presence as SOURCE OF TRUTH for minutes
-  const { data: presenceRecords = [] } = useQuery({
-    queryKey: ["player-field-presence", matchId],
-    queryFn: async () => {
-      if (!matchId) return [];
-      const { data, error } = await supabase
-        .from("player_field_presence")
-        .select("*")
-        .eq("match_id", matchId);
-      if (error) throw error;
-      return data as PresenceRecord[];
-    },
-    enabled: !!matchId,
-    staleTime: 0,
-  });
+  const { data: presenceRecordsRaw } = usePlayerFieldPresence(matchId);
+  const presenceRecords = (presenceRecordsRaw ?? []) as unknown as PresenceRecord[];
+
+  const END_OF_HALF_SECONDS = 45 * 60;
 
   // Build a map of player_id -> total minutes from presence records
   const presenceMinutesMap = useMemo(() => {
@@ -120,12 +110,15 @@ export function SubstitutionStatsCard({
       if (record.role === "starter") {
         map[record.player_id].started = true;
       }
-      const exitSeconds = record.exited_at_seconds ?? (matchDuration * 60);
-      const minutes = Math.floor((exitSeconds - record.entered_at_seconds) / 60);
+      // Use the same rounding/capping standard as the UI minute display
+      const entryMin = getRegulationGameMinute(record.entered_at_seconds, record.period);
+      const exitSeconds = Math.min(record.exited_at_seconds ?? END_OF_HALF_SECONDS, END_OF_HALF_SECONDS);
+      const exitMin = getRegulationGameMinute(exitSeconds, record.period);
+      const minutes = Math.max(0, exitMin - entryMin);
       map[record.player_id].totalMinutes += minutes;
     }
     return map;
-  }, [presenceRecords, matchDuration]);
+  }, [presenceRecords]);
 
   // Get all substitution events
   const substitutions = useMemo<SubstitutionInfo[]>(() => {
@@ -171,9 +164,16 @@ export function SubstitutionStatsCard({
           // Build range display from presence
           const playerRecords = presenceRecords.filter(r => r.player_id === mp.player_id);
           if (playerRecords.length > 0) {
-            const firstEntry = Math.min(...playerRecords.map(r => Math.floor(r.entered_at_seconds / 60)));
-            const lastExit = Math.max(...playerRecords.map(r => Math.floor((r.exited_at_seconds ?? matchDuration * 60) / 60)));
-            rangeDisplay = `${firstEntry}' → ${Math.min(lastExit, 90)}'`;
+            const firstEntry = Math.min(
+              ...playerRecords.map(r => getRegulationGameMinute(r.entered_at_seconds, r.period))
+            );
+            const lastExit = Math.max(
+              ...playerRecords.map(r => {
+                const exitSeconds = Math.min(r.exited_at_seconds ?? END_OF_HALF_SECONDS, END_OF_HALF_SECONDS);
+                return getRegulationGameMinute(exitSeconds, r.period);
+              })
+            );
+            rangeDisplay = `${firstEntry}' → ${lastExit}'`;
           } else {
             rangeDisplay = "—";
           }
@@ -212,7 +212,7 @@ export function SubstitutionStatsCard({
         };
       })
       .sort((a, b) => b.minutesPlayed - a.minutesPlayed);
-  }, [matchPlayers, matchContext, presenceMinutesMap, presenceRecords, matchDuration, hasMatchAddedTime]);
+  }, [matchPlayers, matchContext, presenceMinutesMap, presenceRecords, hasMatchAddedTime]);
 
   // Summary stats
   const summaryStats = useMemo(() => {

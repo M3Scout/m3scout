@@ -1,14 +1,12 @@
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { Clock, LogIn, LogOut, User, ChevronDown, ChevronUp } from "lucide-react";
+import { Clock, LogIn, LogOut, ChevronDown, ChevronUp } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { formatGameMinute, formatPresenceInterval } from "@/lib/formatters";
+import { formatGameMinuteReg, getRegulationGameMinute } from "@/lib/formatters";
 import { getPositionColor, getShortPosition } from "@/lib/positionColors";
 import { useState } from "react";
+import { usePlayerFieldPresence } from "@/hooks/usePlayerFieldPresence";
 
 interface PresenceRecord {
   id: string;
@@ -19,46 +17,45 @@ interface PresenceRecord {
   entered_at_seconds: number;
   exited_at_seconds: number | null;
   role: string;
-  player?: {
-    id: string;
-    full_name: string;
-    photo_url: string | null;
-    position: string;
-  };
+}
+
+interface PlayerLite {
+  id: string;
+  full_name: string;
+  photo_url: string | null;
+  position: string;
+}
+
+interface MatchPlayerLite {
+  player_id: string;
+  player?: PlayerLite | null;
 }
 
 interface PlayerPresenceHistoryProps {
   matchId: string;
+  matchPlayers?: MatchPlayerLite[];
   className?: string;
 }
 
-export function PlayerPresenceHistory({ matchId, className }: PlayerPresenceHistoryProps) {
+export function PlayerPresenceHistory({ matchId, matchPlayers = [], className }: PlayerPresenceHistoryProps) {
   const [expandedPlayers, setExpandedPlayers] = useState<Set<string>>(new Set());
 
-  const { data: presenceRecords = [], isLoading } = useQuery({
-    queryKey: ["player-field-presence", matchId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("player_field_presence")
-        .select(`
-          *,
-          player:players(id, full_name, photo_url, position)
-        `)
-        .eq("match_id", matchId)
-        .order("period", { ascending: true })
-        .order("entered_at_seconds", { ascending: true });
+  const { data: presenceRecordsRaw, isLoading, error } = usePlayerFieldPresence(matchId);
+  const presenceRecords = (presenceRecordsRaw ?? []) as unknown as PresenceRecord[];
 
-      if (error) throw error;
-      return data as PresenceRecord[];
-    },
-  });
+  const END_OF_HALF_SECONDS = 45 * 60;
+
+  const playerMap = matchPlayers.reduce((acc, mp) => {
+    if (mp.player) acc[mp.player_id] = mp.player;
+    return acc;
+  }, {} as Record<string, PlayerLite>);
 
   // Group records by player
   const playerGroups = presenceRecords.reduce((acc, record) => {
     const playerId = record.player_id;
     if (!acc[playerId]) {
       acc[playerId] = {
-        player: record.player,
+        player: playerMap[playerId] ?? null,
         records: [],
         totalMinutes: 0,
         // Determine game role ONCE for the entire match:
@@ -75,12 +72,13 @@ export function PlayerPresenceHistory({ matchId, className }: PlayerPresenceHist
     acc[playerId].records.push(record);
     
     // Calculate total minutes
-    if (record.exited_at_seconds !== null) {
-      acc[playerId].totalMinutes += Math.floor((record.exited_at_seconds - record.entered_at_seconds) / 60);
-    }
+    const entryMin = getRegulationGameMinute(record.entered_at_seconds, record.period);
+    const exitSeconds = Math.min(record.exited_at_seconds ?? END_OF_HALF_SECONDS, END_OF_HALF_SECONDS);
+    const exitMin = getRegulationGameMinute(exitSeconds, record.period);
+    acc[playerId].totalMinutes += Math.max(0, exitMin - entryMin);
     
     return acc;
-  }, {} as Record<string, { player: PresenceRecord["player"]; records: PresenceRecord[]; totalMinutes: number; gameRole: "starter" | "substitute" }>);
+  }, {} as Record<string, { player: PlayerLite | null; records: PresenceRecord[]; totalMinutes: number; gameRole: "starter" | "substitute" }>);
 
   const togglePlayer = (playerId: string) => {
     setExpandedPlayers(prev => {
@@ -100,6 +98,22 @@ export function PlayerPresenceHistory({ matchId, className }: PlayerPresenceHist
         {[1, 2, 3].map((i) => (
           <div key={i} className="h-16 bg-zinc-800/50 rounded-2xl" />
         ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div
+        className={cn(
+          "flex flex-col items-center justify-center py-8 text-center",
+          "bg-zinc-900/60 rounded-2xl border border-white/5",
+          className
+        )}
+      >
+        <Clock className="w-10 h-10 text-zinc-600 mb-3" />
+        <p className="text-sm text-zinc-400">Erro ao carregar presença em campo</p>
+        <p className="text-xs text-zinc-600 mt-1">{String((error as any)?.message ?? error)}</p>
       </div>
     );
   }
@@ -132,10 +146,13 @@ export function PlayerPresenceHistory({ matchId, className }: PlayerPresenceHist
 
       {Object.entries(playerGroups).map(([playerId, group]) => {
         const player = group.player;
-        if (!player) return null;
 
-        const positionColors = getPositionColor(player.position);
-        const shortPosition = getShortPosition(player.position);
+        const safeName = player?.full_name ?? `Atleta (${playerId.slice(0, 8)})`;
+        const safePhoto = player?.photo_url ?? null;
+        const safePosition = player?.position ?? "";
+
+        const positionColors = getPositionColor(safePosition);
+        const shortPosition = getShortPosition(safePosition);
         const isExpanded = expandedPlayers.has(playerId);
         const isOnField = group.records.some(r => r.exited_at_seconds === null);
 
@@ -156,15 +173,15 @@ export function PlayerPresenceHistory({ matchId, className }: PlayerPresenceHist
               className="w-full flex items-center gap-3 p-3 hover:bg-white/5 transition-colors"
             >
               <Avatar className={cn("h-10 w-10 border-2 shrink-0", positionColors.borderClass)}>
-                <AvatarImage src={player.photo_url || undefined} />
+                <AvatarImage src={safePhoto || undefined} />
                 <AvatarFallback className={cn("font-bold text-sm", positionColors.bgClass, positionColors.textClass)}>
-                  {player.full_name.slice(0, 2).toUpperCase()}
+                  {(safeName || "??").slice(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
 
               <div className="flex-1 min-w-0 text-left">
                 <p className="font-medium text-zinc-100 truncate text-sm">
-                  {player.full_name}
+                  {safeName}
                 </p>
                 <div className="flex items-center gap-1.5 mt-1">
                   <Badge size="sm" className={cn(positionColors.bgClass, positionColors.textClass)}>
@@ -226,14 +243,17 @@ export function PlayerPresenceHistory({ matchId, className }: PlayerPresenceHist
                           <div className="flex items-center gap-2 text-sm">
                             <LogIn className="w-3.5 h-3.5 text-emerald-400" />
                             <span className="text-zinc-300">
-                              {formatGameMinute(record.entered_at_seconds, record.period)}
+                              {formatGameMinuteReg(record.entered_at_seconds, record.period)}
                             </span>
                             {record.exited_at_seconds !== null ? (
                               <>
                                 <span className="text-zinc-600">→</span>
                                 <LogOut className="w-3.5 h-3.5 text-amber-400" />
                                 <span className="text-zinc-300">
-                                  {formatGameMinute(record.exited_at_seconds, record.period)}
+                                  {formatGameMinuteReg(
+                                    Math.min(record.exited_at_seconds, END_OF_HALF_SECONDS),
+                                    record.period
+                                  )}
                                 </span>
                               </>
                             ) : (
