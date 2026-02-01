@@ -24,10 +24,57 @@ import { calculateMinutesPlayed } from "./minutesPlayed";
 
 // === PROFESSIONAL SCOUTING WEIGHTS (v2.0) ===
 
+/**
+ * Context for dynamic goal weight calculation
+ * Based on player participation in the match
+ */
+export interface GoalWeightContext {
+  minutesPlayed: number;
+  actionsWithBall: number;
+  totalPassesAttempted: number;
+}
+
+/**
+ * Compute dynamic goal weight (0.80 to 1.00) based on participation
+ * 
+ * Base = 0.80
+ * Bonus (up to +0.20):
+ * - +0.05 if mins >= 60
+ * - +0.05 if actionsWithBall >= 15
+ * - +0.05 if actionsWithBall >= 25
+ * - +0.05 if passesAttempted >= 20
+ * 
+ * Fallback: Returns 0.80 if no participation data available (legacy matches)
+ */
+export function computeGoalWeight(ctx: GoalWeightContext): number {
+  const { minutesPlayed = 0, actionsWithBall = 0, totalPassesAttempted = 0 } = ctx;
+  
+  const base = 0.80;
+  
+  // Legacy fallback: no participation data available
+  if (actionsWithBall === 0 && totalPassesAttempted === 0) {
+    return 0.80;
+  }
+  
+  let bonus = 0.0;
+  
+  if (minutesPlayed >= 60) bonus += 0.05;
+  if (actionsWithBall >= 15) bonus += 0.05;
+  if (actionsWithBall >= 25) bonus += 0.05;
+  if (totalPassesAttempted >= 20) bonus += 0.05;
+  
+  // Clamp bonus to max 0.20
+  bonus = Math.min(Math.max(bonus, 0.0), 0.20);
+  
+  // Clamp total to 0.80–1.00
+  return Math.min(Math.max(base + bonus, 0.80), 1.00);
+}
+
 export const WEIGHTS = {
   // ==================
   // 🟥 ATAQUE
   // ==================
+  // NOTE: goal.weight is the BASE weight (0.80). Use computeGoalWeight() for dynamic weight.
   goal: { weight: 0.80, label: "Gol", category: "attack" as const },
   shot_on_target: { weight: 0.08, label: "Finalização no alvo", category: "attack" as const, maxImpact: 0.40 },
   shot_off_target: { weight: 0.00, label: "Finalização para fora", category: "attack" as const }, // NÃO pontuar
@@ -340,15 +387,18 @@ export function calculateMatchRating(
   const statImpacts: Record<string, { count: number; raw: number; capped: number }> = {};
   
   // Helper to add breakdown item with optional per-stat capping
+  // Added overrideWeight param for dynamic goal weight
   const addItem = (
     stat: string, 
     count: number, 
     isGkStat = false,
-    customCategory?: CategoryKey
+    customCategory?: CategoryKey,
+    overrideWeight?: number
   ): BreakdownItem => {
     const weightSource = isGkStat ? GK_WEIGHTS : WEIGHTS;
     const weightInfo = weightSource[stat as keyof typeof weightSource];
-    const weight = weightInfo?.weight ?? 0;
+    // Use override weight if provided (for dynamic goal weight)
+    const weight = overrideWeight ?? weightInfo?.weight ?? 0;
     const label = weightInfo?.label ?? stat;
     const maxImpact = (weightInfo as any)?.maxImpact;
     
@@ -369,7 +419,7 @@ export function calculateMatchRating(
       stat,
       label,
       count,
-      weight,
+      weight, // This will now reflect the dynamic weight for goals
       rawDelta: Math.round(rawDelta * 1000) / 1000,
       afterMinutes: Math.round(afterMinutes * 1000) / 1000,
       capped,
@@ -488,8 +538,37 @@ export function calculateMatchRating(
 
   // ===== OUTFIELD PLAYER CALCULATION =====
   
+  // === DYNAMIC GOAL WEIGHT CALCULATION ===
+  // Calculate participation context for dynamic goal weight (0.80–1.00)
+  // Uses: minutesPlayed, actionsWithBall, totalPassesAttempted
+  const passesCompleted = Math.max(0, stats.passes_completed);
+  const passesFailed = Math.max(0, stats.passes_total); // passes_total stores FAILED count
+  const totalPassesAttempted = passesCompleted + passesFailed;
+  
+  // Calculate actions with ball from participation stats
+  // This includes: passes, dribbles, shots, crosses, key passes, chances, recoveries
+  const dribblesSuccess = Math.max(0, stats.dribbles_success);
+  const dribblesFailed = Math.max(0, stats.dribbles_total); // dribbles_total stores FAILED count
+  const actionsWithBall = 
+    passesCompleted + passesFailed +
+    dribblesSuccess + dribblesFailed +
+    Math.max(0, stats.shots) +
+    Math.max(0, stats.crosses_success) + Math.max(0, stats.crosses_failed) +
+    Math.max(0, stats.key_passes) +
+    Math.max(0, stats.chances_created) +
+    Math.max(0, stats.recoveries);
+  
+  const goalWeightContext: GoalWeightContext = {
+    minutesPlayed,
+    actionsWithBall,
+    totalPassesAttempted,
+  };
+  
+  const dynamicGoalWeight = computeGoalWeight(goalWeightContext);
+  
   // === ATTACK ===
-  const goalItem = addItem("goal", Math.max(0, stats.goals));
+  // Use dynamic goal weight instead of static 0.80
+  const goalItem = addItem("goal", Math.max(0, stats.goals), false, undefined, dynamicGoalWeight);
   const shotOnTargetItem = addItem("shot_on_target", Math.max(0, stats.shots_on_target));
   // shot_off_target = 0 weight, não pontuar
   addItem("shot_off_target", Math.max(0, stats.shots - stats.shots_on_target));

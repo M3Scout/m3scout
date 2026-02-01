@@ -11,7 +11,14 @@
  * etc.
  */
 
-import { WEIGHTS, GK_WEIGHTS, type CategoryKey, type BreakdownItem } from "./matchRatingEngine";
+import { 
+  WEIGHTS, 
+  GK_WEIGHTS, 
+  computeGoalWeight,
+  type CategoryKey, 
+  type BreakdownItem,
+  type GoalWeightContext
+} from "./matchRatingEngine";
 import type { MatchPlayerStats } from "@/hooks/useLiveMatch";
 
 interface StatMapping {
@@ -21,6 +28,9 @@ interface StatMapping {
   category: CategoryKey;
   getValue: (stats: MatchPlayerStats, isGk: boolean) => number;
   maxImpact?: number;
+  /** If true, this stat has dynamic weight based on context */
+  hasDynamicWeight?: boolean;
+  getDynamicWeight?: (ctx: GoalWeightContext) => number;
 }
 
 /**
@@ -32,9 +42,11 @@ const STAT_MAPPINGS: StatMapping[] = [
   {
     stat: "goal",
     label: "Gol",
-    weight: WEIGHTS.goal.weight,
+    weight: WEIGHTS.goal.weight, // Base weight, will be overridden by dynamic
     category: "attack",
     getValue: (s) => Math.max(0, s.goals ?? 0),
+    hasDynamicWeight: true,
+    getDynamicWeight: computeGoalWeight,
   },
   {
     stat: "shot_on_target",
@@ -294,13 +306,41 @@ export interface CategoryItemizedBreakdown {
 /**
  * Generate itemized breakdown from match player stats
  * Returns breakdown items grouped by category with count × weight = subtotal
+ * 
+ * @param stats - Match player stats
+ * @param minutesFactor - Minutes factor for rating calculation
+ * @param isGoalkeeper - Whether the player is a goalkeeper
+ * @param minutesPlayed - Optional: minutes played for dynamic goal weight calculation
  */
 export function generateBreakdownItemsFromStats(
   stats: MatchPlayerStats,
   minutesFactor: number,
-  isGoalkeeper = false
+  isGoalkeeper = false,
+  minutesPlayed?: number
 ): CategoryItemizedBreakdown[] {
   const mappings = isGoalkeeper ? GK_STAT_MAPPINGS : STAT_MAPPINGS;
+  
+  // Calculate context for dynamic goal weight
+  const passesCompleted = Math.max(0, stats.passes_completed ?? 0);
+  const passesFailed = Math.max(0, stats.passes_total ?? 0); // passes_total stores FAILED count
+  const totalPassesAttempted = passesCompleted + passesFailed;
+  
+  const dribblesSuccess = Math.max(0, stats.dribbles_success ?? 0);
+  const dribblesFailed = Math.max(0, stats.dribbles_total ?? 0); // dribbles_total stores FAILED count
+  const actionsWithBall = 
+    passesCompleted + passesFailed +
+    dribblesSuccess + dribblesFailed +
+    Math.max(0, stats.shots ?? 0) +
+    Math.max(0, stats.crosses_success ?? 0) + Math.max(0, stats.crosses_failed ?? 0) +
+    Math.max(0, stats.key_passes ?? 0) +
+    Math.max(0, stats.chances_created ?? 0) +
+    Math.max(0, stats.recoveries ?? 0);
+  
+  const goalWeightContext: GoalWeightContext = {
+    minutesPlayed: minutesPlayed ?? 0,
+    actionsWithBall,
+    totalPassesAttempted,
+  };
   
   const categoryMap = new Map<CategoryKey, BreakdownItem[]>();
   
@@ -310,7 +350,13 @@ export function generateBreakdownItemsFromStats(
     // Skip items with count = 0 (cleaner UI)
     if (count === 0) continue;
     
-    let rawDelta = count * mapping.weight;
+    // Use dynamic weight if available (for goal)
+    let effectiveWeight = mapping.weight;
+    if (mapping.hasDynamicWeight && mapping.getDynamicWeight) {
+      effectiveWeight = mapping.getDynamicWeight(goalWeightContext);
+    }
+    
+    let rawDelta = count * effectiveWeight;
     let capped = false;
     let originalDelta = rawDelta;
     
@@ -327,7 +373,7 @@ export function generateBreakdownItemsFromStats(
       stat: mapping.stat,
       label: mapping.label,
       count,
-      weight: mapping.weight,
+      weight: effectiveWeight, // Use the dynamic weight for display
       rawDelta: Math.round(rawDelta * 1000) / 1000,
       afterMinutes: Math.round(afterMinutes * 1000) / 1000,
       capped,
