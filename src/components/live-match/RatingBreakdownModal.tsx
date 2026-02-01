@@ -37,38 +37,43 @@ function DeltaIcon({ value }: { value: number }) {
 function BreakdownItemRow({ item }: { item: BreakdownItem }) {
   if (item.count === 0) return null;
   
+  const weightSign = item.weight >= 0 ? "+" : "";
+  const deltaSign = item.rawDelta >= 0 ? "+" : "";
+  
   return (
     <div className="flex items-center justify-between py-1.5 text-xs border-b border-border/30 last:border-0">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-1 min-w-0">
         <DeltaIcon value={item.rawDelta} />
-        <span className="text-muted-foreground">{item.label}</span>
-        <Badge variant="outline" className="text-[10px] h-4 px-1.5">
-          {item.count}× ({item.weight > 0 ? "+" : ""}{item.weight})
-        </Badge>
-        {item.capped && (
-          <Badge variant="secondary" className="text-[9px] h-3.5 px-1 bg-amber-500/20 text-amber-500 border-amber-500/30">
-            LIMITADO
-          </Badge>
-        )}
+        <span className="text-muted-foreground truncate">{item.label}</span>
       </div>
-      <div className="flex items-center gap-3 text-right">
+      <div className="flex items-center gap-2 text-right shrink-0">
+        {/* Show count × weight formula */}
+        <span className="font-mono text-[10px] text-muted-foreground/70">
+          {item.count} × {weightSign}{item.weight.toFixed(3)}
+        </span>
+        <span className="text-muted-foreground/50">=</span>
         {item.capped && item.originalDelta !== undefined && (
           <span className="font-mono text-[10px] text-red-400 line-through">
             {formatDelta(item.originalDelta)}
           </span>
         )}
         <span className={cn(
-          "font-mono text-[11px]",
+          "font-mono text-[11px] font-medium min-w-[40px] text-right",
           item.rawDelta > 0 ? "text-green-500" : item.rawDelta < 0 ? "text-red-500" : "text-muted-foreground"
         )}>
-          {formatDelta(item.rawDelta)}
+          {deltaSign}{item.rawDelta.toFixed(2)}
         </span>
+        {item.capped && (
+          <Badge variant="secondary" className="text-[9px] h-3.5 px-1 bg-amber-500/20 text-amber-500 border-amber-500/30 shrink-0">
+            CAP
+          </Badge>
+        )}
       </div>
     </div>
   );
 }
 
-function CategorySection({ category, isPersistedBreakdown }: { category: CategoryBreakdown; isPersistedBreakdown?: boolean }) {
+function CategorySection({ category }: { category: CategoryBreakdown }) {
   const hasItems = category.items.length > 0;
   const isPositive = category.raw > 0;
   const isNegative = category.raw < 0;
@@ -83,9 +88,6 @@ function CategorySection({ category, isPersistedBreakdown }: { category: Categor
     }
   };
   
-  // Check if this is a synthetic aggregated item (from persisted breakdown)
-  const isAggregatedItem = hasItems && category.items[0]?.stat?.endsWith('_aggregated');
-  
   return (
     <AccordionItem value={category.key} className="border-b border-border/50">
       <AccordionTrigger className="py-2 hover:no-underline">
@@ -93,7 +95,7 @@ function CategorySection({ category, isPersistedBreakdown }: { category: Categor
           <div className="flex items-center gap-2">
             {getCategoryIcon()}
             <span className="font-medium text-sm">{category.label}</span>
-            {hasItems && !isAggregatedItem && (
+            {hasItems && (
               <Badge variant="secondary" className="text-[10px] h-4">
                 {category.items.length}
               </Badge>
@@ -108,33 +110,24 @@ function CategorySection({ category, isPersistedBreakdown }: { category: Categor
         </div>
       </AccordionTrigger>
       <AccordionContent className="pb-2">
-        {isAggregatedItem ? (
-          // Show aggregated data explanation
-          <div className="pl-2 space-y-2">
-            <div className="flex items-center justify-between py-1.5 text-xs border-b border-border/30">
-              <div className="flex items-center gap-2">
-                <DeltaIcon value={category.raw} />
-                <span className="text-muted-foreground">Contribuição total da categoria</span>
-              </div>
+        {hasItems ? (
+          <div className="pl-2 space-y-0">
+            {category.items.map((item, idx) => (
+              <BreakdownItemRow key={idx} item={item} />
+            ))}
+            {/* Category subtotal */}
+            <div className="flex items-center justify-between pt-2 mt-1 border-t border-border/50">
+              <span className="text-xs text-muted-foreground font-medium">Total da categoria</span>
               <span className={cn(
-                "font-mono text-[11px]",
+                "font-mono text-xs font-semibold",
                 isPositive ? "text-green-500" : isNegative ? "text-red-500" : "text-muted-foreground"
               )}>
                 {formatDelta(category.raw)}
               </span>
             </div>
-            <p className="text-[10px] text-muted-foreground/70 italic">
-              Pontuação baseada em estatísticas agregadas (eventos individuais não disponíveis para esta partida)
-            </p>
-          </div>
-        ) : hasItems ? (
-          <div className="pl-2 space-y-0">
-            {category.items.map((item, idx) => (
-              <BreakdownItemRow key={idx} item={item} />
-            ))}
           </div>
         ) : category.raw !== 0 ? (
-          // Has score but no items - show generic contribution message
+          // Has score but no items (shouldn't happen with new logic, but fallback)
           <div className="pl-2 space-y-2">
             <div className="flex items-center justify-between py-1.5 text-xs">
               <div className="flex items-center gap-2">
@@ -148,9 +141,6 @@ function CategorySection({ category, isPersistedBreakdown }: { category: Categor
                 {formatDelta(category.raw)}
               </span>
             </div>
-            <p className="text-[10px] text-muted-foreground/70 italic">
-              Detalhamento de eventos não disponível
-            </p>
           </div>
         ) : (
           <p className="text-xs text-muted-foreground pl-2">Sem contribuição nesta categoria</p>
@@ -282,17 +272,11 @@ export function RatingBreakdownModal({ rating, playerName, children }: RatingBre
           {hasBreakdown ? (
             <div>
               <h4 className="text-sm font-medium mb-2">Contribuição por Categoria</h4>
-              {detailedBreakdown!.isPersistedBreakdown && (
-                <p className="text-[10px] text-muted-foreground/70 mb-2 italic">
-                  Detalhamento baseado em estatísticas agregadas da partida
-                </p>
-              )}
               <Accordion type="multiple" className="border rounded-lg">
                 {detailedBreakdown!.categories.map((category) => (
                   <CategorySection 
                     key={category.key} 
                     category={category} 
-                    isPersistedBreakdown={detailedBreakdown!.isPersistedBreakdown}
                   />
                 ))}
               </Accordion>

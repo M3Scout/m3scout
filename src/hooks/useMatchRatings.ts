@@ -20,9 +20,11 @@ import {
   getRatingBgColor,
   type MatchRatingResult,
   type DetailedBreakdown,
-  type CategoryBreakdown 
+  type CategoryBreakdown,
+  type BreakdownItem
 } from "@/lib/matchRatingEngine";
 import { calculateMinutesPlayed, type MatchPlayerMinutesInput } from "@/lib/minutesPlayed";
+import { generateBreakdownItemsFromStats } from "@/lib/ratingBreakdownGenerator";
 
 export interface MatchPlayer {
   player_id: string;
@@ -59,92 +61,60 @@ interface UseMatchRatingsOptions {
 /**
  * Convert persisted breakdown from SQL to DetailedBreakdown format for UI
  * 
- * IMPORTANT: Persisted breakdowns only contain category aggregates, not individual items.
- * We generate synthetic "summary" items to explain where the score came from,
- * ensuring consistency between the category score and the expanded details.
+ * IMPORTANT: We now generate itemized breakdown from the player's stats,
+ * showing count × weight = subtotal for each stat contribution.
+ * This ensures consistency between the category score and the expanded details.
  */
-function convertPersistedBreakdown(persisted: PersistedRatingBreakdown): DetailedBreakdown {
-  // Helper to create a synthetic summary item for a category
-  // This prevents the "score exists but no events" contradiction
-  const createSummaryItem = (
-    categoryKey: string,
-    label: string,
-    value: number,
-    minutesFactor: number
-  ): import("@/lib/matchRatingEngine").BreakdownItem | null => {
-    if (value === 0) return null;
-    return {
-      stat: `${categoryKey}_aggregated`,
-      label: `${label} (agregado)`,
-      count: 1,
-      weight: value,
-      rawDelta: value,
-      afterMinutes: value * minutesFactor,
-      capped: false,
-    };
+function convertPersistedBreakdown(
+  persisted: PersistedRatingBreakdown,
+  stats: MatchPlayerStats
+): DetailedBreakdown {
+  const isGoalkeeper = persisted.isGoalkeeper ?? false;
+  
+  // Generate itemized breakdown from stats
+  const itemizedCategories = generateBreakdownItemsFromStats(
+    stats,
+    persisted.minutesFactor,
+    isGoalkeeper
+  );
+  
+  // Build categories with real items
+  const categories: CategoryBreakdown[] = [];
+  const allItems: BreakdownItem[] = [];
+  
+  // Map from generated breakdown to CategoryBreakdown format
+  const persistedCategoryValues: Record<string, { value: number; label: string }> = {
+    attack: persisted.categories.attack,
+    creation: persisted.categories.creation,
+    passing: persisted.categories.passing,
+    defense: persisted.categories.defense,
+    discipline: persisted.categories.discipline,
+    goalkeeper: persisted.categories.goalkeeper,
   };
+  
+  for (const itemized of itemizedCategories) {
+    const persistedCat = persistedCategoryValues[itemized.key];
+    
+    // Use persisted value for the raw total (authoritative), but items from calculation
+    categories.push({
+      key: itemized.key,
+      label: itemized.label,
+      raw: persistedCat?.value ?? itemized.rawTotal,
+      afterMinutes: (persistedCat?.value ?? itemized.rawTotal) * persisted.minutesFactor,
+      items: itemized.items,
+    });
+    
+    allItems.push(...itemized.items);
+  }
+  
+  // Filter out empty categories (except attack/defense which are always shown)
+  const filteredCategories = categories.filter(
+    cat => cat.items.length > 0 || cat.key === "attack" || cat.key === "defense"
+  );
 
-  const categories: CategoryBreakdown[] = [
-    {
-      key: "attack" as const,
-      label: persisted.categories.attack.label,
-      raw: persisted.categories.attack.value,
-      afterMinutes: persisted.categories.attack.value * persisted.minutesFactor,
-      items: persisted.categories.attack.value !== 0 
-        ? [createSummaryItem("attack", persisted.categories.attack.label, persisted.categories.attack.value, persisted.minutesFactor)!]
-        : []
-    },
-    {
-      key: "creation" as const,
-      label: persisted.categories.creation.label,
-      raw: persisted.categories.creation.value,
-      afterMinutes: persisted.categories.creation.value * persisted.minutesFactor,
-      items: persisted.categories.creation.value !== 0
-        ? [createSummaryItem("creation", persisted.categories.creation.label, persisted.categories.creation.value, persisted.minutesFactor)!]
-        : []
-    },
-    {
-      key: "passing" as const,
-      label: persisted.categories.passing.label,
-      raw: persisted.categories.passing.value,
-      afterMinutes: persisted.categories.passing.value * persisted.minutesFactor,
-      items: persisted.categories.passing.value !== 0
-        ? [createSummaryItem("passing", persisted.categories.passing.label, persisted.categories.passing.value, persisted.minutesFactor)!]
-        : []
-    },
-    {
-      key: "defense" as const,
-      label: persisted.categories.defense.label,
-      raw: persisted.categories.defense.value,
-      afterMinutes: persisted.categories.defense.value * persisted.minutesFactor,
-      items: persisted.categories.defense.value !== 0
-        ? [createSummaryItem("defense", persisted.categories.defense.label, persisted.categories.defense.value, persisted.minutesFactor)!]
-        : []
-    },
-    {
-      key: "discipline" as const,
-      label: persisted.categories.discipline.label,
-      raw: persisted.categories.discipline.value,
-      afterMinutes: persisted.categories.discipline.value * persisted.minutesFactor,
-      items: persisted.categories.discipline.value !== 0
-        ? [createSummaryItem("discipline", persisted.categories.discipline.label, persisted.categories.discipline.value, persisted.minutesFactor)!]
-        : []
-    },
-    {
-      key: "goalkeeper" as const,
-      label: persisted.categories.goalkeeper.label,
-      raw: persisted.categories.goalkeeper.value,
-      afterMinutes: persisted.categories.goalkeeper.value * persisted.minutesFactor,
-      items: persisted.categories.goalkeeper.value !== 0
-        ? [createSummaryItem("goalkeeper", persisted.categories.goalkeeper.label, persisted.categories.goalkeeper.value, persisted.minutesFactor)!]
-        : []
-    }
-  ].filter(cat => cat.raw !== 0 || cat.key === "attack" || cat.key === "defense");
-
-  // Mark this breakdown as coming from persisted/aggregated data
   return {
-    categories,
-    items: [],
+    categories: filteredCategories,
+    items: allItems.sort((a, b) => Math.abs(b.rawDelta) - Math.abs(a.rawDelta)),
     capsApplied: [],
     antiInflationApplied: !persisted.hasImpact && persisted.rawImpact > 0.9,
     hasImpactfulAction: persisted.hasImpact,
@@ -160,7 +130,8 @@ function persistedRatingToResult(
   rating: number,
   minutesPlayed: number,
   minutesFactor: number | null,
-  rawBreakdown: unknown
+  rawBreakdown: unknown,
+  stats: MatchPlayerStats
 ): MatchRatingResult {
   // Get label based on rating value
   const getLabel = (r: number): string => {
@@ -173,9 +144,11 @@ function persistedRatingToResult(
     return "Muito Fraco";
   };
 
-  // Parse and convert the breakdown
+  // Parse and convert the breakdown (now with stats for itemized generation)
   const parsedBreakdown = parseRatingBreakdown(rawBreakdown);
-  const detailedBreakdown = parsedBreakdown ? convertPersistedBreakdown(parsedBreakdown) : null;
+  const detailedBreakdown = parsedBreakdown 
+    ? convertPersistedBreakdown(parsedBreakdown, stats) 
+    : null;
   
   // If we have parsed breakdown, use its rawImpact for accuracy
   const rawImpact = parsedBreakdown?.rawImpact ?? (rating - 6.0);
@@ -240,12 +213,13 @@ export function useMatchRatings({
       
       // Prefer persisted rating if available and requested
       const persistedRating = stats?.rating;
-      if (usePersistedRating && persistedRating != null && minutesInfo.minutesPlayed > 0) {
+      if (usePersistedRating && persistedRating != null && minutesInfo.minutesPlayed > 0 && stats) {
         rating = persistedRatingToResult(
           persistedRating,
           minutesInfo.minutesPlayed,
           stats?.rating_minutes_factor ?? null,
-          stats?.rating_breakdown ?? null
+          stats?.rating_breakdown ?? null,
+          stats
         );
         
         if (process.env.NODE_ENV === 'development') {
