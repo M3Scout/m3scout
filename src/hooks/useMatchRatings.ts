@@ -72,10 +72,12 @@ function convertPersistedBreakdown(
   const isGoalkeeper = persisted.isGoalkeeper ?? false;
   
   // Generate itemized breakdown from stats
+  // Pass minutesPlayed for dynamic goal weight calculation
   const itemizedCategories = generateBreakdownItemsFromStats(
     stats,
     persisted.minutesFactor,
-    isGoalkeeper
+    isGoalkeeper,
+    persisted.minutesPlayed
   );
   
   // Build categories with real items
