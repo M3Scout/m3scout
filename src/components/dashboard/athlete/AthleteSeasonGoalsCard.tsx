@@ -49,6 +49,8 @@ interface AthleteSeasonGoalsCardProps {
     interceptions?: number;
     passes_completed?: number;
     passes_total?: number;
+    dribbles_success?: number;
+    dribbles_total?: number;
   };
   isGoalkeeper?: boolean;
 }
@@ -150,7 +152,18 @@ const GOAL_TYPE_CONFIG: Record<string, GoalTypeConfig> = {
     type: "accumulation",
     description: "Percentual de acerto de passe na temporada"
   },
-  yellow_cards_max: { 
+  dribble_accuracy: { 
+    label: "Aproveitamento de Dribles", 
+    icon: "🏃", 
+    color: "purple", 
+    minValue: 1, 
+    maxValue: 100, 
+    step: 1, 
+    unit: "%",
+    type: "accumulation",
+    description: "Percentual de acerto de dribles na temporada"
+  },
+  yellow_cards_max: {
     label: "Amarelos", 
     icon: "🟨", 
     color: "yellow", 
@@ -194,8 +207,8 @@ const GOAL_TYPE_CONFIG: Record<string, GoalTypeConfig> = {
 };
 
 // These slugs must match DB constraint values
-const OUTFIELD_GOAL_TYPES = ["goals", "assists", "matches", "minutes", "shots", "tackles", "interceptions", "pass_accuracy", "yellow_cards_max"];
-const GK_GOAL_TYPES = ["saves", "saves_difficult", "clean_sheets", "matches", "minutes", "interceptions", "pass_accuracy", "yellow_cards_max"];
+const OUTFIELD_GOAL_TYPES = ["goals", "assists", "matches", "minutes", "shots", "tackles", "interceptions", "pass_accuracy", "dribble_accuracy", "yellow_cards_max"];
+const GK_GOAL_TYPES = ["saves", "saves_difficult", "clean_sheets", "matches", "minutes", "interceptions", "pass_accuracy", "dribble_accuracy", "yellow_cards_max"];
 
 // For accumulation: higher = better (green when complete)
 // For limit: lower = better (green when under limit, red/warning when approaching/exceeding)
@@ -293,6 +306,13 @@ export function AthleteSeasonGoalsCard({
         if (total === 0) return 0;
         // Return percentage with 1 decimal
         return Math.round((completed / total) * 1000) / 10;
+      }
+      case "dribble_accuracy": {
+        const success = currentStats.dribbles_success ?? 0;
+        const total = currentStats.dribbles_total ?? 0;
+        if (total === 0) return 0;
+        // Return percentage with 1 decimal
+        return Math.round((success / total) * 1000) / 10;
       }
       case "saves_difficult": return 0; // Not tracked yet in DB
       default: return 0;
@@ -571,11 +591,12 @@ export function AthleteSeasonGoalsCard({
                               ? (isOverLimit ? 'text-red-400' : 'text-emerald-400')
                               : (isComplete ? 'text-emerald-400' : 'text-foreground')
                           }`}>
-                            {goal.goal_type === "pass_accuracy" ? `${current.toFixed(1)}%` : current}
+                            {(goal.goal_type === "pass_accuracy" || goal.goal_type === "dribble_accuracy") 
+                              ? `${current.toFixed(1)}%` : current}
                           </span>
                           <span className="text-xs text-muted-foreground">/</span>
                           <span className="text-xs text-muted-foreground tabular-nums">
-                            {goal.goal_type === "pass_accuracy" 
+                            {(goal.goal_type === "pass_accuracy" || goal.goal_type === "dribble_accuracy")
                               ? `${goal.target_value}%`
                               : goal.goal_type === "minutes" 
                                 ? `${goal.target_value} min` 
@@ -620,7 +641,7 @@ export function AthleteSeasonGoalsCard({
                         )
                       ) : isComplete ? (
                         <span className="text-emerald-400">Meta atingida! 🎉</span>
-                      ) : goal.goal_type === "pass_accuracy" ? (
+                      ) : (goal.goal_type === "pass_accuracy" || goal.goal_type === "dribble_accuracy") ? (
                         <>Faltam {(goal.target_value - current).toFixed(1)}% para a meta</>
                       ) : (
                         <>Faltam {goal.goal_type === "minutes" 
