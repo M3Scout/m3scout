@@ -66,8 +66,11 @@ const GOAL_TYPE_CONFIG: Record<string, GoalTypeConfig> = {
   minutes: { label: "Minutos", icon: "⏱️", color: "amber", type: "accumulation" },
   shots: { label: "Finalizações", icon: "🎯", color: "orange", type: "accumulation" },
   tackles: { label: "Desarmes", icon: "🦵", color: "cyan", type: "accumulation" },
+  interceptions: { label: "Interceptações", icon: "🧲", color: "indigo", type: "accumulation" },
+  pass_accuracy: { label: "Aproveitamento de Passe", icon: "📊", color: "teal", type: "accumulation" },
   yellow_cards_max: { label: "Amarelos", icon: "🟨", color: "yellow", type: "limit", limitLabel: "máx." },
-  saves: { label: "Defesas", icon: "🧤", color: "cyan", type: "accumulation" },
+  saves: { label: "Defesas Totais", icon: "🧤", color: "cyan", type: "accumulation" },
+  saves_difficult: { label: "Defesas Difíceis", icon: "🦸", color: "rose", type: "accumulation" },
   clean_sheets: { label: "Clean Sheets", icon: "🛡️", color: "green", type: "accumulation" },
 };
 
@@ -227,6 +230,10 @@ export default function GoalsMonitor() {
         yellow_cards: number;
         saves: number;
         clean_sheets: number;
+        // New goal types
+        interceptions: number;
+        passes_completed: number;
+        passes_total: number;
       }>> = {};
 
       // Fetch stats for each player in parallel
@@ -270,6 +277,11 @@ export default function GoalsMonitor() {
               yellow_cards: stats.reduce((sum, s) => sum + (s.yellow_cards || 0), 0),
               saves: stats.reduce((sum, s) => sum + (s.saves || 0), 0),
               clean_sheets: 0, // Would need match-level calculation
+              // New goal types
+              interceptions: stats.reduce((sum, s) => sum + (s.interceptions || 0), 0),
+              passes_completed: stats.reduce((sum, s) => sum + (s.passes_completed || 0), 0),
+              // passes_total in DB is actually passes_failed - we need completed + total for real total
+              passes_total: stats.reduce((sum, s) => sum + ((s.passes_completed || 0) + (s.passes_total || 0)), 0),
             };
           });
         } catch (err) {
@@ -301,6 +313,19 @@ export default function GoalsMonitor() {
           case "yellow_cards_max": currentValue = playerSeasonStats.yellow_cards; break;
           case "saves": currentValue = playerSeasonStats.saves; break;
           case "clean_sheets": currentValue = playerSeasonStats.clean_sheets; break;
+          case "interceptions": currentValue = playerSeasonStats.interceptions; break;
+          case "pass_accuracy": {
+            const completed = playerSeasonStats.passes_completed ?? 0;
+            const total = playerSeasonStats.passes_total ?? 0;
+            if (total === 0) {
+              currentValue = 0;
+            } else {
+              // Return percentage with 1 decimal
+              currentValue = Math.round((completed / total) * 1000) / 10;
+            }
+            break;
+          }
+          case "saves_difficult": currentValue = 0; break; // Not tracked yet
         }
       }
 
