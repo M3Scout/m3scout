@@ -22,6 +22,7 @@ import PlayerProfile from "./pages/PlayerProfile";
 import Contact from "./pages/Contact";
 import Sobre from "./pages/Sobre";
 import Imprensa from "./pages/Imprensa";
+import ImprensaTodas from "./pages/ImprensaTodas";
 import NewsDetail from "./pages/NewsDetail";
 import RepresentacaoTalentos from "./pages/RepresentacaoTalentos";
 import Auth from "./pages/Auth";
@@ -111,6 +112,7 @@ function AppRoutes() {
                 <Route path="/atletas" element={<Players />} />
                 <Route path="/players/:slug" element={<PlayerProfile />} />
                 <Route path="/imprensa" element={<Imprensa />} />
+                <Route path="/imprensa/todas" element={<ImprensaTodas />} />
                 <Route path="/imprensa/:slug" element={<NewsDetail />} />
                 <Route path="/competitions" element={<CompetitionRankingPublic />} />
                 <Route path="/contact" element={<Contact />} />

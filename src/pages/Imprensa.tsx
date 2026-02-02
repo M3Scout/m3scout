@@ -69,14 +69,14 @@ const Imprensa = () => {
   }, []);
 
   const { data: articles, isLoading } = useQuery({
-    queryKey: ["public-news"],
+    queryKey: ["public-news-vitrine"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("news_articles")
         .select("id, title, slug, category, excerpt, publish_date, featured_image_url, card_crop")
         .eq("status", "published")
         .order("publish_date", { ascending: false })
-        .limit(9);
+        .limit(6);
       
       if (error) throw error;
       return (data ?? []).map((item) => ({
@@ -308,70 +308,88 @@ const Imprensa = () => {
               </Link>
             </motion.div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
-              {articles?.map((article, index) => (
-                <motion.div
-                  key={article.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={newsInView ? { opacity: 1, y: 0 } : {}}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                >
-                  <Link 
-                    to={`/imprensa/${article.slug}`}
-                    className="group block rounded-2xl bg-neutral-900/40 backdrop-blur-sm border border-neutral-800/50 transition-all duration-300 hover:border-neutral-700/60 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/20 h-full overflow-hidden"
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
+                {articles?.map((article, index) => (
+                  <motion.div
+                    key={article.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={newsInView ? { opacity: 1, y: 0 } : {}}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
                   >
-                    {/* Featured Image */}
-                    {article.featured_image_url && (
-                      <CroppedNewsImage
-                        src={article.featured_image_url}
-                        alt={article.title}
-                        crop={article.card_crop}
-                        className="w-full"
-                        aspectRatio={1.91}
-                      />
-                    )}
-                    
-                    <div className="p-6">
-                      {/* Meta */}
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="flex items-center gap-1.5 text-xs text-neutral-500">
-                          <Calendar className="w-3.5 h-3.5" />
-                          <span>
-                            {format(new Date(article.publish_date), "dd MMM yyyy", {
-                              locale: ptBR,
-                            })}
-                          </span>
-                        </div>
-                        <span className="px-2 py-0.5 bg-[#e52421]/10 text-[#e52421] rounded text-[10px] font-medium uppercase tracking-wide">
-                          {article.category}
-                        </span>
-                      </div>
-                      
-                      {/* Title */}
-                      <h3 className="text-base md:text-lg font-medium text-white mb-3 group-hover:text-white transition-colors leading-snug line-clamp-2">
-                        {article.title}
-                      </h3>
-                      
-                      {/* Excerpt */}
-                      {article.excerpt && (
-                        <p className="text-neutral-500 text-sm leading-relaxed line-clamp-2 mb-5">
-                          {article.excerpt}
-                        </p>
+                    <Link 
+                      to={`/imprensa/${article.slug}`}
+                      className="group block rounded-2xl bg-neutral-900/40 backdrop-blur-sm border border-neutral-800/50 transition-all duration-300 hover:border-neutral-700/60 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/20 h-full overflow-hidden"
+                    >
+                      {/* Featured Image */}
+                      {article.featured_image_url && (
+                        <CroppedNewsImage
+                          src={article.featured_image_url}
+                          alt={article.title}
+                          crop={article.card_crop}
+                          className="w-full"
+                          aspectRatio={1.91}
+                        />
                       )}
                       
-                      {/* CTA */}
-                      <span className="inline-flex items-center gap-2 text-sm text-[#e52421] group-hover:gap-3 transition-all duration-300">
-                        <span className="relative">
-                          Ler mais
-                          <span className="absolute left-0 bottom-0 w-0 h-px bg-[#e52421] group-hover:w-full transition-all duration-300" />
+                      <div className="p-6">
+                        {/* Meta */}
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="flex items-center gap-1.5 text-xs text-neutral-500">
+                            <Calendar className="w-3.5 h-3.5" />
+                            <span>
+                              {format(new Date(article.publish_date), "dd MMM yyyy", {
+                                locale: ptBR,
+                              })}
+                            </span>
+                          </div>
+                          <span className="px-2 py-0.5 bg-[#e52421]/10 text-[#e52421] rounded text-[10px] font-medium uppercase tracking-wide">
+                            {article.category}
+                          </span>
+                        </div>
+                        
+                        {/* Title */}
+                        <h3 className="text-base md:text-lg font-medium text-white mb-3 group-hover:text-white transition-colors leading-snug line-clamp-2">
+                          {article.title}
+                        </h3>
+                        
+                        {/* Excerpt */}
+                        {article.excerpt && (
+                          <p className="text-neutral-500 text-sm leading-relaxed line-clamp-2 mb-5">
+                            {article.excerpt}
+                          </p>
+                        )}
+                        
+                        {/* CTA */}
+                        <span className="inline-flex items-center gap-2 text-sm text-[#e52421] group-hover:gap-3 transition-all duration-300">
+                          <span className="relative">
+                            Ler mais
+                            <span className="absolute left-0 bottom-0 w-0 h-px bg-[#e52421] group-hover:w-full transition-all duration-300" />
+                          </span>
+                          <ArrowUpRight className="w-3.5 h-3.5" />
                         </span>
-                        <ArrowUpRight className="w-3.5 h-3.5" />
-                      </span>
-                    </div>
-                  </Link>
-                </motion.div>
-              ))}
-            </div>
+                      </div>
+                    </Link>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* Ver Todas Button */}
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={newsInView ? { opacity: 1, y: 0 } : {}}
+                transition={{ duration: 0.5, delay: 0.6 }}
+                className="flex justify-center mt-12"
+              >
+                <Link 
+                  to="/imprensa/todas"
+                  className="group inline-flex items-center gap-3 px-8 py-4 rounded-full border border-neutral-700 bg-transparent text-white hover:bg-neutral-800 hover:border-neutral-600 transition-all duration-300"
+                >
+                  <span className="text-sm font-medium">Ver todas as notícias</span>
+                  <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                </Link>
+              </motion.div>
+            </>
           )}
         </div>
       </section>
