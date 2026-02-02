@@ -4,12 +4,14 @@
  * Detects chunk load errors (cache/build mismatch) and performs auto-recovery:
  * 1. Clears CacheStorage (service worker caches)
  * 2. Unregisters service workers
- * 3. Forces hard reload (once, to avoid loop)
+ * 3. Forces hard reload (once per session, to avoid loop)
  * 
- * @see .memory/architecture/chunk-error-recovery
+ * If recovery already ran this session, shows error UI instead of looping.
  */
 
-const FORCE_RELOAD_KEY = "m3_force_reload_once";
+import { logAppState } from "./diagnosticLogger";
+
+const CHUNK_RECOVERY_RAN_KEY = "m3_chunk_recovery_ran";
 const CHUNK_ERROR_PATTERNS = [
   /ChunkLoadError/i,
   /Loading chunk/i,
@@ -21,6 +23,16 @@ const CHUNK_ERROR_PATTERNS = [
 
 // Track if we're already recovering to prevent multiple triggers
 let isRecovering = false;
+
+// Callbacks for UI notification when recovery is blocked
+let onRecoveryBlocked: ((reason: string) => void) | null = null;
+
+/**
+ * Register a callback to be notified when chunk recovery is blocked (already ran)
+ */
+export function setOnRecoveryBlocked(callback: (reason: string) => void): void {
+  onRecoveryBlocked = callback;
+}
 
 /**
  * Check if an error message indicates a chunk/module load failure
@@ -40,7 +52,14 @@ export function isAssetLoadError(url: string, status: number): boolean {
 }
 
 /**
- * Perform full cache cleanup and reload
+ * Check if chunk recovery already ran this session
+ */
+export function hasChunkRecoveryRan(): boolean {
+  return sessionStorage.getItem(CHUNK_RECOVERY_RAN_KEY) === "1";
+}
+
+/**
+ * Perform full cache cleanup and reload (ONE TIME ONLY per session)
  */
 export async function performChunkRecovery(reason: string): Promise<void> {
   if (isRecovering) {
@@ -48,15 +67,21 @@ export async function performChunkRecovery(reason: string): Promise<void> {
     return;
   }
 
-  // Check if we already did a force reload to prevent infinite loop
-  const alreadyReloaded = sessionStorage.getItem(FORCE_RELOAD_KEY);
-  if (alreadyReloaded) {
-    console.warn("[ChunkRecovery] Already reloaded once this session, not looping");
-    sessionStorage.removeItem(FORCE_RELOAD_KEY);
+  logAppState("chunk_error_detected", { reason });
+
+  // ONE-SHOT CHECK: If we already ran recovery this session, don't loop
+  if (hasChunkRecoveryRan()) {
+    logAppState("chunk_recovery_skipped_already_ran");
+    console.warn("[ChunkRecovery] Already ran recovery this session - showing error UI instead");
+    
+    // Notify UI to show error state with manual reload button
+    logAppState("chunk_recovery_blocked_show_ui", { reason });
+    onRecoveryBlocked?.(reason);
     return;
   }
 
   isRecovering = true;
+  logAppState("chunk_recovery_run", { reason });
   console.log("[ChunkRecovery] Starting recovery:", reason);
 
   try {
@@ -83,8 +108,8 @@ export async function performChunkRecovery(reason: string): Promise<void> {
       // Ignore storage errors
     }
 
-    // 4. Set flag to prevent reload loop
-    sessionStorage.setItem(FORCE_RELOAD_KEY, "1");
+    // 4. Set flag to prevent future auto-reload loops THIS SESSION
+    sessionStorage.setItem(CHUNK_RECOVERY_RAN_KEY, "1");
 
     // 5. Hard reload (bypass cache)
     console.log("[ChunkRecovery] Performing hard reload...");
@@ -93,8 +118,8 @@ export async function performChunkRecovery(reason: string): Promise<void> {
     console.error("[ChunkRecovery] Error during recovery:", err);
     isRecovering = false;
     
-    // Try simple reload as fallback
-    sessionStorage.setItem(FORCE_RELOAD_KEY, "1");
+    // Set flag and try simple reload as fallback
+    sessionStorage.setItem(CHUNK_RECOVERY_RAN_KEY, "1");
     window.location.reload();
   }
 }
@@ -137,17 +162,46 @@ export function initChunkErrorRecovery(): void {
     }
   });
 
-  // Clear the reload flag on successful boot (after a delay to ensure app loaded)
+  // Clear the recovery flag after 10 seconds of successful operation
+  // This allows recovery to work again if user manually refreshes later
   setTimeout(() => {
-    sessionStorage.removeItem(FORCE_RELOAD_KEY);
-  }, 5000);
+    sessionStorage.removeItem(CHUNK_RECOVERY_RAN_KEY);
+    console.log("[ChunkRecovery] Recovery flag cleared (app loaded successfully)");
+  }, 10000);
 
   console.log("[ChunkRecovery] Error handlers initialized");
 }
 
 /**
- * Check if we're in a post-recovery state (just reloaded)
+ * Check if we're in a post-recovery state (just reloaded after recovery)
  */
 export function isPostRecoveryState(): boolean {
-  return sessionStorage.getItem(FORCE_RELOAD_KEY) === "1";
+  return hasChunkRecoveryRan();
+}
+
+/**
+ * Manual reload with cache clearing (for user-initiated retry)
+ */
+export async function manualReloadWithCacheClear(): Promise<void> {
+  try {
+    // Clear caches
+    if ("caches" in window) {
+      const cacheNames = await caches.keys();
+      await Promise.all(cacheNames.map((name) => caches.delete(name)));
+    }
+    
+    // Unregister SW
+    if ("serviceWorker" in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map((reg) => reg.unregister()));
+    }
+  } catch {
+    // Ignore errors, just reload
+  }
+  
+  // Clear the recovery flag to allow auto-recovery next time
+  sessionStorage.removeItem(CHUNK_RECOVERY_RAN_KEY);
+  
+  // Hard reload
+  window.location.reload();
 }

@@ -73,7 +73,7 @@ const queryClient = new QueryClient({
 
 // Inner component that can use auth context
 function AppRoutes() {
-  const { loading, rolesLoading, permissionsLoading, isRecovering } = useAuth();
+  const { loading, rolesLoading, permissionsLoading, isRecovering, hasAuthTimeout, signOut } = useAuth();
   
   // Determine loading state and reason
   const isBootstrapping = loading || (rolesLoading && !isRecovering);
@@ -83,8 +83,19 @@ function AppRoutes() {
       ? "auth_recovery" 
       : null;
 
+  // Logout handler for AppShell
+  const handleLogout = async () => {
+    await signOut();
+    window.location.href = "/app/auth";
+  };
+
   return (
-    <AppShell isLoading={isBootstrapping} loadingReason={loadingReason}>
+    <AppShell 
+      isLoading={isBootstrapping} 
+      loadingReason={loadingReason}
+      hasAuthTimeout={hasAuthTimeout}
+      onLogout={handleLogout}
+    >
       <TooltipProvider>
         <Toaster />
         <Sonner />

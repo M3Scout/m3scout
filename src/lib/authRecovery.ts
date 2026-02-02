@@ -5,6 +5,7 @@
  * - SWR (Stale-While-Revalidate) cache pattern
  * - Automatic recovery on tab focus/visibility
  * - Silent token refresh when expiring
+ * - Watchdog timeout with canonical signout behavior
  * - Login redirect ONLY as last resort
  * 
  * @see .memory/architecture/auth/performance-resilience-standard
@@ -13,6 +14,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
 import { retryWithBackoff } from "@/lib/retry";
+import { logAppState } from "@/lib/diagnosticLogger";
 
 // ============ TYPES ============
 export interface RbacPayload {
@@ -38,7 +40,7 @@ export type RecoveryReason =
 
 export type RecoveryResult = 
   | { success: true; payload: RbacPayload }
-  | { success: false; reason: string; shouldLogout: boolean };
+  | { success: false; reason: string; shouldLogout: boolean; watchdogTimeout?: boolean };
 
 // ============ CONFIGURATION ============
 const RBAC_CACHE_KEY = "m3_rbac_v3";
@@ -294,6 +296,7 @@ export async function recoverAuthAndRbac(
     onError?: (error: string) => void;
   }
 ): Promise<RecoveryResult> {
+  logAppState("auth_recovery_start", { reason });
   console.log("[AuthRecovery] recover start", { reason });
   callbacks?.onRecovering?.();
 
@@ -302,8 +305,9 @@ export async function recoverAuthAndRbac(
   const watchdogPromise = new Promise<RecoveryResult>((resolve) => {
     setTimeout(() => {
       watchdogFired = true;
+      logAppState("auth_watchdog_timeout", { reason });
       console.warn("[AuthRecovery] Watchdog fired after 8s");
-      resolve({ success: false, reason: "watchdog-timeout", shouldLogout: false });
+      resolve({ success: false, reason: "watchdog-timeout", shouldLogout: false, watchdogTimeout: true });
     }, RECOVERY_WATCHDOG_MS);
   });
 
@@ -396,6 +400,7 @@ export async function recoverAuthAndRbac(
     writeRbacCache(payload);
     callbacks?.onSuccess?.(payload);
 
+    logAppState("auth_recovery_success", { userId: payload.userId });
     console.log("[AuthRecovery] recover success");
     return { success: true, payload };
 
@@ -430,6 +435,7 @@ export async function recoverAuthAndRbac(
     }
 
     // No cache, failed after retries = last resort
+      logAppState("auth_recovery_fail", { reason: "no-cache-after-retries" });
       console.warn("[AuthRecovery] no cache and fetch failed - should logout");
       callbacks?.onError?.((err as Error)?.message ?? "Unknown error");
       return { success: false, reason: "rbac-timeout-no-cache", shouldLogout: true };
@@ -443,21 +449,26 @@ export async function recoverAuthAndRbac(
   // Race the recovery against the watchdog
   const result = await Promise.race([recoveryPromise, watchdogPromise]);
 
-  // If watchdog fired but we have cache, use it as fallback
+  // If watchdog fired, apply canonical recovery behavior
   if (watchdogFired && !result.success) {
     const { data: { session } } = await supabase.auth.getSession();
+    
     if (session?.user) {
+      // (A) Check cache first
       const cached = readRbacCache(session.user.id);
       if (cached) {
+        logAppState("auth_watchdog_fallback_cache", { userId: session.user.id });
         console.log("[AuthRecovery] Watchdog fired but using cached RBAC as fallback");
         callbacks?.onSuccess?.(cached);
         return { success: true, payload: cached };
       }
 
-      // Try one last refresh session as emergency recovery
+      // (B) Try ONE emergency session refresh
+      logAppState("auth_emergency_refresh");
       console.log("[AuthRecovery] Watchdog: attempting emergency session refresh");
-      const { error: refreshError } = await supabase.auth.refreshSession();
-      if (!refreshError) {
+      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+      
+      if (!refreshError && refreshData.session) {
         // Try cache again after refresh
         const freshCached = readRbacCache(session.user.id);
         if (freshCached) {
@@ -465,11 +476,24 @@ export async function recoverAuthAndRbac(
           return { success: true, payload: freshCached };
         }
       }
+
+      // (C) Emergency refresh failed - signOut and redirect to login
+      logAppState("signout_due_to_auth_fail", { reason: "watchdog-refresh-failed" });
+      console.warn("[AuthRecovery] Emergency refresh failed - forcing signOut");
+      
+      try {
+        await supabase.auth.signOut();
+      } catch {
+        // Ignore signOut errors
+      }
+      
+      callbacks?.onError?.("Sessão expirada, faça login novamente");
+      return { success: false, reason: "watchdog-signout", shouldLogout: true, watchdogTimeout: true };
     }
     
-    // No cache and watchdog fired - signal error but don't logout (let UI show retry)
+    // No session at all - signal timeout but let UI handle it
     callbacks?.onError?.("Recovery timeout");
-    return { success: false, reason: "watchdog-timeout-no-cache", shouldLogout: false };
+    return { success: false, reason: "watchdog-timeout-no-session", shouldLogout: true, watchdogTimeout: true };
   }
 
   return result;
