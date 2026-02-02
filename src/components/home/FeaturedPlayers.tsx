@@ -10,7 +10,7 @@ import { motion } from "framer-motion";
 // Generates srcSet for retina displays (2x/3x) using Supabase Storage transform
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function getOptimizedImageProps(photoUrl: string | null, baseWidth: number = 400) {
+function getOptimizedImageProps(photoUrl: string | null, baseWidth: number = 600) {
   const fallback = "/placeholder.svg";
   if (!photoUrl) return { src: fallback, srcSet: undefined, sizes: undefined };
   
@@ -20,19 +20,20 @@ function getOptimizedImageProps(photoUrl: string | null, baseWidth: number = 400
   if (isSupabaseStorage) {
     // Use Supabase image transforms for optimized sizes
     // Format: ?width=X&height=Y&quality=Q
+    // Use larger sizes for retina mobile: 600 -> 1200 (2x) -> 1800 (3x)
     const width1x = baseWidth;
     const width2x = baseWidth * 2;
     const width3x = baseWidth * 3;
     
     const getTransformUrl = (w: number) => {
       const separator = photoUrl.includes("?") ? "&" : "?";
-      return `${photoUrl}${separator}width=${w}&quality=85`;
+      return `${photoUrl}${separator}width=${w}&quality=90`;
     };
     
     return {
-      src: getTransformUrl(width2x), // Default to 2x for good quality baseline
+      src: getTransformUrl(width2x), // Default to 2x (1200px) for good quality baseline
       srcSet: `${getTransformUrl(width1x)} ${width1x}w, ${getTransformUrl(width2x)} ${width2x}w, ${getTransformUrl(width3x)} ${width3x}w`,
-      sizes: "(max-width: 768px) 100vw, 400px",
+      sizes: "(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 400px",
     };
   }
   
@@ -45,13 +46,13 @@ function getOptimizedImageProps(photoUrl: string | null, baseWidth: number = 400
     const getUnsplashUrl = (w: number) => {
       // Unsplash URL format: ?w=X&q=Y&fit=crop
       const baseUrl = photoUrl.split("?")[0];
-      return `${baseUrl}?w=${w}&q=85&fit=crop&auto=format`;
+      return `${baseUrl}?w=${w}&q=90&fit=crop&auto=format`;
     };
     
     return {
       src: getUnsplashUrl(width2x),
       srcSet: `${getUnsplashUrl(width1x)} ${width1x}w, ${getUnsplashUrl(width2x)} ${width2x}w, ${getUnsplashUrl(width3x)} ${width3x}w`,
-      sizes: "(max-width: 768px) 100vw, 400px",
+      sizes: "(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 400px",
     };
   }
   
@@ -59,7 +60,7 @@ function getOptimizedImageProps(photoUrl: string | null, baseWidth: number = 400
   return { 
     src: photoUrl, 
     srcSet: undefined, 
-    sizes: "(max-width: 768px) 100vw, 400px" 
+    sizes: "(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 400px" 
   };
 }
 

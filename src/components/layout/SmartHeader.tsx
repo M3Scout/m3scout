@@ -140,13 +140,16 @@ export function SmartHeader({ variant = "default" }: SmartHeaderProps) {
               </Link>
             </nav>
 
-            {/* Mobile Menu Button */}
+            {/* Mobile Menu Button - Hidden when menu is open (close button is inside overlay) */}
             <button
-              className="lg:hidden min-h-[44px] min-w-[44px] flex items-center justify-center text-white/60 hover:text-white transition-colors duration-300"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              aria-label={isMenuOpen ? "Fechar menu" : "Abrir menu"}
+              className={cn(
+                "lg:hidden min-h-[44px] min-w-[44px] flex items-center justify-center text-white/60 hover:text-white transition-colors duration-300",
+                isMenuOpen && "opacity-0 pointer-events-none"
+              )}
+              onClick={() => setIsMenuOpen(true)}
+              aria-label="Abrir menu"
             >
-              {isMenuOpen ? <X size={22} /> : <Menu size={22} />}
+              <Menu size={22} />
             </button>
           </div>
         </div>
