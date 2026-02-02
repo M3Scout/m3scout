@@ -45,6 +45,7 @@ const RBAC_CACHE_KEY = "m3_rbac_v3";
 const RBAC_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const TOKEN_REFRESH_THRESHOLD_MS = 5 * 60 * 1000; // Refresh if expires in < 5 min
 const FETCH_TIMEOUT_MS = 10000; // 10s timeout
+const RECOVERY_WATCHDOG_MS = 8000; // 8s watchdog for entire recovery
 const RETRY_BACKOFF = [0, 800, 2000]; // 3 attempts with backoff
 const BACKGROUND_RETRY_INTERVAL_MS = 30 * 1000; // 30s between background retries
 
@@ -296,21 +297,33 @@ export async function recoverAuthAndRbac(
   console.log("[AuthRecovery] recover start", { reason });
   callbacks?.onRecovering?.();
 
-  try {
-    // (A) Get current session
-    const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
+  // Create watchdog timer to prevent infinite hang
+  let watchdogFired = false;
+  const watchdogPromise = new Promise<RecoveryResult>((resolve) => {
+    setTimeout(() => {
+      watchdogFired = true;
+      console.warn("[AuthRecovery] Watchdog fired after 8s");
+      resolve({ success: false, reason: "watchdog-timeout", shouldLogout: false });
+    }, RECOVERY_WATCHDOG_MS);
+  });
 
-    if (sessionError) {
-      console.error("[AuthRecovery] getSession error", sessionError);
-      // Session error but might recover - don't logout yet
-      return { success: false, reason: "session-error", shouldLogout: false };
-    }
+  // Main recovery logic wrapped in a promise
+  const recoveryPromise = (async (): Promise<RecoveryResult> => {
+    try {
+      // (A) Get current session
+      const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
 
-    // (B) No session = definitely need login
-    if (!currentSession?.user) {
-      console.log("[AuthRecovery] no session - redirect to login");
-      return { success: false, reason: "no-session", shouldLogout: true };
-    }
+      if (sessionError) {
+        console.error("[AuthRecovery] getSession error", sessionError);
+        // Session error but might recover - don't logout yet
+        return { success: false, reason: "session-error", shouldLogout: false };
+      }
+
+      // (B) No session = definitely need login
+      if (!currentSession?.user) {
+        console.log("[AuthRecovery] no session - redirect to login");
+        return { success: false, reason: "no-session", shouldLogout: true };
+      }
 
     let session = currentSession;
 
@@ -417,14 +430,49 @@ export async function recoverAuthAndRbac(
     }
 
     // No cache, failed after retries = last resort
-    console.warn("[AuthRecovery] no cache and fetch failed - should logout");
-    callbacks?.onError?.((err as Error)?.message ?? "Unknown error");
-    return { success: false, reason: "rbac-timeout-no-cache", shouldLogout: true };
+      console.warn("[AuthRecovery] no cache and fetch failed - should logout");
+      callbacks?.onError?.((err as Error)?.message ?? "Unknown error");
+      return { success: false, reason: "rbac-timeout-no-cache", shouldLogout: true };
 
-  } finally {
-    inFlightPromise = null;
-    inFlightAbortController = null;
+    } finally {
+      inFlightPromise = null;
+      inFlightAbortController = null;
+    }
+  })();
+
+  // Race the recovery against the watchdog
+  const result = await Promise.race([recoveryPromise, watchdogPromise]);
+
+  // If watchdog fired but we have cache, use it as fallback
+  if (watchdogFired && !result.success) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      const cached = readRbacCache(session.user.id);
+      if (cached) {
+        console.log("[AuthRecovery] Watchdog fired but using cached RBAC as fallback");
+        callbacks?.onSuccess?.(cached);
+        return { success: true, payload: cached };
+      }
+
+      // Try one last refresh session as emergency recovery
+      console.log("[AuthRecovery] Watchdog: attempting emergency session refresh");
+      const { error: refreshError } = await supabase.auth.refreshSession();
+      if (!refreshError) {
+        // Try cache again after refresh
+        const freshCached = readRbacCache(session.user.id);
+        if (freshCached) {
+          callbacks?.onSuccess?.(freshCached);
+          return { success: true, payload: freshCached };
+        }
+      }
+    }
+    
+    // No cache and watchdog fired - signal error but don't logout (let UI show retry)
+    callbacks?.onError?.("Recovery timeout");
+    return { success: false, reason: "watchdog-timeout-no-cache", shouldLogout: false };
   }
+
+  return result;
 }
 
 // ============ BACKGROUND REVALIDATION ============
