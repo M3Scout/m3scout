@@ -28,12 +28,10 @@ const socialConfig = {
     url: "https://instagram.com/_m3agency",
   },
   youtube: {
-    // TODO: Replace with actual M3 Agency YouTube channel URL
-    url: "https://youtube.com/@m3agency",
+    url: "https://www.youtube.com/@AgencyM3",
   },
   tiktok: {
-    // TODO: Replace with actual M3 Agency TikTok profile URL
-    url: "https://tiktok.com/@m3agency",
+    url: "https://www.tiktok.com/@m3agency_",
   },
 };
 
