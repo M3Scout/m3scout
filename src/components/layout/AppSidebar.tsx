@@ -463,14 +463,14 @@ export function AppSidebar() {
       {/* ===== MOBILE DRAWER ===== */}
       <nav
         className={cn(
-          "md:hidden fixed top-0 left-0 bottom-0 z-50 w-[85%] max-w-[320px]",
+          "md:hidden fixed left-0 bottom-0 z-50 w-[85%] max-w-[320px]",
           "border-r border-white/5 shadow-2xl shadow-black/50",
           "flex flex-col transition-transform duration-200 ease-out",
           mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         )}
         style={{
+          top: 'var(--sat)',
           background: "linear-gradient(180deg, #0B0E14 0%, #080A10 100%)",
-          paddingTop: 'var(--sat)',
           paddingLeft: 'var(--sal)',
           paddingBottom: 'var(--sab)',
         }}
