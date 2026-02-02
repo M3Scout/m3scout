@@ -8,11 +8,11 @@ const socialConfig = {
     label: "Instagram",
   },
   youtube: {
-    url: "https://youtube.com/@m3agency",
+    url: "https://www.youtube.com/@AgencyM3",
     label: "YouTube",
   },
   tiktok: {
-    url: "https://tiktok.com/@m3agency",
+    url: "https://www.tiktok.com/@m3agency_",
     label: "TikTok",
   },
 };
