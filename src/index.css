@@ -4,16 +4,37 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ========== iOS PWA SAFE AREA SUPPORT ========== */
+/* These CSS variables provide safe area insets for notch/Dynamic Island */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+}
+
 /* GLOBAL: Prevent horizontal overflow on mobile */
 html, body {
   overflow-x: hidden;
   max-width: 100%;
 }
 
+/* iOS PWA standalone mode: ensure proper height */
+@supports (-webkit-touch-callout: none) {
+  html, body {
+    min-height: 100dvh;
+    min-height: -webkit-fill-available;
+  }
+}
+
 #root {
   overflow-x: clip;
   max-width: 100%;
   width: 100%;
+  /* Apply safe area padding for PWA mode */
+  min-height: 100dvh;
+  padding-top: var(--sat);
+  padding-bottom: var(--sab);
 }
 
 /* Ensure all flex/grid children can shrink */
