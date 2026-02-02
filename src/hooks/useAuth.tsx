@@ -181,6 +181,8 @@ interface AuthContextType {
   userStatus: "active" | "suspended" | null;
   /** True when recovery is running in background (SWR mode) */
   isRecovering: boolean;
+  /** True when auth recovery watchdog has timed out */
+  hasAuthTimeout: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, name: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -219,6 +221,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isOwner, setIsOwner] = useState(false);
   const [userStatus, setUserStatus] = useState<"active" | "suspended" | null>(null);
   const [isRecovering, setIsRecovering] = useState(false);
+  const [hasAuthTimeout, setHasAuthTimeout] = useState(false);
 
   const [debug, setDebug] = useState<AuthContextType["debug"]>({
     fetchStage: "idle",
@@ -298,9 +301,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const hasValidRoles = roles.length > 0;
     if (hasValidRoles && reason !== "manual-retry") {
       setIsRecovering(true);
+      setHasAuthTimeout(false); // Reset timeout on new recovery attempt
     } else {
       setRolesLoading(true);
       setPermissionsLoading(true);
+      setHasAuthTimeout(false);
     }
 
     setDebug({ fetchStage: "start", fetchSource: "fresh" });
@@ -335,6 +340,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setRolesLoading(false);
       setPermissionsLoading(false);
       setIsRecovering(false);
+      
+      // Check if watchdog timed out
+      if (!result.success) {
+        const failureResult = result as { success: false; reason: string; shouldLogout: boolean; watchdogTimeout?: boolean };
+        if (failureResult.watchdogTimeout) {
+          setHasAuthTimeout(true);
+        }
+      }
     }
 
     // Handle logout redirect as last resort
@@ -557,6 +570,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isOwner,
         userStatus,
         isRecovering,
+        hasAuthTimeout,
         signIn,
         signUp,
         signOut,
