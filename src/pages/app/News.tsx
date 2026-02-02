@@ -1,9 +1,8 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useMemo } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,12 +13,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Search, Edit, Trash2, Eye, EyeOff, ChevronRight } from "lucide-react";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { Plus } from "lucide-react";
 import { toast } from "sonner";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { PermissionGate } from "@/components/auth/PermissionGate";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { NewsFilters, type StatusFilter, type SortOption } from "@/components/news/NewsFilters";
+import { NewsCardMobile } from "@/components/news/NewsCardMobile";
+import { NewsTableDesktop } from "@/components/news/NewsTableDesktop";
+import { NewsEmptyState } from "@/components/news/NewsEmptyState";
+import { NewsListSkeleton } from "@/components/news/NewsListSkeleton";
 
 type NewsArticle = {
   id: string;
@@ -30,19 +33,30 @@ type NewsArticle = {
   status: string;
   publish_date: string;
   created_at: string;
+  featured_image_url: string | null;
 };
 
 const News = () => {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const { can } = usePermissions();
+  const isMobile = useIsMobile();
+  
+  // Filter state
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteSlug, setDeleteSlug] = useState<string>("");
+
+  const canDelete = can("news", "delete");
 
   const { data: articles, isLoading } = useQuery({
     queryKey: ["admin-news"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("news_articles")
-        .select("id, title, slug, category, excerpt, status, publish_date, created_at")
+        .select("id, title, slug, category, excerpt, status, publish_date, created_at, featured_image_url")
         .order("created_at", { ascending: false });
       
       if (error) throw error;
@@ -62,6 +76,7 @@ const News = () => {
       queryClient.invalidateQueries({ queryKey: ["admin-news"] });
       toast.success("Notícia excluída com sucesso");
       setDeleteId(null);
+      setDeleteSlug("");
     },
     onError: () => {
       toast.error("Erro ao excluir notícia");
@@ -76,159 +91,210 @@ const News = () => {
         .eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["admin-news"] });
-      toast.success("Status atualizado");
+      toast.success(
+        variables.newStatus === "published" 
+          ? "Notícia publicada!" 
+          : "Notícia despublicada"
+      );
     },
     onError: () => {
       toast.error("Erro ao atualizar status");
     },
   });
 
-  const filteredArticles = articles?.filter((article) =>
-    article.title.toLowerCase().includes(search.toLowerCase())
-  );
+  const duplicateMutation = useMutation({
+    mutationFn: async (article: NewsArticle) => {
+      const { data, error } = await supabase
+        .from("news_articles")
+        .insert({
+          title: `${article.title} (cópia)`,
+          slug: `${article.slug}-copia-${Date.now()}`,
+          category: article.category,
+          excerpt: article.excerpt,
+          status: "draft",
+          publish_date: new Date().toISOString(),
+          content: "", // Will need to fetch original content if needed
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-news"] });
+      toast.success("Notícia duplicada como rascunho");
+      navigate(`/app/news/${data.id}/edit`);
+    },
+    onError: () => {
+      toast.error("Erro ao duplicar notícia");
+    },
+  });
+
+  // Filter and sort articles
+  const filteredArticles = useMemo(() => {
+    if (!articles) return [];
+
+    let result = [...articles];
+
+    // Search filter
+    if (search.trim()) {
+      const searchLower = search.toLowerCase();
+      result = result.filter(
+        (a) =>
+          a.title.toLowerCase().includes(searchLower) ||
+          a.slug.toLowerCase().includes(searchLower) ||
+          a.category.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Status filter
+    if (statusFilter !== "all") {
+      result = result.filter((a) => a.status === statusFilter);
+    }
+
+    // Sort
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case "newest":
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case "oldest":
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case "updated":
+          return new Date(b.publish_date).getTime() - new Date(a.publish_date).getTime();
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [articles, search, statusFilter, sortBy]);
+
+  const hasFilters = search.trim() !== "" || statusFilter !== "all";
+
+  const handleDelete = (id: string) => {
+    const article = articles?.find((a) => a.id === id);
+    if (article) {
+      setDeleteId(id);
+      setDeleteSlug(article.slug);
+    }
+  };
+
+  const handleClearFilters = () => {
+    setSearch("");
+    setStatusFilter("all");
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <header className="admin-header animate-fade-in">
-        <div>
-          <h1 className="admin-title">Notícias</h1>
-          <p className="admin-subtitle">Gerencie o conteúdo da Sala de Imprensa</p>
-        </div>
-        <Link to="/app/news/new">
-          <Button className="bg-primary hover:bg-primary/90 text-white gap-2">
-            <Plus className="w-4 h-4" />
-            Nova Notícia
+    <TooltipProvider>
+      <div className="space-y-6">
+        {/* Header */}
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between animate-fade-in">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Notícias</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Gerencie o conteúdo da Sala de Imprensa
+            </p>
+          </div>
+          <Button asChild className="gap-2 shrink-0">
+            <Link to="/app/news/new">
+              <Plus className="w-4 h-4" />
+              Nova Notícia
+            </Link>
           </Button>
-        </Link>
-      </header>
+        </header>
 
-      {/* Search */}
-      <div className="relative max-w-sm animate-fade-in delay-75">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-        <Input
-          placeholder="Buscar notícias..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-10 bg-zinc-900/50 border-zinc-800 text-white placeholder:text-zinc-600 focus-visible:ring-primary/30 focus-visible:border-zinc-700"
-        />
-      </div>
+        {/* Filters */}
+        <div className="animate-fade-in" style={{ animationDelay: "50ms" }}>
+          <NewsFilters
+            search={search}
+            onSearchChange={setSearch}
+            statusFilter={statusFilter}
+            onStatusFilterChange={setStatusFilter}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
+          />
+        </div>
 
-      {/* News List */}
-      <div className="admin-card animate-fade-in delay-100">
-        <div className="admin-card-body p-0">
+        {/* Content */}
+        <div className="animate-fade-in" style={{ animationDelay: "100ms" }}>
           {isLoading ? (
-            <div className="py-12 text-center text-zinc-500">Carregando...</div>
-          ) : filteredArticles?.length === 0 ? (
-            <div className="py-12 text-center text-zinc-500">
-              Nenhuma notícia encontrada
-            </div>
-          ) : (
-            <div className="divide-y divide-zinc-800/50">
-              {filteredArticles?.map((article, index) => (
-                <div 
+            <NewsListSkeleton isMobile={isMobile} />
+          ) : filteredArticles.length === 0 ? (
+            <NewsEmptyState 
+              hasFilters={hasFilters} 
+              onClearFilters={hasFilters ? handleClearFilters : undefined}
+            />
+          ) : isMobile ? (
+            // Mobile: Cards
+            <div className="space-y-4">
+              {filteredArticles.map((article, index) => (
+                <div
                   key={article.id}
-                  className="flex items-center gap-4 p-4 hover:bg-zinc-800/30 transition-colors"
+                  className="animate-fade-in"
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-1">
-                      <p className="text-sm font-medium text-white truncate">
-                        {article.title}
-                      </p>
-                      <span className={
-                        article.status === "published" 
-                          ? "admin-badge-success" 
-                          : "admin-badge-default"
-                      }>
-                        {article.status === "published" ? "Publicado" : "Rascunho"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3 text-xs text-zinc-500">
-                      <span>/imprensa/{article.slug}</span>
-                      <span>•</span>
-                      <span>{article.category}</span>
-                      <span>•</span>
-                      <span>
-                        {format(new Date(article.publish_date), "dd MMM yyyy", {
-                          locale: ptBR,
-                        })}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-1 shrink-0">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() =>
-                        toggleStatusMutation.mutate({
-                          id: article.id,
-                          newStatus: article.status === "published" ? "draft" : "published",
-                        })
-                      }
-                      className="w-8 h-8 text-zinc-500 hover:text-white hover:bg-zinc-800"
-                      title={article.status === "published" ? "Despublicar" : "Publicar"}
-                    >
-                      {article.status === "published" ? (
-                        <EyeOff className="w-4 h-4" />
-                      ) : (
-                        <Eye className="w-4 h-4" />
-                      )}
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      asChild
-                      className="w-8 h-8 text-zinc-500 hover:text-white hover:bg-zinc-800"
-                    >
-                      <Link to={`/app/news/${article.id}/edit`}>
-                        <Edit className="w-4 h-4" />
-                      </Link>
-                    </Button>
-                    <PermissionGate module="news" action="delete">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setDeleteId(article.id)}
-                        className="w-8 h-8 text-zinc-500 hover:text-red-400 hover:bg-red-500/10"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </PermissionGate>
-                  </div>
+                  <NewsCardMobile
+                    article={article}
+                    onToggleStatus={(id, status) => toggleStatusMutation.mutate({ id, newStatus: status })}
+                    onDuplicate={(a) => duplicateMutation.mutate(a)}
+                    onDelete={handleDelete}
+                    canDelete={canDelete}
+                    isToggling={toggleStatusMutation.isPending}
+                  />
                 </div>
               ))}
             </div>
+          ) : (
+            // Desktop: Table
+            <NewsTableDesktop
+              articles={filteredArticles}
+              onToggleStatus={(id, status) => toggleStatusMutation.mutate({ id, newStatus: status })}
+              onDuplicate={(a) => duplicateMutation.mutate(a)}
+              onDelete={handleDelete}
+              canDelete={canDelete}
+              isToggling={toggleStatusMutation.isPending}
+            />
           )}
         </div>
-      </div>
 
-      {/* Delete Dialog */}
-      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
-        <AlertDialogContent className="bg-zinc-900 border-zinc-800">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">Excluir notícia?</AlertDialogTitle>
-            <AlertDialogDescription className="text-zinc-400">
-              Esta ação não pode ser desfeita. A notícia será removida permanentemente.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="bg-zinc-800 border-zinc-700 text-white hover:bg-zinc-700">
-              Cancelar
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deleteId && deleteMutation.mutate(deleteId)}
-              className="bg-red-600 text-white hover:bg-red-700"
-            >
-              Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+        {/* Results count */}
+        {!isLoading && filteredArticles.length > 0 && (
+          <p className="text-xs text-muted-foreground text-center">
+            {filteredArticles.length} {filteredArticles.length === 1 ? "notícia" : "notícias"}
+            {hasFilters && " encontrada(s)"}
+          </p>
+        )}
+
+        {/* Delete Dialog */}
+        <AlertDialog open={!!deleteId} onOpenChange={() => { setDeleteId(null); setDeleteSlug(""); }}>
+          <AlertDialogContent className="bg-zinc-900 border-zinc-800">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-white">Excluir notícia?</AlertDialogTitle>
+              <AlertDialogDescription className="text-zinc-400">
+                Esta ação não pode ser desfeita. A notícia será removida permanentemente.
+                <span className="block mt-2 font-mono text-xs text-zinc-500">
+                  /imprensa/{deleteSlug}
+                </span>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="bg-zinc-800 border-zinc-700 text-white hover:bg-zinc-700">
+                Cancelar
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => deleteId && deleteMutation.mutate(deleteId)}
+                className="bg-red-600 text-white hover:bg-red-700"
+              >
+                Excluir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </TooltipProvider>
   );
 };
 
