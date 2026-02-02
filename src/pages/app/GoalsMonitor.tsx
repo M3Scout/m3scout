@@ -68,6 +68,7 @@ const GOAL_TYPE_CONFIG: Record<string, GoalTypeConfig> = {
   tackles: { label: "Desarmes", icon: "🦵", color: "cyan", type: "accumulation" },
   interceptions: { label: "Interceptações", icon: "🧲", color: "indigo", type: "accumulation" },
   pass_accuracy: { label: "Aproveitamento de Passe", icon: "📊", color: "teal", type: "accumulation" },
+  dribble_accuracy: { label: "Aproveitamento de Dribles", icon: "🏃", color: "purple", type: "accumulation" },
   yellow_cards_max: { label: "Amarelos", icon: "🟨", color: "yellow", type: "limit", limitLabel: "máx." },
   saves: { label: "Defesas Totais", icon: "🧤", color: "cyan", type: "accumulation" },
   saves_difficult: { label: "Defesas Difíceis", icon: "🦸", color: "rose", type: "accumulation" },
@@ -234,6 +235,8 @@ export default function GoalsMonitor() {
         interceptions: number;
         passes_completed: number;
         passes_total: number;
+        dribbles_success: number;
+        dribbles_total: number;
       }>> = {};
 
       // Fetch stats for each player in parallel
@@ -282,6 +285,9 @@ export default function GoalsMonitor() {
               passes_completed: stats.reduce((sum, s) => sum + (s.passes_completed || 0), 0),
               // passes_total in DB is actually passes_failed - we need completed + total for real total
               passes_total: stats.reduce((sum, s) => sum + ((s.passes_completed || 0) + (s.passes_total || 0)), 0),
+              dribbles_success: stats.reduce((sum, s) => sum + (s.dribbles_success || 0), 0),
+              // dribbles_total in DB is actually dribbles_failed - we need success + total for real total
+              dribbles_total: stats.reduce((sum, s) => sum + ((s.dribbles_success || 0) + (s.dribbles_total || 0)), 0),
             };
           });
         } catch (err) {
@@ -322,6 +328,17 @@ export default function GoalsMonitor() {
             } else {
               // Return percentage with 1 decimal
               currentValue = Math.round((completed / total) * 1000) / 10;
+            }
+            break;
+          }
+          case "dribble_accuracy": {
+            const success = playerSeasonStats.dribbles_success ?? 0;
+            const total = playerSeasonStats.dribbles_total ?? 0;
+            if (total === 0) {
+              currentValue = 0;
+            } else {
+              // Return percentage with 1 decimal
+              currentValue = Math.round((success / total) * 1000) / 10;
             }
             break;
           }
