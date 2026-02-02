@@ -51,6 +51,12 @@ interface AthleteSeasonGoalsCardProps {
     passes_total?: number;
     dribbles_success?: number;
     dribbles_total?: number;
+    // Goalkeeper-specific stats
+    goals_conceded?: number;
+    claims_success?: number;
+    claims_total?: number;
+    penalties_saved?: number;
+    penalties_faced?: number;
   };
   isGoalkeeper?: boolean;
 }
@@ -204,11 +210,45 @@ const GOAL_TYPE_CONFIG: Record<string, GoalTypeConfig> = {
     type: "accumulation",
     description: "Jogos sem sofrer gols"
   },
+  // New goalkeeper goal types
+  goals_conceded_max: {
+    label: "Gols Sofridos", 
+    icon: "🥅", 
+    color: "red", 
+    minValue: 0, 
+    maxValue: 80, 
+    step: 1, 
+    type: "limit", 
+    limitLabel: "máx.",
+    description: "Limite máximo de gols sofridos (quanto menos, melhor)"
+  },
+  goalkeeper_claims_accuracy: { 
+    label: "Saídas do Gol Corretas", 
+    icon: "🧤", 
+    color: "teal", 
+    minValue: 1, 
+    maxValue: 100, 
+    step: 1, 
+    unit: "%",
+    type: "accumulation",
+    description: "Percentual de saídas do gol bem-sucedidas"
+  },
+  penalty_save_rate: { 
+    label: "Pênaltis Defendidos", 
+    icon: "🥊", 
+    color: "purple", 
+    minValue: 1, 
+    maxValue: 100, 
+    step: 1, 
+    unit: "%",
+    type: "accumulation",
+    description: "Percentual de pênaltis defendidos"
+  },
 };
 
 // These slugs must match DB constraint values
 const OUTFIELD_GOAL_TYPES = ["goals", "assists", "matches", "minutes", "shots", "tackles", "interceptions", "pass_accuracy", "dribble_accuracy", "yellow_cards_max"];
-const GK_GOAL_TYPES = ["saves", "saves_difficult", "clean_sheets", "matches", "minutes", "interceptions", "pass_accuracy", "dribble_accuracy", "yellow_cards_max"];
+const GK_GOAL_TYPES = ["saves", "saves_difficult", "clean_sheets", "matches", "minutes", "interceptions", "pass_accuracy", "dribble_accuracy", "yellow_cards_max", "goals_conceded_max", "goalkeeper_claims_accuracy", "penalty_save_rate"];
 
 // For accumulation: higher = better (green when complete)
 // For limit: lower = better (green when under limit, red/warning when approaching/exceeding)
@@ -315,6 +355,20 @@ export function AthleteSeasonGoalsCard({
         return Math.round((success / total) * 1000) / 10;
       }
       case "saves_difficult": return 0; // Not tracked yet in DB
+      // New goalkeeper goal types
+      case "goals_conceded_max": return currentStats.goals_conceded ?? 0;
+      case "goalkeeper_claims_accuracy": {
+        const success = currentStats.claims_success ?? 0;
+        const total = currentStats.claims_total ?? 0;
+        if (total === 0) return 0;
+        return Math.round((success / total) * 1000) / 10;
+      }
+      case "penalty_save_rate": {
+        const saved = currentStats.penalties_saved ?? 0;
+        const faced = currentStats.penalties_faced ?? 0;
+        if (faced === 0) return 0;
+        return Math.round((saved / faced) * 1000) / 10;
+      }
       default: return 0;
     }
   };

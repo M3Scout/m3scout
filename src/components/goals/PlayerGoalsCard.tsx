@@ -27,6 +27,10 @@ const GOAL_TYPE_CONFIG: Record<string, GoalTypeConfig> = {
   saves: { label: "Defesas", icon: "🧤", color: "cyan", type: "accumulation" },
   saves_difficult: { label: "Defesas Difíceis", icon: "🦸", color: "rose", type: "accumulation" },
   clean_sheets: { label: "Clean Sheets", icon: "🛡️", color: "green", type: "accumulation" },
+  // New goalkeeper goal types
+  goals_conceded_max: { label: "Gols Sofridos", icon: "🥅", color: "red", type: "limit", limitLabel: "máx." },
+  goalkeeper_claims_accuracy: { label: "Saídas Corretas", icon: "🧤", color: "teal", type: "accumulation" },
+  penalty_save_rate: { label: "Pênaltis %", icon: "🥊", color: "purple", type: "accumulation" },
 };
 
 type GoalStatus = "in_progress" | "completed" | "exceeded";

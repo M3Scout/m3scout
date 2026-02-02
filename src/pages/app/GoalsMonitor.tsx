@@ -64,6 +64,10 @@ const GOAL_TYPE_CONFIG: Record<string, GoalTypeConfig> = {
   saves: { label: "Defesas Totais", icon: "🧤", color: "cyan", type: "accumulation" },
   saves_difficult: { label: "Defesas Difíceis", icon: "🦸", color: "rose", type: "accumulation" },
   clean_sheets: { label: "Clean Sheets", icon: "🛡️", color: "green", type: "accumulation" },
+  // New goalkeeper goal types
+  goals_conceded_max: { label: "Gols Sofridos", icon: "🥅", color: "red", type: "limit", limitLabel: "máx." },
+  goalkeeper_claims_accuracy: { label: "Saídas do Gol Corretas", icon: "🧤", color: "teal", type: "accumulation" },
+  penalty_save_rate: { label: "Pênaltis Defendidos", icon: "🥊", color: "purple", type: "accumulation" },
 };
 
 type GoalStatus = "in_progress" | "completed" | "exceeded";
@@ -310,6 +314,12 @@ export default function GoalsMonitor() {
     passes_total: number;
     dribbles_success: number;
     dribbles_total: number;
+    // Goalkeeper-specific stats
+    goals_conceded: number;
+    claims_success: number;
+    claims_total: number;
+    penalties_saved: number;
+    penalties_faced: number;
   }
 
   const { data: playerStats, isLoading: statsLoading, fetchStatus: statsFetchStatus } = useQuery({
@@ -439,6 +449,9 @@ export default function GoalsMonitor() {
             const manualDribblesSuccess = manualStats.reduce((sum, s) => sum + (s.dribbles_success || 0), 0);
             const manualDribblesFailed = manualStats.reduce((sum, s) => sum + (s.dribbles_failed || 0), 0);
             const manualDribblesTotal = manualDribblesSuccess + manualDribblesFailed;
+            // Goalkeeper-specific (manual)
+            const manualGoalsConceded = manualStats.reduce((sum, s) => sum + (s.goals_conceded || 0), 0);
+            const manualPenaltiesSaved = manualStats.reduce((sum, s) => sum + (s.penalties_saved || 0), 0);
 
             // LEGACY calculations (from player_stats table - admin-entered data)
             // In player_stats (legacy), `shots` is already the TOTAL shots count
@@ -459,6 +472,17 @@ export default function GoalsMonitor() {
             // Legacy uses successful_dribbles and total_dribbles
             const legacyDribblesSuccess = legacyStats.reduce((sum, s) => sum + (s.successful_dribbles || 0), 0);
             const legacyDribblesTotal = legacyStats.reduce((sum, s) => sum + (s.total_dribbles || 0), 0);
+            // Goalkeeper-specific (legacy)
+            const legacyGoalsConceded = legacyStats.reduce((sum, s) => sum + (s.goals_conceded || 0), 0);
+            const legacyPenaltiesSaved = legacyStats.reduce((sum, s) => sum + (s.penalties_saved || 0), 0);
+            const legacyPenaltiesFaced = legacyStats.reduce((sum, s) => sum + (s.penalty_faced || 0), 0);
+            // Note: claims (gk exits) from legacy - claims = successful exits
+            const legacyClaims = legacyStats.reduce((sum, s) => sum + (s.claims || 0), 0);
+
+            // LIVE calculations for goalkeeper-specific
+            const liveGoalsConceded = liveStats.reduce((sum, s) => sum + (s.goals_conceded || 0), 0);
+            // Note: Live match doesn't have penalties_saved/faced or claims tracked separately yet
+            // We'll rely on manual/legacy data for these
 
             // ==== UNIFIED: Live + Manual + Legacy SUM ====
             statsMap[playerId][seasonYear] = {
@@ -476,6 +500,12 @@ export default function GoalsMonitor() {
               passes_total: livePassesTotal + manualPassesTotal + legacyPassesTotal,
               dribbles_success: liveDribblesSuccess + manualDribblesSuccess + legacyDribblesSuccess,
               dribbles_total: liveDribblesTotal + manualDribblesTotal + legacyDribblesTotal,
+              // Goalkeeper-specific stats
+              goals_conceded: liveGoalsConceded + manualGoalsConceded + legacyGoalsConceded,
+              claims_success: legacyClaims, // Only legacy has claims tracked
+              claims_total: legacyClaims, // Assuming all claims are successful attempts for now
+              penalties_saved: manualPenaltiesSaved + legacyPenaltiesSaved,
+              penalties_faced: legacyPenaltiesFaced, // Only legacy has penalty_faced
             };
 
             if (isDev) {
@@ -540,6 +570,33 @@ export default function GoalsMonitor() {
             break;
           }
           case "saves_difficult": currentValue = 0; break; // Not tracked yet
+          // New goalkeeper goal types
+          case "goals_conceded_max": {
+            currentValue = playerSeasonStats.goals_conceded ?? 0;
+            break;
+          }
+          case "goalkeeper_claims_accuracy": {
+            const success = playerSeasonStats.claims_success ?? 0;
+            const total = playerSeasonStats.claims_total ?? 0;
+            if (total === 0) {
+              currentValue = 0;
+            } else {
+              // Return percentage with 1 decimal
+              currentValue = Math.round((success / total) * 1000) / 10;
+            }
+            break;
+          }
+          case "penalty_save_rate": {
+            const saved = playerSeasonStats.penalties_saved ?? 0;
+            const faced = playerSeasonStats.penalties_faced ?? 0;
+            if (faced === 0) {
+              currentValue = 0;
+            } else {
+              // Return percentage with 1 decimal
+              currentValue = Math.round((saved / faced) * 1000) / 10;
+            }
+            break;
+          }
         }
       }
 
