@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { ArrowLeft, Save, Eye } from "lucide-react";
 import { toast } from "sonner";
+import { ImageCropEditor, type CropPosition } from "@/components/news/ImageCropEditor";
 
 const categories = [
   "Institucional",
@@ -45,6 +46,8 @@ type FormData = {
   featured_image_url: string;
   status: string;
   publish_date: string;
+  hero_crop: CropPosition | null;
+  card_crop: CropPosition | null;
 };
 
 const NewsForm = () => {
@@ -63,6 +66,8 @@ const NewsForm = () => {
     featured_image_url: "",
     status: "draft",
     publish_date: new Date().toISOString().slice(0, 16),
+    hero_crop: null,
+    card_crop: null,
   });
 
   const [slugEdited, setSlugEdited] = useState(false);
@@ -94,6 +99,8 @@ const NewsForm = () => {
         featured_image_url: article.featured_image_url || "",
         status: article.status,
         publish_date: new Date(article.publish_date).toISOString().slice(0, 16),
+        hero_crop: article.hero_crop as CropPosition | null,
+        card_crop: article.card_crop as CropPosition | null,
       });
       setSlugEdited(true);
     }
@@ -119,6 +126,8 @@ const NewsForm = () => {
         status: data.status,
         publish_date: new Date(data.publish_date).toISOString(),
         created_by: user?.id,
+        hero_crop: data.hero_crop,
+        card_crop: data.card_crop,
       };
 
       if (isEditing) {
@@ -137,6 +146,7 @@ const NewsForm = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-news"] });
       queryClient.invalidateQueries({ queryKey: ["news-article", id] });
+      queryClient.invalidateQueries({ queryKey: ["public-news"] });
       toast.success(isEditing ? "Notícia atualizada" : "Notícia criada");
       navigate("/app/news");
     },
@@ -276,7 +286,7 @@ const NewsForm = () => {
           </div>
         </div>
 
-        {/* Featured Image */}
+        {/* Featured Image URL */}
         <div className="space-y-2">
           <Label htmlFor="featured_image_url" className="text-xs uppercase tracking-wide text-zinc-500">
             URL da Imagem Destaque
@@ -285,12 +295,40 @@ const NewsForm = () => {
             id="featured_image_url"
             value={formData.featured_image_url}
             onChange={(e) =>
-              setFormData((prev) => ({ ...prev, featured_image_url: e.target.value }))
+              setFormData((prev) => ({ 
+                ...prev, 
+                featured_image_url: e.target.value,
+                // Reset crops when URL changes
+                hero_crop: null,
+                card_crop: null,
+              }))
             }
             placeholder="https://exemplo.com/imagem.jpg"
             className={inputClasses}
           />
         </div>
+
+        {/* Image Crop Editor */}
+        {formData.featured_image_url && (
+          <div className="space-y-2">
+            <Label className="text-xs uppercase tracking-wide text-zinc-500">
+              Enquadramento da Imagem
+            </Label>
+            <div className="p-4 rounded-lg border border-zinc-800 bg-zinc-900/30">
+              <ImageCropEditor
+                imageUrl={formData.featured_image_url}
+                heroCrop={formData.hero_crop}
+                cardCrop={formData.card_crop}
+                onHeroCropChange={(crop) => 
+                  setFormData((prev) => ({ ...prev, hero_crop: crop }))
+                }
+                onCardCropChange={(crop) => 
+                  setFormData((prev) => ({ ...prev, card_crop: crop }))
+                }
+              />
+            </div>
+          </div>
+        )}
 
         {/* Excerpt */}
         <div className="space-y-2">

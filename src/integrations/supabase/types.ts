@@ -918,12 +918,14 @@ export type Database = {
       }
       news_articles: {
         Row: {
+          card_crop: Json | null
           category: string
           content: string
           created_at: string
           created_by: string | null
           excerpt: string | null
           featured_image_url: string | null
+          hero_crop: Json | null
           id: string
           publish_date: string
           slug: string
@@ -932,12 +934,14 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          card_crop?: Json | null
           category: string
           content: string
           created_at?: string
           created_by?: string | null
           excerpt?: string | null
           featured_image_url?: string | null
+          hero_crop?: Json | null
           id?: string
           publish_date?: string
           slug: string
@@ -946,12 +950,14 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          card_crop?: Json | null
           category?: string
           content?: string
           created_at?: string
           created_by?: string | null
           excerpt?: string | null
           featured_image_url?: string | null
+          hero_crop?: Json | null
           id?: string
           publish_date?: string
           slug?: string
