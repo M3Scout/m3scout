@@ -117,7 +117,6 @@ export function AppShell({
     return (
       <div 
         className="min-h-screen flex flex-col items-center justify-center bg-background p-4"
-        style={{ paddingTop: 'calc(var(--sat) + 1rem)', paddingBottom: 'calc(var(--sab) + 1rem)' }}
       >
         <div className="mb-6">
           <img 
@@ -165,7 +164,6 @@ export function AppShell({
       return (
         <div 
           className="min-h-screen flex flex-col items-center justify-center bg-background p-4"
-          style={{ paddingTop: 'calc(var(--sat) + 1rem)', paddingBottom: 'calc(var(--sab) + 1rem)' }}
         >
           <div className="mb-6">
             <img 
@@ -213,7 +211,6 @@ export function AppShell({
     return (
       <div 
         className="min-h-screen flex flex-col items-center justify-center bg-background"
-        style={{ paddingTop: 'var(--sat)', paddingBottom: 'var(--sab)' }}
       >
         {/* Logo */}
         <div className="mb-8 animate-pulse">
