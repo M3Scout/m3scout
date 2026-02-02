@@ -3,23 +3,21 @@ import { useQuery } from "@tanstack/react-query";
 import { 
   Target, 
   Search, 
-  Filter, 
   Loader2, 
   Trophy,
   TrendingUp,
   CheckCircle2,
   Clock,
   AlertTriangle,
-  X,
   Calendar,
-  User
+  User,
+  Users
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { fadeInUp } from "@/lib/animations";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { 
   Select, 
@@ -34,21 +32,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { 
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Card, CardContent } from "@/components/ui/card";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { fetchPlayerMatchStatsRaw } from "@/lib/playerMatchStatsProvider";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
+import { PlayerGoalsCard } from "@/components/goals/PlayerGoalsCard";
 
 // Goal type configuration (mirrored from AthleteSeasonGoalsCard)
 interface GoalTypeConfig {
@@ -156,6 +147,93 @@ function StatusBadge({ status, isLimit }: { status: GoalStatus; isLimit: boolean
       <Clock className="w-3 h-3 mr-1" />
       Em andamento
     </Badge>
+  );
+}
+
+// Group goals by player and render as cards
+function GoalsGridView({ 
+  goals, 
+  onGoalClick 
+}: { 
+  goals: GoalWithProgress[]; 
+  onGoalClick: (goal: GoalWithProgress) => void;
+}) {
+  // Group goals by player_id
+  const groupedByPlayer = useMemo(() => {
+    const map = new Map<string, {
+      player: GoalWithProgress["player"];
+      goals: GoalWithProgress[];
+    }>();
+
+    goals.forEach(goal => {
+      if (!goal.player) return;
+      
+      const existing = map.get(goal.player_id);
+      if (existing) {
+        existing.goals.push(goal);
+      } else {
+        map.set(goal.player_id, {
+          player: goal.player,
+          goals: [goal],
+        });
+      }
+    });
+
+    return Array.from(map.values());
+  }, [goals]);
+
+  if (groupedByPlayer.length === 0) {
+    return (
+      <div className="py-20 text-center">
+        <Trophy className="w-12 h-12 mx-auto mb-4 text-zinc-700" />
+        <p className="text-lg text-muted-foreground">Nenhuma meta encontrada</p>
+        <p className="text-sm text-zinc-600 mt-1">Tente ajustar os filtros</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Summary bar */}
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Users className="w-4 h-4" />
+        <span>{groupedByPlayer.length} jogadores • {goals.length} metas</span>
+      </div>
+
+      {/* Player cards grid */}
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+        {groupedByPlayer.map(({ player, goals: playerGoals }) => {
+          if (!player) return null;
+          
+          return (
+            <PlayerGoalsCard
+              key={player.id}
+              player={{
+                id: player.id,
+                full_name: player.full_name,
+                position: player.position,
+                age: player.age,
+                photo_url: player.photo_url,
+              }}
+              goals={playerGoals.map(g => ({
+                id: g.id,
+                goal_type: g.goal_type,
+                target_value: g.target_value,
+                season_year: g.season_year,
+                currentValue: g.currentValue,
+                percentage: g.percentage,
+                status: g.status,
+              }))}
+              onGoalClick={(goal) => {
+                // Find the full goal object to pass to modal
+                const fullGoal = playerGoals.find(g => g.id === goal.id);
+                if (fullGoal) onGoalClick(fullGoal);
+              }}
+            />
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -624,202 +702,10 @@ export default function GoalsMonitor() {
             </p>
           </div>
         ) : (
-          <>
-            {/* Desktop Table */}
-            <div className="hidden md:block">
-              <Card className="bg-zinc-900/60 border-zinc-800/40 overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-zinc-800/40 hover:bg-transparent">
-                      <TableHead className="text-xs text-zinc-500">Jogador</TableHead>
-                      <TableHead className="text-xs text-zinc-500">Meta</TableHead>
-                      <TableHead className="text-xs text-zinc-500">Alvo</TableHead>
-                      <TableHead className="text-xs text-zinc-500">Temporada</TableHead>
-                      <TableHead className="text-xs text-zinc-500 w-[200px]">Progresso</TableHead>
-                      <TableHead className="text-xs text-zinc-500">Status</TableHead>
-                      <TableHead className="text-xs text-zinc-500">Criada em</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredGoals.map((goal) => {
-                      const config = GOAL_TYPE_CONFIG[goal.goal_type] || {
-                        label: goal.goal_type,
-                        icon: "🎯",
-                        type: "accumulation" as const,
-                      };
-                      const isLimit = config.type === "limit";
-
-                      return (
-                        <TableRow 
-                          key={goal.id}
-                          className="border-zinc-800/40 hover:bg-zinc-800/30 cursor-pointer transition-colors"
-                          onClick={() => setSelectedGoal(goal)}
-                        >
-                          <TableCell>
-                            <div className="flex items-center gap-3">
-                              {goal.player?.photo_url ? (
-                                <img 
-                                  src={goal.player.photo_url} 
-                                  alt={goal.player.full_name}
-                                  className="w-8 h-8 rounded-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center">
-                                  <User className="w-4 h-4 text-zinc-500" />
-                                </div>
-                              )}
-                              <div>
-                                <p className="text-sm font-medium text-foreground">
-                                  {goal.player?.full_name || "Jogador"}
-                                </p>
-                                <p className="text-[10px] text-muted-foreground">
-                                  {goal.player?.position}
-                                  {goal.player?.age && ` • ${goal.player.age} anos`}
-                                </p>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <span className="text-base">{config.icon}</span>
-                              <span className="text-sm text-foreground">{config.label}</span>
-                              {isLimit && (
-                                <span className="text-[10px] text-zinc-500">({config.limitLabel})</span>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-sm font-medium text-foreground">
-                              {goal.target_value}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-sm text-muted-foreground">{goal.season_year}</span>
-                          </TableCell>
-                          <TableCell>
-                            <div className="space-y-1">
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="text-muted-foreground">
-                                  {goal.currentValue} / {goal.target_value}
-                                </span>
-                                <span className="font-medium text-foreground">
-                                  {Math.round(goal.percentage)}%
-                                </span>
-                              </div>
-                              <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                                <div 
-                                  className={cn(
-                                    "h-full transition-all duration-500",
-                                    getProgressColor(goal.percentage, isLimit)
-                                  )}
-                                  style={{ width: `${goal.percentage}%` }}
-                                />
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <StatusBadge status={goal.status} isLimit={isLimit} />
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-xs text-muted-foreground">
-                              {format(new Date(goal.created_at), "dd/MM/yyyy", { locale: ptBR })}
-                            </span>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </Card>
-            </div>
-
-            {/* Mobile Cards */}
-            <div className="md:hidden space-y-3">
-              {filteredGoals.map((goal) => {
-                const config = GOAL_TYPE_CONFIG[goal.goal_type] || {
-                  label: goal.goal_type,
-                  icon: "🎯",
-                  type: "accumulation" as const,
-                };
-                const isLimit = config.type === "limit";
-
-                return (
-                  <motion.div
-                    key={goal.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="rounded-xl bg-zinc-900/60 border border-zinc-800/40 p-4 space-y-3"
-                    onClick={() => setSelectedGoal(goal)}
-                  >
-                    {/* Player info */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        {goal.player?.photo_url ? (
-                          <img 
-                            src={goal.player.photo_url} 
-                            alt={goal.player.full_name}
-                            className="w-10 h-10 rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center">
-                            <User className="w-5 h-5 text-zinc-500" />
-                          </div>
-                        )}
-                        <div>
-                          <p className="text-sm font-medium text-foreground">
-                            {goal.player?.full_name || "Jogador"}
-                          </p>
-                          <p className="text-[10px] text-muted-foreground">
-                            {goal.player?.position}
-                            {goal.player?.age && ` • ${goal.player.age} anos`}
-                          </p>
-                        </div>
-                      </div>
-                      <StatusBadge status={goal.status} isLimit={isLimit} />
-                    </div>
-
-                    {/* Goal info */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{config.icon}</span>
-                        <div>
-                          <span className="text-sm font-medium text-foreground">{config.label}</span>
-                          {isLimit && (
-                            <span className="text-[10px] text-zinc-500 ml-1">({config.limitLabel})</span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-medium text-foreground">
-                          {goal.currentValue} / {goal.target_value}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground">
-                          Temporada {goal.season_year}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Progress bar */}
-                    <div className="space-y-1">
-                      <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
-                        <div 
-                          className={cn(
-                            "h-full transition-all duration-500",
-                            getProgressColor(goal.percentage, isLimit)
-                          )}
-                          style={{ width: `${goal.percentage}%` }}
-                        />
-                      </div>
-                      <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                        <span>Criada em {format(new Date(goal.created_at), "dd/MM/yyyy", { locale: ptBR })}</span>
-                        <span className="font-medium">{Math.round(goal.percentage)}%</span>
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </>
+          <GoalsGridView 
+            goals={filteredGoals} 
+            onGoalClick={setSelectedGoal} 
+          />
         )}
           </motion.div>
         )}
