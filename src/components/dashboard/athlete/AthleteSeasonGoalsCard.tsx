@@ -45,6 +45,10 @@ interface AthleteSeasonGoalsCardProps {
     shots?: number;
     tackles?: number;
     yellow_cards?: number;
+    // New goal types
+    interceptions?: number;
+    passes_completed?: number;
+    passes_total?: number;
   };
   isGoalkeeper?: boolean;
 }
@@ -125,6 +129,27 @@ const GOAL_TYPE_CONFIG: Record<string, GoalTypeConfig> = {
     type: "accumulation",
     description: "Recuperações de bola com sucesso"
   },
+  interceptions: { 
+    label: "Interceptações", 
+    icon: "🧲", 
+    color: "indigo", 
+    minValue: 1, 
+    maxValue: 200, 
+    step: 5, 
+    type: "accumulation",
+    description: "Quantidade de interceptações na temporada"
+  },
+  pass_accuracy: { 
+    label: "Aproveitamento de Passe", 
+    icon: "📊", 
+    color: "teal", 
+    minValue: 1, 
+    maxValue: 100, 
+    step: 1, 
+    unit: "%",
+    type: "accumulation",
+    description: "Percentual de acerto de passe na temporada"
+  },
   yellow_cards_max: { 
     label: "Amarelos", 
     icon: "🟨", 
@@ -137,14 +162,24 @@ const GOAL_TYPE_CONFIG: Record<string, GoalTypeConfig> = {
     description: "Limite máximo de cartões (quanto menos, melhor)"
   },
   saves: { 
-    label: "Defesas", 
+    label: "Defesas Totais", 
     icon: "🧤", 
     color: "cyan", 
-    minValue: 10, 
-    maxValue: 200, 
+    minValue: 1, 
+    maxValue: 300, 
     step: 10, 
     type: "accumulation",
-    description: "Total de defesas realizadas"
+    description: "Total de defesas na temporada"
+  },
+  saves_difficult: { 
+    label: "Defesas Difíceis", 
+    icon: "🦸", 
+    color: "rose", 
+    minValue: 1, 
+    maxValue: 120, 
+    step: 5, 
+    type: "accumulation",
+    description: "Defesas difíceis na temporada (indisponível - sem dados)"
   },
   clean_sheets: { 
     label: "Clean Sheets", 
@@ -159,8 +194,8 @@ const GOAL_TYPE_CONFIG: Record<string, GoalTypeConfig> = {
 };
 
 // These slugs must match DB constraint values
-const OUTFIELD_GOAL_TYPES = ["goals", "assists", "matches", "minutes", "shots", "tackles", "yellow_cards_max"];
-const GK_GOAL_TYPES = ["saves", "clean_sheets", "matches", "minutes", "yellow_cards_max"];
+const OUTFIELD_GOAL_TYPES = ["goals", "assists", "matches", "minutes", "shots", "tackles", "interceptions", "pass_accuracy", "yellow_cards_max"];
+const GK_GOAL_TYPES = ["saves", "saves_difficult", "clean_sheets", "matches", "minutes", "interceptions", "pass_accuracy", "yellow_cards_max"];
 
 // For accumulation: higher = better (green when complete)
 // For limit: lower = better (green when under limit, red/warning when approaching/exceeding)
@@ -251,6 +286,15 @@ export function AthleteSeasonGoalsCard({
       case "shots": return currentStats.shots ?? 0;
       case "tackles": return currentStats.tackles ?? 0;
       case "yellow_cards_max": return currentStats.yellow_cards ?? 0;
+      case "interceptions": return currentStats.interceptions ?? 0;
+      case "pass_accuracy": {
+        const completed = currentStats.passes_completed ?? 0;
+        const total = currentStats.passes_total ?? 0;
+        if (total === 0) return 0;
+        // Return percentage with 1 decimal
+        return Math.round((completed / total) * 1000) / 10;
+      }
+      case "saves_difficult": return 0; // Not tracked yet in DB
       default: return 0;
     }
   };
@@ -527,11 +571,15 @@ export function AthleteSeasonGoalsCard({
                               ? (isOverLimit ? 'text-red-400' : 'text-emerald-400')
                               : (isComplete ? 'text-emerald-400' : 'text-foreground')
                           }`}>
-                            {current}
+                            {goal.goal_type === "pass_accuracy" ? `${current.toFixed(1)}%` : current}
                           </span>
                           <span className="text-xs text-muted-foreground">/</span>
                           <span className="text-xs text-muted-foreground tabular-nums">
-                            {goal.target_value}{goal.goal_type === "minutes" ? " min" : ""}
+                            {goal.goal_type === "pass_accuracy" 
+                              ? `${goal.target_value}%`
+                              : goal.goal_type === "minutes" 
+                                ? `${goal.target_value} min` 
+                                : goal.target_value}
                             {isLimit && " máx."}
                           </span>
                           <Button
@@ -572,6 +620,8 @@ export function AthleteSeasonGoalsCard({
                         )
                       ) : isComplete ? (
                         <span className="text-emerald-400">Meta atingida! 🎉</span>
+                      ) : goal.goal_type === "pass_accuracy" ? (
+                        <>Faltam {(goal.target_value - current).toFixed(1)}% para a meta</>
                       ) : (
                         <>Faltam {goal.goal_type === "minutes" 
                           ? (goal.target_value - current) + " minutos"
@@ -643,6 +693,7 @@ export function AthleteSeasonGoalsCard({
                               <span className="text-xs text-muted-foreground tabular-nums">
                                 Meta: {goal.target_value}
                                 {goal.goal_type === "minutes" ? " min" : ""}
+                                {goal.goal_type === "pass_accuracy" ? "%" : ""}
                                 {config.type === "limit" ? " máx." : ""}
                               </span>
                             </div>
