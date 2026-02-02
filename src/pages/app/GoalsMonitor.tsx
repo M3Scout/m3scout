@@ -270,12 +270,21 @@ export default function GoalsMonitor() {
             const seasonYear = Number(year);
             const seasonMatchPlayers = matchPlayers.filter(mp => mp.match?.season_year === seasonYear);
             
+            // CRITICAL: shots in DB = shots OFF target only
+            // shots_total = shots (off) + shots_on_target + shots_blocked
+            // This matches usePlayerMatchStats.ts line 347-358
+            const shotsOffTarget = stats.reduce((sum, s) => sum + (s.shots || 0), 0);
+            const shotsOnTarget = stats.reduce((sum, s) => sum + (s.shots_on_target || 0), 0);
+            const shotsBlocked = stats.reduce((sum, s) => sum + (s.shots_blocked || 0), 0);
+            const shotsTotal = shotsOffTarget + shotsOnTarget + shotsBlocked;
+            
             statsMap[playerId][seasonYear] = {
               goals: stats.reduce((sum, s) => sum + (s.goals || 0), 0),
               assists: stats.reduce((sum, s) => sum + (s.assists || 0), 0),
               matches: seasonMatchPlayers.length,
               minutes: seasonMatchPlayers.reduce((sum, mp) => sum + (mp.minutes_played || 0), 0),
-              shots: stats.reduce((sum, s) => sum + (s.shots || 0), 0),
+              // Use derived shotsTotal for parity with athlete profile
+              shots: shotsTotal,
               tackles: stats.reduce((sum, s) => sum + (s.tackles || 0), 0),
               yellow_cards: stats.reduce((sum, s) => sum + (s.yellow_cards || 0), 0),
               saves: stats.reduce((sum, s) => sum + (s.saves || 0), 0),
