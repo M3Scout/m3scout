@@ -441,11 +441,9 @@ export default function GoalsMonitor() {
             const manualDribblesTotal = manualDribblesSuccess + manualDribblesFailed;
 
             // LEGACY calculations (from player_stats table - admin-entered data)
-            // In player_stats: shots = shots (off target), shots_on_target = on target
-            // Total = shots + shots_on_target + shots_blocked
-            const legacyShotsTotal = legacyStats.reduce((sum, s) => {
-              return sum + (s.shots || 0) + (s.shots_on_target || 0) + (s.shots_blocked || 0);
-            }, 0);
+            // In player_stats (legacy), `shots` is already the TOTAL shots count
+            // shots_on_target is just a breakdown (subset of shots), NOT additive
+            const legacyShotsTotal = legacyStats.reduce((sum, s) => sum + (s.shots || 0), 0);
             const legacyGoals = legacyStats.reduce((sum, s) => sum + (s.goals || 0), 0);
             const legacyAssists = legacyStats.reduce((sum, s) => sum + (s.assists || 0), 0);
             const legacyMatches = legacyStats.reduce((sum, s) => sum + (s.matches || 0), 0);
