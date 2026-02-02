@@ -421,10 +421,9 @@ export function AppSidebar() {
     <>
       {/* ===== MOBILE HEADER (< 768px) ===== */}
       <header 
-        className="md:hidden fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-gradient-to-b from-zinc-900/98 to-zinc-950/98 backdrop-blur-xl flex items-center justify-between"
+        className="md:hidden fixed left-0 right-0 z-50 h-14 border-b border-white/5 bg-gradient-to-b from-zinc-900/98 to-zinc-950/98 backdrop-blur-xl flex items-center justify-between"
         style={{ 
-          paddingTop: 'calc(var(--sat) + 0.5rem)',
-          paddingBottom: '0.5rem',
+          top: 'var(--sat)',
           paddingLeft: 'calc(var(--sal) + 1rem)',
           paddingRight: 'calc(var(--sar) + 1rem)',
         }}

@@ -21,8 +21,8 @@ function AppLayoutContent() {
           "lg:pt-0" // No extra padding on desktop
         )}
         style={{
-          // Mobile: account for safe area inset in header height
-          paddingTop: 'calc(var(--sat) + 3.5rem)', // 3.5rem = 56px (header height)
+          // Mobile: account for safe area + header height (sat + 56px header)
+          paddingTop: 'calc(var(--sat) + 3.5rem)',
         }}
       >
         <div className="p-[var(--padding-mobile)] md:p-6 lg:p-8 w-full max-w-full overflow-x-hidden lg:pt-8">

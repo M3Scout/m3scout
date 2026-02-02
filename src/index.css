@@ -31,10 +31,9 @@ html, body {
   overflow-x: clip;
   max-width: 100%;
   width: 100%;
-  /* Apply safe area padding for PWA mode */
   min-height: 100dvh;
-  padding-top: var(--sat);
-  padding-bottom: var(--sab);
+  /* DO NOT apply safe area padding here - fixed headers handle their own positioning */
+  /* Safe area is applied directly to: fixed headers, drawers, AppShell loading states */
 }
 
 /* Ensure all flex/grid children can shrink */
