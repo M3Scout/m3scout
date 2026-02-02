@@ -23,6 +23,9 @@ export default defineConfig(({ mode }) => ({
       ],
       manifest: false, // Use manual manifest.webmanifest
       workbox: {
+        // Use skipWaiting + clientsClaim for immediate SW activation
+        skipWaiting: true,
+        clientsClaim: true,
         globPatterns: ["**/*.{css,html,ico,png,svg,woff,woff2}"],
         // Skip precaching of large JS files - they'll be loaded on demand
         globIgnores: ["**/index-*.js"],
