@@ -294,40 +294,43 @@ export default function GoalsMonitor() {
     return [...new Set(goalsRaw.map(g => g.player_id))];
   }, [goalsRaw]);
 
+  // Interface for unified stats combining Live + Manual
+  interface UnifiedSeasonStats {
+    goals: number;
+    assists: number;
+    matches: number;
+    minutes: number;
+    shots: number;
+    tackles: number;
+    yellow_cards: number;
+    saves: number;
+    clean_sheets: number;
+    interceptions: number;
+    passes_completed: number;
+    passes_total: number;
+    dribbles_success: number;
+    dribbles_total: number;
+  }
+
   const { data: playerStats, isLoading: statsLoading, fetchStatus: statsFetchStatus } = useQuery({
-    queryKey: ["admin-goals-player-stats", playerIds],
+    queryKey: ["admin-goals-player-stats-unified", playerIds],
     queryFn: async () => {
       if (playerIds.length === 0) return {};
       
-      const statsMap: Record<string, Record<number, {
-        goals: number;
-        assists: number;
-        matches: number;
-        minutes: number;
-        shots: number;
-        tackles: number;
-        yellow_cards: number;
-        saves: number;
-        clean_sheets: number;
-        // New goal types
-        interceptions: number;
-        passes_completed: number;
-        passes_total: number;
-        dribbles_success: number;
-        dribbles_total: number;
-      }>> = {};
+      const statsMap: Record<string, Record<number, UnifiedSeasonStats>> = {};
 
       // Fetch stats for each player in parallel
       await Promise.all(playerIds.map(async (playerId) => {
         try {
+          // ==== 1. LIVE MATCH STATS ====
           const { matchPlayers, matchStats } = await fetchPlayerMatchStatsRaw({ playerId });
           
           // Group by season
-          const bySeasonYear: Record<number, typeof matchStats> = {};
+          const liveBySeasonYear: Record<number, typeof matchStats> = {};
           matchPlayers.forEach(mp => {
             if (mp.match?.season_year) {
-              if (!bySeasonYear[mp.match.season_year]) {
-                bySeasonYear[mp.match.season_year] = [];
+              if (!liveBySeasonYear[mp.match.season_year]) {
+                liveBySeasonYear[mp.match.season_year] = [];
               }
             }
           });
@@ -335,47 +338,110 @@ export default function GoalsMonitor() {
           matchStats.forEach(stat => {
             const mp = matchPlayers.find(m => m.match_id === stat.match_id);
             if (mp?.match?.season_year) {
-              if (!bySeasonYear[mp.match.season_year]) {
-                bySeasonYear[mp.match.season_year] = [];
+              if (!liveBySeasonYear[mp.match.season_year]) {
+                liveBySeasonYear[mp.match.season_year] = [];
               }
-              bySeasonYear[mp.match.season_year].push(stat);
+              liveBySeasonYear[mp.match.season_year].push(stat);
             }
           });
 
-          statsMap[playerId] = {};
+          // ==== 2. MANUAL STATS ====
+          const { data: manualRows, error: manualError } = await supabase
+            .from("manual_player_stats")
+            .select("*")
+            .eq("player_id", playerId);
           
-          Object.entries(bySeasonYear).forEach(([year, stats]) => {
-            const seasonYear = Number(year);
+          if (manualError) {
+            console.warn(`[GoalsMonitor] Failed to fetch manual stats for ${playerId}:`, manualError);
+          }
+          
+          // Group manual by season
+          const manualBySeasonYear: Record<number, typeof manualRows> = {};
+          (manualRows || []).forEach(ms => {
+            if (!manualBySeasonYear[ms.season_year]) {
+              manualBySeasonYear[ms.season_year] = [];
+            }
+            manualBySeasonYear[ms.season_year].push(ms);
+          });
+
+          // ==== 3. MERGE: Get all unique season years ====
+          const allSeasons = new Set<number>([
+            ...Object.keys(liveBySeasonYear).map(Number),
+            ...Object.keys(manualBySeasonYear).map(Number),
+          ]);
+
+          statsMap[playerId] = {};
+
+          allSeasons.forEach(seasonYear => {
+            const liveStats = liveBySeasonYear[seasonYear] || [];
+            const manualStats = manualBySeasonYear[seasonYear] || [];
             const seasonMatchPlayers = matchPlayers.filter(mp => mp.match?.season_year === seasonYear);
-            
-            // CRITICAL: shots in DB = shots OFF target only
-            // shots_total = shots (off) + shots_on_target + shots_blocked
-            // This matches usePlayerMatchStats.ts line 347-358
-            const shotsOffTarget = stats.reduce((sum, s) => sum + (s.shots || 0), 0);
-            const shotsOnTarget = stats.reduce((sum, s) => sum + (s.shots_on_target || 0), 0);
-            const shotsBlocked = stats.reduce((sum, s) => sum + (s.shots_blocked || 0), 0);
-            const shotsTotal = shotsOffTarget + shotsOnTarget + shotsBlocked;
-            
+
+            // LIVE calculations
+            const liveShotsOffTarget = liveStats.reduce((sum, s) => sum + (s.shots || 0), 0);
+            const liveShotsOnTarget = liveStats.reduce((sum, s) => sum + (s.shots_on_target || 0), 0);
+            const liveShotsBlocked = liveStats.reduce((sum, s) => sum + (s.shots_blocked || 0), 0);
+            const liveShotsTotal = liveShotsOffTarget + liveShotsOnTarget + liveShotsBlocked;
+
+            const liveGoals = liveStats.reduce((sum, s) => sum + (s.goals || 0), 0);
+            const liveAssists = liveStats.reduce((sum, s) => sum + (s.assists || 0), 0);
+            const liveMatches = seasonMatchPlayers.length;
+            const liveMinutes = seasonMatchPlayers.reduce((sum, mp) => sum + (mp.minutes_played || 0), 0);
+            const liveTackles = liveStats.reduce((sum, s) => sum + (s.tackles || 0), 0);
+            const liveYellowCards = liveStats.reduce((sum, s) => sum + (s.yellow_cards || 0), 0);
+            const liveSaves = liveStats.reduce((sum, s) => sum + (s.saves || 0), 0);
+            const liveInterceptions = liveStats.reduce((sum, s) => sum + (s.interceptions || 0), 0);
+            const livePassesCompleted = liveStats.reduce((sum, s) => sum + (s.passes_completed || 0), 0);
+            const livePassesFailed = liveStats.reduce((sum, s) => sum + (s.passes_total || 0), 0); // DB stores failed in passes_total
+            const livePassesTotal = livePassesCompleted + livePassesFailed;
+            const liveDribblesSuccess = liveStats.reduce((sum, s) => sum + (s.dribbles_success || 0), 0);
+            const liveDribblesFailed = liveStats.reduce((sum, s) => sum + (s.dribbles_total || 0), 0); // DB stores failed in dribbles_total
+            const liveDribblesTotal = liveDribblesSuccess + liveDribblesFailed;
+
+            // MANUAL calculations (SUM across all competition contexts in the same season)
+            // Manual uses: shots = total shots (not off-target only like DB schema for live)
+            const manualGoals = manualStats.reduce((sum, s) => sum + (s.goals || 0), 0);
+            const manualAssists = manualStats.reduce((sum, s) => sum + (s.assists || 0), 0);
+            const manualMatches = manualStats.reduce((sum, s) => sum + (s.games || 0), 0);
+            const manualMinutes = manualStats.reduce((sum, s) => sum + (s.minutes || 0), 0);
+            const manualShots = manualStats.reduce((sum, s) => sum + (s.shots || 0) + (s.shots_on_target || 0), 0); // Manual stores differently
+            const manualTackles = manualStats.reduce((sum, s) => sum + (s.tackles || 0), 0);
+            const manualYellowCards = manualStats.reduce((sum, s) => sum + (s.yellow_cards || 0), 0);
+            const manualSaves = manualStats.reduce((sum, s) => sum + (s.saves || 0), 0);
+            const manualCleanSheets = manualStats.reduce((sum, s) => sum + (s.clean_sheets || 0), 0);
+            const manualInterceptions = manualStats.reduce((sum, s) => sum + (s.interceptions || 0), 0);
+            const manualPassesCompleted = manualStats.reduce((sum, s) => sum + (s.passes_completed || 0), 0);
+            const manualPassesFailed = manualStats.reduce((sum, s) => sum + (s.passes_failed || 0), 0);
+            const manualPassesTotal = manualPassesCompleted + manualPassesFailed;
+            const manualDribblesSuccess = manualStats.reduce((sum, s) => sum + (s.dribbles_success || 0), 0);
+            const manualDribblesFailed = manualStats.reduce((sum, s) => sum + (s.dribbles_failed || 0), 0);
+            const manualDribblesTotal = manualDribblesSuccess + manualDribblesFailed;
+
+            // ==== UNIFIED: Live + Manual SUM ====
             statsMap[playerId][seasonYear] = {
-              goals: stats.reduce((sum, s) => sum + (s.goals || 0), 0),
-              assists: stats.reduce((sum, s) => sum + (s.assists || 0), 0),
-              matches: seasonMatchPlayers.length,
-              minutes: seasonMatchPlayers.reduce((sum, mp) => sum + (mp.minutes_played || 0), 0),
-              // Use derived shotsTotal for parity with athlete profile
-              shots: shotsTotal,
-              tackles: stats.reduce((sum, s) => sum + (s.tackles || 0), 0),
-              yellow_cards: stats.reduce((sum, s) => sum + (s.yellow_cards || 0), 0),
-              saves: stats.reduce((sum, s) => sum + (s.saves || 0), 0),
-              clean_sheets: 0, // Would need match-level calculation
-              // New goal types
-              interceptions: stats.reduce((sum, s) => sum + (s.interceptions || 0), 0),
-              passes_completed: stats.reduce((sum, s) => sum + (s.passes_completed || 0), 0),
-              // passes_total in DB is actually passes_failed - we need completed + total for real total
-              passes_total: stats.reduce((sum, s) => sum + ((s.passes_completed || 0) + (s.passes_total || 0)), 0),
-              dribbles_success: stats.reduce((sum, s) => sum + (s.dribbles_success || 0), 0),
-              // dribbles_total in DB is actually dribbles_failed - we need success + total for real total
-              dribbles_total: stats.reduce((sum, s) => sum + ((s.dribbles_success || 0) + (s.dribbles_total || 0)), 0),
+              goals: liveGoals + manualGoals,
+              assists: liveAssists + manualAssists,
+              matches: liveMatches + manualMatches,
+              minutes: liveMinutes + manualMinutes,
+              shots: liveShotsTotal + manualShots,
+              tackles: liveTackles + manualTackles,
+              yellow_cards: liveYellowCards + manualYellowCards,
+              saves: liveSaves + manualSaves,
+              clean_sheets: manualCleanSheets, // Live doesn't track clean_sheets per match yet
+              interceptions: liveInterceptions + manualInterceptions,
+              passes_completed: livePassesCompleted + manualPassesCompleted,
+              passes_total: livePassesTotal + manualPassesTotal,
+              dribbles_success: liveDribblesSuccess + manualDribblesSuccess,
+              dribbles_total: liveDribblesTotal + manualDribblesTotal,
             };
+
+            if (isDev) {
+              console.log(`[GoalsMonitor] Unified stats for ${playerId} / ${seasonYear}:`, {
+                live: { goals: liveGoals, assists: liveAssists, matches: liveMatches, shots: liveShotsTotal },
+                manual: { goals: manualGoals, assists: manualAssists, matches: manualMatches, shots: manualShots },
+                unified: statsMap[playerId][seasonYear],
+              });
+            }
           });
         } catch (err) {
           console.error(`Error fetching stats for player ${playerId}:`, err);
