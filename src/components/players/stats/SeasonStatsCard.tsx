@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ChevronDown, Pencil, Trash2, Zap, FileEdit, Layers } from "lucide-react";
 import { CompetitionStatsSummary } from "@/components/players/stats";
 import type { PlayerStats } from "@/lib/playerStats";
+import { normalizePlayerStats } from "@/lib/normalizePlayerStats";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -92,6 +93,11 @@ export function SeasonStatsCard({
   onEdit,
   onDelete,
 }: SeasonStatsCardProps) {
+  // CRITICAL: Normalize stats to ensure shots_total is calculated correctly
+  // This ensures consistency between summary view (this component) and expanded view (CompetitionStatsSummary)
+  // FIN (finalizações) = shots_on_target + shots_blocked + shots_off_target
+  const normalizedStat = normalizePlayerStats(stat as PlayerStats);
+  
   return (
     <motion.div
       custom={index}
@@ -215,24 +221,25 @@ export function SeasonStatsCard({
 
           {/* Stats Grid - 3 columns for outfield, 2 for GK */}
           <div className={`grid gap-2 w-full ${isGK ? 'grid-cols-2' : 'grid-cols-3'}`}>
-            <StatChip label="Jogos" value={stat.matches} index={0} />
-            <StatChip label="Minutos" value={stat.minutes} index={1} />
+            <StatChip label="Jogos" value={normalizedStat.matches} index={0} />
+            <StatChip label="Minutos" value={normalizedStat.minutes} index={1} />
 
             {isGK ? (
               <>
-                <StatChip label="Defesas" value={stat.saves || 0} highlight="blue" index={2} />
-                <StatChip label="Gols Sofr." value={stat.goals_conceded || 0} index={3} />
-                <StatChip label="Clean Sheets" value={stat.clean_sheets || 0} highlight="green" index={4} />
-                <StatChip label="Pên. Def." value={stat.penalties_saved || 0} index={5} />
+                <StatChip label="Defesas" value={normalizedStat.saves || 0} highlight="blue" index={2} />
+                <StatChip label="Gols Sofr." value={normalizedStat.goals_conceded || 0} index={3} />
+                <StatChip label="Clean Sheets" value={normalizedStat.clean_sheets || 0} highlight="green" index={4} />
+                <StatChip label="Pên. Def." value={normalizedStat.penalties_saved || 0} index={5} />
               </>
             ) : (
               <>
-                <StatChip label="Gols" value={stat.goals} highlight="green" index={2} />
-                <StatChip label="Assist" value={stat.assists} highlight="blue" index={3} />
-                <StatChip label="Finaliz." value={stat.shots || 0} index={4} />
-                <StatChip label="No Gol" value={stat.shots_on_target || 0} index={5} />
-                <StatChip label="Amarelos" value={stat.yellow_cards} variant="warning" index={6} />
-                <StatChip label="Vermelhos" value={stat.red_cards} variant="danger" index={7} />
+                <StatChip label="Gols" value={normalizedStat.goals} highlight="green" index={2} />
+                <StatChip label="Assist" value={normalizedStat.assists} highlight="blue" index={3} />
+                {/* CRITICAL: Use shots_total_derived to ensure FIN = on_target + blocked + off_target */}
+                <StatChip label="Finaliz." value={normalizedStat.shots_total_derived} index={4} />
+                <StatChip label="No Gol" value={normalizedStat.shots_on_target || 0} index={5} />
+                <StatChip label="Amarelos" value={normalizedStat.yellow_cards} variant="warning" index={6} />
+                <StatChip label="Vermelhos" value={normalizedStat.red_cards} variant="danger" index={7} />
               </>
             )}
           </div>
@@ -309,21 +316,28 @@ interface SeasonTotalsCardProps {
 }
 
 export function SeasonTotalsCard({ seasonStats, isGK, index = 0 }: SeasonTotalsCardProps) {
+  // CRITICAL: Normalize each stat before aggregating to ensure FIN uses shots_total_derived
   const totals = seasonStats.reduce(
-    (acc, s) => ({
-      matches: acc.matches + (s.matches || 0),
-      minutes: acc.minutes + (s.minutes || 0),
-      goals: acc.goals + (s.goals || 0),
-      assists: acc.assists + (s.assists || 0),
-      shots: acc.shots + (s.shots || 0),
-      shots_on_target: acc.shots_on_target + (s.shots_on_target || 0),
-      yellow_cards: acc.yellow_cards + (s.yellow_cards || 0),
-      red_cards: acc.red_cards + (s.red_cards || 0),
-      saves: acc.saves + (s.saves || 0),
-      goals_conceded: acc.goals_conceded + (s.goals_conceded || 0),
-      clean_sheets: acc.clean_sheets + (s.clean_sheets || 0),
-      penalties_saved: acc.penalties_saved + (s.penalties_saved || 0),
-    }),
+    (acc, s) => {
+      // Normalize each stat to get correct shots_total_derived
+      const normalized = normalizePlayerStats(s as PlayerStats);
+      return {
+        matches: acc.matches + (normalized.matches || 0),
+        minutes: acc.minutes + (normalized.minutes || 0),
+        goals: acc.goals + (normalized.goals || 0),
+        assists: acc.assists + (normalized.assists || 0),
+        // Use shots_total_derived for correct FIN calculation
+        shots: acc.shots + (normalized.shots_total_derived || 0),
+        shots_on_target: acc.shots_on_target + (normalized.shots_on_target || 0),
+        shots_blocked: acc.shots_blocked + (normalized.shots_blocked || 0),
+        yellow_cards: acc.yellow_cards + (normalized.yellow_cards || 0),
+        red_cards: acc.red_cards + (normalized.red_cards || 0),
+        saves: acc.saves + (normalized.saves || 0),
+        goals_conceded: acc.goals_conceded + (normalized.goals_conceded || 0),
+        clean_sheets: acc.clean_sheets + (normalized.clean_sheets || 0),
+        penalties_saved: acc.penalties_saved + (normalized.penalties_saved || 0),
+      };
+    },
     {
       matches: 0,
       minutes: 0,
@@ -331,6 +345,7 @@ export function SeasonTotalsCard({ seasonStats, isGK, index = 0 }: SeasonTotalsC
       assists: 0,
       shots: 0,
       shots_on_target: 0,
+      shots_blocked: 0,
       yellow_cards: 0,
       red_cards: 0,
       saves: 0,
@@ -366,6 +381,7 @@ export function SeasonTotalsCard({ seasonStats, isGK, index = 0 }: SeasonTotalsC
               <>
                 <StatChip label="Gols" value={totals.goals} highlight="green" index={2} />
                 <StatChip label="Assist" value={totals.assists} highlight="blue" index={3} />
+                {/* CRITICAL: Use aggregated shots which now uses shots_total_derived */}
                 <StatChip label="Finaliz." value={totals.shots} index={4} />
                 <StatChip label="No Gol" value={totals.shots_on_target} index={5} />
                 <StatChip label="Amarelos" value={totals.yellow_cards} variant="warning" index={6} />

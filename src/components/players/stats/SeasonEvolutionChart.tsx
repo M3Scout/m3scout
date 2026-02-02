@@ -22,6 +22,7 @@ import {
 } from "recharts";
 import { TrendingUp } from "lucide-react";
 import type { PlayerStats } from "@/lib/playerStats";
+import { normalizePlayerStats } from "@/lib/normalizePlayerStats";
 
 interface SeasonEvolutionChartProps {
   stats: PlayerStats[];
@@ -231,11 +232,15 @@ export function SeasonEvolutionChart({ stats, isGoalkeeper = false }: SeasonEvol
         };
       }
 
+      // CRITICAL: Normalize to get correct shots_total_derived
+      const normalized = normalizePlayerStats(stat);
+      
       seasonMap[year].matches += stat.matches || 0;
       seasonMap[year].minutes += stat.minutes || 0;
       seasonMap[year].goals += stat.goals || 0;
       seasonMap[year].assists += stat.assists || 0;
-      seasonMap[year].shots += stat.shots || 0;
+      // Use shots_total_derived for correct FIN calculation
+      seasonMap[year].shots += normalized.shots_total_derived || 0;
       seasonMap[year].shots_on_target += stat.shots_on_target || 0;
       seasonMap[year].key_passes += stat.key_passes || 0;
       seasonMap[year].chances_created += stat.chances_created || 0;

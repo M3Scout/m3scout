@@ -76,6 +76,7 @@ import {
   type PlayerStats,
 } from "@/lib/playerStats";
 import { isGoalkeeper } from "@/lib/positionUtils";
+import { normalizePlayerStats } from "@/lib/normalizePlayerStats";
 import { CompetitionStatsSummary, SeasonEvolutionChart, SeasonStatsCard, SeasonTotalsCard } from "@/components/players/stats";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { usePlayerMatchStatsBySeasonCompetition, type SeasonCompetitionStats } from "@/hooks/usePlayerMatchStats";
@@ -492,8 +493,10 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
     }
   };
 
-  // Career totals aggregation
+  // Career totals aggregation - CRITICAL: Use normalizePlayerStats for correct shots total
   const careerTotals = stats.reduce((acc, stat) => {
+    // Normalize to get shots_total_derived
+    const normalized = normalizePlayerStats(stat as PlayerStats);
     acc.matches += stat.matches || 0;
     acc.minutes += stat.minutes || 0;
     acc.goals += stat.goals || 0;
@@ -504,8 +507,10 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
     acc.interceptions += stat.interceptions || 0;
     acc.recoveries += stat.recoveries || 0;
     acc.clearances += stat.clearances || 0;
-    acc.shots += stat.shots || 0;
+    // CRITICAL: Use shots_total_derived for correct FIN calculation
+    acc.shots += normalized.shots_total_derived || 0;
     acc.shots_on_target += stat.shots_on_target || 0;
+    acc.shots_blocked += normalized.shots_blocked || 0;
     acc.key_passes += stat.key_passes || 0;
     acc.chances_created += stat.chances_created || 0;
     acc.successful_dribbles += stat.successful_dribbles || 0;
@@ -528,7 +533,7 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
   }, {
     matches: 0, minutes: 0, goals: 0, assists: 0, yellow_cards: 0, red_cards: 0,
     tackles: 0, interceptions: 0, recoveries: 0, clearances: 0,
-    shots: 0, shots_on_target: 0, key_passes: 0, chances_created: 0,
+    shots: 0, shots_on_target: 0, shots_blocked: 0, key_passes: 0, chances_created: 0,
     successful_dribbles: 0, total_dribbles: 0, accurate_passes: 0, total_passes: 0,
     ground_duels_won: 0, ground_duels_total: 0, aerial_duels_won: 0, aerial_duels_total: 0,
     fouls_committed: 0, fouls_drawn: 0,
@@ -1059,8 +1064,11 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {safeArray(statsBySeason[season]).map((stat, idx) => (
-                            <>
+                          {safeArray(statsBySeason[season]).map((stat, idx) => {
+                            // CRITICAL: Normalize to get correct shots_total_derived
+                            const normalizedStat = normalizePlayerStats(stat as PlayerStats);
+                            return (
+                              <>
                               <TableRow 
                                 key={stat.id} 
                                 className={cn(
@@ -1148,7 +1156,8 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
                                       {stat.goals}
                                     </TableCell>
                                     <TableCell className="text-center font-semibold text-blue-400/90 tabular-nums">{stat.assists}</TableCell>
-                                    <TableCell className="text-center text-sm text-zinc-400 tabular-nums">{stat.shots || 0}</TableCell>
+                                    {/* CRITICAL: Use shots_total_derived for correct FIN calculation */}
+                                    <TableCell className="text-center text-sm text-zinc-400 tabular-nums">{normalizedStat.shots_total_derived}</TableCell>
                                     <TableCell className="text-center text-sm text-zinc-400 tabular-nums">{stat.shots_on_target || 0}</TableCell>
                                     <TableCell className="text-center text-sm text-amber-400/80 tabular-nums">{stat.yellow_cards}</TableCell>
                                     <TableCell className="text-center text-sm text-rose-400/80 tabular-nums">{stat.red_cards}</TableCell>
@@ -1239,7 +1248,8 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
                                 </TableRow>
                               )}
                             </>
-                          ))}
+                            );
+                          })}
                           {/* Totals row - Premium visual closure */}
                           <TableRow className="bg-gradient-to-r from-zinc-800/40 via-zinc-800/30 to-zinc-800/40 border-t-2 border-zinc-700/50">
                             <TableCell className="py-3">
@@ -1278,7 +1288,8 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
                                   {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.assists || 0), 0)}
                                 </TableCell>
                                 <TableCell className="text-center font-bold text-white tabular-nums">
-                                  {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.shots || 0), 0)}
+                                  {/* CRITICAL: Use shots_total_derived for correct FIN calculation */}
+                                  {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (normalizePlayerStats(s as PlayerStats).shots_total_derived || 0), 0)}
                                 </TableCell>
                                 <TableCell className="text-center font-bold text-white tabular-nums">
                                   {safeArray(statsBySeason[season]).reduce((sum, s) => sum + (s.shots_on_target || 0), 0)}
