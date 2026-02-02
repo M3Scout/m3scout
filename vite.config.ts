@@ -26,9 +26,12 @@ export default defineConfig(({ mode }) => ({
         // Use skipWaiting + clientsClaim for immediate SW activation
         skipWaiting: true,
         clientsClaim: true,
-        globPatterns: ["**/*.{css,html,ico,png,svg,woff,woff2}"],
-        // Skip precaching of large JS files - they'll be loaded on demand
-        globIgnores: ["**/index-*.js"],
+        // CRITICAL: Clean up old caches to prevent stale asset references
+        cleanupOutdatedCaches: true,
+        // Don't precache index.html - it must always be fetched fresh
+        globPatterns: ["**/*.{css,ico,png,svg,woff,woff2}"],
+        // Skip precaching of JS files - they'll be cached at runtime
+        globIgnores: ["**/index-*.js", "**/index.html"],
         runtimeCaching: [
           // CRITICAL: Auth/RBAC endpoints must NEVER be cached
           // NetworkOnly strategy for Supabase auth and RPC calls
@@ -91,28 +94,51 @@ export default defineConfig(({ mode }) => ({
             },
           },
           {
-            // Network-first for HTML pages (for offline support of visited pages)
-            urlPattern: /^https:\/\/.*\.html$/i,
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "html-cache",
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24, // 1 day
-              },
-            },
-          },
-          {
-            // Network-first for navigation requests (SPA routes)
+            // CRITICAL: Network-first for ALL navigation requests (index.html)
+            // This ensures we always get the latest index.html from the server
+            // Only falls back to cache if offline (after 3s timeout)
             urlPattern: ({ request }) => request.mode === "navigate",
             handler: "NetworkFirst",
             options: {
               cacheName: "pages-cache",
               expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24, // 1 day
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60, // 1 hour max (short TTL for HTML)
               },
               networkTimeoutSeconds: 3,
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+          {
+            // CacheFirst for JS assets with hash - immutable
+            urlPattern: /\/assets\/.*\.js$/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "js-assets-cache",
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year (hashed = immutable)
+              },
+              cacheableResponse: {
+                statuses: [200],
+              },
+            },
+          },
+          {
+            // CacheFirst for CSS assets with hash - immutable
+            urlPattern: /\/assets\/.*\.css$/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "css-assets-cache",
+              expiration: {
+                maxEntries: 30,
+                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year (hashed = immutable)
+              },
+              cacheableResponse: {
+                statuses: [200],
+              },
             },
           },
         ],
