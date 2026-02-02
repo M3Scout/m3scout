@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { CroppedNewsImage, type CropPosition } from "@/components/news/CroppedNewsImage";
 
 const NewsDetail = () => {
   const { slug } = useParams();
@@ -97,13 +98,15 @@ const NewsDetail = () => {
           )}
         </header>
 
-        {/* Featured Image */}
+        {/* Featured Image with crop */}
         {article.featured_image_url && (
           <div className="py-10">
-            <img
+            <CroppedNewsImage
               src={article.featured_image_url}
               alt={article.title}
-              className="w-full rounded-xl object-cover max-h-[500px]"
+              crop={article.hero_crop as CropPosition | null}
+              className="w-full rounded-xl max-h-[500px]"
+              aspectRatio={16 / 9}
             />
           </div>
         )}

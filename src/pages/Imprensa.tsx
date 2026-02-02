@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { CroppedNewsImage, type CropPosition } from "@/components/news/CroppedNewsImage";
 
 type NewsArticle = {
   id: string;
@@ -23,6 +24,8 @@ type NewsArticle = {
   category: string;
   excerpt: string | null;
   publish_date: string;
+  featured_image_url: string | null;
+  card_crop: CropPosition | null;
 };
 
 const pressKitItems = [
@@ -70,13 +73,16 @@ const Imprensa = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("news_articles")
-        .select("id, title, slug, category, excerpt, publish_date")
+        .select("id, title, slug, category, excerpt, publish_date, featured_image_url, card_crop")
         .eq("status", "published")
         .order("publish_date", { ascending: false })
         .limit(9);
       
       if (error) throw error;
-      return data as NewsArticle[];
+      return (data ?? []).map((item) => ({
+        ...item,
+        card_crop: item.card_crop as CropPosition | null,
+      })) as NewsArticle[];
     },
   });
 
@@ -312,43 +318,56 @@ const Imprensa = () => {
                 >
                   <Link 
                     to={`/imprensa/${article.slug}`}
-                    className="group block p-6 rounded-2xl bg-neutral-900/40 backdrop-blur-sm border border-neutral-800/50 transition-all duration-300 hover:border-neutral-700/60 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/20 h-full"
+                    className="group block rounded-2xl bg-neutral-900/40 backdrop-blur-sm border border-neutral-800/50 transition-all duration-300 hover:border-neutral-700/60 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/20 h-full overflow-hidden"
                   >
-                    {/* Meta */}
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="flex items-center gap-1.5 text-xs text-neutral-500">
-                        <Calendar className="w-3.5 h-3.5" />
-                        <span>
-                          {format(new Date(article.publish_date), "dd MMM yyyy", {
-                            locale: ptBR,
-                          })}
-                        </span>
-                      </div>
-                      <span className="px-2 py-0.5 bg-[#e52421]/10 text-[#e52421] rounded text-[10px] font-medium uppercase tracking-wide">
-                        {article.category}
-                      </span>
-                    </div>
-                    
-                    {/* Title */}
-                    <h3 className="text-base md:text-lg font-medium text-white mb-3 group-hover:text-white transition-colors leading-snug line-clamp-2">
-                      {article.title}
-                    </h3>
-                    
-                    {/* Excerpt */}
-                    {article.excerpt && (
-                      <p className="text-neutral-500 text-sm leading-relaxed line-clamp-2 mb-5">
-                        {article.excerpt}
-                      </p>
+                    {/* Featured Image */}
+                    {article.featured_image_url && (
+                      <CroppedNewsImage
+                        src={article.featured_image_url}
+                        alt={article.title}
+                        crop={article.card_crop}
+                        className="w-full"
+                        aspectRatio={1.91}
+                      />
                     )}
                     
-                    {/* CTA */}
-                    <span className="inline-flex items-center gap-2 text-sm text-[#e52421] group-hover:gap-3 transition-all duration-300">
-                      <span className="relative">
-                        Ler mais
-                        <span className="absolute left-0 bottom-0 w-0 h-px bg-[#e52421] group-hover:w-full transition-all duration-300" />
+                    <div className="p-6">
+                      {/* Meta */}
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="flex items-center gap-1.5 text-xs text-neutral-500">
+                          <Calendar className="w-3.5 h-3.5" />
+                          <span>
+                            {format(new Date(article.publish_date), "dd MMM yyyy", {
+                              locale: ptBR,
+                            })}
+                          </span>
+                        </div>
+                        <span className="px-2 py-0.5 bg-[#e52421]/10 text-[#e52421] rounded text-[10px] font-medium uppercase tracking-wide">
+                          {article.category}
+                        </span>
+                      </div>
+                      
+                      {/* Title */}
+                      <h3 className="text-base md:text-lg font-medium text-white mb-3 group-hover:text-white transition-colors leading-snug line-clamp-2">
+                        {article.title}
+                      </h3>
+                      
+                      {/* Excerpt */}
+                      {article.excerpt && (
+                        <p className="text-neutral-500 text-sm leading-relaxed line-clamp-2 mb-5">
+                          {article.excerpt}
+                        </p>
+                      )}
+                      
+                      {/* CTA */}
+                      <span className="inline-flex items-center gap-2 text-sm text-[#e52421] group-hover:gap-3 transition-all duration-300">
+                        <span className="relative">
+                          Ler mais
+                          <span className="absolute left-0 bottom-0 w-0 h-px bg-[#e52421] group-hover:w-full transition-all duration-300" />
+                        </span>
+                        <ArrowUpRight className="w-3.5 h-3.5" />
                       </span>
-                      <ArrowUpRight className="w-3.5 h-3.5" />
-                    </span>
+                    </div>
                   </Link>
                 </motion.div>
               ))}
