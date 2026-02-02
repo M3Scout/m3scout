@@ -3,6 +3,8 @@
  * 
  * Recruitment funnel with Market Score (TARGET) + confidence
  * Uses Kanban-style layout organized by status
+ * Mobile: Accordion layout (vertical sections)
+ * Desktop: Kanban horizontal scroll
  */
 
 import { useState, useMemo } from "react";
@@ -31,6 +33,8 @@ import { cn } from "@/lib/utils";
 import { Target as TargetType, MarketScoreTrend } from "@/types/marketScore";
 import { TargetFormModal } from "@/components/market/TargetFormModal";
 import { TargetDetailModal } from "@/components/market/TargetDetailModal";
+import { TargetsAccordionMobile } from "@/components/market/TargetsAccordionMobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface TargetWithScore extends TargetType {
   market_score: {
@@ -102,6 +106,7 @@ function TrendIcon({ trend }: { trend: MarketScoreTrend }) {
 
 export default function MarketTargets() {
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [selectedTarget, setSelectedTarget] = useState<TargetWithScore | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -292,22 +297,47 @@ export default function MarketTargets() {
         </Card>
       )}
 
-      {/* Kanban Board */}
+      {/* Kanban Board / Mobile Accordion */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {[1, 2, 3, 4, 5].map(i => (
-            <Card key={i}>
-              <CardHeader className="pb-3">
-                <Skeleton className="h-5 w-24" />
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Skeleton className="h-24 w-full" />
-                <Skeleton className="h-24 w-full" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        isMobile ? (
+          // Mobile skeleton
+          <div className="space-y-3">
+            {[1, 2, 3, 4].map(i => (
+              <Card key={i} className="bg-zinc-900/60">
+                <CardContent className="py-4">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-8 w-8 rounded-lg" />
+                    <Skeleton className="h-5 w-24" />
+                    <Skeleton className="h-5 w-8 ml-auto" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          // Desktop skeleton
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {[1, 2, 3, 4, 5].map(i => (
+              <Card key={i}>
+                <CardHeader className="pb-3">
+                  <Skeleton className="h-5 w-24" />
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Skeleton className="h-24 w-full" />
+                  <Skeleton className="h-24 w-full" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )
+      ) : isMobile ? (
+        // Mobile: Accordion layout (vertical sections, no horizontal scroll)
+        <TargetsAccordionMobile
+          targetsByStatus={targetsByStatus}
+          onOpenDetail={handleOpenDetail}
+        />
       ) : (
+        // Desktop: Kanban horizontal scroll
         <ScrollArea className="w-full">
           <div className="flex gap-4 pb-4 min-w-max">
             {(Object.keys(STATUS_CONFIG) as Array<keyof typeof STATUS_CONFIG>).map((status) => {
