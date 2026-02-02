@@ -535,8 +535,9 @@ export function AppSidebar() {
       {/* ===== TABLET/DESKTOP SIDEBAR (>= 768px) ===== */}
       <aside
         className={cn(
-          "hidden md:flex flex-col fixed left-0 top-0 bottom-0 z-40 transition-all duration-200 ease-out",
-          "border-r border-white/[0.04]",
+          "hidden md:flex flex-col fixed left-0 top-0 z-40 transition-all duration-200 ease-out",
+          "border-r border-white/[0.04] sidebar-compact-height",
+          "h-[100dvh] min-h-screen", // Use dvh with vh fallback for proper height
           showCollapsed ? "w-[64px]" : "w-56"
         )}
         style={{
@@ -547,7 +548,7 @@ export function AppSidebar() {
         <div className="shrink-0 border-b border-white/[0.04]">
           <div
             className={cn(
-              "h-14 flex items-center transition-all duration-200",
+              "sidebar-header-main h-14 flex items-center transition-all duration-200",
               showCollapsed ? "justify-center px-2" : "justify-between px-3"
             )}
           >
@@ -585,7 +586,7 @@ export function AppSidebar() {
 
           {/* Bell + Expand when collapsed */}
           {showCollapsed && (
-            <div className="flex flex-col items-center gap-1 py-2">
+            <div className="sidebar-collapsed-controls flex flex-col items-center gap-1 py-2">
               <NotificationBell />
               <button
                 onClick={toggleCollapsed}
@@ -597,8 +598,8 @@ export function AppSidebar() {
           )}
         </div>
 
-        {/* ===== NAVIGATION - NO SCROLL ===== */}
-        <nav className="flex-1 px-2 py-2 space-y-2 overflow-hidden">
+        {/* ===== NAVIGATION - SCROLLABLE ===== */}
+        <nav className="flex-1 min-h-0 px-2 py-2 space-y-2 overflow-y-auto overflow-x-hidden sidebar-nav-scroll">
           <TooltipProvider delayDuration={0}>
             {navGroups.map((group) => (
               <SidebarSection
@@ -612,8 +613,8 @@ export function AppSidebar() {
           </TooltipProvider>
         </nav>
 
-        {/* ===== FOOTER ===== */}
-        <div className="px-2 py-2 border-t border-white/[0.04] space-y-0.5 shrink-0">
+        {/* ===== FOOTER - Always visible ===== */}
+        <div className="sidebar-footer px-2 py-2 border-t border-white/[0.04] space-y-0.5 shrink-0 mt-auto">
           <TooltipProvider delayDuration={0}>
             {/* Settings */}
             {showCollapsed ? (
