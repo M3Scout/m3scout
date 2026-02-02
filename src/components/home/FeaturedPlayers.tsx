@@ -4,13 +4,37 @@ import { supabase } from "@/integrations/supabase/client";
 import { ArrowRight, Loader2, ChevronLeft, ChevronRight, Zap, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // IMAGE OPTIMIZATION HELPER
-// Generates srcSet for retina displays (2x/3x) using Supabase Storage transform
+// For mobile retina displays (DPR 2-3), we need larger images to avoid blur
+// Mobile card ~420px CSS width × DPR 3 = 1260px minimum, we use 1600-1800px
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function getOptimizedImageProps(photoUrl: string | null, baseWidth: number = 600) {
+/**
+ * Calculates the optimal image width based on target CSS width and device pixel ratio.
+ * Clamps between 1200-1800px to ensure sharpness on mobile retina without excessive size.
+ */
+function getPlayerPhotoUrl(photoUrl: string, targetCssWidthPx: number): string {
+  // Get device pixel ratio (default to 2 for SSR safety)
+  const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 2 : 2;
+  
+  // Calculate required width and clamp between 1200-1800
+  let reqWidth = Math.ceil(targetCssWidthPx * dpr);
+  reqWidth = Math.max(1200, Math.min(reqWidth, 1800));
+  
+  // Add Supabase transform params
+  const separator = photoUrl.includes("?") ? "&" : "?";
+  return `${photoUrl}${separator}width=${reqWidth}&quality=90`;
+}
+
+/**
+ * Returns optimized image props for athlete cards.
+ * Mobile: Uses 1600-1800px for retina sharpness
+ * Desktop: Uses 1200px for faster loading
+ */
+function getOptimizedImageProps(photoUrl: string | null, isMobile: boolean = false) {
   const fallback = "/placeholder.svg";
   if (!photoUrl) return { src: fallback, srcSet: undefined, sizes: undefined };
   
@@ -18,49 +42,62 @@ function getOptimizedImageProps(photoUrl: string | null, baseWidth: number = 600
   const isSupabaseStorage = photoUrl.includes("supabase") && photoUrl.includes("/storage/");
   
   if (isSupabaseStorage) {
-    // Use Supabase image transforms for optimized sizes
-    // Format: ?width=X&height=Y&quality=Q
-    // Use larger sizes for retina mobile: 600 -> 1200 (2x) -> 1800 (3x)
-    const width1x = baseWidth;
-    const width2x = baseWidth * 2;
-    const width3x = baseWidth * 3;
+    // Mobile cards are ~420px wide, need higher resolution for DPR 3
+    // Desktop cards are ~300-400px, 1200px is sufficient
+    const mobileWidth = 1800; // Sharp on iPhone (420px × 3 DPR = 1260px needed)
+    const desktopWidth = 1200;
     
     const getTransformUrl = (w: number) => {
       const separator = photoUrl.includes("?") ? "&" : "?";
       return `${photoUrl}${separator}width=${w}&quality=90`;
     };
     
+    if (isMobile) {
+      // Mobile: serve 1800px directly, no srcSet complexity
+      return {
+        src: getTransformUrl(mobileWidth),
+        srcSet: `${getTransformUrl(1200)} 1200w, ${getTransformUrl(1600)} 1600w, ${getTransformUrl(mobileWidth)} 1800w`,
+        sizes: "100vw",
+      };
+    }
+    
+    // Desktop: srcSet with smaller sizes
     return {
-      src: getTransformUrl(width2x), // Default to 2x (1200px) for good quality baseline
-      srcSet: `${getTransformUrl(width1x)} ${width1x}w, ${getTransformUrl(width2x)} ${width2x}w, ${getTransformUrl(width3x)} ${width3x}w`,
-      sizes: "(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 400px",
+      src: getTransformUrl(desktopWidth),
+      srcSet: `${getTransformUrl(800)} 800w, ${getTransformUrl(desktopWidth)} 1200w, ${getTransformUrl(1600)} 1600w`,
+      sizes: "(max-width: 1024px) 50vw, 400px",
     };
   }
   
   // For external URLs (like Unsplash), they often support similar transforms
   if (photoUrl.includes("unsplash.com")) {
-    const width1x = baseWidth;
-    const width2x = baseWidth * 2;
-    const width3x = baseWidth * 3;
+    const width = isMobile ? 1800 : 1200;
     
     const getUnsplashUrl = (w: number) => {
-      // Unsplash URL format: ?w=X&q=Y&fit=crop
       const baseUrl = photoUrl.split("?")[0];
       return `${baseUrl}?w=${w}&q=90&fit=crop&auto=format`;
     };
     
+    if (isMobile) {
+      return {
+        src: getUnsplashUrl(1800),
+        srcSet: `${getUnsplashUrl(1200)} 1200w, ${getUnsplashUrl(1600)} 1600w, ${getUnsplashUrl(1800)} 1800w`,
+        sizes: "100vw",
+      };
+    }
+    
     return {
-      src: getUnsplashUrl(width2x),
-      srcSet: `${getUnsplashUrl(width1x)} ${width1x}w, ${getUnsplashUrl(width2x)} ${width2x}w, ${getUnsplashUrl(width3x)} ${width3x}w`,
-      sizes: "(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 400px",
+      src: getUnsplashUrl(width),
+      srcSet: `${getUnsplashUrl(800)} 800w, ${getUnsplashUrl(1200)} 1200w, ${getUnsplashUrl(1600)} 1600w`,
+      sizes: "(max-width: 1024px) 50vw, 400px",
     };
   }
   
-  // For other URLs, return as-is but still set sizes hint
+  // For other URLs, return as-is
   return { 
     src: photoUrl, 
     srcSet: undefined, 
-    sizes: "(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 400px" 
+    sizes: isMobile ? "100vw" : "(max-width: 1024px) 50vw, 400px" 
   };
 }
 
@@ -159,11 +196,11 @@ const headerVariants = {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // CARD VARIANT A — Premium Standard
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function PlayerCardPremium({ player }: { player: Player }) {
+function PlayerCardPremium({ player, isMobile }: { player: Player; isMobile: boolean }) {
   const [isHovered, setIsHovered] = useState(false);
   
-  // Get optimized image props for retina displays
-  const imageProps = getOptimizedImageProps(player.photo_url, 400);
+  // Get optimized image props - mobile uses 1800px for retina sharpness
+  const imageProps = getOptimizedImageProps(player.photo_url, isMobile);
 
   return (
     <Link
@@ -275,11 +312,11 @@ function PlayerCardPremium({ player }: { player: Player }) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // CARD VARIANT B — Data-Driven / Scout
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function PlayerCardScout({ player }: { player: Player }) {
+function PlayerCardScout({ player, isMobile }: { player: Player; isMobile: boolean }) {
   const [isHovered, setIsHovered] = useState(false);
   
-  // Get optimized image props for retina displays
-  const imageProps = getOptimizedImageProps(player.photo_url, 400);
+  // Get optimized image props - mobile uses 1800px for retina sharpness
+  const imageProps = getOptimizedImageProps(player.photo_url, isMobile);
 
   return (
     <Link
@@ -410,7 +447,7 @@ function DesktopGrid({ players, variant }: { players: Player[]; variant: "premiu
           variants={cardVariants}
           custom={index}
         >
-          <CardComponent player={player} />
+          <CardComponent player={player} isMobile={false} />
         </motion.div>
       ))}
     </div>
@@ -477,7 +514,7 @@ function MobileCarousel({ players, variant }: { players: Player[]; variant: "pre
             variants={cardVariants}
             custom={index}
           >
-            <CardComponent player={player} />
+            <CardComponent player={player} isMobile={true} />
           </motion.div>
         ))}
       </div>
