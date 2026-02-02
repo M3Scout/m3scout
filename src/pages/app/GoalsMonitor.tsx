@@ -345,7 +345,7 @@ export default function GoalsMonitor() {
             }
           });
 
-          // ==== 2. MANUAL STATS ====
+          // ==== 2. MANUAL STATS (from manual_player_stats table) ====
           const { data: manualRows, error: manualError } = await supabase
             .from("manual_player_stats")
             .select("*")
@@ -354,8 +354,21 @@ export default function GoalsMonitor() {
           if (manualError) {
             console.warn(`[GoalsMonitor] Failed to fetch manual stats for ${playerId}:`, manualError);
           }
+
+          // ==== 3. LEGACY STATS (from player_stats table - admin-entered data) ====
+          // NOTE: player_stats table is used for admin-entered manual data (not manual_player_stats)
+          // See memory: .memory/architecture/compare-unified-stats-v1.md
+          const { data: legacyRows, error: legacyError } = await supabase
+            .from("player_stats")
+            .select("*")
+            .eq("player_id", playerId)
+            .or("is_archived.is.null,is_archived.eq.false"); // Exclude archived
           
-          // Group manual by season
+          if (legacyError) {
+            console.warn(`[GoalsMonitor] Failed to fetch legacy stats for ${playerId}:`, legacyError);
+          }
+          
+          // Group manual_player_stats by season
           const manualBySeasonYear: Record<number, typeof manualRows> = {};
           (manualRows || []).forEach(ms => {
             if (!manualBySeasonYear[ms.season_year]) {
@@ -364,10 +377,20 @@ export default function GoalsMonitor() {
             manualBySeasonYear[ms.season_year].push(ms);
           });
 
-          // ==== 3. MERGE: Get all unique season years ====
+          // Group player_stats (legacy) by season
+          const legacyBySeasonYear: Record<number, typeof legacyRows> = {};
+          (legacyRows || []).forEach(ls => {
+            if (!legacyBySeasonYear[ls.season_year]) {
+              legacyBySeasonYear[ls.season_year] = [];
+            }
+            legacyBySeasonYear[ls.season_year].push(ls);
+          });
+
+          // ==== 4. MERGE: Get all unique season years from all sources ====
           const allSeasons = new Set<number>([
             ...Object.keys(liveBySeasonYear).map(Number),
             ...Object.keys(manualBySeasonYear).map(Number),
+            ...Object.keys(legacyBySeasonYear).map(Number),
           ]);
 
           statsMap[playerId] = {};
@@ -375,6 +398,7 @@ export default function GoalsMonitor() {
           allSeasons.forEach(seasonYear => {
             const liveStats = liveBySeasonYear[seasonYear] || [];
             const manualStats = manualBySeasonYear[seasonYear] || [];
+            const legacyStats = legacyBySeasonYear[seasonYear] || [];
             const seasonMatchPlayers = matchPlayers.filter(mp => mp.match?.season_year === seasonYear);
 
             // LIVE calculations
@@ -398,13 +422,12 @@ export default function GoalsMonitor() {
             const liveDribblesFailed = liveStats.reduce((sum, s) => sum + (s.dribbles_total || 0), 0); // DB stores failed in dribbles_total
             const liveDribblesTotal = liveDribblesSuccess + liveDribblesFailed;
 
-            // MANUAL calculations (SUM across all competition contexts in the same season)
-            // Manual uses: shots = total shots (not off-target only like DB schema for live)
+            // MANUAL calculations (from manual_player_stats table)
             const manualGoals = manualStats.reduce((sum, s) => sum + (s.goals || 0), 0);
             const manualAssists = manualStats.reduce((sum, s) => sum + (s.assists || 0), 0);
             const manualMatches = manualStats.reduce((sum, s) => sum + (s.games || 0), 0);
             const manualMinutes = manualStats.reduce((sum, s) => sum + (s.minutes || 0), 0);
-            const manualShots = manualStats.reduce((sum, s) => sum + (s.shots || 0) + (s.shots_on_target || 0), 0); // Manual stores differently
+            const manualShots = manualStats.reduce((sum, s) => sum + (s.shots || 0) + (s.shots_on_target || 0), 0);
             const manualTackles = manualStats.reduce((sum, s) => sum + (s.tackles || 0), 0);
             const manualYellowCards = manualStats.reduce((sum, s) => sum + (s.yellow_cards || 0), 0);
             const manualSaves = manualStats.reduce((sum, s) => sum + (s.saves || 0), 0);
@@ -417,28 +440,51 @@ export default function GoalsMonitor() {
             const manualDribblesFailed = manualStats.reduce((sum, s) => sum + (s.dribbles_failed || 0), 0);
             const manualDribblesTotal = manualDribblesSuccess + manualDribblesFailed;
 
-            // ==== UNIFIED: Live + Manual SUM ====
+            // LEGACY calculations (from player_stats table - admin-entered data)
+            // In player_stats: shots = shots (off target), shots_on_target = on target
+            // Total = shots + shots_on_target + shots_blocked
+            const legacyShotsTotal = legacyStats.reduce((sum, s) => {
+              return sum + (s.shots || 0) + (s.shots_on_target || 0) + (s.shots_blocked || 0);
+            }, 0);
+            const legacyGoals = legacyStats.reduce((sum, s) => sum + (s.goals || 0), 0);
+            const legacyAssists = legacyStats.reduce((sum, s) => sum + (s.assists || 0), 0);
+            const legacyMatches = legacyStats.reduce((sum, s) => sum + (s.matches || 0), 0);
+            const legacyMinutes = legacyStats.reduce((sum, s) => sum + (s.minutes || 0), 0);
+            const legacyTackles = legacyStats.reduce((sum, s) => sum + (s.tackles || 0), 0);
+            const legacyYellowCards = legacyStats.reduce((sum, s) => sum + (s.yellow_cards || 0), 0);
+            const legacySaves = legacyStats.reduce((sum, s) => sum + (s.saves || 0), 0);
+            const legacyCleanSheets = legacyStats.reduce((sum, s) => sum + (s.clean_sheets || 0), 0);
+            const legacyInterceptions = legacyStats.reduce((sum, s) => sum + (s.interceptions || 0), 0);
+            // Legacy uses accurate_passes (completed) and total_passes
+            const legacyPassesCompleted = legacyStats.reduce((sum, s) => sum + (s.accurate_passes || 0), 0);
+            const legacyPassesTotal = legacyStats.reduce((sum, s) => sum + (s.total_passes || 0), 0);
+            // Legacy uses successful_dribbles and total_dribbles
+            const legacyDribblesSuccess = legacyStats.reduce((sum, s) => sum + (s.successful_dribbles || 0), 0);
+            const legacyDribblesTotal = legacyStats.reduce((sum, s) => sum + (s.total_dribbles || 0), 0);
+
+            // ==== UNIFIED: Live + Manual + Legacy SUM ====
             statsMap[playerId][seasonYear] = {
-              goals: liveGoals + manualGoals,
-              assists: liveAssists + manualAssists,
-              matches: liveMatches + manualMatches,
-              minutes: liveMinutes + manualMinutes,
-              shots: liveShotsTotal + manualShots,
-              tackles: liveTackles + manualTackles,
-              yellow_cards: liveYellowCards + manualYellowCards,
-              saves: liveSaves + manualSaves,
-              clean_sheets: manualCleanSheets, // Live doesn't track clean_sheets per match yet
-              interceptions: liveInterceptions + manualInterceptions,
-              passes_completed: livePassesCompleted + manualPassesCompleted,
-              passes_total: livePassesTotal + manualPassesTotal,
-              dribbles_success: liveDribblesSuccess + manualDribblesSuccess,
-              dribbles_total: liveDribblesTotal + manualDribblesTotal,
+              goals: liveGoals + manualGoals + legacyGoals,
+              assists: liveAssists + manualAssists + legacyAssists,
+              matches: liveMatches + manualMatches + legacyMatches,
+              minutes: liveMinutes + manualMinutes + legacyMinutes,
+              shots: liveShotsTotal + manualShots + legacyShotsTotal,
+              tackles: liveTackles + manualTackles + legacyTackles,
+              yellow_cards: liveYellowCards + manualYellowCards + legacyYellowCards,
+              saves: liveSaves + manualSaves + legacySaves,
+              clean_sheets: manualCleanSheets + legacyCleanSheets,
+              interceptions: liveInterceptions + manualInterceptions + legacyInterceptions,
+              passes_completed: livePassesCompleted + manualPassesCompleted + legacyPassesCompleted,
+              passes_total: livePassesTotal + manualPassesTotal + legacyPassesTotal,
+              dribbles_success: liveDribblesSuccess + manualDribblesSuccess + legacyDribblesSuccess,
+              dribbles_total: liveDribblesTotal + manualDribblesTotal + legacyDribblesTotal,
             };
 
             if (isDev) {
               console.log(`[GoalsMonitor] Unified stats for ${playerId} / ${seasonYear}:`, {
-                live: { goals: liveGoals, assists: liveAssists, matches: liveMatches, shots: liveShotsTotal },
+                live: { goals: liveGoals, assists: liveAssists, matches: liveMatches, shots: liveShotsTotal, interceptions: liveInterceptions },
                 manual: { goals: manualGoals, assists: manualAssists, matches: manualMatches, shots: manualShots },
+                legacy: { goals: legacyGoals, assists: legacyAssists, matches: legacyMatches, shots: legacyShotsTotal, interceptions: legacyInterceptions },
                 unified: statsMap[playerId][seasonYear],
               });
             }
