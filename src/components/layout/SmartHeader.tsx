@@ -72,13 +72,18 @@ export function SmartHeader({ variant = "default" }: SmartHeaderProps) {
     <>
       <header
         className={cn(
-          "fixed top-0 left-0 right-0 z-50",
+          "fixed left-0 right-0 z-50",
           "transition-all duration-500 ease-out",
           isVisible ? "translate-y-0" : "-translate-y-full",
           showTransparent 
             ? "bg-transparent" 
             : "bg-black/90 backdrop-blur-md border-b border-white/[0.04]"
         )}
+        style={{
+          top: 'var(--sat)',
+          paddingLeft: 'var(--sal)',
+          paddingRight: 'var(--sar)',
+        }}
       >
         <div className="mx-auto max-w-[1280px] px-6 lg:px-10">
           <div className="flex h-[72px] md:h-[88px] items-center justify-between">
@@ -158,6 +163,10 @@ export function SmartHeader({ variant = "default" }: SmartHeaderProps) {
             className="fixed inset-0 z-40 lg:hidden overflow-hidden"
             style={{
               background: "linear-gradient(180deg, #000000 0%, #0A0A0A 100%)",
+              paddingTop: 'var(--sat)',
+              paddingBottom: 'var(--sab)',
+              paddingLeft: 'var(--sal)',
+              paddingRight: 'var(--sar)',
             }}
           >
             {/* Close button */}
