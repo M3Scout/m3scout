@@ -186,11 +186,16 @@ export function InstagramFeedSection() {
   ];
 
   return (
-    // Mobile/Tablet fix: Ensure no dark overlay or border-top inherited, full brightness
-    // BUG FIX: Force white background on all devices to prevent gray/dark inheritance
+    // BUG FIX: Force white background with explicit !important-style inline to prevent any inheritance
     <section 
-      className="py-20 md:py-28 border-t-0" 
-      style={{ isolation: 'isolate', opacity: 1, backgroundColor: '#ffffff' }}
+      className="py-20 md:py-28 border-t-0 border-b-0" 
+      style={{ 
+        backgroundColor: '#f8f7f4', 
+        isolation: 'isolate',
+        // Ensure no pseudo-elements or borders can create dark lines
+        borderTop: 'none',
+        borderBottom: 'none',
+      }}
     >
       {/* Single container for entire section - consistent alignment */}
       <div className="mx-auto max-w-[1280px] px-6 lg:px-10">

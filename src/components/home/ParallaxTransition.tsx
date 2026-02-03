@@ -1,5 +1,4 @@
 import { useRef, useEffect, useState } from "react";
-import { cn } from "@/lib/utils";
 
 interface ParallaxTransitionProps {
   children?: React.ReactNode;
@@ -55,14 +54,10 @@ export function ParallaxTransition({ children }: ParallaxTransitionProps) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [prefersReducedMotion, isMobileOrTablet]);
 
-  // Mobile/Tablet: No parallax, no opacity animation — sections render at full brightness
-  // BUG FIX: Remove any potential background inheritance issues
+  // Mobile/Tablet: No parallax, no opacity animation — render children directly
+  // BUG FIX: Remove wrapper entirely to prevent any background/spacing issues between sections
   if (isMobileOrTablet || prefersReducedMotion) {
-    return (
-      <div ref={ref} className="relative" style={{ backgroundColor: 'transparent' }}>
-        {children}
-      </div>
-    );
+    return <>{children}</>;
   }
 
   // Desktop only: Apply parallax and opacity effects
@@ -80,7 +75,6 @@ export function ParallaxTransition({ children }: ParallaxTransitionProps) {
         transform: `translateY(${parallaxOffset}px)`,
         opacity,
         transition: "opacity 0.1s ease-out",
-        backgroundColor: 'transparent',
       }}
     >
       {children}
