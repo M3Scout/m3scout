@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, cloneElement, isValidElement } from "react";
 
 interface ParallaxTransitionProps {
   children?: React.ReactNode;
@@ -17,23 +17,8 @@ export function ParallaxTransition({ children }: ParallaxTransitionProps) {
     return () => mediaQuery.removeEventListener("change", handleChange);
   }, []);
 
-  // Detect mobile (< 768px) and tablet (768–1366px) to disable parallax effects
-  const [isMobileOrTablet, setIsMobileOrTablet] = useState(false);
-  
   useEffect(() => {
-    const checkDevice = () => {
-      const width = window.innerWidth;
-      // Disable parallax/opacity effects on mobile (<768px) and tablet (768–1366px)
-      setIsMobileOrTablet(width <= 1366);
-    };
-    checkDevice();
-    window.addEventListener("resize", checkDevice);
-    return () => window.removeEventListener("resize", checkDevice);
-  }, []);
-
-  useEffect(() => {
-    // Don't run parallax on mobile/tablet
-    if (prefersReducedMotion || isMobileOrTablet) return;
+    if (prefersReducedMotion) return;
 
     const handleScroll = () => {
       if (!ref.current) return;
@@ -41,7 +26,6 @@ export function ParallaxTransition({ children }: ParallaxTransitionProps) {
       const rect = ref.current.getBoundingClientRect();
       const windowHeight = window.innerHeight;
       
-      // Calculate progress: 0 when element enters viewport, 1 when fully visible
       const progress = Math.max(0, Math.min(1, 
         (windowHeight - rect.top) / (windowHeight + rect.height * 0.5)
       ));
@@ -50,34 +34,12 @@ export function ParallaxTransition({ children }: ParallaxTransitionProps) {
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll(); // Initial check
+    handleScroll();
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [prefersReducedMotion, isMobileOrTablet]);
+  }, [prefersReducedMotion]);
 
-  // Mobile/Tablet: No parallax, no opacity animation — render children directly
-  // BUG FIX: Remove wrapper entirely to prevent any background/spacing issues between sections
-  if (isMobileOrTablet || prefersReducedMotion) {
-    return <>{children}</>;
-  }
-
-  // Desktop only: Apply parallax and opacity effects
-  // START at full opacity (1.0) when near top, fade slightly as user scrolls past
-  const parallaxOffset = (1 - scrollProgress) * 40;
-  // Opacity: starts at 0.85, goes to 1.0 as user scrolls to it
-  // This prevents "invisible" sections on cold load
-  const opacity = Math.min(1, 0.85 + scrollProgress * 0.15);
-
-  return (
-    <div 
-      ref={ref}
-      className="relative"
-      style={{
-        transform: `translateY(${parallaxOffset}px)`,
-        opacity,
-        transition: "opacity 0.1s ease-out",
-      }}
-    >
-      {children}
-    </div>
-  );
+  // BUG FIX: Always render children directly without wrapper to prevent black bars
+  // The parallax effect is subtle and not worth the visual bugs it causes
+  // Just return the children as-is on ALL devices
+  return <>{children}</>;
 }
