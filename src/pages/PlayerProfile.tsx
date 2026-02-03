@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getYouTubeEmbedUrl, getYouTubeThumbnailUrl, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePlayerMatchStats } from "@/hooks/usePlayerMatchStats";
-import { 
+import { fetchUnifiedPlayerStats, type UnifiedStats } from "@/hooks/useUnifiedPlayerStats";
+import {
   ArrowLeft, 
   MapPin, 
   Calendar, 
@@ -556,7 +558,7 @@ const PlayerProfile = () => {
     fetchPlayer();
   }, [slug]);
 
-  // ==================== MATCH-DERIVED STATS (Single Source of Truth) ====================
+  // ==================== MATCH-DERIVED STATS (Single Source of Truth for Live Match) ====================
   const {
     matches: matchDerivedMatches,
     totals: matchTotals,
@@ -565,6 +567,14 @@ const PlayerProfile = () => {
   } = usePlayerMatchStats({
     playerId: player?.id ?? "",
     enabled: !!player?.id,
+  });
+
+  // ==================== UNIFIED STATS (For "Por Competição" tab - Live + Manual) ====================
+  const { data: unifiedStatsData } = useQuery({
+    queryKey: ["unified-player-stats-public", player?.id],
+    queryFn: () => fetchUnifiedPlayerStats(player?.id ?? ""),
+    enabled: !!player?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   // Convert hook aggregates into the local UI shape (keeps UI unchanged)
@@ -610,31 +620,40 @@ const PlayerProfile = () => {
     return careerStats[0] || null;
   }, [careerStats]);
 
+  // ==================== COMPETITION STATS (Uses Unified Data - Live + Manual) ====================
+  // This ensures "Por Competição" tab shows ALL competitions, not just Live Match ones
   const competitionStats: CompetitionStats[] = useMemo(() => {
+    const stats = unifiedStatsData || [];
+    
+    // Group by competition_id + season_year
     const acc: Record<string, CompetitionStats> = {};
-    for (const m of matchDerivedMatches) {
-      if (!m.competition_id) continue;
-      const key = `${m.competition_id}-${m.season_year}`;
+    
+    for (const s of stats) {
+      if (!s.competition_id) continue;
+      
+      const key = `${s.competition_id}-${s.season_year}`;
       if (!acc[key]) {
         acc[key] = {
-          competition_id: m.competition_id,
-          competition_name: m.competition_name || "Competição",
+          competition_id: s.competition_id,
+          competition_name: s.competition_name || "Competição",
           competition_type: "league",
-          season_year: m.season_year,
+          season_year: s.season_year,
           matches: 0,
           minutes: 0,
           goals: 0,
           assists: 0,
         };
       }
+      
       const c = acc[key];
-      c.matches += 1;
-      c.minutes += m.minutes_played;
-      c.goals += m.stats.goals;
-      c.assists += m.stats.assists;
+      c.matches += s.matches;
+      c.minutes += s.minutes;
+      c.goals += s.goals;
+      c.assists += s.assists;
     }
+    
     return Object.values(acc).sort((a, b) => b.season_year - a.season_year);
-  }, [matchDerivedMatches]);
+  }, [unifiedStatsData]);
 
   const careerTotals = useMemo(
     () => ({
