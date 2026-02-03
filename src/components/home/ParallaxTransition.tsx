@@ -56,9 +56,10 @@ export function ParallaxTransition({ children }: ParallaxTransitionProps) {
   }, [prefersReducedMotion, isMobileOrTablet]);
 
   // Mobile/Tablet: No parallax, no opacity animation — sections render at full brightness
+  // BUG FIX: Remove any potential background inheritance issues
   if (isMobileOrTablet || prefersReducedMotion) {
     return (
-      <div ref={ref} className="relative">
+      <div ref={ref} className="relative" style={{ backgroundColor: 'transparent' }}>
         {children}
       </div>
     );
@@ -79,6 +80,7 @@ export function ParallaxTransition({ children }: ParallaxTransitionProps) {
         transform: `translateY(${parallaxOffset}px)`,
         opacity,
         transition: "opacity 0.1s ease-out",
+        backgroundColor: 'transparent',
       }}
     >
       {children}
