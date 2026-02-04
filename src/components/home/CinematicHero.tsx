@@ -273,14 +273,18 @@ export function CinematicHero() {
         </div>
       </div>
 
-      {/* Scroll Indicator - Slightly improved */}
+      {/* Scroll Indicator - Centered on all devices */}
       <motion.button
         onClick={scrollToContent}
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: isLoaded ? 1 : 0, y: isLoaded ? 0 : 10 }}
         transition={{ delay: 0.9, duration: 0.5 }}
         whileHover={{ scale: 1.1 }}
-        className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 text-white/60 hover:text-white cursor-pointer transition-colors duration-300"
+        className="absolute bottom-10 left-0 right-0 z-20 flex flex-col items-center justify-center text-center gap-2 text-white/60 hover:text-white cursor-pointer transition-colors duration-300"
+        style={{ 
+          paddingLeft: 'var(--page-gutter)', 
+          paddingRight: 'var(--page-gutter)' 
+        }}
         aria-label="Role para explorar"
       >
         <span className="text-xs font-medium tracking-wider uppercase">Explorar</span>
