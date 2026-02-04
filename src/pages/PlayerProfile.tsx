@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 // Premium modular components
 import { AthleteHeroSection } from "@/components/players/public/AthleteHeroSection";
 import { AthleteHighlightsSection } from "@/components/players/public/AthleteHighlightsSection";
+import { AthletePlayProfileCard } from "@/components/players/public/AthletePlayProfileCard";
 import { AthleteStatsSection } from "@/components/players/public/AthleteStatsSection";
 import { AthleteGamePhasesSection } from "@/components/players/public/AthleteGamePhasesSection";
 import { AthletePhysicalSection } from "@/components/players/public/AthletePhysicalSection";
@@ -304,18 +305,22 @@ const PlayerProfile = () => {
             </Link>
           </motion.div>
 
-          {/* Hero Section */}
-          <AthleteHeroSection player={player} />
+          {/* Hero Section - includes status badge */}
+          <AthleteHeroSection 
+            player={player} 
+            contractStatus={player.contract_status}
+          />
 
-          {/* Highlights Section */}
-          <AthleteHighlightsSection
-            strengths={player.strengths}
+          {/* Play Profile Card - shows tactical role and play style */}
+          <AthletePlayProfileCard
             playStyle={player.play_style}
             primaryTacticalRole={player.primary_tactical_role}
             secondaryTacticalRole={player.secondary_tactical_role}
-            contractStatus={player.contract_status}
-            currentClub={player.current_club}
+            position={player.position}
           />
+
+          {/* Highlights Section - ONLY strengths, clean and focused */}
+          <AthleteHighlightsSection strengths={player.strengths} />
 
           {/* Statistics Section */}
           {!statsLoading && careerStats.length > 0 && (
