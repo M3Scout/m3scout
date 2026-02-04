@@ -287,7 +287,7 @@ const PlayerProfile = () => {
       </div>
 
       <div className="relative pt-24 sm:pt-28 pb-16">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto" style={{ paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
           
           {/* Back Button */}
           <motion.div 

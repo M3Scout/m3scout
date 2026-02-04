@@ -581,8 +581,8 @@ const Players = () => {
         }}
       />
 
-      {/* Main Container */}
-      <div className="relative z-10 w-full max-w-[1360px] mx-auto px-4 md:px-6 lg:px-8">
+      {/* Main Container - Uses global page alignment */}
+      <div className="relative z-10 container-main">
         
         {/* Header Section - Editorial */}
         <motion.section 

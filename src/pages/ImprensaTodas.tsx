@@ -106,7 +106,7 @@ const ImprensaTodas = () => {
 
       {/* HEADER SECTION */}
       <section className="relative pt-32 pb-12 md:pt-40 md:pb-16">
-        <div className="relative z-10 mx-auto max-w-[1200px] px-6 md:px-12 lg:px-16">
+        <div className="relative z-10 container-main">
           
           {/* Back Link */}
           <motion.div
@@ -157,7 +157,7 @@ const ImprensaTodas = () => {
 
       {/* NEWS GRID */}
       <section className="py-8 md:py-12 lg:py-16">
-        <div className="mx-auto max-w-[1200px] px-6 md:px-12 lg:px-16">
+        <div className="container-main">
           
           {/* Initial Loading State */}
           {isLoading && page === 0 ? (

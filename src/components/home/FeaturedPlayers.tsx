@@ -409,16 +409,21 @@ function UniversalCarousel({ players }: { players: Player[] }) {
   return (
     <div className="relative">
       {/* Scroll Container with drag support */}
+      {/* Uses negative margins matching --page-gutter to allow full-bleed scroll while keeping first card aligned with logo */}
       <div
         ref={containerRef}
         className={cn(
-          "flex overflow-x-auto scrollbar-hide scroll-smooth pb-4 gap-4 md:gap-5 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8",
+          "flex overflow-x-auto scrollbar-hide scroll-smooth pb-4 gap-4 md:gap-5",
           isDragging && "cursor-grabbing select-none"
         )}
         style={{
           scrollSnapType: "x mandatory",
           WebkitOverflowScrolling: "touch",
           cursor: isDragging ? "grabbing" : "grab",
+          marginLeft: "calc(-1 * var(--page-gutter))",
+          marginRight: "calc(-1 * var(--page-gutter))",
+          paddingLeft: "var(--page-gutter)",
+          paddingRight: "var(--page-gutter)",
         }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -437,7 +442,7 @@ function UniversalCarousel({ players }: { players: Player[] }) {
           </motion.div>
         ))}
         {/* End spacer for proper scroll */}
-        <div className="flex-shrink-0 w-4 md:w-6 lg:w-8" />
+        <div className="flex-shrink-0" style={{ width: "var(--page-gutter)" }} />
       </div>
 
       {/* Left fade gradient */}
