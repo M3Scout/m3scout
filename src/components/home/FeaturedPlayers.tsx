@@ -211,11 +211,17 @@ const headerVariants = {
 };
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// PREMIUM CAROUSEL CARD - Enhanced with colors and effects
+// PREMIUM CAROUSEL CARD - Clean, minimal overlay
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function CarouselCard({ player, isMobile }: { player: Player; isMobile: boolean }) {
   const [isHovered, setIsHovered] = useState(false);
-  const posColor = positionColors[player.position] || positionColors.CM;
+  
+  // Fixed blue color for all position badges
+  const badgeColor = {
+    bg: "rgba(59, 130, 246, 0.15)",
+    text: "#3b82f6",
+    glow: "rgba(59, 130, 246, 0.3)",
+  };
   
   // Get optimized image props - mobile uses 1800px for retina sharpness
   const imageProps = getOptimizedImageProps(player.photo_url, isMobile);
@@ -230,10 +236,10 @@ function CarouselCard({ player, isMobile }: { player: Player; isMobile: boolean 
       <motion.article 
         className="relative overflow-hidden rounded-xl h-full"
         style={{
-          background: "linear-gradient(180deg, #0d1018 0%, #070910 100%)",
+          background: "#0a0c12",
           boxShadow: isHovered 
-            ? `0 20px 60px -15px rgba(0,0,0,0.8), 0 0 40px -10px ${posColor.glow}` 
-            : "0 10px 40px -10px rgba(0,0,0,0.5)",
+            ? `0 20px 60px -15px rgba(0,0,0,0.7), 0 0 30px -10px ${badgeColor.glow}` 
+            : "0 8px 30px -10px rgba(0,0,0,0.4)",
         }}
         animate={{ 
           scale: isHovered ? 1.02 : 1,
@@ -241,15 +247,15 @@ function CarouselCard({ player, isMobile }: { player: Player; isMobile: boolean 
         }}
         transition={{ duration: 0.3, ease: "easeOut" }}
       >
-        {/* Gradient accent top border */}
+        {/* Accent top border - Blue */}
         <div 
           className="absolute top-0 left-0 right-0 h-1 z-10"
           style={{ 
-            background: `linear-gradient(90deg, ${posColor.text}, ${posColor.text}60, transparent)`,
+            background: `linear-gradient(90deg, ${badgeColor.text}, ${badgeColor.text}60, transparent)`,
           }}
         />
 
-        {/* Image Container - Larger aspect ratio */}
+        {/* Image Container */}
         <div className="relative aspect-[3/4] overflow-hidden">
           <motion.img
             src={imageProps.src}
@@ -258,105 +264,64 @@ function CarouselCard({ player, isMobile }: { player: Player; isMobile: boolean 
             alt={player.full_name}
             loading="lazy"
             className="absolute inset-0 w-full h-full object-cover object-top"
-            animate={{ scale: isHovered ? 1.08 : 1 }}
+            animate={{ scale: isHovered ? 1.05 : 1 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
           />
 
-          {/* Premium gradient overlay with color tint */}
+          {/* Clean bottom gradient only - no side shadows */}
           <div
-            className="absolute inset-0 transition-opacity duration-300"
+            className="absolute inset-0 pointer-events-none"
             style={{
               background: `linear-gradient(180deg, 
                 transparent 0%, 
-                rgba(7, 9, 16, 0.3) 40%, 
-                rgba(7, 9, 16, 0.85) 75%, 
-                #070910 100%)`,
-              opacity: isHovered ? 1 : 0.9,
+                transparent 50%, 
+                rgba(10, 12, 18, 0.6) 75%, 
+                rgba(10, 12, 18, 0.95) 100%)`,
             }}
-          />
-          
-          {/* Subtle color wash on hover */}
-          <motion.div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              background: `radial-gradient(ellipse at bottom, ${posColor.glow} 0%, transparent 70%)`,
-            }}
-            animate={{ opacity: isHovered ? 0.4 : 0 }}
-            transition={{ duration: 0.3 }}
           />
 
-          {/* Position Badge - Top Left with color */}
+          {/* Position Badge - Top Left, Blue */}
           <div className="absolute top-4 left-4 z-10">
             <div 
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg border"
               style={{ 
-                background: posColor.bg,
-                borderColor: `${posColor.text}30`,
+                background: badgeColor.bg,
+                borderColor: `${badgeColor.text}40`,
                 backdropFilter: "blur(8px)",
               }}
             >
-              <Zap className="w-3.5 h-3.5" style={{ color: posColor.text }} />
+              <Zap className="w-3.5 h-3.5" style={{ color: badgeColor.text }} />
               <span 
                 className="text-[11px] font-bold uppercase tracking-[0.12em]"
-                style={{ color: posColor.text }}
+                style={{ color: badgeColor.text }}
               >
                 {positionCodes[player.position] || player.position}
               </span>
             </div>
           </div>
 
-          {/* Status Badge - Top Right with enhanced visibility */}
-          <div className="absolute top-4 right-4 z-10">
-            <div 
-              className="flex items-center gap-2 px-3 py-2 rounded-lg border"
-              style={{ 
-                background: "rgba(30, 215, 96, 0.12)",
-                borderColor: "rgba(30, 215, 96, 0.25)",
-                backdropFilter: "blur(8px)",
-              }}
-            >
-              <span 
-                className="relative flex h-2 w-2"
-              >
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1ED760] opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#1ED760]" />
-              </span>
-              <span 
-                className="text-[11px] font-bold uppercase tracking-[0.1em]"
-                style={{ color: "#1ED760" }}
-              >
-                Monitorado
-              </span>
-            </div>
-          </div>
-
           {/* Player Info - Bottom */}
           <div className="absolute bottom-0 left-0 right-0 p-5 z-10">
-            {/* Name with glow effect */}
-            <h3 
-              className="text-white font-bold text-xl tracking-tight mb-2 line-clamp-1"
-              style={{
-                textShadow: isHovered ? `0 0 20px ${posColor.glow}` : "none",
-              }}
-            >
+            {/* Name */}
+            <h3 className="text-white font-bold text-xl tracking-tight mb-2 line-clamp-1">
               {player.full_name}
             </h3>
 
             {/* Age & Country */}
-            <p className="text-white/60 text-sm font-medium tracking-wide mb-1.5">
+            <p className="text-white/70 text-sm font-medium tracking-wide mb-1.5">
               {player.age ? `${player.age} anos` : "—"}
-              <span className="mx-2 text-white/20">•</span>
+              <span className="mx-2 text-white/30">•</span>
               {player.nationality}
             </p>
 
             {/* Club */}
             {player.current_club && (
-              <p className="text-white/40 text-xs uppercase tracking-[0.1em] line-clamp-1 mb-4">
+              <p className="text-white/50 text-xs uppercase tracking-[0.1em] line-clamp-1 mb-4">
                 {player.current_club}
               </p>
             )}
 
-            {/* Hover CTA - Enhanced */}
+            {/* Hover CTA - Blue accent */}
             <motion.div
               className="flex items-center gap-2 pt-3 border-t border-white/10"
               initial={{ opacity: 0, y: 8 }}
@@ -365,11 +330,11 @@ function CarouselCard({ player, isMobile }: { player: Player; isMobile: boolean 
             >
               <span 
                 className="text-sm font-semibold tracking-wide"
-                style={{ color: posColor.text }}
+                style={{ color: badgeColor.text }}
               >
                 Ver perfil completo
               </span>
-              <ArrowRight className="w-4 h-4" style={{ color: posColor.text }} />
+              <ArrowRight className="w-4 h-4" style={{ color: badgeColor.text }} />
             </motion.div>
           </div>
         </div>
