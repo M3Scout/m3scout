@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Zap, ArrowRight, Flame, Eye, Snowflake, TrendingUp, Activity, DollarSign, FileText, Calendar, Sparkles, User, Ruler, Target, Star, Gamepad2, Clock } from "lucide-react";
+import { motion } from "framer-motion";
+import { Zap, ArrowRight, FileText, Star, Gamepad2, Clock, Ruler } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getPositionColor, getShortPosition } from "@/lib/positionColors";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // TYPES
@@ -20,7 +21,7 @@ export interface AthleteCardPremiumProps {
   isPublic?: boolean;
   // Scouting mode fields
   scoutingMode?: boolean;
-  clubMode?: boolean; // A/B toggle: false = Visual, true = Data-driven
+  clubMode?: boolean;
   dominantFoot?: string | null;
   height?: number | null;
   totalMinutes?: number | null;
@@ -32,32 +33,12 @@ export interface AthleteCardPremiumProps {
   estimatedLevel?: string | null;
   competitionName?: string | null;
   lastReportDate?: string | null;
-  // New field for "Novo" status
   createdAt?: string | null;
   // New indicator header fields
   totalMatches?: number | null;
   playStyle?: string | null;
   primaryTacticalRole?: string | null;
   secondaryTacticalRole?: string | null;
-}
-
-type PriorityLevel = "high" | "monitoring" | "low";
-type StatusLevel = "priority" | "new" | "monitoring";
-
-// Check if athlete was added in the last 30 days
-function isNewAthlete(createdAt?: string | null): boolean {
-  if (!createdAt) return false;
-  const created = new Date(createdAt);
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  return created >= thirtyDaysAgo;
-}
-
-// Determine status: Priority > New > Monitoring
-function getAthleteStatus(priority: PriorityLevel, createdAt?: string | null): StatusLevel {
-  if (priority === "high") return "priority";
-  if (isNewAthlete(createdAt)) return "new";
-  return "monitoring";
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -84,10 +65,13 @@ const positionLabels: Record<string, string> = {
   "Lateral Direito": "Lateral Direito",
   Volante: "Volante",
   "Meio-Campo": "Meio-Campo",
+  Meia: "Meia",
   "Meia Atacante": "Meia Atacante",
+  "Meia Ofensivo": "Meia Ofensivo",
   "Ponta Esquerda": "Ponta Esquerda",
   "Ponta Direita": "Ponta Direita",
   Atacante: "Atacante",
+  Centroavante: "Centroavante",
 };
 
 const footLabels: Record<string, string> = {
@@ -102,105 +86,10 @@ const footLabels: Record<string, string> = {
   Ambos: "Ambos",
 };
 
-const physicalStatusLabels: Record<string, { label: string; color: string }> = {
-  fit: { label: "Apto", color: "#1ED760" },
-  attention: { label: "Atenção", color: "#FFB800" },
-  recovering: { label: "Retorno", color: "#FF6B35" },
-  injured: { label: "Lesionado", color: "#FF4444" },
-};
-
-const priorityConfig: Record<PriorityLevel, { icon: typeof Flame; label: string; color: string; bgColor: string; glowColor: string }> = {
-  high: {
-    icon: Flame,
-    label: "Alta Prioridade",
-    color: "#FF6B35",
-    bgColor: "rgba(255, 107, 53, 0.12)",
-    glowColor: "rgba(255, 107, 53, 0.15)",
-  },
-  monitoring: {
-    icon: Eye,
-    label: "Monitorando",
-    color: "#1ED760",
-    bgColor: "rgba(30, 215, 96, 0.1)",
-    glowColor: "rgba(30, 215, 96, 0.08)",
-  },
-  low: {
-    icon: Snowflake,
-    label: "Baixa Prioridade",
-    color: "#6B7280",
-    bgColor: "rgba(107, 114, 128, 0.1)",
-    glowColor: "transparent",
-  },
-};
-
 // Animation easing
 const premiumEasing = [0.22, 1, 0.36, 1] as const;
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// UTILITIES
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function calculatePriority(overallRating?: number | null, potentialRating?: number | null): PriorityLevel {
-  const overall = overallRating ?? 0;
-  const potential = potentialRating ?? 0;
-  
-  // High priority: high potential (8+) or good overall with growth potential
-  if (potential >= 8.5 || (overall >= 7 && potential >= 8)) return "high";
-  // Monitoring: decent ratings
-  if (overall >= 5 || potential >= 6) return "monitoring";
-  // Low: everything else
-  return "low";
-}
-
-function formatHeight(h: number | null | undefined): string {
-  if (!h) return "—";
-  const meters = h >= 100 ? h / 100 : h;
-  return `${meters.toFixed(2).replace(".", ",")}m`;
-}
-
-function formatFoot(foot: string | null | undefined): string {
-  if (!foot) return "—";
-  return footLabels[foot] || foot;
-}
-
-function formatMarketValue(value: number | null | undefined): string {
-  if (!value) return "—";
-  if (value >= 1000000) return `€${(value / 1000000).toFixed(1)}M`;
-  if (value >= 1000) return `€${Math.round(value / 1000)}k`;
-  return `€${value}`;
-}
-
-function formatMarketValueRange(value: number | null | undefined): string {
-  if (!value) return "A definir";
-  const low = Math.round(value * 0.8);
-  const high = Math.round(value * 1.3);
-  if (value >= 1000000) {
-    return `€${(low / 1000000).toFixed(1)}M–€${(high / 1000000).toFixed(1)}M`;
-  }
-  return `€${Math.round(low / 1000)}k–€${Math.round(high / 1000)}k`;
-}
-
-function getPositionLabel(pos: string): string {
-  return positionLabels[pos] || pos;
-}
-
-// Badge styles - glassmorphism
-const badgeStyle = {
-  background: "rgba(7, 9, 16, 0.75)",
-  backdropFilter: "blur(8px)",
-  WebkitBackdropFilter: "blur(8px)",
-};
-
-// Format minutes for display (1k+ format)
-function formatMinutesDisplay(minutes: number | null | undefined): string {
-  if (!minutes) return "0";
-  if (minutes >= 1000) {
-    return `${(minutes / 1000).toFixed(1)}k`;
-  }
-  return minutes.toString();
-}
-
-// Physical status config for new header
+// Physical status config
 const PHYSICAL_STATUS_CONFIG: Record<string, { 
   label: string; 
   color: string; 
@@ -247,8 +136,34 @@ const DEFAULT_PHYSICAL_CONFIG = {
 };
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// UTILITIES
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function formatHeight(h: number | null | undefined): string {
+  if (!h) return "—";
+  const meters = h >= 100 ? h / 100 : h;
+  return `${meters.toFixed(2).replace(".", ",")}m`;
+}
+
+function formatFoot(foot: string | null | undefined): string {
+  if (!foot) return "—";
+  return footLabels[foot] || foot;
+}
+
+function getPositionLabel(pos: string): string {
+  return positionLabels[pos] || pos;
+}
+
+function formatMinutesDisplay(minutes: number | null | undefined): string {
+  if (!minutes) return "0";
+  if (minutes >= 1000) {
+    return `${(minutes / 1000).toFixed(1)}k`;
+  }
+  return minutes.toString();
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // CLUB MODE INDICATOR ROW COMPONENT
-// New header: NOTA / JOGOS / MINUTOS / FÍSICO / ESTILO DE JOGO
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 interface ClubModeIndicatorRowProps {
@@ -256,7 +171,6 @@ interface ClubModeIndicatorRowProps {
   totalMinutes?: number | null;
   totalMatches?: number | null;
   physicalStatus?: string | null;
-  physicalInfo?: { label: string; color: string };
   playStyle?: string | null;
   primaryTacticalRole?: string | null;
   secondaryTacticalRole?: string | null;
@@ -274,15 +188,12 @@ function ClubModeIndicatorRow({
   const minutes = totalMinutes ?? 0;
   const matches = totalMatches ?? 0;
   
-  // Rating: show only if minutes > 0
   const showRating = minutes > 0 && overallRating !== null && overallRating !== undefined;
   const ratingDisplay = showRating ? overallRating.toFixed(1) : "—";
   
-  // Physical status
   const physicalKey = physicalStatus?.toLowerCase() || "";
   const physicalConfig = PHYSICAL_STATUS_CONFIG[physicalKey] || DEFAULT_PHYSICAL_CONFIG;
   
-  // Play style and roles
   const roles = [primaryTacticalRole, secondaryTacticalRole].filter(Boolean).slice(0, 2);
   const hasPlayStyle = Boolean(playStyle) || roles.length > 0;
 
@@ -333,7 +244,7 @@ function ClubModeIndicatorRow({
         </div>
       </div>
       
-      {/* FÍSICO (with color emphasis) */}
+      {/* FÍSICO */}
       <div 
         className="flex items-center gap-2 px-2.5 py-1.5 rounded-md"
         style={{
@@ -389,8 +300,8 @@ function ClubModeIndicatorRow({
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// CARD VARIANT A — VISUAL MODE (Default / Home-like)
-// Premium Desktop: 450px height, image-centric, slim header
+// CARD VARIANT A — VISUAL MODE (Grid cards)
+// Position-based colors, clean design, no status badges
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function VisualModeCard({
@@ -403,14 +314,13 @@ function VisualModeCard({
   currentClub,
   imageUrl,
   isPublic,
-  priority,
-  createdAt,
-}: AthleteCardPremiumProps & { priority: PriorityLevel }) {
+}: AthleteCardPremiumProps) {
   const [isHovered, setIsHovered] = useState(false);
-  // Public routes use slug, app routes use id (as per App.tsx routing)
   const href = isPublic ? `/players/${slug}` : `/app/players/${id}`;
-  const priorityInfo = priorityConfig[priority];
-  const status = getAthleteStatus(priority, createdAt);
+  
+  // Get position-based colors
+  const positionColors = getPositionColor(position);
+  const shortPosition = getShortPosition(position);
 
   return (
     <Link
@@ -420,49 +330,43 @@ function VisualModeCard({
       onMouseLeave={() => setIsHovered(false)}
     >
       <motion.article
-        className="relative overflow-hidden rounded-md w-full"
+        className="relative overflow-hidden rounded-xl w-full"
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        whileHover={{ y: -5 }}
+        whileHover={{ y: -6, scale: 1.01 }}
         transition={{
           default: { duration: 0.22, ease: premiumEasing },
-          y: { duration: 0.18, ease: "easeOut" },
+          y: { duration: 0.2, ease: "easeOut" },
         }}
         style={{
-          background: "#0a0c12",
+          // Slightly lighter card background for contrast
+          background: "linear-gradient(180deg, #14161c 0%, #0c0e12 100%)",
           aspectRatio: "3 / 4",
           minHeight: "380px",
           maxHeight: "480px",
+          // Position-based glow on hover
           boxShadow: isHovered
-            ? `0 28px 56px -16px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255,255,255,0.06), 0 0 48px -12px ${priorityInfo.glowColor}`
-            : "0 6px 20px -6px rgba(0, 0, 0, 0.35)",
+            ? `0 28px 56px -16px rgba(0, 0, 0, 0.6), 0 0 0 1px hsl(${positionColors.color} / 0.2), 0 0 40px -8px hsl(${positionColors.color} / 0.25)`
+            : "0 6px 20px -6px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255,255,255,0.03)",
         }}
       >
-        {/* Priority indicator bar - top edge */}
-        {priority === "high" && (
-          <motion.div
-            className="absolute top-0 left-0 right-0 h-[2px] z-30"
-            style={{ backgroundColor: priorityInfo.color }}
-            animate={{ opacity: [0.6, 1, 0.6] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          />
-        )}
+        {/* Position-colored top accent bar */}
+        <div
+          className="absolute top-0 left-0 right-0 h-[2px] z-30"
+          style={{ 
+            background: `linear-gradient(90deg, hsl(${positionColors.color}) 0%, hsl(${positionColors.color} / 0.5) 100%)`,
+          }}
+        />
 
-        {/* Full-height Image Container - Image as hero element */}
-        {/* Mobile fix: removed opacity animation to prevent iOS Safari rendering bugs */}
+        {/* Full-height Image Container */}
         <div className="absolute inset-0 overflow-hidden">
-          {/* Placeholder - shown behind the image */}
+          {/* Placeholder */}
           <div
             className="absolute inset-0"
-            style={{ background: "linear-gradient(145deg, #12141a 0%, #070910 100%)" }}
+            style={{ background: "linear-gradient(145deg, #18191f 0%, #0a0b0f 100%)" }}
           />
 
-          {/* 
-            Mobile fix: 
-            - Use regular img instead of motion.img to avoid iOS layer bugs
-            - No opacity toggle (always visible) to prevent disappearing on scroll
-            - loading="eager" on mobile to prevent lazy-load desync
-          */}
+          {/* Image */}
           <img
             src={imageUrl}
             alt={name}
@@ -470,130 +374,75 @@ function VisualModeCard({
             decoding="async"
             className="absolute inset-0 w-full h-full object-cover object-top"
             style={{
-              // Force GPU layer without causing Safari bugs
               transform: isHovered ? 'scale(1.04)' : 'scale(1)',
               transition: 'transform 0.32s ease-out',
             }}
           />
 
-          {/* Gradient overlays for depth and legibility */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#070910] via-[#070910]/35 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#070910]/25 via-transparent to-transparent" />
+          {/* Clean bottom gradient only - no side shadows */}
+          <div 
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background: `linear-gradient(180deg, 
+                transparent 0%, 
+                transparent 45%, 
+                rgba(10, 12, 18, 0.6) 70%, 
+                rgba(10, 12, 18, 0.95) 100%)`,
+            }}
+          />
         </div>
 
-        {/* ━━━ TOP HEADER — Two separate pills ━━━ */}
-        {/* iPad-specific: increased gap to prevent badge crowding */}
+        {/* ━━━ TOP HEADER — Position badge only ━━━ */}
         <div className="absolute top-0 left-0 right-0 pt-3.5 px-3.5 z-20">
-          {/*
-            iPad-only fix:
-            - Force a real, fixed gap between the two badges (position + status)
-            - Allow elegant wrap when the position text is long
-            - Avoid `justify-between` squeezing them together when space is tight
-          */}
-          <div className="flex flex-wrap items-center justify-between gap-3 tablet:justify-start tablet:items-center tablet:flex-wrap tablet:gap-x-3 tablet:gap-y-2 tablet:overflow-visible tablet-landscape:gap-x-3 tablet-landscape:gap-y-2">
-            {/* Left Pill: Position */}
-            <div 
-              className="flex items-center gap-2 px-3 py-2 rounded-md min-h-[32px] tablet:min-w-0"
-              style={{
-                background: "rgba(10, 12, 18, 0.92)",
-                border: "1px solid rgba(255, 255, 255, 0.1)",
-                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3)",
-              }}
+          <div 
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg"
+            style={{
+              background: `hsl(${positionColors.color} / 0.15)`,
+              border: `1px solid hsl(${positionColors.color} / 0.3)`,
+              boxShadow: `0 2px 8px rgba(0, 0, 0, 0.3), 0 0 16px hsl(${positionColors.color} / 0.15)`,
+            }}
+          >
+            <Zap 
+              className="w-3.5 h-3.5" 
+              style={{ color: `hsl(${positionColors.color})` }}
+            />
+            <span 
+              className="text-[11px] font-bold uppercase tracking-[0.08em]"
+              style={{ color: `hsl(${positionColors.color})` }}
             >
-              <Zap className="w-3.5 h-3.5 text-white/60" />
-              <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/90 tablet:max-w-[160px] tablet:truncate">
-                {getPositionLabel(position)}
-              </span>
-            </div>
-
-            {/* Right Pill: Status (Priority > New > Monitoring) — Hidden on iPad */}
-            {status === "priority" ? (
-              <motion.div 
-                className="flex items-center gap-2 px-3 py-2 rounded-md min-h-[32px] tablet:hidden tablet-landscape:hidden"
-                style={{
-                  background: "rgba(10, 12, 18, 0.92)",
-                  border: "1px solid rgba(255, 107, 53, 0.35)",
-                  boxShadow: "0 2px 8px rgba(0, 0, 0, 0.4), 0 0 12px rgba(255, 107, 53, 0.15)",
-                }}
-                animate={{ opacity: [0.9, 1, 0.9] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-              >
-                <Flame className="w-3.5 h-3.5" style={{ color: "#FF6B35" }} />
-                <span 
-                  className="text-[10px] font-bold uppercase tracking-[0.08em]"
-                  style={{ color: "#FF6B35" }}
-                >
-                  Prioridade
-                </span>
-              </motion.div>
-            ) : status === "new" ? (
-              <motion.div 
-                className="flex items-center gap-2 px-3 py-2 rounded-md min-h-[32px] tablet:hidden tablet-landscape:hidden"
-                style={{
-                  background: "rgba(10, 12, 18, 0.92)",
-                  border: "1px solid rgba(59, 130, 246, 0.35)",
-                  boxShadow: "0 2px 8px rgba(0, 0, 0, 0.4), 0 0 12px rgba(59, 130, 246, 0.15)",
-                }}
-                initial={{ scale: 1 }}
-                animate={{ scale: [1, 1.02, 1] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-              >
-                <Sparkles className="w-3.5 h-3.5" style={{ color: "#3B82F6" }} />
-                <span 
-                  className="text-[10px] font-bold uppercase tracking-[0.08em]"
-                  style={{ color: "#3B82F6" }}
-                >
-                  Novo
-                </span>
-              </motion.div>
-            ) : (
-              <div 
-                className="flex items-center gap-2 px-3 py-2 rounded-md min-h-[32px] tablet:hidden tablet-landscape:hidden"
-                style={{
-                  background: "rgba(10, 12, 18, 0.92)",
-                  border: "1px solid rgba(30, 215, 96, 0.25)",
-                  boxShadow: "0 2px 8px rgba(0, 0, 0, 0.4)",
-                }}
-              >
-                <span 
-                  className="w-2 h-2 rounded-full animate-pulse"
-                  style={{ backgroundColor: "#1ED760" }}
-                />
-                <span 
-                  className="text-[10px] font-semibold uppercase tracking-[0.08em]"
-                  style={{ color: "#1ED760" }}
-                >
-                  Monitorado
-                </span>
-              </div>
-            )}
+              {shortPosition}
+            </span>
           </div>
         </div>
 
-        {/* ━━━ BOTTOM INFO ZONE — Generous padding, clear hierarchy ━━━ */}
+        {/* ━━━ BOTTOM INFO ZONE ━━━ */}
         <div className="absolute bottom-0 left-0 right-0 p-5 z-10">
-          {/* Name - Primary focus */}
-          <h3 className="text-white text-[22px] font-bold tracking-tight mb-3 line-clamp-1 drop-shadow-sm">
+          {/* Name - Pure white for maximum contrast */}
+          <h3 className="text-white text-[22px] font-bold tracking-tight mb-3 line-clamp-1 drop-shadow-md">
             {name}
           </h3>
           
-          {/* Meta row - Age & Nationality */}
-          <div className="flex items-center gap-2 text-[14px] text-white/60 font-medium mb-2">
+          {/* Meta row - Light gray secondary info */}
+          <div className="flex items-center gap-2 text-[14px] text-zinc-300 font-medium mb-2">
             {age > 0 && <span>{age} anos</span>}
-            {age > 0 && nationality && <span className="text-white/25">•</span>}
+            {age > 0 && nationality && <span className="text-zinc-500">•</span>}
             {nationality && <span>{nationality}</span>}
           </div>
           
-          {/* Club - Secondary info */}
+          {/* Club - Muted info */}
           {currentClub && (
-            <p className="text-white/40 text-[13px] font-medium line-clamp-1 mb-3">
+            <p className="text-zinc-400 text-[13px] font-medium line-clamp-1 mb-3">
               {currentClub}
             </p>
           )}
 
-          {/* Hover CTA - Slides up on hover */}
+          {/* Hover CTA with position color */}
           <motion.div
-            className="flex items-center gap-2 text-white/50 text-[12px] font-medium tracking-wide pt-2 border-t border-white/[0.06]"
+            className="flex items-center gap-2 text-[12px] font-medium tracking-wide pt-2 border-t"
+            style={{ 
+              borderColor: `hsl(${positionColors.color} / 0.2)`,
+              color: isHovered ? `hsl(${positionColors.color})` : 'rgba(255,255,255,0.5)',
+            }}
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: isHovered ? 1 : 0, y: isHovered ? 0 : 6 }}
             transition={{ duration: 0.18, ease: "easeOut" }}
@@ -608,8 +457,7 @@ function VisualModeCard({
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// CARD VARIANT B — CLUB MODE (Horizontal, data-driven, readable)
-// Premium horizontal layout: Photo | Data | Action
+// CARD VARIANT B — CLUB MODE (Horizontal, data-driven)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function ClubScoutingCard({
@@ -625,34 +473,21 @@ function ClubScoutingCard({
   dominantFoot,
   height,
   overallRating,
-  potentialRating,
   physicalStatus,
-  marketValue,
-  estimatedLevel,
   competitionName,
   lastReportDate,
-  priority,
-  createdAt,
-  // New indicator header fields
   totalMinutes,
   totalMatches,
   playStyle,
   primaryTacticalRole,
   secondaryTacticalRole,
-}: AthleteCardPremiumProps & { priority: PriorityLevel }) {
+}: AthleteCardPremiumProps) {
   const [isHovered, setIsHovered] = useState(false);
-  // Public routes use slug, app routes use id (as per App.tsx routing)
   const href = isPublic ? `/players/${slug}` : `/app/players/${id}`;
-  const priorityInfo = priorityConfig[priority];
-  const physicalInfo = physicalStatusLabels[physicalStatus || "fit"];
-  const status = getAthleteStatus(priority, createdAt);
-
-  // Border color based on priority
-  const borderColor = status === "priority" 
-    ? "rgba(255, 107, 53, 0.35)" 
-    : status === "new" 
-      ? "rgba(59, 130, 246, 0.25)" 
-      : "rgba(255, 255, 255, 0.06)";
+  
+  // Get position-based colors
+  const positionColors = getPositionColor(position);
+  const shortPosition = getShortPosition(position);
 
   return (
     <Link
@@ -662,37 +497,27 @@ function ClubScoutingCard({
       onMouseLeave={() => setIsHovered(false)}
     >
       <motion.article
-        className="relative overflow-hidden rounded-lg w-full"
+        className="relative overflow-hidden rounded-xl w-full"
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        whileHover={{ y: -2, scale: 1.005 }}
+        whileHover={{ y: -3, scale: 1.005 }}
         transition={{
           default: { duration: 0.2, ease: premiumEasing },
           y: { duration: 0.15, ease: "easeOut" },
         }}
         style={{
-          background: "#0B0D12",
-          border: `1px solid ${borderColor}`,
+          background: "linear-gradient(180deg, #14161c 0%, #0c0e12 100%)",
+          border: `1px solid ${isHovered ? `hsl(${positionColors.color} / 0.3)` : 'rgba(255, 255, 255, 0.06)'}`,
           boxShadow: isHovered
-            ? `0 16px 40px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255,255,255,0.04)${status === "priority" ? ", 0 0 30px -10px rgba(255, 107, 53, 0.2)" : ""}`
+            ? `0 16px 40px -12px rgba(0, 0, 0, 0.6), 0 0 24px -8px hsl(${positionColors.color} / 0.2)`
             : "0 4px 12px -4px rgba(0, 0, 0, 0.4)",
         }}
       >
-        {/* Priority indicator bar - left edge */}
-        {status === "priority" && (
-          <motion.div
-            className="absolute top-0 left-0 bottom-0 w-[3px] z-20"
-            style={{ backgroundColor: "#FF6B35" }}
-            animate={{ opacity: [0.7, 1, 0.7] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          />
-        )}
-        {status === "new" && (
-          <div
-            className="absolute top-0 left-0 bottom-0 w-[3px] z-20"
-            style={{ backgroundColor: "#3B82F6" }}
-          />
-        )}
+        {/* Position-colored left edge indicator */}
+        <div
+          className="absolute top-0 left-0 bottom-0 w-[3px] z-20"
+          style={{ backgroundColor: `hsl(${positionColors.color})` }}
+        />
 
         {/* ━━━ HORIZONTAL LAYOUT: 3 Columns ━━━ */}
         <div className="flex flex-col md:flex-row">
@@ -703,11 +528,10 @@ function ClubScoutingCard({
             <div 
               className="relative flex-shrink-0 w-[72px] h-[72px] md:w-[88px] md:h-[88px] rounded-lg overflow-hidden"
               style={{ 
-                background: "linear-gradient(135deg, #12141a 0%, #070910 100%)",
+                background: "linear-gradient(135deg, #18191f 0%, #0a0b0f 100%)",
                 border: "1px solid rgba(255, 255, 255, 0.06)",
               }}
             >
-              {/* Mobile fix: always visible image, no opacity toggle */}
               <img
                 src={imageUrl}
                 alt={name}
@@ -722,17 +546,17 @@ function ClubScoutingCard({
               <h3 className="text-white text-lg md:text-xl font-bold tracking-tight mb-1 line-clamp-2">
                 {name}
               </h3>
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[13px] text-white/60">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[13px] text-zinc-300">
                 {age > 0 && <span>{age} anos</span>}
                 {nationality && (
                   <>
-                    <span className="text-white/25">•</span>
+                    <span className="text-zinc-500">•</span>
                     <span>{nationality}</span>
                   </>
                 )}
               </div>
               {currentClub && (
-                <p className="text-[12px] text-white/40 mt-1 line-clamp-1">{currentClub}</p>
+                <p className="text-[12px] text-zinc-400 mt-1 line-clamp-1">{currentClub}</p>
               )}
             </div>
           </div>
@@ -741,17 +565,17 @@ function ClubScoutingCard({
           <div className="flex-1 p-4 md:p-5">
             {/* First Row: Key chips */}
             <div className="flex flex-wrap items-center gap-2 mb-3">
-              {/* Position */}
+              {/* Position with color */}
               <div 
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-semibold uppercase tracking-wider"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider"
                 style={{
-                  background: "rgba(255, 255, 255, 0.04)",
-                  border: "1px solid rgba(255, 255, 255, 0.08)",
-                  color: "rgba(255, 255, 255, 0.85)",
+                  background: `hsl(${positionColors.color} / 0.12)`,
+                  border: `1px solid hsl(${positionColors.color} / 0.25)`,
+                  color: `hsl(${positionColors.color})`,
                 }}
               >
-                <Zap className="w-3 h-3 text-white/50" />
-                {getPositionLabel(position)}
+                <Zap className="w-3 h-3" />
+                {shortPosition}
               </div>
 
               {/* Foot */}
@@ -779,63 +603,21 @@ function ClubScoutingCard({
                 <Ruler className="w-3 h-3 text-white/40" />
                 {formatHeight(height)}
               </div>
-
-              {/* Status Pill */}
-              {status === "priority" ? (
-                <motion.div 
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-bold uppercase"
-                  style={{
-                    background: "rgba(255, 107, 53, 0.12)",
-                    border: "1px solid rgba(255, 107, 53, 0.3)",
-                    color: "#FF6B35",
-                  }}
-                  animate={{ opacity: [0.9, 1, 0.9] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                >
-                  <Flame className="w-3 h-3" />
-                  Prioridade
-                </motion.div>
-              ) : status === "new" ? (
-                <div 
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-bold uppercase"
-                  style={{
-                    background: "rgba(59, 130, 246, 0.1)",
-                    border: "1px solid rgba(59, 130, 246, 0.25)",
-                    color: "#3B82F6",
-                  }}
-                >
-                  <Sparkles className="w-3 h-3" />
-                  Novo
-                </div>
-              ) : (
-                <div 
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-semibold uppercase tablet:hidden tablet-landscape:hidden"
-                  style={{
-                    background: "rgba(30, 215, 96, 0.08)",
-                    border: "1px solid rgba(30, 215, 96, 0.2)",
-                    color: "#1ED760",
-                  }}
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
-                  Monitorado
-                </div>
-              )}
             </div>
 
-            {/* Second Row: New Indicator Header (NOTA / JOGOS / MINUTOS / FÍSICO / ESTILO) */}
+            {/* Second Row: Indicator Header */}
             <ClubModeIndicatorRow 
               overallRating={overallRating}
               totalMinutes={totalMinutes}
               totalMatches={totalMatches}
               physicalStatus={physicalStatus}
-              physicalInfo={physicalInfo}
               playStyle={playStyle}
               primaryTacticalRole={primaryTacticalRole}
               secondaryTacticalRole={secondaryTacticalRole}
             />
 
-            {/* Third Row: Meta info (always visible, no hover needed) */}
-            <div className="flex flex-wrap items-center gap-3 text-[11px] text-white/40">
+            {/* Third Row: Meta info */}
+            <div className="flex flex-wrap items-center gap-3 text-[11px] text-zinc-400">
               {competitionName && (
                 <span className="flex items-center gap-1">
                   <Zap className="w-3 h-3" />
@@ -856,9 +638,9 @@ function ClubScoutingCard({
             <motion.div 
               className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200"
               style={{
-                background: isHovered ? "rgba(255, 255, 255, 0.08)" : "rgba(255, 255, 255, 0.04)",
-                border: "1px solid rgba(255, 255, 255, 0.08)",
-                color: isHovered ? "#fff" : "rgba(255, 255, 255, 0.7)",
+                background: isHovered ? `hsl(${positionColors.color} / 0.15)` : "rgba(255, 255, 255, 0.04)",
+                border: `1px solid ${isHovered ? `hsl(${positionColors.color} / 0.3)` : 'rgba(255, 255, 255, 0.08)'}`,
+                color: isHovered ? `hsl(${positionColors.color})` : "rgba(255, 255, 255, 0.7)",
               }}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -874,30 +656,17 @@ function ClubScoutingCard({
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// MAIN COMPONENT — EXPORTS BOTH MODES
+// MAIN COMPONENT
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 export function AthleteCardPremium(props: AthleteCardPremiumProps) {
-  const {
-    scoutingMode = false,
-    clubMode = false,
-    overallRating,
-    potentialRating,
-  } = props;
+  const { scoutingMode = false, clubMode = false } = props;
 
-  // Calculate priority based on ratings
-  const priority = calculatePriority(overallRating, potentialRating);
-
-  // If scouting mode is OFF, always use visual mode
-  if (!scoutingMode) {
-    return <VisualModeCard {...props} priority={priority} />;
+  // If scouting mode is OFF or clubMode is OFF, use visual grid mode
+  if (!scoutingMode || !clubMode) {
+    return <VisualModeCard {...props} />;
   }
 
-  // If scouting mode is ON, check clubMode toggle
-  if (clubMode) {
-    return <ClubScoutingCard {...props} priority={priority} />;
-  }
-
-  // Scouting mode ON but clubMode OFF = Visual with priority indicators
-  return <VisualModeCard {...props} priority={priority} />;
+  // Scouting mode ON + clubMode ON = horizontal data card
+  return <ClubScoutingCard {...props} />;
 }
