@@ -13,21 +13,20 @@
   --sal: env(safe-area-inset-left, 0px);
   
   /* ========== GLOBAL LAYOUT - Aligned with Header Logo ========== */
-  /* This variable ensures all content aligns with the header logo's left edge */
-  /* Matches PublicHeader container padding exactly */
+  /* UNIFIED: All pages use same container for perfect horizontal alignment */
   --page-gutter: 1rem;          /* Mobile: 16px (px-4) */
-  --page-max-width: 1400px;     /* Max container width */
+  --page-max-width: 1200px;     /* Max container width - professional editorial */
 }
 
-@media (min-width: 640px) {
+@media (min-width: 768px) {
   :root {
-    --page-gutter: 1.5rem;      /* sm: 24px (px-6) */
+    --page-gutter: 1.25rem;     /* md: 20px (px-5) */
   }
 }
 
 @media (min-width: 1024px) {
   :root {
-    --page-gutter: 2rem;        /* lg: 32px (px-8) */
+    --page-gutter: 1.5rem;      /* lg: 24px (px-6) */
   }
 }
 

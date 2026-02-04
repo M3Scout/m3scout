@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowRight, Loader2, ChevronLeft, ChevronRight, Zap, Activity } from "lucide-react";
+import { ArrowRight, Loader2, ChevronLeft, ChevronRight, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { getPositionColor, getShortPosition } from "@/lib/positionColors";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // IMAGE OPTIMIZATION HELPER
@@ -101,64 +102,7 @@ function getOptimizedImageProps(photoUrl: string | null, isMobile: boolean = fal
   };
 }
 
-// Position labels - professional format
-const positionLabels: Record<string, string> = {
-  GK: "Goleiro",
-  CB: "Zagueiro",
-  LB: "Lateral Esquerdo",
-  RB: "Lateral Direito",
-  CDM: "Volante",
-  CM: "Meio-Campo",
-  CAM: "Meia Atacante",
-  LM: "Meia Esquerda",
-  RM: "Meia Direita",
-  LW: "Ponta Esquerda",
-  RW: "Ponta Direita",
-  CF: "Segundo Atacante",
-  ST: "Atacante",
-};
-
-// Position codes - compact
-const positionCodes: Record<string, string> = {
-  GK: "GOL",
-  CB: "ZAG",
-  LB: "LE",
-  RB: "LD",
-  CDM: "VOL",
-  CM: "MC",
-  CAM: "MEI",
-  LM: "ME",
-  RM: "MD",
-  LW: "PE",
-  RW: "PD",
-  CF: "SA",
-  ST: "ATA",
-};
-
-// Position colors - vibrant accents
-const positionColors: Record<string, { bg: string; text: string; glow: string }> = {
-  GK: { bg: "rgba(251, 191, 36, 0.15)", text: "#fbbf24", glow: "rgba(251, 191, 36, 0.3)" },
-  CB: { bg: "rgba(59, 130, 246, 0.15)", text: "#3b82f6", glow: "rgba(59, 130, 246, 0.3)" },
-  LB: { bg: "rgba(16, 185, 129, 0.15)", text: "#10b981", glow: "rgba(16, 185, 129, 0.3)" },
-  RB: { bg: "rgba(16, 185, 129, 0.15)", text: "#10b981", glow: "rgba(16, 185, 129, 0.3)" },
-  CDM: { bg: "rgba(168, 85, 247, 0.15)", text: "#a855f7", glow: "rgba(168, 85, 247, 0.3)" },
-  CM: { bg: "rgba(236, 72, 153, 0.15)", text: "#ec4899", glow: "rgba(236, 72, 153, 0.3)" },
-  CAM: { bg: "rgba(245, 158, 11, 0.15)", text: "#f59e0b", glow: "rgba(245, 158, 11, 0.3)" },
-  LM: { bg: "rgba(6, 182, 212, 0.15)", text: "#06b6d4", glow: "rgba(6, 182, 212, 0.3)" },
-  RM: { bg: "rgba(6, 182, 212, 0.15)", text: "#06b6d4", glow: "rgba(6, 182, 212, 0.3)" },
-  LW: { bg: "rgba(239, 68, 68, 0.15)", text: "#ef4444", glow: "rgba(239, 68, 68, 0.3)" },
-  RW: { bg: "rgba(239, 68, 68, 0.15)", text: "#ef4444", glow: "rgba(239, 68, 68, 0.3)" },
-  CF: { bg: "rgba(249, 115, 22, 0.15)", text: "#f97316", glow: "rgba(249, 115, 22, 0.3)" },
-  ST: { bg: "rgba(229, 36, 33, 0.15)", text: "#e52421", glow: "rgba(229, 36, 33, 0.3)" },
-};
-
-// Foot labels
-const footLabels: Record<string, string> = {
-  right: "Direito",
-  left: "Esquerdo",
-  both: "Ambos",
-};
-
+// Player interface
 interface Player {
   id: string;
   slug: string;
@@ -211,17 +155,14 @@ const headerVariants = {
 };
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// PREMIUM CAROUSEL CARD - Clean, minimal overlay
+// PREMIUM CAROUSEL CARD - Position-based colors
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function CarouselCard({ player, isMobile }: { player: Player; isMobile: boolean }) {
   const [isHovered, setIsHovered] = useState(false);
   
-  // Fixed blue color for all position badges
-  const badgeColor = {
-    bg: "rgba(59, 130, 246, 0.15)",
-    text: "#3b82f6",
-    glow: "rgba(59, 130, 246, 0.3)",
-  };
+  // Get position-based colors from centralized system
+  const posColors = getPositionColor(player.position);
+  const shortPos = getShortPosition(player.position);
   
   // Get optimized image props - mobile uses 1800px for retina sharpness
   const imageProps = getOptimizedImageProps(player.photo_url, isMobile);
@@ -236,9 +177,9 @@ function CarouselCard({ player, isMobile }: { player: Player; isMobile: boolean 
       <motion.article 
         className="relative overflow-hidden rounded-xl h-full"
         style={{
-          background: "#0a0c12",
+          background: "linear-gradient(180deg, #14161c 0%, #0c0e12 100%)",
           boxShadow: isHovered 
-            ? `0 20px 60px -15px rgba(0,0,0,0.7), 0 0 30px -10px ${badgeColor.glow}` 
+            ? `0 20px 60px -15px rgba(0,0,0,0.7), 0 0 30px -10px hsl(${posColors.color} / 0.3)` 
             : "0 8px 30px -10px rgba(0,0,0,0.4)",
         }}
         animate={{ 
@@ -247,11 +188,11 @@ function CarouselCard({ player, isMobile }: { player: Player; isMobile: boolean 
         }}
         transition={{ duration: 0.3, ease: "easeOut" }}
       >
-        {/* Accent top border - Blue */}
+        {/* Accent top border - Position color */}
         <div 
           className="absolute top-0 left-0 right-0 h-1 z-10"
           style={{ 
-            background: `linear-gradient(90deg, ${badgeColor.text}, ${badgeColor.text}60, transparent)`,
+            background: `linear-gradient(90deg, hsl(${posColors.color}), hsl(${posColors.color} / 0.5), transparent)`,
           }}
         />
 
@@ -274,67 +215,68 @@ function CarouselCard({ player, isMobile }: { player: Player; isMobile: boolean 
             style={{
               background: `linear-gradient(180deg, 
                 transparent 0%, 
-                transparent 50%, 
-                rgba(10, 12, 18, 0.6) 75%, 
+                transparent 45%, 
+                rgba(10, 12, 18, 0.6) 70%, 
                 rgba(10, 12, 18, 0.95) 100%)`,
             }}
           />
 
-          {/* Position Badge - Top Left, Blue */}
+          {/* Position Badge - Top Left, Position color */}
           <div className="absolute top-4 left-4 z-10">
             <div 
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg border"
               style={{ 
-                background: badgeColor.bg,
-                borderColor: `${badgeColor.text}40`,
+                background: `hsl(${posColors.color} / 0.15)`,
+                borderColor: `hsl(${posColors.color} / 0.3)`,
                 backdropFilter: "blur(8px)",
               }}
             >
-              <Zap className="w-3.5 h-3.5" style={{ color: badgeColor.text }} />
+              <Zap className="w-3.5 h-3.5" style={{ color: `hsl(${posColors.color})` }} />
               <span 
                 className="text-[11px] font-bold uppercase tracking-[0.12em]"
-                style={{ color: badgeColor.text }}
+                style={{ color: `hsl(${posColors.color})` }}
               >
-                {positionCodes[player.position] || player.position}
+                {shortPos}
               </span>
             </div>
           </div>
 
           {/* Player Info - Bottom */}
           <div className="absolute bottom-0 left-0 right-0 p-5 z-10">
-            {/* Name */}
-            <h3 className="text-white font-bold text-xl tracking-tight mb-2 line-clamp-1">
+            {/* Name - Pure white */}
+            <h3 className="text-white font-bold text-xl tracking-tight mb-2 line-clamp-1 drop-shadow-md">
               {player.full_name}
             </h3>
 
-            {/* Age & Country */}
-            <p className="text-white/70 text-sm font-medium tracking-wide mb-1.5">
+            {/* Age & Country - Light gray */}
+            <p className="text-zinc-300 text-sm font-medium tracking-wide mb-1.5">
               {player.age ? `${player.age} anos` : "—"}
-              <span className="mx-2 text-white/30">•</span>
+              <span className="mx-2 text-zinc-500">•</span>
               {player.nationality}
             </p>
 
-            {/* Club */}
+            {/* Club - Muted */}
             {player.current_club && (
-              <p className="text-white/50 text-xs uppercase tracking-[0.1em] line-clamp-1 mb-4">
+              <p className="text-zinc-400 text-xs uppercase tracking-[0.1em] line-clamp-1 mb-4">
                 {player.current_club}
               </p>
             )}
 
-            {/* Hover CTA - Blue accent */}
+            {/* Hover CTA - Position color accent */}
             <motion.div
-              className="flex items-center gap-2 pt-3 border-t border-white/10"
+              className="flex items-center gap-2 pt-3 border-t"
+              style={{ borderColor: `hsl(${posColors.color} / 0.2)` }}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: isHovered ? 1 : 0, y: isHovered ? 0 : 8 }}
               transition={{ duration: 0.25, ease: "easeOut" }}
             >
               <span 
                 className="text-sm font-semibold tracking-wide"
-                style={{ color: badgeColor.text }}
+                style={{ color: `hsl(${posColors.color})` }}
               >
                 Ver perfil completo
               </span>
-              <ArrowRight className="w-4 h-4" style={{ color: badgeColor.text }} />
+              <ArrowRight className="w-4 h-4" style={{ color: `hsl(${posColors.color})` }} />
             </motion.div>
           </div>
         </div>
@@ -408,8 +350,7 @@ function UniversalCarousel({ players }: { players: Player[] }) {
 
   return (
     <div className="relative">
-      {/* Scroll Container with drag support */}
-      {/* Uses negative margins matching --page-gutter to allow full-bleed scroll while keeping first card aligned with logo */}
+      {/* Scroll Container - stays within container, first card aligns with title */}
       <div
         ref={containerRef}
         className={cn(
@@ -420,10 +361,6 @@ function UniversalCarousel({ players }: { players: Player[] }) {
           scrollSnapType: "x mandatory",
           WebkitOverflowScrolling: "touch",
           cursor: isDragging ? "grabbing" : "grab",
-          marginLeft: "calc(-1 * var(--page-gutter))",
-          marginRight: "calc(-1 * var(--page-gutter))",
-          paddingLeft: "var(--page-gutter)",
-          paddingRight: "var(--page-gutter)",
         }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -441,14 +378,14 @@ function UniversalCarousel({ players }: { players: Player[] }) {
             <CarouselCard player={player} isMobile={isMobile} />
           </motion.div>
         ))}
-        {/* End spacer for proper scroll */}
-        <div className="flex-shrink-0" style={{ width: "var(--page-gutter)" }} />
+        {/* End spacer */}
+        <div className="flex-shrink-0 w-4" />
       </div>
 
       {/* Left fade gradient */}
       <div
         className={cn(
-          "absolute left-0 top-0 bottom-4 w-16 md:w-24 bg-gradient-to-r from-[#070910] to-transparent pointer-events-none transition-opacity duration-300 z-10",
+          "absolute left-0 top-0 bottom-4 w-12 md:w-20 bg-gradient-to-r from-[#070910] to-transparent pointer-events-none transition-opacity duration-300 z-10",
           canScrollLeft ? "opacity-100" : "opacity-0"
         )}
       />
@@ -456,7 +393,7 @@ function UniversalCarousel({ players }: { players: Player[] }) {
       {/* Right fade gradient */}
       <div
         className={cn(
-          "absolute right-0 top-0 bottom-4 w-16 md:w-24 bg-gradient-to-l from-[#070910] to-transparent pointer-events-none transition-opacity duration-300 z-10",
+          "absolute right-0 top-0 bottom-4 w-12 md:w-20 bg-gradient-to-l from-[#070910] to-transparent pointer-events-none transition-opacity duration-300 z-10",
           canScrollRight ? "opacity-100" : "opacity-0"
         )}
       />

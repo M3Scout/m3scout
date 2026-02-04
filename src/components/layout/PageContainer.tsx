@@ -10,11 +10,8 @@ interface PageContainerProps {
 /**
  * PageContainer - Global container aligned with header logo
  * 
- * This component ensures all content starts exactly aligned with 
- * the left edge of the header logo across all pages.
- * 
- * Uses: max-w-[1400px] with responsive padding (px-4 sm:px-6 lg:px-8)
- * matching the PublicHeader container for perfect alignment.
+ * Uses CSS variable --page-max-width (1200px) and --page-gutter for padding.
+ * Ensures all content aligns perfectly with header logo across all pages.
  */
 export function PageContainer({ 
   children, 
@@ -22,13 +19,7 @@ export function PageContainer({
   as: Component = "div" 
 }: PageContainerProps) {
   return (
-    <Component 
-      className={cn(
-        "w-full max-w-[1400px] mx-auto",
-        "px-[var(--page-gutter)]",
-        className
-      )}
-    >
+    <Component className={cn("container-main", className)}>
       {children}
     </Component>
   );
