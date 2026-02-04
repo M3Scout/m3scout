@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePlayerMatchStats } from "@/hooks/usePlayerMatchStats";
 import { fetchUnifiedPlayerStats, type UnifiedStats } from "@/hooks/useUnifiedPlayerStats";
+import { AthleteHighlightsSection } from "@/components/players/public/AthleteHighlightsSection";
 import {
   ArrowLeft, 
   MapPin, 
@@ -943,7 +944,7 @@ const PlayerProfile = () => {
 
           {/* ==================== HIGHLIGHT CARDS ==================== */}
           <motion.section 
-            className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8 md:mb-12"
+            className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 mb-8 md:mb-12"
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
@@ -966,22 +967,25 @@ const PlayerProfile = () => {
               delay={0.1}
             />
             <HighlightCard 
-              label="Pontos Fortes" 
-              value={player.strengths?.length || 0}
-              subValue={player.strengths?.[0] || "—"}
-              color="purple"
-              icon={Zap}
+              label="Partidas" 
+              value={careerTotals.matches}
+              subValue={`${careerTotals.goals} gols na carreira`}
+              color="amber"
+              icon={Trophy}
               delay={0.2}
             />
-            <HighlightCard 
-              label="Status" 
-              value={player.contract_status === "contracted" ? "Contratado" : "Livre"}
-              subValue={player.current_club || "Sem clube"}
-              color={player.contract_status === "contracted" ? "green" : "amber"}
-              icon={Shield}
-              delay={0.3}
-            />
           </motion.section>
+
+          {/* ==================== ATHLETE HIGHLIGHTS (Premium Section) ==================== */}
+          <AthleteHighlightsSection
+            strengths={player.strengths}
+            playStyle={player.play_style}
+            primaryTacticalRole={player.primary_tactical_role}
+            secondaryTacticalRole={player.secondary_tactical_role}
+            contractStatus={player.contract_status}
+            currentClub={player.current_club}
+            autoRating={player.auto_rating}
+          />
 
           {/* ==================== IDENTITY CHIPS ==================== */}
           <motion.section 
@@ -990,26 +994,10 @@ const PlayerProfile = () => {
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
           >
-            <div className="flex flex-wrap gap-2 mb-3 md:mb-4">
+            <div className="flex flex-wrap gap-2">
               <Chip icon={Flag}>{player.nationality}</Chip>
               {player.secondary_positions?.map((pos) => (
                 <Chip key={pos} variant="default">{pos}</Chip>
-              ))}
-              {player.primary_tactical_role && (
-                <Chip variant="info" icon={Target}>{player.primary_tactical_role}</Chip>
-              )}
-              {player.play_style && (
-                <Chip variant="info">{player.play_style}</Chip>
-              )}
-            </div>
-            
-            {/* Strengths & Areas */}
-            <div className="flex flex-wrap gap-2">
-              {player.strengths?.map((s) => (
-                <Chip key={s} variant="success" icon={Zap}>{s}</Chip>
-              ))}
-              {player.areas_to_develop?.map((a) => (
-                <Chip key={a} variant="warning" icon={TrendingUp}>{a}</Chip>
               ))}
             </div>
           </motion.section>
