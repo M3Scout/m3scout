@@ -28,13 +28,15 @@ export default defineConfig(({ mode }) => ({
         clientsClaim: true,
         // CRITICAL: Clean up old caches to prevent stale asset references
         cleanupOutdatedCaches: true,
-        // Don't precache index.html - it must always be fetched fresh
+        // Only precache static assets - NOT index.html or JS bundles
         globPatterns: ["**/*.{css,ico,png,svg,woff,woff2}"],
-        // Skip precaching of JS files - they'll be cached at runtime
-        globIgnores: ["**/index-*.js", "**/index.html"],
+        // Explicitly exclude index.html and JS from precache
+        globIgnores: ["**/index-*.js", "**/index.html", "**/*.html"],
+        // CRITICAL: Disable navigateFallback to prevent "non-precached-url" errors
+        // Navigation will be handled by runtimeCaching instead
+        navigateFallback: null,
         runtimeCaching: [
           // CRITICAL: Auth/RBAC endpoints must NEVER be cached
-          // NetworkOnly strategy for Supabase auth and RPC calls
           {
             urlPattern: /supabase\.co\/auth\/.*/i,
             handler: "NetworkOnly",
@@ -52,6 +54,24 @@ export default defineConfig(({ mode }) => ({
             handler: "NetworkOnly",
           },
           {
+            // CRITICAL: Handle ALL navigation requests with NetworkFirst
+            // This replaces navigateFallback and prevents "non-precached-url" errors
+            // Falls back to cache only if offline (after 3s timeout)
+            urlPattern: ({ request }) => request.mode === "navigate",
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "html-pages-cache",
+              expiration: {
+                maxEntries: 20,
+                maxAgeSeconds: 60 * 60 * 24, // 24 hours
+              },
+              networkTimeoutSeconds: 3,
+              cacheableResponse: {
+                statuses: [200],
+              },
+            },
+          },
+          {
             // Cache Google Fonts
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
             handler: "CacheFirst",
@@ -59,7 +79,7 @@ export default defineConfig(({ mode }) => ({
               cacheName: "google-fonts-cache",
               expiration: {
                 maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+                maxAgeSeconds: 60 * 60 * 24 * 365,
               },
               cacheableResponse: {
                 statuses: [0, 200],
@@ -74,7 +94,7 @@ export default defineConfig(({ mode }) => ({
               cacheName: "gstatic-fonts-cache",
               expiration: {
                 maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+                maxAgeSeconds: 60 * 60 * 24 * 365,
               },
               cacheableResponse: {
                 statuses: [0, 200],
@@ -89,25 +109,7 @@ export default defineConfig(({ mode }) => ({
               cacheName: "images-cache",
               expiration: {
                 maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
-              },
-            },
-          },
-          {
-            // CRITICAL: Network-first for ALL navigation requests (index.html)
-            // This ensures we always get the latest index.html from the server
-            // Only falls back to cache if offline (after 3s timeout)
-            urlPattern: ({ request }) => request.mode === "navigate",
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "pages-cache",
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60, // 1 hour max (short TTL for HTML)
-              },
-              networkTimeoutSeconds: 3,
-              cacheableResponse: {
-                statuses: [0, 200],
+                maxAgeSeconds: 60 * 60 * 24 * 30,
               },
             },
           },
@@ -119,7 +121,7 @@ export default defineConfig(({ mode }) => ({
               cacheName: "js-assets-cache",
               expiration: {
                 maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year (hashed = immutable)
+                maxAgeSeconds: 60 * 60 * 24 * 365,
               },
               cacheableResponse: {
                 statuses: [200],
@@ -134,7 +136,7 @@ export default defineConfig(({ mode }) => ({
               cacheName: "css-assets-cache",
               expiration: {
                 maxEntries: 30,
-                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year (hashed = immutable)
+                maxAgeSeconds: 60 * 60 * 24 * 365,
               },
               cacheableResponse: {
                 statuses: [200],
@@ -142,7 +144,7 @@ export default defineConfig(({ mode }) => ({
             },
           },
         ],
-        // Don't cache Supabase API requests (fallback denylist)
+        // Denylist for navigation fallback (extra safety)
         navigateFallbackDenylist: [
           /^\/rest\//,
           /^\/auth\//,
