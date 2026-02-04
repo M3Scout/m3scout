@@ -100,10 +100,11 @@ const Contact = () => {
     {
       icon: Mail,
       label: "E-MAIL",
-      value: "contato@m3agency.com",
+      value: "contato@m3scout.com",
       cta: "Enviar e-mail",
-      href: "mailto:contato@m3agency.com",
+      href: "mailto:contato@m3scout.com",
       external: false,
+      accent: "#e52421",
     },
     {
       icon: WhatsAppIcon,
@@ -112,6 +113,7 @@ const Contact = () => {
       cta: "Abrir conversa",
       href: "https://wa.me/556791106060?text=Ol%C3%A1!%20Vim%20pelo%20site%20da%20M3%20Agency%20e%20gostaria%20de%20falar%20sobre%E2%80%A6",
       external: true,
+      accent: "#22c55e",
     },
     {
       icon: Instagram,
@@ -120,6 +122,7 @@ const Contact = () => {
       cta: "Abrir perfil",
       href: "https://instagram.com/_m3agency",
       external: true,
+      accent: "#f59e0b",
     },
   ];
 
@@ -264,41 +267,71 @@ const Contact = () => {
                     }
                   }
                 }}
-                className="group relative block p-5 rounded-xl bg-neutral-900/50 border border-neutral-800/60 transition-all duration-300 hover:border-neutral-700 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/30"
+                className="group relative block rounded-xl bg-neutral-800/60 border border-neutral-700/50 transition-all duration-300 hover:border-neutral-600 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/40 overflow-hidden"
+                style={{
+                  boxShadow: `0 0 0 0 ${contact.accent}00`,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.boxShadow = `0 8px 32px -8px ${contact.accent}40`;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = `0 0 0 0 ${contact.accent}00`;
+                }}
               >
-                {/* Icon */}
-                <motion.div 
-                  className="w-10 h-10 rounded-lg bg-neutral-800/70 flex items-center justify-center mb-4 group-hover:bg-[#e52421]/10 transition-colors duration-300"
-                  variants={{
-                    hidden: { scale: 0.5, opacity: 0 },
-                    visible: { 
-                      scale: 1, 
-                      opacity: 1,
-                      transition: { delay: 0.1, type: "spring", stiffness: 200 }
-                    }
-                  }}
-                >
-                  <contact.icon className="w-4 h-4 text-neutral-500 group-hover:text-[#e52421] transition-colors duration-300" />
-                </motion.div>
+                {/* Accent Top Bar */}
+                <div 
+                  className="h-1 w-full"
+                  style={{ background: `linear-gradient(90deg, ${contact.accent}, ${contact.accent}80)` }}
+                />
                 
-                {/* Label */}
-                <p className="text-[9px] uppercase tracking-[0.2em] text-neutral-600 mb-1">
-                  {contact.label}
-                </p>
-                
-                {/* Value */}
-                <p className="text-base font-semibold text-white mb-4">
-                  {contact.value}
-                </p>
-                
-                {/* CTA */}
-                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#e52421] group-hover:gap-2.5 transition-all duration-300">
-                  <span className="relative">
-                    {contact.cta}
-                    <span className="absolute left-0 bottom-0 w-0 h-px bg-[#e52421] group-hover:w-full transition-all duration-300" />
+                <div className="p-5">
+                  {/* Icon with accent glow */}
+                  <motion.div 
+                    className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-all duration-300"
+                    style={{ 
+                      background: `linear-gradient(135deg, ${contact.accent}20, ${contact.accent}10)`,
+                      border: `1px solid ${contact.accent}30`,
+                    }}
+                    variants={{
+                      hidden: { scale: 0.5, opacity: 0 },
+                      visible: { 
+                        scale: 1, 
+                        opacity: 1,
+                        transition: { delay: 0.1, type: "spring", stiffness: 200 }
+                      }
+                    }}
+                  >
+                    <contact.icon 
+                      className="w-5 h-5 transition-colors duration-300" 
+                      style={{ color: contact.accent }}
+                    />
+                  </motion.div>
+                  
+                  {/* Label */}
+                  <p className="text-[9px] uppercase tracking-[0.2em] text-neutral-500 mb-1">
+                    {contact.label}
+                  </p>
+                  
+                  {/* Value */}
+                  <p className="text-lg font-bold text-white mb-4">
+                    {contact.value}
+                  </p>
+                  
+                  {/* CTA with accent color */}
+                  <span 
+                    className="inline-flex items-center gap-2 text-sm font-semibold group-hover:gap-3 transition-all duration-300"
+                    style={{ color: contact.accent }}
+                  >
+                    <span className="relative">
+                      {contact.cta}
+                      <span 
+                        className="absolute left-0 bottom-0 w-0 h-0.5 group-hover:w-full transition-all duration-300"
+                        style={{ background: contact.accent }}
+                      />
+                    </span>
+                    <ArrowUpRight className="w-4 h-4" />
                   </span>
-                  <ArrowUpRight className="w-3 h-3" />
-                </span>
+                </div>
               </motion.a>
             ))}
           </motion.div>
