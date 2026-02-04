@@ -336,23 +336,45 @@ export function HeroSection() {
         </div>
       </motion.div>
 
-      {/* Scroll Indicator */}
+      {/* Scroll Indicator - Highly Visible */}
       <motion.div 
-        className="absolute bottom-10 left-1/2 -translate-x-1/2"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.5, duration: 1 }}
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.2, duration: 0.8 }}
       >
         <motion.button
-          className="flex flex-col items-center gap-2 text-zinc-500 hover:text-white transition-colors group"
-          animate={{ y: [0, 8, 0] }}
-          transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+          className="group relative flex flex-col items-center gap-3 px-8 py-4 rounded-2xl bg-gradient-to-b from-white/10 to-white/5 border border-white/20 backdrop-blur-md hover:border-red-500/40 hover:from-red-500/10 hover:to-orange-500/5 transition-all duration-500"
+          whileHover={{ scale: 1.05, y: -3 }}
+          whileTap={{ scale: 0.98 }}
           onClick={() => window.scrollTo({ top: window.innerHeight, behavior: "smooth" })}
         >
-          <span className="text-[10px] font-medium tracking-[0.3em] uppercase opacity-60 group-hover:opacity-100 transition-opacity">
-            Scroll
+          {/* Glow effect */}
+          <span className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-b from-red-500/20 to-transparent blur-xl" />
+          
+          {/* Text */}
+          <span className="relative text-sm font-semibold tracking-wide text-white/90 group-hover:text-white transition-colors">
+            Descubra nossos atletas
           </span>
-          <ChevronDown className="w-5 h-5" />
+          
+          {/* Animated arrows */}
+          <div className="relative flex flex-col items-center -space-y-1">
+            <motion.div
+              animate={{ y: [0, 4, 0], opacity: [0.4, 1, 0.4] }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <ChevronDown className="w-5 h-5 text-red-400" />
+            </motion.div>
+            <motion.div
+              animate={{ y: [0, 4, 0], opacity: [0.2, 0.7, 0.2] }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut", delay: 0.15 }}
+            >
+              <ChevronDown className="w-5 h-5 text-orange-400" />
+            </motion.div>
+          </div>
+          
+          {/* Pulse ring */}
+          <span className="absolute inset-0 rounded-2xl animate-ping opacity-20 bg-red-500/30 pointer-events-none" style={{ animationDuration: '2s' }} />
         </motion.button>
       </motion.div>
 
