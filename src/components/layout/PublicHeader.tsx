@@ -21,7 +21,7 @@ export function PublicHeader() {
 
   return (
     <header className="fixed left-0 right-0 z-50 bg-black border-b border-zinc-900" style={{ top: 'var(--sat)', paddingLeft: 'var(--sal)', paddingRight: 'var(--sar)' }}>
-      <div className="w-full max-w-[var(--page-max-width,1400px)] mx-auto" style={{ paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
+      <div className="container-main">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center flex-shrink-0">
@@ -76,7 +76,7 @@ export function PublicHeader() {
       {/* Mobile Navigation */}
       {isMenuOpen && (
         <div className="lg:hidden bg-black border-t border-zinc-900 animate-fade-in">
-          <div className="w-full max-w-[var(--page-max-width,1400px)] mx-auto py-4" style={{ paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
+          <div className="container-main py-4">
             <nav className="flex flex-col gap-1">
               {navLinks.map((link) => (
                 <Link

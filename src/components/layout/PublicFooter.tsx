@@ -80,7 +80,7 @@ const socialLinks = [
 export function PublicFooter() {
   return (
     <footer className="bg-zinc-950 hidden md:block">
-      <div className="mx-auto max-w-[1280px] px-6 lg:px-10">
+      <div className="container-main">
         <div className="flex items-center justify-between h-20 md:h-24">
           {/* Left: Logo */}
           <Link 
