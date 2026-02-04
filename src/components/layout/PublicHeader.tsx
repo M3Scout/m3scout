@@ -24,8 +24,8 @@ export function PublicHeader() {
       {/* Container with unified max-width - matches all page content alignment */}
       <div className="w-full mx-auto" style={{ maxWidth: 'var(--page-max-width)', paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
         <div className="flex h-16 items-center justify-between">
-          {/* Logo - negative margin aligns left edge with page content grid */}
-          <Link to="/" className="flex items-center flex-shrink-0 -ml-3">
+          {/* Logo - small negative margin compensates logo image left whitespace */}
+          <Link to="/" className="flex items-center flex-shrink-0 -ml-3.5">
             <img 
               src={logoM3} 
               alt="M3 Agency" 
