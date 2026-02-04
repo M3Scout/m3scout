@@ -11,6 +11,24 @@
   --sar: env(safe-area-inset-right, 0px);
   --sab: env(safe-area-inset-bottom, 0px);
   --sal: env(safe-area-inset-left, 0px);
+  
+  /* ========== GLOBAL LAYOUT - Aligned with Header Logo ========== */
+  /* This variable ensures all content aligns with the header logo's left edge */
+  /* Matches PublicHeader container padding exactly */
+  --page-gutter: 1rem;          /* Mobile: 16px (px-4) */
+  --page-max-width: 1400px;     /* Max container width */
+}
+
+@media (min-width: 640px) {
+  :root {
+    --page-gutter: 1.5rem;      /* sm: 24px (px-6) */
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --page-gutter: 2rem;        /* lg: 32px (px-8) */
+  }
 }
 
 /* GLOBAL: Prevent horizontal overflow on mobile */
@@ -190,13 +208,20 @@ p, span, h1, h2, h3, h4, h5, h6, a, li {
 @layer components {
   /* ========== GLOBAL CONTAINER - Aligned with Header Logo ========== */
   /* This container ensures all public page content aligns with the header logo */
+  /* Uses CSS variables defined in :root for consistent alignment */
   .container-main {
-    @apply w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8;
+    @apply w-full mx-auto;
+    max-width: var(--page-max-width);
+    padding-left: var(--page-gutter);
+    padding-right: var(--page-gutter);
   }
   
   /* Variant for full-bleed sections that need internal alignment */
   .container-main-inner {
-    @apply max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8;
+    @apply mx-auto;
+    max-width: var(--page-max-width);
+    padding-left: var(--page-gutter);
+    padding-right: var(--page-gutter);
   }
 
   /* Admin Panel - Command Center Aesthetic */

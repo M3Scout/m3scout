@@ -37,7 +37,7 @@ const NewsDetail = () => {
   if (error || !article) {
     return (
       <div className="min-h-screen bg-[#0B0B0D]">
-        <div className="w-full max-w-[1100px] mx-auto px-6 md:px-8 pt-32 pb-16">
+        <div className="w-full max-w-[1100px] mx-auto pt-32 pb-16" style={{ paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
           <h1 className="text-2xl font-bold text-white mb-4">Notícia não encontrada</h1>
           <p className="text-zinc-400 mb-8">
             A notícia que você está procurando não existe ou foi removida.
@@ -55,8 +55,8 @@ const NewsDetail = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0B0B0D]">
-      <div className="w-full max-w-[1100px] mx-auto px-6 md:px-8">
+      <div className="min-h-screen bg-[#0B0B0D]">
+        <div className="w-full max-w-[1100px] mx-auto" style={{ paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
         {/* Back link */}
         <div className="pt-32 pb-8">
           <Link
