@@ -186,48 +186,43 @@ export function InstagramFeedSection() {
   ];
 
   return (
-    // BUG FIX: Force white background with explicit !important-style inline to prevent any inheritance
     <section 
-      className="py-20 md:py-28 border-t-0 border-b-0" 
+      className="py-12 md:py-16 lg:py-20" 
       style={{ 
         backgroundColor: '#f8f7f4', 
         isolation: 'isolate',
-        // Ensure no pseudo-elements or borders can create dark lines
-        borderTop: 'none',
-        borderBottom: 'none',
       }}
     >
-      {/* Single container for entire section - consistent alignment */}
       <div className="mx-auto max-w-[1280px] px-6 lg:px-10">
-        {/* Header — Mobile: stacked title/handle, compact icons */}
-        <div className="flex items-center justify-between gap-4 mb-12">
+        {/* Header - Compact */}
+        <div className="flex items-center justify-between gap-4 mb-6 md:mb-8">
           {/* Left: Title + Handle */}
-          <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3 md:gap-4 min-w-0">
-            <h2 className="text-[11px] sm:text-sm md:text-base font-medium uppercase tracking-[0.2em] sm:tracking-[0.25em] text-neutral-900 whitespace-nowrap">
+          <div className="flex flex-col sm:flex-row sm:items-baseline gap-0.5 sm:gap-3 min-w-0">
+            <h2 className="text-[11px] sm:text-xs md:text-sm font-semibold uppercase tracking-[0.2em] text-neutral-900 whitespace-nowrap">
               Siga a M3 Agency
             </h2>
             <a
               href={socialConfig.instagram.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[11px] sm:text-sm font-normal text-neutral-400 hover:text-neutral-700 transition-colors duration-200 whitespace-nowrap"
+              className="text-[10px] sm:text-xs font-normal text-neutral-400 hover:text-neutral-700 transition-colors duration-200 whitespace-nowrap"
             >
               {socialConfig.instagram.handle}
             </a>
           </div>
 
-          {/* Right: Social Icons — tighter gap on mobile */}
-          <div className="flex items-center gap-1 sm:gap-2 md:gap-3 shrink-0">
+          {/* Right: Social Icons */}
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
             {socialLinks.map((social) => (
               <a
                 key={social.label}
                 href={social.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group relative w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 flex items-center justify-center text-neutral-400 hover:text-neutral-900 transition-all duration-200"
+                className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-neutral-400 hover:text-neutral-900 transition-colors duration-200"
                 aria-label={social.label}
               >
-                <social.icon size={16} className="sm:w-[18px] sm:h-[18px] md:w-5 md:h-5" />
+                <social.icon size={16} className="sm:w-4 sm:h-4" />
               </a>
             ))}
           </div>

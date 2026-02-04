@@ -164,8 +164,8 @@ const Contact = () => {
         }}
       />
 
-      {/* HERO SECTION */}
-      <section className="relative pt-32 pb-12 md:pt-40 md:pb-16">
+      {/* HERO SECTION - Compact */}
+      <section className="relative pt-24 pb-6 md:pt-28 md:pb-8">
         <div className="relative z-10 mx-auto max-w-[1200px] px-6 md:px-12 lg:px-16">
           
           {/* Badge */}
@@ -173,10 +173,10 @@ const Contact = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="mb-8"
+            className="mb-4"
           >
-            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#e52421]/30 bg-[#e52421]/5 text-[10px] uppercase tracking-[0.2em] text-[#e52421] font-medium">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#e52421]" />
+            <span className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full border border-[#e52421]/30 bg-[#e52421]/5 text-[9px] uppercase tracking-[0.2em] text-[#e52421] font-medium">
+              <span className="w-1 h-1 rounded-full bg-[#e52421]" />
               Contato
             </span>
           </motion.div>
@@ -186,7 +186,7 @@ const Contact = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
-            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-semibold tracking-tight text-white mb-6"
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white mb-3"
           >
             Fale com a{" "}
             <span className="text-[#e52421]">M3</span>
@@ -197,7 +197,7 @@ const Contact = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
-            className="text-lg md:text-xl text-neutral-400 font-light max-w-xl leading-relaxed tracking-wide"
+            className="text-base md:text-lg text-neutral-400 font-light max-w-lg leading-relaxed"
           >
             Quer representar um atleta ou falar sobre oportunidades? Escolha o canal ideal.
           </motion.p>
@@ -207,13 +207,13 @@ const Contact = () => {
             initial={{ opacity: 0, scaleX: 0 }}
             animate={{ opacity: 1, scaleX: 1 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="mt-10 w-20 h-px bg-gradient-to-r from-[#e52421]/60 to-transparent origin-left"
+            className="mt-6 w-16 h-px bg-gradient-to-r from-[#e52421]/60 to-transparent origin-left"
           />
         </div>
       </section>
 
-      {/* CHANNELS SECTION */}
-      <section className="py-12 md:py-16">
+      {/* CHANNELS SECTION - Compact */}
+      <section className="py-6 md:py-8">
         <div className="mx-auto max-w-[1200px] px-6 md:px-12 lg:px-16">
           
           {/* Section Header */}
@@ -222,17 +222,17 @@ const Contact = () => {
             initial={{ opacity: 0 }}
             animate={channelsInView ? { opacity: 1 } : {}}
             transition={{ duration: 0.5 }}
-            className="flex items-center gap-3 mb-8"
+            className="flex items-center gap-2 mb-4"
           >
-            <span className="w-2 h-2 rounded-full bg-[#e52421]" />
-            <p className="text-[11px] uppercase tracking-[0.25em] text-neutral-500 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#e52421]" />
+            <p className="text-[10px] uppercase tracking-[0.25em] text-neutral-500 font-semibold">
               Canais diretos
             </p>
           </motion.div>
 
-          {/* Channels Grid */}
+          {/* Channels Grid - Tighter */}
           <motion.div 
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4"
             initial="hidden"
             animate={channelsInView ? "visible" : "hidden"}
             variants={{
@@ -264,11 +264,11 @@ const Contact = () => {
                     }
                   }
                 }}
-                className="group relative block p-6 rounded-2xl bg-neutral-900/40 backdrop-blur-sm border border-neutral-800/50 transition-all duration-300 hover:border-neutral-700/60 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/20"
+                className="group relative block p-5 rounded-xl bg-neutral-900/50 border border-neutral-800/60 transition-all duration-300 hover:border-neutral-700 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/30"
               >
                 {/* Icon */}
                 <motion.div 
-                  className="w-11 h-11 rounded-xl bg-neutral-800/60 flex items-center justify-center mb-5 group-hover:bg-[#e52421]/10 transition-colors duration-300"
+                  className="w-10 h-10 rounded-lg bg-neutral-800/70 flex items-center justify-center mb-4 group-hover:bg-[#e52421]/10 transition-colors duration-300"
                   variants={{
                     hidden: { scale: 0.5, opacity: 0 },
                     visible: { 
@@ -278,26 +278,26 @@ const Contact = () => {
                     }
                   }}
                 >
-                  <contact.icon className="w-5 h-5 text-neutral-500 group-hover:text-[#e52421] transition-colors duration-300" />
+                  <contact.icon className="w-4 h-4 text-neutral-500 group-hover:text-[#e52421] transition-colors duration-300" />
                 </motion.div>
                 
                 {/* Label */}
-                <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-600 mb-2">
+                <p className="text-[9px] uppercase tracking-[0.2em] text-neutral-600 mb-1">
                   {contact.label}
                 </p>
                 
                 {/* Value */}
-                <p className="text-lg font-medium text-white mb-5">
+                <p className="text-base font-semibold text-white mb-4">
                   {contact.value}
                 </p>
                 
                 {/* CTA */}
-                <span className="inline-flex items-center gap-2 text-sm text-[#e52421] group-hover:gap-3 transition-all duration-300">
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#e52421] group-hover:gap-2.5 transition-all duration-300">
                   <span className="relative">
                     {contact.cta}
                     <span className="absolute left-0 bottom-0 w-0 h-px bg-[#e52421] group-hover:w-full transition-all duration-300" />
                   </span>
-                  <ArrowUpRight className="w-3.5 h-3.5" />
+                  <ArrowUpRight className="w-3 h-3" />
                 </span>
               </motion.a>
             ))}
@@ -308,16 +308,16 @@ const Contact = () => {
             initial={{ opacity: 0 }}
             animate={channelsInView ? { opacity: 1 } : {}}
             transition={{ duration: 0.5, delay: 0.5 }}
-            className="mt-8 flex items-center gap-2 text-neutral-600 text-sm"
+            className="mt-5 flex items-center gap-1.5 text-neutral-600 text-xs"
           >
-            <Clock className="w-4 h-4" />
+            <Clock className="w-3.5 h-3.5" />
             <span>Atendimento: seg–sex, 9h–18h (BRT)</span>
           </motion.div>
         </div>
       </section>
 
-      {/* FORM SECTION */}
-      <section className="py-12 md:py-16 lg:py-20 bg-[#0d0d0d]">
+      {/* FORM SECTION - Compact */}
+      <section className="py-8 md:py-10 lg:py-12 bg-[#0d0d0d]">
         <div className="mx-auto max-w-[1200px] px-6 md:px-12 lg:px-16">
           
           {/* Section Header */}
@@ -326,15 +326,15 @@ const Contact = () => {
             initial={{ opacity: 0 }}
             animate={formInView ? { opacity: 1 } : {}}
             transition={{ duration: 0.5 }}
-            className="mb-10"
+            className="mb-6"
           >
-            <div className="flex items-center gap-3 mb-3">
-              <span className="w-2 h-2 rounded-full bg-[#e52421]" />
-              <p className="text-[11px] uppercase tracking-[0.25em] text-neutral-500 font-medium">
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#e52421]" />
+              <p className="text-[10px] uppercase tracking-[0.25em] text-neutral-500 font-semibold">
                 Envie uma mensagem
               </p>
             </div>
-            <p className="text-neutral-600 text-sm font-light">
+            <p className="text-neutral-600 text-xs font-light">
               Preencha o formulário e retornaremos em até 24 horas úteis.
             </p>
           </motion.div>
@@ -345,105 +345,105 @@ const Contact = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={formInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="space-y-6"
+            className="space-y-4"
           >
-            <div className="grid sm:grid-cols-2 gap-5">
+            <div className="grid sm:grid-cols-2 gap-4">
               {/* Nome */}
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-[10px] uppercase tracking-[0.2em] text-neutral-500">
+              <div className="space-y-1.5">
+                <Label htmlFor="name" className="text-[9px] uppercase tracking-[0.2em] text-neutral-500 font-medium">
                   Nome Completo *
                 </Label>
                 <Input
                   id="name"
                   {...register("name")}
-                  className="bg-neutral-900/60 border-neutral-800 rounded-xl px-4 py-3 h-12 text-white placeholder:text-neutral-600 focus-visible:ring-1 focus-visible:ring-[#e52421] focus-visible:border-[#e52421] transition-colors"
+                  className="bg-neutral-900/60 border-neutral-800 rounded-lg px-3 py-2.5 h-10 text-sm text-white placeholder:text-neutral-600 focus-visible:ring-1 focus-visible:ring-[#e52421] focus-visible:border-[#e52421] transition-colors"
                   placeholder="Seu nome"
                 />
-                {errors.name && <p className="text-xs text-[#e52421]">{errors.name.message}</p>}
+                {errors.name && <p className="text-[10px] text-[#e52421]">{errors.name.message}</p>}
               </div>
 
               {/* Email */}
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-[10px] uppercase tracking-[0.2em] text-neutral-500">
+              <div className="space-y-1.5">
+                <Label htmlFor="email" className="text-[9px] uppercase tracking-[0.2em] text-neutral-500 font-medium">
                   E-mail *
                 </Label>
                 <Input
                   id="email"
                   type="email"
                   {...register("email")}
-                  className="bg-neutral-900/60 border-neutral-800 rounded-xl px-4 py-3 h-12 text-white placeholder:text-neutral-600 focus-visible:ring-1 focus-visible:ring-[#e52421] focus-visible:border-[#e52421] transition-colors"
+                  className="bg-neutral-900/60 border-neutral-800 rounded-lg px-3 py-2.5 h-10 text-sm text-white placeholder:text-neutral-600 focus-visible:ring-1 focus-visible:ring-[#e52421] focus-visible:border-[#e52421] transition-colors"
                   placeholder="seu@email.com"
                 />
-                {errors.email && <p className="text-xs text-[#e52421]">{errors.email.message}</p>}
+                {errors.email && <p className="text-[10px] text-[#e52421]">{errors.email.message}</p>}
               </div>
 
               {/* Phone */}
-              <div className="space-y-2">
-                <Label htmlFor="phone" className="text-[10px] uppercase tracking-[0.2em] text-neutral-500">
+              <div className="space-y-1.5">
+                <Label htmlFor="phone" className="text-[9px] uppercase tracking-[0.2em] text-neutral-500 font-medium">
                   Telefone
                 </Label>
                 <Input
                   id="phone"
                   type="tel"
                   {...register("phone")}
-                  className="bg-neutral-900/60 border-neutral-800 rounded-xl px-4 py-3 h-12 text-white placeholder:text-neutral-600 focus-visible:ring-1 focus-visible:ring-[#e52421] focus-visible:border-[#e52421] transition-colors"
+                  className="bg-neutral-900/60 border-neutral-800 rounded-lg px-3 py-2.5 h-10 text-sm text-white placeholder:text-neutral-600 focus-visible:ring-1 focus-visible:ring-[#e52421] focus-visible:border-[#e52421] transition-colors"
                   placeholder="+55 (00) 00000-0000"
                 />
               </div>
 
               {/* Organization */}
-              <div className="space-y-2">
-                <Label htmlFor="organization" className="text-[10px] uppercase tracking-[0.2em] text-neutral-500">
+              <div className="space-y-1.5">
+                <Label htmlFor="organization" className="text-[9px] uppercase tracking-[0.2em] text-neutral-500 font-medium">
                   Clube / Organização
                 </Label>
                 <Input
                   id="organization"
                   {...register("organization")}
-                  className="bg-neutral-900/60 border-neutral-800 rounded-xl px-4 py-3 h-12 text-white placeholder:text-neutral-600 focus-visible:ring-1 focus-visible:ring-[#e52421] focus-visible:border-[#e52421] transition-colors"
+                  className="bg-neutral-900/60 border-neutral-800 rounded-lg px-3 py-2.5 h-10 text-sm text-white placeholder:text-neutral-600 focus-visible:ring-1 focus-visible:ring-[#e52421] focus-visible:border-[#e52421] transition-colors"
                   placeholder="Nome do clube ou empresa"
                 />
               </div>
 
               {/* Subject */}
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="subject" className="text-[10px] uppercase tracking-[0.2em] text-neutral-500">
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="subject" className="text-[9px] uppercase tracking-[0.2em] text-neutral-500 font-medium">
                   Assunto *
                 </Label>
                 <Input
                   id="subject"
                   {...register("subject")}
-                  className="bg-neutral-900/60 border-neutral-800 rounded-xl px-4 py-3 h-12 text-white placeholder:text-neutral-600 focus-visible:ring-1 focus-visible:ring-[#e52421] focus-visible:border-[#e52421] transition-colors"
+                  className="bg-neutral-900/60 border-neutral-800 rounded-lg px-3 py-2.5 h-10 text-sm text-white placeholder:text-neutral-600 focus-visible:ring-1 focus-visible:ring-[#e52421] focus-visible:border-[#e52421] transition-colors"
                   placeholder="Qual o motivo do contato?"
                 />
-                {errors.subject && <p className="text-xs text-[#e52421]">{errors.subject.message}</p>}
+                {errors.subject && <p className="text-[10px] text-[#e52421]">{errors.subject.message}</p>}
               </div>
 
               {/* Message */}
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="message" className="text-[10px] uppercase tracking-[0.2em] text-neutral-500">
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="message" className="text-[9px] uppercase tracking-[0.2em] text-neutral-500 font-medium">
                   Mensagem *
                 </Label>
                 <Textarea
                   id="message"
                   {...register("message")}
-                  className="bg-neutral-900/60 border-neutral-800 rounded-xl px-4 py-3 text-white placeholder:text-neutral-600 focus-visible:ring-1 focus-visible:ring-[#e52421] focus-visible:border-[#e52421] min-h-[120px] resize-none transition-colors"
+                  className="bg-neutral-900/60 border-neutral-800 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-neutral-600 focus-visible:ring-1 focus-visible:ring-[#e52421] focus-visible:border-[#e52421] min-h-[100px] resize-none transition-colors"
                   placeholder="Escreva sua mensagem..."
                 />
-                {errors.message && <p className="text-xs text-[#e52421]">{errors.message.message}</p>}
+                {errors.message && <p className="text-[10px] text-[#e52421]">{errors.message.message}</p>}
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4 pt-2">
+            <div className="pt-1">
               <Button 
                 type="submit" 
                 disabled={isSubmitting}
-                className="bg-[#e52421] hover:bg-[#c91f1c] text-white rounded-xl px-6 py-3 h-12 text-sm font-medium tracking-wide shadow-none transition-all duration-300 hover:shadow-lg hover:shadow-[#e52421]/20"
+                className="bg-[#e52421] hover:bg-[#c91f1c] text-white rounded-lg px-5 py-2.5 h-10 text-xs font-semibold tracking-wide shadow-none transition-all duration-300 hover:shadow-lg hover:shadow-[#e52421]/20"
               >
                 {isSubmitting ? (
                   "Enviando..."
                 ) : (
                   <>
-                    <Send className="w-4 h-4 mr-2" />
+                    <Send className="w-3.5 h-3.5 mr-2" />
                     Enviar mensagem
                   </>
                 )}
