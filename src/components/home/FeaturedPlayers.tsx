@@ -382,20 +382,22 @@ function UniversalCarousel({ players }: { players: Player[] }) {
         <div className="flex-shrink-0 w-4" />
       </div>
 
-      {/* Left fade gradient */}
+      {/* Left fade gradient - matches page background */}
       <div
         className={cn(
-          "absolute left-0 top-0 bottom-4 w-12 md:w-20 bg-gradient-to-r from-[#070910] to-transparent pointer-events-none transition-opacity duration-300 z-10",
+          "absolute left-0 top-0 bottom-4 w-12 md:w-20 pointer-events-none transition-opacity duration-300 z-10",
           canScrollLeft ? "opacity-100" : "opacity-0"
         )}
+        style={{ background: 'linear-gradient(to right, var(--bg-base), transparent)' }}
       />
 
-      {/* Right fade gradient */}
+      {/* Right fade gradient - matches page background */}
       <div
         className={cn(
-          "absolute right-0 top-0 bottom-4 w-12 md:w-20 bg-gradient-to-l from-[#070910] to-transparent pointer-events-none transition-opacity duration-300 z-10",
+          "absolute right-0 top-0 bottom-4 w-12 md:w-20 pointer-events-none transition-opacity duration-300 z-10",
           canScrollRight ? "opacity-100" : "opacity-0"
         )}
+        style={{ background: 'linear-gradient(to left, var(--bg-base), transparent)' }}
       />
 
       {/* Navigation arrows - Desktop only, enhanced */}
@@ -547,7 +549,7 @@ export function FeaturedPlayers() {
     <section
       ref={sectionRef}
       className="relative py-12 md:py-16 lg:py-20 overflow-hidden"
-      style={{ backgroundColor: "#070910" }}
+      style={{ backgroundColor: "var(--bg-base)" }}
     >
       {/* Subtle ambient glow */}
       <div className="absolute inset-0 pointer-events-none">
@@ -555,7 +557,8 @@ export function FeaturedPlayers() {
         <div className="absolute bottom-0 right-1/4 w-[500px] h-[300px] bg-white/[0.01] blur-[100px] rounded-full" />
       </div>
 
-      <div className="relative container-main">
+      {/* Container with unified max-width - matches header */}
+      <div className="relative w-full mx-auto" style={{ maxWidth: 'var(--page-max-width)', paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
         {/* Section Header - Compact */}
         <motion.div
           className="flex flex-col md:flex-row md:items-end justify-between gap-3 mb-6 md:mb-8"
@@ -629,3 +632,5 @@ export function FeaturedPlayers() {
     </section>
   );
 }
+
+export default FeaturedPlayers;

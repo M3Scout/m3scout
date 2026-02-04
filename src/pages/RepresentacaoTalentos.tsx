@@ -4,10 +4,10 @@ import { Users, Star, Target, ArrowRight } from "lucide-react";
 
 const RepresentacaoTalentos = () => {
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-base)' }}>
       {/* Hero Section */}
       <div className="pt-32 pb-16 md:pt-40 md:pb-24">
-        <div className="container-main">
+        <div className="w-full mx-auto" style={{ maxWidth: 'var(--page-max-width)', paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
           <div className="max-w-3xl">
             <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 mb-4">
               Representação de Talentos
@@ -32,7 +32,7 @@ const RepresentacaoTalentos = () => {
 
       {/* Services Section */}
       <section className="py-16 md:py-24 border-t border-zinc-900">
-        <div className="container-main">
+        <div className="w-full mx-auto" style={{ maxWidth: 'var(--page-max-width)', paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
           <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 mb-8">
             Nossos Serviços
           </p>
@@ -82,7 +82,7 @@ const RepresentacaoTalentos = () => {
 
       {/* CTA Section */}
       <section className="py-16 md:py-24 border-t border-zinc-900">
-        <div className="container-main text-center">
+        <div className="w-full mx-auto text-center" style={{ maxWidth: 'var(--page-max-width)', paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
           <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
             Pronto para o próximo nível?
           </h2>

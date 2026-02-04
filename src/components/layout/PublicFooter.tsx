@@ -80,9 +80,10 @@ const socialLinks = [
 export function PublicFooter() {
   return (
     <footer className="bg-zinc-950 hidden md:block">
-      <div className="container-main">
+      {/* Container with unified max-width - matches header and page content */}
+      <div className="w-full mx-auto" style={{ maxWidth: 'var(--page-max-width)', paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
         <div className="flex items-center justify-between h-20 md:h-24">
-          {/* Left: Logo */}
+          {/* Left: Logo - aligns with all page content */}
           <Link 
             to="/" 
             className="flex items-center hover:opacity-80 transition-opacity duration-200"

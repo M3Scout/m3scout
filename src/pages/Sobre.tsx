@@ -39,7 +39,7 @@ const Sobre = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]" style={{ fontFamily: "'Poppins', sans-serif" }}>
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-base)', fontFamily: "'Poppins', sans-serif" }}>
       
       {/* HERO SECTION - Compact Premium */}
       <section className="relative min-h-[70vh] w-full flex items-center">
@@ -52,7 +52,7 @@ const Sobre = () => {
         />
 
         <div className="relative z-10 w-full">
-          <div className="container-main py-20 md:py-28">
+          <div className="w-full mx-auto py-20 md:py-28" style={{ maxWidth: 'var(--page-max-width)', paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
             <div className="max-w-3xl">
               
               {/* M3 Agency Title */}
@@ -108,8 +108,8 @@ const Sobre = () => {
         </div>
       </section>
 
-      <section className="py-12 md:py-16 lg:py-20 bg-[#0a0a0a]">
-        <div className="container-main">
+      <section className="py-12 md:py-16 lg:py-20" style={{ backgroundColor: 'var(--bg-base)' }}>
+        <div className="w-full mx-auto" style={{ maxWidth: 'var(--page-max-width)', paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
           <motion.div 
             ref={conceptRef}
             initial={{ opacity: 0, y: 30 }}
@@ -126,11 +126,11 @@ const Sobre = () => {
         </div>
       </section>
 
-      <section className="py-10 md:py-14 lg:py-16 bg-[#0d0d0d]">
-        <div className="container-main">
+      <section className="py-10 md:py-14 lg:py-16" style={{ backgroundColor: 'var(--bg-base-alt)' }}>
+        <div className="w-full mx-auto" style={{ maxWidth: 'var(--page-max-width)', paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
           
           {/* Section Label */}
-          <motion.p 
+          <motion.p
             initial={{ opacity: 0 }}
             animate={servicesInView ? { opacity: 1 } : {}}
             transition={{ duration: 0.5 }}
@@ -204,8 +204,8 @@ const Sobre = () => {
         </div>
       </section>
 
-      <section className="py-16 md:py-20 lg:py-24 bg-[#0a0a0a]">
-        <div className="container-main">
+      <section className="py-16 md:py-20 lg:py-24" style={{ backgroundColor: 'var(--bg-base)' }}>
+        <div className="w-full mx-auto" style={{ maxWidth: 'var(--page-max-width)', paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
           <div 
             ref={manifestoRef}
             className="manifesto max-w-3xl mx-auto text-center flex flex-col gap-1 md:gap-2"
