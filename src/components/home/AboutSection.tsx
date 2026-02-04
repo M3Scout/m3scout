@@ -27,7 +27,7 @@ export function AboutSection() {
 
   return (
     <section ref={sectionRef} className="py-12 md:py-16 lg:py-20 bg-[#f8f7f4]">
-      <div className="mx-auto max-w-[1280px] px-6 lg:px-10">
+      <div className="container-main">
         <div className="max-w-3xl">
           {/* Editorial Quote - Tighter spacing */}
           <blockquote 

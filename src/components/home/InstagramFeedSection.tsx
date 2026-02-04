@@ -193,7 +193,7 @@ export function InstagramFeedSection() {
         isolation: 'isolate',
       }}
     >
-      <div className="mx-auto max-w-[1280px] px-6 lg:px-10">
+      <div className="container-main">
         {/* Header - Compact */}
         <div className="flex items-center justify-between gap-4 mb-6 md:mb-8">
           {/* Left: Title + Handle */}

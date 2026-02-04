@@ -7,7 +7,7 @@ const RepresentacaoTalentos = () => {
     <div className="min-h-screen bg-black">
       {/* Hero Section */}
       <div className="pt-32 pb-16 md:pt-40 md:pb-24">
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="container-main">
           <div className="max-w-3xl">
             <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 mb-4">
               Representação de Talentos
@@ -32,7 +32,7 @@ const RepresentacaoTalentos = () => {
 
       {/* Services Section */}
       <section className="py-16 md:py-24 border-t border-zinc-900">
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="container-main">
           <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 mb-8">
             Nossos Serviços
           </p>
@@ -82,7 +82,7 @@ const RepresentacaoTalentos = () => {
 
       {/* CTA Section */}
       <section className="py-16 md:py-24 border-t border-zinc-900">
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div className="container-main text-center">
           <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
             Pronto para o próximo nível?
           </h2>

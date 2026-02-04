@@ -51,9 +51,8 @@ const Sobre = () => {
           }}
         />
 
-        {/* Hero Content */}
         <div className="relative z-10 w-full">
-          <div className="mx-auto max-w-[1200px] px-6 md:px-12 lg:px-16 py-20 md:py-28">
+          <div className="container-main py-20 md:py-28">
             <div className="max-w-3xl">
               
               {/* M3 Agency Title */}
@@ -109,9 +108,8 @@ const Sobre = () => {
         </div>
       </section>
 
-      {/* BLOCO EDITORIAL - Compact */}
       <section className="py-12 md:py-16 lg:py-20 bg-[#0a0a0a]">
-        <div className="mx-auto max-w-[1200px] px-6 md:px-12 lg:px-16">
+        <div className="container-main">
           <motion.div 
             ref={conceptRef}
             initial={{ opacity: 0, y: 30 }}
@@ -128,9 +126,8 @@ const Sobre = () => {
         </div>
       </section>
 
-      {/* O QUE FAZEMOS - Compact Editorial List */}
       <section className="py-10 md:py-14 lg:py-16 bg-[#0d0d0d]">
-        <div className="mx-auto max-w-[1200px] px-6 md:px-12 lg:px-16">
+        <div className="container-main">
           
           {/* Section Label */}
           <motion.p 
@@ -207,9 +204,8 @@ const Sobre = () => {
         </div>
       </section>
 
-      {/* BLOCO MANIFESTO - Compact */}
       <section className="py-16 md:py-20 lg:py-24 bg-[#0a0a0a]">
-        <div className="mx-auto max-w-[1200px] px-6 md:px-12 lg:px-16">
+        <div className="container-main">
           <div 
             ref={manifestoRef}
             className="manifesto max-w-3xl mx-auto text-center flex flex-col gap-1 md:gap-2"
