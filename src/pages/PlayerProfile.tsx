@@ -315,7 +315,6 @@ const PlayerProfile = () => {
             secondaryTacticalRole={player.secondary_tactical_role}
             contractStatus={player.contract_status}
             currentClub={player.current_club}
-            autoRating={player.auto_rating}
           />
 
           {/* Statistics Section */}
