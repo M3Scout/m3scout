@@ -9,7 +9,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { staggerContainer, staggerItem, cardHover, cardTap } from "@/lib/animations";
+import { staggerContainer, staggerItem } from "@/lib/animations";
+import { AthleteStatusBadge } from "./AthleteStatusBadge";
 
 interface AthleteHeroSectionProps {
   player: {
@@ -24,6 +25,7 @@ interface AthleteHeroSectionProps {
     primary_tactical_role: string | null;
     play_style: string | null;
   };
+  contractStatus?: string | null;
 }
 
 // Info stat card component
@@ -68,7 +70,7 @@ function InfoStatCard({
   );
 }
 
-export function AthleteHeroSection({ player }: AthleteHeroSectionProps) {
+export function AthleteHeroSection({ player, contractStatus }: AthleteHeroSectionProps) {
   return (
     <motion.section 
       className="grid md:grid-cols-[280px,1fr] lg:grid-cols-[320px,1fr] gap-6 lg:gap-10 mb-10 md:mb-14"
@@ -120,7 +122,7 @@ export function AthleteHeroSection({ player }: AthleteHeroSectionProps) {
       {/* Info Column */}
       <motion.div variants={staggerItem} className="flex flex-col justify-center">
         {/* Name with gradient underline */}
-        <div className="relative mb-2">
+        <div className="relative mb-3">
           <h1 className="text-2xl sm:text-4xl lg:text-5xl font-bold text-foreground tracking-tight">
             {player.full_name}
           </h1>
@@ -132,24 +134,13 @@ export function AthleteHeroSection({ player }: AthleteHeroSectionProps) {
           />
         </div>
         
-        {/* Role line with enhanced styling */}
-        <motion.p 
-          className="text-muted-foreground mb-5 md:mb-6 text-sm md:text-base flex items-center gap-2 flex-wrap"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-        >
-          {player.primary_tactical_role && (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-800/50 text-zinc-300 text-xs font-medium">
-              {player.primary_tactical_role}
-            </span>
-          )}
-          {player.play_style && (
-            <span className="text-muted-foreground/60 text-sm">
-              • {player.play_style}
-            </span>
-          )}
-        </motion.p>
+        {/* Status Badge - positioned near the name */}
+        <div className="mb-5 md:mb-6">
+          <AthleteStatusBadge 
+            contractStatus={contractStatus} 
+            currentClub={player.current_club} 
+          />
+        </div>
 
         {/* Info Grid with stagger animation */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 md:gap-3 mb-6 md:mb-8">
