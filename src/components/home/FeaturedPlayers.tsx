@@ -348,19 +348,28 @@ function UniversalCarousel({ players }: { players: Player[] }) {
     setIsDragging(false);
   };
 
+  // Mobile: calculate full-width card size (100vw - 2*gutter)
+  // Gutter is 16px on mobile (1rem), so card = 100vw - 32px
+  const mobileCardWidth = "calc(100vw - 32px)";
+  const mobileGap = 16; // gap between cards
+
   return (
     <div className="relative">
-      {/* Scroll Container - stays within container, first card aligns with title */}
+      {/* Scroll Container */}
       <div
         ref={containerRef}
         className={cn(
-          "flex overflow-x-auto scrollbar-hide scroll-smooth pb-4 gap-4 md:gap-5",
+          "flex overflow-x-auto scrollbar-hide scroll-smooth pb-4",
           isDragging && "cursor-grabbing select-none"
         )}
         style={{
           scrollSnapType: "x mandatory",
           WebkitOverflowScrolling: "touch",
           cursor: isDragging ? "grabbing" : "grab",
+          gap: isMobile ? `${mobileGap}px` : "20px",
+          // Mobile: scroll-padding matches container gutter so cards center
+          scrollPaddingLeft: isMobile ? "16px" : undefined,
+          scrollPaddingRight: isMobile ? "16px" : undefined,
         }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -370,37 +379,44 @@ function UniversalCarousel({ players }: { players: Player[] }) {
         {players.map((player, index) => (
           <motion.div
             key={player.id}
-            className="flex-shrink-0 w-[85vw] sm:w-[60vw] md:w-[320px] lg:w-[300px]"
-            style={{ scrollSnapAlign: "start" }}
+            className="flex-shrink-0"
+            style={{ 
+              // Mobile: full-width cards (no peek of next card)
+              // Desktop: fixed widths
+              width: isMobile ? mobileCardWidth : undefined,
+              scrollSnapAlign: "start",
+            }}
+            // Desktop only: use class-based widths
+            {...(!isMobile && { className: "flex-shrink-0 sm:w-[60vw] md:w-[320px] lg:w-[300px]" })}
             variants={cardVariants}
             custom={index}
           >
             <CarouselCard player={player} isMobile={isMobile} />
           </motion.div>
         ))}
-        {/* End spacer */}
-        <div className="flex-shrink-0 w-4" />
+        {/* End spacer for last card alignment */}
+        <div className="flex-shrink-0" style={{ width: isMobile ? "16px" : "16px" }} />
       </div>
 
-      {/* Left fade gradient - matches page background */}
+      {/* Left fade gradient - Desktop only */}
       <div
         className={cn(
-          "absolute left-0 top-0 bottom-4 w-12 md:w-20 pointer-events-none transition-opacity duration-300 z-10",
+          "hidden md:block absolute left-0 top-0 bottom-4 w-20 pointer-events-none transition-opacity duration-300 z-10",
           canScrollLeft ? "opacity-100" : "opacity-0"
         )}
         style={{ background: 'linear-gradient(to right, var(--bg-base), transparent)' }}
       />
 
-      {/* Right fade gradient - matches page background */}
+      {/* Right fade gradient - Desktop only */}
       <div
         className={cn(
-          "absolute right-0 top-0 bottom-4 w-12 md:w-20 pointer-events-none transition-opacity duration-300 z-10",
+          "hidden md:block absolute right-0 top-0 bottom-4 w-20 pointer-events-none transition-opacity duration-300 z-10",
           canScrollRight ? "opacity-100" : "opacity-0"
         )}
         style={{ background: 'linear-gradient(to left, var(--bg-base), transparent)' }}
       />
 
-      {/* Navigation arrows - Desktop only, enhanced */}
+      {/* Navigation arrows - Desktop only */}
       <button
         onClick={() => scroll("left")}
         className={cn(
@@ -428,12 +444,12 @@ function UniversalCarousel({ players }: { players: Player[] }) {
         <ChevronRight className="w-6 h-6" />
       </button>
 
-      {/* Mobile navigation dots */}
-      <div className="flex md:hidden justify-center gap-1.5 mt-2">
-        {players.slice(0, 8).map((_, i) => (
+      {/* Mobile: scroll indicators (dots) */}
+      <div className="flex md:hidden justify-center gap-2 mt-4">
+        {players.slice(0, Math.min(players.length, 6)).map((_, i) => (
           <div 
             key={i}
-            className="w-1.5 h-1.5 rounded-full bg-white/20"
+            className="w-2 h-2 rounded-full bg-white/25"
           />
         ))}
       </div>
