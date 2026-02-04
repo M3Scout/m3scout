@@ -689,22 +689,41 @@ const PlayerProfile = () => {
     return Object.values(acc).sort((a, b) => b.season_year - a.season_year);
   }, [unifiedStatsData]);
 
-  const careerTotals = useMemo(
-    () => ({
-      matches: matchTotals.matches,
-      minutes: matchTotals.minutes,
-      goals: matchTotals.goals,
-      assists: matchTotals.assists,
-      shots: matchTotals.shots,
-      key_passes: matchTotals.key_passes,
-      tackles: matchTotals.tackles,
-      interceptions: matchTotals.interceptions,
-      recoveries: matchTotals.recoveries,
-      yellow_cards: matchTotals.yellow_cards,
-      red_cards: matchTotals.red_cards,
-    }),
-    [matchTotals]
-  );
+  // ==================== CAREER TOTALS (Uses Unified Data - Live + Manual) ====================
+  // This is used for the top stats cards - must match the tabs data
+  const careerTotals = useMemo(() => {
+    const stats = unifiedStatsData || [];
+    
+    // Sum all unified stats (already respects Live > Manual priority per context)
+    return stats.reduce(
+      (acc, s) => ({
+        matches: acc.matches + s.matches,
+        minutes: acc.minutes + s.minutes,
+        goals: acc.goals + s.goals,
+        assists: acc.assists + s.assists,
+        shots: acc.shots + s.shots,
+        key_passes: acc.key_passes + s.key_passes,
+        tackles: acc.tackles + s.tackles,
+        interceptions: acc.interceptions + s.interceptions,
+        recoveries: acc.recoveries + s.recoveries,
+        yellow_cards: acc.yellow_cards + s.yellow_cards,
+        red_cards: acc.red_cards + s.red_cards,
+      }),
+      {
+        matches: 0,
+        minutes: 0,
+        goals: 0,
+        assists: 0,
+        shots: 0,
+        key_passes: 0,
+        tackles: 0,
+        interceptions: 0,
+        recoveries: 0,
+        yellow_cards: 0,
+        red_cards: 0,
+      }
+    );
+  }, [unifiedStatsData]);
 
   // DEV-only debug logs (remove after validation)
   useEffect(() => {
