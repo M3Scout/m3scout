@@ -577,36 +577,70 @@ const PlayerProfile = () => {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  // Convert hook aggregates into the local UI shape (keeps UI unchanged)
+  // ==================== CAREER STATS (Uses Unified Data - Live + Manual) ====================
+  // This ensures "Carreira" tab shows ALL seasons, not just Live Match ones
   const careerStats: SeasonStats[] = useMemo(() => {
-    return Object.entries(bySeason)
-      .map(([year, s]) => ({
-        season_year: Number(year),
-        matches: s.matches,
-        minutes: s.minutes,
-        goals: s.goals,
-        assists: s.assists,
-        yellow_cards: s.yellow_cards,
-        red_cards: s.red_cards,
-        tackles: s.tackles,
-        interceptions: s.interceptions,
-        recoveries: s.recoveries,
-        shots: s.shots,
-        shots_on_target: s.shots_on_target,
-        key_passes: s.key_passes,
-        chances_created: s.chances_created,
-        successful_dribbles: s.dribbles_success,
-        total_dribbles: s.dribbles_total,
-        accurate_passes: s.passes_completed,
-        total_passes: s.passes_total,
-        clearances: s.clearances,
-        saves: s.saves,
-        goals_conceded: s.goals_conceded,
-        clean_sheets: s.clean_sheets,
-        penalties_saved: s.penalties_saved,
-      }))
-      .sort((a, b) => b.season_year - a.season_year);
-  }, [bySeason]);
+    const stats = unifiedStatsData || [];
+    
+    // Group by season_year (aggregate all competitions per season)
+    const acc: Record<number, SeasonStats> = {};
+    
+    for (const s of stats) {
+      const year = s.season_year;
+      if (!acc[year]) {
+        acc[year] = {
+          season_year: year,
+          matches: 0,
+          minutes: 0,
+          goals: 0,
+          assists: 0,
+          yellow_cards: 0,
+          red_cards: 0,
+          tackles: 0,
+          interceptions: 0,
+          recoveries: 0,
+          shots: 0,
+          shots_on_target: 0,
+          key_passes: 0,
+          chances_created: 0,
+          successful_dribbles: 0,
+          total_dribbles: 0,
+          accurate_passes: 0,
+          total_passes: 0,
+          clearances: 0,
+          saves: 0,
+          goals_conceded: 0,
+          clean_sheets: 0,
+          penalties_saved: 0,
+        };
+      }
+      
+      const c = acc[year];
+      c.matches += s.matches;
+      c.minutes += s.minutes;
+      c.goals += s.goals;
+      c.assists += s.assists;
+      c.yellow_cards += s.yellow_cards;
+      c.red_cards += s.red_cards;
+      c.tackles += s.tackles;
+      c.interceptions += s.interceptions;
+      c.recoveries += s.recoveries;
+      c.shots += s.shots;
+      c.shots_on_target += s.shots_on_target;
+      c.key_passes += s.key_passes;
+      c.chances_created += s.chances_created;
+      c.successful_dribbles += s.successful_dribbles;
+      c.total_dribbles += s.total_dribbles;
+      c.accurate_passes += s.accurate_passes;
+      c.total_passes += s.total_passes;
+      c.saves += s.saves;
+      c.goals_conceded += s.goals_conceded;
+      c.clean_sheets += s.clean_sheets;
+      c.penalties_saved += s.penalties_saved;
+    }
+    
+    return Object.values(acc).sort((a, b) => b.season_year - a.season_year);
+  }, [unifiedStatsData]);
 
   // Derive the latest season year with actual data (for default display)
   const latestAvailableSeasonYear: number | null = useMemo(() => {
