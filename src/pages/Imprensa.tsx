@@ -81,7 +81,7 @@ const Imprensa = () => {
   });
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]" style={{ fontFamily: "'Poppins', sans-serif" }}>
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-base)', fontFamily: "'Poppins', sans-serif" }}>
       
       {/* Subtle grain texture */}
       <div 
@@ -92,7 +92,7 @@ const Imprensa = () => {
       />
 
       <section className="relative pt-24 pb-8 md:pt-28 md:pb-10">
-        <div className="relative z-10 container-main">
+        <div className="relative z-10 w-full mx-auto" style={{ maxWidth: 'var(--page-max-width)', paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
           
           {/* Badge */}
           <motion.div
@@ -139,7 +139,7 @@ const Imprensa = () => {
       </section>
 
       <section className="py-8 md:py-10 lg:py-12">
-        <div className="container-main">
+        <div className="w-full mx-auto" style={{ maxWidth: 'var(--page-max-width)', paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
           
           {/* Section Header */}
           <motion.div 
@@ -264,8 +264,8 @@ const Imprensa = () => {
         </div>
       </section>
 
-      <section className="py-8 md:py-10 lg:py-12 bg-[#0d0d0d]">
-        <div className="container-main">
+      <section className="py-8 md:py-10 lg:py-12" style={{ backgroundColor: 'var(--bg-base-alt)' }}>
+        <div className="w-full mx-auto" style={{ maxWidth: 'var(--page-max-width)', paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
           
           {/* Section Header */}
           <motion.div 

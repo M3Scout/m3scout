@@ -12,21 +12,37 @@
   --sab: env(safe-area-inset-bottom, 0px);
   --sal: env(safe-area-inset-left, 0px);
   
-  /* ========== GLOBAL LAYOUT - Aligned with Header Logo ========== */
-  /* UNIFIED: All pages use same container for perfect horizontal alignment */
-  --page-gutter: 1rem;          /* Mobile: 16px (px-4) */
-  --page-max-width: 1200px;     /* Max container width - professional editorial */
+  /* ========== GLOBAL LAYOUT TOKENS ========== */
+  /* UNIFIED: Container system for perfect horizontal alignment site-wide */
+  --page-gutter: 1rem;          /* Mobile: 16px */
+  --page-max-width: 1280px;     /* Max container width */
+  
+  /* ========== BACKGROUND TOKENS ========== */
+  --bg-base: #0a0a0a;           /* Unified page background */
+  --bg-base-alt: #0d0d0d;       /* Section variant */
+  --card-bg: #141414;           /* Card background */
+  
+  /* ========== TEXT TOKENS ========== */
+  --text-strong: #ffffff;       /* White - primary text */
+  --text-muted: #a1a1aa;        /* Zinc-400 - better contrast than 500 */
+  --text-subtle: #71717a;       /* Zinc-500 - less important text */
+  
+  /* ========== GLOW TOKENS (Subtle, not neon) ========== */
+  --glow-red: 0 8px 32px -8px rgba(229, 36, 33, 0.4);
+  --glow-green: 0 8px 32px -8px rgba(34, 197, 94, 0.4);
+  --glow-yellow: 0 8px 32px -8px rgba(245, 158, 11, 0.4);
+  --glow-blue: 0 8px 32px -8px rgba(59, 130, 246, 0.35);
 }
 
 @media (min-width: 768px) {
   :root {
-    --page-gutter: 1.25rem;     /* md: 20px (px-5) */
+    --page-gutter: 1.25rem;     /* md: 20px */
   }
 }
 
 @media (min-width: 1024px) {
   :root {
-    --page-gutter: 1.5rem;      /* lg: 24px (px-6) */
+    --page-gutter: 1.5rem;      /* lg: 24px */
   }
 }
 
@@ -207,7 +223,7 @@ p, span, h1, h2, h3, h4, h5, h6, a, li {
 @layer components {
   /* ========== GLOBAL CONTAINER - Aligned with Header Logo ========== */
   /* This container ensures all public page content aligns with the header logo */
-  /* Uses CSS variables defined in :root for consistent alignment */
+  /* Uses CSS variables for consistent 1280px max-width and responsive gutters */
   .container-main {
     @apply w-full mx-auto;
     max-width: var(--page-max-width);

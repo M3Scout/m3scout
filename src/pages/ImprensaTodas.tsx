@@ -94,7 +94,7 @@ const ImprensaTodas = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]" style={{ fontFamily: "'Poppins', sans-serif" }}>
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-base)', fontFamily: "'Poppins', sans-serif" }}>
       
       {/* Subtle grain texture */}
       <div 
@@ -106,7 +106,7 @@ const ImprensaTodas = () => {
 
       {/* HEADER SECTION */}
       <section className="relative pt-32 pb-12 md:pt-40 md:pb-16">
-        <div className="relative z-10 container-main">
+        <div className="relative z-10 w-full mx-auto" style={{ maxWidth: 'var(--page-max-width)', paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
           
           {/* Back Link */}
           <motion.div
@@ -157,7 +157,7 @@ const ImprensaTodas = () => {
 
       {/* NEWS GRID */}
       <section className="py-8 md:py-12 lg:py-16">
-        <div className="container-main">
+        <div className="w-full mx-auto" style={{ maxWidth: 'var(--page-max-width)', paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
           
           {/* Initial Loading State */}
           {isLoading && page === 0 ? (

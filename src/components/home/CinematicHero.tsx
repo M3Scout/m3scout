@@ -107,7 +107,7 @@ export function CinematicHero() {
     <section
       ref={heroRef}
       className="relative min-h-screen flex items-center overflow-hidden"
-      style={{ backgroundColor: "#070910" }}
+      style={{ backgroundColor: "var(--bg-base)" }}
     >
       {/* Background Image - Real Football, Cinematic */}
       <div className="absolute inset-0 z-0">
@@ -122,11 +122,11 @@ export function CinematicHero() {
             filter: "saturate(0.3) brightness(0.4)",
           }}
         />
-        {/* Dark Gradient Overlay */}
+        {/* Dark Gradient Overlay - Uses bg-base variable for seamless transition */}
         <div
           className="absolute inset-0"
           style={{
-            background: "linear-gradient(180deg, #070910 0%, rgba(7,9,16,0.75) 40%, rgba(7,9,16,0.85) 100%)",
+            background: "linear-gradient(180deg, var(--bg-base) 0%, rgba(10,10,10,0.75) 40%, rgba(10,10,10,0.85) 100%)",
           }}
         />
         {/* Subtle Film Grain */}
@@ -138,8 +138,8 @@ export function CinematicHero() {
         />
       </div>
 
-      {/* Main Content */}
-      <div className="relative z-10 w-full container-main py-20">
+      {/* Main Content - Uses unified container alignment */}
+      <div className="relative z-10 w-full py-20 mx-auto" style={{ maxWidth: 'var(--page-max-width)', paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
         <div className="max-w-2xl">
           {/* Badge */}
           <motion.div
@@ -292,11 +292,11 @@ export function CinematicHero() {
         </motion.div>
       </motion.button>
 
-      {/* Bottom Gradient Fade */}
+      {/* Bottom Gradient Fade - Uses bg-base for seamless transition to next section */}
       <div
         className="absolute bottom-0 left-0 right-0 h-32 z-[5] pointer-events-none"
         style={{
-          background: "linear-gradient(to top, #070910 0%, transparent 100%)",
+          background: "linear-gradient(to top, var(--bg-base) 0%, transparent 100%)",
         }}
       />
     </section>

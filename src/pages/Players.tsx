@@ -563,7 +563,7 @@ const Players = () => {
     <div 
       className="min-h-screen"
       style={{ 
-        backgroundColor: "#070910",
+        backgroundColor: "var(--bg-base)",
         fontFamily: "'Poppins', sans-serif" 
       }}
     >
@@ -581,8 +581,8 @@ const Players = () => {
         }}
       />
 
-      {/* Main Container - Uses global page alignment */}
-      <div className="relative z-10 container-main">
+      {/* Main Container - Uses unified page alignment variables */}
+      <div className="relative z-10 w-full mx-auto" style={{ maxWidth: 'var(--page-max-width)', paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
         
         {/* Header Section - Editorial */}
         <motion.section 
