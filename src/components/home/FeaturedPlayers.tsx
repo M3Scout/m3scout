@@ -135,6 +135,23 @@ const positionCodes: Record<string, string> = {
   ST: "ATA",
 };
 
+// Position colors - vibrant accents
+const positionColors: Record<string, { bg: string; text: string; glow: string }> = {
+  GK: { bg: "rgba(251, 191, 36, 0.15)", text: "#fbbf24", glow: "rgba(251, 191, 36, 0.3)" },
+  CB: { bg: "rgba(59, 130, 246, 0.15)", text: "#3b82f6", glow: "rgba(59, 130, 246, 0.3)" },
+  LB: { bg: "rgba(16, 185, 129, 0.15)", text: "#10b981", glow: "rgba(16, 185, 129, 0.3)" },
+  RB: { bg: "rgba(16, 185, 129, 0.15)", text: "#10b981", glow: "rgba(16, 185, 129, 0.3)" },
+  CDM: { bg: "rgba(168, 85, 247, 0.15)", text: "#a855f7", glow: "rgba(168, 85, 247, 0.3)" },
+  CM: { bg: "rgba(236, 72, 153, 0.15)", text: "#ec4899", glow: "rgba(236, 72, 153, 0.3)" },
+  CAM: { bg: "rgba(245, 158, 11, 0.15)", text: "#f59e0b", glow: "rgba(245, 158, 11, 0.3)" },
+  LM: { bg: "rgba(6, 182, 212, 0.15)", text: "#06b6d4", glow: "rgba(6, 182, 212, 0.3)" },
+  RM: { bg: "rgba(6, 182, 212, 0.15)", text: "#06b6d4", glow: "rgba(6, 182, 212, 0.3)" },
+  LW: { bg: "rgba(239, 68, 68, 0.15)", text: "#ef4444", glow: "rgba(239, 68, 68, 0.3)" },
+  RW: { bg: "rgba(239, 68, 68, 0.15)", text: "#ef4444", glow: "rgba(239, 68, 68, 0.3)" },
+  CF: { bg: "rgba(249, 115, 22, 0.15)", text: "#f97316", glow: "rgba(249, 115, 22, 0.3)" },
+  ST: { bg: "rgba(229, 36, 33, 0.15)", text: "#e52421", glow: "rgba(229, 36, 33, 0.3)" },
+};
+
 // Foot labels
 const footLabels: Record<string, string> = {
   right: "Direito",
@@ -194,10 +211,11 @@ const headerVariants = {
 };
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// CARD VARIANT A — Premium Standard
+// PREMIUM CAROUSEL CARD - Enhanced with colors and effects
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function PlayerCardPremium({ player, isMobile }: { player: Player; isMobile: boolean }) {
+function CarouselCard({ player, isMobile }: { player: Player; isMobile: boolean }) {
   const [isHovered, setIsHovered] = useState(false);
+  const posColor = positionColors[player.position] || positionColors.CM;
   
   // Get optimized image props - mobile uses 1800px for retina sharpness
   const imageProps = getOptimizedImageProps(player.photo_url, isMobile);
@@ -205,12 +223,33 @@ function PlayerCardPremium({ player, isMobile }: { player: Player; isMobile: boo
   return (
     <Link
       to={`/players/${player.slug}`}
-      className="group block"
+      className="group block h-full"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <article className="relative overflow-hidden rounded-sm bg-[#0a0c12]">
-        {/* Image Container - 70% of card */}
+      <motion.article 
+        className="relative overflow-hidden rounded-xl h-full"
+        style={{
+          background: "linear-gradient(180deg, #0d1018 0%, #070910 100%)",
+          boxShadow: isHovered 
+            ? `0 20px 60px -15px rgba(0,0,0,0.8), 0 0 40px -10px ${posColor.glow}` 
+            : "0 10px 40px -10px rgba(0,0,0,0.5)",
+        }}
+        animate={{ 
+          scale: isHovered ? 1.02 : 1,
+          y: isHovered ? -4 : 0,
+        }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+      >
+        {/* Gradient accent top border */}
+        <div 
+          className="absolute top-0 left-0 right-0 h-1 z-10"
+          style={{ 
+            background: `linear-gradient(90deg, ${posColor.text}, ${posColor.text}60, transparent)`,
+          }}
+        />
+
+        {/* Image Container - Larger aspect ratio */}
         <div className="relative aspect-[3/4] overflow-hidden">
           <motion.img
             src={imageProps.src}
@@ -219,51 +258,71 @@ function PlayerCardPremium({ player, isMobile }: { player: Player; isMobile: boo
             alt={player.full_name}
             loading="lazy"
             className="absolute inset-0 w-full h-full object-cover object-top"
-            animate={{ scale: isHovered ? 1.03 : 1 }}
-            transition={{ duration: 0.24, ease: "easeOut" }}
+            animate={{ scale: isHovered ? 1.08 : 1 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
           />
 
-          {/* Premium gradient overlay */}
+          {/* Premium gradient overlay with color tint */}
           <div
-            className={cn(
-              "absolute inset-0 bg-gradient-to-t from-[#070910] via-[#070910]/50 to-transparent transition-opacity duration-240",
-              isHovered ? "opacity-95" : "opacity-85"
-            )}
+            className="absolute inset-0 transition-opacity duration-300"
+            style={{
+              background: `linear-gradient(180deg, 
+                transparent 0%, 
+                rgba(7, 9, 16, 0.3) 40%, 
+                rgba(7, 9, 16, 0.85) 75%, 
+                #070910 100%)`,
+              opacity: isHovered ? 1 : 0.9,
+            }}
+          />
+          
+          {/* Subtle color wash on hover */}
+          <motion.div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background: `radial-gradient(ellipse at bottom, ${posColor.glow} 0%, transparent 70%)`,
+            }}
+            animate={{ opacity: isHovered ? 0.4 : 0 }}
+            transition={{ duration: 0.3 }}
           />
 
-          {/* Position Badge - Top Left */}
-          <div className="absolute top-4 left-4">
+          {/* Position Badge - Top Left with color */}
+          <div className="absolute top-4 left-4 z-10">
             <div 
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border border-white/[0.08]"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg border"
               style={{ 
-                background: "rgba(7, 9, 16, 0.65)", 
-                backdropFilter: "blur(6px)",
-                WebkitBackdropFilter: "blur(6px)"
+                background: posColor.bg,
+                borderColor: `${posColor.text}30`,
+                backdropFilter: "blur(8px)",
               }}
             >
-              <Zap className="w-3 h-3 text-white/60" />
-              <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-white">
+              <Zap className="w-3.5 h-3.5" style={{ color: posColor.text }} />
+              <span 
+                className="text-[11px] font-bold uppercase tracking-[0.12em]"
+                style={{ color: posColor.text }}
+              >
                 {positionCodes[player.position] || player.position}
               </span>
             </div>
           </div>
 
-          {/* Status Badge - Top Right (hide on iPad/tablet) */}
-          <div className="absolute top-4 right-4 tablet:hidden tablet-landscape:hidden">
+          {/* Status Badge - Top Right with enhanced visibility */}
+          <div className="absolute top-4 right-4 z-10">
             <div 
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border border-white/[0.08]"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg border"
               style={{ 
-                background: "rgba(7, 9, 16, 0.65)", 
-                backdropFilter: "blur(6px)",
-                WebkitBackdropFilter: "blur(6px)"
+                background: "rgba(30, 215, 96, 0.12)",
+                borderColor: "rgba(30, 215, 96, 0.25)",
+                backdropFilter: "blur(8px)",
               }}
             >
               <span 
-                className="w-1.5 h-1.5 rounded-full animate-pulse"
-                style={{ backgroundColor: "#1ED760" }}
-              />
+                className="relative flex h-2 w-2"
+              >
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1ED760] opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#1ED760]" />
+              </span>
               <span 
-                className="text-[10px] font-semibold uppercase tracking-[0.1em]"
+                className="text-[11px] font-bold uppercase tracking-[0.1em]"
                 style={{ color: "#1ED760" }}
               >
                 Monitorado
@@ -272,197 +331,64 @@ function PlayerCardPremium({ player, isMobile }: { player: Player; isMobile: boo
           </div>
 
           {/* Player Info - Bottom */}
-          <div className="absolute bottom-0 left-0 right-0 p-5">
-            {/* Name */}
-            <h3 className="text-white font-semibold text-lg tracking-tight mb-1.5 line-clamp-1">
+          <div className="absolute bottom-0 left-0 right-0 p-5 z-10">
+            {/* Name with glow effect */}
+            <h3 
+              className="text-white font-bold text-xl tracking-tight mb-2 line-clamp-1"
+              style={{
+                textShadow: isHovered ? `0 0 20px ${posColor.glow}` : "none",
+              }}
+            >
               {player.full_name}
             </h3>
 
             {/* Age & Country */}
-            <p className="text-white/50 text-[13px] font-medium tracking-wide mb-1">
+            <p className="text-white/60 text-sm font-medium tracking-wide mb-1.5">
               {player.age ? `${player.age} anos` : "—"}
-              <span className="mx-1.5 text-white/20">•</span>
+              <span className="mx-2 text-white/20">•</span>
               {player.nationality}
             </p>
 
             {/* Club */}
             {player.current_club && (
-              <p className="text-white/30 text-[11px] uppercase tracking-[0.08em] line-clamp-1">
+              <p className="text-white/40 text-xs uppercase tracking-[0.1em] line-clamp-1 mb-4">
                 {player.current_club}
               </p>
             )}
 
-            {/* Hover CTA */}
+            {/* Hover CTA - Enhanced */}
             <motion.div
-              className="flex items-center gap-1.5 mt-4 text-white/40 text-[11px] font-medium tracking-wide"
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: isHovered ? 1 : 0, y: isHovered ? 0 : 4 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-            >
-              <span>Ver perfil</span>
-              <ArrowRight className="w-3 h-3" />
-            </motion.div>
-          </div>
-        </div>
-      </article>
-    </Link>
-  );
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// CARD VARIANT B — Data-Driven / Scout
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function PlayerCardScout({ player, isMobile }: { player: Player; isMobile: boolean }) {
-  const [isHovered, setIsHovered] = useState(false);
-  
-  // Get optimized image props - mobile uses 1800px for retina sharpness
-  const imageProps = getOptimizedImageProps(player.photo_url, isMobile);
-
-  return (
-    <Link
-      to={`/players/${player.slug}`}
-      className="group block"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <article className="relative overflow-hidden rounded-sm bg-[#0a0c12]">
-        {/* Image Container */}
-        <div className="relative aspect-[3/4] overflow-hidden">
-          <motion.img
-            src={imageProps.src}
-            srcSet={imageProps.srcSet}
-            sizes={imageProps.sizes}
-            alt={player.full_name}
-            loading="lazy"
-            className="absolute inset-0 w-full h-full object-cover object-top"
-            animate={{ scale: isHovered ? 1.03 : 1 }}
-            transition={{ duration: 0.24, ease: "easeOut" }}
-          />
-
-          {/* Premium gradient overlay */}
-          <div
-            className={cn(
-              "absolute inset-0 bg-gradient-to-t from-[#070910] via-[#070910]/50 to-transparent transition-opacity duration-240",
-              isHovered ? "opacity-95" : "opacity-85"
-            )}
-          />
-
-          {/* Position Badge - Top Left */}
-          <div className="absolute top-4 left-4">
-            <div 
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border border-white/[0.08]"
-              style={{ 
-                background: "rgba(7, 9, 16, 0.65)", 
-                backdropFilter: "blur(6px)",
-                WebkitBackdropFilter: "blur(6px)"
-              }}
-            >
-              <Zap className="w-3 h-3 text-white/60" />
-              <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-white">
-                {positionCodes[player.position] || player.position}
-              </span>
-            </div>
-          </div>
-
-          {/* Status Badge - Top Right (hide on iPad/tablet) */}
-          <div className="absolute top-4 right-4 tablet:hidden tablet-landscape:hidden">
-            <div 
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border border-white/[0.08]"
-              style={{ 
-                background: "rgba(7, 9, 16, 0.65)", 
-                backdropFilter: "blur(6px)",
-                WebkitBackdropFilter: "blur(6px)"
-              }}
+              className="flex items-center gap-2 pt-3 border-t border-white/10"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: isHovered ? 1 : 0, y: isHovered ? 0 : 8 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
             >
               <span 
-                className="w-1.5 h-1.5 rounded-full animate-pulse"
-                style={{ backgroundColor: "#1ED760" }}
-              />
-              <span 
-                className="text-[10px] font-semibold uppercase tracking-[0.1em]"
-                style={{ color: "#1ED760" }}
+                className="text-sm font-semibold tracking-wide"
+                style={{ color: posColor.text }}
               >
-                Monitorado
+                Ver perfil completo
               </span>
-            </div>
-          </div>
-
-          {/* Player Info - Bottom */}
-          <div className="absolute bottom-0 left-0 right-0 p-4">
-            {/* Name */}
-            <h3 className="text-white font-semibold text-lg tracking-tight mb-1 line-clamp-1">
-              {player.full_name}
-            </h3>
-
-            {/* Age & Country */}
-            <p className="text-white/50 text-[13px] font-medium tracking-wide mb-3">
-              {player.age ? `${player.age} anos` : "—"}
-              <span className="mx-1.5 text-white/20">•</span>
-              {player.nationality}
-            </p>
-
-            {/* Data Strip - Scout Quick Read */}
-            <div className="flex items-center gap-3 pt-3 border-t border-white/[0.06] text-[10px] font-medium uppercase tracking-[0.08em] text-white/40">
-              <span className="text-white/60">
-                POS: {positionCodes[player.position] || player.position}
-              </span>
-              <span className="w-px h-3 bg-white/10" />
-              <span>
-                Pé: {player.dominant_foot ? footLabels[player.dominant_foot] || player.dominant_foot : "—"}
-              </span>
-              <span className="w-px h-3 bg-white/10" />
-              <span>
-                {player.age ? `${player.age}a` : "—"}
-              </span>
-            </div>
-
-            {/* Hover CTA */}
-            <motion.div
-              className="flex items-center gap-1.5 mt-3 text-white/40 text-[11px] font-medium tracking-wide"
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: isHovered ? 1 : 0, y: isHovered ? 0 : 4 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-            >
-              <span>Ver perfil</span>
-              <ArrowRight className="w-3 h-3" />
+              <ArrowRight className="w-4 h-4" style={{ color: posColor.text }} />
             </motion.div>
           </div>
         </div>
-      </article>
+      </motion.article>
     </Link>
   );
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// DESKTOP GRID
+// UNIVERSAL CAROUSEL - Works on both desktop and mobile
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function DesktopGrid({ players, variant }: { players: Player[]; variant: "premium" | "scout" }) {
-  const CardComponent = variant === "scout" ? PlayerCardScout : PlayerCardPremium;
-
-  return (
-    <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5 px-6 lg:px-8">
-      {players.slice(0, 8).map((player, index) => (
-        <motion.div
-          key={player.id}
-          variants={cardVariants}
-          custom={index}
-        >
-          <CardComponent player={player} isMobile={false} />
-        </motion.div>
-      ))}
-    </div>
-  );
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// MOBILE CAROUSEL
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function MobileCarousel({ players, variant }: { players: Player[]; variant: "premium" | "scout" }) {
+function UniversalCarousel({ players }: { players: Player[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
-
-  const CardComponent = variant === "scout" ? PlayerCardScout : PlayerCardPremium;
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+  const isMobile = useIsMobile();
 
   const checkScrollPosition = () => {
     if (!containerRef.current) return;
@@ -487,75 +413,121 @@ function MobileCarousel({ players, variant }: { players: Player[]; variant: "pre
 
   const scroll = (direction: "left" | "right") => {
     if (!containerRef.current) return;
-    // Scroll exactly 1 full card width
-    const scrollAmount = containerRef.current.clientWidth;
+    // Scroll by card width + gap
+    const cardWidth = isMobile ? containerRef.current.clientWidth * 0.85 : 320;
     containerRef.current.scrollBy({
-      left: direction === "left" ? -scrollAmount : scrollAmount,
+      left: direction === "left" ? -cardWidth : cardWidth,
       behavior: "smooth",
     });
   };
 
+  // Mouse drag handlers for desktop
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!containerRef.current) return;
+    setIsDragging(true);
+    setStartX(e.pageX - containerRef.current.offsetLeft);
+    setScrollLeft(containerRef.current.scrollLeft);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !containerRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - containerRef.current.offsetLeft;
+    const walk = (x - startX) * 1.5;
+    containerRef.current.scrollLeft = scrollLeft - walk;
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
   return (
-    <div className="md:hidden relative">
-      {/* Scroll Container — 1 card at a time, no peek */}
+    <div className="relative">
+      {/* Scroll Container with drag support */}
       <div
         ref={containerRef}
-        className="flex overflow-x-auto scrollbar-hide scroll-smooth pb-4"
+        className={cn(
+          "flex overflow-x-auto scrollbar-hide scroll-smooth pb-4 gap-4 md:gap-5 px-5 md:px-6 lg:px-8",
+          isDragging && "cursor-grabbing select-none"
+        )}
         style={{
           scrollSnapType: "x mandatory",
           WebkitOverflowScrolling: "touch",
+          cursor: isDragging ? "grabbing" : "grab",
         }}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
       >
         {players.map((player, index) => (
           <motion.div
             key={player.id}
-            className="flex-shrink-0 w-full px-4"
+            className="flex-shrink-0 w-[85vw] sm:w-[60vw] md:w-[320px] lg:w-[300px]"
             style={{ scrollSnapAlign: "start" }}
             variants={cardVariants}
             custom={index}
           >
-            <CardComponent player={player} isMobile={true} />
+            <CarouselCard player={player} isMobile={isMobile} />
           </motion.div>
         ))}
+        {/* End spacer for proper scroll */}
+        <div className="flex-shrink-0 w-4 md:w-6 lg:w-8" />
       </div>
 
-      {/* Left fade */}
+      {/* Left fade gradient */}
       <div
         className={cn(
-          "absolute left-0 top-0 bottom-4 w-12 bg-gradient-to-r from-[#070910] to-transparent pointer-events-none transition-opacity duration-300",
+          "absolute left-0 top-0 bottom-4 w-16 md:w-24 bg-gradient-to-r from-[#070910] to-transparent pointer-events-none transition-opacity duration-300 z-10",
           canScrollLeft ? "opacity-100" : "opacity-0"
         )}
       />
 
-      {/* Right fade */}
+      {/* Right fade gradient */}
       <div
         className={cn(
-          "absolute right-0 top-0 bottom-4 w-12 bg-gradient-to-l from-[#070910] to-transparent pointer-events-none transition-opacity duration-300",
+          "absolute right-0 top-0 bottom-4 w-16 md:w-24 bg-gradient-to-l from-[#070910] to-transparent pointer-events-none transition-opacity duration-300 z-10",
           canScrollRight ? "opacity-100" : "opacity-0"
         )}
       />
 
-      {/* Navigation arrows */}
+      {/* Navigation arrows - Desktop only, enhanced */}
       <button
         onClick={() => scroll("left")}
         className={cn(
-          "absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/50 transition-all duration-200",
+          "hidden md:flex absolute left-4 lg:left-6 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full items-center justify-center z-20 transition-all duration-300",
+          "bg-white/10 backdrop-blur-md border border-white/20",
+          "hover:bg-white/20 hover:scale-110 hover:border-white/30",
+          "text-white/70 hover:text-white",
           !canScrollLeft && "opacity-0 pointer-events-none"
         )}
         aria-label="Anterior"
       >
-        <ChevronLeft className="w-4 h-4" />
+        <ChevronLeft className="w-6 h-6" />
       </button>
       <button
         onClick={() => scroll("right")}
         className={cn(
-          "absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/50 transition-all duration-200",
+          "hidden md:flex absolute right-4 lg:right-6 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full items-center justify-center z-20 transition-all duration-300",
+          "bg-white/10 backdrop-blur-md border border-white/20",
+          "hover:bg-white/20 hover:scale-110 hover:border-white/30",
+          "text-white/70 hover:text-white",
           !canScrollRight && "opacity-0 pointer-events-none"
         )}
         aria-label="Próximo"
       >
-        <ChevronRight className="w-4 h-4" />
+        <ChevronRight className="w-6 h-6" />
       </button>
+
+      {/* Mobile navigation dots */}
+      <div className="flex md:hidden justify-center gap-1.5 mt-2">
+        {players.slice(0, 8).map((_, i) => (
+          <div 
+            key={i}
+            className="w-1.5 h-1.5 rounded-full bg-white/20"
+          />
+        ))}
+      </div>
     </div>
   );
 }
@@ -614,8 +586,6 @@ export function FeaturedPlayers() {
   const [isInView, setIsInView] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
 
-  // A/B variant - can be toggled via props or feature flag
-  const variant: "premium" | "scout" = "scout";
 
   useEffect(() => {
     const element = sectionRef.current;
@@ -706,15 +676,14 @@ export function FeaturedPlayers() {
           </motion.div>
         </motion.div>
 
-        {/* Players Display - PROGRESSIVE: show skeletons or cached data immediately */}
+        {/* Players Carousel - Premium horizontal scroll */}
         {players.length > 0 ? (
           <motion.div
             initial="hidden"
             animate={isInView ? "visible" : "hidden"}
             variants={containerVariants}
           >
-            <DesktopGrid players={players} variant={variant} />
-            <MobileCarousel players={players} variant={variant} />
+            <UniversalCarousel players={players} />
           </motion.div>
         ) : loading ? (
           // SKELETON: show placeholder grid while loading (no spinner)
