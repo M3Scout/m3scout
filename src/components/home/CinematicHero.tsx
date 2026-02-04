@@ -139,7 +139,7 @@ export function CinematicHero() {
       </div>
 
       {/* Main Content */}
-      <div className="relative z-10 w-full mx-auto max-w-[1200px] px-6 lg:px-10 py-20">
+      <div className="relative z-10 w-full container-main py-20">
         <div className="max-w-2xl">
           {/* Badge */}
           <motion.div

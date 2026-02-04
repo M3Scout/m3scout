@@ -169,7 +169,7 @@ const Contact = () => {
 
       {/* HERO SECTION - Compact */}
       <section className="relative pt-24 pb-6 md:pt-28 md:pb-8">
-        <div className="relative z-10 mx-auto max-w-[1200px] px-6 md:px-12 lg:px-16">
+        <div className="relative z-10 container-main">
           
           {/* Badge */}
           <motion.div
@@ -217,7 +217,7 @@ const Contact = () => {
 
       {/* CHANNELS SECTION - Compact */}
       <section className="py-6 md:py-8">
-        <div className="mx-auto max-w-[1200px] px-6 md:px-12 lg:px-16">
+        <div className="container-main">
           
           {/* Section Header */}
           <motion.div 
@@ -351,7 +351,7 @@ const Contact = () => {
 
       {/* FORM SECTION - Compact */}
       <section className="py-8 md:py-10 lg:py-12 bg-[#0d0d0d]">
-        <div className="mx-auto max-w-[1200px] px-6 md:px-12 lg:px-16">
+        <div className="container-main">
           
           {/* Section Header */}
           <motion.div 

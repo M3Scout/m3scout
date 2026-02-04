@@ -412,7 +412,7 @@ function UniversalCarousel({ players }: { players: Player[] }) {
       <div
         ref={containerRef}
         className={cn(
-          "flex overflow-x-auto scrollbar-hide scroll-smooth pb-4 gap-4 md:gap-5 px-5 md:px-6 lg:px-8",
+          "flex overflow-x-auto scrollbar-hide scroll-smooth pb-4 gap-4 md:gap-5 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8",
           isDragging && "cursor-grabbing select-none"
         )}
         style={{
@@ -613,10 +613,10 @@ export function FeaturedPlayers() {
         <div className="absolute bottom-0 right-1/4 w-[500px] h-[300px] bg-white/[0.01] blur-[100px] rounded-full" />
       </div>
 
-      <div className="relative mx-auto max-w-7xl">
+      <div className="relative container-main">
         {/* Section Header - Compact */}
         <motion.div
-          className="flex flex-col md:flex-row md:items-end justify-between gap-3 mb-6 md:mb-8 px-5 md:px-6 lg:px-8"
+          className="flex flex-col md:flex-row md:items-end justify-between gap-3 mb-6 md:mb-8"
           initial="hidden"
           animate={isInView ? "visible" : "hidden"}
           variants={containerVariants}
@@ -652,7 +652,7 @@ export function FeaturedPlayers() {
           </motion.div>
         ) : loading ? (
           // SKELETON: show placeholder grid while loading (no spinner)
-          <div className="px-5 md:px-6 lg:px-8">
+          <div>
             <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-4">
               {[...Array(8)].map((_, i) => (
                 <div

@@ -188,6 +188,17 @@ p, span, h1, h2, h3, h4, h5, h6, a, li {
 }
 
 @layer components {
+  /* ========== GLOBAL CONTAINER - Aligned with Header Logo ========== */
+  /* This container ensures all public page content aligns with the header logo */
+  .container-main {
+    @apply w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  /* Variant for full-bleed sections that need internal alignment */
+  .container-main-inner {
+    @apply max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
   /* Admin Panel - Command Center Aesthetic */
   .admin-panel {
     @apply bg-[hsl(222,47%,5%)] min-h-screen;
