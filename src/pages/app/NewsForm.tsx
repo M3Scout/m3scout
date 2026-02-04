@@ -4,9 +4,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -17,6 +17,7 @@ import {
 import { ArrowLeft, Save, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { ImageCropEditor, type CropPosition } from "@/components/news/ImageCropEditor";
+import { NewsImageUpload } from "@/components/news/NewsImageUpload";
 
 const categories = [
   "Institucional",
@@ -286,25 +287,22 @@ const NewsForm = () => {
           </div>
         </div>
 
-        {/* Featured Image URL */}
+        {/* Featured Image Upload */}
         <div className="space-y-2">
-          <Label htmlFor="featured_image_url" className="text-xs uppercase tracking-wide text-zinc-500">
-            URL da Imagem Destaque
+          <Label className="text-xs uppercase tracking-wide text-zinc-500">
+            Imagem Destaque
           </Label>
-          <Input
-            id="featured_image_url"
+          <NewsImageUpload
             value={formData.featured_image_url}
-            onChange={(e) =>
+            onChange={(url) =>
               setFormData((prev) => ({ 
                 ...prev, 
-                featured_image_url: e.target.value,
-                // Reset crops when URL changes
+                featured_image_url: url,
+                // Reset crops when image changes
                 hero_crop: null,
                 card_crop: null,
               }))
             }
-            placeholder="https://exemplo.com/imagem.jpg"
-            className={inputClasses}
           />
         </div>
 
