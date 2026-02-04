@@ -12,7 +12,6 @@ import { cn } from "@/lib/utils";
 // Premium modular components
 import { AthleteHeroSection } from "@/components/players/public/AthleteHeroSection";
 import { AthleteHighlightsSection } from "@/components/players/public/AthleteHighlightsSection";
-import { AthletePlayProfileCard } from "@/components/players/public/AthletePlayProfileCard";
 import { AthleteStatsSection } from "@/components/players/public/AthleteStatsSection";
 import { AthleteGamePhasesSection } from "@/components/players/public/AthleteGamePhasesSection";
 import { AthletePhysicalSection } from "@/components/players/public/AthletePhysicalSection";
@@ -288,7 +287,15 @@ const PlayerProfile = () => {
       </div>
 
       <div className="relative pt-24 sm:pt-28 pb-16">
-        <div className="max-w-6xl mx-auto" style={{ paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
+        {/* Container aligned with header logo - uses same max-width and gutters */}
+        <div 
+          className="w-full mx-auto" 
+          style={{ 
+            maxWidth: 'var(--page-max-width)', 
+            paddingLeft: 'var(--page-gutter)', 
+            paddingRight: 'var(--page-gutter)' 
+          }}
+        >
           
           {/* Back Button */}
           <motion.div 
@@ -305,21 +312,13 @@ const PlayerProfile = () => {
             </Link>
           </motion.div>
 
-          {/* Hero Section - includes status badge */}
+          {/* Hero Section - complete athlete header block */}
           <AthleteHeroSection 
             player={player} 
             contractStatus={player.contract_status}
           />
 
-          {/* Play Profile Card - shows tactical role and play style */}
-          <AthletePlayProfileCard
-            playStyle={player.play_style}
-            primaryTacticalRole={player.primary_tactical_role}
-            secondaryTacticalRole={player.secondary_tactical_role}
-            position={player.position}
-          />
-
-          {/* Highlights Section - ONLY strengths, clean and focused */}
+          {/* Highlights Section - Pontos Fortes */}
           <AthleteHighlightsSection strengths={player.strengths} />
 
           {/* Statistics Section */}
