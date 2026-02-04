@@ -669,7 +669,7 @@ export function FeaturedPlayers() {
   return (
     <section
       ref={sectionRef}
-      className="relative py-20 md:py-28 overflow-hidden"
+      className="relative py-12 md:py-16 lg:py-20 overflow-hidden"
       style={{ backgroundColor: "#070910" }}
     >
       {/* Subtle ambient glow */}
@@ -679,18 +679,18 @@ export function FeaturedPlayers() {
       </div>
 
       <div className="relative mx-auto max-w-7xl">
-        {/* Section Header */}
+        {/* Section Header - Compact */}
         <motion.div
-          className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10 md:mb-14 px-5 md:px-6 lg:px-8"
+          className="flex flex-col md:flex-row md:items-end justify-between gap-3 mb-6 md:mb-8 px-5 md:px-6 lg:px-8"
           initial="hidden"
           animate={isInView ? "visible" : "hidden"}
           variants={containerVariants}
         >
-          <motion.div variants={headerVariants} className="space-y-2">
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight text-white uppercase">
+          <motion.div variants={headerVariants} className="space-y-1">
+            <h2 className="text-xl md:text-2xl lg:text-3xl font-bold tracking-tight text-white uppercase">
               ATLETAS
             </h2>
-            <p className="text-white/40 text-sm md:text-[15px] font-medium tracking-wide">
+            <p className="text-white/40 text-xs md:text-sm font-medium tracking-wide">
               Talentos monitorados pela M3
             </p>
           </motion.div>
@@ -698,10 +698,10 @@ export function FeaturedPlayers() {
           <motion.div variants={headerVariants}>
             <Link
               to="/players"
-              className="group inline-flex items-center gap-2 text-white/40 hover:text-white transition-colors duration-300 text-sm font-medium tracking-wide"
+              className="group inline-flex items-center gap-1.5 text-white/40 hover:text-white transition-colors duration-300 text-xs font-semibold tracking-wide"
             >
               <span>Ver todos</span>
-              <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+              <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
             </Link>
           </motion.div>
         </motion.div>

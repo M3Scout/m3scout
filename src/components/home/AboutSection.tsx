@@ -26,21 +26,20 @@ export function AboutSection() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="py-24 md:py-32 lg:py-40 bg-[#f8f7f4] tablet:border-b-0 tablet:after:hidden">
-      {/* Single column container - aligned with InstagramFeedSection */}
+    <section ref={sectionRef} className="py-12 md:py-16 lg:py-20 bg-[#f8f7f4]">
       <div className="mx-auto max-w-[1280px] px-6 lg:px-10">
         <div className="max-w-3xl">
-          {/* Editorial Quote */}
+          {/* Editorial Quote - Tighter spacing */}
           <blockquote 
             className={cn(
-              "mb-12 transition-all duration-1000 ease-out",
+              "mb-6 md:mb-8 transition-all duration-1000 ease-out",
               isInView 
                 ? "opacity-100 translate-y-0" 
                 : "opacity-0 translate-y-8"
             )}
           >
             <p 
-              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl leading-[1.2] tracking-tight"
+              className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl leading-[1.15] tracking-tight"
               style={{ fontFamily: '"Times New Roman", Times, serif' }}
             >
               <span className="text-neutral-900 font-bold not-italic">"</span>
@@ -57,10 +56,10 @@ export function AboutSection() {
             </p>
           </blockquote>
 
-          {/* Divider Line */}
+          {/* Divider Line - Closer */}
           <div 
             className={cn(
-              "w-full h-px bg-neutral-300 mb-12 transition-all duration-700 ease-out origin-left",
+              "w-full h-px bg-neutral-300 mb-6 md:mb-8 transition-all duration-700 ease-out origin-left",
               isInView 
                 ? "opacity-100 scale-x-100" 
                 : "opacity-0 scale-x-0"
@@ -68,20 +67,20 @@ export function AboutSection() {
             style={{ transitionDelay: "300ms" }}
           />
 
-          {/* Body Text */}
+          {/* Body Text - Compact */}
           <div 
             className={cn(
-              "max-w-2xl mb-12 transition-all duration-700 ease-out",
+              "max-w-2xl mb-6 md:mb-8 transition-all duration-700 ease-out",
               isInView 
                 ? "opacity-100 translate-y-0" 
                 : "opacity-0 translate-y-6"
             )}
             style={{ transitionDelay: "500ms" }}
           >
-            <p className="text-base md:text-lg text-neutral-600 leading-relaxed mb-6">
+            <p className="text-sm md:text-base text-neutral-500 leading-relaxed mb-3">
               Na M3 Agency, combinamos scouting e gestão de carreira com uma visão moderna de mercado.
             </p>
-            <p className="text-base md:text-lg text-neutral-600 leading-relaxed">
+            <p className="text-sm md:text-base text-neutral-500 leading-relaxed">
               Trabalhamos com dados, relacionamento com clubes e acompanhamento próximo para acelerar a evolução de cada atleta.
             </p>
           </div>
@@ -90,7 +89,7 @@ export function AboutSection() {
           <Link
             to="/sobre"
             className={cn(
-              "group inline-flex items-center gap-2 text-sm font-medium uppercase tracking-[0.2em] text-neutral-900 hover:text-[#e52421] transition-all duration-500 ease-out",
+              "group inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-neutral-900 hover:text-[#e52421] transition-all duration-300",
               isInView 
                 ? "opacity-100 translate-y-0" 
                 : "opacity-0 translate-y-4"
@@ -98,7 +97,7 @@ export function AboutSection() {
             style={{ transitionDelay: "700ms" }}
           >
             <span>Saiba Mais</span>
-            <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
+            <ArrowRight className="w-3.5 h-3.5 transition-transform duration-300 group-hover:translate-x-1" />
           </Link>
         </div>
       </div>
