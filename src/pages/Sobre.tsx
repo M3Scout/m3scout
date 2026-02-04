@@ -41,8 +41,8 @@ const Sobre = () => {
   return (
     <div className="min-h-screen bg-[#0a0a0a]" style={{ fontFamily: "'Poppins', sans-serif" }}>
       
-      {/* HERO SECTION - Clean, Premium */}
-      <section className="relative min-h-screen w-full flex items-center">
+      {/* HERO SECTION - Compact Premium */}
+      <section className="relative min-h-[70vh] w-full flex items-center">
         {/* Subtle grain texture */}
         <div 
           className="absolute inset-0 opacity-[0.02] pointer-events-none"
@@ -53,7 +53,7 @@ const Sobre = () => {
 
         {/* Hero Content */}
         <div className="relative z-10 w-full">
-          <div className="mx-auto max-w-[1200px] px-6 md:px-12 lg:px-16 py-32 md:py-40">
+          <div className="mx-auto max-w-[1200px] px-6 md:px-12 lg:px-16 py-20 md:py-28">
             <div className="max-w-3xl">
               
               {/* M3 Agency Title */}
@@ -61,7 +61,7 @@ const Sobre = () => {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
-                className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-semibold tracking-tight text-white mb-8"
+                className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white mb-4"
               >
                 <span className="text-[#e52421]">M3</span> Agency
               </motion.h1>
@@ -71,7 +71,7 @@ const Sobre = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7, delay: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
-                className="text-lg sm:text-xl md:text-2xl text-neutral-400 font-light mb-12 leading-relaxed tracking-wide"
+                className="text-base sm:text-lg md:text-xl text-neutral-400 font-light mb-8 leading-relaxed"
               >
                 Scouting, estratégia e decisões de carreira no futebol profissional.
               </motion.p>
@@ -81,12 +81,12 @@ const Sobre = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7, delay: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
-                className="mb-16"
+                className="mb-8"
               >
-                <p className="text-2xl sm:text-3xl md:text-4xl text-white/90 font-light leading-[1.4] tracking-wide">
+                <p className="text-xl sm:text-2xl md:text-3xl text-white font-medium leading-[1.35]">
                   Transformamos talento em direção.
                   <br />
-                  <span className="text-neutral-400">Criamos caminhos reais no futebol de elite.</span>
+                  <span className="text-neutral-500 font-light">Criamos caminhos reais no futebol de elite.</span>
                 </p>
               </motion.div>
 
@@ -98,9 +98,9 @@ const Sobre = () => {
               >
                 <Link 
                   to="/contato"
-                  className="inline-flex items-center gap-4 text-sm tracking-widest uppercase text-neutral-500 hover:text-white transition-colors duration-300 group"
+                  className="inline-flex items-center gap-3 text-sm tracking-widest uppercase text-neutral-500 hover:text-white transition-colors duration-300 group"
                 >
-                  <span className="w-10 h-px bg-neutral-600 group-hover:w-16 group-hover:bg-[#e52421] transition-all duration-300" />
+                  <span className="w-8 h-px bg-neutral-600 group-hover:w-12 group-hover:bg-[#e52421] transition-all duration-300" />
                   Falar com a M3
                 </Link>
               </motion.div>
@@ -109,27 +109,27 @@ const Sobre = () => {
         </div>
       </section>
 
-      {/* BLOCO EDITORIAL */}
-      <section className="py-32 md:py-40 lg:py-48 bg-[#0a0a0a]">
+      {/* BLOCO EDITORIAL - Compact */}
+      <section className="py-12 md:py-16 lg:py-20 bg-[#0a0a0a]">
         <div className="mx-auto max-w-[1200px] px-6 md:px-12 lg:px-16">
           <motion.div 
             ref={conceptRef}
-            initial={{ opacity: 0, y: 40 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={conceptInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
-            className="max-w-3xl"
+            className="max-w-2xl"
           >
-            <p className="text-xl sm:text-2xl md:text-3xl text-neutral-300 font-light leading-[1.8] tracking-wide">
-              <span className="text-white font-normal">A M3 Agency atua onde talento encontra decisão.</span>
+            <p className="text-lg sm:text-xl md:text-2xl leading-[1.7]">
+              <span className="text-white font-semibold">A M3 Agency atua onde talento encontra decisão.</span>
               <br /><br />
-              Mais do que representar atletas, operamos como um núcleo estratégico: análise, visão de mercado e construção de carreira com base em dados, contexto competitivo e leitura real do jogo.
+              <span className="text-neutral-400 font-light">Mais do que representar atletas, operamos como um núcleo estratégico: análise, visão de mercado e construção de carreira com base em dados, contexto competitivo e leitura real do jogo.</span>
             </p>
           </motion.div>
         </div>
       </section>
 
-      {/* O QUE FAZEMOS - Editorial List */}
-      <section className="py-24 md:py-32 lg:py-40 bg-[#0d0d0d]">
+      {/* O QUE FAZEMOS - Compact Editorial List */}
+      <section className="py-10 md:py-14 lg:py-16 bg-[#0d0d0d]">
         <div className="mx-auto max-w-[1200px] px-6 md:px-12 lg:px-16">
           
           {/* Section Label */}
@@ -137,7 +137,7 @@ const Sobre = () => {
             initial={{ opacity: 0 }}
             animate={servicesInView ? { opacity: 1 } : {}}
             transition={{ duration: 0.5 }}
-            className="text-[11px] uppercase tracking-[0.3em] text-neutral-600 font-medium mb-16 md:mb-20"
+            className="text-[10px] uppercase tracking-[0.25em] text-neutral-500 font-semibold mb-6 md:mb-8"
           >
             O que fazemos
           </motion.p>
@@ -150,16 +150,16 @@ const Sobre = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={servicesInView ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="group border-t border-neutral-800/50 py-10 md:py-12 lg:py-14 cursor-pointer"
+                className="group border-t border-neutral-800/50 py-5 md:py-6 cursor-pointer"
                 onMouseEnter={() => setActiveService(index)}
                 onMouseLeave={() => setActiveService(null)}
               >
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-8 items-baseline">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-6 items-baseline">
                   
                   {/* Number */}
                   <div className="md:col-span-2">
                     <span 
-                      className={`text-2xl md:text-3xl lg:text-4xl font-semibold transition-colors duration-300 ${
+                      className={`text-xl md:text-2xl font-bold transition-colors duration-300 ${
                         activeService === index ? 'text-[#e52421]' : 'text-neutral-700'
                       }`}
                     >
@@ -170,8 +170,8 @@ const Sobre = () => {
                   {/* Title */}
                   <div className="md:col-span-4">
                     <h3 
-                      className={`text-xl md:text-2xl lg:text-3xl font-medium transition-colors duration-300 ${
-                        activeService === index ? 'text-white' : 'text-neutral-500'
+                      className={`text-lg md:text-xl font-semibold transition-colors duration-300 ${
+                        activeService === index ? 'text-white' : 'text-neutral-400'
                       }`}
                     >
                       {service.title}
@@ -181,7 +181,7 @@ const Sobre = () => {
                   {/* Description */}
                   <div className="md:col-span-6">
                     <p 
-                      className={`text-base md:text-lg font-light leading-relaxed transition-colors duration-300 ${
+                      className={`text-sm md:text-base font-light leading-relaxed transition-colors duration-300 ${
                         activeService === index ? 'text-neutral-300' : 'text-neutral-600'
                       }`}
                     >
@@ -192,7 +192,7 @@ const Sobre = () => {
                 
                 {/* Hover accent line */}
                 <div 
-                  className={`mt-8 md:mt-10 h-px transition-all duration-500 ${
+                  className={`mt-4 h-px transition-all duration-500 ${
                     activeService === index 
                       ? 'bg-gradient-to-r from-[#e52421]/60 via-[#e52421]/20 to-transparent' 
                       : 'bg-transparent'
@@ -207,24 +207,24 @@ const Sobre = () => {
         </div>
       </section>
 
-      {/* BLOCO MANIFESTO */}
-      <section className="py-40 md:py-52 lg:py-64 bg-[#0a0a0a]">
+      {/* BLOCO MANIFESTO - Compact */}
+      <section className="py-16 md:py-20 lg:py-24 bg-[#0a0a0a]">
         <div className="mx-auto max-w-[1200px] px-6 md:px-12 lg:px-16">
           <div 
             ref={manifestoRef}
-            className="manifesto max-w-4xl mx-auto text-center flex flex-col gap-[10px] md:gap-3"
+            className="manifesto max-w-3xl mx-auto text-center flex flex-col gap-1 md:gap-2"
           >
             {[
               { text: "Talento sem direção é ruído.", delay: 0, weight: "font-light" },
               { text: "Direção sem estratégia é sorte.", delay: 0.15, weight: "font-light" },
-              { text: "Nós trabalhamos com os dois.", delay: 0.3, weight: "font-medium" },
+              { text: "Nós trabalhamos com os dois.", delay: 0.3, weight: "font-semibold" },
             ].map((item, index) => (
               <motion.p
                 key={index}
-                initial={{ opacity: 0, y: 25 }}
+                initial={{ opacity: 0, y: 20 }}
                 animate={manifestoInView ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.6, delay: item.delay, ease: [0.25, 0.1, 0.25, 1] }}
-                className={`manifesto-item text-[22px] sm:text-[28px] md:text-[34px] lg:text-[40px] ${item.weight} leading-[1.25] tracking-wide text-white/45 transition-colors duration-[220ms] ease-out hover:text-white`}
+                className={`manifesto-item text-lg sm:text-xl md:text-2xl lg:text-3xl ${item.weight} leading-[1.4] text-neutral-500 transition-colors duration-[220ms] ease-out hover:text-white`}
                 style={{ fontFamily: "'Poppins', sans-serif" }}
               >
                 {item.text}

@@ -35,6 +35,7 @@ const pressKitItems = [
     title: "Logo M3 Agency",
     description: "Versões oficiais da marca para uso editorial.",
     driveUrl: "https://drive.google.com/drive/folders/1f99p5pzV9qIcAk05ZaSDFlg2rKR4Eh81?usp=drive_link",
+    accent: "#e52421",
   },
   {
     id: 2,
@@ -42,14 +43,7 @@ const pressKitItems = [
     title: "Fotos dos Atletas",
     description: "Imagens oficiais para matérias e divulgações.",
     driveUrl: "https://drive.google.com/drive/folders/1Ft7SwI4wmRKVqvbtSt3hrqJScOfO1vub?usp=drive_link",
-  },
-  {
-    id: 3,
-    icon: FileText,
-    title: "Release Institucional",
-    description: "Textos e informações oficiais sobre a agência.",
-    // TODO: Substituir pelo link oficial quando disponível
-    driveUrl: "#",
+    accent: "#f59e0b",
   },
 ];
 
@@ -163,9 +157,9 @@ const Imprensa = () => {
             </p>
           </motion.div>
 
-          {/* Press Kit Grid - Tighter gaps */}
+          {/* Press Kit Grid - 2 Cards Only */}
           <motion.div 
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4"
+            className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5 max-w-2xl"
             initial="hidden"
             animate={pressKitInView ? "visible" : "hidden"}
             variants={{
@@ -202,40 +196,70 @@ const Imprensa = () => {
                     }
                   }
                 }}
-                className="group relative block p-5 rounded-xl bg-neutral-900/50 border border-neutral-800/60 transition-all duration-300 hover:border-neutral-700 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/30"
+                className="group relative block rounded-xl bg-neutral-800/60 border border-neutral-700/50 transition-all duration-300 hover:border-neutral-600 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/40 overflow-hidden"
+                style={{
+                  boxShadow: `0 0 0 0 ${item.accent}00`,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.boxShadow = `0 8px 32px -8px ${item.accent}40`;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = `0 0 0 0 ${item.accent}00`;
+                }}
               >
-                {/* Icon */}
-                <motion.div 
-                  className="w-10 h-10 rounded-lg bg-neutral-800/70 flex items-center justify-center mb-4 group-hover:bg-[#e52421]/10 transition-colors duration-300"
-                  variants={{
-                    hidden: { scale: 0.5, opacity: 0 },
-                    visible: { 
-                      scale: 1, 
-                      opacity: 1,
-                      transition: { delay: 0.1, type: "spring", stiffness: 200 }
-                    }
-                  }}
-                >
-                  <item.icon className="w-4 h-4 text-neutral-500 group-hover:text-[#e52421] transition-colors duration-300" />
-                </motion.div>
+                {/* Accent Top Bar */}
+                <div 
+                  className="h-1 w-full"
+                  style={{ background: `linear-gradient(90deg, ${item.accent}, ${item.accent}80)` }}
+                />
                 
-                {/* Content */}
-                <h3 className="text-base font-semibold text-white mb-1.5 group-hover:text-white transition-colors">
-                  {item.title}
-                </h3>
-                
-                <p className="text-xs text-neutral-500 leading-relaxed mb-4 line-clamp-2">
-                  {item.description}
-                </p>
-                
-                {/* CTA */}
-                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#e52421] group-hover:gap-2.5 transition-all duration-300">
-                  <span className="relative">
-                    Acessar no Drive
-                    <span className="absolute left-0 bottom-0 w-0 h-px bg-[#e52421] group-hover:w-full transition-all duration-300" />
+                <div className="p-5">
+                  {/* Icon with accent glow */}
+                  <motion.div 
+                    className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-all duration-300"
+                    style={{ 
+                      background: `linear-gradient(135deg, ${item.accent}20, ${item.accent}10)`,
+                      border: `1px solid ${item.accent}30`,
+                    }}
+                    variants={{
+                      hidden: { scale: 0.5, opacity: 0 },
+                      visible: { 
+                        scale: 1, 
+                        opacity: 1,
+                        transition: { delay: 0.1, type: "spring", stiffness: 200 }
+                      }
+                    }}
+                  >
+                    <item.icon 
+                      className="w-5 h-5 transition-colors duration-300" 
+                      style={{ color: item.accent }}
+                    />
+                  </motion.div>
+                  
+                  {/* Content */}
+                  <h3 className="text-lg font-bold text-white mb-2 group-hover:text-white transition-colors">
+                    {item.title}
+                  </h3>
+                  
+                  <p className="text-sm text-neutral-400 leading-relaxed mb-5">
+                    {item.description}
+                  </p>
+                  
+                  {/* CTA with accent color */}
+                  <span 
+                    className="inline-flex items-center gap-2 text-sm font-semibold group-hover:gap-3 transition-all duration-300"
+                    style={{ color: item.accent }}
+                  >
+                    <span className="relative">
+                      Acessar no Drive
+                      <span 
+                        className="absolute left-0 bottom-0 w-0 h-0.5 group-hover:w-full transition-all duration-300"
+                        style={{ background: item.accent }}
+                      />
+                    </span>
+                    <ExternalLink className="w-4 h-4" />
                   </span>
-                  <ExternalLink className="w-3 h-3" />
-                </span>
+                </div>
               </motion.a>
             ))}
           </motion.div>
