@@ -14,28 +14,51 @@ export function AthleteStatusBadge({ contractStatus, currentClub }: AthleteStatu
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: -5 }}
+      initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: 0.3 }}
+      transition={{ duration: 0.4, delay: 0.35, ease: [0.22, 1, 0.36, 1] }}
       className={cn(
-        "inline-flex items-center gap-2 px-3 py-1.5 rounded-lg",
-        "text-xs font-medium",
+        "inline-flex items-center gap-2.5 px-4 py-2 rounded-full",
+        "backdrop-blur-sm",
         isContracted 
-          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-          : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+          ? "bg-emerald-950/40 border border-emerald-500/30"
+          : "bg-amber-950/40 border border-amber-500/30"
       )}
     >
-      {isContracted ? (
-        <CheckCircle2 className="w-3.5 h-3.5" />
-      ) : (
-        <TrendingUp className="w-3.5 h-3.5" />
-      )}
-      <span>
-        {isContracted ? "Contratado" : "Livre no Mercado"}
-        {currentClub && isContracted && (
-          <span className="text-emerald-400/70 ml-1">• {currentClub}</span>
+      {/* Animated icon with subtle pulse */}
+      <motion.div
+        animate={{ 
+          scale: [1, 1.1, 1],
+          opacity: [0.8, 1, 0.8]
+        }}
+        transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+        className={cn(
+          "p-1 rounded-full",
+          isContracted ? "bg-emerald-500/20" : "bg-amber-500/20"
         )}
-      </span>
+      >
+        {isContracted ? (
+          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+        ) : (
+          <TrendingUp className="w-3.5 h-3.5 text-amber-400" />
+        )}
+      </motion.div>
+      
+      {/* Text with hierarchy */}
+      <div className="flex items-center gap-1.5">
+        <span className={cn(
+          "text-xs font-semibold tracking-wide",
+          isContracted ? "text-emerald-300" : "text-amber-300"
+        )}>
+          {isContracted ? "Contratado" : "Livre no Mercado"}
+        </span>
+        {currentClub && isContracted && (
+          <>
+            <span className="text-zinc-600">•</span>
+            <span className="text-xs font-medium text-zinc-400">{currentClub}</span>
+          </>
+        )}
+      </div>
     </motion.div>
   );
 }
