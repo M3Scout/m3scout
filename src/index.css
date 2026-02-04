@@ -17,6 +17,9 @@
   --page-gutter: 1rem;          /* Mobile: 16px */
   --page-max-width: 1280px;     /* Max container width */
   
+  /* Header logo optical alignment (compensates PNG transparent padding) */
+  --header-logo-nudge-x: -18px;
+  
   /* ========== BACKGROUND TOKENS ========== */
   --bg-base: #0a0a0a;           /* Unified page background */
   --bg-base-alt: #0d0d0d;       /* Section variant */
