@@ -3,17 +3,21 @@
  * 
  * Admin-only page showing auth/session diagnostic logs.
  * Useful for debugging mobile issues without DevTools.
+ * 
+ * Key checks:
+ * - sbClientCount should always be 1
+ * - Timeline: app_boot → getSession_ok → me_context_ok → boot_complete
  */
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { getRecentDiagLogs, clearDiagLogs } from "@/lib/diagnosticLogger";
+import { getRecentDiagLogs, clearDiagLogs, getSbClientCount } from "@/lib/diagnosticLogger";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Trash2, RefreshCw, ArrowLeft, Shield } from "lucide-react";
+import { Trash2, RefreshCw, ArrowLeft, Shield, CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
 import { format } from "date-fns";
 
 export default function DebugAuth() {
@@ -21,6 +25,7 @@ export default function DebugAuth() {
   const navigate = useNavigate();
   const [logs, setLogs] = useState<Array<{ t: string; e: string; c?: Record<string, unknown> }>>([]);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [sbClientCount, setSbClientCount] = useState(0);
   
   // Redirect non-admins
   useEffect(() => {
@@ -32,6 +37,7 @@ export default function DebugAuth() {
   // Load logs
   useEffect(() => {
     setLogs(getRecentDiagLogs());
+    setSbClientCount(getSbClientCount());
   }, [refreshKey]);
   
   const handleClear = () => {
@@ -45,17 +51,24 @@ export default function DebugAuth() {
   
   // Get badge color based on event type
   const getEventColor = (event: string): "default" | "destructive" | "secondary" | "outline" => {
-    if (event.includes("error") || event.includes("fail") || event.includes("timeout")) {
+    if (event.includes("fail") || event.includes("timeout") || event.includes("403") || event.includes("signout")) {
       return "destructive";
     }
-    if (event.includes("success") || event.includes("complete")) {
+    if (event.includes("_ok") || event.includes("success") || event.includes("complete")) {
       return "default";
     }
-    if (event.includes("start") || event.includes("loading")) {
+    if (event.includes("start") || event.includes("boot")) {
       return "secondary";
     }
     return "outline";
   };
+  
+  // Check if timeline is healthy
+  const hasAppBoot = logs.some(l => l.e === "app_boot");
+  const hasGetSessionOk = logs.some(l => l.e === "getSession_ok");
+  const hasMeContextOk = logs.some(l => l.e === "me_context_ok");
+  const hasBootComplete = logs.some(l => l.e === "boot_complete");
+  const isHealthy = hasAppBoot && hasGetSessionOk && hasMeContextOk && hasBootComplete && sbClientCount === 1;
   
   if (loading) {
     return (
@@ -99,6 +112,52 @@ export default function DebugAuth() {
         </div>
       </div>
       
+      {/* Health Check */}
+      <Card className={isHealthy ? "border-emerald-500/50 bg-emerald-950/20" : "border-destructive/50 bg-destructive/10"}>
+        <CardContent className="pt-4">
+          <div className="flex items-center gap-3">
+            {isHealthy ? (
+              <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+            ) : (
+              <AlertTriangle className="w-6 h-6 text-destructive" />
+            )}
+            <div>
+              <div className="font-semibold">{isHealthy ? "Sistema Saudável" : "Problemas Detectados"}</div>
+              <div className="text-sm text-muted-foreground">
+                sbClientCount: <span className={sbClientCount === 1 ? "text-emerald-500" : "text-destructive"}>{sbClientCount}</span>
+                {sbClientCount !== 1 && " (deve ser 1!)"}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      
+      {/* Timeline Checklist */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Timeline Esperada</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { key: "app_boot", has: hasAppBoot },
+              { key: "getSession_ok", has: hasGetSessionOk },
+              { key: "me_context_ok", has: hasMeContextOk },
+              { key: "boot_complete", has: hasBootComplete },
+            ].map(({ key, has }) => (
+              <Badge 
+                key={key} 
+                variant={has ? "default" : "destructive"}
+                className="flex items-center gap-1"
+              >
+                {has ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                {key}
+              </Badge>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+      
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         <Card>
@@ -110,15 +169,15 @@ export default function DebugAuth() {
         <Card>
           <CardContent className="pt-4">
             <div className="text-2xl font-bold text-destructive">
-              {logs.filter(l => l.e.includes("error") || l.e.includes("fail")).length}
+              {logs.filter(l => l.e.includes("fail") || l.e.includes("timeout") || l.e.includes("signout")).length}
             </div>
             <div className="text-sm text-muted-foreground">Erros</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4">
-            <div className="text-2xl font-bold text-emerald-500">
-              {logs.filter(l => l.e.includes("success")).length}
+            <div className="text-2xl font-bold text-primary">
+              {logs.filter(l => l.e.includes("_ok") || l.e.includes("success") || l.e.includes("complete")).length}
             </div>
             <div className="text-sm text-muted-foreground">Sucessos</div>
           </CardContent>
