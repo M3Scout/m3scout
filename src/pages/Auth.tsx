@@ -21,6 +21,7 @@ const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [bootMessage, setBootMessage] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -29,6 +30,20 @@ const Auth = () => {
   const [errors, setErrors] = useState<{ email?: string; password?: string; name?: string }>({});
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
+  // Show post-boot message (e.g., forced login after getSession timeout)
+  useEffect(() => {
+    try {
+      const msg = sessionStorage.getItem("m3_auth_boot_message");
+      if (msg) {
+        setBootMessage(msg);
+        sessionStorage.removeItem("m3_auth_boot_message");
+        toast.error(msg);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
   // Redirect if already logged in
   useEffect(() => {
     if (user && !authLoading) {
@@ -36,7 +51,6 @@ const Auth = () => {
       navigate(from, { replace: true });
     }
   }, [user, authLoading, navigate, location]);
-
   const validateForm = () => {
     const newErrors: typeof errors = {};
     
@@ -196,6 +210,11 @@ const Auth = () => {
 
           {/* Card */}
           <div className="bg-zinc-900/80 backdrop-blur-xl rounded-2xl p-6 sm:p-8 border border-white/[0.06] shadow-2xl shadow-black/50">
+            {bootMessage && (
+              <div className="mb-5 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                {bootMessage}
+              </div>
+            )}
             {/* Header */}
             <div className="mb-6">
               <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
