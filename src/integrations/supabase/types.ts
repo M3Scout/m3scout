@@ -524,6 +524,7 @@ export type Database = {
       }
       match_events: {
         Row: {
+          client_event_id: string | null
           count_in_stats: boolean
           created_at: string
           display_minute: string | null
@@ -541,6 +542,7 @@ export type Database = {
           void_reason: string | null
         }
         Insert: {
+          client_event_id?: string | null
           count_in_stats?: boolean
           created_at?: string
           display_minute?: string | null
@@ -558,6 +560,7 @@ export type Database = {
           void_reason?: string | null
         }
         Update: {
+          client_event_id?: string | null
           count_in_stats?: boolean
           created_at?: string
           display_minute?: string | null
@@ -2423,18 +2426,32 @@ export type Database = {
         Returns: Json
       }
       can_delete: { Args: { _user_id: string }; Returns: boolean }
-      create_live_event_v2: {
-        Args: {
-          p_display_minute?: string
-          p_force_time_seconds?: number
-          p_game_id: string
-          p_half?: number
-          p_notes?: string
-          p_player_id: string
-          p_type: string
-        }
-        Returns: Json
-      }
+      create_live_event_v2:
+        | {
+            Args: {
+              p_display_minute?: string
+              p_force_time_seconds?: number
+              p_game_id: string
+              p_half?: number
+              p_notes?: string
+              p_player_id: string
+              p_type: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_client_event_id?: string
+              p_display_minute?: string
+              p_force_time_seconds?: number
+              p_game_id: string
+              p_half?: number
+              p_notes?: string
+              p_player_id: string
+              p_type: string
+            }
+            Returns: Json
+          }
       delete_last_live_event: {
         Args: { p_event_type: string; p_game_id: string; p_player_id: string }
         Returns: Json
