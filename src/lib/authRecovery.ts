@@ -211,16 +211,18 @@ export async function getSessionWithTimeout(
   timeoutMs: number = GETSESSION_TIMEOUT_MS
 ): Promise<{ session: Session | null; error: Error | null }> {
   try {
-    const result = await withTimeout(
-      async () => {
-        const { data, error } = await supabase.auth.getSession();
-        if (error) throw error;
-        return data.session;
-      },
-      timeoutMs,
-      "getSession"
-    );
-    return { session: result, error: null };
+    const sessionPromise = (async () => {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) throw error;
+      return data.session;
+    })();
+
+    const timeoutPromise = new Promise<Session | null>((_resolve, reject) => {
+      setTimeout(() => reject(new Error(`getSession: timeout after ${timeoutMs}ms`)), timeoutMs);
+    });
+
+    const session = await Promise.race([sessionPromise, timeoutPromise]);
+    return { session, error: null };
   } catch (err) {
     return { session: null, error: err as Error };
   }

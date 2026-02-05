@@ -121,7 +121,8 @@ function AppRoutes() {
                 <Route path="/contato" element={<Contact />} />
               </Route>
 
-              {/* Auth Route */}
+              {/* Auth Routes */}
+              <Route path="/login" element={<Auth />} />
               <Route path="/app/auth" element={<Auth />} />
               
               {/* Pending Access - for users without valid role */}

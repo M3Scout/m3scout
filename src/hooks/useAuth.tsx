@@ -3,6 +3,7 @@ import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
 import { logAppState } from "@/lib/diagnosticLogger";
+import { hardResetAuthToLogin } from "@/lib/authBootReset";
 import {
   recoverAuthAndRbac,
   readRbacCache,
@@ -480,7 +481,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         hasInitializedRef.current = true;
 
         if (error) {
+          const msg = error.message?.toLowerCase?.() ?? "";
+          const isTimeout = msg.includes("timeout");
+
           console.error("[Auth] session error:", error);
+
+          if (isTimeout) {
+            logAppState("getSession_timeout", { duration, message: error.message });
+            // Definitive fallback: never stay stuck on iOS/Safari.
+            await hardResetAuthToLogin({
+              reason: "getSession_timeout",
+              redirectTo: "/login",
+              message: "Sessão expirada. Faça login novamente.",
+              error,
+            });
+            return;
+          }
+
           logAppState("getSession_fail", { message: error.message, duration });
           setLoading(false);
           setRolesLoading(false);
