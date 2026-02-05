@@ -8,30 +8,44 @@
  * - sbClientCount should always be 1
  * - Timeline: app_boot → getSession_ok → me_context_ok → boot_complete
  * 
- * Smart watchdog classification:
- * - auth_watchdog_timeout is WARNING (not error) if boot_complete follows within 15s
+ * Features:
+ * - Filter by boot_id to isolate events from a single boot attempt
+ * - Smart watchdog classification: WARNING (not error) if boot_complete follows within 15s of the same boot
  */
 
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { getRecentDiagLogs, clearDiagLogs, getSbClientCount } from "@/lib/diagnosticLogger";
+import { getRecentDiagLogs, clearDiagLogs, getSbClientCount, getCurrentBootId } from "@/lib/diagnosticLogger";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Trash2, RefreshCw, ArrowLeft, Shield, CheckCircle2, AlertTriangle, XCircle, Clock } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Trash2, RefreshCw, ArrowLeft, Shield, CheckCircle2, AlertTriangle, XCircle, Clock, Filter } from "lucide-react";
 import { format } from "date-fns";
 
 type LogEntry = { t: string; e: string; c?: Record<string, unknown> };
 
-// Check if watchdog timeout was recovered (boot_complete within 15s)
+// Extract boot_id from log entry
+function getBootId(log: LogEntry): string | null {
+  return (log.c?.boot_id as string) ?? null;
+}
+
+// Check if watchdog timeout was recovered within the SAME boot_id (boot_complete within 15s)
 function isWatchdogRecovered(logs: LogEntry[], watchdogLog: LogEntry): boolean {
   const watchdogTime = new Date(watchdogLog.t).getTime();
+  const watchdogBootId = getBootId(watchdogLog);
   const recoveryWindow = 15 * 1000; // 15 seconds
+  
+  // Must have boot_id to correlate
+  if (!watchdogBootId) return false;
   
   return logs.some(log => {
     if (log.e !== "boot_complete") return false;
+    const logBootId = getBootId(log);
+    // Must be same boot_id
+    if (logBootId !== watchdogBootId) return false;
     const logTime = new Date(log.t).getTime();
     // boot_complete must be AFTER watchdog and within 15s
     return logTime > watchdogTime && logTime - watchdogTime <= recoveryWindow;
@@ -48,12 +62,23 @@ function getDurationDisplay(context?: Record<string, unknown>): string | null {
   return null;
 }
 
+// Get all unique boot_ids from logs
+function getUniqueBootIds(logs: LogEntry[]): string[] {
+  const ids = new Set<string>();
+  logs.forEach(log => {
+    const bootId = getBootId(log);
+    if (bootId) ids.add(bootId);
+  });
+  return Array.from(ids).reverse(); // Most recent first
+}
+
 export default function DebugAuth() {
   const { isAdmin, loading } = useAuth();
   const navigate = useNavigate();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
   const [sbClientCount, setSbClientCount] = useState(0);
+  const [selectedBootId, setSelectedBootId] = useState<string | "all">("latest");
   
   // Redirect non-admins
   useEffect(() => {
@@ -64,29 +89,52 @@ export default function DebugAuth() {
   
   // Load logs
   useEffect(() => {
-    setLogs(getRecentDiagLogs());
+    const allLogs = getRecentDiagLogs();
+    setLogs(allLogs);
     setSbClientCount(getSbClientCount());
+    
+    // Default to current boot_id if available
+    const currentBootId = getCurrentBootId();
+    if (currentBootId && allLogs.some(l => getBootId(l) === currentBootId)) {
+      setSelectedBootId(currentBootId);
+    } else {
+      // Fall back to most recent boot_id
+      const bootIds = getUniqueBootIds(allLogs);
+      if (bootIds.length > 0) {
+        setSelectedBootId(bootIds[0]);
+      }
+    }
   }, [refreshKey]);
   
   const handleClear = () => {
     clearDiagLogs();
     setLogs([]);
+    setSelectedBootId("all");
   };
   
   const handleRefresh = () => {
     setRefreshKey(k => k + 1);
   };
   
-  // Compute recovered watchdog timeouts
+  // Get unique boot IDs for filter dropdown
+  const bootIds = useMemo(() => getUniqueBootIds(logs), [logs]);
+  
+  // Filter logs by selected boot_id
+  const filteredLogs = useMemo(() => {
+    if (selectedBootId === "all") return logs;
+    return logs.filter(log => getBootId(log) === selectedBootId);
+  }, [logs, selectedBootId]);
+  
+  // Compute recovered watchdog timeouts (only within filtered logs)
   const recoveredWatchdogs = useMemo(() => {
     const set = new Set<string>();
-    logs.forEach(log => {
-      if (log.e === "auth_watchdog_timeout" && isWatchdogRecovered(logs, log)) {
+    filteredLogs.forEach(log => {
+      if (log.e === "auth_watchdog_timeout" && isWatchdogRecovered(filteredLogs, log)) {
         set.add(log.t); // Use timestamp as unique key
       }
     });
     return set;
-  }, [logs]);
+  }, [filteredLogs]);
   
   // Get badge color based on event type (with smart watchdog classification)
   const getEventBadge = (log: LogEntry): { variant: "default" | "destructive" | "secondary" | "outline"; isWarning?: boolean } => {
@@ -113,29 +161,29 @@ export default function DebugAuth() {
     return { variant: "outline" };
   };
   
-  // Check if timeline is healthy
-  const hasAppBoot = logs.some(l => l.e === "app_boot");
-  const hasGetSessionOk = logs.some(l => l.e === "getSession_ok");
-  const hasMeContextOk = logs.some(l => l.e === "me_context_ok");
-  const hasBootComplete = logs.some(l => l.e === "boot_complete");
+  // Check if timeline is healthy (within selected boot)
+  const hasAppBoot = filteredLogs.some(l => l.e === "app_boot");
+  const hasGetSessionOk = filteredLogs.some(l => l.e === "getSession_ok");
+  const hasMeContextOk = filteredLogs.some(l => l.e === "me_context_ok");
+  const hasBootComplete = filteredLogs.some(l => l.e === "boot_complete");
   const isHealthy = hasAppBoot && hasGetSessionOk && hasMeContextOk && hasBootComplete && sbClientCount === 1;
   
-  // Count errors (excluding recovered watchdog timeouts)
+  // Count errors (excluding recovered watchdog timeouts) - only within selected boot
   const errorCount = useMemo(() => {
-    return logs.filter(l => {
+    return filteredLogs.filter(l => {
       // Recovered watchdog timeouts don't count as errors
       if (l.e === "auth_watchdog_timeout" && recoveredWatchdogs.has(l.t)) {
         return false;
       }
       return l.e.includes("fail") || l.e.includes("timeout") || l.e.includes("signout");
     }).length;
-  }, [logs, recoveredWatchdogs]);
+  }, [filteredLogs, recoveredWatchdogs]);
   
-  // Count warnings (recovered watchdog timeouts)
+  // Count warnings (recovered watchdog timeouts) - only within selected boot
   const warningCount = recoveredWatchdogs.size;
   
-  // Count successes
-  const successCount = logs.filter(l => 
+  // Count successes - only within selected boot
+  const successCount = filteredLogs.filter(l => 
     l.e.includes("_ok") || l.e.includes("success") || l.e.includes("complete")
   ).length;
   
@@ -180,6 +228,32 @@ export default function DebugAuth() {
           </Button>
         </div>
       </div>
+      
+      {/* Boot ID Filter */}
+      <Card>
+        <CardContent className="pt-4">
+          <div className="flex items-center gap-3">
+            <Filter className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm font-medium">Filtrar por Boot:</span>
+            <Select value={selectedBootId} onValueChange={setSelectedBootId}>
+              <SelectTrigger className="w-[220px]">
+                <SelectValue placeholder="Selecionar boot" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os boots</SelectItem>
+                {bootIds.map((id, idx) => (
+                  <SelectItem key={id} value={id}>
+                    {id} {idx === 0 && "(mais recente)"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <span className="text-xs text-muted-foreground">
+              {filteredLogs.length} eventos
+            </span>
+          </div>
+        </CardContent>
+      </Card>
       
       {/* Health Check */}
       <Card className={isHealthy ? "border-emerald-500/50 bg-emerald-950/20" : "border-destructive/50 bg-destructive/10"}>
@@ -231,7 +305,7 @@ export default function DebugAuth() {
       <div className="grid grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-4">
-            <div className="text-2xl font-bold">{logs.length}</div>
+            <div className="text-2xl font-bold">{filteredLogs.length}</div>
             <div className="text-sm text-muted-foreground">Total de eventos</div>
           </CardContent>
         </Card>
@@ -262,16 +336,24 @@ export default function DebugAuth() {
         </CardHeader>
         <CardContent>
           <ScrollArea className="h-[500px]">
-            {logs.length === 0 ? (
+            {filteredLogs.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 Nenhum evento registrado
               </div>
             ) : (
               <div className="space-y-2">
-                {[...logs].reverse().map((log, idx) => {
+                {[...filteredLogs].reverse().map((log, idx) => {
                   const badge = getEventBadge(log);
                   const duration = getDurationDisplay(log.c);
                   const isRecoveredWatchdog = log.e === "auth_watchdog_timeout" && recoveredWatchdogs.has(log.t);
+                  const bootId = getBootId(log);
+                  
+                  // Filter out boot_id from displayed context to reduce noise
+                  const displayContext = log.c ? { ...log.c } : undefined;
+                  if (displayContext) {
+                    delete displayContext.boot_id;
+                  }
+                  const hasDisplayContext = displayContext && Object.keys(displayContext).length > 0;
                   
                   return (
                     <div 
@@ -285,7 +367,7 @@ export default function DebugAuth() {
                       <div className="text-xs text-muted-foreground font-mono shrink-0 w-20">
                         {format(new Date(log.t), "HH:mm:ss")}
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex items-center gap-2 shrink-0 flex-wrap">
                         <Badge variant={badge.variant} className="shrink-0">
                           {log.e}
                         </Badge>
@@ -300,15 +382,20 @@ export default function DebugAuth() {
                             Recuperação lenta, mas concluída
                           </Badge>
                         )}
+                        {selectedBootId === "all" && bootId && (
+                          <span className="text-xs text-muted-foreground font-mono">
+                            [{bootId}]
+                          </span>
+                        )}
                       </div>
-                      {log.c && !isRecoveredWatchdog && (
+                      {hasDisplayContext && !isRecoveredWatchdog && (
                         <div className="text-xs font-mono text-muted-foreground truncate flex-1">
-                          {JSON.stringify(log.c)}
+                          {JSON.stringify(displayContext)}
                         </div>
                       )}
-                      {isRecoveredWatchdog && log.c && (
+                      {isRecoveredWatchdog && hasDisplayContext && (
                         <div className="text-xs font-mono text-amber-500/70 truncate flex-1">
-                          {JSON.stringify(log.c)}
+                          {JSON.stringify(displayContext)}
                         </div>
                       )}
                     </div>
@@ -329,11 +416,11 @@ export default function DebugAuth() {
           <Button
             variant="outline"
             onClick={() => {
-              const blob = new Blob([JSON.stringify(logs, null, 2)], { type: "application/json" });
+              const blob = new Blob([JSON.stringify(filteredLogs, null, 2)], { type: "application/json" });
               const url = URL.createObjectURL(blob);
               const a = document.createElement("a");
               a.href = url;
-              a.download = `debug-auth-${Date.now()}.json`;
+              a.download = `debug-auth-${selectedBootId === "all" ? "all" : selectedBootId}-${Date.now()}.json`;
               a.click();
               URL.revokeObjectURL(url);
             }}

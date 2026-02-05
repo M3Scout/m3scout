@@ -5,6 +5,8 @@
  * All logs are prefixed and timestamped for easy filtering.
  * 
  * Timeline should follow: app_boot → getSession_ok → me_context_ok → ready
+ * 
+ * Each boot attempt is identified by a unique boot_id to isolate events.
  */
 
 export type AppStateEvent =
@@ -41,20 +43,55 @@ interface LogContext {
   message?: string;
   url?: string;
   duration?: number;
+  durationMs?: number;
+  elapsedMs?: number;
   userId?: string;
   hasCache?: boolean;
   sbClientCount?: number;
+  boot_id?: string;
   [key: string]: unknown;
 }
 
 const LOG_PREFIX = "[M3-Diag]";
 
+// Current boot attempt ID - generated fresh on each app_boot
+let currentBootId: string | null = null;
+
+/**
+ * Generate a short unique boot ID (8 chars)
+ */
+function generateBootId(): string {
+  return `b_${Date.now().toString(36).slice(-4)}_${Math.random().toString(36).slice(2, 6)}`;
+}
+
+/**
+ * Get the current boot ID (for external access)
+ */
+export function getCurrentBootId(): string | null {
+  return currentBootId;
+}
+
 /**
  * Log an app state event with optional context
+ * Boot ID is automatically attached to all events after app_boot
  */
 export function logAppState(event: AppStateEvent, context?: LogContext): void {
   const timestamp = new Date().toISOString();
-  const contextStr = context ? ` ${JSON.stringify(context)}` : "";
+  
+  // Generate new boot_id on app_boot
+  if (event === "app_boot") {
+    currentBootId = generateBootId();
+  }
+  
+  // Attach boot_id to all events
+  const enrichedContext: LogContext = {
+    ...context,
+    boot_id: currentBootId ?? undefined,
+  };
+  
+  const contextStr = enrichedContext && Object.keys(enrichedContext).length > 0 
+    ? ` ${JSON.stringify(enrichedContext)}` 
+    : "";
   
   // Always log to console with consistent format
   console.log(`${LOG_PREFIX} [${timestamp}] ${event}${contextStr}`);
@@ -68,7 +105,7 @@ export function logAppState(event: AppStateEvent, context?: LogContext): void {
       : [];
     
     // Keep last 100 events (increased from 50)
-    logs.push({ t: timestamp, e: event, c: context });
+    logs.push({ t: timestamp, e: event, c: enrichedContext });
     if (logs.length > 100) {
       logs.shift();
     }
