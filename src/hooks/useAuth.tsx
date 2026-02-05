@@ -470,12 +470,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logAppState("app_boot", { sbClientCount: typeof window !== "undefined" ? window.__sbClientCount : 0 });
       logAppState("getSession_start");
       
-      const startTime = Date.now();
+      const getSessionStartTime = Date.now();
       
       try {
         // Use getSessionWithTimeout for deterministic behavior
         const { session, error } = await getSessionWithTimeout();
-        const duration = Date.now() - startTime;
+        const getSessionDurationMs = Date.now() - getSessionStartTime;
 
         if (!isMountedRef.current) return;
         hasInitializedRef.current = true;
@@ -487,7 +487,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.error("[Auth] session error:", error);
 
           if (isTimeout) {
-            logAppState("getSession_timeout", { duration, message: error.message });
+            logAppState("getSession_timeout", { durationMs: getSessionDurationMs, message: error.message });
             // Definitive fallback: never stay stuck on iOS/Safari.
             await hardResetAuthToLogin({
               reason: "getSession_timeout",
@@ -498,28 +498,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             return;
           }
 
-          logAppState("getSession_fail", { message: error.message, duration });
+          logAppState("getSession_fail", { message: error.message, durationMs: getSessionDurationMs });
           setLoading(false);
           setRolesLoading(false);
           setPermissionsLoading(false);
           return;
         }
 
-        logAppState("getSession_ok", { hasSession: !!session, duration });
+        logAppState("getSession_ok", { hasSession: !!session, durationMs: getSessionDurationMs });
         setSession(session);
         setUser(session?.user ?? null);
 
         if (session?.user) {
+          const meContextStartTime = Date.now();
           logAppState("me_context_start");
           await handleRbac(session.user.id);
-          logAppState("me_context_ok");
+          const meContextDurationMs = Date.now() - meContextStartTime;
+          logAppState("me_context_ok", { durationMs: meContextDurationMs });
         } else {
           setRolesLoading(false);
           setPermissionsLoading(false);
           setLoading(false);
         }
         
-        logAppState("boot_complete", { duration: Date.now() - startTime });
+        const bootDurationMs = Date.now() - getSessionStartTime;
+        logAppState("boot_complete", { durationMs: bootDurationMs });
       } catch (err) {
         console.error("[Auth] init error:", err);
         logAppState("getSession_fail", { message: (err as Error)?.message });

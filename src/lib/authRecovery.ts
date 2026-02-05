@@ -54,7 +54,7 @@ const RBAC_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const TOKEN_REFRESH_THRESHOLD_MS = 5 * 60 * 1000; // Refresh if expires in < 5 min
 const GETSESSION_TIMEOUT_MS = 5000; // 5s timeout for getSession
 const FETCH_TIMEOUT_MS = 10000; // 10s timeout for RBAC fetch
-const RECOVERY_WATCHDOG_MS = 8000; // 8s watchdog for entire recovery
+const RECOVERY_WATCHDOG_MS = 9000; // 9s watchdog for entire recovery (increased from 8s to reduce false positives)
 const RETRY_BACKOFF = [0, 800, 2000]; // 3 attempts with backoff
 const BACKGROUND_RETRY_INTERVAL_MS = 30 * 1000; // 30s between background retries
 
@@ -348,6 +348,7 @@ export async function recoverAuthAndRbac(
     onError?: (error: string) => void;
   }
 ): Promise<RecoveryResult> {
+  const recoveryStartTime = Date.now();
   logAppState("auth_recovery_start", { reason });
   console.log("[AuthRecovery] recover start", { reason });
   callbacks?.onRecovering?.();
@@ -357,8 +358,9 @@ export async function recoverAuthAndRbac(
   const watchdogPromise = new Promise<RecoveryResult>((resolve) => {
     setTimeout(() => {
       watchdogFired = true;
-      logAppState("auth_watchdog_timeout", { reason });
-      console.warn("[AuthRecovery] Watchdog fired after 8s");
+      const elapsedMs = Date.now() - recoveryStartTime;
+      logAppState("auth_watchdog_timeout", { reason, elapsedMs, thresholdMs: RECOVERY_WATCHDOG_MS });
+      console.warn(`[AuthRecovery] Watchdog fired after ${RECOVERY_WATCHDOG_MS}ms (elapsed: ${elapsedMs}ms)`);
       resolve({ success: false, reason: "watchdog-timeout", shouldLogout: false, watchdogTimeout: true });
     }, RECOVERY_WATCHDOG_MS);
   });
