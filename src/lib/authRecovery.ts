@@ -8,6 +8,11 @@
  * - Watchdog timeout with canonical signout behavior
  * - Login redirect ONLY as last resort
  * 
+ * CRITICAL: Error handling rules:
+ * - 401: Refresh token ONCE, retry ONCE
+ * - 403: NEVER refresh (RLS/permission), show error
+ * - Network/timeout: Retry with backoff, use cache
+ * 
  * @see .memory/architecture/auth/performance-resilience-standard
  */
 
@@ -15,6 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
 import { retryWithBackoff } from "@/lib/retry";
 import { logAppState } from "@/lib/diagnosticLogger";
+import { classifyRbacError, is401Error, is403Error } from "@/lib/rbacError";
 
 // ============ TYPES ============
 export interface RbacPayload {
@@ -46,7 +52,8 @@ export type RecoveryResult =
 const RBAC_CACHE_KEY = "m3_rbac_v3";
 const RBAC_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const TOKEN_REFRESH_THRESHOLD_MS = 5 * 60 * 1000; // Refresh if expires in < 5 min
-const FETCH_TIMEOUT_MS = 10000; // 10s timeout
+const GETSESSION_TIMEOUT_MS = 5000; // 5s timeout for getSession
+const FETCH_TIMEOUT_MS = 10000; // 10s timeout for RBAC fetch
 const RECOVERY_WATCHDOG_MS = 8000; // 8s watchdog for entire recovery
 const RETRY_BACKOFF = [0, 800, 2000]; // 3 attempts with backoff
 const BACKGROUND_RETRY_INTERVAL_MS = 30 * 1000; // 30s between background retries
@@ -57,6 +64,7 @@ let inFlightAbortController: AbortController | null = null;
 let memoryCache: RbacPayload | null = null;
 let backgroundRetryTimer: ReturnType<typeof setTimeout> | null = null;
 let recoveryListenersActive = false;
+let hasAttemptedTokenRefresh = false; // Track if we've already tried refresh
 
 // ============ STORAGE CACHE ============
 
@@ -146,6 +154,7 @@ export function resetInflightState(): void {
   }
   inFlightPromise = null;
   inFlightAbortController = null;
+  hasAttemptedTokenRefresh = false; // Reset refresh tracking
   
   if (import.meta.env.DEV) {
     console.log("[AuthRecovery] Inflight state reset");
@@ -167,13 +176,54 @@ function isAbortError(err: unknown): boolean {
   return e.name === "AbortError" || (e.message?.toLowerCase().includes("aborted") ?? false);
 }
 
-function isPermissionDenied(err: unknown): boolean {
-  if (!err || typeof err !== "object") return false;
-  const e = err as { status?: number; statusCode?: number; code?: string };
-  const status = e.status ?? e.statusCode;
-  if (status === 401 || status === 403) return true;
-  if (e.code === "PGRST301" || e.code === "42501") return true;
-  return false;
+// ============ TIMEOUT WRAPPER ============
+
+/**
+ * Wrap a promise with AbortController and timeout
+ */
+async function withTimeout<T>(
+  fn: (signal: AbortSignal) => Promise<T>,
+  timeoutMs: number,
+  errorMessage: string
+): Promise<T> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => {
+    controller.abort();
+  }, timeoutMs);
+
+  try {
+    const result = await fn(controller.signal);
+    clearTimeout(timeoutId);
+    return result;
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (isAbortError(err)) {
+      throw new Error(`${errorMessage}: timeout after ${timeoutMs}ms`);
+    }
+    throw err;
+  }
+}
+
+/**
+ * Get session with timeout and abort support
+ */
+export async function getSessionWithTimeout(
+  timeoutMs: number = GETSESSION_TIMEOUT_MS
+): Promise<{ session: Session | null; error: Error | null }> {
+  try {
+    const result = await withTimeout(
+      async () => {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        return data.session;
+      },
+      timeoutMs,
+      "getSession"
+    );
+    return { session: result, error: null };
+  } catch (err) {
+    return { session: null, error: err as Error };
+  }
 }
 
 // ============ RAW RBAC FETCH ============
@@ -413,13 +463,45 @@ export async function recoverAuthAndRbac(
       return { success: false, reason: "aborted", shouldLogout: false };
     }
 
-    // Permission denied = invalid session/permissions
-    if (isPermissionDenied(err)) {
-      console.log("[AuthRecovery] permission denied - redirect to login");
-      return { success: false, reason: "rbac-401-403", shouldLogout: true };
+    // Classify the error properly
+    const classified = classifyRbacError(err);
+    
+    // 401 - Try refresh token ONCE if we haven't already
+    if (classified.type === "401" && !hasAttemptedTokenRefresh) {
+      hasAttemptedTokenRefresh = true;
+      console.log("[AuthRecovery] 401 error - attempting token refresh");
+      logAppState("auth_recovery_start", { reason: "401-refresh" });
+      
+      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+      
+      if (!refreshError && refreshData.session) {
+        console.log("[AuthRecovery] token refresh successful, retrying RBAC");
+        // Retry RBAC fetch ONCE
+        try {
+          const payload = await fetchRbacWithRetry(refreshData.session.user.id);
+          if (payload) {
+            writeRbacCache(payload);
+            callbacks?.onSuccess?.(payload);
+            return { success: true, payload };
+          }
+        } catch (retryErr) {
+          console.error("[AuthRecovery] retry after refresh failed", retryErr);
+        }
+      }
+      
+      // Refresh failed or retry failed - logout
+      return { success: false, reason: "401-refresh-failed", shouldLogout: true };
+    }
+    
+    // 403 - NEVER refresh, just show permission error
+    if (classified.type === "403") {
+      console.log("[AuthRecovery] 403 permission denied - NOT refreshing token");
+      callbacks?.onError?.("Acesso negado. Verifique suas permissões.");
+      // 403 should NOT logout - it's a permission issue, not auth issue
+      return { success: false, reason: "permission-denied", shouldLogout: false };
     }
 
-    // Check if we have valid cache as fallback
+    // Check if we have valid cache as fallback for network/timeout errors
     const currentUserId = (await supabase.auth.getSession()).data.session?.user?.id;
     if (currentUserId) {
       const cached = readRbacCache(currentUserId);
@@ -437,7 +519,7 @@ export async function recoverAuthAndRbac(
     // No cache, failed after retries = last resort
       logAppState("auth_recovery_fail", { reason: "no-cache-after-retries" });
       console.warn("[AuthRecovery] no cache and fetch failed - should logout");
-      callbacks?.onError?.((err as Error)?.message ?? "Unknown error");
+      callbacks?.onError?.(classified.message);
       return { success: false, reason: "rbac-timeout-no-cache", shouldLogout: true };
 
     } finally {

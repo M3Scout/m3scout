@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode, useCallback,
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
+import { logAppState } from "@/lib/diagnosticLogger";
 import {
   recoverAuthAndRbac,
   readRbacCache,
@@ -11,6 +12,7 @@ import {
   initRecoveryListeners,
   shouldTriggerRecovery,
   cleanupLegacyCaches,
+  getSessionWithTimeout,
   type RbacPayload,
   type RecoveryReason,
 } from "@/lib/authRecovery";
@@ -462,34 +464,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    // Initial session check
+    // Initial session check with timeout
     const initSession = async () => {
+      logAppState("app_boot", { sbClientCount: typeof window !== "undefined" ? window.__sbClientCount : 0 });
+      logAppState("getSession_start");
+      
+      const startTime = Date.now();
+      
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        // Use getSessionWithTimeout for deterministic behavior
+        const { session, error } = await getSessionWithTimeout();
+        const duration = Date.now() - startTime;
 
         if (!isMountedRef.current) return;
         hasInitializedRef.current = true;
 
         if (error) {
           console.error("[Auth] session error:", error);
+          logAppState("getSession_fail", { message: error.message, duration });
           setLoading(false);
           setRolesLoading(false);
           setPermissionsLoading(false);
           return;
         }
 
+        logAppState("getSession_ok", { hasSession: !!session, duration });
         setSession(session);
         setUser(session?.user ?? null);
 
         if (session?.user) {
+          logAppState("me_context_start");
           await handleRbac(session.user.id);
+          logAppState("me_context_ok");
         } else {
           setRolesLoading(false);
           setPermissionsLoading(false);
           setLoading(false);
         }
+        
+        logAppState("boot_complete", { duration: Date.now() - startTime });
       } catch (err) {
         console.error("[Auth] init error:", err);
+        logAppState("getSession_fail", { message: (err as Error)?.message });
         if (isMountedRef.current) {
           setLoading(false);
           setRolesLoading(false);
