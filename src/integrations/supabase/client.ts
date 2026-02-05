@@ -5,6 +5,30 @@ import type { Database } from './types';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
+// ============ SINGLETON VERIFICATION ============
+// CRITICAL: Ensure only ONE Supabase client instance exists
+// Multiple instances cause auth state desync and session loops
+declare global {
+  interface Window {
+    __sbClientCount?: number;
+    __sbClientCreatedAt?: number;
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.__sbClientCount = (window.__sbClientCount ?? 0) + 1;
+  window.__sbClientCreatedAt = Date.now();
+  
+  if (import.meta.env.DEV) {
+    console.log(`[Supabase] Client instance #${window.__sbClientCount} created`);
+    
+    // Warn if more than 1 instance
+    if (window.__sbClientCount > 1) {
+      console.error('[Supabase] ⚠️ MULTIPLE CLIENT INSTANCES DETECTED! This causes auth issues.');
+    }
+  }
+}
+
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 

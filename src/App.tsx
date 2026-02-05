@@ -58,6 +58,8 @@ import MarketAtivos from "./pages/app/MarketAtivos";
 import MarketTargets from "./pages/app/MarketTargets";
 import GoalsMonitor from "./pages/app/GoalsMonitor";
 import Contracts from "./pages/app/Contracts";
+import DebugAuth from "./pages/app/DebugAuth";
+import DebugLiveMatch from "./pages/app/DebugLiveMatch";
 
 // React Query config - prevent refetching on mount/focus for better performance
 const queryClient = new QueryClient({
@@ -164,6 +166,9 @@ function AppRoutes() {
                 <Route path="contratos" element={<RequirePermission module="players"><Contracts /></RequirePermission>} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="settings/users" element={<RequirePermission module="users" action="manage"><UserManagement /></RequirePermission>} />
+                {/* Debug routes - admin only */}
+                <Route path="debug/auth" element={<DebugAuth />} />
+                <Route path="debug/live-match" element={<DebugLiveMatch />} />
               </Route>
 
               {/* Catch-all */}
