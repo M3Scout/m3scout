@@ -110,10 +110,15 @@ export function CinematicHero() {
       style={{ backgroundColor: "var(--bg-base)" }}
     >
       {/* Background Image - Real Football, Cinematic */}
+      {/* PERFORMANCE: Hero image is LCP element - use fetchpriority="high" and loading="eager" */}
       <div className="absolute inset-0 z-0">
         <img
           src={heroImage}
           alt=""
+          // @ts-expect-error fetchPriority is valid HTML attribute
+          fetchpriority="high"
+          loading="eager"
+          decoding="async"
           className={cn(
             "w-full h-full object-cover transition-opacity duration-1000",
             isLoaded ? "opacity-100" : "opacity-0"
