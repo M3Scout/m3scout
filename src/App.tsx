@@ -10,12 +10,15 @@ import { RequirePermission } from "@/components/auth/PermissionGate";
 import { ThemeProvider } from "next-themes";
 import { PWAProvider } from "@/components/pwa/PWAUpdateToast";
 import { AppShell } from "@/components/app/AppShell";
+import { usePrefetchRoutes } from "@/hooks/usePrefetchRoutes";
+import { Suspense, lazy } from "react";
+import { RouteSuspense, LiveMatchSuspense } from "@/components/app/RouteSuspense";
 
-// Layouts
+// Layouts - Keep static (always needed)
 import { PublicLayout } from "@/components/layout/PublicLayout";
 import { AppLayout } from "@/components/layout/AppLayout";
 
-// Public Pages
+// Public Pages - Keep static (landing page performance)
 import Index from "./pages/Index";
 import Players from "./pages/Players";
 import PlayerProfile from "./pages/PlayerProfile";
@@ -29,37 +32,58 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import CompetitionRankingPublic from "./pages/CompetitionRankingPublic";
 import PendingAccess from "./pages/PendingAccess";
-// App Pages
-import Dashboard from "./pages/app/Dashboard";
-import AppPlayers from "./pages/app/AppPlayers";
-import NewPlayer from "./pages/app/NewPlayer";
-import EditPlayer from "./pages/app/EditPlayer";
-import PlayerDetail from "./pages/app/PlayerDetail";
-import MyProfile from "./pages/app/MyProfile";
-import ScoutingReports from "./pages/app/ScoutingReports";
-import NewScoutingReport from "./pages/app/NewScoutingReport";
-import EditScoutingReport from "./pages/app/EditScoutingReport";
-import ReportDetail from "./pages/app/ReportDetail";
-import Competitions from "./pages/app/Competitions";
-import CompetitionsImport from "./pages/app/CompetitionsImport";
-import CompetitionRanking from "./pages/app/CompetitionRanking";
-import Leads from "./pages/app/Leads";
-import Settings from "./pages/app/Settings";
-import UserManagement from "./pages/app/UserManagement";
-import ComparePlayers from "./pages/app/ComparePlayers";
-import News from "./pages/app/News";
-import NewsForm from "./pages/app/NewsForm";
-import LiveMatch from "./pages/app/LiveMatch";
-import LiveMatchNew from "./pages/app/LiveMatchNew";
-import LiveMatchGame from "./pages/app/LiveMatchGame";
-import LiveMatchReview from "./pages/app/LiveMatchReview";
-import Teams from "./pages/app/Teams";
-import MarketAtivos from "./pages/app/MarketAtivos";
-import MarketTargets from "./pages/app/MarketTargets";
-import GoalsMonitor from "./pages/app/GoalsMonitor";
-import Contracts from "./pages/app/Contracts";
-import DebugAuth from "./pages/app/DebugAuth";
-import DebugLiveMatch from "./pages/app/DebugLiveMatch";
+
+// ============ LAZY LOADED APP PAGES ============
+// Each route is a separate chunk for optimal code splitting
+
+// Dashboard & Core
+const Dashboard = lazy(() => import("./pages/app/Dashboard"));
+const MyProfile = lazy(() => import("./pages/app/MyProfile"));
+const Settings = lazy(() => import("./pages/app/Settings"));
+
+// Players Module
+const AppPlayers = lazy(() => import("./pages/app/AppPlayers"));
+const NewPlayer = lazy(() => import("./pages/app/NewPlayer"));
+const EditPlayer = lazy(() => import("./pages/app/EditPlayer"));
+const PlayerDetail = lazy(() => import("./pages/app/PlayerDetail"));
+
+// Compare
+const ComparePlayers = lazy(() => import("./pages/app/ComparePlayers"));
+
+// Reports Module
+const ScoutingReports = lazy(() => import("./pages/app/ScoutingReports"));
+const NewScoutingReport = lazy(() => import("./pages/app/NewScoutingReport"));
+const EditScoutingReport = lazy(() => import("./pages/app/EditScoutingReport"));
+const ReportDetail = lazy(() => import("./pages/app/ReportDetail"));
+
+// Competitions
+const Competitions = lazy(() => import("./pages/app/Competitions"));
+const CompetitionsImport = lazy(() => import("./pages/app/CompetitionsImport"));
+const CompetitionRanking = lazy(() => import("./pages/app/CompetitionRanking"));
+
+// Live Match - Critical for mobile scouts
+const LiveMatch = lazy(() => import("./pages/app/LiveMatch"));
+const LiveMatchNew = lazy(() => import("./pages/app/LiveMatchNew"));
+const LiveMatchGame = lazy(() => import("./pages/app/LiveMatchGame"));
+const LiveMatchReview = lazy(() => import("./pages/app/LiveMatchReview"));
+
+// Market & Contracts
+const MarketAtivos = lazy(() => import("./pages/app/MarketAtivos"));
+const MarketTargets = lazy(() => import("./pages/app/MarketTargets"));
+const Contracts = lazy(() => import("./pages/app/Contracts"));
+
+// Admin
+const Leads = lazy(() => import("./pages/app/Leads"));
+const News = lazy(() => import("./pages/app/News"));
+const NewsForm = lazy(() => import("./pages/app/NewsForm"));
+const Teams = lazy(() => import("./pages/app/Teams"));
+const GoalsMonitor = lazy(() => import("./pages/app/GoalsMonitor"));
+const UserManagement = lazy(() => import("./pages/app/UserManagement"));
+
+// Debug Pages
+const DebugAuth = lazy(() => import("./pages/app/DebugAuth"));
+const DebugLiveMatch = lazy(() => import("./pages/app/DebugLiveMatch"));
+const DebugPerformance = lazy(() => import("./pages/app/DebugPerformance"));
 
 // React Query config - prevent refetching on mount/focus for better performance
 const queryClient = new QueryClient({
@@ -77,6 +101,9 @@ const queryClient = new QueryClient({
 // Inner component that can use auth context
 function AppRoutes() {
   const { loading, rolesLoading, permissionsLoading, isRecovering, hasAuthTimeout, signOut } = useAuth();
+  
+  // Prefetch critical routes after boot
+  usePrefetchRoutes();
   
   // Determine loading state and reason
   const isBootstrapping = loading || (rolesLoading && !isRecovering);
@@ -137,39 +164,65 @@ function AppRoutes() {
                   </ProtectedRoute>
                 }
               >
-                <Route index element={<Dashboard />} />
-                <Route path="my-profile" element={<MyProfile />} />
-                <Route path="players" element={<RequirePermission module="players"><AppPlayers /></RequirePermission>} />
-                <Route path="players/new" element={<RequirePermission module="players" action="create"><NewPlayer /></RequirePermission>} />
-                <Route path="players/:id" element={<RequirePermission module="players"><PlayerDetail /></RequirePermission>} />
-                <Route path="players/:id/edit" element={<RequirePermission module="players" action="edit"><EditPlayer /></RequirePermission>} />
-                <Route path="compare" element={<RequirePermission module="compare"><ComparePlayers /></RequirePermission>} />
-                <Route path="reports" element={<RequirePermission module="reports"><ScoutingReports /></RequirePermission>} />
-                <Route path="reports/new" element={<RequirePermission module="reports" action="create"><NewScoutingReport /></RequirePermission>} />
-                <Route path="reports/:id" element={<RequirePermission module="reports"><ReportDetail /></RequirePermission>} />
-                <Route path="reports/:id/edit" element={<RequirePermission module="reports" action="edit"><EditScoutingReport /></RequirePermission>} />
-                <Route path="competitions" element={<RequirePermission module="competitions"><Competitions /></RequirePermission>} />
-                <Route path="competitions/import" element={<RequirePermission module="competitions" action="create"><CompetitionsImport /></RequirePermission>} />
-                <Route path="competitions/ranking" element={<RequirePermission module="competitions"><CompetitionRanking /></RequirePermission>} />
-                <Route path="leads" element={<RequirePermission module="leads"><Leads /></RequirePermission>} />
-                <Route path="news" element={<RequirePermission module="news"><News /></RequirePermission>} />
-                <Route path="news/new" element={<RequirePermission module="news" action="create"><NewsForm /></RequirePermission>} />
-                <Route path="news/:id/edit" element={<RequirePermission module="news" action="edit"><NewsForm /></RequirePermission>} />
-                <Route path="live-match" element={<RequirePermission module="live_match"><LiveMatch /></RequirePermission>}>
-                  <Route path="new" element={<LiveMatchNew />} />
-                  <Route path=":matchId" element={<LiveMatchGame />} />
-                  <Route path=":matchId/review" element={<LiveMatchReview />} />
+                <Route index element={<Suspense fallback={<RouteSuspense />}><Dashboard /></Suspense>} />
+                <Route path="my-profile" element={<Suspense fallback={<RouteSuspense />}><MyProfile /></Suspense>} />
+                
+                {/* Players */}
+                <Route path="players" element={<RequirePermission module="players"><Suspense fallback={<RouteSuspense />}><AppPlayers /></Suspense></RequirePermission>} />
+                <Route path="players/new" element={<RequirePermission module="players" action="create"><Suspense fallback={<RouteSuspense />}><NewPlayer /></Suspense></RequirePermission>} />
+                <Route path="players/:id" element={<RequirePermission module="players"><Suspense fallback={<RouteSuspense />}><PlayerDetail /></Suspense></RequirePermission>} />
+                <Route path="players/:id/edit" element={<RequirePermission module="players" action="edit"><Suspense fallback={<RouteSuspense />}><EditPlayer /></Suspense></RequirePermission>} />
+                
+                {/* Compare */}
+                <Route path="compare" element={<RequirePermission module="compare"><Suspense fallback={<RouteSuspense />}><ComparePlayers /></Suspense></RequirePermission>} />
+                
+                {/* Reports */}
+                <Route path="reports" element={<RequirePermission module="reports"><Suspense fallback={<RouteSuspense />}><ScoutingReports /></Suspense></RequirePermission>} />
+                <Route path="reports/new" element={<RequirePermission module="reports" action="create"><Suspense fallback={<RouteSuspense />}><NewScoutingReport /></Suspense></RequirePermission>} />
+                <Route path="reports/:id" element={<RequirePermission module="reports"><Suspense fallback={<RouteSuspense />}><ReportDetail /></Suspense></RequirePermission>} />
+                <Route path="reports/:id/edit" element={<RequirePermission module="reports" action="edit"><Suspense fallback={<RouteSuspense />}><EditScoutingReport /></Suspense></RequirePermission>} />
+                
+                {/* Competitions */}
+                <Route path="competitions" element={<RequirePermission module="competitions"><Suspense fallback={<RouteSuspense />}><Competitions /></Suspense></RequirePermission>} />
+                <Route path="competitions/import" element={<RequirePermission module="competitions" action="create"><Suspense fallback={<RouteSuspense />}><CompetitionsImport /></Suspense></RequirePermission>} />
+                <Route path="competitions/ranking" element={<RequirePermission module="competitions"><Suspense fallback={<RouteSuspense />}><CompetitionRanking /></Suspense></RequirePermission>} />
+                
+                {/* Leads */}
+                <Route path="leads" element={<RequirePermission module="leads"><Suspense fallback={<RouteSuspense />}><Leads /></Suspense></RequirePermission>} />
+                
+                {/* News */}
+                <Route path="news" element={<RequirePermission module="news"><Suspense fallback={<RouteSuspense />}><News /></Suspense></RequirePermission>} />
+                <Route path="news/new" element={<RequirePermission module="news" action="create"><Suspense fallback={<RouteSuspense />}><NewsForm /></Suspense></RequirePermission>} />
+                <Route path="news/:id/edit" element={<RequirePermission module="news" action="edit"><Suspense fallback={<RouteSuspense />}><NewsForm /></Suspense></RequirePermission>} />
+                
+                {/* Live Match - Uses specialized skeleton */}
+                <Route path="live-match" element={<RequirePermission module="live_match"><Suspense fallback={<LiveMatchSuspense />}><LiveMatch /></Suspense></RequirePermission>}>
+                  <Route path="new" element={<Suspense fallback={<LiveMatchSuspense />}><LiveMatchNew /></Suspense>} />
+                  <Route path=":matchId" element={<Suspense fallback={<LiveMatchSuspense />}><LiveMatchGame /></Suspense>} />
+                  <Route path=":matchId/review" element={<Suspense fallback={<LiveMatchSuspense />}><LiveMatchReview /></Suspense>} />
                 </Route>
-                <Route path="teams" element={<Teams />} />
-                <Route path="market/ativos" element={<RequirePermission module="players"><MarketAtivos /></RequirePermission>} />
-                <Route path="market/targets" element={<RequirePermission module="players"><MarketTargets /></RequirePermission>} />
-                <Route path="goals-monitor" element={<RequirePermission module="users" action="manage"><GoalsMonitor /></RequirePermission>} />
-                <Route path="contratos" element={<RequirePermission module="players"><Contracts /></RequirePermission>} />
-                <Route path="settings" element={<Settings />} />
-                <Route path="settings/users" element={<RequirePermission module="users" action="manage"><UserManagement /></RequirePermission>} />
+                
+                {/* Teams */}
+                <Route path="teams" element={<Suspense fallback={<RouteSuspense />}><Teams /></Suspense>} />
+                
+                {/* Market */}
+                <Route path="market/ativos" element={<RequirePermission module="players"><Suspense fallback={<RouteSuspense />}><MarketAtivos /></Suspense></RequirePermission>} />
+                <Route path="market/targets" element={<RequirePermission module="players"><Suspense fallback={<RouteSuspense />}><MarketTargets /></Suspense></RequirePermission>} />
+                
+                {/* Goals Monitor */}
+                <Route path="goals-monitor" element={<RequirePermission module="users" action="manage"><Suspense fallback={<RouteSuspense />}><GoalsMonitor /></Suspense></RequirePermission>} />
+                
+                {/* Contracts */}
+                <Route path="contratos" element={<RequirePermission module="players"><Suspense fallback={<RouteSuspense />}><Contracts /></Suspense></RequirePermission>} />
+                
+                {/* Settings */}
+                <Route path="settings" element={<Suspense fallback={<RouteSuspense />}><Settings /></Suspense>} />
+                <Route path="settings/users" element={<RequirePermission module="users" action="manage"><Suspense fallback={<RouteSuspense />}><UserManagement /></Suspense></RequirePermission>} />
+                
                 {/* Debug routes - admin only */}
-                <Route path="debug/auth" element={<DebugAuth />} />
-                <Route path="debug/live-match" element={<DebugLiveMatch />} />
+                <Route path="debug/auth" element={<Suspense fallback={<RouteSuspense />}><DebugAuth /></Suspense>} />
+                <Route path="debug/live-match" element={<Suspense fallback={<RouteSuspense />}><DebugLiveMatch /></Suspense>} />
+                <Route path="debug/performance" element={<Suspense fallback={<RouteSuspense />}><DebugPerformance /></Suspense>} />
               </Route>
 
               {/* Catch-all */}
