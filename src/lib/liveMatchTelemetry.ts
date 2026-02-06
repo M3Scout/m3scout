@@ -30,7 +30,11 @@ export type LiveMatchLogEvent =
   | "network_error"
   | "rpc_call"
   | "rpc_success"
-  | "rpc_error";
+  | "rpc_error"
+  | "migrate_to_indexeddb"
+  | "indexeddb_init"
+  | "indexeddb_error"
+  | "sync_status_change";
 
 export interface TelemetryEntry {
   /** ISO timestamp */
