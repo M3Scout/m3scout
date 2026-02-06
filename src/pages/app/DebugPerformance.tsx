@@ -22,7 +22,9 @@ import {
   AlertTriangle,
   XCircle,
   Package,
-  Zap
+  Zap,
+  HardDrive,
+  Cpu
 } from "lucide-react";
 import { 
   initWebVitals, 
@@ -31,13 +33,22 @@ import {
   type WebVitalsData 
 } from "@/lib/webVitals";
 import { getPrefetchedRoutes } from "@/lib/routePrefetch";
+import { getWorkerStats, isWorkerSupported } from "@/lib/workerClient";
 import { cn } from "@/lib/utils";
+
+interface SWCacheInfo {
+  name: string;
+  count: number;
+}
 
 export default function DebugPerformance() {
   const { isAdmin } = useAuth();
   const [vitals, setVitals] = useState<WebVitalsData | null>(null);
   const [prefetchedRoutes, setPrefetchedRoutes] = useState<string[]>([]);
   const [memoryInfo, setMemoryInfo] = useState<{ used: number; total: number } | null>(null);
+  const [workerStats, setWorkerStats] = useState(getWorkerStats());
+  const [swCaches, setSWCaches] = useState<SWCacheInfo[]>([]);
+  const [swStatus, setSWStatus] = useState<"active" | "installing" | "none">("none");
   
   // Initialize Web Vitals on mount
   useEffect(() => {
@@ -50,6 +61,11 @@ export default function DebugPerformance() {
     updatePrefetched();
     const interval = setInterval(updatePrefetched, 2000);
     
+    // Update worker stats periodically
+    const workerInterval = setInterval(() => {
+      setWorkerStats(getWorkerStats());
+    }, 5000);
+    
     // Memory info (Chrome only)
     if ((performance as any).memory) {
       const mem = (performance as any).memory;
@@ -59,9 +75,30 @@ export default function DebugPerformance() {
       });
     }
     
+    // Service Worker status
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.ready.then((reg) => {
+        setSWStatus(reg.active ? "active" : reg.installing ? "installing" : "none");
+      }).catch(() => setSWStatus("none"));
+      
+      // Cache info
+      if ("caches" in window) {
+        caches.keys().then(async (names) => {
+          const infos: SWCacheInfo[] = [];
+          for (const name of names) {
+            const cache = await caches.open(name);
+            const keys = await cache.keys();
+            infos.push({ name, count: keys.length });
+          }
+          setSWCaches(infos);
+        }).catch(() => {});
+      }
+    }
+    
     return () => {
       unsubscribe();
       clearInterval(interval);
+      clearInterval(workerInterval);
     };
   }, []);
   
@@ -383,6 +420,142 @@ export default function DebugPerformance() {
         </CardContent>
       </Card>
       
+      {/* Service Worker & Cache */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <HardDrive className="h-5 w-5 text-primary" />
+            Service Worker & Cache
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div className="p-4 rounded-lg bg-muted/50">
+              <h4 className="text-sm font-medium mb-1">Status SW</h4>
+              <div className="flex items-center gap-2">
+                {swStatus === "active" ? (
+                  <CheckCircle2 className="h-5 w-5 text-primary" />
+                ) : swStatus === "installing" ? (
+                  <RefreshCw className="h-5 w-5 text-warning animate-spin" />
+                ) : (
+                  <XCircle className="h-5 w-5 text-muted-foreground" />
+                )}
+                <span className="text-lg font-bold capitalize">{swStatus}</span>
+              </div>
+            </div>
+            <div className="p-4 rounded-lg bg-muted/50">
+              <h4 className="text-sm font-medium mb-1">Caches Ativos</h4>
+              <p className="text-2xl font-bold">{swCaches.length}</p>
+            </div>
+          </div>
+          
+          {swCaches.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Detalhes dos Caches
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                {swCaches.map((cache) => (
+                  <div key={cache.name} className="p-2 rounded bg-muted/30 border border-muted">
+                    <p className="text-xs font-mono truncate" title={cache.name}>
+                      {cache.name}
+                    </p>
+                    <p className="text-sm font-bold">{cache.count} itens</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <h4 className="text-sm font-medium mb-2">Estratégias de Cache</h4>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                <li>✓ <code className="text-xs bg-muted px-1 rounded">m3-images-v1</code> — Stale-While-Revalidate (300 max)</li>
+                <li>✓ <code className="text-xs bg-muted px-1 rounded">m3-assets-v1</code> — CacheFirst (imutável)</li>
+                <li>✓ <code className="text-xs bg-muted px-1 rounded">js/css-assets</code> — CacheFirst (hash)</li>
+                <li>✓ <code className="text-xs bg-muted px-1 rounded">html-pages</code> — NetworkFirst (3s timeout)</li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-sm font-medium mb-2">Exclusões</h4>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                <li>✗ /auth/* — NetworkOnly</li>
+                <li>✗ /rest/v1/rpc/* — NetworkOnly</li>
+                <li>✗ /user_roles — NetworkOnly</li>
+                <li>✗ /user_permissions — NetworkOnly</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      
+      {/* WebWorker Stats */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Cpu className="h-5 w-5 text-primary" />
+            WebWorker (Cálculos Off-Thread)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <div className="p-4 rounded-lg bg-muted/50">
+              <h4 className="text-sm font-medium mb-1">Suportado</h4>
+              <div className="flex items-center gap-2">
+                {isWorkerSupported() ? (
+                  <CheckCircle2 className="h-5 w-5 text-primary" />
+                ) : (
+                  <XCircle className="h-5 w-5 text-destructive" />
+                )}
+                <span className="text-lg font-bold">{isWorkerSupported() ? "Sim" : "Não"}</span>
+              </div>
+            </div>
+            <div className="p-4 rounded-lg bg-muted/50">
+              <h4 className="text-sm font-medium mb-1">Tasks OK</h4>
+              <p className="text-2xl font-bold text-primary">{workerStats.ok}</p>
+            </div>
+            <div className="p-4 rounded-lg bg-muted/50">
+              <h4 className="text-sm font-medium mb-1">Timeouts</h4>
+              <p className="text-2xl font-bold text-warning">{workerStats.timeout}</p>
+            </div>
+            <div className="p-4 rounded-lg bg-muted/50">
+              <h4 className="text-sm font-medium mb-1">Fallbacks</h4>
+              <p className="text-2xl font-bold text-muted-foreground">{workerStats.fallback}</p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <h4 className="text-sm font-medium mb-2">Tasks Suportadas</h4>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                <li>✓ <code className="text-xs bg-muted px-1 rounded">aggregate_stats</code> — Agregação de estatísticas</li>
+                <li>✓ <code className="text-xs bg-muted px-1 rounded">calculate_rating</code> — Cálculo de nota</li>
+                <li>✓ <code className="text-xs bg-muted px-1 rounded">rank_players</code> — Ranking de atletas</li>
+                <li>✓ <code className="text-xs bg-muted px-1 rounded">generate_insights</code> — Insights do dashboard</li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-sm font-medium mb-2">Performance</h4>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Tempo médio</span>
+                  <Badge variant="outline">{workerStats.avgDuration}ms</Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Total de tasks</span>
+                  <Badge variant="outline">{workerStats.total}</Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Timeout configurado</span>
+                  <Badge variant="outline">2000ms</Badge>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      
       {/* Live Match Performance */}
       <Card>
         <CardHeader>
@@ -405,7 +578,7 @@ export default function DebugPerformance() {
             </div>
             <div className="p-4 rounded-lg bg-muted/50">
               <h4 className="text-sm font-medium mb-1">Persistência</h4>
-              <p className="text-2xl font-bold">localStorage</p>
+              <p className="text-2xl font-bold">IndexedDB</p>
               <p className="text-xs text-muted-foreground">Sobrevive a reloads</p>
             </div>
           </div>
