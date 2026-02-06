@@ -117,6 +117,8 @@ export function splitStatsByHalf(
     
     evts.forEach(event => {
       const val = event.value ?? 1;
+      // CRITICAL: Use correct match_event_type enum values from database!
+      // See: SELECT unnest(enum_range(NULL::match_event_type)) for valid values
       switch (event.event_type) {
         case "goal": stats.goals = (stats.goals ?? 0) + val; break;
         case "assist": stats.assists = (stats.assists ?? 0) + val; break;
@@ -124,20 +126,29 @@ export function splitStatsByHalf(
         case "shot_on_target": stats.shots_on_target = (stats.shots_on_target ?? 0) + val; break;
         case "key_pass": stats.key_passes = (stats.key_passes ?? 0) + val; break;
         case "chance_created": stats.chances_created = (stats.chances_created ?? 0) + val; break;
-        case "pass_completed": stats.passes_completed = (stats.passes_completed ?? 0) + val; break;
-        case "pass_failed": 
+        // CORRECTED: pass_success (not pass_completed)
+        case "pass_success": stats.passes_completed = (stats.passes_completed ?? 0) + val; break;
+        // CORRECTED: pass_total stores FAILED passes (not pass_failed)
+        case "pass_total": 
           stats.passes_total = (stats.passes_total ?? 0) + val;
           break;
         case "dribble_success": stats.dribbles_success = (stats.dribbles_success ?? 0) + val; break;
-        case "dribble_fail": stats.dribbles_total = (stats.dribbles_total ?? 0) + val; break;
+        // CORRECTED: dribble_attempt stores FAILED dribbles (not dribble_fail)
+        case "dribble_attempt": stats.dribbles_total = (stats.dribbles_total ?? 0) + val; break;
         case "tackle": stats.tackles = (stats.tackles ?? 0) + val; break;
         case "interception": stats.interceptions = (stats.interceptions ?? 0) + val; break;
         case "clearance": stats.clearances = (stats.clearances ?? 0) + val; break;
         case "recovery": stats.recoveries = (stats.recoveries ?? 0) + val; break;
         case "duel_won": stats.duels_won = (stats.duels_won ?? 0) + val; break;
-        case "duel_lost": stats.duels_total = (stats.duels_total ?? 0) + val; break;
-        case "aerial_won": stats.aerial_duels_won = (stats.aerial_duels_won ?? 0) + val; break;
-        case "aerial_lost": stats.aerial_duels_total = (stats.aerial_duels_total ?? 0) + val; break;
+        // CORRECTED: duel_total stores LOST duels (not duel_lost)
+        case "duel_total": stats.duels_total = (stats.duels_total ?? 0) + val; break;
+        // CORRECTED: aerial_duel_won (not aerial_won)
+        case "aerial_duel_won": stats.aerial_duels_won = (stats.aerial_duels_won ?? 0) + val; break;
+        // CORRECTED: aerial_duel_total stores LOST duels (not aerial_lost)
+        case "aerial_duel_total": stats.aerial_duels_total = (stats.aerial_duels_total ?? 0) + val; break;
+        // Ground duels: add to overall duels (MatchStatsInput doesn't have separate ground_duels fields)
+        case "ground_duel_won": stats.duels_won = (stats.duels_won ?? 0) + val; break;
+        case "ground_duel_total": stats.duels_total = (stats.duels_total ?? 0) + val; break;
         case "foul_committed": stats.fouls_committed = (stats.fouls_committed ?? 0) + val; break;
         case "foul_suffered": stats.fouls_suffered = (stats.fouls_suffered ?? 0) + val; break;
         case "possession_lost": stats.possession_lost = (stats.possession_lost ?? 0) + val; break;
@@ -147,7 +158,8 @@ export function splitStatsByHalf(
         case "was_dribbled": stats.was_dribbled = (stats.was_dribbled ?? 0) + val; break;
         case "ball_action": stats.ball_actions = (stats.ball_actions ?? 0) + val; break;
         case "cross_success": stats.crosses_success = (stats.crosses_success ?? 0) + val; break;
-        case "cross_fail": stats.crosses_failed = (stats.crosses_failed ?? 0) + val; break;
+        // CORRECTED: cross_failed (not cross_fail)
+        case "cross_failed": stats.crosses_failed = (stats.crosses_failed ?? 0) + val; break;
         case "offside": stats.offsides = (stats.offsides ?? 0) + val; break;
         case "shot_blocked": stats.shots_blocked = (stats.shots_blocked ?? 0) + val; break;
       }
