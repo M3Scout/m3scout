@@ -54,6 +54,7 @@ import {
   getScoreLevel, 
   getScoreBadgeColor 
 } from "@/lib/scoring";
+import { getMetricLabel, METRIC_LABELS_PT } from "@/lib/metricLabels";
 import { StatsRadarChart } from "./StatsRadarChart";
 import { UnifiedRadarCard } from "./UnifiedRadarCard";
 import { StatTrendIndicator } from "./StatTrendIndicator";
@@ -360,105 +361,9 @@ const safeLower = (v: unknown): string => {
   return "";
 };
 
-// Human-readable stat name mapping for all stats (includes DB field names and per-90 variants)
-const STAT_NAME_MAP: Record<string, string> = {
-  // Core stats
-  minutes_games: "Minutos/Jogos",
-  matches: "Jogos",
-  minutes: "Minutos",
-  
-  // Goal involvement - raw and per-90 (canonical keys from DB)
-  goal_contributions: "Participações em Gol",  // Canonical key for G+A
-  cards: "Cartões",  // Canonical key for discipline
-  gk_saves: "Defesas",  // Canonical GK key
-  gk_goals_conceded: "Gols Sofridos",  // Canonical GK key
-  gk_penalties_saved: "Pênaltis Defendidos",  // Canonical GK key
-  gk_errors_led_to_goal: "Erros que Resultam em Gol",  // Canonical GK key
-  goals: "Gols",
-  goals_per_90: "Gols/90",
-  assists: "Assistências",
-  assists_per_90: "Assistências/90",
-  ga_per_90: "G+A/90",
-  
-  // Finishing
-  shots: "Finalizações",
-  shots_90: "Finalizações/90",
-  shots_on_target: "Finalizações no Alvo",
-  shots_on_target_90: "Finalizações no Alvo/90",
-  shots_blocked: "Chutes Bloqueados",
-  
-  // Creativity
-  chances_created: "Chances Criadas",
-  chances_created_90: "Chances Criadas/90",
-  key_passes: "Passes Decisivos",
-  key_passes_90: "Passes Decisivos/90",
-  key_pass_accuracy: "Precisão Passes Decisivos",
-  offensive_involvement: "Envolvimento Ofensivo",
-  
-  // Passing
-  accurate_passes: "Passes Certos",
-  accurate_passes_90: "Passes Certos/90",
-  total_passes: "Total de Passes",
-  pass_accuracy: "Precisão de Passes",
-  long_passes_accurate: "Lançamentos Certos",
-  long_passes_total: "Total de Lançamentos",
-  
-  // Defensive
-  tackles: "Desarmes",
-  tackles_90: "Desarmes/90",
-  interceptions: "Interceptações",
-  interceptions_90: "Interceptações/90",
-  recoveries: "Recuperações",
-  recoveries_90: "Recuperações/90",
-  reco: "Recuperações/90", // Alias used in some DB outputs
-  clearances: "Afastamentos",
-  
-  // Duels
-  duels_won: "Duelos Vencidos",
-  duels_won_pct: "Duelos Vencidos (%)",
-  total_duels: "Total de Duelos",
-  ground_duels_won: "Duelos no Chão Vencidos",
-  ground_duels_total: "Total de Duelos no Chão",
-  aerial_duels: "Duelos Aéreos",
-  aerial_duels_90: "Duelos Aéreos/90",
-  aerial_duels_won: "Duelos Aéreos Vencidos",
-  aerial_duels_total: "Total de Duelos Aéreos",
-  
-  // Dribbling
-  successful_dribbles: "Dribles Bem-sucedidos",
-  total_dribbles: "Total de Dribles",
-  times_dribbled_past: "Vezes Driblado",
-  
-  // Discipline
-  discipline: "Disciplina",
-  yellow_cards: "Cartões Amarelos",
-  red_cards: "Cartões Vermelhos",
-  fouls_committed: "Faltas Cometidas",
-  fouls_drawn: "Faltas Sofridas",
-  cards_90: "Cartões/90",
-  
-  // Possession
-  possession_lost: "Posses Perdidas",
-  offsides: "Impedimentos",
-  
-  // Goalkeeper - raw and per-90
-  saves: "Defesas",
-  saves_90: "Defesas/90",
-  saves_per_90: "Defesas/90",
-  saves_inside_box: "Defesas na Área",
-  goals_conceded: "Gols Sofridos",
-  goals_conceded_90: "Gols Sofridos/90",
-  goals_conceded_inv: "Gols Sofridos (inv)",
-  clean_sheets: "Clean Sheets",
-  penalties_saved: "Pênaltis Defendidos",
-  errors: "Erros Graves",
-  errors_inv: "Erros (inv)",
-  errors_leading_to_goal: "Erros que Resultam em Gol",
-  punches: "Socos",
-  high_claims: "Cruzamentos Dominados",
-  successful_runs_out: "Saídas do Gol",
-  total_runs_out: "Total de Saídas do Gol",
-};
+// Human-readable stat name mapping - now using centralized METRIC_LABELS_PT
+// This alias is kept for backward compatibility with existing code
+const STAT_NAME_MAP = METRIC_LABELS_PT;
 
 // Helper to safely get numeric value with fallback
 function safeNumber(value: unknown, fallback: number = 0): number {
@@ -926,16 +831,15 @@ function getPositionStatsBreakdown(
 }
 
 function getHumanStatName(statKey: string, providedLabel: unknown): string {
-  // Normalize the key
-  const normalizedKey = (statKey || "").trim().toLowerCase();
+  // 1. Try the centralized metric label function first
+  const centralLabel = getMetricLabel(statKey);
   
-  // 1. Try our manual mapping first (most reliable)
-  if (normalizedKey && STAT_NAME_MAP[normalizedKey]) {
-    return STAT_NAME_MAP[normalizedKey];
+  // If getMetricLabel returned a proper translation (not just title-cased fallback)
+  if (centralLabel && STAT_NAME_MAP[statKey.toLowerCase()]) {
+    return centralLabel;
   }
-  // Also try original case
-  if (statKey && STAT_NAME_MAP[statKey]) {
-    return STAT_NAME_MAP[statKey];
+  if (centralLabel && STAT_NAME_MAP[statKey]) {
+    return centralLabel;
   }
   
   // 2. If providedLabel is a valid non-placeholder string, use it
@@ -947,24 +851,8 @@ function getHumanStatName(statKey: string, providedLabel: unknown): string {
     return providedLabel;
   }
   
-  // 3. Convert snake_case to Title Case (always do this if we have a key)
-  if (statKey && statKey !== "unknown" && statKey.length > 0) {
-    const titleCase = statKey
-      .replace(/_/g, " ")
-      .replace(/\b\w/g, (c) => c.toUpperCase());
-    // DEV: Log unknown stat keys so we can add them to the mapping
-    if (import.meta.env.DEV) {
-      console.warn(`[getHumanStatName] Unknown stat key: "${statKey}" -> displaying as "${titleCase}". Consider adding to STAT_NAME_MAP.`);
-    }
-    return titleCase;
-  }
-  
-  // 4. Ultimate fallback - never show "não identificada".
-  // If we have any key at all, show the raw key.
-  if (import.meta.env.DEV) {
-    console.error("[getHumanStatName] Called with empty/unknown stat key:", statKey, "label:", providedLabel);
-  }
-  return statKey && statKey !== "unknown" ? statKey : "unknown";
+  // 3. Use getMetricLabel fallback (converts to title case)
+  return centralLabel;
 }
 
 function getStatInfo(statKey: string, label: unknown): StatInfo {
