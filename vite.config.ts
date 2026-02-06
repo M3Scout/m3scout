@@ -35,6 +35,8 @@ export default defineConfig(({ mode }) => ({
         // CRITICAL: Disable navigateFallback to prevent "non-precached-url" errors
         // Navigation will be handled by runtimeCaching instead
         navigateFallback: null,
+        // Import the sync handler for Background Sync
+        importScripts: ["/sw-sync-handler.js"],
         runtimeCaching: [
           // CRITICAL: Auth/RBAC endpoints must NEVER be cached
           {

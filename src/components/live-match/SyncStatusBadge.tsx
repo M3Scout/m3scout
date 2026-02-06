@@ -29,6 +29,10 @@ interface SyncStatusBadgeProps {
   onRetry?: () => void;
   /** Show compact version */
   compact?: boolean;
+  /** Whether Background Sync is supported */
+  bgSyncSupported?: boolean;
+  /** Custom sync method label */
+  syncMethodLabel?: string;
 }
 
 const STATUS_CONFIG: Record<SyncStatus, {
@@ -81,6 +85,8 @@ export function SyncStatusBadge({
   failedCount = 0,
   onRetry,
   compact = false,
+  bgSyncSupported = false,
+  syncMethodLabel,
 }: SyncStatusBadgeProps) {
   const config = STATUS_CONFIG[status];
   
@@ -161,6 +167,28 @@ export function SyncStatusBadge({
     );
   }
   
+  // Generate tooltip message
+  const getTooltipMessage = () => {
+    if (effectiveStatus === "synced") return "Todos os eventos sincronizados";
+    if (effectiveStatus === "pending") {
+      const baseMsg = `${pendingCount} evento(s) aguardando sincronização`;
+      if (bgSyncSupported) {
+        return `${baseMsg} — sincronizará automaticamente em background`;
+      }
+      return baseMsg;
+    }
+    if (effectiveStatus === "syncing") return "Sincronizando eventos...";
+    if (effectiveStatus === "failed") return `${failedCount} evento(s) falharam`;
+    if (effectiveStatus === "offline") {
+      const baseMsg = "Sem conexão";
+      if (bgSyncSupported) {
+        return `${baseMsg} — eventos serão sincronizados automaticamente quando online`;
+      }
+      return `${baseMsg} — eventos serão sincronizados quando online`;
+    }
+    return "";
+  };
+  
   // Tooltip for status explanation
   return (
     <TooltipProvider>
@@ -168,14 +196,13 @@ export function SyncStatusBadge({
         <TooltipTrigger asChild>
           {badge}
         </TooltipTrigger>
-        <TooltipContent side="bottom">
-          <p className="text-xs">
-            {effectiveStatus === "synced" && "Todos os eventos sincronizados"}
-            {effectiveStatus === "pending" && `${pendingCount} evento(s) aguardando sincronização`}
-            {effectiveStatus === "syncing" && "Sincronizando eventos..."}
-            {effectiveStatus === "failed" && `${failedCount} evento(s) falharam`}
-            {effectiveStatus === "offline" && "Sem conexão - eventos serão sincronizados quando online"}
-          </p>
+        <TooltipContent side="bottom" className="max-w-[240px]">
+          <p className="text-xs">{getTooltipMessage()}</p>
+          {syncMethodLabel && (
+            <p className="text-[10px] text-muted-foreground mt-1">
+              Método: {syncMethodLabel}
+            </p>
+          )}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
