@@ -376,18 +376,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ============ HANDLE RBAC (CACHE FIRST + SWR) ============
   const handleRbac = useCallback(async (userId: string) => {
+    // Import dynamically to avoid circular dependency
+    const { getMeContextCacheTtlMs } = await import("@/lib/authRecovery");
+    const ME_CONTEXT_TTL = getMeContextCacheTtlMs();
+    
     // Try cache first for instant UI
     const cached = readRbacCache(userId);
     if (cached) {
+      const cacheAge = Date.now() - cached.fetchedAt;
       console.log("[Auth] cache HIT - applying immediately", {
-        cacheAge: `${Math.round((Date.now() - cached.fetchedAt) / 1000)}s`,
+        cacheAge: `${Math.round(cacheAge / 1000)}s`,
       });
       applyPayload(cached, true);
       setLoading(false);
 
-      // Background revalidation if cache is older than 5 minutes
-      const cacheAge = Date.now() - cached.fetchedAt;
-      if (cacheAge > 5 * 60 * 1000) {
+      // Background revalidation if cache is older than ME_CONTEXT_TTL (3 min)
+      if (cacheAge > ME_CONTEXT_TTL) {
         console.log("[Auth] background revalidation triggered");
         setIsRecovering(true);
         triggerRecovery("init").finally(() => {

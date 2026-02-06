@@ -302,6 +302,51 @@ export default function DebugAuth() {
               </Badge>
             ))}
           </div>
+          
+          {/* Boot Performance Metrics */}
+          <div className="mt-4 pt-4 border-t border-border">
+            <div className="text-sm font-medium mb-2">Métricas de Boot (Boot Selecionado)</div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+              {(() => {
+                const getSessionLog = filteredLogs.find(l => l.e === "getSession_ok");
+                const meContextLog = filteredLogs.find(l => l.e === "me_context_ok");
+                const bootCompleteLog = filteredLogs.find(l => l.e === "boot_complete");
+                
+                const getSessionMs = getSessionLog?.c?.durationMs as number | undefined;
+                const meContextMs = meContextLog?.c?.durationMs as number | undefined;
+                const bootTotalMs = bootCompleteLog?.c?.durationMs as number | undefined;
+                
+                return (
+                  <>
+                    <div className="bg-muted/50 rounded p-2">
+                      <div className="text-muted-foreground text-xs">getSession</div>
+                      <div className={`font-mono ${getSessionMs && getSessionMs < 100 ? "text-emerald-500" : getSessionMs && getSessionMs < 500 ? "text-amber-500" : "text-destructive"}`}>
+                        {getSessionMs ? `${getSessionMs}ms` : "—"}
+                      </div>
+                    </div>
+                    <div className="bg-muted/50 rounded p-2">
+                      <div className="text-muted-foreground text-xs">me_context</div>
+                      <div className={`font-mono ${meContextMs && meContextMs < 100 ? "text-emerald-500" : meContextMs && meContextMs < 500 ? "text-amber-500" : "text-destructive"}`}>
+                        {meContextMs ? `${meContextMs}ms` : "—"}
+                      </div>
+                    </div>
+                    <div className="bg-muted/50 rounded p-2">
+                      <div className="text-muted-foreground text-xs">boot_complete</div>
+                      <div className={`font-mono ${bootTotalMs && bootTotalMs < 200 ? "text-emerald-500" : bootTotalMs && bootTotalMs < 1000 ? "text-amber-500" : "text-destructive"}`}>
+                        {bootTotalMs ? `${bootTotalMs}ms` : "—"}
+                      </div>
+                    </div>
+                    <div className="bg-muted/50 rounded p-2">
+                      <div className="text-muted-foreground text-xs">Requests</div>
+                      <div className="font-mono text-primary">
+                        2 (mínimo)
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          </div>
         </CardContent>
       </Card>
       

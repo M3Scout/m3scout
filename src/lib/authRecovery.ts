@@ -50,11 +50,12 @@ export type RecoveryResult =
 
 // ============ CONFIGURATION ============
 const RBAC_CACHE_KEY = "m3_rbac_v3";
-const RBAC_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const RBAC_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours localStorage persistence
+const ME_CONTEXT_CACHE_TTL_MS = 3 * 60 * 1000; // 3 minutes - short cache for me_context freshness
 const TOKEN_REFRESH_THRESHOLD_MS = 5 * 60 * 1000; // Refresh if expires in < 5 min
 const GETSESSION_TIMEOUT_MS = 5000; // 5s timeout for getSession
 const FETCH_TIMEOUT_MS = 10000; // 10s timeout for RBAC fetch
-const RECOVERY_WATCHDOG_MS = 9000; // 9s watchdog for entire recovery (increased from 8s to reduce false positives)
+const RECOVERY_WATCHDOG_MS = 9000; // 9s watchdog for entire recovery
 const RETRY_BACKOFF = [0, 800, 2000]; // 3 attempts with backoff
 const BACKGROUND_RETRY_INTERVAL_MS = 30 * 1000; // 30s between background retries
 
@@ -665,7 +666,7 @@ export function initRecoveryListeners(
 
 /**
  * Check if we should trigger recovery based on cache state.
- * Used by visibility/focus handlers to decide if recovery is needed.
+ * Uses short cache threshold (3 min) for me_context freshness.
  */
 export function shouldTriggerRecovery(userId: string | null): boolean {
   if (!userId) return false;
@@ -675,9 +676,16 @@ export function shouldTriggerRecovery(userId: string | null): boolean {
   // If no cache, definitely need recovery
   if (!cached) return true;
   
-  // If cache is older than 5 minutes, do background revalidation
+  // If cache is older than ME_CONTEXT_CACHE_TTL_MS (3 min), do background revalidation
   const cacheAge = Date.now() - cached.fetchedAt;
-  return cacheAge > 5 * 60 * 1000;
+  return cacheAge > ME_CONTEXT_CACHE_TTL_MS;
+}
+
+/**
+ * Get cache TTL for me_context (exported for use in other modules)
+ */
+export function getMeContextCacheTtlMs(): number {
+  return ME_CONTEXT_CACHE_TTL_MS;
 }
 
 // ============ CLEANUP LEGACY CACHES ============
