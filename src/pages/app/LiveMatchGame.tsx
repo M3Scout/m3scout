@@ -19,6 +19,12 @@ import { SubstitutionModal } from "@/components/live-match/SubstitutionModal";
 import { EventEffects, useEventEffects } from "@/components/live-match/EventEffects";
 import { AddManualEventModal } from "@/components/live-match/AddManualEventModal";
 import { LiveMatchDebugHud, LiveMatchRpcError } from "@/components/live-match/LiveMatchDebugHud";
+import { SyncStatusBadge } from "@/components/live-match/SyncStatusBadge";
+import { 
+  LiveMatchSkeletonHeader, 
+  LiveMatchSkeletonPlayerRow, 
+  LiveMatchSkeletonActions 
+} from "@/components/live-match/skeletons";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -40,29 +46,11 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useLiveMatchQueue } from "@/hooks/useLiveMatchQueue";
 
-// Loading skeleton for player cards
+// Loading skeleton for player cards - now uses rich skeleton component
 function PlayerCardSkeleton({ index }: { index: number }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1 }}
-      className="rounded-xl bg-zinc-900/60 border border-zinc-800/60 p-4"
-    >
-      <div className="flex items-center gap-3">
-        <Skeleton className="h-12 w-12 rounded-full" />
-        <div className="flex-1 space-y-2">
-          <Skeleton className="h-4 w-32" />
-          <Skeleton className="h-3 w-24" />
-        </div>
-        <div className="flex gap-2">
-          <Skeleton className="h-12 w-12 rounded-lg" />
-          <Skeleton className="h-12 w-12 rounded-lg" />
-        </div>
-      </div>
-    </motion.div>
-  );
+  return <LiveMatchSkeletonPlayerRow index={index} />;
 }
 
 // Inner content component that receives validated matchId
@@ -172,14 +160,19 @@ function LiveMatchGameInner({ matchId }: { matchId: string }) {
   // This MUST come before any useMemo that accesses match/matchPlayers/filteredPlayers
   if (isLoading) {
     return (
-      <div className="min-h-screen pb-20">
-        <div className="sticky top-0 z-20 bg-zinc-950/95 backdrop-blur-lg border-b border-zinc-800/60 p-4">
-          <Skeleton className="h-8 w-48 mb-2" />
-          <Skeleton className="h-4 w-32" />
+      <div className="min-h-screen bg-zinc-950 pb-20">
+        {/* Rich skeleton header */}
+        <div className="container py-4">
+          <LiveMatchSkeletonHeader />
         </div>
-        <div className="container py-6 space-y-4">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <PlayerCardSkeleton key={i} index={i} />
+        
+        {/* Rich skeleton action bar */}
+        <LiveMatchSkeletonActions />
+        
+        {/* Rich skeleton player cards */}
+        <div className="container py-4 space-y-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <LiveMatchSkeletonPlayerRow key={i} index={i} />
           ))}
         </div>
       </div>
@@ -529,6 +522,16 @@ function LiveMatchGameInner({ matchId }: { matchId: string }) {
           onRegenerateSummary={() => regenerateSummary.mutate()}
           isRegenerating={regenerateSummary.isPending}
         />
+      )}
+
+      {/* Sync Status Indicator - visible when live */}
+      {isLive && !isReadOnlyPlayer && (
+        <div className="mx-4 mt-3 flex items-center justify-end">
+          <SyncStatusBadge
+            status={pendingEventsCount > 0 ? "pending" : "synced"}
+            pendingCount={pendingEventsCount}
+          />
+        </div>
       )}
 
       {/* Exit Review Mode Confirmation Dialog */}

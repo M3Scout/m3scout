@@ -7,9 +7,10 @@
  * - queue state subscription
  * - pending/failed counts
  * - retry functionality
+ * - sync status for visual indicators
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -23,7 +24,10 @@ import {
   type QueueState,
   type QueuedEvent,
 } from "@/lib/liveMatchEventQueue";
+import { migrateFromLocalStorage, isIndexedDBAvailable } from "@/lib/liveMatchIndexedDB";
+import { logLiveMatchEvent } from "@/lib/liveMatchTelemetry";
 import type { MatchEventType } from "@/hooks/useLiveMatch";
+import type { SyncStatus } from "@/components/live-match/SyncStatusBadge";
 
 export interface UseLiveMatchQueueOptions {
   matchId: string;
@@ -41,6 +45,38 @@ export function useLiveMatchQueue({
   const queryClient = useQueryClient();
   const [queueState, setQueueState] = useState<QueueState>({ events: [], lastProcessedAt: null });
   const [previousConfirmedIds, setPreviousConfirmedIds] = useState<Set<string>>(new Set());
+  const [isOnline, setIsOnline] = useState(() => 
+    typeof navigator !== "undefined" ? navigator.onLine : true
+  );
+  
+  // Track online/offline status
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      logLiveMatchEvent("sync_status_change", { matchId, online: true });
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+      logLiveMatchEvent("sync_status_change", { matchId, online: false });
+    };
+    
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, [matchId]);
+  
+  // Migrate from localStorage to IndexedDB on mount
+  useEffect(() => {
+    if (isIndexedDBAvailable()) {
+      migrateFromLocalStorage(matchId).catch(() => {
+        // Ignore migration errors
+      });
+    }
+  }, [matchId]);
   
   // Subscribe to queue changes
   useEffect(() => {
@@ -108,12 +144,12 @@ export function useLiveMatchQueue({
     
     // Show optimistic toast
     toast.info("Evento registrado", {
-      description: "Sincronizando...",
+      description: isOnline ? "Sincronizando..." : "Será sincronizado quando online",
       duration: 1500,
     });
     
     return event;
-  }, [matchId]);
+  }, [matchId, isOnline]);
   
   /**
    * Retry all failed events
@@ -132,8 +168,21 @@ export function useLiveMatchQueue({
     e => e.status === "failed"
   ).length;
   
+  const sendingCount = queueState.events.filter(
+    e => e.status === "sending"
+  ).length;
+  
   const hasPending = pendingCount > 0;
   const hasFailed = failedCount > 0;
+  
+  // Compute sync status for visual indicator
+  const syncStatus: SyncStatus = useMemo(() => {
+    if (!isOnline) return "offline";
+    if (failedCount > 0) return "failed";
+    if (sendingCount > 0) return "syncing";
+    if (pendingCount > 0) return "pending";
+    return "synced";
+  }, [isOnline, failedCount, sendingCount, pendingCount]);
   
   return {
     /** Queue state */
@@ -146,9 +195,15 @@ export function useLiveMatchQueue({
     pendingCount,
     /** Number of failed events */
     failedCount,
+    /** Number of events currently sending */
+    sendingCount,
     /** Whether there are pending events */
     hasPending,
     /** Whether there are failed events */
     hasFailed,
+    /** Current sync status for visual indicator */
+    syncStatus,
+    /** Whether device is online */
+    isOnline,
   };
 }
