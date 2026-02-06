@@ -119,13 +119,17 @@ export default function DebugAuth() {
   // Get unique boot IDs for filter dropdown
   const bootIds = useMemo(() => getUniqueBootIds(logs), [logs]);
   
-  // Filter logs by selected boot_id
+  // Filter logs by selected boot_id - STRICT: only events with matching boot_id
   const filteredLogs = useMemo(() => {
-    if (selectedBootId === "all") return logs;
+    if (selectedBootId === "all") {
+      // When "all" is selected, show all events INCLUDING orphans
+      return logs;
+    }
+    // Strict filter: only events with the exact boot_id (excludes orphans)
     return logs.filter(log => getBootId(log) === selectedBootId);
   }, [logs, selectedBootId]);
   
-  // Compute recovered watchdog timeouts (only within filtered logs)
+  // Compute recovered watchdog timeouts (only within filtered logs, same boot_id)
   const recoveredWatchdogs = useMemo(() => {
     const set = new Set<string>();
     filteredLogs.forEach(log => {
