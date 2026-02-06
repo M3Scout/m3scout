@@ -281,6 +281,108 @@ export default function DebugPerformance() {
         </CardContent>
       </Card>
       
+      {/* LCP & Font Optimization */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Gauge className="h-5 w-5 text-primary" />
+            LCP & Font Optimization
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <h4 className="text-sm font-medium mb-2">Imagens LCP (Acima da Dobra)</h4>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                <li>✓ <code className="text-xs bg-muted px-1 rounded">fetchpriority="high"</code> no hero</li>
+                <li>✓ <code className="text-xs bg-muted px-1 rounded">loading="eager"</code> no hero</li>
+                <li>✓ <code className="text-xs bg-muted px-1 rounded">decoding="async"</code></li>
+                <li>✓ Imagem WebP/JPG otimizada</li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-sm font-medium mb-2">Fontes (Sem Bloqueio)</h4>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                <li>✓ <code className="text-xs bg-muted px-1 rounded">font-display: swap</code></li>
+                <li>✓ Preload Inter Regular (woff2)</li>
+                <li>✓ Preconnect fonts.googleapis.com</li>
+                <li>✓ Preconnect fonts.gstatic.com</li>
+              </ul>
+            </div>
+          </div>
+          
+          {/* LCP Element Info */}
+          <div className="mt-4 p-3 rounded-lg bg-muted/30 border border-muted">
+            <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+              Elementos LCP por Página
+            </h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+              <div className="p-2 rounded bg-muted/50">
+                <span className="font-medium text-foreground">/</span>
+                <p className="text-muted-foreground">Hero Image (stadium)</p>
+              </div>
+              <div className="p-2 rounded bg-muted/50">
+                <span className="font-medium text-foreground">/atletas</span>
+                <p className="text-muted-foreground">Primeiro card de atleta</p>
+              </div>
+              <div className="p-2 rounded bg-muted/50">
+                <span className="font-medium text-foreground">/app/dashboard</span>
+                <p className="text-muted-foreground">Hero / KPI Cards</p>
+              </div>
+              <div className="p-2 rounded bg-muted/50">
+                <span className="font-medium text-foreground">/app/live-match</span>
+                <p className="text-muted-foreground">Scoreboard / Timer</p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      
+      {/* List Virtualization */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Layers className="h-5 w-5 text-primary" />
+            Virtualização de Listas
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <h4 className="text-sm font-medium mb-2">Listas Virtualizadas</h4>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                <li>✓ @tanstack/react-virtual instalado</li>
+                <li>✓ Hook useVirtualList disponível</li>
+                <li>✓ Componente VirtualList pronto</li>
+                <li>✓ Threshold: 50+ items para ativar</li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-sm font-medium mb-2">Benefícios Mobile</h4>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                <li>↓ Menos DOM nodes renderizados</li>
+                <li>↓ Menor consumo de memória</li>
+                <li>↑ Scroll mais fluido (60fps)</li>
+                <li>✓ Compatível com iOS Safari</li>
+              </ul>
+            </div>
+          </div>
+          
+          <div className="mt-4 p-3 rounded-lg bg-muted/30 border border-muted">
+            <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+              Páginas com Virtualização Disponível
+            </h4>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="secondary">AppPlayers (Atletas)</Badge>
+              <Badge variant="secondary">News (Notícias)</Badge>
+              <Badge variant="secondary">Leads</Badge>
+              <Badge variant="secondary">ScoutingReports</Badge>
+              <Badge variant="outline" className="text-muted-foreground">+ Qualquer lista &gt; 50 items</Badge>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      
       {/* Live Match Performance */}
       <Card>
         <CardHeader>

@@ -1,3 +1,5 @@
+/* PERFORMANCE: Google Fonts already loaded in index.html with display=swap */
+/* This import is a fallback and also uses display=swap for FOUT prevention */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
 @tailwind base;
