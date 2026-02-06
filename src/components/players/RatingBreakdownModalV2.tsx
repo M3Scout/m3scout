@@ -1002,15 +1002,15 @@ function AdminMetricsDebugPanel({
           <div className="grid grid-cols-3 gap-2 text-[10px]">
             <div className="bg-emerald-500/10 rounded p-2">
               <p className="font-medium text-emerald-600 mb-1">Primárias ({profile.primaryMetrics.length})</p>
-              <p className="text-muted-foreground">{profile.primaryMetrics.join(', ')}</p>
+              <p className="text-muted-foreground">{profile.primaryMetrics.map(m => getMetricLabel(m)).join(', ')}</p>
             </div>
             <div className="bg-blue-500/10 rounded p-2">
               <p className="font-medium text-blue-600 mb-1">Secundárias ({profile.secondaryMetrics.length})</p>
-              <p className="text-muted-foreground">{profile.secondaryMetrics.join(', ')}</p>
+              <p className="text-muted-foreground">{profile.secondaryMetrics.map(m => getMetricLabel(m)).join(', ')}</p>
             </div>
             <div className="bg-muted/50 rounded p-2">
               <p className="font-medium text-muted-foreground mb-1">Ignoradas ({profile.ignoredMetrics.length})</p>
-              <p className="text-muted-foreground/70">{profile.ignoredMetrics.join(', ')}</p>
+              <p className="text-muted-foreground/70">{profile.ignoredMetrics.map(m => getMetricLabel(m)).join(', ')}</p>
             </div>
           </div>
           
