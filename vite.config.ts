@@ -102,14 +102,50 @@ export default defineConfig(({ mode }) => ({
             },
           },
           {
-            // Cache images
-            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp)$/i,
+            // Supabase Storage images - Stale-While-Revalidate for fast load + freshness
+            urlPattern: /supabase\.co\/storage\/v1\/render\/image\/.*/i,
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "m3-images-v1",
+              expiration: {
+                maxEntries: 300, // LRU: keep last 300 images
+                maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
+                purgeOnQuotaError: true,
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+          {
+            // Supabase Storage direct objects - Stale-While-Revalidate
+            urlPattern: /supabase\.co\/storage\/v1\/object\/public\/.*/i,
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "m3-images-v1",
+              expiration: {
+                maxEntries: 300,
+                maxAgeSeconds: 60 * 60 * 24 * 7,
+                purgeOnQuotaError: true,
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+          {
+            // Local static images - CacheFirst (immutable after build)
+            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|avif)$/i,
             handler: "CacheFirst",
             options: {
-              cacheName: "images-cache",
+              cacheName: "m3-assets-v1",
               expiration: {
                 maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 * 30,
+                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year (immutable)
+                purgeOnQuotaError: true,
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
               },
             },
           },
