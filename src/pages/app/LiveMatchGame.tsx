@@ -47,6 +47,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useLiveMatchQueue } from "@/hooks/useLiveMatchQueue";
+import { isBackgroundSyncSupported, getSyncSupportInfo } from "@/lib/backgroundSync";
 
 // Loading skeleton for player cards - now uses rich skeleton component
 function PlayerCardSkeleton({ index }: { index: number }) {
@@ -530,6 +531,8 @@ function LiveMatchGameInner({ matchId }: { matchId: string }) {
           <SyncStatusBadge
             status={pendingEventsCount > 0 ? "pending" : "synced"}
             pendingCount={pendingEventsCount}
+            bgSyncSupported={isBackgroundSyncSupported()}
+            syncMethodLabel={getSyncSupportInfo().label}
           />
         </div>
       )}

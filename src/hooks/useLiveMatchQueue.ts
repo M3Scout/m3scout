@@ -8,6 +8,7 @@
  * - pending/failed counts
  * - retry functionality
  * - sync status for visual indicators
+ * - Background Sync registration when supported
  */
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -26,6 +27,12 @@ import {
 } from "@/lib/liveMatchEventQueue";
 import { migrateFromLocalStorage, isIndexedDBAvailable } from "@/lib/liveMatchIndexedDB";
 import { logLiveMatchEvent } from "@/lib/liveMatchTelemetry";
+import { 
+  registerBackgroundSync, 
+  isBackgroundSyncSupported,
+  getSyncSupportInfo,
+  registerOnlineFallback,
+} from "@/lib/backgroundSync";
 import type { MatchEventType } from "@/hooks/useLiveMatch";
 import type { SyncStatus } from "@/components/live-match/SyncStatusBadge";
 
@@ -48,16 +55,26 @@ export function useLiveMatchQueue({
   const [isOnline, setIsOnline] = useState(() => 
     typeof navigator !== "undefined" ? navigator.onLine : true
   );
+  const [bgSyncSupported] = useState(() => isBackgroundSyncSupported());
+  const syncInfo = useMemo(() => getSyncSupportInfo(), []);
   
   // Track online/offline status
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
       logLiveMatchEvent("sync_status_change", { matchId, online: true });
+      
+      // When coming online, try to sync immediately
+      startQueueProcessor(matchId);
     };
     const handleOffline = () => {
       setIsOnline(false);
       logLiveMatchEvent("sync_status_change", { matchId, online: false });
+      
+      // Register Background Sync when going offline (so it syncs when back online)
+      if (bgSyncSupported) {
+        registerBackgroundSync().catch(() => {});
+      }
     };
     
     window.addEventListener("online", handleOnline);
@@ -67,7 +84,7 @@ export function useLiveMatchQueue({
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
     };
-  }, [matchId]);
+  }, [matchId, bgSyncSupported]);
   
   // Migrate from localStorage to IndexedDB on mount
   useEffect(() => {
@@ -142,14 +159,25 @@ export function useLiveMatchQueue({
       displayMinute: params.displayMinute ?? null,
     });
     
-    // Show optimistic toast
+    // Register Background Sync if offline
+    if (!isOnline && bgSyncSupported) {
+      registerBackgroundSync().catch(() => {});
+    }
+    
+    // Show optimistic toast with sync info
+    const syncMessage = !isOnline 
+      ? (bgSyncSupported 
+          ? "Sincronizará automaticamente" 
+          : "Será sincronizado quando online")
+      : "Sincronizando...";
+    
     toast.info("Evento registrado", {
-      description: isOnline ? "Sincronizando..." : "Será sincronizado quando online",
+      description: syncMessage,
       duration: 1500,
     });
     
     return event;
-  }, [matchId, isOnline]);
+  }, [matchId, isOnline, bgSyncSupported]);
   
   /**
    * Retry all failed events
@@ -205,5 +233,9 @@ export function useLiveMatchQueue({
     syncStatus,
     /** Whether device is online */
     isOnline,
+    /** Whether Background Sync is supported */
+    bgSyncSupported,
+    /** Sync support info for UI display */
+    syncInfo,
   };
 }
