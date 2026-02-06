@@ -2651,7 +2651,7 @@ export type Database = {
           }
       update_player_stat_for_event: {
         Args: {
-          p_delta?: number
+          p_delta: number
           p_event_type: Database["public"]["Enums"]["match_event_type"]
           p_match_id: string
           p_player_id: string
