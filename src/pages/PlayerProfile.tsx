@@ -76,6 +76,10 @@ interface SeasonStats {
   goals_conceded: number;
   clean_sheets: number;
   penalties_saved: number;
+  // GK-specific
+  aerial_duels_won: number;
+  aerial_duels_total: number;
+  fouls_committed: number;
 }
 
 interface CompetitionStats {
@@ -160,6 +164,7 @@ const PlayerProfile = () => {
           chances_created: 0, successful_dribbles: 0, total_dribbles: 0,
           accurate_passes: 0, total_passes: 0, clearances: 0,
           saves: 0, goals_conceded: 0, clean_sheets: 0, penalties_saved: 0,
+          aerial_duels_won: 0, aerial_duels_total: 0, fouls_committed: 0,
         };
       }
       
@@ -185,6 +190,9 @@ const PlayerProfile = () => {
       c.goals_conceded += s.goals_conceded;
       c.clean_sheets += s.clean_sheets;
       c.penalties_saved += s.penalties_saved;
+      c.aerial_duels_won += s.aerial_duels_won ?? 0;
+      c.aerial_duels_total += s.aerial_duels_total ?? 0;
+      c.fouls_committed += s.fouls_committed ?? 0;
     }
     
     return Object.values(acc).sort((a, b) => b.season_year - a.season_year);
@@ -338,6 +346,7 @@ const PlayerProfile = () => {
           <AthleteGamePhasesSection
             currentSeasonStats={currentSeasonStats}
             latestAvailableSeasonYear={latestAvailableSeasonYear}
+            playerPosition={player.position}
           />
 
           {/* Physical Data Section */}

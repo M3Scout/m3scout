@@ -5,9 +5,12 @@ import {
   Footprints, 
   Shield,
   Layers,
+  AlertTriangle,
+  Target,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { cardHover } from "@/lib/animations";
+import { isGoalkeeper } from "@/lib/positionUtils";
 
 interface SeasonStats {
   goals: number;
@@ -21,11 +24,22 @@ interface SeasonStats {
   tackles: number;
   interceptions: number;
   recoveries: number;
+  // GK fields
+  saves: number;
+  clean_sheets: number;
+  penalties_saved: number;
+  aerial_duels_won: number;
+  aerial_duels_total: number;
+  fouls_committed: number;
+  yellow_cards: number;
+  red_cards: number;
+  total_passes: number;
 }
 
 interface AthleteGamePhasesSectionProps {
   currentSeasonStats: SeasonStats | null;
   latestAvailableSeasonYear: number | null;
+  playerPosition?: string;
 }
 
 // Premium phase panel with animated bars
@@ -148,7 +162,10 @@ function PhasePanel({
 export function AthleteGamePhasesSection({
   currentSeasonStats,
   latestAvailableSeasonYear,
+  playerPosition,
 }: AthleteGamePhasesSectionProps) {
+  const isGK = isGoalkeeper(playerPosition);
+
   return (
     <motion.section 
       className="mb-10 md:mb-14"
@@ -176,49 +193,98 @@ export function AthleteGamePhasesSection({
 
       {currentSeasonStats ? (
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-          <PhasePanel 
-            title="Ataque" 
-            icon={Crosshair} 
-            color="orange"
-            index={0}
-            stats={[
-              { label: "Gols", value: currentSeasonStats.goals, max: 20 },
-              { label: "Chutes", value: currentSeasonStats.shots, max: 50 },
-              { label: "Chutes no Gol", value: currentSeasonStats.shots_on_target, max: 30 },
-            ]}
-          />
-          <PhasePanel 
-            title="Criatividade" 
-            icon={Sparkles} 
-            color="purple"
-            index={1}
-            stats={[
-              { label: "Assistências", value: currentSeasonStats.assists, max: 15 },
-              { label: "Passes Decisivos", value: currentSeasonStats.key_passes, max: 40 },
-              { label: "Chances Criadas", value: currentSeasonStats.chances_created, max: 30 },
-            ]}
-          />
-          <PhasePanel 
-            title="Passe" 
-            icon={Footprints} 
-            color="green"
-            index={2}
-            stats={[
-              { label: "Passes Certos", value: currentSeasonStats.accurate_passes, max: 500 },
-              { label: "Dribles Certos", value: currentSeasonStats.successful_dribbles, max: 30 },
-            ]}
-          />
-          <PhasePanel 
-            title="Defesa" 
-            icon={Shield} 
-            color="blue"
-            index={3}
-            stats={[
-              { label: "Desarmes", value: currentSeasonStats.tackles, max: 40 },
-              { label: "Interceptações", value: currentSeasonStats.interceptions, max: 30 },
-              { label: "Recuperações", value: currentSeasonStats.recoveries, max: 50 },
-            ]}
-          />
+          {isGK ? (
+            <>
+              <PhasePanel 
+                title="Defesas de Finalizações" 
+                icon={Shield} 
+                color="green"
+                index={0}
+                stats={[
+                  { label: "Defesas", value: currentSeasonStats.saves, max: 50 },
+                  { label: "Clean Sheets", value: currentSeasonStats.clean_sheets, max: 15 },
+                  { label: "Pênaltis Defendidos", value: currentSeasonStats.penalties_saved, max: 5 },
+                ]}
+              />
+              <PhasePanel 
+                title="Jogo Aéreo" 
+                icon={Target} 
+                color="blue"
+                index={1}
+                stats={[
+                  { label: "Duelos Aéreos Ganhos", value: currentSeasonStats.aerial_duels_won, max: 20 },
+                  { label: "Duelos Aéreos Total", value: currentSeasonStats.aerial_duels_total, max: 30 },
+                ]}
+              />
+              <PhasePanel 
+                title="Reposição" 
+                icon={Footprints} 
+                color="purple"
+                index={2}
+                stats={[
+                  { label: "Passes Certos", value: currentSeasonStats.accurate_passes, max: 300 },
+                  { label: "Passes Totais", value: currentSeasonStats.total_passes, max: 400 },
+                ]}
+              />
+              <PhasePanel 
+                title="Disciplina" 
+                icon={AlertTriangle} 
+                color="orange"
+                index={3}
+                stats={[
+                  { label: "Amarelos", value: currentSeasonStats.yellow_cards, max: 10 },
+                  { label: "Vermelhos", value: currentSeasonStats.red_cards, max: 3 },
+                  { label: "Faltas Cometidas", value: currentSeasonStats.fouls_committed, max: 20 },
+                ]}
+              />
+            </>
+          ) : (
+            <>
+              <PhasePanel 
+                title="Ataque" 
+                icon={Crosshair} 
+                color="orange"
+                index={0}
+                stats={[
+                  { label: "Gols", value: currentSeasonStats.goals, max: 20 },
+                  { label: "Chutes", value: currentSeasonStats.shots, max: 50 },
+                  { label: "Chutes no Gol", value: currentSeasonStats.shots_on_target, max: 30 },
+                ]}
+              />
+              <PhasePanel 
+                title="Criatividade" 
+                icon={Sparkles} 
+                color="purple"
+                index={1}
+                stats={[
+                  { label: "Assistências", value: currentSeasonStats.assists, max: 15 },
+                  { label: "Passes Decisivos", value: currentSeasonStats.key_passes, max: 40 },
+                  { label: "Chances Criadas", value: currentSeasonStats.chances_created, max: 30 },
+                ]}
+              />
+              <PhasePanel 
+                title="Passe" 
+                icon={Footprints} 
+                color="green"
+                index={2}
+                stats={[
+                  { label: "Passes Certos", value: currentSeasonStats.accurate_passes, max: 500 },
+                  { label: "Dribles Certos", value: currentSeasonStats.successful_dribbles, max: 30 },
+                ]}
+              />
+              <PhasePanel 
+                title="Defesa" 
+                icon={Shield} 
+                color="blue"
+                index={3}
+                stats={[
+                  { label: "Desarmes", value: currentSeasonStats.tackles, max: 40 },
+                  { label: "Interceptações", value: currentSeasonStats.interceptions, max: 30 },
+                  { label: "Recuperações", value: currentSeasonStats.recoveries, max: 50 },
+                ]}
+              />
+            </>
+          )}
         </div>
       ) : (
         <motion.div 
