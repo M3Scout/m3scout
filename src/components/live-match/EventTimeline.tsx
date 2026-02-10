@@ -82,6 +82,8 @@ const eventConfig: Record<MatchEventType, {
   punch: { icon: <Shield className="w-3.5 h-3.5" />, label: "Soco", color: "text-blue-400", bgColor: "bg-blue-500/20" },
   high_claim: { icon: <Shield className="w-3.5 h-3.5" />, label: "Bola Alta", color: "text-blue-400", bgColor: "bg-blue-500/20" },
   sweeper_action: { icon: <Footprints className="w-3.5 h-3.5" />, label: "Saída do Gol", color: "text-cyan-400", bgColor: "bg-cyan-500/20" },
+  long_pass_success: { icon: <Footprints className="w-3.5 h-3.5" />, label: "Lançamento Certo", color: "text-green-400", bgColor: "bg-green-500/20" },
+  long_pass_total: { icon: <Footprints className="w-3.5 h-3.5" />, label: "Lançamento Errado", color: "text-red-400", bgColor: "bg-red-500/20" },
   // Meta
   substitution: { icon: <ArrowRightLeft className="w-3.5 h-3.5" />, label: "Substituição", color: "text-amber-400", bgColor: "bg-amber-500/20" },
   player_on: { icon: <ArrowUp className="w-3.5 h-3.5" />, label: "Entrou em Campo", color: "text-green-400", bgColor: "bg-green-500/20" },

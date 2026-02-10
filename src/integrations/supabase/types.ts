@@ -2720,6 +2720,8 @@ export type Database = {
         | "ball_action"
         | "was_dribbled"
         | "blocked_shot"
+        | "long_pass_success"
+        | "long_pass_total"
       match_status: "draft" | "live" | "finished" | "applied"
       position_template: "outfield" | "goalkeeper"
       target_priority: "HIGH" | "MEDIUM" | "LOW"
@@ -2913,6 +2915,8 @@ export const Constants = {
         "ball_action",
         "was_dribbled",
         "blocked_shot",
+        "long_pass_success",
+        "long_pass_total",
       ],
       match_status: ["draft", "live", "finished", "applied"],
       position_template: ["outfield", "goalkeeper"],
