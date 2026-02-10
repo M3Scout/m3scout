@@ -1155,46 +1155,13 @@ export function useLiveMatch(matchId: string) {
 
       if (playersError) throw playersError;
 
-      // For each player, recalculate stats from events
+      // For each player, recalculate stats from events using canonical utility
+      const { computePlayerStatsFromEvents } = await import("@/lib/getEffectiveMatchEvents");
+      
       for (const player of players || []) {
-        const playerEvents = events?.filter(e => e.player_id === player.player_id) || [];
-        
-        // Aggregate events by type
-        const stats: Record<string, number> = {};
-        for (const event of playerEvents) {
-          const key = event.event_type;
-          stats[key] = (stats[key] || 0) + event.value;
-        }
-
-        // Map event types to match_player_stats columns
-        const statsUpdate = {
-          goals: stats["goal"] || 0,
-          assists: stats["assist"] || 0,
-          shots: (stats["shot"] || 0) + (stats["shot_on_target"] || 0) + (stats["goal"] || 0),
-          shots_on_target: (stats["shot_on_target"] || 0) + (stats["goal"] || 0),
-          key_passes: stats["key_pass"] || 0,
-          chances_created: stats["chance_created"] || 0,
-          passes_completed: stats["pass_success"] || 0,
-          // passes_total = passes certos + passes errados (igual lógica de shots)
-          passes_total: (stats["pass_success"] || 0) + (stats["pass_total"] || 0),
-          dribbles_success: stats["dribble_success"] || 0,
-          dribbles_total: (stats["dribble_success"] || 0) + (stats["dribble_attempt"] || 0),
-          tackles: stats["tackle"] || 0,
-          interceptions: stats["interception"] || 0,
-          recoveries: stats["recovery"] || 0,
-          clearances: stats["clearance"] || 0,
-          duels_won: (stats["duel_won"] || 0) + (stats["ground_duel_won"] || 0) + (stats["aerial_duel_won"] || 0),
-          duels_total: (stats["duel_total"] || 0) + (stats["ground_duel_total"] || 0) + (stats["aerial_duel_total"] || 0),
-          aerial_duels_won: stats["aerial_duel_won"] || 0,
-          aerial_duels_total: stats["aerial_duel_total"] || 0,
-          yellow_cards: stats["yellow"] || 0,
-          red_cards: stats["red"] || 0,
-          fouls_committed: stats["foul_committed"] || 0,
-          fouls_suffered: stats["foul_suffered"] || 0,
-          possession_lost: stats["possession_lost"] || 0,
-          saves: stats["save"] || 0,
-          goals_conceded: stats["goal_conceded"] || 0,
-        };
+        // Use the single source of truth for event → stats mapping
+        const statsUpdate = computePlayerStatsFromEvents(events || [], player.player_id);
+        // statsUpdate is now computed by computePlayerStatsFromEvents (canonical single source of truth)
 
         // Upsert stats
         const { error: upsertError } = await supabase
