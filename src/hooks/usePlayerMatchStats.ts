@@ -406,12 +406,16 @@ export function usePlayerMatchStats({
         clearances: stats?.clearances ?? 0,
         blocked_shots: stats?.blocked_shots ?? 0,
         was_dribbled: stats?.was_dribbled ?? 0,
+        // CRITICAL: In DB schema, duels_total stores LOST duels count, NOT actual total
+        // Same pattern as passes_total and dribbles_total
+        // duels_lost = duels_total (the stored "total" IS the lost count)
+        // Actual total = duels_won + duels_total (won + lost)
         duels_won: stats?.duels_won ?? 0,
-        duels_total: stats?.duels_total ?? 0,
+        duels_total: (stats?.duels_won ?? 0) + (stats?.duels_total ?? 0),
         aerial_duels_won: stats?.aerial_duels_won ?? 0,
-        aerial_duels_total: stats?.aerial_duels_total ?? 0,
+        aerial_duels_total: (stats?.aerial_duels_won ?? 0) + (stats?.aerial_duels_total ?? 0),
         ground_duels_won: (stats?.duels_won ?? 0) - (stats?.aerial_duels_won ?? 0),
-        ground_duels_total: (stats?.duels_total ?? 0) - (stats?.aerial_duels_total ?? 0),
+        ground_duels_total: ((stats?.duels_won ?? 0) + (stats?.duels_total ?? 0)) - ((stats?.aerial_duels_won ?? 0) + (stats?.aerial_duels_total ?? 0)),
         yellow_cards: stats?.yellow_cards ?? 0,
         red_cards: stats?.red_cards ?? 0,
         fouls_committed: stats?.fouls_committed ?? 0,
@@ -893,10 +897,15 @@ export function usePlayerMatchStatsBySeasonCompetition({
       s.minutes += minutesPlayed;
       s.goals += stats?.goals ?? 0;
       s.assists += stats?.assists ?? 0;
-      s.shots += stats?.shots ?? 0;
-      s.shots_on_target += stats?.shots_on_target ?? 0;
-      s.shots_off_target += Math.max(0, (stats?.shots ?? 0) - (stats?.shots_on_target ?? 0));
-      s.shots_blocked += stats?.shots_blocked ?? 0;
+      // CRITICAL: In DB schema, shots stores OFF-TARGET shots, NOT total
+      // shots_total = shots (off) + shots_on_target + shots_blocked
+      const matchShotsOff = stats?.shots ?? 0;
+      const matchShotsOn = stats?.shots_on_target ?? 0;
+      const matchShotsBlocked = stats?.shots_blocked ?? 0;
+      s.shots += matchShotsOff + matchShotsOn + matchShotsBlocked; // Actual total
+      s.shots_on_target += matchShotsOn;
+      s.shots_off_target += matchShotsOff;
+      s.shots_blocked += matchShotsBlocked;
       s.offsides += stats?.offsides ?? 0;
       s.passes_completed += stats?.passes_completed ?? 0;
       // CRITICAL: In DB schema, passes_total stores FAILED passes, not actual total
@@ -938,12 +947,15 @@ export function usePlayerMatchStatsBySeasonCompetition({
       s.clearances += stats?.clearances ?? 0;
       s.blocked_shots += stats?.blocked_shots ?? 0;
       s.was_dribbled += stats?.was_dribbled ?? 0;
+      // CRITICAL: In DB schema, duels_total stores LOST duels count, NOT actual total
+      // Same pattern as passes_total and dribbles_total
+      // Actual total = won + lost (= duels_won + duels_total)
       s.duels_won += stats?.duels_won ?? 0;
-      s.duels_total += stats?.duels_total ?? 0;
+      s.duels_total += (stats?.duels_won ?? 0) + (stats?.duels_total ?? 0);
       s.aerial_duels_won += stats?.aerial_duels_won ?? 0;
-      s.aerial_duels_total += stats?.aerial_duels_total ?? 0;
+      s.aerial_duels_total += (stats?.aerial_duels_won ?? 0) + (stats?.aerial_duels_total ?? 0);
       s.ground_duels_won += (stats?.duels_won ?? 0) - (stats?.aerial_duels_won ?? 0);
-      s.ground_duels_total += (stats?.duels_total ?? 0) - (stats?.aerial_duels_total ?? 0);
+      s.ground_duels_total += ((stats?.duels_won ?? 0) + (stats?.duels_total ?? 0)) - ((stats?.aerial_duels_won ?? 0) + (stats?.aerial_duels_total ?? 0));
       s.yellow_cards += stats?.yellow_cards ?? 0;
       s.red_cards += stats?.red_cards ?? 0;
       s.fouls_committed += stats?.fouls_committed ?? 0;
