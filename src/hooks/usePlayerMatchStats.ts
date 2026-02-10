@@ -13,9 +13,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { calculateMinutesPlayed, STANDARD_MATCH_DURATION } from "@/lib/minutesPlayed";
 import { calculateDerivedBallActions } from "@/lib/derivedBallActions";
 import { fetchPlayerMatchStatsRaw } from "@/lib/playerMatchStatsProvider";
+import { getRegulationGameMinute } from "@/lib/formatters";
 
 interface PresenceRow {
   match_id: string;
+  period: number;
   entered_at_seconds: number;
   exited_at_seconds: number | null;
 }
@@ -211,19 +213,24 @@ function getRegMinutesPlayed(
  * We floor seconds->minutes to avoid inflating minutes with partial segments.
  */
 function computePresenceMinutesByMatch(rows: PresenceRow[]): Record<string, number> {
-  const secondsByMatch: Record<string, number> = {};
+  const END_OF_HALF_SECONDS = 45 * 60; // 2700
+  const minutesByMatch: Record<string, number> = {};
+
   for (const r of rows) {
-    const start = r.entered_at_seconds ?? 0;
-    const end = r.exited_at_seconds;
-    if (typeof end !== "number") continue;
-    const delta = Math.max(0, end - start);
-    secondsByMatch[r.match_id] = (secondsByMatch[r.match_id] ?? 0) + delta;
+    const period = r.period ?? 1;
+    const entryMin = getRegulationGameMinute(r.entered_at_seconds ?? 0, period);
+    // Cap at end-of-half if still on field (null) or over regulation
+    const exitSeconds = Math.min(r.exited_at_seconds ?? END_OF_HALF_SECONDS, END_OF_HALF_SECONDS);
+    const exitMin = getRegulationGameMinute(exitSeconds, period);
+    const delta = Math.max(0, exitMin - entryMin);
+    minutesByMatch[r.match_id] = (minutesByMatch[r.match_id] ?? 0) + delta;
   }
 
-  const minutesByMatch: Record<string, number> = {};
-  for (const [matchId, seconds] of Object.entries(secondsByMatch)) {
-    minutesByMatch[matchId] = Math.min(Math.floor(seconds / 60), STANDARD_MATCH_DURATION);
+  // Cap at 90 minutes total per match
+  for (const matchId of Object.keys(minutesByMatch)) {
+    minutesByMatch[matchId] = Math.min(minutesByMatch[matchId], STANDARD_MATCH_DURATION);
   }
+
   return minutesByMatch;
 }
 
@@ -255,7 +262,7 @@ export function usePlayerMatchStats({
       if (matchIds.length > 0) {
         const { data: presenceRows, error: presenceError } = await supabase
           .from("player_field_presence")
-          .select("match_id, entered_at_seconds, exited_at_seconds")
+          .select("match_id, period, entered_at_seconds, exited_at_seconds")
           .eq("player_id", playerId)
           .in("match_id", matchIds);
 
@@ -766,7 +773,7 @@ export function usePlayerMatchStatsBySeasonCompetition({
       {
         const { data: presenceRows, error: presenceError } = await supabase
           .from("player_field_presence")
-          .select("match_id, entered_at_seconds, exited_at_seconds")
+          .select("match_id, period, entered_at_seconds, exited_at_seconds")
           .eq("player_id", playerId)
           .in("match_id", matchIds);
 

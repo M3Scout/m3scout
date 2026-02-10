@@ -13,6 +13,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { getRegulationGameMinute } from "@/lib/formatters";
 import type { PlayerStatRow } from "@/lib/attributeRadar";
 
 interface UseAttributeUnifiedStatsOptions {
@@ -195,24 +196,23 @@ export function useAttributeUnifiedStats({
         // Fetch minutes from presence or fallback
         const { data: presenceData } = await supabase
           .from("player_field_presence")
-          .select("match_id, entered_at_seconds, exited_at_seconds")
+          .select("match_id, period, entered_at_seconds, exited_at_seconds")
           .eq("player_id", playerId)
           .in("match_id", matchIds);
 
-        // Calculate presence minutes by match
+        // Calculate presence minutes by match using regulation minutes (same as SubstitutionStatsCard)
+        const END_OF_HALF_SECONDS = 45 * 60;
         const presenceMinutesByMatch: Record<string, number> = {};
         for (const p of presenceData || []) {
-          const start = p.entered_at_seconds ?? 0;
-          const end = p.exited_at_seconds;
-          if (typeof end !== "number") continue;
-          const delta = Math.max(0, end - start);
+          const period = (p as any).period ?? 1;
+          const entryMin = getRegulationGameMinute(p.entered_at_seconds ?? 0, period);
+          const exitSeconds = Math.min(p.exited_at_seconds ?? END_OF_HALF_SECONDS, END_OF_HALF_SECONDS);
+          const exitMin = getRegulationGameMinute(exitSeconds, period);
+          const delta = Math.max(0, exitMin - entryMin);
           presenceMinutesByMatch[p.match_id] = (presenceMinutesByMatch[p.match_id] ?? 0) + delta;
         }
         for (const matchId of Object.keys(presenceMinutesByMatch)) {
-          presenceMinutesByMatch[matchId] = Math.min(
-            Math.floor(presenceMinutesByMatch[matchId] / 60),
-            90
-          );
+          presenceMinutesByMatch[matchId] = Math.min(presenceMinutesByMatch[matchId], 90);
         }
 
         // Aggregate stats per match (dedup)
