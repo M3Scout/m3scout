@@ -168,18 +168,21 @@ export function normalizeMatchStats(
   const dribbles_failed = dribblesFailed; // Already the failed count
   
   // === DUELS ===
-  // REGRA: duels_total = duels_won + duels_lost
+  // CRITICAL: In our DB schema, duels_total stores LOST duels count, NOT actual total
+  // Same pattern as passes_total and dribbles_total
+  // duels_lost = duels_total (the stored "total" IS the lost count)
+  // Actual total = duels_won + duels_total (won + lost)
   const duelsWon = safe(stats.duels_won);
-  const duelsStoredTotal = safe(stats.duels_total);
-  const duels_total_derived = Math.max(duelsStoredTotal, duelsWon);
-  const duels_lost = Math.max(0, duels_total_derived - duelsWon);
+  const duelsLostStored = safe(stats.duels_total); // duels_total IS the lost count
+  const duels_total_derived = duelsWon + duelsLostStored;
+  const duels_lost = duelsLostStored;
   
   // === AERIAL DUELS ===
-  // REGRA: aerial_total = aerial_won + aerial_lost
+  // CRITICAL: Same pattern - aerial_duels_total stores LOST count
   const aerialWon = safe(stats.aerial_duels_won);
-  const aerialStoredTotal = safe(stats.aerial_duels_total);
-  const aerial_duels_total_derived = Math.max(aerialStoredTotal, aerialWon);
-  const aerial_duels_lost = Math.max(0, aerial_duels_total_derived - aerialWon);
+  const aerialLostStored = safe(stats.aerial_duels_total); // aerial_duels_total IS the lost count
+  const aerial_duels_total_derived = aerialWon + aerialLostStored;
+  const aerial_duels_lost = aerialLostStored;
   
   // === CROSSES ===
   // REGRA: crosses_total = crosses_success + crosses_failed
