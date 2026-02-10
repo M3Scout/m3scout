@@ -968,6 +968,8 @@ export function useLiveMatch(matchId: string) {
       queryClient.invalidateQueries({ queryKey: ["match-events", matchId] });
       queryClient.invalidateQueries({ queryKey: ["match-players", matchId] });
       queryClient.invalidateQueries({ queryKey: ["match-player-stats", matchId] });
+      // CRITICAL FIX: Also invalidate player_field_presence so Presence History updates
+      queryClient.invalidateQueries({ queryKey: ["player-field-presence", matchId] });
       // Invalidate player profile stats for consistency
       queryClient.invalidateQueries({ 
         predicate: (query) => 
