@@ -202,6 +202,8 @@ export const EVENT_TYPE_CONFIG: Record<MatchEventType, SummaryEventConfig> = {
   punch: { label: "Socos", icon: "👊", category: "goalkeeper", order: 56 },
   high_claim: { label: "Bolas Altas", icon: "🙌", category: "goalkeeper", order: 57 },
   sweeper_action: { label: "Saídas do Gol", icon: "🏃", category: "goalkeeper", order: 58 },
+  long_pass_success: { label: "Lançamentos Certos", icon: "🎯", category: "goalkeeper", order: 59 },
+  long_pass_total: { label: "Lançamentos Errados", icon: "📐", category: "goalkeeper", order: 60 },
   
   // Meta events (substitutions - usually not shown directly)
   substitution: { label: "Substituição", icon: "🔄", category: "meta", order: 90 },

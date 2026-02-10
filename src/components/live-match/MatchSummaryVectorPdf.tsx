@@ -116,6 +116,8 @@ const EVENT_LABELS: Record<MatchEventType, string> = {
   punch: "Soco",
   high_claim: "Bola Alta",
   sweeper_action: "Saída Gol",
+  long_pass_success: "Lançamento Certo",
+  long_pass_total: "Lançamento Errado",
   // Meta
   substitution: "Substituição",
   player_on: "Entrou",

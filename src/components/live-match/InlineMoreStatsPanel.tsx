@@ -115,6 +115,18 @@ const GOALKEEPER_STATS: { category: string; categoryKey: string; color: string; 
     ],
   },
   {
+    category: "PASSES",
+    categoryKey: "gk_passes",
+    color: "text-amber-400",
+    bgColor: "bg-amber-500/10 border-amber-500/20",
+    stats: [
+      { type: "pass_success", label: "Passes Certos" },
+      { type: "pass_total", label: "Passes Errados" },
+      { type: "long_pass_success", label: "Lançamentos Certos" },
+      { type: "long_pass_total", label: "Lançamentos Errados" },
+    ],
+  },
+  {
     category: "DIS",
     categoryKey: "discipline",
     color: "text-purple-400",

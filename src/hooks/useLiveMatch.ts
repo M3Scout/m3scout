@@ -30,6 +30,7 @@ export type MatchEventType =
   | "save" | "goal_conceded" | "clean_sheet"
   | "penalty_saved" | "error_led_to_goal"
   | "box_save" | "punch" | "high_claim" | "sweeper_action"
+  | "long_pass_success" | "long_pass_total"
   // Player presence events
   | "player_on" | "player_off"
   // Substitution event

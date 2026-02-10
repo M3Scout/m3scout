@@ -73,6 +73,8 @@ export const EVENT_LABELS_PTBR: Record<string, string> = {
   punch: "Socos",
   high_claim: "Bolas Altas",
   sweeper_action: "Saídas do Gol",
+  long_pass_success: "Lançamentos Certos",
+  long_pass_total: "Lançamentos Errados",
   
   // Player presence (usually not displayed as chips)
   player_on: "Entrou",
@@ -114,6 +116,8 @@ export const EVENT_LABELS_SHORT: Record<string, string> = {
   penalty_saved: "Pên. Def.",
   error_led_to_goal: "Erro→Gol",
   sweeper_action: "Saída Gol",
+  long_pass_success: "Lanç. ✓",
+  long_pass_total: "Lanç. ✗",
 };
 
 /**
