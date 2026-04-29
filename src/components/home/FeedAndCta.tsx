@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { Instagram, Youtube, ArrowRight } from "lucide-react";
+import { Instagram, Youtube } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import "./FeedAndCta.css";
 
