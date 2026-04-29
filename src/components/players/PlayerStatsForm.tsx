@@ -636,7 +636,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
                       <ScoutCategoryStats
                         mode="edit"
                         categories={isGoalkeeper ? GOALKEEPER_SCOUT_CATEGORIES : OUTFIELD_SCOUT_CATEGORIES}
-                        values={statToScoutValues(stat)}
+                        values={statToScoutValues(stat as unknown as Record<string, unknown>)}
                         onChange={(key, next) => updateStatField(stat.id, key as keyof PlayerStat, next)}
                       />
                     </div>
