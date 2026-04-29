@@ -16,6 +16,7 @@ import { useEffect, useRef, useState } from "react";
 import { Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { clampStatValue, getStatLimit } from "@/lib/statLimits";
 
 export type StatValues = Record<string, number>;
 
