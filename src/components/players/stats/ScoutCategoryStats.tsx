@@ -12,6 +12,7 @@
  * exibe automaticamente a porcentagem de aproveitamento, idêntico ao Live.
  */
 
+import { useEffect, useRef, useState } from "react";
 import { Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
