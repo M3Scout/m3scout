@@ -80,7 +80,7 @@ export function LiveMatchBigTimer({
   const [confirmFinishOpen, setConfirmFinishOpen] = useState(false);
   const [displaySeconds, setDisplaySeconds] = useState(0);
   const lastMinuteRef = useRef(0);
-  const holdIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const holdIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { half, clockStatus, halfStartTime, elapsedSecondsInHalf, addedTimeFirstHalf, addedTimeSecondHalf } = timerState;
   

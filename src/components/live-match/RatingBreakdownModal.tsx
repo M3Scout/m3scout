@@ -290,7 +290,7 @@ export function RatingBreakdownModal({ rating, playerName, children }: RatingBre
               <p className="text-xs text-muted-foreground/70 mt-1">
                 A nota foi calculada pelo motor de scouting e persistida no banco de dados.
               </p>
-              {process.env.NODE_ENV === 'development' && (
+              {import.meta.env.DEV && (
                 <p className="text-[10px] text-amber-500/70 mt-2 font-mono">
                   [DEV] Rating persistido sem breakdown - considere rebuild
                 </p>

@@ -820,7 +820,7 @@ export function useLiveMatch(matchId: string) {
       
       const { error } = await supabase
         .from("matches")
-        .update({ [field]: params.minutes })
+        .update({ [field]: params.minutes } as Record<string, number>)
         .eq("id", matchId);
 
       if (error) throw error;
