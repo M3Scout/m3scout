@@ -225,30 +225,18 @@ export function SeasonStatsCard({
             )}
           </div>
 
-          {/* Stats Grid - 3 columns for outfield, 2 for GK */}
-          <div className={`grid gap-2 w-full ${isGK ? 'grid-cols-2' : 'grid-cols-3'}`}>
+          {/* Cabeçalho rápido: Jogos / Minutos */}
+          <div className="grid gap-2 w-full grid-cols-2 mb-3">
             <StatChip label="Jogos" value={normalizedStat.matches} index={0} />
             <StatChip label="Minutos" value={normalizedStat.minutes} index={1} />
-
-            {isGK ? (
-              <>
-                <StatChip label="Defesas" value={normalizedStat.saves || 0} highlight="blue" index={2} />
-                <StatChip label="Gols Sofr." value={normalizedStat.goals_conceded || 0} index={3} />
-                <StatChip label="Clean Sheets" value={normalizedStat.clean_sheets || 0} highlight="green" index={4} />
-                <StatChip label="Pên. Def." value={normalizedStat.penalties_saved || 0} index={5} />
-              </>
-            ) : (
-              <>
-                <StatChip label="Gols" value={normalizedStat.goals} highlight="green" index={2} />
-                <StatChip label="Assist" value={normalizedStat.assists} highlight="blue" index={3} />
-                {/* CRITICAL: Use shots_total_derived to ensure FIN = on_target + blocked + off_target */}
-                <StatChip label="Finaliz." value={normalizedStat.shots_total_derived} index={4} />
-                <StatChip label="No Gol" value={normalizedStat.shots_on_target || 0} index={5} />
-                <StatChip label="Amarelos" value={normalizedStat.yellow_cards} variant="warning" index={6} />
-                <StatChip label="Vermelhos" value={normalizedStat.red_cards} variant="danger" index={7} />
-              </>
-            )}
           </div>
+
+          {/* Scout categories grid (mesma identidade visual do Live Match) */}
+          <ScoutCategoryStats
+            mode="readonly"
+            categories={isGK ? GOALKEEPER_SCOUT_CATEGORIES : OUTFIELD_SCOUT_CATEGORIES}
+            values={statsToScoutValues(normalizedStat)}
+          />
 
           {/* Expanded details with animation */}
           <AnimatePresence>
