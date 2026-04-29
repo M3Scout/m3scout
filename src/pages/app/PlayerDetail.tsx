@@ -299,11 +299,18 @@ const PlayerDetail = () => {
     <div className="space-y-6 w-full min-w-0 overflow-x-hidden">
       {/* Header - Mobile-first redesign */}
       <div className="flex flex-col gap-4 w-full min-w-0">
-        {/* Row 1: Back button + Menu (if needed) */}
-        <div className="flex items-center justify-between">
+        {/* Row 1: Back button + Actions */}
+        <div className="flex items-center justify-between gap-2">
           <Button variant="ghost" size="icon" onClick={() => navigate("/app/players")}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
+          <WhatsAppSummaryButton
+            playerId={player.id}
+            fullName={player.full_name}
+            position={player.position}
+            age={player.age}
+            currentClub={player.current_club}
+          />
         </div>
         
         {/* Row 2: Photo + Name/Position/Rating */}
