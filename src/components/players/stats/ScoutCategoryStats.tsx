@@ -236,10 +236,26 @@ export function ScoutCategoryStats({
 }: ScoutCategoryStatsProps) {
   const isEdit = mode === "edit";
 
-  const handleStep = (key: string, delta: number) => {
+  /**
+   * Aplica a mudança em uma stat. Se a chave for derivada (ex: passes_failed_derived),
+   * traduz para uma atualização do total subjacente (total = success + novoFalhado).
+   */
+  const commitValue = (key: string, nextRaw: number) => {
     if (!onChange) return;
-    const next = clampStatValue(key, getValue(values, key) + delta);
-    onChange(key, next);
+    const derived = DERIVED_FAILED_MAP[key];
+    if (derived) {
+      const success = getValue(values, derived.successKey);
+      const nextFailed = Math.max(0, nextRaw);
+      const nextTotal = clampStatValue(derived.totalKey, success + nextFailed);
+      onChange(derived.totalKey, nextTotal);
+      return;
+    }
+    onChange(key, clampStatValue(key, nextRaw));
+  };
+
+  const handleStep = (key: string, delta: number) => {
+    const current = resolveDisplayValue(values, key);
+    commitValue(key, current + delta);
   };
 
   return (
@@ -259,12 +275,27 @@ export function ScoutCategoryStats({
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
             {category.stats.map((stat) => {
-              const value = getValue(values, stat.key);
-              const pct = stat.successOf
-                ? calcPct(value, getValue(values, stat.successOf))
-                : null;
-              const { max: statMax } = getStatLimit(stat.key);
-              const atMax = value >= statMax;
+              const value = resolveDisplayValue(values, stat.key);
+
+              // Cálculo de porcentagem:
+              // - successOf:        % = success / total
+              // - successOfFailed:  % = success / (success + failed)
+              let pct: number | null = null;
+              if (stat.successOf) {
+                pct = calcPct(value, getValue(values, stat.successOf));
+              } else if (stat.successOfFailed) {
+                const failed = getValue(values, stat.successOfFailed);
+                pct = calcPct(value, value + failed);
+              }
+
+              const isDerived = stat.key in DERIVED_FAILED_MAP;
+              const limitKey = isDerived
+                ? DERIVED_FAILED_MAP[stat.key].totalKey
+                : stat.key;
+              const { max: statMax } = getStatLimit(limitKey);
+              const atMax = isDerived
+                ? value + getValue(values, DERIVED_FAILED_MAP[stat.key].successKey) >= statMax
+                : value >= statMax;
 
               return (
                 <div
