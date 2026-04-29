@@ -143,7 +143,7 @@
 .lp-hero {
   position: relative;
   min-height: 100vh;
-  padding: 140px 40px 80px;
+  padding: 140px 0 80px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -179,6 +179,7 @@
   max-width: 1600px;
   margin: 0 auto;
   width: 100%;
+  padding: 0 40px;
 }
 .lp-hero__title {
   font-family: var(--display);
@@ -303,7 +304,8 @@
 @media (max-width: 1100px) { .lp-hero__side { display: none; } }
 
 @media (max-width: 800px) {
-  .lp-hero { padding: 120px 20px 80px; }
+  .lp-hero { padding: 120px 0 80px; }
+  .lp-hero__inner { padding: 0 20px; }
   .lp-hero__lead { font-size: 16px; }
   .lp-btn { padding: 16px 22px; font-size: 11px; }
 }
