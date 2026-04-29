@@ -122,6 +122,35 @@
   border-color: var(--fg-dark);
 }
 
+.athletes-h__head-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.athletes-h__nav {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  border: 1px solid var(--line-dark);
+  background: transparent;
+  color: var(--fg-dark);
+  font-size: 18px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.25s, color 0.25s, border-color 0.25s, opacity 0.25s;
+}
+.athletes-h__nav:hover:not(:disabled) {
+  background: var(--fg-dark);
+  color: var(--bg-dark);
+  border-color: var(--fg-dark);
+}
+.athletes-h__nav:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
 .athletes-h__track {
   display: flex;
   gap: 24px;
@@ -133,6 +162,13 @@
   scroll-padding-left: 40px;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
+  cursor: grab;
+  user-select: none;
+}
+.athletes-h__track.is-dragging {
+  cursor: grabbing;
+  scroll-snap-type: none;
+}
 }
 .athletes-h__track::-webkit-scrollbar { display: none; }
 
