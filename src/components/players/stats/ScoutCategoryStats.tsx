@@ -308,7 +308,7 @@ export function ScoutCategoryStats({
                 : stat.key;
               const { max: statMax } = getStatLimit(limitKey);
               const atMax = isDerived
-                ? value + getValue(values, DERIVED_FAILED_MAP[stat.key].successKey) >= statMax
+                ? value + sumKeys(values, DERIVED_FAILED_MAP[stat.key].successKey) >= statMax
                 : value >= statMax;
 
               return (
