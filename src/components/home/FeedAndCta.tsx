@@ -14,25 +14,25 @@ interface IGPost {
   media_type?: string;
 }
 
-// Verified football-related Unsplash photo IDs
-const UNSPLASH_IDS = [
-  "1centi3vGEA", // estadio
-  "TY4DI9F8z6Y", // chuteira
-  "wYz3Z6F4ESI", // bola no campo
-  "6ToVtVRE2Hk", // jogador
-  "1uxV98ennpc", // estadio iluminado
-  "RnBNwJVayxg", // treino
-  "ZdaC1ElyD80", // gramado
-  "F6Wf8KbVdK8", // jogador silhueta
-  "PWG4u3X5gzg", // estadio aereo
-  "Tnf1MSQs0NQ", // bola
-  "OByGGettWCU", // pernas correndo
-  "QkQX0VJgCzQ", // multidao
+// Verified football-related Unsplash photos (stable IDs)
+const FALLBACK_PHOTOS = [
+  "photo-1517649763962-0c623066013b", // football match
+  "photo-1551958219-acbc608c6377",   // soccer ball field
+  "photo-1574629810360-7efbbe195018", // stadium
+  "photo-1508098682722-e99c43a406b2", // player kicking
+  "photo-1526232761682-d26e03ac148e", // boots
+  "photo-1543351611-58f69d7c1781",   // training
+  "photo-1571019613454-1cb2f99b2d8b", // ball closeup
+  "photo-1517466787929-bc90951d0974", // crowd
+  "photo-1555169062-013468b47731",   // night stadium
+  "photo-1606925797300-0b35e9d1794e", // player silhouette
+  "photo-1487466365202-1afdb86c764e", // grass
+  "photo-1530549387789-4c1017266635", // goalkeeper
 ];
 
-const FALLBACK_POSTS: IGPost[] = UNSPLASH_IDS.map((id, i) => ({
+const FALLBACK_POSTS: IGPost[] = FALLBACK_PHOTOS.map((id, i) => ({
   id: `fb-${i}`,
-  media_url: `https://images.unsplash.com/photo-${id}?w=600&h=600&fit=crop&q=80&auto=format`,
+  media_url: `https://images.unsplash.com/${id}?w=800&h=800&fit=crop&q=80&auto=format`,
   permalink: "https://instagram.com/_m3agency",
   caption: "M3 Agency · Inteligência em Futebol",
 }));
