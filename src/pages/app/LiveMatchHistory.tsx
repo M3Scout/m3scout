@@ -333,7 +333,7 @@ function MatchCard({ match, link, onDelete, canDelete = false, index }: MatchCar
                 <Button 
                   variant="ghost" 
                   size="icon"
-                  className="h-8 w-8 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity touch:opacity-100"
+                  className="h-8 w-8 text-zinc-300 hover:text-white hover:bg-zinc-800/80 rounded-md transition-colors"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -341,12 +341,9 @@ function MatchCard({ match, link, onDelete, canDelete = false, index }: MatchCar
                   onTouchEnd={(e) => {
                     e.stopPropagation();
                   }}
-                  style={{
-                    // Always visible on touch devices
-                    opacity: 'var(--touch-opacity, 0)',
-                  }}
+                  aria-label="Abrir menu de ações"
                 >
-                  <MoreVertical className="w-4 h-4 text-zinc-500" />
+                  <MoreVertical className="w-5 h-5" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-800">
