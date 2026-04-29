@@ -1,16 +1,17 @@
 /**
  * WhatsAppSummaryButton
  *
- * Botão que gera um resumo consolidado dos principais números do atleta
- * (com totais recalculados quando incoerentes) e oferece duas ações:
- *  - Compartilhar direto no WhatsApp (abre wa.me com o texto pré-preenchido)
- *  - Copiar para a área de transferência
+ * Botão que gera um resumo consolidado dos principais números do atleta com
+ * seletor de janela (carreira, temporada X, últimos 3 meses, últimos 5 jogos,
+ * última partida). Os totais são recalculados quando incoerentes.
  *
- * Usa `unified_player_season_stats` como fonte (LIVE > MANUAL por contexto),
- * idêntico ao restante do perfil do atleta.
+ * Fontes:
+ *  - Carreira / Temporada YYYY → `unified_player_season_stats` (LIVE > MANUAL).
+ *  - Últimos 3 meses / N jogos / última partida → `match_player_stats` (LIVE only,
+ *    pois MANUAL não tem granularidade por jogo).
  */
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -22,13 +23,27 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, MessageCircle, Copy, Check } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Loader2, MessageCircle, Copy, Check, Info } from "lucide-react";
 import { toast } from "sonner";
 import {
   fetchUnifiedPlayerStats,
   aggregateUnifiedStats,
+  getAvailableYears,
 } from "@/hooks/useUnifiedPlayerStats";
 import { buildPlayerWhatsAppSummary } from "@/lib/playerWhatsAppSummary";
+import {
+  buildDefaultWindowOptions,
+  fetchLiveAggregateForWindow,
+  type SummaryWindowOption,
+} from "@/lib/playerSummaryWindow";
 
 interface WhatsAppSummaryButtonProps {
   playerId: string;
@@ -36,7 +51,6 @@ interface WhatsAppSummaryButtonProps {
   position?: string | null;
   age?: number | null;
   currentClub?: string | null;
-  /** Variantes para o botão trigger. */
   variant?: "default" | "outline" | "secondary" | "ghost";
   size?: "default" | "sm" | "lg" | "icon";
   className?: string;
@@ -56,38 +70,93 @@ export function WhatsAppSummaryButton({
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState("");
   const [copied, setCopied] = useState(false);
+  const [windowOptions, setWindowOptions] = useState<SummaryWindowOption[]>(() =>
+    buildDefaultWindowOptions([]),
+  );
+  const [selectedWindowId, setSelectedWindowId] = useState<string>("career");
+  const [emptyForWindow, setEmptyForWindow] = useState(false);
 
-  const generate = async () => {
+  const selectedWindow = useMemo(
+    () => windowOptions.find((o) => o.id === selectedWindowId) ?? windowOptions[0],
+    [windowOptions, selectedWindowId],
+  );
+
+  // Carrega anos disponíveis (só na primeira abertura) para popular o select com temporadas reais.
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const rows = await fetchUnifiedPlayerStats(playerId);
+        const years = getAvailableYears(rows);
+        if (!cancelled) setWindowOptions(buildDefaultWindowOptions(years));
+      } catch (err) {
+        console.error("[WhatsAppSummary] anos disponíveis", err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, playerId]);
+
+  // Gera/regenera o resumo quando a janela muda (e quando o diálogo abre).
+  useEffect(() => {
+    if (!open || !selectedWindow) return;
+    let cancelled = false;
     setLoading(true);
-    try {
-      const rows = await fetchUnifiedPlayerStats(playerId);
-      const aggregated = aggregateUnifiedStats(rows);
-      const text = buildPlayerWhatsAppSummary({
-        fullName,
-        position,
-        age,
-        currentClub,
-        stats: aggregated,
-        positionHint: position,
-      });
-      setSummary(text);
-    } catch (err) {
-      console.error("[WhatsAppSummary] Erro ao gerar resumo", err);
-      toast.error("Não foi possível gerar o resumo");
-      setSummary("");
-    } finally {
-      setLoading(false);
-    }
-  };
+    setEmptyForWindow(false);
+    (async () => {
+      try {
+        const w = selectedWindow.value;
+        let aggregated = null;
+        let matchesCount = 0;
+
+        if (w.kind === "career") {
+          const rows = await fetchUnifiedPlayerStats(playerId);
+          aggregated = aggregateUnifiedStats(rows);
+          matchesCount = aggregated?.matches ?? 0;
+        } else if (w.kind === "season") {
+          const rows = await fetchUnifiedPlayerStats(playerId, w.year);
+          aggregated = aggregateUnifiedStats(rows);
+          matchesCount = aggregated?.matches ?? 0;
+        } else {
+          const r = await fetchLiveAggregateForWindow(playerId, w);
+          aggregated = r.stats;
+          matchesCount = r.matchesCount;
+        }
+
+        if (cancelled) return;
+
+        if (!aggregated || matchesCount === 0) {
+          setEmptyForWindow(true);
+        }
+
+        const text = buildPlayerWhatsAppSummary({
+          fullName,
+          position,
+          age,
+          currentClub,
+          stats: aggregated,
+          positionHint: position,
+          windowLabel: selectedWindow.shortLabel,
+        });
+        setSummary(text);
+      } catch (err) {
+        console.error("[WhatsAppSummary] erro ao gerar", err);
+        toast.error("Não foi possível gerar o resumo");
+        setSummary("");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, selectedWindow, playerId, fullName, position, age, currentClub]);
 
   const handleOpenChange = (next: boolean) => {
     setOpen(next);
-    if (next && !summary) {
-      void generate();
-    }
-    if (!next) {
-      setCopied(false);
-    }
+    if (!next) setCopied(false);
   };
 
   const handleCopy = async () => {
@@ -125,10 +194,39 @@ export function WhatsAppSummaryButton({
         <DialogHeader>
           <DialogTitle>Resumo para WhatsApp</DialogTitle>
           <DialogDescription>
-            Principais números consolidados (totais recalculados automaticamente).
-            Edite livremente antes de enviar.
+            Escolha a janela. Totais são recalculados automaticamente quando
+            incoerentes.
           </DialogDescription>
         </DialogHeader>
+
+        <div className="space-y-2">
+          <Label className="text-xs text-muted-foreground">Janela</Label>
+          <Select
+            value={selectedWindowId}
+            onValueChange={setSelectedWindowId}
+            disabled={loading}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione uma janela..." />
+            </SelectTrigger>
+            <SelectContent>
+              {windowOptions.map((opt) => (
+                <SelectItem key={opt.id} value={opt.id}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {selectedWindow &&
+            (selectedWindow.value.kind === "last3m" ||
+              selectedWindow.value.kind === "lastN" ||
+              selectedWindow.value.kind === "lastMatch") && (
+              <p className="text-[11px] text-muted-foreground flex items-start gap-1">
+                <Info className="w-3 h-3 mt-0.5 shrink-0" />
+                Janelas por jogo usam apenas dados do scout ao vivo.
+              </p>
+            )}
+        </div>
 
         {loading ? (
           <div className="flex items-center justify-center py-12 text-muted-foreground">
@@ -143,6 +241,12 @@ export function WhatsAppSummaryButton({
             className="font-mono text-xs leading-relaxed"
             aria-label="Texto do resumo"
           />
+        )}
+
+        {emptyForWindow && !loading && (
+          <p className="text-xs text-amber-600">
+            Nenhum dado encontrado para esta janela.
+          </p>
         )}
 
         <DialogFooter className="gap-2 sm:gap-2">
