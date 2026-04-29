@@ -350,6 +350,7 @@ function EditableStatValue({
       type="number"
       inputMode="numeric"
       min={0}
+      max={statMax}
       step={1}
       value={draft}
       disabled={disabled}
