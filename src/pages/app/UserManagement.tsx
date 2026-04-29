@@ -63,7 +63,9 @@ import {
   UserCheck,
   UserX,
   UserCog,
-  Filter
+  Filter,
+  KeyRound,
+  RefreshCw,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -187,6 +189,48 @@ export default function UserManagement() {
   const [approvalRole, setApprovalRole] = useState<AppRole>("scout");
   const [approvalLinkedPlayerId, setApprovalLinkedPlayerId] = useState<string | null>(null);
   const [approving, setApproving] = useState(false);
+
+  // Reset password modal state
+  const [resetPasswordUser, setResetPasswordUser] = useState<UserWithPermissions | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [resettingPassword, setResettingPassword] = useState(false);
+
+  const generateRandomPassword = () => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+    let result = "";
+    const arr = new Uint32Array(8);
+    crypto.getRandomValues(arr);
+    for (let i = 0; i < 8; i++) result += chars[arr[i] % chars.length];
+    setNewPassword(result);
+  };
+
+  const handleResetPassword = async () => {
+    if (!resetPasswordUser) return;
+    if (!isAdmin) {
+      toast.error("Apenas administradores podem redefinir senhas");
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error("A senha deve ter ao menos 6 caracteres");
+      return;
+    }
+    setResettingPassword(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-reset-user-password", {
+        body: { user_id: resetPasswordUser.user_id, new_password: newPassword },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success("Senha alterada com sucesso!");
+      setResetPasswordUser(null);
+      setNewPassword("");
+    } catch (err) {
+      console.error("[reset-password] error:", err);
+      toast.error(`Erro ao redefinir senha: ${(err as Error).message}`);
+    } finally {
+      setResettingPassword(false);
+    }
+  };
 
   // Check access
   useEffect(() => {
@@ -846,6 +890,15 @@ export default function UserManagement() {
                             <UserCog className="w-4 h-4 mr-2" />
                             Editar Permissões
                           </DropdownMenuItem>
+                          {isAdmin && (
+                            <DropdownMenuItem
+                              onClick={() => { setNewPassword(""); setResetPasswordUser(user); }}
+                              disabled={user.is_owner && !currentUserIsOwner}
+                            >
+                              <KeyRound className="w-4 h-4 mr-2" />
+                              Redefinir Senha Temporária
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuSeparator />
                           {user.status === "active" ? (
                             <DropdownMenuItem 
@@ -927,6 +980,15 @@ export default function UserManagement() {
                         <UserCog className="w-4 h-4 mr-2" />
                         Editar Permissões
                       </DropdownMenuItem>
+                      {isAdmin && (
+                        <DropdownMenuItem
+                          onClick={() => { setNewPassword(""); setResetPasswordUser(user); }}
+                          disabled={user.is_owner && !currentUserIsOwner}
+                        >
+                          <KeyRound className="w-4 h-4 mr-2" />
+                          Redefinir Senha Temporária
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuSeparator />
                       {user.status === "active" ? (
                         <DropdownMenuItem 
@@ -1299,6 +1361,47 @@ export default function UserManagement() {
             </Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving ? "Salvando..." : "Salvar Permissões"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reset Password Dialog */}
+      <Dialog open={!!resetPasswordUser} onOpenChange={(open) => { if (!open) { setResetPasswordUser(null); setNewPassword(""); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="w-5 h-5 text-primary" />
+              Redefinir Senha Temporária
+            </DialogTitle>
+            <DialogDescription>
+              Defina uma nova senha para <strong>{resetPasswordUser?.full_name || resetPasswordUser?.email}</strong>. O usuário poderá entrar imediatamente com ela.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <Label htmlFor="new-password">Nova senha</Label>
+            <div className="flex gap-2">
+              <Input
+                id="new-password"
+                type="text"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Digite ou gere uma senha"
+                autoComplete="new-password"
+              />
+              <Button type="button" variant="outline" onClick={generateRandomPassword} title="Gerar senha aleatória">
+                <RefreshCw className="w-4 h-4 mr-1" />
+                Gerar
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">Mínimo 6 caracteres. Compartilhe com o usuário por canal seguro.</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setResetPasswordUser(null); setNewPassword(""); }} disabled={resettingPassword}>
+              Cancelar
+            </Button>
+            <Button onClick={handleResetPassword} disabled={resettingPassword || newPassword.length < 6}>
+              {resettingPassword ? "Salvando..." : "Confirmar"}
             </Button>
           </DialogFooter>
         </DialogContent>
