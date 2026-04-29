@@ -30,6 +30,7 @@ const Index = () => {
         <AboutSection />
       </ParallaxTransition>
       <FeedAndCta />
+      <LandingFooter />
     </>
   );
 };
