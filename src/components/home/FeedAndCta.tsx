@@ -14,25 +14,26 @@ interface IGPost {
   media_type?: string;
 }
 
-const FALLBACK_POSTS: IGPost[] = Array.from({ length: 12 }).map((_, i) => ({
+// Verified football-related Unsplash photos (stable IDs)
+const FALLBACK_PHOTOS = [
+  "photo-1517649763962-0c623066013b", // football match
+  "photo-1551958219-acbc608c6377",   // soccer ball field
+  "photo-1574629810360-7efbbe195018", // stadium
+  "photo-1508098682722-e99c43a406b2", // player kicking
+  "photo-1526232761682-d26e03ac148e", // boots
+  "photo-1543351611-58f69d7c1781",   // training
+  "photo-1571019613454-1cb2f99b2d8b", // ball closeup
+  "photo-1517466787929-bc90951d0974", // crowd
+  "photo-1555169062-013468b47731",   // night stadium
+  "photo-1606925797300-0b35e9d1794e", // player silhouette
+  "photo-1487466365202-1afdb86c764e", // grass
+  "photo-1530549387789-4c1017266635", // goalkeeper
+];
+
+const FALLBACK_POSTS: IGPost[] = FALLBACK_PHOTOS.map((id, i) => ({
   id: `fb-${i}`,
-  media_url: `https://images.unsplash.com/photo-${
-    [
-      "1517649763962-0c623066013b",
-      "1551958219-acbc608c6377",
-      "1574629810360-7efbbe195018",
-      "1508098682722-e99c43a406b2",
-      "1526232761682-d26e03ac148e",
-      "1543351611-58f69d7c1781",
-      "1571019613454-1cb2f99b2d8b",
-      "1517466787929-bc90951d0974",
-      "1555169062-013468b47731",
-      "1606925797300-0b35e9d1794e",
-      "1487466365202-1afdb86c764e",
-      "1530549387789-4c1017266635",
-    ][i]
-  }?w=600&h=600&fit=crop&q=80`,
-  permalink: "https://instagram.com/m3agency",
+  media_url: `https://images.unsplash.com/${id}?w=800&h=800&fit=crop&q=80&auto=format`,
+  permalink: "https://instagram.com/_m3agency",
   caption: "M3 Agency · Inteligência em Futebol",
 }));
 
@@ -147,6 +148,11 @@ export function FeedAndCta() {
                       alt={caption}
                       className="post__media"
                       loading="lazy"
+                      onError={(e) => {
+                        const el = e.currentTarget;
+                        el.style.display = "none";
+                        el.parentElement?.classList.add("post--broken");
+                      }}
                     />
                     <div className="post__overlay">
                       <p className="post__caption">{caption}</p>
