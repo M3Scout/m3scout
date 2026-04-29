@@ -340,8 +340,30 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
     }
   };
 
+  const STAT_KEYS = [
+    "matches", "minutes", "goals", "assists", "yellow_cards", "red_cards",
+    "tackles", "interceptions", "recoveries", "saves", "goals_conceded",
+    "clean_sheets", "penalties_saved", "errors_leading_to_goal",
+    "aerial_duels_won", "aerial_duels_total", "accurate_passes", "total_passes",
+    "duels_won", "total_duels", "ground_duels_won", "ground_duels_total",
+    "chances_created", "key_passes", "shots", "shots_on_target", "shots_blocked",
+    "saves_inside_box", "punches", "high_claims", "successful_runs_out",
+    "total_runs_out", "fouls_committed", "fouls_drawn", "offsides",
+    "clearances", "times_dribbled_past", "possession_lost",
+    "long_passes_accurate", "long_passes_total", "successful_dribbles",
+    "total_dribbles",
+  ] as const;
+
+  const buildStatPayload = (stat: PlayerStat): Record<string, number> => {
+    const out: Record<string, number> = {};
+    for (const key of STAT_KEYS) {
+      out[key] = normalizeStatValue(stat[key as keyof PlayerStat] as StatValue, key);
+    }
+    return out;
+  };
+
   const saveStats = async () => {
-    // Validate all stats before saving
+    // 1) Validate metadata first
     for (const stat of stats) {
       if (!stat.season_year || stat.season_year < 1900) {
         toast.error("Temporada inválida", { description: "Por favor, informe um ano de temporada válido." });
@@ -353,6 +375,19 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
       }
     }
 
+    // 2) Validate numeric ranges + success/total pairs
+    for (const stat of stats) {
+      const payload = buildStatPayload(stat);
+      const issues = validateSeasonStats(payload);
+      if (issues.length > 0) {
+        const compName = getCompetitionName(stat.competition_id);
+        toast.error(`Valores inválidos em ${compName} (${stat.season_year})`, {
+          description: issues.slice(0, 3).map((i) => `• ${i.message}`).join("\n"),
+        });
+        return;
+      }
+    }
+
     setSaving(true);
     try {
       for (const stat of stats) {
@@ -360,48 +395,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
           player_id: playerId,
           season_year: stat.season_year,
           competition_id: stat.competition_id,
-          matches: normalizeStatValue(stat.matches),
-          minutes: normalizeStatValue(stat.minutes),
-          goals: normalizeStatValue(stat.goals),
-          assists: normalizeStatValue(stat.assists),
-          yellow_cards: normalizeStatValue(stat.yellow_cards),
-          red_cards: normalizeStatValue(stat.red_cards),
-          tackles: normalizeStatValue(stat.tackles),
-          interceptions: normalizeStatValue(stat.interceptions),
-          recoveries: normalizeStatValue(stat.recoveries),
-          saves: normalizeStatValue(stat.saves),
-          goals_conceded: normalizeStatValue(stat.goals_conceded),
-          clean_sheets: normalizeStatValue(stat.clean_sheets),
-          penalties_saved: normalizeStatValue(stat.penalties_saved),
-          errors_leading_to_goal: normalizeStatValue(stat.errors_leading_to_goal),
-          aerial_duels_won: normalizeStatValue(stat.aerial_duels_won),
-          aerial_duels_total: normalizeStatValue(stat.aerial_duels_total),
-          accurate_passes: normalizeStatValue(stat.accurate_passes),
-          total_passes: normalizeStatValue(stat.total_passes),
-          duels_won: normalizeStatValue(stat.duels_won),
-          total_duels: normalizeStatValue(stat.total_duels),
-          ground_duels_won: normalizeStatValue(stat.ground_duels_won),
-          ground_duels_total: normalizeStatValue(stat.ground_duels_total),
-          chances_created: normalizeStatValue(stat.chances_created),
-          key_passes: normalizeStatValue(stat.key_passes),
-          shots: normalizeStatValue(stat.shots),
-          shots_on_target: normalizeStatValue(stat.shots_on_target),
-          shots_blocked: normalizeStatValue(stat.shots_blocked),
-          saves_inside_box: normalizeStatValue(stat.saves_inside_box),
-          punches: normalizeStatValue(stat.punches),
-          high_claims: normalizeStatValue(stat.high_claims),
-          successful_runs_out: normalizeStatValue(stat.successful_runs_out),
-          total_runs_out: normalizeStatValue(stat.total_runs_out),
-          fouls_committed: normalizeStatValue(stat.fouls_committed),
-          fouls_drawn: normalizeStatValue(stat.fouls_drawn),
-          offsides: normalizeStatValue(stat.offsides),
-          clearances: normalizeStatValue(stat.clearances),
-          times_dribbled_past: normalizeStatValue(stat.times_dribbled_past),
-          possession_lost: normalizeStatValue(stat.possession_lost),
-          long_passes_accurate: normalizeStatValue(stat.long_passes_accurate),
-          long_passes_total: normalizeStatValue(stat.long_passes_total),
-          successful_dribbles: normalizeStatValue(stat.successful_dribbles),
-          total_dribbles: normalizeStatValue(stat.total_dribbles),
+          ...buildStatPayload(stat),
         };
 
         if (stat.id.startsWith("new-")) {
