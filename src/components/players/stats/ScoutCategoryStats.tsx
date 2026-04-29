@@ -196,7 +196,7 @@ export function ScoutCategoryStats({
 
   const handleStep = (key: string, delta: number) => {
     if (!onChange) return;
-    const next = Math.max(0, getValue(values, key) + delta);
+    const next = clampStatValue(key, getValue(values, key) + delta);
     onChange(key, next);
   };
 
