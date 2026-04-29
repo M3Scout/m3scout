@@ -32,7 +32,7 @@ export function LandingFooter() {
           <div>
             <p className="lp-footer__col-title">Contato</p>
             <ul className="lp-footer__col-list">
-              <li><a href="mailto:contato@m3agency.com">contato@m3agency.com</a></li>
+              <li><a href="mailto:contato@m3agency.com.br">contato@m3agency.com.br</a></li>
               <li><a href="tel:+5567991106060">+55 67 99110-6060</a></li>
               <li><span>Campo Grande · BR</span></li>
             </ul>
