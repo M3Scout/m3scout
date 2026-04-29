@@ -477,13 +477,21 @@ function EditableStatValue({
   const effectiveLimitKey = limitKey ?? statKey;
   const { max: statMax } = getStatLimit(effectiveLimitKey);
 
-  // Mantém o input sincronizado quando o valor externo muda (ex: clique em +/-)
-  // sem sobrescrever enquanto o usuário está digitando.
+  // Mantém o input sincronizado quando o valor externo muda (ex: clique em +/-,
+  // ou recálculo automático de um total derivado de outro campo).
+  // Se o input está focado, só sobrescrevemos quando o valor externo difere do
+  // que o usuário digitou — assim recálculos do pai aparecem instantaneamente
+  // sem atrapalhar a digitação em curso.
   useEffect(() => {
     if (!focusedRef.current) {
       setDraft(String(value));
+      return;
     }
-  }, [value]);
+    const parsed = parseInt(draft, 10);
+    if (!Number.isFinite(parsed) || parsed !== value) {
+      setDraft(String(value));
+    }
+  }, [value, draft]);
 
   const commit = () => {
     const parsed = parseInt(draft, 10);
