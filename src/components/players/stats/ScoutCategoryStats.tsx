@@ -253,14 +253,15 @@ export function ScoutCategoryStats({
                       >
                         <Minus className="w-3.5 h-3.5" />
                       </Button>
-                      <span
-                        className={cn(
-                          "text-base font-bold tabular-nums flex-1 text-center",
-                          stat.highlight ? category.color : "text-foreground",
-                        )}
-                      >
-                        {value}
-                      </span>
+                      <EditableStatValue
+                        value={value}
+                        disabled={disabled}
+                        highlight={!!stat.highlight}
+                        accentClass={category.color}
+                        ariaLabel={stat.label}
+                        onCommit={(next) => onChange?.(stat.key, next)}
+                      />
+
                       <Button
                         type="button"
                         size="icon"
