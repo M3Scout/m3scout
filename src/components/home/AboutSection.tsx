@@ -12,7 +12,11 @@ export function AboutSection() {
 
         <div className="sobre__main">
           <h2 className="sobre__quote">
-            Uma nova forma de <em>pensar</em> a carreira de jogadores de futebol.
+            Uma nova forma<br />
+            de <em>pensar</em> a<br />
+            carreira de<br />
+            jogadores de<br />
+            futebol.
           </h2>
 
           <div className="sobre__col-right">
