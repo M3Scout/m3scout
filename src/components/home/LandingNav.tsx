@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Lock } from "lucide-react";
 import { useEffect, useState } from "react";
+import logoM3 from "@/assets/logo-m3.png";
 import "./LandingHero.css";
 
 const navLinks = [
@@ -25,8 +26,8 @@ export function LandingNav() {
     <div className="lp-root">
       <header className={`lp-nav ${scrolled ? "is-scrolled" : ""}`}>
         <div className="lp-nav__inner">
-          <Link to="/" className="lp-nav__logo">
-            /// M3
+          <Link to="/" className="lp-nav__logo" aria-label="M3 Agency">
+            <img src={logoM3} alt="M3 Agency" className="lp-nav__logo-img" />
           </Link>
 
           <nav className="lp-nav__links" aria-label="Navegação principal">
