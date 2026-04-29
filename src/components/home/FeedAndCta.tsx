@@ -160,22 +160,6 @@ export function FeedAndCta() {
         </div>
       </section>
 
-      {/* ============ CTA STRIP (dark) ============ */}
-      <section className="lp-section-dark">
-        <div className="cta-strip">
-          <h2 className="cta-strip__title">
-            Vamos jogar <span className="accent">junto?</span>
-          </h2>
-          <p className="cta-strip__sub">
-            Representação de carreira, inteligência de mercado e desenvolvimento
-            esportivo. Conte com a M3 para o próximo passo.
-          </p>
-          <Link to="/contact" className="cta-strip__btn">
-            Falar com a M3
-            <ArrowRight size={16} strokeWidth={2} />
-          </Link>
-        </div>
-      </section>
     </>
   );
 }
