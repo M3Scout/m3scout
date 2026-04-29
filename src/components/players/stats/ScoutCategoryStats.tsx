@@ -70,9 +70,10 @@ export const OUTFIELD_SCOUT_CATEGORIES: ScoutCategory[] = [
     bgColor: "bg-red-500/10 border-red-500/20",
     stats: [
       { key: "goals", label: "Gols", highlight: true },
-      { key: "shots_on_target", label: "Final. Gol" },
-      { key: "shots", label: "Final. Total" },
+      { key: "shots_on_target", label: "Final. Gol", successOf: "shots" },
+      { key: "shots_off_target_derived", label: "Finalizações Fora" },
       { key: "shots_blocked", label: "Final. Bloq." },
+      { key: "shots", label: "Final. Total" },
       { key: "offsides", label: "Impedim." },
     ],
   },
