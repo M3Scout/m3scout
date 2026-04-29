@@ -43,7 +43,63 @@ function MarqueeRow() {
 export function AthletesHorizontal() {
   const [players, setPlayers] = useState<AthletePlayer[]>([]);
   const [progress, setProgress] = useState(20);
+  const [canPrev, setCanPrev] = useState(false);
+  const [canNext, setCanNext] = useState(true);
   const trackRef = useRef<HTMLDivElement>(null);
+
+  const scrollByCards = (dir: 1 | -1) => {
+    const el = trackRef.current;
+    if (!el) return;
+    const card = el.querySelector<HTMLElement>(".athlete-h-card");
+    const step = card ? card.offsetWidth + 24 : el.clientWidth * 0.8;
+    el.scrollBy({ left: step * dir, behavior: "smooth" });
+  };
+
+  // Drag-to-scroll (desktop)
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    let isDown = false;
+    let startX = 0;
+    let startScroll = 0;
+    let moved = false;
+
+    const onDown = (e: PointerEvent) => {
+      if (e.pointerType === "touch") return;
+      isDown = true;
+      moved = false;
+      startX = e.clientX;
+      startScroll = el.scrollLeft;
+      el.classList.add("is-dragging");
+    };
+    const onMove = (e: PointerEvent) => {
+      if (!isDown) return;
+      const dx = e.clientX - startX;
+      if (Math.abs(dx) > 4) moved = true;
+      el.scrollLeft = startScroll - dx;
+    };
+    const onUp = () => {
+      isDown = false;
+      el.classList.remove("is-dragging");
+    };
+    const onClick = (e: MouseEvent) => {
+      if (moved) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+
+    el.addEventListener("pointerdown", onDown);
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    el.addEventListener("click", onClick, true);
+    return () => {
+      el.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      el.removeEventListener("click", onClick, true);
+    };
+  }, [players.length]);
 
   useEffect(() => {
     let cancelled = false;
@@ -70,10 +126,16 @@ export function AthletesHorizontal() {
       const max = el.scrollWidth - el.clientWidth;
       const pct = max > 0 ? (el.scrollLeft / max) * 100 : 0;
       setProgress(Math.max(8, Math.min(100, pct || 20)));
+      setCanPrev(el.scrollLeft > 4);
+      setCanNext(el.scrollLeft < max - 4);
     };
     onScroll();
     el.addEventListener("scroll", onScroll, { passive: true });
-    return () => el.removeEventListener("scroll", onScroll);
+    window.addEventListener("resize", onScroll);
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
   }, [players.length]);
 
   return (
@@ -86,9 +148,29 @@ export function AthletesHorizontal() {
             <div className="athletes-h__eyebrow">Roster M3</div>
             <h2 className="athletes-h__title">Talentos</h2>
           </div>
-          <Link to="/players" className="athletes-h__cta">
-            Ver todos
-          </Link>
+          <div className="athletes-h__head-actions">
+            <button
+              type="button"
+              className="athletes-h__nav"
+              onClick={() => scrollByCards(-1)}
+              disabled={!canPrev}
+              aria-label="Anterior"
+            >
+              ←
+            </button>
+            <button
+              type="button"
+              className="athletes-h__nav"
+              onClick={() => scrollByCards(1)}
+              disabled={!canNext}
+              aria-label="Próximo"
+            >
+              →
+            </button>
+            <Link to="/players" className="athletes-h__cta">
+              Ver todos
+            </Link>
+          </div>
         </header>
 
         <div className="athletes-h__track" ref={trackRef}>
