@@ -14,25 +14,26 @@ interface IGPost {
   media_type?: string;
 }
 
-const FALLBACK_POSTS: IGPost[] = Array.from({ length: 12 }).map((_, i) => ({
+// Verified football-related Unsplash photo IDs
+const UNSPLASH_IDS = [
+  "1centi3vGEA", // estadio
+  "TY4DI9F8z6Y", // chuteira
+  "wYz3Z6F4ESI", // bola no campo
+  "6ToVtVRE2Hk", // jogador
+  "1uxV98ennpc", // estadio iluminado
+  "RnBNwJVayxg", // treino
+  "ZdaC1ElyD80", // gramado
+  "F6Wf8KbVdK8", // jogador silhueta
+  "PWG4u3X5gzg", // estadio aereo
+  "Tnf1MSQs0NQ", // bola
+  "OByGGettWCU", // pernas correndo
+  "QkQX0VJgCzQ", // multidao
+];
+
+const FALLBACK_POSTS: IGPost[] = UNSPLASH_IDS.map((id, i) => ({
   id: `fb-${i}`,
-  media_url: `https://images.unsplash.com/photo-${
-    [
-      "1517649763962-0c623066013b",
-      "1551958219-acbc608c6377",
-      "1574629810360-7efbbe195018",
-      "1508098682722-e99c43a406b2",
-      "1526232761682-d26e03ac148e",
-      "1543351611-58f69d7c1781",
-      "1571019613454-1cb2f99b2d8b",
-      "1517466787929-bc90951d0974",
-      "1555169062-013468b47731",
-      "1606925797300-0b35e9d1794e",
-      "1487466365202-1afdb86c764e",
-      "1530549387789-4c1017266635",
-    ][i]
-  }?w=600&h=600&fit=crop&q=80`,
-  permalink: "https://instagram.com/m3agency",
+  media_url: `https://images.unsplash.com/photo-${id}?w=600&h=600&fit=crop&q=80&auto=format`,
+  permalink: "https://instagram.com/_m3agency",
   caption: "M3 Agency · Inteligência em Futebol",
 }));
 
