@@ -195,13 +195,7 @@
 /* Pequeno círculo vermelho decorativo (ponto final) ao lado de "ELE" */
 .lp-text-align-left { text-align: left; }
 .lp-circle {
-  display: inline-block;
-  width: 0.18em;
-  height: 0.18em;
-  background: var(--accent);
-  border-radius: 50%;
-  margin-left: 0.12em;
-  vertical-align: baseline;
+  display: none;
 }
 
 .lp-hero__lead {
