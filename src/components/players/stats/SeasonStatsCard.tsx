@@ -14,6 +14,18 @@ import { normalizePlayerStats } from "@/lib/normalizePlayerStats";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
+/**
+ * Mapeia o objeto PlayerStats normalizado para a forma esperada
+ * pelos cards de scout (chaves planas). Garante que `shots` exibido
+ * corresponda ao total derivado (FIN = on_target + blocked + off_target).
+ */
+function statsToScoutValues(s: ReturnType<typeof normalizePlayerStats>): StatValues {
+  return {
+    ...(s as unknown as StatValues),
+    shots: (s.shots_total_derived ?? s.shots ?? 0) as number,
+  };
+}
+
 interface StatsWithCompetition extends PlayerStats {
   competitions?: {
     name: string;
