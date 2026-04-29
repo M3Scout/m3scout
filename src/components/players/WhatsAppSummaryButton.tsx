@@ -44,6 +44,7 @@ import {
   fetchLiveAggregateForWindow,
   type SummaryWindowOption,
 } from "@/lib/playerSummaryWindow";
+import { loadSummary, loadYears } from "@/lib/playerSummaryCache";
 
 interface WhatsAppSummaryButtonProps {
   playerId: string;
