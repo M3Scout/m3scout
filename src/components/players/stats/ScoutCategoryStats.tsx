@@ -385,6 +385,9 @@ export function ScoutCategoryStats({
 
 interface EditableStatValueProps {
   statKey: string;
+  /** Chave usada para resolver os limites de validação (default: statKey).
+   *  Necessária para chaves derivadas, que devem usar os limites do total subjacente. */
+  limitKey?: string;
   value: number;
   disabled?: boolean;
   highlight?: boolean;
@@ -395,6 +398,7 @@ interface EditableStatValueProps {
 
 function EditableStatValue({
   statKey,
+  limitKey,
   value,
   disabled,
   highlight,
@@ -404,7 +408,8 @@ function EditableStatValue({
 }: EditableStatValueProps) {
   const [draft, setDraft] = useState<string>(String(value));
   const focusedRef = useRef(false);
-  const { max: statMax } = getStatLimit(statKey);
+  const effectiveLimitKey = limitKey ?? statKey;
+  const { max: statMax } = getStatLimit(effectiveLimitKey);
 
   // Mantém o input sincronizado quando o valor externo muda (ex: clique em +/-)
   // sem sobrescrever enquanto o usuário está digitando.
@@ -416,9 +421,11 @@ function EditableStatValue({
 
   const commit = () => {
     const parsed = parseInt(draft, 10);
-    const next = clampStatValue(statKey, Number.isFinite(parsed) ? parsed : 0);
-    if (next !== value) onCommit(next);
-    setDraft(String(next));
+    const raw = Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+    // Não fazemos clamp aqui — o pai (commitValue) decide o clamp final
+    // (necessário para chaves derivadas que precisam considerar o total).
+    if (raw !== value) onCommit(raw);
+    setDraft(String(raw));
   };
 
   return (
