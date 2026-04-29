@@ -185,10 +185,36 @@ export const GOALKEEPER_SCOUT_CATEGORIES: ScoutCategory[] = [
  * Helpers
  * ============================================================ */
 
+/**
+ * Mapeamento de chaves "virtuais" (não existem no banco) para o par
+ * success/total real. Quando o usuário edita esses cards, atualizamos
+ * o total subjacente: total = success + novoFalhado.
+ */
+const DERIVED_FAILED_MAP: Record<
+  string,
+  { successKey: string; totalKey: string }
+> = {
+  passes_failed_derived: { successKey: "accurate_passes", totalKey: "total_passes" },
+  dribbles_failed_derived: { successKey: "successful_dribbles", totalKey: "total_dribbles" },
+  ground_duels_lost_derived: { successKey: "ground_duels_won", totalKey: "ground_duels_total" },
+  aerial_duels_lost_derived: { successKey: "aerial_duels_won", totalKey: "aerial_duels_total" },
+};
+
 function getValue(values: StatValues, key: string): number {
   const raw = values[key];
   if (typeof raw !== "number" || isNaN(raw)) return 0;
   return Math.max(0, raw);
+}
+
+/** Resolve o valor exibido — para chaves derivadas, computa total - success. */
+function resolveDisplayValue(values: StatValues, key: string): number {
+  const derived = DERIVED_FAILED_MAP[key];
+  if (derived) {
+    const success = getValue(values, derived.successKey);
+    const total = getValue(values, derived.totalKey);
+    return Math.max(0, total - success);
+  }
+  return getValue(values, key);
 }
 
 function calcPct(success: number, total: number): number | null {
