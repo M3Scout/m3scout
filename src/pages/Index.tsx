@@ -4,7 +4,7 @@ import { AthletesHorizontal } from "@/components/home/AthletesHorizontal";
 
 import { AboutSection } from "@/components/home/AboutSection";
 import { FeedAndCta } from "@/components/home/FeedAndCta";
-import { LandingFooter } from "@/components/home/LandingFooter";
+
 import { ParallaxTransition } from "@/components/home/ParallaxTransition";
 
 const Index = () => {
@@ -27,7 +27,7 @@ const Index = () => {
         <AboutSection />
       </ParallaxTransition>
       <FeedAndCta />
-      <LandingFooter />
+      </>
     </>
   );
 };
