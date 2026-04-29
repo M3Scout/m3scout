@@ -16,6 +16,7 @@ import { useEffect, useRef, useState } from "react";
 import { Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { clampStatValue, getStatLimit } from "@/lib/statLimits";
 
 export type StatValues = Record<string, number>;
 
@@ -195,7 +196,7 @@ export function ScoutCategoryStats({
 
   const handleStep = (key: string, delta: number) => {
     if (!onChange) return;
-    const next = Math.max(0, getValue(values, key) + delta);
+    const next = clampStatValue(key, getValue(values, key) + delta);
     onChange(key, next);
   };
 
@@ -220,6 +221,8 @@ export function ScoutCategoryStats({
               const pct = stat.successOf
                 ? calcPct(value, getValue(values, stat.successOf))
                 : null;
+              const { max: statMax } = getStatLimit(stat.key);
+              const atMax = value >= statMax;
 
               return (
                 <div
@@ -254,6 +257,7 @@ export function ScoutCategoryStats({
                         <Minus className="w-3.5 h-3.5" />
                       </Button>
                       <EditableStatValue
+                        statKey={stat.key}
                         value={value}
                         disabled={disabled}
                         highlight={!!stat.highlight}
@@ -266,13 +270,14 @@ export function ScoutCategoryStats({
                         type="button"
                         size="icon"
                         variant="ghost"
-                        disabled={disabled}
+                        disabled={disabled || atMax}
                         onClick={() => handleStep(stat.key, 1)}
                         className={cn(
                           "h-7 w-7 shrink-0 rounded-md hover:bg-zinc-800 text-zinc-100",
                           "bg-zinc-900/80",
                         )}
                         aria-label={`Aumentar ${stat.label}`}
+                        title={atMax ? `Máximo: ${statMax}` : undefined}
                       >
                         <Plus className="w-3.5 h-3.5" />
                       </Button>
@@ -303,6 +308,7 @@ export function ScoutCategoryStats({
  * ============================================================ */
 
 interface EditableStatValueProps {
+  statKey: string;
   value: number;
   disabled?: boolean;
   highlight?: boolean;
@@ -312,6 +318,7 @@ interface EditableStatValueProps {
 }
 
 function EditableStatValue({
+  statKey,
   value,
   disabled,
   highlight,
@@ -321,6 +328,7 @@ function EditableStatValue({
 }: EditableStatValueProps) {
   const [draft, setDraft] = useState<string>(String(value));
   const focusedRef = useRef(false);
+  const { max: statMax } = getStatLimit(statKey);
 
   // Mantém o input sincronizado quando o valor externo muda (ex: clique em +/-)
   // sem sobrescrever enquanto o usuário está digitando.
@@ -332,7 +340,7 @@ function EditableStatValue({
 
   const commit = () => {
     const parsed = parseInt(draft, 10);
-    const next = Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+    const next = clampStatValue(statKey, Number.isFinite(parsed) ? parsed : 0);
     if (next !== value) onCommit(next);
     setDraft(String(next));
   };
@@ -342,6 +350,7 @@ function EditableStatValue({
       type="number"
       inputMode="numeric"
       min={0}
+      max={statMax}
       step={1}
       value={draft}
       disabled={disabled}
