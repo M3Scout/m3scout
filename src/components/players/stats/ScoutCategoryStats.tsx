@@ -237,6 +237,61 @@ function calcPct(success: number, total: number): number | null {
 }
 
 /* ============================================================
+ * Coerência (validação visual)
+ * ============================================================ */
+
+export interface StatIncoherence {
+  /** Chave do total que está incoerente */
+  totalKey: string;
+  /** Componentes (sucessos) que somam dentro do total */
+  successKeys: string[];
+  /** Soma atual dos componentes */
+  componentsSum: number;
+  /** Valor atual do total */
+  totalValue: number;
+  /** Valor sugerido para o total (= componentsSum) */
+  suggestedTotal: number;
+}
+
+/**
+ * Detecta incoerências do tipo: total < Σ componentes (acertos).
+ * Usado para destacar visualmente os cards e oferecer recálculo automático.
+ */
+export function detectStatIncoherences(values: StatValues): StatIncoherence[] {
+  const seen = new Set<string>();
+  const result: StatIncoherence[] = [];
+  for (const cfg of Object.values(DERIVED_FAILED_MAP)) {
+    if (seen.has(cfg.totalKey)) continue;
+    seen.add(cfg.totalKey);
+    const successKeys = Array.isArray(cfg.successKey) ? cfg.successKey : [cfg.successKey];
+    const componentsSum = sumKeys(values, successKeys);
+    const totalValue = getValue(values, cfg.totalKey);
+    if (componentsSum > totalValue) {
+      result.push({
+        totalKey: cfg.totalKey,
+        successKeys,
+        componentsSum,
+        totalValue,
+        suggestedTotal: componentsSum,
+      });
+    }
+  }
+  return result;
+}
+
+/**
+ * Aplica o recálculo automático de todos os totais incoerentes.
+ * Retorna um patch parcial com as chaves a serem atualizadas.
+ */
+export function recalcStatTotals(values: StatValues): Record<string, number> {
+  const patch: Record<string, number> = {};
+  for (const inc of detectStatIncoherences(values)) {
+    patch[inc.totalKey] = clampStatValue(inc.totalKey, inc.suggestedTotal);
+  }
+  return patch;
+}
+
+/* ============================================================
  * Component
  * ============================================================ */
 
