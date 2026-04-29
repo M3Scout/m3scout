@@ -76,6 +76,7 @@ export function buildPlayerWhatsAppSummary(input: PlayerSummaryInput): string {
   if (typeof age === "number" && age > 0) headerBits.push(`${age} anos`);
   if (currentClub) headerBits.push(currentClub);
   if (headerBits.length) lines.push(`_${headerBits.join(" • ")}_`);
+  if (input.windowLabel) lines.push(`📅 _${input.windowLabel}_`);
   lines.push("");
 
   if (!stats || stats.matches === 0) {
