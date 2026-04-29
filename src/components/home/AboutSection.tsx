@@ -6,7 +6,7 @@ export function AboutSection() {
     <section className="sobre">
       <div className="sobre__inner">
         <header className="sobre__head">
-          <span className="sobre__eyebrow">Sobre a M3</span>
+          <span className="sobre__eyebrow">— Sobre a M3</span>
           <span className="sobre__index">/ 01 — 03</span>
         </header>
 
