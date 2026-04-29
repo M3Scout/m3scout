@@ -70,9 +70,10 @@ export const OUTFIELD_SCOUT_CATEGORIES: ScoutCategory[] = [
     bgColor: "bg-red-500/10 border-red-500/20",
     stats: [
       { key: "goals", label: "Gols", highlight: true },
-      { key: "shots_on_target", label: "Final. Gol" },
-      { key: "shots", label: "Final. Total" },
+      { key: "shots_on_target", label: "Final. Gol", successOf: "shots" },
+      { key: "shots_off_target_derived", label: "Finalizações Fora" },
       { key: "shots_blocked", label: "Final. Bloq." },
+      { key: "shots", label: "Final. Total" },
       { key: "offsides", label: "Impedim." },
     ],
   },
@@ -188,17 +189,30 @@ export const GOALKEEPER_SCOUT_CATEGORIES: ScoutCategory[] = [
 /**
  * Mapeamento de chaves "virtuais" (não existem no banco) para o par
  * success/total real. Quando o usuário edita esses cards, atualizamos
- * o total subjacente: total = success + novoFalhado.
+ * o total subjacente: total = sum(siblings) + novoValor.
+ *
+ * `successKey` pode ser uma única chave (par success/failed) ou várias
+ * (ex: shots_off = shots - shots_on_target - shots_blocked).
  */
 const DERIVED_FAILED_MAP: Record<
   string,
-  { successKey: string; totalKey: string }
+  { successKey: string | string[]; totalKey: string }
 > = {
   passes_failed_derived: { successKey: "accurate_passes", totalKey: "total_passes" },
   dribbles_failed_derived: { successKey: "successful_dribbles", totalKey: "total_dribbles" },
   ground_duels_lost_derived: { successKey: "ground_duels_won", totalKey: "ground_duels_total" },
   aerial_duels_lost_derived: { successKey: "aerial_duels_won", totalKey: "aerial_duels_total" },
+  // Finalizações Fora = Total − No Gol − Bloqueadas (mesmo critério do Live Match)
+  shots_off_target_derived: {
+    successKey: ["shots_on_target", "shots_blocked"],
+    totalKey: "shots",
+  },
 };
+
+function sumKeys(values: StatValues, keys: string | string[]): number {
+  const list = Array.isArray(keys) ? keys : [keys];
+  return list.reduce((acc, k) => acc + getValue(values, k), 0);
+}
 
 function getValue(values: StatValues, key: string): number {
   const raw = values[key];
@@ -206,13 +220,13 @@ function getValue(values: StatValues, key: string): number {
   return Math.max(0, raw);
 }
 
-/** Resolve o valor exibido — para chaves derivadas, computa total - success. */
+/** Resolve o valor exibido — para chaves derivadas, computa total - sum(siblings). */
 function resolveDisplayValue(values: StatValues, key: string): number {
   const derived = DERIVED_FAILED_MAP[key];
   if (derived) {
-    const success = getValue(values, derived.successKey);
+    const siblings = sumKeys(values, derived.successKey);
     const total = getValue(values, derived.totalKey);
-    return Math.max(0, total - success);
+    return Math.max(0, total - siblings);
   }
   return getValue(values, key);
 }
@@ -244,9 +258,9 @@ export function ScoutCategoryStats({
     if (!onChange) return;
     const derived = DERIVED_FAILED_MAP[key];
     if (derived) {
-      const success = getValue(values, derived.successKey);
-      const nextFailed = Math.max(0, nextRaw);
-      const nextTotal = clampStatValue(derived.totalKey, success + nextFailed);
+      const siblings = sumKeys(values, derived.successKey);
+      const nextValue = Math.max(0, nextRaw);
+      const nextTotal = clampStatValue(derived.totalKey, siblings + nextValue);
       onChange(derived.totalKey, nextTotal);
       return;
     }
@@ -294,7 +308,7 @@ export function ScoutCategoryStats({
                 : stat.key;
               const { max: statMax } = getStatLimit(limitKey);
               const atMax = isDerived
-                ? value + getValue(values, DERIVED_FAILED_MAP[stat.key].successKey) >= statMax
+                ? value + sumKeys(values, DERIVED_FAILED_MAP[stat.key].successKey) >= statMax
                 : value >= statMax;
 
               return (
