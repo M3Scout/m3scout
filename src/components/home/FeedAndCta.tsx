@@ -148,6 +148,11 @@ export function FeedAndCta() {
                       alt={caption}
                       className="post__media"
                       loading="lazy"
+                      onError={(e) => {
+                        const el = e.currentTarget;
+                        el.style.display = "none";
+                        el.parentElement?.classList.add("post--broken");
+                      }}
                     />
                     <div className="post__overlay">
                       <p className="post__caption">{caption}</p>
