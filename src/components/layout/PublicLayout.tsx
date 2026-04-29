@@ -19,7 +19,7 @@ export function PublicLayout() {
           </PageTransition>
         </AnimatePresence>
       </main>
-      <PublicFooter />
+      {!isHomePage && <PublicFooter />}
     </div>
   );
 }
