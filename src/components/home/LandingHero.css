@@ -94,6 +94,11 @@
   color: var(--fg-dark);
   text-decoration: none;
 }
+.lp-nav__logo-img {
+  height: 32px;
+  width: auto;
+  display: block;
+}
 .lp-nav__links {
   display: flex;
   gap: 32px;
