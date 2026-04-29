@@ -816,11 +816,13 @@ export function useLiveMatch(matchId: string) {
   // Update added time
   const updateAddedTime = useMutation({
     mutationFn: async (params: { half: 1 | 2; minutes: number }) => {
-      const field = params.half === 1 ? "added_time_first_half" : "added_time_second_half";
-      
+      const updatePayload = params.half === 1
+        ? { added_time_first_half: params.minutes }
+        : { added_time_second_half: params.minutes };
+
       const { error } = await supabase
         .from("matches")
-        .update({ [field]: params.minutes })
+        .update(updatePayload)
         .eq("id", matchId);
 
       if (error) throw error;

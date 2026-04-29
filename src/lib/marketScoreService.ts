@@ -78,7 +78,7 @@ export async function persistMarketScore(
       existingScore = await fetchMarketScoreForTarget(targetId);
     }
     
-    const scoreData: Record<string, unknown> = {
+    const scoreData = {
       athlete_id: type === 'ACTIVE' ? athleteId : null,
       target_id: type === 'TARGET' ? targetId : null,
       type,

@@ -131,7 +131,7 @@ export function usePlayerMatchRatings({
       );
       
       // DEBUG: Log rating source for parity verification
-      if (process.env.NODE_ENV === 'development' && rating.hasRating) {
+      if (import.meta.env.DEV && rating.hasRating) {
         console.debug('[RATING OFFICIAL]', {
           matchId: match.match_id,
           opponent: match.opponent_name,

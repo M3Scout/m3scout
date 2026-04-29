@@ -11,7 +11,7 @@ interface MatchTimerProps {
 export function MatchTimer({ durationMinutes, onMinuteChange }: MatchTimerProps) {
   const [seconds, setSeconds] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastMinuteRef = useRef(0);
 
   const minutes = Math.floor(seconds / 60);

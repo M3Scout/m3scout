@@ -224,7 +224,7 @@ export function useMatchRatings({
           stats
         );
         
-        if (process.env.NODE_ENV === 'development') {
+        if (import.meta.env.DEV) {
           console.debug('[RATING MATCH SUMMARY - PERSISTED]', {
             playerId: mp.player_id.slice(0, 8),
             rating: persistedRating,
@@ -235,7 +235,7 @@ export function useMatchRatings({
         // Calculate on-the-fly (for live matches or missing persisted rating)
         rating = calculatePlayerMatchRating(stats, minutesInput, isGoalkeeper);
         
-        if (process.env.NODE_ENV === 'development' && rating.hasRating) {
+        if (import.meta.env.DEV && rating.hasRating) {
           console.debug('[RATING MATCH SUMMARY - CALCULATED]', {
             playerId: mp.player_id.slice(0, 8),
             rating: rating.rating,
