@@ -25,8 +25,17 @@ export interface ScoutStatDef {
   key: string;
   /** rótulo curto exibido no card */
   label: string;
-  /** se for o "sucesso" de um par (ex: passes_completed) — informe a chave do total / falhas para calcular % */
-  successOf?: string; // key of the failures/total partner
+  /**
+   * Se este card é o lado "sucesso" de um par certo/total (ex: accurate_passes
+   * pareado com total_passes). O % é calculado como success/total.
+   */
+  successOf?: string;
+  /**
+   * Se este card é o lado "sucesso" de um par certo/errado (ex: crosses_success
+   * pareado com crosses_failed). O % é calculado como success/(success+failed).
+   * Use quando a coluna do banco armazena os dois lados separadamente.
+   */
+  successOfFailed?: string;
   /** marca como destaque visual (gols, assistências, defesas) */
   highlight?: boolean;
 }
