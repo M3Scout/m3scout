@@ -28,6 +28,8 @@ import {
   ScoutCategoryStats,
   OUTFIELD_SCOUT_CATEGORIES,
   GOALKEEPER_SCOUT_CATEGORIES,
+  detectStatIncoherences,
+  recalcStatTotals,
   type StatValues,
 } from "@/components/players/stats/ScoutCategoryStats";
 import { clampStatValue, validateSeasonStats, getStatLimit } from "@/lib/statLimits";
