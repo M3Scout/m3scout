@@ -308,6 +308,7 @@ export function ScoutCategoryStats({
  * ============================================================ */
 
 interface EditableStatValueProps {
+  statKey: string;
   value: number;
   disabled?: boolean;
   highlight?: boolean;
@@ -317,6 +318,7 @@ interface EditableStatValueProps {
 }
 
 function EditableStatValue({
+  statKey,
   value,
   disabled,
   highlight,
@@ -326,6 +328,7 @@ function EditableStatValue({
 }: EditableStatValueProps) {
   const [draft, setDraft] = useState<string>(String(value));
   const focusedRef = useRef(false);
+  const { max: statMax } = getStatLimit(statKey);
 
   // Mantém o input sincronizado quando o valor externo muda (ex: clique em +/-)
   // sem sobrescrever enquanto o usuário está digitando.
@@ -337,7 +340,7 @@ function EditableStatValue({
 
   const commit = () => {
     const parsed = parseInt(draft, 10);
-    const next = Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+    const next = clampStatValue(statKey, Number.isFinite(parsed) ? parsed : 0);
     if (next !== value) onCommit(next);
     setDraft(String(next));
   };
