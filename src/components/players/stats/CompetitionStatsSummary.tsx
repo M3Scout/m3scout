@@ -38,33 +38,41 @@ interface CategoryDef {
   chips: ChipDef[];
 }
 
-function StatChip({ label, value, total, highlight, accent }: ChipDef & { accent: string }) {
+function StatCardItem({ label, value, total, highlight, accent }: ChipDef & { accent: string }) {
   const hasPair = typeof total === "number" && total > 0;
   const pct = hasPair ? Math.min(100, Math.round((value / total!) * 100)) : null;
 
   return (
-    <div className="flex items-baseline justify-between gap-2 py-1.5 px-2 rounded-md hover:bg-muted/40 transition-colors">
-      <span className="text-xs text-muted-foreground truncate">{label}</span>
-      <span
-        className={cn(
-          "text-sm font-semibold tabular-nums whitespace-nowrap",
-          highlight ? accent : "text-foreground",
+    <div
+      className={cn(
+        "rounded-lg border bg-card/60 p-3 transition-all",
+        "hover:bg-card hover:border-border hover:-translate-y-0.5",
+        highlight ? "border-border/80" : "border-border/40",
+      )}
+    >
+      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide truncate">
+        {label}
+      </p>
+      <div className="mt-1 flex items-baseline gap-1.5">
+        <span
+          className={cn(
+            "text-2xl font-bold tabular-nums leading-none",
+            highlight ? accent : "text-foreground",
+          )}
+        >
+          {value}
+        </span>
+        {hasPair && (
+          <span className="text-sm text-muted-foreground font-medium tabular-nums">
+            /{total}
+          </span>
         )}
-      >
-        {hasPair ? (
-          <>
-            {value}
-            <span className="text-muted-foreground/70 font-normal">/{total}</span>
-            {pct !== null && (
-              <span className={cn("ml-1 text-[10px] font-medium", accent)}>
-                {pct}%
-              </span>
-            )}
-          </>
-        ) : (
-          value
-        )}
-      </span>
+      </div>
+      {pct !== null && (
+        <p className={cn("mt-1 text-[11px] font-semibold tabular-nums", accent)}>
+          {pct}%
+        </p>
+      )}
     </div>
   );
 }
@@ -75,18 +83,18 @@ function CategorySection({ category }: { category: CategoryDef }) {
   if (!hasAnyData) return null;
 
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-2.5">
       <p
         className={cn(
-          "text-[10px] font-bold uppercase tracking-wider",
+          "text-xs font-bold uppercase tracking-wider",
           category.accent,
         )}
       >
         {category.label}
       </p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-0.5 divide-y divide-border/40 sm:divide-y-0">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
         {category.chips.map((chip) => (
-          <StatChip key={chip.label} {...chip} accent={category.accent} />
+          <StatCardItem key={chip.label} {...chip} accent={category.accent} />
         ))}
       </div>
     </div>
