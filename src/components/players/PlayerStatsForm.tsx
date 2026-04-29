@@ -634,12 +634,58 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
                       </div>
 
                       {/* === SCOUT CATEGORIES (mesmo layout do Live Match) === */}
-                      <ScoutCategoryStats
-                        mode="edit"
-                        categories={isGoalkeeper ? GOALKEEPER_SCOUT_CATEGORIES : OUTFIELD_SCOUT_CATEGORIES}
-                        values={statToScoutValues(stat as unknown as Record<string, unknown>)}
-                        onChange={(key, next) => updateStatField(stat.id, key as keyof PlayerStat, next)}
-                      />
+                      {(() => {
+                        const scoutValues = statToScoutValues(stat as unknown as Record<string, unknown>);
+                        const incoherences = detectStatIncoherences(scoutValues);
+                        return (
+                          <>
+                            {incoherences.length > 0 && (
+                              <Alert variant="default" className="border-amber-300 bg-amber-50">
+                                <AlertTriangle className="h-4 w-4 text-amber-600" />
+                                <AlertDescription className="text-amber-800">
+                                  <div className="flex flex-col gap-2">
+                                    <div>
+                                      <strong>Totais incoerentes detectados</strong> — a soma dos acertos é maior que o total registrado:
+                                      <ul className="list-disc list-inside text-xs mt-1 space-y-0.5">
+                                        {incoherences.map((inc) => (
+                                          <li key={inc.totalKey}>
+                                            <code>{TOTAL_LABEL[inc.totalKey] ?? inc.totalKey}</code>:
+                                            registrado <strong>{inc.totalValue}</strong>, soma dos acertos <strong>{inc.componentsSum}</strong>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                    <div>
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        className="border-amber-400 text-amber-900 hover:bg-amber-100"
+                                        onClick={() => {
+                                          const patch = recalcStatTotals(scoutValues);
+                                          for (const [k, v] of Object.entries(patch)) {
+                                            updateStatField(stat.id, k as keyof PlayerStat, v);
+                                          }
+                                          toast.success("Totais recalculados automaticamente");
+                                        }}
+                                      >
+                                        <Zap className="w-3.5 h-3.5 mr-1.5" />
+                                        Recalcular totais ({incoherences.length})
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </AlertDescription>
+                              </Alert>
+                            )}
+                            <ScoutCategoryStats
+                              mode="edit"
+                              categories={isGoalkeeper ? GOALKEEPER_SCOUT_CATEGORIES : OUTFIELD_SCOUT_CATEGORIES}
+                              values={scoutValues}
+                              onChange={(key, next) => updateStatField(stat.id, key as keyof PlayerStat, next)}
+                            />
+                          </>
+                        );
+                      })()}
                     </div>
                   </CollapsibleContent>
                 </div>
