@@ -379,6 +379,15 @@ export function ScoutCategoryStats({
     commitValue(key, current + delta);
   };
 
+  // Conjunto de chaves envolvidas em incoerências (total + seus componentes),
+  // usado para destacar visualmente os cards afetados.
+  const incoherences = detectStatIncoherences(values);
+  const incoherentKeys = new Set<string>();
+  for (const inc of incoherences) {
+    incoherentKeys.add(inc.totalKey);
+    for (const sk of inc.successKeys) incoherentKeys.add(sk);
+  }
+
   return (
     <div className={cn("space-y-3", className)}>
       {categories.map((category) => (
