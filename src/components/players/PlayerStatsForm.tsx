@@ -115,6 +115,9 @@ interface PlayerStat {
   long_passes_total: StatValue;
   successful_dribbles: StatValue;
   total_dribbles: StatValue;
+  // Crosses
+  crosses_success: StatValue;
+  crosses_failed: StatValue;
 }
 
 // Helper to normalize stat value to number for saving.
