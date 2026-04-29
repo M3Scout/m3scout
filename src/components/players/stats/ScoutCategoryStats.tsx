@@ -221,6 +221,8 @@ export function ScoutCategoryStats({
               const pct = stat.successOf
                 ? calcPct(value, getValue(values, stat.successOf))
                 : null;
+              const { max: statMax } = getStatLimit(stat.key);
+              const atMax = value >= statMax;
 
               return (
                 <div
@@ -255,6 +257,7 @@ export function ScoutCategoryStats({
                         <Minus className="w-3.5 h-3.5" />
                       </Button>
                       <EditableStatValue
+                        statKey={stat.key}
                         value={value}
                         disabled={disabled}
                         highlight={!!stat.highlight}
@@ -267,13 +270,14 @@ export function ScoutCategoryStats({
                         type="button"
                         size="icon"
                         variant="ghost"
-                        disabled={disabled}
+                        disabled={disabled || atMax}
                         onClick={() => handleStep(stat.key, 1)}
                         className={cn(
                           "h-7 w-7 shrink-0 rounded-md hover:bg-zinc-800 text-zinc-100",
                           "bg-zinc-900/80",
                         )}
                         aria-label={`Aumentar ${stat.label}`}
+                        title={atMax ? `Máximo: ${statMax}` : undefined}
                       >
                         <Plus className="w-3.5 h-3.5" />
                       </Button>
