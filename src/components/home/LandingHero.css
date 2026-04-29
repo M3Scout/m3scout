@@ -1,0 +1,313 @@
+/* ============================================================
+   LandingHero — Estilos isolados (escopo .lp-root)
+   Reproduz fielmente o CSS fornecido pelo cliente.
+   ============================================================ */
+
+.lp-root {
+  --bg-dark: #0A0A0A;
+  --fg-dark: #F5F1EA;
+  --accent: #E63946;
+  --line-dark: rgba(255, 255, 255, 0.1);
+  --muted-dark: rgba(245, 241, 234, 0.4);
+  --display: 'Archivo Black', 'Inter', sans-serif;
+  --mono: 'Inter', ui-monospace, SFMono-Regular, monospace;
+
+  background: var(--bg-dark);
+  color: var(--fg-dark);
+  font-family: var(--mono);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- CURSOR ---------- */
+.lp-cursor {
+  position: fixed;
+  top: 0; left: 0;
+  width: 32px; height: 32px;
+  border: 1px solid var(--fg-dark);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  transition: width 0.25s, height 0.25s, background 0.25s, border-color 0.25s;
+  mix-blend-mode: difference;
+  will-change: transform;
+}
+.lp-cursor-dot {
+  position: fixed;
+  top: 0; left: 0;
+  width: 4px; height: 4px;
+  background: var(--fg-dark);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 10000;
+  transform: translate(-50%, -50%);
+  mix-blend-mode: difference;
+  will-change: transform;
+}
+.lp-cursor.is-hover {
+  width: 64px; height: 64px;
+  background: var(--accent);
+  border-color: var(--accent);
+  mix-blend-mode: normal;
+}
+.lp-cursor.is-hover ~ .lp-cursor-dot { opacity: 0; }
+.lp-cursor.is-text { width: 80px; height: 80px; }
+
+@media (hover: none), (pointer: coarse) {
+  .lp-cursor, .lp-cursor-dot { display: none; }
+}
+
+/* ---------- NAV ---------- */
+.lp-nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 40px;
+  color: var(--fg-dark);
+  background: transparent;
+  transition: background 0.3s ease, border-color 0.3s ease, padding 0.3s ease;
+  border-bottom: 1px solid transparent;
+}
+.lp-nav.is-scrolled {
+  background: rgba(10, 10, 10, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom-color: var(--line-dark);
+  padding: 16px 40px;
+}
+.lp-nav__logo {
+  font-family: var(--display);
+  font-size: 22px;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--fg-dark);
+  text-decoration: none;
+}
+.lp-nav__links {
+  display: flex;
+  gap: 32px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.lp-nav__link {
+  position: relative;
+  padding: 8px 0;
+  color: var(--fg-dark);
+  text-decoration: none;
+  font-weight: 500;
+}
+.lp-nav__link::after {
+  content: '';
+  position: absolute;
+  bottom: 4px; left: 0;
+  width: 0; height: 1px;
+  background: currentColor;
+  transition: width 0.3s ease;
+}
+.lp-nav__link:hover::after { width: 100%; }
+.lp-nav__cta {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 10px 18px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  display: inline-flex; align-items: center; gap: 8px;
+  color: var(--fg-dark);
+  text-decoration: none;
+  transition: background 0.3s, color 0.3s;
+}
+.lp-nav__cta:hover { background: var(--fg-dark); color: var(--bg-dark); }
+
+@media (max-width: 800px) {
+  .lp-nav { padding: 16px 20px; }
+  .lp-nav__links { display: none; }
+  .lp-nav__cta { padding: 8px 14px; font-size: 10px; }
+}
+
+/* ---------- HERO ---------- */
+.lp-hero {
+  position: relative;
+  min-height: 100vh;
+  padding: 140px 40px 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: var(--bg-dark);
+  overflow: hidden;
+}
+.lp-hero__bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.5;
+}
+.lp-hero__bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 80%, rgba(230, 57, 70, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(245, 241, 234, 0.04) 0%, transparent 60%);
+}
+.lp-hero__bg-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--line-dark) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line-dark) 1px, transparent 1px);
+  background-size: 80px 80px;
+  -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+          mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+}
+.lp-hero__inner {
+  position: relative;
+  max-width: 1600px;
+  margin: 0 auto;
+  width: 100%;
+}
+.lp-hero__title {
+  font-family: var(--display);
+  font-size: clamp(64px, 11vw, 200px);
+  line-height: 0.92;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+  margin-bottom: 40px;
+  color: var(--fg-dark);
+}
+.lp-hero__title-row {
+  display: block;
+  overflow: hidden;
+}
+.lp-hero__title-row.is-accent {
+  color: var(--accent);
+}
+
+/* Círculo vermelho ao redor do "ELE" */
+.lp-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 9999px;
+  padding: 0 0.32em;
+  line-height: 0.92;
+  /* sutil ajuste para parecer um círculo perfeito visualmente */
+  aspect-ratio: 1 / 1;
+  min-width: 1.05em;
+  margin: 0 0.05em;
+  vertical-align: baseline;
+}
+
+.lp-hero__lead {
+  max-width: 520px;
+  font-size: 18px;
+  line-height: 1.5;
+  color: rgba(245, 241, 234, 0.7);
+  margin-bottom: 48px;
+}
+.lp-hero__lead strong { color: var(--fg-dark); font-weight: 500; }
+
+.lp-hero__actions {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 80px;
+}
+.lp-btn {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 500;
+  padding: 18px 28px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  transition: transform 0.3s, background 0.3s, color 0.3s, border-color 0.3s;
+  position: relative;
+  overflow: hidden;
+  text-decoration: none;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.lp-btn--primary {
+  background: var(--accent);
+  color: #fff;
+}
+.lp-btn--primary:hover { background: #fff; color: var(--accent); }
+.lp-btn--ghost {
+  border: 1px solid var(--line-dark);
+  color: var(--fg-dark);
+  background: transparent;
+}
+.lp-btn--ghost:hover {
+  background: var(--fg-dark);
+  color: var(--bg-dark);
+  border-color: var(--fg-dark);
+}
+
+.lp-hero__scroll {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted-dark);
+}
+.lp-hero__scroll-line {
+  width: 1px; height: 40px;
+  background: linear-gradient(to bottom, var(--muted-dark), transparent);
+  position: relative;
+  overflow: hidden;
+}
+.lp-hero__scroll-line::after {
+  content: '';
+  position: absolute;
+  top: -40px; left: 0;
+  width: 100%; height: 40px;
+  background: linear-gradient(to bottom, transparent, var(--fg-dark));
+  animation: lp-scroll-line 2s infinite;
+}
+@keyframes lp-scroll-line {
+  to { top: 100%; }
+}
+
+.lp-hero__side {
+  position: absolute;
+  top: 50%;
+  right: 40px;
+  transform: translateY(-50%) rotate(90deg);
+  transform-origin: right center;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--muted-dark);
+  white-space: nowrap;
+}
+@media (max-width: 1100px) { .lp-hero__side { display: none; } }
+
+@media (max-width: 800px) {
+  .lp-hero { padding: 120px 20px 80px; }
+  .lp-hero__lead { font-size: 16px; }
+  .lp-btn { padding: 16px 22px; font-size: 11px; }
+}
