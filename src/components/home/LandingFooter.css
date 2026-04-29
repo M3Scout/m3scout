@@ -1,0 +1,105 @@
+/* ============================================================
+   LandingFooter — escopo .lp-footer
+   ============================================================ */
+
+.lp-footer {
+  --bg-darker: #050505;
+  --fg-dark: #F5F1EA;
+  --accent: #E63946;
+  --line-dark: rgba(255, 255, 255, 0.1);
+  --muted-dark: rgba(245, 241, 234, 0.4);
+  --display: 'Archivo Black', 'Inter', sans-serif;
+  --mono: 'Inter', ui-monospace, SFMono-Regular, monospace;
+
+  background: var(--bg-darker);
+  color: var(--fg-dark);
+  padding: 80px 40px 40px;
+  font-family: var(--mono);
+  -webkit-font-smoothing: antialiased;
+}
+.lp-footer__inner {
+  max-width: 1600px;
+  margin: 0 auto;
+}
+.lp-footer__top {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 48px;
+  padding-bottom: 64px;
+  border-bottom: 1px solid var(--line-dark);
+}
+@media (max-width: 800px) {
+  .lp-footer__top { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 480px) {
+  .lp-footer { padding: 56px 20px 28px; }
+  .lp-footer__top { grid-template-columns: 1fr; gap: 36px; }
+}
+
+.lp-footer__brand {
+  font-family: var(--display);
+  font-size: 48px;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  margin: 0 0 16px;
+  line-height: 1;
+  color: var(--fg-dark);
+}
+.lp-footer__brand .accent { color: var(--accent); }
+
+.lp-footer__tagline {
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--muted-dark);
+  max-width: 320px;
+  margin: 0;
+}
+
+.lp-footer__col-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted-dark);
+  margin: 0 0 20px;
+}
+.lp-footer__col-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 14px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.lp-footer__col-list a,
+.lp-footer__col-list span {
+  color: var(--fg-dark);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+.lp-footer__col-list a:hover { color: var(--accent); }
+
+.lp-footer__bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 32px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted-dark);
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.lp-footer__status-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-right: 8px;
+  vertical-align: middle;
+  box-shadow: 0 0 8px var(--accent);
+}
