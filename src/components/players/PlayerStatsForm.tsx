@@ -28,6 +28,32 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { safeArray } from "@/lib/utils";
+import {
+  ScoutCategoryStats,
+  OUTFIELD_SCOUT_CATEGORIES,
+  GOALKEEPER_SCOUT_CATEGORIES,
+  type StatValues,
+} from "@/components/players/stats/ScoutCategoryStats";
+
+/**
+ * Converte um PlayerStat (com possíveis valores "" / null) em um
+ * StatValues numérico para alimentar o ScoutCategoryStats.
+ */
+function statToScoutValues(stat: Record<string, unknown>): StatValues {
+  const out: StatValues = {};
+  for (const [k, v] of Object.entries(stat)) {
+    if (v === "" || v === null || v === undefined) {
+      out[k] = 0;
+    } else if (typeof v === "number") {
+      out[k] = isNaN(v) ? 0 : v;
+    } else if (typeof v === "string") {
+      const parsed = Number(v);
+      out[k] = isNaN(parsed) ? 0 : parsed;
+    }
+  }
+  return out;
+}
+
 
 interface Competition {
   id: string;
