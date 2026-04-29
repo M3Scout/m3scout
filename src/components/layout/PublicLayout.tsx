@@ -1,17 +1,15 @@
 import { Outlet, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
-import { SmartHeader } from "./SmartHeader";
-import { PublicFooter } from "./PublicFooter";
+import { LandingNav } from "@/components/home/LandingNav";
+import { LandingFooter } from "@/components/home/LandingFooter";
 import { PageTransition } from "./PageTransition";
 
 export function PublicLayout() {
   const location = useLocation();
-  const isHomePage = location.pathname === "/";
 
   return (
-    <div className="min-h-screen flex flex-col bg-black">
-      {/* Smart header — hidden on home (LandingHero has its own header) */}
-      {!isHomePage && <SmartHeader variant="default" />}
+    <div className="min-h-screen flex flex-col bg-[#0A0A0A]">
+      <LandingNav />
       <main className="flex-1">
         <AnimatePresence mode="wait">
           <PageTransition key={location.pathname}>
@@ -19,7 +17,7 @@ export function PublicLayout() {
           </PageTransition>
         </AnimatePresence>
       </main>
-      {!isHomePage && <PublicFooter />}
+      <LandingFooter />
     </div>
   );
 }
