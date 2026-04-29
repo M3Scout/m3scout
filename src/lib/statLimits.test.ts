@@ -23,9 +23,9 @@ describe("statLimits", () => {
       expect(clampStatValue("minutes", 3000)).toBe(3000);
     });
 
-    it("trata NaN/Infinity como 0", () => {
+    it("trata NaN/Infinity como 0 (não-finitos viram min)", () => {
       expect(clampStatValue("goals", NaN)).toBe(0);
-      expect(clampStatValue("goals", Infinity)).toBe(SEASON_STAT_LIMITS.goals.max);
+      expect(clampStatValue("goals", Infinity)).toBe(0);
     });
 
     it("aplica fallback razoável para keys desconhecidas", () => {
