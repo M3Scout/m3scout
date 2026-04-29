@@ -303,7 +303,8 @@ export async function computeScoreForAthleteById(
       `)
       .eq('player_id', athleteId)
       .eq('matches.season_year', currentYear)
-      .eq('matches.status', 'finished');
+      // Regra de Ouro: Market Score considera apenas jogos APLICADOS.
+      .eq('matches.status', 'applied');
     
     if (statsError) {
       console.error('[MarketScoreService] Error fetching match stats:', statsError);
