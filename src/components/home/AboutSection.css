@@ -34,12 +34,6 @@
   align-items: center;
   gap: 12px;
 }
-.sobre__eyebrow::before {
-  content: '';
-  width: 24px;
-  height: 1px;
-  background: currentColor;
-}
 .sobre__index {
   color: rgba(10, 10, 10, 0.45);
 }
