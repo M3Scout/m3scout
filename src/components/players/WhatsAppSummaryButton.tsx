@@ -82,14 +82,16 @@ export function WhatsAppSummaryButton({
     [windowOptions, selectedWindowId],
   );
 
-  // Carrega anos disponíveis (só na primeira abertura) para popular o select com temporadas reais.
+  // Carrega anos disponíveis (cache por playerId) para popular o select.
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
     (async () => {
       try {
-        const rows = await fetchUnifiedPlayerStats(playerId);
-        const years = getAvailableYears(rows);
+        const years = await loadYears(playerId, async () => {
+          const rows = await fetchUnifiedPlayerStats(playerId);
+          return getAvailableYears(rows);
+        });
         if (!cancelled) setWindowOptions(buildDefaultWindowOptions(years));
       } catch (err) {
         console.error("[WhatsAppSummary] anos disponíveis", err);
