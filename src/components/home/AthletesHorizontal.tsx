@@ -1,0 +1,148 @@
+import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import "./AthletesHorizontal.css";
+
+const MARQUEE_ITEMS = [
+  "Talentos M3",
+  "Inteligência em Futebol",
+  "Mercado",
+  "Data Driven",
+];
+
+const FALLBACK_GRADIENTS = ["blue", "gold", "red", "purple"] as const;
+
+interface AthletePlayer {
+  id: string;
+  slug: string;
+  full_name: string;
+  position: string | null;
+  age: number | null;
+  nationality: string | null;
+  current_club: string | null;
+  photo_url: string | null;
+}
+
+function MarqueeRow() {
+  // Duplicate items to enable seamless loop (translateX(-50%))
+  const items = [...MARQUEE_ITEMS, ...MARQUEE_ITEMS];
+  return (
+    <div className="marquee" aria-hidden="true">
+      <div className="marquee__track">
+        {items.map((label, idx) => (
+          <span className="marquee__item" key={`${label}-${idx}`}>
+            {label}
+            <span className="marquee__item-dot" />
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function AthletesHorizontal() {
+  const [players, setPlayers] = useState<AthletePlayer[]>([]);
+  const [progress, setProgress] = useState(20);
+  const trackRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("players")
+        .select("id, slug, full_name, position, age, nationality, current_club, photo_url, auto_rating, created_at")
+        .eq("is_public", true)
+        .or("is_archived.is.null,is_archived.eq.false")
+        .order("auto_rating", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false })
+        .limit(8);
+      if (!cancelled && data) setPlayers(data as AthletePlayer[]);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const max = el.scrollWidth - el.clientWidth;
+      const pct = max > 0 ? (el.scrollLeft / max) * 100 : 0;
+      setProgress(Math.max(8, Math.min(100, pct || 20)));
+    };
+    onScroll();
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [players.length]);
+
+  return (
+    <section className="lp-section">
+      <MarqueeRow />
+
+      <div className="athletes-h">
+        <header className="athletes-h__head">
+          <div>
+            <div className="athletes-h__eyebrow">Roster M3</div>
+            <h2 className="athletes-h__title">Talentos</h2>
+          </div>
+          <Link to="/players" className="athletes-h__cta">
+            Ver todos
+          </Link>
+        </header>
+
+        <div className="athletes-h__track" ref={trackRef}>
+          {players.map((p, i) => {
+            const gradient = FALLBACK_GRADIENTS[i % FALLBACK_GRADIENTS.length];
+            const num = `/${String(i + 1).padStart(2, "0")}`;
+            return (
+              <Link
+                key={p.id}
+                to={`/players/${p.slug}`}
+                className={`athlete-h-card athlete-h-card--${gradient}`}
+              >
+                {p.photo_url && (
+                  <>
+                    <img
+                      src={p.photo_url}
+                      alt={p.full_name}
+                      className="athlete-h-card__media"
+                      loading="lazy"
+                    />
+                    <div className="athlete-h-card__media-overlay" />
+                  </>
+                )}
+
+                {p.position && (
+                  <span className="athlete-h-card__chip">
+                    <span className="athlete-h-card__chip-dot" />
+                    {p.position}
+                  </span>
+                )}
+                <span className="athlete-h-card__num">{num}</span>
+
+                <div className="athlete-h-card__body">
+                  <h3 className="athlete-h-card__name">{p.full_name}</h3>
+                  <div className="athlete-h-card__meta">
+                    {p.age != null && <span>{p.age} anos</span>}
+                    {p.nationality && <span>· {p.nationality}</span>}
+                  </div>
+                  {p.current_club && (
+                    <div className="athlete-h-card__club">{p.current_club}</div>
+                  )}
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+
+        <div className="athletes-h__progress" aria-hidden="true">
+          <div
+            className="athletes-h__progress-bar"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      </div>
+    </section>
+  );
+}

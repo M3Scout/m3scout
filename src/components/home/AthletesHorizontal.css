@@ -1,0 +1,258 @@
+/* ============================================================
+   Marquee + AthletesHorizontal — escopo .lp-root-section
+   Reutiliza variáveis do LandingHero (bg-dark, fg-dark, accent…)
+   ============================================================ */
+
+.lp-section {
+  --bg-dark: #0A0A0A;
+  --bg-darker: #050505;
+  --fg-dark: #F5F1EA;
+  --accent: #E63946;
+  --accent-2: #E63946;
+  --line-dark: rgba(255, 255, 255, 0.1);
+  --muted-dark: rgba(245, 241, 234, 0.4);
+  --display: 'Archivo Black', 'Inter', sans-serif;
+  --mono: 'Inter', ui-monospace, SFMono-Regular, monospace;
+  background: var(--bg-dark);
+  color: var(--fg-dark);
+  font-family: var(--mono);
+}
+
+/* ---------- MARQUEE ---------- */
+.marquee {
+  position: relative;
+  padding: 32px 0;
+  border-top: 1px solid var(--line-dark);
+  border-bottom: 1px solid var(--line-dark);
+  background: var(--bg-darker);
+  overflow: hidden;
+}
+.marquee__track {
+  display: flex;
+  gap: 64px;
+  width: max-content;
+  animation: marquee 40s linear infinite;
+}
+.marquee__item {
+  font-family: var(--display);
+  font-size: 48px;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  color: var(--fg-dark);
+  display: flex;
+  align-items: center;
+  gap: 64px;
+  white-space: nowrap;
+  transition: color 0.3s;
+}
+.marquee__item:hover { color: var(--accent); }
+.marquee__item-dot {
+  width: 12px; height: 12px;
+  background: var(--accent);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+@keyframes marquee {
+  to { transform: translateX(-50%); }
+}
+.marquee:hover .marquee__track { animation-play-state: paused; }
+
+@media (max-width: 800px) {
+  .marquee__item { font-size: 32px; gap: 40px; }
+  .marquee__track { gap: 40px; }
+}
+
+/* ---------- ATHLETES horizontal ---------- */
+.athletes-h {
+  background: var(--bg-dark);
+  padding: 120px 0 0;
+  position: relative;
+  overflow: hidden;
+}
+.athletes-h__head {
+  padding: 0 40px;
+  max-width: 1600px;
+  margin: 0 auto 64px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+.athletes-h__title {
+  font-family: var(--display);
+  font-size: clamp(48px, 7vw, 120px);
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  color: var(--fg-dark);
+  margin: 0;
+}
+.athletes-h__eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted-dark);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.athletes-h__eyebrow::before {
+  content: '';
+  width: 24px; height: 1px;
+  background: currentColor;
+}
+.athletes-h__cta {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 12px 22px;
+  border: 1px solid var(--line-dark);
+  border-radius: 999px;
+  color: var(--fg-dark);
+  text-decoration: none;
+  transition: background 0.3s, color 0.3s, border-color 0.3s;
+}
+.athletes-h__cta:hover {
+  background: var(--fg-dark);
+  color: var(--bg-dark);
+  border-color: var(--fg-dark);
+}
+
+.athletes-h__track {
+  display: flex;
+  gap: 24px;
+  padding: 0 40px 80px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.athletes-h__track::-webkit-scrollbar { display: none; }
+
+.athlete-h-card {
+  flex-shrink: 0;
+  width: 380px;
+  height: 500px;
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+  scroll-snap-align: start;
+  transition: transform 0.4s ease;
+  background: #1a1a1a;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+.athlete-h-card:hover { transform: translateY(-8px); }
+
+/* Gradientes de fallback dinâmicos */
+.athlete-h-card--blue   { background: linear-gradient(160deg, #1e3a8a 0%, #0c1e4d 100%); }
+.athlete-h-card--gold   { background: linear-gradient(160deg, #b8860b 0%, #5c4307 100%); }
+.athlete-h-card--red    { background: linear-gradient(160deg, #b91c1c 0%, #5a0d0d 100%); }
+.athlete-h-card--purple { background: linear-gradient(160deg, #6b21a8 0%, #2e0a4a 100%); }
+
+.athlete-h-card__media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+}
+.athlete-h-card__media-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 35%, rgba(0,0,0,0.55) 100%);
+  pointer-events: none;
+}
+
+.athlete-h-card__chip {
+  position: absolute;
+  top: 20px; left: 20px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  background: rgba(255,255,255,0.1);
+  -webkit-backdrop-filter: blur(10px);
+          backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 999px;
+  display: inline-flex; gap: 6px; align-items: center;
+  color: #fff;
+  z-index: 2;
+}
+.athlete-h-card__chip-dot {
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--accent-2);
+}
+.athlete-h-card__num {
+  position: absolute;
+  top: 22px; right: 20px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: rgba(255,255,255,0.6);
+  z-index: 2;
+}
+.athlete-h-card__body {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: 24px;
+  background: linear-gradient(to top, rgba(0,0,0,0.85), transparent);
+  color: #fff;
+  z-index: 2;
+}
+.athlete-h-card__name {
+  font-family: var(--display);
+  font-size: 24px;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  margin: 0 0 10px;
+  text-transform: uppercase;
+}
+.athlete-h-card__meta {
+  display: flex; gap: 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: rgba(255,255,255,0.75);
+  letter-spacing: 0.1em;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  flex-wrap: wrap;
+}
+.athlete-h-card__club {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.55);
+}
+
+.athletes-h__progress {
+  margin: 0 auto 80px;
+  width: 200px; height: 2px;
+  background: var(--line-dark);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.athletes-h__progress-bar {
+  height: 100%;
+  background: var(--accent);
+  width: 20%;
+  transition: width 0.2s ease;
+}
+
+@media (max-width: 800px) {
+  .athletes-h { padding: 80px 0 0; }
+  .athletes-h__head { padding: 0 20px; margin-bottom: 40px; }
+  .athletes-h__track { padding: 0 20px 60px; gap: 16px; }
+  .athlete-h-card { width: 280px; height: 400px; }
+  .athlete-h-card__name { font-size: 20px; }
+}
