@@ -251,11 +251,34 @@ export function ScoutCategoryStats({
   const isEdit = mode === "edit";
 
   /**
-   * Aplica a mudança em uma stat. Se a chave for derivada (ex: passes_failed_derived),
-   * traduz para uma atualização do total subjacente (total = success + novoFalhado).
+   * Índices reversos derivados do DERIVED_FAILED_MAP, calculados sob demanda:
+   *  - successToTotal: para chaves "sucesso" (parte de um par success/total),
+   *    indica qual é o total subjacente. Editar o sucesso pode forçar o total
+   *    a crescer (total ≥ sum(success siblings)).
+   *  - totalToSuccessKeys: para chaves "total", indica os componentes "sucesso"
+   *    que somam dentro dele. Editar o total não pode resultar em valor < soma
+   *    dos componentes (clamp para o mínimo = soma).
+   */
+  const successToTotal: Record<string, string> = {};
+  const totalToSuccessKeys: Record<string, string[]> = {};
+  for (const cfg of Object.values(DERIVED_FAILED_MAP)) {
+    const successList = Array.isArray(cfg.successKey) ? cfg.successKey : [cfg.successKey];
+    totalToSuccessKeys[cfg.totalKey] = successList;
+    for (const sk of successList) successToTotal[sk] = cfg.totalKey;
+  }
+
+  /**
+   * Aplica a mudança em uma stat mantendo a coerência total = Σ componentes.
+   *  - Chave derivada (✗): atualiza o total subjacente.
+   *  - Chave "sucesso" de um par: se o novo sucesso fizer Σ componentes > total,
+   *    o total é elevado automaticamente para acomodar (✗ derivado se mantém).
+   *  - Chave "total": clamp mínimo = Σ componentes (não pode ficar menor que
+   *    a soma dos sucessos já registrados).
    */
   const commitValue = (key: string, nextRaw: number) => {
     if (!onChange) return;
+
+    // 1) Chave derivada (✗): editar o "errado/fora" recalcula o total.
     const derived = DERIVED_FAILED_MAP[key];
     if (derived) {
       const siblings = sumKeys(values, derived.successKey);
@@ -264,6 +287,35 @@ export function ScoutCategoryStats({
       onChange(derived.totalKey, nextTotal);
       return;
     }
+
+    // 2) Chave "total" de um par: não pode ficar abaixo da soma dos componentes.
+    const successList = totalToSuccessKeys[key];
+    if (successList) {
+      const minTotal = sumKeys(values, successList);
+      const nextValue = clampStatValue(key, Math.max(minTotal, Math.max(0, nextRaw)));
+      onChange(key, nextValue);
+      return;
+    }
+
+    // 3) Chave "sucesso" de um par success/total: ajusta o total se necessário.
+    const totalKey = successToTotal[key];
+    if (totalKey) {
+      const nextSuccess = clampStatValue(key, Math.max(0, nextRaw));
+      onChange(key, nextSuccess);
+      // Recalcula a soma de todos os componentes do total considerando o novo valor.
+      const siblings = totalToSuccessKeys[totalKey] ?? [];
+      const newSiblingsSum = siblings.reduce(
+        (acc, sk) => acc + (sk === key ? nextSuccess : getValue(values, sk)),
+        0,
+      );
+      const currentTotal = getValue(values, totalKey);
+      if (newSiblingsSum > currentTotal) {
+        onChange(totalKey, clampStatValue(totalKey, newSiblingsSum));
+      }
+      return;
+    }
+
+    // 4) Caso geral.
     onChange(key, clampStatValue(key, nextRaw));
   };
 
