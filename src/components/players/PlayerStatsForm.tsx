@@ -52,6 +52,14 @@ function statToScoutValues(stat: Record<string, unknown>): StatValues {
   }
   return out;
 }
+/** Rótulos amigáveis para os totais usados nos alertas de incoerência. */
+const TOTAL_LABEL: Record<string, string> = {
+  total_passes: "Passes Totais",
+  total_dribbles: "Dribles Totais",
+  ground_duels_total: "Duelos no Chão Totais",
+  aerial_duels_total: "Duelos Aéreos Totais",
+  shots: "Finalizações Totais",
+};
 
 
 interface Competition {
