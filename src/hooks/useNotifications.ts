@@ -114,26 +114,6 @@ export function useNotifications() {
     fetchNotifications();
   }, [fetchNotifications]);
 
-  // Subscribe to realtime updates
-  useEffect(() => {
-    if (!user) return;
-
-    const channel = supabase
-      .channel(`notifications-realtime-${user.id}-${Math.random().toString(36).slice(2)}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "notifications",
-          filter: `user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          const newNotification = payload.new as Notification;
-          setNotifications((prev) => [newNotification, ...prev]);
-          setUnreadCount((prev) => prev + 1);
-        }
-      )
   // Track instance lifecycle to detect duplicate mounts in dev/prod.
   const instanceIdRef = useRef<number>(0);
   if (instanceIdRef.current === 0) {
