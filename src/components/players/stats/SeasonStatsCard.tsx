@@ -3,6 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronDown, Pencil, Trash2, Zap, FileEdit, Layers } from "lucide-react";
 import { CompetitionStatsSummary } from "@/components/players/stats";
+import {
+  ScoutCategoryStats,
+  OUTFIELD_SCOUT_CATEGORIES,
+  GOALKEEPER_SCOUT_CATEGORIES,
+  type StatValues,
+} from "./ScoutCategoryStats";
 import type { PlayerStats } from "@/lib/playerStats";
 import { normalizePlayerStats } from "@/lib/normalizePlayerStats";
 import { motion, AnimatePresence } from "framer-motion";
