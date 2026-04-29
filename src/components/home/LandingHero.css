@@ -180,6 +180,7 @@
   line-height: 0.92;
   letter-spacing: -0.04em;
   text-transform: uppercase;
+  text-align: left;
   margin-bottom: 40px;
   color: var(--fg-dark);
 }
@@ -191,20 +192,15 @@
   color: var(--accent);
 }
 
-/* Círculo vermelho ao redor do "ELE" */
+/* Pequeno círculo vermelho decorativo (ponto final) ao lado de "ELE" */
+.lp-text-align-left { text-align: left; }
 .lp-circle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: inline-block;
+  width: 0.18em;
+  height: 0.18em;
   background: var(--accent);
-  color: #fff;
-  border-radius: 9999px;
-  padding: 0 0.32em;
-  line-height: 0.92;
-  /* sutil ajuste para parecer um círculo perfeito visualmente */
-  aspect-ratio: 1 / 1;
-  min-width: 1.05em;
-  margin: 0 0.05em;
+  border-radius: 50%;
+  margin-left: 0.12em;
   vertical-align: baseline;
 }
 
