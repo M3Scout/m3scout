@@ -29,6 +29,8 @@ export interface PlayerSummaryInput {
   isGoalkeeper?: boolean;
   /** Posições disponíveis para detectar GK automaticamente (fallback). */
   positionHint?: string | null;
+  /** Rótulo curto da janela ("Carreira", "Últimos 3 meses", "Temporada 2025"...). */
+  windowLabel?: string;
 }
 
 /** Recalcula coerentemente um total: max(total registrado, soma dos componentes). */
