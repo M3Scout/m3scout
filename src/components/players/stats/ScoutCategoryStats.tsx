@@ -237,6 +237,61 @@ function calcPct(success: number, total: number): number | null {
 }
 
 /* ============================================================
+ * Coerência (validação visual)
+ * ============================================================ */
+
+export interface StatIncoherence {
+  /** Chave do total que está incoerente */
+  totalKey: string;
+  /** Componentes (sucessos) que somam dentro do total */
+  successKeys: string[];
+  /** Soma atual dos componentes */
+  componentsSum: number;
+  /** Valor atual do total */
+  totalValue: number;
+  /** Valor sugerido para o total (= componentsSum) */
+  suggestedTotal: number;
+}
+
+/**
+ * Detecta incoerências do tipo: total < Σ componentes (acertos).
+ * Usado para destacar visualmente os cards e oferecer recálculo automático.
+ */
+export function detectStatIncoherences(values: StatValues): StatIncoherence[] {
+  const seen = new Set<string>();
+  const result: StatIncoherence[] = [];
+  for (const cfg of Object.values(DERIVED_FAILED_MAP)) {
+    if (seen.has(cfg.totalKey)) continue;
+    seen.add(cfg.totalKey);
+    const successKeys = Array.isArray(cfg.successKey) ? cfg.successKey : [cfg.successKey];
+    const componentsSum = sumKeys(values, successKeys);
+    const totalValue = getValue(values, cfg.totalKey);
+    if (componentsSum > totalValue) {
+      result.push({
+        totalKey: cfg.totalKey,
+        successKeys,
+        componentsSum,
+        totalValue,
+        suggestedTotal: componentsSum,
+      });
+    }
+  }
+  return result;
+}
+
+/**
+ * Aplica o recálculo automático de todos os totais incoerentes.
+ * Retorna um patch parcial com as chaves a serem atualizadas.
+ */
+export function recalcStatTotals(values: StatValues): Record<string, number> {
+  const patch: Record<string, number> = {};
+  for (const inc of detectStatIncoherences(values)) {
+    patch[inc.totalKey] = clampStatValue(inc.totalKey, inc.suggestedTotal);
+  }
+  return patch;
+}
+
+/* ============================================================
  * Component
  * ============================================================ */
 
@@ -324,6 +379,15 @@ export function ScoutCategoryStats({
     commitValue(key, current + delta);
   };
 
+  // Conjunto de chaves envolvidas em incoerências (total + seus componentes),
+  // usado para destacar visualmente os cards afetados.
+  const incoherences = detectStatIncoherences(values);
+  const incoherentKeys = new Set<string>();
+  for (const inc of incoherences) {
+    incoherentKeys.add(inc.totalKey);
+    for (const sk of inc.successKeys) incoherentKeys.add(sk);
+  }
+
   return (
     <div className={cn("space-y-3", className)}>
       {categories.map((category) => (
@@ -363,6 +427,8 @@ export function ScoutCategoryStats({
                 ? value + sumKeys(values, DERIVED_FAILED_MAP[stat.key].successKey) >= statMax
                 : value >= statMax;
 
+              const isIncoherent = incoherentKeys.has(stat.key);
+
               return (
                 <div
                   key={stat.key}
@@ -370,8 +436,15 @@ export function ScoutCategoryStats({
                     "rounded-md bg-zinc-950/60 border border-zinc-800/60 p-2 flex flex-col gap-1.5",
                     stat.highlight && "ring-1 ring-primary/30",
                     isDerived && "border-dashed border-zinc-700/60",
+                    isIncoherent && "ring-1 ring-amber-500/60 border-amber-500/40",
                   )}
-                  title={isDerived ? "Calculado automaticamente a partir do total e dos acertos" : undefined}
+                  title={
+                    isIncoherent
+                      ? "Total incoerente: menor que a soma dos acertos. Use 'Recalcular totais'."
+                      : isDerived
+                        ? "Calculado automaticamente a partir do total e dos acertos"
+                        : undefined
+                  }
                 >
                   <div className="flex items-baseline justify-between gap-1">
                     <span className="text-[10px] text-zinc-400 truncate uppercase">
