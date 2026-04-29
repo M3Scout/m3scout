@@ -169,7 +169,6 @@
   cursor: grabbing;
   scroll-snap-type: none;
 }
-}
 .athletes-h__track::-webkit-scrollbar { display: none; }
 
 .athlete-h-card {
