@@ -33,6 +33,7 @@ import {
   type StatValues,
 } from "@/components/players/stats/ScoutCategoryStats";
 import { clampStatValue, validateSeasonStats, getStatLimit } from "@/lib/statLimits";
+import { invalidatePlayerSummary } from "@/lib/playerSummaryCache";
 
 /**
  * Converte um PlayerStat (com possíveis valores "" / null) em um
@@ -423,6 +424,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
       }
 
       toast.success("Estatísticas salvas com sucesso!");
+      invalidatePlayerSummary(playerId); // Invalida cache do "Resumo WhatsApp"
       fetchData(); // Refresh to get real IDs
     } catch (error: any) {
       console.error(error);

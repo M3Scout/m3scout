@@ -44,6 +44,7 @@ import {
   fetchLiveAggregateForWindow,
   type SummaryWindowOption,
 } from "@/lib/playerSummaryWindow";
+import { loadSummary, loadYears } from "@/lib/playerSummaryCache";
 
 interface WhatsAppSummaryButtonProps {
   playerId: string;
@@ -81,14 +82,16 @@ export function WhatsAppSummaryButton({
     [windowOptions, selectedWindowId],
   );
 
-  // Carrega anos disponíveis (só na primeira abertura) para popular o select com temporadas reais.
+  // Carrega anos disponíveis (cache por playerId) para popular o select.
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
     (async () => {
       try {
-        const rows = await fetchUnifiedPlayerStats(playerId);
-        const years = getAvailableYears(rows);
+        const years = await loadYears(playerId, async () => {
+          const rows = await fetchUnifiedPlayerStats(playerId);
+          return getAvailableYears(rows);
+        });
         if (!cancelled) setWindowOptions(buildDefaultWindowOptions(years));
       } catch (err) {
         console.error("[WhatsAppSummary] anos disponíveis", err);
@@ -99,7 +102,8 @@ export function WhatsAppSummaryButton({
     };
   }, [open, playerId]);
 
-  // Gera/regenera o resumo quando a janela muda (e quando o diálogo abre).
+  // Gera/regenera o resumo quando a janela muda. Usa cache por (playerId, windowId)
+  // com TTL curto + dedupe de promises in-flight.
   useEffect(() => {
     if (!open || !selectedWindow) return;
     let cancelled = false;
@@ -107,23 +111,24 @@ export function WhatsAppSummaryButton({
     setEmptyForWindow(false);
     (async () => {
       try {
-        const w = selectedWindow.value;
-        let aggregated = null;
-        let matchesCount = 0;
-
-        if (w.kind === "career") {
-          const rows = await fetchUnifiedPlayerStats(playerId);
-          aggregated = aggregateUnifiedStats(rows);
-          matchesCount = aggregated?.matches ?? 0;
-        } else if (w.kind === "season") {
-          const rows = await fetchUnifiedPlayerStats(playerId, w.year);
-          aggregated = aggregateUnifiedStats(rows);
-          matchesCount = aggregated?.matches ?? 0;
-        } else {
-          const r = await fetchLiveAggregateForWindow(playerId, w);
-          aggregated = r.stats;
-          matchesCount = r.matchesCount;
-        }
+        const { stats: aggregated, matchesCount } = await loadSummary(
+          playerId,
+          selectedWindow.id,
+          async () => {
+            const w = selectedWindow.value;
+            if (w.kind === "career") {
+              const rows = await fetchUnifiedPlayerStats(playerId);
+              const agg = aggregateUnifiedStats(rows);
+              return { stats: agg, matchesCount: agg?.matches ?? 0 };
+            }
+            if (w.kind === "season") {
+              const rows = await fetchUnifiedPlayerStats(playerId, w.year);
+              const agg = aggregateUnifiedStats(rows);
+              return { stats: agg, matchesCount: agg?.matches ?? 0 };
+            }
+            return fetchLiveAggregateForWindow(playerId, w);
+          },
+        );
 
         if (cancelled) return;
 
