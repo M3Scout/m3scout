@@ -427,6 +427,8 @@ export function ScoutCategoryStats({
                 ? value + sumKeys(values, DERIVED_FAILED_MAP[stat.key].successKey) >= statMax
                 : value >= statMax;
 
+              const isIncoherent = incoherentKeys.has(stat.key);
+
               return (
                 <div
                   key={stat.key}
@@ -434,8 +436,15 @@ export function ScoutCategoryStats({
                     "rounded-md bg-zinc-950/60 border border-zinc-800/60 p-2 flex flex-col gap-1.5",
                     stat.highlight && "ring-1 ring-primary/30",
                     isDerived && "border-dashed border-zinc-700/60",
+                    isIncoherent && "ring-1 ring-amber-500/60 border-amber-500/40",
                   )}
-                  title={isDerived ? "Calculado automaticamente a partir do total e dos acertos" : undefined}
+                  title={
+                    isIncoherent
+                      ? "Total incoerente: menor que a soma dos acertos. Use 'Recalcular totais'."
+                      : isDerived
+                        ? "Calculado automaticamente a partir do total e dos acertos"
+                        : undefined
+                  }
                 >
                   <div className="flex items-baseline justify-between gap-1">
                     <span className="text-[10px] text-zinc-400 truncate uppercase">
