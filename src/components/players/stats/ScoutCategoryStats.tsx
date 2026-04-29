@@ -303,7 +303,9 @@ export function ScoutCategoryStats({
                   className={cn(
                     "rounded-md bg-zinc-950/60 border border-zinc-800/60 p-2 flex flex-col gap-1.5",
                     stat.highlight && "ring-1 ring-primary/30",
+                    isDerived && "border-dashed border-zinc-700/60",
                   )}
+                  title={isDerived ? "Calculado automaticamente a partir do total e dos acertos" : undefined}
                 >
                   <div className="flex items-baseline justify-between gap-1">
                     <span className="text-[10px] text-zinc-400 truncate uppercase">
@@ -331,12 +333,13 @@ export function ScoutCategoryStats({
                       </Button>
                       <EditableStatValue
                         statKey={stat.key}
+                        limitKey={limitKey}
                         value={value}
                         disabled={disabled}
                         highlight={!!stat.highlight}
                         accentClass={category.color}
                         ariaLabel={stat.label}
-                        onCommit={(next) => onChange?.(stat.key, next)}
+                        onCommit={(next) => commitValue(stat.key, next)}
                       />
 
                       <Button
