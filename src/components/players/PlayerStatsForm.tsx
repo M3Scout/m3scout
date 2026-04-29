@@ -424,6 +424,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
       }
 
       toast.success("Estatísticas salvas com sucesso!");
+      invalidatePlayerSummary(playerId); // Invalida cache do "Resumo WhatsApp"
       fetchData(); // Refresh to get real IDs
     } catch (error: any) {
       console.error(error);
