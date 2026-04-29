@@ -122,7 +122,7 @@ export function LandingHero() {
           >
             <span className="lp-hero__title-row">Futebol</span>
             <span className="lp-hero__title-row">
-              Como <span className="lp-circle">Ele</span>
+              Como Ele<span className="lp-circle" aria-hidden="true" />
             </span>
             <span className="lp-hero__title-row is-accent">Deveria Ser.</span>
           </h1>
