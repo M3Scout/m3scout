@@ -361,28 +361,15 @@ export function SeasonTotalsCard({ seasonStats, isGK, index = 0 }: SeasonTotalsC
           <div className="flex items-center gap-2 mb-2">
             <Badge variant="secondary" className="text-xs">Total da Temporada</Badge>
           </div>
-          <div className={`grid gap-2 w-full ${isGK ? 'grid-cols-2' : 'grid-cols-3'}`}>
+          <div className="grid gap-2 w-full grid-cols-2 mb-3">
             <StatChip label="Jogos" value={totals.matches} index={0} />
             <StatChip label="Minutos" value={totals.minutes} index={1} />
-            {isGK ? (
-              <>
-                <StatChip label="Defesas" value={totals.saves} highlight="blue" index={2} />
-                <StatChip label="Gols Sofr." value={totals.goals_conceded} index={3} />
-                <StatChip label="Clean Sheets" value={totals.clean_sheets} highlight="green" index={4} />
-                <StatChip label="Pên. Def." value={totals.penalties_saved} index={5} />
-              </>
-            ) : (
-              <>
-                <StatChip label="Gols" value={totals.goals} highlight="green" index={2} />
-                <StatChip label="Assist" value={totals.assists} highlight="blue" index={3} />
-                {/* CRITICAL: Use aggregated shots which now uses shots_total_derived */}
-                <StatChip label="Finaliz." value={totals.shots} index={4} />
-                <StatChip label="No Gol" value={totals.shots_on_target} index={5} />
-                <StatChip label="Amarelos" value={totals.yellow_cards} variant="warning" index={6} />
-                <StatChip label="Vermelhos" value={totals.red_cards} variant="danger" index={7} />
-              </>
-            )}
           </div>
+          <ScoutCategoryStats
+            mode="readonly"
+            categories={isGK ? GOALKEEPER_SCOUT_CATEGORIES : OUTFIELD_SCOUT_CATEGORIES}
+            values={totals as unknown as StatValues}
+          />
         </CardContent>
       </Card>
     </motion.div>
