@@ -115,6 +115,9 @@ interface PlayerStat {
   long_passes_total: StatValue;
   successful_dribbles: StatValue;
   total_dribbles: StatValue;
+  // Crosses
+  crosses_success: StatValue;
+  crosses_failed: StatValue;
 }
 
 // Helper to normalize stat value to number for saving.
@@ -172,6 +175,8 @@ const emptyStatRow: Omit<PlayerStat, "id" | "player_id"> = {
   long_passes_total: "",
   successful_dribbles: "",
   total_dribbles: "",
+  crosses_success: "",
+  crosses_failed: "",
 };
 
 interface PlayerStatsFormProps {
@@ -351,7 +356,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
     "total_runs_out", "fouls_committed", "fouls_drawn", "offsides",
     "clearances", "times_dribbled_past", "possession_lost",
     "long_passes_accurate", "long_passes_total", "successful_dribbles",
-    "total_dribbles",
+    "total_dribbles", "crosses_success", "crosses_failed",
   ] as const;
 
   const buildStatPayload = (stat: PlayerStat): Record<string, number> => {

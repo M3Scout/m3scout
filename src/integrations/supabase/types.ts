@@ -1459,7 +1459,9 @@ export type Database = {
           competition_id: string | null
           created_at: string
           crosses_faced: number
+          crosses_failed: number
           crosses_stopped: number
+          crosses_success: number
           duels_won: number
           errors_leading_to_goal: number
           errors_leading_to_shot: number
@@ -1518,7 +1520,9 @@ export type Database = {
           competition_id?: string | null
           created_at?: string
           crosses_faced?: number
+          crosses_failed?: number
           crosses_stopped?: number
+          crosses_success?: number
           duels_won?: number
           errors_leading_to_goal?: number
           errors_leading_to_shot?: number
@@ -1577,7 +1581,9 @@ export type Database = {
           competition_id?: string | null
           created_at?: string
           crosses_faced?: number
+          crosses_failed?: number
           crosses_stopped?: number
+          crosses_success?: number
           duels_won?: number
           errors_leading_to_goal?: number
           errors_leading_to_shot?: number

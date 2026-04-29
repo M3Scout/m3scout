@@ -25,8 +25,17 @@ export interface ScoutStatDef {
   key: string;
   /** rótulo curto exibido no card */
   label: string;
-  /** se for o "sucesso" de um par (ex: passes_completed) — informe a chave do total / falhas para calcular % */
-  successOf?: string; // key of the failures/total partner
+  /**
+   * Se este card é o lado "sucesso" de um par certo/total (ex: accurate_passes
+   * pareado com total_passes). O % é calculado como success/total.
+   */
+  successOf?: string;
+  /**
+   * Se este card é o lado "sucesso" de um par certo/errado (ex: crosses_success
+   * pareado com crosses_failed). O % é calculado como success/(success+failed).
+   * Use quando a coluna do banco armazena os dois lados separadamente.
+   */
+  successOfFailed?: string;
   /** marca como destaque visual (gols, assistências, defesas) */
   highlight?: boolean;
 }
@@ -78,16 +87,20 @@ export const OUTFIELD_SCOUT_CATEGORIES: ScoutCategory[] = [
       { key: "chances_created", label: "Chances" },
       { key: "accurate_passes", label: "Passes ✓", successOf: "total_passes" },
       { key: "total_passes", label: "Passes Tot." },
+      { key: "passes_failed_derived", label: "Passes ✗" },
+      { key: "crosses_success", label: "Cruzam. ✓", successOfFailed: "crosses_failed" },
+      { key: "crosses_failed", label: "Cruzam. ✗" },
     ],
   },
   {
     key: "dribbles",
-    label: "DRIBLES",
+    label: "DRIBLE / POSSE",
     color: "text-cyan-400",
     bgColor: "bg-cyan-500/10 border-cyan-500/20",
     stats: [
       { key: "successful_dribbles", label: "Dribles ✓", successOf: "total_dribbles" },
       { key: "total_dribbles", label: "Dribles Tot." },
+      { key: "dribbles_failed_derived", label: "Dribles ✗" },
       { key: "fouls_drawn", label: "Faltas Sof." },
       { key: "possession_lost", label: "Bolas Perd." },
     ],
@@ -102,10 +115,13 @@ export const OUTFIELD_SCOUT_CATEGORIES: ScoutCategory[] = [
       { key: "interceptions", label: "Interc." },
       { key: "clearances", label: "Cortes" },
       { key: "recoveries", label: "Recup." },
-      { key: "aerial_duels_won", label: "Aéreos ✓", successOf: "aerial_duels_total" },
-      { key: "aerial_duels_total", label: "Aéreos Tot." },
-      { key: "ground_duels_won", label: "Duelos ✓", successOf: "ground_duels_total" },
-      { key: "ground_duels_total", label: "Duelos Tot." },
+      { key: "times_dribbled_past", label: "Driblado" },
+      { key: "ground_duels_won", label: "Duelo Chão ✓", successOf: "ground_duels_total" },
+      { key: "ground_duels_total", label: "Duelo Chão Tot." },
+      { key: "ground_duels_lost_derived", label: "Duelo Chão ✗" },
+      { key: "aerial_duels_won", label: "Duelo Aéreo ✓", successOf: "aerial_duels_total" },
+      { key: "aerial_duels_total", label: "Duelo Aéreo Tot." },
+      { key: "aerial_duels_lost_derived", label: "Duelo Aéreo ✗" },
       { key: "fouls_committed", label: "Faltas Com." },
       { key: "yellow_cards", label: "Amarelos" },
       { key: "red_cards", label: "Vermelhos" },
@@ -169,10 +185,36 @@ export const GOALKEEPER_SCOUT_CATEGORIES: ScoutCategory[] = [
  * Helpers
  * ============================================================ */
 
+/**
+ * Mapeamento de chaves "virtuais" (não existem no banco) para o par
+ * success/total real. Quando o usuário edita esses cards, atualizamos
+ * o total subjacente: total = success + novoFalhado.
+ */
+const DERIVED_FAILED_MAP: Record<
+  string,
+  { successKey: string; totalKey: string }
+> = {
+  passes_failed_derived: { successKey: "accurate_passes", totalKey: "total_passes" },
+  dribbles_failed_derived: { successKey: "successful_dribbles", totalKey: "total_dribbles" },
+  ground_duels_lost_derived: { successKey: "ground_duels_won", totalKey: "ground_duels_total" },
+  aerial_duels_lost_derived: { successKey: "aerial_duels_won", totalKey: "aerial_duels_total" },
+};
+
 function getValue(values: StatValues, key: string): number {
   const raw = values[key];
   if (typeof raw !== "number" || isNaN(raw)) return 0;
   return Math.max(0, raw);
+}
+
+/** Resolve o valor exibido — para chaves derivadas, computa total - success. */
+function resolveDisplayValue(values: StatValues, key: string): number {
+  const derived = DERIVED_FAILED_MAP[key];
+  if (derived) {
+    const success = getValue(values, derived.successKey);
+    const total = getValue(values, derived.totalKey);
+    return Math.max(0, total - success);
+  }
+  return getValue(values, key);
 }
 
 function calcPct(success: number, total: number): number | null {
@@ -194,10 +236,26 @@ export function ScoutCategoryStats({
 }: ScoutCategoryStatsProps) {
   const isEdit = mode === "edit";
 
-  const handleStep = (key: string, delta: number) => {
+  /**
+   * Aplica a mudança em uma stat. Se a chave for derivada (ex: passes_failed_derived),
+   * traduz para uma atualização do total subjacente (total = success + novoFalhado).
+   */
+  const commitValue = (key: string, nextRaw: number) => {
     if (!onChange) return;
-    const next = clampStatValue(key, getValue(values, key) + delta);
-    onChange(key, next);
+    const derived = DERIVED_FAILED_MAP[key];
+    if (derived) {
+      const success = getValue(values, derived.successKey);
+      const nextFailed = Math.max(0, nextRaw);
+      const nextTotal = clampStatValue(derived.totalKey, success + nextFailed);
+      onChange(derived.totalKey, nextTotal);
+      return;
+    }
+    onChange(key, clampStatValue(key, nextRaw));
+  };
+
+  const handleStep = (key: string, delta: number) => {
+    const current = resolveDisplayValue(values, key);
+    commitValue(key, current + delta);
   };
 
   return (
@@ -217,12 +275,27 @@ export function ScoutCategoryStats({
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
             {category.stats.map((stat) => {
-              const value = getValue(values, stat.key);
-              const pct = stat.successOf
-                ? calcPct(value, getValue(values, stat.successOf))
-                : null;
-              const { max: statMax } = getStatLimit(stat.key);
-              const atMax = value >= statMax;
+              const value = resolveDisplayValue(values, stat.key);
+
+              // Cálculo de porcentagem:
+              // - successOf:        % = success / total
+              // - successOfFailed:  % = success / (success + failed)
+              let pct: number | null = null;
+              if (stat.successOf) {
+                pct = calcPct(value, getValue(values, stat.successOf));
+              } else if (stat.successOfFailed) {
+                const failed = getValue(values, stat.successOfFailed);
+                pct = calcPct(value, value + failed);
+              }
+
+              const isDerived = stat.key in DERIVED_FAILED_MAP;
+              const limitKey = isDerived
+                ? DERIVED_FAILED_MAP[stat.key].totalKey
+                : stat.key;
+              const { max: statMax } = getStatLimit(limitKey);
+              const atMax = isDerived
+                ? value + getValue(values, DERIVED_FAILED_MAP[stat.key].successKey) >= statMax
+                : value >= statMax;
 
               return (
                 <div
@@ -230,7 +303,9 @@ export function ScoutCategoryStats({
                   className={cn(
                     "rounded-md bg-zinc-950/60 border border-zinc-800/60 p-2 flex flex-col gap-1.5",
                     stat.highlight && "ring-1 ring-primary/30",
+                    isDerived && "border-dashed border-zinc-700/60",
                   )}
+                  title={isDerived ? "Calculado automaticamente a partir do total e dos acertos" : undefined}
                 >
                   <div className="flex items-baseline justify-between gap-1">
                     <span className="text-[10px] text-zinc-400 truncate uppercase">
@@ -258,12 +333,13 @@ export function ScoutCategoryStats({
                       </Button>
                       <EditableStatValue
                         statKey={stat.key}
+                        limitKey={limitKey}
                         value={value}
                         disabled={disabled}
                         highlight={!!stat.highlight}
                         accentClass={category.color}
                         ariaLabel={stat.label}
-                        onCommit={(next) => onChange?.(stat.key, next)}
+                        onCommit={(next) => commitValue(stat.key, next)}
                       />
 
                       <Button
@@ -309,6 +385,9 @@ export function ScoutCategoryStats({
 
 interface EditableStatValueProps {
   statKey: string;
+  /** Chave usada para resolver os limites de validação (default: statKey).
+   *  Necessária para chaves derivadas, que devem usar os limites do total subjacente. */
+  limitKey?: string;
   value: number;
   disabled?: boolean;
   highlight?: boolean;
@@ -319,6 +398,7 @@ interface EditableStatValueProps {
 
 function EditableStatValue({
   statKey,
+  limitKey,
   value,
   disabled,
   highlight,
@@ -328,7 +408,8 @@ function EditableStatValue({
 }: EditableStatValueProps) {
   const [draft, setDraft] = useState<string>(String(value));
   const focusedRef = useRef(false);
-  const { max: statMax } = getStatLimit(statKey);
+  const effectiveLimitKey = limitKey ?? statKey;
+  const { max: statMax } = getStatLimit(effectiveLimitKey);
 
   // Mantém o input sincronizado quando o valor externo muda (ex: clique em +/-)
   // sem sobrescrever enquanto o usuário está digitando.
@@ -340,9 +421,11 @@ function EditableStatValue({
 
   const commit = () => {
     const parsed = parseInt(draft, 10);
-    const next = clampStatValue(statKey, Number.isFinite(parsed) ? parsed : 0);
-    if (next !== value) onCommit(next);
-    setDraft(String(next));
+    const raw = Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+    // Não fazemos clamp aqui — o pai (commitValue) decide o clamp final
+    // (necessário para chaves derivadas que precisam considerar o total).
+    if (raw !== value) onCommit(raw);
+    setDraft(String(raw));
   };
 
   return (

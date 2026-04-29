@@ -51,6 +51,8 @@ export const SEASON_STAT_LIMITS: Record<string, StatLimit> = {
   successful_dribbles: { min: 0, max: 1000, label: "Dribles Certos" },
   total_dribbles: { min: 0, max: 1000, label: "Dribles Totais" },
   possession_lost: { min: 0, max: 2000, label: "Bolas Perdidas" },
+  crosses_success: { min: 0, max: 1000, label: "Cruzamentos Certos" },
+  crosses_failed: { min: 0, max: 1000, label: "Cruzamentos Errados" },
 
   // Defesa
   tackles: { min: 0, max: 1000, label: "Desarmes" },
