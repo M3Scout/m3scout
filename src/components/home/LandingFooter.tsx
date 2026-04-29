@@ -53,8 +53,8 @@ export function LandingFooter() {
                 </a>
               </li>
               <li>
-                <a href="https://linkedin.com/company/m3agency" target="_blank" rel="noreferrer">
-                  LinkedIn
+                <a href="https://tiktok.com/@m3agency" target="_blank" rel="noreferrer">
+                  TikTok
                 </a>
               </li>
             </ul>
