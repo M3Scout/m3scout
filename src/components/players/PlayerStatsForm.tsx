@@ -117,11 +117,14 @@ interface PlayerStat {
   total_dribbles: StatValue;
 }
 
-// Helper to normalize stat value to number for saving
-const normalizeStatValue = (value: StatValue): number => {
+// Helper to normalize stat value to number for saving.
+// When `key` is provided, we also clamp it to the configured min/max
+// (see src/lib/statLimits.ts) so we never persist negative or absurd values.
+const normalizeStatValue = (value: StatValue, key?: string): number => {
   if (value === null || value === "" || value === undefined) return 0;
   const num = typeof value === "string" ? parseFloat(value) : value;
-  return isNaN(num) ? 0 : num;
+  const safe = isNaN(num) ? 0 : num;
+  return key ? clampStatValue(key, safe) : Math.max(0, safe);
 };
 
 const emptyStatRow: Omit<PlayerStat, "id" | "player_id"> = {
