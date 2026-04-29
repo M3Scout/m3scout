@@ -1365,6 +1365,47 @@ export default function UserManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Reset Password Dialog */}
+      <Dialog open={!!resetPasswordUser} onOpenChange={(open) => { if (!open) { setResetPasswordUser(null); setNewPassword(""); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="w-5 h-5 text-primary" />
+              Redefinir Senha Temporária
+            </DialogTitle>
+            <DialogDescription>
+              Defina uma nova senha para <strong>{resetPasswordUser?.full_name || resetPasswordUser?.email}</strong>. O usuário poderá entrar imediatamente com ela.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <Label htmlFor="new-password">Nova senha</Label>
+            <div className="flex gap-2">
+              <Input
+                id="new-password"
+                type="text"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Digite ou gere uma senha"
+                autoComplete="new-password"
+              />
+              <Button type="button" variant="outline" onClick={generateRandomPassword} title="Gerar senha aleatória">
+                <RefreshCw className="w-4 h-4 mr-1" />
+                Gerar
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">Mínimo 6 caracteres. Compartilhe com o usuário por canal seguro.</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setResetPasswordUser(null); setNewPassword(""); }} disabled={resettingPassword}>
+              Cancelar
+            </Button>
+            <Button onClick={handleResetPassword} disabled={resettingPassword || newPassword.length < 6}>
+              {resettingPassword ? "Salvando..." : "Confirmar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
