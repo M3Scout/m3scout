@@ -258,9 +258,9 @@ export function ScoutCategoryStats({
     if (!onChange) return;
     const derived = DERIVED_FAILED_MAP[key];
     if (derived) {
-      const success = getValue(values, derived.successKey);
-      const nextFailed = Math.max(0, nextRaw);
-      const nextTotal = clampStatValue(derived.totalKey, success + nextFailed);
+      const siblings = sumKeys(values, derived.successKey);
+      const nextValue = Math.max(0, nextRaw);
+      const nextTotal = clampStatValue(derived.totalKey, siblings + nextValue);
       onChange(derived.totalKey, nextTotal);
       return;
     }
