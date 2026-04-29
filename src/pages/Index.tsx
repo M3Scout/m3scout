@@ -3,7 +3,7 @@ import { LandingHero } from "@/components/home/LandingHero";
 import { AthletesHorizontal } from "@/components/home/AthletesHorizontal";
 import { FeaturedPlayers } from "@/components/home/FeaturedPlayers";
 import { AboutSection } from "@/components/home/AboutSection";
-import { InstagramFeedSection } from "@/components/home/InstagramFeedSection";
+import { FeedAndCta } from "@/components/home/FeedAndCta";
 import { ParallaxTransition } from "@/components/home/ParallaxTransition";
 
 const Index = () => {
@@ -28,9 +28,7 @@ const Index = () => {
       <ParallaxTransition>
         <AboutSection />
       </ParallaxTransition>
-      <ParallaxTransition>
-        <InstagramFeedSection />
-      </ParallaxTransition>
+      <FeedAndCta />
     </>
   );
 };
