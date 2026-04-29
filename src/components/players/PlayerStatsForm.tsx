@@ -175,6 +175,8 @@ const emptyStatRow: Omit<PlayerStat, "id" | "player_id"> = {
   long_passes_total: "",
   successful_dribbles: "",
   total_dribbles: "",
+  crosses_success: "",
+  crosses_failed: "",
 };
 
 interface PlayerStatsFormProps {
