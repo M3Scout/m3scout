@@ -304,7 +304,8 @@
 @media (max-width: 1100px) { .lp-hero__side { display: none; } }
 
 @media (max-width: 800px) {
-  .lp-hero { padding: 120px 20px 80px; }
+  .lp-hero { padding: 120px 0 80px; }
+  .lp-hero__inner { padding: 0 20px; }
   .lp-hero__lead { font-size: 16px; }
   .lp-btn { padding: 16px 22px; font-size: 11px; }
 }
