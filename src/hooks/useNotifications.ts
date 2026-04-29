@@ -134,12 +134,90 @@ export function useNotifications() {
           setUnreadCount((prev) => prev + 1);
         }
       )
-      .subscribe();
+  // Track instance lifecycle to detect duplicate mounts in dev/prod.
+  const instanceIdRef = useRef<number>(0);
+  if (instanceIdRef.current === 0) {
+    instanceIdRef.current = ++__notificationsInstanceSeq;
+  }
+
+  useEffect(() => {
+    __notificationsActiveInstances += 1;
+    const id = instanceIdRef.current;
+    if (import.meta.env.DEV) {
+      console.log(
+        `[useNotifications] mount #${id} (active=${__notificationsActiveInstances})`,
+      );
+      if (__notificationsActiveInstances > 1) {
+        console.warn(
+          `[useNotifications] ⚠️ ${__notificationsActiveInstances} instâncias ativas — possível duplicação. Considere mover o hook para um Provider único.`,
+        );
+      }
+    }
+    return () => {
+      __notificationsActiveInstances = Math.max(0, __notificationsActiveInstances - 1);
+      if (import.meta.env.DEV) {
+        console.log(
+          `[useNotifications] unmount #${id} (active=${__notificationsActiveInstances})`,
+        );
+      }
+    };
+  }, []);
+
+  // Subscribe to realtime updates — one channel per (user, instance), com
+  // dedupe por user para garantir que apenas a primeira instância montada
+  // mantenha a inscrição ativa.
+  useEffect(() => {
+    if (!user) return;
+
+    // Se já existe uma instância inscrita para este user, não duplicamos.
+    if (__notificationsActiveUsers.has(user.id)) {
+      if (import.meta.env.DEV) {
+        console.log(
+          `[useNotifications] skip realtime subscribe — já existe canal ativo para user ${user.id}`,
+        );
+      }
+      return;
+    }
+
+    __notificationsActiveUsers.add(user.id);
+    const channelName = `notifications-realtime-${user.id}-${instanceIdRef.current}`;
+
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          const newNotification = payload.new as Notification;
+          setNotifications((prev) => [newNotification, ...prev]);
+          setUnreadCount((prev) => prev + 1);
+        },
+      )
+      .subscribe((status) => {
+        if (import.meta.env.DEV) {
+          console.log(`[useNotifications] channel ${channelName} → ${status}`);
+        }
+      });
 
     return () => {
+      // Cleanup completo: unsubscribe + remove + libera o slot do user.
+      try {
+        channel.unsubscribe();
+      } catch (e) {
+        if (import.meta.env.DEV) console.warn("[useNotifications] unsubscribe error", e);
+      }
       supabase.removeChannel(channel);
+      __notificationsActiveUsers.delete(user.id);
+      if (import.meta.env.DEV) {
+        console.log(`[useNotifications] cleanup channel ${channelName}`);
+      }
     };
-  }, [user]);
+  }, [user?.id]);
 
   return {
     notifications,
