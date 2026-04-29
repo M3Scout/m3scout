@@ -30,6 +30,7 @@ import {
   GOALKEEPER_SCOUT_CATEGORIES,
   type StatValues,
 } from "@/components/players/stats/ScoutCategoryStats";
+import { clampStatValue, validateSeasonStats, getStatLimit } from "@/lib/statLimits";
 
 /**
  * Converte um PlayerStat (com possíveis valores "" / null) em um
