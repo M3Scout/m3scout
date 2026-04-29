@@ -3,10 +3,28 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronDown, Pencil, Trash2, Zap, FileEdit, Layers } from "lucide-react";
 import { CompetitionStatsSummary } from "@/components/players/stats";
+import {
+  ScoutCategoryStats,
+  OUTFIELD_SCOUT_CATEGORIES,
+  GOALKEEPER_SCOUT_CATEGORIES,
+  type StatValues,
+} from "./ScoutCategoryStats";
 import type { PlayerStats } from "@/lib/playerStats";
 import { normalizePlayerStats } from "@/lib/normalizePlayerStats";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+/**
+ * Mapeia o objeto PlayerStats normalizado para a forma esperada
+ * pelos cards de scout (chaves planas). Garante que `shots` exibido
+ * corresponda ao total derivado (FIN = on_target + blocked + off_target).
+ */
+function statsToScoutValues(s: ReturnType<typeof normalizePlayerStats>): StatValues {
+  return {
+    ...(s as unknown as StatValues),
+    shots: (s.shots_total_derived ?? s.shots ?? 0) as number,
+  };
+}
 
 interface StatsWithCompetition extends PlayerStats {
   competitions?: {
@@ -219,30 +237,18 @@ export function SeasonStatsCard({
             )}
           </div>
 
-          {/* Stats Grid - 3 columns for outfield, 2 for GK */}
-          <div className={`grid gap-2 w-full ${isGK ? 'grid-cols-2' : 'grid-cols-3'}`}>
+          {/* Cabeçalho rápido: Jogos / Minutos */}
+          <div className="grid gap-2 w-full grid-cols-2 mb-3">
             <StatChip label="Jogos" value={normalizedStat.matches} index={0} />
             <StatChip label="Minutos" value={normalizedStat.minutes} index={1} />
-
-            {isGK ? (
-              <>
-                <StatChip label="Defesas" value={normalizedStat.saves || 0} highlight="blue" index={2} />
-                <StatChip label="Gols Sofr." value={normalizedStat.goals_conceded || 0} index={3} />
-                <StatChip label="Clean Sheets" value={normalizedStat.clean_sheets || 0} highlight="green" index={4} />
-                <StatChip label="Pên. Def." value={normalizedStat.penalties_saved || 0} index={5} />
-              </>
-            ) : (
-              <>
-                <StatChip label="Gols" value={normalizedStat.goals} highlight="green" index={2} />
-                <StatChip label="Assist" value={normalizedStat.assists} highlight="blue" index={3} />
-                {/* CRITICAL: Use shots_total_derived to ensure FIN = on_target + blocked + off_target */}
-                <StatChip label="Finaliz." value={normalizedStat.shots_total_derived} index={4} />
-                <StatChip label="No Gol" value={normalizedStat.shots_on_target || 0} index={5} />
-                <StatChip label="Amarelos" value={normalizedStat.yellow_cards} variant="warning" index={6} />
-                <StatChip label="Vermelhos" value={normalizedStat.red_cards} variant="danger" index={7} />
-              </>
-            )}
           </div>
+
+          {/* Scout categories grid (mesma identidade visual do Live Match) */}
+          <ScoutCategoryStats
+            mode="readonly"
+            categories={isGK ? GOALKEEPER_SCOUT_CATEGORIES : OUTFIELD_SCOUT_CATEGORIES}
+            values={statsToScoutValues(normalizedStat)}
+          />
 
           {/* Expanded details with animation */}
           <AnimatePresence>
@@ -367,28 +373,15 @@ export function SeasonTotalsCard({ seasonStats, isGK, index = 0 }: SeasonTotalsC
           <div className="flex items-center gap-2 mb-2">
             <Badge variant="secondary" className="text-xs">Total da Temporada</Badge>
           </div>
-          <div className={`grid gap-2 w-full ${isGK ? 'grid-cols-2' : 'grid-cols-3'}`}>
+          <div className="grid gap-2 w-full grid-cols-2 mb-3">
             <StatChip label="Jogos" value={totals.matches} index={0} />
             <StatChip label="Minutos" value={totals.minutes} index={1} />
-            {isGK ? (
-              <>
-                <StatChip label="Defesas" value={totals.saves} highlight="blue" index={2} />
-                <StatChip label="Gols Sofr." value={totals.goals_conceded} index={3} />
-                <StatChip label="Clean Sheets" value={totals.clean_sheets} highlight="green" index={4} />
-                <StatChip label="Pên. Def." value={totals.penalties_saved} index={5} />
-              </>
-            ) : (
-              <>
-                <StatChip label="Gols" value={totals.goals} highlight="green" index={2} />
-                <StatChip label="Assist" value={totals.assists} highlight="blue" index={3} />
-                {/* CRITICAL: Use aggregated shots which now uses shots_total_derived */}
-                <StatChip label="Finaliz." value={totals.shots} index={4} />
-                <StatChip label="No Gol" value={totals.shots_on_target} index={5} />
-                <StatChip label="Amarelos" value={totals.yellow_cards} variant="warning" index={6} />
-                <StatChip label="Vermelhos" value={totals.red_cards} variant="danger" index={7} />
-              </>
-            )}
           </div>
+          <ScoutCategoryStats
+            mode="readonly"
+            categories={isGK ? GOALKEEPER_SCOUT_CATEGORIES : OUTFIELD_SCOUT_CATEGORIES}
+            values={totals as unknown as StatValues}
+          />
         </CardContent>
       </Card>
     </motion.div>

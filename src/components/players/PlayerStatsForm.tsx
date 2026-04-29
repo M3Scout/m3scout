@@ -10,24 +10,46 @@ import { Separator } from "@/components/ui/separator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { 
-  Plus, 
-  Trash2, 
-  Loader2, 
-  BarChart3, 
+import {
+  Plus,
+  Trash2,
+  Loader2,
+  BarChart3,
   Save,
   ChevronDown,
-  Shield,
   Target,
-  Crosshair,
-  Sparkles,
   AlertTriangle,
   Info,
   Zap,
-  Brain
 } from "lucide-react";
 import { toast } from "sonner";
 import { safeArray } from "@/lib/utils";
+import {
+  ScoutCategoryStats,
+  OUTFIELD_SCOUT_CATEGORIES,
+  GOALKEEPER_SCOUT_CATEGORIES,
+  type StatValues,
+} from "@/components/players/stats/ScoutCategoryStats";
+
+/**
+ * Converte um PlayerStat (com possíveis valores "" / null) em um
+ * StatValues numérico para alimentar o ScoutCategoryStats.
+ */
+function statToScoutValues(stat: Record<string, unknown>): StatValues {
+  const out: StatValues = {};
+  for (const [k, v] of Object.entries(stat)) {
+    if (v === "" || v === null || v === undefined) {
+      out[k] = 0;
+    } else if (typeof v === "number") {
+      out[k] = isNaN(v) ? 0 : v;
+    } else if (typeof v === "string") {
+      const parsed = Number(v);
+      out[k] = isNaN(parsed) ? 0 : parsed;
+    }
+  }
+  return out;
+}
+
 
 interface Competition {
   id: string;
@@ -606,321 +628,13 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
                         </div>
                       </div>
 
-                      {/* === SEÇÃO: ATAQUE (ATA) === */}
-                      {!isGoalkeeper && (
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-2 text-sm font-medium">
-                            <Crosshair className="w-4 h-4 text-orange-500" />
-                            <span className="text-orange-600">ATAQUE (ATA)</span>
-                          </div>
-                          <p className="text-xs text-muted-foreground -mt-2">Gols, finalizações e participações ofensivas</p>
-                          
-                          <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
-                            <StatInput 
-                              label="Gols" 
-                              value={stat.goals} 
-                              onChange={(v) => updateStatField(stat.id, "goals", v)}
-                              tooltip="Gols marcados na temporada"
-                            />
-                            <StatInput 
-                              label="Assistências" 
-                              value={stat.assists} 
-                              onChange={(v) => updateStatField(stat.id, "assists", v)}
-                              tooltip="Passes para gol"
-                            />
-                            <StatInput 
-                              label="Chutes" 
-                              value={stat.shots} 
-                              onChange={(v) => updateStatField(stat.id, "shots", v)}
-                              tooltip="Total de finalizações"
-                            />
-                            <StatInput 
-                              label="Chutes no Gol" 
-                              value={stat.shots_on_target} 
-                              onChange={(v) => updateStatField(stat.id, "shots_on_target", v)}
-                              tooltip="Finalizações no alvo"
-                            />
-                          </div>
-                        </div>
-                      )}
-
-                      {/* === SEÇÃO: CRIATIVIDADE (CRI) === */}
-                      {!isGoalkeeper && (
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-2 text-sm font-medium">
-                            <Sparkles className="w-4 h-4 text-purple-500" />
-                            <span className="text-purple-600">CRIATIVIDADE (CRI)</span>
-                          </div>
-                          <p className="text-xs text-muted-foreground -mt-2">Passes decisivos, chances criadas e dribles</p>
-                          
-                          <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
-                            <StatInput 
-                              label="Passes Decisivos" 
-                              value={stat.key_passes} 
-                              onChange={(v) => updateStatField(stat.id, "key_passes", v)}
-                              tooltip="Passes que geraram finalizações"
-                            />
-                            <StatInput 
-                              label="Chances Criadas" 
-                              value={stat.chances_created} 
-                              onChange={(v) => updateStatField(stat.id, "chances_created", v)}
-                              tooltip="Oportunidades de gol criadas"
-                            />
-                            <StatInput 
-                              label="Dribles Certos" 
-                              value={stat.successful_dribbles} 
-                              onChange={(v) => updateStatField(stat.id, "successful_dribbles", v)}
-                              tooltip="Dribles bem sucedidos"
-                            />
-                            <StatInput 
-                              label="Dribles Totais" 
-                              value={stat.total_dribbles} 
-                              onChange={(v) => updateStatField(stat.id, "total_dribbles", v)}
-                              tooltip="Total de tentativas de drible"
-                            />
-                          </div>
-                        </div>
-                      )}
-
-                      {/* === SEÇÃO: DEFESA (DEF) === */}
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-sm font-medium">
-                          <Shield className="w-4 h-4 text-blue-500" />
-                          <span className="text-blue-600">DEFESA (DEF)</span>
-                        </div>
-                        <p className="text-xs text-muted-foreground -mt-2">Desarmes, interceptações e recuperações</p>
-                        
-                        <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
-                          <StatInput 
-                            label="Desarmes" 
-                            value={stat.tackles} 
-                            onChange={(v) => updateStatField(stat.id, "tackles", v)}
-                            tooltip="Bolas recuperadas com carrinho ou bloqueio"
-                          />
-                          <StatInput 
-                            label="Interceptações" 
-                            value={stat.interceptions} 
-                            onChange={(v) => updateStatField(stat.id, "interceptions", v)}
-                            tooltip="Passes adversários interceptados"
-                          />
-                          <StatInput 
-                            label="Recuperações" 
-                            value={stat.recoveries} 
-                            onChange={(v) => updateStatField(stat.id, "recoveries", v)}
-                            tooltip="Bolas recuperadas"
-                          />
-                          <StatInput 
-                            label="Cortes" 
-                            value={stat.clearances} 
-                            onChange={(v) => updateStatField(stat.id, "clearances", v)}
-                            tooltip="Afastamentos de perigo"
-                          />
-                        </div>
-                      </div>
-                      
-                      {/* === SEÇÃO: DUELOS NO CHÃO === */}
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-sm font-medium">
-                          <Target className="w-4 h-4 text-cyan-500" />
-                          <span className="text-cyan-600">DUELOS NO CHÃO</span>
-                        </div>
-                        <p className="text-xs text-muted-foreground -mt-2">Disputas corpo a corpo no chão</p>
-                        
-                        <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
-                          <StatInput 
-                            label="Ganhos" 
-                            value={stat.ground_duels_won} 
-                            onChange={(v) => updateStatField(stat.id, "ground_duels_won", v)}
-                            tooltip="Duelos no chão vencidos"
-                          />
-                          <StatInput 
-                            label="Perdidos" 
-                            value={(() => {
-                              const won = normalizeStatValue(stat.ground_duels_won);
-                              const total = normalizeStatValue(stat.ground_duels_total);
-                              return total > 0 ? total - won : "";
-                            })()} 
-                            onChange={(v) => {
-                              const won = normalizeStatValue(stat.ground_duels_won);
-                              const lost = normalizeStatValue(v);
-                              updateStatField(stat.id, "ground_duels_total", won + lost);
-                            }}
-                            tooltip="Duelos no chão perdidos"
-                          />
-                          <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
-                            <span className="text-xs text-muted-foreground">Total:</span>
-                            <span className="font-medium">{normalizeStatValue(stat.ground_duels_total)}</span>
-                            <span className="text-xs text-muted-foreground">
-                              ({normalizeStatValue(stat.ground_duels_total) > 0 
-                                ? Math.round((normalizeStatValue(stat.ground_duels_won) / normalizeStatValue(stat.ground_duels_total)) * 100) 
-                                : 0}%)
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* === SEÇÃO: DUELOS AÉREOS === */}
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-sm font-medium">
-                          <Zap className="w-4 h-4 text-purple-500" />
-                          <span className="text-purple-600">DUELOS AÉREOS</span>
-                        </div>
-                        <p className="text-xs text-muted-foreground -mt-2">Disputas de bola aérea</p>
-                        
-                        <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
-                          <StatInput 
-                            label="Ganhos" 
-                            value={stat.aerial_duels_won} 
-                            onChange={(v) => updateStatField(stat.id, "aerial_duels_won", v)}
-                            tooltip="Duelos aéreos vencidos"
-                          />
-                          <StatInput 
-                            label="Perdidos" 
-                            value={(() => {
-                              const won = normalizeStatValue(stat.aerial_duels_won);
-                              const total = normalizeStatValue(stat.aerial_duels_total);
-                              return total > 0 ? total - won : "";
-                            })()} 
-                            onChange={(v) => {
-                              const won = normalizeStatValue(stat.aerial_duels_won);
-                              const lost = normalizeStatValue(v);
-                              updateStatField(stat.id, "aerial_duels_total", won + lost);
-                            }}
-                            tooltip="Duelos aéreos perdidos"
-                          />
-                          <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
-                            <span className="text-xs text-muted-foreground">Total:</span>
-                            <span className="font-medium">{normalizeStatValue(stat.aerial_duels_total)}</span>
-                            <span className="text-xs text-muted-foreground">
-                              ({normalizeStatValue(stat.aerial_duels_total) > 0 
-                                ? Math.round((normalizeStatValue(stat.aerial_duels_won) / normalizeStatValue(stat.aerial_duels_total)) * 100) 
-                                : 0}%)
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* === SEÇÃO: DISCIPLINA & TÁTICA (TÁT) === */}
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-sm font-medium">
-                          <Brain className="w-4 h-4 text-emerald-500" />
-                          <span className="text-emerald-600">DISCIPLINA & TÁTICA (TÁT)</span>
-                        </div>
-                        <p className="text-xs text-muted-foreground -mt-2">Cartões, faltas e passes</p>
-                        
-                        <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
-                          <StatInput 
-                            label="Amarelos" 
-                            value={stat.yellow_cards} 
-                            onChange={(v) => updateStatField(stat.id, "yellow_cards", v)}
-                            tooltip="Cartões amarelos recebidos"
-                          />
-                          <StatInput 
-                            label="Vermelhos" 
-                            value={stat.red_cards} 
-                            onChange={(v) => updateStatField(stat.id, "red_cards", v)}
-                            tooltip="Cartões vermelhos recebidos"
-                          />
-                          <StatInput 
-                            label="Faltas Cometidas" 
-                            value={stat.fouls_committed} 
-                            onChange={(v) => updateStatField(stat.id, "fouls_committed", v)}
-                            tooltip="Infrações cometidas"
-                          />
-                          <StatInput 
-                            label="Faltas Sofridas" 
-                            value={stat.fouls_drawn} 
-                            onChange={(v) => updateStatField(stat.id, "fouls_drawn", v)}
-                            tooltip="Faltas recebidas"
-                          />
-                          <StatInput 
-                            label="Passes Certos" 
-                            value={stat.accurate_passes} 
-                            onChange={(v) => updateStatField(stat.id, "accurate_passes", v)}
-                            tooltip="Passes completados"
-                          />
-                          <StatInput 
-                            label="Passes Totais" 
-                            value={stat.total_passes} 
-                            onChange={(v) => updateStatField(stat.id, "total_passes", v)}
-                            tooltip="Total de passes tentados"
-                          />
-                          <StatInput 
-                            label="Bolas Perdidas" 
-                            value={stat.possession_lost} 
-                            onChange={(v) => updateStatField(stat.id, "possession_lost", v)}
-                            tooltip="Posses de bola perdidas"
-                          />
-                        </div>
-                      </div>
-
-                      {/* === SEÇÃO: GOLEIRO (GK ONLY) === */}
-                      {isGoalkeeper && (
-                        <div className="space-y-3 p-4 bg-primary/5 rounded-lg border border-primary/10">
-                          <div className="flex items-center gap-2 text-sm font-medium">
-                            <Shield className="w-4 h-4 text-primary" />
-                            <span className="text-primary">GOLEIRO</span>
-                          </div>
-                          <p className="text-xs text-muted-foreground -mt-2">Estatísticas específicas de goleiro</p>
-                          
-                          <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
-                            <StatInput 
-                              label="Defesas" 
-                              value={stat.saves} 
-                              onChange={(v) => updateStatField(stat.id, "saves", v)}
-                              tooltip="Chutes defendidos"
-                            />
-                            <StatInput 
-                              label="Gols Sofridos" 
-                              value={stat.goals_conceded} 
-                              onChange={(v) => updateStatField(stat.id, "goals_conceded", v)}
-                              tooltip="Gols tomados"
-                            />
-                            <StatInput 
-                              label="Clean Sheets" 
-                              value={stat.clean_sheets} 
-                              onChange={(v) => updateStatField(stat.id, "clean_sheets", v)}
-                              tooltip="Jogos sem sofrer gol"
-                            />
-                            <StatInput 
-                              label="Pênaltis Defendidos" 
-                              value={stat.penalties_saved} 
-                              onChange={(v) => updateStatField(stat.id, "penalties_saved", v)}
-                              tooltip="Pênaltis defendidos"
-                            />
-                            <StatInput 
-                              label="Erros p/ Gol" 
-                              value={stat.errors_leading_to_goal} 
-                              onChange={(v) => updateStatField(stat.id, "errors_leading_to_goal", v)}
-                              tooltip="Erros que resultaram em gol adversário"
-                            />
-                            <StatInput 
-                              label="Defesas na Área" 
-                              value={stat.saves_inside_box} 
-                              onChange={(v) => updateStatField(stat.id, "saves_inside_box", v)}
-                              tooltip="Defesas dentro da área"
-                            />
-                            <StatInput 
-                              label="Socos" 
-                              value={stat.punches} 
-                              onChange={(v) => updateStatField(stat.id, "punches", v)}
-                              tooltip="Defesas com soco"
-                            />
-                            <StatInput 
-                              label="Bolas Altas" 
-                              value={stat.high_claims} 
-                              onChange={(v) => updateStatField(stat.id, "high_claims", v)}
-                              tooltip="Cruzamentos interceptados"
-                            />
-                            <StatInput 
-                              label="Saídas do Gol" 
-                              value={stat.successful_runs_out} 
-                              onChange={(v) => updateStatField(stat.id, "successful_runs_out", v)}
-                              tooltip="Saídas bem sucedidas"
-                            />
-                          </div>
-                        </div>
-                      )}
+                      {/* === SCOUT CATEGORIES (mesmo layout do Live Match) === */}
+                      <ScoutCategoryStats
+                        mode="edit"
+                        categories={isGoalkeeper ? GOALKEEPER_SCOUT_CATEGORIES : OUTFIELD_SCOUT_CATEGORIES}
+                        values={statToScoutValues(stat as unknown as Record<string, unknown>)}
+                        onChange={(key, next) => updateStatField(stat.id, key as keyof PlayerStat, next)}
+                      />
                     </div>
                   </CollapsibleContent>
                 </div>
