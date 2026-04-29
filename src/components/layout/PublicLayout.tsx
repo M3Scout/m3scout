@@ -10,8 +10,8 @@ export function PublicLayout() {
 
   return (
     <div className="min-h-screen flex flex-col bg-black">
-      {/* Smart header with transparent variant on home page */}
-      <SmartHeader variant={isHomePage ? "transparent" : "default"} />
+      {/* Smart header — hidden on home (LandingHero has its own header) */}
+      {!isHomePage && <SmartHeader variant="default" />}
       <main className="flex-1">
         <AnimatePresence mode="wait">
           <PageTransition key={location.pathname}>
