@@ -1,93 +1,86 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 
-// ---- Mocks ----------------------------------------------------------------
+// ---- Hoisted mocks (necessário porque vi.mock é içado para o topo) -------
 
-type Listener = (payload: unknown) => void;
+const h = vi.hoisted(() => {
+  type Listener = (payload: unknown) => void;
+  interface MockChannel {
+    name: string;
+    onCalls: Array<{ event: string; filter: unknown }>;
+    subscribed: boolean;
+    subscribeCalledAt: number | null;
+    lastOnCalledAt: number | null;
+    on: (event: string, filter: unknown, cb: Listener) => MockChannel;
+    subscribe: (cb?: (status: string) => void) => MockChannel;
+    unsubscribe: () => Promise<"ok">;
+  }
 
-interface MockChannel {
-  name: string;
-  onCalls: Array<{ event: string; filter: unknown }>;
-  subscribed: boolean;
-  subscribeCalledAt: number | null;
-  lastOnCalledAt: number | null;
-  on: (event: string, filter: unknown, cb: Listener) => MockChannel;
-  subscribe: (cb?: (status: string) => void) => MockChannel;
-  unsubscribe: () => Promise<"ok">;
-}
-
-const hoisted = vi.hoisted(() => {
-  const createdChannels: any[] = [];
-  const state = { now: 0, user: { id: "user-1" } as { id: string } | null };
-  const removeChannel = vi.fn();
-  const channel = vi.fn();
-  return { createdChannels, state, removeChannel, channel };
-});
-
-const createdChannels = hoisted.createdChannels as MockChannel[];
-const removeChannel = hoisted.removeChannel;
-
-function makeChannel(name: string): MockChannel {
-  const ch: MockChannel = {
-    name,
-    onCalls: [],
-    subscribed: false,
-    subscribeCalledAt: null,
-    lastOnCalledAt: null,
-    on(event, filter, _cb) {
-      if (this.subscribed) {
-        throw new Error(
-          `cannot add \`${event}\` callbacks for ${this.name} after \`subscribe()\`.`,
-        );
-      }
-      this.lastOnCalledAt = ++nowCounter;
-      this.onCalls.push({ event, filter });
-      return this;
-    },
-    subscribe(cb) {
-      this.subscribed = true;
-      this.subscribeCalledAt = ++nowCounter;
-      cb?.("SUBSCRIBED");
-      return this;
-    },
-    async unsubscribe() {
-      this.subscribed = false;
-      return "ok";
-    },
+  const state = {
+    now: 0,
+    user: { id: "user-1" } as { id: string } | null,
+    channels: [] as MockChannel[],
   };
-  createdChannels.push(ch);
-  return ch;
-}
 
-const removeChannel = vi.fn();
+  const removeChannel = vi.fn();
 
-const supabaseMock = {
-  channel: vi.fn((name: string) => makeChannel(name)),
-  removeChannel,
-  from: vi.fn(() => ({
-    select: () => ({
-      eq: () => ({
-        order: () => ({
-          limit: () => Promise.resolve({ data: [], error: null }),
+  function makeChannel(name: string): MockChannel {
+    const ch: MockChannel = {
+      name,
+      onCalls: [],
+      subscribed: false,
+      subscribeCalledAt: null,
+      lastOnCalledAt: null,
+      on(event, filter, _cb) {
+        if (this.subscribed) {
+          throw new Error(
+            `cannot add \`${event}\` callbacks for ${this.name} after \`subscribe()\`.`,
+          );
+        }
+        this.lastOnCalledAt = ++state.now;
+        this.onCalls.push({ event, filter });
+        return this;
+      },
+      subscribe(cb) {
+        this.subscribed = true;
+        this.subscribeCalledAt = ++state.now;
+        cb?.("SUBSCRIBED");
+        return this;
+      },
+      async unsubscribe() {
+        this.subscribed = false;
+        return "ok";
+      },
+    };
+    state.channels.push(ch);
+    return ch;
+  }
+
+  const supabase = {
+    channel: vi.fn((name: string) => makeChannel(name)),
+    removeChannel,
+    from: vi.fn(() => ({
+      select: () => ({
+        eq: () => ({
+          order: () => ({
+            limit: () => Promise.resolve({ data: [], error: null }),
+          }),
         }),
       }),
-    }),
-    update: () => ({
-      eq: () => ({
-        eq: () => Promise.resolve({ error: null }),
+      update: () => ({
+        eq: () => ({
+          eq: () => Promise.resolve({ error: null }),
+        }),
       }),
-    }),
-  })),
-};
+    })),
+  };
 
-vi.mock("@/integrations/supabase/client", () => ({
-  supabase: supabaseMock,
-}));
+  return { state, supabase, removeChannel };
+});
 
-// Auth mock — controlado por variável module-level
-let mockUser: { id: string } | null = { id: "user-1" };
+vi.mock("@/integrations/supabase/client", () => ({ supabase: h.supabase }));
 vi.mock("./useAuth", () => ({
-  useAuth: () => ({ user: mockUser, loading: false }),
+  useAuth: () => ({ user: h.state.user, loading: false }),
 }));
 
 // ---- Tests ----------------------------------------------------------------
@@ -96,11 +89,11 @@ import { useNotifications } from "./useNotifications";
 
 describe("useNotifications — Realtime channel lifecycle", () => {
   beforeEach(() => {
-    createdChannels.length = 0;
-    nowCounter = 0;
-    removeChannel.mockClear();
-    supabaseMock.channel.mockClear();
-    mockUser = { id: "user-1" };
+    h.state.channels.length = 0;
+    h.state.now = 0;
+    h.state.user = { id: "user-1" };
+    h.removeChannel.mockClear();
+    (h.supabase.channel as ReturnType<typeof vi.fn>).mockClear();
   });
 
   afterEach(() => {
@@ -110,9 +103,9 @@ describe("useNotifications — Realtime channel lifecycle", () => {
   it("registra .on() ANTES de chamar .subscribe()", async () => {
     renderHook(() => useNotifications());
 
-    await waitFor(() => expect(createdChannels.length).toBeGreaterThan(0));
+    await waitFor(() => expect(h.state.channels.length).toBeGreaterThan(0));
 
-    const ch = createdChannels[0];
+    const ch = h.state.channels[0];
     expect(ch.onCalls.length).toBe(1);
     expect(ch.subscribed).toBe(true);
     expect(ch.lastOnCalledAt).not.toBeNull();
@@ -123,36 +116,36 @@ describe("useNotifications — Realtime channel lifecycle", () => {
 
   it("usa nome de canal isolado por usuário", async () => {
     const { unmount: unmount1 } = renderHook(() => useNotifications());
-    await waitFor(() => expect(createdChannels.length).toBe(1));
-    expect(createdChannels[0].name).toMatch(/notifications-realtime-user-1-/);
+    await waitFor(() => expect(h.state.channels.length).toBe(1));
+    expect(h.state.channels[0].name).toMatch(/notifications-realtime-user-1-/);
     unmount1();
 
-    mockUser = { id: "user-2" };
+    h.state.user = { id: "user-2" };
     renderHook(() => useNotifications());
-    await waitFor(() => expect(createdChannels.length).toBe(2));
-    expect(createdChannels[1].name).toMatch(/notifications-realtime-user-2-/);
-    expect(createdChannels[1].name).not.toBe(createdChannels[0].name);
+    await waitFor(() => expect(h.state.channels.length).toBe(2));
+    expect(h.state.channels[1].name).toMatch(/notifications-realtime-user-2-/);
+    expect(h.state.channels[1].name).not.toBe(h.state.channels[0].name);
   });
 
   it("não cria canal duplicado quando duas instâncias montam para o mesmo usuário", async () => {
     renderHook(() => useNotifications());
     renderHook(() => useNotifications());
 
-    await waitFor(() => expect(createdChannels.length).toBeGreaterThan(0));
+    await waitFor(() => expect(h.state.channels.length).toBeGreaterThan(0));
     // Apenas a primeira instância deve assinar — dedupe por user.id
-    expect(createdChannels.length).toBe(1);
+    expect(h.state.channels.length).toBe(1);
   });
 
   it("faz cleanup (unsubscribe + removeChannel) ao desmontar e libera o slot do user", async () => {
     const { unmount } = renderHook(() => useNotifications());
-    await waitFor(() => expect(createdChannels.length).toBe(1));
+    await waitFor(() => expect(h.state.channels.length).toBe(1));
 
     unmount();
-    await waitFor(() => expect(removeChannel).toHaveBeenCalledTimes(1));
-    expect(createdChannels[0].subscribed).toBe(false);
+    await waitFor(() => expect(h.removeChannel).toHaveBeenCalledTimes(1));
+    expect(h.state.channels[0].subscribed).toBe(false);
 
     // Após o cleanup, uma nova instância para o mesmo user deve poder assinar de novo
     renderHook(() => useNotifications());
-    await waitFor(() => expect(createdChannels.length).toBe(2));
+    await waitFor(() => expect(h.state.channels.length).toBe(2));
   });
 });
