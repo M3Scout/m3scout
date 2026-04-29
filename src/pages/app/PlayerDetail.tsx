@@ -55,6 +55,7 @@ import { MarketScoreCard } from "@/components/players/sections/MarketScoreCard";
 
 
 import { UnifiedRadarCard } from "@/components/players/UnifiedRadarCard";
+import { WhatsAppSummaryButton } from "@/components/players/WhatsAppSummaryButton";
 
 interface Player {
   id: string;
