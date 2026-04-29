@@ -16,8 +16,16 @@ interface MockChannel {
   unsubscribe: () => Promise<"ok">;
 }
 
-const createdChannels: MockChannel[] = [];
-let nowCounter = 0;
+const hoisted = vi.hoisted(() => {
+  const createdChannels: any[] = [];
+  const state = { now: 0, user: { id: "user-1" } as { id: string } | null };
+  const removeChannel = vi.fn();
+  const channel = vi.fn();
+  return { createdChannels, state, removeChannel, channel };
+});
+
+const createdChannels = hoisted.createdChannels as MockChannel[];
+const removeChannel = hoisted.removeChannel;
 
 function makeChannel(name: string): MockChannel {
   const ch: MockChannel = {
