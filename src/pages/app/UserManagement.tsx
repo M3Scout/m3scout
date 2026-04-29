@@ -890,6 +890,15 @@ export default function UserManagement() {
                             <UserCog className="w-4 h-4 mr-2" />
                             Editar Permissões
                           </DropdownMenuItem>
+                          {isAdmin && (
+                            <DropdownMenuItem
+                              onClick={() => { setNewPassword(""); setResetPasswordUser(user); }}
+                              disabled={user.is_owner && !currentUserIsOwner}
+                            >
+                              <KeyRound className="w-4 h-4 mr-2" />
+                              Redefinir Senha Temporária
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuSeparator />
                           {user.status === "active" ? (
                             <DropdownMenuItem 
