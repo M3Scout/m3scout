@@ -94,10 +94,30 @@
   position: relative;
   overflow: hidden;
   border-radius: 4px;
-  background: #1a1a1a;
+  /* Diagonal-lines fallback (visible while loading or if image breaks) */
+  background-color: #1a1a1a;
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.04) 0,
+    rgba(255, 255, 255, 0.04) 1px,
+    transparent 1px,
+    transparent 10px
+  );
   display: block;
   text-decoration: none;
   color: inherit;
+}
+.post--broken::after {
+  content: "M3";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--display);
+  font-size: 28px;
+  color: rgba(255, 255, 255, 0.15);
+  letter-spacing: 0.05em;
 }
 .post__media {
   position: absolute;
