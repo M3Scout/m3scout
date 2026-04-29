@@ -72,43 +72,7 @@ export function LandingHero() {
       <div ref={cursorRef} className="lp-cursor" aria-hidden="true" />
       <div ref={dotRef} className="lp-cursor-dot" aria-hidden="true" />
 
-      {/* NAV */}
-      <header className={`lp-nav ${scrolled ? "is-scrolled" : ""}`}>
-        <div className="lp-nav__inner">
-          <Link
-            to="/"
-            className="lp-nav__logo"
-            onMouseEnter={onHoverEnter("hover")}
-            onMouseLeave={onHoverLeave}
-          >
-            /// M3
-          </Link>
-
-          <nav className="lp-nav__links" aria-label="Navegação principal">
-            {navLinks.map((l) => (
-              <Link
-                key={l.href}
-                to={l.href}
-                className="lp-nav__link"
-                onMouseEnter={onHoverEnter("hover")}
-                onMouseLeave={onHoverLeave}
-              >
-                {l.label}
-              </Link>
-            ))}
-          </nav>
-
-          <Link
-            to="/app/auth"
-            className="lp-nav__cta"
-            onMouseEnter={onHoverEnter("hover")}
-            onMouseLeave={onHoverLeave}
-          >
-            <Lock size={12} />
-            Área Restrita
-          </Link>
-        </div>
-      </header>
+      {/* NAV agora é renderizado pelo PublicLayout (LandingNav) */}
 
       {/* HERO */}
       <section className="lp-hero">
