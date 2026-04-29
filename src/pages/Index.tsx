@@ -27,7 +27,6 @@ const Index = () => {
         <AboutSection />
       </ParallaxTransition>
       <FeedAndCta />
-      </>
     </>
   );
 };
