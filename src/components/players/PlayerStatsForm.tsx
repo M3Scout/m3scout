@@ -10,21 +10,17 @@ import { Separator } from "@/components/ui/separator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { 
-  Plus, 
-  Trash2, 
-  Loader2, 
-  BarChart3, 
+import {
+  Plus,
+  Trash2,
+  Loader2,
+  BarChart3,
   Save,
   ChevronDown,
-  Shield,
   Target,
-  Crosshair,
-  Sparkles,
   AlertTriangle,
   Info,
   Zap,
-  Brain
 } from "lucide-react";
 import { toast } from "sonner";
 import { safeArray } from "@/lib/utils";
