@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { LandingHero } from "@/components/home/LandingHero";
 import { AthletesHorizontal } from "@/components/home/AthletesHorizontal";
-import { FeaturedPlayers } from "@/components/home/FeaturedPlayers";
+
 import { AboutSection } from "@/components/home/AboutSection";
 import { FeedAndCta } from "@/components/home/FeedAndCta";
 import { LandingFooter } from "@/components/home/LandingFooter";
@@ -23,9 +23,6 @@ const Index = () => {
     <>
       <LandingHero />
       <AthletesHorizontal />
-      <ParallaxTransition>
-        <FeaturedPlayers />
-      </ParallaxTransition>
       <ParallaxTransition>
         <AboutSection />
       </ParallaxTransition>
