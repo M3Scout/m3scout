@@ -296,3 +296,84 @@ export function ScoutCategoryStats({
     </div>
   );
 }
+
+/* ============================================================
+ * EditableStatValue — inline numeric input usado no modo edit.
+ * Permite digitar diretamente sem precisar usar +/-.
+ * ============================================================ */
+
+interface EditableStatValueProps {
+  value: number;
+  disabled?: boolean;
+  highlight?: boolean;
+  accentClass: string;
+  ariaLabel: string;
+  onCommit: (next: number) => void;
+}
+
+function EditableStatValue({
+  value,
+  disabled,
+  highlight,
+  accentClass,
+  ariaLabel,
+  onCommit,
+}: EditableStatValueProps) {
+  const [draft, setDraft] = useState<string>(String(value));
+  const focusedRef = useRef(false);
+
+  // Mantém o input sincronizado quando o valor externo muda (ex: clique em +/-)
+  // sem sobrescrever enquanto o usuário está digitando.
+  useEffect(() => {
+    if (!focusedRef.current) {
+      setDraft(String(value));
+    }
+  }, [value]);
+
+  const commit = () => {
+    const parsed = parseInt(draft, 10);
+    const next = Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+    if (next !== value) onCommit(next);
+    setDraft(String(next));
+  };
+
+  return (
+    <input
+      type="number"
+      inputMode="numeric"
+      min={0}
+      step={1}
+      value={draft}
+      disabled={disabled}
+      aria-label={`Valor de ${ariaLabel}`}
+      onFocus={(e) => {
+        focusedRef.current = true;
+        e.currentTarget.select();
+      }}
+      onBlur={() => {
+        focusedRef.current = false;
+        commit();
+      }}
+      onChange={(e) => setDraft(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          (e.currentTarget as HTMLInputElement).blur();
+        } else if (e.key === "Escape") {
+          setDraft(String(value));
+          (e.currentTarget as HTMLInputElement).blur();
+        }
+      }}
+      className={cn(
+        "flex-1 min-w-0 text-base font-bold tabular-nums text-center bg-transparent",
+        "border-0 outline-none focus:outline-none focus:ring-0",
+        "rounded-md px-1 py-0.5",
+        "focus:bg-zinc-900/80 focus:ring-1 focus:ring-primary/40",
+        "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
+        highlight ? accentClass : "text-foreground",
+        disabled && "opacity-50 cursor-not-allowed",
+      )}
+    />
+  );
+}
+
