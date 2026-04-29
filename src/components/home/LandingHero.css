@@ -188,7 +188,10 @@
   letter-spacing: -0.04em;
   text-transform: uppercase;
   text-align: left;
-  margin-bottom: 40px;
+  margin: 0 0 40px;
+  /* Compensa o side-bearing óptico do Archivo Black em tamanho massivo
+     para o título começar visualmente alinhado com o logo e o lead */
+  margin-left: -0.06em;
   color: var(--fg-dark);
 }
 .lp-hero__title-row {
