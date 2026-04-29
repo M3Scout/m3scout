@@ -190,6 +190,48 @@ export default function UserManagement() {
   const [approvalLinkedPlayerId, setApprovalLinkedPlayerId] = useState<string | null>(null);
   const [approving, setApproving] = useState(false);
 
+  // Reset password modal state
+  const [resetPasswordUser, setResetPasswordUser] = useState<UserWithPermissions | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [resettingPassword, setResettingPassword] = useState(false);
+
+  const generateRandomPassword = () => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+    let result = "";
+    const arr = new Uint32Array(8);
+    crypto.getRandomValues(arr);
+    for (let i = 0; i < 8; i++) result += chars[arr[i] % chars.length];
+    setNewPassword(result);
+  };
+
+  const handleResetPassword = async () => {
+    if (!resetPasswordUser) return;
+    if (!isAdmin) {
+      toast.error("Apenas administradores podem redefinir senhas");
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error("A senha deve ter ao menos 6 caracteres");
+      return;
+    }
+    setResettingPassword(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-reset-user-password", {
+        body: { user_id: resetPasswordUser.user_id, new_password: newPassword },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success("Senha alterada com sucesso!");
+      setResetPasswordUser(null);
+      setNewPassword("");
+    } catch (err) {
+      console.error("[reset-password] error:", err);
+      toast.error(`Erro ao redefinir senha: ${(err as Error).message}`);
+    } finally {
+      setResettingPassword(false);
+    }
+  };
+
   // Check access
   useEffect(() => {
     if (!can("users", "manage")) {
