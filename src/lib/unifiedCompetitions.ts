@@ -110,7 +110,8 @@ async function fetchLiveCompetitions(playerId: string): Promise<UnifiedCompetiti
     `)
     .eq("player_id", playerId)
     .neq("is_removed", true)
-    .in("match.status", ["finished", "applied"]);
+    // Regra de Ouro: somente jogos APLICADOS contam para a lista de competições do atleta.
+    .eq("match.status", "applied");
 
   if (error || !data) {
     console.error("[UnifiedCompetitions] Error fetching live:", error);

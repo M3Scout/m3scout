@@ -255,7 +255,8 @@ const Players = () => {
           .in("player_id", playerIds)
           .eq("is_removed", false)
           .eq("match.season_year", selectedYear)
-          .in("match.status", ["finished", "applied"]),
+          // Regra de Ouro: somente jogos APLICADOS contam para os totais públicos.
+          .eq("match.status", "applied"),
         supabase
           .from("player_stats")
           .select("player_id, season_year, competition_id, matches, minutes")

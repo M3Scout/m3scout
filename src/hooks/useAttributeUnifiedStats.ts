@@ -136,7 +136,8 @@ export function useAttributeUnifiedStats({
         `)
         .eq("player_id", playerId)
         .neq("is_removed", true)
-        .in("match.status", ["finished", "applied"]);
+        // Regra de Ouro: somente jogos APLICADOS contam no radar de atributos.
+        .eq("match.status", "applied");
 
       if (seasonYear) {
         liveQuery = liveQuery.eq("match.season_year", seasonYear);

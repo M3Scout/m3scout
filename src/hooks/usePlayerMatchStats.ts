@@ -755,7 +755,8 @@ export function usePlayerMatchStatsBySeasonCompetition({
         `)
         .eq("player_id", playerId)
         .eq("is_removed", false)
-        .in("match.status", ["finished", "applied"]);
+        // Regra de Ouro: somente jogos APLICADOS contam nas estatísticas do atleta.
+        .eq("match.status", "applied");
 
       if (mpError) throw mpError;
 

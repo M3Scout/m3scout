@@ -96,7 +96,9 @@ export async function fetchPlayerMatchStatsRaw({
     .eq("player_id", playerId)
     // handle NULLs safely: treat NULL as not removed
     .neq("is_removed", true)
-    .in("match.status", ["finished", "applied"]);
+    // Regra de Ouro: somente jogos APLICADOS contam nas estatísticas do atleta.
+    // Jogos 'finished' (Aguardando Aplicar) ficam de fora até o usuário clicar em "Aplicar".
+    .eq("match.status", "applied");
 
   if (seasonYear) {
     matchPlayersQuery = matchPlayersQuery.eq("match.season_year", seasonYear);

@@ -102,7 +102,8 @@ export function usePlayerZoneHistory({
         `)
         .eq("player_id", playerId)
         .neq("match_id", currentMatchId)
-        .in("match.status", ["finished", "applied"])
+        // Regra de Ouro: histórico de zonas considera apenas jogos APLICADOS.
+        .eq("match.status", "applied")
         .eq("match.season_year", seasonYear);
 
       if (matchError) {
