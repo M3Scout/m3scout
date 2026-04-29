@@ -30,11 +30,12 @@
 .feed {
   background: var(--bg-light);
   color: var(--fg-light);
-  padding: 0 40px 120px;
+  padding: 0 0 120px;
 }
 .feed__inner {
   max-width: 1600px;
   margin: 0 auto;
+  padding: 0 40px;
 }
 .feed__head {
   display: flex;
@@ -169,7 +170,8 @@
 }
 
 @media (max-width: 600px) {
-  .feed { padding: 0 20px 80px; }
+  .feed { padding: 0 0 80px; }
+  .feed__inner { padding: 0 20px; }
 }
 
 /* ---------- CTA STRIP ---------- */
