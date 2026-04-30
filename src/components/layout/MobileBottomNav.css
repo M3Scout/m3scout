@@ -32,11 +32,12 @@
 
 .m3-bottom-nav__item {
   position: relative;
-  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 44px;
+  height: 40px;
+  min-width: 40px;
+  padding: 0;
   border-radius: 999px;
   color: rgba(245, 241, 234, 0.55);
   text-decoration: none;
@@ -46,7 +47,6 @@
 
 .m3-bottom-nav__item.is-active {
   color: #ffffff;
-  flex: 2.2;
 }
 
 .m3-bottom-nav__pill {
