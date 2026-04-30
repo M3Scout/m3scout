@@ -13,13 +13,14 @@
 
   background: var(--bg-darker);
   color: var(--fg-dark);
-  padding: 80px 40px 40px;
+  padding: 80px 0 40px;
   font-family: var(--mono);
   -webkit-font-smoothing: antialiased;
 }
 .lp-footer__inner {
   max-width: 1600px;
   margin: 0 auto;
+  padding: 0 40px;
 }
 .lp-footer__top {
   display: grid;
@@ -32,7 +33,8 @@
   .lp-footer__top { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 480px) {
-  .lp-footer { padding: 56px 20px 28px; }
+  .lp-footer { padding: 56px 0 28px; }
+  .lp-footer__inner { padding: 0 20px; }
   .lp-footer__top { grid-template-columns: 1fr; gap: 36px; }
 }
 
