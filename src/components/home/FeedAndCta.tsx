@@ -165,10 +165,19 @@ export function FeedAndCta() {
                       alt={caption}
                       className="post__media"
                       loading="lazy"
+                      referrerPolicy="no-referrer"
                       onError={(e) => {
                         const el = e.currentTarget;
-                        el.style.display = "none";
-                        el.parentElement?.classList.add("post--broken");
+                        const fallback = buildUnsplash(
+                          FALLBACK_PHOTOS[i % FALLBACK_PHOTOS.length]
+                        );
+                        // Avoid infinite loop if fallback also fails
+                        if (el.src !== fallback) {
+                          el.src = fallback;
+                        } else {
+                          el.style.display = "none";
+                          el.parentElement?.classList.add("post--broken");
+                        }
                       }}
                     />
                     <div className="post__overlay">
