@@ -16,24 +16,27 @@ interface IGPost {
 
 // Verified football-related Unsplash photos (stable IDs)
 const FALLBACK_PHOTOS = [
-  "photo-1517649763962-0c623066013b", // football match
-  "photo-1551958219-acbc608c6377",   // soccer ball field
   "photo-1574629810360-7efbbe195018", // stadium
+  "photo-1551958219-acbc608c6377",    // soccer ball field
+  "photo-1517649763962-0c623066013b", // football match
   "photo-1508098682722-e99c43a406b2", // player kicking
   "photo-1526232761682-d26e03ac148e", // boots
-  "photo-1543351611-58f69d7c1781",   // training
+  "photo-1543351611-58f69d7c1781",    // training
   "photo-1571019613454-1cb2f99b2d8b", // ball closeup
   "photo-1517466787929-bc90951d0974", // crowd
-  "photo-1555169062-013468b47731",   // night stadium
+  "photo-1555169062-013468b47731",    // night stadium
   "photo-1606925797300-0b35e9d1794e", // player silhouette
   "photo-1487466365202-1afdb86c764e", // grass
   "photo-1530549387789-4c1017266635", // goalkeeper
 ];
 
+const buildUnsplash = (id: string) =>
+  `https://images.unsplash.com/${id}?w=800&h=800&fit=crop&q=80&auto=format`;
+
 const FALLBACK_POSTS: IGPost[] = FALLBACK_PHOTOS.map((id, i) => ({
   id: `fb-${i}`,
-  media_url: `https://images.unsplash.com/${id}?w=800&h=800&fit=crop&q=80&auto=format`,
-  permalink: "https://instagram.com/_m3agency",
+  media_url: buildUnsplash(id),
+  permalink: "https://instagram.com/m3agency",
   caption: "M3 Agency · Inteligência em Futebol",
 }));
 
@@ -63,9 +66,23 @@ export function FeedAndCta() {
         const { data } = await supabase.functions.invoke("instagram-feed", {
           body: {},
         });
-        if (!cancelled && data?.posts?.length) {
-          setPosts(data.posts.slice(0, 12));
-        }
+        if (cancelled || !data?.posts?.length) return;
+
+        // Edge function returns { id, imageUrl, permalink, caption, mediaType }
+        // Normalize to IGPost shape used by the UI.
+        const normalized: IGPost[] = data.posts
+          .slice(0, 12)
+          .map((p: any, i: number) => ({
+            id: p.id ?? `ig-${i}`,
+            media_url: p.imageUrl || p.media_url || buildUnsplash(FALLBACK_PHOTOS[i % FALLBACK_PHOTOS.length]),
+            permalink: p.permalink || "https://instagram.com/m3agency",
+            caption: p.caption || "M3 Agency",
+            media_type: p.mediaType || p.media_type,
+            thumbnail_url: p.thumbnail_url,
+          }))
+          .filter((p: IGPost) => !!p.media_url);
+
+        if (normalized.length) setPosts(normalized);
       } catch {
         // keep fallback
       }
@@ -148,10 +165,19 @@ export function FeedAndCta() {
                       alt={caption}
                       className="post__media"
                       loading="lazy"
+                      referrerPolicy="no-referrer"
                       onError={(e) => {
                         const el = e.currentTarget;
-                        el.style.display = "none";
-                        el.parentElement?.classList.add("post--broken");
+                        const fallback = buildUnsplash(
+                          FALLBACK_PHOTOS[i % FALLBACK_PHOTOS.length]
+                        );
+                        // Avoid infinite loop if fallback also fails
+                        if (el.src !== fallback) {
+                          el.src = fallback;
+                        } else {
+                          el.style.display = "none";
+                          el.parentElement?.classList.add("post--broken");
+                        }
                       }}
                     />
                     <div className="post__overlay">
