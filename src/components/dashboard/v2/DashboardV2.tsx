@@ -1,0 +1,396 @@
+import { useEffect, useState, useCallback } from "react";
+import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useContractNotificationCheck } from "@/hooks/useContractNotificationCheck";
+import { AdminSkeletonDashboard } from "@/components/admin/AdminSkeleton";
+import { AthleteDashboard } from "@/components/dashboard/athlete/AthleteDashboard";
+import { InsightsCard } from "@/components/dashboard/InsightsCard";
+import { isAbortError, logFetchError, logFetchSkipped, logFetchSuccess } from "@/lib/fetchLogger";
+import { Star, Users, FileText, MessageSquare, AlertTriangle, ArrowRight } from "lucide-react";
+import "./dashboard-v2.css";
+
+interface DashboardStats {
+  totalPlayers: number;
+  reportsThisMonth: number;
+  totalLeads: number;
+  expiringContracts: number;
+}
+interface PositionData { name: string; value: number; }
+interface RecentReport {
+  id: string; player_name: string; competition_name: string;
+  match_date: string; final_score: number;
+}
+interface CompetitionUsage {
+  id: string; name: string; tier: string; final_coefficient: number;
+  usos: number; jogadores: number; ultimo_uso: string | null;
+}
+interface RankedPlayer {
+  id: string; full_name: string; position: string;
+  auto_rating: number | null; current_club: string | null; age: number | null;
+}
+
+const POSITION_COLOR: Record<string, string> = {
+  PD: "#ea580c", PE: "#ea580c",
+  MEI: "#facc15", MEA: "#facc15",
+  GOL: "#8b5cf6",
+  ZAG: "#4a6edc",
+  LD: "#22d3ee", LE: "#22d3ee",
+  VOL: "#34d399",
+  CA: "#f87171", ATA: "#f87171",
+};
+const SHORT_POS: Record<string, string> = {
+  "Goleiro": "GOL", "Zagueiro": "ZAG",
+  "Lateral Direito": "LD", "Lateral Esquerdo": "LE",
+  "Volante": "VOL", "Meia": "MEI", "Meia Atacante": "MEA",
+  "Ponta Direita": "PD", "Ponta Esquerda": "PE",
+  "Centroavante": "CA", "Atacante": "ATA",
+};
+const shortPos = (p: string) => SHORT_POS[p] || (p ? p.slice(0, 3).toUpperCase() : "—");
+
+const TIER_LABEL: Record<string, string> = { S: "S", A: "A", B: "B", C: "C", D: "D" };
+
+const formatDateShort = (iso: string | null) => {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" });
+};
+
+export const DashboardV2 = () => {
+  const { isAdmin, isScout, isPlayer, rolesLoading, session, permissionsLoading } = useAuth();
+  const rbacReady = Boolean(session?.user) && !permissionsLoading && !rolesLoading;
+  useContractNotificationCheck();
+
+  const [loading, setLoading] = useState(true);
+  const [dataReady, setDataReady] = useState(false);
+  const [hasFetched, setHasFetched] = useState(false);
+
+  const [stats, setStats] = useState<DashboardStats>({
+    totalPlayers: 0, reportsThisMonth: 0, totalLeads: 0, expiringContracts: 0,
+  });
+  const [positionData, setPositionData] = useState<PositionData[]>([]);
+  const [recentReports, setRecentReports] = useState<RecentReport[]>([]);
+  const [topPlayers, setTopPlayers] = useState<RankedPlayer[]>([]);
+  const [competitions, setCompetitions] = useState<CompetitionUsage[]>([]);
+
+  const fetchAll = useCallback(async () => {
+    if (!session?.user) { logFetchSkipped("DashboardV2", "no session"); return; }
+    if (!rbacReady) { logFetchSkipped("DashboardV2", "rbac not ready"); return; }
+    if (hasFetched) return;
+    setHasFetched(true);
+
+    const start = performance.now();
+    try {
+      const firstDayOfMonth = new Date();
+      firstDayOfMonth.setDate(1);
+      firstDayOfMonth.setHours(0, 0, 0, 0);
+
+      const [
+        playersRes, leadsRes, contractsRes, positionsRes,
+        recentReportsRes, reportsThisMonthRes, topPlayersRes, compsRes,
+      ] = await Promise.all([
+        supabase.from("players").select("id", { count: "exact", head: true })
+          .or("is_archived.is.null,is_archived.eq.false"),
+        supabase.from("leads").select("id", { count: "exact", head: true }),
+        supabase.from("players").select("id", { count: "exact", head: true })
+          .gte("contract_end", new Date().toISOString().split("T")[0])
+          .lte("contract_end", new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]),
+        supabase.from("players").select("position").or("is_archived.is.null,is_archived.eq.false"),
+        supabase.from("scouting_reports")
+          .select(`id, match_date, final_score, players(full_name), competitions(name)`)
+          .is("deleted_at", null).order("created_at", { ascending: false }).limit(6),
+        supabase.from("scouting_reports").select("id", { count: "exact", head: true })
+          .is("deleted_at", null).gte("created_at", firstDayOfMonth.toISOString()),
+        supabase.from("players")
+          .select("id, full_name, position, auto_rating, current_club, age")
+          .not("auto_rating", "is", null)
+          .or("is_archived.is.null,is_archived.eq.false")
+          .order("auto_rating", { ascending: false }).limit(6),
+        supabase.from("competitions")
+          .select("id, name, tier, final_coefficient")
+          .eq("is_active", true).limit(60),
+      ]);
+
+      setStats({
+        totalPlayers: playersRes.count || 0,
+        reportsThisMonth: reportsThisMonthRes.count || 0,
+        totalLeads: leadsRes.count || 0,
+        expiringContracts: contractsRes.count || 0,
+      });
+
+      // Position breakdown — top 5
+      if (positionsRes.data) {
+        const counts: Record<string, number> = {};
+        positionsRes.data.forEach((p: any) => {
+          const pos = shortPos(p.position || "");
+          counts[pos] = (counts[pos] || 0) + 1;
+        });
+        setPositionData(
+          Object.entries(counts).map(([name, value]) => ({ name, value }))
+            .sort((a, b) => b.value - a.value).slice(0, 5)
+        );
+      }
+
+      // Recent reports
+      if (recentReportsRes.data) {
+        setRecentReports(recentReportsRes.data.map((r: any) => ({
+          id: r.id,
+          player_name: r.players?.full_name || "—",
+          competition_name: r.competitions?.name || "—",
+          match_date: r.match_date,
+          final_score: r.final_score ?? 0,
+        })));
+      }
+
+      if (topPlayersRes.data) setTopPlayers(topPlayersRes.data as any);
+
+      // Competitions usage — needs aggregate (do per-id parallel)
+      if (compsRes.data) {
+        const comps = compsRes.data as any[];
+        const usageRows = await Promise.all(
+          comps.slice(0, 30).map(async (c) => {
+            const [usosR, playersR, lastR] = await Promise.all([
+              supabase.from("scouting_reports")
+                .select("id", { count: "exact", head: true })
+                .eq("competition_id", c.id).is("deleted_at", null),
+              supabase.from("scouting_reports")
+                .select("player_id", { count: "exact", head: true })
+                .eq("competition_id", c.id).is("deleted_at", null),
+              supabase.from("scouting_reports")
+                .select("created_at").eq("competition_id", c.id)
+                .is("deleted_at", null).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+            ]);
+            return {
+              id: c.id, name: c.name, tier: c.tier, final_coefficient: c.final_coefficient,
+              usos: usosR.count || 0,
+              jogadores: playersR.count || 0,
+              ultimo_uso: lastR.data?.created_at || null,
+            } as CompetitionUsage;
+          })
+        );
+        setCompetitions(usageRows.filter(c => c.usos > 0).sort((a, b) => b.usos - a.usos).slice(0, 8));
+      }
+
+      logFetchSuccess({ endpoint: "DashboardV2" }, performance.now() - start);
+    } catch (err) {
+      if (isAbortError(err)) { setHasFetched(false); return; }
+      logFetchError(err, { endpoint: "DashboardV2" });
+    } finally {
+      setLoading(false);
+      setDataReady(true);
+    }
+  }, [session?.user, rbacReady, hasFetched]);
+
+  useEffect(() => { if (rbacReady && !hasFetched) fetchAll(); }, [rbacReady, hasFetched, fetchAll]);
+
+  if (!rolesLoading && isPlayer && !isAdmin && !isScout) return <AthleteDashboard />;
+  if ((loading && !dataReady && stats.totalPlayers === 0) || (!rbacReady && !dataReady)) {
+    return <AdminSkeletonDashboard />;
+  }
+
+  const maxPos = Math.max(...positionData.map(p => p.value), 1);
+
+  return (
+    <div className="m3v2">
+      {/* Top bar */}
+      <div className="topbar">
+        <div>
+          <h1>VISÃO GERAL // ANÁLISE</h1>
+          <p>Painel estratégico de scouting M3 Agency</p>
+        </div>
+        <div className="topbar-actions">
+          <Link to="/app/players" className="btn"><Users size={12} /> Atletas</Link>
+          <Link to="/app/reports/new" className="btn primary"><FileText size={12} /> Novo Relatório</Link>
+        </div>
+      </div>
+
+      {/* Stat cards */}
+      <div className="stats-grid">
+        <Link to="/app/players" className="stat stat-blue">
+          <Users className="stat-icon" />
+          <div className="stat-num">{stats.totalPlayers}</div>
+          <div className="stat-label">Atletas</div>
+          <div className="stat-sub">Portfólio ativo</div>
+        </Link>
+        <Link to="/app/reports" className="stat stat-violet">
+          <FileText className="stat-icon" />
+          <div className="stat-num">{stats.reportsThisMonth}</div>
+          <div className="stat-label">Relatórios</div>
+          <div className="stat-sub">Este mês</div>
+        </Link>
+        <Link to="/app/leads" className="stat stat-amber">
+          <MessageSquare className="stat-icon" />
+          <div className="stat-num">{stats.totalLeads}</div>
+          <div className="stat-label">Leads</div>
+          <div className="stat-sub">Total recebidos</div>
+        </Link>
+        <Link to="/app/contratos?status=expiring&days=90" className="stat stat-green">
+          <AlertTriangle className="stat-icon" />
+          <div className={`stat-num ${stats.expiringContracts > 0 ? "warn" : ""}`}>{stats.expiringContracts}</div>
+          <div className="stat-label">Contratos</div>
+          <div className="stat-sub">Expirando 90d</div>
+        </Link>
+      </div>
+
+      {/* Insights */}
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card-head">
+          <div>
+            <div className="card-title">// INSIGHTS DA PLATAFORMA</div>
+            <div className="card-sub">Análises automatizadas</div>
+          </div>
+          <span className="lbl">AUTO</span>
+        </div>
+        {/* Reuse existing InsightsCard — wrap in scope to neutralize its visual chrome */}
+        <div className="m3v2-insights-wrap">
+          <InsightsCard />
+        </div>
+      </div>
+
+      {/* Top players + Position chart */}
+      <div className="grid-2">
+        <div className="card">
+          <div className="card-head">
+            <div>
+              <div className="card-title">// TOP ATLETAS</div>
+              <div className="card-sub">Ranking por nota automática</div>
+            </div>
+            <Link to="/app/players" className="card-link">VER TODOS <ArrowRight size={10} /></Link>
+          </div>
+          {topPlayers.length === 0 ? (
+            <div className="empty">Nenhum atleta com nota disponível</div>
+          ) : (
+            <div>
+              {topPlayers.map((p, i) => (
+                <Link key={p.id} to={`/app/players/${p.id}`} className={`athlete-row ${i === 0 ? "first" : ""}`}>
+                  <div className="athlete-rank">{String(i + 1).padStart(2, "0")}</div>
+                  <div style={{ minWidth: 0 }}>
+                    <div className="athlete-name">{p.full_name}</div>
+                    <div className="athlete-meta">
+                      {shortPos(p.position)}
+                      {p.age ? ` · ${p.age}a` : ""}
+                      {p.current_club ? ` · ${p.current_club}` : ""}
+                    </div>
+                  </div>
+                  <div className="athlete-rating">
+                    <Star fill="currentColor" />
+                    {p.auto_rating?.toFixed(1) ?? "—"}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="card">
+          <div className="card-head">
+            <div>
+              <div className="card-title">// PERFIL DO ELENCO</div>
+              <div className="card-sub">Distribuição por posição (top 5)</div>
+            </div>
+            <span className="lbl">{positionData.reduce((s, p) => s + p.value, 0)} ATLETAS</span>
+          </div>
+          {positionData.length === 0 ? (
+            <div className="empty">Sem dados de posição</div>
+          ) : (
+            <div className="pos-list">
+              {positionData.map(p => (
+                <div key={p.name} className="pos-row">
+                  <div className="pos-label" style={{ color: POSITION_COLOR[p.name] || "rgba(255,255,255,0.55)" }}>
+                    {p.name}
+                  </div>
+                  <div className="pos-bar-track">
+                    <div
+                      className="pos-bar-fill"
+                      style={{
+                        width: `${(p.value / maxPos) * 100}%`,
+                        background: POSITION_COLOR[p.name] || "rgba(255,255,255,0.35)",
+                        opacity: 0.85,
+                      }}
+                    />
+                  </div>
+                  <div className="pos-val">{p.value}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Recent reports + Competitions table */}
+      <div className="grid-2">
+        <div className="card">
+          <div className="card-head">
+            <div>
+              <div className="card-title">// RELATÓRIOS RECENTES</div>
+              <div className="card-sub">Últimas avaliações</div>
+            </div>
+            <Link to="/app/reports" className="card-link">VER TODOS <ArrowRight size={10} /></Link>
+          </div>
+          {recentReports.length === 0 ? (
+            <div className="empty">Nenhum relatório ainda</div>
+          ) : (
+            <div>
+              {recentReports.map(r => (
+                <Link key={r.id} to={`/app/reports/${r.id}`} className="report-row">
+                  <div className="report-score">{(r.final_score ?? 0).toFixed(1)}</div>
+                  <div style={{ minWidth: 0 }}>
+                    <div className="report-name">{r.player_name}</div>
+                    <div className="report-meta">{r.competition_name}</div>
+                  </div>
+                  <div className="report-date">{formatDateShort(r.match_date)}</div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="card">
+          <div className="card-head">
+            <div>
+              <div className="card-title">// COMPETIÇÕES</div>
+              <div className="card-sub">Tier · multiplicador · uso</div>
+            </div>
+            <Link to="/app/competitions" className="card-link">VER TODAS <ArrowRight size={10} /></Link>
+          </div>
+          {competitions.length === 0 ? (
+            <div className="empty">Sem competições com uso registrado</div>
+          ) : (
+            <div style={{ overflowX: "auto" }}>
+              <table className="comp-table">
+                <thead>
+                  <tr>
+                    <th>Competição</th>
+                    <th>Tier</th>
+                    <th>Final</th>
+                    <th>Usos</th>
+                    <th>Jogadores</th>
+                    <th>Último Uso</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {competitions.map(c => (
+                    <tr key={c.id}>
+                      <td><span className="comp-name" title={c.name}>{c.name}</span></td>
+                      <td><span className={`tier-badge tier-${c.tier}`}>{TIER_LABEL[c.tier] || c.tier}</span></td>
+                      <td style={{ fontVariantNumeric: "tabular-nums", color: "rgba(255,255,255,0.65)" }}>
+                        {Number(c.final_coefficient).toFixed(2)}x
+                      </td>
+                      <td><span className="usos-pill">{c.usos}</span></td>
+                      <td style={{ color: "rgba(255,255,255,0.55)" }}>{c.jogadores}</td>
+                      <td style={{ color: "rgba(255,255,255,0.45)", fontVariantNumeric: "tabular-nums" }}>
+                        {formatDateShort(c.ultimo_uso)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default DashboardV2;
