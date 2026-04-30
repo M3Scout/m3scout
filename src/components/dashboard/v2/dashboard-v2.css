@@ -1,0 +1,466 @@
+/* ============================================================
+   M3 Agency Compact Dashboard — terminal-style premium dark
+   Scoped to .m3v2 wrapper to avoid leaking into the rest of the app.
+   ============================================================ */
+
+.m3v2 {
+  --bg: #0e1219;
+  --card: #111824;
+  --sub: #0f1623;
+  --line: rgba(255, 255, 255, 0.07);
+  --line-strong: rgba(255, 255, 255, 0.12);
+  --text: rgba(255, 255, 255, 0.92);
+  --text-2: rgba(255, 255, 255, 0.55);
+  --text-3: rgba(255, 255, 255, 0.38);
+  --orange: #ea580c;
+  --blue: #4a6edc;
+  --violet: #8b5cf6;
+  --amber: #ca9a23;
+  --green: #10b981;
+  --yellow: #facc15;
+  --red: #ef4444;
+
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  margin: -1rem; /* compensate AppLayout padding */
+  padding: 16px;
+  min-height: calc(100vh - 56px);
+}
+
+@media (min-width: 768px) {
+  .m3v2 {
+    margin: -1.5rem;
+    padding: 20px;
+  }
+}
+@media (min-width: 1024px) {
+  .m3v2 {
+    margin: -2rem;
+    padding: 24px;
+  }
+}
+
+.m3v2 * { box-sizing: border-box; }
+
+/* --------- Section labels --------- */
+.m3v2 .lbl {
+  font-size: 8.5px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-3);
+  font-weight: 600;
+}
+
+.m3v2 .card-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.3px;
+}
+
+.m3v2 .card-sub {
+  font-size: 10px;
+  color: var(--text-3);
+  margin-top: 2px;
+}
+
+/* --------- Card base --------- */
+.m3v2 .card {
+  background: var(--card);
+  border: 0.5px solid var(--line);
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.m3v2 .card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 0.5px solid var(--line);
+}
+
+.m3v2 .sub-card {
+  background: var(--sub);
+  border: 0.5px solid var(--line);
+  border-radius: 7px;
+  padding: 10px 12px;
+}
+
+/* --------- Top header / hero --------- */
+.m3v2 .topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  padding: 0 2px;
+}
+.m3v2 .topbar h1 {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.5px;
+}
+.m3v2 .topbar p {
+  font-size: 10px;
+  color: var(--text-3);
+  margin-top: 2px;
+}
+.m3v2 .topbar-actions { display: flex; gap: 8px; }
+.m3v2 .btn {
+  background: transparent;
+  border: 0.5px solid var(--line-strong);
+  color: var(--text);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 10.5px;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 150ms;
+  font-family: inherit;
+  text-decoration: none;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.m3v2 .btn:hover { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.18); }
+.m3v2 .btn.primary {
+  background: var(--orange);
+  border-color: var(--orange);
+  color: #fff;
+}
+.m3v2 .btn.primary:hover { background: #c2410c; border-color: #c2410c; }
+
+/* --------- Stat cards grid --------- */
+.m3v2 .stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+@media (min-width: 768px) {
+  .m3v2 .stats-grid { grid-template-columns: repeat(4, 1fr); gap: 12px; }
+}
+
+.m3v2 .stat {
+  background: var(--card);
+  border: 0.5px solid var(--line);
+  border-left: 2px solid;
+  border-radius: 10px;
+  padding: 14px 14px 12px;
+  position: relative;
+  text-decoration: none;
+  display: block;
+  transition: transform 150ms, border-color 150ms;
+}
+.m3v2 .stat:hover { transform: translateY(-1px); }
+.m3v2 .stat-blue { border-left-color: rgba(74, 110, 220, 0.85); }
+.m3v2 .stat-blue:hover { border-color: rgba(74, 110, 220, 0.25); }
+.m3v2 .stat-violet { border-left-color: rgba(139, 92, 246, 0.85); }
+.m3v2 .stat-violet:hover { border-color: rgba(139, 92, 246, 0.25); }
+.m3v2 .stat-amber { border-left-color: rgba(202, 154, 35, 0.85); }
+.m3v2 .stat-amber:hover { border-color: rgba(202, 154, 35, 0.25); }
+.m3v2 .stat-green { border-left-color: rgba(16, 185, 129, 0.85); }
+.m3v2 .stat-green:hover { border-color: rgba(16, 185, 129, 0.25); }
+
+.m3v2 .stat-num {
+  font-size: 26px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.5px;
+}
+.m3v2 .stat-num.warn { color: var(--yellow); }
+.m3v2 .stat-label {
+  font-size: 8.5px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-2);
+  margin-top: 8px;
+  font-weight: 600;
+}
+.m3v2 .stat-sub {
+  font-size: 8.5px;
+  color: var(--text-3);
+  margin-top: 2px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.m3v2 .stat-icon {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 16px;
+  height: 16px;
+  color: var(--text-3);
+  opacity: 0.7;
+}
+
+/* --------- Two column grid --------- */
+.m3v2 .grid-2 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+@media (min-width: 1024px) {
+  .m3v2 .grid-2 { grid-template-columns: 1fr 1fr; }
+}
+.m3v2 .grid-3 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+@media (min-width: 1024px) {
+  .m3v2 .grid-3 { grid-template-columns: 1.2fr 1fr 1fr; }
+}
+
+/* --------- Insights --------- */
+.m3v2 .insights-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+@media (min-width: 640px) {
+  .m3v2 .insights-grid { grid-template-columns: 1fr 1fr; }
+}
+
+.m3v2 .insight {
+  background: var(--sub);
+  border: 0.5px solid var(--line);
+  border-left: 2px solid;
+  border-radius: 7px;
+  padding: 10px 12px;
+}
+.m3v2 .insight-orange { border-left-color: var(--orange); }
+.m3v2 .insight-blue { border-left-color: var(--blue); }
+.m3v2 .insight-green { border-left-color: var(--green); }
+.m3v2 .insight-neutral { border-left-color: rgba(255,255,255,0.2); }
+
+.m3v2 .insight-title {
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  letter-spacing: 0.2px;
+}
+.m3v2 .insight-orange .insight-title { color: var(--orange); }
+.m3v2 .insight-blue .insight-title { color: #7e9aff; }
+.m3v2 .insight-green .insight-title { color: var(--green); }
+.m3v2 .insight-neutral .insight-title { color: var(--text); }
+
+.m3v2 .insight-desc {
+  font-size: 10.5px;
+  color: var(--text-2);
+  line-height: 1.45;
+}
+
+/* --------- Top players list --------- */
+.m3v2 .athlete-row {
+  display: grid;
+  grid-template-columns: 18px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  text-decoration: none;
+  color: inherit;
+  margin-bottom: 4px;
+  border: 0.5px solid transparent;
+  transition: background 150ms;
+}
+.m3v2 .athlete-row:hover { background: rgba(255,255,255,0.025); }
+.m3v2 .athlete-row.first {
+  background: linear-gradient(90deg, rgba(202,154,35,0.16), rgba(202,154,35,0.04));
+  border-color: rgba(202,154,35,0.25);
+}
+.m3v2 .athlete-rank {
+  font-size: 10px;
+  color: var(--text-3);
+  font-weight: 600;
+  text-align: center;
+}
+.m3v2 .athlete-row.first .athlete-rank { color: var(--amber); }
+.m3v2 .athlete-name {
+  font-size: 11.5px;
+  color: #fff;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.m3v2 .athlete-meta {
+  font-size: 9.5px;
+  color: var(--text-3);
+  letter-spacing: 0.3px;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.m3v2 .athlete-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+.m3v2 .athlete-rating svg { width: 10px; height: 10px; color: var(--amber); }
+
+/* --------- Position bars --------- */
+.m3v2 .pos-list { display: flex; flex-direction: column; gap: 8px; }
+.m3v2 .pos-row { display: grid; grid-template-columns: 32px 1fr 22px; align-items: center; gap: 10px; }
+.m3v2 .pos-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--text-2);
+}
+.m3v2 .pos-bar-track {
+  height: 6px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.m3v2 .pos-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 600ms ease-out;
+}
+.m3v2 .pos-val {
+  font-size: 10px;
+  color: var(--text-2);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+/* --------- Reports list --------- */
+.m3v2 .report-row {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  text-decoration: none;
+  color: inherit;
+  margin-bottom: 4px;
+  transition: background 150ms;
+}
+.m3v2 .report-row:hover { background: rgba(255,255,255,0.025); }
+.m3v2 .report-score {
+  background: rgba(16,185,129,0.18);
+  color: var(--green);
+  border: 0.5px solid rgba(16,185,129,0.3);
+  border-radius: 6px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.m3v2 .report-name {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.m3v2 .report-meta {
+  font-size: 9.5px;
+  color: var(--text-3);
+  letter-spacing: 0.2px;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.m3v2 .report-date {
+  font-size: 9.5px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* --------- Competition table --------- */
+.m3v2 .comp-table { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+.m3v2 .comp-table thead th {
+  text-align: left;
+  font-size: 8.5px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-3);
+  font-weight: 600;
+  padding: 8px 10px;
+  border-bottom: 0.5px solid var(--line);
+}
+.m3v2 .comp-table tbody td {
+  padding: 9px 10px;
+  border-bottom: 0.5px solid rgba(255,255,255,0.04);
+  color: var(--text);
+  vertical-align: middle;
+}
+.m3v2 .comp-table tbody tr:last-child td { border-bottom: none; }
+.m3v2 .comp-table tbody tr:hover td { background: rgba(255,255,255,0.02); }
+.m3v2 .comp-name {
+  font-size: 11px;
+  color: #fff;
+  font-weight: 600;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+}
+
+.m3v2 .tier-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 0.5px solid;
+  font-family: inherit;
+}
+.m3v2 .tier-S { background: rgba(239,68,68,0.12); color: #f87171; border-color: rgba(239,68,68,0.3); }
+.m3v2 .tier-A { background: rgba(139,92,246,0.12); color: #a78bfa; border-color: rgba(139,92,246,0.3); }
+.m3v2 .tier-B { background: rgba(74,110,220,0.14); color: #7e9aff; border-color: rgba(74,110,220,0.32); }
+.m3v2 .tier-C { background: rgba(16,185,129,0.12); color: var(--green); border-color: rgba(16,185,129,0.3); }
+.m3v2 .tier-D { background: rgba(234,88,12,0.14); color: var(--orange); border-color: rgba(234,88,12,0.32); }
+
+.m3v2 .usos-pill {
+  color: var(--orange);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.m3v2 .empty {
+  padding: 24px 12px;
+  text-align: center;
+  color: var(--text-3);
+  font-size: 10.5px;
+}
+
+/* --------- Card link footer --------- */
+.m3v2 .card-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9.5px;
+  color: var(--text-2);
+  text-decoration: none;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.m3v2 .card-link:hover { color: var(--orange); }
