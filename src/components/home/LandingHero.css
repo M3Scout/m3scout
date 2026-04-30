@@ -144,15 +144,6 @@
   .lp-nav__cta { padding: 8px 14px; font-size: 10px; }
 }
 
-@media (max-width: 767px) {
-  .lp-nav__inner {
-    justify-content: center;
-    position: relative;
-  }
-  .lp-nav__cta { display: none; }
-  .lp-nav__logo { margin: 0 auto; }
-}
-
 /* ---------- HERO ---------- */
 .lp-hero {
   position: relative;

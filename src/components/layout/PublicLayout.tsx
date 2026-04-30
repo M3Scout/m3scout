@@ -2,7 +2,6 @@ import { Outlet, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { LandingNav } from "@/components/home/LandingNav";
 import { LandingFooter } from "@/components/home/LandingFooter";
-import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { PageTransition } from "./PageTransition";
 
 export function PublicLayout() {
@@ -18,10 +17,7 @@ export function PublicLayout() {
           </PageTransition>
         </AnimatePresence>
       </main>
-      <div className="hidden md:block">
-        <LandingFooter />
-      </div>
-      <MobileBottomNav />
+      <LandingFooter />
     </div>
   );
 }
