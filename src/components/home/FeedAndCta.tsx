@@ -66,9 +66,23 @@ export function FeedAndCta() {
         const { data } = await supabase.functions.invoke("instagram-feed", {
           body: {},
         });
-        if (!cancelled && data?.posts?.length) {
-          setPosts(data.posts.slice(0, 12));
-        }
+        if (cancelled || !data?.posts?.length) return;
+
+        // Edge function returns { id, imageUrl, permalink, caption, mediaType }
+        // Normalize to IGPost shape used by the UI.
+        const normalized: IGPost[] = data.posts
+          .slice(0, 12)
+          .map((p: any, i: number) => ({
+            id: p.id ?? `ig-${i}`,
+            media_url: p.imageUrl || p.media_url || buildUnsplash(FALLBACK_PHOTOS[i % FALLBACK_PHOTOS.length]),
+            permalink: p.permalink || "https://instagram.com/m3agency",
+            caption: p.caption || "M3 Agency",
+            media_type: p.mediaType || p.media_type,
+            thumbnail_url: p.thumbnail_url,
+          }))
+          .filter((p: IGPost) => !!p.media_url);
+
+        if (normalized.length) setPosts(normalized);
       } catch {
         // keep fallback
       }
