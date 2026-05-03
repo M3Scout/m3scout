@@ -391,7 +391,7 @@ export default function MarketAtivos() {
                   )}
                   <div className="w-11 h-11 rounded-lg overflow-hidden bg-zinc-800/50">
                     {athlete.photo_url ? (
-                      <img src={athlete.photo_url} alt={athlete.full_name} className="w-full h-full object-cover" />
+                      <img src={athlete.photo_url} alt={athlete.full_name} className="w-full h-full object-cover" loading="lazy" width={44} height={44} />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <User className="w-5 h-5 text-zinc-600" />
