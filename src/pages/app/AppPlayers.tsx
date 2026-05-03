@@ -512,28 +512,28 @@ const AppPlayers = () => {
         <div className="flex gap-2 items-center">
           {/* Search */}
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-600" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-600" />
             <Input
               type="text"
               placeholder="Buscar atleta..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-8 bg-zinc-900/60 border-zinc-800/50 rounded-lg text-xs placeholder:text-zinc-600 focus-visible:ring-1 focus-visible:ring-zinc-700 focus-visible:border-zinc-700"
+              className="pl-9 h-8 bg-zinc-900/40 border-zinc-800/40 rounded-full text-xs placeholder:text-zinc-600 focus-visible:ring-1 focus-visible:ring-zinc-700 focus-visible:border-zinc-700"
             />
           </div>
           
-          {/* Controls cluster */}
+          {/* Filter button */}
           <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
             <CollapsibleTrigger asChild>
               <Button 
                 variant="outline" 
                 size="sm"
-                className="h-8 px-2.5 bg-zinc-900/60 border-zinc-800/50 hover:bg-zinc-800/80 hover:border-zinc-700 rounded-lg text-[11px]"
+                className="h-8 px-3.5 bg-zinc-900/40 border-zinc-800/40 hover:bg-zinc-800/60 hover:border-zinc-700 rounded-full text-[11px] font-medium"
               >
                 <Filter className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline ml-1">Filtros</span>
+                <span className="hidden sm:inline ml-1.5">Filtros</span>
                 {activeFiltersCount > 0 && (
-                  <span className="ml-1 w-4 h-4 rounded-full bg-primary text-white text-[9px] flex items-center justify-center font-medium">
+                  <span className="ml-1.5 w-4 h-4 rounded-full text-white text-[9px] flex items-center justify-center font-medium" style={{ backgroundColor: '#e63946' }}>
                     {activeFiltersCount}
                   </span>
                 )}
@@ -545,19 +545,19 @@ const AppPlayers = () => {
             type="single"
             value={viewMode}
             onValueChange={(value) => value && setViewMode(value as ViewMode)}
-            className="h-8 p-0.5 rounded-lg bg-zinc-900/60"
+            className="h-8 p-0.5 rounded-full bg-zinc-900/40"
           >
             <ToggleGroupItem 
               value="table" 
               aria-label="Visualização em lista" 
-              className="px-2 h-7 rounded-md data-[state=on]:bg-zinc-800 data-[state=on]:text-white data-[state=off]:text-zinc-500"
+              className="px-2.5 h-7 rounded-full data-[state=on]:bg-zinc-800 data-[state=on]:text-white data-[state=off]:text-zinc-500"
             >
               <LayoutList className="w-3.5 h-3.5" />
             </ToggleGroupItem>
             <ToggleGroupItem 
               value="scouting" 
               aria-label="Visualização em cards" 
-              className="px-2 h-7 rounded-md data-[state=on]:bg-zinc-800 data-[state=on]:text-white data-[state=off]:text-zinc-500"
+              className="px-2.5 h-7 rounded-full data-[state=on]:bg-zinc-800 data-[state=on]:text-white data-[state=off]:text-zinc-500"
             >
               <LayoutGrid className="w-3.5 h-3.5" />
             </ToggleGroupItem>
