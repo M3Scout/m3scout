@@ -739,7 +739,7 @@ const AppPlayers = () => {
         </div>
       ) : viewMode === "table" ? (
         /* LIST MODE - Premium rows */
-        <div className="space-y-1.5 animate-fade-in delay-100 w-full min-w-0">
+        <div className="space-y-1 animate-fade-in delay-100 w-full min-w-0">
           {/* Sort Controls - Premium */}
           <div className="flex items-center justify-between mb-1 w-full min-w-0">
             {isMobile ? (
