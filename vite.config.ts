@@ -38,21 +38,22 @@ export default defineConfig(({ mode }) => ({
         // Import the sync handler for Background Sync
         importScripts: ["/sw-sync-handler.js"],
         runtimeCaching: [
-          // CRITICAL: Auth/RBAC endpoints must NEVER be cached
+          // CRITICAL: ALL Supabase API calls must NEVER be cached or intercepted.
+          // A single broad pattern prevents slow responses from being misreported as offline.
           {
             urlPattern: /supabase\.co\/auth\/.*/i,
             handler: "NetworkOnly",
           },
           {
-            urlPattern: /supabase\.co\/rest\/v1\/rpc\/.*/i,
+            urlPattern: /supabase\.co\/rest\/.*/i,
             handler: "NetworkOnly",
           },
           {
-            urlPattern: /supabase\.co\/rest\/v1\/user_roles.*/i,
+            urlPattern: /supabase\.co\/functions\/.*/i,
             handler: "NetworkOnly",
           },
           {
-            urlPattern: /supabase\.co\/rest\/v1\/user_permissions.*/i,
+            urlPattern: /supabase\.co\/realtime\/.*/i,
             handler: "NetworkOnly",
           },
           {
