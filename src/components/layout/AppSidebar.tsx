@@ -249,8 +249,8 @@ const MobileNavItem = memo(function MobileNavItem({
         isActive ? "text-white" : "text-zinc-400 active:bg-white/5"
       )}
       style={{
-        background: isActive ? "rgba(225, 29, 72, 0.05)" : undefined,
-        borderLeft: isActive ? "2px solid #E11D48" : "2px solid transparent",
+        background: isActive ? "rgba(230, 57, 70, 0.08)" : undefined,
+        borderLeft: isActive ? "3px solid #e63946" : "3px solid transparent",
       }}
     >
       <Icon
