@@ -465,7 +465,7 @@ export function AppSidebar() {
           showCollapsed ? "w-[64px]" : "w-56"
         )}
         style={{
-          background: "linear-gradient(180deg, #0B0E14 0%, #080A10 100%)",
+          background: "#000000",
         }}
       >
         {/* ===== HEADER ===== */}
