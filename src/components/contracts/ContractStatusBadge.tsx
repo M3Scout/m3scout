@@ -1,5 +1,4 @@
-import { Badge } from "@/components/ui/badge";
-import { Clock, AlertTriangle, CheckCircle, HelpCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ContractStatusBadgeProps {
   status: "expired" | "expiring" | "active" | "no_end_date";
@@ -7,44 +6,38 @@ interface ContractStatusBadgeProps {
 }
 
 export function ContractStatusBadge({ status, daysToExpire }: ContractStatusBadgeProps) {
-  switch (status) {
-    case "expired":
-      return (
-        <Badge variant="error" className="gap-1">
-          <AlertTriangle className="h-3 w-3" />
-          Vencido
-        </Badge>
-      );
+  const config = {
+    expired: {
+      label: "Vencido",
+      className: "bg-[#e63946]/15 text-[#e63946] border-[#e63946]/20",
+    },
+    expiring: {
+      label: daysToExpire === 0
+        ? "Expira hoje"
+        : daysToExpire === 1
+        ? "Expira amanhã"
+        : `${daysToExpire}d restantes`,
+      className: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+    },
+    active: {
+      label: "Ativo",
+      className: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+    },
+    no_end_date: {
+      label: "Sem data",
+      className: "bg-zinc-800/50 text-zinc-500 border-zinc-700/30",
+    },
+  };
 
-    case "expiring":
-      return (
-        <Badge variant="warning" className="gap-1">
-          <Clock className="h-3 w-3" />
-          {daysToExpire === 0
-            ? "Expira hoje"
-            : daysToExpire === 1
-            ? "Expira amanhã"
-            : `Expira em ${daysToExpire} dias`}
-        </Badge>
-      );
+  const c = config[status];
+  if (!c) return null;
 
-    case "active":
-      return (
-        <Badge variant="success" className="gap-1">
-          <CheckCircle className="h-3 w-3" />
-          Ativo
-        </Badge>
-      );
-
-    case "no_end_date":
-      return (
-        <Badge variant="glass" className="gap-1">
-          <HelpCircle className="h-3 w-3" />
-          Sem data fim
-        </Badge>
-      );
-
-    default:
-      return null;
-  }
+  return (
+    <span className={cn(
+      "inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium border",
+      c.className
+    )}>
+      {c.label}
+    </span>
+  );
 }
