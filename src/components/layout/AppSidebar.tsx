@@ -256,7 +256,7 @@ const MobileNavItem = memo(function MobileNavItem({
       <Icon
         className={cn(
           "w-4 h-4 shrink-0 transition-colors duration-100",
-          isActive ? "text-rose-500" : "text-current opacity-60"
+          isActive ? "text-[#e63946]" : "text-current opacity-60"
         )}
         strokeWidth={1.5}
       />
