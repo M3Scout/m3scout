@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AthleteCardPremium } from "@/components/players/AthleteCardPremium";
+import { getOptimizedImageUrl } from "@/lib/imageUtils";
 import { calculateMatchRating, type PlayerStatsInput } from "@/lib/matchRatingEngine";
 import { STANDARD_MATCH_DURATION, calculateMinutesPlayed } from "@/lib/minutesPlayed";
 import { ControlBarPremium } from "@/components/players/ControlBarPremium";
@@ -790,7 +791,7 @@ const Players = () => {
                     age={player.age || 0}
                     nationality={player.nationality}
                     currentClub={player.current_club || ""}
-                    imageUrl={player.photo_url || "/placeholder.svg"}
+                    imageUrl={getOptimizedImageUrl(player.photo_url, { width: 400, quality: 75 }) || "/placeholder.svg"}
                     isPublic={true}
                     scoutingMode={scoutingMode}
                     clubMode={clubMode}

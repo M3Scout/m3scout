@@ -39,6 +39,10 @@ export function PlayerCard({
           <img
             src={imageUrl}
             alt={name}
+            loading="lazy"
+            decoding="async"
+            width={400}
+            height={500}
             className="w-full h-full object-cover sm:transition-transform sm:duration-500 sm:ease-out sm:group-hover:scale-[1.03]"
           />
           

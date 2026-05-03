@@ -18,20 +18,22 @@ import { RouteSuspense, LiveMatchSuspense } from "@/components/app/RouteSuspense
 import { PublicLayout } from "@/components/layout/PublicLayout";
 import { AppLayout } from "@/components/layout/AppLayout";
 
-// Public Pages - Keep static (landing page performance)
+// Public Pages - Only Index is static (landing page LCP performance)
 import Index from "./pages/Index";
-import Players from "./pages/Players";
-import PlayerProfile from "./pages/PlayerProfile";
-import Contact from "./pages/Contact";
-import Sobre from "./pages/Sobre";
-import Imprensa from "./pages/Imprensa";
-import ImprensaTodas from "./pages/ImprensaTodas";
-import NewsDetail from "./pages/NewsDetail";
-import RepresentacaoTalentos from "./pages/RepresentacaoTalentos";
-import Auth from "./pages/Auth";
-import NotFound from "./pages/NotFound";
-import CompetitionRankingPublic from "./pages/CompetitionRankingPublic";
-import PendingAccess from "./pages/PendingAccess";
+
+// All other public pages are lazy-loaded to reduce initial bundle size (~8MB → ~2MB)
+const Players = lazy(() => import("./pages/Players"));
+const PlayerProfile = lazy(() => import("./pages/PlayerProfile"));
+const Contact = lazy(() => import("./pages/Contact"));
+const Sobre = lazy(() => import("./pages/Sobre"));
+const Imprensa = lazy(() => import("./pages/Imprensa"));
+const ImprensaTodas = lazy(() => import("./pages/ImprensaTodas"));
+const NewsDetail = lazy(() => import("./pages/NewsDetail"));
+const RepresentacaoTalentos = lazy(() => import("./pages/RepresentacaoTalentos"));
+const Auth = lazy(() => import("./pages/Auth"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const CompetitionRankingPublic = lazy(() => import("./pages/CompetitionRankingPublic"));
+const PendingAccess = lazy(() => import("./pages/PendingAccess"));
 
 // ============ LAZY LOADED APP PAGES ============
 // Each route is a separate chunk for optimal code splitting
@@ -135,25 +137,25 @@ function AppRoutes() {
               {/* Public Routes */}
               <Route element={<PublicLayout />}>
                 <Route path="/" element={<Index />} />
-                <Route path="/sobre" element={<Sobre />} />
-                <Route path="/representacao-de-talentos" element={<RepresentacaoTalentos />} />
-                <Route path="/players" element={<Players />} />
-                <Route path="/atletas" element={<Players />} />
-                <Route path="/players/:slug" element={<PlayerProfile />} />
-                <Route path="/imprensa" element={<Imprensa />} />
-                <Route path="/imprensa/todas" element={<ImprensaTodas />} />
-                <Route path="/imprensa/:slug" element={<NewsDetail />} />
-                <Route path="/competitions" element={<CompetitionRankingPublic />} />
-                <Route path="/contact" element={<Contact />} />
-                <Route path="/contato" element={<Contact />} />
+                <Route path="/sobre" element={<Suspense fallback={<RouteSuspense />}><Sobre /></Suspense>} />
+                <Route path="/representacao-de-talentos" element={<Suspense fallback={<RouteSuspense />}><RepresentacaoTalentos /></Suspense>} />
+                <Route path="/players" element={<Suspense fallback={<RouteSuspense />}><Players /></Suspense>} />
+                <Route path="/atletas" element={<Suspense fallback={<RouteSuspense />}><Players /></Suspense>} />
+                <Route path="/players/:slug" element={<Suspense fallback={<RouteSuspense />}><PlayerProfile /></Suspense>} />
+                <Route path="/imprensa" element={<Suspense fallback={<RouteSuspense />}><Imprensa /></Suspense>} />
+                <Route path="/imprensa/todas" element={<Suspense fallback={<RouteSuspense />}><ImprensaTodas /></Suspense>} />
+                <Route path="/imprensa/:slug" element={<Suspense fallback={<RouteSuspense />}><NewsDetail /></Suspense>} />
+                <Route path="/competitions" element={<Suspense fallback={<RouteSuspense />}><CompetitionRankingPublic /></Suspense>} />
+                <Route path="/contact" element={<Suspense fallback={<RouteSuspense />}><Contact /></Suspense>} />
+                <Route path="/contato" element={<Suspense fallback={<RouteSuspense />}><Contact /></Suspense>} />
               </Route>
 
               {/* Auth Routes */}
-              <Route path="/login" element={<Auth />} />
-              <Route path="/app/auth" element={<Auth />} />
+              <Route path="/login" element={<Suspense fallback={<RouteSuspense />}><Auth /></Suspense>} />
+              <Route path="/app/auth" element={<Suspense fallback={<RouteSuspense />}><Auth /></Suspense>} />
               
               {/* Pending Access - for users without valid role */}
-              <Route path="/pending-access" element={<PendingAccess />} />
+              <Route path="/pending-access" element={<Suspense fallback={<RouteSuspense />}><PendingAccess /></Suspense>} />
 
               {/* Protected App Routes */}
               <Route
@@ -226,7 +228,7 @@ function AppRoutes() {
               </Route>
 
               {/* Catch-all */}
-              <Route path="*" element={<NotFound />} />
+              <Route path="*" element={<Suspense fallback={<RouteSuspense />}><NotFound /></Suspense>} />
             </Routes>
           </BrowserRouter>
         </PWAProvider>

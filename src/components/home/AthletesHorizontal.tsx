@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { getOptimizedImageUrl, getResponsiveSrcSet, ATHLETE_CARD_SIZES } from "@/lib/imageUtils";
 import "./AthletesHorizontal.css";
 
 const MARQUEE_ITEMS = [
@@ -188,10 +189,15 @@ export function AthletesHorizontal() {
                 {p.photo_url && (
                   <>
                     <img
-                      src={p.photo_url}
+                      src={getOptimizedImageUrl(p.photo_url, { width: 400, quality: 75 })}
+                      srcSet={getResponsiveSrcSet(p.photo_url, [280, 400, 600], 75) || undefined}
+                      sizes={ATHLETE_CARD_SIZES}
                       alt={p.full_name}
                       className="athlete-h-card__media"
                       loading="lazy"
+                      decoding="async"
+                      width={400}
+                      height={500}
                     />
                     <div className="athlete-h-card__media-overlay" />
                   </>
