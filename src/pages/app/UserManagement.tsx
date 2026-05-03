@@ -4,18 +4,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
 import {
   Select,
   SelectContent,
@@ -53,7 +43,6 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { 
   Shield, 
-  Settings, 
   Users, 
   Crown, 
   AlertTriangle, 
@@ -63,13 +52,15 @@ import {
   UserCheck,
   UserX,
   UserCog,
-  Filter,
   KeyRound,
   RefreshCw,
+  Mail,
+  Copy,
 } from "lucide-react";
-import { format } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 type AppRole = "admin" | "scout" | "member" | "partner" | "editor" | "viewer" | "player";
 
