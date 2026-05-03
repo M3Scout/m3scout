@@ -476,99 +476,94 @@ const AppPlayers = () => {
 
     return (
     <ErrorBoundary fallbackMessage="Não foi possível carregar os detalhes da competição.">
-    <div className="space-y-5 w-full min-w-0 overflow-x-hidden">
+    <div className="space-y-3 w-full min-w-0 overflow-x-hidden">
       {/* Header - Premium compact */}
-      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in">
-        <div className="flex items-center gap-3">
+      <header className="flex items-center justify-between gap-3 animate-fade-in py-1">
+        <div className="flex items-center gap-3 min-w-0">
           <div>
-            <h1 className="text-2xl font-bold text-zinc-100 tracking-tight">Atletas</h1>
-            <p className="text-sm text-zinc-500 mt-0.5">Gerencie todos os atletas da agência</p>
+            <h1 className="text-xl font-extrabold text-zinc-100 tracking-tight uppercase">Atletas</h1>
+            <p className="text-[11px] text-zinc-500 mt-0.5 uppercase tracking-wide">Gerencie todos os atletas da agência</p>
           </div>
-          {/* Subtle refetching indicator */}
           {isRefetching && (
             <div className="flex items-center gap-1.5 text-xs text-zinc-500">
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              <span className="hidden sm:inline">Atualizando...</span>
             </div>
           )}
         </div>
-        {/* Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 shrink-0">
           {isAdmin && (
             <BulkRecalculateButton onComplete={() => fetchPlayers(true)} />
           )}
-          <Button variant="outline" size="sm" asChild className="bg-zinc-900/60 border-zinc-800/50 hover:bg-zinc-800/80 hover:border-zinc-700">
+          <Button variant="outline" size="sm" asChild className="h-8 px-2.5 bg-zinc-900/60 border-zinc-800/50 hover:bg-zinc-800/80 hover:border-zinc-700 text-[11px]">
             <Link to="/app/compare">
-              <GitCompare className="w-4 h-4 sm:mr-1.5" />
-              <span className="hidden sm:inline text-xs">Comparar</span>
+              <GitCompare className="w-3.5 h-3.5 sm:mr-1" />
+              <span className="hidden sm:inline">Comparar</span>
             </Link>
           </Button>
-          <Button size="sm" asChild className="bg-primary hover:bg-primary/90">
+          <Button size="sm" asChild className="h-8 px-2.5 bg-primary hover:bg-primary/90 text-[11px]">
             <Link to="/app/players/new">
-              <Plus className="w-4 h-4 sm:mr-1.5" />
-              <span className="hidden sm:inline text-xs">Novo Atleta</span>
+              <Plus className="w-3.5 h-3.5 sm:mr-1" />
+              <span className="hidden sm:inline">Novo Atleta</span>
             </Link>
           </Button>
         </div>
       </header>
 
       {/* Search and Controls - Premium bar */}
-      <div className="space-y-3 animate-fade-in delay-75">
-        <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center">
+      <div className="space-y-2 animate-fade-in delay-75">
+        <div className="flex gap-2 items-center">
           {/* Search */}
-          <div className="relative flex-1 max-w-lg">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-600" />
             <Input
               type="text"
               placeholder="Buscar atleta..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-10 bg-zinc-900/60 border-zinc-800/50 rounded-xl text-sm placeholder:text-zinc-600 focus-visible:ring-1 focus-visible:ring-zinc-700 focus-visible:border-zinc-700"
+              className="pl-9 h-8 bg-zinc-900/60 border-zinc-800/50 rounded-lg text-xs placeholder:text-zinc-600 focus-visible:ring-1 focus-visible:ring-zinc-700 focus-visible:border-zinc-700"
             />
           </div>
           
           {/* Controls cluster */}
-          <div className="flex items-center gap-2">
-            <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
-              <CollapsibleTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="h-10 px-3 bg-zinc-900/60 border-zinc-800/50 hover:bg-zinc-800/80 hover:border-zinc-700 rounded-xl"
-                >
-                  <Filter className="w-4 h-4" />
-                  <span className="hidden sm:inline ml-1.5 text-xs">Filtros</span>
-                  {activeFiltersCount > 0 && (
-                    <span className="ml-1.5 w-5 h-5 rounded-full bg-primary text-white text-[10px] flex items-center justify-center font-medium">
-                      {activeFiltersCount}
-                    </span>
-                  )}
-                </Button>
-              </CollapsibleTrigger>
-            </Collapsible>
-            
-            <ToggleGroup
-              type="single"
-              value={viewMode}
-              onValueChange={(value) => value && setViewMode(value as ViewMode)}
-              className="h-10 p-1 rounded-xl bg-zinc-900/60"
+          <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
+            <CollapsibleTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="h-8 px-2.5 bg-zinc-900/60 border-zinc-800/50 hover:bg-zinc-800/80 hover:border-zinc-700 rounded-lg text-[11px]"
+              >
+                <Filter className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline ml-1">Filtros</span>
+                {activeFiltersCount > 0 && (
+                  <span className="ml-1 w-4 h-4 rounded-full bg-primary text-white text-[9px] flex items-center justify-center font-medium">
+                    {activeFiltersCount}
+                  </span>
+                )}
+              </Button>
+            </CollapsibleTrigger>
+          </Collapsible>
+          
+          <ToggleGroup
+            type="single"
+            value={viewMode}
+            onValueChange={(value) => value && setViewMode(value as ViewMode)}
+            className="h-8 p-0.5 rounded-lg bg-zinc-900/60"
+          >
+            <ToggleGroupItem 
+              value="table" 
+              aria-label="Visualização em lista" 
+              className="px-2 h-7 rounded-md data-[state=on]:bg-zinc-800 data-[state=on]:text-white data-[state=off]:text-zinc-500"
             >
-              <ToggleGroupItem 
-                value="table" 
-                aria-label="Visualização em lista" 
-                className="px-2.5 h-8 rounded-lg data-[state=on]:bg-zinc-800 data-[state=on]:text-white data-[state=off]:text-zinc-500"
-              >
-                <LayoutList className="w-4 h-4" />
-              </ToggleGroupItem>
-              <ToggleGroupItem 
-                value="scouting" 
-                aria-label="Visualização em cards" 
-                className="px-2.5 h-8 rounded-lg data-[state=on]:bg-zinc-800 data-[state=on]:text-white data-[state=off]:text-zinc-500"
-              >
-                <LayoutGrid className="w-4 h-4" />
-              </ToggleGroupItem>
-            </ToggleGroup>
-          </div>
+              <LayoutList className="w-3.5 h-3.5" />
+            </ToggleGroupItem>
+            <ToggleGroupItem 
+              value="scouting" 
+              aria-label="Visualização em cards" 
+              className="px-2 h-7 rounded-md data-[state=on]:bg-zinc-800 data-[state=on]:text-white data-[state=off]:text-zinc-500"
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+            </ToggleGroupItem>
+          </ToggleGroup>
         </div>
 
         {/* Advanced Filters - Premium Panel */}
@@ -748,9 +743,9 @@ const AppPlayers = () => {
         </div>
       ) : viewMode === "table" ? (
         /* LIST MODE - Premium rows */
-        <div className="space-y-3 animate-fade-in delay-100 w-full min-w-0">
+        <div className="space-y-1.5 animate-fade-in delay-100 w-full min-w-0">
           {/* Sort Controls - Premium */}
-          <div className="flex items-center justify-between mb-2 w-full min-w-0">
+          <div className="flex items-center justify-between mb-1 w-full min-w-0">
             {isMobile ? (
               <SortControlsPremium
                 sortField={sortField}
@@ -798,7 +793,7 @@ const AppPlayers = () => {
               ))}
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {safeArray(paginatedPlayers).map((player, index) => (
                 <PlayerListRowPremium
                   key={player.id}

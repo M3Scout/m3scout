@@ -78,10 +78,10 @@ export function SortControlsPremium({
 
   return (
     <div className="flex items-center gap-1">
-      <span className="text-[11px] uppercase tracking-wide text-zinc-600 font-medium mr-2">
+      <span className="text-[10px] uppercase tracking-wider text-zinc-600 font-semibold mr-1.5">
         Ordenar
       </span>
-      <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-zinc-900/40">
+      <div className="flex items-center gap-0.5 p-0.5 rounded-md bg-zinc-900/40">
         {desktopButtons.map(({ field, label }) => {
           const isActive = sortField === field;
           return (
@@ -89,17 +89,17 @@ export function SortControlsPremium({
               key={field}
               onClick={() => onSort(field)}
               className={cn(
-                "flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-150",
+                "flex items-center gap-0.5 px-2 py-1 rounded text-[10px] font-semibold uppercase tracking-wide transition-all duration-150",
                 isActive 
                   ? "bg-zinc-800 text-zinc-100 shadow-sm" 
-                  : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50"
+                  : "text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800/50"
               )}
             >
               {label}
               {isActive && (
                 sortDirection === "asc" 
-                  ? <ArrowUp className="w-3 h-3" /> 
-                  : <ArrowDown className="w-3 h-3" />
+                  ? <ArrowUp className="w-2.5 h-2.5" /> 
+                  : <ArrowDown className="w-2.5 h-2.5" />
               )}
             </button>
           );
