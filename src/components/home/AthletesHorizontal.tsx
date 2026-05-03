@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { getOptimizedImageUrl, getResponsiveSrcSet, ATHLETE_CARD_SIZES } from "@/lib/imageUtils";
 import "./AthletesHorizontal.css";
 
 const MARQUEE_ITEMS = [
