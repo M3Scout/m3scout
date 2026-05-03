@@ -123,10 +123,10 @@ export function PlayerListRowPremium({
       whileHover={{ y: -1 }}
       onClick={handleRowClick}
       className={cn(
-        "group relative flex items-center gap-4 py-3.5 px-4 cursor-pointer",
+        "group relative flex items-center gap-4 py-3 px-4 cursor-pointer",
         "bg-zinc-950/60 hover:bg-zinc-900/80",
         "rounded-xl transition-all duration-200",
-        "shadow-[0_1px_2px_0_rgba(0,0,0,0.3)] hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.5)]",
+        "shadow-[0_1px_3px_0_rgba(0,0,0,0.2)] hover:shadow-[0_2px_8px_-2px_rgba(0,0,0,0.35)]",
         isArchived && "opacity-50"
       )}
     >
@@ -158,7 +158,7 @@ export function PlayerListRowPremium({
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <h3 className="text-[15px] font-semibold text-zinc-100 truncate leading-tight group-hover:text-white transition-colors">
+              <h3 className="text-[15px] font-extrabold text-zinc-100 truncate leading-tight group-hover:text-white transition-colors tracking-tight">
                 {fullName}
               </h3>
             </TooltipTrigger>
@@ -168,7 +168,7 @@ export function PlayerListRowPremium({
           </Tooltip>
         </TooltipProvider>
         
-        <div className="flex items-center gap-1.5 mt-1 text-[11px] text-zinc-500">
+        <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-zinc-500 uppercase tracking-wide">
           {age && <span className="tabular-nums">{age}</span>}
           {age && nationality && <span className="text-zinc-700">•</span>}
           <span className="truncate">{nationality}</span>
@@ -200,9 +200,9 @@ export function PlayerListRowPremium({
           <Tooltip>
             <TooltipTrigger asChild>
               <div className="flex items-center gap-1.5">
-                {avgScore !== null && avgScore !== undefined && Number.isFinite(avgScore) ? (
-                  <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-zinc-900/60">
-                    <span className={cn("text-sm font-bold tabular-nums", getScoreColor(avgScore))}>
+              {avgScore !== null && avgScore !== undefined && Number.isFinite(avgScore) ? (
+                  <div className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-zinc-900/80">
+                    <span className={cn("text-sm font-extrabold tabular-nums", getScoreColor(avgScore))}>
                       {formatFixed(avgScore, 1)}
                     </span>
                     <TrendIndicator trend={scoreTrend} />
@@ -222,11 +222,11 @@ export function PlayerListRowPremium({
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-900/40">
+              <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900/60">
                 <span className="text-[9px] uppercase tracking-wider text-zinc-600 font-medium">OVR</span>
                 {autoRating !== null && autoRating !== undefined ? (
-                  <span className={cn("text-sm font-bold tabular-nums", getGlobalRatingColor(autoRating))}>
-                    {formatFixed(autoRating, 0)}
+                  <span className={cn("text-sm font-extrabold tabular-nums", getGlobalRatingColor(autoRating))}>
+                    {String(Math.round(autoRating)).padStart(2, '0')}
                   </span>
                 ) : (
                   <span className="text-zinc-700 text-xs">—</span>
