@@ -354,6 +354,44 @@ export default function UserManagement() {
     }
   }, [isAdmin]);
 
+  // Fetch last_sign_in_at from auth via edge function
+  useEffect(() => {
+    const fetchLoginTimes = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("admin-manage-users", {
+          method: "GET",
+        });
+        if (error || !data?.login_map) return;
+        const loginMap = data.login_map as Record<string, string | null>;
+        setUsers(prev => prev.map(u => ({
+          ...u,
+          last_login_at: loginMap[u.user_id] ?? u.last_login_at,
+        })));
+      } catch (err) {
+        console.error("[fetch-login-times] error:", err);
+      }
+    };
+    if (users.length > 0) {
+      fetchLoginTimes();
+    }
+  }, [users.length > 0]);
+
+  // Handle user deletion
+  const handleDeleteUser = async (userId: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-manage-users", {
+        body: { action: "delete", user_id: userId },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success("Usuário excluído com sucesso");
+      setUsers(prev => prev.filter(u => u.user_id !== userId));
+    } catch (err) {
+      console.error("[delete-user] error:", err);
+      toast.error(`Erro ao excluir usuário: ${(err as Error).message}`);
+    }
+  };
+
   // Filtered users
   const filteredUsers = useMemo(() => {
     return users.filter(user => {
