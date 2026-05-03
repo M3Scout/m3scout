@@ -208,10 +208,39 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  // ============ INSTANT BOOT: Check localStorage synchronously ============
+  // If we have a cached Supabase session AND cached RBAC, skip the loading splash entirely.
+  const [bootState] = useState(() => {
+    try {
+      // Check for Supabase session in localStorage
+      const sbKey = Object.keys(localStorage).find(k => k.startsWith("sb-") && k.endsWith("-auth-token"));
+      const hasLocalSession = !!sbKey && !!localStorage.getItem(sbKey);
+      
+      if (hasLocalSession) {
+        // Check for RBAC cache
+        const rbacKeys = Object.keys(localStorage).filter(k => k.startsWith("m3_rbac_"));
+        if (rbacKeys.length > 0) {
+          const cached = localStorage.getItem(rbacKeys[0]);
+          if (cached) {
+            try {
+              const parsed = JSON.parse(cached);
+              const cacheAge = Date.now() - (parsed.fetchedAt || 0);
+              // Accept cache up to 30 minutes old for instant boot
+              if (cacheAge < 30 * 60 * 1000 && parsed.roles?.length > 0) {
+                return { hasCache: true, skipLoading: true };
+              }
+            } catch { /* ignore parse errors */ }
+          }
+        }
+      }
+    } catch { /* localStorage unavailable */ }
+    return { hasCache: false, skipLoading: false };
+  });
+
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [rolesLoading, setRolesLoading] = useState(true);
+  const [loading, setLoading] = useState(!bootState.skipLoading);
+  const [rolesLoading, setRolesLoading] = useState(!bootState.skipLoading);
   const [rolesError, setRolesError] = useState<string | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [linkedPlayerId, setLinkedPlayerId] = useState<string | null>(null);
@@ -219,7 +248,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [rolesFetchedAt, setRolesFetchedAt] = useState<number | null>(null);
 
   const [permissions, setPermissions] = useState<UserPermissions | null>(null);
-  const [permissionsLoading, setPermissionsLoading] = useState(true);
+  const [permissionsLoading, setPermissionsLoading] = useState(!bootState.skipLoading);
   const [permissionsError, setPermissionsError] = useState<string | null>(null);
   const [isOwner, setIsOwner] = useState(false);
   const [userStatus, setUserStatus] = useState<"active" | "suspended" | null>(null);

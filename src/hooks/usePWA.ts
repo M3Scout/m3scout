@@ -1,9 +1,10 @@
 /**
  * PWA Service Worker Hook
  * Uses vite-plugin-pwa with autoUpdate — SW activates immediately on new deploy
+ * All updates are silent — no toasts or prompts.
  */
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useCallback } from "react";
 import { registerSW } from "virtual:pwa-register";
 
 interface PWAUpdateState {
@@ -13,13 +14,8 @@ interface PWAUpdateState {
 }
 
 export function usePWA(): PWAUpdateState {
-  const [offlineReady, setOfflineReady] = useState(false);
-
   useEffect(() => {
     registerSW({
-      onOfflineReady() {
-        setOfflineReady(true);
-      },
       onRegistered(registration) {
         if (import.meta.env.DEV) {
           console.log("[PWA] Service Worker registered:", registration);
@@ -38,8 +34,8 @@ export function usePWA(): PWAUpdateState {
   }, []);
 
   return {
-    needRefresh: false, // autoUpdate handles this automatically
-    offlineReady,
+    needRefresh: false,
+    offlineReady: false,
     updateServiceWorker: useCallback(async () => {
       window.location.reload();
     }, []),
