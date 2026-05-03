@@ -413,7 +413,7 @@ export function AppSidebar() {
         )}
         style={{
           top: 'var(--sat)',
-          background: "linear-gradient(180deg, #0B0E14 0%, #080A10 100%)",
+          background: "#000000",
           paddingLeft: 'var(--sal)',
           paddingBottom: 'var(--sab)',
         }}
