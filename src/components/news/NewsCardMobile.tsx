@@ -59,14 +59,15 @@ export function NewsCardMobile({
           </div>
         )}
         
-        {/* Status Badge - positioned over image */}
+        {/* Status Badge */}
         <div className="absolute top-3 left-3">
           <Badge 
+            variant="outline"
             className={cn(
-              "text-xs font-semibold px-2.5 py-1 shadow-lg",
+              "text-[10px] font-medium px-2 py-0.5",
               isPublished 
-                ? "bg-emerald-500/90 text-white border-0 hover:bg-emerald-500" 
-                : "bg-amber-500/90 text-zinc-900 border-0 hover:bg-amber-500"
+                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 backdrop-blur-sm" 
+                : "bg-amber-500/10 text-amber-400 border-amber-500/20 backdrop-blur-sm"
             )}
           >
             {isPublished ? "Publicado" : "Rascunho"}
@@ -75,21 +76,21 @@ export function NewsCardMobile({
 
         {/* Category Badge */}
         <div className="absolute top-3 right-3">
-          <Badge variant="secondary" className="bg-zinc-900/80 backdrop-blur-sm text-xs">
+          <Badge variant="outline" className="bg-zinc-900/70 backdrop-blur-sm text-[10px] text-zinc-400 border-zinc-700/50">
             {article.category}
           </Badge>
         </div>
       </div>
 
       {/* Content */}
-      <div className="p-4 space-y-3">
+      <div className="p-4 space-y-2.5">
         {/* Title */}
-        <h3 className="font-semibold text-white line-clamp-2 leading-snug">
+        <h3 className="font-bold text-sm text-zinc-100 line-clamp-2 leading-snug">
           {article.title}
         </h3>
 
-        {/* Slug */}
-        <p className="text-xs text-muted-foreground truncate font-mono">
+        {/* Slug — truncated */}
+        <p className="text-[11px] text-zinc-600 truncate max-w-[220px] font-mono">
           /imprensa/{article.slug}
         </p>
 

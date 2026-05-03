@@ -46,12 +46,12 @@ export function NewsFilters({
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
       {/* Search */}
       <div className="relative flex-1 max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input
           placeholder="Buscar notícias..."
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-10"
+          className="pl-10 rounded-full"
         />
       </div>
 
@@ -63,7 +63,7 @@ export function NewsFilters({
             <Button 
               variant="outline" 
               size="sm"
-              className="gap-2 bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:border-zinc-700"
+              className="gap-2 bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:border-zinc-700 rounded-full"
             >
               <Filter className="w-3.5 h-3.5" />
               <span className="hidden xs:inline">Status:</span>
@@ -86,7 +86,7 @@ export function NewsFilters({
             <Button 
               variant="outline" 
               size="sm"
-              className="gap-2 bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:border-zinc-700"
+              className="gap-2 bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:border-zinc-700 rounded-full"
             >
               <span className="hidden xs:inline">Ordenar:</span>
               <span className="font-medium">{sortLabels[sortBy]}</span>
