@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { MoreVertical, Eye, Edit, FileText, Archive, ArchiveRestore, Trash2, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { MoreVertical, Eye, Edit, FileText, Archive, ArchiveRestore, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -15,7 +15,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { formatFixed } from "@/lib/formatters";
 import { getShortPosition, getPositionColor } from "@/lib/positionColors";
 import { cn } from "@/lib/utils";
 
@@ -39,45 +38,6 @@ interface PlayerListRowPremiumProps {
   index?: number;
 }
 
-// Trend indicator - minimal
-const TrendIndicator = ({ trend }: { trend: number | null }) => {
-  if (trend === null || trend === undefined) return null;
-  
-  const threshold = 0.1;
-  
-  if (Math.abs(trend) < threshold) {
-    return (
-      <span className="text-zinc-600">
-        <Minus className="w-2.5 h-2.5" />
-      </span>
-    );
-  }
-  
-  if (trend > 0) {
-    return (
-      <span className="text-emerald-500">
-        <TrendingUp className="w-2.5 h-2.5" />
-      </span>
-    );
-  }
-  
-  return (
-    <span className="text-rose-500">
-      <TrendingDown className="w-2.5 h-2.5" />
-    </span>
-  );
-};
-
-// Score colors (0-5 scale)
-const getScoreColor = (score: number): string => {
-  if (score >= 4.5) return "text-emerald-400";
-  if (score >= 4.0) return "text-green-400";
-  if (score >= 3.5) return "text-lime-400";
-  if (score >= 3.0) return "text-amber-400";
-  if (score >= 2.5) return "text-orange-400";
-  return "text-rose-400";
-};
-
 // Global rating colors (0-100 scale)
 const getGlobalRatingColor = (rating: number): string => {
   if (rating >= 85) return "text-emerald-400";
@@ -97,8 +57,6 @@ export function PlayerListRowPremium({
   currentClub,
   photoUrl,
   autoRating,
-  avgScore,
-  scoreTrend,
   isPublic,
   isArchived,
   isAdmin,
@@ -117,33 +75,32 @@ export function PlayerListRowPremium({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.03, duration: 0.25, ease: "easeOut" }}
+      transition={{ delay: index * 0.025, duration: 0.2, ease: "easeOut" }}
       whileHover={{ y: -1 }}
       onClick={handleRowClick}
       className={cn(
-        "group relative flex items-center gap-4 py-3 px-4 cursor-pointer",
-        "bg-zinc-950/60 hover:bg-zinc-900/80",
-        "rounded-xl transition-all duration-200",
-        "shadow-[0_1px_3px_0_rgba(0,0,0,0.2)] hover:shadow-[0_2px_8px_-2px_rgba(0,0,0,0.35)]",
+        "group relative flex items-center gap-4 py-3.5 px-5 cursor-pointer",
+        "bg-zinc-900/40 hover:bg-zinc-900/70",
+        "rounded-2xl transition-all duration-200",
+        "hover:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.4)]",
         isArchived && "opacity-50"
       )}
     >
       {/* Left Accent Rail */}
       <div 
         className={cn(
-          "absolute left-0 top-3 bottom-3 w-[3px] rounded-full transition-all duration-300",
+          "absolute left-0 top-4 bottom-4 w-[2px] rounded-full transition-all duration-300",
           posColor.accentClass,
-          "opacity-60 group-hover:opacity-100",
-          "group-hover:shadow-[0_0_12px_2px] group-hover:" + posColor.glowClass
+          "opacity-40 group-hover:opacity-100"
         )}
       />
 
       {/* Avatar */}
       <div className={cn(
-        "relative w-11 h-11 rounded-full overflow-hidden flex-shrink-0",
-        "ring-2 ring-zinc-800/50 group-hover:ring-zinc-700/80",
+        "relative w-10 h-10 rounded-full overflow-hidden flex-shrink-0",
+        "ring-1 ring-zinc-800/60",
         "transition-all duration-200"
       )}>
         <img
@@ -158,7 +115,7 @@ export function PlayerListRowPremium({
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <h3 className="text-[15px] font-extrabold text-zinc-100 truncate leading-tight group-hover:text-white transition-colors tracking-tight">
+              <h3 className="text-[15px] font-bold text-white truncate leading-tight tracking-tight">
                 {fullName}
               </h3>
             </TooltipTrigger>
@@ -168,61 +125,38 @@ export function PlayerListRowPremium({
           </Tooltip>
         </TooltipProvider>
         
-        <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-zinc-500 uppercase tracking-wide">
-          {age && <span className="tabular-nums">{age}</span>}
-          {age && nationality && <span className="text-zinc-700">•</span>}
+        <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-zinc-500 uppercase tracking-wider font-medium">
+          {age && <span className="tabular-nums">{age}a</span>}
+          {age && nationality && <span className="text-zinc-700">·</span>}
           <span className="truncate">{nationality}</span>
           {currentClub && (
             <>
-              <span className="text-zinc-700">•</span>
+              <span className="text-zinc-700">·</span>
               <span className="truncate text-zinc-600">{currentClub}</span>
             </>
           )}
         </div>
       </div>
 
-      {/* Badges Cluster */}
-      <div className="hidden sm:flex items-center gap-2.5">
+      {/* Right Cluster: Position + OVR */}
+      <div className="hidden sm:flex items-center gap-3">
         {/* Position Badge */}
         <span 
           className={cn(
-            "text-[10px] font-semibold uppercase tracking-wide",
-            "px-2 py-1 rounded-md",
-            "bg-zinc-900/80",
+            "text-[10px] font-semibold uppercase tracking-wider",
+            "px-2.5 py-1 rounded-full",
+            "bg-zinc-800/60",
             posColor.textClass
           )}
         >
           {getShortPosition(position)}
         </span>
 
-        {/* Score Técnico */}
+        {/* OVR */}
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="flex items-center gap-1.5">
-              {avgScore !== null && avgScore !== undefined && Number.isFinite(avgScore) ? (
-                  <div className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-zinc-900/80">
-                    <span className={cn("text-sm font-extrabold tabular-nums", getScoreColor(avgScore))}>
-                      {formatFixed(avgScore, 1)}
-                    </span>
-                    <TrendIndicator trend={scoreTrend} />
-                  </div>
-                ) : (
-                  <span className="text-zinc-700 text-xs px-2">—</span>
-                )}
-              </div>
-            </TooltipTrigger>
-            <TooltipContent side="top">
-              <p className="text-xs">Score Técnico (média scouting)</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-
-        {/* Global Rating */}
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900/60">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-800/40">
                 <span className="text-[9px] uppercase tracking-wider text-zinc-600 font-medium">OVR</span>
                 {autoRating !== null && autoRating !== undefined ? (
                   <span className={cn("text-sm font-extrabold tabular-nums", getGlobalRatingColor(autoRating))}>
@@ -238,23 +172,6 @@ export function PlayerListRowPremium({
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
-
-        {/* Status Badges */}
-        <div className="hidden lg:flex items-center gap-1.5">
-          <span className={cn(
-            "text-[9px] uppercase tracking-wider font-medium px-2 py-0.5 rounded",
-            isPublic 
-              ? "bg-emerald-500/10 text-emerald-500" 
-              : "bg-zinc-800/60 text-zinc-600"
-          )}>
-            {isPublic ? "Público" : "Privado"}
-          </span>
-          {isArchived && (
-            <span className="text-[9px] uppercase tracking-wider font-medium px-2 py-0.5 rounded bg-amber-500/10 text-amber-500">
-              Arquivado
-            </span>
-          )}
-        </div>
       </div>
 
       {/* Actions */}
@@ -263,10 +180,10 @@ export function PlayerListRowPremium({
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 opacity-40 group-hover:opacity-100 transition-opacity"
+            className="h-7 w-7 opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity"
             onClick={(e) => e.stopPropagation()}
           >
-            <MoreVertical className="w-4 h-4" />
+            <MoreVertical className="w-3.5 h-3.5" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
@@ -327,8 +244,6 @@ export function PlayerListRowMobilePremium({
   currentClub,
   photoUrl,
   autoRating,
-  avgScore,
-  scoreTrend,
   isPublic,
   isArchived,
   isAdmin,
@@ -347,23 +262,22 @@ export function PlayerListRowMobilePremium({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.02, duration: 0.2, ease: "easeOut" }}
       onClick={handleCardClick}
       className={cn(
-        "relative bg-zinc-950/70 rounded-xl overflow-hidden cursor-pointer",
-        "shadow-[0_1px_3px_0_rgba(0,0,0,0.2)]",
+        "relative bg-zinc-900/40 rounded-2xl overflow-hidden cursor-pointer",
         "active:scale-[0.99] transition-transform duration-100",
         isArchived && "opacity-50"
       )}
     >
       {/* Left Accent */}
-      <div className={cn("absolute left-0 top-0 bottom-0 w-[3px]", posColor.accentClass)} />
+      <div className={cn("absolute left-0 top-0 bottom-0 w-[2px]", posColor.accentClass, "opacity-60")} />
 
-      {/* Top Row: Avatar + Name + Actions */}
-      <div className="flex items-center gap-3 p-3 pl-4">
-        <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-zinc-800/50">
+      {/* Content */}
+      <div className="flex items-center gap-3 p-3.5 pl-4">
+        <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 ring-1 ring-zinc-800/60">
           <img
             src={photoUrl || defaultPhoto}
             alt={fullName}
@@ -372,23 +286,36 @@ export function PlayerListRowMobilePremium({
         </div>
 
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-extrabold text-zinc-100 truncate tracking-tight">{fullName}</h3>
-          <div className="flex items-center gap-1.5 text-[11px] text-zinc-500 mt-0.5">
+          <h3 className="text-sm font-bold text-white truncate tracking-tight">{fullName}</h3>
+          <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 uppercase tracking-wider mt-0.5 font-medium">
             <span className={cn(
-              "px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase",
-              "bg-zinc-900/80",
+              "px-1.5 py-0.5 rounded-full text-[9px] font-semibold",
+              "bg-zinc-800/60",
               posColor.textClass
             )}>
               {getShortPosition(position)}
             </span>
-            {age && <span>• {age}</span>}
+            {age && <span>· {age}a</span>}
+            {nationality && <span className="truncate">· {nationality}</span>}
           </div>
+        </div>
+
+        {/* OVR Badge */}
+        <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-zinc-800/40 mr-1">
+          <span className="text-[8px] uppercase tracking-wider text-zinc-600 font-medium">OVR</span>
+          {autoRating !== null && autoRating !== undefined ? (
+            <span className={cn("text-sm font-extrabold tabular-nums", getGlobalRatingColor(autoRating))}>
+              {String(Math.round(autoRating)).padStart(2, '0')}
+            </span>
+          ) : (
+            <span className="text-zinc-700 text-xs">—</span>
+          )}
         </div>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild data-dropdown-trigger>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
-              <MoreVertical className="w-4 h-4" />
+            <Button variant="ghost" size="icon" className="h-7 w-7 opacity-60" onClick={(e) => e.stopPropagation()}>
+              <MoreVertical className="w-3.5 h-3.5" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
@@ -435,45 +362,6 @@ export function PlayerListRowMobilePremium({
             )}
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
-
-      {/* Bottom Row: Metrics */}
-      <div className="flex items-center justify-between px-4 py-2.5 bg-zinc-900/30">
-        {/* Score */}
-        <div className="flex items-center gap-1.5">
-          {avgScore !== null && avgScore !== undefined && Number.isFinite(avgScore) ? (
-            <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-zinc-900/60">
-              <span className={cn("text-sm font-bold tabular-nums", getScoreColor(avgScore))}>
-                {formatFixed(avgScore, 1)}
-              </span>
-              <TrendIndicator trend={scoreTrend} />
-            </div>
-          ) : (
-            <span className="text-zinc-700 text-xs">—</span>
-          )}
-        </div>
-
-        {/* Global */}
-        <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-zinc-900/40">
-          <span className="text-[9px] uppercase tracking-wider text-zinc-600 font-medium">OVR</span>
-          {autoRating !== null && autoRating !== undefined ? (
-            <span className={cn("text-sm font-bold tabular-nums", getGlobalRatingColor(autoRating))}>
-              {formatFixed(autoRating, 0)}
-            </span>
-          ) : (
-            <span className="text-zinc-700 text-xs">—</span>
-          )}
-        </div>
-
-        {/* Status */}
-        <span className={cn(
-          "text-[9px] uppercase tracking-wide font-medium px-1.5 py-0.5 rounded",
-          isPublic 
-            ? "bg-emerald-500/10 text-emerald-500" 
-            : "bg-zinc-800/60 text-zinc-600"
-        )}>
-          {isPublic ? "Pub" : "Priv"}
-        </span>
       </div>
     </motion.div>
   );

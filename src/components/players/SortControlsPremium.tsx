@@ -20,10 +20,8 @@ interface SortControlsPremiumProps {
 }
 
 const sortOptions = [
-  { value: "avg_score-desc", label: "Score ↓", field: "avg_score" as const, dir: "desc" as const },
-  { value: "avg_score-asc", label: "Score ↑", field: "avg_score" as const, dir: "asc" as const },
-  { value: "auto_rating-desc", label: "Nota Global ↓", field: "auto_rating" as const, dir: "desc" as const },
-  { value: "auto_rating-asc", label: "Nota Global ↑", field: "auto_rating" as const, dir: "asc" as const },
+  { value: "auto_rating-desc", label: "OVR ↓", field: "auto_rating" as const, dir: "desc" as const },
+  { value: "auto_rating-asc", label: "OVR ↑", field: "auto_rating" as const, dir: "asc" as const },
   { value: "full_name-asc", label: "Nome A-Z", field: "full_name" as const, dir: "asc" as const },
   { value: "full_name-desc", label: "Nome Z-A", field: "full_name" as const, dir: "desc" as const },
   { value: "position-asc", label: "Posição A-Z", field: "position" as const, dir: "asc" as const },
@@ -31,7 +29,6 @@ const sortOptions = [
 ];
 
 const desktopButtons: Array<{ field: SortField; label: string }> = [
-  { field: "avg_score", label: "Score" },
   { field: "auto_rating", label: "OVR" },
   { field: "full_name", label: "Nome" },
   { field: "position", label: "Posição" },
@@ -54,14 +51,14 @@ export function SortControlsPremium({
   if (isMobile) {
     return (
       <div className="flex items-center gap-2 w-full">
-        <span className="text-[11px] uppercase tracking-wide text-zinc-600 font-medium shrink-0">
+        <span className="text-[10px] uppercase tracking-wider text-zinc-600 font-medium shrink-0">
           Ordenar
         </span>
         <Select 
           value={`${sortField}-${sortDirection}`} 
           onValueChange={handleMobileChange}
         >
-          <SelectTrigger className="flex-1 h-9 text-xs bg-zinc-900/60 border-zinc-800/50 rounded-lg">
+          <SelectTrigger className="flex-1 h-8 text-xs bg-zinc-900/40 border-zinc-800/40 rounded-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -77,34 +74,29 @@ export function SortControlsPremium({
   }
 
   return (
-    <div className="flex items-center gap-1">
-      <span className="text-[10px] uppercase tracking-wider text-zinc-600 font-semibold mr-1.5">
-        Ordenar
-      </span>
-      <div className="flex items-center gap-0.5 p-0.5 rounded-md bg-zinc-900/40">
-        {desktopButtons.map(({ field, label }) => {
-          const isActive = sortField === field;
-          return (
-            <button
-              key={field}
-              onClick={() => onSort(field)}
-              className={cn(
-                "flex items-center gap-0.5 px-2 py-1 rounded text-[10px] font-semibold uppercase tracking-wide transition-all duration-150",
-                isActive 
-                  ? "bg-zinc-800 text-zinc-100 shadow-sm" 
-                  : "text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800/50"
-              )}
-            >
-              {label}
-              {isActive && (
-                sortDirection === "asc" 
-                  ? <ArrowUp className="w-2.5 h-2.5" /> 
-                  : <ArrowDown className="w-2.5 h-2.5" />
-              )}
-            </button>
-          );
-        })}
-      </div>
+    <div className="flex items-center gap-1.5">
+      {desktopButtons.map(({ field, label }) => {
+        const isActive = sortField === field;
+        return (
+          <button
+            key={field}
+            onClick={() => onSort(field)}
+            className={cn(
+              "flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-medium uppercase tracking-wider transition-all duration-150",
+              isActive 
+                ? "bg-zinc-800 text-zinc-100" 
+                : "text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800/40"
+            )}
+          >
+            {label}
+            {isActive && (
+              sortDirection === "asc" 
+                ? <ArrowUp className="w-2.5 h-2.5" /> 
+                : <ArrowDown className="w-2.5 h-2.5" />
+            )}
+          </button>
+        );
+      })}
     </div>
   );
 }
