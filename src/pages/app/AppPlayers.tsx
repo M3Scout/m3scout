@@ -993,7 +993,7 @@ const AppPlayers = () => {
 
       {/* Traditional Pagination */}
       {paginationMode === "pages" && totalPages > 1 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
+        <div className="flex flex-col items-center gap-3 pt-4">
           <div className="flex items-center gap-4">
             <p className="text-sm text-muted-foreground">
               Mostrando {((currentPage - 1) * itemsPerPage) + 1} a {Math.min(currentPage * itemsPerPage, filteredCount)} de {filteredCount} atletas
