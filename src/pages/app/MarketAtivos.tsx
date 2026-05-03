@@ -359,125 +359,101 @@ export default function MarketAtivos() {
           ))}
         </div>
       ) : filteredAthletes.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <User className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">Nenhum atleta encontrado com os filtros aplicados.</p>
-          </CardContent>
-        </Card>
+        <div className="rounded-xl border border-zinc-800/40 bg-zinc-900/40 py-12 text-center">
+          <User className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
+          <p className="text-sm text-zinc-500">Nenhum atleta encontrado com os filtros aplicados.</p>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {filteredAthletes.map((athlete, index) => {
             const score = athlete.score?.score_total ?? 0;
             const scoreColor = getScoreColor(score);
             const hasScore = athlete.score !== null;
+            const posColor = getPositionColor(athlete.position);
+            const shortPos = getShortPosition(athlete.position);
             
-            // Check if score is stale (older than 7 days)
             const isStale = hasScore && athlete.score?.last_calculated_at
               ? (Date.now() - new Date(athlete.score.last_calculated_at).getTime()) > 7 * 24 * 60 * 60 * 1000
               : false;
 
             return (
-              <Card
+              <div
                 key={athlete.id}
                 className={cn(
-                  "bg-zinc-900/80 border border-white/[0.06] cursor-pointer",
-                  "transition-all duration-150 ease-out",
-                  "hover:translate-y-[-2px] hover:shadow-lg hover:shadow-black/30 hover:border-white/10"
+                  "flex items-center gap-3 p-3.5 rounded-xl cursor-pointer",
+                  "bg-zinc-900/50 border border-zinc-800/40",
+                  "hover:border-zinc-700/50 hover:bg-zinc-900/70",
+                  "transition-all duration-200"
                 )}
                 onClick={() => navigate(`/app/players/${athlete.id}`)}
               >
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    {/* Rank + Photo */}
-                    <div className="relative">
-                      {index < 3 && hasScore && (
-                        <div className="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-primary text-[10px] font-bold flex items-center justify-center text-primary-foreground z-10">
-                          {index + 1}
-                        </div>
-                      )}
-                      <div className="w-12 h-12 rounded-lg overflow-hidden bg-secondary/50">
-                        {athlete.photo_url ? (
-                          <img
-                            src={athlete.photo_url}
-                            alt={athlete.full_name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <User className="w-6 h-6 text-muted-foreground" />
-                          </div>
-                        )}
-                      </div>
+                {/* Rank + Photo */}
+                <div className="relative shrink-0">
+                  {index < 10 && hasScore && (
+                    <div className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-[#e63946] text-[10px] font-bold flex items-center justify-center text-white z-10">
+                      {index + 1}
                     </div>
-
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-medium truncate">{athlete.full_name}</h3>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Badge variant="outline" className="text-[10px]">
-                          {athlete.position}
-                        </Badge>
-                        {athlete.age && <span>{athlete.age} anos</span>}
-                      </div>
-                      {athlete.current_club && (
-                        <p className="text-xs text-muted-foreground truncate mt-0.5">
-                          {athlete.current_club}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Score Badge - Shows when score exists in DB */}
-                    {hasScore ? (
-                      <div
-                        className={cn(
-                          "relative flex flex-col items-center justify-center min-w-[60px] px-3 py-2 rounded-lg border",
-                          scoreColor.bg,
-                          scoreColor.border
-                        )}
-                      >
-                        {/* Score number - prominent */}
-                        <span className={cn("text-xl font-bold leading-none", scoreColor.text)}>
-                          {score.toFixed(0)}
-                        </span>
-                        {/* Label - smaller with reduced opacity */}
-                        <span className={cn("text-[10px] font-medium mt-0.5 opacity-70", scoreColor.text)}>
-                          {scoreColor.label}
-                        </span>
-                        {/* Trend indicator - subtle, positioned in corner */}
-                        <div className="absolute -top-1 -right-1">
-                          <TrendIcon trend={athlete.score!.trend_30d} />
-                        </div>
-                        {/* Stale indicator */}
-                        {isStale && (
-                          <div 
-                            className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-yellow-500/80 flex items-center justify-center"
-                            title="Score pode estar desatualizado"
-                          >
-                            <RefreshCw className="w-2.5 h-2.5 text-yellow-950" />
-                          </div>
-                        )}
-                      </div>
+                  )}
+                  <div className="w-11 h-11 rounded-lg overflow-hidden bg-zinc-800/50">
+                    {athlete.photo_url ? (
+                      <img src={athlete.photo_url} alt={athlete.full_name} className="w-full h-full object-cover" />
                     ) : (
-                      // No score in DB yet - show Calculate button
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="min-w-[70px] gap-1 text-xs border-dashed border-zinc-600 hover:border-primary hover:bg-primary/10"
-                        onClick={(e) => handleCalculateScore(e, athlete)}
-                        disabled={calculatingIds.has(athlete.id)}
-                      >
-                        {calculatingIds.has(athlete.id) ? (
-                          <Loader2 className="w-3 h-3 animate-spin" />
-                        ) : (
-                          <Sparkles className="w-3 h-3" />
-                        )}
-                        {calculatingIds.has(athlete.id) ? "..." : "Calcular"}
-                      </Button>
+                      <div className="w-full h-full flex items-center justify-center">
+                        <User className="w-5 h-5 text-zinc-600" />
+                      </div>
                     )}
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-bold text-zinc-100 truncate">{athlete.full_name}</h3>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className={cn("text-[10px] font-semibold uppercase tracking-wider", posColor.textClass)}>
+                      {shortPos}
+                    </span>
+                    {athlete.age && <span className="text-[10px] text-zinc-600">{athlete.age}a</span>}
+                  </div>
+                  {athlete.current_club && (
+                    <p className="text-[10px] text-zinc-600 truncate mt-0.5">{athlete.current_club}</p>
+                  )}
+                </div>
+
+                {/* Score */}
+                {hasScore ? (
+                  <div className="relative flex flex-col items-center justify-center shrink-0">
+                    <span className={cn("text-xl font-black tabular-nums leading-none", scoreColor.text)}>
+                      {score.toFixed(0)}
+                    </span>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <TrendIcon trend={athlete.score!.trend_30d} />
+                      <span className={cn("text-[9px] font-medium opacity-60", scoreColor.text)}>
+                        {scoreColor.label}
+                      </span>
+                    </div>
+                    {isStale && (
+                      <div className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-amber-500/80 flex items-center justify-center" title="Score desatualizado">
+                        <RefreshCw className="w-2 h-2 text-amber-950" />
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="min-w-[65px] gap-1 text-[10px] rounded-full border-dashed border-zinc-700 hover:border-[#e63946] hover:bg-[#e63946]/10"
+                    onClick={(e) => handleCalculateScore(e, athlete)}
+                    disabled={calculatingIds.has(athlete.id)}
+                  >
+                    {calculatingIds.has(athlete.id) ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-3 h-3" />
+                    )}
+                    {calculatingIds.has(athlete.id) ? "..." : "Calcular"}
+                  </Button>
+                )}
+              </div>
             );
           })}
         </div>
@@ -485,7 +461,7 @@ export default function MarketAtivos() {
 
       {/* Results count */}
       {!isLoading && (
-        <p className="text-sm text-muted-foreground text-center">
+        <p className="text-xs text-zinc-600 text-center tabular-nums">
           {filteredAthletes.length} atleta(s) encontrado(s)
         </p>
       )}
