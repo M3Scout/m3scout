@@ -237,6 +237,7 @@ const MobileNavItem = memo(function MobileNavItem({
   isActive,
   onClick,
 }: MobileNavItemProps) {
+  const Icon = item.icon;
   return (
     <Link
       to={item.href}
@@ -251,16 +252,12 @@ const MobileNavItem = memo(function MobileNavItem({
         borderLeft: isActive ? "2px solid #E11D48" : "2px solid transparent",
       }}
     >
-      <span
-        style={{
-          display: "inline-block",
-          width: "4px",
-          height: "4px",
-          borderRadius: "50%",
-          flexShrink: 0,
-          backgroundColor: isActive ? "#E11D48" : "currentColor",
-          opacity: isActive ? 1 : 0.4,
-        }}
+      <Icon
+        className={cn(
+          "w-4 h-4 shrink-0 transition-colors duration-100",
+          isActive ? "text-rose-500" : "text-current opacity-60"
+        )}
+        strokeWidth={1.5}
       />
       <span className={cn(
         "text-[14px] font-medium",
