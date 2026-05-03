@@ -125,13 +125,14 @@ const SidebarItem = memo(function SidebarItem({
     <Link
       to={item.href}
       className={cn(
-        "group relative flex items-center rounded-md transition-all duration-100",
-        collapsed ? "justify-center px-2 py-2" : "gap-2.5 px-2.5 py-1.5",
+        "group relative flex items-center transition-all duration-100",
+        collapsed ? "justify-center px-2 py-2 rounded-md" : "gap-2.5 pr-2.5 py-1.5",
         isActive ? "text-white" : "text-zinc-500 hover:text-zinc-200"
       )}
       style={{
-        background: isActive ? "rgba(225, 29, 72, 0.05)" : undefined,
-        borderLeft: isActive && !collapsed ? "2px solid #E11D48" : "2px solid transparent",
+        background: isActive ? "rgba(230, 57, 70, 0.08)" : undefined,
+        borderLeft: isActive && !collapsed ? "3px solid #e63946" : collapsed ? undefined : "3px solid transparent",
+        paddingLeft: collapsed ? undefined : isActive ? "9px" : "9px",
       }}
     >
       <Icon
