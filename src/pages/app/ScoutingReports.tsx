@@ -342,7 +342,7 @@ const ScoutingReports = () => {
           </p>
           {!searchQuery && (
             <Link to="/app/reports/new">
-              <Button className="bg-red-600 hover:bg-red-700 text-white gap-2">
+              <Button className="bg-[#e63946] hover:bg-[#d62839] text-white gap-2 rounded-full px-5 h-9 text-sm font-semibold">
                 <Plus className="w-4 h-4" />
                 Criar Relatório
               </Button>
