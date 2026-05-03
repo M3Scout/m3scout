@@ -80,6 +80,8 @@ export function NewsTableDesktop({
                           alt={article.title}
                           className="w-full h-full object-cover"
                           loading="lazy"
+                          width={64}
+                          height={40}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">

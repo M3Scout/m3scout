@@ -139,7 +139,7 @@ export function MatchHeader({
                 <img 
                   src={displayLogoUrl} 
                   alt={displayTeamName} 
-                  className="w-10 h-10 object-contain shrink-0"
+                  className="w-10 h-10 object-contain shrink-0" width={40} height={40}
                 />
                 <div className="min-w-0">
                   <h1 className="text-base sm:text-lg font-bold truncate">

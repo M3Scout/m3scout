@@ -365,7 +365,7 @@ export default function LiveMatchNew() {
                     <SelectItem key={team.id} value={team.id}>
                       <span className="flex items-center gap-2">
                         {team.logo_url ? (
-                          <img src={team.logo_url} alt="" className="w-4 h-4 object-contain" />
+                          <img src={team.logo_url} alt="" className="w-4 h-4 object-contain" width={16} height={16} />
                         ) : (
                           <div 
                             className="w-4 h-4 rounded" 
@@ -420,7 +420,7 @@ export default function LiveMatchNew() {
                       <img 
                         src={displayLogoUrl} 
                         alt="Logo" 
-                        className="w-full h-full object-contain"
+                        className="w-full h-full object-contain" width={48} height={48}
                       />
                     ) : (
                       <Image className="w-5 h-5 text-zinc-600" />
@@ -477,7 +477,7 @@ export default function LiveMatchNew() {
                   <img 
                     src={displayLogoUrl} 
                     alt={displayTeamName} 
-                    className="w-8 h-8 object-contain rounded bg-zinc-800/50 p-0.5"
+                    className="w-8 h-8 object-contain rounded bg-zinc-800/50 p-0.5" width={32} height={32}
                   />
                 ) : (
                   <div className="w-8 h-8 rounded bg-emerald-500/20 flex items-center justify-center">
@@ -496,7 +496,7 @@ export default function LiveMatchNew() {
                   <img 
                     src={opponentLogoUrl} 
                     alt={opponentName || "Adversário"} 
-                    className="w-8 h-8 object-contain rounded bg-zinc-800/50 p-0.5"
+                    className="w-8 h-8 object-contain rounded bg-zinc-800/50 p-0.5" width={32} height={32}
                   />
                 ) : (
                   <div className="w-8 h-8 rounded bg-red-500/20 flex items-center justify-center">
@@ -605,7 +605,7 @@ export default function LiveMatchNew() {
                       <img 
                         src={opponentLogoUrl} 
                         alt="Logo adversário" 
-                        className="w-full h-full object-contain"
+                        className="w-full h-full object-contain" width={48} height={48}
                       />
                     ) : (
                       <Image className="w-5 h-5 text-zinc-600" />

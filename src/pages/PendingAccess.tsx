@@ -33,7 +33,7 @@ export default function PendingAccess() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex justify-center mb-8">
-          <img src={logoM3} alt="M3 Agency" className="h-10 w-auto" />
+          <img src={logoM3} alt="M3 Agency" className="h-10 w-auto" width={100} height={40} />
         </div>
 
         {/* Card */}

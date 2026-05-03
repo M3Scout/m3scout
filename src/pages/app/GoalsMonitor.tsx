@@ -896,7 +896,7 @@ export default function GoalsMonitor() {
                   <img 
                     src={selectedGoal.player.photo_url} 
                     alt={selectedGoal.player.full_name}
-                    className="w-14 h-14 rounded-full object-cover"
+                    className="w-14 h-14 rounded-full object-cover" width={56} height={56}
                   />
                 ) : (
                   <div className="w-14 h-14 rounded-full bg-zinc-700 flex items-center justify-center">
