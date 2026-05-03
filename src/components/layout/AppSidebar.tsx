@@ -524,7 +524,7 @@ export function AppSidebar() {
         </div>
 
         {/* ===== NAVIGATION - SCROLLABLE ===== */}
-        <nav className="flex-1 min-h-0 px-2 py-2 space-y-2 overflow-y-auto overflow-x-hidden sidebar-nav-scroll">
+        <nav className="flex-1 min-h-0 pr-2 py-2 space-y-2 overflow-y-auto overflow-x-hidden sidebar-nav-scroll">
           <TooltipProvider delayDuration={0}>
             {navGroups.map((group) => (
               <SidebarSection
