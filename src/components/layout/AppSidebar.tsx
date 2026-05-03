@@ -208,7 +208,7 @@ const SidebarSection = memo(function SidebarSection({
     <div className="space-y-0.5 first:mt-0 [&:not(:first-child)]:mt-6">
       {!collapsed && (
         <div
-          className="px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em]"
+          className="pl-3 pr-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em]"
           style={{ color: "#666666" }}
         >
           {group.label}
