@@ -477,32 +477,30 @@ const AppPlayers = () => {
     return (
     <ErrorBoundary fallbackMessage="Não foi possível carregar os detalhes da competição.">
     <div className="space-y-3 w-full min-w-0 overflow-x-hidden">
-      {/* Header - Premium compact */}
-      <header className="flex items-center justify-between gap-3 animate-fade-in py-1">
+      {/* Header */}
+      <header className="flex items-center justify-between gap-3 animate-fade-in">
         <div className="flex items-center gap-3 min-w-0">
           <div>
-            <h1 className="text-xl font-extrabold text-zinc-100 tracking-tight uppercase">Atletas</h1>
-            <p className="text-[11px] text-zinc-500 mt-0.5 uppercase tracking-wide">Gerencie todos os atletas da agência</p>
+            <h1 className="text-lg font-bold text-white tracking-tight">Atletas</h1>
+            <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium">
+              {filteredCount} atleta{filteredCount !== 1 ? "s" : ""}
+              {isRefetching && " · atualizando..."}
+            </p>
           </div>
-          {isRefetching && (
-            <div className="flex items-center gap-1.5 text-xs text-zinc-500">
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            </div>
-          )}
         </div>
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
           {isAdmin && (
             <BulkRecalculateButton onComplete={() => fetchPlayers(true)} />
           )}
-          <Button variant="outline" size="sm" asChild className="h-8 px-2.5 bg-zinc-900/60 border-zinc-800/50 hover:bg-zinc-800/80 hover:border-zinc-700 text-[11px]">
+          <Button variant="outline" size="sm" asChild className="h-8 px-4 rounded-full bg-zinc-900/40 border-zinc-800/40 hover:bg-zinc-800/60 hover:border-zinc-700 text-[11px] font-medium">
             <Link to="/app/compare">
-              <GitCompare className="w-3.5 h-3.5 sm:mr-1" />
+              <GitCompare className="w-3.5 h-3.5 sm:mr-1.5" />
               <span className="hidden sm:inline">Comparar</span>
             </Link>
           </Button>
-          <Button size="sm" asChild className="h-8 px-2.5 bg-primary hover:bg-primary/90 text-[11px]">
+          <Button size="sm" asChild className="h-8 px-4 rounded-full text-[11px] font-medium text-white" style={{ backgroundColor: '#e63946' }}>
             <Link to="/app/players/new">
-              <Plus className="w-3.5 h-3.5 sm:mr-1" />
+              <Plus className="w-3.5 h-3.5 sm:mr-1.5" />
               <span className="hidden sm:inline">Novo Atleta</span>
             </Link>
           </Button>
@@ -514,28 +512,28 @@ const AppPlayers = () => {
         <div className="flex gap-2 items-center">
           {/* Search */}
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-600" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-600" />
             <Input
               type="text"
               placeholder="Buscar atleta..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-8 bg-zinc-900/60 border-zinc-800/50 rounded-lg text-xs placeholder:text-zinc-600 focus-visible:ring-1 focus-visible:ring-zinc-700 focus-visible:border-zinc-700"
+              className="pl-9 h-8 bg-zinc-900/40 border-zinc-800/40 rounded-full text-xs placeholder:text-zinc-600 focus-visible:ring-1 focus-visible:ring-zinc-700 focus-visible:border-zinc-700"
             />
           </div>
           
-          {/* Controls cluster */}
+          {/* Filter button */}
           <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
             <CollapsibleTrigger asChild>
               <Button 
                 variant="outline" 
                 size="sm"
-                className="h-8 px-2.5 bg-zinc-900/60 border-zinc-800/50 hover:bg-zinc-800/80 hover:border-zinc-700 rounded-lg text-[11px]"
+                className="h-8 px-3.5 bg-zinc-900/40 border-zinc-800/40 hover:bg-zinc-800/60 hover:border-zinc-700 rounded-full text-[11px] font-medium"
               >
                 <Filter className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline ml-1">Filtros</span>
+                <span className="hidden sm:inline ml-1.5">Filtros</span>
                 {activeFiltersCount > 0 && (
-                  <span className="ml-1 w-4 h-4 rounded-full bg-primary text-white text-[9px] flex items-center justify-center font-medium">
+                  <span className="ml-1.5 w-4 h-4 rounded-full text-white text-[9px] flex items-center justify-center font-medium" style={{ backgroundColor: '#e63946' }}>
                     {activeFiltersCount}
                   </span>
                 )}
@@ -547,19 +545,19 @@ const AppPlayers = () => {
             type="single"
             value={viewMode}
             onValueChange={(value) => value && setViewMode(value as ViewMode)}
-            className="h-8 p-0.5 rounded-lg bg-zinc-900/60"
+            className="h-8 p-0.5 rounded-full bg-zinc-900/40"
           >
             <ToggleGroupItem 
               value="table" 
               aria-label="Visualização em lista" 
-              className="px-2 h-7 rounded-md data-[state=on]:bg-zinc-800 data-[state=on]:text-white data-[state=off]:text-zinc-500"
+              className="px-2.5 h-7 rounded-full data-[state=on]:bg-zinc-800 data-[state=on]:text-white data-[state=off]:text-zinc-500"
             >
               <LayoutList className="w-3.5 h-3.5" />
             </ToggleGroupItem>
             <ToggleGroupItem 
               value="scouting" 
               aria-label="Visualização em cards" 
-              className="px-2 h-7 rounded-md data-[state=on]:bg-zinc-800 data-[state=on]:text-white data-[state=off]:text-zinc-500"
+              className="px-2.5 h-7 rounded-full data-[state=on]:bg-zinc-800 data-[state=on]:text-white data-[state=off]:text-zinc-500"
             >
               <LayoutGrid className="w-3.5 h-3.5" />
             </ToggleGroupItem>
@@ -676,10 +674,8 @@ const AppPlayers = () => {
       </div>
 
       {/* Results count */}
-      <p className="text-[11px] uppercase tracking-wide text-zinc-600 font-medium animate-fade-in">
-        {filteredCount} atleta{filteredCount !== 1 ? "s" : ""}
-        {showArchived && " (incluindo arquivados)"}
-      </p>
+
+
 
       {/* Content */}
       {loading ? (
@@ -743,7 +739,7 @@ const AppPlayers = () => {
         </div>
       ) : viewMode === "table" ? (
         /* LIST MODE - Premium rows */
-        <div className="space-y-1.5 animate-fade-in delay-100 w-full min-w-0">
+        <div className="space-y-1 animate-fade-in delay-100 w-full min-w-0">
           {/* Sort Controls - Premium */}
           <div className="flex items-center justify-between mb-1 w-full min-w-0">
             {isMobile ? (
@@ -823,30 +819,23 @@ const AppPlayers = () => {
         /* GRID MODE - Position Identity Cards with colors */
         <div className="space-y-4 animate-fade-in delay-100">
           {/* Sort Controls */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2 text-xs text-zinc-500">
-              <span>Ordenar por:</span>
-              <button 
-                onClick={() => handleSort("avg_score")}
-                className={`flex items-center gap-1 px-2 py-1 rounded hover:bg-zinc-800/50 transition-colors ${sortField === "avg_score" ? "text-primary" : ""}`}
-              >
-                Score <SortIcon field="avg_score" />
-              </button>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-1.5 text-xs text-zinc-500">
               <button 
                 onClick={() => handleSort("auto_rating")}
-                className={`flex items-center gap-1 px-2 py-1 rounded hover:bg-zinc-800/50 transition-colors ${sortField === "auto_rating" ? "text-primary" : ""}`}
+                className={`flex items-center gap-1 px-3 py-1 rounded-full text-[10px] uppercase tracking-wider font-medium hover:bg-zinc-800/40 transition-colors ${sortField === "auto_rating" ? "bg-zinc-800 text-zinc-100" : ""}`}
               >
-                Nota Global <SortIcon field="auto_rating" />
+                OVR <SortIcon field="auto_rating" />
               </button>
               <button 
                 onClick={() => handleSort("full_name")}
-                className={`flex items-center gap-1 px-2 py-1 rounded hover:bg-zinc-800/50 transition-colors ${sortField === "full_name" ? "text-primary" : ""}`}
+                className={`flex items-center gap-1 px-3 py-1 rounded-full text-[10px] uppercase tracking-wider font-medium hover:bg-zinc-800/40 transition-colors ${sortField === "full_name" ? "bg-zinc-800 text-zinc-100" : ""}`}
               >
                 Nome <SortIcon field="full_name" />
               </button>
               <button 
                 onClick={() => handleSort("position")}
-                className={`flex items-center gap-1 px-2 py-1 rounded hover:bg-zinc-800/50 transition-colors ${sortField === "position" ? "text-primary" : ""}`}
+                className={`flex items-center gap-1 px-3 py-1 rounded-full text-[10px] uppercase tracking-wider font-medium hover:bg-zinc-800/40 transition-colors ${sortField === "position" ? "bg-zinc-800 text-zinc-100" : ""}`}
               >
                 Posição <SortIcon field="position" />
               </button>
