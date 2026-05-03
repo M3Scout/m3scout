@@ -931,7 +931,9 @@ export default function UserManagement() {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-amber-500" />
-              {confirmAction?.type === "suspend" 
+              {confirmAction?.type === "delete"
+                ? "Excluir usuário"
+                : confirmAction?.type === "suspend" 
                 ? "Suspender usuário" 
                 : confirmAction?.type === "reject"
                 ? "Recusar usuário"
@@ -939,7 +941,9 @@ export default function UserManagement() {
               }
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {confirmAction?.type === "suspend" 
+              {confirmAction?.type === "delete"
+                ? `Tem certeza que deseja excluir "${confirmAction?.user.full_name || "este usuário"}"? Esta ação é irreversível e todos os dados serão removidos permanentemente.`
+                : confirmAction?.type === "suspend" 
                 ? `Tem certeza que deseja suspender "${confirmAction?.user.full_name || "este usuário"}"? Ele não poderá mais acessar o sistema.`
                 : confirmAction?.type === "reject"
                 ? `Tem certeza que deseja recusar "${confirmAction?.user.full_name || "este usuário"}"? A solicitação de acesso será rejeitada.`
@@ -952,7 +956,9 @@ export default function UserManagement() {
             <AlertDialogAction
               onClick={() => {
                 if (!confirmAction) return;
-                if (confirmAction.type === "reject") {
+                if (confirmAction.type === "delete") {
+                  handleDeleteUser(confirmAction.user.user_id);
+                } else if (confirmAction.type === "reject") {
                   handleReject(confirmAction.user.user_id);
                 } else {
                   handleStatusChange(
@@ -962,12 +968,14 @@ export default function UserManagement() {
                 }
               }}
               className={
-                confirmAction?.type === "suspend" || confirmAction?.type === "reject"
-                  ? "bg-red-600 hover:bg-red-700" 
+                confirmAction?.type === "suspend" || confirmAction?.type === "reject" || confirmAction?.type === "delete"
+                  ? "bg-[#e63946] hover:bg-[#e63946]/90" 
                   : "bg-emerald-600 hover:bg-emerald-700"
               }
             >
-              {confirmAction?.type === "suspend" 
+              {confirmAction?.type === "delete"
+                ? "Excluir Permanentemente"
+                : confirmAction?.type === "suspend" 
                 ? "Suspender" 
                 : confirmAction?.type === "reject"
                 ? "Recusar"
