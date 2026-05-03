@@ -402,7 +402,10 @@ export default function MarketAtivos() {
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-bold text-zinc-100 truncate">{athlete.full_name}</h3>
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="text-sm font-bold text-zinc-100 truncate">{athlete.full_name}</h3>
+                    {hasScore && <TrendIcon trend={athlete.score!.trend_30d} />}
+                  </div>
                   <div className="flex items-center gap-2 mt-0.5">
                     <span className={cn("text-[10px] font-semibold uppercase tracking-wider", posColor.textClass)}>
                       {shortPos}
