@@ -4,18 +4,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
 import {
   Select,
   SelectContent,
@@ -53,7 +43,6 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { 
   Shield, 
-  Settings, 
   Users, 
   Crown, 
   AlertTriangle, 
@@ -63,13 +52,15 @@ import {
   UserCheck,
   UserX,
   UserCog,
-  Filter,
   KeyRound,
   RefreshCw,
+  Mail,
+  Copy,
 } from "lucide-react";
-import { format } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 type AppRole = "admin" | "scout" | "member" | "partner" | "editor" | "viewer" | "player";
 
@@ -126,14 +117,23 @@ const ROLE_LABELS: Record<AppRole, string> = {
 };
 
 const ROLE_COLORS: Record<AppRole, string> = {
-  admin: "bg-amber-500/20 text-amber-400 border-amber-500/30",
-  editor: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-  scout: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-  viewer: "bg-zinc-500/20 text-zinc-400 border-zinc-500/30",
-  member: "bg-zinc-500/20 text-zinc-400 border-zinc-500/30",
-  partner: "bg-purple-500/20 text-purple-400 border-purple-500/30",
-  player: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+  admin: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+  editor: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+  scout: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+  viewer: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20",
+  member: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20",
+  partner: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+  player: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
 };
+
+function relativeTime(dateStr: string | null): string {
+  if (!dateStr) return "Nunca";
+  try {
+    return formatDistanceToNow(new Date(dateStr), { addSuffix: true, locale: ptBR });
+  } catch {
+    return "—";
+  }
+}
 
 const MODULES = [
   { key: "players", label: "Atletas", actions: ["view", "create", "edit", "delete", "export"] },
@@ -705,375 +705,175 @@ export default function UserManagement() {
     );
   }
 
+  const copyUserId = (userId: string) => {
+    navigator.clipboard.writeText(userId);
+    toast.success("ID copiado");
+  };
+
+  const renderUserRow = (user: UserWithPermissions) => (
+    <div
+      key={user.user_id}
+      className="flex items-center gap-4 px-4 py-3 rounded-xl bg-zinc-900/50 border border-zinc-800/30 hover:border-zinc-700/40 hover:bg-zinc-900/70 transition-all duration-200"
+    >
+      {/* Avatar + Name */}
+      <div className="flex items-center gap-3 flex-1 min-w-0">
+        <div className="w-9 h-9 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-300 shrink-0">
+          {user.full_name?.charAt(0).toUpperCase() || "U"}
+        </div>
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5">
+            <p className="text-sm font-bold text-zinc-100 truncate">{user.full_name || "Sem nome"}</p>
+            {user.is_owner && <Crown className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
+          </div>
+          {user.role === "player" && user.linked_player_name && (
+            <p className="text-[10px] text-zinc-600 truncate">→ {user.linked_player_name}</p>
+          )}
+        </div>
+      </div>
+
+      {/* Role */}
+      <div className="hidden sm:flex w-[80px] shrink-0 justify-center">
+        <span className={cn("inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium border", ROLE_COLORS[user.role])}>
+          {ROLE_LABELS[user.role]}
+        </span>
+      </div>
+
+      {/* Status */}
+      <div className="hidden sm:flex w-[90px] shrink-0 justify-center">
+        <span className={cn(
+          "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-medium border",
+          user.status === "active" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+            : user.status === "pending" ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+            : "bg-[#e63946]/10 text-[#e63946] border-[#e63946]/20"
+        )}>
+          <span className={cn("w-1.5 h-1.5 rounded-full",
+            user.status === "active" ? "bg-emerald-400" : user.status === "pending" ? "bg-amber-400" : "bg-[#e63946]"
+          )} />
+          {user.status === "active" ? "Ativo" : user.status === "pending" ? "Pendente" : "Suspenso"}
+        </span>
+      </div>
+
+      {/* Last login */}
+      <div className="hidden md:block w-[120px] shrink-0 text-right">
+        <p className="text-[11px] text-zinc-500">{relativeTime(user.last_login_at)}</p>
+      </div>
+
+      {/* Actions */}
+      {user.status === "pending" ? (
+        <div className="flex items-center gap-1.5 shrink-0">
+          <Button size="sm" onClick={() => openApprovalModal(user)} className="bg-emerald-600 hover:bg-emerald-700 h-7 text-[10px] rounded-full px-3">
+            <UserCheck className="w-3 h-3 mr-1" />Aprovar
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setConfirmAction({ type: "reject", user })} className="text-[#e63946] hover:bg-[#e63946]/10 h-7 rounded-full px-2">
+            <UserX className="w-3 h-3" />
+          </Button>
+        </div>
+      ) : (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-zinc-500 hover:text-zinc-300">
+              <MoreHorizontal className="w-4 h-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-800">
+            <DropdownMenuItem onClick={() => copyUserId(user.user_id)}>
+              <Copy className="w-4 h-4 mr-2" />Copiar ID
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="bg-zinc-800" />
+            <DropdownMenuItem onClick={() => openPermissions(user)} disabled={user.is_owner && !currentUserIsOwner}>
+              <UserCog className="w-4 h-4 mr-2" />Editar Permissões
+            </DropdownMenuItem>
+            {isAdmin && (
+              <DropdownMenuItem onClick={() => { setNewPassword(""); setResetPasswordUser(user); }} disabled={user.is_owner && !currentUserIsOwner}>
+                <KeyRound className="w-4 h-4 mr-2" />Redefinir Senha
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator className="bg-zinc-800" />
+            {user.status === "active" ? (
+              <DropdownMenuItem onClick={() => setConfirmAction({ type: "suspend", user })} disabled={user.is_owner || user.user_id === currentUser?.id} className="text-[#e63946] focus:text-[#e63946]">
+                <UserX className="w-4 h-4 mr-2" />Suspender
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem onClick={() => setConfirmAction({ type: "activate", user })} disabled={user.is_owner} className="text-emerald-400 focus:text-emerald-400">
+                <UserCheck className="w-4 h-4 mr-2" />Ativar
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+    </div>
+  );
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-primary/10">
-            <Users className="w-6 h-6 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold">Usuários</h1>
-            <p className="text-sm text-muted-foreground">
-              {users.length} usuário{users.length !== 1 ? "s" : ""} • {activeCount} ativo{activeCount !== 1 ? "s" : ""}
-              {pendingCount > 0 && (
-                <span className="text-amber-400 font-medium"> • {pendingCount} pendente{pendingCount !== 1 ? "s" : ""}</span>
-              )}
-            </p>
-          </div>
+        <div>
+          <h1 className="text-2xl font-extrabold tracking-tight">Usuários</h1>
+          <p className="text-xs text-zinc-500 mt-1 uppercase tracking-wide">
+            {users.length} usuário{users.length !== 1 ? "s" : ""} · {activeCount} ativo{activeCount !== 1 ? "s" : ""}
+            {pendingCount > 0 && ` · ${pendingCount} pendente${pendingCount !== 1 ? "s" : ""}`}
+          </p>
         </div>
         {pendingCount > 0 && (
-          <Button 
-            variant="outline" 
-            className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
-            onClick={() => setStatusFilter("pending")}
-          >
-            <AlertTriangle className="w-4 h-4 mr-2" />
-            Ver Pendentes ({pendingCount})
+          <Button variant="outline" className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10 rounded-full text-xs h-8 px-4" onClick={() => setStatusFilter("pending")}>
+            <AlertTriangle className="w-3.5 h-3.5 mr-1.5" />Ver Pendentes ({pendingCount})
           </Button>
         )}
       </div>
 
       {/* Search and Filters */}
-      <Card className="bg-zinc-900/50 border border-zinc-800/50">
-        <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-3">
-            {/* Search */}
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por nome..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            
-            {/* Status Filter */}
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[140px]">
-                <Filter className="w-4 h-4 mr-2 text-muted-foreground" />
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="pending">
-                  <span className="flex items-center gap-2">
-                    Pendentes {pendingCount > 0 && <Badge variant="outline" className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-[10px] h-4">{pendingCount}</Badge>}
-                  </span>
-                </SelectItem>
-                <SelectItem value="active">Ativos</SelectItem>
-                <SelectItem value="suspended">Suspensos</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            {/* Role Filter */}
-            <Select value={roleFilter} onValueChange={setRoleFilter}>
-              <SelectTrigger className="w-full sm:w-[140px]">
-                <Shield className="w-4 h-4 mr-2 text-muted-foreground" />
-                <SelectValue placeholder="Função" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="editor">Editor</SelectItem>
-                <SelectItem value="viewer">Viewer</SelectItem>
-                <SelectItem value="player">Jogador</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Desktop Table */}
-      <Card className="hidden md:block bg-zinc-900/50 border border-zinc-800/50">
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-zinc-800/50 hover:bg-transparent">
-                <TableHead className="pl-6">Usuário</TableHead>
-                <TableHead>Função</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Último Login</TableHead>
-                <TableHead className="text-right pr-6">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredUsers.map((user) => (
-                <TableRow key={user.user_id} className="border-zinc-800/50 hover:bg-zinc-800/20">
-                  <TableCell className="pl-6">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-zinc-800 flex items-center justify-center text-sm font-medium">
-                        {user.full_name?.charAt(0).toUpperCase() || "U"}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium">{user.full_name || "Sem nome"}</p>
-                          {user.is_owner && (
-                            <Crown className="w-4 h-4 text-amber-400" />
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground">{user.user_id.slice(0, 8)}...</p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col gap-1">
-                      <Badge className={ROLE_COLORS[user.role]} variant="outline">
-                        {ROLE_LABELS[user.role]}
-                      </Badge>
-                      {user.role === "player" && (
-                        <span className="text-xs text-muted-foreground">
-                          {user.linked_player_name ? `→ ${user.linked_player_name}` : "⚠️ Não vinculado"}
-                        </span>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge 
-                      variant="outline" 
-                      className={
-                        user.status === "active" 
-                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" 
-                          : user.status === "pending"
-                          ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
-                          : "bg-red-500/10 text-red-400 border-red-500/30"
-                      }
-                    >
-                      <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
-                        user.status === "active" ? "bg-emerald-400" : 
-                        user.status === "pending" ? "bg-amber-400" : "bg-red-400"
-                      }`} />
-                      {user.status === "active" ? "Ativo" : user.status === "pending" ? "Pendente" : "Suspenso"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-sm">
-                    {user.last_login_at 
-                      ? format(new Date(user.last_login_at), "dd/MM/yyyy HH:mm", { locale: ptBR })
-                      : "Nunca"
-                    }
-                  </TableCell>
-                  <TableCell className="text-right pr-6">
-                    {user.status === "pending" ? (
-                      <div className="flex items-center justify-end gap-2">
-                        <Button 
-                          size="sm" 
-                          onClick={() => openApprovalModal(user)}
-                          className="bg-emerald-600 hover:bg-emerald-700 h-7 text-xs"
-                        >
-                          <UserCheck className="w-3.5 h-3.5 mr-1" />
-                          Aprovar
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="ghost"
-                          onClick={() => setConfirmAction({ type: "reject", user })}
-                          className="text-red-400 hover:text-red-300 hover:bg-red-500/10 h-7 text-xs"
-                        >
-                          <UserX className="w-3.5 h-3.5 mr-1" />
-                          Recusar
-                        </Button>
-                      </div>
-                    ) : (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem 
-                            onClick={() => openPermissions(user)}
-                            disabled={user.is_owner && !currentUserIsOwner}
-                          >
-                            <UserCog className="w-4 h-4 mr-2" />
-                            Editar Permissões
-                          </DropdownMenuItem>
-                          {isAdmin && (
-                            <DropdownMenuItem
-                              onClick={() => { setNewPassword(""); setResetPasswordUser(user); }}
-                              disabled={user.is_owner && !currentUserIsOwner}
-                            >
-                              <KeyRound className="w-4 h-4 mr-2" />
-                              Redefinir Senha Temporária
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuSeparator />
-                          {user.status === "active" ? (
-                            <DropdownMenuItem 
-                              onClick={() => setConfirmAction({ type: "suspend", user })}
-                              disabled={user.is_owner || user.user_id === currentUser?.id}
-                              className="text-red-400 focus:text-red-400"
-                            >
-                              <UserX className="w-4 h-4 mr-2" />
-                              Suspender
-                            </DropdownMenuItem>
-                          ) : (
-                            <DropdownMenuItem 
-                              onClick={() => setConfirmAction({ type: "activate", user })}
-                              disabled={user.is_owner}
-                              className="text-emerald-400 focus:text-emerald-400"
-                            >
-                              <UserCheck className="w-4 h-4 mr-2" />
-                              Ativar
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-              {filteredUsers.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
-                    <Users className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                    <p>Nenhum usuário encontrado</p>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      {/* Mobile Cards */}
-      <div className="md:hidden space-y-3">
-        {filteredUsers.length === 0 ? (
-          <Card className="bg-zinc-900/50 border border-zinc-800/50">
-            <CardContent className="py-12 text-center">
-              <Users className="w-12 h-12 mx-auto mb-3 opacity-20" />
-              <p className="text-muted-foreground">Nenhum usuário encontrado</p>
-            </CardContent>
-          </Card>
-        ) : (
-          filteredUsers.map((user) => (
-            <Card key={user.user_id} className="bg-zinc-900/50 border border-zinc-800/50">
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-sm font-medium shrink-0">
-                      {user.full_name?.charAt(0).toUpperCase() || "U"}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium truncate">{user.full_name || "Sem nome"}</p>
-                        {user.is_owner && (
-                          <Crown className="w-4 h-4 text-amber-400 shrink-0" />
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground">{user.user_id.slice(0, 8)}...</p>
-                    </div>
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem 
-                        onClick={() => openPermissions(user)}
-                        disabled={user.is_owner && !currentUserIsOwner}
-                      >
-                        <UserCog className="w-4 h-4 mr-2" />
-                        Editar Permissões
-                      </DropdownMenuItem>
-                      {isAdmin && (
-                        <DropdownMenuItem
-                          onClick={() => { setNewPassword(""); setResetPasswordUser(user); }}
-                          disabled={user.is_owner && !currentUserIsOwner}
-                        >
-                          <KeyRound className="w-4 h-4 mr-2" />
-                          Redefinir Senha Temporária
-                        </DropdownMenuItem>
-                      )}
-                      <DropdownMenuSeparator />
-                      {user.status === "active" ? (
-                        <DropdownMenuItem 
-                          onClick={() => setConfirmAction({ type: "suspend", user })}
-                          disabled={user.is_owner || user.user_id === currentUser?.id}
-                          className="text-red-400 focus:text-red-400"
-                        >
-                          <UserX className="w-4 h-4 mr-2" />
-                          Suspender
-                        </DropdownMenuItem>
-                      ) : (
-                        <DropdownMenuItem 
-                          onClick={() => setConfirmAction({ type: "activate", user })}
-                          disabled={user.is_owner}
-                          className="text-emerald-400 focus:text-emerald-400"
-                        >
-                          <UserCheck className="w-4 h-4 mr-2" />
-                          Ativar
-                        </DropdownMenuItem>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-                
-                <div className="flex flex-wrap items-center gap-2 mt-3">
-                  <Badge className={ROLE_COLORS[user.role]} variant="outline">
-                    {ROLE_LABELS[user.role]}
-                  </Badge>
-                  {user.role === "player" && (
-                    <span className="text-xs text-muted-foreground">
-                      {user.linked_player_name ? `→ ${user.linked_player_name}` : "⚠️ Não vinculado"}
-                    </span>
-                  )}
-                  <Badge 
-                    variant="outline" 
-                    className={
-                      user.status === "active" 
-                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" 
-                        : user.status === "pending"
-                        ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
-                        : "bg-red-500/10 text-red-400 border-red-500/30"
-                    }
-                  >
-                    <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
-                      user.status === "active" ? "bg-emerald-400" : 
-                      user.status === "pending" ? "bg-amber-400" : "bg-red-400"
-                    }`} />
-                    {user.status === "active" ? "Ativo" : user.status === "pending" ? "Pendente" : "Suspenso"}
-                  </Badge>
-                </div>
-                
-                {/* Actions for pending users on mobile */}
-                {user.status === "pending" && (
-                  <div className="flex gap-2 mt-3">
-                    <Button 
-                      size="sm" 
-                      onClick={() => openApprovalModal(user)}
-                      className="bg-emerald-600 hover:bg-emerald-700 flex-1"
-                    >
-                      <UserCheck className="w-4 h-4 mr-2" />
-                      Aprovar
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => setConfirmAction({ type: "reject", user })}
-                      className="text-red-400 border-red-500/30 hover:bg-red-500/10"
-                    >
-                      <UserX className="w-4 h-4" />
-                    </Button>
-                  </div>
-                )}
-                
-                <p className="text-xs text-muted-foreground mt-3">
-                  Último login: {user.last_login_at 
-                    ? format(new Date(user.last_login_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
-                    : "Nunca"
-                  }
-                </p>
-              </CardContent>
-            </Card>
-          ))
-        )}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+          <Input placeholder="Buscar por nome..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 rounded-full bg-zinc-900 border-zinc-800 text-sm h-9" />
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-full sm:w-[140px] rounded-full bg-zinc-900 border-zinc-800 h-9 text-sm">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent className="bg-zinc-900 border-zinc-800">
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="pending">Pendentes</SelectItem>
+            <SelectItem value="active">Ativos</SelectItem>
+            <SelectItem value="suspended">Suspensos</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={roleFilter} onValueChange={setRoleFilter}>
+          <SelectTrigger className="w-full sm:w-[140px] rounded-full bg-zinc-900 border-zinc-800 h-9 text-sm">
+            <Shield className="w-3.5 h-3.5 mr-2 text-zinc-500" />
+            <SelectValue placeholder="Função" />
+          </SelectTrigger>
+          <SelectContent className="bg-zinc-900 border-zinc-800">
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="admin">Admin</SelectItem>
+            <SelectItem value="editor">Editor</SelectItem>
+            <SelectItem value="viewer">Viewer</SelectItem>
+            <SelectItem value="player">Jogador</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
+      {/* Column headers */}
+      <div className="hidden sm:flex items-center gap-4 px-4 text-[10px] text-zinc-600 uppercase tracking-wider font-medium">
+        <div className="flex-1">Usuário</div>
+        <div className="w-[80px] text-center">Função</div>
+        <div className="w-[90px] text-center">Status</div>
+        <div className="hidden md:block w-[120px] text-right">Último Login</div>
+        <div className="w-8" />
+      </div>
+
+      {/* User list */}
+      {filteredUsers.length === 0 ? (
+        <div className="text-center py-16 rounded-xl bg-zinc-900/30 border border-zinc-800/30">
+          <Users className="w-10 h-10 mx-auto text-zinc-700 mb-3" />
+          <p className="text-sm text-zinc-500">Nenhum usuário encontrado</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {filteredUsers.map(renderUserRow)}
+        </div>
+      )}
       {/* Confirm Action Dialog */}
       <AlertDialog open={!!confirmAction} onOpenChange={() => setConfirmAction(null)}>
         <AlertDialogContent>
