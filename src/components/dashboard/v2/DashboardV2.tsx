@@ -85,6 +85,8 @@ const now = new Date();
 const currentMonth = now.toLocaleDateString("pt-BR", { month: "short" }).toUpperCase().replace(".", "");
 const currentYear = now.getFullYear();
 
+const uniqueCount = (values: Array<string | null | undefined>) => new Set(values.filter(Boolean)).size;
+
 export const DashboardV2 = () => {
   const { isAdmin, isScout, isPlayer, rolesLoading, session, permissionsLoading } = useAuth();
   const rbacReady = Boolean(session?.user) && !permissionsLoading && !rolesLoading;
@@ -142,8 +144,8 @@ export const DashboardV2 = () => {
           .or("is_archived.is.null,is_archived.eq.false")
           .order("auto_rating", { ascending: false }).limit(6),
         supabase.from("competitions")
-          .select("id, name, tier, final_coefficient")
-          .eq("is_active", true).limit(60),
+          .select("id, name, display_name, tier, final_coefficient")
+          .eq("is_active", true),
       ]);
 
       setStats({
@@ -179,43 +181,69 @@ export const DashboardV2 = () => {
 
       if (compsRes.data) {
         const comps = compsRes.data as any[];
-        const currentYear = new Date().getFullYear();
+        const seasonYear = new Date().getFullYear();
+        const yearStart = `${seasonYear}-01-01T00:00:00.000Z`;
+        const nextYearStart = `${seasonYear + 1}-01-01T00:00:00.000Z`;
         const usageRows = await Promise.all(
-          comps.slice(0, 60).map(async (c) => {
-            const [scoutingR, matchesR, playersR, lastScoutR, lastMatchR] = await Promise.all([
+          comps.map(async (c) => {
+            const [scoutingR, matchesR, matchIdsR, manualStatsR, legacyStatsR, lastScoutR, lastMatchR] = await Promise.all([
               supabase.from("scouting_reports")
-                .select("id", { count: "exact", head: true })
-                .eq("competition_id", c.id).is("deleted_at", null),
+                .select("player_id", { count: "exact" })
+                .eq("competition_id", c.id)
+                .is("deleted_at", null)
+                .gte("match_date", yearStart)
+                .lt("match_date", nextYearStart),
               supabase.from("matches")
                 .select("id", { count: "exact", head: true })
-                .eq("competition_id", c.id).eq("season_year", currentYear).eq("status", "applied"),
-              supabase.from("match_players")
-                .select("player_id", { count: "exact", head: true })
-                .in("match_id",
-                  (await supabase.from("matches").select("id").eq("competition_id", c.id).eq("season_year", currentYear).eq("status", "applied")).data?.map((m: any) => m.id) || []
-                ),
-              supabase.from("scouting_reports")
-                .select("created_at").eq("competition_id", c.id)
-                .is("deleted_at", null).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+                .eq("competition_id", c.id).eq("season_year", seasonYear).eq("status", "applied"),
               supabase.from("matches")
-                .select("match_date").eq("competition_id", c.id).eq("season_year", currentYear).eq("status", "applied")
+                .select("id")
+                .eq("competition_id", c.id).eq("season_year", seasonYear).eq("status", "applied"),
+              supabase.from("manual_player_stats")
+                .select("player_id", { count: "exact" })
+                .eq("competition_id", c.id).eq("season_year", seasonYear).gt("games", 0),
+              supabase.from("player_stats")
+                .select("player_id", { count: "exact" })
+                .eq("competition_id", c.id).eq("season_year", seasonYear)
+                .or("is_archived.is.null,is_archived.eq.false").gt("matches", 0),
+              supabase.from("scouting_reports")
+                .select("match_date").eq("competition_id", c.id)
+                .is("deleted_at", null)
+                .gte("match_date", yearStart)
+                .lt("match_date", nextYearStart)
+                .order("match_date", { ascending: false }).limit(1).maybeSingle(),
+              supabase.from("matches")
+                .select("match_date").eq("competition_id", c.id).eq("season_year", seasonYear).eq("status", "applied")
                 .order("match_date", { ascending: false }).limit(1).maybeSingle(),
             ]);
-            const totalUsos = (scoutingR.count || 0) + (matchesR.count || 0);
-            const lastScouting = lastScoutR.data?.created_at || null;
+            const matchIds = matchIdsR.data?.map((m: any) => m.id) || [];
+            const matchPlayersR = matchIds.length > 0
+              ? await supabase.from("match_players").select("player_id", { count: "exact" }).in("match_id", matchIds)
+              : { data: [], count: 0 };
+            const totalUsos = (scoutingR.count || 0) + (matchesR.count || 0) + (manualStatsR.count || 0) + (legacyStatsR.count || 0);
+            const lastScouting = lastScoutR.data?.match_date || null;
             const lastMatch = lastMatchR.data?.match_date || null;
             const ultimoUso = lastScouting && lastMatch
               ? (lastScouting > lastMatch ? lastScouting : lastMatch)
               : lastScouting || lastMatch;
             return {
-              id: c.id, name: c.name, tier: c.tier, final_coefficient: c.final_coefficient,
+              id: c.id, name: c.display_name || c.name, tier: c.tier, final_coefficient: c.final_coefficient,
               usos: totalUsos,
-              jogadores: playersR.count || 0,
+              jogadores: uniqueCount([
+                ...(scoutingR.data || []).map((row: any) => row.player_id),
+                ...(manualStatsR.data || []).map((row: any) => row.player_id),
+                ...(legacyStatsR.data || []).map((row: any) => row.player_id),
+                ...(matchPlayersR.data || []).map((row: any) => row.player_id),
+              ]),
               ultimo_uso: ultimoUso,
             } as CompetitionUsage;
           })
         );
-        setCompetitions(usageRows.filter(c => c.usos > 0).sort((a, b) => b.usos - a.usos).slice(0, 8));
+        const visibleCompetitions = usageRows
+          .filter(c => c.usos > 0)
+          .sort((a, b) => (b.ultimo_uso || "").localeCompare(a.ultimo_uso || "") || b.usos - a.usos);
+        console.log("[DashboardV2] Competições 2026 retornadas", visibleCompetitions);
+        setCompetitions(visibleCompetitions);
       }
 
       logFetchSuccess({ endpoint: "DashboardV2" }, performance.now() - start);
