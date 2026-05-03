@@ -26,7 +26,6 @@ import {
   Plus,
   Copy,
   HelpCircle,
-  RefreshCw,
   Trash2,
   Info,
 } from "lucide-react";
