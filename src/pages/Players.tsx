@@ -111,7 +111,7 @@ const Players = () => {
 
       // STEP 1: Core player data only (FAST - no joins)
       const { data: playersData, error: playersError } = await supabase
-        .from("players")
+        .from("public_players_safe" as any)
         .select(`
           id, slug, full_name, position, secondary_positions, age, nationality, 
           current_club, photo_url, auto_rating, dominant_foot, height,
@@ -119,8 +119,6 @@ const Players = () => {
           play_style, primary_tactical_role, secondary_tactical_role,
           created_at
         `)
-        .eq("is_public", true)
-        .or("is_archived.is.null,is_archived.eq.false")
         .order("full_name");
 
       if (import.meta.env.DEV) {

@@ -119,10 +119,9 @@ const PlayerProfile = () => {
     const fetchPlayer = async () => {
       if (!slug) return;
       const { data } = await supabase
-        .from("players")
+        .from("public_players_safe" as any)
         .select("*")
         .eq("slug", slug)
-        .eq("is_public", true)
         .limit(1);
       const playerRow = Array.isArray(data) ? data[0] ?? null : null;
       if (playerRow) setPlayer(playerRow);

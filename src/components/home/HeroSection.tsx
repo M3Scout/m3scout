@@ -45,7 +45,7 @@ export function HeroSection() {
     async function fetchStats() {
       try {
         const [p, r, c] = await Promise.all([
-          supabase.from("players").select("id", { count: "exact", head: true }).eq("is_public", true),
+          supabase.from("public_players_safe" as any).select("id", { count: "exact", head: true }),
           supabase.from("scouting_reports").select("id", { count: "exact", head: true }),
           supabase.from("competitions").select("id", { count: "exact", head: true }).eq("is_active", true),
         ]);
