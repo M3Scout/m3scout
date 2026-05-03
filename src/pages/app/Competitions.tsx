@@ -546,7 +546,7 @@ const Competitions = () => {
               <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
                 <Button 
                   variant="outline" 
-                  className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                  className="text-destructive border-destructive/30 hover:bg-destructive/10 rounded-full"
                   onClick={() => setDeleteDialogOpen(true)}
                 >
                   <Trash2 className="w-4 h-4" />
@@ -578,13 +578,14 @@ const Competitions = () => {
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel onClick={() => setConfirmationInput("")}>
+                  <AlertDialogCancel onClick={() => setConfirmationInput("")} className="rounded-full">
                     Cancelar
                   </AlertDialogCancel>
                   <Button
                     variant="destructive"
                     onClick={handleDeleteAll}
                     disabled={!isConfirmationValid || isDeleting}
+                    className="rounded-full"
                   >
                     {isDeleting && <Loader2 className="w-4 h-4 animate-spin" />}
                     Excluir Todas
@@ -598,33 +599,20 @@ const Competitions = () => {
             <Button 
               variant="outline" 
               onClick={findDuplicates}
+              className="rounded-full"
             >
               <Copy className="w-4 h-4" />
               Remover Duplicados
             </Button>
           )}
-          {isAdmin && competitions.length > 0 && (
-            <Button 
-              variant="outline" 
-              onClick={handleRecalculateAll}
-              disabled={isRecalculating}
-            >
-              {isRecalculating ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <RefreshCw className="w-4 h-4" />
-              )}
-              Recalcular Coeficientes
-            </Button>
-          )}
           <Link to="/app/competitions/import">
-            <Button variant="outline">
+            <Button variant="outline" className="rounded-full">
               <Upload className="w-4 h-4" />
               Importar CSV
             </Button>
           </Link>
           {isAdmin && (
-            <Button onClick={handleCreate}>
+            <Button onClick={handleCreate} className="bg-[#e63946] hover:bg-[#d62839] text-white rounded-full">
               <Plus className="w-4 h-4" />
               Nova Competição
             </Button>
@@ -935,7 +923,7 @@ const Competitions = () => {
                   onValueChange={([v]) => setFormData({ ...formData, visibility_score: v })}
                   min={0}
                   max={100}
-                  step={5}
+                  step={1}
                 />
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>Oculto</span>
@@ -973,10 +961,10 @@ const Competitions = () => {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setDialogOpen(false)} className="rounded-full">
               Cancelar
             </Button>
-            <Button onClick={handleSave} disabled={saving}>
+            <Button onClick={handleSave} disabled={saving} className="bg-[#e63946] hover:bg-[#d62839] text-white rounded-full">
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
               {editingCompetition ? "Salvar" : "Criar"}
             </Button>
