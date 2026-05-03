@@ -398,6 +398,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "manual_player_stats_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "public_players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       market_score_events: {
@@ -514,6 +521,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "market_scores_athlete_id_fkey"
+            columns: ["athlete_id"]
+            isOneToOne: true
+            referencedRelation: "public_players_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "market_scores_target_id_fkey"
             columns: ["target_id"]
             isOneToOne: true
@@ -593,10 +607,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "match_events_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "public_players_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "match_events_player_in_id_fkey"
             columns: ["player_in_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_events_player_in_id_fkey"
+            columns: ["player_in_id"]
+            isOneToOne: false
+            referencedRelation: "public_players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -752,6 +780,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "match_player_stats_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "public_players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       match_players: {
@@ -819,6 +854,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_players_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "public_players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -1039,6 +1081,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "player_achievements_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "public_players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       player_attribute_scores: {
@@ -1097,6 +1146,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_attribute_scores_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "public_players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -1167,6 +1223,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "player_contract_history_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "public_players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       player_field_presence: {
@@ -1228,6 +1291,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "player_field_presence_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "public_players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       player_injuries: {
@@ -1272,6 +1342,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "player_injuries_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "public_players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       player_market_value_history: {
@@ -1314,6 +1391,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_market_value_history_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "public_players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -1369,6 +1453,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "player_physical_history_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "public_players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       player_rating_history: {
@@ -1399,6 +1490,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_rating_history_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "public_players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -1440,6 +1538,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_season_goals_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "public_players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -1641,6 +1746,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_stats_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "public_players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -1975,6 +2087,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scouting_reports_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "public_players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -2355,10 +2474,152 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "user_roles_linked_player_id_fkey"
+            columns: ["linked_player_id"]
+            isOneToOne: false
+            referencedRelation: "public_players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
     Views: {
+      public_players_safe: {
+        Row: {
+          age: number | null
+          areas_to_develop: string[] | null
+          auto_rating: number | null
+          bio_public: string | null
+          birth_date: string | null
+          body_fat_percentage: number | null
+          country: string | null
+          created_at: string | null
+          current_club: string | null
+          dominant_foot: string | null
+          estimated_level: string | null
+          full_name: string | null
+          height: number | null
+          highlight_video_url: string | null
+          id: string | null
+          is_archived: boolean | null
+          is_public: boolean | null
+          market_value: number | null
+          market_value_currency: string | null
+          market_value_trend: string | null
+          max_speed: number | null
+          muscle_mass: number | null
+          nationality: string | null
+          overall_rating: number | null
+          passports: string[] | null
+          photo_url: string | null
+          physical_status: string | null
+          play_style: string | null
+          playing_height_preference: string | null
+          position: string | null
+          potential_rating: number | null
+          primary_tactical_role: string | null
+          ready_to_compete: boolean | null
+          secondary_positions: string[] | null
+          secondary_tactical_role: string | null
+          slug: string | null
+          sprint_30m: number | null
+          strengths: string[] | null
+          updated_at: string | null
+          vo2_max: number | null
+          weight: number | null
+          wingspan: number | null
+        }
+        Insert: {
+          age?: number | null
+          areas_to_develop?: string[] | null
+          auto_rating?: number | null
+          bio_public?: string | null
+          birth_date?: string | null
+          body_fat_percentage?: number | null
+          country?: string | null
+          created_at?: string | null
+          current_club?: string | null
+          dominant_foot?: string | null
+          estimated_level?: string | null
+          full_name?: string | null
+          height?: number | null
+          highlight_video_url?: string | null
+          id?: string | null
+          is_archived?: boolean | null
+          is_public?: boolean | null
+          market_value?: number | null
+          market_value_currency?: string | null
+          market_value_trend?: string | null
+          max_speed?: number | null
+          muscle_mass?: number | null
+          nationality?: string | null
+          overall_rating?: number | null
+          passports?: string[] | null
+          photo_url?: string | null
+          physical_status?: string | null
+          play_style?: string | null
+          playing_height_preference?: string | null
+          position?: string | null
+          potential_rating?: number | null
+          primary_tactical_role?: string | null
+          ready_to_compete?: boolean | null
+          secondary_positions?: string[] | null
+          secondary_tactical_role?: string | null
+          slug?: string | null
+          sprint_30m?: number | null
+          strengths?: string[] | null
+          updated_at?: string | null
+          vo2_max?: number | null
+          weight?: number | null
+          wingspan?: number | null
+        }
+        Update: {
+          age?: number | null
+          areas_to_develop?: string[] | null
+          auto_rating?: number | null
+          bio_public?: string | null
+          birth_date?: string | null
+          body_fat_percentage?: number | null
+          country?: string | null
+          created_at?: string | null
+          current_club?: string | null
+          dominant_foot?: string | null
+          estimated_level?: string | null
+          full_name?: string | null
+          height?: number | null
+          highlight_video_url?: string | null
+          id?: string | null
+          is_archived?: boolean | null
+          is_public?: boolean | null
+          market_value?: number | null
+          market_value_currency?: string | null
+          market_value_trend?: string | null
+          max_speed?: number | null
+          muscle_mass?: number | null
+          nationality?: string | null
+          overall_rating?: number | null
+          passports?: string[] | null
+          photo_url?: string | null
+          physical_status?: string | null
+          play_style?: string | null
+          playing_height_preference?: string | null
+          position?: string | null
+          potential_rating?: number | null
+          primary_tactical_role?: string | null
+          ready_to_compete?: boolean | null
+          secondary_positions?: string[] | null
+          secondary_tactical_role?: string | null
+          slug?: string | null
+          sprint_30m?: number | null
+          strengths?: string[] | null
+          updated_at?: string | null
+          vo2_max?: number | null
+          weight?: number | null
+          wingspan?: number | null
+        }
+        Relationships: []
+      }
       unified_player_season_stats: {
         Row: {
           accurate_passes: number | null
