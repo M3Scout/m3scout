@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { ChevronDown } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
-import heroStadium from "@/assets/hero-stadium.jpg";
+import heroStadium from "@/assets/hero-stadium.webp";
 
 export function HeaderHero() {
   const [scrollY, setScrollY] = useState(0);

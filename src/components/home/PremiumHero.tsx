@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, ChevronDown, Users, FileText, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
-import heroStadium from "@/assets/hero-stadium.jpg";
+import heroStadium from "@/assets/hero-stadium.webp";
 
 export function PremiumHero() {
   const heroRef = useRef<HTMLElement>(null);
