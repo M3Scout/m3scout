@@ -420,7 +420,7 @@ export default function LiveMatchNew() {
                       <img 
                         src={displayLogoUrl} 
                         alt="Logo" 
-                        className="w-full h-full object-contain"
+                        className="w-full h-full object-contain" width={48} height={48}
                       />
                     ) : (
                       <Image className="w-5 h-5 text-zinc-600" />
@@ -605,7 +605,7 @@ export default function LiveMatchNew() {
                       <img 
                         src={opponentLogoUrl} 
                         alt="Logo adversário" 
-                        className="w-full h-full object-contain"
+                        className="w-full h-full object-contain" width={48} height={48}
                       />
                     ) : (
                       <Image className="w-5 h-5 text-zinc-600" />
