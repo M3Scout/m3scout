@@ -40,6 +40,7 @@ interface NavItem {
   label: string;
   module: string;
   action?: string;
+  icon: LucideIcon;
 }
 
 interface NavGroup {
