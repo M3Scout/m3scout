@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableCompetitionSelect } from "@/components/ui/searchable-competition-select";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -605,21 +606,14 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
                           </div>
                           <div className="space-y-1 sm:col-span-3">
                             <Label className="text-xs text-muted-foreground">Competição *</Label>
-                            <Select 
-                              value={stat.competition_id || ""} 
+                            <SearchableCompetitionSelect
+                              competitions={safeArray(competitions)}
+                              value={stat.competition_id || ""}
                               onValueChange={(val) => updateStatField(stat.id, "competition_id", val || null)}
-                            >
-                              <SelectTrigger className={!stat.competition_id ? "border-destructive/50" : ""}>
-                                <SelectValue placeholder="Selecione uma competição..." />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {safeArray(competitions).map(c => (
-                                  <SelectItem key={c.id} value={c.id}>
-                                    {c.display_name || c.name} (coef: {c.final_coefficient})
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                              placeholder="Selecione uma competição..."
+                              triggerClassName={!stat.competition_id ? "border-destructive/50" : ""}
+                              renderLabel={(c) => `${c.display_name || c.name} (coef: ${c.final_coefficient})`}
+                            />
                             {!stat.competition_id && (
                               <p className="text-xs text-destructive">Competição é obrigatória</p>
                             )}
