@@ -837,6 +837,18 @@ export default function UserManagement() {
                 <UserCheck className="w-4 h-4 mr-2" />Ativar
               </DropdownMenuItem>
             )}
+            {isAdmin && (
+              <>
+                <DropdownMenuSeparator className="bg-zinc-800" />
+                <DropdownMenuItem
+                  onClick={() => setConfirmAction({ type: "delete", user })}
+                  disabled={user.is_owner || user.user_id === currentUser?.id}
+                  className="text-[#e63946] focus:text-[#e63946] focus:bg-[#e63946]/10"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />Excluir
+                </DropdownMenuItem>
+              </>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       )}
