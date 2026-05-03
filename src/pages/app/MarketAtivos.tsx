@@ -402,7 +402,10 @@ export default function MarketAtivos() {
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-bold text-zinc-100 truncate">{athlete.full_name}</h3>
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="text-sm font-bold text-zinc-100 truncate">{athlete.full_name}</h3>
+                    {hasScore && <TrendIcon trend={athlete.score!.trend_30d} />}
+                  </div>
                   <div className="flex items-center gap-2 mt-0.5">
                     <span className={cn("text-[10px] font-semibold uppercase tracking-wider", posColor.textClass)}>
                       {shortPos}
@@ -416,21 +419,13 @@ export default function MarketAtivos() {
 
                 {/* Score */}
                 {hasScore ? (
-                  <div className="relative flex flex-col items-center justify-center shrink-0">
+                  <div className="flex flex-col items-center justify-center shrink-0">
                     <span className={cn("text-xl font-black tabular-nums leading-none", scoreColor.text)}>
                       {score.toFixed(0)}
                     </span>
-                    <div className="flex items-center gap-1 mt-0.5">
-                      <TrendIcon trend={athlete.score!.trend_30d} />
-                      <span className={cn("text-[9px] font-medium opacity-60", scoreColor.text)}>
-                        {scoreColor.label}
-                      </span>
-                    </div>
-                    {isStale && (
-                      <div className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-amber-500/80 flex items-center justify-center" title="Score desatualizado">
-                        <RefreshCw className="w-2 h-2 text-amber-950" />
-                      </div>
-                    )}
+                    <span className={cn("text-[9px] font-medium opacity-60 mt-1", scoreColor.text)}>
+                      {scoreColor.label}
+                    </span>
                   </div>
                 ) : (
                   <Button
