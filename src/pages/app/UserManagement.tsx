@@ -875,8 +875,8 @@ export default function UserManagement() {
         </div>
       )}
 
-      {/* Desktop Table */}
-      <Card className="hidden md:block bg-zinc-900/50 border border-zinc-800/50">
+
+
         <CardContent className="p-0">
           <Table>
             <TableHeader>
