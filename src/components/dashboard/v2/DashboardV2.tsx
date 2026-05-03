@@ -7,7 +7,7 @@ import { AdminSkeletonDashboard } from "@/components/admin/AdminSkeleton";
 import { AthleteDashboard } from "@/components/dashboard/athlete/AthleteDashboard";
 import { InsightsCard } from "@/components/dashboard/InsightsCard";
 import { isAbortError, logFetchError, logFetchSkipped, logFetchSuccess } from "@/lib/fetchLogger";
-import { Star, Users, FileText, MessageSquare, AlertTriangle, ArrowRight } from "lucide-react";
+import { Star, Users, FileText, ArrowRight } from "lucide-react";
 import "./dashboard-v2.css";
 
 interface DashboardStats {
@@ -30,15 +30,29 @@ interface RankedPlayer {
   auto_rating: number | null; current_club: string | null; age: number | null;
 }
 
-const POSITION_COLOR: Record<string, string> = {
-  PD: "#ea580c", PE: "#ea580c",
-  MEI: "#facc15", MEA: "#facc15",
-  GOL: "#8b5cf6",
-  ZAG: "#4a6edc",
-  LD: "#22d3ee", LE: "#22d3ee",
-  VOL: "#34d399",
-  CA: "#f87171", ATA: "#f87171",
+const POS_BAR_COLOR: Record<string, string> = {
+  PD: "#E5173F", PE: "#E5173F",
+  MEI: "#E8C84A", MEA: "#E8C84A",
+  GOL: "#2DCE8A", ZAG: "#2DCE8A",
+  LD: "#2DCE8A", LE: "#2DCE8A",
+  VOL: "#E8C84A",
+  CA: "#E5173F", ATA: "#E5173F",
 };
+
+const POS_BADGE_STYLE: Record<string, { bg: string; color: string }> = {
+  GOL: { bg: "rgba(45,206,138,0.12)", color: "#2DCE8A" },
+  ZAG: { bg: "rgba(45,206,138,0.12)", color: "#2DCE8A" },
+  LD: { bg: "rgba(45,206,138,0.12)", color: "#2DCE8A" },
+  LE: { bg: "rgba(45,206,138,0.12)", color: "#2DCE8A" },
+  VOL: { bg: "rgba(232,200,74,0.12)", color: "#E8C84A" },
+  MEI: { bg: "rgba(232,200,74,0.12)", color: "#E8C84A" },
+  MEA: { bg: "rgba(232,200,74,0.12)", color: "#E8C84A" },
+  PD: { bg: "rgba(229,23,63,0.12)", color: "#E5173F" },
+  PE: { bg: "rgba(229,23,63,0.12)", color: "#E5173F" },
+  CA: { bg: "rgba(229,23,63,0.12)", color: "#E5173F" },
+  ATA: { bg: "rgba(229,23,63,0.12)", color: "#E5173F" },
+};
+
 const SHORT_POS: Record<string, string> = {
   "Goleiro": "GOL", "Zagueiro": "ZAG",
   "Lateral Direito": "LD", "Lateral Esquerdo": "LE",
@@ -48,13 +62,28 @@ const SHORT_POS: Record<string, string> = {
 };
 const shortPos = (p: string) => SHORT_POS[p] || (p ? p.slice(0, 3).toUpperCase() : "—");
 
-const TIER_LABEL: Record<string, string> = { S: "S", A: "A", B: "B", C: "C", D: "D" };
-
 const formatDateShort = (iso: string | null) => {
   if (!iso) return "—";
   const d = new Date(iso);
   return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" });
 };
+
+const getScoreClass = (score: number) => {
+  if (score >= 65) return "m3dash-report-score--green";
+  if (score >= 55) return "m3dash-report-score--yellow";
+  return "m3dash-report-score--red";
+};
+
+const getInitials = (name: string) => {
+  const parts = name.split(" ").filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+};
+
+const now = new Date();
+const currentMonth = now.toLocaleDateString("pt-BR", { month: "short" }).toUpperCase().replace(".", "");
+const currentYear = now.getFullYear();
 
 export const DashboardV2 = () => {
   const { isAdmin, isScout, isPlayer, rolesLoading, session, permissionsLoading } = useAuth();
@@ -72,6 +101,12 @@ export const DashboardV2 = () => {
   const [recentReports, setRecentReports] = useState<RecentReport[]>([]);
   const [topPlayers, setTopPlayers] = useState<RankedPlayer[]>([]);
   const [competitions, setCompetitions] = useState<CompetitionUsage[]>([]);
+
+  // Alert: find lowest-rated player
+  const lowestPlayer = topPlayers.length > 0
+    ? topPlayers.reduce((min, p) => ((p.auto_rating ?? 99) < (min.auto_rating ?? 99) ? p : min), topPlayers[0])
+    : null;
+  const showAlert = lowestPlayer && (lowestPlayer.auto_rating ?? 99) < 5.0;
 
   const fetchAll = useCallback(async () => {
     if (!session?.user) { logFetchSkipped("DashboardV2", "no session"); return; }
@@ -118,7 +153,6 @@ export const DashboardV2 = () => {
         expiringContracts: contractsRes.count || 0,
       });
 
-      // Position breakdown — top 5
       if (positionsRes.data) {
         const counts: Record<string, number> = {};
         positionsRes.data.forEach((p: any) => {
@@ -131,7 +165,6 @@ export const DashboardV2 = () => {
         );
       }
 
-      // Recent reports
       if (recentReportsRes.data) {
         setRecentReports(recentReportsRes.data.map((r: any) => ({
           id: r.id,
@@ -144,7 +177,6 @@ export const DashboardV2 = () => {
 
       if (topPlayersRes.data) setTopPlayers(topPlayersRes.data as any);
 
-      // Competitions usage — needs aggregate (do per-id parallel)
       if (compsRes.data) {
         const comps = compsRes.data as any[];
         const usageRows = await Promise.all(
@@ -191,202 +223,250 @@ export const DashboardV2 = () => {
   const maxPos = Math.max(...positionData.map(p => p.value), 1);
 
   return (
-    <div className="m3v2">
-      {/* Top bar */}
-      <div className="topbar">
-        <div>
-          <h1>VISÃO GERAL // ANÁLISE</h1>
-          <p>Painel estratégico de scouting M3 Agency</p>
+    <div className="m3dash">
+      {/* ── TOPBAR ── */}
+      <div className="m3dash-topbar">
+        <div className="m3dash-breadcrumb">
+          <span className="bc-muted">M3 Agency </span>
+          <span className="bc-text">// Dashboard</span>
         </div>
-        <div className="topbar-actions">
-          <Link to="/app/players" className="btn"><Users size={12} /> Atletas</Link>
-          <Link to="/app/reports/new" className="btn primary"><FileText size={12} /> Novo Relatório</Link>
-        </div>
-      </div>
-
-      {/* Stat cards */}
-      <div className="stats-grid">
-        <Link to="/app/players" className="stat stat-blue">
-          <Users className="stat-icon" />
-          <div className="stat-num">{stats.totalPlayers}</div>
-          <div className="stat-label">Atletas</div>
-          <div className="stat-sub">Portfólio ativo</div>
-        </Link>
-        <Link to="/app/reports" className="stat stat-violet">
-          <FileText className="stat-icon" />
-          <div className="stat-num">{stats.reportsThisMonth}</div>
-          <div className="stat-label">Relatórios</div>
-          <div className="stat-sub">Este mês</div>
-        </Link>
-        <Link to="/app/leads" className="stat stat-amber">
-          <MessageSquare className="stat-icon" />
-          <div className="stat-num">{stats.totalLeads}</div>
-          <div className="stat-label">Leads</div>
-          <div className="stat-sub">Total recebidos</div>
-        </Link>
-        <Link to="/app/contratos?status=expiring&days=90" className="stat stat-green">
-          <AlertTriangle className="stat-icon" />
-          <div className={`stat-num ${stats.expiringContracts > 0 ? "warn" : ""}`}>{stats.expiringContracts}</div>
-          <div className="stat-label">Contratos</div>
-          <div className="stat-sub">Expirando 90d</div>
-        </Link>
-      </div>
-
-      {/* Insights */}
-      <div className="card" style={{ marginBottom: 16 }}>
-        <div className="card-head">
-          <div>
-            <div className="card-title">// INSIGHTS DA PLATAFORMA</div>
-            <div className="card-sub">Análises automatizadas</div>
-          </div>
-          <span className="lbl">AUTO</span>
-        </div>
-        {/* Reuse existing InsightsCard — wrap in scope to neutralize its visual chrome */}
-        <div className="m3v2-insights-wrap">
-          <InsightsCard />
+        <div className="m3dash-topbar-actions">
+          <Link to="/app/players" className="m3dash-btn">
+            <Users size={13} /> Atletas
+          </Link>
+          <Link to="/app/reports/new" className="m3dash-btn m3dash-btn--primary">
+            + Novo Relatório
+          </Link>
         </div>
       </div>
 
-      {/* Top players + Position chart */}
-      <div className="grid-2">
-        <div className="card">
-          <div className="card-head">
-            <div>
-              <div className="card-title">// TOP ATLETAS</div>
-              <div className="card-sub">Ranking por nota automática</div>
-            </div>
-            <Link to="/app/players" className="card-link">VER TODOS <ArrowRight size={10} /></Link>
+      {/* ── CONTENT ── */}
+      <div className="m3dash-content">
+        {/* Page header */}
+        <div className="m3dash-header">
+          <div className="m3dash-headline">
+            VISÃO<br />GERAL <span className="red">—</span>
           </div>
-          {topPlayers.length === 0 ? (
-            <div className="empty">Nenhum atleta com nota disponível</div>
-          ) : (
-            <div>
-              {topPlayers.map((p, i) => (
-                <Link key={p.id} to={`/app/players/${p.id}`} className={`athlete-row ${i === 0 ? "first" : ""}`}>
-                  <div className="athlete-rank">{String(i + 1).padStart(2, "0")}</div>
-                  <div style={{ minWidth: 0 }}>
-                    <div className="athlete-name">{p.full_name}</div>
-                    <div className="athlete-meta">
-                      {shortPos(p.position)}
-                      {p.age ? ` · ${p.age}a` : ""}
-                      {p.current_club ? ` · ${p.current_club}` : ""}
-                    </div>
-                  </div>
-                  <div className="athlete-rating">
-                    <Star fill="currentColor" />
-                    {p.auto_rating?.toFixed(1) ?? "—"}
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
+          <div className="m3dash-meta">
+            PORTFÓLIO ATIVO · {currentYear}<br />
+            BRASIL & INTERNACIONAL<br />
+            {currentMonth} {currentYear}
+          </div>
         </div>
 
-        <div className="card">
-          <div className="card-head">
-            <div>
-              <div className="card-title">// PERFIL DO ELENCO</div>
-              <div className="card-sub">Distribuição por posição (top 5)</div>
+        {/* Alert banner */}
+        {showAlert && lowestPlayer && (
+          <div className="m3dash-alert">
+            <div className="m3dash-alert-icon">!</div>
+            <div className="m3dash-alert-body">
+              <div className="m3dash-alert-name">{lowestPlayer.full_name}</div>
+              <div className="m3dash-alert-desc">
+                Nota automática abaixo do limiar mínimo de performance
+              </div>
             </div>
-            <span className="lbl">{positionData.reduce((s, p) => s + p.value, 0)} ATLETAS</span>
+            <div className="m3dash-alert-badge">
+              ↓ {((5.0 - (lowestPlayer.auto_rating ?? 0)) / 5.0 * 100).toFixed(0)}%
+            </div>
           </div>
-          {positionData.length === 0 ? (
-            <div className="empty">Sem dados de posição</div>
-          ) : (
-            <div className="pos-list">
-              {positionData.map(p => (
-                <div key={p.name} className="pos-row">
-                  <div className="pos-label" style={{ color: POSITION_COLOR[p.name] || "rgba(255,255,255,0.55)" }}>
-                    {p.name}
-                  </div>
-                  <div className="pos-bar-track">
-                    <div
-                      className="pos-bar-fill"
-                      style={{
-                        width: `${(p.value / maxPos) * 100}%`,
-                        background: POSITION_COLOR[p.name] || "rgba(255,255,255,0.35)",
-                        opacity: 0.85,
-                      }}
-                    />
-                  </div>
-                  <div className="pos-val">{p.value}</div>
+        )}
+
+        {/* Stats row */}
+        <div className="m3dash-stats">
+          <Link to="/app/players" className="m3dash-stat">
+            <div className="m3dash-stat-label">Atletas</div>
+            <div className="m3dash-stat-value">{stats.totalPlayers}</div>
+            <div className="m3dash-stat-sub">Portfólio ativo</div>
+            <div className="m3dash-stat-bar m3dash-stat-bar--green" />
+          </Link>
+          <Link to="/app/reports" className="m3dash-stat">
+            <div className="m3dash-stat-label">Relatórios</div>
+            <div className="m3dash-stat-value">{stats.reportsThisMonth}</div>
+            <div className="m3dash-stat-sub">Este mês</div>
+            <div className={`m3dash-stat-bar ${stats.reportsThisMonth > 0 ? "m3dash-stat-bar--muted" : "m3dash-stat-bar--muted"}`} />
+          </Link>
+          <Link to="/app/leads" className="m3dash-stat">
+            <div className="m3dash-stat-label">Leads</div>
+            <div className="m3dash-stat-value">{stats.totalLeads}</div>
+            <div className="m3dash-stat-sub">Total recebidos</div>
+            <div className={`m3dash-stat-bar ${stats.totalLeads > 0 ? "m3dash-stat-bar--muted" : "m3dash-stat-bar--muted"}`} />
+          </Link>
+          <Link to="/app/contratos?status=expiring&days=90" className="m3dash-stat">
+            <div className="m3dash-stat-label">Contratos</div>
+            <div className={`m3dash-stat-value ${stats.expiringContracts > 0 ? "warn" : ""}`}>
+              {stats.expiringContracts}
+            </div>
+            <div className="m3dash-stat-sub">Expirando 90d</div>
+            <div className={`m3dash-stat-bar ${stats.expiringContracts > 0 ? "m3dash-stat-bar--yellow" : "m3dash-stat-bar--muted"}`} />
+          </Link>
+        </div>
+
+        {/* Main 2-column grid */}
+        <div className="m3dash-grid">
+          {/* LEFT COLUMN */}
+          <div className="m3dash-col-left">
+            {/* Top Atletas */}
+            <div className="m3dash-section">
+              <div className="m3dash-section-head">
+                <div className="m3dash-section-title">
+                  <span className="red">// </span>Top Atletas
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Recent reports + Competitions table */}
-      <div className="grid-2">
-        <div className="card">
-          <div className="card-head">
-            <div>
-              <div className="card-title">// RELATÓRIOS RECENTES</div>
-              <div className="card-sub">Últimas avaliações</div>
-            </div>
-            <Link to="/app/reports" className="card-link">VER TODOS <ArrowRight size={10} /></Link>
-          </div>
-          {recentReports.length === 0 ? (
-            <div className="empty">Nenhum relatório ainda</div>
-          ) : (
-            <div>
-              {recentReports.map(r => (
-                <Link key={r.id} to={`/app/reports/${r.id}`} className="report-row">
-                  <div className="report-score">{(r.final_score ?? 0).toFixed(1)}</div>
-                  <div style={{ minWidth: 0 }}>
-                    <div className="report-name">{r.player_name}</div>
-                    <div className="report-meta">{r.competition_name}</div>
-                  </div>
-                  <div className="report-date">{formatDateShort(r.match_date)}</div>
+                <Link to="/app/players" className="m3dash-section-link">
+                  Ver Todos <ArrowRight size={10} style={{ display: "inline", verticalAlign: "middle" }} />
                 </Link>
-              ))}
+              </div>
+              {topPlayers.length === 0 ? (
+                <div className="m3dash-empty">Nenhum atleta com nota disponível</div>
+              ) : (
+                topPlayers.map((p, i) => {
+                  const pos = shortPos(p.position);
+                  const badgeStyle = POS_BADGE_STYLE[pos] || { bg: "rgba(240,236,227,0.08)", color: "rgba(240,236,227,0.45)" };
+                  const isTop = i < 3;
+                  return (
+                    <Link key={p.id} to={`/app/players/${p.id}`} className="m3dash-athlete">
+                      <div className="m3dash-athlete-rank">{String(i + 1).padStart(2, "0")}</div>
+                      <div className="m3dash-athlete-avatar">{getInitials(p.full_name)}</div>
+                      <div className="m3dash-athlete-info">
+                        <div className="m3dash-athlete-name">{p.full_name}</div>
+                        <div className="m3dash-athlete-meta">
+                          {pos}{p.age ? ` · ${p.age}a` : ""}{p.current_club ? ` · ${p.current_club}` : ""}
+                        </div>
+                      </div>
+                      <span className="m3dash-pos-badge" style={{ background: badgeStyle.bg, color: badgeStyle.color }}>
+                        {pos}
+                      </span>
+                      <div className={`m3dash-athlete-score ${isTop ? "m3dash-athlete-score--top" : "m3dash-athlete-score--low"}`}>
+                        <Star fill="currentColor" />
+                        {p.auto_rating?.toFixed(1) ?? "—"}
+                      </div>
+                    </Link>
+                  );
+                })
+              )}
             </div>
-          )}
-        </div>
 
-        <div className="card">
-          <div className="card-head">
-            <div>
-              <div className="card-title">// COMPETIÇÕES</div>
-              <div className="card-sub">Tier · multiplicador · uso</div>
+            {/* Relatórios Recentes */}
+            <div className="m3dash-section">
+              <div className="m3dash-section-head">
+                <div className="m3dash-section-title">
+                  <span className="red">// </span>Relatórios Recentes
+                </div>
+                <Link to="/app/reports" className="m3dash-section-link">
+                  Ver Todos <ArrowRight size={10} style={{ display: "inline", verticalAlign: "middle" }} />
+                </Link>
+              </div>
+              {recentReports.length === 0 ? (
+                <div className="m3dash-empty">Nenhum relatório ainda</div>
+              ) : (
+                recentReports.map(r => (
+                  <Link key={r.id} to={`/app/reports/${r.id}`} className="m3dash-report">
+                    <div className={`m3dash-report-score ${getScoreClass(r.final_score)}`}>
+                      {(r.final_score ?? 0).toFixed(1)}
+                    </div>
+                    <div className="m3dash-report-info">
+                      <div className="m3dash-report-name">{r.player_name}</div>
+                      <div className="m3dash-report-comp">{r.competition_name}</div>
+                    </div>
+                    <div className="m3dash-report-date">{formatDateShort(r.match_date)}</div>
+                  </Link>
+                ))
+              )}
             </div>
-            <Link to="/app/competitions" className="card-link">VER TODAS <ArrowRight size={10} /></Link>
           </div>
-          {competitions.length === 0 ? (
-            <div className="empty">Sem competições com uso registrado</div>
-          ) : (
-            <div style={{ overflowX: "auto" }}>
-              <table className="comp-table">
-                <thead>
-                  <tr>
-                    <th>Competição</th>
-                    <th>Tier</th>
-                    <th>Final</th>
-                    <th>Usos</th>
-                    <th>Jogadores</th>
-                    <th>Último Uso</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {competitions.map(c => (
-                    <tr key={c.id}>
-                      <td><span className="comp-name" title={c.name}>{c.name}</span></td>
-                      <td><span className={`tier-badge tier-${c.tier}`}>{TIER_LABEL[c.tier] || c.tier}</span></td>
-                      <td style={{ fontVariantNumeric: "tabular-nums", color: "rgba(255,255,255,0.65)" }}>
-                        {Number(c.final_coefficient).toFixed(2)}x
-                      </td>
-                      <td><span className="usos-pill">{c.usos}</span></td>
-                      <td style={{ color: "rgba(255,255,255,0.55)" }}>{c.jogadores}</td>
-                      <td style={{ color: "rgba(255,255,255,0.45)", fontVariantNumeric: "tabular-nums" }}>
-                        {formatDateShort(c.ultimo_uso)}
-                      </td>
-                    </tr>
+
+          {/* RIGHT COLUMN */}
+          <div className="m3dash-col-right">
+            {/* Perfil do Elenco */}
+            <div className="m3dash-section">
+              <div className="m3dash-section-head">
+                <div className="m3dash-section-title">
+                  <span className="red">// </span>Perfil do Elenco
+                </div>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--muted2)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                  {positionData.reduce((s, p) => s + p.value, 0)} atletas
+                </span>
+              </div>
+              {positionData.length === 0 ? (
+                <div className="m3dash-empty">Sem dados de posição</div>
+              ) : (
+                <div className="m3dash-pos-list">
+                  {positionData.map(p => (
+                    <div key={p.name} className="m3dash-pos-row">
+                      <div className="m3dash-pos-label" style={{ color: POS_BAR_COLOR[p.name] || "var(--muted)" }}>
+                        {p.name}
+                      </div>
+                      <div className="m3dash-pos-track">
+                        <div
+                          className="m3dash-pos-fill"
+                          style={{
+                            width: `${(p.value / maxPos) * 100}%`,
+                            background: POS_BAR_COLOR[p.name] || "var(--muted2)",
+                          }}
+                        />
+                      </div>
+                      <div className="m3dash-pos-count">{p.value}</div>
+                    </div>
                   ))}
-                </tbody>
-              </table>
+                </div>
+              )}
             </div>
-          )}
+
+            {/* Insights */}
+            <div className="m3dash-section">
+              <div className="m3dash-section-head">
+                <div className="m3dash-section-title">
+                  <span className="red">// </span>Insights
+                </div>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--muted2)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                  Auto
+                </span>
+              </div>
+              <div className="m3dash-insights-wrap">
+                <InsightsCard />
+              </div>
+            </div>
+
+            {/* Competições */}
+            <div className="m3dash-section">
+              <div className="m3dash-section-head">
+                <div className="m3dash-section-title">
+                  <span className="red">// </span>Competições
+                </div>
+                <Link to="/app/competitions" className="m3dash-section-link">
+                  Ver Todas <ArrowRight size={10} style={{ display: "inline", verticalAlign: "middle" }} />
+                </Link>
+              </div>
+              {competitions.length === 0 ? (
+                <div className="m3dash-empty">Sem competições com uso registrado</div>
+              ) : (
+                <div style={{ overflowX: "auto" }}>
+                  <table className="m3dash-comp-table">
+                    <thead>
+                      <tr>
+                        <th>Competição</th>
+                        <th>Tier</th>
+                        <th>Final</th>
+                        <th>Usos</th>
+                        <th>Jog.</th>
+                        <th>Último</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {competitions.map(c => (
+                        <tr key={c.id}>
+                          <td><span className="m3dash-comp-name" title={c.name}>{c.name}</span></td>
+                          <td><span className="m3dash-tier">{c.tier}</span></td>
+                          <td>{Number(c.final_coefficient).toFixed(2)}x</td>
+                          <td><span className="m3dash-usos">{c.usos}</span></td>
+                          <td style={{ color: "var(--muted)" }}>{c.jogadores}</td>
+                          <td style={{ color: "var(--muted2)" }}>{formatDateShort(c.ultimo_uso)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
