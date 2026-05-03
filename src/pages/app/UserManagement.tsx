@@ -180,7 +180,7 @@ export default function UserManagement() {
   
   // Confirmation dialogs
   const [confirmAction, setConfirmAction] = useState<{
-    type: "activate" | "suspend" | "reject";
+    type: "activate" | "suspend" | "reject" | "delete";
     user: UserWithPermissions;
   } | null>(null);
   
