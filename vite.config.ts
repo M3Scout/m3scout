@@ -151,36 +151,8 @@ export default defineConfig(({ mode }) => ({
               },
             },
           },
-          {
-            // CacheFirst for JS assets with hash - immutable
-            urlPattern: /\/assets\/.*\.js$/i,
-            handler: "CacheFirst",
-            options: {
-              cacheName: "js-assets-cache",
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24 * 365,
-              },
-              cacheableResponse: {
-                statuses: [200],
-              },
-            },
-          },
-          {
-            // CacheFirst for CSS assets with hash - immutable
-            urlPattern: /\/assets\/.*\.css$/i,
-            handler: "CacheFirst",
-            options: {
-              cacheName: "css-assets-cache",
-              expiration: {
-                maxEntries: 30,
-                maxAgeSeconds: 60 * 60 * 24 * 365,
-              },
-              cacheableResponse: {
-                statuses: [200],
-              },
-            },
-          },
+          // JS/CSS assets have content hashes in filenames — new deploys produce new URLs
+          // No SW caching needed; CDN Cache-Control headers handle these
         ],
         // Denylist for navigation fallback (extra safety)
         navigateFallbackDenylist: [
