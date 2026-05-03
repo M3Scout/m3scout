@@ -20,10 +20,6 @@ import {
   Search, 
   Plus,
   FileText, 
-  Users,
-  Trophy,
-  User,
-  LayoutGrid,
   ClipboardList,
   Calendar,
 } from "lucide-react";
