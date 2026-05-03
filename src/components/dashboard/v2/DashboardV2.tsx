@@ -228,7 +228,7 @@ export const DashboardV2 = () => {
                 .select("match_date").eq("competition_id", c.id).eq("season_year", seasonYear).eq("status", "applied")
                 .order("match_date", { ascending: false }).limit(1).maybeSingle(),
             ]);
-            const matchIds = matchIdsR.data?.map((m: any) => m.id) || [];
+            const matchIds = (matchIdsR.data as IdRow[] | null)?.map((m) => m.id) || [];
             const matchPlayersR = matchIds.length > 0
               ? await supabase.from("match_players").select("player_id", { count: "exact" }).in("match_id", matchIds)
               : { data: [], count: 0 };
@@ -242,10 +242,10 @@ export const DashboardV2 = () => {
               id: c.id, name: c.display_name || c.name, tier: c.tier, final_coefficient: c.final_coefficient,
               usos: totalUsos,
               jogadores: uniqueCount([
-                ...(scoutingR.data || []).map((row: any) => row.player_id),
-                ...(manualStatsR.data || []).map((row: any) => row.player_id),
-                ...(legacyStatsR.data || []).map((row: any) => row.player_id),
-                ...(matchPlayersR.data || []).map((row: any) => row.player_id),
+                ...((scoutingR.data as PlayerIdRow[] | null) || []).map((row) => row.player_id),
+                ...((manualStatsR.data as PlayerIdRow[] | null) || []).map((row) => row.player_id),
+                ...((legacyStatsR.data as PlayerIdRow[] | null) || []).map((row) => row.player_id),
+                ...((matchPlayersR.data as PlayerIdRow[] | null) || []).map((row) => row.player_id),
               ]),
               ultimo_uso: ultimoUso,
             } as CompetitionUsage;
