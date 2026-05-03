@@ -296,7 +296,7 @@ export const DashboardV2 = () => {
               {stats.expiringContracts}
             </div>
             <div className="m3dash-stat-sub">Expirando 90d</div>
-            <div className={`m3dash-stat-bar ${stats.expiringContracts > 0 ? "m3dash-stat-bar--yellow" : "m3dash-stat-bar--muted"}`} />
+            <div className="m3dash-stat-bar m3dash-stat-bar--yellow" />
           </Link>
         </div>
 
