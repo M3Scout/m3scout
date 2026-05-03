@@ -120,6 +120,7 @@ const SidebarItem = memo(function SidebarItem({
   isActive,
   collapsed,
 }: SidebarItemProps) {
+  const Icon = item.icon;
   const content = (
     <Link
       to={item.href}
@@ -133,16 +134,13 @@ const SidebarItem = memo(function SidebarItem({
         borderLeft: isActive && !collapsed ? "2px solid #E11D48" : "2px solid transparent",
       }}
     >
-      <span
-        style={{
-          display: "inline-block",
-          width: collapsed ? "6px" : "4px",
-          height: collapsed ? "6px" : "4px",
-          borderRadius: "50%",
-          flexShrink: 0,
-          backgroundColor: isActive ? "#E11D48" : "currentColor",
-          opacity: isActive ? 1 : 0.4,
-        }}
+      <Icon
+        className={cn(
+          "shrink-0 transition-colors duration-100",
+          collapsed ? "w-[18px] h-[18px]" : "w-4 h-4",
+          isActive ? "text-rose-500" : "text-current opacity-60"
+        )}
+        strokeWidth={1.5}
       />
       {!collapsed && (
         <span
