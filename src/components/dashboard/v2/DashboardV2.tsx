@@ -179,24 +179,39 @@ export const DashboardV2 = () => {
 
       if (compsRes.data) {
         const comps = compsRes.data as any[];
+        const currentYear = new Date().getFullYear();
         const usageRows = await Promise.all(
-          comps.slice(0, 30).map(async (c) => {
-            const [usosR, playersR, lastR] = await Promise.all([
+          comps.slice(0, 60).map(async (c) => {
+            const [scoutingR, matchesR, playersR, lastScoutR, lastMatchR] = await Promise.all([
               supabase.from("scouting_reports")
                 .select("id", { count: "exact", head: true })
                 .eq("competition_id", c.id).is("deleted_at", null),
-              supabase.from("scouting_reports")
+              supabase.from("matches")
+                .select("id", { count: "exact", head: true })
+                .eq("competition_id", c.id).eq("season_year", currentYear).eq("status", "applied"),
+              supabase.from("match_players")
                 .select("player_id", { count: "exact", head: true })
-                .eq("competition_id", c.id).is("deleted_at", null),
+                .in("match_id",
+                  (await supabase.from("matches").select("id").eq("competition_id", c.id).eq("season_year", currentYear).eq("status", "applied")).data?.map((m: any) => m.id) || []
+                ),
               supabase.from("scouting_reports")
                 .select("created_at").eq("competition_id", c.id)
                 .is("deleted_at", null).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+              supabase.from("matches")
+                .select("match_date").eq("competition_id", c.id).eq("season_year", currentYear).eq("status", "applied")
+                .order("match_date", { ascending: false }).limit(1).maybeSingle(),
             ]);
+            const totalUsos = (scoutingR.count || 0) + (matchesR.count || 0);
+            const lastScouting = lastScoutR.data?.created_at || null;
+            const lastMatch = lastMatchR.data?.match_date || null;
+            const ultimoUso = lastScouting && lastMatch
+              ? (lastScouting > lastMatch ? lastScouting : lastMatch)
+              : lastScouting || lastMatch;
             return {
               id: c.id, name: c.name, tier: c.tier, final_coefficient: c.final_coefficient,
-              usos: usosR.count || 0,
+              usos: totalUsos,
               jogadores: playersR.count || 0,
-              ultimo_uso: lastR.data?.created_at || null,
+              ultimo_uso: ultimoUso,
             } as CompetitionUsage;
           })
         );
