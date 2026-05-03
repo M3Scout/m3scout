@@ -994,9 +994,9 @@ const AppPlayers = () => {
       {/* Traditional Pagination */}
       {paginationMode === "pages" && totalPages > 1 && (
         <div className="flex flex-col items-center gap-3 pt-4">
-          <div className="flex items-center gap-4">
-            <p className="text-sm text-muted-foreground">
-              Mostrando {((currentPage - 1) * itemsPerPage) + 1} a {Math.min(currentPage * itemsPerPage, filteredCount)} de {filteredCount} atletas
+          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              {((currentPage - 1) * itemsPerPage) + 1}–{Math.min(currentPage * itemsPerPage, filteredCount)} de {filteredCount}
             </p>
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">Itens:</span>
