@@ -42,6 +42,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SearchableCompetitionSelect } from "@/components/ui/searchable-competition-select";
 import {
   BarChart3,
   Plus,
