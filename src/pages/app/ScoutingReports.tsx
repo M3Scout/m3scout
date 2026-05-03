@@ -260,85 +260,64 @@ const ScoutingReports = () => {
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row gap-3 sm:items-center"
+        className="flex flex-col gap-3"
       >
-        {/* Search */}
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-          <Input
-            type="text"
-            placeholder="Buscar atleta, competição ou scout..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 bg-zinc-900/60 border-zinc-800 focus:border-zinc-700"
-          />
+        {/* Top row: Search + Period + Count */}
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+            <Input
+              type="text"
+              placeholder="Buscar atleta, competição ou scout..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 bg-zinc-900/50 border-zinc-800/50 focus:border-zinc-700 rounded-full h-9 text-sm"
+            />
+          </div>
+
+          <Select value={periodFilter} onValueChange={(v) => setPeriodFilter(v as PeriodFilter)}>
+            <SelectTrigger className="w-[160px] bg-zinc-900/50 border-zinc-800/50 text-sm h-9 rounded-full">
+              <Calendar className="w-3.5 h-3.5 mr-2 text-zinc-500" />
+              <SelectValue placeholder="Período" />
+            </SelectTrigger>
+            <SelectContent className="bg-zinc-900 border-zinc-800">
+              <SelectItem value="all">Todos os períodos</SelectItem>
+              <SelectItem value="7days">Últimos 7 dias</SelectItem>
+              <SelectItem value="30days">Últimos 30 dias</SelectItem>
+              <SelectItem value="season">Temporada atual</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-800/40">
+            <ClipboardList className="w-3.5 h-3.5 text-zinc-600" />
+            <span className="text-xs text-zinc-500 font-medium tabular-nums">
+              {totalReports} relatório{totalReports !== 1 ? "s" : ""}
+            </span>
+          </div>
         </div>
 
-        {/* Period Filter */}
-        <Select value={periodFilter} onValueChange={(v) => setPeriodFilter(v as PeriodFilter)}>
-          <SelectTrigger className="w-[160px] bg-zinc-900/60 border-zinc-800 text-sm h-10">
-            <Calendar className="w-3.5 h-3.5 mr-2 text-zinc-500" />
-            <SelectValue placeholder="Período" />
-          </SelectTrigger>
-          <SelectContent className="bg-zinc-900 border-zinc-800">
-            <SelectItem value="all">Todos os períodos</SelectItem>
-            <SelectItem value="7days">Últimos 7 dias</SelectItem>
-            <SelectItem value="30days">Últimos 30 dias</SelectItem>
-            <SelectItem value="season">Temporada atual</SelectItem>
-          </SelectContent>
-        </Select>
-
-        {/* Grouping - Segmented Control */}
-        <div className="flex items-center gap-2.5">
-          <span className="text-xs text-zinc-500 hidden sm:inline font-medium">Agrupar:</span>
-          <Tabs value={groupBy} onValueChange={(v) => setGroupBy(v as GroupBy)}>
-            <TabsList className="bg-zinc-900 border border-zinc-700/50 h-10 p-1 gap-0.5 rounded-lg shadow-sm">
-              <TabsTrigger 
-                value="none" 
-                className="text-xs h-8 px-2.5 sm:px-3 gap-1.5 rounded-md transition-all duration-200
-                  data-[state=inactive]:text-zinc-500 data-[state=inactive]:hover:text-zinc-300 data-[state=inactive]:hover:bg-zinc-800/50
-                  data-[state=active]:bg-zinc-700 data-[state=active]:text-zinc-100 data-[state=active]:shadow-sm"
-              >
-                <LayoutGrid className="w-4 h-4" />
-                <span className="hidden sm:inline">Todos</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="player" 
-                className="text-xs h-8 px-2.5 sm:px-3 gap-1.5 rounded-md transition-all duration-200
-                  data-[state=inactive]:text-zinc-500 data-[state=inactive]:hover:text-zinc-300 data-[state=inactive]:hover:bg-zinc-800/50
-                  data-[state=active]:bg-zinc-700 data-[state=active]:text-zinc-100 data-[state=active]:shadow-sm"
-              >
-                <Users className="w-4 h-4" />
-                <span className="hidden sm:inline">Atleta</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="competition" 
-                className="text-xs h-8 px-2.5 sm:px-3 gap-1.5 rounded-md transition-all duration-200
-                  data-[state=inactive]:text-zinc-500 data-[state=inactive]:hover:text-zinc-300 data-[state=inactive]:hover:bg-zinc-800/50
-                  data-[state=active]:bg-zinc-700 data-[state=active]:text-zinc-100 data-[state=active]:shadow-sm"
-              >
-                <Trophy className="w-4 h-4" />
-                <span className="hidden sm:inline">Competição</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="scout" 
-                className="text-xs h-8 px-2.5 sm:px-3 gap-1.5 rounded-md transition-all duration-200
-                  data-[state=inactive]:text-zinc-500 data-[state=inactive]:hover:text-zinc-300 data-[state=inactive]:hover:bg-zinc-800/50
-                  data-[state=active]:bg-zinc-700 data-[state=active]:text-zinc-100 data-[state=active]:shadow-sm"
-              >
-                <User className="w-4 h-4" />
-                <span className="hidden sm:inline">Scout</span>
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
-
-        {/* Count badge */}
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-800/60 border border-zinc-700/40">
-          <ClipboardList className="w-3.5 h-3.5 text-zinc-500" />
-          <span className="text-xs text-zinc-400 font-medium">
-            {totalReports} relatório{totalReports !== 1 ? "s" : ""}
-          </span>
+        {/* Minimal tabs for grouping */}
+        <div className="flex items-center gap-1">
+          <span className="text-[10px] text-zinc-600 uppercase tracking-wider font-medium mr-2 hidden sm:inline">Agrupar</span>
+          {([
+            { value: "none" as GroupBy, label: "Todos" },
+            { value: "player" as GroupBy, label: "Atleta" },
+            { value: "competition" as GroupBy, label: "Competição" },
+            { value: "scout" as GroupBy, label: "Scout" },
+          ]).map(tab => (
+            <button
+              key={tab.value}
+              onClick={() => setGroupBy(tab.value)}
+              className={cn(
+                "text-xs px-3 py-1.5 rounded-full transition-all duration-200 font-medium",
+                groupBy === tab.value
+                  ? "text-zinc-100 bg-zinc-800"
+                  : "text-zinc-500 hover:text-zinc-300"
+              )}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
       </motion.div>
 
