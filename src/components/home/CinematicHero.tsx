@@ -4,7 +4,7 @@ import { ArrowRight, ChevronDown } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
-import heroImage from "@/assets/hero-stadium-cinematic.jpg";
+import heroImage from "@/assets/hero-stadium-cinematic.webp";
 
 interface HeroStats {
   athletes: number | null;

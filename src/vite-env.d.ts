@@ -14,3 +14,13 @@ declare module "virtual:pwa-register" {
 
   export function registerSW(options?: RegisterSWOptions): (reloadPage?: boolean) => Promise<void>;
 }
+
+// Image module declarations
+declare module "*.webp" {
+  const src: string;
+  export default src;
+}
+declare module "*.avif" {
+  const src: string;
+  export default src;
+}
