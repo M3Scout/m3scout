@@ -53,39 +53,39 @@ const internalNavGroups: NavGroup[] = [
   {
     label: "Análise",
     items: [
-      { href: "/app", label: "Dashboard", module: "app" },
-      { href: "/app/players", label: "Atletas", module: "players" },
-      { href: "/app/compare", label: "Comparar", module: "compare" },
-      { href: "/app/reports", label: "Relatórios", module: "reports" },
+      { href: "/app", label: "Dashboard", module: "app", icon: LayoutDashboard },
+      { href: "/app/players", label: "Atletas", module: "players", icon: Users },
+      { href: "/app/compare", label: "Comparar", module: "compare", icon: GitCompare },
+      { href: "/app/reports", label: "Relatórios", module: "reports", icon: FileText },
     ]
   },
   {
     label: "Contexto Esportivo",
     items: [
-      { href: "/app/live-match", label: "Jogo Ao Vivo", module: "live_match" },
-      { href: "/app/competitions", label: "Competições", module: "competitions" },
+      { href: "/app/live-match", label: "Jogo Ao Vivo", module: "live_match", icon: Radio },
+      { href: "/app/competitions", label: "Competições", module: "competitions", icon: Trophy },
     ]
   },
   {
     label: "Negócios",
     items: [
-      { href: "/app/news", label: "Notícias", module: "news" },
-      { href: "/app/leads", label: "Leads", module: "leads" },
+      { href: "/app/news", label: "Notícias", module: "news", icon: Newspaper },
+      { href: "/app/leads", label: "Leads", module: "leads", icon: Target },
     ]
   },
   {
     label: "Mercado",
     items: [
-      { href: "/app/market/ativos", label: "Ativos M3", module: "players" },
-      { href: "/app/market/targets", label: "Targets", module: "players" },
-      { href: "/app/contratos", label: "Contratos", module: "players" },
+      { href: "/app/market/ativos", label: "Ativos M3", module: "players", icon: Briefcase },
+      { href: "/app/market/targets", label: "Targets", module: "players", icon: Crosshair },
+      { href: "/app/contratos", label: "Contratos", module: "players", icon: ScrollText },
     ]
   },
   {
     label: "Administração",
     items: [
-      { href: "/app/goals-monitor", label: "Metas", module: "users", action: "manage" },
-      { href: "/app/settings/users", label: "Usuários", module: "users", action: "manage" },
+      { href: "/app/goals-monitor", label: "Metas", module: "users", action: "manage", icon: Goal },
+      { href: "/app/settings/users", label: "Usuários", module: "users", action: "manage", icon: UserCog },
     ]
   }
 ];
@@ -94,16 +94,16 @@ const playerNavGroups: NavGroup[] = [
   {
     label: "Meu Espaço",
     items: [
-      { href: "/app", label: "Dashboard", module: "app" },
-      { href: "/app/my-profile", label: "Meu Perfil", module: "players" },
-      { href: "/app/reports", label: "Relatórios", module: "reports" },
+      { href: "/app", label: "Dashboard", module: "app", icon: LayoutDashboard },
+      { href: "/app/my-profile", label: "Meu Perfil", module: "players", icon: User },
+      { href: "/app/reports", label: "Relatórios", module: "reports", icon: FileText },
     ]
   },
   {
     label: "Jogos",
     items: [
-      { href: "/app/live-match", label: "Meus Jogos", module: "live_match" },
-      { href: "/app/competitions", label: "Competições", module: "competitions" },
+      { href: "/app/live-match", label: "Meus Jogos", module: "live_match", icon: Gamepad2 },
+      { href: "/app/competitions", label: "Competições", module: "competitions", icon: Trophy },
     ]
   }
 ];
