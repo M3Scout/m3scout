@@ -477,32 +477,30 @@ const AppPlayers = () => {
     return (
     <ErrorBoundary fallbackMessage="Não foi possível carregar os detalhes da competição.">
     <div className="space-y-3 w-full min-w-0 overflow-x-hidden">
-      {/* Header - Premium compact */}
-      <header className="flex items-center justify-between gap-3 animate-fade-in py-1">
+      {/* Header */}
+      <header className="flex items-center justify-between gap-3 animate-fade-in">
         <div className="flex items-center gap-3 min-w-0">
           <div>
-            <h1 className="text-xl font-extrabold text-zinc-100 tracking-tight uppercase">Atletas</h1>
-            <p className="text-[11px] text-zinc-500 mt-0.5 uppercase tracking-wide">Gerencie todos os atletas da agência</p>
+            <h1 className="text-lg font-bold text-white tracking-tight">Atletas</h1>
+            <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium">
+              {filteredCount} atleta{filteredCount !== 1 ? "s" : ""}
+              {isRefetching && " · atualizando..."}
+            </p>
           </div>
-          {isRefetching && (
-            <div className="flex items-center gap-1.5 text-xs text-zinc-500">
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            </div>
-          )}
         </div>
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
           {isAdmin && (
             <BulkRecalculateButton onComplete={() => fetchPlayers(true)} />
           )}
-          <Button variant="outline" size="sm" asChild className="h-8 px-2.5 bg-zinc-900/60 border-zinc-800/50 hover:bg-zinc-800/80 hover:border-zinc-700 text-[11px]">
+          <Button variant="outline" size="sm" asChild className="h-8 px-4 rounded-full bg-zinc-900/40 border-zinc-800/40 hover:bg-zinc-800/60 hover:border-zinc-700 text-[11px] font-medium">
             <Link to="/app/compare">
-              <GitCompare className="w-3.5 h-3.5 sm:mr-1" />
+              <GitCompare className="w-3.5 h-3.5 sm:mr-1.5" />
               <span className="hidden sm:inline">Comparar</span>
             </Link>
           </Button>
-          <Button size="sm" asChild className="h-8 px-2.5 bg-primary hover:bg-primary/90 text-[11px]">
+          <Button size="sm" asChild className="h-8 px-4 rounded-full text-[11px] font-medium text-white" style={{ backgroundColor: '#e63946' }}>
             <Link to="/app/players/new">
-              <Plus className="w-3.5 h-3.5 sm:mr-1" />
+              <Plus className="w-3.5 h-3.5 sm:mr-1.5" />
               <span className="hidden sm:inline">Novo Atleta</span>
             </Link>
           </Button>
