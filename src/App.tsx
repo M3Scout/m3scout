@@ -228,7 +228,7 @@ function AppRoutes() {
               </Route>
 
               {/* Catch-all */}
-              <Route path="*" element={<NotFound />} />
+              <Route path="*" element={<Suspense fallback={<RouteSuspense />}><NotFound /></Suspense>} />
             </Routes>
           </BrowserRouter>
         </PWAProvider>
