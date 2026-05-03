@@ -49,15 +49,15 @@ export function NewsTableDesktop({
   isToggling,
 }: NewsTableDesktopProps) {
   return (
-    <div className="rounded-xl border border-zinc-800/40 bg-gradient-to-b from-zinc-900/95 via-zinc-900/90 to-zinc-950/95 overflow-hidden">
+    <div className="rounded-xl border border-zinc-800/40 bg-zinc-900/50 overflow-hidden">
       <Table>
         <TableHeader>
           <TableRow className="border-zinc-800/50 hover:bg-transparent">
-            <TableHead className="w-[45%] text-zinc-400 font-medium">Notícia</TableHead>
-            <TableHead className="w-[12%] text-zinc-400 font-medium">Status</TableHead>
-            <TableHead className="w-[12%] text-zinc-400 font-medium">Categoria</TableHead>
-            <TableHead className="w-[15%] text-zinc-400 font-medium">Data</TableHead>
-            <TableHead className="w-[16%] text-zinc-400 font-medium text-right">Ações</TableHead>
+            <TableHead className="text-zinc-500 font-medium text-xs uppercase tracking-wider">Notícia</TableHead>
+            <TableHead className="w-[100px] text-zinc-500 font-medium text-xs uppercase tracking-wider">Status</TableHead>
+            <TableHead className="w-[100px] text-zinc-500 font-medium text-xs uppercase tracking-wider">Categoria</TableHead>
+            <TableHead className="w-[130px] text-zinc-500 font-medium text-xs uppercase tracking-wider text-right">Data</TableHead>
+            <TableHead className="w-[140px] text-zinc-500 font-medium text-xs uppercase tracking-wider text-right">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -67,13 +67,13 @@ export function NewsTableDesktop({
             return (
               <TableRow 
                 key={article.id} 
-                className="border-zinc-800/30 hover:bg-zinc-800/30 transition-colors group"
+                className="border-zinc-800/20 hover:bg-zinc-800/20 transition-colors group"
               >
                 {/* Article Info */}
-                <TableCell className="py-4">
-                  <div className="flex items-center gap-4">
+                <TableCell className="py-3.5">
+                  <div className="flex items-center gap-3">
                     {/* Thumbnail */}
-                    <div className="w-20 h-12 rounded-lg bg-zinc-800/50 overflow-hidden flex-shrink-0">
+                    <div className="w-16 h-10 rounded-lg bg-zinc-800/50 overflow-hidden flex-shrink-0">
                       {article.featured_image_url ? (
                         <img 
                           src={article.featured_image_url} 
@@ -83,23 +83,16 @@ export function NewsTableDesktop({
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <span className="text-zinc-600 text-[10px]">Sem img</span>
+                          <span className="text-zinc-700 text-[9px]">Sem img</span>
                         </div>
                       )}
                     </div>
                     
                     <div className="min-w-0 flex-1">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <p className="font-medium text-white truncate max-w-[300px] cursor-default">
-                            {article.title}
-                          </p>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom" className="max-w-sm">
-                          {article.title}
-                        </TooltipContent>
-                      </Tooltip>
-                      <p className="text-xs text-muted-foreground truncate font-mono mt-0.5">
+                      <p className="font-bold text-sm text-zinc-100 truncate max-w-[280px]">
+                        {article.title}
+                      </p>
+                      <p className="text-[11px] text-zinc-600 truncate max-w-[200px] font-mono mt-0.5">
                         /imprensa/{article.slug}
                       </p>
                     </div>
@@ -109,11 +102,12 @@ export function NewsTableDesktop({
                 {/* Status */}
                 <TableCell>
                   <Badge 
+                    variant="outline"
                     className={cn(
-                      "text-xs font-semibold whitespace-nowrap",
+                      "text-[10px] font-medium px-2 py-0.5 border",
                       isPublished 
-                        ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/30" 
-                        : "bg-amber-500/20 text-amber-400 border-amber-500/30 hover:bg-amber-500/30"
+                        ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" 
+                        : "bg-amber-500/10 text-amber-500 border-amber-500/20"
                     )}
                   >
                     {isPublished ? "Publicado" : "Rascunho"}
@@ -122,13 +116,13 @@ export function NewsTableDesktop({
 
                 {/* Category */}
                 <TableCell>
-                  <Badge variant="secondary" className="text-xs">
+                  <Badge variant="outline" className="text-[10px] font-medium text-zinc-400 border-zinc-700/50 bg-zinc-800/30 px-2 py-0.5">
                     {article.category}
                   </Badge>
                 </TableCell>
 
                 {/* Date */}
-                <TableCell className="text-sm text-muted-foreground">
+                <TableCell className="text-xs text-zinc-500 tabular-nums text-right whitespace-nowrap">
                   {format(new Date(article.publish_date), "dd MMM yyyy", { locale: ptBR })}
                 </TableCell>
 

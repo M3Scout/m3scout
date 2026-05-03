@@ -193,12 +193,12 @@ const News = () => {
         {/* Header */}
         <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between animate-fade-in">
           <div>
-            <h1 className="text-2xl font-bold text-white">Notícias</h1>
-            <p className="text-sm text-muted-foreground mt-1">
+            <h1 className="text-2xl font-extrabold text-white tracking-tight">Notícias</h1>
+            <p className="text-xs text-zinc-500 mt-1 uppercase tracking-wide">
               Gerencie o conteúdo da Sala de Imprensa
             </p>
           </div>
-          <Button asChild className="gap-2 shrink-0">
+          <Button asChild className="gap-2 shrink-0 bg-[#e63946] hover:bg-[#d62839] text-white rounded-full px-5 h-9 text-sm font-semibold">
             <Link to="/app/news/new">
               <Plus className="w-4 h-4" />
               Nova Notícia
@@ -281,12 +281,12 @@ const News = () => {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel className="bg-zinc-800 border-zinc-700 text-white hover:bg-zinc-700">
+              <AlertDialogCancel className="bg-zinc-800 border-zinc-700 text-white hover:bg-zinc-700 rounded-full">
                 Cancelar
               </AlertDialogCancel>
               <AlertDialogAction
                 onClick={() => deleteId && deleteMutation.mutate(deleteId)}
-                className="bg-red-600 text-white hover:bg-red-700"
+                className="bg-red-600 text-white hover:bg-red-700 rounded-full"
               >
                 Excluir
               </AlertDialogAction>
