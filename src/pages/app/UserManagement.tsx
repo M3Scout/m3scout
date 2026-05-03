@@ -876,10 +876,6 @@ export default function UserManagement() {
       )}
 
 
-
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
               <TableRow className="border-zinc-800/50 hover:bg-transparent">
                 <TableHead className="pl-6">Usuário</TableHead>
                 <TableHead>Função</TableHead>
