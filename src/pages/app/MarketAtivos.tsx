@@ -228,19 +228,19 @@ export default function MarketAtivos() {
   const athletesWithoutScore = athletes.filter(a => !a.score).length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Sparkles className="w-6 h-6 text-primary" />
+          <h1 className="text-2xl font-extrabold tracking-tight flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-[#e63946]" />
             Mercado → Ativos M3
           </h1>
-          <p className="text-muted-foreground text-sm mt-1">
+          <p className="text-xs text-zinc-500 mt-1 uppercase tracking-wide">
             Ranking interno dos atletas por Market Score
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => refetch()}>
+        <Button variant="outline" size="sm" onClick={() => refetch()} className="rounded-full">
           <RefreshCw className="w-4 h-4 mr-2" />
           Atualizar
         </Button>
@@ -248,116 +248,97 @@ export default function MarketAtivos() {
 
       {/* Info banner for missing scores */}
       {athletesWithoutScore > 0 && (
-        <Card className="border-yellow-500/30 bg-yellow-500/5">
-          <CardContent className="py-3 flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-yellow-500/20 flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-yellow-400" />
-            </div>
-            <p className="text-sm text-yellow-400/90">
-              {athletesWithoutScore} atleta(s) ainda sem score calculado. 
-              Abra o perfil para calcular automaticamente.
-            </p>
-          </CardContent>
-        </Card>
+        <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 flex items-center gap-3">
+          <div className="w-7 h-7 rounded-full bg-amber-500/15 flex items-center justify-center shrink-0">
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+          </div>
+          <p className="text-xs text-amber-400/90">
+            {athletesWithoutScore} atleta(s) ainda sem score calculado. 
+            Abra o perfil para calcular automaticamente.
+          </p>
+        </div>
       )}
 
       {/* Filters */}
-      <Card className="bg-zinc-900/80 border border-white/[0.06]">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Filter className="w-4 h-4" />
-            Filtros
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar atleta..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 bg-zinc-800/50 border-white/[0.06]"
-              />
-            </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+          <Input
+            placeholder="Buscar atleta..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-10 rounded-full bg-zinc-900 border-zinc-800 text-sm h-9"
+          />
+        </div>
 
-            {/* Position */}
-            <Select value={positionFilter} onValueChange={setPositionFilter}>
-              <SelectTrigger className="bg-zinc-800/50 border-white/[0.06]">
-                <SelectValue placeholder="Posição" />
-              </SelectTrigger>
-              <SelectContent className="bg-zinc-900 border-white/[0.06]">
-                {POSITIONS.map((pos) => (
-                  <SelectItem key={pos} value={pos}>
-                    {pos}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        {/* Position */}
+        <Select value={positionFilter} onValueChange={setPositionFilter}>
+          <SelectTrigger className="rounded-full bg-zinc-900 border-zinc-800 h-9 text-sm">
+            <SelectValue placeholder="Posição" />
+          </SelectTrigger>
+          <SelectContent className="bg-zinc-900 border-zinc-800">
+            {POSITIONS.map((pos) => (
+              <SelectItem key={pos} value={pos}>{pos}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-            {/* Age Range */}
-            <Select
-              value={String(ageRangeIndex)}
-              onValueChange={(v) => setAgeRangeIndex(Number(v))}
-            >
-              <SelectTrigger className="bg-zinc-800/50 border-white/[0.06]">
-                <SelectValue placeholder="Idade" />
-              </SelectTrigger>
-              <SelectContent className="bg-zinc-900 border-white/[0.06]">
-                {AGE_RANGES.map((range, idx) => (
-                  <SelectItem key={idx} value={String(idx)}>
-                    {range.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        {/* Age Range */}
+        <Select value={String(ageRangeIndex)} onValueChange={(v) => setAgeRangeIndex(Number(v))}>
+          <SelectTrigger className="rounded-full bg-zinc-900 border-zinc-800 h-9 text-sm">
+            <SelectValue placeholder="Idade" />
+          </SelectTrigger>
+          <SelectContent className="bg-zinc-900 border-zinc-800">
+            {AGE_RANGES.map((range, idx) => (
+              <SelectItem key={idx} value={String(idx)}>{range.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-            {/* Min Score */}
-            <Select value={String(minScore)} onValueChange={(v) => setMinScore(Number(v))}>
-              <SelectTrigger className="bg-zinc-800/50 border-white/[0.06]">
-                <SelectValue placeholder="Score mínimo" />
-              </SelectTrigger>
-              <SelectContent className="bg-zinc-900 border-white/[0.06]">
-                <SelectItem value="0">Score ≥ 0</SelectItem>
-                <SelectItem value="30">Score ≥ 30</SelectItem>
-                <SelectItem value="50">Score ≥ 50</SelectItem>
-                <SelectItem value="60">Score ≥ 60</SelectItem>
-                <SelectItem value="70">Score ≥ 70</SelectItem>
-                <SelectItem value="80">Score ≥ 80</SelectItem>
-              </SelectContent>
-            </Select>
+        {/* Min Score */}
+        <Select value={String(minScore)} onValueChange={(v) => setMinScore(Number(v))}>
+          <SelectTrigger className="rounded-full bg-zinc-900 border-zinc-800 h-9 text-sm">
+            <SelectValue placeholder="Score mínimo" />
+          </SelectTrigger>
+          <SelectContent className="bg-zinc-900 border-zinc-800">
+            <SelectItem value="0">Score ≥ 0</SelectItem>
+            <SelectItem value="30">Score ≥ 30</SelectItem>
+            <SelectItem value="50">Score ≥ 50</SelectItem>
+            <SelectItem value="60">Score ≥ 60</SelectItem>
+            <SelectItem value="70">Score ≥ 70</SelectItem>
+            <SelectItem value="80">Score ≥ 80</SelectItem>
+          </SelectContent>
+        </Select>
 
-            {/* Trend */}
-            <Select value={trendFilter} onValueChange={(v) => setTrendFilter(v as typeof trendFilter)}>
-              <SelectTrigger className="bg-zinc-800/50 border-white/[0.06]">
-                <SelectValue placeholder="Tendência" />
-              </SelectTrigger>
-              <SelectContent className="bg-zinc-900 border-white/[0.06]">
-                <SelectItem value="ALL">Todas tendências</SelectItem>
-                <SelectItem value="UP">
-                  <span className="flex items-center gap-2">
-                    <TrendingUp className="w-3 h-3 text-emerald-400" />
-                    Em alta
-                  </span>
-                </SelectItem>
-                <SelectItem value="DOWN">
-                  <span className="flex items-center gap-2">
-                    <TrendingDown className="w-3 h-3 text-red-400" />
-                    Em baixa
-                  </span>
-                </SelectItem>
-                <SelectItem value="FLAT">
-                  <span className="flex items-center gap-2">
-                    <Minus className="w-3 h-3 text-muted-foreground" />
-                    Estável
-                  </span>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+        {/* Trend */}
+        <Select value={trendFilter} onValueChange={(v) => setTrendFilter(v as typeof trendFilter)}>
+          <SelectTrigger className="rounded-full bg-zinc-900 border-zinc-800 h-9 text-sm">
+            <SelectValue placeholder="Tendência" />
+          </SelectTrigger>
+          <SelectContent className="bg-zinc-900 border-zinc-800">
+            <SelectItem value="ALL">Todas tendências</SelectItem>
+            <SelectItem value="UP">
+              <span className="flex items-center gap-2">
+                <TrendingUp className="w-3 h-3 text-emerald-400" />
+                Em alta
+              </span>
+            </SelectItem>
+            <SelectItem value="DOWN">
+              <span className="flex items-center gap-2">
+                <TrendingDown className="w-3 h-3 text-red-400" />
+                Em baixa
+              </span>
+            </SelectItem>
+            <SelectItem value="FLAT">
+              <span className="flex items-center gap-2">
+                <Minus className="w-3 h-3 text-zinc-500" />
+                Estável
+              </span>
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
       {/* Athletes Grid */}
       {isLoading ? (
