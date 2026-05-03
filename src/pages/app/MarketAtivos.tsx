@@ -25,7 +25,6 @@ import {
   Search,
   User,
   Sparkles,
-  Filter,
   RefreshCw,
   Loader2,
 } from "lucide-react";
