@@ -34,6 +34,8 @@ import {
 import { cn } from "@/lib/utils";
 import { MarketScoreTrend } from "@/types/marketScore";
 import { computeScoreForAthleteById } from "@/lib/marketScoreService";
+import { getPositionColor, getShortPosition } from "@/lib/positionColors";
+import { toast } from "sonner";
 import { toast } from "sonner";
 
 interface AthleteWithScore {
