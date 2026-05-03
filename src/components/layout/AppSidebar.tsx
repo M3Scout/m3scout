@@ -347,7 +347,7 @@ const MobileSection = memo(function MobileSection({
   };
 
   return (
-    <div className="space-y-0.5">
+    <div className="space-y-0.5 first:mt-0 [&:not(:first-child)]:mt-5">
       <div
         className="px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em]"
         style={{ color: colors.accent, opacity: 0.8 }}
