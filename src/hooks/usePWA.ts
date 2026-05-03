@@ -1,6 +1,6 @@
 /**
  * PWA Service Worker Hook
- * Uses vite-plugin-pwa for proper SW registration
+ * Uses vite-plugin-pwa with autoUpdate — SW activates immediately on new deploy
  */
 
 import { useEffect, useState, useCallback } from "react";
@@ -13,15 +13,10 @@ interface PWAUpdateState {
 }
 
 export function usePWA(): PWAUpdateState {
-  const [needRefresh, setNeedRefresh] = useState(false);
   const [offlineReady, setOfflineReady] = useState(false);
-  const [updateSW, setUpdateSW] = useState<(() => Promise<void>) | null>(null);
 
   useEffect(() => {
-    const updateSWFn = registerSW({
-      onNeedRefresh() {
-        setNeedRefresh(true);
-      },
+    registerSW({
       onOfflineReady() {
         setOfflineReady(true);
       },
@@ -29,25 +24,25 @@ export function usePWA(): PWAUpdateState {
         if (import.meta.env.DEV) {
           console.log("[PWA] Service Worker registered:", registration);
         }
+        // Periodically check for SW updates (every 60s)
+        if (registration) {
+          setInterval(() => {
+            registration.update();
+          }, 60 * 1000);
+        }
       },
       onRegisterError(error) {
         console.error("[PWA] Service Worker registration error:", error);
       },
     });
-
-    setUpdateSW(() => updateSWFn);
   }, []);
 
-  const updateServiceWorker = useCallback(async () => {
-    if (updateSW) {
-      await updateSW();
-    }
-  }, [updateSW]);
-
   return {
-    needRefresh,
+    needRefresh: false, // autoUpdate handles this automatically
     offlineReady,
-    updateServiceWorker,
+    updateServiceWorker: useCallback(async () => {
+      window.location.reload();
+    }, []),
   };
 }
 
@@ -56,13 +51,11 @@ export async function checkRealConnectivity(): Promise<boolean> {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
-
     const response = await fetch(`/favicon2.png?_=${Date.now()}`, {
       method: "HEAD",
       cache: "no-store",
       signal: controller.signal,
     });
-
     clearTimeout(timeoutId);
     return response.ok;
   } catch {

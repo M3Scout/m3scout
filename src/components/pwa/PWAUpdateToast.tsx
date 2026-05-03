@@ -1,17 +1,16 @@
 /**
  * PWA Update Toast Component
- * Shows a toast when a new version is available
+ * With autoUpdate, new SW activates automatically — only show offline-ready toast
  */
 
 import type { ReactNode } from "react";
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { usePWA } from "@/hooks/usePWA";
-import { RefreshCw, Wifi } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Wifi } from "lucide-react";
 
 export function PWAUpdateToast() {
-  const { needRefresh, offlineReady, updateServiceWorker } = usePWA();
+  const { offlineReady } = usePWA();
 
   useEffect(() => {
     if (offlineReady) {
@@ -22,22 +21,6 @@ export function PWAUpdateToast() {
       });
     }
   }, [offlineReady]);
-
-  useEffect(() => {
-    if (needRefresh) {
-      toast("Nova versão disponível", {
-        description: "Clique para atualizar o app.",
-        icon: <RefreshCw className="h-4 w-4" />,
-        duration: Infinity,
-        action: {
-          label: "Atualizar",
-          onClick: () => {
-            updateServiceWorker();
-          },
-        },
-      });
-    }
-  }, [needRefresh, updateServiceWorker]);
 
   return null;
 }
