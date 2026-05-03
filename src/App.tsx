@@ -18,20 +18,22 @@ import { RouteSuspense, LiveMatchSuspense } from "@/components/app/RouteSuspense
 import { PublicLayout } from "@/components/layout/PublicLayout";
 import { AppLayout } from "@/components/layout/AppLayout";
 
-// Public Pages - Keep static (landing page performance)
+// Public Pages - Only Index is static (landing page LCP performance)
 import Index from "./pages/Index";
-import Players from "./pages/Players";
-import PlayerProfile from "./pages/PlayerProfile";
-import Contact from "./pages/Contact";
-import Sobre from "./pages/Sobre";
-import Imprensa from "./pages/Imprensa";
-import ImprensaTodas from "./pages/ImprensaTodas";
-import NewsDetail from "./pages/NewsDetail";
-import RepresentacaoTalentos from "./pages/RepresentacaoTalentos";
-import Auth from "./pages/Auth";
-import NotFound from "./pages/NotFound";
-import CompetitionRankingPublic from "./pages/CompetitionRankingPublic";
-import PendingAccess from "./pages/PendingAccess";
+
+// All other public pages are lazy-loaded to reduce initial bundle size (~8MB → ~2MB)
+const Players = lazy(() => import("./pages/Players"));
+const PlayerProfile = lazy(() => import("./pages/PlayerProfile"));
+const Contact = lazy(() => import("./pages/Contact"));
+const Sobre = lazy(() => import("./pages/Sobre"));
+const Imprensa = lazy(() => import("./pages/Imprensa"));
+const ImprensaTodas = lazy(() => import("./pages/ImprensaTodas"));
+const NewsDetail = lazy(() => import("./pages/NewsDetail"));
+const RepresentacaoTalentos = lazy(() => import("./pages/RepresentacaoTalentos"));
+const Auth = lazy(() => import("./pages/Auth"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const CompetitionRankingPublic = lazy(() => import("./pages/CompetitionRankingPublic"));
+const PendingAccess = lazy(() => import("./pages/PendingAccess"));
 
 // ============ LAZY LOADED APP PAGES ============
 // Each route is a separate chunk for optimal code splitting
