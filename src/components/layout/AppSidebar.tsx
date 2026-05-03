@@ -244,7 +244,7 @@ const SidebarSection = memo(function SidebarSection({
   };
 
   return (
-    <div className="space-y-0.5">
+    <div className="space-y-0.5 first:mt-0 [&:not(:first-child)]:mt-5">
       {/* Section label - hide when collapsed */}
       {!collapsed && (
         <div
