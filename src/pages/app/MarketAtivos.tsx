@@ -340,20 +340,18 @@ export default function MarketAtivos() {
 
       {/* Athletes Grid */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Card key={i}>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <Skeleton className="w-12 h-12 rounded-lg" />
-                  <div className="flex-1 space-y-2">
-                    <Skeleton className="h-4 w-32" />
-                    <Skeleton className="h-3 w-20" />
-                  </div>
-                  <Skeleton className="w-14 h-14 rounded-lg" />
+            <div key={i} className="rounded-xl bg-zinc-900/50 border border-zinc-800/40 p-3.5">
+              <div className="flex items-center gap-3">
+                <Skeleton className="w-11 h-11 rounded-lg" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-20" />
                 </div>
-              </CardContent>
-            </Card>
+                <Skeleton className="w-10 h-10 rounded" />
+              </div>
+            </div>
           ))}
         </div>
       ) : filteredAthletes.length === 0 ? (
