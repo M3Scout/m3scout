@@ -353,7 +353,7 @@ export function PlayerListRowMobilePremium({
       onClick={handleCardClick}
       className={cn(
         "relative bg-zinc-950/70 rounded-xl overflow-hidden cursor-pointer",
-        "shadow-[0_2px_8px_-2px_rgba(0,0,0,0.4)]",
+        "shadow-[0_1px_3px_0_rgba(0,0,0,0.2)]",
         "active:scale-[0.99] transition-transform duration-100",
         isArchived && "opacity-50"
       )}
@@ -372,7 +372,7 @@ export function PlayerListRowMobilePremium({
         </div>
 
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-semibold text-zinc-100 truncate">{fullName}</h3>
+          <h3 className="text-sm font-extrabold text-zinc-100 truncate tracking-tight">{fullName}</h3>
           <div className="flex items-center gap-1.5 text-[11px] text-zinc-500 mt-0.5">
             <span className={cn(
               "px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase",
