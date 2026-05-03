@@ -25,6 +25,18 @@ interface CompetitionUsage {
   id: string; name: string; tier: string; final_coefficient: number;
   usos: number; jogadores: number; ultimo_uso: string | null;
 }
+interface PositionRow { position: string | null; }
+interface RecentReportRow {
+  id: string; match_date: string; final_score: number | null;
+  players?: { full_name: string | null } | null;
+  competitions?: { name: string | null } | null;
+}
+interface CompetitionRow {
+  id: string; name: string; display_name?: string | null;
+  tier: string; final_coefficient: number;
+}
+interface IdRow { id: string; }
+interface PlayerIdRow { player_id: string | null; }
 interface RankedPlayer {
   id: string; full_name: string; position: string;
   auto_rating: number | null; current_club: string | null; age: number | null;
@@ -157,7 +169,7 @@ export const DashboardV2 = () => {
 
       if (positionsRes.data) {
         const counts: Record<string, number> = {};
-        positionsRes.data.forEach((p: any) => {
+        (positionsRes.data as PositionRow[]).forEach((p) => {
           const pos = shortPos(p.position || "");
           counts[pos] = (counts[pos] || 0) + 1;
         });
@@ -168,7 +180,7 @@ export const DashboardV2 = () => {
       }
 
       if (recentReportsRes.data) {
-        setRecentReports(recentReportsRes.data.map((r: any) => ({
+        setRecentReports((recentReportsRes.data as unknown as RecentReportRow[]).map((r) => ({
           id: r.id,
           player_name: r.players?.full_name || "—",
           competition_name: r.competitions?.name || "—",
@@ -177,10 +189,10 @@ export const DashboardV2 = () => {
         })));
       }
 
-      if (topPlayersRes.data) setTopPlayers(topPlayersRes.data as any);
+      if (topPlayersRes.data) setTopPlayers(topPlayersRes.data as RankedPlayer[]);
 
       if (compsRes.data) {
-        const comps = compsRes.data as any[];
+        const comps = compsRes.data as CompetitionRow[];
         const seasonYear = new Date().getFullYear();
         const yearStart = `${seasonYear}-01-01`;
         const nextYearStart = `${seasonYear + 1}-01-01`;
