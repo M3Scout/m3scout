@@ -125,20 +125,21 @@ const SidebarItem = memo(function SidebarItem({
     <Link
       to={item.href}
       className={cn(
-        "group relative flex items-center rounded-md transition-all duration-100",
-        collapsed ? "justify-center px-2 py-2" : "gap-2.5 px-2.5 py-1.5",
+        "group relative flex items-center transition-all duration-100",
+        collapsed ? "justify-center px-2 py-2 rounded-md" : "gap-2.5 pr-2.5 py-1.5",
         isActive ? "text-white" : "text-zinc-500 hover:text-zinc-200"
       )}
       style={{
-        background: isActive ? "rgba(225, 29, 72, 0.05)" : undefined,
-        borderLeft: isActive && !collapsed ? "2px solid #E11D48" : "2px solid transparent",
+        background: isActive ? "rgba(230, 57, 70, 0.08)" : undefined,
+        borderLeft: isActive && !collapsed ? "3px solid #e63946" : collapsed ? undefined : "3px solid transparent",
+        paddingLeft: collapsed ? undefined : isActive ? "9px" : "9px",
       }}
     >
       <Icon
         className={cn(
           "shrink-0 transition-colors duration-100",
           collapsed ? "w-[18px] h-[18px]" : "w-4 h-4",
-          isActive ? "text-rose-500" : "text-current opacity-60"
+          isActive ? "text-[#e63946]" : "text-current opacity-60"
         )}
         strokeWidth={1.5}
       />
@@ -207,7 +208,7 @@ const SidebarSection = memo(function SidebarSection({
     <div className="space-y-0.5 first:mt-0 [&:not(:first-child)]:mt-6">
       {!collapsed && (
         <div
-          className="px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em]"
+          className="pl-3 pr-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em]"
           style={{ color: "#666666" }}
         >
           {group.label}
@@ -248,14 +249,14 @@ const MobileNavItem = memo(function MobileNavItem({
         isActive ? "text-white" : "text-zinc-400 active:bg-white/5"
       )}
       style={{
-        background: isActive ? "rgba(225, 29, 72, 0.05)" : undefined,
-        borderLeft: isActive ? "2px solid #E11D48" : "2px solid transparent",
+        background: isActive ? "rgba(230, 57, 70, 0.08)" : undefined,
+        borderLeft: isActive ? "3px solid #e63946" : "3px solid transparent",
       }}
     >
       <Icon
         className={cn(
           "w-4 h-4 shrink-0 transition-colors duration-100",
-          isActive ? "text-rose-500" : "text-current opacity-60"
+          isActive ? "text-[#e63946]" : "text-current opacity-60"
         )}
         strokeWidth={1.5}
       />
@@ -412,7 +413,7 @@ export function AppSidebar() {
         )}
         style={{
           top: 'var(--sat)',
-          background: "linear-gradient(180deg, #0B0E14 0%, #080A10 100%)",
+          background: "#000000",
           paddingLeft: 'var(--sal)',
           paddingBottom: 'var(--sab)',
         }}
@@ -465,7 +466,7 @@ export function AppSidebar() {
           showCollapsed ? "w-[64px]" : "w-56"
         )}
         style={{
-          background: "linear-gradient(180deg, #0B0E14 0%, #080A10 100%)",
+          background: "#000000",
         }}
       >
         {/* ===== HEADER ===== */}
@@ -523,7 +524,7 @@ export function AppSidebar() {
         </div>
 
         {/* ===== NAVIGATION - SCROLLABLE ===== */}
-        <nav className="flex-1 min-h-0 px-2 py-2 space-y-2 overflow-y-auto overflow-x-hidden sidebar-nav-scroll">
+        <nav className="flex-1 min-h-0 pr-2 py-2 space-y-2 overflow-y-auto overflow-x-hidden sidebar-nav-scroll">
           <TooltipProvider delayDuration={0}>
             {navGroups.map((group) => (
               <SidebarSection
