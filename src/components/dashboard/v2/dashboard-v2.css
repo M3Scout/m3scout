@@ -659,4 +659,25 @@
   .m3dash-meta { text-align: left; }
   .m3dash-stat { padding: 16px; }
   .m3dash-stat-value { font-size: 32px; }
+
+  /* Competition table: tighter padding, smaller text */
+  .m3dash-comp-table thead th { padding: 8px 10px; font-size: 8px; }
+  .m3dash-comp-table tbody td { padding: 8px 10px; font-size: 10px; }
+  .m3dash-comp-name { max-width: 100px; }
+
+  /* Alert: wrap gracefully */
+  .m3dash-alert { flex-wrap: wrap; gap: 10px; padding: 12px 14px; }
+  .m3dash-alert-badge { margin-left: auto; }
+
+  /* Section heads */
+  .m3dash-section-head { flex-wrap: wrap; gap: 6px; }
+
+  /* Athlete rows: tighter */
+  .m3dash-athlete { padding: 10px 14px; gap: 10px; }
+  .m3dash-athlete-rank { font-size: 9px; min-width: 16px; }
+  .m3dash-pos-badge { display: none; }
+
+  /* Report rows */
+  .m3dash-report { padding: 10px 14px; }
+  .m3dash-report-date { font-size: 9px; }
 }
