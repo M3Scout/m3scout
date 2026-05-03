@@ -14,7 +14,7 @@
   --muted2: rgba(240,236,227,0.2);
   --red: #E5173F;
   --green: #2DCE8A;
-  --yellow: #E8C84A;
+  --yellow: #E8C44A;
 
   --font-heading: 'Barlow Condensed', sans-serif;
   --font-body: 'Barlow', sans-serif;
@@ -98,7 +98,7 @@
 /* --------- CONTENT --------- */
 .m3dash-content {
   flex: 1;
-  padding: 20px 28px 48px;
+  padding: 36px 28px 48px;
 }
 
 /* --------- PAGE HEADER --------- */
@@ -115,7 +115,7 @@
   font-weight: 900;
   font-size: 48px;
   text-transform: uppercase;
-  line-height: 0.9;
+  line-height: 1;
   color: var(--text);
 }
 .m3dash-headline .red { color: var(--red); }
@@ -186,8 +186,10 @@
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 1px;
-  margin-bottom: 28px;
+  margin-bottom: 24px;
   border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
 }
 
 @media (min-width: 640px) {
@@ -247,29 +249,63 @@
 .m3dash-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 1px;
+  gap: 24px;
 }
 
 @media (min-width: 1024px) {
   .m3dash-grid {
-    grid-template-columns: 1fr 360px;
+    grid-template-columns: 1fr 1fr;
   }
 }
 
-.m3dash-col-left { display: flex; flex-direction: column; gap: 1px; }
-.m3dash-col-right { display: flex; flex-direction: column; gap: 1px; }
+.m3dash-col-left { display: flex; flex-direction: column; gap: 24px; }
+.m3dash-col-right { display: flex; flex-direction: column; gap: 24px; }
+
+/* --------- INSIGHTS FULL WIDTH --------- */
+.m3dash-insights-full {
+  margin-bottom: 24px;
+}
+@media (min-width: 768px) {
+  /* Tighter wrapper padding — less dead space above/below the card row */
+  .m3dash-insights-full .m3dash-insights-wrap > div > div:last-child {
+    padding: 10px 12px;
+  }
+  /* 5-column horizontal grid */
+  .m3dash-insights-full .m3dash-insights-wrap > div > div:last-child > div {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    height: auto;
+  }
+  /* Each motion.div stretches to fill its grid cell */
+  .m3dash-insights-full .m3dash-insights-wrap > div > div:last-child > div > div {
+    display: flex;
+    align-items: stretch;
+  }
+  /* Cards: fill column, proper breathing room, no forced overflow clipping */
+  .m3dash-insights-full .m3dash-insights-wrap a.rounded-lg {
+    flex: 1;
+    padding: 16px 14px;
+    min-height: 96px;
+    gap: 10px;
+    overflow: visible;
+    align-items: flex-start;
+  }
+}
 
 /* --------- SECTION (card) --------- */
 .m3dash-section {
   background: var(--bg2);
   border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
 }
 
 .m3dash-section-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
+  padding: 18px 24px;
   border-bottom: 1px solid var(--border);
 }
 
@@ -300,7 +336,7 @@
   grid-template-columns: 24px 32px 1fr auto auto;
   align-items: center;
   gap: 12px;
-  padding: 10px 20px;
+  padding: 12px 24px;
   border-bottom: 1px solid var(--border);
   text-decoration: none;
   color: inherit;
@@ -385,7 +421,7 @@
   grid-template-columns: 40px 1fr auto;
   align-items: center;
   gap: 12px;
-  padding: 10px 20px;
+  padding: 12px 24px;
   border-bottom: 1px solid var(--border);
   text-decoration: none;
   color: inherit;
@@ -437,7 +473,7 @@
 }
 
 /* --------- PERFIL DO ELENCO --------- */
-.m3dash-pos-list { padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; }
+.m3dash-pos-list { padding: 16px 24px; display: flex; flex-direction: column; gap: 10px; }
 .m3dash-pos-row {
   display: grid;
   grid-template-columns: 36px 1fr 24px;
@@ -516,14 +552,14 @@
   text-transform: uppercase;
   color: var(--muted2);
   text-align: left;
-  padding: 10px 16px;
+  padding: 10px 20px;
   border-bottom: 1px solid var(--border);
   font-weight: 400;
 }
 .m3dash-comp-table tbody td {
   font-family: var(--font-mono);
   font-size: 11px;
-  padding: 10px 16px;
+  padding: 10px 20px;
   border-bottom: 1px solid var(--border);
   color: var(--text);
   vertical-align: middle;
@@ -564,12 +600,54 @@
 }
 
 /* --------- Insights card override --------- */
-.m3dash-insights-wrap .rounded-xl,
-.m3dash-insights-wrap .rounded-lg {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  padding: 0 !important;
+/* Strip the InsightsCard outer container — .m3dash-section already provides the card frame */
+.m3dash-insights-wrap > div {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  overflow: visible;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+/* Hide InsightsCard's own duplicate header ("Insights da Plataforma") */
+.m3dash-insights-wrap > div > div:first-child {
+  display: none;
+}
+/* Content area: natural height, padded */
+.m3dash-insights-wrap > div > div:last-child {
+  padding: 12px;
+  flex: none;
+}
+/* Individual insight <Link> cards */
+.m3dash-insights-wrap a.rounded-lg {
+  background: #1a1a1a;
+  border: 1px solid var(--border);
+}
+/* Description: allow 2 lines so text is never aggressively clipped */
+.m3dash-insights-wrap a.rounded-lg > div > p {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: normal;
+  line-height: 1.4;
+}
+/* Title + badge row: baseline-align so badge sits flush with title text */
+.m3dash-insights-wrap a.rounded-lg > div > div {
+  align-items: baseline;
+  flex-wrap: nowrap;
+}
+/* Trend badge: shrink to be proportional to title (12px → 9px, tighter padding) */
+.m3dash-insights-wrap a.rounded-lg > div > div > div {
+  font-size: 9px;
+  padding: 1px 5px;
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+.m3dash-insights-wrap a.rounded-lg > div > div > div svg {
+  width: 10px;
+  height: 10px;
 }
 
 /* --------- Mobile adjustments --------- */

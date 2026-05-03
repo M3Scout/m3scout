@@ -1,31 +1,15 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
-  LayoutDashboard,
-  Users,
-  FileText,
-  Trophy,
-  Settings,
-  LogOut,
   ChevronLeft,
   ChevronRight,
   Menu,
   X,
-  MessageSquare,
-  GitCompare,
-  Newspaper,
-  Radio,
-  Shield,
-  TrendingUp,
-  Target,
-  ScrollText,
-  LucideIcon,
 } from "lucide-react";
-import { useState, useEffect, useMemo, useCallback, memo } from "react";
+import { useState, useEffect, useMemo, memo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions, ModuleKey } from "@/hooks/usePermissions";
 import { useSidebar } from "@/hooks/useSidebar";
-import { toast } from "sonner";
 import logoM3 from "@/assets/logo-m3.png";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import {
@@ -35,35 +19,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-// ============ SECTION COLOR SYSTEM ============
-const SECTION_COLORS = {
-  analysis: {
-    accent: "#FF3B3B",
-    activeBg: "rgba(255, 59, 59, 0.08)",
-  },
-  sports: {
-    accent: "#22C55E",
-    activeBg: "rgba(34, 197, 94, 0.08)",
-  },
-  business: {
-    accent: "#3B82F6",
-    activeBg: "rgba(59, 130, 246, 0.08)",
-  },
-  market: {
-    accent: "#8B5CF6",
-    activeBg: "rgba(139, 92, 246, 0.08)",
-  },
-  admin: {
-    accent: "#F59E0B",
-    activeBg: "rgba(245, 158, 11, 0.08)",
-  },
-} as const;
-
-type SectionColorKey = keyof typeof SECTION_COLORS;
-
 interface NavItem {
   href: string;
-  icon: LucideIcon;
   label: string;
   module: string;
   action?: string;
@@ -71,7 +28,6 @@ interface NavItem {
 
 interface NavGroup {
   label: string;
-  colorKey: SectionColorKey;
   items: NavItem[];
 }
 
@@ -79,45 +35,40 @@ interface NavGroup {
 const internalNavGroups: NavGroup[] = [
   {
     label: "Análise",
-    colorKey: "analysis",
     items: [
-      { href: "/app", icon: LayoutDashboard, label: "Dashboard", module: "app" },
-      { href: "/app/players", icon: Users, label: "Atletas", module: "players" },
-      { href: "/app/compare", icon: GitCompare, label: "Comparar", module: "compare" },
-      { href: "/app/reports", icon: FileText, label: "Relatórios", module: "reports" },
+      { href: "/app", label: "Dashboard", module: "app" },
+      { href: "/app/players", label: "Atletas", module: "players" },
+      { href: "/app/compare", label: "Comparar", module: "compare" },
+      { href: "/app/reports", label: "Relatórios", module: "reports" },
     ]
   },
   {
     label: "Contexto Esportivo",
-    colorKey: "sports",
     items: [
-      { href: "/app/live-match", icon: Radio, label: "Jogo Ao Vivo", module: "live_match" },
-      { href: "/app/competitions", icon: Trophy, label: "Competições", module: "competitions" },
+      { href: "/app/live-match", label: "Jogo Ao Vivo", module: "live_match" },
+      { href: "/app/competitions", label: "Competições", module: "competitions" },
     ]
   },
   {
     label: "Negócios",
-    colorKey: "business",
     items: [
-      { href: "/app/news", icon: Newspaper, label: "Notícias", module: "news" },
-      { href: "/app/leads", icon: MessageSquare, label: "Leads", module: "leads" },
+      { href: "/app/news", label: "Notícias", module: "news" },
+      { href: "/app/leads", label: "Leads", module: "leads" },
     ]
   },
   {
     label: "Mercado",
-    colorKey: "market",
     items: [
-      { href: "/app/market/ativos", icon: TrendingUp, label: "Ativos M3", module: "players" },
-      { href: "/app/market/targets", icon: Users, label: "Targets", module: "players" },
-      { href: "/app/contratos", icon: ScrollText, label: "Contratos", module: "players" },
+      { href: "/app/market/ativos", label: "Ativos M3", module: "players" },
+      { href: "/app/market/targets", label: "Targets", module: "players" },
+      { href: "/app/contratos", label: "Contratos", module: "players" },
     ]
   },
   {
     label: "Administração",
-    colorKey: "admin",
     items: [
-      { href: "/app/goals-monitor", icon: Target, label: "Metas", module: "users", action: "manage" },
-      { href: "/app/settings/users", icon: Shield, label: "Usuários", module: "users", action: "manage" },
+      { href: "/app/goals-monitor", label: "Metas", module: "users", action: "manage" },
+      { href: "/app/settings/users", label: "Usuários", module: "users", action: "manage" },
     ]
   }
 ];
@@ -125,19 +76,17 @@ const internalNavGroups: NavGroup[] = [
 const playerNavGroups: NavGroup[] = [
   {
     label: "Meu Espaço",
-    colorKey: "analysis",
     items: [
-      { href: "/app", icon: LayoutDashboard, label: "Dashboard", module: "app" },
-      { href: "/app/my-profile", icon: Users, label: "Meu Perfil", module: "players" },
-      { href: "/app/reports", icon: FileText, label: "Relatórios", module: "reports" },
+      { href: "/app", label: "Dashboard", module: "app" },
+      { href: "/app/my-profile", label: "Meu Perfil", module: "players" },
+      { href: "/app/reports", label: "Relatórios", module: "reports" },
     ]
   },
   {
     label: "Jogos",
-    colorKey: "sports",
     items: [
-      { href: "/app/live-match", icon: Radio, label: "Meus Jogos", module: "live_match" },
-      { href: "/app/competitions", icon: Trophy, label: "Competições", module: "competitions" },
+      { href: "/app/live-match", label: "Meus Jogos", module: "live_match" },
+      { href: "/app/competitions", label: "Competições", module: "competitions" },
     ]
   }
 ];
@@ -146,16 +95,12 @@ const playerNavGroups: NavGroup[] = [
 interface SidebarItemProps {
   item: NavItem;
   isActive: boolean;
-  accentColor: string;
-  activeBg: string;
   collapsed: boolean;
 }
 
 const SidebarItem = memo(function SidebarItem({
   item,
   isActive,
-  accentColor,
-  activeBg,
   collapsed,
 }: SidebarItemProps) {
   const content = (
@@ -167,23 +112,26 @@ const SidebarItem = memo(function SidebarItem({
         isActive ? "text-white" : "text-zinc-500 hover:text-zinc-200"
       )}
       style={{
-        background: isActive ? activeBg : undefined,
-        borderLeft: isActive && !collapsed ? `3px solid ${accentColor}` : "3px solid transparent",
+        background: isActive ? "rgba(225, 29, 72, 0.05)" : undefined,
+        borderLeft: isActive && !collapsed ? "2px solid #E11D48" : "2px solid transparent",
       }}
     >
-      <item.icon
-        className={cn(
-          "shrink-0 transition-colors duration-100",
-          collapsed ? "w-[18px] h-[18px]" : "w-[16px] h-[16px]"
-        )}
-        style={{ color: isActive ? accentColor : undefined }}
-        strokeWidth={1.5}
+      <span
+        style={{
+          display: "inline-block",
+          width: collapsed ? "6px" : "4px",
+          height: collapsed ? "6px" : "4px",
+          borderRadius: "50%",
+          flexShrink: 0,
+          backgroundColor: isActive ? "#E11D48" : "currentColor",
+          opacity: isActive ? 1 : 0.4,
+        }}
       />
       {!collapsed && (
         <span
           className={cn(
             "text-[14px] leading-[1.2] font-medium tracking-tight truncate",
-            isActive && "text-white"
+            isActive ? "text-white" : ""
           )}
         >
           {item.label}
@@ -224,10 +172,7 @@ const SidebarSection = memo(function SidebarSection({
   collapsed,
   can,
 }: SidebarSectionProps) {
-  const colors = SECTION_COLORS[group.colorKey];
-  
-  // Filter items by permission
-  const visibleItems = useMemo(() => 
+  const visibleItems = useMemo(() =>
     group.items.filter(item => {
       if (!item.module || item.module === "app") return true;
       const action = item.action || "view";
@@ -244,24 +189,20 @@ const SidebarSection = memo(function SidebarSection({
   };
 
   return (
-    <div className="space-y-0.5 first:mt-0 [&:not(:first-child)]:mt-5">
-      {/* Section label - hide when collapsed */}
+    <div className="space-y-0.5 first:mt-0 [&:not(:first-child)]:mt-6">
       {!collapsed && (
         <div
           className="px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em]"
-          style={{ color: colors.accent, opacity: 0.7 }}
+          style={{ color: "#666666" }}
         >
           {group.label}
         </div>
       )}
-      {/* Items */}
       {visibleItems.map((item) => (
         <SidebarItem
           key={item.href}
           item={item}
           isActive={isActive(item.href)}
-          accentColor={colors.accent}
-          activeBg={colors.activeBg}
           collapsed={collapsed}
         />
       ))}
@@ -273,16 +214,12 @@ const SidebarSection = memo(function SidebarSection({
 interface MobileNavItemProps {
   item: NavItem;
   isActive: boolean;
-  accentColor: string;
-  activeBg: string;
   onClick: () => void;
 }
 
 const MobileNavItem = memo(function MobileNavItem({
   item,
   isActive,
-  accentColor,
-  activeBg,
   onClick,
 }: MobileNavItemProps) {
   return (
@@ -295,14 +232,20 @@ const MobileNavItem = memo(function MobileNavItem({
         isActive ? "text-white" : "text-zinc-400 active:bg-white/5"
       )}
       style={{
-        background: isActive ? activeBg : undefined,
-        borderLeft: isActive ? `3px solid ${accentColor}` : "3px solid transparent",
+        background: isActive ? "rgba(225, 29, 72, 0.05)" : undefined,
+        borderLeft: isActive ? "2px solid #E11D48" : "2px solid transparent",
       }}
     >
-      <item.icon
-        className="w-5 h-5 shrink-0"
-        style={{ color: isActive ? accentColor : undefined }}
-        strokeWidth={1.5}
+      <span
+        style={{
+          display: "inline-block",
+          width: "4px",
+          height: "4px",
+          borderRadius: "50%",
+          flexShrink: 0,
+          backgroundColor: isActive ? "#E11D48" : "currentColor",
+          opacity: isActive ? 1 : 0.4,
+        }}
       />
       <span className={cn(
         "text-[14px] font-medium",
@@ -328,9 +271,7 @@ const MobileSection = memo(function MobileSection({
   can,
   onNavigate,
 }: MobileSectionProps) {
-  const colors = SECTION_COLORS[group.colorKey];
-  
-  const visibleItems = useMemo(() => 
+  const visibleItems = useMemo(() =>
     group.items.filter(item => {
       if (!item.module || item.module === "app") return true;
       const action = item.action || "view";
@@ -347,10 +288,10 @@ const MobileSection = memo(function MobileSection({
   };
 
   return (
-    <div className="space-y-0.5 first:mt-0 [&:not(:first-child)]:mt-5">
+    <div className="space-y-0.5 first:mt-0 [&:not(:first-child)]:mt-6">
       <div
         className="px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em]"
-        style={{ color: colors.accent, opacity: 0.8 }}
+        style={{ color: "#666666" }}
       >
         {group.label}
       </div>
@@ -359,8 +300,6 @@ const MobileSection = memo(function MobileSection({
           key={item.href}
           item={item}
           isActive={isActive(item.href)}
-          accentColor={colors.accent}
-          activeBg={colors.activeBg}
           onClick={onNavigate}
         />
       ))}
@@ -371,8 +310,7 @@ const MobileSection = memo(function MobileSection({
 // ============ MAIN SIDEBAR COMPONENT ============
 export function AppSidebar() {
   const location = useLocation();
-  const navigate = useNavigate();
-  const { signOut, user, isPlayer } = useAuth();
+  const { user, isPlayer } = useAuth();
   const { can, isPlayerRole } = usePermissions();
   const { isCollapsed, toggleCollapsed, setIsCollapsed } = useSidebar();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -404,15 +342,7 @@ export function AppSidebar() {
   // Choose navigation groups based on user role
   const navGroups = isPlayerRole ? playerNavGroups : internalNavGroups;
 
-  const handleLogout = useCallback(async () => {
-    await signOut();
-    toast.success("Você saiu do sistema");
-    navigate("/app/auth");
-  }, [signOut, navigate]);
-
-  const handleMobileClose = useCallback(() => {
-    setMobileMenuOpen(false);
-  }, []);
+  const handleMobileClose = () => setMobileMenuOpen(false);
 
   const showCollapsed = isCollapsed || isTablet;
   const currentPath = location.pathname;
@@ -420,9 +350,9 @@ export function AppSidebar() {
   return (
     <>
       {/* ===== MOBILE HEADER (< 768px) ===== */}
-      <header 
+      <header
         className="md:hidden fixed left-0 right-0 z-50 h-14 border-b border-white/5 bg-gradient-to-b from-zinc-900/98 to-zinc-950/98 backdrop-blur-xl flex items-center justify-between"
-        style={{ 
+        style={{
           top: 'var(--sat)',
           paddingLeft: 'calc(var(--sal) + 1rem)',
           paddingRight: 'calc(var(--sar) + 1rem)',
@@ -504,31 +434,13 @@ export function AppSidebar() {
         </div>
 
         {/* Drawer Footer */}
-        <div className="px-3 py-3 border-t border-white/5 space-y-0.5 shrink-0">
-          <Link
-            to="/app/settings"
-            onClick={handleMobileClose}
-            className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-zinc-500 active:bg-white/5 transition-all"
-          >
-            <Settings className="w-5 h-5" strokeWidth={1.5} />
-            <span className="text-[14px] font-medium">Configurações</span>
-          </Link>
-
-          <div className="h-px bg-gradient-to-r from-transparent via-zinc-800 to-transparent my-2" />
-
+        <div className="px-3 py-4 border-t border-white/5 shrink-0">
           {user && (
-            <div className="px-4 py-2 text-[11px] text-zinc-600 truncate">
-              {user.email}
+            <div className="px-4 space-y-0.5">
+              <div className="text-[11px] text-zinc-500 truncate">{user.email}</div>
+              <div className="text-[10px] font-semibold text-zinc-700 uppercase tracking-[0.08em]">M3 AGENCY</div>
             </div>
           )}
-
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-3 px-4 py-2.5 w-full rounded-lg text-zinc-500 active:bg-white/5 active:scale-[0.98] transition-all duration-150"
-          >
-            <LogOut className="w-5 h-5 shrink-0" strokeWidth={1.5} />
-            <span className="text-[14px] font-medium">Sair</span>
-          </button>
         </div>
       </nav>
 
@@ -537,7 +449,7 @@ export function AppSidebar() {
         className={cn(
           "hidden md:flex flex-col fixed left-0 top-0 z-40 transition-all duration-200 ease-out",
           "border-r border-white/[0.04] sidebar-compact-height",
-          "h-[100dvh] min-h-screen", // Use dvh with vh fallback for proper height
+          "h-[100dvh] min-h-screen",
           showCollapsed ? "w-[64px]" : "w-56"
         )}
         style={{
@@ -613,78 +525,14 @@ export function AppSidebar() {
           </TooltipProvider>
         </nav>
 
-        {/* ===== FOOTER - Always visible ===== */}
-        <div className="sidebar-footer px-2 py-2 border-t border-white/[0.04] space-y-0.5 shrink-0 mt-auto">
-          <TooltipProvider delayDuration={0}>
-            {/* Settings */}
-            {showCollapsed ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Link
-                    to="/app/settings"
-                    className="flex items-center justify-center px-2 py-2 rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-white/5 transition-all duration-100"
-                  >
-                    <Settings className="w-[18px] h-[18px]" strokeWidth={1.5} />
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  sideOffset={12}
-                  className="bg-zinc-900 border-zinc-800 text-zinc-100 text-xs font-medium"
-                >
-                  Configurações
-                </TooltipContent>
-              </Tooltip>
-            ) : (
-              <Link
-                to="/app/settings"
-                className={cn(
-                  "flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-zinc-500 hover:text-zinc-200 transition-all duration-100",
-                  currentPath.startsWith("/app/settings") &&
-                    "text-white bg-white/5"
-                )}
-              >
-                <Settings className="w-[16px] h-[16px]" strokeWidth={1.5} />
-                <span className="text-[14px] font-medium">Configurações</span>
-              </Link>
-            )}
-
-            {/* User email - only when expanded */}
-            {!showCollapsed && user && (
-              <div className="px-2.5 py-1 text-[10px] text-zinc-600 truncate">
-                {user.email}
-              </div>
-            )}
-
-            {/* Logout */}
-            {showCollapsed ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center justify-center w-full px-2 py-2 rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-white/5 transition-all duration-100"
-                  >
-                    <LogOut className="w-[18px] h-[18px]" strokeWidth={1.5} />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  sideOffset={12}
-                  className="bg-zinc-900 border-zinc-800 text-zinc-100 text-xs font-medium"
-                >
-                  Sair
-                </TooltipContent>
-              </Tooltip>
-            ) : (
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-2.5 px-2.5 py-1.5 w-full rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-white/5 transition-all duration-100"
-              >
-                <LogOut className="w-[16px] h-[16px]" strokeWidth={1.5} />
-                <span className="text-[14px] font-medium">Sair</span>
-              </button>
-            )}
-          </TooltipProvider>
+        {/* ===== FOOTER ===== */}
+        <div className="sidebar-footer px-2 py-3 border-t border-white/[0.04] shrink-0 mt-auto">
+          {!showCollapsed && user && (
+            <div className="px-2.5 space-y-0.5">
+              <div className="text-[10px] text-zinc-500 truncate">{user.email}</div>
+              <div className="text-[10px] font-semibold text-zinc-700 uppercase tracking-[0.08em]">M3 AGENCY</div>
+            </div>
+          )}
         </div>
       </aside>
     </>
