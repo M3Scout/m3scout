@@ -95,7 +95,7 @@ export function SmartHeader({ variant = "default" }: SmartHeaderProps) {
               <img 
                 src={logoM3} 
                 alt="M3 Agency" 
-                className="h-7 md:h-9 w-auto"
+                className="h-7 md:h-9 w-auto" width={90} height={36}
               />
             </Link>
 

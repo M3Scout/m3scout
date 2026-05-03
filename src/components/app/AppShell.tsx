@@ -122,7 +122,7 @@ export function AppShell({
           <img 
             src={logoM3} 
             alt="M3 Scout" 
-            className="h-12 w-auto opacity-60"
+            className="h-12 w-auto opacity-60" width={120} height={48}
           />
         </div>
 
@@ -169,7 +169,7 @@ export function AppShell({
             <img 
               src={logoM3} 
               alt="M3 Scout" 
-              className="h-12 w-auto opacity-60"
+              className="h-12 w-auto opacity-60" width={120} height={48}
             />
           </div>
 
@@ -217,7 +217,7 @@ export function AppShell({
           <img 
             src={logoM3} 
             alt="M3 Scout" 
-            className="h-16 w-auto opacity-80"
+            className="h-16 w-auto opacity-80" width={160} height={64}
           />
         </div>
 

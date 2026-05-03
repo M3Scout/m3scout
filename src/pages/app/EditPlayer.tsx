@@ -572,7 +572,7 @@ export default function EditPlayer() {
                     <div className="w-40 h-40 rounded-full overflow-hidden bg-secondary/50 flex items-center justify-center border-2 border-dashed border-border relative">
                       {photoPreview ? (
                         <>
-                          <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
+                          <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" width={200} height={200} />
                           <button type="button" onClick={handleRemovePhoto}
                             className="absolute top-1 right-1 p-1 bg-destructive rounded-full text-destructive-foreground hover:bg-destructive/80 transition-colors">
                             <Trash2 className="w-4 h-4" />

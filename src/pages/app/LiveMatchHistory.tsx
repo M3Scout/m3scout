@@ -253,7 +253,7 @@ function MatchCard({ match, link, onDelete, canDelete = false, index }: MatchCar
               <img 
                 src={displayLogoUrl} 
                 alt={displayTeamName} 
-                className="w-10 h-10 object-contain rounded-lg bg-zinc-800/50 p-1"
+                className="w-10 h-10 object-contain rounded-lg bg-zinc-800/50 p-1" width={40} height={40}
               />
             ) : (
               <div className={cn(
@@ -271,7 +271,7 @@ function MatchCard({ match, link, onDelete, canDelete = false, index }: MatchCar
               <img 
                 src={match.opponent_logo_url} 
                 alt={match.opponent_name} 
-                className="w-10 h-10 object-contain rounded-lg bg-zinc-800/50 p-1"
+                className="w-10 h-10 object-contain rounded-lg bg-zinc-800/50 p-1" width={40} height={40}
               />
             ) : (
               <div className="w-10 h-10 rounded-lg bg-zinc-700/40 flex items-center justify-center text-xs font-bold text-zinc-400">

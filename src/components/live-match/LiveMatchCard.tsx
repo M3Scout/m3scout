@@ -328,7 +328,7 @@ export function LiveMatchCard({ match, link, onDelete, canDelete = false, index 
                   <img 
                     src={displayLogoUrl} 
                     alt={displayTeamName} 
-                    className="w-8 h-8 object-contain"
+                    className="w-8 h-8 object-contain" width={32} height={32}
                   />
                   <div>
                     <h4 className="font-bold text-lg text-zinc-100 truncate">
@@ -445,7 +445,7 @@ export function LiveMatchCard({ match, link, onDelete, canDelete = false, index 
                     <img 
                       src={mp.players.photo_url} 
                       alt={mp.players.full_name}
-                      className="w-8 h-8 rounded-full object-cover"
+                      className="w-8 h-8 rounded-full object-cover" width={32} height={32}
                     />
                   ) : (
                     <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center text-xs font-medium">

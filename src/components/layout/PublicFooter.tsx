@@ -91,7 +91,7 @@ export function PublicFooter() {
             <img 
               src={logoM3} 
               alt="M3 Agency" 
-              className="h-6 md:h-7 w-auto"
+              className="h-6 md:h-7 w-auto" width={70} height={28}
             />
           </Link>
 

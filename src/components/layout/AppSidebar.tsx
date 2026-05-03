@@ -372,7 +372,7 @@ export function AppSidebar() {
         }}
       >
         <Link to="/" className="flex items-center">
-          <img src={logoM3} alt="M3 Agency" className="h-7 w-auto" />
+          <img src={logoM3} alt="M3 Agency" className="h-7 w-auto" width={70} height={28} />
         </Link>
         <div className="flex items-center gap-1">
           <NotificationBell />
@@ -422,7 +422,7 @@ export function AppSidebar() {
         <div className="shrink-0 border-b border-white/5">
           <div className="h-14 flex items-center justify-between px-4">
             <Link to="/" className="flex items-center" onClick={handleMobileClose}>
-              <img src={logoM3} alt="M3 Agency" className="h-7 w-auto" />
+              <img src={logoM3} alt="M3 Agency" className="h-7 w-auto" width={70} height={28} />
             </Link>
             <button
               onClick={handleMobileClose}

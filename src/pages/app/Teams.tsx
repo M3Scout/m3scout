@@ -351,7 +351,7 @@ export default function Teams() {
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center overflow-hidden">
                   {logoUrl ? (
-                    <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
+                    <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" width={40} height={40} />
                   ) : (
                     <Shield className="w-6 h-6 text-zinc-600" />
                   )}
@@ -472,7 +472,7 @@ export default function Teams() {
               <p className="text-[10px] text-zinc-500 mb-2">Preview:</p>
               <div className="flex items-center gap-3">
                 {logoUrl ? (
-                  <img src={logoUrl} alt="Preview" className="w-10 h-10 object-contain" />
+                  <img src={logoUrl} alt="Preview" className="w-10 h-10 object-contain" width={40} height={40} />
                 ) : (
                   <div
                     className="w-10 h-10 rounded-lg flex items-center justify-center font-bold"

@@ -27,7 +27,7 @@ export function LandingNav() {
       <header className={`lp-nav ${scrolled ? "is-scrolled" : ""}`}>
         <div className="lp-nav__inner">
           <Link to="/" className="lp-nav__logo" aria-label="M3 Agency">
-            <img src={logoM3} alt="M3 Agency" className="lp-nav__logo-img" />
+            <img src={logoM3} alt="M3 Agency" className="lp-nav__logo-img" width={90} height={36} />
           </Link>
 
           <nav className="lp-nav__links" aria-label="Navegação principal">

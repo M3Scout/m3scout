@@ -254,7 +254,7 @@ export function GameHeaderCard({
                 <img 
                   src={displayLogoUrl} 
                   alt={displayTeamName} 
-                  className="w-10 h-10 sm:w-12 sm:h-12 object-contain shrink-0"
+                  className="w-10 h-10 sm:w-12 sm:h-12 object-contain shrink-0" width={48} height={48}
                 />
                 <div className="min-w-0">
                   <h1 className="text-base sm:text-lg font-bold text-zinc-100 truncate">
