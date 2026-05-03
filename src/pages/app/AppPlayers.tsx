@@ -674,10 +674,8 @@ const AppPlayers = () => {
       </div>
 
       {/* Results count */}
-      <p className="text-[11px] uppercase tracking-wide text-zinc-600 font-medium animate-fade-in">
-        {filteredCount} atleta{filteredCount !== 1 ? "s" : ""}
-        {showArchived && " (incluindo arquivados)"}
-      </p>
+
+
 
       {/* Content */}
       {loading ? (
