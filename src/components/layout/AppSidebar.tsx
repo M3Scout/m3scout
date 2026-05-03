@@ -5,6 +5,22 @@ import {
   ChevronRight,
   Menu,
   X,
+  LayoutDashboard,
+  Users,
+  GitCompare,
+  FileText,
+  Radio,
+  Trophy,
+  Newspaper,
+  Target,
+  Briefcase,
+  Crosshair,
+  ScrollText,
+  Goal,
+  UserCog,
+  User,
+  Gamepad2,
+  type LucideIcon,
 } from "lucide-react";
 import { useState, useEffect, useMemo, memo } from "react";
 import { useAuth } from "@/hooks/useAuth";
