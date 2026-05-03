@@ -69,40 +69,43 @@ export function CompetitionFilters({
       <div className="flex flex-col lg:flex-row gap-4">
         {/* Search */}
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             type="text"
             placeholder="Buscar competição..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-10"
+            className="pl-10 rounded-full"
           />
         </div>
 
-        {/* Quick Tier Buttons */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground mr-1">Tier:</span>
-          <Button
-            variant={tierFilter === "all" ? "default" : "outline"}
-            size="sm"
+        {/* Quick Tier Chips */}
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium mr-1">Tier</span>
+          <button
             onClick={() => onTierChange("all")}
-            className="h-8 px-3"
+            className={cn(
+              "text-xs px-3 py-1.5 rounded-full transition-all duration-200 font-medium",
+              tierFilter === "all"
+                ? "bg-zinc-700 text-zinc-100"
+                : "text-zinc-500 hover:text-zinc-300"
+            )}
           >
             Todos
-          </Button>
+          </button>
           {TIERS.map((tier) => (
-            <Button
+            <button
               key={tier}
-              variant={tierFilter === tier ? "default" : "outline"}
-              size="sm"
               onClick={() => onTierChange(tier)}
               className={cn(
-                "h-8 w-8 p-0",
-                tierFilter === tier && "ring-2 ring-offset-2 ring-offset-background"
+                "text-xs px-3 py-1.5 rounded-full transition-all duration-200 font-semibold",
+                tierFilter === tier
+                  ? "ring-1 ring-offset-1 ring-offset-background"
+                  : "opacity-70 hover:opacity-100"
               )}
             >
               <TierBadge tier={tier} size="sm" showTooltip={false} />
-            </Button>
+            </button>
           ))}
         </div>
 
@@ -112,7 +115,7 @@ export function CompetitionFilters({
             variant="outline"
             size="sm"
             onClick={() => setShowAdvanced(!showAdvanced)}
-            className={cn(showAdvanced && "bg-secondary")}
+            className={cn("rounded-full", showAdvanced && "bg-secondary")}
           >
             <Filter className="w-4 h-4 mr-2" />
             Filtros
@@ -129,7 +132,7 @@ export function CompetitionFilters({
             )}
           </Button>
           {hasActiveFilters && (
-            <Button variant="ghost" size="sm" onClick={onClear}>
+            <Button variant="ghost" size="sm" onClick={onClear} className="rounded-full">
               <X className="w-4 h-4 mr-1" />
               Limpar
             </Button>
