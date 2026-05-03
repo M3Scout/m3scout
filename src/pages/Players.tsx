@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AthleteCardPremium } from "@/components/players/AthleteCardPremium";
+import { getOptimizedImageUrl } from "@/lib/imageUtils";
 import { calculateMatchRating, type PlayerStatsInput } from "@/lib/matchRatingEngine";
 import { STANDARD_MATCH_DURATION, calculateMinutesPlayed } from "@/lib/minutesPlayed";
 import { ControlBarPremium } from "@/components/players/ControlBarPremium";
