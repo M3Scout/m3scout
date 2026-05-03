@@ -1,5 +1,3 @@
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 interface ContractFiltersProps {
@@ -16,13 +14,13 @@ interface ContractFiltersProps {
 export function ContractFilters({ currentStatus, counts, onFilterChange }: ContractFiltersProps) {
   const filters = [
     { key: null, label: "Todos", count: counts.total },
-    { key: "expired", label: "Vencidos", count: counts.expired, badgeVariant: "error" as const },
-    { key: "expiring", label: "Expirando", count: counts.expiring, badgeVariant: "warning" as const },
-    { key: "active", label: "Ativos", count: counts.active, badgeVariant: "success" as const },
+    { key: "expired", label: "Vencidos", count: counts.expired },
+    { key: "expiring", label: "Expirando", count: counts.expiring },
+    { key: "active", label: "Ativos", count: counts.active },
   ];
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-1.5">
       {filters.map((filter) => {
         const isActive = currentStatus === filter.key;
         return (
@@ -30,23 +28,19 @@ export function ContractFilters({ currentStatus, counts, onFilterChange }: Contr
             key={filter.key ?? "all"}
             onClick={() => onFilterChange(filter.key)}
             className={cn(
-              "inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all",
-              "border",
+              "inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-medium transition-all duration-200",
               isActive
-                ? "bg-zinc-800 border-white/[0.08] text-foreground shadow-sm"
-                : "bg-zinc-900/60 border-white/[0.04] text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-300"
+                ? "bg-zinc-800 text-zinc-100"
+                : "text-zinc-500 hover:text-zinc-300"
             )}
           >
             {filter.label}
-            <Badge
-              variant={isActive ? "secondary" : (filter.badgeVariant || "glass")}
-              size="sm"
-              className={cn(
-                !isActive && !filter.badgeVariant && "bg-zinc-800/60 text-zinc-500 border-transparent"
-              )}
-            >
+            <span className={cn(
+              "tabular-nums text-[10px]",
+              isActive ? "text-zinc-400" : "text-zinc-600"
+            )}>
               {filter.count}
-            </Badge>
+            </span>
           </button>
         );
       })}
