@@ -182,8 +182,8 @@ export const DashboardV2 = () => {
       if (compsRes.data) {
         const comps = compsRes.data as any[];
         const seasonYear = new Date().getFullYear();
-        const yearStart = `${seasonYear}-01-01T00:00:00.000Z`;
-        const nextYearStart = `${seasonYear + 1}-01-01T00:00:00.000Z`;
+        const yearStart = `${seasonYear}-01-01`;
+        const nextYearStart = `${seasonYear + 1}-01-01`;
         const usageRows = await Promise.all(
           comps.map(async (c) => {
             const [scoutingR, matchesR, matchIdsR, manualStatsR, legacyStatsR, lastScoutR, lastMatchR] = await Promise.all([
@@ -242,7 +242,7 @@ export const DashboardV2 = () => {
         const visibleCompetitions = usageRows
           .filter(c => c.usos > 0)
           .sort((a, b) => (b.ultimo_uso || "").localeCompare(a.ultimo_uso || "") || b.usos - a.usos);
-        console.log("[DashboardV2] Competições 2026 retornadas", visibleCompetitions);
+        console.log(`[DashboardV2] Competições ${seasonYear} retornadas`, visibleCompetitions);
         setCompetitions(visibleCompetitions);
       }
 
