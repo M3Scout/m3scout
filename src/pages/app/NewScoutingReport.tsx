@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SearchableCompetitionSelect } from "@/components/ui/searchable-competition-select";
 import { toast } from "sonner";
 import { 
   ArrowLeft, 
@@ -291,18 +292,13 @@ const NewScoutingReport = () => {
 
             <div className="space-y-2">
               <Label htmlFor="competitionId">Competição *</Label>
-              <Select onValueChange={handleCompetitionChange}>
-                <SelectTrigger className="input-dark">
-                  <SelectValue placeholder="Selecione a competição" />
-                </SelectTrigger>
-                <SelectContent>
-                  {competitions.map((comp) => (
-                    <SelectItem key={comp.id} value={comp.id}>
-                      {comp.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableCompetitionSelect
+                competitions={competitions}
+                value=""
+                onValueChange={handleCompetitionChange}
+                placeholder="Selecione a competição"
+                triggerClassName="input-dark"
+              />
               {errors.competitionId && (
                 <p className="text-sm text-destructive">{errors.competitionId.message}</p>
               )}

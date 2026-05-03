@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SearchableCompetitionSelect } from "@/components/ui/searchable-competition-select";
 import { toast } from "sonner";
 import { 
   Radio, Play, Loader2, MapPin, Clock, Trophy, Calendar, 
@@ -544,28 +545,17 @@ export default function LiveMatchNew() {
                 <Trophy className="h-3.5 w-3.5" />
                 Competição <span className="text-red-400">*</span>
               </Label>
-              <Select
+              <SearchableCompetitionSelect
+                competitions={competitions || []}
                 value={competitionId}
                 onValueChange={(v) => { setCompetitionId(v); clearError("competition"); }}
                 disabled={loadingCompetitions}
-              >
-                <SelectTrigger 
-                  id="competition"
-                  className={cn(
-                    "h-11 bg-zinc-900/60 border-zinc-700/50 rounded-xl text-zinc-200 hover:border-zinc-600/60 focus:ring-1 focus:ring-green-500/30 focus:border-green-500/50 transition-all",
-                    errors.competition && "border-red-500/50 focus:ring-red-500/30 focus:border-red-500/50"
-                  )}
-                >
-                  <SelectValue placeholder="Selecione a competição..." />
-                </SelectTrigger>
-                <SelectContent className="bg-zinc-900 border-zinc-800">
-                  {competitions?.map((comp) => (
-                    <SelectItem key={comp.id} value={comp.id}>
-                      {comp.display_name || comp.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Selecione a competição..."
+                triggerClassName={cn(
+                  "h-11 bg-zinc-900/60 border-zinc-700/50 rounded-xl text-zinc-200 hover:border-zinc-600/60 focus:ring-1 focus:ring-green-500/30 focus:border-green-500/50 transition-all",
+                  errors.competition && "border-red-500/50 focus:ring-red-500/30 focus:border-red-500/50"
+                )}
+              />
               {errors.competition && (
                 <p className="text-xs text-red-400 mt-1">{errors.competition}</p>
               )}

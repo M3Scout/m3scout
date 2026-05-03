@@ -42,6 +42,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SearchableCompetitionSelect } from "@/components/ui/searchable-competition-select";
 import {
   BarChart3,
   Plus,
@@ -618,22 +619,13 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
                     </div>
                     <div className="space-y-2">
                       <Label>Competição *</Label>
-                      <Select
+                      <SearchableCompetitionSelect
+                        competitions={safeArray(competitions)}
                         value={formData.competition_id}
                         onValueChange={(v) => handleInputChange("competition_id", v)}
-                        required
-                      >
-                        <SelectTrigger className={!formData.competition_id ? "border-destructive/50" : ""}>
-                          <SelectValue placeholder="Selecione uma competição..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {safeArray(competitions).map((comp) => (
-                            <SelectItem key={comp.id} value={comp.id}>
-                              {comp.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        placeholder="Selecione uma competição..."
+                        triggerClassName={!formData.competition_id ? "border-destructive/50" : ""}
+                      />
                       {!formData.competition_id && (
                         <p className="text-xs text-destructive">Competição é obrigatória</p>
                       )}
