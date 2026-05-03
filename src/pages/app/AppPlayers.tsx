@@ -819,30 +819,23 @@ const AppPlayers = () => {
         /* GRID MODE - Position Identity Cards with colors */
         <div className="space-y-4 animate-fade-in delay-100">
           {/* Sort Controls */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2 text-xs text-zinc-500">
-              <span>Ordenar por:</span>
-              <button 
-                onClick={() => handleSort("avg_score")}
-                className={`flex items-center gap-1 px-2 py-1 rounded hover:bg-zinc-800/50 transition-colors ${sortField === "avg_score" ? "text-primary" : ""}`}
-              >
-                Score <SortIcon field="avg_score" />
-              </button>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-1.5 text-xs text-zinc-500">
               <button 
                 onClick={() => handleSort("auto_rating")}
-                className={`flex items-center gap-1 px-2 py-1 rounded hover:bg-zinc-800/50 transition-colors ${sortField === "auto_rating" ? "text-primary" : ""}`}
+                className={`flex items-center gap-1 px-3 py-1 rounded-full text-[10px] uppercase tracking-wider font-medium hover:bg-zinc-800/40 transition-colors ${sortField === "auto_rating" ? "bg-zinc-800 text-zinc-100" : ""}`}
               >
-                Nota Global <SortIcon field="auto_rating" />
+                OVR <SortIcon field="auto_rating" />
               </button>
               <button 
                 onClick={() => handleSort("full_name")}
-                className={`flex items-center gap-1 px-2 py-1 rounded hover:bg-zinc-800/50 transition-colors ${sortField === "full_name" ? "text-primary" : ""}`}
+                className={`flex items-center gap-1 px-3 py-1 rounded-full text-[10px] uppercase tracking-wider font-medium hover:bg-zinc-800/40 transition-colors ${sortField === "full_name" ? "bg-zinc-800 text-zinc-100" : ""}`}
               >
                 Nome <SortIcon field="full_name" />
               </button>
               <button 
                 onClick={() => handleSort("position")}
-                className={`flex items-center gap-1 px-2 py-1 rounded hover:bg-zinc-800/50 transition-colors ${sortField === "position" ? "text-primary" : ""}`}
+                className={`flex items-center gap-1 px-3 py-1 rounded-full text-[10px] uppercase tracking-wider font-medium hover:bg-zinc-800/40 transition-colors ${sortField === "position" ? "bg-zinc-800 text-zinc-100" : ""}`}
               >
                 Posição <SortIcon field="position" />
               </button>
