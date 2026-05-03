@@ -52,6 +52,8 @@ export function NewsCardMobile({
             alt={article.title}
             className="w-full h-full object-cover"
             loading="lazy"
+            width={400}
+            height={225}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
