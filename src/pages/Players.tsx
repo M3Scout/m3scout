@@ -791,7 +791,7 @@ const Players = () => {
                     age={player.age || 0}
                     nationality={player.nationality}
                     currentClub={player.current_club || ""}
-                    imageUrl={player.photo_url || "/placeholder.svg"}
+                    imageUrl={getOptimizedImageUrl(player.photo_url, { width: 400, quality: 75 }) || "/placeholder.svg"}
                     isPublic={true}
                     scoutingMode={scoutingMode}
                     clubMode={clubMode}
