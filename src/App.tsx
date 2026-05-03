@@ -137,25 +137,25 @@ function AppRoutes() {
               {/* Public Routes */}
               <Route element={<PublicLayout />}>
                 <Route path="/" element={<Index />} />
-                <Route path="/sobre" element={<Sobre />} />
-                <Route path="/representacao-de-talentos" element={<RepresentacaoTalentos />} />
-                <Route path="/players" element={<Players />} />
-                <Route path="/atletas" element={<Players />} />
-                <Route path="/players/:slug" element={<PlayerProfile />} />
-                <Route path="/imprensa" element={<Imprensa />} />
-                <Route path="/imprensa/todas" element={<ImprensaTodas />} />
-                <Route path="/imprensa/:slug" element={<NewsDetail />} />
-                <Route path="/competitions" element={<CompetitionRankingPublic />} />
-                <Route path="/contact" element={<Contact />} />
-                <Route path="/contato" element={<Contact />} />
+                <Route path="/sobre" element={<Suspense fallback={<RouteSuspense />}><Sobre /></Suspense>} />
+                <Route path="/representacao-de-talentos" element={<Suspense fallback={<RouteSuspense />}><RepresentacaoTalentos /></Suspense>} />
+                <Route path="/players" element={<Suspense fallback={<RouteSuspense />}><Players /></Suspense>} />
+                <Route path="/atletas" element={<Suspense fallback={<RouteSuspense />}><Players /></Suspense>} />
+                <Route path="/players/:slug" element={<Suspense fallback={<RouteSuspense />}><PlayerProfile /></Suspense>} />
+                <Route path="/imprensa" element={<Suspense fallback={<RouteSuspense />}><Imprensa /></Suspense>} />
+                <Route path="/imprensa/todas" element={<Suspense fallback={<RouteSuspense />}><ImprensaTodas /></Suspense>} />
+                <Route path="/imprensa/:slug" element={<Suspense fallback={<RouteSuspense />}><NewsDetail /></Suspense>} />
+                <Route path="/competitions" element={<Suspense fallback={<RouteSuspense />}><CompetitionRankingPublic /></Suspense>} />
+                <Route path="/contact" element={<Suspense fallback={<RouteSuspense />}><Contact /></Suspense>} />
+                <Route path="/contato" element={<Suspense fallback={<RouteSuspense />}><Contact /></Suspense>} />
               </Route>
 
               {/* Auth Routes */}
-              <Route path="/login" element={<Auth />} />
-              <Route path="/app/auth" element={<Auth />} />
+              <Route path="/login" element={<Suspense fallback={<RouteSuspense />}><Auth /></Suspense>} />
+              <Route path="/app/auth" element={<Suspense fallback={<RouteSuspense />}><Auth /></Suspense>} />
               
               {/* Pending Access - for users without valid role */}
-              <Route path="/pending-access" element={<PendingAccess />} />
+              <Route path="/pending-access" element={<Suspense fallback={<RouteSuspense />}><PendingAccess /></Suspense>} />
 
               {/* Protected App Routes */}
               <Route
