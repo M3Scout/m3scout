@@ -8,10 +8,8 @@ import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -27,13 +25,13 @@ import {
   Search,
   User,
   Sparkles,
-  Filter,
   RefreshCw,
   Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MarketScoreTrend } from "@/types/marketScore";
 import { computeScoreForAthleteById } from "@/lib/marketScoreService";
+import { getPositionColor, getShortPosition } from "@/lib/positionColors";
 import { toast } from "sonner";
 
 interface AthleteWithScore {
@@ -227,19 +225,19 @@ export default function MarketAtivos() {
   const athletesWithoutScore = athletes.filter(a => !a.score).length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Sparkles className="w-6 h-6 text-primary" />
+          <h1 className="text-2xl font-extrabold tracking-tight flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-[#e63946]" />
             Mercado → Ativos M3
           </h1>
-          <p className="text-muted-foreground text-sm mt-1">
+          <p className="text-xs text-zinc-500 mt-1 uppercase tracking-wide">
             Ranking interno dos atletas por Market Score
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => refetch()}>
+        <Button variant="outline" size="sm" onClick={() => refetch()} className="rounded-full">
           <RefreshCw className="w-4 h-4 mr-2" />
           Atualizar
         </Button>
@@ -247,255 +245,210 @@ export default function MarketAtivos() {
 
       {/* Info banner for missing scores */}
       {athletesWithoutScore > 0 && (
-        <Card className="border-yellow-500/30 bg-yellow-500/5">
-          <CardContent className="py-3 flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-yellow-500/20 flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-yellow-400" />
-            </div>
-            <p className="text-sm text-yellow-400/90">
-              {athletesWithoutScore} atleta(s) ainda sem score calculado. 
-              Abra o perfil para calcular automaticamente.
-            </p>
-          </CardContent>
-        </Card>
+        <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 flex items-center gap-3">
+          <div className="w-7 h-7 rounded-full bg-amber-500/15 flex items-center justify-center shrink-0">
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+          </div>
+          <p className="text-xs text-amber-400/90">
+            {athletesWithoutScore} atleta(s) ainda sem score calculado. 
+            Abra o perfil para calcular automaticamente.
+          </p>
+        </div>
       )}
 
       {/* Filters */}
-      <Card className="bg-zinc-900/80 border border-white/[0.06]">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Filter className="w-4 h-4" />
-            Filtros
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar atleta..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 bg-zinc-800/50 border-white/[0.06]"
-              />
-            </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+          <Input
+            placeholder="Buscar atleta..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-10 rounded-full bg-zinc-900 border-zinc-800 text-sm h-9"
+          />
+        </div>
 
-            {/* Position */}
-            <Select value={positionFilter} onValueChange={setPositionFilter}>
-              <SelectTrigger className="bg-zinc-800/50 border-white/[0.06]">
-                <SelectValue placeholder="Posição" />
-              </SelectTrigger>
-              <SelectContent className="bg-zinc-900 border-white/[0.06]">
-                {POSITIONS.map((pos) => (
-                  <SelectItem key={pos} value={pos}>
-                    {pos}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        {/* Position */}
+        <Select value={positionFilter} onValueChange={setPositionFilter}>
+          <SelectTrigger className="rounded-full bg-zinc-900 border-zinc-800 h-9 text-sm">
+            <SelectValue placeholder="Posição" />
+          </SelectTrigger>
+          <SelectContent className="bg-zinc-900 border-zinc-800">
+            {POSITIONS.map((pos) => (
+              <SelectItem key={pos} value={pos}>{pos}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-            {/* Age Range */}
-            <Select
-              value={String(ageRangeIndex)}
-              onValueChange={(v) => setAgeRangeIndex(Number(v))}
-            >
-              <SelectTrigger className="bg-zinc-800/50 border-white/[0.06]">
-                <SelectValue placeholder="Idade" />
-              </SelectTrigger>
-              <SelectContent className="bg-zinc-900 border-white/[0.06]">
-                {AGE_RANGES.map((range, idx) => (
-                  <SelectItem key={idx} value={String(idx)}>
-                    {range.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        {/* Age Range */}
+        <Select value={String(ageRangeIndex)} onValueChange={(v) => setAgeRangeIndex(Number(v))}>
+          <SelectTrigger className="rounded-full bg-zinc-900 border-zinc-800 h-9 text-sm">
+            <SelectValue placeholder="Idade" />
+          </SelectTrigger>
+          <SelectContent className="bg-zinc-900 border-zinc-800">
+            {AGE_RANGES.map((range, idx) => (
+              <SelectItem key={idx} value={String(idx)}>{range.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-            {/* Min Score */}
-            <Select value={String(minScore)} onValueChange={(v) => setMinScore(Number(v))}>
-              <SelectTrigger className="bg-zinc-800/50 border-white/[0.06]">
-                <SelectValue placeholder="Score mínimo" />
-              </SelectTrigger>
-              <SelectContent className="bg-zinc-900 border-white/[0.06]">
-                <SelectItem value="0">Score ≥ 0</SelectItem>
-                <SelectItem value="30">Score ≥ 30</SelectItem>
-                <SelectItem value="50">Score ≥ 50</SelectItem>
-                <SelectItem value="60">Score ≥ 60</SelectItem>
-                <SelectItem value="70">Score ≥ 70</SelectItem>
-                <SelectItem value="80">Score ≥ 80</SelectItem>
-              </SelectContent>
-            </Select>
+        {/* Min Score */}
+        <Select value={String(minScore)} onValueChange={(v) => setMinScore(Number(v))}>
+          <SelectTrigger className="rounded-full bg-zinc-900 border-zinc-800 h-9 text-sm">
+            <SelectValue placeholder="Score mínimo" />
+          </SelectTrigger>
+          <SelectContent className="bg-zinc-900 border-zinc-800">
+            <SelectItem value="0">Score ≥ 0</SelectItem>
+            <SelectItem value="30">Score ≥ 30</SelectItem>
+            <SelectItem value="50">Score ≥ 50</SelectItem>
+            <SelectItem value="60">Score ≥ 60</SelectItem>
+            <SelectItem value="70">Score ≥ 70</SelectItem>
+            <SelectItem value="80">Score ≥ 80</SelectItem>
+          </SelectContent>
+        </Select>
 
-            {/* Trend */}
-            <Select value={trendFilter} onValueChange={(v) => setTrendFilter(v as typeof trendFilter)}>
-              <SelectTrigger className="bg-zinc-800/50 border-white/[0.06]">
-                <SelectValue placeholder="Tendência" />
-              </SelectTrigger>
-              <SelectContent className="bg-zinc-900 border-white/[0.06]">
-                <SelectItem value="ALL">Todas tendências</SelectItem>
-                <SelectItem value="UP">
-                  <span className="flex items-center gap-2">
-                    <TrendingUp className="w-3 h-3 text-emerald-400" />
-                    Em alta
-                  </span>
-                </SelectItem>
-                <SelectItem value="DOWN">
-                  <span className="flex items-center gap-2">
-                    <TrendingDown className="w-3 h-3 text-red-400" />
-                    Em baixa
-                  </span>
-                </SelectItem>
-                <SelectItem value="FLAT">
-                  <span className="flex items-center gap-2">
-                    <Minus className="w-3 h-3 text-muted-foreground" />
-                    Estável
-                  </span>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+        {/* Trend */}
+        <Select value={trendFilter} onValueChange={(v) => setTrendFilter(v as typeof trendFilter)}>
+          <SelectTrigger className="rounded-full bg-zinc-900 border-zinc-800 h-9 text-sm">
+            <SelectValue placeholder="Tendência" />
+          </SelectTrigger>
+          <SelectContent className="bg-zinc-900 border-zinc-800">
+            <SelectItem value="ALL">Todas tendências</SelectItem>
+            <SelectItem value="UP">
+              <span className="flex items-center gap-2">
+                <TrendingUp className="w-3 h-3 text-emerald-400" />
+                Em alta
+              </span>
+            </SelectItem>
+            <SelectItem value="DOWN">
+              <span className="flex items-center gap-2">
+                <TrendingDown className="w-3 h-3 text-red-400" />
+                Em baixa
+              </span>
+            </SelectItem>
+            <SelectItem value="FLAT">
+              <span className="flex items-center gap-2">
+                <Minus className="w-3 h-3 text-zinc-500" />
+                Estável
+              </span>
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
       {/* Athletes Grid */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Card key={i}>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <Skeleton className="w-12 h-12 rounded-lg" />
-                  <div className="flex-1 space-y-2">
-                    <Skeleton className="h-4 w-32" />
-                    <Skeleton className="h-3 w-20" />
-                  </div>
-                  <Skeleton className="w-14 h-14 rounded-lg" />
+            <div key={i} className="rounded-xl bg-zinc-900/50 border border-zinc-800/40 p-3.5">
+              <div className="flex items-center gap-3">
+                <Skeleton className="w-11 h-11 rounded-lg" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-20" />
                 </div>
-              </CardContent>
-            </Card>
+                <Skeleton className="w-10 h-10 rounded" />
+              </div>
+            </div>
           ))}
         </div>
       ) : filteredAthletes.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <User className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">Nenhum atleta encontrado com os filtros aplicados.</p>
-          </CardContent>
-        </Card>
+        <div className="rounded-xl border border-zinc-800/40 bg-zinc-900/40 py-12 text-center">
+          <User className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
+          <p className="text-sm text-zinc-500">Nenhum atleta encontrado com os filtros aplicados.</p>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {filteredAthletes.map((athlete, index) => {
             const score = athlete.score?.score_total ?? 0;
             const scoreColor = getScoreColor(score);
             const hasScore = athlete.score !== null;
+            const posColor = getPositionColor(athlete.position);
+            const shortPos = getShortPosition(athlete.position);
             
-            // Check if score is stale (older than 7 days)
             const isStale = hasScore && athlete.score?.last_calculated_at
               ? (Date.now() - new Date(athlete.score.last_calculated_at).getTime()) > 7 * 24 * 60 * 60 * 1000
               : false;
 
             return (
-              <Card
+              <div
                 key={athlete.id}
                 className={cn(
-                  "bg-zinc-900/80 border border-white/[0.06] cursor-pointer",
-                  "transition-all duration-150 ease-out",
-                  "hover:translate-y-[-2px] hover:shadow-lg hover:shadow-black/30 hover:border-white/10"
+                  "flex items-center gap-3 p-3.5 rounded-xl cursor-pointer",
+                  "bg-zinc-900/50 border border-zinc-800/40",
+                  "hover:border-zinc-700/50 hover:bg-zinc-900/70",
+                  "transition-all duration-200"
                 )}
                 onClick={() => navigate(`/app/players/${athlete.id}`)}
               >
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    {/* Rank + Photo */}
-                    <div className="relative">
-                      {index < 3 && hasScore && (
-                        <div className="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-primary text-[10px] font-bold flex items-center justify-center text-primary-foreground z-10">
-                          {index + 1}
-                        </div>
-                      )}
-                      <div className="w-12 h-12 rounded-lg overflow-hidden bg-secondary/50">
-                        {athlete.photo_url ? (
-                          <img
-                            src={athlete.photo_url}
-                            alt={athlete.full_name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <User className="w-6 h-6 text-muted-foreground" />
-                          </div>
-                        )}
-                      </div>
+                {/* Rank + Photo */}
+                <div className="relative shrink-0">
+                  {index < 10 && hasScore && (
+                    <div className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-[#e63946] text-[10px] font-bold flex items-center justify-center text-white z-10">
+                      {index + 1}
                     </div>
-
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-medium truncate">{athlete.full_name}</h3>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Badge variant="outline" className="text-[10px]">
-                          {athlete.position}
-                        </Badge>
-                        {athlete.age && <span>{athlete.age} anos</span>}
-                      </div>
-                      {athlete.current_club && (
-                        <p className="text-xs text-muted-foreground truncate mt-0.5">
-                          {athlete.current_club}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Score Badge - Shows when score exists in DB */}
-                    {hasScore ? (
-                      <div
-                        className={cn(
-                          "relative flex flex-col items-center justify-center min-w-[60px] px-3 py-2 rounded-lg border",
-                          scoreColor.bg,
-                          scoreColor.border
-                        )}
-                      >
-                        {/* Score number - prominent */}
-                        <span className={cn("text-xl font-bold leading-none", scoreColor.text)}>
-                          {score.toFixed(0)}
-                        </span>
-                        {/* Label - smaller with reduced opacity */}
-                        <span className={cn("text-[10px] font-medium mt-0.5 opacity-70", scoreColor.text)}>
-                          {scoreColor.label}
-                        </span>
-                        {/* Trend indicator - subtle, positioned in corner */}
-                        <div className="absolute -top-1 -right-1">
-                          <TrendIcon trend={athlete.score!.trend_30d} />
-                        </div>
-                        {/* Stale indicator */}
-                        {isStale && (
-                          <div 
-                            className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-yellow-500/80 flex items-center justify-center"
-                            title="Score pode estar desatualizado"
-                          >
-                            <RefreshCw className="w-2.5 h-2.5 text-yellow-950" />
-                          </div>
-                        )}
-                      </div>
+                  )}
+                  <div className="w-11 h-11 rounded-lg overflow-hidden bg-zinc-800/50">
+                    {athlete.photo_url ? (
+                      <img src={athlete.photo_url} alt={athlete.full_name} className="w-full h-full object-cover" />
                     ) : (
-                      // No score in DB yet - show Calculate button
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="min-w-[70px] gap-1 text-xs border-dashed border-zinc-600 hover:border-primary hover:bg-primary/10"
-                        onClick={(e) => handleCalculateScore(e, athlete)}
-                        disabled={calculatingIds.has(athlete.id)}
-                      >
-                        {calculatingIds.has(athlete.id) ? (
-                          <Loader2 className="w-3 h-3 animate-spin" />
-                        ) : (
-                          <Sparkles className="w-3 h-3" />
-                        )}
-                        {calculatingIds.has(athlete.id) ? "..." : "Calcular"}
-                      </Button>
+                      <div className="w-full h-full flex items-center justify-center">
+                        <User className="w-5 h-5 text-zinc-600" />
+                      </div>
                     )}
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-bold text-zinc-100 truncate">{athlete.full_name}</h3>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className={cn("text-[10px] font-semibold uppercase tracking-wider", posColor.textClass)}>
+                      {shortPos}
+                    </span>
+                    {athlete.age && <span className="text-[10px] text-zinc-600">{athlete.age}a</span>}
+                  </div>
+                  {athlete.current_club && (
+                    <p className="text-[10px] text-zinc-600 truncate mt-0.5">{athlete.current_club}</p>
+                  )}
+                </div>
+
+                {/* Score */}
+                {hasScore ? (
+                  <div className="relative flex flex-col items-center justify-center shrink-0">
+                    <span className={cn("text-xl font-black tabular-nums leading-none", scoreColor.text)}>
+                      {score.toFixed(0)}
+                    </span>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <TrendIcon trend={athlete.score!.trend_30d} />
+                      <span className={cn("text-[9px] font-medium opacity-60", scoreColor.text)}>
+                        {scoreColor.label}
+                      </span>
+                    </div>
+                    {isStale && (
+                      <div className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-amber-500/80 flex items-center justify-center" title="Score desatualizado">
+                        <RefreshCw className="w-2 h-2 text-amber-950" />
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="min-w-[65px] gap-1 text-[10px] rounded-full border-dashed border-zinc-700 hover:border-[#e63946] hover:bg-[#e63946]/10"
+                    onClick={(e) => handleCalculateScore(e, athlete)}
+                    disabled={calculatingIds.has(athlete.id)}
+                  >
+                    {calculatingIds.has(athlete.id) ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-3 h-3" />
+                    )}
+                    {calculatingIds.has(athlete.id) ? "..." : "Calcular"}
+                  </Button>
+                )}
+              </div>
             );
           })}
         </div>
@@ -503,7 +456,7 @@ export default function MarketAtivos() {
 
       {/* Results count */}
       {!isLoading && (
-        <p className="text-sm text-muted-foreground text-center">
+        <p className="text-xs text-zinc-600 text-center tabular-nums">
           {filteredAthletes.length} atleta(s) encontrado(s)
         </p>
       )}
