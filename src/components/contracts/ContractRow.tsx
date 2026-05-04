@@ -25,8 +25,10 @@ export function ContractRow({ contract }: ContractRowProps) {
     .join("")
     .toUpperCase();
 
+  const firstName = contract.player_name.split(" ")[0];
+
   return (
-    <div className="flex items-center gap-4 px-4 py-3 rounded-xl bg-zinc-900/50 border border-zinc-800/30 hover:border-zinc-700/40 hover:bg-zinc-900/70 transition-all duration-200">
+    <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-zinc-900/50 border border-zinc-800/30 hover:border-zinc-700/40 hover:bg-zinc-900/70 transition-all duration-200">
       {/* Athlete */}
       <div className="flex items-center gap-3 flex-1 min-w-0">
         <Avatar className="h-9 w-9 border border-zinc-800 shrink-0">
@@ -36,7 +38,10 @@ export function ContractRow({ contract }: ContractRowProps) {
           </AvatarFallback>
         </Avatar>
         <div className="min-w-0">
-          <p className="text-sm font-bold text-zinc-100 truncate">{contract.player_name}</p>
+          <p className="text-sm font-bold text-zinc-100 truncate">
+            <span className="sm:hidden">{firstName}</span>
+            <span className="hidden sm:inline">{contract.player_name}</span>
+          </p>
           <p className="text-[10px] text-zinc-600 uppercase tracking-wider font-medium">{contract.player_position}</p>
         </div>
       </div>
@@ -56,20 +61,18 @@ export function ContractRow({ contract }: ContractRowProps) {
         </p>
       </div>
 
-      {/* Status */}
-      <div className="w-[110px] shrink-0 flex justify-center">
+      {/* Status + Action inline for mobile symmetry */}
+      <div className="flex items-center gap-2 shrink-0">
         <ContractStatusBadge status={contract.status} daysToExpire={contract.days_to_expire} />
+        <Link
+          to={`/app/players/${contract.player_id}`}
+          className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-medium text-zinc-400 hover:text-zinc-100 bg-zinc-800/40 hover:bg-zinc-800 border border-zinc-700/30 transition-all duration-200"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Eye className="w-3 h-3" />
+          Ver Atleta
+        </Link>
       </div>
-
-      {/* Action */}
-      <Link
-        to={`/app/players/${contract.player_id}`}
-        className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-medium text-zinc-400 hover:text-zinc-100 bg-zinc-800/40 hover:bg-zinc-800 border border-zinc-700/30 transition-all duration-200"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <Eye className="w-3 h-3" />
-        Ver Atleta
-      </Link>
     </div>
   );
 }

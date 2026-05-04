@@ -300,13 +300,23 @@ export const DashboardV2 = () => {
         {/* Page header */}
         <div className="m3dash-header">
           <div className="m3dash-headline">
-            VISÃO<br />GERAL <span className="red">—</span>
+            VISÃO GERAL
           </div>
           <div className="m3dash-meta">
             PORTFÓLIO ATIVO · {currentYear}<br />
             BRASIL & INTERNACIONAL<br />
             <span className="text-white">{currentMonth} {currentYear}</span>
           </div>
+        </div>
+
+        {/* Mobile-only action buttons below headline */}
+        <div className="m3dash-mobile-actions">
+          <Link to="/app/players" className="m3dash-btn">
+            <Users size={13} /> Atletas
+          </Link>
+          <Link to="/app/reports/new" className="m3dash-btn m3dash-btn--primary">
+            + Novo Relatório
+          </Link>
         </div>
 
         {/* Alert banner */}

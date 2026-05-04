@@ -540,6 +540,7 @@ const Competitions = () => {
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
+          <span className="hidden md:inline-flex">
           <PermissionGate module="competitions" action="delete">
             {competitions.length > 0 && (
               <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -594,22 +595,25 @@ const Competitions = () => {
             </AlertDialog>
             )}
           </PermissionGate>
+          </span>
           {isAdmin && competitions.length > 0 && (
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={findDuplicates}
-              className="rounded-full"
+              className="hidden md:inline-flex rounded-full"
             >
               <Copy className="w-4 h-4" />
               Remover Duplicados
             </Button>
           )}
-          <Link to="/app/competitions/import">
-            <Button variant="outline" className="rounded-full">
-              <Upload className="w-4 h-4" />
-              Importar CSV
-            </Button>
-          </Link>
+          <span className="hidden md:inline-flex">
+            <Link to="/app/competitions/import">
+              <Button variant="outline" className="rounded-full">
+                <Upload className="w-4 h-4" />
+                Importar CSV
+              </Button>
+            </Link>
+          </span>
           {isAdmin && (
             <Button onClick={handleCreate} className="bg-[#e63946] hover:bg-[#d62839] text-white rounded-full">
               <Plus className="w-4 h-4" />

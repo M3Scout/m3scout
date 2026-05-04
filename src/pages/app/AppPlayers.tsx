@@ -481,24 +481,28 @@ const AppPlayers = () => {
       <header className="flex items-center justify-between gap-3 animate-fade-in">
         <div className="flex items-center gap-3 min-w-0">
           <div>
-            <h1 className="text-lg font-bold text-white tracking-tight">Atletas</h1>
-            <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium">
-              {filteredCount} atleta{filteredCount !== 1 ? "s" : ""}
-              {isRefetching && " · atualizando..."}
-            </p>
+            <div className="flex items-baseline gap-1.5 flex-wrap">
+              <h1 className="text-lg font-bold text-white tracking-tight whitespace-nowrap">Atletas</h1>
+              <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium whitespace-nowrap">
+                {filteredCount} atleta{filteredCount !== 1 ? "s" : ""}
+                {isRefetching && " · atualizando..."}
+              </span>
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {isAdmin && (
-            <BulkRecalculateButton onComplete={() => fetchPlayers(true)} />
+            <span className="hidden md:inline-flex">
+              <BulkRecalculateButton onComplete={() => fetchPlayers(true)} />
+            </span>
           )}
-          <Button variant="outline" size="sm" asChild className="h-8 px-4 rounded-full bg-zinc-900/40 border-zinc-800/40 hover:bg-zinc-800/60 hover:border-zinc-700 text-[11px] font-medium">
+          <Button variant="outline" size="sm" asChild className="hidden md:inline-flex h-8 px-4 rounded-full bg-zinc-900/40 border-zinc-800/40 hover:bg-zinc-800/60 hover:border-zinc-700 text-[11px] font-medium">
             <Link to="/app/compare">
               <GitCompare className="w-3.5 h-3.5 sm:mr-1.5" />
               <span className="hidden sm:inline">Comparar</span>
             </Link>
           </Button>
-          <Button size="sm" asChild className="h-8 px-4 rounded-full text-[11px] font-medium text-white" style={{ backgroundColor: '#e63946' }}>
+          <Button size="sm" asChild className="hidden md:inline-flex h-8 px-4 rounded-full text-[11px] font-medium text-white" style={{ backgroundColor: '#e63946' }}>
             <Link to="/app/players/new">
               <Plus className="w-3.5 h-3.5 sm:mr-1.5" />
               <span className="hidden sm:inline">Novo Atleta</span>

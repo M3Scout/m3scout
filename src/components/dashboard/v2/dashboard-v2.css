@@ -650,7 +650,16 @@
   height: 10px;
 }
 
-/* --------- Mobile adjustments --------- */
+/* --------- Mobile action buttons (below headline, hidden by default) --------- */
+.m3dash-mobile-actions {
+  display: none;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: nowrap;
+}
+
+/* --------- Mobile adjustments (< 640px) --------- */
 @media (max-width: 639px) {
   .m3dash-topbar { padding: 0 16px; }
   .m3dash-content { padding: 20px 16px 32px; }
@@ -680,4 +689,14 @@
   /* Report rows */
   .m3dash-report { padding: 10px 14px; }
   .m3dash-report-date { font-size: 9px; }
+}
+
+/* --------- Mobile-first restructure (< 768px) --------- */
+@media (max-width: 767px) {
+  .m3dash-breadcrumb { display: none; }
+  .m3dash-topbar-actions { display: none; }
+  .m3dash-meta { display: none; }
+  .m3dash-mobile-actions { display: flex; }
+  .m3dash-btn { border-radius: 9999px; }
+  .m3dash-headline { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 }

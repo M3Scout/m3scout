@@ -166,7 +166,7 @@ export function CompetitionMobileCard({ competition, isAdmin, onEdit, onDelete }
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0 flex-nowrap">
           <TierBadge tier={tier} size="md" />
           <StatusBadge isActive={competition.is_active} />
         </div>

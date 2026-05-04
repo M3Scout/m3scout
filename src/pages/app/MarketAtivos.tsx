@@ -269,29 +269,33 @@ export default function MarketAtivos() {
           />
         </div>
 
-        {/* Position */}
-        <Select value={positionFilter} onValueChange={setPositionFilter}>
-          <SelectTrigger className="rounded-full bg-zinc-900 border-zinc-800 h-9 text-sm">
-            <SelectValue placeholder="Posição" />
-          </SelectTrigger>
-          <SelectContent className="bg-zinc-900 border-zinc-800">
-            {POSITIONS.map((pos) => (
-              <SelectItem key={pos} value={pos}>{pos}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {/* Position - hidden on mobile */}
+        <div className="hidden sm:block">
+          <Select value={positionFilter} onValueChange={setPositionFilter}>
+            <SelectTrigger className="rounded-full bg-zinc-900 border-zinc-800 h-9 text-sm w-full">
+              <SelectValue placeholder="Posição" />
+            </SelectTrigger>
+            <SelectContent className="bg-zinc-900 border-zinc-800">
+              {POSITIONS.map((pos) => (
+                <SelectItem key={pos} value={pos}>{pos}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-        {/* Age Range */}
-        <Select value={String(ageRangeIndex)} onValueChange={(v) => setAgeRangeIndex(Number(v))}>
-          <SelectTrigger className="rounded-full bg-zinc-900 border-zinc-800 h-9 text-sm">
-            <SelectValue placeholder="Idade" />
-          </SelectTrigger>
-          <SelectContent className="bg-zinc-900 border-zinc-800">
-            {AGE_RANGES.map((range, idx) => (
-              <SelectItem key={idx} value={String(idx)}>{range.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {/* Age Range - hidden on mobile */}
+        <div className="hidden sm:block">
+          <Select value={String(ageRangeIndex)} onValueChange={(v) => setAgeRangeIndex(Number(v))}>
+            <SelectTrigger className="rounded-full bg-zinc-900 border-zinc-800 h-9 text-sm w-full">
+              <SelectValue placeholder="Idade" />
+            </SelectTrigger>
+            <SelectContent className="bg-zinc-900 border-zinc-800">
+              {AGE_RANGES.map((range, idx) => (
+                <SelectItem key={idx} value={String(idx)}>{range.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
         {/* Min Score */}
         <Select value={String(minScore)} onValueChange={(v) => setMinScore(Number(v))}>
