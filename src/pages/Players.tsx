@@ -333,25 +333,26 @@ const Players = () => {
       </section>
 
       {/* ━━━ S2 — TOOLBAR (Sticky) ━━━ */}
-      <section className="sticky top-0 z-40" style={{ backgroundColor: BLACK, padding: "24px 64px", borderBottom: `1px solid ${BORDER_DARK}` }}>
+      <section className="sticky top-0 z-40" style={{ backgroundColor: BLACK, padding: "0 64px 16px", borderBottom: `1px solid ${BORDER_DARK}` }}>
         {/* Top Row */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 160px 160px", gap: 1, background: BORDER_DARK }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 160px 160px", gap: 1, background: "#1A1A1A" }}>
           {/* Search */}
           <div className="flex items-center gap-3" style={{ backgroundColor: BLACK, padding: "0 20px" }}>
-            <Search style={{ width: 13, height: 13, color: "rgba(242,237,228,0.3)", flexShrink: 0 }} />
+            <Search style={{ width: 12, height: 12, color: "rgba(242,237,228,0.2)", flexShrink: 0, strokeWidth: 1.5 }} />
             <input
               type="text"
               placeholder="Buscar atleta..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{ fontFamily: BODY, fontWeight: 300, fontSize: 14, color: CREAM, background: "transparent", border: "none", outline: "none", width: "100%", padding: "14px 0" }}
+              className="placeholder:text-[rgba(242,237,228,0.2)]"
             />
           </div>
 
           {/* Position Filter */}
           <div style={{ backgroundColor: BLACK }}>
             <Select value={positionFilter} onValueChange={setPositionFilter}>
-              <SelectTrigger className="w-full h-full border-0 focus:ring-0 rounded-none" style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.1em", background: "transparent", padding: "0 16px", borderRadius: 0 }}>
+              <SelectTrigger className="w-full h-full border-0 focus:ring-0 rounded-none" style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.2em", background: "transparent", padding: "0 16px", borderRadius: 0 }}>
                 <div className="flex items-center justify-between w-full">
                   <span>Posição</span>
                   <span style={{ fontSize: 14 }}>↓</span>
@@ -370,7 +371,7 @@ const Players = () => {
           {/* Nationality Filter */}
           <div style={{ backgroundColor: BLACK }}>
             <Select value={nationalityFilter} onValueChange={setNationalityFilter}>
-              <SelectTrigger className="w-full h-full border-0 focus:ring-0 rounded-none" style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.1em", background: "transparent", padding: "0 16px", borderRadius: 0 }}>
+              <SelectTrigger className="w-full h-full border-0 focus:ring-0 rounded-none" style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.2em", background: "transparent", padding: "0 16px", borderRadius: 0 }}>
                 <div className="flex items-center justify-between w-full">
                   <span>Nacion.</span>
                   <span style={{ fontSize: 14 }}>↓</span>
@@ -391,11 +392,11 @@ const Players = () => {
         <div className="flex items-center justify-between" style={{ marginTop: 16 }}>
           {/* Left: count + year */}
           <div className="flex items-center gap-4">
-            <span style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.1em" }}>
+            <span style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.2em" }}>
               {filteredPlayers.length} ATLETAS NO PORTFÓLIO
             </span>
             <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
-              <SelectTrigger className="w-auto h-auto border-0 p-0 focus:ring-0 rounded-none" style={{ fontFamily: MONO, fontSize: 10, color: CREAM, textTransform: "uppercase", borderBottom: `1px solid ${CREAM}`, paddingBottom: 2, borderRadius: 0 }}>
+              <SelectTrigger className="w-auto h-auto border-0 p-0 focus:ring-0 rounded-none bg-transparent" style={{ fontFamily: MONO, fontSize: 10, color: CREAM, textTransform: "uppercase", borderBottom: `1px solid ${CREAM}`, paddingBottom: 2, borderRadius: 0, background: "transparent" }}>
                 <SelectValue />
                 <span style={{ marginLeft: 4, fontSize: 12 }}>↓</span>
               </SelectTrigger>
@@ -487,12 +488,12 @@ const Players = () => {
                           {shortPos}
                         </div>
                         {/* Card number */}
-                        <span style={{ fontFamily: MONO, fontSize: 11, color: "rgba(242,237,228,0.3)" }}>/{cardNum}</span>
+                        <span style={{ fontFamily: MONO, fontSize: 11, color: "rgba(242,237,228,0.2)" }}>/{cardNum}</span>
                       </div>
 
                       {/* Bottom info */}
                       <div className="absolute bottom-0 left-0 right-0" style={{ background: "linear-gradient(to top, rgba(10,10,10,0.85) 0%, rgba(10,10,10,0.5) 30%, transparent 50%)", padding: "48px 16px 16px" }}>
-                        <h3 style={{ fontFamily: DISPLAY, fontWeight: 900, fontSize: 22, color: CREAM, textTransform: "uppercase", lineHeight: 0.95, marginBottom: 6 }}>
+                        <h3 style={{ fontFamily: DISPLAY, fontWeight: 900, fontSize: 22, color: CREAM, textTransform: "uppercase", lineHeight: 0.9, marginBottom: 6 }}>
                           {player.full_name}
                         </h3>
                         <div style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, display: "flex", flexWrap: "wrap", gap: "4px 12px" }}>
@@ -501,8 +502,8 @@ const Players = () => {
                           {player.current_club && <span style={{ color: "rgba(242,237,228,0.25)" }}>{player.current_club}</span>}
                         </div>
                         {/* Ver perfil link aligned left with name */}
-                        <span className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 13, color: CREAM, borderBottom: `1px solid ${RED}`, paddingBottom: 2, gap: 8, marginTop: 10, width: "fit-content" }}>
-                          Ver perfil <ArrowRight style={{ width: 14, height: 14 }} />
+                        <span className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 13, color: CREAM, textTransform: "uppercase", borderBottom: `1px solid ${RED}`, paddingBottom: 2, gap: 8, marginTop: 10, width: "fit-content" }}>
+                          VER PERFIL <ArrowRight style={{ width: 14, height: 14, color: RED }} />
                         </span>
                       </div>
                     </div>
@@ -529,7 +530,7 @@ const Players = () => {
 
                 return (
                   <Link key={player.id} to={href} className="group block" style={{ borderBottom: `1px solid ${BORDER_DARK}` }}>
-                    <div className="flex items-stretch transition-colors duration-200" style={{ minHeight: 72 }}
+                    <div className="flex items-start transition-colors duration-200" style={{ minHeight: 72 }}
                       onMouseOver={(e) => { (e.currentTarget as HTMLDivElement).style.backgroundColor = "rgba(255,255,255,0.02)"; }}
                       onMouseOut={(e) => { (e.currentTarget as HTMLDivElement).style.backgroundColor = "transparent"; }}
                     >
@@ -537,7 +538,7 @@ const Players = () => {
                       <div style={{ width: 4, backgroundColor: dotColor, flexShrink: 0 }} />
 
                       {/* Col 1: Photo */}
-                      <div style={{ width: 72, height: 72, flexShrink: 0, borderRadius: 0, overflow: "hidden" }}>
+                      <div style={{ width: 72, height: 72, flexShrink: 0, borderRadius: 0, overflow: "hidden", alignSelf: "flex-start" }}>
                         <img
                           src={imgUrl}
                           alt={player.full_name}
@@ -548,7 +549,7 @@ const Players = () => {
                       </div>
 
                       {/* Col 2: Name/Info */}
-                      <div className="flex flex-col justify-center" style={{ width: 220, flexShrink: 0, padding: "8px 16px" }}>
+                      <div className="flex flex-col justify-start" style={{ width: 220, flexShrink: 0, padding: "12px 16px" }}>
                         <h3 style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 15, color: CREAM, textTransform: "uppercase", lineHeight: 1.2, marginBottom: 2 }}>
                           {player.full_name}
                         </h3>
@@ -562,14 +563,14 @@ const Players = () => {
                       </div>
 
                       {/* Col 3: Data */}
-                      <div className="flex-1 flex items-center gap-4 flex-wrap" style={{ padding: "8px 16px" }}>
+                      <div className="flex-1 flex items-start gap-4 flex-wrap" style={{ padding: "12px 16px" }}>
                         {/* Tags */}
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="flex items-center gap-1" style={{ fontFamily: MONO, fontSize: 9, color: WHITE_MUTED, border: `1px solid ${BORDER_DARK}`, padding: "3px 8px", textTransform: "uppercase" }}>
+                        <div className="flex items-center gap-2 flex-wrap" style={{ paddingTop: 4 }}>
+                          <span className="flex items-center gap-1" style={{ fontFamily: MONO, fontSize: 9, color: dotColor, border: `1px solid ${dotColor}33`, padding: "3px 8px", textTransform: "uppercase" }}>
                             <div style={{ width: 5, height: 5, borderRadius: "50%", backgroundColor: dotColor }} />
                             {shortPos}
                           </span>
-                          <span style={{ fontFamily: MONO, fontSize: 9, color: physical.color, border: `1px solid ${BORDER_DARK}`, padding: "3px 8px", textTransform: "uppercase" }}>
+                          <span style={{ fontFamily: MONO, fontSize: 9, color: physical.color, border: `1px solid ${physical.color}4D`, padding: "3px 8px", textTransform: "uppercase" }}>
                             Físico: {physical.label}
                           </span>
                           {player.play_style && (
@@ -603,14 +604,14 @@ const Players = () => {
                       </div>
 
                       {/* Col 4: CTA */}
-                      <div className="flex items-center" style={{ padding: "8px 24px 8px 16px", flexShrink: 0 }}>
+                      <div className="flex items-start" style={{ padding: "14px 24px 8px 16px", flexShrink: 0, marginLeft: "auto" }}>
                         <span
                           className="flex items-center transition-all duration-200"
-                          style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 13, color: CREAM, borderBottom: `1px solid ${BORDER_DARK}`, paddingBottom: 2, gap: 8 }}
+                          style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 13, color: CREAM, textTransform: "uppercase", borderBottom: `1px solid ${BORDER_DARK}`, paddingBottom: 2, gap: 8 }}
                           onMouseOver={(e) => { (e.currentTarget as HTMLSpanElement).style.borderColor = RED; (e.currentTarget as HTMLSpanElement).style.gap = "14px"; }}
                           onMouseOut={(e) => { (e.currentTarget as HTMLSpanElement).style.borderColor = BORDER_DARK; (e.currentTarget as HTMLSpanElement).style.gap = "8px"; }}
                         >
-                          Ver perfil <ArrowRight style={{ width: 14, height: 14 }} />
+                          VER PERFIL <ArrowRight style={{ width: 14, height: 14, color: RED }} />
                         </span>
                       </div>
                     </div>
