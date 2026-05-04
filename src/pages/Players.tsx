@@ -534,7 +534,7 @@ const Players = () => {
                       onMouseOut={(e) => { (e.currentTarget as HTMLDivElement).style.backgroundColor = "transparent"; }}
                     >
                       {/* Left accent bar */}
-                      <div style={{ width: 2, backgroundColor: dotColor, flexShrink: 0 }} />
+                      <div style={{ width: 4, backgroundColor: dotColor, flexShrink: 0 }} />
 
                       {/* Col 1: Photo */}
                       <div style={{ width: 72, height: 72, flexShrink: 0 }}>
