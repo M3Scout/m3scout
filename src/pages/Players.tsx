@@ -468,7 +468,8 @@ const Players = () => {
                       <img
                         src={imgUrl}
                         alt={player.full_name}
-                        loading="lazy"
+                        loading={index === 0 ? "eager" : "lazy"}
+                        decoding="async"
                         className="absolute inset-0 w-full h-full object-cover object-top transition-all duration-500"
                         style={{ filter: "grayscale(10%)" }}
                         onMouseOver={(e) => { (e.target as HTMLImageElement).style.transform = "scale(1.03)"; (e.target as HTMLImageElement).style.filter = "grayscale(0%)"; }}
