@@ -4,13 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { getOptimizedImageUrl } from "@/lib/imageUtils";
 import { calculateMatchRating, type PlayerStatsInput } from "@/lib/matchRatingEngine";
 import { STANDARD_MATCH_DURATION, calculateMinutesPlayed } from "@/lib/minutesPlayed";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Loader2, ChevronLeft, ChevronRight, Search, ArrowRight } from "lucide-react";
 import { safeArray } from "@/lib/utils";
 import { getShortPosition } from "@/lib/positionColors";
