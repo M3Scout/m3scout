@@ -32,7 +32,7 @@ const Sobre = () => {
     <div style={{ fontFamily: B, backgroundColor: BLACK }}>
 
       {/* S1 HERO */}
-      <section style={{ backgroundColor: BLACK, padding: `80px ${gutter}` }}>
+      <section style={{ backgroundColor: BLACK, padding: `clamp(120px, 18vh, 220px) ${gutter} 80px` }}>
         <div style={{ maxWidth: maxW, margin: "0 auto" }}>
 
 
