@@ -491,8 +491,8 @@ const Players = () => {
                       </div>
 
                       {/* Bottom info */}
-                      <div className="absolute bottom-0 left-0 right-0" style={{ background: "linear-gradient(to top, rgba(10,10,10,0.92) 0%, transparent 100%)", padding: "48px 16px 16px" }}>
-                        <h3 style={{ fontFamily: DISPLAY, fontWeight: 900, fontSize: 22, color: CREAM, textTransform: "uppercase", lineHeight: 1.1, marginBottom: 6 }}>
+                      <div className="absolute bottom-0 left-0 right-0" style={{ background: "linear-gradient(to top, rgba(10,10,10,0.85) 0%, rgba(10,10,10,0.5) 30%, transparent 50%)", padding: "48px 16px 16px" }}>
+                        <h3 style={{ fontFamily: DISPLAY, fontWeight: 900, fontSize: 22, color: CREAM, textTransform: "uppercase", lineHeight: 0.95, marginBottom: 6 }}>
                           {player.full_name}
                         </h3>
                         <div style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, display: "flex", flexWrap: "wrap", gap: "4px 12px" }}>
@@ -500,11 +500,8 @@ const Players = () => {
                           <span>{player.nationality}</span>
                           {player.current_club && <span style={{ color: "rgba(242,237,228,0.25)" }}>{player.current_club}</span>}
                         </div>
-                      </div>
-
-                      {/* Hover overlay */}
-                      <div className="absolute inset-0 flex items-end justify-start opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background: "rgba(229,23,63,0.08)", padding: 16 }}>
-                        <span className="flex items-center gap-2" style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 13, color: CREAM, borderBottom: `1px solid ${RED}`, paddingBottom: 2 }}>
+                        {/* Ver perfil link aligned left with name */}
+                        <span className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 13, color: CREAM, borderBottom: `1px solid ${RED}`, paddingBottom: 2, gap: 8, marginTop: 10, width: "fit-content" }}>
                           Ver perfil <ArrowRight style={{ width: 14, height: 14 }} />
                         </span>
                       </div>
