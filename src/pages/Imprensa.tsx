@@ -78,8 +78,8 @@ const Imprensa = () => {
   const featured = articles?.[0];
   const grid = articles?.slice(1, 6) ?? [];
 
-  const gutter = "var(--page-gutter, 64px)";
-  const maxW = "var(--page-max-width, 1200px)";
+  const gutter = "clamp(20px, 4vw, 40px)";
+  const maxW = "1600px";
 
   return (
     <div style={{ backgroundColor: BLACK, fontFamily: B }}>
@@ -88,14 +88,6 @@ const Imprensa = () => {
       <section style={{ backgroundColor: BLACK, padding: `72px ${gutter} 80px`, borderBottom: `1px solid ${BORDER_DARK}` }}>
         <div style={{ maxWidth: maxW, margin: "0 auto" }}>
 
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 48 }}>
-            <span style={{ fontFamily: JB, fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase", color: WHITE_MUTED }}>
-              — SALA DE IMPRENSA
-            </span>
-            <span style={{ fontFamily: JB, fontSize: 10, letterSpacing: "0.15em", color: WHITE_MUTED, opacity: 0.5 }}>
-              · PRESS
-            </span>
-          </div>
 
           <h1 style={{
             fontFamily: BC,
