@@ -1,11 +1,12 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, Users, Radio, Target } from "lucide-react";
+import { Home, Users, ClipboardList, Radio, Target } from "lucide-react";
 import { motion } from "framer-motion";
 import "./MobileBottomNav.css";
 
 const items = [
   { to: "/app", label: "Início", Icon: Home, match: (p: string) => p === "/app" || p === "/app/" },
   { to: "/app/athletes", label: "Atletas", Icon: Users, match: (p: string) => p.startsWith("/app/athletes") || p.startsWith("/app/players") },
+  { to: "/app/scouting", label: "Relatórios", Icon: ClipboardList, match: (p: string) => p.startsWith("/app/scouting") },
   { to: "/app/live-match", label: "Ao Vivo", Icon: Radio, match: (p: string) => p.startsWith("/app/live-match") },
   { to: "/app/market/targets", label: "Metas", Icon: Target, match: (p: string) => p.startsWith("/app/market") },
 ];
