@@ -710,8 +710,7 @@ export default function GoalsMonitor() {
         {/* ===== ALWAYS VISIBLE HEADER (even during RBAC/loading) ===== */}
         <header className="flex items-start justify-between gap-3">
           <div>
-            <h1 className="text-xl font-semibold">Metas (Monitor)</h1>
-            <p className="text-sm text-muted-foreground">Total: {goals.length}</p>
+            <h1 className="m3-page-title">MONITORAR</h1>
             {isDev && (
               <pre className="mt-3 max-w-full overflow-auto rounded-lg border border-border/50 bg-card/50 p-3 text-[11px] leading-snug text-muted-foreground">
 {JSON.stringify(goals?.[0] ?? null, null, 2)}
@@ -742,15 +741,7 @@ export default function GoalsMonitor() {
           >
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-green-600/10 flex items-center justify-center">
-              <Target className="w-5 h-5 text-emerald-400" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-foreground">Metas dos Jogadores</h2>
-              <p className="text-xs text-muted-foreground">Monitoramento em tempo real (somente leitura)</p>
-            </div>
-          </div>
+          <h2 className="m3-section-title"><span style={{ color: "#E5173F" }}>// </span>METAS</h2>
 
           {/* Quick Stats */}
           <div className="flex items-center gap-3">
