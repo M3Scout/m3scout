@@ -4,13 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { getOptimizedImageUrl } from "@/lib/imageUtils";
 import { calculateMatchRating, type PlayerStatsInput } from "@/lib/matchRatingEngine";
 import { STANDARD_MATCH_DURATION, calculateMinutesPlayed } from "@/lib/minutesPlayed";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Loader2, ChevronLeft, ChevronRight, Search, ArrowRight } from "lucide-react";
 import { safeArray } from "@/lib/utils";
 import { getShortPosition } from "@/lib/positionColors";
@@ -334,11 +327,11 @@ const Players = () => {
 
       {/* ━━━ S2 — TOOLBAR (Sticky) ━━━ */}
       <section className="sticky top-0 z-40" style={{ backgroundColor: BLACK, padding: "0 64px 16px", borderBottom: `1px solid ${BORDER_DARK}` }}>
-        {/* Top Row */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 160px 160px", gap: 1, background: "#1A1A1A" }}>
+        {/* Top Row — grid with 1px border lines */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 160px 160px", gap: 0, border: `1px solid ${BORDER_DARK}` }}>
           {/* Search */}
-          <div className="flex items-center gap-3" style={{ backgroundColor: BLACK, padding: "0 20px" }}>
-            <Search style={{ width: 12, height: 12, color: "rgba(242,237,228,0.2)", flexShrink: 0, strokeWidth: 1.5 }} />
+          <div className="flex items-center gap-3" style={{ backgroundColor: BLACK, padding: "0 20px", borderRight: `1px solid ${BORDER_DARK}` }}>
+            <Search style={{ width: 12, height: 12, color: "rgba(242,237,228,0.18)", flexShrink: 0, strokeWidth: 1.5 }} />
             <input
               type="text"
               placeholder="Buscar atleta..."
@@ -349,42 +342,42 @@ const Players = () => {
             />
           </div>
 
-          {/* Position Filter */}
-          <div style={{ backgroundColor: BLACK }}>
-            <Select value={positionFilter} onValueChange={setPositionFilter}>
-              <SelectTrigger className="w-full h-full border-0 focus:ring-0 rounded-none" style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.2em", background: "transparent", padding: "0 16px", borderRadius: 0 }}>
-                <div className="flex items-center justify-between w-full">
-                  <span>Posição</span>
-                  <span style={{ fontSize: 14 }}>↓</span>
-                </div>
-              </SelectTrigger>
-              <SelectContent className="border-0 rounded-none" style={{ background: BLACK, border: `1px solid ${BORDER_DARK}`, borderRadius: 0 }}>
-                {positions.map((pos) => (
-                  <SelectItem key={pos} value={pos.toLowerCase()} className="text-white/70 focus:bg-white/5 focus:text-white" style={{ fontFamily: MONO, fontSize: 11 }}>
-                    {pos}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Position Filter — native select wrapped in div */}
+          <div className="relative flex items-center" style={{ backgroundColor: BLACK, padding: "0 16px", borderRight: `1px solid ${BORDER_DARK}` }}>
+            <select
+              value={positionFilter}
+              onChange={(e) => setPositionFilter(e.target.value)}
+              style={{
+                fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, textTransform: "uppercase",
+                letterSpacing: "0.1em", background: "transparent", border: "none", outline: "none",
+                appearance: "none", WebkitAppearance: "none", width: "100%", cursor: "pointer",
+                padding: "14px 0",
+              }}
+            >
+              {positions.map((pos) => (
+                <option key={pos} value={pos.toLowerCase()} style={{ background: BLACK, color: CREAM }}>{pos}</option>
+              ))}
+            </select>
+            <span style={{ fontFamily: MONO, fontSize: 12, color: WHITE_MUTED, pointerEvents: "none", flexShrink: 0 }}>↓</span>
           </div>
 
-          {/* Nationality Filter */}
-          <div style={{ backgroundColor: BLACK }}>
-            <Select value={nationalityFilter} onValueChange={setNationalityFilter}>
-              <SelectTrigger className="w-full h-full border-0 focus:ring-0 rounded-none" style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.2em", background: "transparent", padding: "0 16px", borderRadius: 0 }}>
-                <div className="flex items-center justify-between w-full">
-                  <span>Nacion.</span>
-                  <span style={{ fontSize: 14 }}>↓</span>
-                </div>
-              </SelectTrigger>
-              <SelectContent className="border-0 rounded-none" style={{ background: BLACK, border: `1px solid ${BORDER_DARK}`, borderRadius: 0 }}>
-                {nationalities.map((nat) => (
-                  <SelectItem key={nat} value={nat.toLowerCase()} className="text-white/70 focus:bg-white/5 focus:text-white" style={{ fontFamily: MONO, fontSize: 11 }}>
-                    {nat}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Nationality Filter — native select */}
+          <div className="relative flex items-center" style={{ backgroundColor: BLACK, padding: "0 16px" }}>
+            <select
+              value={nationalityFilter}
+              onChange={(e) => setNationalityFilter(e.target.value)}
+              style={{
+                fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, textTransform: "uppercase",
+                letterSpacing: "0.1em", background: "transparent", border: "none", outline: "none",
+                appearance: "none", WebkitAppearance: "none", width: "100%", cursor: "pointer",
+                padding: "14px 0",
+              }}
+            >
+              {nationalities.map((nat) => (
+                <option key={nat} value={nat.toLowerCase()} style={{ background: BLACK, color: CREAM }}>{nat}</option>
+              ))}
+            </select>
+            <span style={{ fontFamily: MONO, fontSize: 12, color: WHITE_MUTED, pointerEvents: "none", flexShrink: 0 }}>↓</span>
           </div>
         </div>
 
@@ -392,28 +385,33 @@ const Players = () => {
         <div className="flex items-center justify-between" style={{ marginTop: 16 }}>
           {/* Left: count + year */}
           <div className="flex items-center gap-4">
-            <span style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.2em" }}>
+            <span style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.1em" }}>
               {filteredPlayers.length} ATLETAS NO PORTFÓLIO
             </span>
-            <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
-              <SelectTrigger className="w-auto h-auto border-0 p-0 focus:ring-0 rounded-none bg-transparent" style={{ fontFamily: MONO, fontSize: 10, color: CREAM, textTransform: "uppercase", borderBottom: `1px solid ${CREAM}`, paddingBottom: 2, borderRadius: 0, background: "transparent" }}>
-                <SelectValue />
-                <span style={{ marginLeft: 4, fontSize: 12 }}>↓</span>
-              </SelectTrigger>
-              <SelectContent className="border-0 rounded-none" style={{ background: BLACK, border: `1px solid ${BORDER_DARK}`, borderRadius: 0 }}>
+            {/* Year selector — plain text + native select */}
+            <div className="relative flex items-center" style={{ borderBottom: `1px solid ${CREAM}`, paddingBottom: 2 }}>
+              <select
+                value={String(selectedYear)}
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                style={{
+                  fontFamily: MONO, fontSize: 10, color: CREAM, textTransform: "uppercase",
+                  background: "transparent", border: "none", outline: "none",
+                  appearance: "none", WebkitAppearance: "none", cursor: "pointer",
+                  paddingRight: 16,
+                }}
+              >
                 {availableYears.map((year) => (
-                  <SelectItem key={year} value={String(year)} className="text-white/70 focus:bg-white/5 focus:text-white" style={{ fontFamily: MONO, fontSize: 11 }}>
-                    {year}
-                  </SelectItem>
+                  <option key={year} value={String(year)} style={{ background: BLACK, color: CREAM }}>{year}</option>
                 ))}
-              </SelectContent>
-            </Select>
+              </select>
+              <span style={{ fontFamily: MONO, fontSize: 11, color: CREAM, pointerEvents: "none", position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)" }}>↓</span>
+            </div>
           </div>
 
-          {/* Right: Scouting Toggle */}
+          {/* Right: Scouting Toggle — both labels visible */}
           <div className="flex items-center gap-3">
-            <span style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-              {scoutingMode ? "Modo Scouting" : "Normal"}
+            <span style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.1em" }}>
+              NORMAL
             </span>
             <button
               onClick={() => setScoutingMode(!scoutingMode)}
@@ -438,6 +436,9 @@ const Players = () => {
                 borderRadius: 0,
               }} />
             </button>
+            <span style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.1em" }}>
+              MODO SCOUTING
+            </span>
           </div>
         </div>
       </section>
