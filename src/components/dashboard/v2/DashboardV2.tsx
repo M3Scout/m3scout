@@ -305,7 +305,7 @@ export const DashboardV2 = () => {
           <div className="m3dash-meta">
             PORTFÓLIO ATIVO · {currentYear}<br />
             BRASIL & INTERNACIONAL<br />
-            {currentMonth} {currentYear}
+            <span className="text-white">{currentMonth} {currentYear}</span>
           </div>
         </div>
 
