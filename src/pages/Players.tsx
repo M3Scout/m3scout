@@ -493,7 +493,7 @@ const Players = () => {
 
                       {/* Bottom info */}
                       <div className="absolute bottom-0 left-0 right-0" style={{ background: "linear-gradient(to top, rgba(10,10,10,0.85) 0%, rgba(10,10,10,0.5) 30%, transparent 50%)", padding: "48px 16px 16px" }}>
-                        <h3 style={{ fontFamily: DISPLAY, fontWeight: 900, fontSize: 22, color: CREAM, textTransform: "uppercase", lineHeight: 0.95, marginBottom: 6 }}>
+                        <h3 style={{ fontFamily: DISPLAY, fontWeight: 900, fontSize: 22, color: CREAM, textTransform: "uppercase", lineHeight: 0.9, marginBottom: 6 }}>
                           {player.full_name}
                         </h3>
                         <div style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, display: "flex", flexWrap: "wrap", gap: "4px 12px" }}>
