@@ -399,7 +399,7 @@ const Players = () => {
                 <SelectValue />
                 <span style={{ marginLeft: 4, fontSize: 12 }}>↓</span>
               </SelectTrigger>
-              <SelectContent className="border-0" style={{ background: BLACK, border: `1px solid ${BORDER_DARK}` }}>
+              <SelectContent className="border-0 rounded-none" style={{ background: BLACK, border: `1px solid ${BORDER_DARK}`, borderRadius: 0 }}>
                 {availableYears.map((year) => (
                   <SelectItem key={year} value={String(year)} className="text-white/70 focus:bg-white/5 focus:text-white" style={{ fontFamily: MONO, fontSize: 11 }}>
                     {year}
