@@ -120,8 +120,8 @@ const Contact = () => {
     }
   };
 
-  const gutter = "var(--page-gutter, 64px)";
-  const maxW = "var(--page-max-width, 1200px)";
+  const gutter = "clamp(20px, 4vw, 40px)";
+  const maxW = "1600px";
 
   if (isSubmitted) {
     return (
