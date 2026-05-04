@@ -563,7 +563,7 @@ const Players = () => {
                       </div>
 
                       {/* Col 3: Data */}
-                      <div className="flex-1 flex items-center gap-4 flex-wrap" style={{ padding: "8px 16px" }}>
+                      <div className="flex-1 flex items-start gap-4 flex-wrap" style={{ padding: "12px 16px" }}>
                         {/* Tags */}
                         <div className="flex items-center gap-2 flex-wrap" style={{ paddingTop: 4 }}>
                           <span className="flex items-center gap-1" style={{ fontFamily: MONO, fontSize: 9, color: dotColor, border: `1px solid ${dotColor}33`, padding: "3px 8px", textTransform: "uppercase" }}>
