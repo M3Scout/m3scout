@@ -338,7 +338,7 @@ const Players = () => {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 160px 160px", gap: 1, background: BORDER_DARK }}>
           {/* Search */}
           <div className="flex items-center gap-3" style={{ backgroundColor: BLACK, padding: "0 20px" }}>
-            <Search style={{ width: 16, height: 16, color: WHITE_MUTED, flexShrink: 0 }} />
+            <Search style={{ width: 13, height: 13, color: "rgba(242,237,228,0.3)", flexShrink: 0 }} />
             <input
               type="text"
               placeholder="Buscar atleta..."
@@ -351,7 +351,7 @@ const Players = () => {
           {/* Position Filter */}
           <div style={{ backgroundColor: BLACK }}>
             <Select value={positionFilter} onValueChange={setPositionFilter}>
-              <SelectTrigger className="w-full h-full border-0 focus:ring-0 rounded-none" style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.08em", background: "transparent", padding: "0 16px", borderRadius: 0 }}>
+              <SelectTrigger className="w-full h-full border-0 focus:ring-0 rounded-none" style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.1em", background: "transparent", padding: "0 16px", borderRadius: 0 }}>
                 <div className="flex items-center justify-between w-full">
                   <span>Posição</span>
                   <span style={{ fontSize: 14 }}>↓</span>
@@ -370,9 +370,9 @@ const Players = () => {
           {/* Nationality Filter */}
           <div style={{ backgroundColor: BLACK }}>
             <Select value={nationalityFilter} onValueChange={setNationalityFilter}>
-              <SelectTrigger className="w-full h-full border-0 focus:ring-0 rounded-none" style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.08em", background: "transparent", padding: "0 16px", borderRadius: 0 }}>
+              <SelectTrigger className="w-full h-full border-0 focus:ring-0 rounded-none" style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.1em", background: "transparent", padding: "0 16px", borderRadius: 0 }}>
                 <div className="flex items-center justify-between w-full">
-                  <span>Nacionalidade</span>
+                  <span>Nacion.</span>
                   <span style={{ fontSize: 14 }}>↓</span>
                 </div>
               </SelectTrigger>
@@ -391,15 +391,15 @@ const Players = () => {
         <div className="flex items-center justify-between" style={{ marginTop: 16 }}>
           {/* Left: count + year */}
           <div className="flex items-center gap-4">
-            <span style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-              {filteredPlayers.length} ATLETAS
+            <span style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.1em" }}>
+              {filteredPlayers.length} ATLETAS NO PORTFÓLIO
             </span>
             <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
-              <SelectTrigger className="w-auto h-auto border-0 p-0 focus:ring-0" style={{ fontFamily: MONO, fontSize: 10, color: CREAM, textTransform: "uppercase", borderBottom: `1px solid ${CREAM}`, paddingBottom: 2 }}>
+              <SelectTrigger className="w-auto h-auto border-0 p-0 focus:ring-0 rounded-none" style={{ fontFamily: MONO, fontSize: 10, color: CREAM, textTransform: "uppercase", borderBottom: `1px solid ${CREAM}`, paddingBottom: 2, borderRadius: 0 }}>
                 <SelectValue />
                 <span style={{ marginLeft: 4, fontSize: 12 }}>↓</span>
               </SelectTrigger>
-              <SelectContent className="border-0" style={{ background: BLACK, border: `1px solid ${BORDER_DARK}` }}>
+              <SelectContent className="border-0 rounded-none" style={{ background: BLACK, border: `1px solid ${BORDER_DARK}`, borderRadius: 0 }}>
                 {availableYears.map((year) => (
                   <SelectItem key={year} value={String(year)} className="text-white/70 focus:bg-white/5 focus:text-white" style={{ fontFamily: MONO, fontSize: 11 }}>
                     {year}
@@ -416,7 +416,6 @@ const Players = () => {
             </span>
             <button
               onClick={() => setScoutingMode(!scoutingMode)}
-              className="rounded-none"
               style={{
                 width: 36, height: 20,
                 backgroundColor: scoutingMode ? RED : BORDER_DARK,
@@ -425,6 +424,7 @@ const Players = () => {
                 border: "none",
                 borderRadius: 0,
                 transition: "background-color 0.2s",
+                outline: "none",
               }}
             >
               <div style={{
