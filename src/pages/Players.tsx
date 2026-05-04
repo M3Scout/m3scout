@@ -540,7 +540,7 @@ const Players = () => {
                       <div style={{ width: 4, backgroundColor: dotColor, flexShrink: 0 }} />
 
                       {/* 3-column CSS Grid */}
-                      <div style={{ display: "grid", gridTemplateColumns: "280px 1fr 180px", flex: 1, minHeight: 120 }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "280px 1fr 180px", flex: 1 }}>
 
                         {/* ── COL 1: Photo + Identity ── */}
                         <div style={{ display: "flex", padding: "12px 16px", borderRight: `1px solid ${BORDER_DARK}`, gap: 12 }}>
