@@ -416,12 +416,14 @@ const Players = () => {
             </span>
             <button
               onClick={() => setScoutingMode(!scoutingMode)}
+              className="rounded-none"
               style={{
                 width: 36, height: 20,
                 backgroundColor: scoutingMode ? RED : BORDER_DARK,
                 position: "relative",
                 cursor: "pointer",
                 border: "none",
+                borderRadius: 0,
                 transition: "background-color 0.2s",
               }}
             >
@@ -432,6 +434,7 @@ const Players = () => {
                 top: 3,
                 left: scoutingMode ? 19 : 3,
                 transition: "left 0.2s",
+                borderRadius: 0,
               }} />
             </button>
           </div>
