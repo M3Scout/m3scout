@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { getOptimizedImageUrl } from "@/lib/imageUtils";
+import { getOptimizedImageUrl, getResponsiveSrcSet, ATHLETE_CARD_SIZES } from "@/lib/imageUtils";
 import { calculateMatchRating, type PlayerStatsInput } from "@/lib/matchRatingEngine";
 import { STANDARD_MATCH_DURATION, calculateMinutesPlayed } from "@/lib/minutesPlayed";
 import { Loader2, ChevronLeft, ChevronRight, Search, ArrowRight } from "lucide-react";
@@ -456,7 +456,8 @@ const Players = () => {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: BORDER_DARK }}>
               {safeArray(paginatedPlayers).map((player, index) => {
                 const href = `/players/${player.slug}`;
-                const imgUrl = getOptimizedImageUrl(player.photo_url, { width: 400, quality: 75 }) || "/placeholder.svg";
+                const imgUrl = getOptimizedImageUrl(player.photo_url, { width: 400, quality: 70 }) || "/placeholder.svg";
+                const imgSrcSet = getResponsiveSrcSet(player.photo_url, [280, 400, 600], 70);
                 const shortPos = getShortPosition(player.position);
                 const dotColor = getPosDotColor(player.position);
                 const cardNum = String(index + 1 + (currentPage - 1) * itemsPerPage).padStart(2, "0");
@@ -467,11 +468,16 @@ const Players = () => {
                       {/* Image */}
                       <img
                         src={imgUrl}
+                        srcSet={imgSrcSet || undefined}
+                        sizes={ATHLETE_CARD_SIZES}
                         alt={player.full_name}
                         loading={index === 0 ? "eager" : "lazy"}
+                        fetchPriority={index === 0 ? "high" : undefined}
                         decoding="async"
-                        className="absolute inset-0 w-full h-full object-cover object-top transition-all duration-500"
-                        style={{ filter: "grayscale(10%)" }}
+                        width={400}
+                        height={533}
+                        className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-500"
+                        style={{ filter: "grayscale(10%)", willChange: "transform" }}
                         onMouseOver={(e) => { (e.target as HTMLImageElement).style.transform = "scale(1.03)"; (e.target as HTMLImageElement).style.filter = "grayscale(0%)"; }}
                         onMouseOut={(e) => { (e.target as HTMLImageElement).style.transform = "scale(1)"; (e.target as HTMLImageElement).style.filter = "grayscale(10%)"; }}
                       />
@@ -517,7 +523,7 @@ const Players = () => {
             <div style={{ borderBottom: `1px solid ${BORDER_DARK}` }}>
               {safeArray(paginatedPlayers).map((player) => {
                 const href = `/players/${player.slug}`;
-                const imgUrl = getOptimizedImageUrl(player.photo_url, { width: 160, quality: 75 }) || "/placeholder.svg";
+                const imgUrl = getOptimizedImageUrl(player.photo_url, { width: 160, quality: 70 }) || "/placeholder.svg";
                 const shortPos = getShortPosition(player.position);
                 const dotColor = getPosDotColor(player.position);
                 const stats = playerStats.get(player.id);
@@ -541,7 +547,7 @@ const Players = () => {
                         <div style={{ display: "flex", padding: "10px 16px", borderRight: `1px solid ${BORDER_DARK}`, gap: 12 }}>
                           {/* Photo */}
                           <div style={{ width: 80, height: 90, flexShrink: 0, overflow: "hidden" }}>
-                            <img src={imgUrl} alt={player.full_name} loading="lazy" decoding="async" width={80} height={90} className="w-full h-full object-cover" style={{ filter: "grayscale(15%)" }} />
+                            <img src={imgUrl} alt={player.full_name} loading="lazy" decoding="async" width={80} height={90} className="w-full h-full object-cover" style={{ filter: "grayscale(15%)", willChange: "filter" }} />
                           </div>
                           {/* Name block */}
                           <div className="flex flex-col justify-start" style={{ minWidth: 0 }}>
