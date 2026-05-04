@@ -456,7 +456,8 @@ const Players = () => {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: BORDER_DARK }}>
               {safeArray(paginatedPlayers).map((player, index) => {
                 const href = `/players/${player.slug}`;
-                const imgUrl = getOptimizedImageUrl(player.photo_url, { width: 400, quality: 75 }) || "/placeholder.svg";
+                const imgUrl = getOptimizedImageUrl(player.photo_url, { width: 400, quality: 70 }) || "/placeholder.svg";
+                const imgSrcSet = getResponsiveSrcSet(player.photo_url, [280, 400, 600], 70);
                 const shortPos = getShortPosition(player.position);
                 const dotColor = getPosDotColor(player.position);
                 const cardNum = String(index + 1 + (currentPage - 1) * itemsPerPage).padStart(2, "0");
