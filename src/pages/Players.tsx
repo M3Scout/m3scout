@@ -519,7 +519,7 @@ const Players = () => {
             <span style={{ fontFamily: MONO, fontSize: 9, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.12em", display: "block", marginBottom: 24 }}>
               // DADOS PRONTOS PARA DECISÃO
             </span>
-            <div>
+            <div style={{ borderBottom: `1px solid ${BORDER_DARK}` }}>
               {safeArray(paginatedPlayers).map((player) => {
                 const href = `/players/${player.slug}`;
                 const imgUrl = getOptimizedImageUrl(player.photo_url, { width: 160, quality: 75 }) || "/placeholder.svg";
