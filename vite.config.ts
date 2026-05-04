@@ -170,6 +170,25 @@ export default defineConfig(({ mode }) => ({
       },
     }),
   ].filter(Boolean),
+  build: {
+    // Target modern browsers for smaller output
+    target: "es2020",
+    // Split chunks for better caching and smaller initial load
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Vendor: isolate heavy libs so they cache independently
+          "vendor-react": ["react", "react-dom", "react-router-dom"],
+          "vendor-supabase": ["@supabase/supabase-js"],
+          "vendor-motion": ["framer-motion"],
+          "vendor-query": ["@tanstack/react-query"],
+          "vendor-recharts": ["recharts"],
+        },
+      },
+    },
+    // Increase warning threshold (we have code-splitting already)
+    chunkSizeWarningLimit: 600,
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
