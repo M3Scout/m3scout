@@ -3,6 +3,7 @@ import { AnimatePresence } from "framer-motion";
 import { AppSidebar } from "./AppSidebar";
 import { SidebarProvider, useSidebar } from "@/hooks/useSidebar";
 import { PageTransition } from "./PageTransition";
+import { AppBottomNav } from "./AppBottomNav";
 import { cn } from "@/lib/utils";
 
 function AppLayoutContent() {
@@ -22,7 +23,7 @@ function AppLayoutContent() {
           "pt-[calc(var(--sat)+3.5rem)] md:pt-0"
         )}
       >
-        <div className="p-[var(--padding-mobile)] md:p-6 lg:p-8 w-full max-w-full overflow-x-hidden lg:pt-8">
+        <div className="p-[var(--padding-mobile)] md:p-6 lg:p-8 w-full max-w-full overflow-x-hidden lg:pt-8 pb-24 md:pb-6 lg:pb-8">
           <AnimatePresence mode="wait" initial={false}>
             <PageTransition key={location.pathname}>
               <Outlet />
@@ -30,6 +31,7 @@ function AppLayoutContent() {
           </AnimatePresence>
         </div>
       </main>
+      <AppBottomNav />
     </div>
   );
 }
