@@ -565,12 +565,12 @@ const Players = () => {
                       {/* Col 3: Data */}
                       <div className="flex-1 flex items-center gap-4 flex-wrap" style={{ padding: "8px 16px" }}>
                         {/* Tags */}
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="flex items-center gap-1" style={{ fontFamily: MONO, fontSize: 9, color: WHITE_MUTED, border: `1px solid ${BORDER_DARK}`, padding: "3px 8px", textTransform: "uppercase" }}>
+                        <div className="flex items-center gap-2 flex-wrap" style={{ paddingTop: 4 }}>
+                          <span className="flex items-center gap-1" style={{ fontFamily: MONO, fontSize: 9, color: dotColor, border: `1px solid ${dotColor}33`, padding: "3px 8px", textTransform: "uppercase" }}>
                             <div style={{ width: 5, height: 5, borderRadius: "50%", backgroundColor: dotColor }} />
                             {shortPos}
                           </span>
-                          <span style={{ fontFamily: MONO, fontSize: 9, color: physical.color, border: `1px solid ${BORDER_DARK}`, padding: "3px 8px", textTransform: "uppercase" }}>
+                          <span style={{ fontFamily: MONO, fontSize: 9, color: physical.color, border: `1px solid ${physical.color}4D`, padding: "3px 8px", textTransform: "uppercase" }}>
                             Físico: {physical.label}
                           </span>
                           {player.play_style && (
