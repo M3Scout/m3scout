@@ -7,7 +7,7 @@ import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Eye, Users, Handshake, CheckCircle2 } from "lucide-react";
+import { Eye, Users, Handshake, CheckCircle2, XCircle } from "lucide-react";
 import { Target as TargetType, MarketScoreTrend } from "@/types/marketScore";
 import { TargetFormModal } from "@/components/market/TargetFormModal";
 import { TargetDetailModal } from "@/components/market/TargetDetailModal";
@@ -34,10 +34,10 @@ type ActivityRow = {
 // ============ STAGE CONFIG ============
 
 const KANBAN_STAGES = [
-  { key: "MONITORING" as const, label: "MONITORANDO", color: "#9B6DFF", Icon: Eye },
-  { key: "APPROACH"   as const, label: "ABORDAGEM",   color: "#FF8C42", Icon: Users },
-  { key: "NEGOTIATION"as const, label: "NEGOCIAÇÃO",  color: "#E8C84A", Icon: Handshake },
-  { key: "SIGNED"     as const, label: "CONTRATADO",  color: "#2DCE8A", Icon: CheckCircle2 },
+  { key: "MONITORING"  as const, label: "MONITORANDO", color: "#9B6DFF", Icon: Eye },
+  { key: "NEGOTIATION" as const, label: "NEGOCIAÇÃO",  color: "#E8C84A", Icon: Handshake },
+  { key: "SIGNED"      as const, label: "CONTRATADO",  color: "#2DCE8A", Icon: CheckCircle2 },
+  { key: "DROPPED"     as const, label: "DESCARTADO",  color: "#E5173F", Icon: XCircle },
 ] as const;
 
 type StageKey = typeof KANBAN_STAGES[number]["key"];
@@ -144,9 +144,9 @@ export default function MarketTargets() {
 
   const statusCounts = useMemo(() => ({
     MONITORING:  targetsByStatus.MONITORING.length,
-    APPROACH:    targetsByStatus.APPROACH.length,
     NEGOTIATION: targetsByStatus.NEGOTIATION.length,
     SIGNED:      targetsByStatus.SIGNED.length,
+    DROPPED:     targetsByStatus.DROPPED.length,
   }), [targetsByStatus]);
 
   const top5 = useMemo(() =>
@@ -192,7 +192,7 @@ export default function MarketTargets() {
         marginBottom: 20,
         borderBottom: BORDER,
       }}>
-        <h1 className="m3-page-title">METAS</h1>
+        <h1 className="m3-page-title">MONITORAMENTO</h1>
 
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 16 }}>
           <div style={{

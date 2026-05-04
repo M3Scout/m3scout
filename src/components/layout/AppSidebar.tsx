@@ -84,7 +84,7 @@ const internalNavGroups: NavGroup[] = [
   {
     label: "Administração",
     items: [
-      { href: "/app/goals-monitor", label: "Metas", module: "users", action: "manage", icon: Goal },
+      { href: "/app/goals-monitor", label: "Monitoramento", module: "users", action: "manage", icon: Goal },
       { href: "/app/settings/users", label: "Usuários", module: "users", action: "manage", icon: UserCog },
     ]
   }
