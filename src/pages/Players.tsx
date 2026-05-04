@@ -304,14 +304,8 @@ const Players = () => {
     <div className="min-h-screen" style={{ backgroundColor: BLACK }}>
 
       {/* ━━━ S1 — HERO ━━━ */}
-      <section style={{ backgroundColor: BLACK, padding: "72px 64px 64px", borderBottom: `1px solid ${BORDER_DARK}` }}>
-        <div style={{ maxWidth: 1600 }}>
-          {/* Top micro labels */}
-          <div className="flex items-center gap-4 mb-8">
-            <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.12em", color: WHITE_MUTED, textTransform: "uppercase" }}>— PORTFÓLIO</span>
-            <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.12em", color: "rgba(242,237,228,0.18)", textTransform: "uppercase" }}>· M3 AGENCY</span>
-          </div>
-
+      <section style={{ backgroundColor: BLACK, padding: `clamp(120px, 18vh, 200px) clamp(20px, 4vw, 40px) 64px` }}>
+        <div>
           {/* H1 */}
           <h1 style={{ fontFamily: DISPLAY, fontWeight: 900, fontSize: "clamp(72px, 8vw, 120px)", lineHeight: 0.87, color: CREAM, margin: 0 }}>
             NOSSOS<br />
@@ -326,7 +320,7 @@ const Players = () => {
       </section>
 
       {/* ━━━ S2 — TOOLBAR (Sticky) ━━━ */}
-      <section className="sticky top-0 z-40" style={{ backgroundColor: BLACK, padding: "36px 64px 16px", borderBottom: `1px solid ${BORDER_DARK}` }}>
+      <section className="sticky top-0 z-40" style={{ backgroundColor: BLACK, padding: "36px clamp(20px, 4vw, 40px) 16px", borderBottom: `1px solid ${BORDER_DARK}` }}>
         {/* Top Row — grid with 1px border lines */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 160px 160px", gap: 0, border: `1px solid ${BORDER_DARK}` }}>
           {/* Search */}
@@ -444,7 +438,7 @@ const Players = () => {
       </section>
 
       {/* ━━━ S3 — CONTENT ━━━ */}
-      <section style={{ backgroundColor: BLACK, padding: "48px 64px 96px" }}>
+      <section style={{ backgroundColor: BLACK, padding: "48px clamp(20px, 4vw, 40px) 96px" }}>
         {loading ? (
           <div className="flex items-center justify-center" style={{ padding: "128px 0" }}>
             <Loader2 className="w-6 h-6 animate-spin" style={{ color: WHITE_MUTED }} />
