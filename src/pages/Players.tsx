@@ -502,8 +502,8 @@ const Players = () => {
                           {player.current_club && <span style={{ color: "rgba(242,237,228,0.25)" }}>{player.current_club}</span>}
                         </div>
                         {/* Ver perfil link aligned left with name */}
-                        <span className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 13, color: CREAM, borderBottom: `1px solid ${RED}`, paddingBottom: 2, gap: 8, marginTop: 10, width: "fit-content" }}>
-                          Ver perfil <ArrowRight style={{ width: 14, height: 14 }} />
+                        <span className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 13, color: CREAM, textTransform: "uppercase", borderBottom: `1px solid ${RED}`, paddingBottom: 2, gap: 8, marginTop: 10, width: "fit-content" }}>
+                          VER PERFIL <ArrowRight style={{ width: 14, height: 14, color: RED }} />
                         </span>
                       </div>
                     </div>
