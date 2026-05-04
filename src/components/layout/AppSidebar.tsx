@@ -419,19 +419,13 @@ export function AppSidebar() {
         }}
       >
         {/* Drawer Header */}
-        <div className="shrink-0 border-b border-white/5">
-          <div className="h-14 flex items-center justify-between px-4">
-            <Link to="/" className="flex items-center" onClick={handleMobileClose}>
-              <img src={logoM3} alt="M3 Agency" className="h-7 w-auto" width={70} height={28} />
-            </Link>
-            <button
-              onClick={handleMobileClose}
-              className="w-9 h-9 flex items-center justify-center rounded-lg text-zinc-500 active:bg-white/5 transition-colors"
-            >
-              <X className="w-5 h-5" strokeWidth={1.5} />
-            </button>
-          </div>
-        </div>
+         <div className="shrink-0 border-b border-white/5">
+           <div className="h-14 flex items-center px-4">
+             <Link to="/" className="flex items-center" onClick={handleMobileClose}>
+               <img src={logoM3} alt="M3 Agency" className="h-7 w-auto" width={70} height={28} />
+             </Link>
+           </div>
+         </div>
 
         {/* Drawer Content - Scrollable on mobile */}
         <div className="flex-1 overflow-y-auto overscroll-contain px-2 py-3 space-y-3">
