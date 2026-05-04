@@ -530,7 +530,7 @@ const Players = () => {
 
                 return (
                   <Link key={player.id} to={href} className="group block" style={{ borderBottom: `1px solid ${BORDER_DARK}` }}>
-                    <div className="flex items-stretch transition-colors duration-200" style={{ minHeight: 72 }}
+                    <div className="flex items-start transition-colors duration-200" style={{ minHeight: 72 }}
                       onMouseOver={(e) => { (e.currentTarget as HTMLDivElement).style.backgroundColor = "rgba(255,255,255,0.02)"; }}
                       onMouseOut={(e) => { (e.currentTarget as HTMLDivElement).style.backgroundColor = "transparent"; }}
                     >
