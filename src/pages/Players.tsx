@@ -566,7 +566,7 @@ const Players = () => {
                         {/* ── COL 2: Technical Info (stacked rows) ── */}
                         <div style={{ display: "flex", flexDirection: "column", borderRight: `1px solid ${BORDER_DARK}` }}>
                           {/* Row 1: Tags */}
-                          <div className="flex items-center gap-2 flex-wrap" style={{ padding: "10px 16px", borderBottom: `1px solid ${BORDER_DARK}` }}>
+                          <div className="flex items-center gap-2 flex-wrap" style={{ padding: "10px 16px 4px" }}>
                             <span style={{ fontFamily: MONO, fontSize: 9, color: dotColor, border: `1px solid ${dotColor}4D`, padding: "3px 8px", textTransform: "uppercase" }}>
                               {shortPos}
                             </span>
@@ -586,7 +586,7 @@ const Players = () => {
                           </div>
 
                           {/* Row 2: Stats */}
-                          <div className="flex items-end gap-6" style={{ padding: "8px 16px", borderBottom: `1px solid ${BORDER_DARK}` }}>
+                          <div className="flex items-end gap-6" style={{ padding: "4px 16px" }}>
                             <div>
                               <span style={{ fontFamily: MONO, fontSize: 8, color: WHITE_MUTED, opacity: 0.25, textTransform: "uppercase", display: "block" }}>Nota</span>
                               <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 16, color: CREAM }}>{rating != null ? rating.toFixed(1) : "—"}</span>
