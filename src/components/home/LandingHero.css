@@ -139,9 +139,11 @@
 .lp-nav__cta:hover { background: var(--fg-dark); color: var(--bg-dark); }
 
 @media (max-width: 800px) {
-  .lp-nav__inner { padding: 0 20px; }
+  .lp-nav__inner { padding: 0 20px; justify-content: center; }
   .lp-nav__links { display: none; }
-  .lp-nav__cta { padding: 8px 14px; font-size: 10px; }
+  .lp-nav__cta { display: none; }
+  .lp-nav__spacer { display: none; }
+  .lp-nav__logo { margin: 0 auto; }
 }
 
 /* ---------- HERO ---------- */

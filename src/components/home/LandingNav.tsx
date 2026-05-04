@@ -26,6 +26,9 @@ export function LandingNav() {
     <div className="lp-root">
       <header className={`lp-nav ${scrolled ? "is-scrolled" : ""}`}>
         <div className="lp-nav__inner">
+          {/* Spacer for mobile centering */}
+          <div className="lp-nav__spacer lg:hidden" />
+
           <Link to="/" className="lp-nav__logo" aria-label="M3 Agency">
             <img src={logoM3} alt="M3 Agency" className="lp-nav__logo-img" width={90} height={36} />
           </Link>

@@ -22,7 +22,7 @@ function AppLayoutContent() {
           "pt-[calc(var(--sat)+3.5rem)] md:pt-0"
         )}
       >
-        <div className="p-[var(--padding-mobile)] md:p-6 lg:p-8 w-full max-w-full overflow-x-hidden lg:pt-8 pb-[calc(56px+env(safe-area-inset-bottom,0px)+var(--padding-mobile))] md:pb-6 lg:pb-8">
+        <div className="p-[var(--padding-mobile)] md:p-6 lg:p-8 w-full max-w-full overflow-x-hidden lg:pt-8">
           <AnimatePresence mode="wait" initial={false}>
             <PageTransition key={location.pathname}>
               <Outlet />
