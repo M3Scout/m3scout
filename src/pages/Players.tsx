@@ -547,7 +547,7 @@ const Players = () => {
                         <div style={{ display: "flex", padding: "10px 16px", borderRight: `1px solid ${BORDER_DARK}`, gap: 12 }}>
                           {/* Photo */}
                           <div style={{ width: 80, height: 90, flexShrink: 0, overflow: "hidden" }}>
-                            <img src={imgUrl} alt={player.full_name} loading="lazy" decoding="async" width={80} height={90} className="w-full h-full object-cover" style={{ filter: "grayscale(15%)" }} />
+                            <img src={imgUrl} alt={player.full_name} loading="lazy" decoding="async" width={80} height={90} className="w-full h-full object-cover" style={{ filter: "grayscale(15%)", willChange: "filter" }} />
                           </div>
                           {/* Name block */}
                           <div className="flex flex-col justify-start" style={{ minWidth: 0 }}>
