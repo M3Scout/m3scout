@@ -604,7 +604,7 @@ const Players = () => {
                       </div>
 
                       {/* Col 4: CTA */}
-                      <div className="flex items-center" style={{ padding: "8px 24px 8px 16px", flexShrink: 0 }}>
+                      <div className="flex items-start" style={{ padding: "14px 24px 8px 16px", flexShrink: 0, marginLeft: "auto" }}>
                         <span
                           className="flex items-center transition-all duration-200"
                           style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 13, color: CREAM, textTransform: "uppercase", borderBottom: `1px solid ${BORDER_DARK}`, paddingBottom: 2, gap: 8 }}
