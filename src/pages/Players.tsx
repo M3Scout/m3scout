@@ -607,15 +607,6 @@ const Players = () => {
                             )}
                           </div>
 
-                          {/* Row 3: Competition / Report line */}
-                          <div style={{ padding: "6px 16px", flex: 1, display: "flex", alignItems: "center" }}>
-                            <span style={{ fontFamily: MONO, fontSize: 9, color: "rgba(242,237,228,0.3)" }}>
-                              {[
-                                player.competition_name || null,
-                                player.last_report_date ? `· Rel: ${player.last_report_date}` : null,
-                              ].filter(Boolean).join(" ")}
-                            </span>
-                          </div>
                         </div>
 
                         {/* ── COL 3: CTA ── */}
