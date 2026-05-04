@@ -392,11 +392,11 @@ const Players = () => {
         <div className="flex items-center justify-between" style={{ marginTop: 16 }}>
           {/* Left: count + year */}
           <div className="flex items-center gap-4">
-            <span style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.1em" }}>
+            <span style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.2em" }}>
               {filteredPlayers.length} ATLETAS NO PORTFÓLIO
             </span>
             <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
-              <SelectTrigger className="w-auto h-auto border-0 p-0 focus:ring-0 rounded-none" style={{ fontFamily: MONO, fontSize: 10, color: CREAM, textTransform: "uppercase", borderBottom: `1px solid ${CREAM}`, paddingBottom: 2, borderRadius: 0 }}>
+              <SelectTrigger className="w-auto h-auto border-0 p-0 focus:ring-0 rounded-none bg-transparent" style={{ fontFamily: MONO, fontSize: 10, color: CREAM, textTransform: "uppercase", borderBottom: `1px solid ${CREAM}`, paddingBottom: 2, borderRadius: 0, background: "transparent" }}>
                 <SelectValue />
                 <span style={{ marginLeft: 4, fontSize: 12 }}>↓</span>
               </SelectTrigger>
