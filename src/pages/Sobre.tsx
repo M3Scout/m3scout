@@ -208,7 +208,7 @@ const Sobre = () => {
         <div className="w-full mx-auto" style={{ maxWidth: '1600px', paddingLeft: '40px', paddingRight: '40px' }}>
           <div 
             ref={manifestoRef}
-            className="manifesto max-w-3xl mx-auto text-center flex flex-col gap-1 md:gap-2"
+            className="manifesto max-w-3xl text-left flex flex-col gap-1 md:gap-2"
           >
             {[
               { text: "Talento sem direção é ruído.", delay: 0, weight: "font-light" },
