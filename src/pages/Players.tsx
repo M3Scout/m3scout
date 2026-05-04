@@ -376,7 +376,7 @@ const Players = () => {
                   <span style={{ fontSize: 14 }}>↓</span>
                 </div>
               </SelectTrigger>
-              <SelectContent className="border-0" style={{ background: BLACK, border: `1px solid ${BORDER_DARK}` }}>
+              <SelectContent className="border-0 rounded-none" style={{ background: BLACK, border: `1px solid ${BORDER_DARK}`, borderRadius: 0 }}>
                 {nationalities.map((nat) => (
                   <SelectItem key={nat} value={nat.toLowerCase()} className="text-white/70 focus:bg-white/5 focus:text-white" style={{ fontFamily: MONO, fontSize: 11 }}>
                     {nat}
