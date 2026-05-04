@@ -52,7 +52,7 @@ const Sobre = () => {
         />
 
         <div className="relative z-10 w-full">
-          <div className="w-full mx-auto py-20 md:py-28" style={{ maxWidth: 'var(--page-max-width)', paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
+          <div className="w-full mx-auto py-20 md:py-28" style={{ maxWidth: '1600px', paddingLeft: '40px', paddingRight: '40px' }}>
             <div className="max-w-3xl">
               
               {/* M3 Agency Title */}
@@ -109,7 +109,7 @@ const Sobre = () => {
       </section>
 
       <section className="py-12 md:py-16 lg:py-20" style={{ backgroundColor: 'var(--bg-base)' }}>
-        <div className="w-full mx-auto" style={{ maxWidth: 'var(--page-max-width)', paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
+        <div className="w-full mx-auto" style={{ maxWidth: '1600px', paddingLeft: '40px', paddingRight: '40px' }}>
           <motion.div 
             ref={conceptRef}
             initial={{ opacity: 0, y: 30 }}
@@ -127,7 +127,7 @@ const Sobre = () => {
       </section>
 
       <section className="py-10 md:py-14 lg:py-16" style={{ backgroundColor: 'var(--bg-base-alt)' }}>
-        <div className="w-full mx-auto" style={{ maxWidth: 'var(--page-max-width)', paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
+        <div className="w-full mx-auto" style={{ maxWidth: '1600px', paddingLeft: '40px', paddingRight: '40px' }}>
           
           {/* Section Label */}
           <motion.p
@@ -205,10 +205,10 @@ const Sobre = () => {
       </section>
 
       <section className="py-16 md:py-20 lg:py-24" style={{ backgroundColor: 'var(--bg-base)' }}>
-        <div className="w-full mx-auto" style={{ maxWidth: 'var(--page-max-width)', paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
+        <div className="w-full mx-auto" style={{ maxWidth: '1600px', paddingLeft: '40px', paddingRight: '40px' }}>
           <div 
             ref={manifestoRef}
-            className="manifesto max-w-3xl mx-auto text-center flex flex-col gap-1 md:gap-2"
+            className="manifesto max-w-3xl text-left flex flex-col gap-1 md:gap-2"
           >
             {[
               { text: "Talento sem direção é ruído.", delay: 0, weight: "font-light" },
