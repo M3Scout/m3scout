@@ -221,9 +221,11 @@ export default function MarketTargets() {
           <button
             onClick={() => setFormModalOpen(true)}
             style={{
-              padding: "8px 16px",
+              padding: "8px 20px",
               background: "#E5173F",
               border: "none",
+              borderRadius: 9999,
+              boxShadow: "none",
               color: "#fff",
               fontFamily: CONDENSED,
               fontWeight: 700,
