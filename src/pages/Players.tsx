@@ -523,7 +523,7 @@ const Players = () => {
             <div style={{ borderBottom: `1px solid ${BORDER_DARK}` }}>
               {safeArray(paginatedPlayers).map((player) => {
                 const href = `/players/${player.slug}`;
-                const imgUrl = getOptimizedImageUrl(player.photo_url, { width: 160, quality: 75 }) || "/placeholder.svg";
+                const imgUrl = getOptimizedImageUrl(player.photo_url, { width: 160, quality: 70 }) || "/placeholder.svg";
                 const shortPos = getShortPosition(player.position);
                 const dotColor = getPosDotColor(player.position);
                 const stats = playerStats.get(player.id);
