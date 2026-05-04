@@ -25,7 +25,7 @@ const Sobre = () => {
     }
   }, []);
 
-  const gutter = "var(--page-gutter, 40px)";
+  const gutter = "clamp(20px, 4vw, 40px)";
   const maxW = "1600px";
 
   return (
