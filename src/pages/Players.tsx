@@ -337,7 +337,7 @@ const Players = () => {
         {/* Top Row */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 160px 160px", gap: 1, background: BORDER_DARK }}>
           {/* Search */}
-          <div className="flex items-center gap-3" style={{ backgroundColor: BLACK, padding: "0 16px" }}>
+          <div className="flex items-center gap-3" style={{ backgroundColor: BLACK, padding: "0 20px" }}>
             <Search style={{ width: 16, height: 16, color: WHITE_MUTED, flexShrink: 0 }} />
             <input
               type="text"
@@ -351,13 +351,13 @@ const Players = () => {
           {/* Position Filter */}
           <div style={{ backgroundColor: BLACK }}>
             <Select value={positionFilter} onValueChange={setPositionFilter}>
-              <SelectTrigger className="w-full h-full border-0 focus:ring-0" style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.08em", background: "transparent", padding: "0 16px" }}>
+              <SelectTrigger className="w-full h-full border-0 focus:ring-0 rounded-none" style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.08em", background: "transparent", padding: "0 16px", borderRadius: 0 }}>
                 <div className="flex items-center justify-between w-full">
                   <span>Posição</span>
                   <span style={{ fontSize: 14 }}>↓</span>
                 </div>
               </SelectTrigger>
-              <SelectContent className="border-0" style={{ background: BLACK, border: `1px solid ${BORDER_DARK}` }}>
+              <SelectContent className="border-0 rounded-none" style={{ background: BLACK, border: `1px solid ${BORDER_DARK}`, borderRadius: 0 }}>
                 {positions.map((pos) => (
                   <SelectItem key={pos} value={pos.toLowerCase()} className="text-white/70 focus:bg-white/5 focus:text-white" style={{ fontFamily: MONO, fontSize: 11 }}>
                     {pos}
@@ -370,13 +370,13 @@ const Players = () => {
           {/* Nationality Filter */}
           <div style={{ backgroundColor: BLACK }}>
             <Select value={nationalityFilter} onValueChange={setNationalityFilter}>
-              <SelectTrigger className="w-full h-full border-0 focus:ring-0" style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.08em", background: "transparent", padding: "0 16px" }}>
+              <SelectTrigger className="w-full h-full border-0 focus:ring-0 rounded-none" style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.08em", background: "transparent", padding: "0 16px", borderRadius: 0 }}>
                 <div className="flex items-center justify-between w-full">
                   <span>Nacionalidade</span>
                   <span style={{ fontSize: 14 }}>↓</span>
                 </div>
               </SelectTrigger>
-              <SelectContent className="border-0" style={{ background: BLACK, border: `1px solid ${BORDER_DARK}` }}>
+              <SelectContent className="border-0 rounded-none" style={{ background: BLACK, border: `1px solid ${BORDER_DARK}`, borderRadius: 0 }}>
                 {nationalities.map((nat) => (
                   <SelectItem key={nat} value={nat.toLowerCase()} className="text-white/70 focus:bg-white/5 focus:text-white" style={{ fontFamily: MONO, fontSize: 11 }}>
                     {nat}
@@ -416,12 +416,14 @@ const Players = () => {
             </span>
             <button
               onClick={() => setScoutingMode(!scoutingMode)}
+              className="rounded-none"
               style={{
                 width: 36, height: 20,
                 backgroundColor: scoutingMode ? RED : BORDER_DARK,
                 position: "relative",
                 cursor: "pointer",
                 border: "none",
+                borderRadius: 0,
                 transition: "background-color 0.2s",
               }}
             >
@@ -432,6 +434,7 @@ const Players = () => {
                 top: 3,
                 left: scoutingMode ? 19 : 3,
                 transition: "left 0.2s",
+                borderRadius: 0,
               }} />
             </button>
           </div>
@@ -488,8 +491,8 @@ const Players = () => {
                       </div>
 
                       {/* Bottom info */}
-                      <div className="absolute bottom-0 left-0 right-0" style={{ background: "linear-gradient(to top, rgba(10,10,10,0.92) 0%, transparent 100%)", padding: "48px 16px 16px" }}>
-                        <h3 style={{ fontFamily: DISPLAY, fontWeight: 900, fontSize: 22, color: CREAM, textTransform: "uppercase", lineHeight: 1.1, marginBottom: 6 }}>
+                      <div className="absolute bottom-0 left-0 right-0" style={{ background: "linear-gradient(to top, rgba(10,10,10,0.85) 0%, rgba(10,10,10,0.5) 30%, transparent 50%)", padding: "48px 16px 16px" }}>
+                        <h3 style={{ fontFamily: DISPLAY, fontWeight: 900, fontSize: 22, color: CREAM, textTransform: "uppercase", lineHeight: 0.95, marginBottom: 6 }}>
                           {player.full_name}
                         </h3>
                         <div style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, display: "flex", flexWrap: "wrap", gap: "4px 12px" }}>
@@ -497,11 +500,8 @@ const Players = () => {
                           <span>{player.nationality}</span>
                           {player.current_club && <span style={{ color: "rgba(242,237,228,0.25)" }}>{player.current_club}</span>}
                         </div>
-                      </div>
-
-                      {/* Hover overlay */}
-                      <div className="absolute inset-0 flex items-end justify-start opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background: "rgba(229,23,63,0.08)", padding: 16 }}>
-                        <span className="flex items-center gap-2" style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 13, color: CREAM, borderBottom: `1px solid ${RED}`, paddingBottom: 2 }}>
+                        {/* Ver perfil link aligned left with name */}
+                        <span className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 13, color: CREAM, borderBottom: `1px solid ${RED}`, paddingBottom: 2, gap: 8, marginTop: 10, width: "fit-content" }}>
                           Ver perfil <ArrowRight style={{ width: 14, height: 14 }} />
                         </span>
                       </div>
@@ -534,16 +534,16 @@ const Players = () => {
                       onMouseOut={(e) => { (e.currentTarget as HTMLDivElement).style.backgroundColor = "transparent"; }}
                     >
                       {/* Left accent bar */}
-                      <div style={{ width: 2, backgroundColor: dotColor, flexShrink: 0 }} />
+                      <div style={{ width: 4, backgroundColor: dotColor, flexShrink: 0 }} />
 
                       {/* Col 1: Photo */}
-                      <div style={{ width: 72, height: 72, flexShrink: 0 }}>
+                      <div style={{ width: 72, height: 72, flexShrink: 0, borderRadius: 0, overflow: "hidden" }}>
                         <img
                           src={imgUrl}
                           alt={player.full_name}
                           loading="lazy"
                           className="w-full h-full object-cover"
-                          style={{ filter: "grayscale(15%)" }}
+                          style={{ filter: "grayscale(15%)", borderRadius: 0 }}
                         />
                       </div>
 
@@ -582,20 +582,20 @@ const Players = () => {
                         {/* Stats */}
                         <div className="flex items-center gap-4">
                           <div>
-                            <span style={{ fontFamily: MONO, fontSize: 8, color: WHITE_MUTED, textTransform: "uppercase", display: "block" }}>Nota</span>
+                            <span style={{ fontFamily: MONO, fontSize: 8, color: WHITE_MUTED, opacity: 0.25, textTransform: "uppercase", display: "block" }}>Nota</span>
                             <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 16, color: CREAM }}>{rating != null ? rating.toFixed(1) : "—"}</span>
                           </div>
                           <div>
-                            <span style={{ fontFamily: MONO, fontSize: 8, color: WHITE_MUTED, textTransform: "uppercase", display: "block" }}>Jogos</span>
+                            <span style={{ fontFamily: MONO, fontSize: 8, color: WHITE_MUTED, opacity: 0.25, textTransform: "uppercase", display: "block" }}>Jogos</span>
                             <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 16, color: CREAM }}>{stats?.matches ?? 0}</span>
                           </div>
                           <div>
-                            <span style={{ fontFamily: MONO, fontSize: 8, color: WHITE_MUTED, textTransform: "uppercase", display: "block" }}>Min</span>
+                            <span style={{ fontFamily: MONO, fontSize: 8, color: WHITE_MUTED, opacity: 0.25, textTransform: "uppercase", display: "block" }}>Min</span>
                             <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 16, color: CREAM }}>{formatMinutesK(stats?.minutes)}</span>
                           </div>
                           {player.play_style && (
                             <div>
-                              <span style={{ fontFamily: MONO, fontSize: 8, color: WHITE_MUTED, textTransform: "uppercase", display: "block" }}>Estilo</span>
+                              <span style={{ fontFamily: MONO, fontSize: 8, color: WHITE_MUTED, opacity: 0.25, textTransform: "uppercase", display: "block" }}>Estilo</span>
                               <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 14, color: CREAM }}>{player.play_style}</span>
                             </div>
                           )}
