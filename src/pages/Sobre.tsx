@@ -35,14 +35,6 @@ const Sobre = () => {
       <section style={{ backgroundColor: BLACK, padding: `80px ${gutter}` }}>
         <div style={{ maxWidth: maxW, margin: "0 auto" }}>
 
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 56 }}>
-            <span style={{ fontFamily: BC, fontWeight: 700, fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: WHITE_MUTED }}>
-              M3 AGENCY
-            </span>
-            <span style={{ fontFamily: BC, fontWeight: 700, fontSize: 11, letterSpacing: "0.2em", color: WHITE_MUTED }}>
-              — 01
-            </span>
-          </div>
 
           <h1 style={{
             fontFamily: BC,
