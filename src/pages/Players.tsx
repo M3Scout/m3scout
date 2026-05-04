@@ -588,20 +588,20 @@ const Players = () => {
                           {/* Row 2: Stats */}
                           <div className="flex items-end gap-6" style={{ padding: "4px 16px" }}>
                             <div>
-                              <span style={{ fontFamily: MONO, fontSize: 8, color: WHITE_MUTED, opacity: 0.25, textTransform: "uppercase", display: "block" }}>Nota</span>
+                              <span style={{ fontFamily: MONO, fontSize: 9, color: WHITE_MUTED, opacity: 0.45, textTransform: "uppercase", display: "block", marginBottom: 2 }}>Nota</span>
                               <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 16, color: CREAM }}>{rating != null ? rating.toFixed(1) : "—"}</span>
                             </div>
                             <div>
-                              <span style={{ fontFamily: MONO, fontSize: 8, color: WHITE_MUTED, opacity: 0.25, textTransform: "uppercase", display: "block" }}>Jogos</span>
+                              <span style={{ fontFamily: MONO, fontSize: 9, color: WHITE_MUTED, opacity: 0.45, textTransform: "uppercase", display: "block", marginBottom: 2 }}>Jogos</span>
                               <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 16, color: CREAM }}>{stats?.matches ?? 0}</span>
                             </div>
                             <div>
-                              <span style={{ fontFamily: MONO, fontSize: 8, color: WHITE_MUTED, opacity: 0.25, textTransform: "uppercase", display: "block" }}>Min.</span>
+                              <span style={{ fontFamily: MONO, fontSize: 9, color: WHITE_MUTED, opacity: 0.45, textTransform: "uppercase", display: "block", marginBottom: 2 }}>Min.</span>
                               <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 16, color: CREAM }}>{formatMinutesK(stats?.minutes)}</span>
                             </div>
                             {player.play_style && (
                               <div>
-                                <span style={{ fontFamily: MONO, fontSize: 8, color: WHITE_MUTED, opacity: 0.25, textTransform: "uppercase", display: "block" }}>Estilo</span>
+                                <span style={{ fontFamily: MONO, fontSize: 9, color: WHITE_MUTED, opacity: 0.45, textTransform: "uppercase", display: "block", marginBottom: 2 }}>Estilo</span>
                                 <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 14, color: CREAM }}>{player.play_style}</span>
                               </div>
                             )}
@@ -611,8 +611,7 @@ const Players = () => {
                           <div style={{ padding: "6px 16px", flex: 1, display: "flex", alignItems: "center" }}>
                             <span style={{ fontFamily: MONO, fontSize: 9, color: "rgba(242,237,228,0.3)" }}>
                               {[
-                                player.nationality,
-                                player.competition_name ? `— ${player.competition_name}` : null,
+                                player.competition_name || null,
                                 player.last_report_date ? `· Rel: ${player.last_report_date}` : null,
                               ].filter(Boolean).join(" ")}
                             </span>
