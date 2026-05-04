@@ -488,7 +488,7 @@ const Players = () => {
                           {shortPos}
                         </div>
                         {/* Card number */}
-                        <span style={{ fontFamily: MONO, fontSize: 11, color: "rgba(242,237,228,0.3)" }}>/{cardNum}</span>
+                        <span style={{ fontFamily: MONO, fontSize: 11, color: "rgba(242,237,228,0.2)" }}>/{cardNum}</span>
                       </div>
 
                       {/* Bottom info */}
