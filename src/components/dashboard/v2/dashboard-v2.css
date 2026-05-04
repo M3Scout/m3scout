@@ -69,14 +69,22 @@
 
 .m3dash-topbar-actions { display: flex; gap: 8px; align-items: center; }
 
+.m3dash-header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
 .m3dash-btn {
   font-family: var(--font-heading);
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  padding: 8px 16px;
-  border: 1px solid var(--border-med);
+  padding: 10px 22px;
+  border: 1px solid rgba(255,255,255,0.13);
+  border-radius: 9999px;
   background: transparent;
   color: var(--text);
   cursor: pointer;
@@ -85,8 +93,9 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  white-space: nowrap;
 }
-.m3dash-btn:hover { background: rgba(255,255,255,0.02); }
+.m3dash-btn:hover { background: rgba(255,255,255,0.04); }
 
 .m3dash-btn--primary {
   background: var(--red);
@@ -693,9 +702,6 @@
 
 /* --------- Mobile-first restructure (< 768px) --------- */
 @media (max-width: 767px) {
-  .m3dash-topbar { display: none; }
-  .m3dash-meta { display: none; }
-  .m3dash-mobile-actions { display: flex; }
-  .m3dash-btn { border-radius: 9999px; }
   .m3dash-headline { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .m3dash-header { flex-direction: column; align-items: flex-start; gap: 16px; }
 }
