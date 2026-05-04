@@ -468,11 +468,16 @@ const Players = () => {
                       {/* Image */}
                       <img
                         src={imgUrl}
+                        srcSet={imgSrcSet || undefined}
+                        sizes={ATHLETE_CARD_SIZES}
                         alt={player.full_name}
                         loading={index === 0 ? "eager" : "lazy"}
+                        fetchPriority={index === 0 ? "high" : undefined}
                         decoding="async"
-                        className="absolute inset-0 w-full h-full object-cover object-top transition-all duration-500"
-                        style={{ filter: "grayscale(10%)" }}
+                        width={400}
+                        height={533}
+                        className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-500"
+                        style={{ filter: "grayscale(10%)", willChange: "transform" }}
                         onMouseOver={(e) => { (e.target as HTMLImageElement).style.transform = "scale(1.03)"; (e.target as HTMLImageElement).style.filter = "grayscale(0%)"; }}
                         onMouseOut={(e) => { (e.target as HTMLImageElement).style.transform = "scale(1)"; (e.target as HTMLImageElement).style.filter = "grayscale(10%)"; }}
                       />
