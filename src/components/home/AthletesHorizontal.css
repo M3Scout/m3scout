@@ -182,6 +182,7 @@
   text-decoration: none;
   color: inherit;
   display: block;
+  contain: layout style paint;
 }
 .athlete-h-card:hover { transform: translateY(-8px); }
 
