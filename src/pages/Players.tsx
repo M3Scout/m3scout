@@ -549,7 +549,7 @@ const Players = () => {
                       </div>
 
                       {/* Col 2: Name/Info */}
-                      <div className="flex flex-col justify-center" style={{ width: 220, flexShrink: 0, padding: "8px 16px" }}>
+                      <div className="flex flex-col justify-start" style={{ width: 220, flexShrink: 0, padding: "12px 16px" }}>
                         <h3 style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 15, color: CREAM, textTransform: "uppercase", lineHeight: 1.2, marginBottom: 2 }}>
                           {player.full_name}
                         </h3>
