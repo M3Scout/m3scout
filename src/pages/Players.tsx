@@ -487,14 +487,14 @@ const Players = () => {
                       </div>
 
                       {/* Bottom info */}
-                      <div className="absolute bottom-0 left-0 right-0" style={{ background: "linear-gradient(to top, rgba(10,10,10,0.85) 0%, rgba(10,10,10,0.5) 30%, transparent 50%)", padding: "48px 16px 16px" }}>
-                        <h3 style={{ fontFamily: DISPLAY, fontWeight: 900, fontSize: 22, color: CREAM, textTransform: "uppercase", lineHeight: 0.9, marginBottom: 6 }}>
+                      <div className="absolute bottom-0 left-0 right-0" style={{ background: "linear-gradient(to top, #0A0A0A 0%, rgba(10,10,10,0.92) 35%, rgba(10,10,10,0.6) 55%, transparent 75%)", padding: "64px 16px 16px" }}>
+                        <h3 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: 24, color: "#fff", textTransform: "uppercase", lineHeight: 0.9, marginBottom: 8 }}>
                           {player.full_name}
                         </h3>
-                        <div style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, display: "flex", flexWrap: "wrap", gap: "4px 12px" }}>
+                        <div style={{ fontFamily: MONO, fontSize: 10, color: "#fff", display: "flex", flexWrap: "wrap", gap: "4px 6px" }}>
                           {player.age && <span>{player.age} anos</span>}
-                          <span>{player.nationality}</span>
-                          {player.current_club && <span style={{ color: "rgba(242,237,228,0.25)" }}>{player.current_club}</span>}
+                          <span>· {player.nationality}</span>
+                          {player.current_club && <span>· {player.current_club}</span>}
                         </div>
                         {/* Ver perfil link aligned left with name */}
                         <span className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 13, color: CREAM, textTransform: "uppercase", borderBottom: `1px solid ${RED}`, paddingBottom: 2, gap: 8, marginTop: 10, width: "fit-content" }}>
