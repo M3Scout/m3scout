@@ -1,51 +1,42 @@
 import { Link, useLocation } from "react-router-dom";
 import { Home, Users, Radio, Target } from "lucide-react";
+import { motion } from "framer-motion";
+import "./MobileBottomNav.css";
 
 const items = [
-  { to: "/app", label: "INÍCIO", Icon: Home, match: (p: string) => p === "/app" || p === "/app/" },
-  { to: "/app/athletes", label: "ATLETAS", Icon: Users, match: (p: string) => p.startsWith("/app/athletes") || p.startsWith("/app/players") },
-  { to: "/app/live-match", label: "AO VIVO", Icon: Radio, match: (p: string) => p.startsWith("/app/live-match") },
-  { to: "/app/market/targets", label: "METAS", Icon: Target, match: (p: string) => p.startsWith("/app/market") },
+  { to: "/app", label: "Início", Icon: Home, match: (p: string) => p === "/app" || p === "/app/" },
+  { to: "/app/athletes", label: "Atletas", Icon: Users, match: (p: string) => p.startsWith("/app/athletes") || p.startsWith("/app/players") },
+  { to: "/app/live-match", label: "Ao Vivo", Icon: Radio, match: (p: string) => p.startsWith("/app/live-match") },
+  { to: "/app/market/targets", label: "Metas", Icon: Target, match: (p: string) => p.startsWith("/app/market") },
 ];
 
 export function AppBottomNav() {
   const location = useLocation();
+  const activeIdx = items.findIndex((i) => i.match(location.pathname));
 
   return (
-    <nav
-      className="fixed left-0 right-0 bottom-0 z-50 md:hidden"
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-      aria-label="Navegação rápida"
-    >
-      <div
-        className="flex items-stretch justify-around"
-        style={{
-          background: "#111111",
-          borderTop: "1px solid rgba(255,255,255,0.07)",
-        }}
-      >
-        {items.map((item) => {
-          const isActive = item.match(location.pathname);
+    <nav className="m3-bottom-nav" aria-label="Navegação rápida">
+      <div className="m3-bottom-nav__inner">
+        {items.map((item, idx) => {
+          const isActive = idx === activeIdx;
           const { Icon } = item;
           return (
             <Link
               key={item.to}
               to={item.to}
-              className="flex flex-col items-center justify-center gap-1 flex-1 py-2.5 transition-colors duration-200"
-              style={{ color: isActive ? "#E5173F" : "rgba(255,255,255,0.45)" }}
+              className={`m3-bottom-nav__item ${isActive ? "is-active" : ""}`}
               aria-current={isActive ? "page" : undefined}
             >
-              <Icon size={20} strokeWidth={isActive ? 2.2 : 1.8} />
-              <span
-                style={{
-                  fontFamily: "'JetBrains Mono', ui-monospace, SFMono-Regular, monospace",
-                  fontSize: "9px",
-                  fontWeight: 600,
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                }}
-              >
-                {item.label}
+              {isActive && (
+                <motion.span
+                  layoutId="app-bottom-nav-pill"
+                  className="m3-bottom-nav__pill"
+                  transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                />
+              )}
+              <span className="m3-bottom-nav__content">
+                <Icon size={18} strokeWidth={2} />
+                {isActive && <span className="m3-bottom-nav__label">{item.label}</span>}
               </span>
             </Link>
           );
