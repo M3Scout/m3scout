@@ -519,7 +519,7 @@ const Players = () => {
             <span style={{ fontFamily: MONO, fontSize: 9, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.12em", display: "block", marginBottom: 24 }}>
               // DADOS PRONTOS PARA DECISÃO
             </span>
-            <div>
+            <div style={{ borderBottom: `1px solid ${BORDER_DARK}` }}>
               {safeArray(paginatedPlayers).map((player) => {
                 const href = `/players/${player.slug}`;
                 const imgUrl = getOptimizedImageUrl(player.photo_url, { width: 160, quality: 75 }) || "/placeholder.svg";
@@ -530,90 +530,106 @@ const Players = () => {
                 const rating = stats?.averageRating;
 
                 return (
-                  <Link key={player.id} to={href} className="group block" style={{ borderBottom: `1px solid ${BORDER_DARK}` }}>
-                    <div className="flex items-start transition-colors duration-200" style={{ minHeight: 72 }}
+                  <Link key={player.id} to={href} className="group block">
+                    {/* Outer row with accent bar */}
+                    <div style={{ display: "flex", borderTop: `1px solid ${BORDER_DARK}` }}
                       onMouseOver={(e) => { (e.currentTarget as HTMLDivElement).style.backgroundColor = "rgba(255,255,255,0.02)"; }}
                       onMouseOut={(e) => { (e.currentTarget as HTMLDivElement).style.backgroundColor = "transparent"; }}
                     >
                       {/* Left accent bar */}
                       <div style={{ width: 4, backgroundColor: dotColor, flexShrink: 0 }} />
 
-                      {/* Col 1: Photo */}
-                      <div style={{ width: 72, height: 72, flexShrink: 0, borderRadius: 0, overflow: "hidden", alignSelf: "flex-start" }}>
-                        <img
-                          src={imgUrl}
-                          alt={player.full_name}
-                          loading="lazy"
-                          className="w-full h-full object-cover"
-                          style={{ filter: "grayscale(15%)", borderRadius: 0 }}
-                        />
-                      </div>
+                      {/* 3-column CSS Grid */}
+                      <div style={{ display: "grid", gridTemplateColumns: "280px 1fr 180px", flex: 1, minHeight: 120 }}>
 
-                      {/* Col 2: Name/Info */}
-                      <div className="flex flex-col justify-start" style={{ width: 220, flexShrink: 0, padding: "12px 16px" }}>
-                        <h3 style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 15, color: CREAM, textTransform: "uppercase", lineHeight: 1.2, marginBottom: 2 }}>
-                          {player.full_name}
-                        </h3>
-                        <div style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, display: "flex", flexWrap: "wrap", gap: "2px 8px" }}>
-                          {player.age && <span>{player.age} anos</span>}
-                          <span>{player.nationality}</span>
-                        </div>
-                        {player.current_club && (
-                          <span style={{ fontFamily: MONO, fontSize: 10, color: "rgba(242,237,228,0.22)", marginTop: 1 }}>{player.current_club}</span>
-                        )}
-                      </div>
-
-                      {/* Col 3: Data */}
-                      <div className="flex-1 flex items-start gap-4 flex-wrap" style={{ padding: "12px 16px" }}>
-                        {/* Tags */}
-                        <div className="flex items-center gap-2 flex-wrap" style={{ paddingTop: 4 }}>
-                          <span className="flex items-center gap-1" style={{ fontFamily: MONO, fontSize: 9, color: dotColor, border: `1px solid ${dotColor}33`, padding: "3px 8px", textTransform: "uppercase" }}>
-                            <div style={{ width: 5, height: 5, borderRadius: "50%", backgroundColor: dotColor }} />
-                            {shortPos}
-                          </span>
-                          <span style={{ fontFamily: MONO, fontSize: 9, color: physical.color, border: `1px solid ${physical.color}4D`, padding: "3px 8px", textTransform: "uppercase" }}>
-                            Físico: {physical.label}
-                          </span>
-                          {player.play_style && (
-                            <span style={{ fontFamily: MONO, fontSize: 9, color: WHITE_MUTED, border: `1px solid ${BORDER_DARK}`, padding: "3px 8px", textTransform: "uppercase" }}>
-                              {player.play_style}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Stats */}
-                        <div className="flex items-center gap-4">
-                          <div>
-                            <span style={{ fontFamily: MONO, fontSize: 8, color: WHITE_MUTED, opacity: 0.25, textTransform: "uppercase", display: "block" }}>Nota</span>
-                            <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 16, color: CREAM }}>{rating != null ? rating.toFixed(1) : "—"}</span>
+                        {/* ── COL 1: Photo + Identity ── */}
+                        <div style={{ display: "flex", padding: "12px 16px", borderRight: `1px solid ${BORDER_DARK}`, gap: 12 }}>
+                          {/* Photo */}
+                          <div style={{ width: 80, height: 100, flexShrink: 0, overflow: "hidden" }}>
+                            <img src={imgUrl} alt={player.full_name} loading="lazy" className="w-full h-full object-cover" style={{ filter: "grayscale(15%)" }} />
                           </div>
-                          <div>
-                            <span style={{ fontFamily: MONO, fontSize: 8, color: WHITE_MUTED, opacity: 0.25, textTransform: "uppercase", display: "block" }}>Jogos</span>
-                            <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 16, color: CREAM }}>{stats?.matches ?? 0}</span>
-                          </div>
-                          <div>
-                            <span style={{ fontFamily: MONO, fontSize: 8, color: WHITE_MUTED, opacity: 0.25, textTransform: "uppercase", display: "block" }}>Min</span>
-                            <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 16, color: CREAM }}>{formatMinutesK(stats?.minutes)}</span>
-                          </div>
-                          {player.play_style && (
-                            <div>
-                              <span style={{ fontFamily: MONO, fontSize: 8, color: WHITE_MUTED, opacity: 0.25, textTransform: "uppercase", display: "block" }}>Estilo</span>
-                              <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 14, color: CREAM }}>{player.play_style}</span>
+                          {/* Name block */}
+                          <div className="flex flex-col justify-start" style={{ minWidth: 0 }}>
+                            <h3 style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 15, color: CREAM, textTransform: "uppercase", lineHeight: 1.15, marginBottom: 4 }}>
+                              {player.full_name}
+                            </h3>
+                            <div style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, display: "flex", flexWrap: "wrap", gap: "2px 8px" }}>
+                              {player.age && <span>{player.age} anos</span>}
+                              <span>· {player.nationality}</span>
                             </div>
-                          )}
+                            {player.current_club && (
+                              <span style={{ fontFamily: MONO, fontSize: 10, color: "rgba(242,237,228,0.22)", marginTop: 2 }}>{player.current_club}</span>
+                            )}
+                          </div>
                         </div>
-                      </div>
 
-                      {/* Col 4: CTA */}
-                      <div className="flex items-start" style={{ padding: "14px 24px 8px 16px", flexShrink: 0, marginLeft: "auto" }}>
-                        <span
-                          className="flex items-center transition-all duration-200"
-                          style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 13, color: CREAM, textTransform: "uppercase", borderBottom: `1px solid ${BORDER_DARK}`, paddingBottom: 2, gap: 8 }}
-                          onMouseOver={(e) => { (e.currentTarget as HTMLSpanElement).style.borderColor = RED; (e.currentTarget as HTMLSpanElement).style.gap = "14px"; }}
-                          onMouseOut={(e) => { (e.currentTarget as HTMLSpanElement).style.borderColor = BORDER_DARK; (e.currentTarget as HTMLSpanElement).style.gap = "8px"; }}
-                        >
-                          VER PERFIL <ArrowRight style={{ width: 14, height: 14, color: RED }} />
-                        </span>
+                        {/* ── COL 2: Technical Info (stacked rows) ── */}
+                        <div style={{ display: "flex", flexDirection: "column", borderRight: `1px solid ${BORDER_DARK}` }}>
+                          {/* Row 1: Tags */}
+                          <div className="flex items-center gap-2 flex-wrap" style={{ padding: "10px 16px", borderBottom: `1px solid ${BORDER_DARK}` }}>
+                            <span style={{ fontFamily: MONO, fontSize: 9, color: dotColor, border: `1px solid ${dotColor}4D`, padding: "3px 8px", textTransform: "uppercase" }}>
+                              {shortPos}
+                            </span>
+                            {player.dominant_foot && (
+                              <span style={{ fontFamily: MONO, fontSize: 9, color: WHITE_MUTED, border: `1px solid ${BORDER_DARK}`, padding: "3px 8px", textTransform: "uppercase" }}>
+                                Pé: {player.dominant_foot === "right" ? "Direito" : player.dominant_foot === "left" ? "Esquerdo" : player.dominant_foot}
+                              </span>
+                            )}
+                            {player.height && (
+                              <span style={{ fontFamily: MONO, fontSize: 9, color: WHITE_MUTED, border: `1px solid ${BORDER_DARK}`, padding: "3px 8px", textTransform: "uppercase" }}>
+                                {(player.height / 100).toFixed(2).replace(".", ",")}M
+                              </span>
+                            )}
+                            <span style={{ fontFamily: MONO, fontSize: 9, color: physical.color, border: `1px solid ${physical.color}4D`, padding: "3px 8px", textTransform: "uppercase" }}>
+                              Físico: {physical.label}
+                            </span>
+                          </div>
+
+                          {/* Row 2: Stats */}
+                          <div className="flex items-end gap-6" style={{ padding: "8px 16px", borderBottom: `1px solid ${BORDER_DARK}` }}>
+                            <div>
+                              <span style={{ fontFamily: MONO, fontSize: 8, color: WHITE_MUTED, opacity: 0.25, textTransform: "uppercase", display: "block" }}>Nota</span>
+                              <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 16, color: CREAM }}>{rating != null ? rating.toFixed(1) : "—"}</span>
+                            </div>
+                            <div>
+                              <span style={{ fontFamily: MONO, fontSize: 8, color: WHITE_MUTED, opacity: 0.25, textTransform: "uppercase", display: "block" }}>Jogos</span>
+                              <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 16, color: CREAM }}>{stats?.matches ?? 0}</span>
+                            </div>
+                            <div>
+                              <span style={{ fontFamily: MONO, fontSize: 8, color: WHITE_MUTED, opacity: 0.25, textTransform: "uppercase", display: "block" }}>Min.</span>
+                              <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 16, color: CREAM }}>{formatMinutesK(stats?.minutes)}</span>
+                            </div>
+                            {player.play_style && (
+                              <div>
+                                <span style={{ fontFamily: MONO, fontSize: 8, color: WHITE_MUTED, opacity: 0.25, textTransform: "uppercase", display: "block" }}>Estilo</span>
+                                <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 14, color: CREAM }}>{player.play_style}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Row 3: Competition / Report line */}
+                          <div style={{ padding: "6px 16px", flex: 1, display: "flex", alignItems: "center" }}>
+                            <span style={{ fontFamily: MONO, fontSize: 9, color: "rgba(242,237,228,0.3)" }}>
+                              {[
+                                player.nationality,
+                                player.competition_name ? `— ${player.competition_name}` : null,
+                                player.last_report_date ? `· Rel: ${player.last_report_date}` : null,
+                              ].filter(Boolean).join(" ")}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* ── COL 3: CTA ── */}
+                        <div className="flex items-center justify-center" style={{ padding: "12px 24px" }}>
+                          <span
+                            className="flex items-center transition-all duration-200"
+                            style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 13, color: CREAM, textTransform: "uppercase", borderBottom: `1px solid ${RED}`, paddingBottom: 2, gap: 8 }}
+                            onMouseOver={(e) => { (e.currentTarget as HTMLSpanElement).style.gap = "14px"; }}
+                            onMouseOut={(e) => { (e.currentTarget as HTMLSpanElement).style.gap = "8px"; }}
+                          >
+                            VER PERFIL <ArrowRight style={{ width: 14, height: 14, color: RED }} />
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </Link>
