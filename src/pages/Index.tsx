@@ -1,32 +1,23 @@
-import { useEffect } from "react";
+import { lazy, Suspense } from "react";
 import { LandingHero } from "@/components/home/LandingHero";
 import { AthletesHorizontal } from "@/components/home/AthletesHorizontal";
 
-import { AboutSection } from "@/components/home/AboutSection";
-import { FeedAndCta } from "@/components/home/FeedAndCta";
-
-import { ParallaxTransition } from "@/components/home/ParallaxTransition";
+// Below-the-fold: lazy load to reduce initial JS payload
+const AboutSection = lazy(() => import("@/components/home/AboutSection").then(m => ({ default: m.AboutSection })));
+const FeedAndCta = lazy(() => import("@/components/home/FeedAndCta").then(m => ({ default: m.FeedAndCta })));
+const ParallaxTransition = lazy(() => import("@/components/home/ParallaxTransition").then(m => ({ default: m.ParallaxTransition })));
 
 const Index = () => {
-  useEffect(() => {
-    if (import.meta.env.DEV) {
-      const appStart = (window as any).__APP_MOUNT_START ?? performance.now();
-      console.log("[TIMING] Index page mounted", {
-        sinceAppMount: `${Math.round(performance.now() - appStart)}ms`
-      });
-    }
-  }, []);
-
-  if (import.meta.env.DEV) console.log("[MOUNT] Index (Home/Landing)");
-
   return (
     <>
       <LandingHero />
       <AthletesHorizontal />
-      <ParallaxTransition>
-        <AboutSection />
-      </ParallaxTransition>
-      <FeedAndCta />
+      <Suspense fallback={<div style={{ minHeight: "100vh" }} />}>
+        <ParallaxTransition>
+          <AboutSection />
+        </ParallaxTransition>
+        <FeedAndCta />
+      </Suspense>
     </>
   );
 };
