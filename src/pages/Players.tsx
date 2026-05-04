@@ -540,12 +540,12 @@ const Players = () => {
                       <div style={{ width: 4, backgroundColor: dotColor, flexShrink: 0 }} />
 
                       {/* 3-column CSS Grid */}
-                      <div style={{ display: "grid", gridTemplateColumns: "280px 1fr 180px", flex: 1, minHeight: 120 }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "280px 1fr 180px", flex: 1 }}>
 
                         {/* ── COL 1: Photo + Identity ── */}
-                        <div style={{ display: "flex", padding: "12px 16px", borderRight: `1px solid ${BORDER_DARK}`, gap: 12 }}>
+                        <div style={{ display: "flex", padding: "10px 16px", borderRight: `1px solid ${BORDER_DARK}`, gap: 12 }}>
                           {/* Photo */}
-                          <div style={{ width: 80, height: 100, flexShrink: 0, overflow: "hidden" }}>
+                          <div style={{ width: 80, height: 90, flexShrink: 0, overflow: "hidden" }}>
                             <img src={imgUrl} alt={player.full_name} loading="lazy" className="w-full h-full object-cover" style={{ filter: "grayscale(15%)" }} />
                           </div>
                           {/* Name block */}
@@ -566,7 +566,7 @@ const Players = () => {
                         {/* ── COL 2: Technical Info (stacked rows) ── */}
                         <div style={{ display: "flex", flexDirection: "column", borderRight: `1px solid ${BORDER_DARK}` }}>
                           {/* Row 1: Tags */}
-                          <div className="flex items-center gap-2 flex-wrap" style={{ padding: "10px 16px 4px" }}>
+                          <div className="flex items-center gap-2 flex-wrap" style={{ padding: "10px 16px 2px" }}>
                             <span style={{ fontFamily: MONO, fontSize: 9, color: dotColor, border: `1px solid ${dotColor}4D`, padding: "3px 8px", textTransform: "uppercase" }}>
                               {shortPos}
                             </span>
@@ -586,7 +586,7 @@ const Players = () => {
                           </div>
 
                           {/* Row 2: Stats */}
-                          <div className="flex items-end gap-6" style={{ padding: "4px 16px" }}>
+                          <div className="flex items-end gap-6" style={{ padding: "2px 16px 10px" }}>
                             <div>
                               <span style={{ fontFamily: MONO, fontSize: 9, color: WHITE_MUTED, opacity: 0.45, textTransform: "uppercase", display: "block", marginBottom: 2 }}>Nota</span>
                               <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 16, color: CREAM }}>{rating != null ? rating.toFixed(1) : "—"}</span>
