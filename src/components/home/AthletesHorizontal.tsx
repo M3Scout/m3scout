@@ -194,7 +194,7 @@ export function AthletesHorizontal() {
                       sizes={ATHLETE_CARD_SIZES}
                       alt={p.full_name}
                       className="athlete-h-card__media"
-                      loading="lazy"
+                      loading={idx < 2 ? "eager" : "lazy"}
                       decoding="async"
                       width={400}
                       height={500}
