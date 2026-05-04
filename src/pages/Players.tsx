@@ -352,7 +352,7 @@ const Players = () => {
           {/* Position Filter */}
           <div style={{ backgroundColor: BLACK }}>
             <Select value={positionFilter} onValueChange={setPositionFilter}>
-              <SelectTrigger className="w-full h-full border-0 focus:ring-0 rounded-none" style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.1em", background: "transparent", padding: "0 16px", borderRadius: 0 }}>
+              <SelectTrigger className="w-full h-full border-0 focus:ring-0 rounded-none" style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.2em", background: "transparent", padding: "0 16px", borderRadius: 0 }}>
                 <div className="flex items-center justify-between w-full">
                   <span>Posição</span>
                   <span style={{ fontSize: 14 }}>↓</span>
