@@ -326,7 +326,7 @@ const Players = () => {
       </section>
 
       {/* ━━━ S2 — TOOLBAR (Sticky) ━━━ */}
-      <section className="sticky top-0 z-40" style={{ backgroundColor: BLACK, padding: "0 64px 16px", borderBottom: `1px solid ${BORDER_DARK}` }}>
+      <section className="sticky top-0 z-40" style={{ backgroundColor: BLACK, padding: "36px 64px 16px", borderBottom: `1px solid ${BORDER_DARK}` }}>
         {/* Top Row — grid with 1px border lines */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 160px 160px", gap: 0, border: `1px solid ${BORDER_DARK}` }}>
           {/* Search */}
