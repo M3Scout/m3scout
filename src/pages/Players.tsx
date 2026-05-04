@@ -607,11 +607,11 @@ const Players = () => {
                       <div className="flex items-center" style={{ padding: "8px 24px 8px 16px", flexShrink: 0 }}>
                         <span
                           className="flex items-center transition-all duration-200"
-                          style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 13, color: CREAM, borderBottom: `1px solid ${BORDER_DARK}`, paddingBottom: 2, gap: 8 }}
+                          style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 13, color: CREAM, textTransform: "uppercase", borderBottom: `1px solid ${BORDER_DARK}`, paddingBottom: 2, gap: 8 }}
                           onMouseOver={(e) => { (e.currentTarget as HTMLSpanElement).style.borderColor = RED; (e.currentTarget as HTMLSpanElement).style.gap = "14px"; }}
                           onMouseOut={(e) => { (e.currentTarget as HTMLSpanElement).style.borderColor = BORDER_DARK; (e.currentTarget as HTMLSpanElement).style.gap = "8px"; }}
                         >
-                          Ver perfil <ArrowRight style={{ width: 14, height: 14 }} />
+                          VER PERFIL <ArrowRight style={{ width: 14, height: 14, color: RED }} />
                         </span>
                       </div>
                     </div>
