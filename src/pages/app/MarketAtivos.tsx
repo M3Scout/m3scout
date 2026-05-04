@@ -227,16 +227,8 @@ export default function MarketAtivos() {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-[#e63946]" />
-            Mercado → Ativos M3
-          </h1>
-          <p className="text-xs text-zinc-500 mt-1 uppercase tracking-wide">
-            Ranking interno dos atletas por Market Score
-          </p>
-        </div>
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="m3-page-title">ATIVOS</h1>
         <Button variant="outline" size="sm" onClick={() => refetch()} className="rounded-full">
           <RefreshCw className="w-4 h-4 mr-2" />
           Atualizar

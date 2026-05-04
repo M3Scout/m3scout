@@ -156,7 +156,7 @@ export default function Leads() {
       {/* Header */}
       <header className="admin-header animate-fade-in">
         <div>
-          <h1 className="admin-title">Leads</h1>
+          <h1 className="m3-page-title">LEADS</h1>
           <p className="admin-subtitle">Contatos recebidos pelo formulário público</p>
         </div>
       </header>

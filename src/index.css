@@ -951,6 +951,23 @@ p, span, h1, h2, h3, h4, h5, h6, a, li {
   }
 }
 
+/* ========== EDITORIAL PAGE TITLE (Global) ========== */
+.m3-page-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  font-size: 48px;
+  text-transform: uppercase;
+  line-height: 0.88;
+  color: #fff;
+  letter-spacing: -0.01em;
+  word-break: normal;
+  overflow-wrap: normal;
+  white-space: nowrap;
+}
+@media (max-width: 639px) {
+  .m3-page-title { font-size: 36px; }
+}
+
 /* ========== SIDEBAR HEIGHT-BASED RESPONSIVENESS ========== */
 /* For short height screens (notebooks), reduce spacing in sidebar */
 @media screen and (max-height: 750px) {

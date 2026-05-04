@@ -531,13 +531,7 @@ const Competitions = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3">
-            <Trophy className="w-8 h-8 text-primary" />
-            Competições
-          </h1>
-          <p className="text-muted-foreground">
-            Gerencie competições e seus coeficientes
-          </p>
+          <h1 className="m3-page-title">COMPETIÇÕES</h1>
         </div>
         <div className="flex gap-2 flex-wrap">
           <span className="hidden md:inline-flex">

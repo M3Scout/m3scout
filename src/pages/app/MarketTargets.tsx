@@ -192,18 +192,7 @@ export default function MarketTargets() {
         marginBottom: 20,
         borderBottom: BORDER,
       }}>
-        <div style={{
-          fontFamily: CONDENSED,
-          fontWeight: 900,
-          fontSize: 52,
-          textTransform: "uppercase",
-          lineHeight: 0.88,
-          color: "#fff",
-          letterSpacing: "-0.01em",
-        }}>
-          <div>FUNIL</div>
-          <div>DE TARGETS</div>
-        </div>
+        <h1 className="m3-page-title">METAS</h1>
 
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 16 }}>
           <div style={{
