@@ -5,10 +5,10 @@ import "./MobileBottomNav.css";
 
 const items = [
   { to: "/app", label: "Início", Icon: Home, match: (p: string) => p === "/app" || p === "/app/" },
-  { to: "/app/athletes", label: "Atletas", Icon: Users, match: (p: string) => p.startsWith("/app/athletes") || p.startsWith("/app/players") },
-  { to: "/app/scouting", label: "Relatórios", Icon: ClipboardList, match: (p: string) => p.startsWith("/app/scouting") },
+  { to: "/app/players", label: "Atletas", Icon: Users, match: (p: string) => p.startsWith("/app/players") },
+  { to: "/app/reports", label: "Relatórios", Icon: ClipboardList, match: (p: string) => p.startsWith("/app/reports") || p.startsWith("/app/scouting") },
   { to: "/app/live-match", label: "Ao Vivo", Icon: Radio, match: (p: string) => p.startsWith("/app/live-match") },
-  { to: "/app/market/targets", label: "Metas", Icon: Target, match: (p: string) => p.startsWith("/app/market") },
+  { to: "/app/goals-monitor", label: "Metas", Icon: Target, match: (p: string) => p.startsWith("/app/goals") },
 ];
 
 export function AppBottomNav() {
