@@ -548,6 +548,9 @@ export function AppSidebar() {
           )}
         </div>
       </aside>
+
+      {/* ===== MOBILE BOTTOM NAV (< 768px) ===== */}
+      <MobileBottomNav currentPath={currentPath} can={can} isPlayerRole={isPlayerRole} />
     </>
   );
 }
