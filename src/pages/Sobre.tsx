@@ -1,234 +1,193 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { motion, useInView } from "framer-motion";
+
+const RED = "#E5173F";
+const CREAM = "#F2EDE4";
+const BLACK = "#0A0A0A";
+const WHITE_MUTED = "rgba(242,237,228,0.42)";
+const CREAM_MUTED = "rgba(15,15,15,0.42)";
+const BC = "'Barlow Condensed', sans-serif";
+const B = "'Barlow', sans-serif";
+
+const services = [
+  { number: "01", title: "Gestão de Carreira", description: "Planejamento profissional, contratos e decisões de longo prazo." },
+  { number: "02", title: "Scouting & Performance", description: "Análise técnica, dados, relatórios e acompanhamento contínuo." },
+  { number: "03", title: "Conexão com o Mercado", description: "Relação direta com clubes, projetos e estruturas profissionais." },
+];
 
 const Sobre = () => {
   const [activeService, setActiveService] = useState<number | null>(null);
-  const conceptRef = useRef<HTMLDivElement>(null);
-  const servicesRef = useRef<HTMLDivElement>(null);
-  const manifestoRef = useRef<HTMLDivElement>(null);
-  
-  const conceptInView = useInView(conceptRef, { once: true, margin: "-80px" });
-  const servicesInView = useInView(servicesRef, { once: true, margin: "-80px" });
-  const manifestoInView = useInView(manifestoRef, { once: true, margin: "-80px" });
 
-  // Fix scroll bug - always start at top
   useEffect(() => {
     window.scrollTo(0, 0);
-    if ('scrollRestoration' in history) {
-      history.scrollRestoration = 'manual';
+    if ("scrollRestoration" in history) {
+      history.scrollRestoration = "manual";
     }
   }, []);
 
-  const services = [
-    {
-      number: "01",
-      title: "Gestão de Carreira",
-      description: "Planejamento profissional, contratos e decisões de longo prazo."
-    },
-    {
-      number: "02",
-      title: "Scouting & Performance",
-      description: "Análise técnica, dados, relatórios e acompanhamento contínuo."
-    },
-    {
-      number: "03",
-      title: "Conexão com o Mercado",
-      description: "Relação direta com clubes, projetos e estruturas profissionais."
-    }
-  ];
+  const gutter = "var(--page-gutter, 24px)";
+  const maxW = "var(--page-max-width, 1200px)";
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-base)', fontFamily: "'Poppins', sans-serif" }}>
-      
-      {/* HERO SECTION - Compact Premium */}
-      <section className="relative min-h-[70vh] w-full flex items-center">
-        {/* Subtle grain texture */}
-        <div 
-          className="absolute inset-0 opacity-[0.02] pointer-events-none"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
-          }}
-        />
+    <div style={{ fontFamily: B, backgroundColor: BLACK }}>
 
-        <div className="relative z-10 w-full">
-          <div className="w-full mx-auto py-20 md:py-28" style={{ maxWidth: 'var(--page-max-width)', paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
-            <div className="max-w-3xl">
-              
-              {/* M3 Agency Title */}
-              <motion.h1 
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
-                className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white mb-4"
-              >
-                <span className="text-[#e52421]">M3</span> Agency
-              </motion.h1>
+      {/* S1 HERO */}
+      <section style={{ backgroundColor: BLACK, padding: `80px ${gutter}` }}>
+        <div style={{ maxWidth: maxW, margin: "0 auto" }}>
 
-              {/* Subtitle */}
-              <motion.p 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, delay: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
-                className="text-base sm:text-lg md:text-xl text-neutral-400 font-light mb-8 leading-relaxed"
-              >
-                Scouting, estratégia e decisões de carreira no futebol profissional.
-              </motion.p>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 56 }}>
+            <span style={{ fontFamily: BC, fontWeight: 700, fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: WHITE_MUTED }}>
+              M3 AGENCY
+            </span>
+            <span style={{ fontFamily: BC, fontWeight: 700, fontSize: 11, letterSpacing: "0.2em", color: WHITE_MUTED }}>
+              — 01
+            </span>
+          </div>
 
-              {/* Editorial Headline */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, delay: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
-                className="mb-8"
-              >
-                <p className="text-xl sm:text-2xl md:text-3xl text-white font-medium leading-[1.35]">
-                  Transformamos talento em direção.
-                  <br />
-                  <span className="text-neutral-500 font-light">Criamos caminhos reais no futebol de elite.</span>
+          <h1 style={{
+            fontFamily: BC,
+            fontWeight: 900,
+            fontSize: "clamp(58px, 11vw, 152px)",
+            lineHeight: 0.88,
+            textTransform: "uppercase",
+            color: CREAM,
+            letterSpacing: "-0.02em",
+            margin: "0 0 48px 0",
+            wordBreak: "normal",
+            overflowWrap: "normal",
+            whiteSpace: "normal",
+          }}>
+            UMA NOVA<br />
+            FORMA DE<br />
+            <span style={{ fontFamily: BC, fontWeight: 300, fontStyle: "italic", textTransform: "lowercase", color: RED }}>pensar</span>{" "}A<br />
+            CARREIRA.
+          </h1>
+
+          <p style={{ fontFamily: B, fontWeight: 300, fontSize: 18, lineHeight: 1.7, color: WHITE_MUTED, maxWidth: 480, marginBottom: 40 }}>
+            A M3 Agency é uma gestora de carreiras no futebol profissional. Operamos com dados, contexto e visão de mercado para posicionar atletas onde o talento encontra oportunidade real.
+          </p>
+
+          <Link to="/contato" style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 14,
+            fontFamily: BC,
+            fontWeight: 700,
+            fontSize: 12,
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+            color: CREAM,
+            textDecoration: "none",
+          }}>
+            <span style={{ display: "inline-block", width: 40, height: 1, backgroundColor: RED, flexShrink: 0 }} />
+            FALAR COM A M3
+          </Link>
+        </div>
+      </section>
+
+      {/* S2 MISSÃO */}
+      <section style={{ backgroundColor: CREAM, padding: `80px ${gutter}` }}>
+        <div style={{ maxWidth: maxW, margin: "0 auto" }}>
+          <p style={{ fontFamily: BC, fontWeight: 700, fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: CREAM_MUTED, marginBottom: 40 }}>
+            <span style={{ color: RED }}>// </span>NOSSA MISSÃO
+          </p>
+
+          <h2 style={{
+            fontFamily: BC,
+            fontWeight: 900,
+            fontSize: "clamp(38px, 7vw, 108px)",
+            lineHeight: 0.9,
+            textTransform: "uppercase",
+            color: BLACK,
+            letterSpacing: "-0.02em",
+            margin: 0,
+            wordBreak: "normal",
+            overflowWrap: "normal",
+          }}>
+            A M3 ATUA ONDE<br />
+            TALENTO ENCONTRA<br />
+            <span style={{ fontFamily: BC, fontWeight: 300, fontStyle: "italic", textTransform: "lowercase", color: RED }}>decisão.</span>
+          </h2>
+        </div>
+      </section>
+
+      {/* S3 SERVIÇOS */}
+      <section style={{ backgroundColor: CREAM, padding: `0 ${gutter} 80px` }}>
+        <div style={{ maxWidth: maxW, margin: "0 auto" }}>
+          {services.map((service, index) => (
+            <div
+              key={service.number}
+              onMouseEnter={() => setActiveService(index)}
+              onMouseLeave={() => setActiveService(null)}
+              style={{
+                borderTop: `1px solid ${CREAM_MUTED}`,
+                backgroundColor: activeService === index ? "rgba(15,15,15,0.06)" : "transparent",
+                transition: "background-color 0.2s ease",
+                padding: "22px 0",
+              }}
+            >
+              <div className="grid grid-cols-[60px_1fr] sm:grid-cols-[80px_1fr_1fr] gap-x-4 sm:gap-x-6 items-baseline">
+                <span style={{ fontFamily: BC, fontWeight: 700, fontSize: 13, letterSpacing: "0.1em", color: activeService === index ? RED : CREAM_MUTED, transition: "color 0.2s ease" }}>
+                  {service.number}
+                </span>
+                <h3 style={{ fontFamily: BC, fontWeight: 800, fontSize: "clamp(18px, 2.5vw, 30px)", textTransform: "uppercase", color: BLACK, lineHeight: 1, margin: 0 }}>
+                  {service.title}
+                </h3>
+                <p className="hidden sm:block" style={{ fontFamily: B, fontWeight: 300, fontSize: 15, lineHeight: 1.6, color: CREAM_MUTED, margin: 0 }}>
+                  {service.description}
                 </p>
-              </motion.div>
-
-              {/* CTA Link */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.6, delay: 0.6 }}
-              >
-                <Link 
-                  to="/contato"
-                  className="inline-flex items-center gap-3 text-sm tracking-widest uppercase text-neutral-500 hover:text-white transition-colors duration-300 group"
-                >
-                  <span className="w-8 h-px bg-neutral-600 group-hover:w-12 group-hover:bg-[#e52421] transition-all duration-300" />
-                  Falar com a M3
-                </Link>
-              </motion.div>
+              </div>
+              <p className="sm:hidden" style={{ fontFamily: B, fontWeight: 300, fontSize: 14, lineHeight: 1.6, color: CREAM_MUTED, margin: "6px 0 0 0", paddingLeft: 60 }}>
+                {service.description}
+              </p>
             </div>
+          ))}
+          <div style={{ borderTop: `1px solid ${CREAM_MUTED}` }} />
+        </div>
+      </section>
+
+      {/* S4 QUOTE */}
+      <section style={{ backgroundColor: BLACK, padding: `80px ${gutter}` }}>
+        <div style={{ maxWidth: maxW, margin: "0 auto" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 56 }}>
+            <span style={{ display: "inline-block", width: 40, height: 2, backgroundColor: RED, flexShrink: 0 }} />
+            <span style={{ fontFamily: BC, fontWeight: 700, fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: WHITE_MUTED }}>
+              M3 AGENCY · CAMPO GRANDE · 2024
+            </span>
           </div>
+
+          <p style={{ fontFamily: BC, fontWeight: 300, fontSize: "clamp(22px, 4vw, 52px)", lineHeight: 1.15, color: WHITE_MUTED, marginBottom: 8 }}>
+            Talento sem direção é ruído.<br />
+            Direção sem estratégia é sorte.
+          </p>
+
+          <p style={{ fontFamily: BC, fontWeight: 800, fontSize: "clamp(22px, 4vw, 52px)", lineHeight: 1.15, color: CREAM, margin: 0 }}>
+            Nós trabalhamos com{" "}
+            <span style={{ color: RED }}>os dois.</span>
+          </p>
         </div>
       </section>
 
-      <section className="py-12 md:py-16 lg:py-20" style={{ backgroundColor: 'var(--bg-base)' }}>
-        <div className="w-full mx-auto" style={{ maxWidth: 'var(--page-max-width)', paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
-          <motion.div 
-            ref={conceptRef}
-            initial={{ opacity: 0, y: 30 }}
-            animate={conceptInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
-            className="max-w-2xl"
-          >
-            <p className="text-lg sm:text-xl md:text-2xl leading-[1.7]">
-              <span className="text-white font-semibold">A M3 Agency atua onde talento encontra decisão.</span>
-              <br /><br />
-              <span className="text-neutral-400 font-light">Mais do que representar atletas, operamos como um núcleo estratégico: análise, visão de mercado e construção de carreira com base em dados, contexto competitivo e leitura real do jogo.</span>
-            </p>
-          </motion.div>
+      {/* S5 DATA STRIP */}
+      <section style={{ backgroundColor: BLACK, borderTop: "1px solid rgba(242,237,228,0.1)", padding: `48px ${gutter}` }}>
+        <div style={{ maxWidth: maxW, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24 }}>
+          {[
+            { label: "Sede", value: "Campo Grande, MS" },
+            { label: "Atuação", value: "Brasil · América do Sul" },
+            { label: "Desde", value: "2020" },
+          ].map((item) => (
+            <div key={item.label}>
+              <p style={{ fontFamily: BC, fontWeight: 700, fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: WHITE_MUTED, margin: "0 0 8px 0" }}>
+                {item.label}
+              </p>
+              <p style={{ fontFamily: BC, fontWeight: 700, fontSize: "clamp(14px, 2vw, 22px)", textTransform: "uppercase", color: CREAM, lineHeight: 1, margin: 0 }}>
+                {item.value}
+              </p>
+            </div>
+          ))}
         </div>
       </section>
 
-      <section className="py-10 md:py-14 lg:py-16" style={{ backgroundColor: 'var(--bg-base-alt)' }}>
-        <div className="w-full mx-auto" style={{ maxWidth: 'var(--page-max-width)', paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
-          
-          {/* Section Label */}
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={servicesInView ? { opacity: 1 } : {}}
-            transition={{ duration: 0.5 }}
-            className="text-[10px] uppercase tracking-[0.25em] text-neutral-500 font-semibold mb-6 md:mb-8"
-          >
-            O que fazemos
-          </motion.p>
-
-          {/* Services List */}
-          <div ref={servicesRef}>
-            {services.map((service, index) => (
-              <motion.div
-                key={service.number}
-                initial={{ opacity: 0, y: 20 }}
-                animate={servicesInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="group border-t border-neutral-800/50 py-5 md:py-6 cursor-pointer"
-                onMouseEnter={() => setActiveService(index)}
-                onMouseLeave={() => setActiveService(null)}
-              >
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-6 items-baseline">
-                  
-                  {/* Number */}
-                  <div className="md:col-span-2">
-                    <span 
-                      className={`text-xl md:text-2xl font-bold transition-colors duration-300 ${
-                        activeService === index ? 'text-[#e52421]' : 'text-neutral-700'
-                      }`}
-                    >
-                      {service.number}
-                    </span>
-                  </div>
-                  
-                  {/* Title */}
-                  <div className="md:col-span-4">
-                    <h3 
-                      className={`text-lg md:text-xl font-semibold transition-colors duration-300 ${
-                        activeService === index ? 'text-white' : 'text-neutral-400'
-                      }`}
-                    >
-                      {service.title}
-                    </h3>
-                  </div>
-                  
-                  {/* Description */}
-                  <div className="md:col-span-6">
-                    <p 
-                      className={`text-sm md:text-base font-light leading-relaxed transition-colors duration-300 ${
-                        activeService === index ? 'text-neutral-300' : 'text-neutral-600'
-                      }`}
-                    >
-                      {service.description}
-                    </p>
-                  </div>
-                </div>
-                
-                {/* Hover accent line */}
-                <div 
-                  className={`mt-4 h-px transition-all duration-500 ${
-                    activeService === index 
-                      ? 'bg-gradient-to-r from-[#e52421]/60 via-[#e52421]/20 to-transparent' 
-                      : 'bg-transparent'
-                  }`} 
-                />
-              </motion.div>
-            ))}
-            
-            {/* Bottom border */}
-            <div className="border-t border-neutral-800/50" />
-          </div>
-        </div>
-      </section>
-
-      <section className="py-16 md:py-20 lg:py-24" style={{ backgroundColor: 'var(--bg-base)' }}>
-        <div className="w-full mx-auto" style={{ maxWidth: 'var(--page-max-width)', paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
-          <div 
-            ref={manifestoRef}
-            className="manifesto max-w-3xl mx-auto text-center flex flex-col gap-1 md:gap-2"
-          >
-            {[
-              { text: "Talento sem direção é ruído.", delay: 0, weight: "font-light" },
-              { text: "Direção sem estratégia é sorte.", delay: 0.15, weight: "font-light" },
-              { text: "Nós trabalhamos com os dois.", delay: 0.3, weight: "font-semibold" },
-            ].map((item, index) => (
-              <motion.p
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                animate={manifestoInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.6, delay: item.delay, ease: [0.25, 0.1, 0.25, 1] }}
-                className={`manifesto-item text-lg sm:text-xl md:text-2xl lg:text-3xl ${item.weight} leading-[1.4] text-neutral-500 transition-colors duration-[220ms] ease-out hover:text-white`}
-                style={{ fontFamily: "'Poppins', sans-serif" }}
-              >
-                {item.text}
-              </motion.p>
-            ))}
-          </div>
-        </div>
-      </section>
     </div>
   );
 };
