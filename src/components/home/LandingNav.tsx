@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Lock } from "lucide-react";
+
 import { useEffect, useState } from "react";
 import logoM3 from "@/assets/logo-m3.png";
 import "./LandingHero.css";

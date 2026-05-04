@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { Lock } from "lucide-react";
 import { useEffect, useRef, useState, useCallback } from "react";
 import "./LandingHero.css";
 
