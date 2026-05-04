@@ -18,7 +18,9 @@ export function PublicLayout() {
           </PageTransition>
         </AnimatePresence>
       </main>
-      <LandingFooter />
+      <div className="hidden lg:block">
+        <LandingFooter />
+      </div>
       <MobileBottomNav />
     </div>
   );
