@@ -120,16 +120,13 @@ const Contact = () => {
     }
   };
 
-  const gutter = "var(--page-gutter, 64px)";
-  const maxW = "var(--page-max-width, 1200px)";
+  const gutter = "clamp(20px, 4vw, 40px)";
+  const maxW = "1600px";
 
   if (isSubmitted) {
     return (
-      <div style={{ backgroundColor: BLACK, padding: `120px ${gutter}`, minHeight: "60vh", fontFamily: B }}>
+      <div style={{ backgroundColor: BLACK, padding: `clamp(120px, 18vh, 220px) ${gutter} 80px`, minHeight: "60vh", fontFamily: B }}>
         <div style={{ maxWidth: maxW, margin: "0 auto" }}>
-          <p style={{ fontFamily: JB, fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase", color: WHITE_MUTED, margin: "0 0 48px 0" }}>
-            — CONTATO
-          </p>
           <h1 style={{
             fontFamily: BC,
             fontWeight: 900,
@@ -176,17 +173,9 @@ const Contact = () => {
     <div style={{ backgroundColor: BLACK, fontFamily: B }}>
 
       {/* S1 HERO */}
-      <section style={{ backgroundColor: BLACK, padding: `72px ${gutter} 80px`, borderBottom: `1px solid ${BORDER_DARK}` }}>
+      <section style={{ backgroundColor: BLACK, padding: `clamp(120px, 18vh, 220px) ${gutter} 80px`, borderBottom: `1px solid ${BORDER_DARK}` }}>
         <div style={{ maxWidth: maxW, margin: "0 auto" }}>
 
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 48 }}>
-            <span style={{ fontFamily: JB, fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase", color: WHITE_MUTED }}>
-              — CONTATO
-            </span>
-            <span style={{ fontFamily: JB, fontSize: 10, letterSpacing: "0.15em", color: WHITE_MUTED, opacity: 0.5 }}>
-              · M3 AGENCY
-            </span>
-          </div>
 
           <h1 style={{
             fontFamily: BC,
