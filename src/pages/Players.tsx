@@ -538,7 +538,7 @@ const Players = () => {
                       <div style={{ width: 4, backgroundColor: dotColor, flexShrink: 0 }} />
 
                       {/* Col 1: Photo */}
-                      <div style={{ width: 72, height: 72, flexShrink: 0, borderRadius: 0, overflow: "hidden" }}>
+                      <div style={{ width: 72, height: 72, flexShrink: 0, borderRadius: 0, overflow: "hidden", alignSelf: "flex-start" }}>
                         <img
                           src={imgUrl}
                           alt={player.full_name}
