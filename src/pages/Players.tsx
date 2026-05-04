@@ -337,7 +337,7 @@ const Players = () => {
         {/* Top Row */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 160px 160px", gap: 1, background: BORDER_DARK }}>
           {/* Search */}
-          <div className="flex items-center gap-3" style={{ backgroundColor: BLACK, padding: "0 16px" }}>
+          <div className="flex items-center gap-3" style={{ backgroundColor: BLACK, padding: "0 20px" }}>
             <Search style={{ width: 16, height: 16, color: WHITE_MUTED, flexShrink: 0 }} />
             <input
               type="text"
