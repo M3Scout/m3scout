@@ -11,10 +11,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, ChevronLeft, ChevronRight, Search, ChevronDown, ArrowRight } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, Search, ArrowRight } from "lucide-react";
 import { safeArray } from "@/lib/utils";
-import { AnimatePresence } from "framer-motion";
-import { getPositionColor, getShortPosition } from "@/lib/positionColors";
+import { getShortPosition } from "@/lib/positionColors";
 
 /* ─── DESIGN TOKENS ─── */
 const RED = "#E5173F";
