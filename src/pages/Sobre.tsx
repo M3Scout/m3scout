@@ -25,8 +25,8 @@ const Sobre = () => {
     }
   }, []);
 
-  const gutter = "var(--page-gutter, 24px)";
-  const maxW = "var(--page-max-width, 1200px)";
+  const gutter = "40px";
+  const maxW = "1600px";
 
   return (
     <div style={{ fontFamily: B, backgroundColor: BLACK }}>
