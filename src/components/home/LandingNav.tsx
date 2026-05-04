@@ -7,7 +7,6 @@ import "./LandingHero.css";
 const navLinks = [
   { href: "/sobre", label: "Sobre" },
   { href: "/atletas", label: "Talentos" },
-  { href: "/representacao-de-talentos", label: "Clubes" },
   { href: "/imprensa", label: "Imprensa" },
   { href: "/contato", label: "Contato" },
 ];
