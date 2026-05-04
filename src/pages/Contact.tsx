@@ -125,11 +125,8 @@ const Contact = () => {
 
   if (isSubmitted) {
     return (
-      <div style={{ backgroundColor: BLACK, padding: `120px ${gutter}`, minHeight: "60vh", fontFamily: B }}>
+      <div style={{ backgroundColor: BLACK, padding: `clamp(120px, 18vh, 220px) ${gutter} 80px`, minHeight: "60vh", fontFamily: B }}>
         <div style={{ maxWidth: maxW, margin: "0 auto" }}>
-          <p style={{ fontFamily: JB, fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase", color: WHITE_MUTED, margin: "0 0 48px 0" }}>
-            — CONTATO
-          </p>
           <h1 style={{
             fontFamily: BC,
             fontWeight: 900,
