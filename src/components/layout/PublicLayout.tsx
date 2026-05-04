@@ -19,7 +19,7 @@ export function PublicLayout() {
         </AnimatePresence>
       </main>
       <LandingFooter />
-      <PublicMobileNav />
+      <MobileBottomNav />
     </div>
   );
 }
