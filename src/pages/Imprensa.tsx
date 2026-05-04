@@ -78,8 +78,8 @@ const Imprensa = () => {
   const featured = articles?.[0];
   const grid = articles?.slice(1, 6) ?? [];
 
-  const gutter = "var(--page-gutter, 64px)";
-  const maxW = "var(--page-max-width, 1200px)";
+  const gutter = "40px";
+  const maxW = "1600px";
 
   return (
     <div style={{ backgroundColor: BLACK, fontFamily: B }}>
