@@ -333,18 +333,19 @@ const Players = () => {
       </section>
 
       {/* ━━━ S2 — TOOLBAR (Sticky) ━━━ */}
-      <section className="sticky top-0 z-40" style={{ backgroundColor: BLACK, padding: "24px 64px", borderBottom: `1px solid ${BORDER_DARK}` }}>
+      <section className="sticky top-0 z-40" style={{ backgroundColor: BLACK, padding: "0 64px 16px", borderBottom: `1px solid ${BORDER_DARK}` }}>
         {/* Top Row */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 160px 160px", gap: 1, background: BORDER_DARK }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 160px 160px", gap: 1, background: "#1A1A1A" }}>
           {/* Search */}
           <div className="flex items-center gap-3" style={{ backgroundColor: BLACK, padding: "0 20px" }}>
-            <Search style={{ width: 13, height: 13, color: "rgba(242,237,228,0.3)", flexShrink: 0 }} />
+            <Search style={{ width: 12, height: 12, color: "rgba(242,237,228,0.2)", flexShrink: 0, strokeWidth: 1.5 }} />
             <input
               type="text"
               placeholder="Buscar atleta..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{ fontFamily: BODY, fontWeight: 300, fontSize: 14, color: CREAM, background: "transparent", border: "none", outline: "none", width: "100%", padding: "14px 0" }}
+              className="placeholder:text-[rgba(242,237,228,0.2)]"
             />
           </div>
 
