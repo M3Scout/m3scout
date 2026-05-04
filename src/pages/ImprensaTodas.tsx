@@ -94,7 +94,7 @@ const ImprensaTodas = () => {
   };
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-base)', fontFamily: "'Poppins', sans-serif" }}>
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-base)', fontFamily: "'Inter', sans-serif" }}>
       
       {/* Subtle grain texture */}
       <div 

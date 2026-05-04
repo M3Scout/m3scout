@@ -56,7 +56,7 @@ export function ControlBarPremium({
     <motion.div 
       className="flex flex-col lg:flex-row gap-3 p-2 rounded-[var(--radius-card)]"
       style={{ 
-        fontFamily: "'Poppins', sans-serif",
+        fontFamily: "'Inter', sans-serif",
         background: 'var(--bg-glass)',
         border: 'var(--border-glass)',
         backdropFilter: 'blur(8px)',
@@ -75,7 +75,7 @@ export function ControlBarPremium({
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           className="pl-11 h-[var(--tap-target)] bg-transparent border-0 text-white placeholder:text-neutral-500 rounded-[var(--radius-button)] focus-visible:ring-1 focus-visible:ring-white/10 transition-all duration-200"
-          style={{ fontFamily: "'Poppins', sans-serif" }}
+          style={{ fontFamily: "'Inter', sans-serif" }}
         />
       </div>
 
@@ -85,13 +85,13 @@ export function ControlBarPremium({
         <Select value={positionFilter} onValueChange={onPositionChange}>
           <SelectTrigger 
             className="w-full sm:w-[160px] h-[var(--tap-target)] bg-transparent border-0 text-white rounded-[var(--radius-button)] focus:ring-1 focus:ring-white/10 hover:bg-white/5 transition-all duration-200"
-            style={{ fontFamily: "'Poppins', sans-serif" }}
+            style={{ fontFamily: "'Inter', sans-serif" }}
           >
             <SelectValue placeholder="Posição" />
           </SelectTrigger>
           <SelectContent 
             className="bg-[#0f0f0f] border-white/10 rounded-[var(--radius-button)]"
-            style={{ fontFamily: "'Poppins', sans-serif" }}
+            style={{ fontFamily: "'Inter', sans-serif" }}
           >
             {safeArray(positions).map((pos) => (
               <SelectItem 
@@ -109,13 +109,13 @@ export function ControlBarPremium({
         <Select value={nationalityFilter} onValueChange={onNationalityChange}>
           <SelectTrigger 
             className="w-full sm:w-[160px] h-[var(--tap-target)] bg-transparent border-0 text-white rounded-[var(--radius-button)] focus:ring-1 focus:ring-white/10 hover:bg-white/5 transition-all duration-200"
-            style={{ fontFamily: "'Poppins', sans-serif" }}
+            style={{ fontFamily: "'Inter', sans-serif" }}
           >
             <SelectValue placeholder="Nacionalidade" />
           </SelectTrigger>
           <SelectContent 
             className="bg-[#0f0f0f] border-white/10 rounded-[var(--radius-button)]"
-            style={{ fontFamily: "'Poppins', sans-serif" }}
+            style={{ fontFamily: "'Inter', sans-serif" }}
           >
             {safeArray(nationalities).map((nat) => (
               <SelectItem 
