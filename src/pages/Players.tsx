@@ -582,20 +582,20 @@ const Players = () => {
                         {/* Stats */}
                         <div className="flex items-center gap-4">
                           <div>
-                            <span style={{ fontFamily: MONO, fontSize: 8, color: WHITE_MUTED, textTransform: "uppercase", display: "block" }}>Nota</span>
+                            <span style={{ fontFamily: MONO, fontSize: 8, color: WHITE_MUTED, opacity: 0.25, textTransform: "uppercase", display: "block" }}>Nota</span>
                             <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 16, color: CREAM }}>{rating != null ? rating.toFixed(1) : "—"}</span>
                           </div>
                           <div>
-                            <span style={{ fontFamily: MONO, fontSize: 8, color: WHITE_MUTED, textTransform: "uppercase", display: "block" }}>Jogos</span>
+                            <span style={{ fontFamily: MONO, fontSize: 8, color: WHITE_MUTED, opacity: 0.25, textTransform: "uppercase", display: "block" }}>Jogos</span>
                             <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 16, color: CREAM }}>{stats?.matches ?? 0}</span>
                           </div>
                           <div>
-                            <span style={{ fontFamily: MONO, fontSize: 8, color: WHITE_MUTED, textTransform: "uppercase", display: "block" }}>Min</span>
+                            <span style={{ fontFamily: MONO, fontSize: 8, color: WHITE_MUTED, opacity: 0.25, textTransform: "uppercase", display: "block" }}>Min</span>
                             <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 16, color: CREAM }}>{formatMinutesK(stats?.minutes)}</span>
                           </div>
                           {player.play_style && (
                             <div>
-                              <span style={{ fontFamily: MONO, fontSize: 8, color: WHITE_MUTED, textTransform: "uppercase", display: "block" }}>Estilo</span>
+                              <span style={{ fontFamily: MONO, fontSize: 8, color: WHITE_MUTED, opacity: 0.25, textTransform: "uppercase", display: "block" }}>Estilo</span>
                               <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 14, color: CREAM }}>{player.play_style}</span>
                             </div>
                           )}
