@@ -281,7 +281,7 @@ export async function upsertPlayerStats(
 
     const { data, error } = await supabase
       .from('player_stats')
-      .upsert(payload, {
+      .upsert(payload as any, {
         onConflict: 'player_id,season_year,competition_id',
       })
       .select()
