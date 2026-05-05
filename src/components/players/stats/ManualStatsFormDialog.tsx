@@ -54,6 +54,13 @@ interface LiveStats {
   tackles?: number;
 }
 
+interface ExistingRecordSummary {
+  games: number;
+  minutes: number;
+  goals: number;
+  assists: number;
+}
+
 interface ManualStatsFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -62,6 +69,8 @@ interface ManualStatsFormDialogProps {
   competitions: Competition[];
   // For edit mode
   existingManualStats?: Partial<ManualStatsInput> | null;
+  // Existing record in DB for the selected season+competition (for accumulation warning)
+  existingRecordSummary?: ExistingRecordSummary | null;
   // Live stats for the same season/competition (for preview)
   liveStats?: LiveStats | null;
   // Preselected values
