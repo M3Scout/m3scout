@@ -171,9 +171,12 @@ export function useManualPlayerStats({ playerId, enabled = true }: UseManualPlay
   };
 
   // Upsert mutation (uses UNIQUE constraint)
+  // ACCUMULATIVE: When record exists, SUM new values to existing totals
   // CLEANUP RULE: If all fields are zero, DELETE the record instead
   const upsertMutation = useMutation({
-    mutationFn: async (input: ManualStatsInput) => {
+    mutationFn: async (input: ManualStatsInput & { _mode?: 'accumulate' | 'replace' }) => {
+      const mode = input._mode ?? 'accumulate';
+
       // CLEANUP: If games=0 AND all fields=0, DELETE the record
       if (isAllFieldsZero(input)) {
         // Find existing record to delete
@@ -199,56 +202,78 @@ export function useManualPlayerStats({ playerId, enabled = true }: UseManualPlay
         return { deleted: false, noOp: true };
       }
 
-      // UPSERT: if exists, update; if not, insert
+      // Check for existing record
+      const existing = manualStats.find(
+        ms =>
+          ms.player_id === input.player_id &&
+          ms.season_year === input.season_year &&
+          ms.competition_id === input.competition_id
+      );
+
+      // Build the payload - if accumulate mode and record exists, sum values
+      const sumFields = (field: keyof ManualStatsInput, fallback = 0): number => {
+        const newVal = (input[field] as number | undefined) ?? fallback;
+        if (mode === 'accumulate' && existing) {
+          return ((existing as any)[field] ?? 0) + newVal;
+        }
+        return newVal;
+      };
+
+      const payload = {
+        player_id: input.player_id,
+        season_year: input.season_year,
+        competition_id: input.competition_id,
+        games: sumFields('games'),
+        minutes: sumFields('minutes'),
+        goals: sumFields('goals'),
+        assists: sumFields('assists'),
+        shots: sumFields('shots'),
+        shots_on_target: sumFields('shots_on_target'),
+        passes_completed: sumFields('passes_completed'),
+        passes_failed: sumFields('passes_failed'),
+        key_passes: sumFields('key_passes'),
+        chances_created: sumFields('chances_created'),
+        dribbles_success: sumFields('dribbles_success'),
+        dribbles_failed: sumFields('dribbles_failed'),
+        tackles: sumFields('tackles'),
+        interceptions: sumFields('interceptions'),
+        recoveries: sumFields('recoveries'),
+        clearances: sumFields('clearances'),
+        duels_won: sumFields('duels_won'),
+        duels_lost: sumFields('duels_lost'),
+        aerial_duels_won: sumFields('aerial_duels_won'),
+        aerial_duels_lost: sumFields('aerial_duels_lost'),
+        yellow_cards: sumFields('yellow_cards'),
+        red_cards: sumFields('red_cards'),
+        fouls_committed: sumFields('fouls_committed'),
+        fouls_suffered: sumFields('fouls_suffered'),
+        saves: sumFields('saves'),
+        goals_conceded: sumFields('goals_conceded'),
+        clean_sheets: sumFields('clean_sheets'),
+        penalties_saved: sumFields('penalties_saved'),
+        notes: input.notes ?? existing?.notes ?? null,
+      };
+
       const { data, error } = await supabase
         .from("manual_player_stats")
-        .upsert(
-          {
-            player_id: input.player_id,
-            season_year: input.season_year,
-            competition_id: input.competition_id,
-            games: input.games,
-            minutes: input.minutes,
-            goals: input.goals ?? 0,
-            assists: input.assists ?? 0,
-            shots: input.shots ?? 0,
-            shots_on_target: input.shots_on_target ?? 0,
-            passes_completed: input.passes_completed ?? 0,
-            passes_failed: input.passes_failed ?? 0,
-            key_passes: input.key_passes ?? 0,
-            chances_created: input.chances_created ?? 0,
-            dribbles_success: input.dribbles_success ?? 0,
-            dribbles_failed: input.dribbles_failed ?? 0,
-            tackles: input.tackles ?? 0,
-            interceptions: input.interceptions ?? 0,
-            recoveries: input.recoveries ?? 0,
-            clearances: input.clearances ?? 0,
-            duels_won: input.duels_won ?? 0,
-            duels_lost: input.duels_lost ?? 0,
-            aerial_duels_won: input.aerial_duels_won ?? 0,
-            aerial_duels_lost: input.aerial_duels_lost ?? 0,
-            yellow_cards: input.yellow_cards ?? 0,
-            red_cards: input.red_cards ?? 0,
-            fouls_committed: input.fouls_committed ?? 0,
-            fouls_suffered: input.fouls_suffered ?? 0,
-            saves: input.saves ?? 0,
-            goals_conceded: input.goals_conceded ?? 0,
-            clean_sheets: input.clean_sheets ?? 0,
-            penalties_saved: input.penalties_saved ?? 0,
-            notes: input.notes ?? null,
-          },
-          {
-            onConflict: "player_id,season_year,competition_id",
-          }
-        )
+        .upsert(payload, {
+          onConflict: "player_id,season_year,competition_id",
+        })
         .select()
         .single();
 
       if (error) throw error;
-      return data;
+      return { ...data, _wasAccumulated: mode === 'accumulate' && !!existing };
     },
-    onSuccess: () => {
+    onSuccess: (result: any) => {
       queryClient.invalidateQueries({ queryKey });
+      if (result?._wasAccumulated) {
+        toast.success("Dados acumulados com sucesso! Os valores foram somados ao total existente.");
+      } else if (result?.deleted) {
+        toast.info("Registro manual removido.");
+      } else if (!result?.noOp) {
+        toast.success("Estatísticas manuais salvas com sucesso!");
+      }
     },
   });
 
