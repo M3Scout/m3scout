@@ -1,12 +1,14 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, Users, Newspaper, Lock } from "lucide-react";
+import { Home, Users, Newspaper, Lock, Info, Mail } from "lucide-react";
 import { motion } from "framer-motion";
 import "./MobileBottomNav.css";
 
 const items = [
   { to: "/", label: "Home", Icon: Home, match: (p: string) => p === "/" },
+  { to: "/sobre", label: "Sobre", Icon: Info, match: (p: string) => p.startsWith("/sobre") },
   { to: "/atletas", label: "Talentos", Icon: Users, match: (p: string) => p.startsWith("/atletas") || p.startsWith("/representacao") },
   { to: "/imprensa", label: "Imprensa", Icon: Newspaper, match: (p: string) => p.startsWith("/imprensa") || p.startsWith("/news") },
+  { to: "/contato", label: "Contato", Icon: Mail, match: (p: string) => p.startsWith("/contato") || p.startsWith("/contact") },
   { to: "/app/auth", label: "Restrito", Icon: Lock, match: (p: string) => p.startsWith("/app") },
 ];
 
