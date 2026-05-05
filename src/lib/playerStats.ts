@@ -184,20 +184,25 @@ export interface AggregatedStats {
 /**
  * Upsert player stats for a specific season and competition.
  * Uses the unique constraint (player_id, season_year, competition_id) for upsert.
+ * 
+ * When mode='accumulate' (default for new entries): if a record already exists,
+ * the new values are SUMMED to the existing totals.
+ * When mode='replace': the new values REPLACE existing ones (edit mode).
  */
 export async function upsertPlayerStats(
-  stats: PlayerStatsInput
-): Promise<{ data: PlayerStats | null; error: Error | null }> {
+  stats: PlayerStatsInput,
+  options?: { mode?: 'accumulate' | 'replace' }
+): Promise<{ data: PlayerStats | null; error: Error | null; wasAccumulated?: boolean }> {
+  const mode = options?.mode ?? 'accumulate';
+  
   try {
     // Validate non-negative values for all numeric fields
     const numericFields = [
       'matches', 'minutes', 'goals', 'assists', 
       'yellow_cards', 'red_cards', 'tackles', 
       'interceptions', 'recoveries',
-      // Goalkeeper-specific
       'saves', 'goals_conceded', 'clean_sheets',
       'penalties_saved', 'errors_leading_to_goal',
-      // Additional
       'aerial_duels_won', 'accurate_passes', 'total_passes',
       'duels_won', 'total_duels', 'chances_created',
       'key_passes', 'shots', 'shots_on_target'
@@ -210,45 +215,75 @@ export async function upsertPlayerStats(
       }
     }
 
+    // If accumulate mode, check for existing record and sum values
+    let wasAccumulated = false;
+    let payload: Record<string, any> = {
+      player_id: stats.player_id,
+      season_year: stats.season_year,
+      competition_id: stats.competition_id || null,
+      matches: stats.matches ?? 0,
+      minutes: stats.minutes ?? 0,
+      goals: stats.goals ?? 0,
+      assists: stats.assists ?? 0,
+      yellow_cards: stats.yellow_cards ?? 0,
+      red_cards: stats.red_cards ?? 0,
+      tackles: stats.tackles ?? 0,
+      interceptions: stats.interceptions ?? 0,
+      recoveries: stats.recoveries ?? 0,
+      saves: stats.saves ?? 0,
+      goals_conceded: stats.goals_conceded ?? 0,
+      clean_sheets: stats.clean_sheets ?? 0,
+      penalties_saved: stats.penalties_saved ?? 0,
+      errors_leading_to_goal: stats.errors_leading_to_goal ?? 0,
+      aerial_duels_won: stats.aerial_duels_won ?? 0,
+      accurate_passes: stats.accurate_passes ?? 0,
+      total_passes: stats.total_passes ?? 0,
+      duels_won: stats.duels_won ?? 0,
+      total_duels: stats.total_duels ?? 0,
+      chances_created: stats.chances_created ?? 0,
+      key_passes: stats.key_passes ?? 0,
+      shots: stats.shots ?? 0,
+      shots_on_target: stats.shots_on_target ?? 0,
+    };
+
+    if (mode === 'accumulate') {
+      // Check for existing record
+      let query = supabase
+        .from('player_stats')
+        .select('*')
+        .eq('player_id', stats.player_id)
+        .eq('season_year', stats.season_year);
+      
+      if (stats.competition_id) {
+        query = query.eq('competition_id', stats.competition_id);
+      } else {
+        query = query.is('competition_id', null);
+      }
+
+      const { data: existing } = await query.maybeSingle();
+
+      if (existing) {
+        wasAccumulated = true;
+        // Sum all numeric fields
+        const sumFields = [
+          'matches', 'minutes', 'goals', 'assists', 'yellow_cards', 'red_cards',
+          'tackles', 'interceptions', 'recoveries', 'saves', 'goals_conceded',
+          'clean_sheets', 'penalties_saved', 'errors_leading_to_goal',
+          'aerial_duels_won', 'accurate_passes', 'total_passes',
+          'duels_won', 'total_duels', 'chances_created', 'key_passes',
+          'shots', 'shots_on_target',
+        ];
+        for (const field of sumFields) {
+          payload[field] = ((existing as any)[field] ?? 0) + (payload[field] ?? 0);
+        }
+      }
+    }
+
     const { data, error } = await supabase
       .from('player_stats')
-      .upsert(
-        {
-          player_id: stats.player_id,
-          season_year: stats.season_year,
-          competition_id: stats.competition_id || null,
-          // General stats
-          matches: stats.matches ?? 0,
-          minutes: stats.minutes ?? 0,
-          goals: stats.goals ?? 0,
-          assists: stats.assists ?? 0,
-          yellow_cards: stats.yellow_cards ?? 0,
-          red_cards: stats.red_cards ?? 0,
-          // Defensive stats
-          tackles: stats.tackles ?? 0,
-          interceptions: stats.interceptions ?? 0,
-          recoveries: stats.recoveries ?? 0,
-          // Goalkeeper-specific stats
-          saves: stats.saves ?? 0,
-          goals_conceded: stats.goals_conceded ?? 0,
-          clean_sheets: stats.clean_sheets ?? 0,
-          penalties_saved: stats.penalties_saved ?? 0,
-          errors_leading_to_goal: stats.errors_leading_to_goal ?? 0,
-          // Additional stats
-          aerial_duels_won: stats.aerial_duels_won ?? 0,
-          accurate_passes: stats.accurate_passes ?? 0,
-          total_passes: stats.total_passes ?? 0,
-          duels_won: stats.duels_won ?? 0,
-          total_duels: stats.total_duels ?? 0,
-          chances_created: stats.chances_created ?? 0,
-          key_passes: stats.key_passes ?? 0,
-          shots: stats.shots ?? 0,
-          shots_on_target: stats.shots_on_target ?? 0,
-        },
-        {
-          onConflict: 'player_id,season_year,competition_id',
-        }
-      )
+      .upsert(payload as any, {
+        onConflict: 'player_id,season_year,competition_id',
+      })
       .select()
       .limit(1);
 
@@ -257,7 +292,7 @@ export async function upsertPlayerStats(
     }
 
     const row = Array.isArray(data) ? data[0] ?? null : null;
-    return { data: row as PlayerStats | null, error: null };
+    return { data: row as PlayerStats | null, error: null, wasAccumulated };
   } catch (err) {
     return { data: null, error: err as Error };
   }

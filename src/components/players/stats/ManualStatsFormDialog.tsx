@@ -54,6 +54,13 @@ interface LiveStats {
   tackles?: number;
 }
 
+interface ExistingRecordSummary {
+  games: number;
+  minutes: number;
+  goals: number;
+  assists: number;
+}
+
 interface ManualStatsFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -62,6 +69,8 @@ interface ManualStatsFormDialogProps {
   competitions: Competition[];
   // For edit mode
   existingManualStats?: Partial<ManualStatsInput> | null;
+  // Existing record in DB for the selected season+competition (for accumulation warning)
+  existingRecordSummary?: ExistingRecordSummary | null;
   // Live stats for the same season/competition (for preview)
   liveStats?: LiveStats | null;
   // Preselected values
@@ -80,6 +89,7 @@ export function ManualStatsFormDialog({
   playerId,
   competitions,
   existingManualStats,
+  existingRecordSummary,
   liveStats,
   defaultSeasonYear,
   defaultCompetitionId,
@@ -434,6 +444,23 @@ export function ManualStatsFormDialog({
           </div>
 
           <Separator className="bg-zinc-800/50" />
+
+          {/* Accumulation Warning: When existing data found for this season+competition */}
+          {!isEdit && existingRecordSummary && existingRecordSummary.games > 0 && formData.games > 0 && (
+            <Alert className="border-emerald-500/30 bg-emerald-500/5">
+              <Layers className="h-4 w-4 text-emerald-400" />
+              <AlertTitle className="text-emerald-400 text-sm">Dados existentes encontrados</AlertTitle>
+              <AlertDescription className="text-emerald-300/80 text-xs space-y-1">
+                <p>
+                  Já existem <strong>{existingRecordSummary.games} jogos</strong> registrados nesta competição/temporada 
+                  ({existingRecordSummary.goals} gols, {existingRecordSummary.assists} assistências, {existingRecordSummary.minutes} min).
+                </p>
+                <p>
+                  Os novos valores serão <strong>somados ao total atual</strong>. Resultado: {existingRecordSummary.games + formData.games} jogos, {existingRecordSummary.goals + formData.goals} gols.
+                </p>
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* Cleanup Warning: When setting games=0 */}
           {isEdit && formData.games === 0 && (

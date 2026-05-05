@@ -60,7 +60,9 @@ import {
   FileEdit,
   Layers,
   Lock,
+  AlertTriangle,
 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Tooltip,
   TooltipContent,
@@ -394,6 +396,15 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
     setDialogOpen(true);
   };
 
+  // Detect if a record already exists for the currently selected season+competition (new entry only)
+  const existingRecordForForm = useMemo(() => {
+    if (selectedStats) return null; // edit mode, not relevant
+    if (!formData.competition_id) return null;
+    return manualStats.find(
+      s => s.season_year === formData.season_year && s.competition_id === formData.competition_id
+    ) ?? null;
+  }, [selectedStats, formData.season_year, formData.competition_id, manualStats]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -409,7 +420,8 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
 
     setSaving(true);
 
-    const { data, error } = await upsertPlayerStats({
+    const isNewEntry = !selectedStats;
+    const { data, error, wasAccumulated } = await upsertPlayerStats({
       player_id: playerId,
       season_year: formData.season_year,
       competition_id: formData.competition_id,
@@ -431,7 +443,7 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
       clean_sheets: formData.clean_sheets,
       penalties_saved: formData.penalties_saved,
       errors_leading_to_goal: formData.errors_leading_to_goal,
-    });
+    }, { mode: isNewEntry ? 'accumulate' : 'replace' });
 
     setSaving(false);
 
@@ -440,7 +452,13 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
       return;
     }
 
-    toast.success(selectedStats ? "Estatísticas atualizadas!" : "Estatísticas adicionadas!");
+    if (wasAccumulated) {
+      toast.success("Dados acumulados com sucesso!", { 
+        description: "Os novos valores foram somados ao total existente da competição." 
+      });
+    } else {
+      toast.success(selectedStats ? "Estatísticas atualizadas!" : "Estatísticas adicionadas!");
+    }
     setDialogOpen(false);
     resetForm();
     fetchData();
@@ -631,6 +649,19 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
                       )}
                     </div>
                   </div>
+
+                  {/* Accumulation Warning */}
+                  {!selectedStats && existingRecordForForm && (
+                    <Alert className="border-emerald-500/30 bg-emerald-500/5">
+                      <Layers className="h-4 w-4 text-emerald-400" />
+                      <AlertTitle className="text-emerald-400 text-sm">Dados existentes encontrados</AlertTitle>
+                      <AlertDescription className="text-emerald-300/80 text-xs">
+                        Já existem <strong>{existingRecordForForm.matches} jogos</strong> registrados nesta competição/temporada
+                        ({existingRecordForForm.goals} gols, {existingRecordForForm.assists} assistências).
+                        Os novos valores serão <strong>somados ao total atual</strong>.
+                      </AlertDescription>
+                    </Alert>
+                  )}
 
                   {/* Matches and Minutes */}
                   <div className="grid grid-cols-2 gap-4">
