@@ -19,8 +19,8 @@ function AppLayoutContent() {
           "flex-1 min-h-screen transition-[margin] duration-200 ease-out overflow-x-hidden max-w-full",
           // Desktop: dynamic margin based on sidebar state (64px collapsed, 224px expanded)
           isCollapsed ? "lg:ml-16" : "lg:ml-56",
-          // Mobile only: account for safe area + header height (header is md:hidden, so clear at md+)
-          "pt-[calc(var(--sat)+3.5rem)] md:pt-0"
+           // Mobile only: account for safe area + header height (header is md:hidden, so clear at md+)
+           "pt-[calc(env(safe-area-inset-top,0px)+3.5rem)] md:pt-0"
         )}
       >
         <div className="p-[var(--padding-mobile)] md:p-6 lg:p-8 w-full max-w-full overflow-x-hidden lg:pt-8 pb-24 md:pb-6 lg:pb-8">
