@@ -364,13 +364,14 @@ export function AppSidebar() {
     <>
       {/* ===== MOBILE HEADER (< 768px) ===== */}
        <header
-         className="md:hidden fixed left-0 right-0 z-[100] h-14 border-b border-white/5 flex items-center justify-between"
+         className="md:hidden fixed left-0 right-0 z-[100] border-b border-white/5 flex items-center justify-between"
          style={{
            top: 0,
+           height: 'calc(var(--sat) + 3.5rem)',
+           paddingTop: 'var(--sat)',
            background: '#18181b',
-           paddingTop: 'env(safe-area-inset-top, 0px)',
-           paddingLeft: 'calc(env(safe-area-inset-left, 0px) + 1rem)',
-           paddingRight: 'calc(env(safe-area-inset-right, 0px) + 1rem)',
+           paddingLeft: 'calc(var(--sal) + 1rem)',
+           paddingRight: 'calc(var(--sar) + 1rem)',
          }}
        >
         <Link to="/" className="flex items-center">
