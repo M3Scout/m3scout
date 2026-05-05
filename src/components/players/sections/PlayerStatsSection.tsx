@@ -405,7 +405,7 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
     ) ?? null;
   }, [selectedStats, formData.season_year, formData.competition_id, manualStats]);
 
-
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Validate required fields
