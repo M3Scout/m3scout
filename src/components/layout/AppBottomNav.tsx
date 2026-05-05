@@ -8,7 +8,7 @@ const items = [
   { to: "/app/players", label: "Atletas", Icon: Users, match: (p: string) => p.startsWith("/app/players") },
   { to: "/app/reports", label: "Relatórios", Icon: ClipboardList, match: (p: string) => p.startsWith("/app/reports") || p.startsWith("/app/scouting") },
   { to: "/app/live-match", label: "Ao Vivo", Icon: Radio, match: (p: string) => p.startsWith("/app/live-match") },
-  { to: "/app/goals-monitor", label: "Monitoramento", Icon: Target, match: (p: string) => p.startsWith("/app/goals") },
+  { to: "/app/goals-monitor", label: "Metas", Icon: Target, match: (p: string) => p.startsWith("/app/goals") },
 ];
 
 export function AppBottomNav() {
