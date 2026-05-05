@@ -741,7 +741,6 @@ export default function GoalsMonitor() {
           >
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <h2 className="m3-section-title"><span style={{ color: "#E5173F" }}>// </span>METAS</h2>
 
           {/* Quick Stats */}
           <div className="flex items-center gap-3">
