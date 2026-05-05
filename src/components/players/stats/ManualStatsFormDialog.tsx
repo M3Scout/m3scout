@@ -89,6 +89,7 @@ export function ManualStatsFormDialog({
   playerId,
   competitions,
   existingManualStats,
+  existingRecordSummary,
   liveStats,
   defaultSeasonYear,
   defaultCompetitionId,
