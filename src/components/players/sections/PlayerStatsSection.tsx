@@ -650,6 +650,19 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
                     </div>
                   </div>
 
+                  {/* Accumulation Warning */}
+                  {!selectedStats && existingRecordForForm && (
+                    <Alert className="border-emerald-500/30 bg-emerald-500/5">
+                      <Layers className="h-4 w-4 text-emerald-400" />
+                      <AlertTitle className="text-emerald-400 text-sm">Dados existentes encontrados</AlertTitle>
+                      <AlertDescription className="text-emerald-300/80 text-xs">
+                        Já existem <strong>{existingRecordForForm.matches} jogos</strong> registrados nesta competição/temporada
+                        ({existingRecordForForm.goals} gols, {existingRecordForForm.assists} assistências).
+                        Os novos valores serão <strong>somados ao total atual</strong>.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
                   {/* Matches and Minutes */}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
