@@ -60,7 +60,9 @@ import {
   FileEdit,
   Layers,
   Lock,
+  AlertTriangle,
 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Tooltip,
   TooltipContent,
