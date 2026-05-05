@@ -409,7 +409,8 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
 
     setSaving(true);
 
-    const { data, error } = await upsertPlayerStats({
+    const isNewEntry = !selectedStats;
+    const { data, error, wasAccumulated } = await upsertPlayerStats({
       player_id: playerId,
       season_year: formData.season_year,
       competition_id: formData.competition_id,
@@ -431,7 +432,7 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
       clean_sheets: formData.clean_sheets,
       penalties_saved: formData.penalties_saved,
       errors_leading_to_goal: formData.errors_leading_to_goal,
-    });
+    }, { mode: isNewEntry ? 'accumulate' : 'replace' });
 
     setSaving(false);
 
@@ -440,7 +441,13 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
       return;
     }
 
-    toast.success(selectedStats ? "Estatísticas atualizadas!" : "Estatísticas adicionadas!");
+    if (wasAccumulated) {
+      toast.success("Dados acumulados com sucesso!", { 
+        description: "Os novos valores foram somados ao total existente da competição." 
+      });
+    } else {
+      toast.success(selectedStats ? "Estatísticas atualizadas!" : "Estatísticas adicionadas!");
+    }
     setDialogOpen(false);
     resetForm();
     fetchData();
