@@ -154,19 +154,22 @@ const RESPONSIVE_CSS = `
     .pl-toolbar-filters > div:last-child {
       border-bottom: none;
     }
-    .pl-toolbar-bottom {
-      flex-direction: column;
-      align-items: stretch;
-      gap: 14px;
-    }
-    .pl-toolbar-bottom-left {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .pl-toggle-row {
-      justify-content: center;
-    }
+     .pl-toolbar-bottom {
+       flex-direction: row;
+       align-items: center;
+       justify-content: center;
+       gap: 12px;
+       flex-wrap: wrap;
+     }
+     .pl-toolbar-bottom-left {
+       display: flex;
+       flex-direction: row;
+       align-items: center;
+       gap: 10px;
+     }
+     .pl-toggle-row {
+       justify-content: center;
+     }
 
     /* Normal grid: 2 columns */
     .pl-card-grid {
@@ -536,22 +539,20 @@ const Players = () => {
             <span style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.1em" }}>
               NORMAL
             </span>
-            <button
-              onClick={() => setScoutingMode(!scoutingMode)}
-              style={{
-                width: 36, height: 20,
-                backgroundColor: scoutingMode ? RED : BORDER_DARK,
-                position: "relative",
-                cursor: "pointer",
-                border: "none",
-                borderRadius: 0,
-                transition: "background-color 0.2s",
-                outline: "none",
-                minHeight: 44,
-                minWidth: 44,
-                display: "flex",
-                alignItems: "center",
-              }}
+             <button
+               onClick={() => setScoutingMode(!scoutingMode)}
+               style={{
+                 width: 36, height: 20,
+                 backgroundColor: scoutingMode ? RED : BORDER_DARK,
+                 position: "relative",
+                 cursor: "pointer",
+                 border: "none",
+                 borderRadius: 0,
+                 transition: "background-color 0.2s",
+                 outline: "none",
+                 display: "flex",
+                 alignItems: "center",
+               }}
             >
               <div style={{
                 width: 14, height: 14,
