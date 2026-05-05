@@ -20,7 +20,7 @@ export function PublicHeader() {
   };
 
   return (
-    <header className="fixed left-0 right-0 z-[100] border-b border-zinc-900" style={{ top: 0, background: '#0A0A0A', paddingTop: 'calc(env(safe-area-inset-top, 0px) + var(--sat, 0px))', paddingLeft: 'env(safe-area-inset-left, 0px)', paddingRight: 'env(safe-area-inset-right, 0px)' }}>
+    <header className="fixed left-0 right-0 z-50 bg-[var(--bg-base)]/95 backdrop-blur-md border-b border-zinc-900" style={{ top: 'var(--sat)', paddingLeft: 'var(--sal)', paddingRight: 'var(--sar)' }}>
       {/* Container with unified max-width - matches all page content alignment */}
       <div className="w-full mx-auto" style={{ maxWidth: 'var(--page-max-width)', paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
         <div className="flex h-16 items-center justify-between">

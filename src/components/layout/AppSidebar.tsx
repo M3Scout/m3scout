@@ -363,14 +363,17 @@ export function AppSidebar() {
   return (
     <>
       {/* ===== MOBILE HEADER (< 768px) ===== */}
-      <header
-        className="md:hidden fixed left-0 right-0 z-50 h-14 border-b border-white/5 bg-gradient-to-b from-zinc-900/98 to-zinc-950/98 backdrop-blur-xl flex items-center justify-between"
-        style={{
-          top: 'var(--sat)',
-          paddingLeft: 'calc(var(--sal) + 1rem)',
-          paddingRight: 'calc(var(--sar) + 1rem)',
-        }}
-      >
+       <header
+         className="md:hidden fixed left-0 right-0 z-[100] border-b border-white/5 flex items-center justify-between"
+         style={{
+           top: 0,
+           height: 'calc(var(--sat) + 3.5rem)',
+           paddingTop: 'var(--sat)',
+           background: '#18181b',
+           paddingLeft: 'calc(var(--sal) + 1rem)',
+           paddingRight: 'calc(var(--sar) + 1rem)',
+         }}
+       >
         <Link to="/" className="flex items-center">
           <img src={logoM3} alt="M3 Agency" className="h-7 w-auto" width={70} height={28} />
         </Link>
