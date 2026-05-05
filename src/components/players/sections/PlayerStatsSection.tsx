@@ -396,7 +396,16 @@ export function PlayerStatsSection({ playerId, playerPosition, onStatsChange }: 
     setDialogOpen(true);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Detect if a record already exists for the currently selected season+competition (new entry only)
+  const existingRecordForForm = useMemo(() => {
+    if (selectedStats) return null; // edit mode, not relevant
+    if (!formData.competition_id) return null;
+    return manualStats.find(
+      s => s.season_year === formData.season_year && s.competition_id === formData.competition_id
+    ) ?? null;
+  }, [selectedStats, formData.season_year, formData.competition_id, manualStats]);
+
+
     e.preventDefault();
 
     // Validate required fields
