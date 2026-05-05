@@ -181,25 +181,94 @@ export default function MarketTargets() {
   const MONO = '"JetBrains Mono", monospace';
 
   return (
-    <div>
+    <div className="market-targets-page">
+      <style>{`
+        .mt-header {
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+          padding-bottom: 20px;
+          margin-bottom: 20px;
+          border-bottom: ${BORDER};
+        }
+        .mt-header-right {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 16px;
+        }
+        .mt-funnel-strip {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 1px;
+          border: ${BORDER};
+          background: rgba(255,255,255,0.07);
+          margin-bottom: 20px;
+        }
+        .mt-kanban-scroll {
+          margin-bottom: 20px;
+        }
+        .mt-kanban-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 12px;
+        }
+        .mt-footer-grid {
+          display: grid;
+          grid-template-columns: 1fr 280px;
+          gap: 12px;
+        }
+
+        @media (max-width: 767px) {
+          .mt-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 16px;
+          }
+          .mt-header-right {
+            align-items: flex-start;
+            width: 100%;
+          }
+          .mt-header-right .mt-header-meta {
+            text-align: left;
+          }
+          .mt-header-right button {
+            width: 100%;
+          }
+          .mt-funnel-strip {
+            grid-template-columns: repeat(2, 1fr);
+          }
+          .mt-funnel-cell {
+            padding: 14px 16px 12px !important;
+          }
+          .mt-funnel-label {
+            font-size: 10px !important;
+            white-space: nowrap;
+          }
+          .mt-funnel-number {
+            font-size: 30px !important;
+          }
+          .mt-kanban-grid {
+            grid-template-columns: 1fr;
+          }
+          .mt-kanban-col {
+            margin-bottom: 4px;
+          }
+          .mt-footer-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
 
       {/* ===== HEADER ===== */}
-      <div style={{
-        display: "flex",
-        alignItems: "flex-end",
-        justifyContent: "space-between",
-        paddingBottom: 20,
-        marginBottom: 20,
-        borderBottom: BORDER,
-      }}>
+      <div className="mt-header">
         <h1 className="m3-page-title">MONITORAMENTO</h1>
 
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 16 }}>
-          <div style={{
+        <div className="mt-header-right">
+          <div className="mt-header-meta" style={{
             fontFamily: MONO,
             fontSize: 11,
             color: "#444",
-            textAlign: "right",
             lineHeight: 1.7,
             textTransform: "uppercase",
           }}>
@@ -210,11 +279,10 @@ export default function MarketTargets() {
           <button
             onClick={() => setFormModalOpen(true)}
             style={{
-              padding: "8px 20px",
+              padding: "10px 20px",
               background: "#E5173F",
               border: "none",
               borderRadius: 9999,
-              boxShadow: "none",
               color: "#fff",
               fontFamily: CONDENSED,
               fontWeight: 700,
@@ -222,6 +290,7 @@ export default function MarketTargets() {
               textTransform: "uppercase",
               letterSpacing: "0.08em",
               cursor: "pointer",
+              minHeight: 44,
             }}
           >
             + NOVO TARGET
@@ -230,16 +299,9 @@ export default function MarketTargets() {
       </div>
 
       {/* ===== FUNNEL STRIP ===== */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(4, 1fr)",
-        gap: "1px",
-        border: BORDER,
-        background: "rgba(255,255,255,0.07)",
-        marginBottom: 20,
-      }}>
+      <div className="mt-funnel-strip">
         {KANBAN_STAGES.map(({ key, label, color, Icon }) => (
-          <div key={key} style={{
+          <div key={key} className="mt-funnel-cell" style={{
             background: "#111111",
             padding: "18px 22px 16px",
             borderTop: `2px solid ${color}`,
@@ -250,7 +312,7 @@ export default function MarketTargets() {
               justifyContent: "space-between",
               marginBottom: 12,
             }}>
-              <span style={{
+              <span className="mt-funnel-label" style={{
                 fontFamily: MONO,
                 fontSize: 9,
                 color: "#555",
@@ -274,7 +336,7 @@ export default function MarketTargets() {
               </div>
             </div>
 
-            <div style={{
+            <div className="mt-funnel-number" style={{
               fontFamily: CONDENSED,
               fontWeight: 900,
               fontSize: 38,
@@ -302,18 +364,13 @@ export default function MarketTargets() {
       </div>
 
       {/* ===== KANBAN ===== */}
-      <div style={{ overflowX: "auto", marginBottom: 20 }}>
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
-          gap: 12,
-          minWidth: 900,
-        }}>
+      <div className="mt-kanban-scroll">
+        <div className="mt-kanban-grid">
           {KANBAN_STAGES.map(({ key, label, color }) => {
             const stageTargets = targetsByStatus[key] || [];
 
             return (
-              <div key={key} style={{
+              <div key={key} className="mt-kanban-col" style={{
                 background: "#111111",
                 border: BORDER,
                 display: "flex",
@@ -358,7 +415,7 @@ export default function MarketTargets() {
                   flexDirection: "column",
                   gap: 8,
                   flex: 1,
-                  minHeight: 180,
+                  minHeight: 120,
                 }}>
                   {isLoading ? (
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -371,8 +428,8 @@ export default function MarketTargets() {
                       alignItems: "center",
                       justifyContent: "center",
                       flex: 1,
+                      padding: "16px 0",
                     }}>
-                      <div style={{ height: 32, width: 1, background: "rgba(255,255,255,0.05)" }} />
                       <div style={{
                         fontFamily: MONO,
                         fontSize: 10,
@@ -380,11 +437,9 @@ export default function MarketTargets() {
                         textTransform: "uppercase",
                         textAlign: "center",
                         lineHeight: 1.6,
-                        padding: "8px 0",
                       }}>
                         Nenhum target<br />nesta etapa
                       </div>
-                      <div style={{ height: 32, width: 1, background: "rgba(255,255,255,0.05)" }} />
                     </div>
                   ) : stageTargets.map(target => {
                     const age = getAge(target);
@@ -405,6 +460,7 @@ export default function MarketTargets() {
                           border: BORDER,
                           padding: "11px 13px",
                           cursor: "pointer",
+                          minHeight: 44,
                         }}
                       >
                         {/* Top: avatar + name + meta */}
@@ -519,173 +575,166 @@ export default function MarketTargets() {
         </div>
       </div>
 
-      {/* ===== FOOTER (2 cols) ===== */}
-      <div style={{ overflowX: "auto" }}>
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 280px",
-          gap: 12,
-          minWidth: 600,
-        }}>
-          {/* Left: Atividade Recente */}
-          <div style={{ background: "#111111", border: BORDER }}>
-            <div style={{
-              padding: "13px 18px",
-              borderBottom: BORDER,
+      {/* ===== FOOTER (2 cols → stacked on mobile) ===== */}
+      <div className="mt-footer-grid">
+        {/* Left: Atividade Recente */}
+        <div style={{ background: "#111111", border: BORDER }}>
+          <div style={{
+            padding: "13px 18px",
+            borderBottom: BORDER,
+          }}>
+            <span style={{
+              fontFamily: CONDENSED,
+              fontWeight: 700,
+              fontSize: 13,
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+              color: "#ccc",
             }}>
+              <span style={{ color: "#E5173F" }}>//</span>{" "}ATIVIDADE RECENTE
+            </span>
+          </div>
+          <div style={{
+            padding: "12px 18px",
+            display: "flex",
+            flexDirection: "column",
+            gap: 9,
+          }}>
+            {recentActivity.length === 0 ? (
               <span style={{
-                fontFamily: CONDENSED,
-                fontWeight: 700,
-                fontSize: 13,
+                fontFamily: MONO,
+                fontSize: 10,
+                color: "#333",
                 textTransform: "uppercase",
-                letterSpacing: "0.08em",
-                color: "#ccc",
               }}>
-                <span style={{ color: "#E5173F" }}>//</span>{" "}ATIVIDADE RECENTE
+                Nenhuma atividade registrada
               </span>
-            </div>
-            <div style={{
-              padding: "12px 18px",
-              display: "flex",
-              flexDirection: "column",
-              gap: 9,
-            }}>
-              {recentActivity.length === 0 ? (
-                <span style={{
-                  fontFamily: MONO,
-                  fontSize: 10,
-                  color: "#333",
-                  textTransform: "uppercase",
+            ) : recentActivity.map(obs => {
+              const stageConf = KANBAN_STAGES.find(s => s.key === obs.targets?.status);
+              const dotColor = stageConf?.color ?? "#444";
+              return (
+                <div key={obs.id} style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
                 }}>
-                  Nenhuma atividade registrada
-                </span>
-              ) : recentActivity.map(obs => {
-                const stageConf = KANBAN_STAGES.find(s => s.key === obs.targets?.status);
-                const dotColor = stageConf?.color ?? "#444";
-                return (
-                  <div key={obs.id} style={{
+                  <span style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: "50%",
+                    background: dotColor,
+                    flexShrink: 0,
+                  }} />
+                  <span style={{
+                    fontFamily: '"Barlow", sans-serif',
+                    fontSize: 12,
+                    color: "#666",
+                    flex: 1,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}>
+                    <strong style={{ color: "#888", fontWeight: 600 }}>
+                      {obs.targets?.name}
+                    </strong>
+                    {obs.qualitative_notes
+                      ? ` — ${obs.qualitative_notes}`
+                      : " — Observação registrada"}
+                  </span>
+                  <span style={{
+                    fontFamily: MONO,
+                    fontSize: 10,
+                    color: "#333",
+                    flexShrink: 0,
+                  }}>
+                    {formatTimeAgo(obs.created_at)}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Right: Market Score Ranking */}
+        <div style={{ background: "#111111", border: BORDER }}>
+          <div style={{
+            padding: "13px 18px",
+            borderBottom: BORDER,
+          }}>
+            <span style={{
+              fontFamily: CONDENSED,
+              fontWeight: 700,
+              fontSize: 13,
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+              color: "#ccc",
+            }}>
+              <span style={{ color: "#E5173F" }}>//</span>{" "}MARKET SCORE
+            </span>
+          </div>
+          <div style={{
+            padding: "12px 18px",
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
+          }}>
+            {top5.length === 0 ? (
+              <span style={{
+                fontFamily: MONO,
+                fontSize: 10,
+                color: "#333",
+                textTransform: "uppercase",
+              }}>
+                Sem scores calculados
+              </span>
+            ) : top5.map(target => {
+              const score = target.market_score!.score_total;
+              const barColor = getScoreBarColor(score);
+              return (
+                <div
+                  key={target.id}
+                  onClick={() => handleOpenDetail(target)}
+                  style={{ cursor: "pointer" }}
+                >
+                  <div style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: 10,
+                    justifyContent: "space-between",
+                    marginBottom: 5,
                   }}>
                     <span style={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: "50%",
-                      background: dotColor,
-                      flexShrink: 0,
-                    }} />
-                    <span style={{
-                      fontFamily: '"Barlow", sans-serif',
+                      fontFamily: CONDENSED,
+                      fontWeight: 700,
                       fontSize: 12,
-                      color: "#666",
+                      textTransform: "uppercase",
+                      color: "#888",
                       flex: 1,
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
                     }}>
-                      <strong style={{ color: "#888", fontWeight: 600 }}>
-                        {obs.targets?.name}
-                      </strong>
-                      {obs.qualitative_notes
-                        ? ` — ${obs.qualitative_notes}`
-                        : " — Observação registrada"}
+                      {target.name}
                     </span>
                     <span style={{
                       fontFamily: MONO,
-                      fontSize: 10,
-                      color: "#333",
+                      fontSize: 11,
+                      color: barColor,
                       flexShrink: 0,
+                      marginLeft: 10,
                     }}>
-                      {formatTimeAgo(obs.created_at)}
+                      {score.toFixed(0)}
                     </span>
                   </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Right: Market Score Ranking */}
-          <div style={{ background: "#111111", border: BORDER }}>
-            <div style={{
-              padding: "13px 18px",
-              borderBottom: BORDER,
-            }}>
-              <span style={{
-                fontFamily: CONDENSED,
-                fontWeight: 700,
-                fontSize: 13,
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-                color: "#ccc",
-              }}>
-                <span style={{ color: "#E5173F" }}>//</span>{" "}MARKET SCORE
-              </span>
-            </div>
-            <div style={{
-              padding: "12px 18px",
-              display: "flex",
-              flexDirection: "column",
-              gap: 12,
-            }}>
-              {top5.length === 0 ? (
-                <span style={{
-                  fontFamily: MONO,
-                  fontSize: 10,
-                  color: "#333",
-                  textTransform: "uppercase",
-                }}>
-                  Sem scores calculados
-                </span>
-              ) : top5.map(target => {
-                const score = target.market_score!.score_total;
-                const barColor = getScoreBarColor(score);
-                return (
-                  <div
-                    key={target.id}
-                    onClick={() => handleOpenDetail(target)}
-                    style={{ cursor: "pointer" }}
-                  >
+                  <div style={{ height: 3, background: "rgba(255,255,255,0.05)" }}>
                     <div style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      marginBottom: 5,
-                    }}>
-                      <span style={{
-                        fontFamily: CONDENSED,
-                        fontWeight: 700,
-                        fontSize: 12,
-                        textTransform: "uppercase",
-                        color: "#888",
-                        flex: 1,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}>
-                        {target.name}
-                      </span>
-                      <span style={{
-                        fontFamily: MONO,
-                        fontSize: 11,
-                        color: barColor,
-                        flexShrink: 0,
-                        marginLeft: 10,
-                      }}>
-                        {score.toFixed(0)}
-                      </span>
-                    </div>
-                    <div style={{ height: 3, background: "rgba(255,255,255,0.05)" }}>
-                      <div style={{
-                        height: "100%",
-                        width: `${score}%`,
-                        background: barColor,
-                      }} />
-                    </div>
+                      height: "100%",
+                      width: `${score}%`,
+                      background: barColor,
+                    }} />
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
