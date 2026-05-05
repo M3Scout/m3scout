@@ -87,6 +87,138 @@ function getPhysicalLabel(status: string | null): { label: string; color: string
   return { label: "N/I", color: WHITE_MUTED };
 }
 
+/* ─── RESPONSIVE CSS ─── */
+const RESPONSIVE_CSS = `
+  /* ── TOOLBAR ── */
+  .pl-toolbar-filters {
+    display: grid;
+    grid-template-columns: 1fr 160px 160px;
+    gap: 0;
+    border: 1px solid ${BORDER_DARK};
+  }
+  .pl-toolbar-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 16px;
+  }
+  .pl-toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  /* ── NORMAL GRID ── */
+  .pl-card-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: ${BORDER_DARK};
+  }
+
+  /* ── SCOUTING ROW (desktop) ── */
+  .pl-scout-row-inner {
+    display: grid;
+    grid-template-columns: 280px 1fr 180px;
+    flex: 1;
+  }
+  .pl-scout-col1 { display: flex; padding: 10px 16px; border-right: 1px solid ${BORDER_DARK}; gap: 12px; }
+  .pl-scout-col2 { display: flex; flex-direction: column; border-right: 1px solid ${BORDER_DARK}; }
+  .pl-scout-col3 { display: flex; align-items: center; justify-content: center; padding: 12px 24px; }
+  .pl-scout-tags { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 16px 2px; }
+  .pl-scout-stats { display: flex; align-items: flex-end; gap: 24px; padding: 2px 16px 10px; }
+  .pl-scout-photo { width: 80px; height: 90px; flex-shrink: 0; overflow: hidden; }
+
+  /* ── PAGINATION ── */
+  .pl-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid ${BORDER_DARK};
+  }
+
+  /* ════════════════════════════════════════════
+     MOBILE OVERRIDES (<768px)
+     ════════════════════════════════════════════ */
+  @media (max-width: 767px) {
+    /* Toolbar: stack everything vertically */
+    .pl-toolbar-filters {
+      grid-template-columns: 1fr;
+    }
+    .pl-toolbar-filters > div {
+      border-right: none !important;
+      border-bottom: 1px solid ${BORDER_DARK};
+    }
+    .pl-toolbar-filters > div:last-child {
+      border-bottom: none;
+    }
+    .pl-toolbar-bottom {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 14px;
+    }
+    .pl-toolbar-bottom-left {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .pl-toggle-row {
+      justify-content: center;
+    }
+
+    /* Normal grid: 2 columns */
+    .pl-card-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* Scouting: transform each row into a stacked card */
+    .pl-scout-row-inner {
+      display: flex;
+      flex-direction: column;
+      grid-template-columns: unset;
+    }
+    .pl-scout-col1 {
+      border-right: none;
+      padding: 12px 16px;
+      gap: 12px;
+    }
+    .pl-scout-col2 {
+      border-right: none;
+    }
+    .pl-scout-tags {
+      padding: 4px 16px 8px;
+    }
+    .pl-scout-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      padding: 0;
+      background: ${BORDER_DARK};
+    }
+    .pl-scout-stat-cell {
+      background: ${BLACK};
+      padding: 10px 16px;
+    }
+    .pl-scout-col3 {
+      padding: 14px 16px;
+      border-top: 1px solid ${BORDER_DARK};
+    }
+    .pl-scout-photo {
+      width: 72px;
+      height: 72px;
+    }
+
+    /* Pagination: stack on very small */
+    .pl-pagination {
+      flex-direction: column;
+      gap: 16px;
+      align-items: center;
+    }
+  }
+`;
+
 /* ════════════════════════════════════════════════════════════
    MAIN COMPONENT — keeps ALL data-fetching & state logic
    ════════════════════════════════════════════════════════════ */
@@ -298,21 +430,19 @@ const Players = () => {
   };
 
   /* ════════════════════════════════════════════
-     RENDER — NEW BRUTALIST DESIGN
+     RENDER — BRUTALIST DESIGN (RESPONSIVE)
      ════════════════════════════════════════════ */
   return (
     <div className="min-h-screen" style={{ backgroundColor: BLACK }}>
+      <style>{RESPONSIVE_CSS}</style>
 
       {/* ━━━ S1 — HERO ━━━ */}
       <section style={{ backgroundColor: BLACK, padding: `clamp(120px, 18vh, 200px) clamp(20px, 4vw, 40px) 64px` }}>
         <div>
-          {/* H1 */}
           <h1 style={{ fontFamily: DISPLAY, fontWeight: 900, fontSize: "clamp(72px, 8vw, 120px)", lineHeight: 0.87, color: CREAM, margin: 0 }}>
             NOSSOS<br />
             <span style={{ fontStyle: "italic", fontWeight: 300, color: RED }}>ATLETAS.</span>
           </h1>
-
-          {/* Body */}
           <p style={{ fontFamily: BODY, fontWeight: 300, fontSize: 16, color: WHITE_MUTED, maxWidth: 480, marginTop: 32, lineHeight: 1.6 }}>
             Curadoria, dados e contexto competitivo. Portfólio pronto para decisão.
           </p>
@@ -321,8 +451,8 @@ const Players = () => {
 
       {/* ━━━ S2 — TOOLBAR (Sticky) ━━━ */}
       <section className="sticky top-0 z-40" style={{ backgroundColor: BLACK, padding: "36px clamp(20px, 4vw, 40px) 16px", borderBottom: `1px solid ${BORDER_DARK}` }}>
-        {/* Top Row — grid with 1px border lines */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 160px 160px", gap: 0, border: `1px solid ${BORDER_DARK}` }}>
+        {/* Filters Grid */}
+        <div className="pl-toolbar-filters">
           {/* Search */}
           <div className="flex items-center gap-3" style={{ backgroundColor: BLACK, padding: "0 20px", borderRight: `1px solid ${BORDER_DARK}` }}>
             <Search style={{ width: 12, height: 12, color: "rgba(242,237,228,0.18)", flexShrink: 0, strokeWidth: 1.5 }} />
@@ -336,7 +466,7 @@ const Players = () => {
             />
           </div>
 
-          {/* Position Filter — native select wrapped in div */}
+          {/* Position Filter */}
           <div className="relative flex items-center" style={{ backgroundColor: BLACK, padding: "0 16px", borderRight: `1px solid ${BORDER_DARK}` }}>
             <select
               value={positionFilter}
@@ -355,7 +485,7 @@ const Players = () => {
             <span style={{ fontFamily: MONO, fontSize: 12, color: WHITE_MUTED, pointerEvents: "none", flexShrink: 0 }}>↓</span>
           </div>
 
-          {/* Nationality Filter — native select */}
+          {/* Nationality Filter */}
           <div className="relative flex items-center" style={{ backgroundColor: BLACK, padding: "0 16px" }}>
             <select
               value={nationalityFilter}
@@ -376,13 +506,12 @@ const Players = () => {
         </div>
 
         {/* Bottom Row */}
-        <div className="flex items-center justify-between" style={{ marginTop: 16 }}>
+        <div className="pl-toolbar-bottom">
           {/* Left: count + year */}
-          <div className="flex items-center gap-4">
+          <div className="pl-toolbar-bottom-left" style={{ display: "flex", alignItems: "center", gap: 16 }}>
             <span style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.1em" }}>
               {filteredPlayers.length} ATLETAS NO PORTFÓLIO
             </span>
-            {/* Year selector — plain text + native select */}
             <div className="relative flex items-center" style={{ borderBottom: `1px solid ${CREAM}`, paddingBottom: 2 }}>
               <select
                 value={String(selectedYear)}
@@ -402,8 +531,8 @@ const Players = () => {
             </div>
           </div>
 
-          {/* Right: Scouting Toggle — both labels visible */}
-          <div className="flex items-center gap-3">
+          {/* Right: Scouting Toggle */}
+          <div className="pl-toggle-row">
             <span style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.1em" }}>
               NORMAL
             </span>
@@ -418,13 +547,18 @@ const Players = () => {
                 borderRadius: 0,
                 transition: "background-color 0.2s",
                 outline: "none",
+                minHeight: 44,
+                minWidth: 44,
+                display: "flex",
+                alignItems: "center",
               }}
             >
               <div style={{
                 width: 14, height: 14,
                 backgroundColor: CREAM,
                 position: "absolute",
-                top: 3,
+                top: "50%",
+                transform: "translateY(-50%)",
                 left: scoutingMode ? 19 : 3,
                 transition: "left 0.2s",
                 borderRadius: 0,
@@ -453,7 +587,7 @@ const Players = () => {
             <span style={{ fontFamily: MONO, fontSize: 9, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.12em", display: "block", marginBottom: 24 }}>
               // TALENTOS MONITORADOS
             </span>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: BORDER_DARK }}>
+            <div className="pl-card-grid">
               {safeArray(paginatedPlayers).map((player, index) => {
                 const href = `/players/${player.slug}`;
                 const imgUrl = getOptimizedImageUrl(player.photo_url, { width: 400, quality: 70 }) || "/placeholder.svg";
@@ -465,7 +599,6 @@ const Players = () => {
                 return (
                   <Link key={player.id} to={href} className="group block" style={{ backgroundColor: BLACK }}>
                     <div className="relative overflow-hidden" style={{ aspectRatio: "3/4" }}>
-                      {/* Image */}
                       <img
                         src={imgUrl}
                         srcSet={imgSrcSet || undefined}
@@ -484,18 +617,16 @@ const Players = () => {
 
                       {/* Top overlay */}
                       <div className="absolute top-0 left-0 right-0 flex items-start justify-between" style={{ padding: "16px 16px 0" }}>
-                        {/* Position tag */}
                         <div className="flex items-center gap-2" style={{ fontFamily: MONO, fontSize: 9, color: CREAM, textTransform: "uppercase", letterSpacing: "0.1em" }}>
                           <div style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: dotColor, flexShrink: 0 }} />
                           {shortPos}
                         </div>
-                        {/* Card number */}
                         <span style={{ fontFamily: MONO, fontSize: 11, color: "rgba(242,237,228,0.2)" }}>/{cardNum}</span>
                       </div>
 
                       {/* Bottom info */}
                       <div className="absolute bottom-0 left-0 right-0" style={{ background: "linear-gradient(to top, #0A0A0A 0%, rgba(10,10,10,0.92) 35%, rgba(10,10,10,0.6) 55%, transparent 75%)", padding: "64px 16px 16px" }}>
-                        <h3 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: 24, color: "#fff", textTransform: "uppercase", lineHeight: 0.9, marginBottom: 8 }}>
+                        <h3 style={{ fontFamily: DISPLAY, fontWeight: 900, fontSize: "clamp(18px, 3vw, 24px)", color: "#fff", textTransform: "uppercase", lineHeight: 0.9, marginBottom: 8 }}>
                           {player.full_name}
                         </h3>
                         <div style={{ fontFamily: MONO, fontSize: 10, color: "#fff", display: "flex", flexWrap: "wrap", gap: "4px 6px" }}>
@@ -503,7 +634,6 @@ const Players = () => {
                           <span>· {player.nationality}</span>
                           {player.current_club && <span>· {player.current_club}</span>}
                         </div>
-                        {/* Ver perfil link aligned left with name */}
                         <span className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 13, color: CREAM, textTransform: "uppercase", borderBottom: `1px solid ${RED}`, paddingBottom: 2, gap: 8, marginTop: 10, width: "fit-content" }}>
                           VER PERFIL <ArrowRight style={{ width: 14, height: 14, color: RED }} />
                         </span>
@@ -521,7 +651,7 @@ const Players = () => {
               // DADOS PRONTOS PARA DECISÃO
             </span>
             <div style={{ borderBottom: `1px solid ${BORDER_DARK}` }}>
-              {safeArray(paginatedPlayers).map((player) => {
+              {safeArray(paginatedPlayers).map((player, index) => {
                 const href = `/players/${player.slug}`;
                 const imgUrl = getOptimizedImageUrl(player.photo_url, { width: 160, quality: 70 }) || "/placeholder.svg";
                 const shortPos = getShortPosition(player.position);
@@ -532,7 +662,6 @@ const Players = () => {
 
                 return (
                   <Link key={player.id} to={href} className="group block">
-                    {/* Outer row with accent bar */}
                     <div style={{ display: "flex", borderTop: `1px solid ${BORDER_DARK}` }}
                       onMouseOver={(e) => { (e.currentTarget as HTMLDivElement).style.backgroundColor = "rgba(255,255,255,0.02)"; }}
                       onMouseOut={(e) => { (e.currentTarget as HTMLDivElement).style.backgroundColor = "transparent"; }}
@@ -540,16 +669,23 @@ const Players = () => {
                       {/* Left accent bar */}
                       <div style={{ width: 4, backgroundColor: dotColor, flexShrink: 0 }} />
 
-                      {/* 3-column CSS Grid */}
-                      <div style={{ display: "grid", gridTemplateColumns: "280px 1fr 180px", flex: 1 }}>
-
-                        {/* ── COL 1: Photo + Identity ── */}
-                        <div style={{ display: "flex", padding: "10px 16px", borderRight: `1px solid ${BORDER_DARK}`, gap: 12 }}>
-                          {/* Photo */}
-                          <div style={{ width: 80, height: 90, flexShrink: 0, overflow: "hidden" }}>
-                            <img src={imgUrl} alt={player.full_name} loading="lazy" decoding="async" width={80} height={90} className="w-full h-full object-cover" style={{ filter: "grayscale(15%)", willChange: "filter" }} />
+                      {/* Row content */}
+                      <div className="pl-scout-row-inner">
+                        {/* COL 1: Photo + Identity */}
+                        <div className="pl-scout-col1">
+                          <div className="pl-scout-photo">
+                            <img
+                              src={imgUrl}
+                              alt={player.full_name}
+                              loading={index === 0 ? "eager" : "lazy"}
+                              fetchPriority={index === 0 ? "high" : undefined}
+                              decoding="async"
+                              width={80}
+                              height={90}
+                              className="w-full h-full object-cover"
+                              style={{ filter: "grayscale(15%)", transition: "filter 0.3s" }}
+                            />
                           </div>
-                          {/* Name block */}
                           <div className="flex flex-col justify-start" style={{ minWidth: 0 }}>
                             <h3 style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 15, color: CREAM, textTransform: "uppercase", lineHeight: 1.15, marginBottom: 4 }}>
                               {player.full_name}
@@ -564,10 +700,10 @@ const Players = () => {
                           </div>
                         </div>
 
-                        {/* ── COL 2: Technical Info (stacked rows) ── */}
-                        <div style={{ display: "flex", flexDirection: "column", borderRight: `1px solid ${BORDER_DARK}` }}>
-                          {/* Row 1: Tags */}
-                          <div className="flex items-center gap-2 flex-wrap" style={{ padding: "10px 16px 2px" }}>
+                        {/* COL 2: Tags + Stats */}
+                        <div className="pl-scout-col2">
+                          {/* Tags */}
+                          <div className="pl-scout-tags">
                             <span style={{ fontFamily: MONO, fontSize: 9, color: dotColor, border: `1px solid ${dotColor}4D`, padding: "3px 8px", textTransform: "uppercase" }}>
                               {shortPos}
                             </span>
@@ -586,32 +722,31 @@ const Players = () => {
                             </span>
                           </div>
 
-                          {/* Row 2: Stats */}
-                          <div className="flex items-end gap-6" style={{ padding: "2px 16px 10px" }}>
-                            <div>
-                              <span style={{ fontFamily: MONO, fontSize: 9, color: WHITE_MUTED, opacity: 0.45, textTransform: "uppercase", display: "block", marginBottom: 2 }}>Nota</span>
+                          {/* Stats */}
+                          <div className="pl-scout-stats">
+                            <div className="pl-scout-stat-cell">
+                              <span style={{ fontFamily: MONO, fontSize: 8, color: WHITE_MUTED, opacity: 0.45, textTransform: "uppercase", display: "block", marginBottom: 2, letterSpacing: "0.05em" }}>Nota</span>
                               <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 16, color: CREAM }}>{rating != null ? rating.toFixed(1) : "—"}</span>
                             </div>
-                            <div>
-                              <span style={{ fontFamily: MONO, fontSize: 9, color: WHITE_MUTED, opacity: 0.45, textTransform: "uppercase", display: "block", marginBottom: 2 }}>Jogos</span>
+                            <div className="pl-scout-stat-cell">
+                              <span style={{ fontFamily: MONO, fontSize: 8, color: WHITE_MUTED, opacity: 0.45, textTransform: "uppercase", display: "block", marginBottom: 2, letterSpacing: "0.05em" }}>Jogos</span>
                               <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 16, color: CREAM }}>{stats?.matches ?? 0}</span>
                             </div>
-                            <div>
-                              <span style={{ fontFamily: MONO, fontSize: 9, color: WHITE_MUTED, opacity: 0.45, textTransform: "uppercase", display: "block", marginBottom: 2 }}>Min.</span>
+                            <div className="pl-scout-stat-cell">
+                              <span style={{ fontFamily: MONO, fontSize: 8, color: WHITE_MUTED, opacity: 0.45, textTransform: "uppercase", display: "block", marginBottom: 2, letterSpacing: "0.05em" }}>Min.</span>
                               <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 16, color: CREAM }}>{formatMinutesK(stats?.minutes)}</span>
                             </div>
                             {player.play_style && (
-                              <div>
-                                <span style={{ fontFamily: MONO, fontSize: 9, color: WHITE_MUTED, opacity: 0.45, textTransform: "uppercase", display: "block", marginBottom: 2 }}>Estilo</span>
+                              <div className="pl-scout-stat-cell">
+                                <span style={{ fontFamily: MONO, fontSize: 8, color: WHITE_MUTED, opacity: 0.45, textTransform: "uppercase", display: "block", marginBottom: 2, letterSpacing: "0.05em" }}>Estilo</span>
                                 <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 14, color: CREAM }}>{player.play_style}</span>
                               </div>
                             )}
                           </div>
-
                         </div>
 
-                        {/* ── COL 3: CTA ── */}
-                        <div className="flex items-center justify-center" style={{ padding: "12px 24px" }}>
+                        {/* COL 3: CTA */}
+                        <div className="pl-scout-col3">
                           <span
                             className="flex items-center transition-all duration-200"
                             style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 13, color: CREAM, textTransform: "uppercase", borderBottom: `1px solid ${RED}`, paddingBottom: 2, gap: 8 }}
@@ -632,7 +767,7 @@ const Players = () => {
 
         {/* ━━━ PAGINATION ━━━ */}
         {!loading && totalPages > 1 && (
-          <div className="flex items-center justify-between" style={{ marginTop: 48, paddingTop: 24, borderTop: `1px solid ${BORDER_DARK}` }}>
+          <div className="pl-pagination">
             <span style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED }}>
               {((currentPage - 1) * itemsPerPage) + 1}–{Math.min(currentPage * itemsPerPage, filteredPlayers.length)} de {filteredPlayers.length}
             </span>
