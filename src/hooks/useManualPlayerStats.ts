@@ -292,6 +292,16 @@ export function useManualPlayerStats({ playerId, enabled = true }: UseManualPlay
     },
   });
 
+  /** Check if a record already exists for given player+season+competition */
+  const hasExistingRecord = (playerId: string, seasonYear: number, competitionId: string | null): ManualPlayerStats | null => {
+    return manualStats.find(
+      ms =>
+        ms.player_id === playerId &&
+        ms.season_year === seasonYear &&
+        ms.competition_id === competitionId
+    ) ?? null;
+  };
+
   return {
     manualStats,
     manualStatsByKey,
@@ -302,6 +312,7 @@ export function useManualPlayerStats({ playerId, enabled = true }: UseManualPlay
     deleteManualStats: deleteMutation.mutateAsync,
     isUpserting: upsertMutation.isPending,
     isDeleting: deleteMutation.isPending,
+    hasExistingRecord,
   };
 }
 
