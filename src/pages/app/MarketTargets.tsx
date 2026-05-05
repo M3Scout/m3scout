@@ -265,17 +265,6 @@ export default function MarketTargets() {
         <h1 className="m3-page-title">MONITORAMENTO</h1>
 
         <div className="mt-header-right">
-          <div className="mt-header-meta" style={{
-            fontFamily: MONO,
-            fontSize: 11,
-            color: "#444",
-            lineHeight: 1.7,
-            textTransform: "uppercase",
-          }}>
-            <div>MERCADO · CAPTAÇÃO</div>
-            <div>MARKET SCORE ATIVO</div>
-            <div>MAI 2026</div>
-          </div>
           <button
             onClick={() => setFormModalOpen(true)}
             style={{
