@@ -3,7 +3,7 @@
  * Logic: unchanged. UI: complete overhaul per spec.
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,6 +11,19 @@ import { Eye, Users, Handshake, CheckCircle2, XCircle } from "lucide-react";
 import { Target as TargetType, MarketScoreTrend } from "@/types/marketScore";
 import { TargetFormModal } from "@/components/market/TargetFormModal";
 import { TargetDetailModal } from "@/components/market/TargetDetailModal";
+import {
+  DndContext,
+  DragOverlay,
+  useDraggable,
+  useDroppable,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type DragStartEvent,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
 
 // ============ TYPES ============
 
@@ -70,6 +83,188 @@ function getAge(t: TargetWithScore): number | null {
 
 function getInitials(name: string): string {
   return name.split(" ").slice(0, 2).map(n => n[0]).join("").toUpperCase();
+}
+
+// ============ MODULE-LEVEL STYLE CONSTANTS ============
+
+const BORDER = "1px solid rgba(255,255,255,0.07)";
+const CONDENSED = '"Barlow Condensed", sans-serif';
+const MONO = '"JetBrains Mono", monospace';
+
+// ============ CARD VISUAL (pure, no hooks — used by overlay too) ============
+
+function CardVisual({ target, isOverlay = false }: { target: TargetWithScore; isOverlay?: boolean }) {
+  const age = getAge(target);
+  const hasScore = target.market_score !== null;
+  const dotColor = hasScore ? getScoreBarColor(target.market_score!.score_total) : "#2a2a2a";
+  const meta = [target.position, age ? `${age}a` : null, target.current_club].filter(Boolean).join(" · ");
+
+  return (
+    <div style={{
+      background: "#181818",
+      border: isOverlay ? "1px solid rgba(255,255,255,0.18)" : BORDER,
+      padding: "11px 13px",
+      boxShadow: isOverlay ? "0 16px 48px rgba(0,0,0,0.8), 0 4px 16px rgba(0,0,0,0.5)" : "none",
+      transform: isOverlay ? "scale(1.04) rotate(1deg)" : "none",
+      cursor: isOverlay ? "grabbing" : "grab",
+    }}>
+      <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 8 }}>
+        <div style={{
+          width: 30, height: 30, borderRadius: "50%",
+          background: "#1e1e1e", border: "1px solid rgba(255,255,255,0.08)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          flexShrink: 0, overflow: "hidden",
+        }}>
+          {target.photo_url ? (
+            <img src={target.photo_url} alt={target.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          ) : (
+            <span style={{ fontFamily: CONDENSED, fontWeight: 700, fontSize: 11, color: "#555" }}>
+              {getInitials(target.name)}
+            </span>
+          )}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{
+            fontFamily: CONDENSED, fontWeight: 700, fontSize: 13,
+            textTransform: "uppercase", color: "#ddd",
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+          }}>
+            {target.name}
+          </div>
+          {meta && (
+            <div style={{
+              fontFamily: MONO, fontSize: 9, color: "#444", marginTop: 2,
+              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            }}>
+              {meta}
+            </div>
+          )}
+        </div>
+      </div>
+      <div style={{
+        borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: 7,
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ width: 6, height: 6, borderRadius: "50%", background: dotColor, display: "inline-block", flexShrink: 0 }} />
+          <span style={{ fontFamily: MONO, fontSize: 10, color: hasScore ? "#888" : "#333" }}>
+            {hasScore ? target.market_score!.score_total.toFixed(0) : "—"}
+          </span>
+        </div>
+        <span style={{
+          fontFamily: MONO, fontSize: 9, color: "#444",
+          border: "1px solid rgba(255,255,255,0.07)", padding: "1px 5px", textTransform: "uppercase",
+        }}>
+          {target.position}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ============ KANBAN CARD (draggable) ============
+
+function KanbanCard({ target, onOpenDetail }: { target: TargetWithScore; onOpenDetail: (t: TargetWithScore) => void }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: target.id,
+    data: { target },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      onClick={() => onOpenDetail(target)}
+      style={{
+        opacity: isDragging ? 0.3 : 1,
+        touchAction: "none",
+        transition: "opacity 0.15s ease",
+      }}
+    >
+      <CardVisual target={target} />
+    </div>
+  );
+}
+
+// ============ KANBAN COLUMN (droppable) ============
+
+interface KanbanColumnProps {
+  stageKey: StageKey;
+  label: string;
+  color: string;
+  stageTargets: TargetWithScore[];
+  isLoading: boolean;
+  onOpenDetail: (t: TargetWithScore) => void;
+}
+
+function KanbanColumn({ stageKey, label, color, stageTargets, isLoading, onOpenDetail }: KanbanColumnProps) {
+  const { setNodeRef, isOver } = useDroppable({ id: stageKey });
+
+  return (
+    <div className="mt-kanban-col" style={{
+      background: "#111111",
+      border: isOver ? `1px solid ${color}50` : BORDER,
+      display: "flex",
+      flexDirection: "column",
+      transition: "border-color 0.15s ease",
+    }}>
+      {/* Column header */}
+      <div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 14px 10px" }}>
+          <span style={{
+            color, fontFamily: CONDENSED, fontWeight: 700, fontSize: 13,
+            letterSpacing: "0.06em", textTransform: "uppercase", flex: 1,
+          }}>
+            {label}
+          </span>
+          <span style={{
+            fontFamily: MONO, fontSize: 10, color: "#444",
+            border: "1px solid rgba(255,255,255,0.1)", padding: "1px 6px",
+          }}>
+            {stageTargets.length}
+          </span>
+        </div>
+        <div style={{ height: 2, background: color, opacity: isOver ? 1 : 0.7, transition: "opacity 0.15s ease" }} />
+      </div>
+      {/* Droppable content area */}
+      <div
+        ref={setNodeRef}
+        style={{
+          padding: "10px 8px 8px",
+          display: "flex",
+          flexDirection: "column",
+          gap: 8,
+          flex: 1,
+          minHeight: 120,
+          background: isOver ? `${color}0c` : "transparent",
+          transition: "background 0.15s ease",
+        }}
+      >
+        {isLoading ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {[1, 2].map(i => <Skeleton key={i} className="h-16 w-full rounded-none" />)}
+          </div>
+        ) : stageTargets.length === 0 ? (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flex: 1 }}>
+            <div style={{ height: 32, width: 1, background: "rgba(255,255,255,0.05)" }} />
+            <div style={{
+              fontFamily: MONO, fontSize: 10,
+              color: isOver ? `${color}90` : "#2a2a2a",
+              textTransform: "uppercase", textAlign: "center",
+              lineHeight: 1.6, padding: "8px 0",
+              transition: "color 0.15s ease",
+            }}>
+              {isOver ? <>Soltar aqui</> : <>Nenhum target<br />nesta etapa</>}
+            </div>
+            <div style={{ height: 32, width: 1, background: "rgba(255,255,255,0.05)" }} />
+          </div>
+        ) : stageTargets.map(target => (
+          <KanbanCard key={target.id} target={target} onOpenDetail={onOpenDetail} />
+        ))}
+      </div>
+    </div>
+  );
 }
 
 // ============ COMPONENT ============
@@ -174,11 +369,43 @@ export default function MarketTargets() {
     setDetailModalOpen(false);
   };
 
-  // ============ RENDER ============
+  // ---- DnD state & sensors ----
+  const [activeTarget, setActiveTarget] = useState<TargetWithScore | null>(null);
 
-  const BORDER = "1px solid rgba(255,255,255,0.07)";
-  const CONDENSED = '"Barlow Condensed", sans-serif';
-  const MONO = '"JetBrains Mono", monospace';
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
+  );
+
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    const t = targets.find(x => x.id === event.active.id);
+    setActiveTarget(t ?? null);
+  }, [targets]);
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveTarget(null);
+    if (!over) return;
+    const newStatus = over.id as StageKey;
+    const dragged = targets.find(t => t.id === active.id);
+    if (!dragged || dragged.status === newStatus) return;
+
+    // Optimistic update
+    queryClient.setQueryData<TargetWithScore[]>(["market-targets"], old =>
+      old?.map(t => t.id === dragged.id ? { ...t, status: newStatus } : t) ?? []
+    );
+
+    // Persist
+    supabase
+      .from("targets")
+      .update({ status: newStatus, updated_at: new Date().toISOString() })
+      .eq("id", dragged.id)
+      .then(({ error }) => {
+        if (error) queryClient.invalidateQueries({ queryKey: ["market-targets"] });
+      });
+  }, [targets, queryClient]);
+
+  // ============ RENDER ============
 
   return (
     <div className="market-targets-page">
@@ -353,216 +580,31 @@ export default function MarketTargets() {
       </div>
 
       {/* ===== KANBAN ===== */}
-      <div className="mt-kanban-scroll">
-        <div className="mt-kanban-grid">
-          {KANBAN_STAGES.map(({ key, label, color }) => {
-            const stageTargets = targetsByStatus[key] || [];
-
-            return (
-              <div key={key} className="mt-kanban-col" style={{
-                background: "#111111",
-                border: BORDER,
-                display: "flex",
-                flexDirection: "column",
-              }}>
-                {/* Column header */}
-                <div>
-                  <div style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    padding: "12px 14px 10px",
-                  }}>
-                    <span style={{
-                      color,
-                      fontFamily: CONDENSED,
-                      fontWeight: 700,
-                      fontSize: 13,
-                      letterSpacing: "0.06em",
-                      textTransform: "uppercase",
-                      flex: 1,
-                    }}>
-                      {label}
-                    </span>
-                    <span style={{
-                      fontFamily: MONO,
-                      fontSize: 10,
-                      color: "#444",
-                      border: "1px solid rgba(255,255,255,0.1)",
-                      padding: "1px 6px",
-                    }}>
-                      {stageTargets.length}
-                    </span>
-                  </div>
-                  <div style={{ height: 2, background: color }} />
-                </div>
-
-                {/* Column content */}
-                <div style={{
-                  padding: "10px 8px 8px",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 8,
-                  flex: 1,
-                  minHeight: 120,
-                }}>
-                  {isLoading ? (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                      {[1, 2].map(i => <Skeleton key={i} className="h-16 w-full rounded-none" />)}
-                    </div>
-                  ) : stageTargets.length === 0 ? (
-                    <div style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flex: 1,
-                      padding: "16px 0",
-                    }}>
-                      <div style={{
-                        fontFamily: MONO,
-                        fontSize: 10,
-                        color: "#2a2a2a",
-                        textTransform: "uppercase",
-                        textAlign: "center",
-                        lineHeight: 1.6,
-                      }}>
-                        Nenhum target<br />nesta etapa
-                      </div>
-                    </div>
-                  ) : stageTargets.map(target => {
-                    const age = getAge(target);
-                    const hasScore = target.market_score !== null;
-                    const dotColor = hasScore ? getScoreBarColor(target.market_score!.score_total) : "#2a2a2a";
-                    const meta = [
-                      target.position,
-                      age ? `${age}a` : null,
-                      target.current_club,
-                    ].filter(Boolean).join(" · ");
-
-                    return (
-                      <div
-                        key={target.id}
-                        onClick={() => handleOpenDetail(target)}
-                        style={{
-                          background: "#181818",
-                          border: BORDER,
-                          padding: "11px 13px",
-                          cursor: "pointer",
-                          minHeight: 44,
-                        }}
-                      >
-                        {/* Top: avatar + name + meta */}
-                        <div style={{
-                          display: "flex",
-                          gap: 8,
-                          alignItems: "flex-start",
-                          marginBottom: 8,
-                        }}>
-                          <div style={{
-                            width: 30,
-                            height: 30,
-                            borderRadius: "50%",
-                            background: "#1e1e1e",
-                            border: "1px solid rgba(255,255,255,0.08)",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            flexShrink: 0,
-                            overflow: "hidden",
-                          }}>
-                            {target.photo_url ? (
-                              <img
-                                src={target.photo_url}
-                                alt={target.name}
-                                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                              />
-                            ) : (
-                              <span style={{
-                                fontFamily: CONDENSED,
-                                fontWeight: 700,
-                                fontSize: 11,
-                                color: "#555",
-                              }}>
-                                {getInitials(target.name)}
-                              </span>
-                            )}
-                          </div>
-
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{
-                              fontFamily: CONDENSED,
-                              fontWeight: 700,
-                              fontSize: 13,
-                              textTransform: "uppercase",
-                              color: "#ddd",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
-                            }}>
-                              {target.name}
-                            </div>
-                            {meta && (
-                              <div style={{
-                                fontFamily: MONO,
-                                fontSize: 9,
-                                color: "#444",
-                                marginTop: 2,
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                whiteSpace: "nowrap",
-                              }}>
-                                {meta}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Bottom: score dot + position tag */}
-                        <div style={{
-                          borderTop: "1px solid rgba(255,255,255,0.05)",
-                          paddingTop: 7,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                        }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            <span style={{
-                              width: 6,
-                              height: 6,
-                              borderRadius: "50%",
-                              background: dotColor,
-                              display: "inline-block",
-                              flexShrink: 0,
-                            }} />
-                            <span style={{
-                              fontFamily: MONO,
-                              fontSize: 10,
-                              color: hasScore ? "#888" : "#333",
-                            }}>
-                              {hasScore ? target.market_score!.score_total.toFixed(0) : "—"}
-                            </span>
-                          </div>
-                          <span style={{
-                            fontFamily: MONO,
-                            fontSize: 9,
-                            color: "#444",
-                            border: "1px solid rgba(255,255,255,0.07)",
-                            padding: "1px 5px",
-                            textTransform: "uppercase",
-                          }}>
-                            {target.position}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
+      <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+        <div className="mt-kanban-scroll" style={{ overflowX: "auto" }}>
+          <div className="mt-kanban-grid" style={{ minWidth: 900 }}>
+            {KANBAN_STAGES.map(({ key, label, color }) => (
+              <KanbanColumn
+                key={key}
+                stageKey={key}
+                label={label}
+                color={color}
+                stageTargets={targetsByStatus[key] || []}
+                isLoading={isLoading}
+                onOpenDetail={handleOpenDetail}
+              />
+            ))}
+          </div>
         </div>
-      </div>
+
+        <DragOverlay dropAnimation={null}>
+          {activeTarget ? (
+            <div style={{ width: 220 }}>
+              <CardVisual target={activeTarget} isOverlay />
+            </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
 
       {/* ===== FOOTER (2 cols → stacked on mobile) ===== */}
       <div className="mt-footer-grid">

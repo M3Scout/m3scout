@@ -15,7 +15,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
   Edit,
@@ -156,15 +155,18 @@ export function TargetDetailModal({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
-          <DialogHeader>
+        <DialogContent
+          className="max-w-lg max-h-[90vh] overflow-hidden"
+          style={{ display: 'flex', flexDirection: 'column' }}
+        >
+          <DialogHeader className="shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <TargetIcon className="w-5 h-5 text-primary" />
               Detalhes do Target
             </DialogTitle>
           </DialogHeader>
 
-          <ScrollArea className="flex-1 pr-4">
+          <div className="flex-1 min-h-0 pr-2" style={{ overflowY: 'auto' }}>
             <div className="space-y-5">
               {/* Basic Info */}
               <div className="flex items-start gap-4">
@@ -402,10 +404,10 @@ export function TargetDetailModal({
                 </>
               )}
             </div>
-          </ScrollArea>
+          </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-between pt-4 border-t">
+          <div className="flex items-center justify-between pt-4 border-t shrink-0">
             <Button variant="ghost" onClick={() => onOpenChange(false)}>
               Fechar
             </Button>
