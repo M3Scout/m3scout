@@ -10,6 +10,11 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const APPROVED_ROLES = new Set(["admin", "scout", "editor", "viewer", "player"]);
 
+const getRealtimeStatus = (row: unknown) =>
+  typeof row === "object" && row !== null && "status" in row
+    ? String((row as { status?: unknown }).status ?? "")
+    : "";
+
 export default function PendingAccess() {
   const { signOut, user, triggerRecovery } = useAuth();
   const navigate = useNavigate();
@@ -69,7 +74,7 @@ export default function PendingAccess() {
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
-          const newStatus = (payload.new as any)?.status;
+          const newStatus = getRealtimeStatus(payload.new);
           console.log("[PendingAccess] Realtime update:", newStatus);
           if (newStatus === "active") {
             checkAndRedirect("realtime");
@@ -85,7 +90,7 @@ export default function PendingAccess() {
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
-          const newStatus = (payload.new as any)?.status;
+          const newStatus = getRealtimeStatus(payload.new);
           console.log("[PendingAccess] Realtime insert:", newStatus);
           if (newStatus === "active") {
             checkAndRedirect("realtime-insert");
