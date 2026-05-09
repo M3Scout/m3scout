@@ -58,6 +58,7 @@ const FETCH_TIMEOUT_MS = 10000; // 10s timeout for RBAC fetch
 const RECOVERY_WATCHDOG_MS = 9000; // 9s watchdog for entire recovery
 const RETRY_BACKOFF = [0, 800, 2000]; // 3 attempts with backoff
 const BACKGROUND_RETRY_INTERVAL_MS = 30 * 1000; // 30s between background retries
+const CACHEABLE_ROLES = new Set(["admin", "scout", "editor", "viewer", "player"]);
 
 // ============ MODULE STATE (SINGLETON) ============
 let inFlightPromise: Promise<RbacPayload | null> | null = null;
@@ -66,6 +67,14 @@ let memoryCache: RbacPayload | null = null;
 let backgroundRetryTimer: ReturnType<typeof setTimeout> | null = null;
 let recoveryListenersActive = false;
 let hasAttemptedTokenRefresh = false; // Track if we've already tried refresh
+
+function isCacheableRbacPayload(payload: RbacPayload | null): payload is RbacPayload {
+  return Boolean(
+    payload &&
+    payload.userStatus === "active" &&
+    payload.roles.some((role) => CACHEABLE_ROLES.has(role))
+  );
+}
 
 // ============ STORAGE CACHE ============
 
@@ -123,6 +132,11 @@ export function readRbacCache(userId: string): RbacPayload | null {
 
 export function writeRbacCache(payload: RbacPayload): void {
   try {
+    if (!isCacheableRbacPayload(payload)) {
+      clearRbacCache();
+      return;
+    }
+
     memoryCache = payload;
     localStorage.setItem(RBAC_CACHE_KEY, JSON.stringify(payload));
   } catch {
