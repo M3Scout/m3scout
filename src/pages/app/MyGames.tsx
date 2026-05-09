@@ -132,7 +132,7 @@ function PlayerMatchCard({ match }: { match: MatchWithRating }) {
           <div className="flex items-center gap-1 shrink-0">
             <div className="w-10 h-10 rounded-lg bg-zinc-800/60 flex items-center justify-center overflow-hidden">
               {match.team_logo_url ? (
-                <img src={match.team_logo_url} alt="Team" className="w-8 h-8 object-contain" width={32} height={32} />
+                <img src={match.team_logo_url} alt="Team" className="w-8 h-8 object-contain" width={32} height={32} loading="lazy" decoding="async" />
               ) : (
                 <Shield className="w-5 h-5 text-zinc-600" />
               )}
@@ -140,7 +140,7 @@ function PlayerMatchCard({ match }: { match: MatchWithRating }) {
             <span className="text-xs text-zinc-600 font-medium">vs</span>
             <div className="w-10 h-10 rounded-lg bg-zinc-800/60 flex items-center justify-center overflow-hidden">
               {match.opponent_logo_url ? (
-                <img src={match.opponent_logo_url} alt="Opponent" className="w-8 h-8 object-contain" width={32} height={32} />
+                <img src={match.opponent_logo_url} alt="Opponent" className="w-8 h-8 object-contain" width={32} height={32} loading="lazy" decoding="async" />
               ) : (
                 <Shield className="w-5 h-5 text-zinc-600" />
               )}

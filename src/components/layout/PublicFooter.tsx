@@ -88,10 +88,11 @@ export function PublicFooter() {
             to="/" 
             className="flex items-center hover:opacity-80 transition-opacity duration-200"
           >
-            <img 
-              src={logoM3} 
-              alt="M3 Agency" 
+            <img
+              src={logoM3}
+              alt="M3 Agency"
               className="h-6 md:h-7 w-auto" width={70} height={28}
+              loading="lazy" decoding="async"
             />
           </Link>
 

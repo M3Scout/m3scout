@@ -116,7 +116,7 @@ function CardVisual({ target, isOverlay = false }: { target: TargetWithScore; is
           flexShrink: 0, overflow: "hidden",
         }}>
           {target.photo_url ? (
-            <img src={target.photo_url} alt={target.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            <img src={target.photo_url} alt={target.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} loading="lazy" decoding="async" />
           ) : (
             <span style={{ fontFamily: CONDENSED, fontWeight: 700, fontSize: 11, color: "#555" }}>
               {getInitials(target.name)}

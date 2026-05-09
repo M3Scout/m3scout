@@ -883,10 +883,11 @@ export default function GoalsMonitor() {
               {/* Player Info */}
               <div className="flex items-center gap-4 p-4 rounded-xl bg-zinc-800/50">
                 {selectedGoal.player?.photo_url ? (
-                  <img 
-                    src={selectedGoal.player.photo_url} 
+                  <img
+                    src={selectedGoal.player.photo_url}
                     alt={selectedGoal.player.full_name}
                     className="w-14 h-14 rounded-full object-cover" width={56} height={56}
+                    loading="lazy" decoding="async"
                   />
                 ) : (
                   <div className="w-14 h-14 rounded-full bg-zinc-700 flex items-center justify-center">

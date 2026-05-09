@@ -325,10 +325,11 @@ export function LiveMatchCard({ match, link, onDelete, canDelete = false, index 
               {/* Match info */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-2">
-                  <img 
-                    src={displayLogoUrl} 
-                    alt={displayTeamName} 
+                  <img
+                    src={displayLogoUrl}
+                    alt={displayTeamName}
                     className="w-8 h-8 object-contain" width={32} height={32}
+                    loading="lazy" decoding="async"
                   />
                   <div>
                     <h4 className="font-bold text-lg text-zinc-100 truncate">
@@ -442,10 +443,11 @@ export function LiveMatchCard({ match, link, onDelete, canDelete = false, index 
               >
                 <div className="flex items-center gap-3 w-full">
                   {mp.players.photo_url ? (
-                    <img 
-                      src={mp.players.photo_url} 
+                    <img
+                      src={mp.players.photo_url}
                       alt={mp.players.full_name}
                       className="w-8 h-8 rounded-full object-cover" width={32} height={32}
+                      loading="lazy" decoding="async"
                     />
                   ) : (
                     <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center text-xs font-medium">

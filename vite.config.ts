@@ -176,13 +176,50 @@ export default defineConfig(({ mode }) => ({
     // Split chunks for better caching and smaller initial load
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Vendor: isolate heavy libs so they cache independently
-          "vendor-react": ["react", "react-dom", "react-router-dom"],
-          "vendor-supabase": ["@supabase/supabase-js"],
-          "vendor-motion": ["framer-motion"],
-          "vendor-query": ["@tanstack/react-query"],
-          "vendor-recharts": ["recharts"],
+        // Function form allows pattern matching for packages like @radix-ui/* (54 pkgs)
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return;
+          // PDF generation — heavy libs only needed for report exports
+          if (id.includes("@react-pdf/") || id.includes("html2canvas")) {
+            return "vendor-pdf";
+          }
+          // Radix UI primitives — shared by all shadcn components across pages
+          if (id.includes("@radix-ui/")) {
+            return "vendor-radix";
+          }
+          // Icon library — imported in virtually every component
+          if (id.includes("lucide-react")) {
+            return "vendor-icons";
+          }
+          // Form validation — react-hook-form + zod used across many form pages
+          if (id.includes("react-hook-form") || id.includes("/zod/")) {
+            return "vendor-forms";
+          }
+          // Animation — only pages that use motion components
+          if (id.includes("framer-motion")) {
+            return "vendor-motion";
+          }
+          // Data fetching & state management
+          if (id.includes("@tanstack/react-query")) {
+            return "vendor-query";
+          }
+          // Charts — only dashboard / analytics pages
+          if (id.includes("recharts")) {
+            return "vendor-recharts";
+          }
+          // Supabase backend client
+          if (id.includes("@supabase/")) {
+            return "vendor-supabase";
+          }
+          // React core + routing — smallest possible initial chunk
+          if (
+            id.includes("/react-dom/") ||
+            id.includes("/react-router") ||
+            id.includes("/react/") ||
+            id.includes("/scheduler/")
+          ) {
+            return "vendor-react";
+          }
         },
       },
     },
