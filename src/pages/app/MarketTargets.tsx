@@ -427,9 +427,7 @@ export default function MarketTargets() {
         .mt-funnel-strip {
           display: grid;
           grid-template-columns: repeat(4, 1fr);
-          gap: 1px;
-          border: ${BORDER};
-          background: rgba(255,255,255,0.07);
+          gap: 12px;
           margin-bottom: 20px;
         }
         .mt-kanban-scroll {
