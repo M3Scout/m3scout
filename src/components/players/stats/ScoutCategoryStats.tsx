@@ -550,21 +550,16 @@ function EditableStatValue({
   const effectiveLimitKey = limitKey ?? statKey;
   const { max: statMax } = getStatLimit(effectiveLimitKey);
 
-  // Mantém o input sincronizado quando o valor externo muda (ex: clique em +/-,
-  // ou recálculo automático de um total derivado de outro campo).
-  // Se o input está focado, só sobrescrevemos quando o valor externo difere do
-  // que o usuário digitou — assim recálculos do pai aparecem instantaneamente
-  // sem atrapalhar a digitação em curso.
+  // Sync draft from the external value only when the input is NOT focused.
+  // Keeping `draft` out of deps prevents the effect from re-running on every
+  // keystroke — which was the root cause of typed values being immediately
+  // overwritten by the parent's stale numeric state.
   useEffect(() => {
     if (!focusedRef.current) {
       setDraft(String(value));
-      return;
     }
-    const parsed = parseInt(draft, 10);
-    if (!Number.isFinite(parsed) || parsed !== value) {
-      setDraft(String(value));
-    }
-  }, [value, draft]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
 
   const commit = () => {
     const parsed = parseInt(draft, 10);

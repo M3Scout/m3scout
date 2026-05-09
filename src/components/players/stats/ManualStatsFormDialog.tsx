@@ -40,6 +40,15 @@ import {
 import { checkDuplicationWarning, type ManualStatsInput } from "@/hooks/useManualPlayerStats";
 import { cn } from "@/lib/utils";
 
+// Numeric form fields allow "" as a transitional state while the user is
+// typing — only normalized to a number on blur and on submit.
+type NumericFormValue = number | "";
+
+/** Coerces a NumericFormValue to a plain number for calculations/submit. */
+function n(v: NumericFormValue): number {
+  return v === "" ? 0 : v;
+}
+
 interface Competition {
   id: string;
   name: string;
@@ -97,8 +106,27 @@ export function ManualStatsFormDialog({
 }: ManualStatsFormDialogProps) {
   const isEdit = !!existingManualStats;
   
-  // Form state - starts ZEROED for new entries
-  const [formData, setFormData] = useState({
+  // Form state - starts ZEROED for new entries.
+  // Numeric stat fields use NumericFormValue (number | "") so that temporarily
+  // empty inputs don't snap back to 0 while the user is typing.
+  const [formData, setFormData] = useState<{
+    season_year: number;
+    competition_id: string;
+    games: NumericFormValue;
+    minutes: NumericFormValue;
+    goals: NumericFormValue;
+    assists: NumericFormValue;
+    shots: NumericFormValue;
+    shots_on_target: NumericFormValue;
+    tackles: NumericFormValue;
+    interceptions: NumericFormValue;
+    recoveries: NumericFormValue;
+    yellow_cards: NumericFormValue;
+    red_cards: NumericFormValue;
+    saves: NumericFormValue;
+    goals_conceded: NumericFormValue;
+    clean_sheets: NumericFormValue;
+  }>({
     season_year: defaultSeasonYear || currentYear,
     competition_id: defaultCompetitionId || "",
     games: 0,
@@ -166,11 +194,11 @@ export function ManualStatsFormDialog({
 
   // Check for duplication warning
   const duplicationCheck = checkDuplicationWarning(
-    formData.games,
+    n(formData.games),
     liveStats?.games ?? 0,
-    formData.goals,
+    n(formData.goals),
     liveStats?.goals ?? 0,
-    formData.assists,
+    n(formData.assists),
     liveStats?.assists ?? 0
   );
 
@@ -182,7 +210,7 @@ export function ManualStatsFormDialog({
   }, [formData.games, formData.goals, formData.assists]);
 
   // Check if this is a cleanup operation (all zeros = delete)
-  const isCleanupOperation = isEdit && formData.games === 0;
+  const isCleanupOperation = isEdit && n(formData.games) === 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -193,7 +221,7 @@ export function ManualStatsFormDialog({
     }
 
     // For NEW entries, require at least 1 game
-    if (!isEdit && formData.games === 0) {
+    if (!isEdit && n(formData.games) === 0) {
       return; // Don't submit empty new records
     }
 
@@ -206,34 +234,42 @@ export function ManualStatsFormDialog({
       player_id: playerId,
       season_year: formData.season_year,
       competition_id: formData.competition_id,
-      games: formData.games,
-      minutes: formData.minutes,
-      goals: formData.goals,
-      assists: formData.assists,
-      shots: formData.shots,
-      shots_on_target: formData.shots_on_target,
-      tackles: formData.tackles,
-      interceptions: formData.interceptions,
-      recoveries: formData.recoveries,
-      yellow_cards: formData.yellow_cards,
-      red_cards: formData.red_cards,
-      saves: formData.saves,
-      goals_conceded: formData.goals_conceded,
-      clean_sheets: formData.clean_sheets,
+      games: n(formData.games),
+      minutes: n(formData.minutes),
+      goals: n(formData.goals),
+      assists: n(formData.assists),
+      shots: n(formData.shots),
+      shots_on_target: n(formData.shots_on_target),
+      tackles: n(formData.tackles),
+      interceptions: n(formData.interceptions),
+      recoveries: n(formData.recoveries),
+      yellow_cards: n(formData.yellow_cards),
+      red_cards: n(formData.red_cards),
+      saves: n(formData.saves),
+      goals_conceded: n(formData.goals_conceded),
+      clean_sheets: n(formData.clean_sheets),
     });
 
     onOpenChange(false);
   };
 
-  const handleInputChange = (field: string, value: number | string) => {
+  const handleInputChange = (field: string, value: NumericFormValue | string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  // Preview combined totals
-  const previewGames = (liveStats?.games ?? 0) + formData.games;
-  const previewMinutes = (liveStats?.minutes ?? 0) + formData.minutes;
-  const previewGoals = (liveStats?.goals ?? 0) + formData.goals;
-  const previewAssists = (liveStats?.assists ?? 0) + formData.assists;
+  // Normalize a field to 0 on blur when the user left it empty
+  const handleNumericBlur = (field: string) => {
+    setFormData(prev => {
+      const v = prev[field as keyof typeof prev];
+      return v === "" ? { ...prev, [field]: 0 } : prev;
+    });
+  };
+
+  // Preview combined totals (coerce form values to numbers for arithmetic)
+  const previewGames = (liveStats?.games ?? 0) + n(formData.games);
+  const previewMinutes = (liveStats?.minutes ?? 0) + n(formData.minutes);
+  const previewGoals = (liveStats?.goals ?? 0) + n(formData.goals);
+  const previewAssists = (liveStats?.assists ?? 0) + n(formData.assists);
 
   const hasLiveStats = (liveStats?.games ?? 0) > 0;
 
@@ -313,7 +349,8 @@ export function ManualStatsFormDialog({
                   type="number"
                   min={0}
                   value={formData.games}
-                  onChange={(e) => handleInputChange("games", Number(e.target.value))}
+                  onChange={(e) => handleInputChange("games", e.target.value === "" ? "" : Number(e.target.value))}
+                  onBlur={() => handleNumericBlur("games")}
                   className="h-9"
                   required
                 />
@@ -324,7 +361,8 @@ export function ManualStatsFormDialog({
                   type="number"
                   min={0}
                   value={formData.minutes}
-                  onChange={(e) => handleInputChange("minutes", Number(e.target.value))}
+                  onChange={(e) => handleInputChange("minutes", e.target.value === "" ? "" : Number(e.target.value))}
+                  onBlur={() => handleNumericBlur("minutes")}
                   className="h-9"
                   required
                 />
@@ -342,7 +380,8 @@ export function ManualStatsFormDialog({
                   type="number"
                   min={0}
                   value={formData.goals}
-                  onChange={(e) => handleInputChange("goals", Number(e.target.value))}
+                  onChange={(e) => handleInputChange("goals", e.target.value === "" ? "" : Number(e.target.value))}
+                  onBlur={() => handleNumericBlur("goals")}
                   className="h-8 text-sm"
                 />
               </div>
@@ -352,7 +391,8 @@ export function ManualStatsFormDialog({
                   type="number"
                   min={0}
                   value={formData.assists}
-                  onChange={(e) => handleInputChange("assists", Number(e.target.value))}
+                  onChange={(e) => handleInputChange("assists", e.target.value === "" ? "" : Number(e.target.value))}
+                  onBlur={() => handleNumericBlur("assists")}
                   className="h-8 text-sm"
                 />
               </div>
@@ -362,7 +402,8 @@ export function ManualStatsFormDialog({
                   type="number"
                   min={0}
                   value={formData.shots}
-                  onChange={(e) => handleInputChange("shots", Number(e.target.value))}
+                  onChange={(e) => handleInputChange("shots", e.target.value === "" ? "" : Number(e.target.value))}
+                  onBlur={() => handleNumericBlur("shots")}
                   className="h-8 text-sm"
                 />
               </div>
@@ -372,7 +413,8 @@ export function ManualStatsFormDialog({
                   type="number"
                   min={0}
                   value={formData.shots_on_target}
-                  onChange={(e) => handleInputChange("shots_on_target", Number(e.target.value))}
+                  onChange={(e) => handleInputChange("shots_on_target", e.target.value === "" ? "" : Number(e.target.value))}
+                  onBlur={() => handleNumericBlur("shots_on_target")}
                   className="h-8 text-sm"
                 />
               </div>
@@ -389,7 +431,8 @@ export function ManualStatsFormDialog({
                   type="number"
                   min={0}
                   value={formData.tackles}
-                  onChange={(e) => handleInputChange("tackles", Number(e.target.value))}
+                  onChange={(e) => handleInputChange("tackles", e.target.value === "" ? "" : Number(e.target.value))}
+                  onBlur={() => handleNumericBlur("tackles")}
                   className="h-8 text-sm"
                 />
               </div>
@@ -399,7 +442,8 @@ export function ManualStatsFormDialog({
                   type="number"
                   min={0}
                   value={formData.interceptions}
-                  onChange={(e) => handleInputChange("interceptions", Number(e.target.value))}
+                  onChange={(e) => handleInputChange("interceptions", e.target.value === "" ? "" : Number(e.target.value))}
+                  onBlur={() => handleNumericBlur("interceptions")}
                   className="h-8 text-sm"
                 />
               </div>
@@ -409,7 +453,8 @@ export function ManualStatsFormDialog({
                   type="number"
                   min={0}
                   value={formData.recoveries}
-                  onChange={(e) => handleInputChange("recoveries", Number(e.target.value))}
+                  onChange={(e) => handleInputChange("recoveries", e.target.value === "" ? "" : Number(e.target.value))}
+                  onBlur={() => handleNumericBlur("recoveries")}
                   className="h-8 text-sm"
                 />
               </div>
@@ -426,7 +471,8 @@ export function ManualStatsFormDialog({
                   type="number"
                   min={0}
                   value={formData.yellow_cards}
-                  onChange={(e) => handleInputChange("yellow_cards", Number(e.target.value))}
+                  onChange={(e) => handleInputChange("yellow_cards", e.target.value === "" ? "" : Number(e.target.value))}
+                  onBlur={() => handleNumericBlur("yellow_cards")}
                   className="h-8 text-sm"
                 />
               </div>
@@ -436,7 +482,8 @@ export function ManualStatsFormDialog({
                   type="number"
                   min={0}
                   value={formData.red_cards}
-                  onChange={(e) => handleInputChange("red_cards", Number(e.target.value))}
+                  onChange={(e) => handleInputChange("red_cards", e.target.value === "" ? "" : Number(e.target.value))}
+                  onBlur={() => handleNumericBlur("red_cards")}
                   className="h-8 text-sm"
                 />
               </div>
@@ -446,7 +493,7 @@ export function ManualStatsFormDialog({
           <Separator className="bg-zinc-800/50" />
 
           {/* Accumulation Warning: When existing data found for this season+competition */}
-          {!isEdit && existingRecordSummary && existingRecordSummary.games > 0 && formData.games > 0 && (
+          {!isEdit && existingRecordSummary && existingRecordSummary.games > 0 && n(formData.games) > 0 && (
             <Alert className="border-emerald-500/30 bg-emerald-500/5">
               <Layers className="h-4 w-4 text-emerald-400" />
               <AlertTitle className="text-emerald-400 text-sm">Dados existentes encontrados</AlertTitle>
@@ -456,14 +503,14 @@ export function ManualStatsFormDialog({
                   ({existingRecordSummary.goals} gols, {existingRecordSummary.assists} assistências, {existingRecordSummary.minutes} min).
                 </p>
                 <p>
-                  Os novos valores serão <strong>somados ao total atual</strong>. Resultado: {existingRecordSummary.games + formData.games} jogos, {existingRecordSummary.goals + formData.goals} gols.
+                  Os novos valores serão <strong>somados ao total atual</strong>. Resultado: {existingRecordSummary.games + n(formData.games)} jogos, {existingRecordSummary.goals + n(formData.goals)} gols.
                 </p>
               </AlertDescription>
             </Alert>
           )}
 
           {/* Cleanup Warning: When setting games=0 */}
-          {isEdit && formData.games === 0 && (
+          {isEdit && n(formData.games) === 0 && (
             <Alert className="border-amber-500/30 bg-amber-500/5">
               <AlertTriangle className="h-4 w-4 text-amber-400" />
               <AlertTitle className="text-amber-400 text-sm">Remover Estatísticas Manuais</AlertTitle>
@@ -475,7 +522,7 @@ export function ManualStatsFormDialog({
           )}
 
           {/* Preview: Live + Manual = Combined */}
-          {hasLiveStats && formData.games > 0 && (
+          {hasLiveStats && n(formData.games) > 0 && (
             <div className="bg-zinc-900/50 rounded-lg p-3 space-y-2">
               <div className="flex items-center gap-2 text-xs text-zinc-400">
                 <Layers className="w-3.5 h-3.5 text-violet-400" />
@@ -555,10 +602,10 @@ export function ManualStatsFormDialog({
               type="submit"
               variant={isCleanupOperation ? "destructive" : "default"}
               disabled={
-                isSubmitting || 
-                !formData.competition_id || 
+                isSubmitting ||
+                !formData.competition_id ||
                 (duplicationCheck.isDuplicate && !confirmDuplication && !isCleanupOperation) ||
-                (!isEdit && formData.games === 0) // New entries require at least 1 game
+                (!isEdit && n(formData.games) === 0) // New entries require at least 1 game
               }
               className="gap-1.5"
             >
