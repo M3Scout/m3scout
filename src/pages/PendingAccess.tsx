@@ -32,7 +32,7 @@ export default function PendingAccess() {
         .eq("status", "active")
         .limit(1);
 
-        if (data?.some((entry) => APPROVED_ROLES.has(entry.role))) {
+      if (data?.some((entry) => APPROVED_ROLES.has(entry.role))) {
         console.log(`[PendingAccess] User approved via ${source}`);
         hasRedirectedRef.current = true;
         setApproved(true);
