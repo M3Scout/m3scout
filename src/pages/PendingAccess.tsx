@@ -8,6 +8,8 @@ import { useNavigate } from "react-router-dom";
 import { clearRbacCache, resetInflightState } from "@/lib/authRecovery";
 import { motion, AnimatePresence } from "framer-motion";
 
+const APPROVED_ROLES = new Set(["admin", "scout", "editor", "viewer", "player"]);
+
 export default function PendingAccess() {
   const { signOut, user, triggerRecovery } = useAuth();
   const navigate = useNavigate();
@@ -30,7 +32,7 @@ export default function PendingAccess() {
         .eq("status", "active")
         .limit(1);
 
-      if (data && data.length > 0) {
+        if (data?.some((entry) => APPROVED_ROLES.has(entry.role))) {
         console.log(`[PendingAccess] User approved via ${source}`);
         hasRedirectedRef.current = true;
         setApproved(true);
@@ -43,10 +45,7 @@ export default function PendingAccess() {
         resetInflightState();
         await triggerRecovery("manual-retry");
 
-        // Redirect after showing success animation
-        setTimeout(() => {
-          navigate("/app", { replace: true });
-        }, 1800);
+        navigate("/app", { replace: true });
       }
     } catch (err) {
       console.warn("[PendingAccess] Check failed:", err);
@@ -178,7 +177,7 @@ export default function PendingAccess() {
                   Acesso Liberado!
                 </h1>
                 <p className="text-zinc-400 mb-4">
-                  Redirecionando para o dashboard...
+                  Abrindo dashboard...
                 </p>
                 <div className="flex justify-center">
                   <Loader2 className="w-5 h-5 animate-spin text-emerald-400" />
@@ -242,7 +241,7 @@ export default function PendingAccess() {
                     ) : (
                       <RefreshCw className="w-4 h-4" />
                     )}
-                    {checking ? "Verificando..." : "Já fui liberado"}
+                    {checking ? "Checando acesso..." : "Checar acesso"}
                   </Button>
 
                   <Button
