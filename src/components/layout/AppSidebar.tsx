@@ -5,6 +5,7 @@ import {
   ChevronRight,
   Menu,
   X,
+  LogOut,
   LayoutDashboard,
   Users,
   GitCompare,
@@ -27,6 +28,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePermissions, ModuleKey } from "@/hooks/usePermissions";
 import { useSidebar } from "@/hooks/useSidebar";
 import logoM3 from "@/assets/logo-m3.png";
+import { hardLogoutToAuth } from "@/lib/hardLogout";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import {
   Tooltip,
