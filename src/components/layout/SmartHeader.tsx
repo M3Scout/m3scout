@@ -80,7 +80,8 @@ export function SmartHeader({ variant = "default" }: SmartHeaderProps) {
             : "bg-black/90 backdrop-blur-md border-b border-white/[0.04]"
         )}
         style={{
-          top: 'var(--sat)',
+          top: 0,
+          paddingTop: 'var(--sat)',
           paddingLeft: 'var(--sal)',
           paddingRight: 'var(--sar)',
         }}
