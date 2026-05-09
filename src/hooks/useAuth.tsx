@@ -22,6 +22,8 @@ export type AppRole = Database["public"]["Enums"]["app_role"];
 
 // Valid roles that grant app access
 const VALID_ROLES: AppRole[] = ["admin", "scout", "editor", "viewer", "player"];
+const isActivePayload = (payload: RbacPayload) =>
+  payload.userStatus === "active" && payload.roles.some((role) => VALID_ROLES.includes(role as AppRole));
 
 // ============ PERMISSIONS TYPES ============
 export interface UserPermissions {
@@ -268,6 +270,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const applyPayload = useCallback((payload: RbacPayload, fromCache: boolean) => {
     if (!isMountedRef.current) return;
 
+    if (fromCache && !isActivePayload(payload)) {
+      clearRbacCache();
+      return;
+    }
+
     setRoles(payload.roles as AppRole[]);
     setLinkedPlayerId(payload.linkedPlayerId);
     setIsOwner(payload.isOwner);
@@ -411,7 +418,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     // Try cache first for instant UI
     const cached = readRbacCache(userId);
-    if (cached) {
+    if (cached && isActivePayload(cached)) {
       const cacheAge = Date.now() - cached.fetchedAt;
       console.log("[Auth] cache HIT - applying immediately", {
         cacheAge: `${Math.round(cacheAge / 1000)}s`,
@@ -430,6 +437,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
       }
       return;
+    } else if (cached) {
+      clearRbacCache();
     }
 
     // Cache miss - do full recovery
