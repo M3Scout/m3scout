@@ -327,8 +327,7 @@ export function AppSidebar() {
   const location = useLocation();
   const { user, isPlayer } = useAuth();
   const { can, isPlayerRole } = usePermissions();
-  const { isCollapsed, toggleCollapsed, setIsCollapsed } = useSidebar();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { isCollapsed, toggleCollapsed, setIsCollapsed, mobileMenuOpen, setMobileMenuOpen } = useSidebar();
   const [isTablet, setIsTablet] = useState(false);
 
   // Detect tablet breakpoint

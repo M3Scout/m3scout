@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { Home, Users, ClipboardList, Radio, Target } from "lucide-react";
 import { motion } from "framer-motion";
+import { useSidebar } from "@/hooks/useSidebar";
 import "./MobileBottomNav.css";
 
 const items = [
@@ -13,11 +14,20 @@ const items = [
 
 export function AppBottomNav() {
   const location = useLocation();
+  const { mobileMenuOpen } = useSidebar();
   const activeIdx = items.findIndex((i) => i.match(location.pathname));
 
   return (
     <nav className="m3-bottom-nav" aria-label="Navegação rápida">
-      <div className="m3-bottom-nav__inner">
+      <motion.div
+        className="m3-bottom-nav__inner"
+        animate={
+          mobileMenuOpen
+            ? { opacity: 0, y: 8, pointerEvents: "none" }
+            : { opacity: 1, y: 0, pointerEvents: "auto" }
+        }
+        transition={{ duration: 0.15, ease: "easeOut" }}
+      >
         {items.map((item, idx) => {
           const isActive = idx === activeIdx;
           const { Icon } = item;
@@ -42,7 +52,7 @@ export function AppBottomNav() {
             </Link>
           );
         })}
-      </div>
+      </motion.div>
     </nav>
   );
 }
