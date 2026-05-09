@@ -5,6 +5,7 @@ import {
   ChevronRight,
   Menu,
   X,
+  LogOut,
   LayoutDashboard,
   Users,
   GitCompare,
@@ -27,6 +28,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePermissions, ModuleKey } from "@/hooks/usePermissions";
 import { useSidebar } from "@/hooks/useSidebar";
 import logoM3 from "@/assets/logo-m3.png";
+import { hardLogoutToAuth } from "@/lib/hardLogout";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import {
   Tooltip,
@@ -446,9 +448,18 @@ export function AppSidebar() {
         {/* Drawer Footer */}
         <div className="px-3 py-4 border-t border-white/5 shrink-0">
           {user && (
-            <div className="px-4 space-y-0.5">
-              <div className="text-[11px] text-zinc-500 truncate">{user.email}</div>
-              <div className="text-[10px] font-semibold text-zinc-700 uppercase tracking-[0.08em]">M3 AGENCY</div>
+            <div className="px-4 flex items-center justify-between gap-2">
+              <div className="min-w-0 space-y-0.5">
+                <div className="text-[11px] text-zinc-500 truncate">{user.email}</div>
+                <div className="text-[10px] font-semibold text-zinc-700 uppercase tracking-[0.08em]">M3 AGENCY</div>
+              </div>
+              <button
+                onClick={() => hardLogoutToAuth()}
+                className="shrink-0 w-8 h-8 flex items-center justify-center rounded-md text-zinc-500 hover:text-red-500 hover:bg-red-500/10 transition-all duration-150"
+                title="Sair"
+              >
+                <LogOut className="w-4 h-4" strokeWidth={1.5} />
+              </button>
             </div>
           )}
         </div>
@@ -538,9 +549,18 @@ export function AppSidebar() {
         {/* ===== FOOTER ===== */}
         <div className="sidebar-footer px-2 py-3 border-t border-white/[0.04] shrink-0 mt-auto">
           {!showCollapsed && user && (
-            <div className="px-2.5 space-y-0.5">
-              <div className="text-[10px] text-zinc-500 truncate">{user.email}</div>
-              <div className="text-[10px] font-semibold text-zinc-700 uppercase tracking-[0.08em]">M3 AGENCY</div>
+            <div className="px-2.5 flex items-center justify-between gap-2">
+              <div className="min-w-0 space-y-0.5">
+                <div className="text-[10px] text-zinc-500 truncate">{user.email}</div>
+                <div className="text-[10px] font-semibold text-zinc-700 uppercase tracking-[0.08em]">M3 AGENCY</div>
+              </div>
+              <button
+                onClick={() => hardLogoutToAuth()}
+                className="shrink-0 w-7 h-7 flex items-center justify-center rounded-md text-zinc-500 hover:text-red-500 hover:bg-red-500/10 transition-all duration-150"
+                title="Sair"
+              >
+                <LogOut className="w-3.5 h-3.5" strokeWidth={1.5} />
+              </button>
             </div>
           )}
         </div>
