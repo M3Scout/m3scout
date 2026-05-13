@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { safeArray } from "@/lib/utils";
@@ -269,6 +270,31 @@ const PlayerDetail = () => {
   // Season computed
   const ga = (seasonTotals?.goals ?? 0) + (seasonTotals?.assists ?? 0);
   const tierCfg = marketScore !== null ? getMarketScoreTier(Math.round(marketScore)) : { label: "", color: "#E5173F" };
+
+  // Rating history for Note Evolution delta
+  const { data: ratingHistory = [] } = useQuery({
+    queryKey: ["player-rating-history-overview", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("player_rating_history")
+        .select("rating")
+        .eq("player_id", id!)
+        .order("recorded_at", { ascending: true })
+        .limit(20);
+      return (data ?? []) as { rating: number }[];
+    },
+    enabled: !!id,
+  });
+  const initialRating: number | null = ratingHistory.length > 0 ? ratingHistory[0].rating : null;
+  const ratingDelta: number | null =
+    initialRating !== null && player !== null && player.auto_rating !== null
+      ? player.auto_rating - initialRating
+      : null;
+
+  // Reliability
+  const reliabilityPct = Math.min(100, Math.round((reports.length / 5) * 100));
+  const reliabilityColor = reliabilityPct > 70 ? T.green : reliabilityPct >= 50 ? T.amber : T.accent;
+  const reliabilityLabel = reliabilityPct > 70 ? "ALTA" : reliabilityPct >= 50 ? "MÉDIA" : "BAIXA";
 
   const handleDeleteSuccess = () => navigate("/app/players");
 
@@ -884,32 +910,57 @@ const PlayerDetail = () => {
 
               {/* Note Evolution chart */}
               <section className={`border ${T.border} p-5`}>
-                <SectionTitle>EVOLUÇÃO DA NOTA M3</SectionTitle>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-[10px] tracking-[0.18em] uppercase font-barlow font-bold" style={{ color: "#6B6560" }}>
+                    EVOLUÇÃO DA NOTA
+                  </p>
+                  {ratingDelta !== null && (
+                    <span
+                      className="font-jetbrains text-[13px]"
+                      style={{ color: ratingDelta >= 0 ? T.green : T.accent }}
+                    >
+                      {ratingDelta >= 0 ? "+" : "−"}{Math.abs(ratingDelta).toFixed(1)}
+                    </span>
+                  )}
+                </div>
                 <NoteEvolutionMiniChart playerId={player.id} currentRating={player.auto_rating} />
+                {initialRating !== null && player.auto_rating !== null && (
+                  <div className="flex items-center justify-between mt-3">
+                    <span className="font-jetbrains text-[18px]" style={{ color: "#6B6560" }}>
+                      INICIAL · {initialRating.toFixed(1)}
+                    </span>
+                    <span className="font-jetbrains text-[18px] font-bold" style={{ color: T.accent }}>
+                      ATUAL · {player.auto_rating.toFixed(1)}
+                    </span>
+                  </div>
+                )}
               </section>
 
               {/* Reliability */}
               <section className={`border ${T.border} p-5`}>
-                <SectionTitle>CONFIABILIDADE</SectionTitle>
-                <div className="mb-2">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-[10px] tracking-[0.18em] uppercase font-barlow font-bold" style={{ color: "#6B6560" }}>
+                    CONFIABILIDADE
+                  </p>
                   <span
-                    className="font-jetbrains font-bold"
-                    style={{ fontSize: 22, color: T.amber }}
+                    className="font-jetbrains text-[22px] font-bold"
+                    style={{ color: reliabilityColor }}
                   >
-                    {player.auto_rating !== null
-                      ? `${Math.min(100, Math.round((reports.length / 5) * 100))}%`
-                      : "—"}
+                    {reliabilityPct}%
                   </span>
                 </div>
-                <div
-                  className="w-full overflow-hidden"
-                  style={{ height: 2, background: "#1C1C1C" }}
+                <span
+                  className="font-barlow font-bold text-[11px] uppercase tracking-wide px-[10px] py-[3px] inline-block mb-3"
+                  style={{ border: `1px solid ${reliabilityColor}`, color: reliabilityColor }}
                 >
+                  {reliabilityLabel}
+                </span>
+                <div className="w-full overflow-hidden" style={{ height: 2, background: "#1C1C1C" }}>
                   <div
                     style={{
                       height: "100%",
-                      width: `${Math.min(100, Math.round((reports.length / 5) * 100))}%`,
-                      background: T.amber,
+                      width: `${reliabilityPct}%`,
+                      background: reliabilityColor,
                       transition: "width 0.6s ease",
                     }}
                   />
@@ -923,32 +974,36 @@ const PlayerDetail = () => {
               <section className={`border ${T.border} p-5`}>
                 <SectionTitle>RELATÓRIOS RECENTES</SectionTitle>
                 {reports.length === 0 ? (
-                  <p className="font-jetbrains text-[11px] text-[#6B6560]">Nenhum relatório encontrado.</p>
+                  <p className="font-barlow text-[11px] text-[#6B6560]">Nenhum relatório encontrado.</p>
                 ) : (
                   <ul className="space-y-2">
-                    {reports.slice(0, 5).map((r) => (
-                      <li
-                        key={r.id}
-                        className={`flex items-center justify-between pb-2 border-b ${T.border} last:border-0 last:pb-0`}
-                      >
-                        <div>
-                          <p className="font-jetbrains text-[10px] text-[#6B6560] uppercase tracking-wider">
-                            {r.competition?.name ?? "—"}
-                          </p>
-                          <p className="font-jetbrains text-[10px] text-[#6B6560]">
-                            {format(new Date(r.match_date), "dd MMM yyyy", { locale: ptBR })}
-                          </p>
-                        </div>
-                        <Link to={`/app/reports/${r.id}`}>
-                          <span
-                            className="font-jetbrains font-bold text-[15px]"
-                            style={{ color: "#F2EDE4" }}
-                          >
-                            {r.final_score?.toFixed(1) ?? "—"}
-                          </span>
-                        </Link>
-                      </li>
-                    ))}
+                    {reports.slice(0, 5).map((r) => {
+                      const score = r.final_score ?? 0;
+                      const scoreColor = score > 70 ? T.green : score >= 50 ? T.amber : "#F2EDE4";
+                      return (
+                        <li
+                          key={r.id}
+                          className={`flex items-center justify-between pb-2 border-b ${T.border} last:border-0 last:pb-0`}
+                        >
+                          <div>
+                            <p className="font-barlow font-bold text-[12px] uppercase tracking-wide" style={{ color: "#F2EDE4" }}>
+                              {r.competition?.name ?? "—"}
+                            </p>
+                            <p className="font-jetbrains text-[10px] text-[#6B6560]">
+                              {format(new Date(r.match_date), "dd MMM yyyy", { locale: ptBR })}
+                            </p>
+                          </div>
+                          <Link to={`/app/reports/${r.id}`}>
+                            <span
+                              className="font-jetbrains font-bold text-[15px]"
+                              style={{ color: scoreColor }}
+                            >
+                              {r.final_score?.toFixed(1) ?? "—"}
+                            </span>
+                          </Link>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </section>
