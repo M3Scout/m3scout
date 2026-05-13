@@ -899,7 +899,24 @@ const PlayerDetail = () => {
 
               {/* Market Value chart */}
               <section className={`border ${T.border} p-5`}>
-                <SectionTitle>VALOR DE MERCADO</SectionTitle>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-[10px] tracking-[0.18em] uppercase font-barlow font-bold" style={{ color: "#6B6560" }}>
+                    VALOR DE MERCADO
+                  </p>
+                  {player.market_value_trend && (() => {
+                    const t = player.market_value_trend.toLowerCase();
+                    const cfg = t === "up"
+                      ? { icon: "↗", label: "EM ALTA",  color: T.green  }
+                      : t === "down"
+                      ? { icon: "↘", label: "EM BAIXA", color: T.accent }
+                      : { icon: "→", label: "ESTÁVEL",  color: "#6B6560" };
+                    return (
+                      <span className="font-barlow font-bold text-[11px] uppercase tracking-wide" style={{ color: cfg.color }}>
+                        {cfg.icon} {cfg.label}
+                      </span>
+                    );
+                  })()}
+                </div>
                 <div className="flex items-baseline gap-1 mb-3">
                   <span className="font-jetbrains text-[18px] font-bold" style={{ color: T.green }}>
                     {formatMarketValue(player.market_value, player.market_value_currency)}
