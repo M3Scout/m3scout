@@ -125,7 +125,7 @@ const TABS = [
 
 function Label({ children }: { children: React.ReactNode }) {
   return (
-    <span className={`block text-[10px] tracking-[0.18em] uppercase ${T.muted} font-jetbrains mb-1`}>
+    <span className={`block text-[10px] tracking-[0.18em] uppercase ${T.muted} font-barlow font-bold mb-1`}>
       {children}
     </span>
   );
@@ -133,7 +133,7 @@ function Label({ children }: { children: React.ReactNode }) {
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <p className={`text-[10px] tracking-[0.18em] uppercase ${T.muted} font-jetbrains mb-3`}>
+    <p className={`text-[10px] tracking-[0.18em] uppercase ${T.muted} font-barlow font-bold mb-3`}>
       {children}
     </p>
   );
@@ -155,6 +155,40 @@ function formatMarketValue(value: number | null, currency: string | null) {
   if (value >= 1_000_000) return `${symbol}${(value / 1_000_000).toFixed(1)}M`;
   if (value >= 1_000) return `${symbol}${(value / 1_000).toFixed(0)}K`;
   return `${symbol}${value}`;
+}
+
+function getMarketScoreTier(score: number): { label: string; color: string } {
+  if (score >= 86) return { label: "ELITE",      color: "#22C55E" };
+  if (score >= 71) return { label: "ALTO",       color: "#22C55E" };
+  if (score >= 51) return { label: "MÉDIO",      color: "#F59E0B" };
+  if (score >= 31) return { label: "BAIXO",      color: "#E5173F" };
+  return              { label: "MUITO BAIXO", color: "#E5173F" };
+}
+
+const PLAY_STYLE_DESC: Record<string, string> = {
+  "CONSTRUTOR":  "Constrói jogadas com passes precisos e movimentação inteligente.",
+  "FINALIZADOR": "Explora espaços e busca o gol com eficiência clínica.",
+  "DRIBLADOR":   "Utiliza o drible como arma para criar desequilíbrio e espaços.",
+  "ORGANIZADOR": "Organiza o jogo com visão ampla e passes filtrados na medida.",
+  "DEFENSIVO":   "Comprometido com marcação intensa e recuperação de bola.",
+  "ARTICULADOR": "Liga as linhas do time com qualidade técnica e inteligência.",
+  "LIVRE":       "Movimenta-se com liberdade entre linhas para criar vantagem.",
+};
+
+function getPlayStyleDesc(style: string): string {
+  return PLAY_STYLE_DESC[style.toUpperCase()] ?? "Perfil de jogo definido pelo staff técnico.";
+}
+
+function getMarketScoreExplanation(score: number, confidence: number, sample: number): string {
+  if (sample < 2)
+    return "Amostra de observações insuficiente. O score reflete dados preliminares e pode divergir do valor real de mercado.";
+  if (confidence < 60)
+    return "Confiabilidade baixa devido à amostra reduzida. Score ajustado para refletir a incerteza dos dados disponíveis.";
+  if (score < 50)
+    return "Score abaixo da média de mercado. Pode indicar baixa regularidade, nível competitivo reduzido ou janela de idade desfavorável.";
+  if (score < 70)
+    return "Score na faixa intermediária. O atleta apresenta potencial de valorização com mais dados de observação.";
+  return "Score consistente com perfil de mercado. Dados suficientes para avaliação confiável do valor do atleta.";
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -188,7 +222,7 @@ const PlayerDetail = () => {
   });
 
   // Market score hook
-  const { displayScore: marketScore, scoreLoading: marketScoreLoading } = useMarketScore({
+  const { displayScore: marketScore, scoreLoading: marketScoreLoading, dataConfidence, hasEnoughData: marketHasData } = useMarketScore({
     playerId: id ?? "",
     playerName: player?.full_name ?? "",
     position: player?.position ?? "",
@@ -234,6 +268,7 @@ const PlayerDetail = () => {
 
   // Season computed
   const ga = (seasonTotals?.goals ?? 0) + (seasonTotals?.assists ?? 0);
+  const tierCfg = marketScore !== null ? getMarketScoreTier(Math.round(marketScore)) : { label: "", color: "#E5173F" };
 
   const handleDeleteSuccess = () => navigate("/app/players");
 
@@ -286,7 +321,7 @@ const PlayerDetail = () => {
   return (
     <div
       className={`${T.bg} ${T.text} -mx-4 -mt-4 md:-mx-6 md:-mt-6 lg:-mx-8 lg:-mt-8 pb-24 md:pb-8`}
-      style={{ fontFamily: "Inter, system-ui, sans-serif" }}
+      style={{ fontFamily: "Barlow Condensed, sans-serif" }}
     >
 
       {/* ── Top accent line ─────────────────────────────────────────────── */}
@@ -626,14 +661,19 @@ const PlayerDetail = () => {
                   <div className={`${T.bg} p-4`}>
                     <SectionTitle>ESTILO DE JOGO</SectionTitle>
                     {player.play_style ? (
-                      <p
-                        className="font-barlow font-black text-[22px] uppercase leading-tight"
-                        style={{ color: T.accent }}
-                      >
-                        {player.play_style}
-                      </p>
+                      <>
+                        <p
+                          className="font-barlow font-black text-[22px] uppercase leading-tight"
+                          style={{ color: T.accent }}
+                        >
+                          {player.play_style}
+                        </p>
+                        <p className="font-barlow text-[12px] mt-1" style={{ color: "#6B6560" }}>
+                          {getPlayStyleDesc(player.play_style)}
+                        </p>
+                      </>
                     ) : (
-                      <p className="font-jetbrains text-[11px] text-[#6B6560]">Não definido.</p>
+                      <p className="font-barlow text-[11px] text-[#6B6560]">Não definido.</p>
                     )}
                   </div>
 
@@ -641,16 +681,19 @@ const PlayerDetail = () => {
                   <div className={`${T.bg} p-4`}>
                     <SectionTitle>PONTOS FORTES</SectionTitle>
                     {safeArray(player.strengths).length > 0 ? (
-                      <ul className="space-y-1">
+                      <div className="flex flex-wrap gap-2">
                         {safeArray(player.strengths).map((s, i) => (
-                          <li key={i} className="flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 shrink-0" style={{ background: T.green }} />
-                            <span className="font-jetbrains text-[11px]" style={{ color: T.green }}>{s}</span>
-                          </li>
+                          <span
+                            key={i}
+                            className="font-barlow font-bold text-[11px] uppercase tracking-wide px-[10px] py-[3px]"
+                            style={{ border: `1px solid ${T.green}`, color: T.green }}
+                          >
+                            {s}
+                          </span>
                         ))}
-                      </ul>
+                      </div>
                     ) : (
-                      <p className="font-jetbrains text-[11px] text-[#6B6560]">Nenhum ponto forte cadastrado.</p>
+                      <p className="font-barlow text-[11px] text-[#6B6560]">Nenhum ponto forte cadastrado.</p>
                     )}
                   </div>
 
@@ -658,16 +701,19 @@ const PlayerDetail = () => {
                   <div className={`${T.bg} p-4`}>
                     <SectionTitle>ÁREAS DE DESENVOLVIMENTO</SectionTitle>
                     {safeArray(player.areas_to_develop).length > 0 ? (
-                      <ul className="space-y-1">
+                      <div className="flex flex-wrap gap-2">
                         {safeArray(player.areas_to_develop).map((s, i) => (
-                          <li key={i} className="flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 shrink-0" style={{ background: T.amber }} />
-                            <span className="font-jetbrains text-[11px]" style={{ color: T.amber }}>{s}</span>
-                          </li>
+                          <span
+                            key={i}
+                            className="font-barlow font-bold text-[11px] uppercase tracking-wide px-[10px] py-[3px]"
+                            style={{ border: `1px solid ${T.amber}`, color: T.amber }}
+                          >
+                            {s}
+                          </span>
                         ))}
-                      </ul>
+                      </div>
                     ) : (
-                      <p className="font-jetbrains text-[11px] text-[#6B6560]">Nenhuma área registrada.</p>
+                      <p className="font-barlow text-[11px] text-[#6B6560]">Nenhuma área registrada.</p>
                     )}
                   </div>
                 </div>
@@ -728,8 +774,8 @@ const PlayerDetail = () => {
                     <Label>NÍVEL ESTIMADO</Label>
                     {player.estimated_level ? (
                       <span
-                        className="font-barlow font-black text-[20px] uppercase leading-tight"
-                        style={{ color: T.amber }}
+                        className="font-barlow font-bold text-[13px] uppercase tracking-wide px-[10px] py-[3px] inline-block"
+                        style={{ border: `1px solid ${T.amber}`, color: T.amber }}
                       >
                         {player.estimated_level}
                       </span>
@@ -747,51 +793,76 @@ const PlayerDetail = () => {
               {/* M3 Market Score */}
               <section className={`border ${T.border} p-5`}>
                 <SectionTitle>M3 MARKET SCORE</SectionTitle>
-                <div className="flex items-baseline gap-2 mb-3">
+
+                {/* Score number + tier label */}
+                <div className="flex items-baseline gap-3 mb-2">
                   <span
                     className="font-jetbrains font-bold leading-none"
                     style={{ fontSize: 76, color: "#F2EDE4", lineHeight: 1 }}
                   >
-                    {marketScoreLoading
-                      ? "…"
-                      : marketScore !== null
-                      ? Math.round(marketScore)
-                      : "—"}
+                    {marketScoreLoading ? "…" : marketScore !== null ? Math.round(marketScore) : "—"}
                   </span>
                   <span className="font-jetbrains text-[12px] text-[#6B6560]">/100</span>
+                  {!marketScoreLoading && marketScore !== null && (
+                    <span
+                      className="font-barlow font-extrabold text-[12px] uppercase tracking-wider"
+                      style={{ color: tierCfg.color }}
+                    >
+                      {tierCfg.label}
+                    </span>
+                  )}
                 </div>
 
                 {/* Progress bar */}
                 <div
-                  className="w-full mb-4 overflow-hidden"
+                  className="w-full mb-3 overflow-hidden"
                   style={{ height: 2, background: "#1C1C1C" }}
                 >
                   <div
                     style={{
                       height: "100%",
                       width: `${marketScore ?? 0}%`,
-                      background: T.accent,
+                      background: tierCfg.color,
                       transition: "width 0.6s ease",
                     }}
                   />
                 </div>
 
-                {/* Insights placeholder list */}
-                <ul className="space-y-1.5">
-                  {[
-                    player.age && player.age <= 23 ? "Atleta em janela de valorização" : null,
-                    (seasonTotals?.goals ?? 0) > 5 ? "Alto volume ofensivo na temporada" : null,
-                    player.contract_status === "contracted" ? "Contrato ativo" : null,
-                  ].filter(Boolean).slice(0, 3).map((insight, i) => (
-                    <li key={i} className="flex items-center gap-2">
-                      <span
-                        className="w-[3px] h-[3px] shrink-0"
-                        style={{ background: T.accent }}
-                      />
-                      <span className="font-jetbrains text-[11px] text-[#6B6560]">{insight}</span>
-                    </li>
-                  ))}
-                </ul>
+                {/* Meta lines + explanation — only when score exists */}
+                {!marketScoreLoading && marketScore !== null ? (
+                  <>
+                    <p className="font-jetbrains text-[11px] mb-1" style={{ color: "#6B6560" }}>
+                      Base: {player.auto_rating !== null ? Math.round(player.auto_rating * 10) : "—"} → Ajustado: {Math.round(marketScore)}
+                    </p>
+                    <p className="font-jetbrains text-[11px] mb-3" style={{ color: T.amber }}>
+                      {dataConfidence < 75 ? "↓" : "→"} Confiança {Math.round(dataConfidence)}%{(!marketHasData || reports.length < 3) ? " · Amostra reduzida" : ""}
+                    </p>
+                    <div
+                      className="font-jetbrains text-[11px] leading-relaxed"
+                      style={{
+                        background: "#0D0D0D",
+                        borderLeft: "2px solid #F59E0B",
+                        padding: "9px 12px",
+                        color: "#6B6560",
+                      }}
+                    >
+                      {getMarketScoreExplanation(Math.round(marketScore), Math.round(dataConfidence), reports.length)}
+                    </div>
+                  </>
+                ) : !marketScoreLoading && (
+                  <ul className="space-y-1.5">
+                    {[
+                      player.age && player.age <= 23 ? "Atleta em janela de valorização" : null,
+                      (seasonTotals?.goals ?? 0) > 5 ? "Alto volume ofensivo na temporada" : null,
+                      player.contract_status === "contracted" ? "Contrato ativo" : null,
+                    ].filter(Boolean).slice(0, 3).map((insight, i) => (
+                      <li key={i} className="flex items-center gap-2">
+                        <span className="w-[3px] h-[3px] shrink-0" style={{ background: T.accent }} />
+                        <span className="font-jetbrains text-[11px] text-[#6B6560]">{insight}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </section>
 
               {/* Attributes Radar */}
