@@ -13,6 +13,10 @@ import { MarketValueMiniChart } from "@/components/players/detail/MarketValueMin
 import { NoteEvolutionMiniChart } from "@/components/players/detail/NoteEvolutionMiniChart";
 import { StatsTab } from "@/components/players/detail/StatsTab";
 import { MarketValueTab } from "@/components/players/detail/MarketValueTab";
+import { PhysicalTab } from "@/components/players/detail/PhysicalTab";
+import { MedicalTab } from "@/components/players/detail/MedicalTab";
+import { TechnicalTab } from "@/components/players/detail/TechnicalTab";
+import { ContractTab } from "@/components/players/detail/ContractTab";
 import {
   ArrowLeft,
   Edit,
@@ -481,6 +485,37 @@ const PlayerDetail = () => {
             marketValueCurrency={player.market_value_currency}
             marketValueTrend={player.market_value_trend}
             onValueChange={refetchPlayer}
+          />
+        ) : activeTab === "physical" ? (
+          <PhysicalTab
+            playerId={player.id}
+            playerPosition={player.position}
+            playerHeight={player.height}
+            playerWingspan={player.wingspan}
+          />
+        ) : activeTab === "medical" ? (
+          <MedicalTab
+            playerId={player.id}
+            playerPhysicalStatus={player.physical_status}
+            playerMedicalNotes={player.medical_notes}
+            onDataChange={refetchPlayer}
+            canEdit={canEdit}
+          />
+        ) : activeTab === "technical" ? (
+          <TechnicalTab playerId={player.id} />
+        ) : activeTab === "contract" ? (
+          <ContractTab
+            playerId={player.id}
+            currentClub={player.current_club}
+            country={player.country}
+            contractStart={player.contract_start}
+            contractEnd={player.contract_end}
+            contractStatus={player.contract_status}
+            salaryInfo={player.salary_info}
+            releaseClause={player.release_clause}
+            agentName={player.agent_name}
+            agentContact={player.agent_contact}
+            contractNotes={player.contract_notes}
           />
         ) : activeTab !== "overview" ? (
           <Placeholder />
