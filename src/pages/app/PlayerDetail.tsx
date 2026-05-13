@@ -553,6 +553,12 @@ const PlayerDetail = () => {
             playerPosition={player.position}
             playerHeight={player.height}
             playerWingspan={player.wingspan}
+            playerWeight={player.weight}
+            playerBodyFat={player.body_fat_percentage}
+            playerMuscle={player.muscle_mass}
+            playerMaxSpeed={player.max_speed}
+            playerSprint30m={player.sprint_30m}
+            playerVo2Max={player.vo2_max}
           />
         ) : activeTab === "medical" ? (
           <MedicalTab

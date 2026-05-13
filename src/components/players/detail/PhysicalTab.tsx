@@ -307,8 +307,15 @@ interface PhysicalHistoryRecord {
 interface PhysicalTabProps {
   playerId: string;
   playerPosition?: string | null;
+  // From players table — used as fallback when no physical history record exists
   playerHeight?: number | null;
   playerWingspan?: number | null;
+  playerWeight?: number | null;
+  playerBodyFat?: number | null;
+  playerMuscle?: number | null;
+  playerMaxSpeed?: number | null;
+  playerSprint30m?: number | null;
+  playerVo2Max?: number | null;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -317,6 +324,12 @@ export function PhysicalTab({
   playerId,
   playerHeight,
   playerWingspan,
+  playerWeight,
+  playerBodyFat,
+  playerMuscle,
+  playerMaxSpeed,
+  playerSprint30m,
+  playerVo2Max,
 }: PhysicalTabProps) {
   const [activeMetrics, setActiveMetrics] = useState<MetricKey[]>([
     "weight",
@@ -338,16 +351,24 @@ export function PhysicalTab({
 
   const latest = history && history.length > 0 ? history[history.length - 1] : null;
 
-  const bmi = calcBMI(latest?.weight, playerHeight);
-  const muscleMassPct = calcMuscleMassPct(latest?.weight, latest?.body_fat_percentage);
+  // Resolve each metric: prefer the most-recent history record, fall back to players table
+  const resolvedWeight   = latest?.weight               ?? playerWeight   ?? null;
+  const resolvedBodyFat  = latest?.body_fat_percentage  ?? playerBodyFat  ?? null;
+  const resolvedMuscle   = latest?.muscle_mass          ?? playerMuscle   ?? null;
+  const resolvedMaxSpeed = latest?.max_speed            ?? playerMaxSpeed ?? null;
+  const resolvedSprint   = latest?.sprint_30m           ?? playerSprint30m ?? null;
+  const resolvedVo2      = latest?.vo2_max              ?? playerVo2Max   ?? null;
+
+  const bmi = calcBMI(resolvedWeight, playerHeight);
+  const muscleMassPct = calcMuscleMassPct(resolvedWeight, resolvedBodyFat);
 
   const radarValues = RADAR_AXES.map(axis => {
     let value: number | null = null;
-    if (axis.key === "max_speed")           value = latest?.max_speed ?? null;
-    else if (axis.key === "sprint_30m")     value = latest?.sprint_30m ?? null;
-    else if (axis.key === "vo2_max")        value = latest?.vo2_max ?? null;
-    else if (axis.key === "body_fat_percentage") value = latest?.body_fat_percentage ?? null;
-    else if (axis.key === "muscle_mass_pct") value = muscleMassPct;
+    if (axis.key === "max_speed")                value = resolvedMaxSpeed;
+    else if (axis.key === "sprint_30m")          value = resolvedSprint;
+    else if (axis.key === "vo2_max")             value = resolvedVo2;
+    else if (axis.key === "body_fat_percentage") value = resolvedBodyFat;
+    else if (axis.key === "muscle_mass_pct")     value = muscleMassPct;
     return normalizeForRadar(value, axis.key);
   });
 
@@ -516,7 +537,7 @@ export function PhysicalTab({
             <MetricCard label="Altura" value={playerHeight ?? null} unit="cm" rangeKey="height" decimals={0} />
           </GridCell>
           <GridCell>
-            <MetricCard label="Peso" value={latest?.weight ?? null} unit="kg" rangeKey="weight" />
+            <MetricCard label="Peso" value={resolvedWeight} unit="kg" rangeKey="weight" />
           </GridCell>
           <GridCell>
             <MetricCard label="Envergadura" value={playerWingspan ?? null} unit="cm" rangeKey="wingspan" decimals={0} />
@@ -531,7 +552,7 @@ export function PhysicalTab({
           <GridCell>
             <MetricCard
               label="% Gordura"
-              value={latest?.body_fat_percentage ?? null}
+              value={resolvedBodyFat}
               unit="%"
               rangeKey="body_fat_percentage"
             />
@@ -557,7 +578,7 @@ export function PhysicalTab({
           <GridCell>
             <MetricCard
               label="Vel. Máx"
-              value={latest?.max_speed ?? null}
+              value={resolvedMaxSpeed}
               unit="km/h"
               rangeKey="max_speed"
             />
@@ -565,7 +586,7 @@ export function PhysicalTab({
           <GridCell>
             <MetricCard
               label="Sprint 30m"
-              value={latest?.sprint_30m ?? null}
+              value={resolvedSprint}
               unit="s"
               rangeKey="sprint_30m"
               decimals={2}
@@ -574,7 +595,7 @@ export function PhysicalTab({
           <GridCell>
             <MetricCard
               label="VO2 Máx"
-              value={latest?.vo2_max ?? null}
+              value={resolvedVo2}
               unit="ml/kg/min"
               rangeKey="vo2_max"
             />
