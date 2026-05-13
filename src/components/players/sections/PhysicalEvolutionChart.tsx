@@ -744,68 +744,96 @@ export const PhysicalEvolutionChart = ({ playerId, playerName = "Atleta", curren
                 Adicione avaliações físicas para visualizar a evolução do atleta
               </p>
             </div>
-          ) : (
-            <div className="h-[250px] w-full -mx-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
-                  <CartesianGrid 
-                    strokeDasharray="4 4" 
-                    stroke="hsl(240,5%,20%)" 
-                    strokeOpacity={0.4}
-                    vertical={false}
-                  />
-                  <XAxis
-                    dataKey="date"
-                    tick={{ fill: "hsl(240,5%,40%)", fontSize: 9 }}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis
-                    tick={{ fill: "hsl(240,5%,40%)", fontSize: 9 }}
-                    tickLine={false}
-                    axisLine={false}
-                    width={35}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(240,6%,10%)",
-                      border: "1px solid hsl(240,5%,20%)",
-                      borderRadius: 12,
-                      fontSize: 12,
-                      boxShadow: "0 10px 30px -10px rgba(0,0,0,0.5)",
-                    }}
-                    labelStyle={{ color: "hsl(240,5%,70%)", marginBottom: 4 }}
-                    labelFormatter={(label) => `Data: ${label}`}
-                    formatter={(value: number, name: string) => {
-                      const config = METRIC_CONFIG[name as MetricKey];
-                      return [
-                        <span key={name} className="font-bold">{value?.toFixed(1)} {config?.unit || ""}</span>,
-                        config?.label || name
-                      ];
-                    }}
-                  />
-                  <Legend
-                    wrapperStyle={{ fontSize: 10, paddingTop: 10 }}
-                    formatter={(value) => (
-                      <span className="text-zinc-500">{METRIC_CONFIG[value as MetricKey]?.label || value}</span>
-                    )}
-                  />
-                  {selectedMetrics.map((metric) => (
-                    <Line
-                      key={metric}
-                      type="monotone"
-                      dataKey={metric}
-                      stroke={METRIC_CONFIG[metric].color}
-                      strokeWidth={2.5}
-                      dot={{ fill: METRIC_CONFIG[metric].color, strokeWidth: 0, r: 3 }}
-                      activeDot={{ r: 6, strokeWidth: 0, fill: METRIC_CONFIG[metric].color }}
-                      connectNulls
-                    />
-                  ))}
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          )}
+          ) : (() => {
+            // Determine which selected metrics actually have at least one numeric data point
+            const metricsWithData = selectedMetrics.filter((metric) =>
+              chartData.some((d) => d[metric] !== null && d[metric] !== undefined && !Number.isNaN(d[metric] as number))
+            );
+            const metricsWithoutData = selectedMetrics.filter((m) => !metricsWithData.includes(m));
+
+            return (
+              <>
+                <div className="h-[250px] w-full -mx-2">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+                      <CartesianGrid
+                        strokeDasharray="4 4"
+                        stroke="hsl(240,5%,20%)"
+                        strokeOpacity={0.4}
+                        vertical={false}
+                      />
+                      <XAxis
+                        dataKey="date"
+                        tick={{ fill: "hsl(240,5%,40%)", fontSize: 9 }}
+                        tickLine={false}
+                        axisLine={false}
+                      />
+                      {/* One independent (hidden) YAxis per metric so kg/% /s don't crush each other */}
+                      {metricsWithData.map((metric, idx) => (
+                        <YAxis
+                          key={metric}
+                          yAxisId={metric}
+                          orientation={idx === 0 ? "left" : "right"}
+                          hide={idx > 0}
+                          domain={["auto", "auto"]}
+                          tick={{ fill: "hsl(240,5%,40%)", fontSize: 9 }}
+                          tickLine={false}
+                          axisLine={false}
+                          width={35}
+                        />
+                      ))}
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "hsl(240,6%,10%)",
+                          border: "1px solid hsl(240,5%,20%)",
+                          borderRadius: 12,
+                          fontSize: 12,
+                          boxShadow: "0 10px 30px -10px rgba(0,0,0,0.5)",
+                        }}
+                        labelStyle={{ color: "hsl(240,5%,70%)", marginBottom: 4 }}
+                        labelFormatter={(label) => `Data: ${label}`}
+                        formatter={(value: number, name: string) => {
+                          const config = METRIC_CONFIG[name as MetricKey];
+                          return [
+                            <span key={name} className="font-bold">{value?.toFixed(1)} {config?.unit || ""}</span>,
+                            config?.label || name,
+                          ];
+                        }}
+                      />
+                      <Legend
+                        wrapperStyle={{ fontSize: 10, paddingTop: 10 }}
+                        formatter={(value) => (
+                          <span style={{ color: METRIC_CONFIG[value as MetricKey]?.color }}>
+                            {METRIC_CONFIG[value as MetricKey]?.label || value}
+                          </span>
+                        )}
+                      />
+                      {metricsWithData.map((metric) => (
+                        <Line
+                          key={metric}
+                          yAxisId={metric}
+                          type="monotone"
+                          dataKey={metric}
+                          name={metric}
+                          stroke={METRIC_CONFIG[metric].color}
+                          strokeWidth={2.5}
+                          dot={{ fill: METRIC_CONFIG[metric].color, strokeWidth: 0, r: 3 }}
+                          activeDot={{ r: 6, strokeWidth: 0, fill: METRIC_CONFIG[metric].color }}
+                          connectNulls
+                          isAnimationActive={false}
+                        />
+                      ))}
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+                {metricsWithoutData.length > 0 && (
+                  <p className="text-[10px] text-zinc-600 text-center mt-2">
+                    Sem dados para: {metricsWithoutData.map((m) => METRIC_CONFIG[m].label).join(", ")}
+                  </p>
+                )}
+              </>
+            );
+          })()}
 
           {/* History count - Discrete footer */}
           {history && history.length > 0 && (
