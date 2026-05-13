@@ -536,7 +536,7 @@ export function MedicalTab({
                   </div>
 
                   {/* Stats grid */}
-                  <div className="grid grid-cols-3 divide-x px-0" style={{ borderBottom: `1px solid ${BORDER}`, divideColor: BORDER }}>
+                  <div className="grid grid-cols-3 divide-x px-0" style={{ borderBottom: `1px solid ${BORDER}`, ['--tw-divide-opacity' as any]: 1, borderColor: BORDER } as React.CSSProperties}>
                     {[
                       { label: "INÍCIO",       value: formatDateMediumBR(inj.start_date) },
                       { label: "RETORNO",      value: inj.return_date ? formatDateMediumBR(inj.return_date) : "—" },
