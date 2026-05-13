@@ -11,7 +11,6 @@ import {
   BarChart,
   Bar,
   Legend,
-  Cell,
 } from "recharts";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { format } from "date-fns";
@@ -20,7 +19,9 @@ import { usePlayerMatchRatings } from "@/hooks/usePlayerMatchRatings";
 import {
   usePlayerMatchStatsBySeasonCompetition,
   type SeasonCompetitionStats,
+  type MatchRowPreview,
 } from "@/hooks/usePlayerMatchStats";
+import { useManualPlayerStats } from "@/hooks/useManualPlayerStats";
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const A = "#E5173F";
@@ -88,6 +89,9 @@ const ChartTooltip = ({
   );
 };
 
+// ─── Extended season row type with source ─────────────────────────────────────
+type SeasonRowData = SeasonCompetitionStats & { source: "live" | "manual" };
+
 // ─── Metric selector options for the bar chart ───────────────────────────────
 const METRIC_OPTIONS = [
   { id: "ga", label: "Gols & Assistências", a: "goals", b: "assists", aLabel: "Gols", bLabel: "Assist.", aColor: GREEN, bColor: BLUE },
@@ -109,11 +113,83 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
   const { matches: ratedMatches, averageRating, bestMatch, recentTrend, isLoading: ratingsLoading } =
     usePlayerMatchRatings({ playerId, playerPosition, enabled: !!playerId });
 
-  // Season/competition breakdown
-  const { stats: seasonStats, bySeason, seasons, isLoading: statsLoading } =
+  // Season/competition breakdown (live data)
+  const { stats: seasonStats, bySeason, seasons, matchesByKey, isLoading: statsLoading } =
     usePlayerMatchStatsBySeasonCompetition({ playerId, enabled: !!playerId });
 
-  const isLoading = ratingsLoading || statsLoading;
+  // Manual stats (external games not tracked via Live Match)
+  const { manualStats, isLoading: manualLoading } = useManualPlayerStats({ playerId, enabled: !!playerId });
+
+  const isLoading = ratingsLoading || statsLoading || manualLoading;
+
+  // Merged season/competition breakdown (live + manual)
+  const mergedBySeason = useMemo((): Record<number, SeasonRowData[]> => {
+    const merged: Record<number, SeasonRowData[]> = {};
+    seasons.forEach(yr => {
+      merged[yr] = (bySeason[yr] ?? []).map(s => ({ ...s, source: "live" as const }));
+    });
+    manualStats.forEach(ms => {
+      const yr = ms.season_year;
+      if (!merged[yr]) merged[yr] = [];
+      const comp = ms.competition;
+      merged[yr].push({
+        id: `manual_${ms.id}`,
+        season_year: yr,
+        competition_id: ms.competition_id,
+        competition_name: comp?.display_name || comp?.name || null,
+        source: "manual" as const,
+        stats: {
+          matches: ms.games,
+          minutes: ms.minutes,
+          goals: ms.goals,
+          assists: ms.assists,
+          shots: ms.shots,
+          shots_on_target: ms.shots_on_target,
+          shots_off_target: Math.max(0, ms.shots - ms.shots_on_target),
+          shots_blocked: 0,
+          offsides: 0,
+          passes_completed: ms.passes_completed,
+          passes_failed: ms.passes_failed,
+          passes_total: ms.passes_completed + ms.passes_failed,
+          key_passes: ms.key_passes,
+          chances_created: ms.chances_created,
+          crosses_success: 0,
+          crosses_failed: 0,
+          ball_actions: 0,
+          dribbles_success: ms.dribbles_success,
+          dribbles_failed: ms.dribbles_failed,
+          dribbles_total: ms.dribbles_success + ms.dribbles_failed,
+          tackles: ms.tackles,
+          interceptions: ms.interceptions,
+          recoveries: ms.recoveries,
+          clearances: ms.clearances,
+          blocked_shots: 0,
+          was_dribbled: 0,
+          duels_won: ms.duels_won,
+          duels_total: ms.duels_won + ms.duels_lost,
+          aerial_duels_won: ms.aerial_duels_won,
+          aerial_duels_total: ms.aerial_duels_won + ms.aerial_duels_lost,
+          ground_duels_won: ms.duels_won - ms.aerial_duels_won,
+          ground_duels_total: (ms.duels_won + ms.duels_lost) - (ms.aerial_duels_won + ms.aerial_duels_lost),
+          yellow_cards: ms.yellow_cards,
+          red_cards: ms.red_cards,
+          fouls_committed: ms.fouls_committed,
+          fouls_suffered: ms.fouls_suffered,
+          possession_lost: 0,
+          saves: ms.saves,
+          goals_conceded: ms.goals_conceded,
+          clean_sheets: ms.clean_sheets,
+          penalties_saved: ms.penalties_saved,
+        },
+      });
+    });
+    return merged;
+  }, [bySeason, seasons, manualStats]);
+
+  const allSeasons = useMemo(() => {
+    const manualYears = manualStats.map(ms => ms.season_year);
+    return Array.from(new Set([...seasons, ...manualYears])).sort((a, b) => b - a);
+  }, [seasons, manualStats]);
 
   // Chart data: match ratings sorted chronologically
   const ratingChartData = useMemo(() => {
@@ -423,7 +499,7 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
         <SectionHead>DETALHES POR TEMPORADA</SectionHead>
         {isLoading ? (
           <NoData label="Carregando…" />
-        ) : seasons.length === 0 ? (
+        ) : allSeasons.length === 0 ? (
           <NoData label="Sem partidas registradas" />
         ) : (
           <div className="overflow-x-auto">
@@ -442,8 +518,8 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
                 </tr>
               </thead>
               <tbody>
-                {seasons.map((yr) => {
-                  const rows = bySeason[yr] ?? [];
+                {allSeasons.map((yr) => {
+                  const rows = mergedBySeason[yr] ?? [];
                   return [
                     /* Season header row */
                     <tr key={`yr-${yr}`} style={{ background: BORDER }}>
@@ -457,8 +533,12 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
                     </tr>,
 
                     /* Competition rows */
-                    ...rows.map((row: SeasonCompetitionStats) => (
-                      <SeasonRow key={row.id} row={row} />
+                    ...rows.map((row: SeasonRowData) => (
+                      <SeasonRow
+                        key={row.id}
+                        row={row}
+                        matches={row.source === "live" ? (matchesByKey[row.id] ?? []) : undefined}
+                      />
                     )),
                   ];
                 })}
@@ -472,95 +552,133 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
 }
 
 // ─── Season table row ─────────────────────────────────────────────────────────
-function SeasonRow({ row }: { row: SeasonCompetitionStats }) {
+function SeasonRow({ row, matches }: { row: SeasonRowData; matches?: MatchRowPreview[] }) {
+  const [expanded, setExpanded] = useState(false);
+  const canExpand = !!matches && matches.length > 0;
   const s = row.stats;
-  const A_TOKEN = "#E5173F";
-  const GREEN = "#22C55E";
-  const AMBER = "#F59E0B";
-  const BORDER = "#1C1C1C";
-  const TEXT = "#F2EDE4";
-  const MUTED = "#6B6560";
 
-  const gColor = s.goals > 0 ? GREEN : A_TOKEN;
-  const aColor = s.assists > 0 ? GREEN : A_TOKEN;
+  const R = "#E5173F";
+  const G = "#22C55E";
+  const AMB = "#F59E0B";
+  const BRD = "#1C1C1C";
+  const TXT = "#F2EDE4";
+  const MUT = "#6B6560";
+  const BLU = "#3B82F6";
+
+  const badge = row.source === "manual"
+    ? { label: "MANUAL", color: BLU }
+    : { label: "LIVE", color: G };
 
   return (
-    <tr
-      className="transition-colors"
-      style={{ borderBottom: `1px solid ${BORDER}` }}
-      onMouseEnter={(e) => (e.currentTarget.style.background = "#111")}
-      onMouseLeave={(e) => (e.currentTarget.style.background = "")}
-    >
-      {/* Competição */}
-      <td className="px-3 py-2.5" style={{ borderRight: `1px solid ${BORDER}`, color: TEXT }}>
-        {row.competition_name ?? "—"}
-      </td>
-
-      {/* J */}
-      <td className="px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BORDER}`, color: TEXT }}>
-        {s.matches}
-      </td>
-
-      {/* MIN */}
-      <td className="px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BORDER}`, color: MUTED }}>
-        {s.minutes}
-      </td>
-
-      {/* G */}
-      <td className="px-3 py-2.5 text-right tabular-nums font-bold" style={{ borderRight: `1px solid ${BORDER}`, color: gColor }}>
-        {s.goals}
-      </td>
-
-      {/* A */}
-      <td className="px-3 py-2.5 text-right tabular-nums font-bold" style={{ borderRight: `1px solid ${BORDER}`, color: aColor }}>
-        {s.assists}
-      </td>
-
-      {/* FIN */}
-      <td className="px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BORDER}`, color: MUTED }}>
-        {s.shots}
-      </td>
-
-      {/* NOG (shots on target) */}
-      <td className="px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BORDER}`, color: MUTED }}>
-        {s.shots_on_target}
-      </td>
-
-      {/* AM */}
-      <td
-        className="px-3 py-2.5 text-right tabular-nums"
-        style={{ borderRight: `1px solid ${BORDER}`, color: s.yellow_cards > 0 ? AMBER : MUTED }}
+    <>
+      <tr
+        className="transition-colors"
+        style={{ borderBottom: `1px solid ${BRD}`, cursor: canExpand ? "pointer" : "default" }}
+        onClick={() => canExpand && setExpanded(e => !e)}
+        onMouseEnter={(e) => (e.currentTarget.style.background = "#111")}
+        onMouseLeave={(e) => (e.currentTarget.style.background = "")}
       >
-        {s.yellow_cards}
-      </td>
+        {/* Competição */}
+        <td className="px-3 py-2.5" style={{ borderRight: `1px solid ${BRD}`, color: TXT }}>
+          <div className="flex items-center gap-1.5">
+            {canExpand && (
+              <span
+                className="inline-block text-[12px] leading-none select-none transition-transform"
+                style={{
+                  color: MUT,
+                  transform: expanded ? "rotate(90deg)" : "rotate(0deg)",
+                  display: "inline-block",
+                }}
+              >
+                ›
+              </span>
+            )}
+            {row.competition_name ?? "—"}
+          </div>
+        </td>
 
-      {/* VE */}
-      <td
-        className="px-3 py-2.5 text-right tabular-nums"
-        style={{ borderRight: `1px solid ${BORDER}`, color: s.red_cards > 0 ? "#E5173F" : MUTED }}
-      >
-        {s.red_cards}
-      </td>
+        {/* J */}
+        <td className="px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: TXT }}>
+          {s.matches}
+        </td>
 
-      {/* DES */}
-      <td className="px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BORDER}`, color: MUTED }}>
-        {s.tackles}
-      </td>
+        {/* MIN */}
+        <td className="px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>
+          {s.minutes}
+        </td>
 
-      {/* INT */}
-      <td className="px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BORDER}`, color: MUTED }}>
-        {s.interceptions}
-      </td>
+        {/* G */}
+        <td className="px-3 py-2.5 text-right tabular-nums font-bold" style={{ borderRight: `1px solid ${BRD}`, color: s.goals > 0 ? G : R }}>
+          {s.goals}
+        </td>
 
-      {/* Badge */}
-      <td className="px-3 py-2.5">
-        <span
-          className="font-jetbrains text-[9px] tracking-wider uppercase px-1.5 py-0.5"
-          style={{ color: "#22C55E", border: "1px solid #22C55E" }}
-        >
-          LIVE
-        </span>
-      </td>
-    </tr>
+        {/* A */}
+        <td className="px-3 py-2.5 text-right tabular-nums font-bold" style={{ borderRight: `1px solid ${BRD}`, color: s.assists > 0 ? G : R }}>
+          {s.assists}
+        </td>
+
+        {/* FIN */}
+        <td className="px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>
+          {s.shots}
+        </td>
+
+        {/* NOG */}
+        <td className="px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>
+          {s.shots_on_target}
+        </td>
+
+        {/* AM */}
+        <td className="px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: s.yellow_cards > 0 ? AMB : MUT }}>
+          {s.yellow_cards}
+        </td>
+
+        {/* VE */}
+        <td className="px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: s.red_cards > 0 ? R : MUT }}>
+          {s.red_cards}
+        </td>
+
+        {/* DES */}
+        <td className="px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>
+          {s.tackles}
+        </td>
+
+        {/* INT */}
+        <td className="px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>
+          {s.interceptions}
+        </td>
+
+        {/* Badge */}
+        <td className="px-3 py-2.5">
+          <span
+            className="font-jetbrains text-[9px] tracking-wider uppercase px-1.5 py-0.5"
+            style={{ color: badge.color, border: `1px solid ${badge.color}` }}
+          >
+            {badge.label}
+          </span>
+        </td>
+      </tr>
+
+      {/* Individual match rows when expanded */}
+      {expanded && matches?.map(m => (
+        <tr key={m.match_id} style={{ background: "#0C0C0C", borderBottom: `1px solid ${BRD}` }}>
+          <td className="py-2 pl-8 pr-3" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>
+            <span className="font-jetbrains text-[10px]">
+              {format(new Date(m.match_date), "dd/MM")} · {m.opponent_name}
+            </span>
+          </td>
+          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px]" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>1</td>
+          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px]" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>{m.minutes_played}</td>
+          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px] font-bold" style={{ borderRight: `1px solid ${BRD}`, color: m.goals > 0 ? G : MUT }}>{m.goals}</td>
+          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px] font-bold" style={{ borderRight: `1px solid ${BRD}`, color: m.assists > 0 ? G : MUT }}>{m.assists}</td>
+          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px]" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>{m.shots}</td>
+          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px]" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>{m.shots_on_target}</td>
+          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px]" style={{ borderRight: `1px solid ${BRD}`, color: m.yellow_cards > 0 ? AMB : MUT }}>{m.yellow_cards}</td>
+          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px]" style={{ borderRight: `1px solid ${BRD}`, color: m.red_cards > 0 ? R : MUT }}>{m.red_cards}</td>
+          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px]" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>{m.tackles}</td>
+          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px]" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>{m.interceptions}</td>
+          <td className="px-3 py-2" />
+        </tr>
+      ))}
+    </>
   );
 }

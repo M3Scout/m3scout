@@ -711,6 +711,22 @@ export interface SeasonCompetitionStats {
   stats: MatchDerivedStats;
 }
 
+/** Minimal per-match data for the expand/collapse rows in Detalhes por Temporada */
+export interface MatchRowPreview {
+  match_id: string;
+  match_date: string;
+  opponent_name: string;
+  minutes_played: number;
+  goals: number;
+  assists: number;
+  shots: number;
+  shots_on_target: number;
+  yellow_cards: number;
+  red_cards: number;
+  tackles: number;
+  interceptions: number;
+}
+
 /**
  * Hook to get player match stats organized by season and competition
  * This is the format expected by PlayerStatsSection "Detalhes por Temporada"
@@ -812,6 +828,7 @@ export function usePlayerMatchStatsBySeasonCompetition({
 
   // Group data by season_year + competition_id
   const statsBySeasonCompetition: Record<string, SeasonCompetitionStats> = {};
+  const matchesByKey: Record<string, MatchRowPreview[]> = {};
   const seasonYears = new Set<number>();
 
   const uniqueMatchPlayers = (() => {
@@ -900,6 +917,28 @@ export function usePlayerMatchStatsBySeasonCompetition({
             mp.match.added_time_first_half ?? 0,
             mp.match.added_time_second_half ?? 0
           );
+
+      // Track individual match preview for expand/collapse
+      if (!matchesByKey[key]) matchesByKey[key] = [];
+      {
+        const mShotsOff = stats?.shots ?? 0;
+        const mShotsOn = stats?.shots_on_target ?? 0;
+        const mShotsBlocked = stats?.shots_blocked ?? 0;
+        matchesByKey[key].push({
+          match_id: mp.match_id,
+          match_date: mp.match.match_date,
+          opponent_name: mp.match.opponent_name,
+          minutes_played: minutesPlayed,
+          goals: stats?.goals ?? 0,
+          assists: stats?.assists ?? 0,
+          shots: mShotsOff + mShotsOn + mShotsBlocked,
+          shots_on_target: mShotsOn,
+          yellow_cards: stats?.yellow_cards ?? 0,
+          red_cards: stats?.red_cards ?? 0,
+          tackles: stats?.tackles ?? 0,
+          interceptions: stats?.interceptions ?? 0,
+        });
+      }
 
       s.matches += 1;
       s.minutes += minutesPlayed;
@@ -993,6 +1032,7 @@ export function usePlayerMatchStatsBySeasonCompetition({
     stats: statsArray,
     bySeason: groupedBySeason,
     seasons: Array.from(seasonYears).sort((a, b) => b - a),
+    matchesByKey,
     isLoading,
     error,
     refetch,
