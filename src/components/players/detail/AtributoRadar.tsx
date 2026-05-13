@@ -111,9 +111,9 @@ export function AtributoRadar({ playerId }: AtributoRadarProps) {
             <tspan
               x={x.toFixed(2)}
               y={y.toFixed(2)}
-              fontSize="10"
+              fontSize="13"
               fontFamily="Barlow Condensed, sans-serif"
-              fontWeight="400"
+              fontWeight="700"
               fill={MUTED}
               letterSpacing="1"
             >
@@ -121,10 +121,10 @@ export function AtributoRadar({ playerId }: AtributoRadarProps) {
             </tspan>
             <tspan
               x={x.toFixed(2)}
-              dy="13"
-              fontSize="18"
+              dy="16"
+              fontSize="11"
               fontFamily="Barlow Condensed, sans-serif"
-              fontWeight="900"
+              fontWeight="700"
               fill={TEXT}
             >
               {loaded ? String(Math.round(scores[i])) : "—"}
