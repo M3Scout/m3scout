@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { fetchPlayerAllAttributeScores, type AttributeScoresData } from "@/lib/attributeScores";
 
-const CX = 105;
-const CY = 120;
-const R  = 72;
+const CX = 115;
+const CY = 130;
+const R  = 86;
 const LABEL_R = R + 20;
 
 const ACCENT = "#E5173F";
@@ -72,7 +72,7 @@ export function AtributoRadar({ playerId }: AtributoRadarProps) {
   }, [playerId]);
 
   return (
-    <svg viewBox="0 0 210 250" className="w-full" style={{ maxHeight: 260 }}>
+    <svg viewBox="0 0 230 270" className="w-full" style={{ maxHeight: 280 }}>
       {/* Grid rings */}
       {[0.25, 0.5, 0.75, 1].map(f => (
         <path key={f} d={gridPath(f)} fill="none" stroke={BORDER} strokeWidth="1" />
@@ -111,9 +111,9 @@ export function AtributoRadar({ playerId }: AtributoRadarProps) {
             <tspan
               x={x.toFixed(2)}
               y={y.toFixed(2)}
-              fontSize="8"
-              fontFamily="JetBrains Mono, monospace"
-              fontWeight="700"
+              fontSize="10"
+              fontFamily="Barlow Condensed, sans-serif"
+              fontWeight="400"
               fill={MUTED}
               letterSpacing="1"
             >
@@ -121,8 +121,8 @@ export function AtributoRadar({ playerId }: AtributoRadarProps) {
             </tspan>
             <tspan
               x={x.toFixed(2)}
-              dy="16"
-              fontSize="22"
+              dy="13"
+              fontSize="18"
               fontFamily="Barlow Condensed, sans-serif"
               fontWeight="900"
               fill={TEXT}
