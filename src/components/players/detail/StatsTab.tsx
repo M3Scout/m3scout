@@ -707,7 +707,9 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
 // ─── Season table row ─────────────────────────────────────────────────────────
 function SeasonRow({ row, matches }: { row: SeasonRowData; matches?: MatchRowPreview[] }) {
   const [expanded, setExpanded] = useState(false);
-  const canExpand = row.source === "live" && !!matches && matches.length > 0;
+  const hasMatchRows = row.source === "live" && !!matches && matches.length > 0;
+  // Manual rows always expandable (show stats detail); live rows expand when match data exists
+  const canExpand = hasMatchRows || row.source === "manual";
   const s = row.stats;
 
   const R   = "#E5173F";
@@ -802,8 +804,8 @@ function SeasonRow({ row, matches }: { row: SeasonRowData; matches?: MatchRowPre
         </td>
       </tr>
 
-      {/* Individual match rows when expanded (live only) */}
-      {expanded && matches?.map(m => (
+      {/* Individual match rows when expanded (live with match data) */}
+      {expanded && hasMatchRows && matches?.map(m => (
         <tr key={m.match_id} style={{ background: "#0C0C0C", borderBottom: `1px solid ${BRD}` }}>
           <td className="py-2 pl-8 pr-3" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>
             <span className="font-jetbrains text-[10px]">
@@ -823,6 +825,102 @@ function SeasonRow({ row, matches }: { row: SeasonRowData; matches?: MatchRowPre
           <td className="px-3 py-2" />
         </tr>
       ))}
+
+      {/* Detailed stats panel when expanded (manual rows — no individual match data) */}
+      {expanded && row.source === "manual" && (
+        <tr style={{ background: "#0C0C0C", borderBottom: `1px solid ${BRD}` }}>
+          <td colSpan={12} className="px-6 py-4">
+            <div className="flex flex-wrap gap-x-10 gap-y-3 font-jetbrains text-[10px]">
+
+              {/* Finalizações */}
+              {s.shots > 0 && (
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[9px] tracking-[0.18em] uppercase" style={{ color: MUT }}>Finalizações</span>
+                  <span style={{ color: TXT }}>
+                    {s.shots} total · {s.shots_on_target} no gol
+                    {s.shots_blocked > 0 ? ` · ${s.shots_blocked} bloq.` : ""}
+                  </span>
+                </div>
+              )}
+
+              {/* Passes */}
+              {s.passes_total > 0 && (
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[9px] tracking-[0.18em] uppercase" style={{ color: MUT }}>Passes</span>
+                  <span style={{ color: TXT }}>
+                    {s.passes_completed}/{s.passes_total}
+                    {s.key_passes > 0 ? ` · ${s.key_passes} decisivos` : ""}
+                    {s.chances_created > 0 ? ` · ${s.chances_created} chances` : ""}
+                  </span>
+                </div>
+              )}
+
+              {/* Dribles */}
+              {s.dribbles_total > 0 && (
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[9px] tracking-[0.18em] uppercase" style={{ color: MUT }}>Dribles</span>
+                  <span style={{ color: TXT }}>{s.dribbles_success}/{s.dribbles_total}</span>
+                </div>
+              )}
+
+              {/* Duelos */}
+              {s.duels_total > 0 && (
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[9px] tracking-[0.18em] uppercase" style={{ color: MUT }}>Duelos</span>
+                  <span style={{ color: TXT }}>
+                    {s.duels_won}/{s.duels_total}
+                    {s.aerial_duels_total > 0 ? ` · aéreo ${s.aerial_duels_won}/${s.aerial_duels_total}` : ""}
+                  </span>
+                </div>
+              )}
+
+              {/* Defesa extra */}
+              {(s.recoveries > 0 || s.clearances > 0) && (
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[9px] tracking-[0.18em] uppercase" style={{ color: MUT }}>Defesa</span>
+                  <span style={{ color: TXT }}>
+                    {s.recoveries > 0 ? `${s.recoveries} recup.` : ""}
+                    {s.recoveries > 0 && s.clearances > 0 ? " · " : ""}
+                    {s.clearances > 0 ? `${s.clearances} cortes` : ""}
+                  </span>
+                </div>
+              )}
+
+              {/* Faltas */}
+              {(s.fouls_committed > 0 || s.fouls_suffered > 0) && (
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[9px] tracking-[0.18em] uppercase" style={{ color: MUT }}>Faltas</span>
+                  <span style={{ color: TXT }}>
+                    {s.fouls_committed} com. · {s.fouls_suffered} sof.
+                  </span>
+                </div>
+              )}
+
+              {/* Cruzamentos */}
+              {(s.crosses_success + s.crosses_failed) > 0 && (
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[9px] tracking-[0.18em] uppercase" style={{ color: MUT }}>Cruzamentos</span>
+                  <span style={{ color: TXT }}>{s.crosses_success}/{s.crosses_success + s.crosses_failed}</span>
+                </div>
+              )}
+
+              {/* Goleiro */}
+              {(s.saves > 0 || s.goals_conceded > 0 || s.clean_sheets > 0) && (
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[9px] tracking-[0.18em] uppercase" style={{ color: MUT }}>Goleiro</span>
+                  <span style={{ color: TXT }}>
+                    {s.saves > 0 ? `${s.saves} defesas` : ""}
+                    {s.saves > 0 && s.goals_conceded > 0 ? " · " : ""}
+                    {s.goals_conceded > 0 ? `${s.goals_conceded} gols sof.` : ""}
+                    {s.clean_sheets > 0 ? <span style={{ color: G }}>{` · ${s.clean_sheets} cs`}</span> : ""}
+                  </span>
+                </div>
+              )}
+
+            </div>
+          </td>
+        </tr>
+      )}
     </>
   );
 }
