@@ -942,13 +942,23 @@ const PlayerDetail = () => {
                 </div>
                 <NoteEvolutionMiniChart playerId={player.id} currentRating={player.auto_rating} />
                 {initialRating !== null && player.auto_rating !== null && (
-                  <div className="flex items-center justify-between mt-3">
-                    <span className="font-jetbrains text-[18px]" style={{ color: "#6B6560" }}>
-                      INICIAL · {initialRating.toFixed(1)}
-                    </span>
-                    <span className="font-jetbrains text-[18px] font-bold" style={{ color: T.accent }}>
-                      ATUAL · {player.auto_rating.toFixed(1)}
-                    </span>
+                  <div className="flex items-start justify-between mt-3">
+                    <div>
+                      <p className="font-barlow font-bold text-[10px] uppercase mb-0.5" style={{ color: "#6B6560", letterSpacing: "0.12em" }}>
+                        INICIAL
+                      </p>
+                      <p className="font-jetbrains text-[22px] font-bold" style={{ color: "#6B6560" }}>
+                        {initialRating.toFixed(1)}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-barlow font-bold text-[10px] uppercase mb-0.5" style={{ color: "#6B6560", letterSpacing: "0.12em" }}>
+                        ATUAL
+                      </p>
+                      <p className="font-jetbrains text-[22px] font-bold" style={{ color: ratingDelta !== null && ratingDelta >= 0 ? T.green : T.accent }}>
+                        {player.auto_rating.toFixed(1)}
+                      </p>
+                    </div>
                   </div>
                 )}
               </section>
