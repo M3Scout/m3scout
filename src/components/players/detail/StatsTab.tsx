@@ -19,7 +19,7 @@ import { usePlayerMatchRatings } from "@/hooks/usePlayerMatchRatings";
 import {
   usePlayerMatchStatsBySeasonCompetition,
   type SeasonCompetitionStats,
-  type MatchRowPreview,
+  type MatchDerivedStats,
 } from "@/hooks/usePlayerMatchStats";
 import { useManualPlayerStats } from "@/hooks/useManualPlayerStats";
 
@@ -114,7 +114,7 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
     usePlayerMatchRatings({ playerId, playerPosition, enabled: !!playerId });
 
   // Season/competition breakdown (live data)
-  const { stats: seasonStats, bySeason, seasons, matchesByKey, isLoading: statsLoading } =
+  const { stats: seasonStats, bySeason, seasons, isLoading: statsLoading } =
     usePlayerMatchStatsBySeasonCompetition({ playerId, enabled: !!playerId });
 
   // Manual stats (external games not tracked via Live Match)
@@ -203,7 +203,7 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
       }));
   }, [ratedMatches]);
 
-  // Career totals (all seasons combined)
+  // Career totals (all seasons, live + manual)
   const careerTotals = useMemo(() => {
     const t = { matches: 0, minutes: 0, goals: 0, assists: 0, shots: 0, key_passes: 0, tackles: 0, yellow_cards: 0 };
     seasonStats.forEach(({ stats: s }) => {
@@ -216,17 +216,26 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
       t.tackles += s.tackles;
       t.yellow_cards += s.yellow_cards;
     });
+    manualStats.forEach(ms => {
+      t.matches += ms.games;
+      t.minutes += ms.minutes;
+      t.goals += ms.goals;
+      t.assists += ms.assists;
+      t.shots += ms.shots;
+      t.key_passes += ms.key_passes;
+      t.tackles += ms.tackles;
+      t.yellow_cards += ms.yellow_cards;
+    });
     return t;
-  }, [seasonStats]);
+  }, [seasonStats, manualStats]);
 
-  // Bar chart: one entry per season, aggregated
+  // Bar chart: one entry per season, live + manual aggregated
   const barData = useMemo(() => {
-    return seasons.map((yr) => {
-      const rows = bySeason[yr] ?? [];
+    return allSeasons.map((yr) => {
       const agg: Record<string, number> = {
         goals: 0, assists: 0, shots: 0, shots_on_target: 0, tackles: 0, interceptions: 0,
       };
-      rows.forEach(({ stats: s }) => {
+      (bySeason[yr] ?? []).forEach(({ stats: s }) => {
         agg.goals += s.goals;
         agg.assists += s.assists;
         agg.shots += s.shots;
@@ -234,9 +243,17 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
         agg.tackles += s.tackles;
         agg.interceptions += s.interceptions;
       });
+      manualStats.filter(ms => ms.season_year === yr).forEach(ms => {
+        agg.goals += ms.goals;
+        agg.assists += ms.assists;
+        agg.shots += ms.shots;
+        agg.shots_on_target += ms.shots_on_target;
+        agg.tackles += ms.tackles;
+        agg.interceptions += ms.interceptions;
+      });
       return { season: String(yr), ...agg };
     });
-  }, [seasons, bySeason]);
+  }, [allSeasons, bySeason, manualStats]);
 
   const metric = METRIC_OPTIONS.find((m) => m.id === selectedMetric)!;
 
@@ -416,11 +433,11 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
             </div>
           ))}
         </div>
-        {seasons.length > 0 && (
+        {allSeasons.length > 0 && (
           <div className="px-4 py-2 border-t font-jetbrains text-[10px] tracking-wider uppercase" style={{ borderColor: BORDER, color: MUTED }}>
-            {seasons.length} temporada{seasons.length !== 1 ? "s" : ""}
+            {allSeasons.length} temporada{allSeasons.length !== 1 ? "s" : ""}
             {" · "}
-            {seasonStats.length} competiç{seasonStats.length !== 1 ? "ões" : "ão"}
+            {seasonStats.length + manualStats.length} competiç{(seasonStats.length + manualStats.length) !== 1 ? "ões" : "ão"}
           </div>
         )}
       </div>
@@ -534,11 +551,7 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
 
                     /* Competition rows */
                     ...rows.map((row: SeasonRowData) => (
-                      <SeasonRow
-                        key={row.id}
-                        row={row}
-                        matches={row.source === "live" ? (matchesByKey[row.id] ?? []) : undefined}
-                      />
+                      <SeasonRow key={row.id} row={row} />
                     )),
                   ];
                 })}
@@ -551,14 +564,158 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
   );
 }
 
+// ─── Stat detail line ─────────────────────────────────────────────────────────
+function StatLine({
+  label,
+  value,
+  highlight = false,
+}: {
+  label: string;
+  value: number | string | null;
+  highlight?: boolean;
+}) {
+  const display = value == null || value === "" ? "—" : String(value);
+  return (
+    <div
+      className="flex items-baseline justify-between py-[5px]"
+      style={{ borderBottom: `1px solid #111` }}
+    >
+      <span
+        className="font-jetbrains text-[9px] uppercase tracking-[0.12em] leading-none"
+        style={{ color: MUTED }}
+      >
+        {label}
+      </span>
+      <span
+        className="font-jetbrains text-[11px] tabular-nums leading-none"
+        style={{ color: highlight ? GREEN : display === "—" ? MUTED : TEXT }}
+      >
+        {display}
+      </span>
+    </div>
+  );
+}
+
+// ─── Category header inside panel ─────────────────────────────────────────────
+function CategoryHead({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-2 mb-3">
+      <div className="w-[2px] h-[12px]" style={{ background: A }} />
+      <span
+        className="font-barlow font-black text-[11px] uppercase tracking-[0.2em]"
+        style={{ color: MUTED }}
+      >
+        {children}
+      </span>
+    </div>
+  );
+}
+
+// ─── Full stat breakdown panel (shown when row is expanded) ───────────────────
+function StatDetailPanel({ stats: s }: { stats: MatchDerivedStats }) {
+  const passAcc =
+    s.passes_total > 0 ? Math.round((s.passes_completed / s.passes_total) * 100) : null;
+  const crossTotal = s.crosses_success + s.crosses_failed;
+
+  return (
+    <div style={{ background: BORDER }}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-px">
+
+        {/* ── Ataque ──────────────────────────────────────────────────────── */}
+        <div className="p-4" style={{ background: "#0B0B0B" }}>
+          <CategoryHead>Ataque</CategoryHead>
+          <StatLine label="Gols"          value={s.goals}           highlight={s.goals > 0} />
+          <StatLine label="Assistências"  value={s.assists}         highlight={s.assists > 0} />
+          <StatLine label="Finalizações"  value={s.shots} />
+          <StatLine label="No Gol"        value={s.shots_on_target} />
+          <StatLine label="Fora"          value={s.shots_off_target} />
+          {s.shots_blocked > 0 && (
+            <StatLine label="Bloqueadas"  value={s.shots_blocked} />
+          )}
+          {s.offsides > 0 && (
+            <StatLine label="Impedimentos" value={s.offsides} />
+          )}
+        </div>
+
+        {/* ── Passes ──────────────────────────────────────────────────────── */}
+        <div className="p-4" style={{ background: "#0B0B0B" }}>
+          <CategoryHead>Passes</CategoryHead>
+          <StatLine label="Completos"       value={s.passes_completed} />
+          <StatLine label="Falhos"          value={s.passes_failed} />
+          <StatLine label="Total"           value={s.passes_total} />
+          <StatLine
+            label="% Acerto"
+            value={passAcc !== null ? `${passAcc}%` : null}
+            highlight={passAcc !== null && passAcc >= 80}
+          />
+          <StatLine label="Passes-Chave"    value={s.key_passes}      highlight={s.key_passes > 0} />
+          <StatLine label="Chances Criadas" value={s.chances_created} highlight={s.chances_created > 0} />
+          {crossTotal > 0 && (
+            <StatLine
+              label="Cruzamentos V/T"
+              value={`${s.crosses_success}/${crossTotal}`}
+            />
+          )}
+        </div>
+
+        {/* ── Defesa ──────────────────────────────────────────────────────── */}
+        <div className="p-4" style={{ background: "#0B0B0B" }}>
+          <CategoryHead>Defesa</CategoryHead>
+          <StatLine label="Desarmes"       value={s.tackles} />
+          <StatLine label="Interceptações" value={s.interceptions} />
+          <StatLine label="Recuperações"   value={s.recoveries} />
+          {s.clearances > 0 && (
+            <StatLine label="Afastamentos" value={s.clearances} />
+          )}
+          {s.blocked_shots > 0 && (
+            <StatLine label="Bloqueios"    value={s.blocked_shots} />
+          )}
+          {s.was_dribbled > 0 && (
+            <StatLine label="Dribles Sofridos" value={s.was_dribbled} />
+          )}
+          {s.duels_total > 0 && (
+            <StatLine label="Duelos V/T"   value={`${s.duels_won}/${s.duels_total}`} />
+          )}
+          {s.aerial_duels_total > 0 && (
+            <StatLine label="Aéreos V/T"   value={`${s.aerial_duels_won}/${s.aerial_duels_total}`} />
+          )}
+          {s.ground_duels_total > 0 && (
+            <StatLine label="Terrestres V/T" value={`${s.ground_duels_won}/${s.ground_duels_total}`} />
+          )}
+        </div>
+
+        {/* ── Dribles / Posse ─────────────────────────────────────────────── */}
+        <div className="p-4" style={{ background: "#0B0B0B" }}>
+          <CategoryHead>Dribles / Posse</CategoryHead>
+          <StatLine label="Dribles Certos"     value={s.dribbles_success} highlight={s.dribbles_success > 0} />
+          <StatLine label="Dribles Falhos"     value={s.dribbles_failed} />
+          <StatLine label="Total Dribles"      value={s.dribbles_total} />
+          {s.ball_actions > 0 && (
+            <StatLine label="Ações de Bola"    value={s.ball_actions} />
+          )}
+          {s.possession_lost > 0 && (
+            <StatLine label="Posse Perdida"    value={s.possession_lost} />
+          )}
+          <StatLine label="Faltas Cometidas"   value={s.fouls_committed} />
+          <StatLine label="Faltas Sofridas"    value={s.fouls_suffered} />
+          <StatLine label="Cartões Amarelos"   value={s.yellow_cards} />
+          {s.red_cards > 0 && (
+            <StatLine label="Cartões Vermelhos" value={s.red_cards} />
+          )}
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
 // ─── Season table row ─────────────────────────────────────────────────────────
-function SeasonRow({ row, matches }: { row: SeasonRowData; matches?: MatchRowPreview[] }) {
+function SeasonRow({ row }: { row: SeasonRowData }) {
   const [expanded, setExpanded] = useState(false);
-  const canExpand = !!matches && matches.length > 0;
   const s = row.stats;
 
-  const R = "#E5173F";
-  const G = "#22C55E";
+  const R   = "#E5173F";
+  const G   = "#22C55E";
   const AMB = "#F59E0B";
   const BRD = "#1C1C1C";
   const TXT = "#F2EDE4";
@@ -567,32 +724,31 @@ function SeasonRow({ row, matches }: { row: SeasonRowData; matches?: MatchRowPre
 
   const badge = row.source === "manual"
     ? { label: "MANUAL", color: BLU }
-    : { label: "LIVE", color: G };
+    : { label: "LIVE",   color: G };
 
   return (
     <>
       <tr
         className="transition-colors"
-        style={{ borderBottom: `1px solid ${BRD}`, cursor: canExpand ? "pointer" : "default" }}
-        onClick={() => canExpand && setExpanded(e => !e)}
+        style={{ borderBottom: `1px solid ${BRD}`, cursor: "pointer" }}
+        onClick={() => setExpanded(e => !e)}
         onMouseEnter={(e) => (e.currentTarget.style.background = "#111")}
         onMouseLeave={(e) => (e.currentTarget.style.background = "")}
       >
         {/* Competição */}
         <td className="px-3 py-2.5" style={{ borderRight: `1px solid ${BRD}`, color: TXT }}>
           <div className="flex items-center gap-1.5">
-            {canExpand && (
-              <span
-                className="inline-block text-[12px] leading-none select-none transition-transform"
-                style={{
-                  color: MUT,
-                  transform: expanded ? "rotate(90deg)" : "rotate(0deg)",
-                  display: "inline-block",
-                }}
-              >
-                ›
-              </span>
-            )}
+            <span
+              className="inline-block text-[12px] leading-none select-none"
+              style={{
+                color: MUT,
+                transform: expanded ? "rotate(90deg)" : "rotate(0deg)",
+                transition: "transform 150ms",
+                display: "inline-block",
+              }}
+            >
+              ›
+            </span>
             {row.competition_name ?? "—"}
           </div>
         </td>
@@ -601,52 +757,42 @@ function SeasonRow({ row, matches }: { row: SeasonRowData; matches?: MatchRowPre
         <td className="px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: TXT }}>
           {s.matches}
         </td>
-
         {/* MIN */}
         <td className="px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>
           {s.minutes}
         </td>
-
         {/* G */}
         <td className="px-3 py-2.5 text-right tabular-nums font-bold" style={{ borderRight: `1px solid ${BRD}`, color: s.goals > 0 ? G : R }}>
           {s.goals}
         </td>
-
         {/* A */}
         <td className="px-3 py-2.5 text-right tabular-nums font-bold" style={{ borderRight: `1px solid ${BRD}`, color: s.assists > 0 ? G : R }}>
           {s.assists}
         </td>
-
         {/* FIN */}
         <td className="px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>
           {s.shots}
         </td>
-
         {/* NOG */}
         <td className="px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>
           {s.shots_on_target}
         </td>
-
         {/* AM */}
         <td className="px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: s.yellow_cards > 0 ? AMB : MUT }}>
           {s.yellow_cards}
         </td>
-
         {/* VE */}
         <td className="px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: s.red_cards > 0 ? R : MUT }}>
           {s.red_cards}
         </td>
-
         {/* DES */}
         <td className="px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>
           {s.tackles}
         </td>
-
         {/* INT */}
         <td className="px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>
           {s.interceptions}
         </td>
-
         {/* Badge */}
         <td className="px-3 py-2.5">
           <span
@@ -658,27 +804,14 @@ function SeasonRow({ row, matches }: { row: SeasonRowData; matches?: MatchRowPre
         </td>
       </tr>
 
-      {/* Individual match rows when expanded */}
-      {expanded && matches?.map(m => (
-        <tr key={m.match_id} style={{ background: "#0C0C0C", borderBottom: `1px solid ${BRD}` }}>
-          <td className="py-2 pl-8 pr-3" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>
-            <span className="font-jetbrains text-[10px]">
-              {format(new Date(m.match_date), "dd/MM")} · {m.opponent_name}
-            </span>
+      {/* Expanded detail panel */}
+      {expanded && (
+        <tr>
+          <td colSpan={12} style={{ padding: 0, borderBottom: `1px solid ${BRD}` }}>
+            <StatDetailPanel stats={s} />
           </td>
-          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px]" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>1</td>
-          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px]" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>{m.minutes_played}</td>
-          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px] font-bold" style={{ borderRight: `1px solid ${BRD}`, color: m.goals > 0 ? G : MUT }}>{m.goals}</td>
-          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px] font-bold" style={{ borderRight: `1px solid ${BRD}`, color: m.assists > 0 ? G : MUT }}>{m.assists}</td>
-          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px]" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>{m.shots}</td>
-          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px]" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>{m.shots_on_target}</td>
-          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px]" style={{ borderRight: `1px solid ${BRD}`, color: m.yellow_cards > 0 ? AMB : MUT }}>{m.yellow_cards}</td>
-          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px]" style={{ borderRight: `1px solid ${BRD}`, color: m.red_cards > 0 ? R : MUT }}>{m.red_cards}</td>
-          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px]" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>{m.tackles}</td>
-          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px]" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>{m.interceptions}</td>
-          <td className="px-3 py-2" />
         </tr>
-      ))}
+      )}
     </>
   );
 }
