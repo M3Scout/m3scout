@@ -1,61 +1,31 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { getYouTubeEmbedUrl, safeArray } from "@/lib/utils";
-import { isGoalkeeper } from "@/lib/positionUtils";
+import { safeArray } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { PermissionGate } from "@/components/auth/PermissionGate";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DeletePlayerDialog } from "@/components/players/DeletePlayerDialog";
+import { usePlayerMatchStats } from "@/hooks/usePlayerMatchStats";
+import { useMarketScore } from "@/hooks/useMarketScore";
+import { AtributoRadar } from "@/components/players/detail/AtributoRadar";
+import { MarketValueMiniChart } from "@/components/players/detail/MarketValueMiniChart";
+import { NoteEvolutionMiniChart } from "@/components/players/detail/NoteEvolutionMiniChart";
 import {
   ArrowLeft,
   Edit,
   Trash2,
   FileText,
-  Calendar,
   User,
-  Flag,
-  MapPin,
-  Play,
   Eye,
   EyeOff,
   Loader2,
-  Activity,
-  Target,
-  Stethoscope,
-  FileText as ContractIcon,
-  BarChart3,
-  DollarSign,
   Lock,
 } from "lucide-react";
-import { DeletePlayerDialog } from "@/components/players/DeletePlayerDialog";
-import { PhysicalDataSection } from "@/components/players/sections/PhysicalDataSection";
-import { TechnicalProfileSection } from "@/components/players/sections/TechnicalProfileSection";
-import { InjuryHistorySection } from "@/components/players/sections/InjuryHistorySection";
-import { ContractSection } from "@/components/players/sections/ContractSection";
-import { InternalEvaluationSection } from "@/components/players/sections/InternalEvaluationSection";
-import { PlayerStatsSection } from "@/components/players/sections/PlayerStatsSection";
-import { GoalkeeperStatsSection } from "@/components/players/sections/GoalkeeperStatsSection";
-import { PlayerRatingBadge } from "@/components/players/PlayerRatingBadge";
-import { RatingEvolutionChart } from "@/components/players/sections/RatingEvolutionChart";
-import { MatchRatingEvolutionChart } from "@/components/players/sections/MatchRatingEvolutionChart";
-import { PlayerOverviewSection } from "@/components/players/sections/PlayerOverviewSection";
-import { SeasonSummaryCard } from "@/components/players/sections/SeasonSummaryCard";
-import { OverallRatingCard } from "@/components/players/sections/OverallRatingCard";
-import { MarketValueSection } from "@/components/players/sections/MarketValueSection";
-import { MarketValueTab } from "@/components/players/sections/MarketValueTab";
-import { DataQualityPanel } from "@/components/players/DataQualityPanel";
-import { RecentReportsCard } from "@/components/players/sections/RecentReportsCard";
-import { MetadataCard } from "@/components/players/sections/MetadataCard";
-import { MarketScoreCard } from "@/components/players/sections/MarketScoreCard";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
-
-import { UnifiedRadarCard } from "@/components/players/UnifiedRadarCard";
-import { WhatsAppSummaryButton } from "@/components/players/WhatsAppSummaryButton";
+// ─── Types ───────────────────────────────────────────────────────────────────
 
 interface Player {
   id: string;
@@ -74,7 +44,6 @@ interface Player {
   bio_public: string | null;
   highlight_video_url: string | null;
   is_public: boolean | null;
-  // Contract
   contract_start: string | null;
   contract_end: string | null;
   contract_notes: string | null;
@@ -84,7 +53,6 @@ interface Player {
   passports: string[] | null;
   agent_name: string | null;
   agent_contact: string | null;
-  // Physical
   weight: number | null;
   body_fat_percentage: number | null;
   muscle_mass: number | null;
@@ -93,43 +61,28 @@ interface Player {
   sprint_30m: number | null;
   vo2_max: number | null;
   last_physical_evaluation: string | null;
-  // Technical
   playing_height_preference: string | null;
   play_style: string | null;
   primary_tactical_role: string | null;
   secondary_tactical_role: string | null;
   strengths: string[] | null;
   areas_to_develop: string[] | null;
-  // Medical
   physical_status: string | null;
   medical_notes: string | null;
-  // Internal Evaluation
   overall_rating: number | null;
   potential_rating: number | null;
   ready_to_compete: boolean | null;
   estimated_level: string | null;
   internal_evaluation_notes: string | null;
   internal_notes: string | null;
-  // Auto Rating
   auto_rating: number | null;
   rating_updated_at: string | null;
   auto_rating_details: Record<string, unknown> | null;
-  // Market Value
   market_value: number | null;
   market_value_currency: string | null;
   market_value_trend: string | null;
-  // Metadata
   created_at: string;
   updated_at: string;
-}
-
-interface Injury {
-  id: string;
-  injury_type: string;
-  start_date: string;
-  return_date: string | null;
-  severity: string;
-  notes: string | null;
 }
 
 interface ScoutingReport {
@@ -137,86 +90,120 @@ interface ScoutingReport {
   match_date: string;
   final_score: number;
   rating: number;
-  competition: {
-    name: string;
-  } | null;
+  competition: { name: string } | null;
 }
+
+// ─── Design tokens ───────────────────────────────────────────────────────────
+
+const T = {
+  bg: "bg-[#0A0A0A]",
+  text: "text-[#F2EDE4]",
+  accent: "#E5173F",
+  border: "border-[#1C1C1C]",
+  muted: "text-[#6B6560]",
+  green: "#22C55E",
+  amber: "#F59E0B",
+} as const;
+
+const TABS = [
+  { id: "overview", label: "VISÃO GERAL" },
+  { id: "stats", label: "ESTATÍSTICAS" },
+  { id: "market", label: "VALOR DE MERCADO" },
+  { id: "physical", label: "FÍSICO" },
+  { id: "technical", label: "TÉCNICO" },
+  { id: "medical", label: "MÉDICO" },
+  { id: "contract", label: "CONTRATO" },
+] as const;
+
+// ─── Small atoms ─────────────────────────────────────────────────────────────
+
+function Label({ children }: { children: React.ReactNode }) {
+  return (
+    <span className={`block text-[10px] tracking-[0.18em] uppercase ${T.muted} font-jetbrains mb-1`}>
+      {children}
+    </span>
+  );
+}
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <p className={`text-[10px] tracking-[0.18em] uppercase ${T.muted} font-jetbrains mb-3`}>
+      {children}
+    </p>
+  );
+}
+
+function Placeholder() {
+  return (
+    <div className="py-16 text-center">
+      <span className="font-barlow font-black text-lg tracking-[0.3em] text-[#6B6560] uppercase">
+        — Seção em desenvolvimento —
+      </span>
+    </div>
+  );
+}
+
+function formatMarketValue(value: number | null, currency: string | null) {
+  if (value === null || value === undefined) return "—";
+  const symbol = currency === "BRL" ? "R$" : "€";
+  if (value >= 1_000_000) return `${symbol}${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `${symbol}${(value / 1_000).toFixed(0)}K`;
+  return `${symbol}${value}`;
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
 
 const PlayerDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { isAdmin, isScout, isPlayer, linkedPlayerId } = useAuth();
   const { can, isPlayerRole } = usePermissions();
+
   const [player, setPlayer] = useState<Player | null>(null);
-  const [injuries, setInjuries] = useState<Injury[]>([]);
   const [reports, setReports] = useState<ScoutingReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("overview");
 
-  // === ROUTE-LEVEL ACCESS CONTROL ===
-  // Permission-based: anyone with players_view can see athletes
-  // Player role (athlete): can ONLY see their own athlete (self-only rule)
+  // Permissions
   const hasViewPermission = can("players", "view");
   const isOwnAthlete = (isPlayer || isPlayerRole) && linkedPlayerId === id;
-  
-  // Access rules:
-  // 1. Player/Athlete role: can ONLY see their own athlete (self-only)
-  // 2. All other roles: check players_view permission
   const isPlayerRoleOnly = (isPlayer || isPlayerRole) && !isAdmin && !isScout;
   const canAccessAthlete = isPlayerRoleOnly ? isOwnAthlete : hasViewPermission;
-  
-  // Read-only: Player role OR viewer (anyone without edit permission)
   const canEditPlayer = can("players", "edit");
-  const isReadOnly = !canEditPlayer;
-  
-  // Can edit: requires edit permission
   const canEdit = canEditPlayer;
-  
-  // Can create reports: requires reports create permission
   const canCreateReport = can("reports", "create");
 
-  // Refetch player to get updated auto_rating after stats change
+  // Season stats hook
+  const { totals: seasonTotals, isLoading: statsLoading } = usePlayerMatchStats({
+    playerId: id ?? "",
+    seasonYear: new Date().getFullYear(),
+    enabled: !!id,
+  });
+
+  // Market score hook
+  const { displayScore: marketScore, scoreLoading: marketScoreLoading } = useMarketScore({
+    playerId: id ?? "",
+    playerName: player?.full_name ?? "",
+    position: player?.position ?? "",
+    secondaryPositions: player?.secondary_positions ?? [],
+    birthDate: player?.birth_date,
+    age: player?.age,
+    enabled: !!id && !!player,
+  });
+
   const refetchPlayer = async () => {
     if (!id) return;
-    const { data } = await supabase
-      .from("players")
-      .select("*")
-      .eq("id", id)
-      .limit(1);
-    const playerRow = Array.isArray(data) ? data[0] ?? null : null;
-    if (playerRow) {
-      setPlayer(playerRow as Player);
-    }
-  };
-
-  // Refetch injuries after adding new one
-  const refetchInjuries = async () => {
-    if (!id) return;
-    const { data } = await supabase
-      .from("player_injuries")
-      .select("*")
-      .eq("player_id", id)
-      .order("start_date", { ascending: false });
-    if (data) {
-      setInjuries(data);
-    }
+    const { data } = await supabase.from("players").select("*").eq("id", id).limit(1);
+    const row = Array.isArray(data) ? data[0] ?? null : null;
+    if (row) setPlayer(row as Player);
   };
 
   useEffect(() => {
+    if (!id) return;
     const fetchData = async () => {
-      if (!id) return;
-
-      const [playerRes, injuriesRes, reportsRes] = await Promise.all([
-        supabase
-          .from("players")
-          .select("*")
-          .eq("id", id)
-          .limit(1),
-        supabase
-          .from("player_injuries")
-          .select("*")
-          .eq("player_id", id)
-          .order("start_date", { ascending: false }),
+      const [playerRes, reportsRes] = await Promise.all([
+        supabase.from("players").select("*").eq("id", id).limit(1),
         supabase
           .from("scouting_reports")
           .select("id, match_date, final_score, rating, competition:competitions(name)")
@@ -224,43 +211,27 @@ const PlayerDetail = () => {
           .order("match_date", { ascending: false })
           .limit(5),
       ]);
-
-      const playerRow = Array.isArray(playerRes.data) ? playerRes.data[0] ?? null : null;
-
-      if (import.meta.env.DEV) {
-        console.log("[BREAKDOWN] fetched payload", {
-          playerId: id,
-          hasAutoRatingDetails: Boolean(playerRow?.auto_rating_details),
-          autoRating: playerRow?.auto_rating,
-          position: playerRow?.position,
-          competitionsInDetails: Array.isArray((playerRow as any)?.auto_rating_details?.competitions)
-            ? (playerRow as any).auto_rating_details.competitions.map((c: any) => ({
-                competition_id: c?.competition_id,
-                season_year: c?.season_year,
-                stat_breakdown_len: Array.isArray(c?.stat_breakdown) ? c.stat_breakdown.length : 0,
-              }))
-            : [],
-        });
-      }
-
-      if (playerRow) {
-        setPlayer(playerRow as Player);
-      }
-      if (injuriesRes.data) {
-        setInjuries(injuriesRes.data);
-      }
-      if (reportsRes.data) {
-        setReports(reportsRes.data as ScoutingReport[]);
-      }
+      const row = Array.isArray(playerRes.data) ? playerRes.data[0] ?? null : null;
+      if (row) setPlayer(row as Player);
+      if (reportsRes.data) setReports(reportsRes.data as ScoutingReport[]);
       setLoading(false);
     };
-
     fetchData();
   }, [id]);
 
-  const handleDeleteSuccess = () => {
-    navigate("/app/players");
-  };
+  // KPI: average scout note
+  const avgScoutNote = useMemo(() => {
+    if (!reports.length) return null;
+    const avg = reports.reduce((s, r) => s + (r.final_score ?? 0), 0) / reports.length;
+    return avg;
+  }, [reports]);
+
+  // Season computed
+  const ga = (seasonTotals?.goals ?? 0) + (seasonTotals?.assists ?? 0);
+
+  const handleDeleteSuccess = () => navigate("/app/players");
+
+  // ── Loading ──────────────────────────────────────────────────────────────
 
   if (loading) {
     return (
@@ -270,7 +241,6 @@ const PlayerDetail = () => {
     );
   }
 
-  // === ACCESS DENIED: Player trying to view another athlete ===
   if (!canAccessAthlete && !loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
@@ -281,7 +251,12 @@ const PlayerDetail = () => {
         <p className="text-muted-foreground text-center max-w-md">
           Você só pode visualizar o perfil do seu próprio atleta.
         </p>
-        <Button onClick={() => navigate("/app/my-profile")}>Ir para Meu Perfil</Button>
+        <button
+          onClick={() => navigate("/app/my-profile")}
+          className="px-4 py-2 bg-primary text-primary-foreground text-sm"
+        >
+          Ir para Meu Perfil
+        </button>
       </div>
     );
   }
@@ -290,349 +265,579 @@ const PlayerDetail = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
         <h2 className="text-xl font-semibold">Atleta não encontrado</h2>
-        <Button onClick={() => navigate("/app/players")}>Voltar</Button>
+        <button
+          onClick={() => navigate("/app/players")}
+          className="px-4 py-2 bg-primary text-primary-foreground text-sm"
+        >
+          Voltar
+        </button>
       </div>
     );
   }
 
-  return (
-    <div className="space-y-6 w-full min-w-0 overflow-x-hidden">
-      {/* Header - Mobile-first redesign */}
-      <div className="flex flex-col gap-4 w-full min-w-0">
-        {/* Row 1: Back button + Actions */}
-        <div className="flex items-center justify-between gap-2">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/app/players")}>
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <WhatsAppSummaryButton
-            playerId={player.id}
-            fullName={player.full_name}
-            position={player.position}
-            age={player.age}
-            currentClub={player.current_club}
-          />
-        </div>
-        
-        {/* Row 2: Photo + Name/Position/Rating */}
-        <div className="flex items-start gap-4 w-full min-w-0">
-          {/* Photo */}
-          <div className="w-20 h-20 rounded-xl overflow-hidden bg-secondary/50 flex-shrink-0">
-            {player.photo_url ? (
-              <img
-                src={player.photo_url}
-                alt={player.full_name}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <User className="w-8 h-8 text-muted-foreground" />
-              </div>
-            )}
-          </div>
-          
-          {/* Info block */}
-          <div className="flex-1 min-w-0">
-            {/* Name */}
-            <h1 className="text-xl md:text-2xl font-bold truncate">{player.full_name}</h1>
-            
-            {/* Positions */}
-            <div className="flex flex-wrap items-center gap-1.5 mt-1 text-muted-foreground">
-              <Badge variant="outline" className="text-xs">{player.position}</Badge>
-              {safeArray(player.secondary_positions).slice(0, 2).map((pos) => (
-                <Badge key={pos} variant="outline" className="opacity-70 text-xs">
-                  {pos}
-                </Badge>
-              ))}
-            </div>
-            
-            {/* Rating */}
-            {player.auto_rating !== null && player.auto_rating !== undefined && (
-              <div className="mt-2">
-                <PlayerRatingBadge
-                  rating={player.auto_rating}
-                  playerPosition={player.position}
-                  size="sm"
-                />
-              </div>
-            )}
-          </div>
-        </div>
-        
-        {/* Row 3: Badge - compact */}
-        <div className="flex items-center">
-          <Badge variant={player.is_public ? "default" : "secondary"} className="text-xs">
-            {player.is_public ? (
-              <>
-                <Eye className="w-3 h-3 mr-1" />
-                Público
-              </>
-            ) : (
-              <>
-                <EyeOff className="w-3 h-3 mr-1" />
-                Privado
-              </>
-            )}
-          </Badge>
-        </div>
+  // ── Render ───────────────────────────────────────────────────────────────
 
-        {/* Row 4: Actions - Only show for Admin/Scout (read-only for Player) */}
-        {!isReadOnly && (
-          <div className="flex flex-col gap-2 w-full">
-            {canCreateReport && (
-              <Button variant="outline" asChild className="w-full justify-center">
-                <Link to={`/app/reports/new?player=${player.id}`}>
-                  <FileText className="w-4 h-4 mr-2" />
-                  Novo Relatório
-                </Link>
-              </Button>
+  return (
+    <div
+      className={`${T.bg} ${T.text} -mx-4 -mt-4 md:-mx-6 md:-mt-6 lg:-mx-8 lg:-mt-8 pb-24 md:pb-8`}
+      style={{ fontFamily: "Inter, system-ui, sans-serif" }}
+    >
+
+      {/* ── Top accent line ─────────────────────────────────────────────── */}
+      <div style={{ height: 2, background: T.accent }} />
+
+      {/* ── Topbar ──────────────────────────────────────────────────────── */}
+      <div
+        className={`flex items-center justify-between gap-4 px-4 md:px-6 py-3 border-b ${T.border}`}
+      >
+        <button
+          onClick={() => navigate("/app/players")}
+          className="flex items-center gap-1.5 font-jetbrains text-[11px] tracking-[0.14em] text-[#6B6560] hover:text-[#F2EDE4] transition-colors uppercase"
+        >
+          <ArrowLeft className="w-3 h-3" />
+          ATLETAS / {player.full_name.toUpperCase()}
+        </button>
+
+        <div className="flex items-center gap-2 shrink-0">
+          {canCreateReport && (
+            <Link
+              to={`/app/reports/new?player=${player.id}`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 border ${T.border} font-jetbrains text-[11px] tracking-wider uppercase text-[#F2EDE4] hover:border-[#E5173F] transition-colors`}
+            >
+              <FileText className="w-3 h-3" />
+              + NOVO RELATÓRIO
+            </Link>
+          )}
+          {canEdit && (
+            <Link
+              to={`/app/players/${player.id}/edit`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 border ${T.border} font-jetbrains text-[11px] tracking-wider uppercase text-[#F2EDE4] hover:border-[#F2EDE4] transition-colors`}
+            >
+              <Edit className="w-3 h-3" />
+              EDITAR
+            </Link>
+          )}
+          {isAdmin && (
+            <PermissionGate module="players" action="delete">
+              <button
+                onClick={() => setDeleteDialogOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 font-jetbrains text-[11px] tracking-wider uppercase text-white hover:opacity-80 transition-opacity"
+                style={{ background: T.accent }}
+              >
+                <Trash2 className="w-3 h-3" />
+                EXCLUIR
+              </button>
+            </PermissionGate>
+          )}
+        </div>
+      </div>
+
+      {/* ── Header ──────────────────────────────────────────────────────── */}
+      <div className={`px-4 md:px-6 py-[22px] border-b ${T.border}`}>
+        <div className="flex gap-4 items-start">
+
+          {/* Photo */}
+          <div
+            className={`w-20 h-20 shrink-0 border ${T.border} overflow-hidden bg-[#111] flex items-center justify-center`}
+          >
+            {player.photo_url ? (
+              <img src={player.photo_url} alt={player.full_name} className="w-full h-full object-cover" />
+            ) : (
+              <User className="w-8 h-8 text-[#6B6560]" />
             )}
-            <div className="grid grid-cols-2 gap-2">
-              {canEdit && (
-                <Button variant="outline" asChild className="justify-center">
-                  <Link to={`/app/players/${player.id}/edit`}>
-                    <Edit className="w-4 h-4 mr-2" />
-                    Editar
-                  </Link>
-                </Button>
+          </div>
+
+          {/* Info */}
+          <div className="flex-1 min-w-0">
+            <h1
+              className="font-barlow font-black text-[34px] uppercase leading-none tracking-tight"
+              style={{ lineHeight: 1.05 }}
+            >
+              {player.full_name}
+            </h1>
+
+            {/* Meta-row */}
+            <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 mt-1.5 font-jetbrains text-[12px] text-[#6B6560]">
+              <span style={{ color: T.accent }} className="font-bold">
+                {player.position}
+              </span>
+              {safeArray(player.secondary_positions).length > 0 && (
+                <>
+                  <span>·</span>
+                  <span>{safeArray(player.secondary_positions).slice(0, 2).join(" / ")}</span>
+                </>
               )}
-              {isAdmin && (
-                <PermissionGate module="players" action="delete">
-                  <Button
-                    variant="destructive"
-                    onClick={() => setDeleteDialogOpen(true)}
-                    className="justify-center"
+              {player.age && <><span>·</span><span>{player.age} anos</span></>}
+              {player.height && <><span>·</span><span>{player.height}cm</span></>}
+              {player.dominant_foot && <><span>·</span><span>{player.dominant_foot}</span></>}
+              {player.nationality && <><span>·</span><span>{player.nationality}</span></>}
+            </div>
+
+            {/* Badges */}
+            <div className="flex flex-wrap gap-1.5 mt-2.5">
+              {/* Public/Private */}
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 border ${T.border} font-jetbrains text-[10px] tracking-wider uppercase text-[#6B6560]`}>
+                {player.is_public
+                  ? <><Eye className="w-2.5 h-2.5" />PÚBLICO</>
+                  : <><EyeOff className="w-2.5 h-2.5" />PRIVADO</>
+                }
+              </span>
+
+              {/* Contract status */}
+              {player.contract_status && (
+                <span className={`inline-flex items-center px-2 py-0.5 border ${T.border} font-jetbrains text-[10px] tracking-wider uppercase text-[#6B6560]`}>
+                  {player.contract_status === "contracted" ? "CONTRATADO" : player.contract_status.toUpperCase()}
+                </span>
+              )}
+
+              {/* Auto rating */}
+              {player.auto_rating !== null && player.auto_rating !== undefined && (
+                <span className={`inline-flex items-center px-2 py-0.5 border ${T.border} font-jetbrains text-[10px] tracking-wider uppercase text-[#F2EDE4]`}>
+                  ★ {player.auto_rating.toFixed(1)}/10
+                </span>
+              )}
+
+              {/* Club */}
+              {player.current_club && (
+                <span className={`inline-flex items-center px-2 py-0.5 border ${T.border} font-jetbrains text-[10px] tracking-wider uppercase text-[#6B6560]`}>
+                  {player.current_club}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── KPI Strip ───────────────────────────────────────────────────── */}
+      <div className={`grid grid-cols-2 md:grid-cols-4 border-b ${T.border}`}>
+        {[
+          {
+            label: "M3 MARKET SCORE",
+            value: marketScoreLoading ? "…" : (marketScore !== null ? String(Math.round(marketScore)) : "—"),
+            color: T.accent,
+          },
+          {
+            label: "SCOUT NOTE",
+            value: avgScoutNote !== null ? avgScoutNote.toFixed(1) : "—",
+            color: undefined,
+          },
+          {
+            label: "POTENCIAL",
+            value: player.potential_rating !== null ? `${player.potential_rating.toFixed(1)}` : "—",
+            color: T.green,
+          },
+          {
+            label: "VALOR DE MERCADO",
+            value: formatMarketValue(player.market_value, player.market_value_currency),
+            color: undefined,
+          },
+        ].map((kpi, i, arr) => (
+          <div
+            key={kpi.label}
+            className={`px-4 md:px-6 py-4 ${i < arr.length - 1 ? `border-r ${T.border}` : ""}`}
+          >
+            <Label>{kpi.label}</Label>
+            <span
+              className="font-jetbrains text-[22px] font-bold leading-none"
+              style={{ color: kpi.color ?? "#F2EDE4" }}
+            >
+              {kpi.value}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Tab Bar ─────────────────────────────────────────────────────── */}
+      <div className={`flex border-b ${T.border} overflow-x-auto scrollbar-none`}>
+        {TABS.map((tab) => {
+          const active = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-4 md:px-5 py-3 font-jetbrains text-[11px] tracking-[0.15em] uppercase shrink-0 transition-colors ${
+                active
+                  ? "text-[#F2EDE4] border-b-2"
+                  : "text-[#6B6560] border-b-2 border-transparent hover:text-[#F2EDE4]"
+              }`}
+              style={active ? { borderBottomColor: T.accent } : undefined}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── Tab Content ─────────────────────────────────────────────────── */}
+      <div className="px-4 md:px-6 py-6">
+        {activeTab !== "overview" ? (
+          <Placeholder />
+        ) : (
+          /* ── Overview ──────────────────────────────────────────────── */
+          <div className="grid gap-0 lg:grid-cols-[1fr_340px]">
+
+            {/* ── Left column ─────────────────────────────────────────── */}
+            <div className={`lg:border-r ${T.border} lg:pr-6 space-y-0`}>
+
+              {/* Season Stats */}
+              <section className={`border ${T.border} mb-5`}>
+                <div className={`grid grid-cols-5 divide-x divide-[#1C1C1C]`}>
+                  {[
+                    { label: "JOGOS", value: statsLoading ? "…" : (seasonTotals?.matches ?? "—"), color: undefined },
+                    { label: "MIN", value: statsLoading ? "…" : (seasonTotals?.minutes ?? "—"), color: undefined },
+                    { label: "GOLS", value: statsLoading ? "…" : (seasonTotals?.goals ?? "—"), color: T.accent },
+                    { label: "ASSIST", value: statsLoading ? "…" : (seasonTotals?.assists ?? "—"), color: undefined },
+                    { label: "G+A", value: statsLoading ? "…" : ga, color: T.amber },
+                  ].map((s) => (
+                    <div key={s.label} className="px-3 py-4 text-center">
+                      <span className={`block text-[9px] tracking-[0.2em] uppercase ${T.muted} font-jetbrains mb-1`}>
+                        {s.label}
+                      </span>
+                      <span
+                        className="font-jetbrains text-[28px] font-bold leading-none"
+                        style={{ color: s.color ?? "#F2EDE4" }}
+                      >
+                        {s.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div className={`border-t ${T.border} px-4 py-2`}>
+                  <span className="font-jetbrains text-[10px] tracking-wider uppercase text-[#6B6560]">
+                    TEMPORADA {new Date().getFullYear()}
+                  </span>
+                </div>
+              </section>
+
+              {/* Info Cards Grid */}
+              <section className={`border ${T.border} mb-5`}>
+                <div className={`grid grid-cols-1 md:grid-cols-2`} style={{ gap: 1, background: "#1C1C1C" }}>
+
+                  {/* Identity */}
+                  <div className={`${T.bg} p-4`}>
+                    <SectionTitle>IDENTIDADE</SectionTitle>
+                    <dl className="space-y-1.5">
+                      {[
+                        { k: "Posição", v: player.position },
+                        { k: "Idade", v: player.age ? `${player.age} anos` : null },
+                        { k: "Altura", v: player.height ? `${player.height} cm` : null },
+                        { k: "Pé dominante", v: player.dominant_foot },
+                        { k: "País", v: player.nationality },
+                        { k: "Clube", v: player.current_club },
+                      ].filter((x) => x.v).map(({ k, v }) => (
+                        <div key={k} className="flex justify-between gap-2">
+                          <dt className="font-jetbrains text-[10px] text-[#6B6560] uppercase tracking-wider shrink-0">{k}</dt>
+                          <dd className="font-jetbrains text-[11px] text-[#F2EDE4] text-right">{v}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </div>
+
+                  {/* Contract */}
+                  <div className={`${T.bg} p-4`}>
+                    <SectionTitle>CONTRATO</SectionTitle>
+                    <dl className="space-y-1.5">
+                      {[
+                        { k: "Status", v: player.contract_status },
+                        { k: "Início", v: player.contract_start ? format(new Date(player.contract_start), "MMM yyyy", { locale: ptBR }) : null },
+                        { k: "Término", v: player.contract_end ? format(new Date(player.contract_end), "MMM yyyy", { locale: ptBR }) : null },
+                        { k: "Agente", v: player.agent_name },
+                        { k: "Salário", v: player.salary_info },
+                      ].filter((x) => x.v).map(({ k, v }) => (
+                        <div key={k} className="flex justify-between gap-2">
+                          <dt className="font-jetbrains text-[10px] text-[#6B6560] uppercase tracking-wider shrink-0">{k}</dt>
+                          <dd className="font-jetbrains text-[11px] text-[#F2EDE4] text-right">{v}</dd>
+                        </div>
+                      ))}
+                      {!player.contract_status && !player.contract_start && (
+                        <p className="font-jetbrains text-[11px] text-[#6B6560]">Sem informações de contrato.</p>
+                      )}
+                    </dl>
+                  </div>
+
+                  {/* Tactical */}
+                  <div className={`${T.bg} p-4`}>
+                    <SectionTitle>PERFIL TÁTICO</SectionTitle>
+                    <dl className="space-y-1.5">
+                      {[
+                        { k: "Função principal", v: player.primary_tactical_role },
+                        { k: "Função secundária", v: player.secondary_tactical_role },
+                        { k: "Preferência", v: player.playing_height_preference },
+                      ].filter((x) => x.v).map(({ k, v }) => (
+                        <div key={k} className="flex justify-between gap-2">
+                          <dt className="font-jetbrains text-[10px] text-[#6B6560] uppercase tracking-wider shrink-0">{k}</dt>
+                          <dd className="font-jetbrains text-[11px] text-[#F2EDE4] text-right">{v}</dd>
+                        </div>
+                      ))}
+                      {!player.primary_tactical_role && (
+                        <p className="font-jetbrains text-[11px] text-[#6B6560]">Sem perfil tático definido.</p>
+                      )}
+                    </dl>
+                  </div>
+
+                  {/* Style */}
+                  <div className={`${T.bg} p-4`}>
+                    <SectionTitle>ESTILO DE JOGO</SectionTitle>
+                    {player.play_style ? (
+                      <p
+                        className="font-barlow font-black text-[22px] uppercase leading-tight"
+                        style={{ color: T.accent }}
+                      >
+                        {player.play_style}
+                      </p>
+                    ) : (
+                      <p className="font-jetbrains text-[11px] text-[#6B6560]">Não definido.</p>
+                    )}
+                  </div>
+
+                  {/* Strengths */}
+                  <div className={`${T.bg} p-4`}>
+                    <SectionTitle>PONTOS FORTES</SectionTitle>
+                    {safeArray(player.strengths).length > 0 ? (
+                      <ul className="space-y-1">
+                        {safeArray(player.strengths).map((s, i) => (
+                          <li key={i} className="flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 shrink-0" style={{ background: T.green }} />
+                            <span className="font-jetbrains text-[11px]" style={{ color: T.green }}>{s}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="font-jetbrains text-[11px] text-[#6B6560]">Nenhum ponto forte cadastrado.</p>
+                    )}
+                  </div>
+
+                  {/* Weaknesses */}
+                  <div className={`${T.bg} p-4`}>
+                    <SectionTitle>ÁREAS DE DESENVOLVIMENTO</SectionTitle>
+                    {safeArray(player.areas_to_develop).length > 0 ? (
+                      <ul className="space-y-1">
+                        {safeArray(player.areas_to_develop).map((s, i) => (
+                          <li key={i} className="flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 shrink-0" style={{ background: T.amber }} />
+                            <span className="font-jetbrains text-[11px]" style={{ color: T.amber }}>{s}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="font-jetbrains text-[11px] text-[#6B6560]">Nenhuma área registrada.</p>
+                    )}
+                  </div>
+                </div>
+              </section>
+
+              {/* Internal Evaluation (private section, same access rules as before) */}
+              <section className={`border ${T.border} mb-5`}>
+                <div className={`px-4 py-3 border-b ${T.border} flex items-center gap-2`}>
+                  <SectionTitle>AVALIAÇÃO INTERNA</SectionTitle>
+                  <Lock className="w-3 h-3 text-[#6B6560] mb-3" />
+                </div>
+                <div
+                  className="grid grid-cols-2"
+                  style={{ gap: 1, background: "#1C1C1C" }}
+                >
+                  {/* Nota Geral */}
+                  <div className={`${T.bg} p-5`}>
+                    <Label>NOTA GERAL</Label>
+                    <span className="font-jetbrains text-[32px] font-bold text-[#F2EDE4] leading-none">
+                      {player.overall_rating !== null && player.overall_rating !== undefined
+                        ? player.overall_rating.toFixed(1)
+                        : "—"}
+                    </span>
+                    <span className="font-jetbrains text-[12px] text-[#6B6560] ml-1">/10</span>
+                  </div>
+
+                  {/* Potencial */}
+                  <div className={`${T.bg} p-5`}>
+                    <Label>POTENCIAL</Label>
+                    <span
+                      className="font-jetbrains text-[32px] font-bold leading-none"
+                      style={{ color: T.green }}
+                    >
+                      {player.potential_rating !== null && player.potential_rating !== undefined
+                        ? player.potential_rating.toFixed(1)
+                        : "—"}
+                    </span>
+                    <span className="font-jetbrains text-[12px] text-[#6B6560] ml-1">/10</span>
+                  </div>
+
+                  {/* Ready to compete */}
+                  <div className={`${T.bg} p-5`}>
+                    <Label>PRONTO PARA COMPETIR?</Label>
+                    {player.ready_to_compete !== null && player.ready_to_compete !== undefined ? (
+                      <span
+                        className="font-barlow font-black text-[18px] uppercase"
+                        style={{ color: player.ready_to_compete ? T.green : T.amber }}
+                      >
+                        {player.ready_to_compete ? "SIM" : "NÃO"}
+                      </span>
+                    ) : (
+                      <span className="font-jetbrains text-[20px] font-bold text-[#6B6560]">—</span>
+                    )}
+                  </div>
+
+                  {/* Estimated Level */}
+                  <div className={`${T.bg} p-5`}>
+                    <Label>NÍVEL ESTIMADO</Label>
+                    {player.estimated_level ? (
+                      <span
+                        className="font-barlow font-black text-[20px] uppercase leading-tight"
+                        style={{ color: T.amber }}
+                      >
+                        {player.estimated_level}
+                      </span>
+                    ) : (
+                      <span className="font-jetbrains text-[20px] font-bold text-[#6B6560]">—</span>
+                    )}
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            {/* ── Right Sidebar ────────────────────────────────────────── */}
+            <div className="lg:pl-6 space-y-5 mt-5 lg:mt-0">
+
+              {/* M3 Market Score */}
+              <section className={`border ${T.border} p-5`}>
+                <SectionTitle>M3 MARKET SCORE</SectionTitle>
+                <div className="flex items-baseline gap-2 mb-3">
+                  <span
+                    className="font-jetbrains font-bold leading-none"
+                    style={{ fontSize: 76, color: "#F2EDE4", lineHeight: 1 }}
                   >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Excluir
-                  </Button>
-                </PermissionGate>
-              )}
+                    {marketScoreLoading
+                      ? "…"
+                      : marketScore !== null
+                      ? Math.round(marketScore)
+                      : "—"}
+                  </span>
+                  <span className="font-jetbrains text-[12px] text-[#6B6560]">/100</span>
+                </div>
+
+                {/* Progress bar */}
+                <div
+                  className="w-full mb-4 overflow-hidden"
+                  style={{ height: 2, background: "#1C1C1C" }}
+                >
+                  <div
+                    style={{
+                      height: "100%",
+                      width: `${marketScore ?? 0}%`,
+                      background: T.accent,
+                      transition: "width 0.6s ease",
+                    }}
+                  />
+                </div>
+
+                {/* Insights placeholder list */}
+                <ul className="space-y-1.5">
+                  {[
+                    player.age && player.age <= 23 ? "Atleta em janela de valorização" : null,
+                    (seasonTotals?.goals ?? 0) > 5 ? "Alto volume ofensivo na temporada" : null,
+                    player.contract_status === "contracted" ? "Contrato ativo" : null,
+                  ].filter(Boolean).slice(0, 3).map((insight, i) => (
+                    <li key={i} className="flex items-center gap-2">
+                      <span
+                        className="w-[3px] h-[3px] shrink-0"
+                        style={{ background: T.accent }}
+                      />
+                      <span className="font-jetbrains text-[11px] text-[#6B6560]">{insight}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+
+              {/* Attributes Radar */}
+              <section className={`border ${T.border} p-5`}>
+                <SectionTitle>ATRIBUTOS</SectionTitle>
+                <AtributoRadar playerId={player.id} />
+              </section>
+
+              {/* Market Value chart */}
+              <section className={`border ${T.border} p-5`}>
+                <SectionTitle>VALOR DE MERCADO</SectionTitle>
+                <div className="flex items-baseline gap-1 mb-3">
+                  <span className="font-jetbrains text-[18px] font-bold" style={{ color: T.green }}>
+                    {formatMarketValue(player.market_value, player.market_value_currency)}
+                  </span>
+                </div>
+                <MarketValueMiniChart playerId={player.id} currentValue={player.market_value} />
+              </section>
+
+              {/* Note Evolution chart */}
+              <section className={`border ${T.border} p-5`}>
+                <SectionTitle>EVOLUÇÃO DA NOTA M3</SectionTitle>
+                <NoteEvolutionMiniChart playerId={player.id} currentRating={player.auto_rating} />
+              </section>
+
+              {/* Reliability */}
+              <section className={`border ${T.border} p-5`}>
+                <SectionTitle>CONFIABILIDADE</SectionTitle>
+                <div className="mb-2">
+                  <span
+                    className="font-jetbrains font-bold"
+                    style={{ fontSize: 22, color: T.amber }}
+                  >
+                    {player.auto_rating !== null
+                      ? `${Math.min(100, Math.round((reports.length / 5) * 100))}%`
+                      : "—"}
+                  </span>
+                </div>
+                <div
+                  className="w-full overflow-hidden"
+                  style={{ height: 2, background: "#1C1C1C" }}
+                >
+                  <div
+                    style={{
+                      height: "100%",
+                      width: `${Math.min(100, Math.round((reports.length / 5) * 100))}%`,
+                      background: T.amber,
+                      transition: "width 0.6s ease",
+                    }}
+                  />
+                </div>
+                <p className="font-jetbrains text-[10px] text-[#6B6560] mt-2 tracking-wider uppercase">
+                  Baseado em {reports.length} relatório{reports.length !== 1 ? "s" : ""}
+                </p>
+              </section>
+
+              {/* Recent Reports */}
+              <section className={`border ${T.border} p-5`}>
+                <SectionTitle>RELATÓRIOS RECENTES</SectionTitle>
+                {reports.length === 0 ? (
+                  <p className="font-jetbrains text-[11px] text-[#6B6560]">Nenhum relatório encontrado.</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {reports.slice(0, 5).map((r) => (
+                      <li
+                        key={r.id}
+                        className={`flex items-center justify-between pb-2 border-b ${T.border} last:border-0 last:pb-0`}
+                      >
+                        <div>
+                          <p className="font-jetbrains text-[10px] text-[#6B6560] uppercase tracking-wider">
+                            {r.competition?.name ?? "—"}
+                          </p>
+                          <p className="font-jetbrains text-[10px] text-[#6B6560]">
+                            {format(new Date(r.match_date), "dd MMM yyyy", { locale: ptBR })}
+                          </p>
+                        </div>
+                        <Link to={`/app/reports/${r.id}`}>
+                          <span
+                            className="font-jetbrains font-bold text-[15px]"
+                            style={{ color: "#F2EDE4" }}
+                          >
+                            {r.final_score?.toFixed(1) ?? "—"}
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
             </div>
           </div>
         )}
       </div>
-
-      {/* Main Content with Tabs */}
-      <Tabs defaultValue="overview" className="space-y-4 w-full min-w-0">
-        {/* Premium Tab Navigation */}
-        <TabsList>
-          <TabsTrigger value="overview">
-            <User className="w-4 h-4" />
-            <span className="hidden sm:inline">Visão Geral</span>
-            <span className="sm:hidden">Geral</span>
-          </TabsTrigger>
-          <TabsTrigger value="stats">
-            <BarChart3 className="w-4 h-4" />
-            <span className="hidden sm:inline">Estatísticas</span>
-            <span className="sm:hidden">Stats</span>
-          </TabsTrigger>
-          <TabsTrigger value="market">
-            <DollarSign className="w-4 h-4" />
-            <span className="hidden sm:inline">Valor de Mercado</span>
-            <span className="sm:hidden">Valor</span>
-          </TabsTrigger>
-          <TabsTrigger value="physical">
-            <Activity className="w-4 h-4" />
-            <span>Físico</span>
-          </TabsTrigger>
-          <TabsTrigger value="technical">
-            <Target className="w-4 h-4" />
-            <span>Técnico</span>
-          </TabsTrigger>
-          <TabsTrigger value="medical">
-            <Stethoscope className="w-4 h-4" />
-            <span>Médico</span>
-          </TabsTrigger>
-          <TabsTrigger value="contract">
-            <ContractIcon className="w-4 h-4" />
-            <span>Contrato</span>
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Overview Tab */}
-        <TabsContent value="overview">
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2 space-y-6">
-              {/* Executive Summary - All key info in one organized card */}
-              <PlayerOverviewSection
-                fullName={player.full_name}
-                age={player.age}
-                height={player.height}
-                dominantFoot={player.dominant_foot}
-                nationality={player.nationality}
-                currentClub={player.current_club}
-                country={player.country}
-                contractStatus={player.contract_status}
-                position={player.position}
-                secondaryPositions={player.secondary_positions}
-                primaryTacticalRole={player.primary_tactical_role}
-                secondaryTacticalRole={player.secondary_tactical_role}
-                playStyle={player.play_style}
-                strengths={player.strengths}
-                areasToDevelope={player.areas_to_develop}
-              />
-
-              {/* Season Summary */}
-              <SeasonSummaryCard playerId={player.id} playerPosition={player.position} />
-
-              {/* Video */}
-              {player.highlight_video_url && (() => {
-                const embedUrl = getYouTubeEmbedUrl(player.highlight_video_url);
-                if (!embedUrl) return null;
-                return (
-                  <Card className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Play className="w-5 h-5" />
-                        Vídeo de Destaque
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="aspect-video rounded-lg overflow-hidden">
-                        <iframe
-                          src={embedUrl}
-                          title="Player Highlights"
-                          className="w-full h-full"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })()}
-
-              {/* Internal Evaluation - Visible to ALL authorized users (Admin, Scout, Player viewing own profile) */}
-              <InternalEvaluationSection data={player} />
-            </div>
-
-            {/* Sidebar */}
-            <div className="space-y-6">
-              {/* M3 Market Score - Premium internal score */}
-              <MarketScoreCard
-                athleteId={player.id}
-                athleteName={player.full_name}
-                position={player.position}
-                secondaryPositions={player.secondary_positions ?? []}
-                birthDate={player.birth_date}
-                age={player.age}
-              />
-
-              {/* Overall Rating Card */}
-              <OverallRatingCard
-                autoRating={player.auto_rating}
-                overallRating={player.overall_rating}
-                potentialRating={player.potential_rating}
-                ratingUpdatedAt={player.rating_updated_at}
-                ratingDetails={player.auto_rating_details as any}
-                playerId={player.id}
-                playerPosition={player.position}
-                isAdmin={isAdmin}
-                onRatingRecalculated={refetchPlayer}
-              />
-
-              {/* Attribute Radar - automatically switches for GK */}
-              <UnifiedRadarCard playerId={player.id} playerPosition={player.position} showFilters={true} />
-
-              {/* Market Value */}
-              <MarketValueSection
-                playerId={player.id}
-                marketValue={player.market_value}
-                marketValueCurrency={player.market_value_currency}
-                marketValueTrend={player.market_value_trend}
-                onValueChange={refetchPlayer}
-              />
-
-              {/* Rating Evolution Chart */}
-              <RatingEvolutionChart
-                playerId={player.id}
-                currentRating={player.auto_rating}
-              />
-
-              {/* Data Quality Panel */}
-              <DataQualityPanel
-                playerId={player.id}
-                position={player.position}
-              />
-              {/* Recent Reports */}
-              <RecentReportsCard reports={reports} playerId={player.id} />
-
-              {/* Metadata */}
-              <MetadataCard 
-                id={player.id} 
-                slug={player.slug} 
-                createdAt={player.created_at} 
-                updatedAt={player.updated_at} 
-              />
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* Stats Tab */}
-        <TabsContent value="stats" className="space-y-6">
-          {/* Match Rating Evolution Chart */}
-          <MatchRatingEvolutionChart 
-            playerId={player.id} 
-            playerName={player.full_name}
-          />
-          
-          <PlayerStatsSection 
-            playerId={player.id}
-            playerPosition={player.position}
-            onStatsChange={refetchPlayer}
-          />
-          {/* GK detailed stats section (only for goalkeepers) */}
-          {isGoalkeeper(player.position) && (
-            <GoalkeeperStatsSection playerId={player.id} />
-          )}
-        </TabsContent>
-
-        {/* Market Value Tab */}
-        <TabsContent value="market">
-          <MarketValueTab
-            playerId={player.id}
-            marketValue={player.market_value}
-            marketValueCurrency={player.market_value_currency}
-            marketValueTrend={player.market_value_trend}
-            onValueChange={refetchPlayer}
-          />
-        </TabsContent>
-
-        {/* Physical Tab */}
-        <TabsContent value="physical">
-          <PhysicalDataSection data={player} playerId={player.id} playerName={player.full_name} />
-        </TabsContent>
-
-        {/* Technical Tab */}
-        <TabsContent value="technical">
-          <TechnicalProfileSection data={player} />
-        </TabsContent>
-
-        {/* Medical Tab */}
-        <TabsContent value="medical">
-          <InjuryHistorySection 
-            injuries={injuries} 
-            physicalStatus={player.physical_status}
-            medicalNotes={player.medical_notes}
-            playerId={player.id}
-            onInjuryAdded={refetchInjuries}
-            player={{
-              full_name: player.full_name,
-              position: player.position,
-              age: player.age,
-              birth_date: player.birth_date,
-              nationality: player.nationality,
-              current_club: player.current_club,
-              photo_url: player.photo_url,
-            }}
-          />
-        </TabsContent>
-
-        {/* Contract Tab */}
-        <TabsContent value="contract">
-          <ContractSection data={player} playerId={player.id} />
-        </TabsContent>
-      </Tabs>
 
       <DeletePlayerDialog
         open={deleteDialogOpen}

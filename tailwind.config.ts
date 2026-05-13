@@ -87,6 +87,8 @@ export default {
         sans: ['Inter', 'system-ui', 'sans-serif'],
         serif: ['"Times New Roman"', 'Times', 'serif'],
         gotham: ['Gotham-Book', 'Gotham', 'Arial', 'sans-serif'],
+        barlow: ['"Barlow Condensed"', 'sans-serif'],
+        jetbrains: ['"JetBrains Mono"', 'monospace'],
       },
       keyframes: {
         "accordion-down": {
