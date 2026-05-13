@@ -11,6 +11,7 @@ import { useMarketScore } from "@/hooks/useMarketScore";
 import { AtributoRadar } from "@/components/players/detail/AtributoRadar";
 import { MarketValueMiniChart } from "@/components/players/detail/MarketValueMiniChart";
 import { NoteEvolutionMiniChart } from "@/components/players/detail/NoteEvolutionMiniChart";
+import { StatsTab } from "@/components/players/detail/StatsTab";
 import {
   ArrowLeft,
   Edit,
@@ -470,7 +471,9 @@ const PlayerDetail = () => {
 
       {/* ── Tab Content ─────────────────────────────────────────────────── */}
       <div className="px-4 md:px-6 py-6">
-        {activeTab !== "overview" ? (
+        {activeTab === "stats" ? (
+          <StatsTab playerId={player.id} playerPosition={player.position} />
+        ) : activeTab !== "overview" ? (
           <Placeholder />
         ) : (
           /* ── Overview ──────────────────────────────────────────────── */
