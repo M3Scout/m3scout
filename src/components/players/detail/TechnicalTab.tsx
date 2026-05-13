@@ -290,7 +290,7 @@ export function TechnicalTab({ playerId }: TechnicalTabProps) {
       {/* ── KPI Strip ──────────────────────────────────────────────────────── */}
       <div
         className="grid grid-cols-5 divide-x"
-        style={{ borderColor: BORDER, border: `1px solid ${BORDER}`, divideColor: BORDER }}
+        style={{ borderColor: BORDER, border: `1px solid ${BORDER}` }}
       >
         {KPI_ITEMS.map((item, i) => {
           const val = item.value;
