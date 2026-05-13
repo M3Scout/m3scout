@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   ComposedChart,
   Area,
@@ -15,13 +16,59 @@ import {
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { supabase } from "@/integrations/supabase/client";
 import { usePlayerMatchRatings } from "@/hooks/usePlayerMatchRatings";
 import {
   usePlayerMatchStatsBySeasonCompetition,
   type SeasonCompetitionStats,
-  type MatchDerivedStats,
+  type MatchRowPreview,
 } from "@/hooks/usePlayerMatchStats";
 import { useManualPlayerStats } from "@/hooks/useManualPlayerStats";
+
+// ─── player_stats table row (written by PlayerStatsForm) ──────────────────────
+interface PlayerStatRow {
+  id: string;
+  player_id: string;
+  season_year: number;
+  competition_id: string | null;
+  competition: { id: string; name: string; display_name: string | null } | null;
+  matches: number;
+  minutes: number;
+  goals: number;
+  assists: number;
+  yellow_cards: number;
+  red_cards: number;
+  shots: number;
+  shots_on_target: number;
+  shots_blocked: number;
+  offsides: number;
+  accurate_passes: number;
+  total_passes: number;
+  key_passes: number;
+  chances_created: number;
+  crosses_success: number;
+  crosses_failed: number;
+  successful_dribbles: number;
+  total_dribbles: number;
+  tackles: number;
+  interceptions: number;
+  recoveries: number;
+  clearances: number;
+  times_dribbled_past: number;
+  duels_won: number;
+  total_duels: number;
+  aerial_duels_won: number;
+  aerial_duels_total: number;
+  ground_duels_won: number;
+  ground_duels_total: number;
+  fouls_committed: number;
+  fouls_drawn: number;
+  possession_lost: number;
+  saves: number;
+  goals_conceded: number;
+  clean_sheets: number;
+  penalties_saved: number;
+}
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const A = "#E5173F";
@@ -114,15 +161,30 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
     usePlayerMatchRatings({ playerId, playerPosition, enabled: !!playerId });
 
   // Season/competition breakdown (live data)
-  const { stats: seasonStats, bySeason, seasons, isLoading: statsLoading } =
+  const { stats: seasonStats, bySeason, seasons, matchesByKey, isLoading: statsLoading } =
     usePlayerMatchStatsBySeasonCompetition({ playerId, enabled: !!playerId });
 
   // Manual stats (external games not tracked via Live Match)
   const { manualStats, isLoading: manualLoading } = useManualPlayerStats({ playerId, enabled: !!playerId });
 
-  const isLoading = ratingsLoading || statsLoading || manualLoading;
+  // Stats entered via PlayerStatsForm (writes to player_stats table, different from manual_player_stats)
+  const { data: playerStats = [], isLoading: psLoading } = useQuery<PlayerStatRow[]>({
+    queryKey: ["player-stats", playerId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("player_stats")
+        .select("*, competition:competitions(id, name, display_name)")
+        .eq("player_id", playerId)
+        .order("season_year", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as PlayerStatRow[];
+    },
+    enabled: !!playerId,
+  });
 
-  // Merged season/competition breakdown (live + manual)
+  const isLoading = ratingsLoading || statsLoading || manualLoading || psLoading;
+
+  // Merged season/competition breakdown (live + manual_player_stats + player_stats)
   const mergedBySeason = useMemo((): Record<number, SeasonRowData[]> => {
     const merged: Record<number, SeasonRowData[]> = {};
     seasons.forEach(yr => {
@@ -183,13 +245,69 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
         },
       });
     });
+    playerStats.forEach(ps => {
+      const yr = ps.season_year;
+      if (!merged[yr]) merged[yr] = [];
+      const comp = ps.competition;
+      merged[yr].push({
+        id: `ps_${ps.id}`,
+        season_year: yr,
+        competition_id: ps.competition_id,
+        competition_name: comp?.display_name || comp?.name || null,
+        source: "manual" as const,
+        stats: {
+          matches: ps.matches,
+          minutes: ps.minutes,
+          goals: ps.goals,
+          assists: ps.assists,
+          shots: ps.shots,
+          shots_on_target: ps.shots_on_target,
+          shots_off_target: Math.max(0, ps.shots - ps.shots_on_target - ps.shots_blocked),
+          shots_blocked: ps.shots_blocked,
+          offsides: ps.offsides,
+          passes_completed: ps.accurate_passes,
+          passes_failed: ps.total_passes - ps.accurate_passes,
+          passes_total: ps.total_passes,
+          key_passes: ps.key_passes,
+          chances_created: ps.chances_created,
+          crosses_success: ps.crosses_success,
+          crosses_failed: ps.crosses_failed,
+          ball_actions: 0,
+          dribbles_success: ps.successful_dribbles,
+          dribbles_failed: ps.total_dribbles - ps.successful_dribbles,
+          dribbles_total: ps.total_dribbles,
+          tackles: ps.tackles,
+          interceptions: ps.interceptions,
+          recoveries: ps.recoveries,
+          clearances: ps.clearances,
+          blocked_shots: 0,
+          was_dribbled: ps.times_dribbled_past,
+          duels_won: ps.duels_won,
+          duels_total: ps.total_duels,
+          aerial_duels_won: ps.aerial_duels_won,
+          aerial_duels_total: ps.aerial_duels_total,
+          ground_duels_won: ps.ground_duels_won,
+          ground_duels_total: ps.ground_duels_total,
+          yellow_cards: ps.yellow_cards,
+          red_cards: ps.red_cards,
+          fouls_committed: ps.fouls_committed,
+          fouls_suffered: ps.fouls_drawn,
+          possession_lost: ps.possession_lost,
+          saves: ps.saves,
+          goals_conceded: ps.goals_conceded,
+          clean_sheets: ps.clean_sheets,
+          penalties_saved: ps.penalties_saved,
+        },
+      });
+    });
     return merged;
-  }, [bySeason, seasons, manualStats]);
+  }, [bySeason, seasons, manualStats, playerStats]);
 
   const allSeasons = useMemo(() => {
     const manualYears = manualStats.map(ms => ms.season_year);
-    return Array.from(new Set([...seasons, ...manualYears])).sort((a, b) => b - a);
-  }, [seasons, manualStats]);
+    const psYears = playerStats.map(ps => ps.season_year);
+    return Array.from(new Set([...seasons, ...manualYears, ...psYears])).sort((a, b) => b - a);
+  }, [seasons, manualStats, playerStats]);
 
   // Chart data: match ratings sorted chronologically
   const ratingChartData = useMemo(() => {
@@ -203,7 +321,7 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
       }));
   }, [ratedMatches]);
 
-  // Career totals (all seasons, live + manual)
+  // Career totals (all seasons, live + manual_player_stats + player_stats)
   const careerTotals = useMemo(() => {
     const t = { matches: 0, minutes: 0, goals: 0, assists: 0, shots: 0, key_passes: 0, tackles: 0, yellow_cards: 0 };
     seasonStats.forEach(({ stats: s }) => {
@@ -226,10 +344,20 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
       t.tackles += ms.tackles;
       t.yellow_cards += ms.yellow_cards;
     });
+    playerStats.forEach(ps => {
+      t.matches += ps.matches;
+      t.minutes += ps.minutes;
+      t.goals += ps.goals;
+      t.assists += ps.assists;
+      t.shots += ps.shots;
+      t.key_passes += ps.key_passes;
+      t.tackles += ps.tackles;
+      t.yellow_cards += ps.yellow_cards;
+    });
     return t;
-  }, [seasonStats, manualStats]);
+  }, [seasonStats, manualStats, playerStats]);
 
-  // Bar chart: one entry per season, live + manual aggregated
+  // Bar chart: one entry per season, live + manual_player_stats + player_stats aggregated
   const barData = useMemo(() => {
     return allSeasons.map((yr) => {
       const agg: Record<string, number> = {
@@ -251,9 +379,17 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
         agg.tackles += ms.tackles;
         agg.interceptions += ms.interceptions;
       });
+      playerStats.filter(ps => ps.season_year === yr).forEach(ps => {
+        agg.goals += ps.goals;
+        agg.assists += ps.assists;
+        agg.shots += ps.shots;
+        agg.shots_on_target += ps.shots_on_target;
+        agg.tackles += ps.tackles;
+        agg.interceptions += ps.interceptions;
+      });
       return { season: String(yr), ...agg };
     });
-  }, [allSeasons, bySeason, manualStats]);
+  }, [allSeasons, bySeason, manualStats, playerStats]);
 
   const metric = METRIC_OPTIONS.find((m) => m.id === selectedMetric)!;
 
@@ -437,7 +573,7 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
           <div className="px-4 py-2 border-t font-jetbrains text-[10px] tracking-wider uppercase" style={{ borderColor: BORDER, color: MUTED }}>
             {allSeasons.length} temporada{allSeasons.length !== 1 ? "s" : ""}
             {" · "}
-            {seasonStats.length + manualStats.length} competiç{(seasonStats.length + manualStats.length) !== 1 ? "ões" : "ão"}
+            {seasonStats.length + manualStats.length + playerStats.length} competiç{(seasonStats.length + manualStats.length + playerStats.length) !== 1 ? "ões" : "ão"}
           </div>
         )}
       </div>
@@ -551,7 +687,11 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
 
                     /* Competition rows */
                     ...rows.map((row: SeasonRowData) => (
-                      <SeasonRow key={row.id} row={row} />
+                      <SeasonRow
+                        key={row.id}
+                        row={row}
+                        matches={row.source === "live" ? (matchesByKey[row.id] ?? []) : undefined}
+                      />
                     )),
                   ];
                 })}
@@ -564,154 +704,10 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
   );
 }
 
-// ─── Stat detail line ─────────────────────────────────────────────────────────
-function StatLine({
-  label,
-  value,
-  highlight = false,
-}: {
-  label: string;
-  value: number | string | null;
-  highlight?: boolean;
-}) {
-  const display = value == null || value === "" ? "—" : String(value);
-  return (
-    <div
-      className="flex items-baseline justify-between py-[5px]"
-      style={{ borderBottom: `1px solid #111` }}
-    >
-      <span
-        className="font-jetbrains text-[9px] uppercase tracking-[0.12em] leading-none"
-        style={{ color: MUTED }}
-      >
-        {label}
-      </span>
-      <span
-        className="font-jetbrains text-[11px] tabular-nums leading-none"
-        style={{ color: highlight ? GREEN : display === "—" ? MUTED : TEXT }}
-      >
-        {display}
-      </span>
-    </div>
-  );
-}
-
-// ─── Category header inside panel ─────────────────────────────────────────────
-function CategoryHead({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex items-center gap-2 mb-3">
-      <div className="w-[2px] h-[12px]" style={{ background: A }} />
-      <span
-        className="font-barlow font-black text-[11px] uppercase tracking-[0.2em]"
-        style={{ color: MUTED }}
-      >
-        {children}
-      </span>
-    </div>
-  );
-}
-
-// ─── Full stat breakdown panel (shown when row is expanded) ───────────────────
-function StatDetailPanel({ stats: s }: { stats: MatchDerivedStats }) {
-  const passAcc =
-    s.passes_total > 0 ? Math.round((s.passes_completed / s.passes_total) * 100) : null;
-  const crossTotal = s.crosses_success + s.crosses_failed;
-
-  return (
-    <div style={{ background: BORDER }}>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-px">
-
-        {/* ── Ataque ──────────────────────────────────────────────────────── */}
-        <div className="p-4" style={{ background: "#0B0B0B" }}>
-          <CategoryHead>Ataque</CategoryHead>
-          <StatLine label="Gols"          value={s.goals}           highlight={s.goals > 0} />
-          <StatLine label="Assistências"  value={s.assists}         highlight={s.assists > 0} />
-          <StatLine label="Finalizações"  value={s.shots} />
-          <StatLine label="No Gol"        value={s.shots_on_target} />
-          <StatLine label="Fora"          value={s.shots_off_target} />
-          {s.shots_blocked > 0 && (
-            <StatLine label="Bloqueadas"  value={s.shots_blocked} />
-          )}
-          {s.offsides > 0 && (
-            <StatLine label="Impedimentos" value={s.offsides} />
-          )}
-        </div>
-
-        {/* ── Passes ──────────────────────────────────────────────────────── */}
-        <div className="p-4" style={{ background: "#0B0B0B" }}>
-          <CategoryHead>Passes</CategoryHead>
-          <StatLine label="Completos"       value={s.passes_completed} />
-          <StatLine label="Falhos"          value={s.passes_failed} />
-          <StatLine label="Total"           value={s.passes_total} />
-          <StatLine
-            label="% Acerto"
-            value={passAcc !== null ? `${passAcc}%` : null}
-            highlight={passAcc !== null && passAcc >= 80}
-          />
-          <StatLine label="Passes-Chave"    value={s.key_passes}      highlight={s.key_passes > 0} />
-          <StatLine label="Chances Criadas" value={s.chances_created} highlight={s.chances_created > 0} />
-          {crossTotal > 0 && (
-            <StatLine
-              label="Cruzamentos V/T"
-              value={`${s.crosses_success}/${crossTotal}`}
-            />
-          )}
-        </div>
-
-        {/* ── Defesa ──────────────────────────────────────────────────────── */}
-        <div className="p-4" style={{ background: "#0B0B0B" }}>
-          <CategoryHead>Defesa</CategoryHead>
-          <StatLine label="Desarmes"       value={s.tackles} />
-          <StatLine label="Interceptações" value={s.interceptions} />
-          <StatLine label="Recuperações"   value={s.recoveries} />
-          {s.clearances > 0 && (
-            <StatLine label="Afastamentos" value={s.clearances} />
-          )}
-          {s.blocked_shots > 0 && (
-            <StatLine label="Bloqueios"    value={s.blocked_shots} />
-          )}
-          {s.was_dribbled > 0 && (
-            <StatLine label="Dribles Sofridos" value={s.was_dribbled} />
-          )}
-          {s.duels_total > 0 && (
-            <StatLine label="Duelos V/T"   value={`${s.duels_won}/${s.duels_total}`} />
-          )}
-          {s.aerial_duels_total > 0 && (
-            <StatLine label="Aéreos V/T"   value={`${s.aerial_duels_won}/${s.aerial_duels_total}`} />
-          )}
-          {s.ground_duels_total > 0 && (
-            <StatLine label="Terrestres V/T" value={`${s.ground_duels_won}/${s.ground_duels_total}`} />
-          )}
-        </div>
-
-        {/* ── Dribles / Posse ─────────────────────────────────────────────── */}
-        <div className="p-4" style={{ background: "#0B0B0B" }}>
-          <CategoryHead>Dribles / Posse</CategoryHead>
-          <StatLine label="Dribles Certos"     value={s.dribbles_success} highlight={s.dribbles_success > 0} />
-          <StatLine label="Dribles Falhos"     value={s.dribbles_failed} />
-          <StatLine label="Total Dribles"      value={s.dribbles_total} />
-          {s.ball_actions > 0 && (
-            <StatLine label="Ações de Bola"    value={s.ball_actions} />
-          )}
-          {s.possession_lost > 0 && (
-            <StatLine label="Posse Perdida"    value={s.possession_lost} />
-          )}
-          <StatLine label="Faltas Cometidas"   value={s.fouls_committed} />
-          <StatLine label="Faltas Sofridas"    value={s.fouls_suffered} />
-          <StatLine label="Cartões Amarelos"   value={s.yellow_cards} />
-          {s.red_cards > 0 && (
-            <StatLine label="Cartões Vermelhos" value={s.red_cards} />
-          )}
-        </div>
-
-      </div>
-    </div>
-  );
-}
-
 // ─── Season table row ─────────────────────────────────────────────────────────
-function SeasonRow({ row }: { row: SeasonRowData }) {
+function SeasonRow({ row, matches }: { row: SeasonRowData; matches?: MatchRowPreview[] }) {
   const [expanded, setExpanded] = useState(false);
+  const canExpand = row.source === "live" && !!matches && matches.length > 0;
   const s = row.stats;
 
   const R   = "#E5173F";
@@ -730,25 +726,27 @@ function SeasonRow({ row }: { row: SeasonRowData }) {
     <>
       <tr
         className="transition-colors"
-        style={{ borderBottom: `1px solid ${BRD}`, cursor: "pointer" }}
-        onClick={() => setExpanded(e => !e)}
+        style={{ borderBottom: `1px solid ${BRD}`, cursor: canExpand ? "pointer" : "default" }}
+        onClick={() => canExpand && setExpanded(e => !e)}
         onMouseEnter={(e) => (e.currentTarget.style.background = "#111")}
         onMouseLeave={(e) => (e.currentTarget.style.background = "")}
       >
         {/* Competição */}
         <td className="px-3 py-2.5" style={{ borderRight: `1px solid ${BRD}`, color: TXT }}>
           <div className="flex items-center gap-1.5">
-            <span
-              className="inline-block text-[12px] leading-none select-none"
-              style={{
-                color: MUT,
-                transform: expanded ? "rotate(90deg)" : "rotate(0deg)",
-                transition: "transform 150ms",
-                display: "inline-block",
-              }}
-            >
-              ›
-            </span>
+            {canExpand && (
+              <span
+                className="inline-block text-[12px] leading-none select-none"
+                style={{
+                  color: MUT,
+                  transform: expanded ? "rotate(90deg)" : "rotate(0deg)",
+                  transition: "transform 150ms",
+                  display: "inline-block",
+                }}
+              >
+                ›
+              </span>
+            )}
             {row.competition_name ?? "—"}
           </div>
         </td>
@@ -804,14 +802,27 @@ function SeasonRow({ row }: { row: SeasonRowData }) {
         </td>
       </tr>
 
-      {/* Expanded detail panel */}
-      {expanded && (
-        <tr>
-          <td colSpan={12} style={{ padding: 0, borderBottom: `1px solid ${BRD}` }}>
-            <StatDetailPanel stats={s} />
+      {/* Individual match rows when expanded (live only) */}
+      {expanded && matches?.map(m => (
+        <tr key={m.match_id} style={{ background: "#0C0C0C", borderBottom: `1px solid ${BRD}` }}>
+          <td className="py-2 pl-8 pr-3" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>
+            <span className="font-jetbrains text-[10px]">
+              {format(new Date(m.match_date), "dd/MM")} · {m.opponent_name}
+            </span>
           </td>
+          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px]" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>1</td>
+          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px]" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>{m.minutes_played}</td>
+          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px] font-bold" style={{ borderRight: `1px solid ${BRD}`, color: m.goals > 0 ? G : MUT }}>{m.goals}</td>
+          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px] font-bold" style={{ borderRight: `1px solid ${BRD}`, color: m.assists > 0 ? G : MUT }}>{m.assists}</td>
+          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px]" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>{m.shots}</td>
+          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px]" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>{m.shots_on_target}</td>
+          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px]" style={{ borderRight: `1px solid ${BRD}`, color: m.yellow_cards > 0 ? AMB : MUT }}>{m.yellow_cards}</td>
+          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px]" style={{ borderRight: `1px solid ${BRD}`, color: m.red_cards > 0 ? R : MUT }}>{m.red_cards}</td>
+          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px]" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>{m.tackles}</td>
+          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px]" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>{m.interceptions}</td>
+          <td className="px-3 py-2" />
         </tr>
-      )}
+      ))}
     </>
   );
 }
