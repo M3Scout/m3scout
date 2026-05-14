@@ -8,6 +8,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { DeletePlayerDialog } from "@/components/players/DeletePlayerDialog";
 import { usePlayerMatchStats } from "@/hooks/usePlayerMatchStats";
+import { useManualPlayerStats } from "@/hooks/useManualPlayerStats";
 import { useMarketScore } from "@/hooks/useMarketScore";
 import { AtributoRadar } from "@/components/players/detail/AtributoRadar";
 import { MarketValueMiniChart } from "@/components/players/detail/MarketValueMiniChart";
@@ -167,8 +168,12 @@ function getMarketScoreTier(score: number): { label: string; color: string } {
 }
 
 const PLAY_STYLE_DESC: Record<string, string> = {
-  "CONSTRUTOR":  "Constrói jogadas com passes precisos e movimentação inteligente.",
-  "FINALIZADOR": "Explora espaços e busca o gol com eficiência clínica.",
+  "BOX-TO-BOX":  "Meio-campista incansável que atua em ambas as áreas, contribuindo tanto na recuperação de bola quanto na chegada ao ataque com alta intensidade.",
+  "ARMADOR":     "Jogador criativo com visão de jogo privilegiada, responsável por ditar o ritmo da equipe e servir os companheiros com passes decisivos.",
+  "CONSTRUTOR":  "Jogador que inicia a organização ofensiva, conectando a defesa ao meio-campo com passes precisos e mantendo a posse de bola.",
+  "FINALIZADOR": "Atacante de área com alto instinto de posicionamento, focado em concluir as jogadas e converter chances em gols com precisão.",
+  "PIVÔ":        "Atacante que utiliza o porte físico para sustentar a marcação de costas, servindo de referência para a aproximação dos companheiros.",
+  "VELOCISTA":   "Jogador de explosão que utiliza a velocidade para vencer duelos individuais e explorar as costas da defesa adversária.",
   "DRIBLADOR":   "Utiliza o drible como arma para criar desequilíbrio e espaços.",
   "ORGANIZADOR": "Organiza o jogo com visão ampla e passes filtrados na medida.",
   "DEFENSIVO":   "Comprometido com marcação intensa e recuperação de bola.",
@@ -215,12 +220,62 @@ const PlayerDetail = () => {
   const canEdit = canEditPlayer;
   const canCreateReport = can("reports", "create");
 
-  // Season stats hook
-  const { totals: seasonTotals, isLoading: statsLoading } = usePlayerMatchStats({
+  const CURRENT_YEAR = new Date().getFullYear();
+
+  // Live match stats for current season
+  const { totals: liveTotals, isLoading: liveStatsLoading } = usePlayerMatchStats({
     playerId: id ?? "",
-    seasonYear: new Date().getFullYear(),
+    seasonYear: CURRENT_YEAR,
     enabled: !!id,
   });
+
+  // Manual stats (manual_player_stats table — external games not in live match system)
+  const { manualStats, isLoading: manualLoading } = useManualPlayerStats({
+    playerId: id ?? "",
+    enabled: !!id,
+  });
+
+  // Player_stats table (entries via PlayerStatsForm)
+  const { data: playerStatsRows = [], isLoading: psLoading } = useQuery({
+    queryKey: ["player-stats-overview", id, CURRENT_YEAR],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("player_stats")
+        .select("matches, minutes, goals, assists")
+        .eq("player_id", id!)
+        .eq("season_year", CURRENT_YEAR);
+      if (error) throw error;
+      return (data ?? []) as { matches: number; minutes: number; goals: number; assists: number }[];
+    },
+    enabled: !!id,
+  });
+
+  // Merged totals: live + manual_player_stats + player_stats (all for current season)
+  const seasonTotals = useMemo(() => {
+    const t = {
+      matches: liveTotals?.matches ?? 0,
+      minutes: liveTotals?.minutes ?? 0,
+      goals:   liveTotals?.goals   ?? 0,
+      assists: liveTotals?.assists  ?? 0,
+    };
+    manualStats
+      .filter(ms => ms.season_year === CURRENT_YEAR)
+      .forEach(ms => {
+        t.matches += ms.games;
+        t.minutes += ms.minutes;
+        t.goals   += ms.goals   ?? 0;
+        t.assists += ms.assists ?? 0;
+      });
+    playerStatsRows.forEach(ps => {
+      t.matches += ps.matches ?? 0;
+      t.minutes += ps.minutes ?? 0;
+      t.goals   += ps.goals   ?? 0;
+      t.assists += ps.assists ?? 0;
+    });
+    return t;
+  }, [liveTotals, manualStats, playerStatsRows, CURRENT_YEAR]);
+
+  const statsLoading = liveStatsLoading || manualLoading || psLoading;
 
   // Market score hook
   const { displayScore: marketScore, scoreLoading: marketScoreLoading, dataConfidence, hasEnoughData: marketHasData } = useMarketScore({
