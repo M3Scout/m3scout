@@ -168,17 +168,33 @@ function getMarketScoreTier(score: number): { label: string; color: string } {
 }
 
 const PLAY_STYLE_DESC: Record<string, string> = {
-  "BOX-TO-BOX":  "Meio-campista incansável que atua em ambas as áreas, contribuindo tanto na recuperação de bola quanto na chegada ao ataque com alta intensidade.",
-  "ARMADOR":     "Jogador criativo com visão de jogo privilegiada, responsável por ditar o ritmo da equipe e servir os companheiros com passes decisivos.",
-  "CONSTRUTOR":  "Jogador que inicia a organização ofensiva, conectando a defesa ao meio-campo com passes precisos e mantendo a posse de bola.",
-  "FINALIZADOR": "Atacante de área com alto instinto de posicionamento, focado em concluir as jogadas e converter chances em gols com precisão.",
-  "PIVÔ":        "Atacante que utiliza o porte físico para sustentar a marcação de costas, servindo de referência para a aproximação dos companheiros.",
-  "VELOCISTA":   "Jogador de explosão que utiliza a velocidade para vencer duelos individuais e explorar as costas da defesa adversária.",
-  "DRIBLADOR":   "Utiliza o drible como arma para criar desequilíbrio e espaços.",
-  "ORGANIZADOR": "Organiza o jogo com visão ampla e passes filtrados na medida.",
-  "DEFENSIVO":   "Comprometido com marcação intensa e recuperação de bola.",
-  "ARTICULADOR": "Liga as linhas do time com qualidade técnica e inteligência.",
-  "LIVRE":       "Movimenta-se com liberdade entre linhas para criar vantagem.",
+  // Meio-campo
+  "BOX-TO-BOX":           "Meio-campista incansável que atua em ambas as áreas, contribuindo na recuperação de bola e na chegada ao ataque com alta intensidade.",
+  "VOLANTE DE CONTENÇÃO": "Jogador focado na marcação e proteção à frente da zaga, especialista em interceptações e combate direto para anular o adversário.",
+  "ARMADOR RECUADO":      "Atua à frente da defesa para ditar o ritmo do jogo, distribuindo passes curtos e longos com precisão para iniciar a organização ofensiva.",
+  "MEIA-ARMADOR":         "Especialista no último passe e criação de chances, utiliza visão de jogo privilegiada para servir os atacantes em zonas de finalização.",
+  "MEZZALA":              "Meio-campista que flutua do centro para os lados, oferecendo amplitude ofensiva e infiltração constante na área adversária.",
+  "FALSO TREQUARTISTA":   "Armador que recua para organizar a posse de bola, mas mantém liberdade total para criar jogadas no terço final do campo.",
+  // Ataque e pontas
+  "FALSO PONTA":          "Atua partindo do lado para o centro para atrair a marcação, liberando o corredor lateral para a subida dos companheiros.",
+  "PONTA INVERTIDO":      "Joga no lado oposto ao pé preferencial, focando em cortes para o centro para buscar o chute ou passes decisivos por dentro.",
+  "FALSO 9":              "Centroavante que recua para o meio-campo para atrair zagueiros, priorizando a armação de jogadas e a abertura de espaços na defesa.",
+  "OPORTUNISTA":          "Atacante de referência física, focado em posicionamento dentro da área para finalizar rapidamente as jogadas de ataque.",
+  // Defesa e gol
+  "ZAGUEIRO CONSTRUTOR":  "Defensor com técnica apurada que inicia a saída de bola com passes verticais e qualidade na transição ofensiva.",
+  "GOLEIRO-LINHA":        "Goleiro que joga adiantado e participa ativamente da posse de bola, atuando como um líbero para antecipar lançamentos adversários.",
+  // Legacy entries kept for backward compatibility
+  "BOX-TO-BOX (legacy)":  "Meio-campista incansável que atua em ambas as áreas, contribuindo tanto na recuperação de bola quanto na chegada ao ataque.",
+  "ARMADOR":              "Jogador criativo com visão de jogo privilegiada, responsável por ditar o ritmo da equipe e servir os companheiros com passes decisivos.",
+  "CONSTRUTOR":           "Jogador que inicia a organização ofensiva, conectando a defesa ao meio-campo com passes precisos e mantendo a posse de bola.",
+  "FINALIZADOR":          "Atacante de área com alto instinto de posicionamento, focado em concluir as jogadas e converter chances em gols com precisão.",
+  "PIVÔ":                 "Atacante que utiliza o porte físico para sustentar a marcação de costas, servindo de referência para a aproximação dos companheiros.",
+  "VELOCISTA":            "Jogador de explosão que utiliza a velocidade para vencer duelos individuais e explorar as costas da defesa adversária.",
+  "DRIBLADOR":            "Utiliza o drible como arma para criar desequilíbrio e espaços no ataque.",
+  "ORGANIZADOR":          "Organiza o jogo com visão ampla e passes filtrados na medida.",
+  "DEFENSIVO":            "Comprometido com marcação intensa e recuperação de bola.",
+  "ARTICULADOR":          "Liga as linhas do time com qualidade técnica e inteligência tática.",
+  "LIVRE":                "Movimenta-se com liberdade entre linhas para criar vantagem numérica.",
 };
 
 function getPlayStyleDesc(style: string): string {
