@@ -346,8 +346,9 @@ export function usePlayerMatchStats({
             STANDARD_MATCH_DURATION
           );
 
-      // Count matches even with 0 minutes to stay consistent with StatsTab counting logic.
-      // A player listed in match_players is credited with a game regardless of recorded presence time.
+      // Professional rule: J (games) counts only matches where the athlete actually played (MIN > 0).
+      // A 0-minute entry means the athlete was related but did not take the field.
+      if (minutesPlayed <= 0) continue;
 
       // CRITICAL: In our DB schema, `shots` field stores shots OFF TARGET (not total)
       // shots_total = shots (off target) + shots_on_target + shots_blocked
@@ -940,7 +941,9 @@ export function usePlayerMatchStatsBySeasonCompetition({
         });
       }
 
-      s.matches += 1;
+      // J (games) = only matches where athlete actually played (MIN > 0).
+      // The match row still appears in matchesByKey so it shows in the expandable list.
+      s.matches += minutesPlayed > 0 ? 1 : 0;
       s.minutes += minutesPlayed;
       s.goals += stats?.goals ?? 0;
       s.assists += stats?.assists ?? 0;
