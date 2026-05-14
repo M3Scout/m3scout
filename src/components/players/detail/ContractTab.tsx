@@ -1,8 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { parseDateSafe, formatDateMediumBR } from "@/lib/dateUtils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useAuth } from "@/hooks/useAuth";
+import { ChevronUp, ChevronDown } from "lucide-react";
 
 // ─── Design tokens ───────────────────────────────────────────────────────────
 
@@ -142,6 +145,11 @@ export function ContractTab({
   agentContact,
   contractNotes,
 }: ContractTabProps) {
+  const queryClient = useQueryClient();
+  const { isAdmin, isScout } = useAuth();
+  const canEdit = isAdmin || isScout;
+  const [reordering, setReordering] = useState(false);
+
   const { data: history = [], isLoading } = useQuery({
     queryKey: ["player-contract-history", playerId],
     queryFn: async () => {
@@ -153,13 +161,43 @@ export function ContractTab({
         .order("sort_order", { ascending: true });
       if (error) throw error;
       const rows = (data ?? []) as ContractRecord[];
+      // Sort by sort_order when present; fall back to most-recent start_date
       return rows.sort((a, b) => {
-        if (a.is_current && !b.is_current) return -1;
-        if (!a.is_current && b.is_current) return 1;
+        if (a.sort_order !== null && b.sort_order !== null) return a.sort_order - b.sort_order;
+        if (a.sort_order !== null) return -1;
+        if (b.sort_order !== null) return 1;
         return new Date(b.start_date).getTime() - new Date(a.start_date).getTime();
       });
     },
   });
+
+  // Entry with the most recent start_date always gets the ATUAL badge
+  const currentEntryId = useMemo(() => {
+    if (history.length === 0) return null;
+    return history.reduce((prev, curr) =>
+      new Date(curr.start_date) > new Date(prev.start_date) ? curr : prev
+    ).id;
+  }, [history]);
+
+  const handleReorder = async (index: number, dir: "up" | "down") => {
+    const swapIdx = dir === "up" ? index - 1 : index + 1;
+    if (swapIdx < 0 || swapIdx >= history.length || reordering) return;
+    setReordering(true);
+    try {
+      const a = history[index];
+      const b = history[swapIdx];
+      // Use positional fallback so we always have a concrete integer to swap
+      const aOrder = a.sort_order ?? index * 10;
+      const bOrder = b.sort_order ?? swapIdx * 10;
+      await Promise.all([
+        supabase.from("player_contract_history").update({ sort_order: bOrder }).eq("id", a.id),
+        supabase.from("player_contract_history").update({ sort_order: aOrder }).eq("id", b.id),
+      ]);
+      queryClient.invalidateQueries({ queryKey: ["player-contract-history", playerId] });
+    } finally {
+      setReordering(false);
+    }
+  };
 
   const statusCfg = getStatusCfg(contractStatus);
   const days = daysUntil(contractEnd);
@@ -337,7 +375,7 @@ export function ContractTab({
 
             {history.map((c, i) => {
               const typeCfg = getTypeCfg(c.contract_type);
-              const isCurrent = !!c.is_current;
+              const isCurrent = c.id === currentEntryId;
               const dotColor = isCurrent ? ACCENT : MUTED;
 
               return (
@@ -433,13 +471,43 @@ export function ContractTab({
                         )}
                       </div>
 
-                      {/* Type badge */}
-                      <span
-                        className="font-jetbrains text-[9px] uppercase tracking-wider border px-2 py-0.5 flex-shrink-0"
-                        style={{ color: typeCfg.color, borderColor: typeCfg.color }}
-                      >
-                        {typeCfg.label}
-                      </span>
+                      {/* Right side: type badge + reorder buttons */}
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span
+                          className="font-jetbrains text-[9px] uppercase tracking-wider border px-2 py-0.5"
+                          style={{ color: typeCfg.color, borderColor: typeCfg.color }}
+                        >
+                          {typeCfg.label}
+                        </span>
+                        {canEdit && history.length > 1 && (
+                          <div className="flex flex-col" style={{ gap: "1px" }}>
+                            <button
+                              onClick={() => handleReorder(i, "up")}
+                              disabled={i === 0 || reordering}
+                              className="flex items-center justify-center w-5 h-5 transition-colors"
+                              style={{
+                                color: i === 0 ? BORDER : MUTED,
+                                cursor: i === 0 ? "default" : "pointer",
+                              }}
+                              title="Mover para cima"
+                            >
+                              <ChevronUp className="w-3 h-3" />
+                            </button>
+                            <button
+                              onClick={() => handleReorder(i, "down")}
+                              disabled={i === history.length - 1 || reordering}
+                              className="flex items-center justify-center w-5 h-5 transition-colors"
+                              style={{
+                                color: i === history.length - 1 ? BORDER : MUTED,
+                                cursor: i === history.length - 1 ? "default" : "pointer",
+                              }}
+                              title="Mover para baixo"
+                            >
+                              <ChevronDown className="w-3 h-3" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

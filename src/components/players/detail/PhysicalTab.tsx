@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 import {
   ResponsiveContainer,
   LineChart,
@@ -12,6 +14,7 @@ import {
 } from "recharts";
 import { format } from "date-fns";
 import { parseDateSafe } from "@/lib/dateUtils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 // ─── Design tokens ───────────────────────────────────────────────────────────
 
@@ -129,7 +132,6 @@ function PhysicalRadar({ athleteValues }: { athleteValues: number[] }) {
 
   return (
     <svg viewBox="0 0 240 230" className="w-full max-w-[260px] mx-auto">
-      {/* Grid rings */}
       {rings.map(r => (
         <polygon
           key={r}
@@ -139,14 +141,12 @@ function PhysicalRadar({ athleteValues }: { athleteValues: number[] }) {
           strokeWidth="1"
         />
       ))}
-      {/* Axis lines */}
       {RADAR_AXES.map((_, i) => {
         const outer = axisPoint(i, 1.0);
         return (
           <line key={i} x1={CX} y1={CY} x2={outer.x} y2={outer.y} stroke={BORDER} strokeWidth="1" />
         );
       })}
-      {/* Elite polygon — red dashed */}
       <polygon
         points={pointsStr(elitePts)}
         fill={`${ACCENT}14`}
@@ -154,14 +154,12 @@ function PhysicalRadar({ athleteValues }: { athleteValues: number[] }) {
         strokeWidth="1.5"
         strokeDasharray="4 3"
       />
-      {/* Athlete polygon — green solid */}
       <polygon
         points={pointsStr(athletePts)}
         fill={`${GREEN}28`}
         stroke={GREEN}
         strokeWidth="2"
       />
-      {/* Axis labels */}
       {RADAR_AXES.map((axis, i) => {
         const pt = axisPoint(i, LABEL_FACTOR);
         return (
@@ -183,7 +181,7 @@ function PhysicalRadar({ athleteValues }: { athleteValues: number[] }) {
   );
 }
 
-// ─── Metric card (M3 style) ───────────────────────────────────────────────────
+// ─── Metric card ──────────────────────────────────────────────────────────────
 
 interface MetricCardProps {
   label: string;
@@ -270,7 +268,21 @@ function SectionHeader({ title }: { title: string }) {
   );
 }
 
-// ─── Metric grid wrapper (1px separators via gap-px technique) ────────────────
+function SectionHeaderWithAction({ title, action }: { title: string; action?: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center gap-3">
+        <div className="w-[3px] h-[14px]" style={{ background: ACCENT }} />
+        <h3 className="font-barlow text-[13px] uppercase tracking-widest" style={{ color: TEXT }}>
+          {title}
+        </h3>
+      </div>
+      {action}
+    </div>
+  );
+}
+
+// ─── Metric grid wrapper ──────────────────────────────────────────────────────
 
 function MetricGrid({ children, cols = 3 }: { children: React.ReactNode; cols?: number }) {
   const colCls = cols === 3 ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-1 sm:grid-cols-2";
@@ -288,6 +300,49 @@ function GridCell({ children }: { children: React.ReactNode }) {
   return <div style={{ background: BG }}>{children}</div>;
 }
 
+// ─── Form field atoms ─────────────────────────────────────────────────────────
+
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <label className="block font-jetbrains text-[9px] uppercase tracking-[0.18em] mb-1.5" style={{ color: MUTED }}>
+      {children}
+    </label>
+  );
+}
+
+function FieldInput({
+  type = "number",
+  value,
+  onChange,
+  placeholder,
+  step,
+}: {
+  type?: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  step?: string;
+}) {
+  return (
+    <input
+      type={type}
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      placeholder={placeholder}
+      step={step}
+      className="w-full font-jetbrains text-[12px] px-3 py-2.5 outline-none transition-colors"
+      style={{
+        background: "#0D0D0D",
+        border: `1px solid ${BORDER}`,
+        color: TEXT,
+        borderRadius: 0,
+      }}
+      onFocus={e => (e.currentTarget.style.borderColor = MUTED)}
+      onBlur={e => (e.currentTarget.style.borderColor = BORDER)}
+    />
+  );
+}
+
 // ─── Physical history record type ─────────────────────────────────────────────
 
 interface PhysicalHistoryRecord {
@@ -302,12 +357,22 @@ interface PhysicalHistoryRecord {
   notes: string | null;
 }
 
+const EMPTY_FORM = {
+  recorded_at: "",
+  weight: "",
+  body_fat_percentage: "",
+  muscle_mass: "",
+  max_speed: "",
+  sprint_30m: "",
+  vo2_max: "",
+  notes: "",
+};
+
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface PhysicalTabProps {
   playerId: string;
   playerPosition?: string | null;
-  // From players table — used as fallback when no physical history record exists
   playerHeight?: number | null;
   playerWingspan?: number | null;
   playerWeight?: number | null;
@@ -331,10 +396,14 @@ export function PhysicalTab({
   playerSprint30m,
   playerVo2Max,
 }: PhysicalTabProps) {
-  const [activeMetrics, setActiveMetrics] = useState<MetricKey[]>([
-    "weight",
-    "body_fat_percentage",
-  ]);
+  const queryClient = useQueryClient();
+  const { user, isAdmin, isScout } = useAuth();
+  const canEdit = isAdmin || isScout;
+
+  const [activeMetrics, setActiveMetrics] = useState<MetricKey[]>(["weight", "body_fat_percentage"]);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [form, setForm] = useState(EMPTY_FORM);
 
   const { data: history, isLoading } = useQuery({
     queryKey: ["player-physical-history", playerId],
@@ -351,13 +420,12 @@ export function PhysicalTab({
 
   const latest = history && history.length > 0 ? history[history.length - 1] : null;
 
-  // Resolve each metric: prefer the most-recent history record, fall back to players table
-  const resolvedWeight   = latest?.weight               ?? playerWeight   ?? null;
-  const resolvedBodyFat  = latest?.body_fat_percentage  ?? playerBodyFat  ?? null;
-  const resolvedMuscle   = latest?.muscle_mass          ?? playerMuscle   ?? null;
-  const resolvedMaxSpeed = latest?.max_speed            ?? playerMaxSpeed ?? null;
+  const resolvedWeight   = latest?.weight               ?? playerWeight    ?? null;
+  const resolvedBodyFat  = latest?.body_fat_percentage  ?? playerBodyFat   ?? null;
+  const resolvedMuscle   = latest?.muscle_mass          ?? playerMuscle    ?? null;
+  const resolvedMaxSpeed = latest?.max_speed            ?? playerMaxSpeed  ?? null;
   const resolvedSprint   = latest?.sprint_30m           ?? playerSprint30m ?? null;
-  const resolvedVo2      = latest?.vo2_max              ?? playerVo2Max   ?? null;
+  const resolvedVo2      = latest?.vo2_max              ?? playerVo2Max    ?? null;
 
   const bmi = calcBMI(resolvedWeight, playerHeight);
   const muscleMassPct = calcMuscleMassPct(resolvedWeight, resolvedBodyFat);
@@ -390,227 +458,454 @@ export function PhysicalTab({
     });
   };
 
+  const openDialog = () => {
+    setForm({
+      ...EMPTY_FORM,
+      recorded_at: format(new Date(), "yyyy-MM-dd"),
+    });
+    setDialogOpen(true);
+  };
+
+  const handleSave = async () => {
+    if (!user) {
+      toast.error("É necessário estar autenticado");
+      return;
+    }
+    const hasAtLeastOne =
+      form.weight || form.body_fat_percentage || form.muscle_mass ||
+      form.max_speed || form.sprint_30m || form.vo2_max;
+    if (!hasAtLeastOne) {
+      toast.error("Preencha ao menos um campo de medida");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const { error } = await supabase.from("player_physical_history").insert({
+        player_id: playerId,
+        recorded_at: form.recorded_at,
+        weight:              form.weight              ? parseFloat(form.weight)              : null,
+        body_fat_percentage: form.body_fat_percentage ? parseFloat(form.body_fat_percentage) : null,
+        muscle_mass:         form.muscle_mass         ? parseFloat(form.muscle_mass)         : null,
+        max_speed:           form.max_speed           ? parseFloat(form.max_speed)           : null,
+        sprint_30m:          form.sprint_30m          ? parseFloat(form.sprint_30m)          : null,
+        vo2_max:             form.vo2_max             ? parseFloat(form.vo2_max)             : null,
+        notes:               form.notes               || null,
+        created_by:          user.id,
+      });
+
+      if (error) {
+        if (error.code === "23505") {
+          toast.error("Já existe um registro para esta data");
+        } else {
+          throw error;
+        }
+        return;
+      }
+
+      toast.success("Avaliação registrada com sucesso");
+      queryClient.invalidateQueries({ queryKey: ["player-physical-history", playerId] });
+      queryClient.invalidateQueries({ queryKey: ["latest-physical-evaluation", playerId] });
+      setDialogOpen(false);
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao salvar avaliação");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // ── Add-data button (reused in multiple section headers) ──────────────────
+  const addButton = canEdit ? (
+    <button
+      onClick={openDialog}
+      className="font-jetbrains text-[9px] uppercase tracking-[0.18em] px-3 py-1.5 border transition-colors"
+      style={{ borderColor: ACCENT, color: ACCENT, background: `${ACCENT}0D` }}
+      onMouseEnter={e => (e.currentTarget.style.background = `${ACCENT}20`)}
+      onMouseLeave={e => (e.currentTarget.style.background = `${ACCENT}0D`)}
+    >
+      ＋ ADICIONAR DADOS
+    </button>
+  ) : null;
+
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-8 py-6">
+    <>
+      <div className="space-y-8 py-6">
 
-      {/* ── 1. Evolução Física ─────────────────────────────────────────────── */}
-      <section>
-        <SectionHeader title="Evolução Física" />
-        <div className="border p-4" style={{ borderColor: BORDER }}>
-          {/* Filter pills */}
-          <div className="flex flex-wrap gap-2 mb-5">
-            {(Object.entries(METRIC_CONFIG) as [MetricKey, typeof METRIC_CONFIG[MetricKey]][]).map(
-              ([key, cfg]) => {
-                const isActive = activeMetrics.includes(key);
-                return (
-                  <button
-                    key={key}
-                    onClick={() => toggleMetric(key)}
-                    className="font-jetbrains text-[10px] uppercase tracking-wider px-3 py-1.5 border transition-colors"
-                    style={{
-                      borderColor: isActive ? ACCENT : BORDER,
-                      color: isActive ? ACCENT : MUTED,
-                      background: isActive ? `${ACCENT}12` : "transparent",
-                    }}
-                  >
-                    <span
-                      className="inline-block w-1.5 h-1.5 rounded-full mr-1.5 align-middle"
-                      style={{ backgroundColor: cfg.color }}
-                    />
-                    {cfg.label}
-                  </button>
-                );
-              }
-            )}
-          </div>
-
-          {/* Chart */}
-          {isLoading ? (
-            <div className="h-[220px] flex items-center justify-center">
-              <span className="font-jetbrains text-[11px] uppercase tracking-wider" style={{ color: MUTED }}>
-                CARREGANDO...
-              </span>
-            </div>
-          ) : chartData.length === 0 ? (
-            <div className="h-[220px] flex items-center justify-center">
-              <span className="font-jetbrains text-[11px] uppercase tracking-wider" style={{ color: MUTED }}>
-                SEM AVALIAÇÕES REGISTRADAS
-              </span>
-            </div>
-          ) : (
-            <div className="h-[220px] -mx-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="2 4" stroke={BORDER} vertical={false} />
-                  <XAxis
-                    dataKey="date"
-                    tick={{ fill: MUTED, fontSize: 9, fontFamily: "JetBrains Mono, monospace" }}
-                    tickLine={false}
-                    axisLine={{ stroke: BORDER }}
-                  />
-                  <YAxis
-                    tick={{ fill: MUTED, fontSize: 9, fontFamily: "JetBrains Mono, monospace" }}
-                    tickLine={false}
-                    axisLine={false}
-                    width={32}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      background: BG,
-                      border: `1px solid ${BORDER}`,
-                      borderRadius: 0,
-                      fontSize: 11,
-                      fontFamily: "JetBrains Mono, monospace",
-                    }}
-                    labelStyle={{ color: MUTED }}
-                    formatter={(value: number, name: string) => {
-                      const cfg = METRIC_CONFIG[name as MetricKey];
-                      return [`${value?.toFixed(1)} ${cfg?.unit ?? ""}`, cfg?.label ?? name];
-                    }}
-                  />
-                  {activeMetrics.map(key => (
-                    <Line
+        {/* ── 1. Evolução Física ──────────────────────────────────────────── */}
+        <section>
+          <SectionHeader title="Evolução Física" />
+          <div className="border p-4" style={{ borderColor: BORDER }}>
+            {/* Filter pills */}
+            <div className="flex flex-wrap gap-2 mb-5">
+              {(Object.entries(METRIC_CONFIG) as [MetricKey, typeof METRIC_CONFIG[MetricKey]][]).map(
+                ([key, cfg]) => {
+                  const isActive = activeMetrics.includes(key);
+                  return (
+                    <button
                       key={key}
-                      type="monotone"
-                      dataKey={key}
-                      stroke={METRIC_CONFIG[key].color}
-                      strokeWidth={2}
-                      dot={{ fill: METRIC_CONFIG[key].color, strokeWidth: 0, r: 3 }}
-                      activeDot={{ r: 5, strokeWidth: 0 }}
-                      connectNulls
-                    />
-                  ))}
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* ── 2. Performance vs Elite ────────────────────────────────────────── */}
-      <section>
-        <SectionHeader title="Performance vs Elite" />
-        <div className="border p-6" style={{ borderColor: BORDER }}>
-          <div className="flex flex-col md:flex-row items-center gap-8">
-            <div className="flex-1 flex justify-center">
-              <PhysicalRadar athleteValues={radarValues} />
+                      onClick={() => toggleMetric(key)}
+                      className="font-jetbrains text-[10px] uppercase tracking-wider px-3 py-1.5 border transition-colors"
+                      style={{
+                        borderColor: isActive ? ACCENT : BORDER,
+                        color: isActive ? ACCENT : MUTED,
+                        background: isActive ? `${ACCENT}12` : "transparent",
+                      }}
+                    >
+                      <span
+                        className="inline-block w-1.5 h-1.5 rounded-full mr-1.5 align-middle"
+                        style={{ backgroundColor: cfg.color }}
+                      />
+                      {cfg.label}
+                    </button>
+                  );
+                }
+              )}
             </div>
 
-            {/* Legend + values */}
-            <div className="flex flex-col gap-3">
-              {/* Legend */}
-              <div className="flex items-center gap-2 font-jetbrains text-[10px] uppercase tracking-wider">
-                <svg width="28" height="10">
-                  <line x1="0" y1="5" x2="28" y2="5" stroke={ACCENT} strokeWidth="1.5" strokeDasharray="4 3" />
-                </svg>
-                <span style={{ color: MUTED }}>Benchmark Elite</span>
+            {/* Chart */}
+            {isLoading ? (
+              <div className="h-[220px] flex items-center justify-center">
+                <span className="font-jetbrains text-[11px] uppercase tracking-wider" style={{ color: MUTED }}>
+                  CARREGANDO...
+                </span>
               </div>
-              <div className="flex items-center gap-2 font-jetbrains text-[10px] uppercase tracking-wider">
-                <svg width="28" height="10">
-                  <line x1="0" y1="5" x2="28" y2="5" stroke={GREEN} strokeWidth="2" />
-                </svg>
-                <span style={{ color: MUTED }}>Atleta</span>
+            ) : chartData.length === 0 ? (
+              <div className="h-[220px] flex flex-col items-center justify-center gap-3">
+                <span className="font-jetbrains text-[11px] uppercase tracking-wider" style={{ color: MUTED }}>
+                  SEM AVALIAÇÕES REGISTRADAS
+                </span>
+                {canEdit && (
+                  <button
+                    onClick={openDialog}
+                    className="font-jetbrains text-[9px] uppercase tracking-[0.18em] px-4 py-2 border transition-colors"
+                    style={{ borderColor: ACCENT, color: ACCENT, background: `${ACCENT}0D` }}
+                  >
+                    ＋ ADICIONAR PRIMEIRA AVALIAÇÃO
+                  </button>
+                )}
               </div>
+            ) : (() => {
+              const metricsWithData = activeMetrics.filter(key =>
+                chartData.some(d => d[key] != null && Number.isFinite(d[key] as number))
+              );
+              const noDataMetrics = activeMetrics.filter(m => !metricsWithData.includes(m));
 
-              {/* Per-axis values */}
-              <div className="mt-3 space-y-2 border-t pt-3" style={{ borderColor: BORDER }}>
-                {RADAR_AXES.map((axis, i) => (
-                  <div key={axis.key} className="flex items-center gap-3 font-jetbrains text-[11px]">
-                    <span className="w-[108px]" style={{ color: MUTED }}>{axis.label}</span>
-                    <div className="flex-1 h-[1px]" style={{ background: BORDER }} />
-                    <span style={{ color: radarValues[i] >= 75 ? GREEN : radarValues[i] >= 40 ? TEXT : ACCENT }}>
-                      {radarValues[i].toFixed(0)}%
+              if (metricsWithData.length === 0) {
+                return (
+                  <div className="h-[220px] flex items-center justify-center">
+                    <span className="font-jetbrains text-[11px] uppercase tracking-wider" style={{ color: MUTED }}>
+                      SEM DADOS PARA AS MÉTRICAS SELECIONADAS
                     </span>
                   </div>
-                ))}
+                );
+              }
+
+              return (
+                <>
+                  <div className="h-[220px] -mx-2">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={chartData} margin={{ top: 5, right: 40, left: -20, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="2 4" stroke={BORDER} vertical={false} />
+                        <XAxis
+                          dataKey="date"
+                          tick={{ fill: MUTED, fontSize: 9, fontFamily: "JetBrains Mono, monospace" }}
+                          tickLine={false}
+                          axisLine={{ stroke: BORDER }}
+                          padding={{ right: 16 }}
+                        />
+                        {metricsWithData.map((key, idx) => (
+                          <YAxis
+                            key={key}
+                            yAxisId={key}
+                            orientation={idx === 0 ? "left" : "right"}
+                            hide={idx > 0}
+                            domain={["auto", "auto"]}
+                            tick={{ fill: MUTED, fontSize: 9, fontFamily: "JetBrains Mono, monospace" }}
+                            tickLine={false}
+                            axisLine={false}
+                            width={32}
+                          />
+                        ))}
+                        <Tooltip
+                          contentStyle={{
+                            background: BG,
+                            border: `1px solid ${BORDER}`,
+                            borderRadius: 0,
+                            fontSize: 11,
+                            fontFamily: "JetBrains Mono, monospace",
+                          }}
+                          labelStyle={{ color: MUTED }}
+                          cursor={{ stroke: MUTED, strokeWidth: 1, strokeDasharray: "4 3" }}
+                          formatter={(value: number, name: string) => {
+                            const cfg = METRIC_CONFIG[name as MetricKey];
+                            return [`${value?.toFixed(1)} ${cfg?.unit ?? ""}`, cfg?.label ?? name];
+                          }}
+                        />
+                        {metricsWithData.map(key => (
+                          <Line
+                            key={key}
+                            yAxisId={key}
+                            type="monotone"
+                            dataKey={key}
+                            stroke={METRIC_CONFIG[key].color}
+                            strokeWidth={2}
+                            dot={{ fill: METRIC_CONFIG[key].color, strokeWidth: 0, r: 3 }}
+                            activeDot={{ r: 5, strokeWidth: 0 }}
+                            connectNulls
+                            isAnimationActive={false}
+                          />
+                        ))}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                  {noDataMetrics.length > 0 && (
+                    <p className="font-jetbrains text-[10px] uppercase tracking-wider text-center mt-3" style={{ color: MUTED }}>
+                      Sem dados para: {noDataMetrics.map(m => METRIC_CONFIG[m].label).join(", ")}
+                    </p>
+                  )}
+                </>
+              );
+            })()}
+          </div>
+        </section>
+
+        {/* ── 2. Performance vs Elite ─────────────────────────────────────── */}
+        <section>
+          <SectionHeader title="Performance vs Elite" />
+          <div className="border p-6" style={{ borderColor: BORDER }}>
+            <div className="flex flex-col md:flex-row items-center gap-8">
+              <div className="flex-1 flex justify-center">
+                <PhysicalRadar athleteValues={radarValues} />
+              </div>
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-2 font-jetbrains text-[10px] uppercase tracking-wider">
+                  <svg width="28" height="10">
+                    <line x1="0" y1="5" x2="28" y2="5" stroke={ACCENT} strokeWidth="1.5" strokeDasharray="4 3" />
+                  </svg>
+                  <span style={{ color: MUTED }}>Benchmark Elite</span>
+                </div>
+                <div className="flex items-center gap-2 font-jetbrains text-[10px] uppercase tracking-wider">
+                  <svg width="28" height="10">
+                    <line x1="0" y1="5" x2="28" y2="5" stroke={GREEN} strokeWidth="2" />
+                  </svg>
+                  <span style={{ color: MUTED }}>Atleta</span>
+                </div>
+                <div className="mt-3 space-y-2 border-t pt-3" style={{ borderColor: BORDER }}>
+                  {RADAR_AXES.map((axis, i) => (
+                    <div key={axis.key} className="flex items-center gap-3 font-jetbrains text-[11px]">
+                      <span className="w-[108px]" style={{ color: MUTED }}>{axis.label}</span>
+                      <div className="flex-1 h-[1px]" style={{ background: BORDER }} />
+                      <span style={{ color: radarValues[i] >= 75 ? GREEN : radarValues[i] >= 40 ? TEXT : ACCENT }}>
+                        {radarValues[i].toFixed(0)}%
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ── 3. Medidas Corporais ───────────────────────────────────────────── */}
-      <section>
-        <SectionHeader title="Medidas Corporais" />
-        <MetricGrid>
-          <GridCell>
-            <MetricCard label="Altura" value={playerHeight ?? null} unit="cm" rangeKey="height" decimals={0} />
-          </GridCell>
-          <GridCell>
-            <MetricCard label="Peso" value={resolvedWeight} unit="kg" rangeKey="weight" />
-          </GridCell>
-          <GridCell>
-            <MetricCard label="Envergadura" value={playerWingspan ?? null} unit="cm" rangeKey="wingspan" decimals={0} />
-          </GridCell>
-        </MetricGrid>
-      </section>
+        {/* ── 3. Medidas Corporais ─────────────────────────────────────────── */}
+        <section>
+          <SectionHeaderWithAction title="Medidas Corporais" action={addButton} />
+          <MetricGrid>
+            <GridCell>
+              <MetricCard label="Altura" value={playerHeight ?? null} unit="cm" rangeKey="height" decimals={0} />
+            </GridCell>
+            <GridCell>
+              <MetricCard label="Peso" value={resolvedWeight} unit="kg" rangeKey="weight" />
+            </GridCell>
+            <GridCell>
+              <MetricCard label="Envergadura" value={playerWingspan ?? null} unit="cm" rangeKey="wingspan" decimals={0} />
+            </GridCell>
+          </MetricGrid>
+        </section>
 
-      {/* ── 4. Composição Corporal ─────────────────────────────────────────── */}
-      <section>
-        <SectionHeader title="Composição Corporal" />
-        <MetricGrid>
-          <GridCell>
-            <MetricCard
-              label="% Gordura"
-              value={resolvedBodyFat}
-              unit="%"
-              rangeKey="body_fat_percentage"
-            />
-          </GridCell>
-          <GridCell>
-            <MetricCard
-              label="% Massa Muscular"
-              value={muscleMassPct}
-              unit="%"
-              rangeKey="muscle_mass_pct"
-            />
-          </GridCell>
-          <GridCell>
-            <MetricCard label="IMC" value={bmi} unit="" rangeKey="bmi" />
-          </GridCell>
-        </MetricGrid>
-      </section>
+        {/* ── 4. Composição Corporal ───────────────────────────────────────── */}
+        <section>
+          <SectionHeader title="Composição Corporal" />
+          <MetricGrid>
+            <GridCell>
+              <MetricCard label="% Gordura" value={resolvedBodyFat} unit="%" rangeKey="body_fat_percentage" />
+            </GridCell>
+            <GridCell>
+              <MetricCard label="% Massa Muscular" value={muscleMassPct} unit="%" rangeKey="muscle_mass_pct" />
+            </GridCell>
+            <GridCell>
+              <MetricCard label="IMC" value={bmi} unit="" rangeKey="bmi" />
+            </GridCell>
+          </MetricGrid>
+        </section>
 
-      {/* ── 5. Performance ─────────────────────────────────────────────────── */}
-      <section>
-        <SectionHeader title="Performance" />
-        <MetricGrid>
-          <GridCell>
-            <MetricCard
-              label="Vel. Máx"
-              value={resolvedMaxSpeed}
-              unit="km/h"
-              rangeKey="max_speed"
-            />
-          </GridCell>
-          <GridCell>
-            <MetricCard
-              label="Sprint 30m"
-              value={resolvedSprint}
-              unit="s"
-              rangeKey="sprint_30m"
-              decimals={2}
-            />
-          </GridCell>
-          <GridCell>
-            <MetricCard
-              label="VO2 Máx"
-              value={resolvedVo2}
-              unit="ml/kg/min"
-              rangeKey="vo2_max"
-            />
-          </GridCell>
-        </MetricGrid>
-      </section>
+        {/* ── 5. Performance ───────────────────────────────────────────────── */}
+        <section>
+          <SectionHeader title="Performance" />
+          <MetricGrid>
+            <GridCell>
+              <MetricCard label="Vel. Máx" value={resolvedMaxSpeed} unit="km/h" rangeKey="max_speed" />
+            </GridCell>
+            <GridCell>
+              <MetricCard label="Sprint 30m" value={resolvedSprint} unit="s" rangeKey="sprint_30m" decimals={2} />
+            </GridCell>
+            <GridCell>
+              <MetricCard label="VO2 Máx" value={resolvedVo2} unit="ml/kg/min" rangeKey="vo2_max" />
+            </GridCell>
+          </MetricGrid>
+        </section>
 
-      {/* ── Footer ─────────────────────────────────────────────────────────── */}
-      {latest && (
-        <div className="border-t pt-4" style={{ borderColor: BORDER }}>
-          <span className="font-jetbrains text-[10px] uppercase tracking-wider" style={{ color: MUTED }}>
-            ÚLTIMA AVALIAÇÃO: {format(parseDateSafe(latest.recorded_at), "dd/MM/yyyy")}
-          </span>
-        </div>
-      )}
-    </div>
+        {/* ── Footer ───────────────────────────────────────────────────────── */}
+        {latest && (
+          <div className="border-t pt-4" style={{ borderColor: BORDER }}>
+            <span className="font-jetbrains text-[10px] uppercase tracking-wider" style={{ color: MUTED }}>
+              ÚLTIMA AVALIAÇÃO: {format(parseDateSafe(latest.recorded_at), "dd/MM/yyyy")}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* ── Add Physical Data Dialog ─────────────────────────────────────── */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent
+          className="max-w-md p-0 gap-0 overflow-hidden"
+          style={{ background: BG, border: `1px solid ${BORDER}`, borderRadius: 0, boxShadow: "0 16px 48px rgba(0,0,0,0.8)" }}
+        >
+          {/* Header */}
+          <DialogHeader
+            className="px-5 py-4"
+            style={{ borderBottom: `1px solid ${BORDER}` }}
+          >
+            <DialogTitle
+              className="font-barlow font-black text-[13px] uppercase tracking-[0.2em]"
+              style={{ color: TEXT }}
+            >
+              NOVA AVALIAÇÃO FÍSICA
+            </DialogTitle>
+          </DialogHeader>
+
+          {/* Form */}
+          <div className="px-5 py-5 space-y-4">
+            {/* Date — full width */}
+            <div>
+              <FieldLabel>Data da Avaliação</FieldLabel>
+              <FieldInput
+                type="date"
+                value={form.recorded_at}
+                onChange={v => setForm(f => ({ ...f, recorded_at: v }))}
+              />
+            </div>
+
+            {/* 2-column grid */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <FieldLabel>Peso (kg)</FieldLabel>
+                <FieldInput
+                  value={form.weight}
+                  onChange={v => setForm(f => ({ ...f, weight: v }))}
+                  placeholder="75.5"
+                  step="0.1"
+                />
+              </div>
+              <div>
+                <FieldLabel>% Gordura</FieldLabel>
+                <FieldInput
+                  value={form.body_fat_percentage}
+                  onChange={v => setForm(f => ({ ...f, body_fat_percentage: v }))}
+                  placeholder="12.5"
+                  step="0.1"
+                />
+              </div>
+              <div>
+                <FieldLabel>Massa Muscular (kg)</FieldLabel>
+                <FieldInput
+                  value={form.muscle_mass}
+                  onChange={v => setForm(f => ({ ...f, muscle_mass: v }))}
+                  placeholder="38.0"
+                  step="0.1"
+                />
+              </div>
+              <div>
+                <FieldLabel>Vel. Máx (km/h)</FieldLabel>
+                <FieldInput
+                  value={form.max_speed}
+                  onChange={v => setForm(f => ({ ...f, max_speed: v }))}
+                  placeholder="32.5"
+                  step="0.1"
+                />
+              </div>
+              <div>
+                <FieldLabel>Sprint 30m (s)</FieldLabel>
+                <FieldInput
+                  value={form.sprint_30m}
+                  onChange={v => setForm(f => ({ ...f, sprint_30m: v }))}
+                  placeholder="4.25"
+                  step="0.01"
+                />
+              </div>
+              <div>
+                <FieldLabel>VO2 Máx (ml/kg/min)</FieldLabel>
+                <FieldInput
+                  value={form.vo2_max}
+                  onChange={v => setForm(f => ({ ...f, vo2_max: v }))}
+                  placeholder="55.0"
+                  step="0.1"
+                />
+              </div>
+            </div>
+
+            {/* Notes — full width */}
+            <div>
+              <FieldLabel>Observações</FieldLabel>
+              <textarea
+                value={form.notes}
+                onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                placeholder="Notas sobre a avaliação..."
+                rows={2}
+                className="w-full font-jetbrains text-[12px] px-3 py-2.5 outline-none resize-none transition-colors"
+                style={{
+                  background: "#0D0D0D",
+                  border: `1px solid ${BORDER}`,
+                  color: TEXT,
+                  borderRadius: 0,
+                }}
+                onFocus={e => (e.currentTarget.style.borderColor = MUTED)}
+                onBlur={e => (e.currentTarget.style.borderColor = BORDER)}
+              />
+            </div>
+          </div>
+
+          {/* Footer actions */}
+          <div
+            className="px-5 py-4 flex gap-3"
+            style={{ borderTop: `1px solid ${BORDER}` }}
+          >
+            <button
+              onClick={() => setDialogOpen(false)}
+              disabled={submitting}
+              className="flex-1 font-jetbrains text-[10px] uppercase tracking-[0.18em] py-2.5 border transition-colors"
+              style={{ borderColor: BORDER, color: MUTED }}
+              onMouseEnter={e => (e.currentTarget.style.borderColor = MUTED)}
+              onMouseLeave={e => (e.currentTarget.style.borderColor = BORDER)}
+            >
+              CANCELAR
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={submitting}
+              className="flex-[2] font-jetbrains text-[10px] uppercase tracking-[0.18em] py-2.5 transition-opacity"
+              style={{
+                background: ACCENT,
+                color: "#fff",
+                opacity: submitting ? 0.6 : 1,
+              }}
+            >
+              {submitting ? "SALVANDO..." : "SALVAR AVALIAÇÃO"}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

@@ -70,6 +70,22 @@ interface PlayerStatRow {
   penalties_saved: number;
 }
 
+// ─── Table header definitions ─────────────────────────────────────────────────
+const TABLE_HEADERS = [
+  { label: "COMPETIÇÃO", tooltip: "" },
+  { label: "J",   tooltip: "Jogos" },
+  { label: "MIN", tooltip: "Minutos" },
+  { label: "G",   tooltip: "Gols" },
+  { label: "A",   tooltip: "Assistências" },
+  { label: "FIN", tooltip: "Finalizações" },
+  { label: "NOG", tooltip: "No Gol" },
+  { label: "AM",  tooltip: "Amarelos" },
+  { label: "VE",  tooltip: "Vermelhos" },
+  { label: "DES", tooltip: "Desarmes" },
+  { label: "INT", tooltip: "Interceptações" },
+  { label: "",    tooltip: "" },
+] as const;
+
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const A = "#E5173F";
 const GREEN = "#22C55E";
@@ -624,6 +640,7 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
                   tickLine={false}
                 />
                 <Tooltip
+                  cursor={{ fill: "transparent" }}
                   content={(props) => (
                     <ChartTooltip
                       active={props.active}
@@ -659,13 +676,19 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
             <table className="w-full min-w-[640px] font-jetbrains text-[11px]" style={{ color: TEXT }}>
               <thead>
                 <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
-                  {["COMPETIÇÃO", "J", "MIN", "G", "A", "FIN", "NOG", "AM", "VE", "DES", "INT", ""].map((h, i) => (
+                  {TABLE_HEADERS.map((h, i) => (
                     <th
                       key={i}
+                      title={h.tooltip || undefined}
                       className="px-3 py-2 text-left font-jetbrains text-[9px] tracking-[0.18em] uppercase"
-                      style={{ color: MUTED, borderRight: i < 11 ? `1px solid ${BORDER}` : undefined }}
+                      style={{
+                        color: MUTED,
+                        borderRight: i < TABLE_HEADERS.length - 1 ? `1px solid ${BORDER}` : undefined,
+                        cursor: h.tooltip ? "help" : undefined,
+                        borderBottom: h.tooltip ? `1px dotted ${MUTED}` : undefined,
+                      }}
                     >
-                      {h}
+                      {h.label}
                     </th>
                   ))}
                 </tr>
