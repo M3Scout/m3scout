@@ -346,8 +346,8 @@ export function usePlayerMatchStats({
             STANDARD_MATCH_DURATION
           );
 
-      // Skip zero-minute participations (games = DISTINCT match_id where minutes > 0)
-      if (minutesPlayed <= 0) continue;
+      // Count matches even with 0 minutes to stay consistent with StatsTab counting logic.
+      // A player listed in match_players is credited with a game regardless of recorded presence time.
 
       // CRITICAL: In our DB schema, `shots` field stores shots OFF TARGET (not total)
       // shots_total = shots (off target) + shots_on_target + shots_blocked
