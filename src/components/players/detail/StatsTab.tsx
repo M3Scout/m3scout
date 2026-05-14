@@ -14,6 +14,12 @@ import {
   Legend,
 } from "recharts";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import {
+  Tooltip as UiTooltip,
+  TooltipContent as UiTooltipContent,
+  TooltipProvider as UiTooltipProvider,
+  TooltipTrigger as UiTooltipTrigger,
+} from "@/components/ui/tooltip";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
@@ -78,9 +84,9 @@ const TABLE_HEADERS = [
   { label: "G",   tooltip: "Gols" },
   { label: "A",   tooltip: "Assistências" },
   { label: "FIN", tooltip: "Finalizações" },
-  { label: "NOG", tooltip: "No Gol" },
-  { label: "AM",  tooltip: "Amarelos" },
-  { label: "VE",  tooltip: "Vermelhos" },
+  { label: "NOG", tooltip: "No Gol (Finalizações Certas)" },
+  { label: "AM",  tooltip: "Cartões Amarelos" },
+  { label: "VE",  tooltip: "Cartão Vermelho" },
   { label: "DES", tooltip: "Desarmes" },
   { label: "INT", tooltip: "Interceptações" },
   { label: "",    tooltip: "" },
@@ -675,23 +681,39 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[640px] font-jetbrains text-[11px]" style={{ color: TEXT }}>
               <thead>
-                <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
-                  {TABLE_HEADERS.map((h, i) => (
-                    <th
-                      key={i}
-                      title={h.tooltip || undefined}
-                      className="px-3 py-2 text-left font-jetbrains text-[9px] tracking-[0.18em] uppercase"
-                      style={{
-                        color: MUTED,
-                        borderRight: i < TABLE_HEADERS.length - 1 ? `1px solid ${BORDER}` : undefined,
-                        cursor: h.tooltip ? "help" : undefined,
-                        borderBottom: h.tooltip ? `1px dotted ${MUTED}` : undefined,
-                      }}
-                    >
-                      {h.label}
-                    </th>
-                  ))}
-                </tr>
+                <UiTooltipProvider delayDuration={0}>
+                  <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
+                    {TABLE_HEADERS.map((h, i) => (
+                      <th
+                        key={i}
+                        className="px-3 py-2 text-left font-jetbrains text-[9px] tracking-[0.18em] uppercase"
+                        style={{
+                          color: MUTED,
+                          borderRight: i < TABLE_HEADERS.length - 1 ? `1px solid ${BORDER}` : undefined,
+                        }}
+                      >
+                        {h.tooltip ? (
+                          <UiTooltip>
+                            <UiTooltipTrigger asChild>
+                              <span style={{ borderBottom: "1px dotted #383530", cursor: "default" }}>
+                                {h.label}
+                              </span>
+                            </UiTooltipTrigger>
+                            <UiTooltipContent
+                              side="top"
+                              className="font-jetbrains text-[11px] px-2 py-1"
+                              style={{ background: "#111", border: `1px solid ${BORDER}`, borderRadius: 0, color: TEXT }}
+                            >
+                              {h.tooltip}
+                            </UiTooltipContent>
+                          </UiTooltip>
+                        ) : (
+                          h.label
+                        )}
+                      </th>
+                    ))}
+                  </tr>
+                </UiTooltipProvider>
               </thead>
               <tbody>
                 {allSeasons.map((yr) => {
