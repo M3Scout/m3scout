@@ -47,8 +47,18 @@ const nationalities = [
 ];
 
 const playStyles = [
-  "Box-to-Box", "Construtor", "Destruidor", "Finalizador", "Armador", 
-  "Velocista", "Apoiador", "Regista", "Meia-atacante", "Pivô",
+  "Box-to-Box",
+  "Volante de Contenção",
+  "Armador Recuado",
+  "Meia-Armador",
+  "Mezzala",
+  "Falso Trequartista",
+  "Falso Ponta",
+  "Ponta Invertido",
+  "Falso 9",
+  "Oportunista",
+  "Zagueiro Construtor",
+  "Goleiro-Linha",
 ];
 
 const tacticalRoles = [
