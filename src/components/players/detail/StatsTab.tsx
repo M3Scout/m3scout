@@ -704,15 +704,91 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
   );
 }
 
+// ─── Stat category block (expanded detail panel) ─────────────────────────────
+interface StatDef {
+  label: string;
+  value: number;
+  positive?: boolean;
+  negative?: boolean;
+}
+
+function StatBlock({ title, titleColor, stats }: { title: string; titleColor: string; stats: StatDef[] }) {
+  return (
+    <div>
+      <div
+        style={{
+          fontFamily: "Barlow Condensed, sans-serif",
+          fontSize: 10,
+          fontWeight: 700,
+          textTransform: "uppercase",
+          letterSpacing: "0.16em",
+          color: titleColor,
+          borderBottom: "1px solid #1C1C1C",
+          paddingBottom: 5,
+          marginBottom: 6,
+        }}
+      >
+        {title}
+      </div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(4, 1fr)",
+          gap: 1,
+          background: "#1C1C1C",
+        }}
+      >
+        {stats.map((st) => (
+          <div
+            key={st.label}
+            style={{
+              background: "#111111",
+              padding: "10px 14px",
+              display: "flex",
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <span
+              style={{
+                fontFamily: "Barlow Condensed, sans-serif",
+                fontSize: 10,
+                textTransform: "uppercase",
+                letterSpacing: "0.12em",
+                color: "#6B6560",
+              }}
+            >
+              {st.label}
+            </span>
+            <span
+              style={{
+                fontFamily: "JetBrains Mono, monospace",
+                fontSize: 15,
+                fontWeight: 700,
+                color:
+                  st.positive && st.value > 0
+                    ? "#22C55E"
+                    : st.negative && st.value > 0
+                    ? "#E5173F"
+                    : "#F2EDE4",
+              }}
+            >
+              {st.value}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── Season table row ─────────────────────────────────────────────────────────
-function SeasonRow({ row, matches }: { row: SeasonRowData; matches?: MatchRowPreview[] }) {
+function SeasonRow({ row }: { row: SeasonRowData; matches?: MatchRowPreview[] }) {
   const [expanded, setExpanded] = useState(false);
-  const hasMatchRows = row.source === "live" && !!matches && matches.length > 0;
-  // Manual rows always expandable (show stats detail); live rows expand when match data exists
-  const canExpand = hasMatchRows || row.source === "manual";
   const s = row.stats;
 
-  const R   = "#E5173F";
+  const ACC = "#E5173F";
   const G   = "#22C55E";
   const AMB = "#F59E0B";
   const BRD = "#1C1C1C";
@@ -724,31 +800,74 @@ function SeasonRow({ row, matches }: { row: SeasonRowData; matches?: MatchRowPre
     ? { label: "MANUAL", color: BLU }
     : { label: "LIVE",   color: G };
 
+  const ataqueStats: StatDef[] = [
+    { label: "Gols",        value: s.goals,            positive: true },
+    { label: "Assistências", value: s.assists,          positive: true },
+    { label: "Finalizações", value: s.shots },
+    { label: "No Gol",      value: s.shots_on_target,  positive: true },
+    { label: "Fora",        value: s.shots_off_target },
+    { label: "Bloqueadas",  value: s.shots_blocked },
+  ];
+
+  const passesStats: StatDef[] = [
+    { label: "Certos",        value: s.passes_completed, positive: true },
+    { label: "Errados",       value: s.passes_failed,    negative: true },
+    { label: "Total",         value: s.passes_total },
+    { label: "Decisivos",     value: s.key_passes,       positive: true },
+    { label: "Chances",       value: s.chances_created,  positive: true },
+    { label: "Cruz. Certos",  value: s.crosses_success,  positive: true },
+    { label: "Cruz. Errados", value: s.crosses_failed,   negative: true },
+  ];
+
+  const drilesStats: StatDef[] = [
+    { label: "Certos",      value: s.dribbles_success, positive: true },
+    { label: "Errados",     value: s.dribbles_failed,  negative: true },
+    { label: "Total",       value: s.dribbles_total },
+    { label: "Posse Perd.", value: s.possession_lost,  negative: true },
+  ];
+
+  const defesaStats: StatDef[] = [
+    { label: "Desarmes",    value: s.tackles,            positive: true },
+    { label: "Intercep.",   value: s.interceptions,      positive: true },
+    { label: "Recuper.",    value: s.recoveries,         positive: true },
+    { label: "Cortes",      value: s.clearances,         positive: true },
+    { label: "Duelos G",    value: s.duels_won,          positive: true },
+    { label: "Duelos",      value: s.duels_total },
+    { label: "Aéreos G",    value: s.aerial_duels_won,   positive: true },
+    { label: "Aéreos",      value: s.aerial_duels_total },
+    { label: "Faltas Com.", value: s.fouls_committed,    negative: true },
+    { label: "Faltas Sof.", value: s.fouls_suffered },
+    { label: "Amarelos",    value: s.yellow_cards,       negative: true },
+    { label: "Vermelhos",   value: s.red_cards,          negative: true },
+    { label: "Defesas",     value: s.saves,              positive: true },
+    { label: "Gols Sof.",   value: s.goals_conceded,     negative: true },
+    { label: "Clean Sheets", value: s.clean_sheets,      positive: true },
+    { label: "Pen. Salvos", value: s.penalties_saved,    positive: true },
+  ];
+
   return (
     <>
       <tr
         className="transition-colors"
-        style={{ borderBottom: `1px solid ${BRD}`, cursor: canExpand ? "pointer" : "default" }}
-        onClick={() => canExpand && setExpanded(e => !e)}
+        style={{ borderBottom: `1px solid ${BRD}`, cursor: "pointer" }}
+        onClick={() => setExpanded((e) => !e)}
         onMouseEnter={(e) => (e.currentTarget.style.background = "#111")}
         onMouseLeave={(e) => (e.currentTarget.style.background = "")}
       >
         {/* Competição */}
         <td className="px-3 py-2.5" style={{ borderRight: `1px solid ${BRD}`, color: TXT }}>
           <div className="flex items-center gap-1.5">
-            {canExpand && (
-              <span
-                className="inline-block text-[12px] leading-none select-none"
-                style={{
-                  color: MUT,
-                  transform: expanded ? "rotate(90deg)" : "rotate(0deg)",
-                  transition: "transform 150ms",
-                  display: "inline-block",
-                }}
-              >
-                ›
-              </span>
-            )}
+            <span
+              className="inline-block text-[12px] leading-none select-none"
+              style={{
+                color: MUT,
+                transform: expanded ? "rotate(90deg)" : "rotate(0deg)",
+                transition: "transform 150ms",
+                display: "inline-block",
+              }}
+            >
+              ›
+            </span>
             {row.competition_name ?? "—"}
           </div>
         </td>
@@ -762,11 +881,11 @@ function SeasonRow({ row, matches }: { row: SeasonRowData; matches?: MatchRowPre
           {s.minutes}
         </td>
         {/* G */}
-        <td className="px-3 py-2.5 text-right tabular-nums font-bold" style={{ borderRight: `1px solid ${BRD}`, color: s.goals > 0 ? G : R }}>
+        <td className="px-3 py-2.5 text-right tabular-nums font-bold" style={{ borderRight: `1px solid ${BRD}`, color: s.goals > 0 ? G : ACC }}>
           {s.goals}
         </td>
         {/* A */}
-        <td className="px-3 py-2.5 text-right tabular-nums font-bold" style={{ borderRight: `1px solid ${BRD}`, color: s.assists > 0 ? G : R }}>
+        <td className="px-3 py-2.5 text-right tabular-nums font-bold" style={{ borderRight: `1px solid ${BRD}`, color: s.assists > 0 ? G : ACC }}>
           {s.assists}
         </td>
         {/* FIN */}
@@ -782,7 +901,7 @@ function SeasonRow({ row, matches }: { row: SeasonRowData; matches?: MatchRowPre
           {s.yellow_cards}
         </td>
         {/* VE */}
-        <td className="px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: s.red_cards > 0 ? R : MUT }}>
+        <td className="px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: s.red_cards > 0 ? ACC : MUT }}>
           {s.red_cards}
         </td>
         {/* DES */}
@@ -804,119 +923,15 @@ function SeasonRow({ row, matches }: { row: SeasonRowData; matches?: MatchRowPre
         </td>
       </tr>
 
-      {/* Individual match rows when expanded (live with match data) */}
-      {expanded && hasMatchRows && matches?.map(m => (
-        <tr key={m.match_id} style={{ background: "#0C0C0C", borderBottom: `1px solid ${BRD}` }}>
-          <td className="py-2 pl-8 pr-3" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>
-            <span className="font-jetbrains text-[10px]">
-              {format(new Date(m.match_date), "dd/MM")} · {m.opponent_name}
-            </span>
-          </td>
-          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px]" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>1</td>
-          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px]" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>{m.minutes_played}</td>
-          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px] font-bold" style={{ borderRight: `1px solid ${BRD}`, color: m.goals > 0 ? G : MUT }}>{m.goals}</td>
-          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px] font-bold" style={{ borderRight: `1px solid ${BRD}`, color: m.assists > 0 ? G : MUT }}>{m.assists}</td>
-          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px]" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>{m.shots}</td>
-          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px]" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>{m.shots_on_target}</td>
-          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px]" style={{ borderRight: `1px solid ${BRD}`, color: m.yellow_cards > 0 ? AMB : MUT }}>{m.yellow_cards}</td>
-          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px]" style={{ borderRight: `1px solid ${BRD}`, color: m.red_cards > 0 ? R : MUT }}>{m.red_cards}</td>
-          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px]" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>{m.tackles}</td>
-          <td className="px-3 py-2 text-right tabular-nums font-jetbrains text-[10px]" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>{m.interceptions}</td>
-          <td className="px-3 py-2" />
-        </tr>
-      ))}
-
-      {/* Detailed stats panel when expanded (manual rows — no individual match data) */}
-      {expanded && row.source === "manual" && (
-        <tr style={{ background: "#0C0C0C", borderBottom: `1px solid ${BRD}` }}>
-          <td colSpan={12} className="px-6 py-4">
-            <div className="flex flex-wrap gap-x-10 gap-y-3 font-jetbrains text-[10px]">
-
-              {/* Finalizações */}
-              {s.shots > 0 && (
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[9px] tracking-[0.18em] uppercase" style={{ color: MUT }}>Finalizações</span>
-                  <span style={{ color: TXT }}>
-                    {s.shots} total · {s.shots_on_target} no gol
-                    {s.shots_blocked > 0 ? ` · ${s.shots_blocked} bloq.` : ""}
-                  </span>
-                </div>
-              )}
-
-              {/* Passes */}
-              {s.passes_total > 0 && (
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[9px] tracking-[0.18em] uppercase" style={{ color: MUT }}>Passes</span>
-                  <span style={{ color: TXT }}>
-                    {s.passes_completed}/{s.passes_total}
-                    {s.key_passes > 0 ? ` · ${s.key_passes} decisivos` : ""}
-                    {s.chances_created > 0 ? ` · ${s.chances_created} chances` : ""}
-                  </span>
-                </div>
-              )}
-
-              {/* Dribles */}
-              {s.dribbles_total > 0 && (
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[9px] tracking-[0.18em] uppercase" style={{ color: MUT }}>Dribles</span>
-                  <span style={{ color: TXT }}>{s.dribbles_success}/{s.dribbles_total}</span>
-                </div>
-              )}
-
-              {/* Duelos */}
-              {s.duels_total > 0 && (
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[9px] tracking-[0.18em] uppercase" style={{ color: MUT }}>Duelos</span>
-                  <span style={{ color: TXT }}>
-                    {s.duels_won}/{s.duels_total}
-                    {s.aerial_duels_total > 0 ? ` · aéreo ${s.aerial_duels_won}/${s.aerial_duels_total}` : ""}
-                  </span>
-                </div>
-              )}
-
-              {/* Defesa extra */}
-              {(s.recoveries > 0 || s.clearances > 0) && (
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[9px] tracking-[0.18em] uppercase" style={{ color: MUT }}>Defesa</span>
-                  <span style={{ color: TXT }}>
-                    {s.recoveries > 0 ? `${s.recoveries} recup.` : ""}
-                    {s.recoveries > 0 && s.clearances > 0 ? " · " : ""}
-                    {s.clearances > 0 ? `${s.clearances} cortes` : ""}
-                  </span>
-                </div>
-              )}
-
-              {/* Faltas */}
-              {(s.fouls_committed > 0 || s.fouls_suffered > 0) && (
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[9px] tracking-[0.18em] uppercase" style={{ color: MUT }}>Faltas</span>
-                  <span style={{ color: TXT }}>
-                    {s.fouls_committed} com. · {s.fouls_suffered} sof.
-                  </span>
-                </div>
-              )}
-
-              {/* Cruzamentos */}
-              {(s.crosses_success + s.crosses_failed) > 0 && (
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[9px] tracking-[0.18em] uppercase" style={{ color: MUT }}>Cruzamentos</span>
-                  <span style={{ color: TXT }}>{s.crosses_success}/{s.crosses_success + s.crosses_failed}</span>
-                </div>
-              )}
-
-              {/* Goleiro */}
-              {(s.saves > 0 || s.goals_conceded > 0 || s.clean_sheets > 0) && (
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[9px] tracking-[0.18em] uppercase" style={{ color: MUT }}>Goleiro</span>
-                  <span style={{ color: TXT }}>
-                    {s.saves > 0 ? `${s.saves} defesas` : ""}
-                    {s.saves > 0 && s.goals_conceded > 0 ? " · " : ""}
-                    {s.goals_conceded > 0 ? `${s.goals_conceded} gols sof.` : ""}
-                    {s.clean_sheets > 0 ? <span style={{ color: G }}>{` · ${s.clean_sheets} cs`}</span> : ""}
-                  </span>
-                </div>
-              )}
-
+      {/* Expanded stats panel — 4 category blocks, Live and Manual */}
+      {expanded && (
+        <tr style={{ borderBottom: `1px solid ${BRD}` }}>
+          <td colSpan={12} style={{ background: "#0D0D0D", padding: "14px 16px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <StatBlock title="Ataque"          titleColor="#E5173F" stats={ataqueStats} />
+              <StatBlock title="Passes"          titleColor="#F59E0B" stats={passesStats} />
+              <StatBlock title="Dribles / Posse" titleColor="#3B82F6" stats={drilesStats} />
+              <StatBlock title="Defesa"          titleColor="#6B9EE5" stats={defesaStats} />
             </div>
           </td>
         </tr>
