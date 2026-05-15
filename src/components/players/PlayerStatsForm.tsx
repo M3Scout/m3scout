@@ -701,23 +701,36 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
     try {
       // 1) Delete match_player_stats (the aggregated per-match stat rows)
       if (group.matchPlayerStatIds.length > 0) {
-        const { error } = await supabase
+        const { data: deletedStats, error } = await supabase
           .from("match_player_stats")
           .delete()
-          .in("id", group.matchPlayerStatIds);
+          .in("id", group.matchPlayerStatIds)
+          .select("id");
         if (error) throw error;
+        console.log(`[deleteLiveGroup] deleted ${deletedStats?.length ?? 0}/${group.matchPlayerStatIds.length} match_player_stats`);
       }
 
       // 2) Soft-delete match_players entries for this player in those matches.
-      //    Hard DELETE is blocked by RLS; setting is_removed=true achieves the
-      //    same effect because fetchPlayerMatchStatsRaw filters .neq("is_removed", true).
+      //    Fetch IDs first, then update by PK — mirrors the pattern used in
+      //    LiveMatchGame (updatePlayer) which is known to pass RLS.
       if (group.matchIds.length > 0) {
-        const { error } = await supabase
+        const { data: mpRows, error: mpFetchErr } = await supabase
           .from("match_players")
-          .update({ is_removed: true, removed_at: new Date().toISOString() })
+          .select("id")
           .eq("player_id", playerId)
           .in("match_id", group.matchIds);
-        if (error) throw error;
+        if (mpFetchErr) throw mpFetchErr;
+
+        const mpIds = (mpRows ?? []).map((r) => r.id);
+        console.log(`[deleteLiveGroup] found ${mpIds.length} match_players to soft-delete`);
+
+        if (mpIds.length > 0) {
+          const { error: mpUpdateErr } = await supabase
+            .from("match_players")
+            .update({ is_removed: true, removed_at: new Date().toISOString() })
+            .in("id", mpIds);
+          if (mpUpdateErr) throw mpUpdateErr;
+        }
       }
 
       // 3) Recalculate all derived values when any source match was "applied"
