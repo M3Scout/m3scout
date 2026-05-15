@@ -1,7 +1,6 @@
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef } from "react";
+import { useEffect, useState, ReactNode, useCallback, useRef } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { Database } from "@/integrations/supabase/types";
 import { logAppState } from "@/lib/diagnosticLogger";
 import { hardResetAuthToLogin } from "@/lib/authBootReset";
 import {
@@ -17,46 +16,17 @@ import {
   type RbacPayload,
   type RecoveryReason,
 } from "@/lib/authRecovery";
+import { AuthContext, type AuthContextType, type AppRole, type UserPermissions } from "./authContext";
 
-export type AppRole = Database["public"]["Enums"]["app_role"];
+export { useAuth, AuthContext } from "./authContext";
+export type { AppRole, UserPermissions, AuthContextType } from "./authContext";
 
 // Valid roles that grant app access
 const VALID_ROLES: AppRole[] = ["admin", "scout", "editor", "viewer", "player"];
 const isActivePayload = (payload: RbacPayload) =>
   payload.userStatus === "active" && payload.roles.some((role) => VALID_ROLES.includes(role as AppRole));
 
-// ============ PERMISSIONS TYPES ============
-export interface UserPermissions {
-  app_view: boolean;
-  players_view: boolean;
-  players_create: boolean;
-  players_edit: boolean;
-  players_delete: boolean;
-  players_export: boolean;
-  compare_view: boolean;
-  reports_view: boolean;
-  reports_create: boolean;
-  reports_edit: boolean;
-  reports_delete: boolean;
-  reports_export: boolean;
-  live_match_view: boolean;
-  live_match_log: boolean;
-  competitions_view: boolean;
-  competitions_create: boolean;
-  competitions_edit: boolean;
-  competitions_delete: boolean;
-  news_view: boolean;
-  news_create: boolean;
-  news_edit: boolean;
-  news_delete: boolean;
-  news_publish: boolean;
-  leads_view: boolean;
-  leads_create: boolean;
-  leads_edit: boolean;
-  leads_delete: boolean;
-  leads_export: boolean;
-  users_manage: boolean;
-}
+// PERMISSIONS TYPES re-exported from authContext
 
 // Admin gets everything
 const ADMIN_PERMISSIONS: UserPermissions = {
@@ -167,47 +137,7 @@ const DEFAULT_PERMISSIONS: UserPermissions = {
 // Cleanup legacy caches on module load
 cleanupLegacyCaches();
 
-// ============ CONTEXT TYPE ============
-interface AuthContextType {
-  user: User | null;
-  session: Session | null;
-  loading: boolean;
-  roles: AppRole[];
-  linkedPlayerId: string | null;
-  isApproved: boolean;
-  rolesLoading: boolean;
-  rolesError: string | null;
-  rolesFromCache: boolean;
-  rolesFetchedAt: number | null;
-  permissions: UserPermissions | null;
-  permissionsLoading: boolean;
-  permissionsError: string | null;
-  isOwner: boolean;
-  userStatus: "active" | "suspended" | null;
-  /** True when recovery is running in background (SWR mode) */
-  isRecovering: boolean;
-  /** True when auth recovery watchdog has timed out */
-  hasAuthTimeout: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, name: string) => Promise<{ error: Error | null }>;
-  signOut: () => Promise<void>;
-  refreshRoles: () => Promise<void>;
-  /** Manual recovery function - exposed for Retry button */
-  triggerRecovery: (reason: RecoveryReason) => Promise<boolean>;
-  hasRole: (role: AppRole) => boolean;
-  isAdmin: boolean;
-  isScout: boolean;
-  isInternal: boolean;
-  isPlayer: boolean;
-  debug: {
-    fetchStage: "idle" | "start" | "success" | "error";
-    fetchSource: "fresh" | "cache" | "background" | null;
-    fetchDurationMs?: number;
-    error?: { code?: string; message?: string };
-  };
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// AuthContext + AuthContextType moved to ./authContext (re-exported above for HMR stability)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   // ============ INSTANT BOOT: Check localStorage synchronously ============
@@ -691,10 +621,3 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
-}
