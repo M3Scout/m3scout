@@ -30,6 +30,8 @@ import {
   type MatchRowPreview,
 } from "@/hooks/usePlayerMatchStats";
 import { useManualPlayerStats } from "@/hooks/useManualPlayerStats";
+import { mergeSeasonRows } from "@/lib/mergeSeasonStats";
+import type { SeasonSource } from "@/lib/mergeSeasonStats";
 
 // ─── player_stats table row (written by PlayerStatsForm) ──────────────────────
 interface PlayerStatRow {
@@ -159,7 +161,9 @@ const ChartTooltip = ({
 };
 
 // ─── Extended season row type with source ─────────────────────────────────────
-type SeasonRowData = SeasonCompetitionStats & { source: "live" | "manual" };
+// "mixed" is produced by mergeSeasonRows() when LIVE + MANUAL rows coexist for
+// the same (year × competition). Only the public view uses merged rows.
+type SeasonRowData = SeasonCompetitionStats & { source: SeasonSource };
 
 // ─── Metric selector options for the bar chart ───────────────────────────────
 const METRIC_OPTIONS = [
@@ -720,7 +724,9 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
               </thead>
               <tbody>
                 {allSeasons.map((yr) => {
-                  const rows = mergedBySeason[yr] ?? [];
+                  // mergeSeasonRows é chamado APENAS aqui (visualização pública).
+                  // O estado mergedBySeason permanece intacto para a tela de edição.
+                  const rows = mergeSeasonRows(mergedBySeason[yr] ?? []);
                   return [
                     /* Season header row */
                     <tr key={`yr-${yr}`} style={{ background: BORDER }}>
@@ -875,9 +881,10 @@ function SeasonRow({ row, isGoalkeeper = false }: { row: SeasonRowData; matches?
   const MUT = "#6B6560";
   const BLU = "#3B82F6";
 
-  const badge = row.source === "manual"
-    ? { label: "MANUAL", color: BLU }
-    : { label: "LIVE",   color: G };
+  const badge =
+    row.source === "manual" ? { label: "MANUAL",       color: BLU }
+    : row.source === "mixed" ? { label: "LIVE + MANUAL", color: AMB }
+    : /* live */               { label: "LIVE",          color: G };
 
   const ataqueStats: StatDef[] = [
     { label: "Gols",        value: s.goals,            positive: true },

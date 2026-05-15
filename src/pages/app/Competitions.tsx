@@ -95,6 +95,23 @@ const BRAZILIAN_STATES = [
 
 const CONFIRMATION_TEXT = "EXCLUIR TUDO";
 
+/**
+ * Normaliza string para busca fuzzy:
+ *  - Remove acentos/diacríticos (NFD + strip combining marks)
+ *  - Converte hífens e travessões em espaços
+ *  - Colapsa espaços múltiplos
+ *  - Lowercase
+ * Permite buscar "goias" e encontrar "Goiás", "serie a" → "Série A", etc.
+ */
+const norm = (str: string) =>
+  str
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[-–—]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+
 const Competitions = () => {
   const { isAdmin } = useAuth();
   const isMobile = useIsMobile();
@@ -107,6 +124,7 @@ const Competitions = () => {
   const [countryFilter, setCountryFilter] = useState("all");
   const [divisionFilter, setDivisionFilter] = useState("all");
   const [visibilityFilter, setVisibilityFilter] = useState<[number, number]>([0, 100]);
+  const [coefficientFilter, setCoefficientFilter] = useState<[number, number]>([0, 1.20]);
   
   // Delete all dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -192,22 +210,27 @@ const Competitions = () => {
 
   const filteredCompetitions = useMemo(() => {
     return competitions.filter((comp) => {
-      const searchLower = (searchQuery || "").toLowerCase();
-      const matchesSearch = 
-        (comp.name || "").toLowerCase().includes(searchLower) ||
-        ((comp.display_name || "").toLowerCase().includes(searchLower)) ||
-        ((comp.state || "").toLowerCase().includes(searchLower));
+      const searchNorm = norm(searchQuery || "");
+      const matchesSearch =
+        searchNorm === "" ||
+        norm(comp.name || "").includes(searchNorm) ||
+        norm(comp.display_name || "").includes(searchNorm) ||
+        norm(comp.state || "").includes(searchNorm) ||
+        norm(comp.country || "").includes(searchNorm);
       const matchesTier = tierFilter === "all" || getTierFromCoefficient(comp.final_coefficient) === tierFilter;
       const matchesType = typeFilter === "all" || comp.type === typeFilter;
       const matchesState = stateFilter === "all" || comp.state === stateFilter;
       const matchesCountry = countryFilter === "all" || comp.country === countryFilter;
       const matchesDivision = divisionFilter === "all" || comp.division === divisionFilter;
-      const matchesVisibility = 
-        (comp.visibility_score ?? 50) >= visibilityFilter[0] && 
+      const matchesVisibility =
+        (comp.visibility_score ?? 50) >= visibilityFilter[0] &&
         (comp.visibility_score ?? 50) <= visibilityFilter[1];
-      return matchesSearch && matchesTier && matchesType && matchesState && matchesCountry && matchesDivision && matchesVisibility;
+      const matchesCoefficient =
+        comp.final_coefficient >= coefficientFilter[0] &&
+        comp.final_coefficient <= coefficientFilter[1];
+      return matchesSearch && matchesTier && matchesType && matchesState && matchesCountry && matchesDivision && matchesVisibility && matchesCoefficient;
     });
-  }, [competitions, searchQuery, tierFilter, typeFilter, stateFilter, countryFilter, divisionFilter, visibilityFilter]);
+  }, [competitions, searchQuery, tierFilter, typeFilter, stateFilter, countryFilter, divisionFilter, visibilityFilter, coefficientFilter]);
 
   const getTypeLabel = (type: string) => {
     const found = COMPETITION_TYPES.find(t => t.value === type);
@@ -232,11 +255,20 @@ const Competitions = () => {
     setCountryFilter("all");
     setDivisionFilter("all");
     setVisibilityFilter([0, 100]);
+    setCoefficientFilter([0, 1.20]);
   };
 
-  const hasActiveFilters = Boolean(searchQuery) || tierFilter !== "all" || typeFilter !== "all" || stateFilter !== "all" || 
-    countryFilter !== "all" || divisionFilter !== "all" || 
-    visibilityFilter[0] !== 0 || visibilityFilter[1] !== 100;
+  const hasActiveFilters =
+    Boolean(searchQuery) ||
+    tierFilter !== "all" ||
+    typeFilter !== "all" ||
+    stateFilter !== "all" ||
+    countryFilter !== "all" ||
+    divisionFilter !== "all" ||
+    visibilityFilter[0] !== 0 ||
+    visibilityFilter[1] !== 100 ||
+    coefficientFilter[0] !== 0 ||
+    coefficientFilter[1] !== 1.20;
 
   // Open create dialog
   const handleCreate = () => {
@@ -631,6 +663,8 @@ const Competitions = () => {
         onStateChange={setStateFilter}
         visibilityFilter={visibilityFilter}
         onVisibilityChange={setVisibilityFilter}
+        coefficientFilter={coefficientFilter}
+        onCoefficientChange={setCoefficientFilter}
         countries={uniqueCountries}
         states={uniqueStates}
         onClear={clearFilters}
@@ -662,17 +696,17 @@ const Competitions = () => {
         <div className="rounded-lg border border-border/50 bg-card/30 p-12 text-center">
           <Trophy className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
           <p className="text-lg font-medium mb-2">
-            {hasActiveFilters ? "Nenhuma competição encontrada" : "Nenhuma competição cadastrada"}
+            {hasActiveFilters ? "Nenhuma competição encontrada com estes filtros." : "Nenhuma competição cadastrada"}
           </p>
           <p className="text-sm text-muted-foreground mb-6">
-            {hasActiveFilters 
-              ? "Tente ajustar os filtros de busca."
+            {hasActiveFilters
+              ? "Ajuste ou remova os filtros para ver resultados."
               : "Crie uma nova competição ou importe um arquivo CSV."
             }
           </p>
           <div className="flex gap-2 justify-center">
             {hasActiveFilters ? (
-              <Button variant="outline" onClick={clearFilters}>Limpar filtros</Button>
+              <Button variant="outline" onClick={clearFilters}>Limpar Filtros</Button>
             ) : (
               <>
                 <Button onClick={handleCreate}>

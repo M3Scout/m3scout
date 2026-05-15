@@ -24,6 +24,9 @@ const COMPETITION_TYPES = [
   { value: "continental", label: "Continental" },
 ];
 
+const COEF_MIN = 0;
+const COEF_MAX = 1.20;
+
 interface CompetitionFiltersProps {
   searchQuery: string;
   onSearchChange: (value: string) => void;
@@ -37,6 +40,8 @@ interface CompetitionFiltersProps {
   onStateChange: (value: string) => void;
   visibilityFilter: [number, number];
   onVisibilityChange: (value: [number, number]) => void;
+  coefficientFilter: [number, number];
+  onCoefficientChange: (value: [number, number]) => void;
   countries: string[];
   states: string[];
   onClear: () => void;
@@ -56,6 +61,8 @@ export function CompetitionFilters({
   onStateChange,
   visibilityFilter,
   onVisibilityChange,
+  coefficientFilter,
+  onCoefficientChange,
   countries,
   states,
   onClear,
@@ -63,18 +70,83 @@ export function CompetitionFilters({
 }: CompetitionFiltersProps) {
   const [showAdvanced, setShowAdvanced] = React.useState(false);
 
+  // ── Debounced search ──────────────────────────────────────────────────────
+  const [inputValue, setInputValue] = React.useState(searchQuery);
+  const debounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Sync local input when parent resets (e.g. clearFilters)
+  React.useEffect(() => {
+    setInputValue(searchQuery);
+  }, [searchQuery]);
+
+  const handleSearchInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setInputValue(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      onSearchChange(value);
+    }, 350);
+  };
+
+  React.useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
+
+  // ── Coefficient inputs ────────────────────────────────────────────────────
+  const [coefMinRaw, setCoefMinRaw] = React.useState(String(coefficientFilter[0]));
+  const [coefMaxRaw, setCoefMaxRaw] = React.useState(String(coefficientFilter[1]));
+
+  // Sync local strings when parent resets
+  React.useEffect(() => {
+    setCoefMinRaw(String(coefficientFilter[0]));
+    setCoefMaxRaw(String(coefficientFilter[1]));
+  }, [coefficientFilter[0], coefficientFilter[1]]);
+
+  const commitCoefMin = (raw: string) => {
+    const parsed = parseFloat(raw);
+    const value = isNaN(parsed)
+      ? COEF_MIN
+      : Math.min(Math.max(parsed, COEF_MIN), coefficientFilter[1]);
+    setCoefMinRaw(value.toFixed(2));
+    onCoefficientChange([value, coefficientFilter[1]]);
+  };
+
+  const commitCoefMax = (raw: string) => {
+    const parsed = parseFloat(raw);
+    const value = isNaN(parsed)
+      ? COEF_MAX
+      : Math.max(Math.min(parsed, COEF_MAX), coefficientFilter[0]);
+    setCoefMaxRaw(value.toFixed(2));
+    onCoefficientChange([coefficientFilter[0], value]);
+  };
+
+  // ── Active filter count ───────────────────────────────────────────────────
+  const activeCount = [
+    tierFilter !== "all",
+    typeFilter !== "all",
+    countryFilter !== "all",
+    stateFilter !== "all",
+    visibilityFilter[0] > 0 || visibilityFilter[1] < 100,
+    coefficientFilter[0] > COEF_MIN || coefficientFilter[1] < COEF_MAX,
+  ].filter(Boolean).length;
+
+  const isCoefficientActive =
+    coefficientFilter[0] > COEF_MIN || coefficientFilter[1] < COEF_MAX;
+
   return (
     <div className="space-y-4">
       {/* Quick Tier Filters + Search */}
       <div className="flex flex-col lg:flex-row gap-4">
-        {/* Search */}
+        {/* Search — value is local (debounced), visual sync on parent reset */}
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             type="text"
             placeholder="Buscar competição..."
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
+            value={inputValue}
+            onChange={handleSearchInput}
             className="pl-10 rounded-full"
           />
         </div>
@@ -119,15 +191,9 @@ export function CompetitionFilters({
           >
             <Filter className="w-4 h-4 mr-2" />
             Filtros
-            {hasActiveFilters && (
+            {activeCount > 0 && (
               <Badge variant="secondary" className="ml-2 h-5 px-1.5">
-                {[
-                  tierFilter !== "all",
-                  typeFilter !== "all",
-                  countryFilter !== "all",
-                  stateFilter !== "all",
-                  visibilityFilter[0] > 0 || visibilityFilter[1] < 100,
-                ].filter(Boolean).length}
+                {activeCount}
               </Badge>
             )}
           </Button>
@@ -142,7 +208,7 @@ export function CompetitionFilters({
 
       {/* Advanced Filters */}
       {showAdvanced && (
-        <div className="p-4 rounded-lg border border-border/50 bg-card/30 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 animate-fade-in">
+        <div className="p-4 rounded-lg border border-border/50 bg-card/30 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 animate-fade-in">
           {/* Type */}
           <div className="space-y-2">
             <Label className="text-xs text-muted-foreground">Tipo</Label>
@@ -199,10 +265,49 @@ export function CompetitionFilters({
             </Select>
           </div>
 
+          {/* Coefficient Range */}
+          <div className="space-y-2 col-span-2 md:col-span-1 lg:col-span-1">
+            <Label
+              className={cn(
+                "text-xs",
+                isCoefficientActive ? "text-primary font-medium" : "text-muted-foreground"
+              )}
+            >
+              Coeficiente
+            </Label>
+            <div className="flex items-center gap-1.5">
+              <Input
+                type="number"
+                min={COEF_MIN}
+                max={COEF_MAX}
+                step={0.01}
+                value={coefMinRaw}
+                onChange={(e) => setCoefMinRaw(e.target.value)}
+                onBlur={() => commitCoefMin(coefMinRaw)}
+                onKeyDown={(e) => e.key === "Enter" && commitCoefMin(coefMinRaw)}
+                className="w-[72px] text-center text-xs tabular-nums px-2"
+                placeholder="0.00"
+              />
+              <span className="text-muted-foreground text-xs select-none">–</span>
+              <Input
+                type="number"
+                min={COEF_MIN}
+                max={COEF_MAX}
+                step={0.01}
+                value={coefMaxRaw}
+                onChange={(e) => setCoefMaxRaw(e.target.value)}
+                onBlur={() => commitCoefMax(coefMaxRaw)}
+                onKeyDown={(e) => e.key === "Enter" && commitCoefMax(coefMaxRaw)}
+                className="w-[72px] text-center text-xs tabular-nums px-2"
+                placeholder="1.20"
+              />
+            </div>
+          </div>
+
           {/* Visibility Slider */}
           <div className="space-y-2 col-span-2 md:col-span-1 lg:col-span-2">
             <Label className="text-xs text-muted-foreground">
-              Visibilidade: {visibilityFilter[0]} - {visibilityFilter[1]}
+              Visibilidade: {visibilityFilter[0]} – {visibilityFilter[1]}
             </Label>
             <div className="pt-2 px-1">
               <Slider
