@@ -513,9 +513,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(session?.user ?? null);
 
         if (event === "TOKEN_REFRESHED") {
-          console.log("[Auth] token refreshed - triggering recovery");
-          if (session?.user) {
+          // Only recover if RBAC cache is actually stale — the token refresh
+          // itself doesn't invalidate roles, so skip the round-trip when cache
+          // is still within the 3-minute ME_CONTEXT_CACHE_TTL_MS window.
+          if (session?.user && shouldTriggerRecovery(session.user.id)) {
+            console.log("[Auth] token refreshed — RBAC cache stale, triggering recovery");
             triggerRecovery("token-refresh");
+          } else {
+            console.log("[Auth] token refreshed — RBAC cache valid, skipping recovery");
           }
         } else if (session?.user) {
           await handleRbac(session.user.id);

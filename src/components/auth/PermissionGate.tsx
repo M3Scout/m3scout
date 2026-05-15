@@ -75,8 +75,9 @@ interface RequirePermissionProps {
   children: ReactNode;
 }
 
-// PERFORMANCE: Reduced from 8s to 4s for faster error detection
-const REQUIRE_PERMISSION_TIMEOUT_MS = 4000;
+// Aligned with auth watchdog (20s) — gives RBAC a fair chance to resolve
+// before rendering the error banner for legitimate users on slow connections.
+const REQUIRE_PERMISSION_TIMEOUT_MS = 15000;
 
 /**
  * Route-level permission check component.
