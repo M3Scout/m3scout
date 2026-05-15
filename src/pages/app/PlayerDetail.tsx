@@ -546,64 +546,27 @@ const PlayerDetail = () => {
         </div>
       </div>
 
-      {/* ── KPI Strip ───────────────────────────────────────────────────── */}
-      <div className={`grid grid-cols-2 md:grid-cols-4 border-b ${T.border}`}>
-        {[
-          {
-            label: "M3 MARKET SCORE",
-            value: marketScoreLoading ? "…" : (marketScore !== null ? String(Math.round(marketScore)) : "—"),
-            color: T.accent,
-          },
-          {
-            label: "SCOUT NOTE",
-            value: avgScoutNote !== null ? avgScoutNote.toFixed(1) : "—",
-            color: undefined,
-          },
-          {
-            label: "POTENCIAL",
-            value: player.potential_rating !== null ? `${player.potential_rating.toFixed(1)}` : "—",
-            color: T.green,
-          },
-          {
-            label: "VALOR DE MERCADO",
-            value: formatMarketValue(player.market_value, player.market_value_currency),
-            color: undefined,
-          },
-        ].map((kpi, i, arr) => (
-          <div
-            key={kpi.label}
-            className={`px-4 md:px-6 py-4 ${i < arr.length - 1 ? `border-r ${T.border}` : ""}`}
-          >
-            <Label>{kpi.label}</Label>
-            <span
-              className="font-jetbrains text-[22px] font-bold leading-none"
-              style={{ color: kpi.color ?? "#F2EDE4" }}
-            >
-              {kpi.value}
-            </span>
-          </div>
-        ))}
-      </div>
-
       {/* ── Tab Bar ─────────────────────────────────────────────────────── */}
-      <div className={`flex border-b ${T.border} overflow-x-auto scrollbar-none`}>
-        {TABS.map((tab) => {
-          const active = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-4 md:px-5 py-3 font-jetbrains text-[11px] tracking-[0.15em] uppercase shrink-0 transition-colors ${
-                active
-                  ? "text-[#F2EDE4] border-b-2"
-                  : "text-[#6B6560] border-b-2 border-transparent hover:text-[#F2EDE4]"
-              }`}
-              style={active ? { borderBottomColor: T.accent } : undefined}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
+      <div className={`border-b ${T.border} overflow-x-auto scrollbar-none`}>
+        <div className="flex px-4 md:px-6">
+          {TABS.map((tab) => {
+            const active = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`pr-4 md:pr-5 py-3 font-jetbrains text-[11px] tracking-[0.15em] uppercase shrink-0 transition-colors ${
+                  active
+                    ? "text-[#F2EDE4] border-b-2"
+                    : "text-[#6B6560] border-b-2 border-transparent hover:text-[#F2EDE4]"
+                }`}
+                style={active ? { borderBottomColor: T.accent } : undefined}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* ── Tab Content ─────────────────────────────────────────────────── */}
