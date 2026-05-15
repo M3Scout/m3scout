@@ -379,7 +379,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [statsRes, compRes, liveRes, minutesRes] = await Promise.all([
+      const [statsRes, compRes, liveRes, minutesRes, livePlayersRes] = await Promise.all([
         supabase
           .from("player_stats")
           .select("*")
@@ -414,12 +414,27 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
           .from("match_players")
           .select("match_id, minutes_played")
           .eq("player_id", playerId),
+        // Fetch LIVE participation rows too. A player can still count in public stats
+        // even after the match_player_stats row was deleted, because appearances/minutes
+        // are derived from match_players.
+        supabase
+          .from("match_players")
+          .select(`
+            id, match_id, minutes_played, is_removed,
+            matches!inner (
+              id, season_year, competition_id, status,
+              competitions ( id, name, display_name )
+            )
+          `)
+          .eq("player_id", playerId)
+          .neq("is_removed", true),
       ]);
 
       if (statsRes.error) throw statsRes.error;
       if (compRes.error) throw compRes.error;
       // Live stats errors are non-fatal — show what we have
       if (liveRes.error) console.warn("[PlayerStatsForm] live stats fetch error", liveRes.error);
+      if (livePlayersRes.error) console.warn("[PlayerStatsForm] live players fetch error", livePlayersRes.error);
 
       setStats(statsRes.data || []);
       setCompetitions(compRes.data || []);
@@ -430,11 +445,18 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
         minutesMap[mp.match_id] = mp.minutes_played ?? 0;
       }
 
-      // Aggregate match_player_stats by (season_year, competition_id)
-      const groupMap: Record<string, LiveStatGroup> = {};
+      const statsByMatchId: Record<string, any> = {};
       for (const row of (liveRes.data || []) as any[]) {
+        statsByMatchId[row.match_id as string] = row;
+      }
+
+      // Aggregate LIVE rows by (season_year, competition_id). Use match_players as
+      // the source of truth for visibility because appearances/minutes live there.
+      const groupMap: Record<string, LiveStatGroup> = {};
+      for (const row of (livePlayersRes.data || []) as any[]) {
         const match = row.matches as { id: string; season_year: number; competition_id: string | null; status: "draft" | "live" | "finished" | "applied"; competitions: { id: string; name: string; display_name: string | null } | null } | null;
         if (!match) continue;
+        const statRow = (statsByMatchId[row.match_id as string] ?? {}) as any;
         const key = `${match.season_year}_${match.competition_id ?? "none"}`;
         if (!groupMap[key]) {
           const comp = match.competitions;
@@ -462,14 +484,14 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
           };
         }
         const g = groupMap[key];
-        g.matchPlayerStatIds.push(row.id as string);
+        if (statRow.id) g.matchPlayerStatIds.push(statRow.id as string);
         if (!g.matchIds.includes(row.match_id as string)) g.matchIds.push(row.match_id as string);
         if (match.status === "applied") g.appliedCount += 1;
-        const mins = minutesMap[row.match_id as string] ?? 0;
+        const mins = row.minutes_played ?? minutesMap[row.match_id as string] ?? 0;
         if (mins > 0) g.matches += 1;
         g.minutes += mins;
-        g.goals += row.goals ?? 0;
-        g.assists += row.assists ?? 0;
+        g.goals += statRow.goals ?? 0;
+        g.assists += statRow.assists ?? 0;
         // shots in match_player_stats = off-target only; total = off + on_target + blocked
         const offTarget = row.shots ?? 0;
         const onTarget = row.shots_on_target ?? 0;
