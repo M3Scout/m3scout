@@ -43,13 +43,13 @@ export const SEASON_STAT_LIMITS: Record<string, StatLimit> = {
 
   // Passes
   accurate_passes: { min: 0, max: COUNT_DEFAULT, label: "Passes Certos" },
-  total_passes: { min: 0, max: COUNT_DEFAULT, label: "Passes Totais" },
+  total_passes: { min: 0, max: COUNT_DEFAULT, label: "Passes Errados" },
   long_passes_accurate: { min: 0, max: 5000, label: "Lançamentos Certos" },
-  long_passes_total: { min: 0, max: 5000, label: "Lançamentos Totais" },
+  long_passes_total: { min: 0, max: 5000, label: "Lançamentos Errados" },
 
   // Dribles
   successful_dribbles: { min: 0, max: 1000, label: "Dribles Certos" },
-  total_dribbles: { min: 0, max: 1000, label: "Dribles Totais" },
+  total_dribbles: { min: 0, max: 1000, label: "Dribles Errados" },
   possession_lost: { min: 0, max: 2000, label: "Bolas Perdidas" },
   crosses_success: { min: 0, max: 1000, label: "Cruzamentos Certos" },
   crosses_failed: { min: 0, max: 1000, label: "Cruzamentos Errados" },
@@ -62,9 +62,9 @@ export const SEASON_STAT_LIMITS: Record<string, StatLimit> = {
   duels_won: { min: 0, max: 2000, label: "Duelos Ganhos" },
   total_duels: { min: 0, max: 2000, label: "Duelos Totais" },
   ground_duels_won: { min: 0, max: 2000, label: "Duelos Solo Ganhos" },
-  ground_duels_total: { min: 0, max: 2000, label: "Duelos Solo Totais" },
+  ground_duels_total: { min: 0, max: 2000, label: "Duelos Solo Errados" },
   aerial_duels_won: { min: 0, max: 1000, label: "Duelos Aéreos Ganhos" },
-  aerial_duels_total: { min: 0, max: 1000, label: "Duelos Aéreos Totais" },
+  aerial_duels_total: { min: 0, max: 1000, label: "Duelos Aéreos Errados" },
   times_dribbled_past: { min: 0, max: 500, label: "Driblado" },
 
   // Goleiro
@@ -149,12 +149,11 @@ export function validateSeasonStats(
   return issues;
 }
 
+// NOTE: total_passes, total_dribbles, aerial_duels_total, ground_duels_total
+// and long_passes_total store FAILED/LOST counts in the DB (not real totals).
+// Checking success <= that column would always fire incorrectly — those pairs
+// are intentionally absent. Only columns that truly store a real total remain.
 export const DEFAULT_SUCCESS_PAIRS: Array<[string, string]> = [
-  ["accurate_passes", "total_passes"],
-  ["long_passes_accurate", "long_passes_total"],
-  ["successful_dribbles", "total_dribbles"],
-  ["aerial_duels_won", "aerial_duels_total"],
-  ["ground_duels_won", "ground_duels_total"],
   ["duels_won", "total_duels"],
   ["successful_runs_out", "total_runs_out"],
   ["shots_on_target", "shots"],
