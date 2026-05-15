@@ -739,6 +739,7 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
                         key={row.id}
                         row={row}
                         matches={row.source === "live" ? (matchesByKey[row.id] ?? []) : undefined}
+                        isGoalkeeper={playerPosition === "Goleiro" || playerPosition === "GK"}
                       />
                     )),
                   ];
@@ -832,7 +833,7 @@ function StatBlock({ title, titleColor, stats }: { title: string; titleColor: st
 }
 
 // ─── Season table row ─────────────────────────────────────────────────────────
-function SeasonRow({ row }: { row: SeasonRowData; matches?: MatchRowPreview[] }) {
+function SeasonRow({ row, isGoalkeeper = false }: { row: SeasonRowData; matches?: MatchRowPreview[]; isGoalkeeper?: boolean }) {
   const [expanded, setExpanded] = useState(false);
   const s = row.stats;
 
@@ -889,10 +890,12 @@ function SeasonRow({ row }: { row: SeasonRowData; matches?: MatchRowPreview[] })
     { label: "Faltas Sof.",    value: s.fouls_suffered },
     { label: "Amarelos",       value: s.yellow_cards,                               negative: true },
     { label: "Vermelhos",      value: s.red_cards,                                  negative: true },
-    { label: "Defesas",        value: s.saves,                                      positive: true },
-    { label: "Gols Sof.",      value: s.goals_conceded,                             negative: true },
-    { label: "Clean Sheets",   value: s.clean_sheets,                               positive: true },
-    { label: "Pen. Salvos",    value: s.penalties_saved,                            positive: true },
+    ...(isGoalkeeper ? [
+      { label: "Defesas",      value: s.saves,                                      positive: true },
+      { label: "Gols Sof.",    value: s.goals_conceded,                             negative: true },
+      { label: "Clean Sheets", value: s.clean_sheets,                               positive: true },
+      { label: "Pen. Salvos",  value: s.penalties_saved,                            positive: true },
+    ] as StatDef[] : []),
   ];
 
   return (
