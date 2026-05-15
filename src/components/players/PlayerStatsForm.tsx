@@ -22,6 +22,7 @@ import {
   AlertTriangle,
   Info,
   Zap,
+  Lock,
 } from "lucide-react";
 import { toast } from "sonner";
 import { safeArray } from "@/lib/utils";
@@ -63,6 +64,90 @@ const TOTAL_LABEL: Record<string, string> = {
   shots: "Finalizações Totais",
 };
 
+/** Stats aggregated from match_player_stats for one (season_year, competition_id) pair. */
+interface LiveStatGroup {
+  source: "live";
+  groupKey: string;
+  season_year: number;
+  competition_id: string | null;
+  competition_name: string | null;
+  /** match_player_stats IDs, used for bulk deletion. */
+  matchPlayerStatIds: string[];
+  matches: number;
+  minutes: number;
+  // All fields use player_stats column naming so ScoutCategoryStats renders them directly
+  goals: number;
+  assists: number;
+  /** Total shots = off-target + on-target + blocked (player_stats semantics). */
+  shots: number;
+  shots_on_target: number;
+  shots_blocked: number;
+  offsides: number;
+  accurate_passes: number;
+  total_passes: number;
+  key_passes: number;
+  chances_created: number;
+  crosses_success: number;
+  crosses_failed: number;
+  successful_dribbles: number;
+  total_dribbles: number;
+  fouls_committed: number;
+  fouls_drawn: number;
+  possession_lost: number;
+  tackles: number;
+  interceptions: number;
+  clearances: number;
+  recoveries: number;
+  times_dribbled_past: number;
+  duels_won: number;
+  total_duels: number;
+  aerial_duels_won: number;
+  aerial_duels_total: number;
+  ground_duels_won: number;
+  ground_duels_total: number;
+  yellow_cards: number;
+  red_cards: number;
+  saves: number;
+  goals_conceded: number;
+}
+
+/** Convert a LiveStatGroup to the flat StatValues map ScoutCategoryStats expects. */
+function liveStatToScoutValues(g: LiveStatGroup): StatValues {
+  return {
+    goals: g.goals,
+    assists: g.assists,
+    shots: g.shots,
+    shots_on_target: g.shots_on_target,
+    shots_blocked: g.shots_blocked,
+    offsides: g.offsides,
+    accurate_passes: g.accurate_passes,
+    total_passes: g.total_passes,
+    key_passes: g.key_passes,
+    chances_created: g.chances_created,
+    crosses_success: g.crosses_success,
+    crosses_failed: g.crosses_failed,
+    successful_dribbles: g.successful_dribbles,
+    total_dribbles: g.total_dribbles,
+    fouls_committed: g.fouls_committed,
+    fouls_drawn: g.fouls_drawn,
+    possession_lost: g.possession_lost,
+    tackles: g.tackles,
+    interceptions: g.interceptions,
+    clearances: g.clearances,
+    recoveries: g.recoveries,
+    times_dribbled_past: g.times_dribbled_past,
+    duels_won: g.duels_won,
+    total_duels: g.total_duels,
+    aerial_duels_won: g.aerial_duels_won,
+    aerial_duels_total: g.aerial_duels_total,
+    ground_duels_won: g.ground_duels_won,
+    ground_duels_total: g.ground_duels_total,
+    yellow_cards: g.yellow_cards,
+    red_cards: g.red_cards,
+    saves: g.saves,
+    goals_conceded: g.goals_conceded,
+  };
+}
 
 interface Competition {
   id: string;
@@ -272,9 +357,11 @@ function SummaryBadge({ label, value, highlight = false }: { label: string; valu
 
 export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormProps) {
   const [stats, setStats] = useState<PlayerStat[]>([]);
+  const [liveStatGroups, setLiveStatGroups] = useState<LiveStatGroup[]>([]);
   const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deletingLive, setDeletingLive] = useState<string | null>(null);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   const isGoalkeeper = playerPosition === "Goleiro" || playerPosition === "GK";
@@ -286,7 +373,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [statsRes, compRes] = await Promise.all([
+      const [statsRes, compRes, liveRes, minutesRes] = await Promise.all([
         supabase
           .from("player_stats")
           .select("*")
@@ -297,13 +384,125 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
           .select("id, name, display_name, final_coefficient")
           .eq("is_active", true)
           .order("name"),
+        // Fetch all match_player_stats for this player, joined with match metadata
+        supabase
+          .from("match_player_stats")
+          .select(`
+            id, player_id, match_id,
+            goals, assists, shots, shots_on_target, shots_blocked, offsides,
+            passes_completed, passes_total, key_passes, chances_created,
+            crosses_success, crosses_failed,
+            dribbles_success, dribbles_total,
+            fouls_committed, fouls_suffered, possession_lost,
+            tackles, interceptions, clearances, recoveries, was_dribbled,
+            duels_won, duels_total, aerial_duels_won, aerial_duels_total,
+            yellow_cards, red_cards, saves, goals_conceded,
+            matches!inner (
+              id, season_year, competition_id, status,
+              competitions ( id, name, display_name )
+            )
+          `)
+          .eq("player_id", playerId)
+          .eq("matches.status", "finished"),
+        // Fetch minutes_played from match_players
+        supabase
+          .from("match_players")
+          .select("match_id, minutes_played")
+          .eq("player_id", playerId),
       ]);
 
       if (statsRes.error) throw statsRes.error;
       if (compRes.error) throw compRes.error;
+      // Live stats errors are non-fatal — show what we have
+      if (liveRes.error) console.warn("[PlayerStatsForm] live stats fetch error", liveRes.error);
 
       setStats(statsRes.data || []);
       setCompetitions(compRes.data || []);
+
+      // Build a minutes map: match_id → minutes_played
+      const minutesMap: Record<string, number> = {};
+      for (const mp of minutesRes.data || []) {
+        minutesMap[mp.match_id] = mp.minutes_played ?? 0;
+      }
+
+      // Aggregate match_player_stats by (season_year, competition_id)
+      const groupMap: Record<string, LiveStatGroup> = {};
+      for (const row of (liveRes.data || []) as any[]) {
+        const match = row.matches as { id: string; season_year: number; competition_id: string | null; status: string; competitions: { id: string; name: string; display_name: string | null } | null } | null;
+        if (!match) continue;
+        const key = `${match.season_year}_${match.competition_id ?? "none"}`;
+        if (!groupMap[key]) {
+          const comp = match.competitions;
+          groupMap[key] = {
+            source: "live",
+            groupKey: key,
+            season_year: match.season_year,
+            competition_id: match.competition_id,
+            competition_name: comp ? (comp.display_name || comp.name) : null,
+            matchPlayerStatIds: [],
+            matches: 0, minutes: 0,
+            goals: 0, assists: 0,
+            shots: 0, shots_on_target: 0, shots_blocked: 0, offsides: 0,
+            accurate_passes: 0, total_passes: 0, key_passes: 0, chances_created: 0,
+            crosses_success: 0, crosses_failed: 0,
+            successful_dribbles: 0, total_dribbles: 0,
+            fouls_committed: 0, fouls_drawn: 0, possession_lost: 0,
+            tackles: 0, interceptions: 0, clearances: 0, recoveries: 0, times_dribbled_past: 0,
+            duels_won: 0, total_duels: 0,
+            aerial_duels_won: 0, aerial_duels_total: 0,
+            ground_duels_won: 0, ground_duels_total: 0,
+            yellow_cards: 0, red_cards: 0,
+            saves: 0, goals_conceded: 0,
+          };
+        }
+        const g = groupMap[key];
+        g.matchPlayerStatIds.push(row.id as string);
+        const mins = minutesMap[row.match_id as string] ?? 0;
+        if (mins > 0) g.matches += 1;
+        g.minutes += mins;
+        g.goals += row.goals ?? 0;
+        g.assists += row.assists ?? 0;
+        // shots in match_player_stats = off-target only; total = off + on_target + blocked
+        const offTarget = row.shots ?? 0;
+        const onTarget = row.shots_on_target ?? 0;
+        const blocked = row.shots_blocked ?? 0;
+        g.shots += offTarget + onTarget + blocked;
+        g.shots_on_target += onTarget;
+        g.shots_blocked += blocked;
+        g.offsides += row.offsides ?? 0;
+        g.accurate_passes += row.passes_completed ?? 0;
+        g.total_passes += row.passes_total ?? 0;
+        g.key_passes += row.key_passes ?? 0;
+        g.chances_created += row.chances_created ?? 0;
+        g.crosses_success += row.crosses_success ?? 0;
+        g.crosses_failed += row.crosses_failed ?? 0;
+        g.successful_dribbles += row.dribbles_success ?? 0;
+        g.total_dribbles += row.dribbles_total ?? 0;
+        g.fouls_committed += row.fouls_committed ?? 0;
+        g.fouls_drawn += row.fouls_suffered ?? 0;
+        g.possession_lost += row.possession_lost ?? 0;
+        g.tackles += row.tackles ?? 0;
+        g.interceptions += row.interceptions ?? 0;
+        g.clearances += row.clearances ?? 0;
+        g.recoveries += row.recoveries ?? 0;
+        g.times_dribbled_past += row.was_dribbled ?? 0;
+        // duels_won/total in match_player_stats = all duels (ground + aerial combined)
+        g.duels_won += row.duels_won ?? 0;
+        g.total_duels += row.duels_total ?? 0;
+        g.aerial_duels_won += row.aerial_duels_won ?? 0;
+        g.aerial_duels_total += row.aerial_duels_total ?? 0;
+        // Ground duels derived as total − aerial (best approximation available)
+        g.ground_duels_won = Math.max(0, g.duels_won - g.aerial_duels_won);
+        g.ground_duels_total = Math.max(0, g.total_duels - g.aerial_duels_total);
+        g.yellow_cards += row.yellow_cards ?? 0;
+        g.red_cards += row.red_cards ?? 0;
+        g.saves += row.saves ?? 0;
+        g.goals_conceded += row.goals_conceded ?? 0;
+      }
+
+      setLiveStatGroups(
+        Object.values(groupMap).sort((a, b) => b.season_year - a.season_year),
+      );
     } catch (error: any) {
       toast.error("Erro ao carregar estatísticas");
       console.error(error);
@@ -468,6 +667,38 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
     return warnings;
   };
 
+  const allRows = useMemo<({ type: "manual"; stat: PlayerStat } | { type: "live"; group: LiveStatGroup })[]>(() => {
+    const rows = [
+      ...safeArray(stats).map(s => ({ type: "manual" as const, stat: s })),
+      ...liveStatGroups.map(g => ({ type: "live" as const, group: g })),
+    ];
+    return rows.sort((a, b) => {
+      const ya = a.type === "manual" ? a.stat.season_year : a.group.season_year;
+      const yb = b.type === "manual" ? b.stat.season_year : b.group.season_year;
+      return yb - ya;
+    });
+  }, [stats, liveStatGroups]);
+
+  const deleteLiveGroup = async (groupKey: string) => {
+    const group = liveStatGroups.find(g => g.groupKey === groupKey);
+    if (!group) return;
+    if (!window.confirm(`Remover ${group.matches} partida(s) ao vivo de ${group.competition_name ?? "Sem competição"} (${group.season_year})?`)) return;
+    setDeletingLive(groupKey);
+    try {
+      const { error } = await supabase
+        .from("match_player_stats")
+        .delete()
+        .in("id", group.matchPlayerStatIds);
+      if (error) throw error;
+      setLiveStatGroups(prev => prev.filter(g => g.groupKey !== groupKey));
+      toast.success("Estatísticas ao vivo removidas");
+    } catch (error: any) {
+      toast.error("Erro ao remover estatísticas ao vivo");
+    } finally {
+      setDeletingLive(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -502,7 +733,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {(stats?.length ?? 0) === 0 ? (
+        {allRows.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <BarChart3 className="w-12 h-12 mx-auto mb-2 opacity-50" />
             <p>Nenhuma estatística registrada</p>
@@ -512,13 +743,89 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
             </Button>
           </div>
         ) : (
-          safeArray(stats).map((stat) => {
+          allRows.map((row) => {
+            if (row.type === "live") {
+              const group = row.group;
+              const rowId = `live-${group.groupKey}`;
+              return (
+                <Collapsible key={rowId} open={expandedRows.has(rowId)} onOpenChange={() => toggleRow(rowId)}>
+                  <div className="border border-green-500/30 rounded-lg">
+                    <CollapsibleTrigger asChild>
+                      <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 transition-colors">
+                        <div className="flex items-center gap-4 flex-wrap">
+                          <Badge variant="outline" className="border-green-500/50 text-green-400 bg-green-500/10">
+                            <Zap className="w-3 h-3 mr-1" />
+                            AO VIVO
+                          </Badge>
+                          <Badge variant="outline">{group.season_year}</Badge>
+                          <span className="font-medium">{group.competition_name ?? "Sem competição"}</span>
+                          <span className="text-sm text-muted-foreground">
+                            {group.matches} jogos • {group.minutes} min • {group.goals}G {group.assists}A
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            disabled={deletingLive === group.groupKey}
+                            onClick={(e) => { e.stopPropagation(); deleteLiveGroup(group.groupKey); }}
+                          >
+                            {deletingLive === group.groupKey
+                              ? <Loader2 className="w-4 h-4 animate-spin" />
+                              : <Trash2 className="w-4 h-4 text-destructive" />}
+                          </Button>
+                          <ChevronDown className={`w-4 h-4 transition-transform ${expandedRows.has(rowId) ? 'rotate-180' : ''}`} />
+                        </div>
+                      </div>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="p-4 pt-0 space-y-4">
+                        <Separator />
+                        <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-3">
+                          <div className="text-xs font-medium text-green-400 mb-2 flex items-center gap-1">
+                            <Zap className="w-3 h-3" />
+                            Resumo — Dados ao Vivo
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <SummaryBadge label="Jogos" value={group.matches} />
+                            <SummaryBadge label="Min" value={group.minutes} />
+                            <SummaryBadge label="Gols" value={group.goals} highlight />
+                            <SummaryBadge label="Assist" value={group.assists} highlight />
+                            <SummaryBadge label="Chutes" value={group.shots} />
+                            <SummaryBadge label="No Gol" value={group.shots_on_target} />
+                            <SummaryBadge label="P.Dec" value={group.key_passes} />
+                            <SummaryBadge label="Chances" value={group.chances_created} />
+                            <SummaryBadge label="Amar" value={group.yellow_cards} />
+                            <SummaryBadge label="Verm" value={group.red_cards} />
+                          </div>
+                        </div>
+                        <Alert className="border-blue-500/30 bg-blue-500/5">
+                          <Info className="h-4 w-4 text-blue-400" />
+                          <AlertDescription className="text-blue-300 text-xs">
+                            Estatísticas geradas automaticamente pelo sistema Live Match. Para corrigir valores, edite os dados de cada partida individualmente.
+                          </AlertDescription>
+                        </Alert>
+                        <ScoutCategoryStats
+                          mode="readonly"
+                          categories={isGoalkeeper ? GOALKEEPER_SCOUT_CATEGORIES : OUTFIELD_SCOUT_CATEGORIES}
+                          values={liveStatToScoutValues(group)}
+                        />
+                      </div>
+                    </CollapsibleContent>
+                  </div>
+                </Collapsible>
+              );
+            }
+
+            // Manual stat row
+            const stat = row.stat;
             const warnings = getValidationWarnings(stat);
-            
+
             return (
-              <Collapsible 
-                key={stat.id} 
-                open={expandedRows.has(stat.id)} 
+              <Collapsible
+                key={stat.id}
+                open={expandedRows.has(stat.id)}
                 onOpenChange={() => toggleRow(stat.id)}
               >
                 <div className="border rounded-lg">
@@ -538,9 +845,9 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
                         )}
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button 
-                          type="button" 
-                          variant="ghost" 
+                        <Button
+                          type="button"
+                          variant="ghost"
                           size="icon"
                           onClick={(e) => { e.stopPropagation(); deleteStatRow(stat.id); }}
                         >
@@ -550,7 +857,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
                       </div>
                     </div>
                   </CollapsibleTrigger>
-                  
+
                   <CollapsibleContent>
                     <div className="p-4 pt-0 space-y-6">
                       <Separator />
@@ -566,7 +873,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
                           </AlertDescription>
                         </Alert>
                       )}
-                      
+
                       {/* Quick Summary */}
                       <div className="bg-muted/30 rounded-lg p-3">
                         <div className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
@@ -594,13 +901,13 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
                           Gerais
                         </div>
                         <p className="text-xs text-muted-foreground -mt-2">Informações básicas da temporada/competição</p>
-                        
+
                         <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">
                           <div className="space-y-1">
                             <Label className="text-xs text-muted-foreground">Temporada</Label>
-                            <Input 
-                              type="number" 
-                              value={stat.season_year} 
+                            <Input
+                              type="number"
+                              value={stat.season_year}
                               onChange={(e) => updateStatField(stat.id, "season_year", parseInt(e.target.value) || new Date().getFullYear())}
                             />
                           </div>
@@ -621,15 +928,15 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
                         </div>
 
                         <div className="grid gap-3 grid-cols-2 sm:grid-cols-3">
-                          <StatInput 
-                            label="Jogos" 
-                            value={stat.matches} 
+                          <StatInput
+                            label="Jogos"
+                            value={stat.matches}
                             onChange={(v) => updateStatField(stat.id, "matches", v)}
                             tooltip="Total de partidas disputadas"
                           />
-                          <StatInput 
-                            label="Minutos" 
-                            value={stat.minutes} 
+                          <StatInput
+                            label="Minutos"
+                            value={stat.minutes}
                             onChange={(v) => updateStatField(stat.id, "minutes", v)}
                             tooltip="Total de minutos em campo"
                             warning={normalizeStatValue(stat.minutes) === 0 && normalizeStatValue(stat.matches) > 0 ? "Sem minutos registrados" : undefined}
@@ -698,7 +1005,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
           })
         )}
 
-        {(stats?.length ?? 0) > 0 && (
+        {safeArray(stats).length > 0 && (
           <div className="flex justify-end pt-2">
             <Button type="button" onClick={saveStats} disabled={saving}>
               {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
