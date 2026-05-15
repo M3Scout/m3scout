@@ -721,41 +721,20 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
 
     setDeletingLive(groupKey);
     try {
-      // 1) Delete match_player_stats (the aggregated per-match stat rows)
-      if (group.matchPlayerStatIds.length > 0) {
-        const { data: deletedStats, error } = await supabase
-          .from("match_player_stats")
-          .delete()
-          .in("id", group.matchPlayerStatIds)
-          .select("id");
-        if (error) throw error;
-        console.log(`[deleteLiveGroup] deleted ${deletedStats?.length ?? 0}/${group.matchPlayerStatIds.length} match_player_stats`);
-      }
+      // 1) Atomic backend cleanup: remove LIVE stat rows, soft-remove match_players,
+      // and delete stale player_stats fallback rows for this competition/season.
+      const { data: cleanupResult, error: cleanupError } = await supabase.rpc(
+        "remove_player_live_stats_group" as any,
+        {
+          p_player_id: playerId,
+          p_season_year: group.season_year,
+          p_competition_id: group.competition_id,
+        },
+      );
+      if (cleanupError) throw cleanupError;
+      console.log("[deleteLiveGroup] cleanup result", cleanupResult);
 
-      // 2) Soft-delete match_players entries for this player in those matches.
-      //    Fetch IDs first, then update by PK — mirrors the pattern used in
-      //    LiveMatchGame (updatePlayer) which is known to pass RLS.
-      if (group.matchIds.length > 0) {
-        const { data: mpRows, error: mpFetchErr } = await supabase
-          .from("match_players")
-          .select("id")
-          .eq("player_id", playerId)
-          .in("match_id", group.matchIds);
-        if (mpFetchErr) throw mpFetchErr;
-
-        const mpIds = (mpRows ?? []).map((r) => r.id);
-        console.log(`[deleteLiveGroup] found ${mpIds.length} match_players to soft-delete`);
-
-        if (mpIds.length > 0) {
-          const { error: mpUpdateErr } = await supabase
-            .from("match_players")
-            .update({ is_removed: true, removed_at: new Date().toISOString() })
-            .in("id", mpIds);
-          if (mpUpdateErr) throw mpUpdateErr;
-        }
-      }
-
-      // 3) Recalculate all derived values when any source match was "applied"
+      // 2) Recalculate all derived values when any source match was "applied"
       if (isApplied) {
         const [ratingRes, attrRes, marketRes] = await Promise.allSettled([
           supabase.rpc("update_player_auto_rating", { p_player_id: playerId }),
