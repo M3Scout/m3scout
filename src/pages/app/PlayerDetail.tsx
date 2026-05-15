@@ -555,14 +555,16 @@ const PlayerDetail = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`pr-4 md:pr-5 py-3 font-jetbrains text-[11px] tracking-[0.15em] uppercase shrink-0 transition-colors ${
-                  active
-                    ? "text-[#F2EDE4] border-b-2"
-                    : "text-[#6B6560] border-b-2 border-transparent hover:text-[#F2EDE4]"
+                className={`pr-4 md:pr-5 py-3 font-jetbrains text-[11px] tracking-[0.15em] uppercase shrink-0 transition-colors flex flex-col items-start ${
+                  active ? "text-[#F2EDE4]" : "text-[#6B6560] hover:text-[#F2EDE4]"
                 }`}
-                style={active ? { borderBottomColor: T.accent } : undefined}
               >
-                {tab.label}
+                <span
+                  className="border-b-2 pb-px"
+                  style={{ borderColor: active ? T.accent : "transparent" }}
+                >
+                  {tab.label}
+                </span>
               </button>
             );
           })}
