@@ -116,6 +116,7 @@ export const OUTFIELD_SCOUT_CATEGORIES: ScoutCategory[] = [
       { key: "interceptions", label: "Interc." },
       { key: "clearances", label: "Cortes" },
       { key: "recoveries", label: "Recup." },
+      { key: "shots_blocked", label: "Chute Bloq." },
       { key: "times_dribbled_past", label: "Driblado" },
       { key: "ground_duels_won", label: "Duelo Chão ✓", successOfFailed: "ground_duels_total" },
       { key: "ground_duels_total", label: "Duelo Chão ✗" },

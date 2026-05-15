@@ -304,7 +304,7 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
           interceptions: ps.interceptions,
           recoveries: ps.recoveries,
           clearances: ps.clearances,
-          blocked_shots: 0,
+          blocked_shots: ps.shots_blocked,
           was_dribbled: ps.times_dribbled_past,
           duels_won: ps.duels_won,
           duels_total: ps.total_duels,
@@ -759,68 +759,98 @@ interface StatDef {
   value: number;
   positive?: boolean;
   negative?: boolean;
+  /** success rate: null = total is 0 (show "0%" in gray), number = (success/total)*100 */
+  pct?: number | null;
 }
 
 function StatBlock({ title, titleColor, stats }: { title: string; titleColor: string; stats: StatDef[] }) {
   return (
     <div>
-      <div
-        style={{
-          fontFamily: "Barlow Condensed, sans-serif",
-          fontSize: 10,
-          fontWeight: 700,
-          textTransform: "uppercase",
-          letterSpacing: "0.16em",
-          color: titleColor,
-          borderBottom: "1px solid #1C1C1C",
-          paddingBottom: 5,
-          marginBottom: 6,
-        }}
-      >
-        {title}
+      {/* Section header: left accent bar + title */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+        <div style={{ width: 3, height: 16, background: titleColor, borderRadius: 2, flexShrink: 0 }} />
+        <span
+          style={{
+            fontFamily: "Barlow Condensed, sans-serif",
+            fontSize: 11,
+            fontWeight: 700,
+            textTransform: "uppercase",
+            letterSpacing: "0.2em",
+            color: titleColor,
+          }}
+        >
+          {title}
+        </span>
       </div>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
-          gap: 1,
-          background: "#1C1C1C",
-        }}
-      >
+      {/* Stat cards */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
         {stats.map((st) => (
           <div
             key={st.label}
             style={{
-              background: "#111111",
-              padding: "10px 14px",
+              background: "linear-gradient(180deg, rgba(255,255,255,0.055) 0%, rgba(255,255,255,0.02) 100%)",
+              border: "1px solid rgba(255,255,255,0.07)",
+              borderRadius: 8,
+              padding: "10px 12px",
               display: "flex",
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
+              flexDirection: "column",
+              gap: 5,
             }}
           >
-            <span
-              style={{
-                fontFamily: "Barlow Condensed, sans-serif",
-                fontSize: 10,
-                textTransform: "uppercase",
-                letterSpacing: "0.12em",
-                color: "#6B6560",
-              }}
-            >
-              {st.label}
-            </span>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span
+                style={{
+                  fontFamily: "Barlow Condensed, sans-serif",
+                  fontSize: 9,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.16em",
+                  color: "#7D7874",
+                }}
+              >
+                {st.label}
+              </span>
+              {st.pct !== undefined && (
+                <span
+                  style={{
+                    fontFamily: "JetBrains Mono, monospace",
+                    fontSize: 9,
+                    fontWeight: 700,
+                    borderRadius: 4,
+                    padding: "1px 5px",
+                    color:
+                      st.pct === null ? "#7D7874"
+                      : st.pct >= 60   ? "#34D399"
+                      : st.pct >= 50   ? "#F59E0B"
+                      :                  "#FB7185",
+                    background:
+                      st.pct === null ? "rgba(125,120,116,0.12)"
+                      : st.pct >= 60   ? "rgba(52,211,153,0.15)"
+                      : st.pct >= 50   ? "rgba(245,158,11,0.15)"
+                      :                  "rgba(251,113,133,0.15)",
+                    border: `1px solid ${
+                      st.pct === null ? "rgba(125,120,116,0.25)"
+                      : st.pct >= 60   ? "rgba(52,211,153,0.3)"
+                      : st.pct >= 50   ? "rgba(245,158,11,0.3)"
+                      :                  "rgba(251,113,133,0.3)"
+                    }`,
+                  }}
+                >
+                  {st.pct === null ? "0%" : `${Math.round(st.pct)}%`}
+                </span>
+              )}
+            </div>
             <span
               style={{
                 fontFamily: "JetBrains Mono, monospace",
-                fontSize: 15,
+                fontSize: 18,
                 fontWeight: 700,
+                lineHeight: 1,
                 color:
                   st.positive && st.value > 0
-                    ? "#22C55E"
+                    ? "#34D399"
                     : st.negative && st.value > 0
-                    ? "#E5173F"
-                    : "#F2EDE4",
+                    ? "#FB7185"
+                    : "#F3F4F6",
               }}
             >
               {st.value}
@@ -861,35 +891,36 @@ function SeasonRow({ row, isGoalkeeper = false }: { row: SeasonRowData; matches?
   const passesStats: StatDef[] = [
     { label: "Certos",        value: s.passes_completed, positive: true },
     { label: "Errados",       value: s.passes_failed,    negative: true },
-    { label: "Total",         value: s.passes_total },
+    { label: "Total",         value: s.passes_total,     pct: s.passes_total > 0 ? (s.passes_completed / s.passes_total) * 100 : null },
     { label: "Decisivos",     value: s.key_passes,       positive: true },
     { label: "Chances",       value: s.chances_created,  positive: true },
-    { label: "Cruz. Certos",  value: s.crosses_success,  positive: true },
+    { label: "Cruz. Certos",  value: s.crosses_success,  positive: true, pct: (s.crosses_success + s.crosses_failed) > 0 ? (s.crosses_success / (s.crosses_success + s.crosses_failed)) * 100 : null },
     { label: "Cruz. Errados", value: s.crosses_failed,   negative: true },
   ];
 
   const drilesStats: StatDef[] = [
-    { label: "Certos",      value: s.dribbles_success, positive: true },
-    { label: "Errados",     value: s.dribbles_failed,  negative: true },
-    { label: "Total",       value: s.dribbles_total },
+    { label: "Drible ✓",   value: s.dribbles_success, positive: true, pct: s.dribbles_total > 0 ? (s.dribbles_success / s.dribbles_total) * 100 : null },
+    { label: "Drible ✗",   value: s.dribbles_failed,  negative: true },
+    { label: "Falta Sof.", value: s.fouls_suffered },
     { label: "Posse Perd.", value: s.possession_lost,  negative: true },
   ];
 
   const defesaStats: StatDef[] = [
-    { label: "Desarmes",       value: s.tackles,                                    positive: true },
-    { label: "Intercep.",      value: s.interceptions,                              positive: true },
-    { label: "Recuper.",       value: s.recoveries,                                 positive: true },
-    { label: "Cortes",         value: s.clearances,                                 positive: true },
-    { label: "Duelo Chão ✓",  value: s.ground_duels_won,                           positive: true },
-    { label: "Duelo Chão ✗",  value: Math.max(0, s.ground_duels_total - s.ground_duels_won), negative: true },
-    { label: "Duelo Chão Tot.", value: s.ground_duels_total },
-    { label: "Duelo Aéreo ✓", value: s.aerial_duels_won,                           positive: true },
-    { label: "Duelo Aéreo ✗", value: Math.max(0, s.aerial_duels_total - s.aerial_duels_won), negative: true },
-    { label: "Duelo Aéreo Tot.", value: s.aerial_duels_total },
-    { label: "Faltas Com.",    value: s.fouls_committed,                            negative: true },
-    { label: "Faltas Sof.",    value: s.fouls_suffered },
-    { label: "Amarelos",       value: s.yellow_cards,                               negative: true },
-    { label: "Vermelhos",      value: s.red_cards,                                  negative: true },
+    { label: "Desarmes",        value: s.tackles,                                                                     positive: true },
+    { label: "Intercep.",       value: s.interceptions,                                                               positive: true },
+    { label: "Cortes",          value: s.clearances,                                                                  positive: true },
+    { label: "Recuper.",        value: s.recoveries,                                                                  positive: true },
+    { label: "Chute Bloq.",     value: s.blocked_shots,                                                               positive: true },
+    { label: "Driblado",        value: s.was_dribbled,                                                                negative: true },
+    { label: "Duelo Chão ✓",    value: s.ground_duels_won,                                                            positive: true },
+    { label: "Duelo Chão ✗",    value: Math.max(0, s.ground_duels_total - s.ground_duels_won),                        negative: true },
+    { label: "Duelo Chão Tot.", value: s.ground_duels_total,                                                          pct: s.ground_duels_total > 0 ? (s.ground_duels_won / s.ground_duels_total) * 100 : null },
+    { label: "Duelo Aéreo ✓",   value: s.aerial_duels_won,                                                            positive: true },
+    { label: "Duelo Aéreo ✗",   value: Math.max(0, s.aerial_duels_total - s.aerial_duels_won),                        negative: true },
+    { label: "Duelo Aéreo Tot.", value: s.aerial_duels_total,                                                         pct: s.aerial_duels_total > 0 ? (s.aerial_duels_won / s.aerial_duels_total) * 100 : null },
+    { label: "Faltas Com.",     value: s.fouls_committed,                                                             negative: true },
+    { label: "Amarelos",        value: s.yellow_cards,                                                                negative: true },
+    { label: "Vermelhos",       value: s.red_cards,                                                                   negative: true },
     ...(isGoalkeeper ? [
       { label: "Defesas",      value: s.saves,                                      positive: true },
       { label: "Gols Sof.",    value: s.goals_conceded,                             negative: true },
@@ -979,8 +1010,8 @@ function SeasonRow({ row, isGoalkeeper = false }: { row: SeasonRowData; matches?
       {/* Expanded stats panel — 4 category blocks, Live and Manual */}
       {expanded && (
         <tr style={{ borderBottom: `1px solid ${BRD}` }}>
-          <td colSpan={12} style={{ background: "#0D0D0D", padding: "14px 16px" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <td colSpan={12} style={{ background: "#070707", padding: "20px 20px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
               <StatBlock title="Ataque"          titleColor="#E5173F" stats={ataqueStats} />
               <StatBlock title="Passes"          titleColor="#F59E0B" stats={passesStats} />
               <StatBlock title="Dribles / Posse" titleColor="#3B82F6" stats={drilesStats} />
