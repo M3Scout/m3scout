@@ -265,6 +265,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isMountedRef = useRef(true);
   const hasInitializedRef = useRef(false);
   const lastRecoveryRef = useRef<number>(0);
+  const isRevalidatingRef = useRef(false);
+  // Stable ref so the listeners effect doesn't re-run on every triggerRecovery recreation
+  const triggerRecoveryRef = useRef<typeof triggerRecovery | null>(null);
 
   // ============ APPLY RBAC PAYLOAD ============
   const applyPayload = useCallback((payload: RbacPayload, fromCache: boolean) => {
@@ -325,6 +328,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     lastRecoveryRef.current = now;
 
+    // Deduplicate: skip if a background revalidation is already in flight
+    if (isRevalidatingRef.current && reason !== "manual-retry") {
+      console.log("[Auth] Revalidation already in progress, skipping");
+      return false;
+    }
+
     // Check if recovery is needed (based on cache state)
     const userId = user?.id ?? session?.user?.id;
     if (userId && !shouldTriggerRecovery(userId) && reason !== "manual-retry") {
@@ -348,6 +357,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     setDebug({ fetchStage: "start", fetchSource: "fresh" });
+    isRevalidatingRef.current = true;
 
     const result = await recoverAuthAndRbac(reason, {
       onRecovering: () => {
@@ -375,11 +385,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
     });
 
+    isRevalidatingRef.current = false;
+
     if (isMountedRef.current) {
       setRolesLoading(false);
       setPermissionsLoading(false);
       setIsRecovering(false);
-      
+
       // Check if watchdog timed out
       if (!result.success) {
         const failureResult = result as { success: false; reason: string; shouldLogout: boolean; watchdogTimeout?: boolean };
@@ -447,17 +459,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   }, [applyPayload, triggerRecovery]);
 
+  // Keep the ref current so the listener closure always calls the latest version
+  // without causing the effect below to re-run on every RBAC load.
+  useEffect(() => {
+    triggerRecoveryRef.current = triggerRecovery;
+  });
+
   // ============ VISIBILITY/FOCUS RECOVERY ============
+  // Only re-register when user identity changes, NOT on every triggerRecovery recreation.
   useEffect(() => {
     const cleanup = initRecoveryListeners((reason) => {
-      // Only trigger if we have a user
       if (user?.id) {
-        triggerRecovery(reason);
+        triggerRecoveryRef.current?.(reason);
       }
     });
 
     return cleanup;
-  }, [user?.id, triggerRecovery]);
+  }, [user?.id]);
 
   // ============ INIT EFFECT ============
   useEffect(() => {
