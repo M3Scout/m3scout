@@ -7,7 +7,7 @@
 
 import { useEffect } from "react";
 import { Navigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/authContext";
 import { Loader2 } from "lucide-react";
 import { PlayerAccountUnlinked } from "@/components/auth/PlayerAccountUnlinked";
 

@@ -1,4 +1,4 @@
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/authContext";
 import { Button } from "@/components/ui/button";
 import { Clock, LogOut, ArrowLeft, Loader2, CheckCircle2, RefreshCw } from "lucide-react";
 import logoM3 from "@/assets/logo-m3.png";

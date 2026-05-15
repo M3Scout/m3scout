@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "./useAuth";
+import { useAuth } from "./authContext";
 
 // Module-level tracker to detect concurrent useNotifications instances
 // and prevent duplicate realtime subscriptions per user.

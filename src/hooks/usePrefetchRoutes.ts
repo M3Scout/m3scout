@@ -6,7 +6,7 @@
  */
 
 import { useEffect, useRef } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/authContext";
 import { prefetchLiveMatch, prefetchSecondaryRoutes } from "@/lib/routePrefetch";
 
 export function usePrefetchRoutes() {

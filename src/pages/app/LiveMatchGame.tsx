@@ -3,7 +3,7 @@ import { useParams, Navigate, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useLiveMatch, MatchEventType } from "@/hooks/useLiveMatch";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/authContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { HookDebugErrorBoundary, getHookMask, isBlockEnabled, getHookDebugState, setHookDebugState } from "@/components/HookDebugErrorBoundary";

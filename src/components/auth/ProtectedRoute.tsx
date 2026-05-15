@@ -1,5 +1,5 @@
 import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/authContext";
 import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { PermissionsWarningBanner } from "@/components/auth/PermissionsWarningBanner";

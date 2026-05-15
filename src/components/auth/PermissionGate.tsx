@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useRef, useState } from "react";
 import { usePermissions, ModuleKey, ActionKey } from "@/hooks/usePermissions";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/authContext";
 import { AlertTriangle, Lock, RefreshCw, LogOut, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 

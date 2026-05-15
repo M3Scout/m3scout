@@ -1,6 +1,6 @@
 import { useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "./useAuth";
+import { useAuth } from "./authContext";
 
 const LAST_CHECK_KEY = "m3_contract_notify_last_check";
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours

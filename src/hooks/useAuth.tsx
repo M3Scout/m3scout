@@ -18,9 +18,6 @@ import {
 } from "@/lib/authRecovery";
 import { AuthContext, type AuthContextType, type AppRole, type UserPermissions } from "./authContext";
 
-export { useAuth, AuthContext } from "./authContext";
-export type { AppRole, UserPermissions, AuthContextType } from "./authContext";
-
 // Valid roles that grant app access
 const VALID_ROLES: AppRole[] = ["admin", "scout", "editor", "viewer", "player"];
 const isActivePayload = (payload: RbacPayload) =>

@@ -1,4 +1,4 @@
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/authContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Outlet, useLocation } from "react-router-dom";
 import { Radio, Loader2 } from "lucide-react";

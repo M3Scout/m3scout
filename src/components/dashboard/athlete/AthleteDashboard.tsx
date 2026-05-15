@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/authContext";
 import { AdminSkeletonDashboard } from "@/components/admin/AdminSkeleton";
 import { AthleteHero } from "./AthleteHero";
 import { AthleteKPICards } from "./AthleteKPICards";

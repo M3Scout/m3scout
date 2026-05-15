@@ -37,7 +37,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { fetchPlayerMatchStatsRaw } from "@/lib/playerMatchStatsProvider";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/authContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { PlayerGoalsCard } from "@/components/goals/PlayerGoalsCard";
 

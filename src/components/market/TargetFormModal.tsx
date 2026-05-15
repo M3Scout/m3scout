@@ -33,7 +33,7 @@ import { Loader2, Save, X, Plus, User, MapPin, Eye, Target as TargetIcon, LineCh
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Target, TargetStatus, TargetPriority } from "@/types/marketScore";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/authContext";
 
 // Form validation schema
 const formSchema = z.object({
