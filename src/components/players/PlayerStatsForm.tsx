@@ -72,8 +72,10 @@ interface LiveStatGroup {
   season_year: number;
   competition_id: string | null;
   competition_name: string | null;
-  /** match_player_stats IDs, used for bulk deletion. */
+  /** match_player_stats IDs, used for bulk deletion of the stat rows. */
   matchPlayerStatIds: string[];
+  /** Distinct match IDs in this group, used to clean up match_players entries. */
+  matchIds: string[];
   matches: number;
   minutes: number;
   /** How many of the source matches have status "applied". */
@@ -443,6 +445,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
             competition_id: match.competition_id,
             competition_name: comp ? (comp.display_name || comp.name) : null,
             matchPlayerStatIds: [],
+            matchIds: [],
             matches: 0, minutes: 0, appliedCount: 0,
             goals: 0, assists: 0,
             shots: 0, shots_on_target: 0, shots_blocked: 0, offsides: 0,
@@ -460,6 +463,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
         }
         const g = groupMap[key];
         g.matchPlayerStatIds.push(row.id as string);
+        if (!g.matchIds.includes(row.match_id as string)) g.matchIds.push(row.match_id as string);
         if (match.status === "applied") g.appliedCount += 1;
         const mins = minutesMap[row.match_id as string] ?? 0;
         if (mins > 0) g.matches += 1;
@@ -689,41 +693,61 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
 
     const isApplied = group.appliedCount > 0;
     const confirmMsg = isApplied
-      ? `ATENÇÃO: ${group.appliedCount} partida(s) já aplicada(s) serão removidas e os totais do atleta serão recalculados.\n\nRemover ${group.matchPlayerStatIds.length} registro(s) de "${group.competition_name ?? "Sem competição"} ${group.season_year}"?`
-      : `Remover ${group.matchPlayerStatIds.length} registro(s) de "${group.competition_name ?? "Sem competição"} ${group.season_year}"?`;
+      ? `ATENÇÃO: ${group.appliedCount} partida(s) já aplicada(s) serão removidas. O atleta será retirado desses jogos e os totais serão recalculados.\n\nRemover ${group.matchIds.length} partida(s) de "${group.competition_name ?? "Sem competição"} ${group.season_year}"?`
+      : `Remover ${group.matchIds.length} partida(s) de "${group.competition_name ?? "Sem competição"} ${group.season_year}"?`;
     if (!window.confirm(confirmMsg)) return;
 
     setDeletingLive(groupKey);
     try {
-      // 1) Delete the match_player_stats rows
-      const { error } = await supabase
-        .from("match_player_stats")
-        .delete()
-        .in("id", group.matchPlayerStatIds);
-      if (error) throw error;
+      // 1) Delete match_player_stats (the aggregated per-match stat rows)
+      if (group.matchPlayerStatIds.length > 0) {
+        const { error } = await supabase
+          .from("match_player_stats")
+          .delete()
+          .in("id", group.matchPlayerStatIds);
+        if (error) throw error;
+      }
 
-      // 2) If any source matches were "applied", recalculate all derived values
-      //    so ratings, attributes and market value reflect the removal.
+      // 2) Delete match_players entries for this player in those matches.
+      //    This is the authoritative source used by the public stats hook
+      //    (usePlayerMatchStatsBySeasonCompetition) — without these rows the
+      //    season/competition row disappears entirely from the public view.
+      if (group.matchIds.length > 0) {
+        const { error } = await supabase
+          .from("match_players")
+          .delete()
+          .eq("player_id", playerId)
+          .in("match_id", group.matchIds);
+        if (error) throw error;
+      }
+
+      // 3) Recalculate all derived values when any source match was "applied"
       if (isApplied) {
         const [ratingRes, attrRes, marketRes] = await Promise.allSettled([
           supabase.rpc("update_player_auto_rating", { p_player_id: playerId }),
           supabase.rpc("recalculate_player_all_attributes", { p_player_id: playerId }),
           supabase.rpc("recalculate_player_market_value_summary", { p_player_id: playerId }),
         ]);
-        if (ratingRes.status === "rejected") console.warn("[deleteLiveGroup] update_player_auto_rating failed", ratingRes.reason);
-        if (attrRes.status === "rejected")  console.warn("[deleteLiveGroup] recalculate_player_all_attributes failed", attrRes.reason);
-        if (marketRes.status === "rejected") console.warn("[deleteLiveGroup] recalculate_player_market_value_summary failed", marketRes.reason);
+        if (ratingRes.status === "rejected")  console.warn("[deleteLiveGroup] update_player_auto_rating failed", ratingRes.reason);
+        if (attrRes.status === "rejected")    console.warn("[deleteLiveGroup] recalculate_player_all_attributes failed", attrRes.reason);
+        if (marketRes.status === "rejected")  console.warn("[deleteLiveGroup] recalculate_player_market_value_summary failed", marketRes.reason);
       }
 
-      // 3) Invalidate React Query caches so any open tabs refresh automatically
+      // 4) Broad cache invalidation — covers all tabs (public + edit)
       invalidatePlayerSummary(playerId);
+      // Specific player keys
       queryClient.invalidateQueries({ queryKey: ["player-match-stats", playerId] });
       queryClient.invalidateQueries({ queryKey: ["player-match-stats-by-season-comp", playerId] });
       queryClient.invalidateQueries({ queryKey: ["player-stats", playerId] });
       queryClient.invalidateQueries({ queryKey: ["player-stats-overview", playerId] });
       queryClient.invalidateQueries({ queryKey: ["player-rating-history-overview", playerId] });
+      // Broad prefix keys — catch any query that opens from "Visão Geral" / "Estatísticas" tabs
+      queryClient.invalidateQueries({ queryKey: ["player-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["player-live-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["player-details"] });
+      queryClient.invalidateQueries({ queryKey: ["players"] });
 
-      // 4) Remove from local state (instant UI feedback)
+      // 5) Remove from local state (instant UI feedback)
       setLiveStatGroups(prev => prev.filter(g => g.groupKey !== groupKey));
 
       toast.success(
