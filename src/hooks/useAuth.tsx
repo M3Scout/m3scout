@@ -137,47 +137,7 @@ const DEFAULT_PERMISSIONS: UserPermissions = {
 // Cleanup legacy caches on module load
 cleanupLegacyCaches();
 
-// ============ CONTEXT TYPE ============
-interface AuthContextType {
-  user: User | null;
-  session: Session | null;
-  loading: boolean;
-  roles: AppRole[];
-  linkedPlayerId: string | null;
-  isApproved: boolean;
-  rolesLoading: boolean;
-  rolesError: string | null;
-  rolesFromCache: boolean;
-  rolesFetchedAt: number | null;
-  permissions: UserPermissions | null;
-  permissionsLoading: boolean;
-  permissionsError: string | null;
-  isOwner: boolean;
-  userStatus: "active" | "suspended" | null;
-  /** True when recovery is running in background (SWR mode) */
-  isRecovering: boolean;
-  /** True when auth recovery watchdog has timed out */
-  hasAuthTimeout: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, name: string) => Promise<{ error: Error | null }>;
-  signOut: () => Promise<void>;
-  refreshRoles: () => Promise<void>;
-  /** Manual recovery function - exposed for Retry button */
-  triggerRecovery: (reason: RecoveryReason) => Promise<boolean>;
-  hasRole: (role: AppRole) => boolean;
-  isAdmin: boolean;
-  isScout: boolean;
-  isInternal: boolean;
-  isPlayer: boolean;
-  debug: {
-    fetchStage: "idle" | "start" | "success" | "error";
-    fetchSource: "fresh" | "cache" | "background" | null;
-    fetchDurationMs?: number;
-    error?: { code?: string; message?: string };
-  };
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// AuthContext + AuthContextType moved to ./authContext (re-exported above for HMR stability)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   // ============ INSTANT BOOT: Check localStorage synchronously ============
