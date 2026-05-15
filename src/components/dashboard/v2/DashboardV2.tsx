@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/authContext";
 import { useContractNotificationCheck } from "@/hooks/useContractNotificationCheck";
 import { AdminSkeletonDashboard } from "@/components/admin/AdminSkeleton";
 import { AthleteDashboard } from "@/components/dashboard/athlete/AthleteDashboard";

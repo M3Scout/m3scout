@@ -1,5 +1,5 @@
 import { createContext, useContext, ReactNode, useCallback } from "react";
-import { useAuth, UserPermissions } from "@/hooks/useAuth";
+import { useAuth, UserPermissions } from "@/hooks/authContext";
 
 export type ModuleKey = 
   | "app" 
@@ -23,7 +23,7 @@ export type ActionKey =
   | "manage";
 
 // Re-export UserPermissions for convenience
-export type { UserPermissions } from "@/hooks/useAuth";
+export type { UserPermissions } from "@/hooks/authContext";
 
 interface PermissionsContextType {
   permissions: UserPermissions | null;

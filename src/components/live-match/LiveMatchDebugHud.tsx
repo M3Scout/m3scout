@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/authContext";
 import { cn } from "@/lib/utils";
 import { X, Bug } from "lucide-react";
 

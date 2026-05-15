@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, ArrowLeft, Loader2, Mail, Lock, User } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/authContext";
 import { toast } from "sonner";
 import { z } from "zod";
 import logoM3 from "@/assets/logo-m3.png";

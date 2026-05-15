@@ -39,7 +39,7 @@ import { TargetObservationModal } from "./TargetObservationModal";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/authContext";
 import { useTargetMarketScore } from "@/hooks/useTargetMarketScore";
 
 interface TargetWithScore extends Target {

@@ -11,7 +11,7 @@ import {
 import { TrendingUp, TrendingDown, Minus, Loader2, Save, Pencil, Trash2, MoreHorizontal } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/authContext";
 import {
   DropdownMenu,
   DropdownMenuContent,

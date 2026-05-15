@@ -23,7 +23,7 @@ import { Slider } from "@/components/ui/slider";
 import { Loader2, Save, Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/authContext";
 import { format } from "date-fns";
 
 const formSchema = z.object({

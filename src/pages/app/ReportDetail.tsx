@@ -6,7 +6,7 @@ import { RatingStars } from "@/components/players/RatingStars";
 import { ScoreBreakdownDisplay } from "@/components/scouting/ScoreBreakdownDisplay";
 import { DeleteReportDialog } from "@/components/scouting/DeleteReportDialog";
 import { ExportPdfButton } from "@/components/scouting/ExportPdfButton";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/authContext";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { 
   ArrowLeft, 

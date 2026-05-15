@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { DeleteReportDialog } from "@/components/scouting/DeleteReportDialog";
 import { ReportCard, ReportCardSkeleton } from "@/components/scouting/ReportCard";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/authContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { 
   Search, 

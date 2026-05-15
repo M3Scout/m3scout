@@ -24,7 +24,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useState, useEffect, useMemo, memo } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/authContext";
 import { usePermissions, ModuleKey } from "@/hooks/usePermissions";
 import { useSidebar } from "@/hooks/useSidebar";
 import logoM3 from "@/assets/logo-m3.png";

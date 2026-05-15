@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { parseDateSafe, formatDateMediumBR } from "@/lib/dateUtils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/authContext";
 import { ChevronUp, ChevronDown } from "lucide-react";
 
 // ─── Design tokens ───────────────────────────────────────────────────────────

@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { safeArray } from "@/lib/utils";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/authContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { DeletePlayerDialog } from "@/components/players/DeletePlayerDialog";
