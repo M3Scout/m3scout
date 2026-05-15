@@ -75,6 +75,8 @@ interface LiveStatGroup {
   matchPlayerStatIds: string[];
   matches: number;
   minutes: number;
+  /** How many of the source matches have status "applied". */
+  appliedCount: number;
   // All fields use player_stats column naming so ScoutCategoryStats renders them directly
   goals: number;
   assists: number;
@@ -402,8 +404,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
               competitions ( id, name, display_name )
             )
           `)
-          .eq("player_id", playerId)
-          .eq("matches.status", "finished"),
+          .eq("player_id", playerId),
         // Fetch minutes_played from match_players
         supabase
           .from("match_players")
@@ -428,7 +429,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
       // Aggregate match_player_stats by (season_year, competition_id)
       const groupMap: Record<string, LiveStatGroup> = {};
       for (const row of (liveRes.data || []) as any[]) {
-        const match = row.matches as { id: string; season_year: number; competition_id: string | null; status: string; competitions: { id: string; name: string; display_name: string | null } | null } | null;
+        const match = row.matches as { id: string; season_year: number; competition_id: string | null; status: "draft" | "live" | "finished" | "applied"; competitions: { id: string; name: string; display_name: string | null } | null } | null;
         if (!match) continue;
         const key = `${match.season_year}_${match.competition_id ?? "none"}`;
         if (!groupMap[key]) {
@@ -440,7 +441,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
             competition_id: match.competition_id,
             competition_name: comp ? (comp.display_name || comp.name) : null,
             matchPlayerStatIds: [],
-            matches: 0, minutes: 0,
+            matches: 0, minutes: 0, appliedCount: 0,
             goals: 0, assists: 0,
             shots: 0, shots_on_target: 0, shots_blocked: 0, offsides: 0,
             accurate_passes: 0, total_passes: 0, key_passes: 0, chances_created: 0,
@@ -457,6 +458,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
         }
         const g = groupMap[key];
         g.matchPlayerStatIds.push(row.id as string);
+        if (match.status === "applied") g.appliedCount += 1;
         const mins = minutesMap[row.match_id as string] ?? 0;
         if (mins > 0) g.matches += 1;
         g.minutes += mins;
@@ -757,6 +759,19 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
                             <Zap className="w-3 h-3 mr-1" />
                             AO VIVO
                           </Badge>
+                          {group.appliedCount === group.matchPlayerStatIds.length ? (
+                            <Badge variant="outline" className="border-green-600/60 text-green-500 bg-green-500/10 text-[10px]">
+                              Aplicado
+                            </Badge>
+                          ) : group.appliedCount === 0 ? (
+                            <Badge variant="outline" className="border-amber-500/60 text-amber-400 bg-amber-500/10 text-[10px]">
+                              Aguardando
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="border-amber-500/60 text-amber-400 bg-amber-500/10 text-[10px]">
+                              {group.appliedCount}/{group.matchPlayerStatIds.length} Aplicado
+                            </Badge>
+                          )}
                           <Badge variant="outline">{group.season_year}</Badge>
                           <span className="font-medium">{group.competition_name ?? "Sem competição"}</span>
                           <span className="text-sm text-muted-foreground">
