@@ -1,7 +1,6 @@
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef } from "react";
+import { useEffect, useState, ReactNode, useCallback, useRef } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { Database } from "@/integrations/supabase/types";
 import { logAppState } from "@/lib/diagnosticLogger";
 import { hardResetAuthToLogin } from "@/lib/authBootReset";
 import {
@@ -17,8 +16,10 @@ import {
   type RbacPayload,
   type RecoveryReason,
 } from "@/lib/authRecovery";
+import { AuthContext, type AuthContextType, type AppRole, type UserPermissions } from "./authContext";
 
-export type AppRole = Database["public"]["Enums"]["app_role"];
+export { useAuth, AuthContext } from "./authContext";
+export type { AppRole, UserPermissions, AuthContextType } from "./authContext";
 
 // Valid roles that grant app access
 const VALID_ROLES: AppRole[] = ["admin", "scout", "editor", "viewer", "player"];
