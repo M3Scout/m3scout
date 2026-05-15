@@ -2881,6 +2881,14 @@ export type Database = {
         Args: { p_player_id: string }
         Returns: undefined
       }
+      remove_player_live_stats_group: {
+        Args: {
+          p_competition_id?: string
+          p_player_id: string
+          p_season_year: number
+        }
+        Returns: Json
+      }
       resume_live_game: { Args: { p_game_id: string }; Returns: Json }
       set_added_time: {
         Args: { p_added_seconds: number; p_game_id: string }
