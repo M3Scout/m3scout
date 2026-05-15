@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -367,6 +368,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   const isGoalkeeper = playerPosition === "Goleiro" || playerPosition === "GK";
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     fetchData();
@@ -684,18 +686,54 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
   const deleteLiveGroup = async (groupKey: string) => {
     const group = liveStatGroups.find(g => g.groupKey === groupKey);
     if (!group) return;
-    if (!window.confirm(`Remover ${group.matches} partida(s) ao vivo de ${group.competition_name ?? "Sem competição"} (${group.season_year})?`)) return;
+
+    const isApplied = group.appliedCount > 0;
+    const confirmMsg = isApplied
+      ? `ATENÇÃO: ${group.appliedCount} partida(s) já aplicada(s) serão removidas e os totais do atleta serão recalculados.\n\nRemover ${group.matchPlayerStatIds.length} registro(s) de "${group.competition_name ?? "Sem competição"} ${group.season_year}"?`
+      : `Remover ${group.matchPlayerStatIds.length} registro(s) de "${group.competition_name ?? "Sem competição"} ${group.season_year}"?`;
+    if (!window.confirm(confirmMsg)) return;
+
     setDeletingLive(groupKey);
     try {
+      // 1) Delete the match_player_stats rows
       const { error } = await supabase
         .from("match_player_stats")
         .delete()
         .in("id", group.matchPlayerStatIds);
       if (error) throw error;
+
+      // 2) If any source matches were "applied", recalculate all derived values
+      //    so ratings, attributes and market value reflect the removal.
+      if (isApplied) {
+        const [ratingRes, attrRes, marketRes] = await Promise.allSettled([
+          supabase.rpc("update_player_auto_rating", { p_player_id: playerId }),
+          supabase.rpc("recalculate_player_all_attributes", { p_player_id: playerId }),
+          supabase.rpc("recalculate_player_market_value_summary", { p_player_id: playerId }),
+        ]);
+        if (ratingRes.status === "rejected") console.warn("[deleteLiveGroup] update_player_auto_rating failed", ratingRes.reason);
+        if (attrRes.status === "rejected")  console.warn("[deleteLiveGroup] recalculate_player_all_attributes failed", attrRes.reason);
+        if (marketRes.status === "rejected") console.warn("[deleteLiveGroup] recalculate_player_market_value_summary failed", marketRes.reason);
+      }
+
+      // 3) Invalidate React Query caches so any open tabs refresh automatically
+      invalidatePlayerSummary(playerId);
+      queryClient.invalidateQueries({ queryKey: ["player-match-stats", playerId] });
+      queryClient.invalidateQueries({ queryKey: ["player-match-stats-by-season-comp", playerId] });
+      queryClient.invalidateQueries({ queryKey: ["player-stats", playerId] });
+      queryClient.invalidateQueries({ queryKey: ["player-stats-overview", playerId] });
+      queryClient.invalidateQueries({ queryKey: ["player-rating-history-overview", playerId] });
+
+      // 4) Remove from local state (instant UI feedback)
       setLiveStatGroups(prev => prev.filter(g => g.groupKey !== groupKey));
-      toast.success("Estatísticas ao vivo removidas");
+
+      toast.success(
+        isApplied
+          ? "Estatísticas removidas e totais recalculados"
+          : "Estatísticas ao vivo removidas",
+      );
     } catch (error: any) {
       toast.error("Erro ao remover estatísticas ao vivo");
+      console.error("[deleteLiveGroup]", error);
     } finally {
       setDeletingLive(null);
     }
