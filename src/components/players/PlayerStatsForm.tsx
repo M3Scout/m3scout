@@ -755,9 +755,14 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
       queryClient.invalidateQueries({ queryKey: ["player-rating-history-overview", playerId] });
       // Broad prefix keys — catch any query that opens from "Visão Geral" / "Estatísticas" tabs
       queryClient.invalidateQueries({ queryKey: ["player-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["player_stats"] });
       queryClient.invalidateQueries({ queryKey: ["player-live-stats"] });
       queryClient.invalidateQueries({ queryKey: ["player-details"] });
       queryClient.invalidateQueries({ queryKey: ["players"] });
+      queryClient.invalidateQueries({ queryKey: ["player", playerId] });
+      queryClient.invalidateQueries({ queryKey: ["unified-player-stats", playerId] });
+      queryClient.invalidateQueries({ queryKey: ["unified-competitions", playerId] });
+      queryClient.invalidateQueries({ queryKey: ["player-season-stats", playerId] });
 
       // 5) Remove from local state (instant UI feedback)
       setLiveStatGroups(prev => prev.filter(g => g.groupKey !== groupKey));
