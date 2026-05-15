@@ -708,14 +708,13 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
         if (error) throw error;
       }
 
-      // 2) Delete match_players entries for this player in those matches.
-      //    This is the authoritative source used by the public stats hook
-      //    (usePlayerMatchStatsBySeasonCompetition) — without these rows the
-      //    season/competition row disappears entirely from the public view.
+      // 2) Soft-delete match_players entries for this player in those matches.
+      //    Hard DELETE is blocked by RLS; setting is_removed=true achieves the
+      //    same effect because fetchPlayerMatchStatsRaw filters .neq("is_removed", true).
       if (group.matchIds.length > 0) {
         const { error } = await supabase
           .from("match_players")
-          .delete()
+          .update({ is_removed: true, removed_at: new Date().toISOString() })
           .eq("player_id", playerId)
           .in("match_id", group.matchIds);
         if (error) throw error;
