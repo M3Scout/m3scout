@@ -186,18 +186,24 @@ const AppPlayers = () => {
       // Normalize to array (never let `players` become undefined/null)
       const safePlayersData = Array.isArray(playersData) ? playersData : [];
 
-      // Fetch scores for all players (from scouting reports) - non-blocking
-      // We need individual scores with dates to calculate trends
+      // Fetch scores for all players — limited to last 12 months to prevent
+      // unbounded table scans as the database grows.
       const scoresByPlayer: Record<string, { score: number; date: string }[]> = {};
       try {
+        const cutoff = new Date();
+        cutoff.setFullYear(cutoff.getFullYear() - 1);
+        const cutoffDate = cutoff.toISOString().slice(0, 10); // "YYYY-MM-DD"
+
         const { data: scoresData } = await supabase
           .from("scouting_reports")
           .select("player_id, final_score, match_date")
           .is("deleted_at", null)
+          .gte("match_date", cutoffDate)
           .order("match_date", { ascending: true });
 
         if (Array.isArray(scoresData)) {
           scoresData.forEach((report) => {
+            if (report.final_score === null || report.final_score === undefined) return;
             if (!scoresByPlayer[report.player_id]) {
               scoresByPlayer[report.player_id] = [];
             }
@@ -220,7 +226,7 @@ const AppPlayers = () => {
         let scoreTrend: number | null = null;
 
         if (Array.isArray(scores) && scores.length > 0) {
-          // Calculate average
+          // All entries already have valid scores (nulls filtered above)
           avgScore = scores.reduce((a, b) => a + b.score, 0) / scores.length;
           
           // Calculate trend: compare last score with previous score (or average of all previous)

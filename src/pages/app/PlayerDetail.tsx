@@ -331,11 +331,11 @@ const PlayerDetail = () => {
     fetchData();
   }, [id]);
 
-  // KPI: average scout note
+  // KPI: average scout note — only valid (non-null) scores count
   const avgScoutNote = useMemo(() => {
-    if (!reports.length) return null;
-    const avg = reports.reduce((s, r) => s + (r.final_score ?? 0), 0) / reports.length;
-    return avg;
+    const valid = reports.filter(r => r.final_score !== null && r.final_score !== undefined);
+    if (!valid.length) return null;
+    return valid.reduce((s, r) => s + r.final_score!, 0) / valid.length;
   }, [reports]);
 
   // Season computed
