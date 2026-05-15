@@ -379,7 +379,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [statsRes, compRes, liveRes, minutesRes] = await Promise.all([
+      const [statsRes, compRes, liveRes, minutesRes, livePlayersRes] = await Promise.all([
         supabase
           .from("player_stats")
           .select("*")
@@ -414,12 +414,27 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
           .from("match_players")
           .select("match_id, minutes_played")
           .eq("player_id", playerId),
+        // Fetch LIVE participation rows too. A player can still count in public stats
+        // even after the match_player_stats row was deleted, because appearances/minutes
+        // are derived from match_players.
+        supabase
+          .from("match_players")
+          .select(`
+            id, match_id, minutes_played, is_removed,
+            matches!inner (
+              id, season_year, competition_id, status,
+              competitions ( id, name, display_name )
+            )
+          `)
+          .eq("player_id", playerId)
+          .neq("is_removed", true),
       ]);
 
       if (statsRes.error) throw statsRes.error;
       if (compRes.error) throw compRes.error;
       // Live stats errors are non-fatal — show what we have
       if (liveRes.error) console.warn("[PlayerStatsForm] live stats fetch error", liveRes.error);
+      if (livePlayersRes.error) console.warn("[PlayerStatsForm] live players fetch error", livePlayersRes.error);
 
       setStats(statsRes.data || []);
       setCompetitions(compRes.data || []);
@@ -430,11 +445,18 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
         minutesMap[mp.match_id] = mp.minutes_played ?? 0;
       }
 
-      // Aggregate match_player_stats by (season_year, competition_id)
-      const groupMap: Record<string, LiveStatGroup> = {};
+      const statsByMatchId: Record<string, any> = {};
       for (const row of (liveRes.data || []) as any[]) {
+        statsByMatchId[row.match_id as string] = row;
+      }
+
+      // Aggregate LIVE rows by (season_year, competition_id). Use match_players as
+      // the source of truth for visibility because appearances/minutes live there.
+      const groupMap: Record<string, LiveStatGroup> = {};
+      for (const row of (livePlayersRes.data || []) as any[]) {
         const match = row.matches as { id: string; season_year: number; competition_id: string | null; status: "draft" | "live" | "finished" | "applied"; competitions: { id: string; name: string; display_name: string | null } | null } | null;
         if (!match) continue;
+        const statRow = (statsByMatchId[row.match_id as string] ?? {}) as any;
         const key = `${match.season_year}_${match.competition_id ?? "none"}`;
         if (!groupMap[key]) {
           const comp = match.competitions;
@@ -462,50 +484,50 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
           };
         }
         const g = groupMap[key];
-        g.matchPlayerStatIds.push(row.id as string);
+        if (statRow.id) g.matchPlayerStatIds.push(statRow.id as string);
         if (!g.matchIds.includes(row.match_id as string)) g.matchIds.push(row.match_id as string);
         if (match.status === "applied") g.appliedCount += 1;
-        const mins = minutesMap[row.match_id as string] ?? 0;
+        const mins = row.minutes_played ?? minutesMap[row.match_id as string] ?? 0;
         if (mins > 0) g.matches += 1;
         g.minutes += mins;
-        g.goals += row.goals ?? 0;
-        g.assists += row.assists ?? 0;
+        g.goals += statRow.goals ?? 0;
+        g.assists += statRow.assists ?? 0;
         // shots in match_player_stats = off-target only; total = off + on_target + blocked
-        const offTarget = row.shots ?? 0;
-        const onTarget = row.shots_on_target ?? 0;
-        const blocked = row.shots_blocked ?? 0;
+        const offTarget = statRow.shots ?? 0;
+        const onTarget = statRow.shots_on_target ?? 0;
+        const blocked = statRow.shots_blocked ?? 0;
         g.shots += offTarget + onTarget + blocked;
         g.shots_on_target += onTarget;
         g.shots_blocked += blocked;
-        g.offsides += row.offsides ?? 0;
-        g.accurate_passes += row.passes_completed ?? 0;
-        g.total_passes += row.passes_total ?? 0;
-        g.key_passes += row.key_passes ?? 0;
-        g.chances_created += row.chances_created ?? 0;
-        g.crosses_success += row.crosses_success ?? 0;
-        g.crosses_failed += row.crosses_failed ?? 0;
-        g.successful_dribbles += row.dribbles_success ?? 0;
-        g.total_dribbles += row.dribbles_total ?? 0;
-        g.fouls_committed += row.fouls_committed ?? 0;
-        g.fouls_drawn += row.fouls_suffered ?? 0;
-        g.possession_lost += row.possession_lost ?? 0;
-        g.tackles += row.tackles ?? 0;
-        g.interceptions += row.interceptions ?? 0;
-        g.clearances += row.clearances ?? 0;
-        g.recoveries += row.recoveries ?? 0;
-        g.times_dribbled_past += row.was_dribbled ?? 0;
+        g.offsides += statRow.offsides ?? 0;
+        g.accurate_passes += statRow.passes_completed ?? 0;
+        g.total_passes += statRow.passes_total ?? 0;
+        g.key_passes += statRow.key_passes ?? 0;
+        g.chances_created += statRow.chances_created ?? 0;
+        g.crosses_success += statRow.crosses_success ?? 0;
+        g.crosses_failed += statRow.crosses_failed ?? 0;
+        g.successful_dribbles += statRow.dribbles_success ?? 0;
+        g.total_dribbles += statRow.dribbles_total ?? 0;
+        g.fouls_committed += statRow.fouls_committed ?? 0;
+        g.fouls_drawn += statRow.fouls_suffered ?? 0;
+        g.possession_lost += statRow.possession_lost ?? 0;
+        g.tackles += statRow.tackles ?? 0;
+        g.interceptions += statRow.interceptions ?? 0;
+        g.clearances += statRow.clearances ?? 0;
+        g.recoveries += statRow.recoveries ?? 0;
+        g.times_dribbled_past += statRow.was_dribbled ?? 0;
         // duels_won/total in match_player_stats = all duels (ground + aerial combined)
-        g.duels_won += row.duels_won ?? 0;
-        g.total_duels += row.duels_total ?? 0;
-        g.aerial_duels_won += row.aerial_duels_won ?? 0;
-        g.aerial_duels_total += row.aerial_duels_total ?? 0;
+        g.duels_won += statRow.duels_won ?? 0;
+        g.total_duels += statRow.duels_total ?? 0;
+        g.aerial_duels_won += statRow.aerial_duels_won ?? 0;
+        g.aerial_duels_total += statRow.aerial_duels_total ?? 0;
         // Ground duels derived as total − aerial (best approximation available)
         g.ground_duels_won = Math.max(0, g.duels_won - g.aerial_duels_won);
         g.ground_duels_total = Math.max(0, g.total_duels - g.aerial_duels_total);
-        g.yellow_cards += row.yellow_cards ?? 0;
-        g.red_cards += row.red_cards ?? 0;
-        g.saves += row.saves ?? 0;
-        g.goals_conceded += row.goals_conceded ?? 0;
+        g.yellow_cards += statRow.yellow_cards ?? 0;
+        g.red_cards += statRow.red_cards ?? 0;
+        g.saves += statRow.saves ?? 0;
+        g.goals_conceded += statRow.goals_conceded ?? 0;
       }
 
       setLiveStatGroups(
@@ -699,41 +721,20 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
 
     setDeletingLive(groupKey);
     try {
-      // 1) Delete match_player_stats (the aggregated per-match stat rows)
-      if (group.matchPlayerStatIds.length > 0) {
-        const { data: deletedStats, error } = await supabase
-          .from("match_player_stats")
-          .delete()
-          .in("id", group.matchPlayerStatIds)
-          .select("id");
-        if (error) throw error;
-        console.log(`[deleteLiveGroup] deleted ${deletedStats?.length ?? 0}/${group.matchPlayerStatIds.length} match_player_stats`);
-      }
+      // 1) Atomic backend cleanup: remove LIVE stat rows, soft-remove match_players,
+      // and delete stale player_stats fallback rows for this competition/season.
+      const { data: cleanupResult, error: cleanupError } = await supabase.rpc(
+        "remove_player_live_stats_group" as any,
+        {
+          p_player_id: playerId,
+          p_season_year: group.season_year,
+          p_competition_id: group.competition_id,
+        },
+      );
+      if (cleanupError) throw cleanupError;
+      console.log("[deleteLiveGroup] cleanup result", cleanupResult);
 
-      // 2) Soft-delete match_players entries for this player in those matches.
-      //    Fetch IDs first, then update by PK — mirrors the pattern used in
-      //    LiveMatchGame (updatePlayer) which is known to pass RLS.
-      if (group.matchIds.length > 0) {
-        const { data: mpRows, error: mpFetchErr } = await supabase
-          .from("match_players")
-          .select("id")
-          .eq("player_id", playerId)
-          .in("match_id", group.matchIds);
-        if (mpFetchErr) throw mpFetchErr;
-
-        const mpIds = (mpRows ?? []).map((r) => r.id);
-        console.log(`[deleteLiveGroup] found ${mpIds.length} match_players to soft-delete`);
-
-        if (mpIds.length > 0) {
-          const { error: mpUpdateErr } = await supabase
-            .from("match_players")
-            .update({ is_removed: true, removed_at: new Date().toISOString() })
-            .in("id", mpIds);
-          if (mpUpdateErr) throw mpUpdateErr;
-        }
-      }
-
-      // 3) Recalculate all derived values when any source match was "applied"
+      // 2) Recalculate all derived values when any source match was "applied"
       if (isApplied) {
         const [ratingRes, attrRes, marketRes] = await Promise.allSettled([
           supabase.rpc("update_player_auto_rating", { p_player_id: playerId }),
