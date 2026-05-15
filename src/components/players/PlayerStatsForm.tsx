@@ -517,17 +517,17 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
         g.recoveries += statRow.recoveries ?? 0;
         g.times_dribbled_past += statRow.was_dribbled ?? 0;
         // duels_won/total in match_player_stats = all duels (ground + aerial combined)
-        g.duels_won += row.duels_won ?? 0;
-        g.total_duels += row.duels_total ?? 0;
-        g.aerial_duels_won += row.aerial_duels_won ?? 0;
-        g.aerial_duels_total += row.aerial_duels_total ?? 0;
+        g.duels_won += statRow.duels_won ?? 0;
+        g.total_duels += statRow.duels_total ?? 0;
+        g.aerial_duels_won += statRow.aerial_duels_won ?? 0;
+        g.aerial_duels_total += statRow.aerial_duels_total ?? 0;
         // Ground duels derived as total − aerial (best approximation available)
         g.ground_duels_won = Math.max(0, g.duels_won - g.aerial_duels_won);
         g.ground_duels_total = Math.max(0, g.total_duels - g.aerial_duels_total);
-        g.yellow_cards += row.yellow_cards ?? 0;
-        g.red_cards += row.red_cards ?? 0;
-        g.saves += row.saves ?? 0;
-        g.goals_conceded += row.goals_conceded ?? 0;
+        g.yellow_cards += statRow.yellow_cards ?? 0;
+        g.red_cards += statRow.red_cards ?? 0;
+        g.saves += statRow.saves ?? 0;
+        g.goals_conceded += statRow.goals_conceded ?? 0;
       }
 
       setLiveStatGroups(
