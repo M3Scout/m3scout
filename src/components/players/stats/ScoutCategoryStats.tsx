@@ -86,9 +86,9 @@ export const OUTFIELD_SCOUT_CATEGORIES: ScoutCategory[] = [
       { key: "assists", label: "Assist.", highlight: true },
       { key: "key_passes", label: "Passes Dec." },
       { key: "chances_created", label: "Chances" },
-      { key: "accurate_passes", label: "Passes ✓", successOf: "total_passes" },
-      { key: "total_passes", label: "Passes Tot." },
-      { key: "passes_failed_derived", label: "Passes ✗" },
+      { key: "accurate_passes", label: "Passes ✓", successOfFailed: "total_passes" },
+      { key: "total_passes", label: "Passes ✗" },
+      { key: "passes_total_derived", label: "Passes Tot." },
       { key: "crosses_success", label: "Cruzam. ✓", successOfFailed: "crosses_failed" },
       { key: "crosses_failed", label: "Cruzam. ✗" },
     ],
@@ -99,9 +99,9 @@ export const OUTFIELD_SCOUT_CATEGORIES: ScoutCategory[] = [
     color: "text-cyan-400",
     bgColor: "bg-cyan-500/10 border-cyan-500/20",
     stats: [
-      { key: "successful_dribbles", label: "Dribles ✓", successOf: "total_dribbles" },
-      { key: "total_dribbles", label: "Dribles Tot." },
-      { key: "dribbles_failed_derived", label: "Dribles ✗" },
+      { key: "successful_dribbles", label: "Dribles ✓", successOfFailed: "total_dribbles" },
+      { key: "total_dribbles", label: "Dribles ✗" },
+      { key: "dribbles_total_derived", label: "Dribles Tot." },
       { key: "fouls_drawn", label: "Faltas Sof." },
       { key: "possession_lost", label: "Bolas Perd." },
     ],
@@ -117,12 +117,12 @@ export const OUTFIELD_SCOUT_CATEGORIES: ScoutCategory[] = [
       { key: "clearances", label: "Cortes" },
       { key: "recoveries", label: "Recup." },
       { key: "times_dribbled_past", label: "Driblado" },
-      { key: "ground_duels_won", label: "Duelo Chão ✓", successOf: "ground_duels_total" },
-      { key: "ground_duels_total", label: "Duelo Chão Tot." },
-      { key: "ground_duels_lost_derived", label: "Duelo Chão ✗" },
-      { key: "aerial_duels_won", label: "Duelo Aéreo ✓", successOf: "aerial_duels_total" },
-      { key: "aerial_duels_total", label: "Duelo Aéreo Tot." },
-      { key: "aerial_duels_lost_derived", label: "Duelo Aéreo ✗" },
+      { key: "ground_duels_won", label: "Duelo Chão ✓", successOfFailed: "ground_duels_total" },
+      { key: "ground_duels_total", label: "Duelo Chão ✗" },
+      { key: "ground_duels_total_derived", label: "Duelo Chão Tot." },
+      { key: "aerial_duels_won", label: "Duelo Aéreo ✓", successOfFailed: "aerial_duels_total" },
+      { key: "aerial_duels_total", label: "Duelo Aéreo ✗" },
+      { key: "aerial_duels_total_derived", label: "Duelo Aéreo Tot." },
       { key: "fouls_committed", label: "Faltas Com." },
       { key: "yellow_cards", label: "Amarelos" },
       { key: "red_cards", label: "Vermelhos" },
@@ -163,10 +163,12 @@ export const GOALKEEPER_SCOUT_CATEGORIES: ScoutCategory[] = [
     color: "text-amber-400",
     bgColor: "bg-amber-500/10 border-amber-500/20",
     stats: [
-      { key: "accurate_passes", label: "Passes ✓", successOf: "total_passes" },
-      { key: "total_passes", label: "Passes Tot." },
-      { key: "long_passes_accurate", label: "Lanç. ✓", successOf: "long_passes_total" },
-      { key: "long_passes_total", label: "Lanç. Tot." },
+      { key: "accurate_passes", label: "Passes ✓", successOfFailed: "total_passes" },
+      { key: "total_passes", label: "Passes ✗" },
+      { key: "passes_total_derived", label: "Passes Tot." },
+      { key: "long_passes_accurate", label: "Lanç. ✓", successOfFailed: "long_passes_total" },
+      { key: "long_passes_total", label: "Lanç. ✗" },
+      { key: "long_passes_total_derived", label: "Lanç. Tot." },
     ],
   },
   {
@@ -187,26 +189,41 @@ export const GOALKEEPER_SCOUT_CATEGORIES: ScoutCategory[] = [
  * ============================================================ */
 
 /**
- * Mapeamento de chaves "virtuais" (não existem no banco) para o par
- * success/total real. Quando o usuário edita esses cards, atualizamos
- * o total subjacente: total = sum(siblings) + novoValor.
+ * Mapeamento de chaves "virtuais" para pares onde a DB armazena um
+ * "total real" e o errado é derivado por subtração.
  *
- * `successKey` pode ser uma única chave (par success/failed) ou várias
- * (ex: shots_off = shots - shots_on_target - shots_blocked).
+ * IMPORTANTE: usar apenas quando a coluna `totalKey` armazena o total
+ * verdadeiro (sucesso + falha). NÃO usar para pares onde a coluna
+ * "total" da DB armazena apenas as falhas (ex: total_passes, total_dribbles,
+ * aerial_duels_total, ground_duels_total) — esses pares usam DERIVED_SUM_MAP.
  */
 const DERIVED_FAILED_MAP: Record<
   string,
   { successKey: string | string[]; totalKey: string }
 > = {
-  passes_failed_derived: { successKey: "accurate_passes", totalKey: "total_passes" },
-  dribbles_failed_derived: { successKey: "successful_dribbles", totalKey: "total_dribbles" },
-  ground_duels_lost_derived: { successKey: "ground_duels_won", totalKey: "ground_duels_total" },
-  aerial_duels_lost_derived: { successKey: "aerial_duels_won", totalKey: "aerial_duels_total" },
-  // Finalizações Fora = Total − No Gol − Bloqueadas (mesmo critério do Live Match)
+  // Finalizações Fora = Total − No Gol − Bloqueadas
+  // `shots` na DB armazena o total real de finalizações (única exceção ao padrão)
   shots_off_target_derived: {
     successKey: ["shots_on_target", "shots_blocked"],
     totalKey: "shots",
   },
+};
+
+/**
+ * Mapeamento de chaves "virtuais" cujo valor é a SOMA dos componentes.
+ * Usado para exibir o total real de pares onde cada lado é armazenado
+ * independentemente na DB.
+ *
+ * Contexto: nas colunas `total_passes`, `total_dribbles`, `ground_duels_total`
+ * e `aerial_duels_total` a DB armazena a contagem de FALHAS/DERROTAS — não o
+ * total verdadeiro. O total real é success + falha, calculado aqui.
+ */
+const DERIVED_SUM_MAP: Record<string, string[]> = {
+  passes_total_derived:        ["accurate_passes",      "total_passes"],
+  dribbles_total_derived:      ["successful_dribbles",  "total_dribbles"],
+  ground_duels_total_derived:  ["ground_duels_won",     "ground_duels_total"],
+  aerial_duels_total_derived:  ["aerial_duels_won",     "aerial_duels_total"],
+  long_passes_total_derived:   ["long_passes_accurate", "long_passes_total"],
 };
 
 function sumKeys(values: StatValues, keys: string | string[]): number {
@@ -220,13 +237,17 @@ function getValue(values: StatValues, key: string): number {
   return Math.max(0, raw);
 }
 
-/** Resolve o valor exibido — para chaves derivadas, computa total - sum(siblings). */
+/** Resolve o valor exibido.
+ *  - DERIVED_SUM_MAP: soma dos componentes (total real = sucesso + falha)
+ *  - DERIVED_FAILED_MAP: total − soma dos irmãos (ex: finalizações fora)
+ *  - demais: valor bruto da DB
+ */
 function resolveDisplayValue(values: StatValues, key: string): number {
+  const sumParts = DERIVED_SUM_MAP[key];
+  if (sumParts) return sumKeys(values, sumParts);
   const derived = DERIVED_FAILED_MAP[key];
   if (derived) {
-    const siblings = sumKeys(values, derived.successKey);
-    const total = getValue(values, derived.totalKey);
-    return Math.max(0, total - siblings);
+    return Math.max(0, getValue(values, derived.totalKey) - sumKeys(values, derived.successKey));
   }
   return getValue(values, key);
 }
@@ -418,12 +439,13 @@ export function ScoutCategoryStats({
                 pct = calcPct(value, value + failed);
               }
 
-              const isDerived = stat.key in DERIVED_FAILED_MAP;
-              const limitKey = isDerived
-                ? DERIVED_FAILED_MAP[stat.key].totalKey
-                : stat.key;
+              const isFailedDerived = stat.key in DERIVED_FAILED_MAP;
+              const isSumDerived = stat.key in DERIVED_SUM_MAP;
+              const isDerived = isFailedDerived || isSumDerived;
+
+              const limitKey = isFailedDerived ? DERIVED_FAILED_MAP[stat.key].totalKey : stat.key;
               const { max: statMax } = getStatLimit(limitKey);
-              const atMax = isDerived
+              const atMax = isFailedDerived
                 ? value + sumKeys(values, DERIVED_FAILED_MAP[stat.key].successKey) >= statMax
                 : value >= statMax;
 
@@ -441,9 +463,11 @@ export function ScoutCategoryStats({
                   title={
                     isIncoherent
                       ? "Total incoerente: menor que a soma dos acertos. Use 'Recalcular totais'."
-                      : isDerived
-                        ? "Calculado automaticamente a partir do total e dos acertos"
-                        : undefined
+                      : isSumDerived
+                        ? "Total calculado automaticamente: certos + errados"
+                        : isFailedDerived
+                          ? "Calculado automaticamente a partir do total e dos acertos"
+                          : undefined
                   }
                 >
                   <div className="flex items-baseline justify-between gap-1">
@@ -457,7 +481,7 @@ export function ScoutCategoryStats({
                     )}
                   </div>
 
-                  {isEdit ? (
+                  {isEdit && !isSumDerived ? (
                     <div className="flex items-center justify-between gap-1">
                       <Button
                         type="button"
