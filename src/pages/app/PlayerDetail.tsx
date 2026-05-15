@@ -213,6 +213,14 @@ function getMarketScoreExplanation(score: number, confidence: number, sample: nu
   return "Score consistente com perfil de mercado. Dados suficientes para avaliação confiável do valor do atleta.";
 }
 
+// ─── Module-level constants ───────────────────────────────────────────────────
+// Shared between the query .limit(), reliability math, and the list render so
+// they can never drift out of sync with each other.
+const RECENT_REPORTS_LIMIT = 5;
+// Computed once at module load — avoids a per-render Date allocation and the
+// edge-case glitch if the app is open across midnight on New Year's Eve.
+const CURRENT_YEAR = new Date().getFullYear();
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 const PlayerDetail = () => {
@@ -235,8 +243,6 @@ const PlayerDetail = () => {
   const canEditPlayer = can("players", "edit");
   const canEdit = canEditPlayer;
   const canCreateReport = can("reports", "create");
-
-  const CURRENT_YEAR = new Date().getFullYear();
 
   // Live match stats for current season
   const { totals: liveTotals, isLoading: liveStatsLoading } = usePlayerMatchStats({
@@ -321,7 +327,7 @@ const PlayerDetail = () => {
           .select("id, match_date, final_score, rating, competition:competitions(name)")
           .eq("player_id", id)
           .order("match_date", { ascending: false })
-          .limit(5),
+          .limit(RECENT_REPORTS_LIMIT),
       ]);
       const row = Array.isArray(playerRes.data) ? playerRes.data[0] ?? null : null;
       if (row) setPlayer(row as Player);
@@ -363,7 +369,7 @@ const PlayerDetail = () => {
       : null;
 
   // Reliability
-  const reliabilityPct = Math.min(100, Math.round((reports.length / 5) * 100));
+  const reliabilityPct = Math.min(100, Math.round((reports.length / RECENT_REPORTS_LIMIT) * 100));
   const reliabilityColor = reliabilityPct > 70 ? T.green : reliabilityPct >= 50 ? T.amber : T.accent;
   const reliabilityLabel = reliabilityPct > 70 ? "ALTA" : reliabilityPct >= 50 ? "MÉDIA" : "BAIXA";
 
@@ -1041,12 +1047,24 @@ const PlayerDetail = () => {
 
               {/* Recent Reports */}
               <section className={`border ${T.border} p-5`}>
-                <SectionTitle>RELATÓRIOS RECENTES</SectionTitle>
+                <div className="flex items-start justify-between">
+                  <SectionTitle>RELATÓRIOS RECENTES</SectionTitle>
+                  {avgScoutNote !== null && (
+                    <div className="text-right">
+                      <p className="font-jetbrains font-bold text-[18px]" style={{ color: avgScoutNote > 70 ? T.green : avgScoutNote >= 50 ? T.amber : T.accent }}>
+                        {avgScoutNote.toFixed(1)}
+                      </p>
+                      <p className="font-jetbrains text-[9px] tracking-wider uppercase" style={{ color: "#6B6560" }}>
+                        Média (últimos 5 jogos)
+                      </p>
+                    </div>
+                  )}
+                </div>
                 {reports.length === 0 ? (
                   <p className="font-barlow text-[11px] text-[#6B6560]">Nenhum relatório encontrado.</p>
                 ) : (
                   <ul className="space-y-2">
-                    {reports.slice(0, 5).map((r) => {
+                    {reports.slice(0, RECENT_REPORTS_LIMIT).map((r) => {
                       const score = r.final_score ?? 0;
                       const scoreColor = score > 70 ? T.green : score >= 50 ? T.amber : "#F2EDE4";
                       return (

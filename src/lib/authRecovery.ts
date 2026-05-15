@@ -44,9 +44,23 @@ export type RecoveryReason =
   | "token-refresh"
   | "error-recovery";
 
-export type RecoveryResult = 
+export type RecoveryResult =
   | { success: true; payload: RbacPayload }
   | { success: false; reason: string; shouldLogout: boolean; watchdogTimeout?: boolean };
+
+/** Shape returned by the `get_user_rbac` RPC function. */
+interface RbacRpcResponse {
+  userId: string;
+  roles: string[];
+  isAdmin: boolean;
+  isPlayer: boolean;
+  isOwner: boolean;
+  linkedPlayerId: string | null;
+  userStatus: string | null;
+  permissions: Record<string, boolean> | null;
+  fetchedAt: number;
+  ttlSeconds: number;
+}
 
 // ============ CONFIGURATION ============
 const RBAC_CACHE_KEY = "m3_rbac_v3";
@@ -271,28 +285,28 @@ async function fetchRbacRaw(
     return null;
   }
 
-  const rbacData = data as unknown as {
-    userId: string;
-    roles: string[];
-    isAdmin: boolean;
-    isPlayer: boolean;
-    isOwner: boolean;
-    linkedPlayerId: string | null;
-    userStatus: string | null;
-    permissions: Record<string, boolean> | null;
-    fetchedAt: number;
-    ttlSeconds: number;
-  };
+  const rbacData = data as unknown as RbacRpcResponse;
+
+  // Guard against schema drift: required fields must be present and typed correctly.
+  if (
+    typeof rbacData.userId !== "string" ||
+    !Array.isArray(rbacData.roles) ||
+    typeof rbacData.fetchedAt !== "number" ||
+    typeof rbacData.ttlSeconds !== "number"
+  ) {
+    console.error("[AuthRecovery] RPC response malformed — unexpected shape", rbacData);
+    return null;
+  }
 
   const payload: RbacPayload = {
     userId: rbacData.userId,
-    roles: rbacData.roles || [],
-    isAdmin: rbacData.isAdmin,
-    isPlayer: rbacData.isPlayer,
-    isOwner: rbacData.isOwner,
-    linkedPlayerId: rbacData.linkedPlayerId,
+    roles: rbacData.roles,
+    isAdmin: rbacData.isAdmin ?? false,
+    isPlayer: rbacData.isPlayer ?? false,
+    isOwner: rbacData.isOwner ?? false,
+    linkedPlayerId: rbacData.linkedPlayerId ?? null,
     userStatus: (rbacData.userStatus as "active" | "suspended") ?? null,
-    permissions: rbacData.permissions,
+    permissions: rbacData.permissions ?? null,
     fetchedAt: rbacData.fetchedAt,
     expiresAt: rbacData.fetchedAt + Math.min(rbacData.ttlSeconds * 1000, RBAC_CACHE_TTL_MS),
   };
