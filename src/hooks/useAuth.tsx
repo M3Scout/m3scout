@@ -26,38 +26,7 @@ const VALID_ROLES: AppRole[] = ["admin", "scout", "editor", "viewer", "player"];
 const isActivePayload = (payload: RbacPayload) =>
   payload.userStatus === "active" && payload.roles.some((role) => VALID_ROLES.includes(role as AppRole));
 
-// ============ PERMISSIONS TYPES ============
-export interface UserPermissions {
-  app_view: boolean;
-  players_view: boolean;
-  players_create: boolean;
-  players_edit: boolean;
-  players_delete: boolean;
-  players_export: boolean;
-  compare_view: boolean;
-  reports_view: boolean;
-  reports_create: boolean;
-  reports_edit: boolean;
-  reports_delete: boolean;
-  reports_export: boolean;
-  live_match_view: boolean;
-  live_match_log: boolean;
-  competitions_view: boolean;
-  competitions_create: boolean;
-  competitions_edit: boolean;
-  competitions_delete: boolean;
-  news_view: boolean;
-  news_create: boolean;
-  news_edit: boolean;
-  news_delete: boolean;
-  news_publish: boolean;
-  leads_view: boolean;
-  leads_create: boolean;
-  leads_edit: boolean;
-  leads_delete: boolean;
-  leads_export: boolean;
-  users_manage: boolean;
-}
+// PERMISSIONS TYPES re-exported from authContext
 
 // Admin gets everything
 const ADMIN_PERMISSIONS: UserPermissions = {
