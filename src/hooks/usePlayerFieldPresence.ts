@@ -23,7 +23,7 @@ export function usePlayerFieldPresence(matchId?: string) {
   return useQuery({
     queryKey: ["player-field-presence", matchId],
     enabled: !!matchId,
-    staleTime: 0,
+    staleTime: 30 * 1000,
     queryFn: async () => {
       if (!matchId) return [] as PlayerFieldPresenceRecord[];
 

@@ -304,9 +304,7 @@ export function usePlayerMatchStats({
       };
     },
     enabled: enabled && !!playerId,
-    staleTime: 0, // Always refetch to ensure consistency with Match Review ratings
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
+    staleTime: 5 * 60 * 1000,
   });
 
   // Transform raw data into MatchWithStats format

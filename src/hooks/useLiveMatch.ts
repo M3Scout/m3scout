@@ -340,7 +340,7 @@ export function useLiveMatch(matchId: string) {
       if (error) throw error;
       return data as MatchPlayerStats[];
     },
-    staleTime: 0, // Always refetch when invalidated
+    staleTime: 30 * 1000,
     refetchOnMount: true,
   });
 

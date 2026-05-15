@@ -671,7 +671,7 @@ export const PhysicalDataSection = ({ data, playerId, playerName }: PhysicalData
       return Array.isArray(records) && records.length > 0 ? records[0] : null;
     },
     enabled: !!playerId,
-    staleTime: 0, // Always check for updates
+    staleTime: 5 * 60 * 1000,
   });
 
   // Merge: use latest evaluation data if available, otherwise fallback to player static data
