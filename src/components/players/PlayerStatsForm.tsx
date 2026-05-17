@@ -673,6 +673,9 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
           player_id:          playerId,
           season_year:        group.season_year,
           competition_id:     group.competition_id,
+          // Flag: this row is a manual correction applied on top of LIVE-aggregated stats.
+          // The public stats view will REPLACE the LIVE row with this one (not sum).
+          is_live_correction: true,
           matches:            "matches" in edits ? n("matches") : group.matches,
           minutes:            "minutes" in edits ? n("minutes") : group.minutes,
           goals:              n("goals"),
