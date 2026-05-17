@@ -116,8 +116,25 @@ export function mergeSeasonRows(rows: PublicSeasonRow[]): PublicSeasonRow[] {
   }, {});
 
   return Object.values(buckets).map(group => {
-    // All rows are summed regardless of source. LIVE, manual_player_stats, and
-    // player_stats entries for the same competition/season are treated as additive.
+    // OVERRIDE semantic: if any row in the group is a "live_correction", it
+    // REPLACES the LIVE row (the correction is a manual override of the
+    // LIVE-aggregated totals for that exact season/competition). Any additive
+    // manual entries (manual / player_stats without the correction flag) are
+    // still summed onto the corrected base.
+    const correction = group.find(r => r.source === "live_correction");
+    if (correction) {
+      const additive = group.filter(
+        r => r.source !== "live_correction" && r.source !== "live",
+      );
+      return additive.reduce<PublicSeasonRow>((acc, row) => ({
+        ...acc,
+        id: `${acc.id}+${row.id}`,
+        stats: sumStats(acc.stats, row.stats),
+        source: resolveSource(acc.source, row.source),
+      }), { ...correction, stats: { ...correction.stats } });
+    }
+
+    // ADDITIVE semantic (default): LIVE + MANUAL + player_stats all sum.
     return group.reduce<PublicSeasonRow>((acc, row, i) => {
       if (i === 0) return { ...row, stats: { ...row.stats } };
       return {
