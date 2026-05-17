@@ -966,7 +966,7 @@ function SeasonRow({ row, isGoalkeeper = false }: { row: SeasonRowData; matches?
   const BLU = "#3B82F6";
 
   const badge =
-    row.source === "manual" || row.source === "player_stats"
+    row.source === "manual" || row.source === "player_stats" || row.source === "live_correction"
       ? { label: "MANUAL",       color: BLU }
       : row.source === "mixed"
       ? { label: "LIVE + MANUAL", color: AMB }

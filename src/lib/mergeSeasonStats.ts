@@ -11,8 +11,11 @@
  *
  * LÓGICA:
  *  - Agrupa por chave composta (season_year × competition_id).
- *  - Soma TODOS os campos numéricos de `stats` independentemente da origem
- *    (LIVE + MANUAL são aditivos na visão pública).
+ *  - Linhas `source = "live_correction"` (is_live_correction=true) suprimem a
+ *    linha LIVE correspondente, mas aceitam entradas aditivas (manual/player_stats)
+ *    somadas por cima — correções manuais que substituem os dados ao vivo.
+ *  - Todas as demais linhas (LIVE, manual_player_stats, player_stats aditivos) são
+ *    somadas campo a campo.
  *  - Linhas sem colisão mantêm a `source` original.
  *  - Linhas com origens distintas recebem `source = "mixed"` → badge "LIVE + MANUAL".
  *  - O array original nunca é mutado.
@@ -87,8 +90,9 @@ function sumStats(a: MatchDerivedStats, b: MatchDerivedStats): MatchDerivedStats
 
 function resolveSource(a: SeasonSource, b: SeasonSource): SeasonSource {
   if (a === b) return a;
-  // Treat player_stats as "manual" for badge purposes
-  const norm = (s: SeasonSource) => s === "player_stats" ? "manual" : s;
+  // Treat player_stats and live_correction as "manual" for badge purposes
+  const norm = (s: SeasonSource) =>
+    s === "player_stats" || s === "live_correction" ? "manual" : s;
   return norm(a) === norm(b) ? norm(a) : "mixed";
 }
 
