@@ -22,7 +22,7 @@ import type { MatchDerivedStats, SeasonCompetitionStats } from "@/hooks/usePlaye
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type SeasonSource = "live" | "manual" | "player_stats" | "mixed";
+export type SeasonSource = "live" | "manual" | "player_stats" | "live_correction" | "mixed";
 
 /** Shape de uma linha no render público — mesma base do hook, source ampliado. */
 export type PublicSeasonRow = SeasonCompetitionStats & { source: SeasonSource };
