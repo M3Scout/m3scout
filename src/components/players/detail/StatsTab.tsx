@@ -76,6 +76,7 @@ interface PlayerStatRow {
   goals_conceded: number;
   clean_sheets: number;
   penalties_saved: number;
+  is_live_correction?: boolean | null;
 }
 
 // ─── Table header definitions ─────────────────────────────────────────────────
@@ -280,7 +281,7 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
         season_year: yr,
         competition_id: ps.competition_id,
         competition_name: comp?.display_name || comp?.name || null,
-        source: "player_stats" as const,
+        source: (ps.is_live_correction ? "live_correction" : "player_stats") as SeasonSource,
         stats: {
           matches: ps.matches,
           minutes: ps.minutes,

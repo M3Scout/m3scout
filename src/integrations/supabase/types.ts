@@ -1580,6 +1580,7 @@ export type Database = {
           id: string
           interceptions: number
           is_archived: boolean | null
+          is_live_correction: boolean
           key_passes: number
           long_passes_accurate: number
           long_passes_total: number
@@ -1641,6 +1642,7 @@ export type Database = {
           id?: string
           interceptions?: number
           is_archived?: boolean | null
+          is_live_correction?: boolean
           key_passes?: number
           long_passes_accurate?: number
           long_passes_total?: number
@@ -1702,6 +1704,7 @@ export type Database = {
           id?: string
           interceptions?: number
           is_archived?: boolean | null
+          is_live_correction?: boolean
           key_passes?: number
           long_passes_accurate?: number
           long_passes_total?: number
