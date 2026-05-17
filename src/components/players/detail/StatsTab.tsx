@@ -727,6 +727,41 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
                   // mergeSeasonRows é chamado APENAS aqui (visualização pública).
                   // O estado mergedBySeason permanece intacto para a tela de edição.
                   const rows = mergeSeasonRows(mergedBySeason[yr] ?? []);
+
+                  const totals = rows.reduce(
+                    (acc, row) => ({
+                      matches:        acc.matches        + row.stats.matches,
+                      minutes:        acc.minutes        + row.stats.minutes,
+                      goals:          acc.goals          + row.stats.goals,
+                      assists:        acc.assists        + row.stats.assists,
+                      shots:          acc.shots          + row.stats.shots,
+                      shots_on_target: acc.shots_on_target + row.stats.shots_on_target,
+                      yellow_cards:   acc.yellow_cards   + row.stats.yellow_cards,
+                      red_cards:      acc.red_cards      + row.stats.red_cards,
+                      tackles:        acc.tackles        + row.stats.tackles,
+                      interceptions:  acc.interceptions  + row.stats.interceptions,
+                    }),
+                    { matches: 0, minutes: 0, goals: 0, assists: 0, shots: 0, shots_on_target: 0, yellow_cards: 0, red_cards: 0, tackles: 0, interceptions: 0 }
+                  );
+
+                  // Minutes bracket drives the color for both J and MIN cells
+                  const minBracket =
+                    totals.minutes > 4200  ? "risk" :
+                    totals.minutes >= 2500 ? "protagonist" :
+                    totals.minutes >= 1200 ? "regular" : "low";
+
+                  const minColor =
+                    minBracket === "risk"        ? "#b91c1c" :  // red-700
+                    minBracket === "protagonist" ? "#34d399" :  // emerald-400
+                    minBracket === "regular"     ? "#fbbf24" :  // amber-400
+                                                   "#fb7185";   // rose-400
+
+                  const minTooltip =
+                    minBracket === "risk"        ? "Zona de Risco. Atleta desgastado. Propensão altíssima a queda de rendimento e lesões." :
+                    minBracket === "protagonist" ? "Protagonista. Titular absoluto. Dados altamente confiáveis para análise de mercado." :
+                    minBracket === "regular"     ? "Jogador de elenco. Reserva imediato ou titular que perdeu metade da temporada por lesão." :
+                                                   "Amostragem baixa. Dados pouco confiáveis. Ritmo de jogo prejudicado.";
+
                   return [
                     /* Season header row */
                     <tr key={`yr-${yr}`} style={{ background: BORDER }}>
@@ -748,6 +783,54 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
                         isGoalkeeper={playerPosition === "Goleiro" || playerPosition === "GK"}
                       />
                     )),
+
+                    /* Totals row — only shown when there are 2+ competition rows */
+                    ...(rows.length > 1 ? [
+                      <tr key={`total-${yr}`} style={{ borderTop: `2px solid #2A2725`, background: "#131210" }}>
+                        <td
+                          className="px-3 py-2 font-barlow font-black text-[11px] tracking-[0.15em] uppercase"
+                          style={{ borderRight: `1px solid ${BORDER}`, color: MUTED }}
+                        >
+                          TOTAL {yr}
+                        </td>
+                        <td
+                          className={`px-3 py-2 text-right tabular-nums font-bold text-[13px]${minBracket === "risk" ? " animate-pulse" : ""}`}
+                          style={{ borderRight: `1px solid ${BORDER}`, color: TEXT }}
+                        >
+                          {totals.matches}
+                        </td>
+                        <td
+                          className={`px-3 py-2 text-right tabular-nums font-bold text-[13px]${minBracket === "risk" ? " animate-pulse" : ""}`}
+                          style={{ borderRight: `1px solid ${BORDER}`, color: TEXT }}
+                        >
+                          <UiTooltipProvider>
+                            <UiTooltip>
+                              <UiTooltipTrigger asChild>
+                                <span style={{ borderBottom: `1px dotted ${minColor}`, cursor: "default" }}>
+                                  {totals.minutes}
+                                </span>
+                              </UiTooltipTrigger>
+                              <UiTooltipContent
+                                side="top"
+                                className="font-jetbrains text-[11px] px-2 py-1 max-w-[260px] text-center"
+                                style={{ background: "#111", border: `1px solid ${BORDER}`, borderRadius: 0, color: minColor }}
+                              >
+                                {minTooltip}
+                              </UiTooltipContent>
+                            </UiTooltip>
+                          </UiTooltipProvider>
+                        </td>
+                        <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${BORDER}`, color: totals.goals > 0 ? GREEN : A }}>{totals.goals}</td>
+                        <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${BORDER}`, color: totals.assists > 0 ? GREEN : A }}>{totals.assists}</td>
+                        <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${BORDER}`, color: MUTED }}>{totals.shots}</td>
+                        <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${BORDER}`, color: MUTED }}>{totals.shots_on_target}</td>
+                        <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${BORDER}`, color: totals.yellow_cards > 0 ? AMBER : MUTED }}>{totals.yellow_cards}</td>
+                        <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${BORDER}`, color: totals.red_cards > 0 ? A : MUTED }}>{totals.red_cards}</td>
+                        <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${BORDER}`, color: MUTED }}>{totals.tackles}</td>
+                        <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${BORDER}`, color: MUTED }}>{totals.interceptions}</td>
+                        <td className="px-3 py-2" />
+                      </tr>
+                    ] : []),
                   ];
                 })}
               </tbody>
