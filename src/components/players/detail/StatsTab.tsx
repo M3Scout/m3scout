@@ -76,6 +76,7 @@ interface PlayerStatRow {
   goals_conceded: number;
   clean_sheets: number;
   penalties_saved: number;
+  is_live_correction?: boolean | null;
 }
 
 // ─── Table header definitions ─────────────────────────────────────────────────
