@@ -11,10 +11,10 @@
  *
  * LÓGICA:
  *  - Agrupa por chave composta (season_year × competition_id).
- *  - Soma todos os campos numéricos de `stats` (campos derivados como
- *    passes_total, dribbles_total etc. são aditivos e permanecem corretos).
+ *  - Soma TODOS os campos numéricos de `stats` independentemente da origem
+ *    (LIVE + MANUAL são aditivos na visão pública).
  *  - Linhas sem colisão mantêm a `source` original.
- *  - Linhas com origens distintas recebem `source = "mixed"`.
+ *  - Linhas com origens distintas recebem `source = "mixed"` → badge "LIVE + MANUAL".
  *  - O array original nunca é mutado.
  */
 
@@ -113,17 +113,9 @@ export function mergeSeasonRows(rows: PublicSeasonRow[]): PublicSeasonRow[] {
   }, {});
 
   return Object.values(buckets).map(group => {
-    const hasLive   = group.some(r => r.source === "live");
-    const hasManual = group.some(r => r.source === "manual");
-
-    // Override semantics: when a MANUAL row exists alongside a LIVE row for the
-    // same (year × competition), the MANUAL entry is treated as the authoritative
-    // correction and the LIVE entry is suppressed.  This prevents the public view
-    // from doubling stats when an operator edits a LIVE group and saves it to
-    // player_stats (which would previously be summed on top of the original LIVE).
-    const toMerge = hasManual && hasLive ? group.filter(r => r.source === "manual") : group;
-
-    return toMerge.reduce<PublicSeasonRow>((acc, row, i) => {
+    // Sum all rows regardless of source (LIVE + MANUAL are additive in the public view).
+    // The edit form receives the raw unmerged array and is never affected by this function.
+    return group.reduce<PublicSeasonRow>((acc, row, i) => {
       if (i === 0) return { ...row, stats: { ...row.stats } };
       return {
         ...acc,
@@ -131,6 +123,6 @@ export function mergeSeasonRows(rows: PublicSeasonRow[]): PublicSeasonRow[] {
         stats: sumStats(acc.stats, row.stats),
         source: resolveSource(acc.source, row.source),
       };
-    }, toMerge[0]);
+    }, group[0]);
   });
 }
