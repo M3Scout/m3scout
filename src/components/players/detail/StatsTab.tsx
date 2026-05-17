@@ -280,7 +280,7 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
         season_year: yr,
         competition_id: ps.competition_id,
         competition_name: comp?.display_name || comp?.name || null,
-        source: "manual" as const,
+        source: "player_stats" as const,
         stats: {
           matches: ps.matches,
           minutes: ps.minutes,
@@ -965,9 +965,11 @@ function SeasonRow({ row, isGoalkeeper = false }: { row: SeasonRowData; matches?
   const BLU = "#3B82F6";
 
   const badge =
-    row.source === "manual" ? { label: "MANUAL",       color: BLU }
-    : row.source === "mixed" ? { label: "LIVE + MANUAL", color: AMB }
-    : /* live */               { label: "LIVE",          color: G };
+    row.source === "manual" || row.source === "player_stats"
+      ? { label: "MANUAL",       color: BLU }
+      : row.source === "mixed"
+      ? { label: "LIVE + MANUAL", color: AMB }
+      : /* live */ { label: "LIVE", color: G };
 
   const ataqueStats: StatDef[] = [
     { label: "Gols",        value: s.goals,            positive: true },

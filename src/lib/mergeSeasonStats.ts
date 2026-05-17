@@ -22,7 +22,7 @@ import type { MatchDerivedStats, SeasonCompetitionStats } from "@/hooks/usePlaye
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type SeasonSource = "live" | "manual" | "mixed";
+export type SeasonSource = "live" | "manual" | "player_stats" | "mixed";
 
 /** Shape de uma linha no render público — mesma base do hook, source ampliado. */
 export type PublicSeasonRow = SeasonCompetitionStats & { source: SeasonSource };
@@ -86,7 +86,10 @@ function sumStats(a: MatchDerivedStats, b: MatchDerivedStats): MatchDerivedStats
 }
 
 function resolveSource(a: SeasonSource, b: SeasonSource): SeasonSource {
-  return a === b ? a : "mixed";
+  if (a === b) return a;
+  // Treat player_stats as "manual" for badge purposes
+  const norm = (s: SeasonSource) => s === "player_stats" ? "manual" : s;
+  return norm(a) === norm(b) ? norm(a) : "mixed";
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
@@ -113,9 +116,18 @@ export function mergeSeasonRows(rows: PublicSeasonRow[]): PublicSeasonRow[] {
   }, {});
 
   return Object.values(buckets).map(group => {
-    // Sum all rows regardless of source (LIVE + MANUAL are additive in the public view).
-    // The edit form receives the raw unmerged array and is never affected by this function.
-    return group.reduce<PublicSeasonRow>((acc, row, i) => {
+    const hasLive        = group.some(r => r.source === "live");
+    const hasPlayerStats = group.some(r => r.source === "player_stats");
+
+    // player_stats rows are corrections saved via the edit form — they override the
+    // underlying live row for the same competition/season.
+    // manual_player_stats rows (source "manual") represent truly separate games and
+    // are always summed with live data.
+    const toMerge = hasPlayerStats && hasLive
+      ? group.filter(r => r.source !== "live")
+      : group;
+
+    return toMerge.reduce<PublicSeasonRow>((acc, row, i) => {
       if (i === 0) return { ...row, stats: { ...row.stats } };
       return {
         ...acc,
@@ -123,6 +135,6 @@ export function mergeSeasonRows(rows: PublicSeasonRow[]): PublicSeasonRow[] {
         stats: sumStats(acc.stats, row.stats),
         source: resolveSource(acc.source, row.source),
       };
-    }, group[0]);
+    }, toMerge[0]);
   });
 }
