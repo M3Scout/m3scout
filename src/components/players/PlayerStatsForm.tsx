@@ -367,6 +367,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deletingLive, setDeletingLive] = useState<string | null>(null);
+  const [liveEdits, setLiveEdits] = useState<Record<string, StatValues>>({});
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   const isGoalkeeper = playerPosition === "Goleiro" || playerPosition === "GK";
@@ -608,6 +609,164 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
     return out;
   };
 
+  /**
+   * Persists LIVE stat corrections directly into match_player_stats.
+   * Strategy: zero all rows in the group except the last, then set the last row
+   * to the full corrected aggregate. This keeps the data source as "live" and
+   * never creates a player_stats (MANUAL) record, which would cause duplication
+   * in the public view via mergeSeasonRows.
+   */
+  const applyLiveEditsToMatchStats = async () => {
+    for (const [groupKey, edits] of Object.entries(liveEdits)) {
+      if (Object.keys(edits).length === 0) continue;
+      const group = liveStatGroups.find(g => g.groupKey === groupKey);
+      if (!group) continue;
+
+      const merged = { ...liveStatToScoutValues(group), ...edits };
+      const n = (key: string): number => {
+        const v = merged[key as keyof typeof merged];
+        return typeof v === "number" ? Math.max(0, v) : 0;
+      };
+
+      // ── match_player_stats ──────────────────────────────────────────────
+      if (group.matchPlayerStatIds.length > 0) {
+        const zeroRow = {
+          goals: 0, assists: 0, shots: 0, shots_on_target: 0, shots_blocked: 0,
+          offsides: 0, passes_completed: 0, passes_total: 0, key_passes: 0,
+          chances_created: 0, crosses_success: 0, crosses_failed: 0,
+          dribbles_success: 0, dribbles_total: 0,
+          fouls_committed: 0, fouls_suffered: 0, possession_lost: 0,
+          tackles: 0, interceptions: 0, clearances: 0, recoveries: 0,
+          was_dribbled: 0, duels_won: 0, duels_total: 0,
+          aerial_duels_won: 0, aerial_duels_total: 0,
+          yellow_cards: 0, red_cards: 0, saves: 0, goals_conceded: 0,
+        };
+
+        // Zero all rows except the last
+        for (const id of group.matchPlayerStatIds.slice(0, -1)) {
+          const { error } = await supabase.from("match_player_stats").update(zeroRow).eq("id", id);
+          if (error) throw error;
+        }
+
+        // Last row absorbs the full corrected total
+        const offTarget = Math.max(0, n("shots") - n("shots_on_target") - n("shots_blocked"));
+        const newDuelsWon  = n("aerial_duels_won")   + n("ground_duels_won");
+        const newDuelsTotal = n("aerial_duels_total") + n("ground_duels_total");
+
+        const lastRow = {
+          goals:              n("goals"),
+          assists:            n("assists"),
+          shots:              offTarget,
+          shots_on_target:    n("shots_on_target"),
+          shots_blocked:      n("shots_blocked"),
+          offsides:           n("offsides"),
+          passes_completed:   n("accurate_passes"),
+          passes_total:       n("total_passes"),
+          key_passes:         n("key_passes"),
+          chances_created:    n("chances_created"),
+          crosses_success:    n("crosses_success"),
+          crosses_failed:     n("crosses_failed"),
+          dribbles_success:   n("successful_dribbles"),
+          dribbles_total:     n("total_dribbles"),
+          fouls_committed:    n("fouls_committed"),
+          fouls_suffered:     n("fouls_drawn"),
+          possession_lost:    n("possession_lost"),
+          tackles:            n("tackles"),
+          interceptions:      n("interceptions"),
+          clearances:         n("clearances"),
+          recoveries:         n("recoveries"),
+          was_dribbled:       n("times_dribbled_past"),
+          duels_won:          newDuelsWon,
+          duels_total:        newDuelsTotal,
+          aerial_duels_won:   n("aerial_duels_won"),
+          aerial_duels_total: n("aerial_duels_total"),
+          yellow_cards:       n("yellow_cards"),
+          red_cards:          n("red_cards"),
+          saves:              n("saves"),
+          goals_conceded:     n("goals_conceded"),
+        };
+
+        const lastStatId = group.matchPlayerStatIds[group.matchPlayerStatIds.length - 1];
+        const { error } = await supabase.from("match_player_stats").update(lastRow).eq("id", lastStatId);
+        if (error) throw error;
+      }
+
+      // ── minutes (match_players) ─────────────────────────────────────────
+      if ("minutes" in edits && group.matchIds.length > 0) {
+        const editedMinutes = n("minutes");
+        const lastMatchId = group.matchIds[group.matchIds.length - 1];
+
+        // Sum minutes of all OTHER matches in this group
+        let otherSum = 0;
+        if (group.matchIds.length > 1) {
+          const { data: otherRows } = await supabase
+            .from("match_players")
+            .select("minutes_played")
+            .eq("player_id", playerId)
+            .in("match_id", group.matchIds.slice(0, -1));
+          otherSum = (otherRows ?? []).reduce((s, r) => s + (r.minutes_played ?? 0), 0);
+        }
+
+        const { data: lastMp } = await supabase
+          .from("match_players")
+          .select("id")
+          .eq("player_id", playerId)
+          .eq("match_id", lastMatchId)
+          .maybeSingle();
+
+        if (lastMp) {
+          await supabase
+            .from("match_players")
+            .update({ minutes_played: Math.max(0, editedMinutes - otherSum) })
+            .eq("id", lastMp.id);
+        }
+      }
+
+      // ── Update local state immediately (.map keeps source = "live") ─────
+      setLiveStatGroups(prev => prev.map(g => {
+        if (g.groupKey !== groupKey) return g;
+        const newDuelsWon  = n("aerial_duels_won")   + n("ground_duels_won");
+        const newDuelsTotal = n("aerial_duels_total") + n("ground_duels_total");
+        return {
+          ...g,
+          goals:               n("goals"),
+          assists:             n("assists"),
+          shots:               n("shots"),
+          shots_on_target:     n("shots_on_target"),
+          shots_blocked:       n("shots_blocked"),
+          offsides:            n("offsides"),
+          accurate_passes:     n("accurate_passes"),
+          total_passes:        n("total_passes"),
+          key_passes:          n("key_passes"),
+          chances_created:     n("chances_created"),
+          crosses_success:     n("crosses_success"),
+          crosses_failed:      n("crosses_failed"),
+          successful_dribbles: n("successful_dribbles"),
+          total_dribbles:      n("total_dribbles"),
+          fouls_committed:     n("fouls_committed"),
+          fouls_drawn:         n("fouls_drawn"),
+          possession_lost:     n("possession_lost"),
+          tackles:             n("tackles"),
+          interceptions:       n("interceptions"),
+          clearances:          n("clearances"),
+          recoveries:          n("recoveries"),
+          times_dribbled_past: n("times_dribbled_past"),
+          duels_won:           newDuelsWon,
+          total_duels:         newDuelsTotal,
+          aerial_duels_won:    n("aerial_duels_won"),
+          aerial_duels_total:  n("aerial_duels_total"),
+          ground_duels_won:    n("ground_duels_won"),
+          ground_duels_total:  n("ground_duels_total"),
+          yellow_cards:        n("yellow_cards"),
+          red_cards:           n("red_cards"),
+          saves:               n("saves"),
+          goals_conceded:      n("goals_conceded"),
+          minutes: "minutes" in edits ? n("minutes") : g.minutes,
+        };
+      }));
+    }
+  };
+
   const saveStats = async () => {
     // 1) Validate metadata first
     for (const stat of stats) {
@@ -653,7 +812,12 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
         }
       }
 
+      // Write LIVE edits back to match_player_stats — no player_stats record created,
+      // so the public view never double-counts (mergeSeasonRows sums LIVE + MANUAL).
+      await applyLiveEditsToMatchStats();
+
       toast.success("Estatísticas salvas com sucesso!");
+      setLiveEdits({});
       invalidatePlayerSummary(playerId); // Invalida cache do "Resumo WhatsApp"
       fetchData(); // Refresh to get real IDs
     } catch (error: any) {
@@ -662,6 +826,13 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
     } finally {
       setSaving(false);
     }
+  };
+
+  const updateLiveEdit = (groupKey: string, key: string, value: number) => {
+    setLiveEdits(prev => ({
+      ...prev,
+      [groupKey]: { ...(prev[groupKey] ?? {}), [key]: value },
+    }));
   };
 
   const toggleRow = (id: string) => {
@@ -839,6 +1010,11 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
                             <Zap className="w-3 h-3 mr-1" />
                             AO VIVO
                           </Badge>
+                          {Object.keys(liveEdits[group.groupKey] ?? {}).length > 0 && (
+                            <Badge variant="outline" className="border-amber-500/60 text-amber-400 bg-amber-500/10 text-[10px]">
+                              Edições não salvas
+                            </Badge>
+                          )}
                           {group.appliedCount === group.matchPlayerStatIds.length ? (
                             <Badge variant="outline" className="border-green-600/60 text-green-500 bg-green-500/10 text-[10px]">
                               Aplicado
@@ -895,16 +1071,31 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
                             <SummaryBadge label="Verm" value={group.red_cards} />
                           </div>
                         </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <StatInput
+                            label="Jogos"
+                            value={liveEdits[group.groupKey]?.["matches"] ?? group.matches}
+                            onChange={(v) => updateLiveEdit(group.groupKey, "matches", v === "" || v === null ? 0 : Number(v))}
+                            tooltip="Total de partidas disputadas nesta competição"
+                          />
+                          <StatInput
+                            label="Minutos"
+                            value={liveEdits[group.groupKey]?.["minutes"] ?? group.minutes}
+                            onChange={(v) => updateLiveEdit(group.groupKey, "minutes", v === "" || v === null ? 0 : Number(v))}
+                            tooltip="Total de minutos em campo"
+                          />
+                        </div>
                         <Alert className="border-blue-500/30 bg-blue-500/5">
                           <Info className="h-4 w-4 text-blue-400" />
                           <AlertDescription className="text-blue-300 text-xs">
-                            Estatísticas geradas automaticamente pelo sistema Live Match. Para corrigir valores, edite os dados de cada partida individualmente.
+                            Estatísticas geradas pelo sistema Live Match. Você pode editar os valores abaixo manualmente para corrigir eventuais falhas da automação.
                           </AlertDescription>
                         </Alert>
                         <ScoutCategoryStats
-                          mode="readonly"
+                          mode="edit"
                           categories={isGoalkeeper ? GOALKEEPER_SCOUT_CATEGORIES : OUTFIELD_SCOUT_CATEGORIES}
-                          values={liveStatToScoutValues(group)}
+                          values={{ ...liveStatToScoutValues(group), ...(liveEdits[group.groupKey] ?? {}) }}
+                          onChange={(key, next) => updateLiveEdit(group.groupKey, key, next)}
                         />
                       </div>
                     </CollapsibleContent>
@@ -1100,7 +1291,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
           })
         )}
 
-        {safeArray(stats).length > 0 && (
+        {(safeArray(stats).length > 0 || Object.keys(liveEdits).length > 0) && (
           <div className="flex justify-end pt-2">
             <Button type="button" onClick={saveStats} disabled={saving}>
               {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
