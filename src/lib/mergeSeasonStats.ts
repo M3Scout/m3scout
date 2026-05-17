@@ -116,18 +116,9 @@ export function mergeSeasonRows(rows: PublicSeasonRow[]): PublicSeasonRow[] {
   }, {});
 
   return Object.values(buckets).map(group => {
-    const hasLive        = group.some(r => r.source === "live");
-    const hasPlayerStats = group.some(r => r.source === "player_stats");
-
-    // player_stats rows are corrections saved via the edit form — they override the
-    // underlying live row for the same competition/season.
-    // manual_player_stats rows (source "manual") represent truly separate games and
-    // are always summed with live data.
-    const toMerge = hasPlayerStats && hasLive
-      ? group.filter(r => r.source !== "live")
-      : group;
-
-    return toMerge.reduce<PublicSeasonRow>((acc, row, i) => {
+    // All rows are summed regardless of source. LIVE, manual_player_stats, and
+    // player_stats entries for the same competition/season are treated as additive.
+    return group.reduce<PublicSeasonRow>((acc, row, i) => {
       if (i === 0) return { ...row, stats: { ...row.stats } };
       return {
         ...acc,
@@ -135,6 +126,6 @@ export function mergeSeasonRows(rows: PublicSeasonRow[]): PublicSeasonRow[] {
         stats: sumStats(acc.stats, row.stats),
         source: resolveSource(acc.source, row.source),
       };
-    }, toMerge[0]);
+    }, group[0]);
   });
 }
