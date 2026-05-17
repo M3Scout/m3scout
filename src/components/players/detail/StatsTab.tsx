@@ -795,13 +795,13 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
                         </td>
                         <td
                           className={`px-3 py-2 text-right tabular-nums font-bold text-[13px]${minBracket === "risk" ? " animate-pulse" : ""}`}
-                          style={{ borderRight: `1px solid ${BORDER}`, color: TEXT }}
+                          style={{ borderRight: `1px solid ${BORDER}`, color: minColor }}
                         >
                           {totals.matches}
                         </td>
                         <td
                           className={`px-3 py-2 text-right tabular-nums font-bold text-[13px]${minBracket === "risk" ? " animate-pulse" : ""}`}
-                          style={{ borderRight: `1px solid ${BORDER}`, color: TEXT }}
+                          style={{ borderRight: `1px solid ${BORDER}`, color: minColor }}
                         >
                           <UiTooltipProvider>
                             <UiTooltip>
@@ -813,7 +813,7 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
                               <UiTooltipContent
                                 side="top"
                                 className="font-jetbrains text-[11px] px-2 py-1 max-w-[260px] text-center"
-                                style={{ background: "#111", border: `1px solid ${BORDER}`, borderRadius: 0, color: minColor }}
+                                style={{ background: "#111", border: `1px solid ${minColor}`, borderRadius: 0, color: TEXT }}
                               >
                                 {minTooltip}
                               </UiTooltipContent>
