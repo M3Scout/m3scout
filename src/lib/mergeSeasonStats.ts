@@ -105,27 +105,32 @@ function resolveSource(a: SeasonSource, b: SeasonSource): SeasonSource {
  * // publicRows.length <= (mergedBySeason[yr] ?? []).length
  */
 export function mergeSeasonRows(rows: PublicSeasonRow[]): PublicSeasonRow[] {
-  const grouped = rows.reduce<Record<string, PublicSeasonRow>>((acc, row) => {
-    // Chave estável: prefere competition_id (UUID), cai em nome ou placeholder
+  // Step 1 — group all rows by the stable (year × competition) key
+  const buckets = rows.reduce<Record<string, PublicSeasonRow[]>>((acc, row) => {
     const key = `${row.season_year}_${row.competition_id ?? row.competition_name ?? "__none__"}`;
-
-    if (!acc[key]) {
-      // Primeira ocorrência: clonar raso para não mutar o original
-      acc[key] = { ...row, stats: { ...row.stats } };
-      return acc;
-    }
-
-    const prev = acc[key];
-    acc[key] = {
-      ...prev,
-      // ID composto → estável para uso como `key` no React
-      id: `${prev.id}+${row.id}`,
-      stats: sumStats(prev.stats, row.stats),
-      source: resolveSource(prev.source, row.source),
-    };
-
+    (acc[key] ??= []).push(row);
     return acc;
   }, {});
 
-  return Object.values(grouped);
+  return Object.values(buckets).map(group => {
+    const hasLive   = group.some(r => r.source === "live");
+    const hasManual = group.some(r => r.source === "manual");
+
+    // Override semantics: when a MANUAL row exists alongside a LIVE row for the
+    // same (year × competition), the MANUAL entry is treated as the authoritative
+    // correction and the LIVE entry is suppressed.  This prevents the public view
+    // from doubling stats when an operator edits a LIVE group and saves it to
+    // player_stats (which would previously be summed on top of the original LIVE).
+    const toMerge = hasManual && hasLive ? group.filter(r => r.source === "manual") : group;
+
+    return toMerge.reduce<PublicSeasonRow>((acc, row, i) => {
+      if (i === 0) return { ...row, stats: { ...row.stats } };
+      return {
+        ...acc,
+        id: `${acc.id}+${row.id}`,
+        stats: sumStats(acc.stats, row.stats),
+        source: resolveSource(acc.source, row.source),
+      };
+    }, toMerge[0]);
+  });
 }
