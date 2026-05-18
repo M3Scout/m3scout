@@ -244,8 +244,8 @@ const PlayerDetail = () => {
   const canEdit = canEditPlayer;
   const canCreateReport = can("reports", "create");
 
-  // Live match stats for current season
-  const { totals: liveTotals, isLoading: liveStatsLoading } = usePlayerMatchStats({
+  // Live match stats for current season (by competition too, for correction logic)
+  const { totals: liveTotals, byCompetition: liveByCompetition, isLoading: liveStatsLoading } = usePlayerMatchStats({
     playerId: id ?? "",
     seasonYear: CURRENT_YEAR,
     enabled: !!id,
@@ -257,45 +257,86 @@ const PlayerDetail = () => {
     enabled: !!id,
   });
 
-  // Player_stats table (entries via PlayerStatsForm)
+  // Player_stats table (entries via PlayerStatsForm) — includes is_live_correction flag
   const { data: playerStatsRows = [], isLoading: psLoading } = useQuery({
     queryKey: ["player-stats-overview", id, CURRENT_YEAR],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("player_stats")
-        .select("matches, minutes, goals, assists")
+        .select("matches, minutes, goals, assists, is_live_correction, competition_id")
         .eq("player_id", id!)
         .eq("season_year", CURRENT_YEAR);
       if (error) throw error;
-      return (data ?? []) as { matches: number; minutes: number; goals: number; assists: number }[];
+      return (data ?? []) as {
+        matches: number;
+        minutes: number;
+        goals: number;
+        assists: number;
+        is_live_correction: boolean | null;
+        competition_id: string | null;
+      }[];
     },
     enabled: !!id,
   });
 
-  // Merged totals: live + manual_player_stats + player_stats (all for current season)
+  // Merged totals applying is_live_correction override semantics:
+  //   • Correction row exists for competition → use ONLY that row, subtract raw LIVE for that comp.
+  //   • No correction → sum LIVE + additive player_stats rows.
+  //   • manual_player_stats → always additive.
   const seasonTotals = useMemo(() => {
-    const t = {
-      matches: liveTotals?.matches ?? 0,
-      minutes: liveTotals?.minutes ?? 0,
-      goals:   liveTotals?.goals   ?? 0,
-      assists: liveTotals?.assists  ?? 0,
-    };
+    // Competitions that have a correction row (override semantics)
+    const correctedCompIds = new Set(
+      playerStatsRows
+        .filter(ps => ps.is_live_correction)
+        .map(ps => ps.competition_id)
+        .filter((c): c is string => !!c),
+    );
+
+    // Start from live totals, then subtract corrected-competition contributions
+    let matches = liveTotals?.matches ?? 0;
+    let minutes = liveTotals?.minutes ?? 0;
+    let goals   = liveTotals?.goals   ?? 0;
+    let assists = liveTotals?.assists  ?? 0;
+
+    for (const compId of correctedCompIds) {
+      const live = liveByCompetition[compId];
+      if (live) {
+        matches -= live.stats.matches;
+        minutes -= live.stats.minutes;
+        goals   -= live.stats.goals;
+        assists -= live.stats.assists;
+      }
+    }
+
+    // manual_player_stats: always additive
     manualStats
       .filter(ms => ms.season_year === CURRENT_YEAR)
       .forEach(ms => {
-        t.matches += ms.games;
-        t.minutes += ms.minutes;
-        t.goals   += ms.goals   ?? 0;
-        t.assists += ms.assists ?? 0;
+        matches += ms.games;
+        minutes += ms.minutes;
+        goals   += ms.goals   ?? 0;
+        assists += ms.assists ?? 0;
       });
+
+    // player_stats: correction rows always count; non-correction rows only count
+    // when their competition has no correction (avoids double-counting stale rows)
     playerStatsRows.forEach(ps => {
-      t.matches += ps.matches ?? 0;
-      t.minutes += ps.minutes ?? 0;
-      t.goals   += ps.goals   ?? 0;
-      t.assists += ps.assists ?? 0;
+      const isCorrected = !ps.is_live_correction && correctedCompIds.has(ps.competition_id ?? "___none");
+      if (!isCorrected) {
+        matches += ps.matches ?? 0;
+        minutes += ps.minutes ?? 0;
+        goals   += ps.goals   ?? 0;
+        assists += ps.assists ?? 0;
+      }
     });
-    return t;
-  }, [liveTotals, manualStats, playerStatsRows, CURRENT_YEAR]);
+
+    return {
+      matches: Math.max(0, matches),
+      minutes: Math.max(0, minutes),
+      goals:   Math.max(0, goals),
+      assists: Math.max(0, assists),
+    };
+  }, [liveTotals, liveByCompetition, manualStats, playerStatsRows, CURRENT_YEAR]);
 
   const statsLoading = liveStatsLoading || manualLoading || psLoading;
 
