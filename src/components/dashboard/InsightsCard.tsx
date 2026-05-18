@@ -155,8 +155,7 @@ const TrendBadge = ({ trend }: { trend: Insight["trend"] }) => {
 };
 
 export const InsightsCard = () => {
-  const { session, permissionsLoading, rolesLoading } = useAuth();
-  const rbacReady = Boolean(session?.user) && !permissionsLoading && !rolesLoading;
+  const { session } = useAuth();
 
   const [insights, setInsights] = useState<Insight[]>([]);
   const [loading, setLoading] = useState(true);
@@ -164,7 +163,6 @@ export const InsightsCard = () => {
 
   const generateInsights = useCallback(async () => {
     if (!session?.user) { logFetchSkipped("InsightsCard", "no session"); return; }
-    if (!rbacReady)     { logFetchSkipped("InsightsCard", "rbac not ready"); return; }
     if (hasFetched) return;
     setHasFetched(true);
 
@@ -380,11 +378,11 @@ export const InsightsCard = () => {
     } finally {
       setLoading(false);
     }
-  }, [session?.user, rbacReady, hasFetched]);
+  }, [session?.user, hasFetched]);
 
   useEffect(() => {
-    if (rbacReady && !hasFetched) generateInsights();
-  }, [rbacReady, hasFetched, generateInsights]);
+    if (session?.user && !hasFetched) generateInsights();
+  }, [session?.user, hasFetched, generateInsights]);
 
   // ── Loading skeleton ────────────────────────────────────────────────────────
   if (loading) {
