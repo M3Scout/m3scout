@@ -169,6 +169,7 @@ interface PlayerStat {
   player_id: string;
   season_year: number;
   competition_id: string | null;
+  is_live_correction?: boolean | null;
   matches: StatValue;
   minutes: StatValue;
   goals: StatValue;
@@ -770,10 +771,38 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
     return warnings;
   };
 
-  const allRows = useMemo<({ type: "manual"; stat: PlayerStat } | { type: "live"; group: LiveStatGroup })[]>(() => {
-    const rows = [
-      ...safeArray(stats).map(s => ({ type: "manual" as const, stat: s })),
-      ...liveStatGroups.map(g => ({ type: "live" as const, group: g })),
+  const allRows = useMemo<(
+    | { type: "manual"; stat: PlayerStat }
+    | { type: "live"; group: LiveStatGroup; correction: PlayerStat | null }
+  )[]>(() => {
+    // Build map: groupKey → correction PlayerStat (is_live_correction=true)
+    // Only map corrections that have a matching live group; otherwise keep as manual.
+    const liveGroupKeys = new Set(liveStatGroups.map(g => g.groupKey));
+    const correctionMap = new Map<string, PlayerStat>();
+    for (const stat of safeArray(stats)) {
+      if (stat.is_live_correction === true && stat.competition_id) {
+        const key = `${stat.season_year}_${stat.competition_id}`;
+        if (liveGroupKeys.has(key)) correctionMap.set(key, stat);
+      }
+    }
+
+    const rows: (
+      | { type: "manual"; stat: PlayerStat }
+      | { type: "live"; group: LiveStatGroup; correction: PlayerStat | null }
+    )[] = [
+      // Exclude correction rows — they're merged into their live card
+      ...safeArray(stats)
+        .filter(s => {
+          if (!s.is_live_correction) return true;
+          const key = `${s.season_year}_${s.competition_id}`;
+          return !liveGroupKeys.has(key); // keep if no matching live group
+        })
+        .map(s => ({ type: "manual" as const, stat: s })),
+      ...liveStatGroups.map(g => ({
+        type: "live" as const,
+        group: g,
+        correction: correctionMap.get(g.groupKey) ?? null,
+      })),
     ];
     return rows.sort((a, b) => {
       const ya = a.type === "manual" ? a.stat.season_year : a.group.season_year;
@@ -922,17 +951,38 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
           allRows.map((row) => {
             if (row.type === "live") {
               const group = row.group;
+              const correction = row.correction; // PlayerStat with is_live_correction=true, or null
               const rowId = `live-${group.groupKey}`;
+
+              // When a correction exists, display corrected values; fall back to raw live.
+              const n = (v: StatValue) => normalizeStatValue(v);
+              const dispMatches  = liveEdits[group.groupKey]?.["matches"]  ?? (correction ? n(correction.matches)  : group.matches);
+              const dispMinutes  = liveEdits[group.groupKey]?.["minutes"]  ?? (correction ? n(correction.minutes)  : group.minutes);
+              const dispGoals    = liveEdits[group.groupKey]?.["goals"]    ?? (correction ? n(correction.goals)    : group.goals);
+              const dispAssists  = liveEdits[group.groupKey]?.["assists"]  ?? (correction ? n(correction.assists)  : group.assists);
+
+              // Base values fed into the ScoutCategoryStats editor
+              const baseScoutValues = correction
+                ? statToScoutValues(correction as unknown as Record<string, unknown>)
+                : liveStatToScoutValues(group);
+
               return (
                 <Collapsible key={rowId} open={expandedRows.has(rowId)} onOpenChange={() => toggleRow(rowId)}>
-                  <div className="border border-green-500/30 rounded-lg">
+                  <div className={`border rounded-lg ${correction ? "border-amber-500/30" : "border-green-500/30"}`}>
                     <CollapsibleTrigger asChild>
                       <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 transition-colors">
                         <div className="flex items-center gap-4 flex-wrap">
-                          <Badge variant="outline" className="border-green-500/50 text-green-400 bg-green-500/10">
-                            <Zap className="w-3 h-3 mr-1" />
-                            AO VIVO
-                          </Badge>
+                          {correction ? (
+                            <Badge variant="outline" className="border-amber-500/50 text-amber-400 bg-amber-500/10">
+                              <Zap className="w-3 h-3 mr-1" />
+                              AO VIVO (Editado)
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="border-green-500/50 text-green-400 bg-green-500/10">
+                              <Zap className="w-3 h-3 mr-1" />
+                              AO VIVO
+                            </Badge>
+                          )}
                           {Object.keys(liveEdits[group.groupKey] ?? {}).length > 0 && (
                             <Badge variant="outline" className="border-amber-500/60 text-amber-400 bg-amber-500/10 text-[10px]">
                               Edições não salvas
@@ -954,7 +1004,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
                           <Badge variant="outline">{group.season_year}</Badge>
                           <span className="font-medium">{group.competition_name ?? "Sem competição"}</span>
                           <span className="text-sm text-muted-foreground">
-                            {group.matches} jogos • {group.minutes} min • {group.goals}G {group.assists}A
+                            {dispMatches} jogos • {dispMinutes} min • {dispGoals}G {dispAssists}A
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -976,34 +1026,34 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
                     <CollapsibleContent>
                       <div className="p-4 pt-0 space-y-4">
                         <Separator />
-                        <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-3">
-                          <div className="text-xs font-medium text-green-400 mb-2 flex items-center gap-1">
+                        <div className={`rounded-lg p-3 ${correction ? "bg-amber-500/5 border border-amber-500/20" : "bg-green-500/5 border border-green-500/20"}`}>
+                          <div className={`text-xs font-medium mb-2 flex items-center gap-1 ${correction ? "text-amber-400" : "text-green-400"}`}>
                             <Zap className="w-3 h-3" />
-                            Resumo — Dados ao Vivo
+                            {correction ? "Resumo — Dados Corrigidos" : "Resumo — Dados ao Vivo"}
                           </div>
                           <div className="flex flex-wrap gap-2">
-                            <SummaryBadge label="Jogos" value={group.matches} />
-                            <SummaryBadge label="Min" value={group.minutes} />
-                            <SummaryBadge label="Gols" value={group.goals} highlight />
-                            <SummaryBadge label="Assist" value={group.assists} highlight />
-                            <SummaryBadge label="Chutes" value={group.shots} />
-                            <SummaryBadge label="No Gol" value={group.shots_on_target} />
-                            <SummaryBadge label="P.Dec" value={group.key_passes} />
-                            <SummaryBadge label="Chances" value={group.chances_created} />
-                            <SummaryBadge label="Amar" value={group.yellow_cards} />
-                            <SummaryBadge label="Verm" value={group.red_cards} />
+                            <SummaryBadge label="Jogos"  value={dispMatches} />
+                            <SummaryBadge label="Min"    value={dispMinutes} />
+                            <SummaryBadge label="Gols"   value={dispGoals}   highlight />
+                            <SummaryBadge label="Assist" value={dispAssists} highlight />
+                            <SummaryBadge label="Chutes" value={correction ? n(correction.shots)          : group.shots} />
+                            <SummaryBadge label="No Gol" value={correction ? n(correction.shots_on_target): group.shots_on_target} />
+                            <SummaryBadge label="P.Dec"  value={correction ? n(correction.key_passes)     : group.key_passes} />
+                            <SummaryBadge label="Chances" value={correction ? n(correction.chances_created): group.chances_created} />
+                            <SummaryBadge label="Amar"   value={correction ? n(correction.yellow_cards)   : group.yellow_cards} />
+                            <SummaryBadge label="Verm"   value={correction ? n(correction.red_cards)      : group.red_cards} />
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                           <StatInput
                             label="Jogos"
-                            value={liveEdits[group.groupKey]?.["matches"] ?? group.matches}
+                            value={liveEdits[group.groupKey]?.["matches"] ?? (correction ? n(correction.matches) : group.matches)}
                             onChange={(v) => updateLiveEdit(group.groupKey, "matches", v === "" || v === null ? 0 : Number(v))}
                             tooltip="Total de partidas disputadas nesta competição"
                           />
                           <StatInput
                             label="Minutos"
-                            value={liveEdits[group.groupKey]?.["minutes"] ?? group.minutes}
+                            value={liveEdits[group.groupKey]?.["minutes"] ?? (correction ? n(correction.minutes) : group.minutes)}
                             onChange={(v) => updateLiveEdit(group.groupKey, "minutes", v === "" || v === null ? 0 : Number(v))}
                             tooltip="Total de minutos em campo"
                           />
@@ -1011,13 +1061,15 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
                         <Alert className="border-blue-500/30 bg-blue-500/5">
                           <Info className="h-4 w-4 text-blue-400" />
                           <AlertDescription className="text-blue-300 text-xs">
-                            Estatísticas geradas pelo sistema Live Match. Você pode editar os valores abaixo manualmente para corrigir eventuais falhas da automação.
+                            {correction
+                              ? "Os valores exibidos são a correção manual salva. Edite abaixo para atualizar a correção."
+                              : "Estatísticas geradas pelo sistema Live Match. Você pode editar os valores abaixo manualmente para corrigir eventuais falhas da automação."}
                           </AlertDescription>
                         </Alert>
                         <ScoutCategoryStats
                           mode="edit"
                           categories={isGoalkeeper ? GOALKEEPER_SCOUT_CATEGORIES : OUTFIELD_SCOUT_CATEGORIES}
-                          values={{ ...liveStatToScoutValues(group), ...(liveEdits[group.groupKey] ?? {}) }}
+                          values={{ ...baseScoutValues, ...(liveEdits[group.groupKey] ?? {}) }}
                           onChange={(key, next) => updateLiveEdit(group.groupKey, key, next)}
                         />
                       </div>
