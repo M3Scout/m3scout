@@ -2783,6 +2783,26 @@ export type Database = {
         Args: { p_match_id: string }
         Returns: number
       }
+      get_season_player_aggregates: {
+        Args: { p_season_year: number }
+        Returns: {
+          full_name: string
+          player_id: string
+          slug: string
+          total_accurate_passes: number
+          total_aerial_duels_failed: number
+          total_aerial_duels_won: number
+          total_crosses_failed: number
+          total_crosses_success: number
+          total_dribbles_failed: number
+          total_dribbles_success: number
+          total_failed_passes: number
+          total_ground_duels_failed: number
+          total_ground_duels_won: number
+          total_matches: number
+          total_minutes: number
+        }[]
+      }
       get_user_rbac: { Args: { p_user_id: string }; Returns: Json }
       get_user_role: {
         Args: { _user_id: string }
