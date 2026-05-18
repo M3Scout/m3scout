@@ -1,22 +1,17 @@
-import { useState, useEffect, useCallback } from "react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
   TrendingUp,
-  TrendingDown,
-  Minus,
-  Brain,
-  Trophy,
-  PieChart,
   Sparkles,
   ChevronRight,
   Lightbulb,
-  ArrowUpRight,
-  ArrowDownRight,
   Clock,
   Target,
   Crosshair,
   ShieldAlert,
+  Brain,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,16 +22,15 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { logFetchSuccess, logFetchError, logFetchSkipped, isAbortError } from "@/lib/fetchLogger";
 
-type TrendDirection = "up" | "down" | "stable" | "new";
-type InsightType = "rising" | "alert" | "market" | "profile" | "competition" | "balance" | "neutral" | "critical";
-type InsightPriority = 1 | 2 | 3 | 4 | 5;
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type InsightType = "alert" | "critical" | "neutral";
 
 interface Insight {
   id: string;
   type: InsightType;
-  priority: InsightPriority;
+  priority: 1 | 2 | 3 | 4 | 5;
   icon: React.ElementType;
   title: string;
   description: string;
@@ -45,370 +39,172 @@ interface Insight {
   colorClass: string;
   bgClass: string;
   borderClass: string;
-  trend?: {
-    direction: TrendDirection;
-    value?: number;
-    label?: string;
-  };
 }
 
-const insightConfig = {
-  rising: {
-    icon: TrendingUp,
-    colorClass: "text-emerald-400",
-    bgClass: "bg-emerald-500/10",
-    borderClass: "border-emerald-500/20 hover:border-emerald-500/40",
+const cfg = {
+  critical: {
+    colorClass:  "text-rose-400",
+    bgClass:     "bg-rose-500/10",
+    borderClass: "border-rose-500/20 hover:border-rose-500/40",
   },
   alert: {
-    icon: AlertTriangle,
-    colorClass: "text-amber-400",
-    bgClass: "bg-amber-500/10",
+    colorClass:  "text-amber-400",
+    bgClass:     "bg-amber-500/10",
     borderClass: "border-amber-500/20 hover:border-amber-500/40",
   },
-  critical: {
-    icon: ShieldAlert,
-    colorClass: "text-rose-400",
-    bgClass: "bg-rose-500/10",
-    borderClass: "border-rose-500/20 hover:border-rose-500/40",
-  },
-  market: {
-    icon: TrendingUp,
-    colorClass: "text-blue-400",
-    bgClass: "bg-blue-500/10",
-    borderClass: "border-blue-500/20 hover:border-blue-500/40",
-  },
-  profile: {
-    icon: Brain,
-    colorClass: "text-violet-400",
-    bgClass: "bg-violet-500/10",
-    borderClass: "border-violet-500/20 hover:border-violet-500/40",
-  },
-  competition: {
-    icon: Trophy,
-    colorClass: "text-primary",
-    bgClass: "bg-primary/10",
-    borderClass: "border-primary/20 hover:border-primary/40",
-  },
-  balance: {
-    icon: PieChart,
-    colorClass: "text-rose-400",
-    bgClass: "bg-rose-500/10",
-    borderClass: "border-rose-500/20 hover:border-rose-500/40",
-  },
   neutral: {
-    icon: Lightbulb,
-    colorClass: "text-zinc-400",
-    bgClass: "bg-zinc-500/5",
+    colorClass:  "text-zinc-400",
+    bgClass:     "bg-zinc-500/5",
     borderClass: "border-zinc-700/30 hover:border-zinc-600/50",
   },
 };
 
-// ─── Aggregated per-player stats for the current season ──────────────────────
-interface PlayerAggregate {
-  playerId: string;
-  fullName: string;
-  slug: string | null;
-  matches: number;
-  minutes: number;
-  // passes: accurate_passes = completed; total_passes = FAILED (DB naming quirk)
-  passesCompleted: number;
-  passesFailed: number;
-  // dribbles: successful_dribbles = success; total_dribbles = FAILED (DB naming quirk)
-  dribblesSuccess: number;
-  dribblesFailed: number;
-  crossesSuccess: number;
-  crossesFailed: number;
-  // ground duels: ground_duels_total = FAILED (DB naming quirk)
-  groundDuelsWon: number;
-  groundDuelsFailed: number;
-  // aerial duels: aerial_duels_total = FAILED (DB naming quirk)
-  aerialDuelsWon: number;
-  aerialDuelsFailed: number;
+// ─── RPC row shape ────────────────────────────────────────────────────────────
+
+interface AggregateRow {
+  player_id:              string;
+  full_name:              string;
+  slug:                   string | null;
+  total_matches:          number;
+  total_minutes:          number;
+  total_accurate_passes:  number;
+  total_failed_passes:    number;
+  total_crosses_success:  number;
+  total_crosses_failed:   number;
+  total_dribbles_success: number;
+  total_dribbles_failed:  number;
+  total_ground_duels_won:    number;
+  total_ground_duels_failed: number;
+  total_aerial_duels_won:    number;
+  total_aerial_duels_failed: number;
 }
 
-interface RateRule {
-  statName: string;
-  icon: React.ElementType;
-  success: number;
-  total: number;
-  minTotal: number;
+// ─── Insight engine (pure function — runs in useMemo) ─────────────────────────
+
+function buildInsights(aggregates: AggregateRow[], year: number): Insight[] {
+  const out: Insight[] = [];
+
+  for (const p of aggregates) {
+    const firstName  = p.full_name.split(" ")[0];
+    const link       = `/app/players/${p.player_id}`;
+
+    // Rule 1 — Minutagem Baixa
+    if (p.total_matches >= 5) {
+      const avgMin = p.total_minutes / p.total_matches;
+      if (avgMin <= 45) {
+        out.push({
+          id:          `minutes-${p.player_id}`,
+          type:        "alert",
+          priority:    3,
+          icon:        Clock,
+          ...cfg.alert,
+          title:       `${firstName}: Minutagem Baixa`,
+          description: `Apenas ${avgMin.toFixed(0)} min/jogo em ${p.total_matches} partidas na temporada ${year}.`,
+          tooltip:     `${p.full_name} tem média de ${avgMin.toFixed(0)} min/jogo em ${p.total_matches} jogos em ${year}. Indica falta de regularidade como titular.`,
+          link,
+        });
+      }
+    }
+
+    // Rule 2 — Success rates
+    type RateRule = { statName: string; icon: React.ElementType; success: number; total: number; minTotal: number };
+    const rules: RateRule[] = [
+      { statName: "Passes",      icon: Target,     success: p.total_accurate_passes,  total: p.total_accurate_passes + p.total_failed_passes,   minTotal: 50 },
+      { statName: "Dribles",     icon: TrendingUp,  success: p.total_dribbles_success, total: p.total_dribbles_success + p.total_dribbles_failed, minTotal: 15 },
+      { statName: "Cruzamentos", icon: Crosshair,   success: p.total_crosses_success,  total: p.total_crosses_success + p.total_crosses_failed,   minTotal: 10 },
+      { statName: "Duelo Chão",  icon: ShieldAlert, success: p.total_ground_duels_won, total: p.total_ground_duels_won + p.total_ground_duels_failed, minTotal: 15 },
+      { statName: "Duelo Aéreo", icon: ShieldAlert, success: p.total_aerial_duels_won, total: p.total_aerial_duels_won + p.total_aerial_duels_failed, minTotal: 10 },
+    ];
+
+    for (const r of rules) {
+      if (r.total < r.minTotal) continue;
+      const pct = (r.success / r.total) * 100;
+
+      if (pct < 50) {
+        out.push({
+          id:          `critical-${r.statName.toLowerCase()}-${p.player_id}`,
+          type:        "critical",
+          priority:    1,
+          icon:        r.icon,
+          ...cfg.critical,
+          title:       `${firstName}: Alerta Crítico em ${r.statName}`,
+          description: `Aproveitamento de apenas ${pct.toFixed(0)}%. Índice preocupante para a temporada.`,
+          tooltip:     `${p.full_name} — ${r.statName}: ${pct.toFixed(1)}% (${r.success}/${r.total}) em ${year}. Abaixo de 50% é crítico.`,
+          link,
+        });
+      } else if (pct <= 65) {
+        out.push({
+          id:          `attention-${r.statName.toLowerCase()}-${p.player_id}`,
+          type:        "alert",
+          priority:    2,
+          icon:        r.icon,
+          ...cfg.alert,
+          title:       `${firstName}: Atenção em ${r.statName}`,
+          description: `Aproveitamento de ${pct.toFixed(0)}%. Exige acompanhamento.`,
+          tooltip:     `${p.full_name} — ${r.statName}: ${pct.toFixed(1)}% (${r.success}/${r.total}) em ${year}. Entre 50–65%, requer monitoramento.`,
+          link,
+        });
+      }
+    }
+  }
+
+  // Sort: critical (1) → attention (2) → minutes (3)
+  out.sort((a, b) => a.priority - b.priority);
+
+  // Pad with neutral cards if fewer than 5 real insights
+  if (out.length === 0) {
+    out.push({
+      id: "no-alerts", type: "neutral", priority: 5, icon: Lightbulb, ...cfg.neutral,
+      title:       "Nenhum alerta na temporada",
+      description: `Todos os atletas com aproveitamentos regulares em ${year}.`,
+      tooltip:     `Não foram detectados índices críticos nos dados de ${year}. Continue monitorando!`,
+      link:        "/app/players",
+    });
+  }
+  if (out.length < 5) {
+    out.push({
+      id: "explore", type: "neutral", priority: 5, icon: Brain, ...cfg.neutral,
+      title:       "Explore o portfólio",
+      description: "Analise atletas e crie relatórios de scouting.",
+      tooltip:     "Acesse a lista completa de atletas para análises detalhadas.",
+      link:        "/app/players",
+    });
+  }
+
+  return out.slice(0, 5);
 }
 
-const TrendBadge = ({ trend }: { trend: Insight["trend"] }) => {
-  if (!trend) return null;
-  const config = {
-    up:     { icon: ArrowUpRight,   color: "text-emerald-400", bg: "bg-emerald-500/20" },
-    down:   { icon: ArrowDownRight, color: "text-rose-400",    bg: "bg-rose-500/20" },
-    stable: { icon: Minus,          color: "text-zinc-400",    bg: "bg-zinc-500/20" },
-    new:    { icon: Sparkles,       color: "text-amber-400",   bg: "bg-amber-500/20" },
-  };
-  const { icon: Icon, color, bg } = config[trend.direction];
-  return (
-    <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${bg} ${color}`}>
-      <Icon className="w-3 h-3" />
-      {trend.value !== undefined && (
-        <span>{trend.direction === "down" ? "" : "+"}{trend.value}%</span>
-      )}
-      {trend.label && <span>{trend.label}</span>}
-    </div>
-  );
-};
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export const InsightsCard = () => {
   const { session } = useAuth();
+  const currentYear = new Date().getFullYear();
 
-  const [insights, setInsights] = useState<Insight[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [hasFetched, setHasFetched] = useState(false);
+  // Single RPC call — Postgres aggregates all competitions per player in one
+  // pass. React Query fires this in parallel with other dashboard queries and
+  // caches the result for 5 minutes so navigating back is instant.
+  const { data: aggregates = [], isLoading } = useQuery<AggregateRow[]>({
+    queryKey:  ["insights-season-aggregates", currentYear],
+    queryFn:   async () => {
+      const { data, error } = await supabase.rpc("get_season_player_aggregates", {
+        p_season_year: currentYear,
+      });
+      if (error) throw error;
+      return (data ?? []) as AggregateRow[];
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled:   !!session?.user,
+  });
 
-  const generateInsights = useCallback(async () => {
-    if (!session?.user) { logFetchSkipped("InsightsCard", "no session"); return; }
-    if (hasFetched) return;
-    setHasFetched(true);
+  // Insight rules run synchronously on the already-aggregated RPC result
+  const insights = useMemo(
+    () => buildInsights(aggregates, currentYear),
+    [aggregates, currentYear],
+  );
 
-    const fetchStart = performance.now();
-    const currentYear = new Date().getFullYear();
+  // ── Loading skeleton ──────────────────────────────────────────────────────
 
-    try {
-      // Step 1 — raw stats rows for the current season (no embedded join to
-      // avoid Supabase collapsing/reordering rows with the same player_id)
-      const { data: statsRows, error: statsErr } = await supabase
-        .from("player_stats")
-        .select(
-          "player_id, matches, minutes, accurate_passes, total_passes, " +
-          "crosses_success, crosses_failed, successful_dribbles, total_dribbles, " +
-          "ground_duels_won, ground_duels_total, aerial_duels_won, aerial_duels_total"
-        )
-        .eq("season_year", currentYear);
-
-      if (statsErr) throw statsErr;
-      if (!statsRows?.length) {
-        setInsights([{
-          id: "no-data", type: "neutral", priority: 5, icon: Lightbulb,
-          colorClass: insightConfig.neutral.colorClass, bgClass: insightConfig.neutral.bgClass,
-          borderClass: insightConfig.neutral.borderClass,
-          title: "Sem dados na temporada", link: "/app/players",
-          description: `Nenhuma estatística registrada em ${currentYear}.`,
-          tooltip: `Adicione estatísticas a atletas para ver insights aqui.`,
-        }]);
-        return;
-      }
-
-      // Step 2 — player details for the IDs found in player_stats
-      const uniqueIds = [...new Set(statsRows.map(r => r.player_id))];
-      const { data: playersData } = await supabase
-        .from("players")
-        .select("id, full_name, slug, is_archived")
-        .in("id", uniqueIds);
-
-      const playerInfo = new Map(
-        (playersData ?? [])
-          .filter(p => !p.is_archived)
-          .map(p => [p.id, p])
-      );
-
-      // Step 3 — aggregate ALL competition rows per player before any logic
-      const aggMap = new Map<string, PlayerAggregate>();
-
-      for (const row of statsRows) {
-        const info = playerInfo.get(row.player_id);
-        if (!info) continue; // skip archived / unknown players
-
-        let agg = aggMap.get(row.player_id);
-        if (!agg) {
-          agg = {
-            playerId:         row.player_id,
-            fullName:         info.full_name ?? "Atleta",
-            slug:             info.slug ?? null,
-            matches:          0,
-            minutes:          0,
-            passesCompleted:  0,
-            passesFailed:     0,
-            dribblesSuccess:  0,
-            dribblesFailed:   0,
-            crossesSuccess:   0,
-            crossesFailed:    0,
-            groundDuelsWon:   0,
-            groundDuelsFailed: 0,
-            aerialDuelsWon:   0,
-            aerialDuelsFailed: 0,
-          };
-          aggMap.set(row.player_id, agg);
-        }
-
-        agg.matches           += row.matches           ?? 0;
-        agg.minutes           += row.minutes           ?? 0;
-        agg.passesCompleted   += row.accurate_passes   ?? 0;
-        agg.passesFailed      += row.total_passes      ?? 0; // column stores FAILED
-        agg.dribblesSuccess   += row.successful_dribbles ?? 0;
-        agg.dribblesFailed    += row.total_dribbles    ?? 0; // column stores FAILED
-        agg.crossesSuccess    += row.crosses_success   ?? 0;
-        agg.crossesFailed     += row.crosses_failed    ?? 0;
-        agg.groundDuelsWon    += row.ground_duels_won   ?? 0;
-        agg.groundDuelsFailed += row.ground_duels_total ?? 0; // column stores FAILED
-        agg.aerialDuelsWon    += row.aerial_duels_won   ?? 0;
-        agg.aerialDuelsFailed += row.aerial_duels_total ?? 0; // column stores FAILED
-      }
-
-      // Step 4 — run insight logic on the aggregated yearly totals
-      const players = Array.from(aggMap.values());
-      const generatedInsights: Insight[] = [];
-
-      for (const p of players) {
-        const firstName = p.fullName.split(" ")[0];
-        const playerLink = `/app/players/${p.playerId}`;
-
-        // ── Rule 1: Minutagem Baixa ─────────────────────────────────────────
-        if (p.matches >= 5) {
-          const avgMin = p.minutes / p.matches;
-          if (avgMin <= 45) {
-            generatedInsights.push({
-              id:          `minutes-${p.playerId}`,
-              type:        "alert",
-              priority:    3,
-              icon:        Clock,
-              colorClass:  insightConfig.alert.colorClass,
-              bgClass:     insightConfig.alert.bgClass,
-              borderClass: insightConfig.alert.borderClass,
-              title:       `${firstName}: Minutagem Baixa`,
-              description: `Apenas ${avgMin.toFixed(0)} min/jogo em ${p.matches} partidas. Precisa buscar a titularidade ou mais regularidade.`,
-              tooltip:     `${p.fullName} tem média de ${avgMin.toFixed(0)} minutos por jogo em ${p.matches} partidas na temporada ${currentYear}. Isso indica falta de regularidade como titular.`,
-              link:        playerLink,
-            });
-          }
-        }
-
-        // ── Rule 2: Success Rates ───────────────────────────────────────────
-        const rateRules: RateRule[] = [
-          {
-            statName: "Passes",
-            icon:     Target,
-            success:  p.passesCompleted,
-            total:    p.passesCompleted + p.passesFailed,
-            minTotal: 50,
-          },
-          {
-            statName: "Dribles",
-            icon:     TrendingUp,
-            success:  p.dribblesSuccess,
-            total:    p.dribblesSuccess + p.dribblesFailed,
-            minTotal: 15,
-          },
-          {
-            statName: "Cruzamentos",
-            icon:     Crosshair,
-            success:  p.crossesSuccess,
-            total:    p.crossesSuccess + p.crossesFailed,
-            minTotal: 10,
-          },
-          {
-            statName: "Duelo Chão",
-            icon:     ShieldAlert,
-            success:  p.groundDuelsWon,
-            total:    p.groundDuelsWon + p.groundDuelsFailed,
-            minTotal: 15,
-          },
-          {
-            statName: "Duelo Aéreo",
-            icon:     ShieldAlert,
-            success:  p.aerialDuelsWon,
-            total:    p.aerialDuelsWon + p.aerialDuelsFailed,
-            minTotal: 10,
-          },
-        ];
-
-        for (const rule of rateRules) {
-          if (rule.total < rule.minTotal) continue;
-          const pct = (rule.success / rule.total) * 100;
-
-          if (pct < 50) {
-            generatedInsights.push({
-              id:          `critical-${rule.statName.toLowerCase()}-${p.playerId}`,
-              type:        "critical",
-              priority:    1,
-              icon:        rule.icon,
-              colorClass:  insightConfig.critical.colorClass,
-              bgClass:     insightConfig.critical.bgClass,
-              borderClass: insightConfig.critical.borderClass,
-              title:       `${firstName}: Alerta Crítico em ${rule.statName}`,
-              description: `Aproveitamento de apenas ${pct.toFixed(0)}%. Índice preocupante para a temporada.`,
-              tooltip:     `${p.fullName} tem aproveitamento de ${pct.toFixed(1)}% em ${rule.statName} (${rule.success}/${rule.total}) na temporada ${currentYear}. Índice abaixo de 50% é considerado crítico.`,
-              link:        playerLink,
-            });
-          } else if (pct <= 65) {
-            generatedInsights.push({
-              id:          `attention-${rule.statName.toLowerCase()}-${p.playerId}`,
-              type:        "alert",
-              priority:    2,
-              icon:        rule.icon,
-              colorClass:  insightConfig.alert.colorClass,
-              bgClass:     insightConfig.alert.bgClass,
-              borderClass: insightConfig.alert.borderClass,
-              title:       `${firstName}: Atenção em ${rule.statName}`,
-              description: `Aproveitamento de ${pct.toFixed(0)}%. Exige acompanhamento para melhorar a regularidade.`,
-              tooltip:     `${p.fullName} tem aproveitamento de ${pct.toFixed(1)}% em ${rule.statName} (${rule.success}/${rule.total}) na temporada ${currentYear}. Entre 50–65%, exige monitoramento.`,
-              link:        playerLink,
-            });
-          }
-        }
-      }
-
-      // ── Sort: critical (1) → attention (2) → minutes (3) ─────────────────
-      generatedInsights.sort((a, b) => a.priority - b.priority);
-
-      // ── Pad to 5 if needed ────────────────────────────────────────────────
-      const TARGET = 5;
-      if (generatedInsights.length === 0) {
-        generatedInsights.push({
-          id:          "no-alerts",
-          type:        "neutral",
-          priority:    5,
-          icon:        Lightbulb,
-          colorClass:  insightConfig.neutral.colorClass,
-          bgClass:     insightConfig.neutral.bgClass,
-          borderClass: insightConfig.neutral.borderClass,
-          title:       "Nenhum alerta na temporada",
-          description: `Todos os atletas estão com aproveitamentos regulares em ${currentYear}.`,
-          tooltip:     `Não foram detectados índices críticos nos dados de ${currentYear}. Continue monitorando!`,
-          link:        "/app/players",
-        });
-      }
-      if (generatedInsights.length < TARGET) {
-        generatedInsights.push({
-          id:          "explore",
-          type:        "neutral",
-          priority:    5,
-          icon:        Brain,
-          colorClass:  insightConfig.neutral.colorClass,
-          bgClass:     insightConfig.neutral.bgClass,
-          borderClass: insightConfig.neutral.borderClass,
-          title:       "Explore o portfólio",
-          description: "Analise atletas e crie relatórios de scouting.",
-          tooltip:     "Acesse a lista completa de atletas para análises detalhadas.",
-          link:        "/app/players",
-        });
-      }
-
-      logFetchSuccess({ endpoint: "InsightsCard" }, performance.now() - fetchStart);
-      setInsights(generatedInsights.slice(0, TARGET));
-    } catch (error) {
-      if (isAbortError(error)) {
-        if (import.meta.env.DEV) console.log("[FETCH ABORT] InsightsCard");
-        setHasFetched(false);
-        return;
-      }
-      logFetchError(error, { endpoint: "InsightsCard" });
-    } finally {
-      setLoading(false);
-    }
-  }, [session?.user, hasFetched]);
-
-  useEffect(() => {
-    if (session?.user && !hasFetched) generateInsights();
-  }, [session?.user, hasFetched, generateInsights]);
-
-  // ── Loading skeleton ────────────────────────────────────────────────────────
-  if (loading) {
+  if (isLoading) {
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -437,14 +233,14 @@ export const InsightsCard = () => {
     );
   }
 
-  // ── Render ──────────────────────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────────────────
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="w-full max-w-full h-full flex flex-col rounded-xl bg-zinc-900/60 backdrop-blur-sm shadow-sm overflow-hidden"
     >
-      {/* Header */}
       <div className="px-5 py-4 border-b border-zinc-800/40 bg-zinc-900/50 shrink-0">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500/20 to-yellow-600/10 flex items-center justify-center relative">
@@ -454,13 +250,12 @@ export const InsightsCard = () => {
           <div>
             <h2 className="text-sm font-semibold text-white">Insights da Plataforma</h2>
             <p className="text-[10px] text-zinc-500">
-              Análise automática · Temporada {new Date().getFullYear()}
+              Análise automática · Temporada {currentYear}
             </p>
           </div>
         </div>
       </div>
 
-      {/* Insight list */}
       <div className="p-3 flex-1 flex flex-col">
         <TooltipProvider delayDuration={300}>
           <div className="flex flex-col justify-between h-full gap-2">
@@ -491,12 +286,9 @@ export const InsightsCard = () => {
                         </motion.div>
 
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className={`text-sm font-medium truncate ${insight.colorClass}`}>
-                              {insight.title}
-                            </p>
-                            {insight.trend && <TrendBadge trend={insight.trend} />}
-                          </div>
+                          <p className={`text-sm font-medium truncate ${insight.colorClass}`}>
+                            {insight.title}
+                          </p>
                           <p className="text-[11px] text-zinc-400 mt-0.5 line-clamp-1">
                             {insight.description}
                           </p>
