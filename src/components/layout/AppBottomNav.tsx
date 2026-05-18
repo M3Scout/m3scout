@@ -17,6 +17,9 @@ export function AppBottomNav() {
   const { mobileMenuOpen } = useSidebar();
   const activeIdx = items.findIndex((i) => i.match(location.pathname));
 
+  // Hide during active live match sessions — the action buttons need full screen height
+  if (location.pathname.startsWith("/app/live-match/")) return null;
+
   return (
     <nav className="m3-bottom-nav" aria-label="Navegação rápida">
       <motion.div
