@@ -1,19 +1,22 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { 
-  Flame, 
-  AlertTriangle, 
-  TrendingUp, 
+import {
+  AlertTriangle,
+  TrendingUp,
   TrendingDown,
   Minus,
-  Brain, 
-  Trophy, 
+  Brain,
+  Trophy,
   PieChart,
   Sparkles,
   ChevronRight,
   Lightbulb,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  Clock,
+  Target,
+  Crosshair,
+  ShieldAlert,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,8 +30,8 @@ import {
 import { logFetchSuccess, logFetchError, logFetchSkipped, isAbortError } from "@/lib/fetchLogger";
 
 type TrendDirection = "up" | "down" | "stable" | "new";
-type InsightType = "rising" | "alert" | "market" | "profile" | "competition" | "balance" | "neutral";
-type InsightPriority = 1 | 2 | 3 | 4 | 5; // 1 = highest priority
+type InsightType = "rising" | "alert" | "market" | "profile" | "competition" | "balance" | "neutral" | "critical";
+type InsightPriority = 1 | 2 | 3 | 4 | 5;
 
 interface Insight {
   id: string;
@@ -51,7 +54,7 @@ interface Insight {
 
 const insightConfig = {
   rising: {
-    icon: Flame,
+    icon: TrendingUp,
     colorClass: "text-emerald-400",
     bgClass: "bg-emerald-500/10",
     borderClass: "border-emerald-500/20 hover:border-emerald-500/40",
@@ -61,6 +64,12 @@ const insightConfig = {
     colorClass: "text-amber-400",
     bgClass: "bg-amber-500/10",
     borderClass: "border-amber-500/20 hover:border-amber-500/40",
+  },
+  critical: {
+    icon: ShieldAlert,
+    colorClass: "text-rose-400",
+    bgClass: "bg-rose-500/10",
+    borderClass: "border-rose-500/20 hover:border-rose-500/40",
   },
   market: {
     icon: TrendingUp,
@@ -94,116 +103,46 @@ const insightConfig = {
   },
 };
 
-// Fallback insights when we don't have enough real data
-const getFallbackInsights = (
-  existingCount: number,
-  stats: { avgAge?: number; positionBalance?: boolean; hasAlerts?: boolean }
-): Insight[] => {
-  const fallbacks: Insight[] = [];
+// ─── Aggregated per-player stats for the current season ──────────────────────
+interface PlayerAggregate {
+  playerId: string;
+  fullName: string;
+  slug: string | null;
+  matches: number;
+  minutes: number;
+  // passes: accurate_passes = completed; total_passes = FAILED (DB naming quirk)
+  passesCompleted: number;
+  passesFailed: number;
+  // dribbles: successful_dribbles = success; total_dribbles = FAILED (DB naming quirk)
+  dribblesSuccess: number;
+  dribblesFailed: number;
+  crossesSuccess: number;
+  crossesFailed: number;
+  // ground duels: ground_duels_total = FAILED (DB naming quirk)
+  groundDuelsWon: number;
+  groundDuelsFailed: number;
+  // aerial duels: aerial_duels_total = FAILED (DB naming quirk)
+  aerialDuelsWon: number;
+  aerialDuelsFailed: number;
+}
 
-  if (!stats.hasAlerts) {
-    fallbacks.push({
-      id: "fallback-no-alerts",
-      type: "neutral",
-      priority: 5,
-      ...insightConfig.neutral,
-      title: "Nenhum atleta em alerta",
-      description: "Todos os atletas estão com performance estável.",
-      tooltip: "Não há atletas com queda significativa de desempenho ou em situação crítica no momento.",
-      link: "/app/players",
-    });
-  }
-
-  if (stats.avgAge && stats.avgAge < 22) {
-    fallbacks.push({
-      id: "fallback-young-base",
-      type: "neutral",
-      priority: 5,
-      ...insightConfig.neutral,
-      icon: TrendingUp,
-      colorClass: "text-blue-400",
-      bgClass: "bg-blue-500/5",
-      borderClass: "border-blue-500/20 hover:border-blue-500/30",
-      title: "Base jovem promissora",
-      description: `Média de idade de ${stats.avgAge.toFixed(0)} anos no elenco.`,
-      tooltip: "A média de idade dos atletas indica um portfólio com alto potencial de valorização a longo prazo.",
-      link: "/app/players",
-    });
-  }
-
-  if (stats.positionBalance) {
-    fallbacks.push({
-      id: "fallback-balanced",
-      type: "neutral",
-      priority: 5,
-      ...insightConfig.neutral,
-      icon: PieChart,
-      colorClass: "text-emerald-400",
-      bgClass: "bg-emerald-500/5",
-      borderClass: "border-emerald-500/20 hover:border-emerald-500/30",
-      title: "Elenco bem distribuído",
-      description: "Posições equilibradas no portfólio.",
-      tooltip: "A distribuição de posições está equilibrada, reduzindo riscos de concentração em áreas específicas.",
-      link: "/app/players",
-    });
-  }
-
-  // Generic fallbacks
-  fallbacks.push({
-    id: "fallback-explore",
-    type: "neutral",
-    priority: 5,
-    ...insightConfig.neutral,
-    icon: Brain,
-    title: "Explore o portfólio",
-    description: "Analise atletas e crie relatórios.",
-    tooltip: "Acesse a lista completa de atletas para análises detalhadas e criação de novos relatórios de scouting.",
-    link: "/app/players",
-  });
-
-  fallbacks.push({
-    id: "fallback-reports",
-    type: "neutral",
-    priority: 5,
-    ...insightConfig.neutral,
-    icon: Trophy,
-    title: "Acompanhe competições",
-    description: "Veja as competições mais utilizadas.",
-    tooltip: "Monitore quais competições estão gerando os melhores relatórios e insights sobre atletas.",
-    link: "/app/competitions",
-  });
-
-  return fallbacks;
-};
+interface RateRule {
+  statName: string;
+  icon: React.ElementType;
+  success: number;
+  total: number;
+  minTotal: number;
+}
 
 const TrendBadge = ({ trend }: { trend: Insight["trend"] }) => {
   if (!trend) return null;
-
   const config = {
-    up: {
-      icon: ArrowUpRight,
-      color: "text-emerald-400",
-      bg: "bg-emerald-500/20",
-    },
-    down: {
-      icon: ArrowDownRight,
-      color: "text-rose-400",
-      bg: "bg-rose-500/20",
-    },
-    stable: {
-      icon: Minus,
-      color: "text-zinc-400",
-      bg: "bg-zinc-500/20",
-    },
-    new: {
-      icon: Sparkles,
-      color: "text-amber-400",
-      bg: "bg-amber-500/20",
-    },
+    up:     { icon: ArrowUpRight,   color: "text-emerald-400", bg: "bg-emerald-500/20" },
+    down:   { icon: ArrowDownRight, color: "text-rose-400",    bg: "bg-rose-500/20" },
+    stable: { icon: Minus,          color: "text-zinc-400",    bg: "bg-zinc-500/20" },
+    new:    { icon: Sparkles,       color: "text-amber-400",   bg: "bg-amber-500/20" },
   };
-
   const { icon: Icon, color, bg } = config[trend.direction];
-
   return (
     <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${bg} ${color}`}>
       <Icon className="w-3 h-3" />
@@ -218,316 +157,239 @@ const TrendBadge = ({ trend }: { trend: Insight["trend"] }) => {
 export const InsightsCard = () => {
   const { session, permissionsLoading, rolesLoading } = useAuth();
   const rbacReady = Boolean(session?.user) && !permissionsLoading && !rolesLoading;
-  
+
   const [insights, setInsights] = useState<Insight[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasFetched, setHasFetched] = useState(false);
 
   const generateInsights = useCallback(async () => {
-    // GUARD: Only fetch when RBAC is ready
-    if (!session?.user) {
-      logFetchSkipped("InsightsCard", "no session");
-      return;
-    }
-    if (!rbacReady) {
-      logFetchSkipped("InsightsCard", "rbac not ready");
-      return;
-    }
-    
-    // Prevent duplicate fetches
+    if (!session?.user) { logFetchSkipped("InsightsCard", "no session"); return; }
+    if (!rbacReady)     { logFetchSkipped("InsightsCard", "rbac not ready"); return; }
     if (hasFetched) return;
     setHasFetched(true);
-    
+
     const fetchStart = performance.now();
-    
+    const currentYear = new Date().getFullYear();
+
     try {
-        const generatedInsights: Insight[] = [];
+      // Fetch all player_stats rows for the current season, with player details
+      const { data: rows, error } = await supabase
+        .from("player_stats")
+        .select(`
+          player_id,
+          matches, minutes,
+          accurate_passes, total_passes,
+          crosses_success, crosses_failed,
+          successful_dribbles, total_dribbles,
+          ground_duels_won, ground_duels_total,
+          aerial_duels_won, aerial_duels_total,
+          player:players!player_id(id, full_name, slug, is_archived)
+        `)
+        .eq("season_year", currentYear);
 
-        // Fetch all necessary data in parallel
-        const [
-          playersResult,
-          statsResult,
-          reportsResult,
-          competitionsResult,
-          ratingHistoryResult,
-        ] = await Promise.all([
-          supabase
-            .from("players")
-            .select("id, full_name, position, age, auto_rating, current_club, slug")
-            .or("is_archived.is.null,is_archived.eq.false")
-            .not("auto_rating", "is", null)
-            .order("auto_rating", { ascending: false })
-            .limit(50),
-          supabase
-            .from("player_stats")
-            .select("player_id, goals, assists, minutes, matches, season_year, competition_id")
-            .order("season_year", { ascending: false })
-            .limit(200),
-          supabase
-            .from("scouting_reports")
-            .select("id, player_id, final_score, match_date, competition_id, created_at, players(full_name, slug), competitions(name)")
-            .is("deleted_at", null)
-            .order("match_date", { ascending: false })
-            .limit(100),
-          supabase
-            .from("competitions")
-            .select("id, name, tier, final_coefficient")
-            .eq("is_active", true),
-          supabase
-            .from("player_rating_history")
-            .select("player_id, rating, recorded_at")
-            .order("recorded_at", { ascending: false })
-            .limit(100),
-        ]);
+      if (error) throw error;
 
-        const players = playersResult.data || [];
-        const stats = statsResult.data || [];
-        const reports = reportsResult.data || [];
-        const competitions = competitionsResult.data || [];
-        const ratingHistory = ratingHistoryResult.data || [];
+      // ── Aggregate per player (sum across all competitions) ──────────────────
+      const map = new Map<string, PlayerAggregate>();
 
-        // Helper: Calculate trend from rating history
-        const calculatePlayerTrend = (playerId: string): { direction: TrendDirection; value: number } => {
-          const playerRatings = ratingHistory
-            .filter(r => r.player_id === playerId)
-            .sort((a, b) => new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime());
-          
-          if (playerRatings.length < 2) {
-            return { direction: "new", value: 0 };
-          }
+      for (const row of (rows ?? [])) {
+        const p = (row.player as any);
+        if (!p || p.is_archived) continue;
 
-          const current = playerRatings[0].rating;
-          const previous = playerRatings[Math.min(1, playerRatings.length - 1)].rating;
-          const change = ((current - previous) / previous) * 100;
-
-          if (Math.abs(change) < 2) return { direction: "stable", value: 0 };
-          return {
-            direction: change > 0 ? "up" : "down",
-            value: Math.round(Math.abs(change)),
-          };
+        const existing = map.get(row.player_id) ?? {
+          playerId:        row.player_id,
+          fullName:        p.full_name ?? "Atleta",
+          slug:            p.slug ?? null,
+          matches:         0,
+          minutes:         0,
+          passesCompleted: 0,
+          passesFailed:    0,
+          dribblesSuccess: 0,
+          dribblesFailed:  0,
+          crossesSuccess:  0,
+          crossesFailed:   0,
+          groundDuelsWon:  0,
+          groundDuelsFailed: 0,
+          aerialDuelsWon:  0,
+          aerialDuelsFailed: 0,
         };
 
-        // Helper: Calculate reports trend (compare last 30 days vs previous 30 days)
-        const calculateReportsTrend = (): { direction: TrendDirection; value: number } => {
-          const now = new Date();
-          const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-          const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+        existing.matches          += row.matches          ?? 0;
+        existing.minutes          += row.minutes          ?? 0;
+        existing.passesCompleted  += row.accurate_passes  ?? 0;
+        existing.passesFailed     += row.total_passes     ?? 0; // column stores FAILED
+        existing.dribblesSuccess  += row.successful_dribbles ?? 0;
+        existing.dribblesFailed   += row.total_dribbles   ?? 0; // column stores FAILED
+        existing.crossesSuccess   += row.crosses_success  ?? 0;
+        existing.crossesFailed    += row.crosses_failed   ?? 0;
+        existing.groundDuelsWon   += row.ground_duels_won   ?? 0;
+        existing.groundDuelsFailed += row.ground_duels_total ?? 0; // column stores FAILED
+        existing.aerialDuelsWon   += row.aerial_duels_won   ?? 0;
+        existing.aerialDuelsFailed += row.aerial_duels_total ?? 0; // column stores FAILED
 
-          const recentReports = reports.filter(r => new Date(r.created_at) >= thirtyDaysAgo).length;
-          const previousReports = reports.filter(r => {
-            const date = new Date(r.created_at);
-            return date >= sixtyDaysAgo && date < thirtyDaysAgo;
-          }).length;
-
-          if (previousReports === 0) {
-            return recentReports > 0 ? { direction: "new", value: recentReports } : { direction: "stable", value: 0 };
-          }
-
-          const change = ((recentReports - previousReports) / previousReports) * 100;
-          if (Math.abs(change) < 5) return { direction: "stable", value: 0 };
-          return {
-            direction: change > 0 ? "up" : "down",
-            value: Math.round(Math.abs(change)),
-          };
-        };
-
-        // Calculate stats for fallback insights
-        const avgAge = players.length > 0 
-          ? players.filter(p => p.age).reduce((sum, p) => sum + (p.age || 0), 0) / players.filter(p => p.age).length
-          : 0;
-
-        const positionCounts: Record<string, number> = {};
-        players.forEach(p => {
-          positionCounts[p.position] = (positionCounts[p.position] || 0) + 1;
-        });
-        const sortedPositions = Object.entries(positionCounts).sort((a, b) => b[1] - a[1]);
-        const topPosition = sortedPositions[0];
-        const concentration = players.length > 0 && topPosition ? (topPosition[1] / players.length) * 100 : 0;
-        const isBalanced = concentration <= 30;
-
-        const lowRatedPlayers = players.filter(p => p.auto_rating && p.auto_rating < 3.0);
-        const hasAlerts = lowRatedPlayers.length > 0;
-
-        // 1. 🔥 Player Rising - Best performing player with trend (Priority 2)
-        if (players.length > 0) {
-          const topPlayer = players[0];
-          if (topPlayer.auto_rating && topPlayer.auto_rating >= 4.0) {
-            const trend = calculatePlayerTrend(topPlayer.id);
-            generatedInsights.push({
-              id: "rising-1",
-              type: "rising",
-              priority: 2,
-              ...insightConfig.rising,
-              title: `${topPlayer.full_name.split(' ')[0]} está em alta`,
-              description: `Nota ${topPlayer.auto_rating.toFixed(1)} — melhor do portfólio atual.`,
-              tooltip: `${topPlayer.full_name} tem a melhor nota automática entre todos os atletas. Posição: ${topPlayer.position}. Clube: ${topPlayer.current_club || 'N/D'}.`,
-              link: `/app/players/${topPlayer.id}`,
-              trend: trend.direction !== "stable" ? trend : undefined,
-            });
-          }
-        }
-
-        // 2. ⚠️ Player Alert - Players with low ratings (Priority 1 - highest)
-        if (hasAlerts) {
-          const alertPlayer = lowRatedPlayers[0];
-          const trend = calculatePlayerTrend(alertPlayer.id);
-          generatedInsights.push({
-            id: "alert-1",
-            type: "alert",
-            priority: 1,
-            ...insightConfig.alert,
-            title: `${alertPlayer.full_name.split(' ')[0]} precisa de atenção`,
-            description: `Nota ${alertPlayer.auto_rating?.toFixed(1)} — abaixo do esperado.`,
-            tooltip: `${alertPlayer.full_name} está com performance abaixo da média. Considere revisar estatísticas ou criar novo relatório de scouting.`,
-            link: `/app/players/${alertPlayer.id}`,
-            trend: trend.direction === "down" ? trend : undefined,
-          });
-        }
-
-        // 3. 📈 Market Potential - Young players with good ratings (Priority 3)
-        const youngTalents = players.filter(p => 
-          p.age && p.age <= 23 && p.auto_rating && p.auto_rating >= 3.5
-        );
-        if (youngTalents.length > 0) {
-          const talent = youngTalents[0];
-          const trend = calculatePlayerTrend(talent.id);
-          generatedInsights.push({
-            id: "market-1",
-            type: "market",
-            priority: 3,
-            ...insightConfig.market,
-            title: `${talent.full_name.split(' ')[0]} tem potencial de mercado`,
-            description: `${talent.age} anos + nota ${talent.auto_rating?.toFixed(1)} = valorização.`,
-            tooltip: `${talent.full_name} combina juventude (${talent.age} anos) com boa performance (${talent.auto_rating?.toFixed(1)}). Alto potencial de valorização no mercado.`,
-            link: `/app/players/${talent.id}`,
-            trend: trend.direction === "up" ? trend : { direction: "new" as TrendDirection, value: 0 },
-          });
-        }
-
-        // 4. 🧠 Profile Highlight - Player excelling in specific area (Priority 3)
-        if (stats.length > 0 && players.length > 0) {
-          const playerGoals: Record<string, number> = {};
-          stats.forEach(s => {
-            playerGoals[s.player_id] = (playerGoals[s.player_id] || 0) + (s.goals || 0);
-          });
-          
-          const topScorerId = Object.entries(playerGoals)
-            .sort((a, b) => b[1] - a[1])[0];
-          
-          if (topScorerId && topScorerId[1] > 3) {
-            const topScorer = players.find(p => p.id === topScorerId[0]);
-            if (topScorer) {
-              generatedInsights.push({
-                id: "profile-1",
-                type: "profile",
-                priority: 3,
-                ...insightConfig.profile,
-                title: `${topScorer.full_name.split(' ')[0]} lidera em gols`,
-                description: `${topScorerId[1]} gols no período — destaque ofensivo.`,
-                tooltip: `${topScorer.full_name} é o artilheiro do portfólio com ${topScorerId[1]} gols. Perfil atacante de alto nível.`,
-                link: `/app/players/${topScorer.id}`,
-              });
-            }
-          }
-        }
-
-        // 5. 🏆 Strategic Competition - Most used competition (Priority 4)
-        if (reports.length > 0) {
-          const compCounts: Record<string, { count: number; totalScore: number; name: string }> = {};
-          reports.forEach((r: any) => {
-            if (r.competition_id && r.competitions?.name) {
-              if (!compCounts[r.competition_id]) {
-                compCounts[r.competition_id] = { count: 0, totalScore: 0, name: r.competitions.name };
-              }
-              compCounts[r.competition_id].count++;
-              compCounts[r.competition_id].totalScore += r.final_score || 0;
-            }
-          });
-
-          const topComp = Object.entries(compCounts)
-            .map(([id, data]) => ({ id, ...data, avgScore: data.totalScore / data.count }))
-            .sort((a, b) => b.count - a.count)[0];
-
-          if (topComp && topComp.count >= 3) {
-            const reportsTrend = calculateReportsTrend();
-            generatedInsights.push({
-              id: "competition-1",
-              type: "competition",
-              priority: 4,
-              ...insightConfig.competition,
-              title: `${topComp.name.split(' ').slice(0, 3).join(' ')} é estratégica`,
-              description: `${topComp.count} relatórios — média ${topComp.avgScore.toFixed(1)}.`,
-              tooltip: `${topComp.name} é a competição mais utilizada com ${topComp.count} relatórios e média de score ${topComp.avgScore.toFixed(1)}.`,
-              link: `/app/competitions`,
-              trend: reportsTrend.direction !== "stable" ? reportsTrend : undefined,
-            });
-          }
-        }
-
-        // 6. 📊 Unbalanced Portfolio - Position concentration (Priority 4)
-        if (players.length >= 5 && !isBalanced && topPosition[1] >= 3) {
-          generatedInsights.push({
-            id: "balance-1",
-            type: "balance",
-            priority: 4,
-            ...insightConfig.balance,
-            title: `Portfólio concentrado`,
-            description: `${topPosition[1]} atletas são ${topPosition[0]}s (${concentration.toFixed(0)}%).`,
-            tooltip: `O portfólio tem ${concentration.toFixed(0)}% de concentração na posição ${topPosition[0]}. Considere diversificar para reduzir riscos.`,
-            link: `/app/players`,
-          });
-        }
-
-        // Sort by priority and take top insights
-        generatedInsights.sort((a, b) => a.priority - b.priority);
-
-        // If we have less than 5 insights, add fallbacks
-        const TARGET_INSIGHTS = 5;
-        if (generatedInsights.length < TARGET_INSIGHTS) {
-          const fallbacks = getFallbackInsights(generatedInsights.length, {
-            avgAge: avgAge || undefined,
-            positionBalance: isBalanced,
-            hasAlerts,
-          });
-
-          // Add fallbacks until we reach 5
-          for (const fallback of fallbacks) {
-            if (generatedInsights.length >= TARGET_INSIGHTS) break;
-            // Don't add duplicate types
-            if (!generatedInsights.some(i => i.id === fallback.id)) {
-              generatedInsights.push(fallback);
-            }
-          }
-        }
-
-        // Always set exactly 5 insights
-        logFetchSuccess({ endpoint: "InsightsCard" }, performance.now() - fetchStart);
-        setInsights(generatedInsights.slice(0, TARGET_INSIGHTS));
-      } catch (error) {
-        // Handle AbortError gracefully
-        if (isAbortError(error)) {
-          if (import.meta.env.DEV) {
-            console.log("[FETCH ABORT] InsightsCard - request cancelled");
-          }
-          setHasFetched(false);
-          return;
-        }
-        logFetchError(error, { endpoint: "InsightsCard" });
-      } finally {
-        setLoading(false);
+        map.set(row.player_id, existing);
       }
+
+      const players = Array.from(map.values());
+      const generatedInsights: Insight[] = [];
+
+      for (const p of players) {
+        const firstName = p.fullName.split(" ")[0];
+        const playerLink = `/app/players/${p.playerId}`;
+
+        // ── Rule 1: Minutagem Baixa ─────────────────────────────────────────
+        if (p.matches >= 5) {
+          const avgMin = p.minutes / p.matches;
+          if (avgMin <= 45) {
+            generatedInsights.push({
+              id:          `minutes-${p.playerId}`,
+              type:        "alert",
+              priority:    3,
+              icon:        Clock,
+              colorClass:  insightConfig.alert.colorClass,
+              bgClass:     insightConfig.alert.bgClass,
+              borderClass: insightConfig.alert.borderClass,
+              title:       `${firstName}: Minutagem Baixa`,
+              description: `Apenas ${avgMin.toFixed(0)} min/jogo em ${p.matches} partidas. Precisa buscar a titularidade ou mais regularidade.`,
+              tooltip:     `${p.fullName} tem média de ${avgMin.toFixed(0)} minutos por jogo em ${p.matches} partidas na temporada ${currentYear}. Isso indica falta de regularidade como titular.`,
+              link:        playerLink,
+            });
+          }
+        }
+
+        // ── Rule 2: Success Rates ───────────────────────────────────────────
+        const rateRules: RateRule[] = [
+          {
+            statName: "Passes",
+            icon:     Target,
+            success:  p.passesCompleted,
+            total:    p.passesCompleted + p.passesFailed,
+            minTotal: 50,
+          },
+          {
+            statName: "Dribles",
+            icon:     TrendingUp,
+            success:  p.dribblesSuccess,
+            total:    p.dribblesSuccess + p.dribblesFailed,
+            minTotal: 15,
+          },
+          {
+            statName: "Cruzamentos",
+            icon:     Crosshair,
+            success:  p.crossesSuccess,
+            total:    p.crossesSuccess + p.crossesFailed,
+            minTotal: 10,
+          },
+          {
+            statName: "Duelo Chão",
+            icon:     ShieldAlert,
+            success:  p.groundDuelsWon,
+            total:    p.groundDuelsWon + p.groundDuelsFailed,
+            minTotal: 15,
+          },
+          {
+            statName: "Duelo Aéreo",
+            icon:     ShieldAlert,
+            success:  p.aerialDuelsWon,
+            total:    p.aerialDuelsWon + p.aerialDuelsFailed,
+            minTotal: 10,
+          },
+        ];
+
+        for (const rule of rateRules) {
+          if (rule.total < rule.minTotal) continue;
+          const pct = (rule.success / rule.total) * 100;
+
+          if (pct < 50) {
+            generatedInsights.push({
+              id:          `critical-${rule.statName.toLowerCase()}-${p.playerId}`,
+              type:        "critical",
+              priority:    1,
+              icon:        rule.icon,
+              colorClass:  insightConfig.critical.colorClass,
+              bgClass:     insightConfig.critical.bgClass,
+              borderClass: insightConfig.critical.borderClass,
+              title:       `${firstName}: Alerta Crítico em ${rule.statName}`,
+              description: `Aproveitamento de apenas ${pct.toFixed(0)}%. Índice preocupante para a temporada.`,
+              tooltip:     `${p.fullName} tem aproveitamento de ${pct.toFixed(1)}% em ${rule.statName} (${rule.success}/${rule.total}) na temporada ${currentYear}. Índice abaixo de 50% é considerado crítico.`,
+              link:        playerLink,
+            });
+          } else if (pct <= 65) {
+            generatedInsights.push({
+              id:          `attention-${rule.statName.toLowerCase()}-${p.playerId}`,
+              type:        "alert",
+              priority:    2,
+              icon:        rule.icon,
+              colorClass:  insightConfig.alert.colorClass,
+              bgClass:     insightConfig.alert.bgClass,
+              borderClass: insightConfig.alert.borderClass,
+              title:       `${firstName}: Atenção em ${rule.statName}`,
+              description: `Aproveitamento de ${pct.toFixed(0)}%. Exige acompanhamento para melhorar a regularidade.`,
+              tooltip:     `${p.fullName} tem aproveitamento de ${pct.toFixed(1)}% em ${rule.statName} (${rule.success}/${rule.total}) na temporada ${currentYear}. Entre 50–65%, exige monitoramento.`,
+              link:        playerLink,
+            });
+          }
+        }
+      }
+
+      // ── Sort: critical (1) → attention (2) → minutes (3) ─────────────────
+      generatedInsights.sort((a, b) => a.priority - b.priority);
+
+      // ── Pad to 5 if needed ────────────────────────────────────────────────
+      const TARGET = 5;
+      if (generatedInsights.length === 0) {
+        generatedInsights.push({
+          id:          "no-alerts",
+          type:        "neutral",
+          priority:    5,
+          icon:        Lightbulb,
+          colorClass:  insightConfig.neutral.colorClass,
+          bgClass:     insightConfig.neutral.bgClass,
+          borderClass: insightConfig.neutral.borderClass,
+          title:       "Nenhum alerta na temporada",
+          description: `Todos os atletas estão com aproveitamentos regulares em ${currentYear}.`,
+          tooltip:     `Não foram detectados índices críticos nos dados de ${currentYear}. Continue monitorando!`,
+          link:        "/app/players",
+        });
+      }
+      if (generatedInsights.length < TARGET) {
+        generatedInsights.push({
+          id:          "explore",
+          type:        "neutral",
+          priority:    5,
+          icon:        Brain,
+          colorClass:  insightConfig.neutral.colorClass,
+          bgClass:     insightConfig.neutral.bgClass,
+          borderClass: insightConfig.neutral.borderClass,
+          title:       "Explore o portfólio",
+          description: "Analise atletas e crie relatórios de scouting.",
+          tooltip:     "Acesse a lista completa de atletas para análises detalhadas.",
+          link:        "/app/players",
+        });
+      }
+
+      logFetchSuccess({ endpoint: "InsightsCard" }, performance.now() - fetchStart);
+      setInsights(generatedInsights.slice(0, TARGET));
+    } catch (error) {
+      if (isAbortError(error)) {
+        if (import.meta.env.DEV) console.log("[FETCH ABORT] InsightsCard");
+        setHasFetched(false);
+        return;
+      }
+      logFetchError(error, { endpoint: "InsightsCard" });
+    } finally {
+      setLoading(false);
+    }
   }, [session?.user, rbacReady, hasFetched]);
 
-  // Fetch when RBAC is ready
   useEffect(() => {
-    if (rbacReady && !hasFetched) {
-      generateInsights();
-    }
+    if (rbacReady && !hasFetched) generateInsights();
   }, [rbacReady, hasFetched, generateInsights]);
 
+  // ── Loading skeleton ────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-full h-full flex flex-col rounded-xl bg-zinc-900/60 backdrop-blur-sm shadow-sm overflow-hidden"
@@ -554,8 +416,9 @@ export const InsightsCard = () => {
     );
   }
 
+  // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="w-full max-w-full h-full flex flex-col rounded-xl bg-zinc-900/60 backdrop-blur-sm shadow-sm overflow-hidden"
@@ -569,12 +432,14 @@ export const InsightsCard = () => {
           </div>
           <div>
             <h2 className="text-sm font-semibold text-white">Insights da Plataforma</h2>
-            <p className="text-[10px] text-zinc-500">Leituras automáticas baseadas nos dados atuais</p>
+            <p className="text-[10px] text-zinc-500">
+              Análise automática · Temporada {new Date().getFullYear()}
+            </p>
           </div>
         </div>
       </div>
 
-      {/* Content - Always exactly 5 insights with flex-1 to fill height */}
+      {/* Insight list */}
       <div className="p-3 flex-1 flex flex-col">
         <TooltipProvider delayDuration={300}>
           <div className="flex flex-col justify-between h-full gap-2">
@@ -587,11 +452,7 @@ export const InsightsCard = () => {
                       custom={index}
                       initial={{ opacity: 0, x: -15, scale: 0.98 }}
                       animate={{ opacity: 1, x: 0, scale: 1 }}
-                      transition={{ 
-                        delay: index * 0.08, 
-                        duration: 0.35, 
-                        ease: "easeOut" 
-                      }}
+                      transition={{ delay: index * 0.08, duration: 0.35, ease: "easeOut" }}
                       whileHover={{ scale: 1.01, x: 2 }}
                       whileTap={{ scale: 0.99 }}
                     >
@@ -599,8 +460,7 @@ export const InsightsCard = () => {
                         to={insight.link}
                         className={`group flex items-center gap-3 p-3 flex-1 min-h-[52px] rounded-lg border transition-all duration-200 w-full max-w-full overflow-hidden ${insight.bgClass} ${insight.borderClass}`}
                       >
-                        {/* Icon */}
-                        <motion.div 
+                        <motion.div
                           className={`w-8 h-8 rounded-lg bg-zinc-900/50 flex items-center justify-center shrink-0 ${insight.colorClass}`}
                           initial={{ scale: 0, rotate: -90 }}
                           animate={{ scale: 1, rotate: 0 }}
@@ -609,7 +469,6 @@ export const InsightsCard = () => {
                           <Icon className="w-4 h-4" />
                         </motion.div>
 
-                        {/* Content */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <p className={`text-sm font-medium truncate ${insight.colorClass}`}>
@@ -622,13 +481,12 @@ export const InsightsCard = () => {
                           </p>
                         </div>
 
-                        {/* Arrow */}
                         <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 group-hover:translate-x-0.5 transition-all shrink-0" />
                       </Link>
                     </motion.div>
                   </TooltipTrigger>
-                  <TooltipContent 
-                    side="left" 
+                  <TooltipContent
+                    side="left"
                     className="max-w-xs bg-zinc-900 border-zinc-800 text-zinc-300 text-xs p-3"
                   >
                     {insight.tooltip}
