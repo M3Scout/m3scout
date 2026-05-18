@@ -170,65 +170,88 @@ export const InsightsCard = () => {
     const currentYear = new Date().getFullYear();
 
     try {
-      // Fetch all player_stats rows for the current season, with player details
-      const { data: rows, error } = await supabase
+      // Step 1 — raw stats rows for the current season (no embedded join to
+      // avoid Supabase collapsing/reordering rows with the same player_id)
+      const { data: statsRows, error: statsErr } = await supabase
         .from("player_stats")
-        .select(`
-          player_id,
-          matches, minutes,
-          accurate_passes, total_passes,
-          crosses_success, crosses_failed,
-          successful_dribbles, total_dribbles,
-          ground_duels_won, ground_duels_total,
-          aerial_duels_won, aerial_duels_total,
-          player:players!player_id(id, full_name, slug, is_archived)
-        `)
+        .select(
+          "player_id, matches, minutes, accurate_passes, total_passes, " +
+          "crosses_success, crosses_failed, successful_dribbles, total_dribbles, " +
+          "ground_duels_won, ground_duels_total, aerial_duels_won, aerial_duels_total"
+        )
         .eq("season_year", currentYear);
 
-      if (error) throw error;
-
-      // ── Aggregate per player (sum across all competitions) ──────────────────
-      const map = new Map<string, PlayerAggregate>();
-
-      for (const row of (rows ?? [])) {
-        const p = (row.player as any);
-        if (!p || p.is_archived) continue;
-
-        const existing = map.get(row.player_id) ?? {
-          playerId:        row.player_id,
-          fullName:        p.full_name ?? "Atleta",
-          slug:            p.slug ?? null,
-          matches:         0,
-          minutes:         0,
-          passesCompleted: 0,
-          passesFailed:    0,
-          dribblesSuccess: 0,
-          dribblesFailed:  0,
-          crossesSuccess:  0,
-          crossesFailed:   0,
-          groundDuelsWon:  0,
-          groundDuelsFailed: 0,
-          aerialDuelsWon:  0,
-          aerialDuelsFailed: 0,
-        };
-
-        existing.matches          += row.matches          ?? 0;
-        existing.minutes          += row.minutes          ?? 0;
-        existing.passesCompleted  += row.accurate_passes  ?? 0;
-        existing.passesFailed     += row.total_passes     ?? 0; // column stores FAILED
-        existing.dribblesSuccess  += row.successful_dribbles ?? 0;
-        existing.dribblesFailed   += row.total_dribbles   ?? 0; // column stores FAILED
-        existing.crossesSuccess   += row.crosses_success  ?? 0;
-        existing.crossesFailed    += row.crosses_failed   ?? 0;
-        existing.groundDuelsWon   += row.ground_duels_won   ?? 0;
-        existing.groundDuelsFailed += row.ground_duels_total ?? 0; // column stores FAILED
-        existing.aerialDuelsWon   += row.aerial_duels_won   ?? 0;
-        existing.aerialDuelsFailed += row.aerial_duels_total ?? 0; // column stores FAILED
-
-        map.set(row.player_id, existing);
+      if (statsErr) throw statsErr;
+      if (!statsRows?.length) {
+        setInsights([{
+          id: "no-data", type: "neutral", priority: 5, icon: Lightbulb,
+          colorClass: insightConfig.neutral.colorClass, bgClass: insightConfig.neutral.bgClass,
+          borderClass: insightConfig.neutral.borderClass,
+          title: "Sem dados na temporada", link: "/app/players",
+          description: `Nenhuma estatística registrada em ${currentYear}.`,
+          tooltip: `Adicione estatísticas a atletas para ver insights aqui.`,
+        }]);
+        return;
       }
 
-      const players = Array.from(map.values());
+      // Step 2 — player details for the IDs found in player_stats
+      const uniqueIds = [...new Set(statsRows.map(r => r.player_id))];
+      const { data: playersData } = await supabase
+        .from("players")
+        .select("id, full_name, slug, is_archived")
+        .in("id", uniqueIds);
+
+      const playerInfo = new Map(
+        (playersData ?? [])
+          .filter(p => !p.is_archived)
+          .map(p => [p.id, p])
+      );
+
+      // Step 3 — aggregate ALL competition rows per player before any logic
+      const aggMap = new Map<string, PlayerAggregate>();
+
+      for (const row of statsRows) {
+        const info = playerInfo.get(row.player_id);
+        if (!info) continue; // skip archived / unknown players
+
+        let agg = aggMap.get(row.player_id);
+        if (!agg) {
+          agg = {
+            playerId:         row.player_id,
+            fullName:         info.full_name ?? "Atleta",
+            slug:             info.slug ?? null,
+            matches:          0,
+            minutes:          0,
+            passesCompleted:  0,
+            passesFailed:     0,
+            dribblesSuccess:  0,
+            dribblesFailed:   0,
+            crossesSuccess:   0,
+            crossesFailed:    0,
+            groundDuelsWon:   0,
+            groundDuelsFailed: 0,
+            aerialDuelsWon:   0,
+            aerialDuelsFailed: 0,
+          };
+          aggMap.set(row.player_id, agg);
+        }
+
+        agg.matches           += row.matches           ?? 0;
+        agg.minutes           += row.minutes           ?? 0;
+        agg.passesCompleted   += row.accurate_passes   ?? 0;
+        agg.passesFailed      += row.total_passes      ?? 0; // column stores FAILED
+        agg.dribblesSuccess   += row.successful_dribbles ?? 0;
+        agg.dribblesFailed    += row.total_dribbles    ?? 0; // column stores FAILED
+        agg.crossesSuccess    += row.crosses_success   ?? 0;
+        agg.crossesFailed     += row.crosses_failed    ?? 0;
+        agg.groundDuelsWon    += row.ground_duels_won   ?? 0;
+        agg.groundDuelsFailed += row.ground_duels_total ?? 0; // column stores FAILED
+        agg.aerialDuelsWon    += row.aerial_duels_won   ?? 0;
+        agg.aerialDuelsFailed += row.aerial_duels_total ?? 0; // column stores FAILED
+      }
+
+      // Step 4 — run insight logic on the aggregated yearly totals
+      const players = Array.from(aggMap.values());
       const generatedInsights: Insight[] = [];
 
       for (const p of players) {
