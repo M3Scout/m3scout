@@ -2784,45 +2784,23 @@ export type Database = {
         Returns: number
       }
       get_season_player_aggregates: {
-        Args: { target_year: number }
+        Args: { p_season_year: number }
         Returns: {
-          accurate_passes: number
-          aerial_duels_total: number
-          aerial_duels_won: number
-          assists: number
-          chances_created: number
-          clean_sheets: number
-          competitions_count: number
-          dribbles_attempted: number
-          dribbles_completed: number
-          duels_won: number
-          errors_leading_to_goal: number
-          fouls_committed: number
-          fouls_drawn: number
-          goals: number
-          goals_conceded: number
-          ground_duels_total: number
-          ground_duels_won: number
-          interceptions: number
-          key_passes: number
-          matches: number
-          minutes: number
-          passes_attempted: number
-          passes_completed: number
-          penalties_saved: number
+          full_name: string
           player_id: string
-          recoveries: number
-          red_cards: number
-          saves: number
-          season_year: number
-          shots: number
-          shots_on_target: number
-          successful_dribbles: number
-          tackles: number
-          total_dribbles: number
-          total_duels: number
-          total_passes: number
-          yellow_cards: number
+          slug: string
+          total_accurate_passes: number
+          total_aerial_duels_failed: number
+          total_aerial_duels_won: number
+          total_crosses_failed: number
+          total_crosses_success: number
+          total_dribbles_failed: number
+          total_dribbles_success: number
+          total_failed_passes: number
+          total_ground_duels_failed: number
+          total_ground_duels_won: number
+          total_matches: number
+          total_minutes: number
         }[]
       }
       get_user_rbac: { Args: { p_user_id: string }; Returns: Json }
