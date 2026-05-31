@@ -302,10 +302,10 @@
 
 @media (max-width: 800px) {
   .athletes-h { padding: 80px 0 0; }
-  .athletes-h__head { padding: 0 20px; margin-bottom: 40px; }
-  .athletes-h__track { padding: 0 20px 60px; gap: 16px; scroll-padding-left: 20px; }
+  .athletes-h__head { padding: 0 24px; margin-bottom: 40px; }
+  .athletes-h__track { padding: 0 24px 60px; gap: 16px; scroll-padding-left: 24px; }
   .athlete-h-card { width: 78%; min-width: 240px; }
   .athlete-h-card__name { font-size: 20px; }
-  .athletes-h__progress { padding: 0 20px; }
-  .athletes-h__progress::before { left: 20px; right: 20px; }
+  .athletes-h__progress { padding: 0 24px; }
+  .athletes-h__progress::before { left: 24px; right: 24px; }
 }

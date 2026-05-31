@@ -25,7 +25,7 @@ const Sobre = () => {
     }
   }, []);
 
-  const gutter = "clamp(20px, 5.625vw, 72px)";
+  const gutter = "clamp(24px, 5.625vw, 72px)";
   const maxW = "1600px";
 
   return (

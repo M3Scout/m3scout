@@ -171,7 +171,7 @@
 
 @media (max-width: 600px) {
   .feed { padding: 0 0 80px; }
-  .feed__inner { padding: 0 20px; }
+  .feed__inner { padding: 0 24px; }
 }
 
 /* ---------- CTA STRIP ---------- */
@@ -226,7 +226,7 @@
 }
 
 @media (max-width: 600px) {
-  .cta-strip { padding: 80px 20px; }
+  .cta-strip { padding: 80px 24px; }
   .cta-strip__sub { font-size: 15px; }
   .cta-strip__btn { padding: 16px 26px; font-size: 11px; }
 }

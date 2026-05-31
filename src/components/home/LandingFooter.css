@@ -34,7 +34,7 @@
 }
 @media (max-width: 600px) {
   .lp-footer { padding: 56px 0 28px; }
-  .lp-footer__inner { padding: 0 20px; }
+  .lp-footer__inner { padding: 0 24px; }
   .lp-footer__top { grid-template-columns: 1fr; gap: 36px; padding-bottom: 48px; }
   .lp-footer__brand { font-size: 40px; }
   .lp-footer__bottom { font-size: 9px; gap: 12px; }

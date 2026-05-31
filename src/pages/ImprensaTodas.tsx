@@ -104,7 +104,7 @@ const ImprensaTodas = () => {
       />
 
       {/* HEADER SECTION */}
-      <section style={{ backgroundColor: '#0A0A0A', padding: `clamp(120px, 18vh, 220px) clamp(20px, 5.625vw, 72px) 80px`, borderBottom: `1px solid rgba(242,237,228,0.1)` }}>
+      <section style={{ backgroundColor: '#0A0A0A', padding: `clamp(120px, 18vh, 220px) clamp(24px, 5.625vw, 72px) 80px`, borderBottom: `1px solid rgba(242,237,228,0.1)` }}>
         <h1 style={{
           fontFamily: "'Basis Grotesque Pro', sans-serif",
           fontWeight: 900,
@@ -124,7 +124,7 @@ const ImprensaTodas = () => {
       </section>
 
       {/* NEWS GRID */}
-      <section className="py-8 md:py-12 lg:py-16" style={{ paddingLeft: 'clamp(20px, 5.625vw, 72px)', paddingRight: 'clamp(20px, 5.625vw, 72px)' }}>
+      <section className="py-8 md:py-12 lg:py-16" style={{ paddingLeft: 'clamp(24px, 5.625vw, 72px)', paddingRight: 'clamp(24px, 5.625vw, 72px)' }}>
         <div>
           
           {/* Initial Loading State */}

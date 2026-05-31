@@ -440,7 +440,7 @@ const Players = () => {
       <style>{RESPONSIVE_CSS}</style>
 
       {/* ━━━ S1 — HERO ━━━ */}
-      <section style={{ backgroundColor: BLACK, padding: `clamp(120px, 18vh, 200px) clamp(20px, 5.625vw, 72px) 64px` }}>
+      <section style={{ backgroundColor: BLACK, padding: `clamp(120px, 18vh, 200px) clamp(24px, 5.625vw, 72px) 64px` }}>
         <div>
           <h1 style={{ fontFamily: DISPLAY, fontWeight: 900, fontSize: "clamp(72px, 8vw, 120px)", lineHeight: 0.87, color: CREAM, margin: 0 }}>
             NOSSOS<br />
@@ -453,7 +453,7 @@ const Players = () => {
       </section>
 
       {/* ━━━ S2 — TOOLBAR (Sticky) ━━━ */}
-      <section className="sticky top-0 z-40" style={{ backgroundColor: BLACK, padding: "36px clamp(20px, 5.625vw, 72px) 16px", borderBottom: `1px solid ${BORDER_DARK}` }}>
+      <section className="sticky top-0 z-40" style={{ backgroundColor: BLACK, padding: "36px clamp(24px, 5.625vw, 72px) 16px", borderBottom: `1px solid ${BORDER_DARK}` }}>
         {/* Filters Grid */}
         <div className="pl-toolbar-filters">
           {/* Search */}
@@ -573,7 +573,7 @@ const Players = () => {
       </section>
 
       {/* ━━━ S3 — CONTENT ━━━ */}
-      <section style={{ backgroundColor: BLACK, padding: "48px clamp(20px, 5.625vw, 72px) 96px" }}>
+      <section style={{ backgroundColor: BLACK, padding: "48px clamp(24px, 5.625vw, 72px) 96px" }}>
         {loading ? (
           <div className="flex items-center justify-center" style={{ padding: "128px 0" }}>
             <Loader2 className="w-6 h-6 animate-spin" style={{ color: WHITE_MUTED }} />

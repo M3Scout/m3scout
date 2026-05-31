@@ -78,7 +78,7 @@ const Imprensa = () => {
   const featured = articles?.[0];
   const grid = articles?.slice(1, 6) ?? [];
 
-  const gutter = "clamp(20px, 5.625vw, 72px)";
+  const gutter = "clamp(24px, 5.625vw, 72px)";
   const maxW = "1600px";
 
   return (
