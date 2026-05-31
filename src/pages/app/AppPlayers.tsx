@@ -488,7 +488,7 @@ const AppPlayers = () => {
         <div className="flex items-center gap-3 min-w-0">
           <div>
             <div className="flex items-baseline gap-2 flex-wrap">
-              <h1 className="m3-page-title">ATLETAS</h1>
+              <h1 className="m3-page-title">Atletas</h1>
               <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium whitespace-nowrap">
                 {filteredCount} atleta{filteredCount !== 1 ? "s" : ""}
                 {isRefetching && " · atualizando..."}

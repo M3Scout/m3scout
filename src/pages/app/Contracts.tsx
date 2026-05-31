@@ -57,7 +57,7 @@ export default function Contracts() {
     <div className="space-y-5 pb-8 px-[var(--padding-mobile)] md:px-0">
       {/* Header */}
       <div>
-        <h1 className="m3-page-title">CONTRATOS</h1>
+        <h1 className="m3-page-title">Contratos</h1>
         <p className="text-xs text-zinc-500 mt-1 uppercase tracking-wide">
           Gestão de contratos dos atletas
         </p>

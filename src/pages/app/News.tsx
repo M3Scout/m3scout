@@ -193,7 +193,7 @@ const News = () => {
         {/* Header */}
         <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between animate-fade-in">
           <div>
-            <h1 className="m3-page-title">NOTÍCIAS</h1>
+            <h1 className="m3-page-title">Notícias</h1>
             <p className="text-xs text-zinc-500 mt-1 uppercase tracking-wide">
               Gerencie o conteúdo da Sala de Imprensa
             </p>

@@ -170,7 +170,6 @@
   font-family: var(--font-heading);
   font-weight: 700;
   font-size: 13px;
-  text-transform: uppercase;
   color: var(--red);
 }
 .m3dash-alert-desc {
@@ -322,7 +321,6 @@
   font-family: var(--font-heading);
   font-weight: 700;
   font-size: 13px;
-  text-transform: uppercase;
   color: var(--text);
   letter-spacing: 0.04em;
 }
@@ -382,7 +380,6 @@
   font-family: var(--font-heading);
   font-weight: 700;
   font-size: 14px;
-  text-transform: uppercase;
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
@@ -460,7 +457,6 @@
   font-family: var(--font-heading);
   font-weight: 600;
   font-size: 13px;
-  text-transform: uppercase;
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;

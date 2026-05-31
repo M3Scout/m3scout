@@ -236,7 +236,7 @@ const ScoutingReports = () => {
       {/* Header */}
       <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="m3-page-title">RELATÓRIOS</h1>
+          <h1 className="m3-page-title">Relatórios</h1>
           <p className="text-xs text-zinc-500 mt-1 uppercase tracking-wide">
             Avaliações técnicas e análises de scouting
           </p>

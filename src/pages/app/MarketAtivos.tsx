@@ -228,7 +228,7 @@ export default function MarketAtivos() {
     <div className="space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
-        <h1 className="m3-page-title">ATIVOS</h1>
+        <h1 className="m3-page-title">Ativos</h1>
         <Button variant="outline" size="sm" onClick={() => refetch()} className="rounded-full">
           <RefreshCw className="w-4 h-4 mr-2" />
           Atualizar

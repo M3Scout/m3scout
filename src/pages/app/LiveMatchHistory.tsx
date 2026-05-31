@@ -573,7 +573,7 @@ export default function LiveMatchHistory() {
             </div>
           )}
           <div>
-            <h1 className="m3-page-title">JOGOS AO VIVO</h1>
+            <h1 className="m3-page-title">Jogos ao vivo</h1>
             <p className="text-sm text-zinc-500 mt-1">
               Registro de estatísticas em tempo real
             </p>

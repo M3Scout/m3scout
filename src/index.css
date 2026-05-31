@@ -993,7 +993,6 @@ p, span, h1, h2, h3, h4, h5, h6, a, li {
   font-family: 'Basis Grotesque Pro', sans-serif;
   font-weight: 900;
   font-size: 48px;
-  text-transform: uppercase;
   line-height: 0.88;
   color: #fff;
   letter-spacing: -0.01em;
@@ -1005,7 +1004,6 @@ p, span, h1, h2, h3, h4, h5, h6, a, li {
   font-family: 'Basis Grotesque Pro', sans-serif;
   font-weight: 900;
   font-size: 28px;
-  text-transform: uppercase;
   line-height: 0.88;
   color: #fff;
   letter-spacing: -0.01em;

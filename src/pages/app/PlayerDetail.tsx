@@ -114,13 +114,13 @@ const T = {
 } as const;
 
 const TABS = [
-  { id: "overview", label: "VISÃO GERAL" },
-  { id: "stats", label: "ESTATÍSTICAS" },
-  { id: "market", label: "VALOR DE MERCADO" },
-  { id: "physical", label: "FÍSICO" },
-  { id: "technical", label: "TÉCNICO" },
-  { id: "medical", label: "MÉDICO" },
-  { id: "contract", label: "CONTRATO" },
+  { id: "overview", label: "Visão geral" },
+  { id: "stats", label: "Estatísticas" },
+  { id: "market", label: "Valor de mercado" },
+  { id: "physical", label: "Físico" },
+  { id: "technical", label: "Técnico" },
+  { id: "medical", label: "Médico" },
+  { id: "contract", label: "Contrato" },
 ] as const;
 
 // ─── Small atoms ─────────────────────────────────────────────────────────────
@@ -535,7 +535,7 @@ const PlayerDetail = () => {
           {/* Info */}
           <div className="flex-1 min-w-0">
             <h1
-              className="font-barlow font-black text-[34px] uppercase leading-none tracking-tight"
+              className="font-barlow font-black text-[34px] leading-none tracking-tight"
               style={{ lineHeight: 1.05 }}
             >
               {player.full_name}

@@ -487,7 +487,7 @@ export default function MarketTargets() {
 
       {/* ===== HEADER ===== */}
       <div className="mt-header">
-        <h1 className="m3-page-title">MONITORAMENTO</h1>
+        <h1 className="m3-page-title">Monitoramento</h1>
 
         <div className="mt-header-right">
           <button
