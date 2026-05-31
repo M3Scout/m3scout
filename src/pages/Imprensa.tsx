@@ -115,10 +115,6 @@ const Imprensa = () => {
       <section style={{ backgroundColor: CREAM, padding: `72px ${gutter}`, borderBottom: `1px solid ${BORDER_CREAM}` }}>
         <div style={{ maxWidth: maxW, margin: "0 auto" }}>
 
-          <p style={{ fontFamily: JB, fontSize: 9, letterSpacing: "0.2em", textTransform: "uppercase", color: CREAM_MUTED, margin: "0 0 32px 0" }}>
-            // PRESS KIT
-          </p>
-
           {pressKitItems.map((item, index) => (
             <a
               key={item.id}
@@ -171,18 +167,6 @@ const Imprensa = () => {
       <section style={{ backgroundColor: BLACK, padding: `72px ${gutter}` }}>
         <div style={{ maxWidth: maxW, margin: "0 auto" }}>
 
-          {/* Section header */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 40 }}>
-            <span style={{ fontFamily: JB, fontSize: 9, letterSpacing: "0.2em", textTransform: "uppercase", color: WHITE_MUTED }}>
-              // ÚLTIMAS NOTÍCIAS
-            </span>
-            <Link
-              to="/imprensa/todas"
-              style={{ fontFamily: BC, fontWeight: 700, fontSize: 13, letterSpacing: "0.05em", color: CREAM, textDecoration: "none" }}
-            >
-              Ver todas →
-            </Link>
-          </div>
 
           {isLoading ? (
             <>
@@ -358,29 +342,31 @@ const Imprensa = () => {
               )}
 
               {/* CTA Final */}
-              <Link
-                to="/imprensa/todas"
-                onMouseEnter={() => setHoveredCta(true)}
-                onMouseLeave={() => setHoveredCta(false)}
-                style={{ textDecoration: "none" }}
-              >
-                <span style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: hoveredCta ? 20 : 12,
-                  fontFamily: BC,
-                  fontWeight: 700,
-                  fontSize: 14,
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase",
-                  color: CREAM,
-                  borderBottom: `1px solid ${RED}`,
-                  paddingBottom: 4,
-                  transition: "gap 0.2s ease",
-                }}>
-                  VER TODAS AS NOTÍCIAS →
-                </span>
-              </Link>
+              <div style={{ textAlign: "center", marginTop: 32 }}>
+                <Link
+                  to="/imprensa/todas"
+                  onMouseEnter={() => setHoveredCta(true)}
+                  onMouseLeave={() => setHoveredCta(false)}
+                  style={{ textDecoration: "none" }}
+                >
+                  <span style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: hoveredCta ? 20 : 12,
+                    fontFamily: BC,
+                    fontWeight: 700,
+                    fontSize: 14,
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    color: CREAM,
+                    borderBottom: `1px solid ${RED}`,
+                    paddingBottom: 4,
+                    transition: "gap 0.2s ease",
+                  }}>
+                    VER TODAS AS NOTÍCIAS →
+                  </span>
+                </Link>
+              </div>
             </>
           )}
         </div>
