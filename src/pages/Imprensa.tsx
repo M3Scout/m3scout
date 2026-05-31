@@ -342,7 +342,7 @@ const Imprensa = () => {
               )}
 
               {/* CTA Final */}
-              <div style={{ textAlign: "center", marginTop: 32 }}>
+              <div style={{ textAlign: "center", marginTop: 32, marginBottom: 48 }}>
                 <Link
                   to="/imprensa/todas"
                   onMouseEnter={() => setHoveredCta(true)}
