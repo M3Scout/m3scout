@@ -143,16 +143,18 @@ const RESPONSIVE_CSS = `
      MOBILE OVERRIDES (<768px)
      ════════════════════════════════════════════ */
   @media (max-width: 767px) {
-    /* Toolbar: stack everything vertically */
+    /* Toolbar: search + position side by side, nationality hidden */
     .pl-toolbar-filters {
-      grid-template-columns: 1fr;
+      grid-template-columns: 1fr 120px;
+    }
+    .pl-nationality-filter {
+      display: none;
     }
     .pl-toolbar-filters > div {
-      border-right: none !important;
-      border-bottom: 1px solid ${BORDER_DARK};
-    }
-    .pl-toolbar-filters > div:last-child {
       border-bottom: none;
+    }
+    .pl-toolbar-filters > div:first-child {
+      border-right: 1px solid ${BORDER_DARK} !important;
     }
      .pl-toolbar-bottom {
        flex-direction: row;
@@ -458,14 +460,14 @@ const Players = () => {
         <div className="pl-toolbar-filters">
           {/* Search */}
           <div className="flex items-center gap-3" style={{ backgroundColor: BLACK, padding: "0 20px", borderRight: `1px solid ${BORDER_DARK}` }}>
-            <Search style={{ width: 12, height: 12, color: "rgba(242,237,228,0.18)", flexShrink: 0, strokeWidth: 1.5 }} />
+            <Search style={{ width: 14, height: 14, color: "rgba(242,237,228,0.6)", flexShrink: 0, strokeWidth: 1.5 }} />
             <input
               type="text"
               placeholder="Buscar atleta..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{ fontFamily: BODY, fontWeight: 300, fontSize: 14, color: CREAM, background: "transparent", border: "none", outline: "none", width: "100%", padding: "14px 0" }}
-              className="placeholder:text-[rgba(242,237,228,0.2)]"
+              className="placeholder:text-[rgba(242,237,228,0.55)]"
             />
           </div>
 
@@ -489,7 +491,7 @@ const Players = () => {
           </div>
 
           {/* Nationality Filter */}
-          <div className="relative flex items-center" style={{ backgroundColor: BLACK, padding: "0 16px" }}>
+          <div className="pl-nationality-filter relative flex items-center" style={{ backgroundColor: BLACK, padding: "0 16px" }}>
             <select
               value={nationalityFilter}
               onChange={(e) => setNationalityFilter(e.target.value)}
