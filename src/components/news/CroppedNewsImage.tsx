@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ImageOff } from "lucide-react";
+import { getOptimizedImageUrl } from "@/lib/imageUtils";
 
 export type CropPosition = {
   x: number;
@@ -13,6 +14,7 @@ interface CroppedNewsImageProps {
   alt: string;
   crop?: CropPosition | null;
   className?: string;
+  width?: number;
   aspectRatio?: number;
 }
 
@@ -24,10 +26,13 @@ export function CroppedNewsImage({
   crop,
   className,
   aspectRatio,
+  width = 1200,
 }: CroppedNewsImageProps) {
   const position = crop ?? DEFAULT_CROP;
   const [hasError, setHasError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  const optimizedSrc = getOptimizedImageUrl(src, { width, quality: 85, format: "avif" }) || src;
 
   // Check if URL is likely expired (Discord CDN with ex= parameter from the past)
   const isLikelyExpired = src?.includes('cdn.discordapp.com') && src?.includes('ex=');
@@ -51,7 +56,7 @@ export function CroppedNewsImage({
             <div className="absolute inset-0 bg-neutral-800/50 animate-pulse" />
           )}
           <img
-            src={src}
+            src={optimizedSrc}
             alt={alt}
             className={cn(
               "w-full h-full object-cover transition-opacity duration-300",

@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getPositionColor } from "@/lib/positionColors";
+import { getOptimizedImageUrl } from "@/lib/imageUtils";
 
 interface AthleteHeroSectionProps {
   player: {
@@ -105,7 +106,7 @@ export function AthleteHeroSection({ player, contractStatus }: AthleteHeroSectio
         )}>
           {/* Image */}
           <img
-            src={player.photo_url || "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=800&h=1000&fit=crop"}
+            src={getOptimizedImageUrl(player.photo_url, { width: 1920, quality: 85, format: "avif" }) || "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=1920&h=2400&fit=crop&q=85&auto=format"}
             alt={player.full_name}
             className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]"
           />

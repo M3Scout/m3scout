@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/tooltip";
 import { getShortPosition, getPositionColor } from "@/lib/positionColors";
 import { cn } from "@/lib/utils";
+import { getOptimizedImageUrl } from "@/lib/imageUtils";
 
 interface PlayerListRowPremiumProps {
   id: string;
@@ -104,7 +105,7 @@ export function PlayerListRowPremium({
         "transition-all duration-200"
       )}>
         <img
-          src={photoUrl || defaultPhoto}
+          src={getOptimizedImageUrl(photoUrl, { width: 800, quality: 85, format: "avif" }) || defaultPhoto}
           alt={fullName}
           className="w-full h-full object-cover"
         />
@@ -279,7 +280,7 @@ export function PlayerListRowMobilePremium({
       <div className="flex items-center gap-3 p-3.5 pl-4">
         <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 ring-1 ring-zinc-800/60">
           <img
-            src={photoUrl || defaultPhoto}
+            src={getOptimizedImageUrl(photoUrl, { width: 800, quality: 85, format: "avif" }) || defaultPhoto}
             alt={fullName}
             className="w-full h-full object-cover"
           />

@@ -11,6 +11,7 @@ import {
 import { formatFixed } from "@/lib/formatters";
 import { getPositionColor, getShortPosition } from "@/lib/positionColors";
 import { cn } from "@/lib/utils";
+import { getOptimizedImageUrl } from "@/lib/imageUtils";
 
 interface PositionIdentityCardProps {
   id: string;
@@ -112,7 +113,7 @@ export function PositionIdentityCard({
         <div className="relative w-20 sm:w-24 flex-shrink-0 ml-2">
           <div className="aspect-square overflow-hidden rounded-lg m-2 border border-zinc-800 group-hover:border-zinc-700 transition-colors">
             <img
-              src={photoUrl || defaultPhoto}
+              src={getOptimizedImageUrl(photoUrl, { width: 800, quality: 85, format: "avif" }) || defaultPhoto}
               alt={fullName}
               className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
             />

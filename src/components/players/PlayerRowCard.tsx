@@ -18,6 +18,7 @@ import {
 import { formatFixed } from "@/lib/formatters";
 import { getShortPosition, getPositionColor } from "@/lib/positionColors";
 import { playerRankItemVariants, subtleHover, subtleTap } from "@/lib/animations";
+import { getOptimizedImageUrl } from "@/lib/imageUtils";
 
 interface PlayerRowCardProps {
   id: string;
@@ -164,7 +165,7 @@ export function PlayerRowCard({
       {/* Player Photo with Position Color Ring */}
       <div className={`w-10 h-10 rounded-full overflow-hidden flex-shrink-0 ring-2 ${posColor.ringClass}`}>
         <img
-          src={photoUrl || defaultPhoto}
+          src={getOptimizedImageUrl(photoUrl, { width: 800, quality: 85, format: "avif" }) || defaultPhoto}
           alt={fullName}
           className="w-full h-full object-cover"
         />
@@ -372,7 +373,7 @@ export function PlayerMobileCard({
       <div className="flex items-center gap-3 p-3 pl-4">
         <div className={`w-12 h-12 rounded-full overflow-hidden flex-shrink-0 ring-2 ${posColor.ringClass}`}>
           <img
-            src={photoUrl || defaultPhoto}
+            src={getOptimizedImageUrl(photoUrl, { width: 800, quality: 85, format: "avif" }) || defaultPhoto}
             alt={fullName}
             className="w-full h-full object-cover"
           />
