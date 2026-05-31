@@ -35,17 +35,18 @@
 }
 .marquee__item {
   font-family: var(--display);
+  font-weight: 900;
   font-size: 48px;
   letter-spacing: -0.02em;
   text-transform: uppercase;
-  color: var(--fg-dark);
+  color: #E63946;
   display: flex;
   align-items: center;
   gap: 64px;
   white-space: nowrap;
   transition: color 0.3s;
 }
-.marquee__item:hover { color: var(--accent); }
+.marquee__item:hover { color: var(--fg-dark); }
 .marquee__item-dot {
   width: 12px; height: 12px;
   background: var(--accent);
