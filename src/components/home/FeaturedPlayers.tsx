@@ -6,101 +6,7 @@ import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getPositionColor, getShortPosition } from "@/lib/positionColors";
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// IMAGE OPTIMIZATION HELPER
-// For mobile retina displays (DPR 2-3), we need larger images to avoid blur
-// Mobile card ~420px CSS width × DPR 3 = 1260px minimum, we use 1600-1800px
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-/**
- * Calculates the optimal image width based on target CSS width and device pixel ratio.
- * Clamps between 1200-1800px to ensure sharpness on mobile retina without excessive size.
- */
-function getPlayerPhotoUrl(photoUrl: string, targetCssWidthPx: number): string {
-  // Get device pixel ratio (default to 2 for SSR safety)
-  const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 2 : 2;
-  
-  // Calculate required width and clamp between 1200-1800
-  let reqWidth = Math.ceil(targetCssWidthPx * dpr);
-  reqWidth = Math.max(1200, Math.min(reqWidth, 1800));
-  
-  // Add Supabase transform params
-  const separator = photoUrl.includes("?") ? "&" : "?";
-  return `${photoUrl}${separator}width=${reqWidth}&quality=85&format=avif`;
-}
-
-/**
- * Returns optimized image props for athlete cards.
- * Mobile: Uses 1600-1800px for retina sharpness
- * Desktop: Uses 1200px for faster loading
- */
-function getOptimizedImageProps(photoUrl: string | null, isMobile: boolean = false) {
-  const fallback = "/placeholder.svg";
-  if (!photoUrl) return { src: fallback, srcSet: undefined, sizes: undefined };
-  
-  // Check if it's a Supabase storage URL that supports transforms
-  const isSupabaseStorage = photoUrl.includes("supabase") && photoUrl.includes("/storage/");
-  
-  if (isSupabaseStorage) {
-    // Mobile cards are ~420px wide, need higher resolution for DPR 3
-    // Desktop cards are ~300-400px, 1200px is sufficient
-    const mobileWidth = 1800; // Sharp on iPhone (420px × 3 DPR = 1260px needed)
-    const desktopWidth = 1200;
-    
-    const getTransformUrl = (w: number) => {
-      const separator = photoUrl.includes("?") ? "&" : "?";
-      return `${photoUrl}${separator}width=${w}&quality=90`;
-    };
-    
-    if (isMobile) {
-      // Mobile: serve 1800px directly, no srcSet complexity
-      return {
-        src: getTransformUrl(mobileWidth),
-        srcSet: `${getTransformUrl(1200)} 1200w, ${getTransformUrl(1600)} 1600w, ${getTransformUrl(mobileWidth)} 1800w`,
-        sizes: "100vw",
-      };
-    }
-    
-    // Desktop: srcSet with smaller sizes
-    return {
-      src: getTransformUrl(desktopWidth),
-      srcSet: `${getTransformUrl(800)} 800w, ${getTransformUrl(desktopWidth)} 1200w, ${getTransformUrl(1600)} 1600w`,
-      sizes: "(max-width: 1024px) 50vw, 400px",
-    };
-  }
-  
-  // For external URLs (like Unsplash), they often support similar transforms
-  if (photoUrl.includes("unsplash.com")) {
-    const width = isMobile ? 1800 : 1200;
-    
-    const getUnsplashUrl = (w: number) => {
-      const baseUrl = photoUrl.split("?")[0];
-      return `${baseUrl}?w=${w}&q=85&fit=crop&auto=format&fm=avif`;
-    };
-    
-    if (isMobile) {
-      return {
-        src: getUnsplashUrl(1800),
-        srcSet: `${getUnsplashUrl(1200)} 1200w, ${getUnsplashUrl(1600)} 1600w, ${getUnsplashUrl(1800)} 1800w`,
-        sizes: "100vw",
-      };
-    }
-    
-    return {
-      src: getUnsplashUrl(width),
-      srcSet: `${getUnsplashUrl(800)} 800w, ${getUnsplashUrl(1200)} 1200w, ${getUnsplashUrl(1600)} 1600w`,
-      sizes: "(max-width: 1024px) 50vw, 400px",
-    };
-  }
-  
-  // For other URLs, return as-is
-  return { 
-    src: photoUrl, 
-    srcSet: undefined, 
-    sizes: isMobile ? "100vw" : "(max-width: 1024px) 50vw, 400px" 
-  };
-}
+import { getOptimizedImageUrl, getResponsiveSrcSet } from "@/lib/imageUtils";
 
 // Player interface
 interface Player {
@@ -159,13 +65,10 @@ const headerVariants = {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function CarouselCard({ player, isMobile }: { player: Player; isMobile: boolean }) {
   const [isHovered, setIsHovered] = useState(false);
-  
+
   // Get position-based colors from centralized system
   const posColors = getPositionColor(player.position);
   const shortPos = getShortPosition(player.position);
-  
-  // Get optimized image props - mobile uses 1800px for retina sharpness
-  const imageProps = getOptimizedImageProps(player.photo_url, isMobile);
 
   return (
     <Link
@@ -199,14 +102,18 @@ function CarouselCard({ player, isMobile }: { player: Player; isMobile: boolean 
         {/* Image Container */}
         <div className="relative aspect-[3/4] overflow-hidden">
           <motion.img
-            src={imageProps.src}
-            srcSet={imageProps.srcSet}
-            sizes={imageProps.sizes}
+            src={getOptimizedImageUrl(player.photo_url, { width: 900, quality: 85, format: "avif" }) || player.photo_url || "/placeholder.svg"}
+            srcSet={getResponsiveSrcSet(player.photo_url, [450, 900], 85) || undefined}
+            sizes="(max-width: 767px) 50vw, 400px"
             alt={player.full_name}
             loading="lazy"
+            decoding="async"
+            width={900}
+            height={1200}
             className="absolute inset-0 w-full h-full object-cover object-top"
             animate={{ scale: isHovered ? 1.05 : 1 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
+            onError={(e) => { if (player.photo_url) (e.target as HTMLImageElement).src = player.photo_url; }}
           />
 
           {/* Clean bottom gradient only - no side shadows */}

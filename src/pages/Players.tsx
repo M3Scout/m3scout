@@ -601,8 +601,8 @@ const Players = () => {
             <div className="pl-card-grid">
               {safeArray(paginatedPlayers).map((player, index) => {
                 const href = `/players/${player.slug}`;
-                const imgUrl = getOptimizedImageUrl(player.photo_url, { width: 1800, quality: 85, format: "avif" }) || "/placeholder.svg";
-                const imgSrcSet = getResponsiveSrcSet(player.photo_url, [900, 1500, 2000], 85);
+                const imgUrl = getOptimizedImageUrl(player.photo_url, { width: 900, quality: 85, format: "avif" }) || "/placeholder.svg";
+                const imgSrcSet = getResponsiveSrcSet(player.photo_url, [450, 900], 85);
                 const shortPos = getShortPosition(player.position);
                 const dotColor = getPosDotColor(player.position);
                 const cardNum = String(index + 1 + (currentPage - 1) * itemsPerPage).padStart(2, "0");
@@ -624,6 +624,7 @@ const Players = () => {
                         style={{ filter: "grayscale(10%)", willChange: "transform" }}
                         onMouseOver={(e) => { (e.target as HTMLImageElement).style.transform = "scale(1.03)"; (e.target as HTMLImageElement).style.filter = "grayscale(0%)"; }}
                         onMouseOut={(e) => { (e.target as HTMLImageElement).style.transform = "scale(1)"; (e.target as HTMLImageElement).style.filter = "grayscale(10%)"; }}
+                        onError={(e) => { if (player.photo_url) (e.target as HTMLImageElement).src = player.photo_url; }}
                       />
 
                       {/* Top overlay */}

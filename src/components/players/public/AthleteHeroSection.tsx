@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getPositionColor } from "@/lib/positionColors";
-import { getOptimizedImageUrl } from "@/lib/imageUtils";
+import { getOptimizedImageUrl, getResponsiveSrcSet } from "@/lib/imageUtils";
 
 interface AthleteHeroSectionProps {
   player: {
@@ -106,9 +106,12 @@ export function AthleteHeroSection({ player, contractStatus }: AthleteHeroSectio
         )}>
           {/* Image */}
           <img
-            src={getOptimizedImageUrl(player.photo_url, { width: 1920, quality: 85, format: "avif" }) || "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=1920&h=2400&fit=crop&q=85&auto=format"}
+            src={getOptimizedImageUrl(player.photo_url, { width: 1500, quality: 85, format: "avif" }) || player.photo_url || ""}
+            srcSet={getResponsiveSrcSet(player.photo_url, [750, 1500], 85) || undefined}
+            sizes="100vw"
             alt={player.full_name}
             className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]"
+            onError={(e) => { if (player.photo_url) (e.target as HTMLImageElement).src = player.photo_url; }}
           />
           
           {/* Gradient overlay - bottom fade */}

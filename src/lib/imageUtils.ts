@@ -68,19 +68,20 @@ export function getResponsiveSrcSet(
 }
 
 /**
- * sizes for the grid cards on /atletas (2-col mobile, 3-col desktop).
- * Accurate per-column widths let the browser pick the right srcSet entry.
+ * sizes for grid/carousel athlete portrait cards.
+ * 50vw on mobile (2-col grid), fixed 400px on desktop.
+ * Paired with a 900px Supabase transform: covers 3× Retina on 300px-wide cards.
  */
-export const ATHLETE_CARD_SIZES =
-  "(max-width: 767px) calc(50vw - 16px), (max-width: 1024px) calc(33vw - 16px), 440px";
+export const ATHLETE_CARD_SIZES = "(max-width: 767px) 50vw, 400px";
 
 /**
- * sizes for the home-page horizontal carousel cards (~78vw on mobile, ~440px on desktop).
+ * sizes for the home-page horizontal carousel cards.
+ * Same math as grid cards — 900px transform + 50vw mobile hint is sufficient.
  */
-export const ATHLETE_CAROUSEL_SIZES =
-  "(max-width: 800px) 80vw, 440px";
+export const ATHLETE_CAROUSEL_SIZES = "(max-width: 767px) 50vw, 400px";
 
 /**
- * sizes for athlete profile hero (full-bleed portrait).
+ * sizes for full-bleed hero / banner images.
+ * Always 100vw — paired with a 1500px Supabase transform.
  */
-export const ATHLETE_HERO_SIZES = "(max-width: 768px) 100vw, 50vw";
+export const ATHLETE_HERO_SIZES = "100vw";

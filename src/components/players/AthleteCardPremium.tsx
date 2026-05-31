@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Zap, ArrowRight, FileText, Star, Gamepad2, Clock, Ruler } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getPositionColor, getShortPosition } from "@/lib/positionColors";
+import { getOptimizedImageUrl, getResponsiveSrcSet } from "@/lib/imageUtils";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // TYPES
@@ -368,15 +369,20 @@ function VisualModeCard({
 
           {/* Image */}
           <img
-            src={imageUrl}
+            src={getOptimizedImageUrl(imageUrl, { width: 900, quality: 85, format: "avif" }) || imageUrl}
+            srcSet={getResponsiveSrcSet(imageUrl, [450, 900], 85) || undefined}
+            sizes="(max-width: 767px) 50vw, 400px"
             alt={name}
             loading="eager"
             decoding="async"
+            width={900}
+            height={1200}
             className="absolute inset-0 w-full h-full object-cover object-top"
             style={{
               transform: isHovered ? 'scale(1.04)' : 'scale(1)',
               transition: 'transform 0.32s ease-out',
             }}
+            onError={(e) => { (e.target as HTMLImageElement).src = imageUrl; }}
           />
 
           {/* Clean bottom gradient only - no side shadows */}
@@ -533,11 +539,14 @@ function ClubScoutingCard({
               }}
             >
               <img
-                src={imageUrl}
+                src={getOptimizedImageUrl(imageUrl, { width: 300, quality: 85, format: "avif" }) || imageUrl}
                 alt={name}
                 loading="eager"
                 decoding="async"
+                width={300}
+                height={300}
                 className="absolute inset-0 w-full h-full object-cover object-top"
+                onError={(e) => { (e.target as HTMLImageElement).src = imageUrl; }}
               />
             </div>
 
