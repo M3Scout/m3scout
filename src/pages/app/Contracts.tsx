@@ -58,9 +58,6 @@ export default function Contracts() {
       {/* Header */}
       <div>
         <h1 className="m3-page-title">Contratos</h1>
-        <p className="text-xs text-zinc-500 mt-1 uppercase tracking-wide">
-          Gestão de contratos dos atletas
-        </p>
       </div>
 
       {/* Search + Filters */}

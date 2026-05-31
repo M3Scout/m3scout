@@ -237,9 +237,6 @@ const ScoutingReports = () => {
       <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="m3-page-title">Relatórios</h1>
-          <p className="text-xs text-zinc-500 mt-1 uppercase tracking-wide">
-            Avaliações técnicas e análises de scouting
-          </p>
         </div>
         <Link to="/dashboard/relatorios/novo">
           <Button className="bg-[#e63946] hover:bg-[#d62839] text-white gap-2 rounded-full px-5 h-9 text-sm font-semibold">
