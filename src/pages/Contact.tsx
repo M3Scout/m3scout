@@ -203,9 +203,6 @@ const Contact = () => {
       <section style={{ backgroundColor: CREAM, padding: `72px ${gutter}`, borderBottom: `1px solid ${BORDER_CREAM}` }}>
         <div style={{ maxWidth: maxW, margin: "0 auto" }}>
 
-          <p style={{ fontFamily: JB, fontSize: 9, letterSpacing: "0.2em", textTransform: "uppercase", color: CREAM_MUTED, margin: "0 0 32px 0" }}>
-            // CANAIS DIRETOS
-          </p>
 
           {channels.map((ch, index) => (
             <a
@@ -263,9 +260,6 @@ const Contact = () => {
       <section style={{ backgroundColor: BLACK, padding: `72px ${gutter} 80px` }}>
         <div style={{ maxWidth: maxW, margin: "0 auto" }}>
 
-          <p style={{ fontFamily: JB, fontSize: 9, letterSpacing: "0.2em", textTransform: "uppercase", color: WHITE_MUTED, margin: "0 0 32px 0" }}>
-            // ENVIE UMA MENSAGEM
-          </p>
 
           <form onSubmit={handleSubmit(onSubmit)}>
             <div
