@@ -170,39 +170,39 @@ function AppRoutes() {
                 <Route index element={<Suspense fallback={<RouteSuspense />}><Dashboard /></Suspense>} />
                 <Route path="my-profile" element={<Suspense fallback={<RouteSuspense />}><MyProfile /></Suspense>} />
                 
-                {/* Players */}
-                <Route path="players" element={<RequirePermission module="players"><Suspense fallback={<RouteSuspense />}><AppPlayers /></Suspense></RequirePermission>} />
-                <Route path="players/new" element={<RequirePermission module="players" action="create"><Suspense fallback={<RouteSuspense />}><NewPlayer /></Suspense></RequirePermission>} />
-                <Route path="players/:id" element={<RequirePermission module="players"><Suspense fallback={<RouteSuspense />}><PlayerDetail /></Suspense></RequirePermission>} />
-                <Route path="players/:id/edit" element={<RequirePermission module="players" action="edit"><Suspense fallback={<RouteSuspense />}><EditPlayer /></Suspense></RequirePermission>} />
-                
-                {/* Compare */}
-                <Route path="compare" element={<RequirePermission module="compare"><Suspense fallback={<RouteSuspense />}><ComparePlayers /></Suspense></RequirePermission>} />
-                
-                {/* Reports */}
-                <Route path="reports" element={<RequirePermission module="reports"><Suspense fallback={<RouteSuspense />}><ScoutingReports /></Suspense></RequirePermission>} />
-                <Route path="reports/new" element={<RequirePermission module="reports" action="create"><Suspense fallback={<RouteSuspense />}><NewScoutingReport /></Suspense></RequirePermission>} />
-                <Route path="reports/:id" element={<RequirePermission module="reports"><Suspense fallback={<RouteSuspense />}><ReportDetail /></Suspense></RequirePermission>} />
-                <Route path="reports/:id/edit" element={<RequirePermission module="reports" action="edit"><Suspense fallback={<RouteSuspense />}><EditScoutingReport /></Suspense></RequirePermission>} />
-                
-                {/* Competitions */}
-                <Route path="competitions" element={<RequirePermission module="competitions"><Suspense fallback={<RouteSuspense />}><Competitions /></Suspense></RequirePermission>} />
-                <Route path="competitions/import" element={<RequirePermission module="competitions" action="create"><Suspense fallback={<RouteSuspense />}><CompetitionsImport /></Suspense></RequirePermission>} />
-                <Route path="competitions/ranking" element={<RequirePermission module="competitions"><Suspense fallback={<RouteSuspense />}><CompetitionRanking /></Suspense></RequirePermission>} />
-                
+                {/* Players → atletas */}
+                <Route path="atletas" element={<RequirePermission module="players"><Suspense fallback={<RouteSuspense />}><AppPlayers /></Suspense></RequirePermission>} />
+                <Route path="atletas/novo" element={<RequirePermission module="players" action="create"><Suspense fallback={<RouteSuspense />}><NewPlayer /></Suspense></RequirePermission>} />
+                <Route path="atletas/:id" element={<RequirePermission module="players"><Suspense fallback={<RouteSuspense />}><PlayerDetail /></Suspense></RequirePermission>} />
+                <Route path="atletas/:id/editar" element={<RequirePermission module="players" action="edit"><Suspense fallback={<RouteSuspense />}><EditPlayer /></Suspense></RequirePermission>} />
+
+                {/* Compare → comparar */}
+                <Route path="comparar" element={<RequirePermission module="compare"><Suspense fallback={<RouteSuspense />}><ComparePlayers /></Suspense></RequirePermission>} />
+
+                {/* Reports → relatorios */}
+                <Route path="relatorios" element={<RequirePermission module="reports"><Suspense fallback={<RouteSuspense />}><ScoutingReports /></Suspense></RequirePermission>} />
+                <Route path="relatorios/novo" element={<RequirePermission module="reports" action="create"><Suspense fallback={<RouteSuspense />}><NewScoutingReport /></Suspense></RequirePermission>} />
+                <Route path="relatorios/:id" element={<RequirePermission module="reports"><Suspense fallback={<RouteSuspense />}><ReportDetail /></Suspense></RequirePermission>} />
+                <Route path="relatorios/:id/editar" element={<RequirePermission module="reports" action="edit"><Suspense fallback={<RouteSuspense />}><EditScoutingReport /></Suspense></RequirePermission>} />
+
+                {/* Competitions → competicoes */}
+                <Route path="competicoes" element={<RequirePermission module="competitions"><Suspense fallback={<RouteSuspense />}><Competitions /></Suspense></RequirePermission>} />
+                <Route path="competicoes/importar" element={<RequirePermission module="competitions" action="create"><Suspense fallback={<RouteSuspense />}><CompetitionsImport /></Suspense></RequirePermission>} />
+                <Route path="competicoes/ranking" element={<RequirePermission module="competitions"><Suspense fallback={<RouteSuspense />}><CompetitionRanking /></Suspense></RequirePermission>} />
+
                 {/* Leads */}
                 <Route path="leads" element={<RequirePermission module="leads"><Suspense fallback={<RouteSuspense />}><Leads /></Suspense></RequirePermission>} />
-                
-                {/* News */}
-                <Route path="news" element={<RequirePermission module="news"><Suspense fallback={<RouteSuspense />}><News /></Suspense></RequirePermission>} />
-                <Route path="news/new" element={<RequirePermission module="news" action="create"><Suspense fallback={<RouteSuspense />}><NewsForm /></Suspense></RequirePermission>} />
-                <Route path="news/:id/edit" element={<RequirePermission module="news" action="edit"><Suspense fallback={<RouteSuspense />}><NewsForm /></Suspense></RequirePermission>} />
-                
-                {/* Live Match - Uses specialized skeleton */}
-                <Route path="live-match" element={<RequirePermission module="live_match"><Suspense fallback={<LiveMatchSuspense />}><LiveMatch /></Suspense></RequirePermission>}>
-                  <Route path="new" element={<Suspense fallback={<LiveMatchSuspense />}><LiveMatchNew /></Suspense>} />
+
+                {/* News → noticias */}
+                <Route path="noticias" element={<RequirePermission module="news"><Suspense fallback={<RouteSuspense />}><News /></Suspense></RequirePermission>} />
+                <Route path="noticias/nova" element={<RequirePermission module="news" action="create"><Suspense fallback={<RouteSuspense />}><NewsForm /></Suspense></RequirePermission>} />
+                <Route path="noticias/:id/editar" element={<RequirePermission module="news" action="edit"><Suspense fallback={<RouteSuspense />}><NewsForm /></Suspense></RequirePermission>} />
+
+                {/* Live Match → aovivo */}
+                <Route path="aovivo" element={<RequirePermission module="live_match"><Suspense fallback={<LiveMatchSuspense />}><LiveMatch /></Suspense></RequirePermission>}>
+                  <Route path="novo" element={<Suspense fallback={<LiveMatchSuspense />}><LiveMatchNew /></Suspense>} />
                   <Route path=":matchId" element={<Suspense fallback={<LiveMatchSuspense />}><LiveMatchGame /></Suspense>} />
-                  <Route path=":matchId/review" element={<Suspense fallback={<LiveMatchSuspense />}><LiveMatchReview /></Suspense>} />
+                  <Route path=":matchId/revisao" element={<Suspense fallback={<LiveMatchSuspense />}><LiveMatchReview /></Suspense>} />
                 </Route>
                 
                 {/* Teams */}

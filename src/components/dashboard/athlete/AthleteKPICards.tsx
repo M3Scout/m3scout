@@ -89,7 +89,7 @@ export function AthleteKPICards({
           whileTap={subtleTap}
         >
           <Link
-            to={`/app/players/${athleteId}?tab=stats`}
+            to={`/dashboard/atletas/${athleteId}?tab=stats`}
             className={`group relative block overflow-hidden rounded-[var(--radius-card)] bg-gradient-to-br ${kpi.color} p-4 sm:p-5 transition-all duration-300 hover:shadow-xl ${kpi.glowColor}`}
           >
             {/* Subtle glow effect */}

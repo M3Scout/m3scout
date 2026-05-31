@@ -56,22 +56,22 @@ const internalNavGroups: NavGroup[] = [
     label: "Análise",
     items: [
       { href: "/dashboard", label: "Dashboard", module: "app", icon: LayoutDashboard },
-      { href: "/dashboard/players", label: "Atletas", module: "players", icon: Users },
-      { href: "/dashboard/compare", label: "Comparar", module: "compare", icon: GitCompare },
-      { href: "/dashboard/reports", label: "Relatórios", module: "reports", icon: FileText },
+      { href: "/dashboard/atletas", label: "Atletas", module: "players", icon: Users },
+      { href: "/dashboard/comparar", label: "Comparar", module: "compare", icon: GitCompare },
+      { href: "/dashboard/relatorios", label: "Relatórios", module: "reports", icon: FileText },
     ]
   },
   {
     label: "Contexto Esportivo",
     items: [
-      { href: "/dashboard/live-match", label: "Jogo Ao Vivo", module: "live_match", icon: Radio },
-      { href: "/dashboard/competitions", label: "Competições", module: "competitions", icon: Trophy },
+      { href: "/dashboard/aovivo", label: "Jogo Ao Vivo", module: "live_match", icon: Radio },
+      { href: "/dashboard/competicoes", label: "Competições", module: "competitions", icon: Trophy },
     ]
   },
   {
     label: "Negócios",
     items: [
-      { href: "/dashboard/news", label: "Notícias", module: "news", icon: Newspaper },
+      { href: "/dashboard/noticias", label: "Notícias", module: "news", icon: Newspaper },
       { href: "/dashboard/leads", label: "Leads", module: "leads", icon: Target },
     ]
   },
@@ -98,14 +98,14 @@ const playerNavGroups: NavGroup[] = [
     items: [
       { href: "/dashboard", label: "Dashboard", module: "app", icon: LayoutDashboard },
       { href: "/dashboard/my-profile", label: "Meu Perfil", module: "players", icon: User },
-      { href: "/dashboard/reports", label: "Relatórios", module: "reports", icon: FileText },
+      { href: "/dashboard/relatorios", label: "Relatórios", module: "reports", icon: FileText },
     ]
   },
   {
     label: "Jogos",
     items: [
-      { href: "/dashboard/live-match", label: "Meus Jogos", module: "live_match", icon: Gamepad2 },
-      { href: "/dashboard/competitions", label: "Competições", module: "competitions", icon: Trophy },
+      { href: "/dashboard/aovivo", label: "Meus Jogos", module: "live_match", icon: Gamepad2 },
+      { href: "/dashboard/competicoes", label: "Competições", module: "competitions", icon: Trophy },
     ]
   }
 ];

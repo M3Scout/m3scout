@@ -53,7 +53,7 @@ export function AthleteReportsCard({ reports, athleteId }: AthleteReportsCardPro
         </div>
         
         <Link 
-          to={`/app/players/${athleteId}?tab=overview`} 
+          to={`/dashboard/atletas/${athleteId}?tab=overview`} 
           className="text-xs text-muted-foreground hover:text-zinc-300 transition-colors flex items-center gap-0.5"
         >
           Ver todos
@@ -74,7 +74,7 @@ export function AthleteReportsCard({ reports, athleteId }: AthleteReportsCardPro
                   whileTap={cardTap}
                 >
                   <Link
-                    to={`/app/reports/${report.id}`}
+                    to={`/dashboard/relatorios/${report.id}`}
                     className="group flex items-center gap-3 p-3 rounded-[var(--radius-button)] bg-zinc-900/30 hover:bg-zinc-800/30 transition-all duration-200"
                   >
                     {/* Score Circle */}

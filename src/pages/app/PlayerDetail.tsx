@@ -414,7 +414,7 @@ const PlayerDetail = () => {
   const reliabilityColor = reliabilityPct > 70 ? T.green : reliabilityPct >= 50 ? T.amber : T.accent;
   const reliabilityLabel = reliabilityPct > 70 ? "ALTA" : reliabilityPct >= 50 ? "MÉDIA" : "BAIXA";
 
-  const handleDeleteSuccess = () => navigate("/dashboard/players");
+  const handleDeleteSuccess = () => navigate("/dashboard/atletas");
 
   // ── Loading ──────────────────────────────────────────────────────────────
 
@@ -451,7 +451,7 @@ const PlayerDetail = () => {
       <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
         <h2 className="text-xl font-semibold">Atleta não encontrado</h2>
         <button
-          onClick={() => navigate("/dashboard/players")}
+          onClick={() => navigate("/dashboard/atletas")}
           className="px-4 py-2 bg-primary text-primary-foreground text-sm"
         >
           Voltar
@@ -476,7 +476,7 @@ const PlayerDetail = () => {
         className={`flex items-center justify-between gap-4 px-4 md:px-6 py-3 border-b ${T.border}`}
       >
         <button
-          onClick={() => navigate("/dashboard/players")}
+          onClick={() => navigate("/dashboard/atletas")}
           className="flex items-center gap-1.5 font-jetbrains text-[11px] tracking-[0.14em] text-[#6B6560] hover:text-[#F2EDE4] transition-colors uppercase"
         >
           <ArrowLeft className="w-3 h-3" />
@@ -486,7 +486,7 @@ const PlayerDetail = () => {
         <div className="flex items-center gap-2 shrink-0">
           {canCreateReport && (
             <Link
-              to={`/dashboard/reports/new?player=${player.id}`}
+              to={`/dashboard/relatorios/novo?player=${player.id}`}
               className={`flex items-center gap-1.5 px-3 py-1.5 border ${T.border} font-jetbrains text-[11px] tracking-wider uppercase text-[#F2EDE4] hover:border-[#E5173F] transition-colors`}
             >
               <FileText className="w-3 h-3" />
@@ -495,7 +495,7 @@ const PlayerDetail = () => {
           )}
           {canEdit && (
             <Link
-              to={`/dashboard/players/${player.id}/edit`}
+              to={`/dashboard/atletas/${player.id}/editar`}
               className={`flex items-center gap-1.5 px-3 py-1.5 border ${T.border} font-jetbrains text-[11px] tracking-wider uppercase text-[#F2EDE4] hover:border-[#F2EDE4] transition-colors`}
             >
               <Edit className="w-3 h-3" />
@@ -1121,7 +1121,7 @@ const PlayerDetail = () => {
                               {format(new Date(r.match_date), "dd MMM yyyy", { locale: ptBR })}
                             </p>
                           </div>
-                          <Link to={`/dashboard/reports/${r.id}`}>
+                          <Link to={`/dashboard/relatorios/${r.id}`}>
                             <span
                               className="font-jetbrains font-bold text-[15px]"
                               style={{ color: scoreColor }}

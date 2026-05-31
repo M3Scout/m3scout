@@ -126,7 +126,7 @@ const News = () => {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["admin-news"] });
       toast.success("Notícia duplicada como rascunho");
-      navigate(`/dashboard/news/${data.id}/edit`);
+      navigate(`/dashboard/noticias/${data.id}/editar`);
     },
     onError: () => {
       toast.error("Erro ao duplicar notícia");
@@ -199,7 +199,7 @@ const News = () => {
             </p>
           </div>
           <Button asChild className="gap-2 shrink-0 bg-[#e63946] hover:bg-[#d62839] text-white rounded-full px-5 h-9 text-sm font-semibold">
-            <Link to="/dashboard/news/new">
+            <Link to="/dashboard/noticias/nova">
               <Plus className="w-4 h-4" />
               Nova Notícia
             </Link>

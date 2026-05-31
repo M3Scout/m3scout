@@ -299,7 +299,7 @@ export default function DebugPerformance() {
               <ul className="text-sm text-muted-foreground space-y-1">
                 <li>1. Boot completo → Prefetch Live Match</li>
                 <li>2. 2s depois → Prefetch rotas secundárias</li>
-                <li>3. Atletas → Prefetch dashboard/compare</li>
+                <li>3. Atletas → Prefetch dashboard/comparar</li>
               </ul>
             </div>
             <div>

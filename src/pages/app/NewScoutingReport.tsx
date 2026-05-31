@@ -206,7 +206,7 @@ const NewScoutingReport = () => {
       if (error) throw error;
 
       toast.success("Relatório criado com sucesso!");
-      navigate("/dashboard/reports");
+      navigate("/dashboard/relatorios");
     } catch (error: any) {
       console.error("Error creating report:", error);
       toast.error(error.message || "Erro ao criar relatório");
@@ -253,7 +253,7 @@ const NewScoutingReport = () => {
       {/* Header */}
       <div>
         <Link
-          to="/dashboard/reports"
+          to="/dashboard/relatorios"
           className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -470,7 +470,7 @@ const NewScoutingReport = () => {
 
         {/* Submit */}
         <div className="flex justify-end gap-4">
-          <Link to="/dashboard/reports">
+          <Link to="/dashboard/relatorios">
             <Button type="button" variant="outline">
               Cancelar
             </Button>

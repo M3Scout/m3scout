@@ -27,7 +27,7 @@ export function FeaturedPlayerCard({
   autoRating,
 }: FeaturedPlayerCardProps) {
   // Public routes use slug for SEO-friendly URLs, app routes use id for reliability
-  const href = isPublic ? `/players/${slug}` : `/app/players/${id}`;
+  const href = isPublic ? `/players/${slug}` : `/dashboard/atletas/${id}`;
 
   return (
     <Link to={href} className="group block col-span-1 sm:col-span-2">

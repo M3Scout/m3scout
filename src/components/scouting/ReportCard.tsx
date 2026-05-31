@@ -92,7 +92,7 @@ export function ReportCard({
       transition={{ duration: 0.25, delay: index * 0.04 }}
       className="group"
     >
-      <Link to={`/app/reports/${report.id}`}>
+      <Link to={`/dashboard/relatorios/${report.id}`}>
         <div className={cn(
           "relative flex items-stretch rounded-xl overflow-hidden",
           "bg-zinc-900/50 border border-zinc-800/40",
@@ -155,13 +155,13 @@ export function ReportCard({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-800">
                 <DropdownMenuItem asChild>
-                  <Link to={`/app/reports/${report.id}`} className="flex items-center gap-2">
+                  <Link to={`/dashboard/relatorios/${report.id}`} className="flex items-center gap-2">
                     <Eye className="w-4 h-4" />
                     Ver relatório
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to={`/app/reports/${report.id}/edit`} className="flex items-center gap-2">
+                  <Link to={`/dashboard/relatorios/${report.id}/edit`} className="flex items-center gap-2">
                     <Edit className="w-4 h-4" />
                     Editar
                   </Link>

@@ -198,7 +198,7 @@ export const TopPlayersCard = () => {
                 whileTap={subtleTap}
               >
                 <Link
-                  to={`/dashboard/players/${player.id}`}
+                  to={`/dashboard/atletas/${player.id}`}
                   className={`group flex items-center gap-3 p-3 flex-1 min-h-[52px] rounded-[var(--radius-button)] transition-all duration-200 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 w-full max-w-full overflow-hidden ${getRankBg(index + 1)}`}
                 >
                   {/* Rank */}
@@ -269,7 +269,7 @@ export const TopPlayersCard = () => {
       {players.length > 0 && (
         <div className="px-4 sm:px-5 py-3 border-t border-zinc-800/40 bg-zinc-900/30">
           <Link 
-            to="/dashboard/players"
+            to="/dashboard/atletas"
             className="text-xs text-primary hover:text-primary/80 flex items-center justify-center gap-1 font-medium transition-colors"
           >
             Ver todos os atletas

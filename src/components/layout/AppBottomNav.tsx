@@ -6,9 +6,9 @@ import "./MobileBottomNav.css";
 
 const items = [
   { to: "/dashboard", label: "Início", Icon: Home, match: (p: string) => p === "/dashboard" || p === "/dashboard/" },
-  { to: "/dashboard/players", label: "Atletas", Icon: Users, match: (p: string) => p.startsWith("/dashboard/players") },
-  { to: "/dashboard/reports", label: "Relatórios", Icon: ClipboardList, match: (p: string) => p.startsWith("/dashboard/reports") || p.startsWith("/dashboard/scouting") },
-  { to: "/dashboard/live-match", label: "Ao Vivo", Icon: Radio, match: (p: string) => p.startsWith("/dashboard/live-match") },
+  { to: "/dashboard/atletas", label: "Atletas", Icon: Users, match: (p: string) => p.startsWith("/dashboard/atletas") },
+  { to: "/dashboard/relatorios", label: "Relatórios", Icon: ClipboardList, match: (p: string) => p.startsWith("/dashboard/relatorios") || p.startsWith("/dashboard/scouting") },
+  { to: "/dashboard/aovivo", label: "Ao Vivo", Icon: Radio, match: (p: string) => p.startsWith("/dashboard/aovivo") },
   { to: "/dashboard/goals-monitor", label: "Metas", Icon: Target, match: (p: string) => p.startsWith("/dashboard/goals") },
 ];
 
@@ -18,7 +18,7 @@ export function AppBottomNav() {
   const activeIdx = items.findIndex((i) => i.match(location.pathname));
 
   // Hide during active live match sessions — the action buttons need full screen height
-  if (location.pathname.startsWith("/dashboard/live-match/")) return null;
+  if (location.pathname.startsWith("/dashboard/aovivo/")) return null;
 
   return (
     <nav className="m3-bottom-nav" aria-label="Navegação rápida">

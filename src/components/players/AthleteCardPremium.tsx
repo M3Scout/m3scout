@@ -316,7 +316,7 @@ function VisualModeCard({
   isPublic,
 }: AthleteCardPremiumProps) {
   const [isHovered, setIsHovered] = useState(false);
-  const href = isPublic ? `/players/${slug}` : `/app/players/${id}`;
+  const href = isPublic ? `/players/${slug}` : `/dashboard/atletas/${id}`;
   
   // Get position-based colors
   const positionColors = getPositionColor(position);
@@ -483,7 +483,7 @@ function ClubScoutingCard({
   secondaryTacticalRole,
 }: AthleteCardPremiumProps) {
   const [isHovered, setIsHovered] = useState(false);
-  const href = isPublic ? `/players/${slug}` : `/app/players/${id}`;
+  const href = isPublic ? `/players/${slug}` : `/dashboard/atletas/${id}`;
   
   // Get position-based colors
   const positionColors = getPositionColor(position);

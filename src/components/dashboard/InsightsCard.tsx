@@ -86,7 +86,7 @@ function buildInsights(aggregates: AggregateRow[], year: number): Insight[] {
 
   for (const p of aggregates) {
     const firstName  = p.full_name.split(" ")[0];
-    const link       = `/dashboard/players/${p.player_id}`;
+    const link       = `/dashboard/atletas/${p.player_id}`;
 
     // Rule 1 — Minutagem Baixa
     if (p.total_matches >= 5) {
@@ -158,7 +158,7 @@ function buildInsights(aggregates: AggregateRow[], year: number): Insight[] {
       title:       "Nenhum alerta na temporada",
       description: `Todos os atletas com aproveitamentos regulares em ${year}.`,
       tooltip:     `Não foram detectados índices críticos nos dados de ${year}. Continue monitorando!`,
-      link:        "/dashboard/players",
+      link:        "/dashboard/atletas",
     });
   }
   if (out.length < 5) {
@@ -167,7 +167,7 @@ function buildInsights(aggregates: AggregateRow[], year: number): Insight[] {
       title:       "Explore o portfólio",
       description: "Analise atletas e crie relatórios de scouting.",
       tooltip:     "Acesse a lista completa de atletas para análises detalhadas.",
-      link:        "/dashboard/players",
+      link:        "/dashboard/atletas",
     });
   }
 

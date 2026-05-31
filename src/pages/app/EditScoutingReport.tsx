@@ -140,7 +140,7 @@ const EditScoutingReport = () => {
       const reportRow = Array.isArray(reportRes.data) ? reportRes.data[0] ?? null : null;
       if (!reportRow) {
         toast.error("Relatório não encontrado");
-        navigate("/dashboard/reports");
+        navigate("/dashboard/relatorios");
         return;
       }
 
@@ -254,7 +254,7 @@ const EditScoutingReport = () => {
       if (error) throw error;
 
       toast.success("Relatório atualizado com sucesso!");
-      navigate(`/dashboard/reports/${id}`);
+      navigate(`/dashboard/relatorios/${id}`);
     } catch (error: any) {
       console.error("Error updating report:", error);
       toast.error(error.message || "Erro ao atualizar relatório");
@@ -309,7 +309,7 @@ const EditScoutingReport = () => {
       {/* Header */}
       <div>
         <Link
-          to={`/dashboard/reports/${id}`}
+          to={`/dashboard/relatorios/${id}`}
           className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -532,7 +532,7 @@ const EditScoutingReport = () => {
 
         {/* Submit */}
         <div className="flex justify-end gap-4">
-          <Link to={`/dashboard/reports/${id}`}>
+          <Link to={`/dashboard/relatorios/${id}`}>
             <Button type="button" variant="outline">
               Cancelar
             </Button>

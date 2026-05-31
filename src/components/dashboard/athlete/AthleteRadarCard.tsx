@@ -277,7 +277,7 @@ export function AthleteRadarCard({ athleteId, athletePosition }: AthleteRadarCar
           <span>Calculado das estatísticas</span>
         </div>
         <Link 
-          to={`/app/players/${athleteId}?tab=technical`}
+          to={`/dashboard/atletas/${athleteId}?tab=technical`}
           className="text-xs text-primary hover:text-primary/80 transition-colors"
         >
           Ver detalhes →

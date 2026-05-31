@@ -145,7 +145,7 @@ export function NewsCardMobile({
                 asChild
                 aria-label="Editar notícia"
               >
-                <Link to={`/app/news/${article.id}/edit`}>
+                <Link to={`/dashboard/noticias/${article.id}/edit`}>
                   <Edit className="w-4 h-4" />
                 </Link>
               </Button>

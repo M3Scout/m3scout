@@ -43,7 +43,7 @@ export function AthleteHero({ athleteName, athletePosition, athleteClub, athlete
 
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <motion.div whileHover={cardHover} whileTap={cardTap}>
-              <Link to={`/dashboard/players/${athleteId}`}>
+              <Link to={`/dashboard/atletas/${athleteId}`}>
                 <Button 
                   variant="glass" 
                   size="sm"
@@ -67,7 +67,7 @@ export function AthleteHero({ athleteName, athletePosition, athleteClub, athlete
               </Link>
             </motion.div>
             <motion.div whileHover={cardHover} whileTap={cardTap}>
-              <Link to={`/dashboard/players/${athleteId}?tab=stats`}>
+              <Link to={`/dashboard/atletas/${athleteId}?tab=stats`}>
                 <Button 
                   size="sm"
                   className="min-h-[var(--tap-target)] rounded-[var(--radius-button)] bg-gradient-to-r from-primary to-red-600 hover:from-primary/90 hover:to-red-600/90 text-primary-foreground shadow-lg shadow-primary/20"

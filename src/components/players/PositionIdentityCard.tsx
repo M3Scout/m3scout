@@ -83,7 +83,7 @@ export function PositionIdentityCard({
     if ((e.target as HTMLElement).closest('[data-dropdown-trigger]')) {
       return;
     }
-    navigate(`/app/players/${id}`);
+    navigate(`/dashboard/atletas/${id}`);
   };
 
   const defaultPhoto = "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=200&h=200&fit=crop";
@@ -210,19 +210,19 @@ export function PositionIdentityCard({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem asChild>
-                <Link to={`/app/players/${id}`}>
+                <Link to={`/dashboard/atletas/${id}`}>
                   <Eye className="w-4 h-4 mr-2" />
                   Ver Detalhes
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link to={`/app/players/${id}/edit`}>
+                <Link to={`/dashboard/atletas/${id}/edit`}>
                   <Edit className="w-4 h-4 mr-2" />
                   Editar
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link to={`/app/reports/new?player=${id}`}>
+                <Link to={`/dashboard/relatorios/novo?player=${id}`}>
                   <FileText className="w-4 h-4 mr-2" />
                   Novo Relatório
                 </Link>
@@ -335,7 +335,7 @@ export function PositionIdentityCardMobile({
     if ((e.target as HTMLElement).closest('[data-dropdown-trigger]')) {
       return;
     }
-    navigate(`/app/players/${id}`);
+    navigate(`/dashboard/atletas/${id}`);
   };
 
   const defaultPhoto = "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=100&h=100&fit=crop";
@@ -408,19 +408,19 @@ export function PositionIdentityCardMobile({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem asChild>
-              <Link to={`/app/players/${id}`}>
+              <Link to={`/dashboard/atletas/${id}`}>
                 <Eye className="w-4 h-4 mr-2" />
                 Ver Detalhes
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link to={`/app/players/${id}/edit`}>
+              <Link to={`/dashboard/atletas/${id}/edit`}>
                 <Edit className="w-4 h-4 mr-2" />
                 Editar
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link to={`/app/reports/new?player=${id}`}>
+              <Link to={`/dashboard/relatorios/novo?player=${id}`}>
                 <FileText className="w-4 h-4 mr-2" />
                 Novo Relatório
               </Link>

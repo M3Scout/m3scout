@@ -98,7 +98,7 @@ export function ContractRow({ contract }: ContractRowProps) {
       {/* ── Ver Atleta: col 3 mobile / col 4 sm / col 5 md ── */}
       <div className="col-start-3 sm:col-start-4 md:col-start-5 flex items-center justify-end">
         <Link
-          to={`/app/players/${contract.player_id}`}
+          to={`/dashboard/atletas/${contract.player_id}`}
           className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-medium text-zinc-400 hover:text-zinc-100 bg-zinc-800/40 hover:bg-zinc-800 border border-zinc-700/30 transition-all duration-200 whitespace-nowrap"
           onClick={(e) => e.stopPropagation()}
         >

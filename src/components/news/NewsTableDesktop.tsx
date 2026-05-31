@@ -178,7 +178,7 @@ export function NewsTableDesktop({
                           aria-label="Editar notícia"
                         >
                           <Link 
-                            to={`/app/news/${article.id}/edit`}
+                            to={`/dashboard/noticias/${article.id}/edit`}
                             onClick={(e) => e.stopPropagation()}
                           >
                             <Edit className="w-4 h-4" />

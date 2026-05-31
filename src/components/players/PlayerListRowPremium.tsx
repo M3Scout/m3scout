@@ -70,7 +70,7 @@ export function PlayerListRowPremium({
 
   const handleRowClick = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('[data-dropdown-trigger]')) return;
-    navigate(`/app/players/${id}`);
+    navigate(`/dashboard/atletas/${id}`);
   };
 
   return (
@@ -188,19 +188,19 @@ export function PlayerListRowPremium({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
           <DropdownMenuItem asChild>
-            <Link to={`/app/players/${id}`}>
+            <Link to={`/dashboard/atletas/${id}`}>
               <Eye className="w-4 h-4 mr-2" />
               Ver Detalhes
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link to={`/app/players/${id}/edit`}>
+            <Link to={`/dashboard/atletas/${id}/edit`}>
               <Edit className="w-4 h-4 mr-2" />
               Editar
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link to={`/app/reports/new?player=${id}`}>
+            <Link to={`/dashboard/relatorios/novo?player=${id}`}>
               <FileText className="w-4 h-4 mr-2" />
               Novo Relatório
             </Link>
@@ -257,7 +257,7 @@ export function PlayerListRowMobilePremium({
 
   const handleCardClick = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('[data-dropdown-trigger]')) return;
-    navigate(`/app/players/${id}`);
+    navigate(`/dashboard/atletas/${id}`);
   };
 
   return (
@@ -320,19 +320,19 @@ export function PlayerListRowMobilePremium({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
             <DropdownMenuItem asChild>
-              <Link to={`/app/players/${id}`}>
+              <Link to={`/dashboard/atletas/${id}`}>
                 <Eye className="w-4 h-4 mr-2" />
                 Ver Detalhes
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link to={`/app/players/${id}/edit`}>
+              <Link to={`/dashboard/atletas/${id}/edit`}>
                 <Edit className="w-4 h-4 mr-2" />
                 Editar
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link to={`/app/reports/new?player=${id}`}>
+              <Link to={`/dashboard/relatorios/novo?player=${id}`}>
                 <FileText className="w-4 h-4 mr-2" />
                 Novo Relatório
               </Link>

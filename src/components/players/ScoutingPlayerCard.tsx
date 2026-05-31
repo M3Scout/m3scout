@@ -73,7 +73,7 @@ export function ScoutingPlayerCard({
   potentialRating,
 }: ScoutingPlayerCardProps) {
   // App routes use id for reliability (slug may not be unique)
-  const href = `/app/players/${id}`;
+  const href = `/dashboard/atletas/${id}`;
 
   return (
     <Link to={href} className="group block">

@@ -652,7 +652,7 @@ export function GameScoreboard({
                       )}
                       asChild
                     >
-                      <Link to={`/app/live-match/${matchId}/review`}>
+                      <Link to={`/dashboard/aovivo/${matchId}/review`}>
                         <ArrowRight className="w-5 h-5" />
                         <span className="hidden sm:inline tablet-landscape:inline">Revisar</span>
                       </Link>
@@ -683,7 +683,7 @@ export function GameScoreboard({
                   className="h-14 gap-2 border-blue-500/50 text-blue-400 hover:bg-blue-500/10"
                   asChild
                 >
-                  <Link to={`/app/live-match/${matchId}/review`}>
+                  <Link to={`/dashboard/aovivo/${matchId}/review`}>
                     <ArrowRight className="w-5 h-5" />
                     Revisar
                   </Link>

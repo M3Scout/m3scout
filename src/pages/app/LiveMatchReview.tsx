@@ -393,7 +393,7 @@ export default function LiveMatchReview() {
   });
 
   if (!matchId) {
-    return <Navigate to="/dashboard/live-match/new" replace />;
+    return <Navigate to="/dashboard/aovivo/novo" replace />;
   }
 
   if (isLoading) {
@@ -409,7 +409,7 @@ export default function LiveMatchReview() {
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <h1 className="text-2xl font-bold">Jogo não encontrado</h1>
         <Button asChild>
-          <Link to="/dashboard/live-match/new">Criar novo jogo</Link>
+          <Link to="/dashboard/aovivo/novo">Criar novo jogo</Link>
         </Button>
       </div>
     );
@@ -427,7 +427,7 @@ export default function LiveMatchReview() {
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
-            <Link to={`/dashboard/live-match/${matchId}`}>
+            <Link to={`/dashboard/aovivo/${matchId}`}>
               <ArrowLeft className="h-5 w-5" />
             </Link>
           </Button>
@@ -835,7 +835,7 @@ export default function LiveMatchReview() {
                       className="h-9 w-9 sm:h-10 sm:w-10 shrink-0"
                       asChild
                     >
-                      <Link to={`/dashboard/players/${mp.player_id}`} target="_blank">
+                      <Link to={`/dashboard/atletas/${mp.player_id}`} target="_blank">
                         <ExternalLink className="h-4 w-4 sm:h-5 sm:w-5" />
                       </Link>
                     </Button>
@@ -850,7 +850,7 @@ export default function LiveMatchReview() {
       {/* Actions */}
       <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sticky bottom-4 bg-zinc-950/95 backdrop-blur-lg p-4 sm:p-5 -mx-4 rounded-xl border border-zinc-800/40 shadow-xl">
         <Button variant="outline" asChild className="flex-1 h-11 sm:h-12 text-sm sm:text-base">
-          <Link to={`/dashboard/live-match/${matchId}`}>
+          <Link to={`/dashboard/aovivo/${matchId}`}>
             <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
             Voltar e Corrigir
           </Link>
@@ -896,7 +896,7 @@ export default function LiveMatchReview() {
               {matchPlayers.slice(0, 5).map((mp) => (
                 mp.player && (
                   <Button key={mp.id} variant="outline" size="sm" asChild className="text-xs sm:text-sm">
-                    <Link to={`/dashboard/players/${mp.player_id}`}>
+                    <Link to={`/dashboard/atletas/${mp.player_id}`}>
                       Ver {mp.player.full_name.split(" ")[0]}
                     </Link>
                   </Button>

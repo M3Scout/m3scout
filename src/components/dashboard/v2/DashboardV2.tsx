@@ -285,10 +285,10 @@ export const DashboardV2 = () => {
         <div className="m3dash-header">
           <div className="m3dash-headline">VISÃO GERAL</div>
           <div className="m3dash-header-actions">
-            <Link to="/dashboard/players" className="m3dash-btn">
+            <Link to="/dashboard/atletas" className="m3dash-btn">
               <Users size={13} /> ATLETAS
             </Link>
-            <Link to="/dashboard/reports/new" className="m3dash-btn m3dash-btn--primary">
+            <Link to="/dashboard/relatorios/novo" className="m3dash-btn m3dash-btn--primary">
               + NOVO RELATÓRIO
             </Link>
           </div>
@@ -312,13 +312,13 @@ export const DashboardV2 = () => {
 
         {/* Stats row */}
         <div className="m3dash-stats">
-          <Link to="/dashboard/players" className="m3dash-stat">
+          <Link to="/dashboard/atletas" className="m3dash-stat">
             <div className="m3dash-stat-label">Atletas</div>
             <div className="m3dash-stat-value">{stats.totalPlayers}</div>
             <div className="m3dash-stat-sub">Portfólio ativo</div>
             <div className="m3dash-stat-bar m3dash-stat-bar--green" />
           </Link>
-          <Link to="/dashboard/reports" className="m3dash-stat">
+          <Link to="/dashboard/relatorios" className="m3dash-stat">
             <div className="m3dash-stat-label">Relatórios</div>
             <div className="m3dash-stat-value">{stats.reportsThisMonth}</div>
             <div className="m3dash-stat-sub">Este mês</div>
@@ -363,7 +363,7 @@ export const DashboardV2 = () => {
               <div className="m3dash-section-title">
                 <span className="red">// </span>Top Atletas
               </div>
-              <Link to="/dashboard/players" className="m3dash-section-link">
+              <Link to="/dashboard/atletas" className="m3dash-section-link">
                 Ver Todos <ArrowRight size={10} style={{ display: "inline", verticalAlign: "middle" }} />
               </Link>
             </div>
@@ -375,7 +375,7 @@ export const DashboardV2 = () => {
                 const badgeStyle = POS_BADGE_STYLE[pos] || { bg: "rgba(240,236,227,0.08)", color: "rgba(240,236,227,0.45)" };
                 const isTop = i < 3;
                 return (
-                  <Link key={p.id} to={`/dashboard/players/${p.id}`} className="m3dash-athlete">
+                  <Link key={p.id} to={`/dashboard/atletas/${p.id}`} className="m3dash-athlete">
                     <div className="m3dash-athlete-rank">{String(i + 1).padStart(2, "0")}</div>
                     <div className="m3dash-athlete-avatar">{getInitials(p.full_name)}</div>
                     <div className="m3dash-athlete-info">
@@ -438,7 +438,7 @@ export const DashboardV2 = () => {
               <div className="m3dash-section-title">
                 <span className="red">// </span>Relatórios Recentes
               </div>
-              <Link to="/dashboard/reports" className="m3dash-section-link">
+              <Link to="/dashboard/relatorios" className="m3dash-section-link">
                 Ver Todos <ArrowRight size={10} style={{ display: "inline", verticalAlign: "middle" }} />
               </Link>
             </div>
@@ -446,7 +446,7 @@ export const DashboardV2 = () => {
               <div className="m3dash-empty">Nenhum relatório ainda</div>
             ) : (
               recentReports.map(r => (
-                <Link key={r.id} to={`/dashboard/reports/${r.id}`} className="m3dash-report">
+                <Link key={r.id} to={`/dashboard/relatorios/${r.id}`} className="m3dash-report">
                   <div className={`m3dash-report-score ${getScoreClass(r.final_score)}`}>
                     {(r.final_score ?? 0).toFixed(1)}
                   </div>
@@ -466,7 +466,7 @@ export const DashboardV2 = () => {
               <div className="m3dash-section-title">
                 <span className="red">// </span>Competições
               </div>
-              <Link to="/dashboard/competitions" className="m3dash-section-link">
+              <Link to="/dashboard/competicoes" className="m3dash-section-link">
                 Ver Todas <ArrowRight size={10} style={{ display: "inline", verticalAlign: "middle" }} />
               </Link>
             </div>

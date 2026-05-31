@@ -503,13 +503,13 @@ const AppPlayers = () => {
             </span>
           )}
           <Button variant="outline" size="sm" asChild className="hidden md:inline-flex h-8 px-4 rounded-full bg-zinc-900/40 border-zinc-800/40 hover:bg-zinc-800/60 hover:border-zinc-700 text-[11px] font-medium">
-            <Link to="/dashboard/compare">
+            <Link to="/dashboard/comparar">
               <GitCompare className="w-3.5 h-3.5 sm:mr-1.5" />
               <span className="hidden sm:inline">Comparar</span>
             </Link>
           </Button>
           <Button size="sm" asChild className="hidden md:inline-flex h-8 px-4 rounded-full text-[11px] font-medium text-white" style={{ backgroundColor: '#e63946' }}>
-            <Link to="/dashboard/players/new">
+            <Link to="/dashboard/atletas/novo">
               <Plus className="w-3.5 h-3.5 sm:mr-1.5" />
               <span className="hidden sm:inline">Novo Atleta</span>
             </Link>
@@ -721,7 +721,7 @@ const AppPlayers = () => {
               </p>
             </div>
             <Button variant="gradient" asChild className="mt-2">
-              <Link to="/dashboard/players/new">
+              <Link to="/dashboard/atletas/novo">
                 <Plus className="w-4 h-4 mr-2" />
                 Cadastrar Primeiro Atleta
               </Link>

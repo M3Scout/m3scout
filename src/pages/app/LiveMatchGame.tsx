@@ -147,7 +147,7 @@ function LiveMatchGameInner({ matchId }: { matchId: string }) {
   const handleFinishGame = useCallback(() => {
     finishGame.mutate(undefined, {
       onSuccess: () => {
-        navigate(`/dashboard/live-match/${matchId}/review`);
+        navigate(`/dashboard/aovivo/${matchId}/revisao`);
       },
     });
   }, [finishGame, matchId, navigate]);
@@ -191,11 +191,11 @@ function LiveMatchGameInner({ matchId }: { matchId: string }) {
         <p className="text-sm text-zinc-500">O jogo pode ter sido excluído ou você não tem acesso.</p>
         {!isPlayerOnlyMode && (
           <Button asChild>
-            <Link to="/dashboard/live-match/new">Criar novo jogo</Link>
+            <Link to="/dashboard/aovivo/novo">Criar novo jogo</Link>
           </Button>
         )}
         <Button variant="outline" asChild>
-          <Link to="/dashboard/live-match">Voltar</Link>
+          <Link to="/dashboard/aovivo">Voltar</Link>
         </Button>
       </div>
     );
@@ -225,7 +225,7 @@ function LiveMatchGameInner({ matchId }: { matchId: string }) {
           Apenas jogadores que participam do jogo podem visualizá-lo.
         </p>
         <Button variant="outline" asChild>
-          <Link to="/dashboard/live-match">Ver Meus Jogos</Link>
+          <Link to="/dashboard/aovivo">Ver Meus Jogos</Link>
         </Button>
       </div>
     );
@@ -933,7 +933,7 @@ function LiveMatchGameContent() {
   
   // Guard: if no matchId, redirect (this happens before any other hooks in Inner)
   if (!matchId) {
-    return <Navigate to="/dashboard/live-match/new" replace />;
+    return <Navigate to="/dashboard/aovivo/novo" replace />;
   }
   
   // Render inner component with guaranteed matchId

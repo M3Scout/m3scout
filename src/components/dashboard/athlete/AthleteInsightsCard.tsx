@@ -321,7 +321,7 @@ export function AthleteInsightsCard({
       {/* Footer */}
       <div className="px-4 py-3 border-t border-zinc-800/30 bg-zinc-900/30">
         <Link 
-          to={`/app/players/${athleteId}?tab=technical`}
+          to={`/dashboard/atletas/${athleteId}?tab=technical`}
           className="text-xs text-primary hover:text-primary/80 transition-colors"
         >
           Ver perfil técnico completo →

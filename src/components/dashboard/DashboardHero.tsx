@@ -30,7 +30,7 @@ export const DashboardHero = () => {
 
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <motion.div whileHover={cardHover} whileTap={cardTap}>
-              <Link to="/dashboard/players">
+              <Link to="/dashboard/atletas">
                 <Button 
                   variant="glass" 
                   size="sm"
@@ -42,7 +42,7 @@ export const DashboardHero = () => {
               </Link>
             </motion.div>
             <motion.div whileHover={cardHover} whileTap={cardTap}>
-              <Link to="/dashboard/compare">
+              <Link to="/dashboard/comparar">
                 <Button 
                   variant="glass" 
                   size="sm"
@@ -54,7 +54,7 @@ export const DashboardHero = () => {
               </Link>
             </motion.div>
             <motion.div whileHover={cardHover} whileTap={cardTap}>
-              <Link to="/dashboard/reports/new">
+              <Link to="/dashboard/relatorios/novo">
                 <Button 
                   size="sm"
                   className="min-h-[var(--tap-target)] rounded-[var(--radius-button)] bg-gradient-to-r from-primary to-red-600 hover:from-primary/90 hover:to-red-600/90 text-primary-foreground shadow-lg shadow-primary/20"

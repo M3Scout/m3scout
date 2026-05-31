@@ -19,7 +19,7 @@ const kpiConfig = [
     iconColor: "text-blue-400",
     borderColor: "border-blue-500/20",
     glowColor: "group-hover:shadow-blue-500/10",
-    link: "/dashboard/players",
+    link: "/dashboard/atletas",
   },
   {
     key: "reports",
@@ -30,7 +30,7 @@ const kpiConfig = [
     iconColor: "text-violet-400",
     borderColor: "border-violet-500/20",
     glowColor: "group-hover:shadow-violet-500/10",
-    link: "/dashboard/reports",
+    link: "/dashboard/relatorios",
   },
   {
     key: "leads",

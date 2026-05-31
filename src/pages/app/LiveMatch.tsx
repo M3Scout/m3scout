@@ -22,7 +22,7 @@ export default function LiveMatch() {
   // For PLAYER role: show their games only (filtered by lineup)
   if (isPlayer || isPlayerRole) {
     // If at /app/live-match exactly, show player's games
-    if (location.pathname === "/dashboard/live-match") {
+    if (location.pathname === "/dashboard/aovivo") {
       return <MyGames />;
     }
     // Otherwise, let the child routes handle access control
@@ -45,7 +45,7 @@ export default function LiveMatch() {
   }
 
   // If at /app/live-match exactly, show history for internal users with permission
-  if (location.pathname === "/dashboard/live-match") {
+  if (location.pathname === "/dashboard/aovivo") {
     return <LiveMatchHistory />;
   }
 

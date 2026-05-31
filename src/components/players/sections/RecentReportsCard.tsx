@@ -44,7 +44,7 @@ export function RecentReportsCard({ reports, playerId }: RecentReportsCardProps)
             {safeArray(reports).map((report) => (
               <Link
                 key={report.id}
-                to={`/app/reports/${report.id}`}
+                to={`/dashboard/relatorios/${report.id}`}
                 className={cn(
                   "group block p-3 rounded-xl",
                   "bg-zinc-900/40 border border-zinc-800/30",
@@ -85,7 +85,7 @@ export function RecentReportsCard({ reports, playerId }: RecentReportsCardProps)
               className="w-full mt-2 text-xs text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/40" 
               asChild
             >
-              <Link to={`/app/reports?player=${playerId}`} className="flex items-center justify-center gap-2">
+              <Link to={`/dashboard/relatorios?player=${playerId}`} className="flex items-center justify-center gap-2">
                 Ver todos os relatórios
                 <ArrowRight className="w-3 h-3" />
               </Link>
@@ -105,7 +105,7 @@ export function RecentReportsCard({ reports, playerId }: RecentReportsCardProps)
               asChild
               className="border-zinc-700/50 text-zinc-400 hover:text-zinc-300"
             >
-              <Link to={`/app/reports/new?player=${playerId}`}>
+              <Link to={`/dashboard/relatorios/novo?player=${playerId}`}>
                 <FileText className="w-4 h-4 mr-2" />
                 Criar Relatório
               </Link>
