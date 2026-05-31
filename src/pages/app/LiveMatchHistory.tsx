@@ -574,17 +574,14 @@ export default function LiveMatchHistory() {
           )}
           <div>
             <h1 className="m3-page-title">Jogos ao vivo</h1>
-            <p className="text-sm text-zinc-500 mt-1">
-              Registro de estatísticas em tempo real
-            </p>
           </div>
         </div>
 
         {canLogEvents && (
           <Link to="/dashboard/aovivo/novo">
-            <Button className="bg-red-600 hover:bg-red-700 text-white gap-2">
+            <Button className="bg-[#e63946] hover:bg-[#d62839] text-white gap-2 rounded-full px-5 h-9 text-sm font-semibold">
               <Plus className="w-4 h-4" />
-              Novo Jogo
+              Novo jogo
             </Button>
           </Link>
         )}
