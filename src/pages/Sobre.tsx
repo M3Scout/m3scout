@@ -80,7 +80,7 @@ const Sobre = () => {
       {/* S2 MISSÃO */}
       <section style={{ backgroundColor: CREAM, padding: `80px ${gutter}` }}>
         <div style={{ maxWidth: maxW, margin: "0 auto" }}>
-          <p style={{ fontFamily: BC, fontWeight: 700, fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: CREAM_MUTED, marginBottom: 40 }}>
+          <p className="hidden sm:block" style={{ fontFamily: BC, fontWeight: 700, fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: CREAM_MUTED, marginBottom: 40 }}>
             <span style={{ color: RED }}>// </span>NOSSA MISSÃO
           </p>
 
@@ -139,7 +139,7 @@ const Sobre = () => {
       </section>
 
       {/* S4 QUOTE */}
-      <section style={{ backgroundColor: BLACK, padding: `80px ${gutter}` }}>
+      <section className="hidden sm:block" style={{ backgroundColor: BLACK, padding: `80px ${gutter}` }}>
         <div style={{ maxWidth: maxW, margin: "0 auto" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 56 }}>
             <span style={{ display: "inline-block", width: 40, height: 2, backgroundColor: RED, flexShrink: 0 }} />
@@ -161,7 +161,7 @@ const Sobre = () => {
       </section>
 
       {/* S5 DATA STRIP */}
-      <section style={{ backgroundColor: BLACK, borderTop: "1px solid rgba(242,237,228,0.1)", padding: `48px ${gutter}` }}>
+      <section className="hidden sm:block" style={{ backgroundColor: BLACK, borderTop: "1px solid rgba(242,237,228,0.1)", padding: `48px ${gutter}` }}>
         <div style={{ maxWidth: maxW, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24 }}>
           {[
             { label: "Sede", value: "Campo Grande, MS" },
