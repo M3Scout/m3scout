@@ -29,7 +29,6 @@ import {
   User,
   ChevronLeft,
   ChevronRight,
-  GitCompare,
   AlertTriangle,
   RefreshCw,
   ChevronsDown,
@@ -44,7 +43,6 @@ import { ScoutingPlayerCard } from "@/components/players/ScoutingPlayerCard";
 import { PlayerListRowPremium, PlayerListRowMobilePremium } from "@/components/players/PlayerListRowPremium";
 import { SortControlsPremium } from "@/components/players/SortControlsPremium";
 import { PositionIdentityCard, PositionIdentityCardMobile } from "@/components/players/PositionIdentityCard";
-import { BulkRecalculateButton } from "@/components/players/BulkRecalculateButton";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -497,17 +495,6 @@ const AppPlayers = () => {
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          {isAdmin && (
-            <span className="hidden md:inline-flex">
-              <BulkRecalculateButton onComplete={() => fetchPlayers(true)} />
-            </span>
-          )}
-          <Button variant="outline" size="sm" asChild className="hidden md:inline-flex h-8 px-4 rounded-full bg-zinc-900/40 border-zinc-800/40 hover:bg-zinc-800/60 hover:border-zinc-700 text-[11px] font-medium">
-            <Link to="/dashboard/comparar">
-              <GitCompare className="w-3.5 h-3.5 sm:mr-1.5" />
-              <span className="hidden sm:inline">Comparar</span>
-            </Link>
-          </Button>
           <Button size="sm" asChild className="hidden md:inline-flex h-8 px-4 rounded-full text-[11px] font-medium text-white" style={{ backgroundColor: '#e63946' }}>
             <Link to="/dashboard/atletas/novo">
               <Plus className="w-3.5 h-3.5 sm:mr-1.5" />

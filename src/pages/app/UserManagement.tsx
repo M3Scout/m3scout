@@ -860,7 +860,7 @@ export default function UserManagement() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight">Usuários</h1>
+          <h1 className="m3-page-title">Usuários</h1>
           <p className="text-xs text-zinc-500 mt-1 uppercase tracking-wide">
             {users.length} usuário{users.length !== 1 ? "s" : ""} · {activeCount} ativo{activeCount !== 1 ? "s" : ""}
             {pendingCount > 0 && ` · ${pendingCount} pendente${pendingCount !== 1 ? "s" : ""}`}
