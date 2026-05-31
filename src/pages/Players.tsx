@@ -156,6 +156,12 @@ const RESPONSIVE_CSS = `
     .pl-toolbar-filters > div:first-child {
       border-right: 1px solid ${BORDER_DARK} !important;
     }
+    /* Reduce filter bar height on mobile */
+    .pl-toolbar-filters input,
+    .pl-toolbar-filters select {
+      padding-top: 8px !important;
+      padding-bottom: 8px !important;
+    }
      .pl-toolbar-bottom {
        flex-direction: row;
        align-items: center;
@@ -519,21 +525,22 @@ const Players = () => {
             <span style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.1em" }}>
               {filteredPlayers.length} ATLETAS NO PORTFÓLIO
             </span>
-            <div className="flex items-center gap-1">
-              {availableYears.map((year) => (
-                <button
-                  key={year}
-                  onClick={() => setSelectedYear(year)}
-                  style={{
-                    fontFamily: MONO, fontSize: 10, color: selectedYear === year ? CREAM : WHITE_MUTED,
-                    background: "transparent", border: "none", outline: "none", cursor: "pointer",
-                    padding: "2px 6px", borderBottom: selectedYear === year ? `1px solid ${CREAM}` : "1px solid transparent",
-                    textTransform: "uppercase" as const, letterSpacing: "0.05em",
-                  }}
-                >
-                  {year}
-                </button>
-              ))}
+            <div className="relative flex items-center" style={{ borderBottom: `1px solid ${CREAM}`, paddingBottom: 2 }}>
+              <select
+                value={String(selectedYear)}
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                style={{
+                  fontFamily: MONO, fontSize: 10, color: CREAM, textTransform: "uppercase",
+                  background: "transparent", border: "none", outline: "none",
+                  appearance: "none", WebkitAppearance: "none", cursor: "pointer",
+                  paddingRight: 16,
+                }}
+              >
+                {availableYears.map((year) => (
+                  <option key={year} value={String(year)} style={{ background: BLACK, color: CREAM }}>{year}</option>
+                ))}
+              </select>
+              <span style={{ fontFamily: MONO, fontSize: 11, color: CREAM, pointerEvents: "none", position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)" }}>↓</span>
             </div>
           </div>
 
