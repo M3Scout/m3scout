@@ -48,7 +48,6 @@ import { cn, safeArray } from "@/lib/utils";
 import { formatFixed } from "@/lib/formatters";
 import { getPositionColor, getShortPosition } from "@/lib/positionColors";
 import { ComparisonRadarOverlay } from "@/components/players/ComparisonRadarOverlay";
-import { CompareHero } from "@/components/compare/CompareHero";
 import { ComparePlayerCard, CompareEmptySlot } from "@/components/compare/ComparePlayerCard";
 import { CompareStatRow, CompareStatBlock, CompareBarRow } from "@/components/compare/CompareStatBlock";
 import { SimilarPlayerSuggestions } from "@/components/compare/SimilarPlayerSuggestions";
@@ -569,8 +568,10 @@ const ComparePlayers = () => {
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Hero */}
-      <CompareHero playersCount={selectedPlayers.length} />
+      {/* Header */}
+      <div>
+        <h1 className="m3-page-title">Comparar</h1>
+      </div>
 
       {/* Player Selection Grid */}
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
