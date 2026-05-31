@@ -283,7 +283,7 @@ export const DashboardV2 = () => {
       <div className="m3dash-content">
         {/* Page header: title + action buttons */}
         <div className="m3dash-header">
-          <div className="m3dash-headline">VISÃO GERAL</div>
+          <div className="m3dash-headline">Visão geral</div>
           <div className="m3dash-header-actions">
             <Link to="/dashboard/atletas" className="m3dash-btn">
               <Users size={13} /> ATLETAS
