@@ -122,16 +122,18 @@ const Sobre = () => {
                 <span style={{ fontFamily: BC, fontWeight: 700, fontSize: 13, letterSpacing: "0.1em", color: activeService === index ? RED : CREAM_MUTED, transition: "color 0.2s ease" }}>
                   {service.number}
                 </span>
-                <h3 style={{ fontFamily: BC, fontWeight: 800, fontSize: "clamp(18px, 2.5vw, 30px)", textTransform: "uppercase", color: BLACK, lineHeight: 1, margin: 0 }}>
-                  {service.title}
-                </h3>
+                <div>
+                  <h3 style={{ fontFamily: BC, fontWeight: 800, fontSize: "clamp(18px, 2.5vw, 30px)", textTransform: "uppercase", color: BLACK, lineHeight: 1, margin: 0 }}>
+                    {service.title}
+                  </h3>
+                  <p className="sm:hidden" style={{ fontFamily: B, fontWeight: 300, fontSize: 14, lineHeight: 1.6, color: CREAM_MUTED, margin: "6px 0 0 0" }}>
+                    {service.description}
+                  </p>
+                </div>
                 <p className="hidden sm:block" style={{ fontFamily: B, fontWeight: 300, fontSize: 15, lineHeight: 1.6, color: CREAM_MUTED, margin: 0 }}>
                   {service.description}
                 </p>
               </div>
-              <p className="sm:hidden" style={{ fontFamily: B, fontWeight: 300, fontSize: 14, lineHeight: 1.6, color: CREAM_MUTED, margin: "6px 0 0 0", paddingLeft: 60 }}>
-                {service.description}
-              </p>
             </div>
           ))}
           <div style={{ borderTop: `1px solid ${CREAM_MUTED}` }} />
