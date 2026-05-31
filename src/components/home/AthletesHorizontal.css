@@ -49,7 +49,7 @@
 .marquee__item:hover { color: var(--fg-dark); }
 .marquee__item-dot {
   width: 12px; height: 12px;
-  background: var(--accent);
+  background: #fff;
   border-radius: 50%;
   flex-shrink: 0;
 }
