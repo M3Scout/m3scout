@@ -711,11 +711,6 @@ export default function GoalsMonitor() {
         <header className="flex items-start justify-between gap-3">
           <div>
             <h1 className="m3-page-title">Metas</h1>
-            {isDev && (
-              <pre className="mt-3 max-w-full overflow-auto rounded-lg border border-border/50 bg-card/50 p-3 text-[11px] leading-snug text-muted-foreground">
-{JSON.stringify(goals?.[0] ?? null, null, 2)}
-              </pre>
-            )}
           </div>
 
           {/* Small non-blocking RBAC indicator */}
