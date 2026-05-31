@@ -171,6 +171,8 @@ const RESPONSIVE_CSS = `
      }
      .pl-toggle-row {
        justify-content: center;
+       align-items: center;
+       height: 20px;
      }
 
     /* Normal grid: 2 columns */
@@ -517,22 +519,21 @@ const Players = () => {
             <span style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.1em" }}>
               {filteredPlayers.length} ATLETAS NO PORTFÓLIO
             </span>
-            <div className="relative flex items-center" style={{ borderBottom: `1px solid ${CREAM}`, paddingBottom: 2 }}>
-              <select
-                value={String(selectedYear)}
-                onChange={(e) => setSelectedYear(Number(e.target.value))}
-                style={{
-                  fontFamily: MONO, fontSize: 10, color: CREAM, textTransform: "uppercase",
-                  background: "transparent", border: "none", outline: "none",
-                  appearance: "none", WebkitAppearance: "none", cursor: "pointer",
-                  paddingRight: 16,
-                }}
-              >
-                {availableYears.map((year) => (
-                  <option key={year} value={String(year)} style={{ background: BLACK, color: CREAM }}>{year}</option>
-                ))}
-              </select>
-              <span style={{ fontFamily: MONO, fontSize: 11, color: CREAM, pointerEvents: "none", position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)" }}>↓</span>
+            <div className="flex items-center gap-1">
+              {availableYears.map((year) => (
+                <button
+                  key={year}
+                  onClick={() => setSelectedYear(year)}
+                  style={{
+                    fontFamily: MONO, fontSize: 10, color: selectedYear === year ? CREAM : WHITE_MUTED,
+                    background: "transparent", border: "none", outline: "none", cursor: "pointer",
+                    padding: "2px 6px", borderBottom: selectedYear === year ? `1px solid ${CREAM}` : "1px solid transparent",
+                    textTransform: "uppercase" as const, letterSpacing: "0.05em",
+                  }}
+                >
+                  {year}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -544,7 +545,7 @@ const Players = () => {
              <button
                onClick={() => setScoutingMode(!scoutingMode)}
                style={{
-                 width: 36, height: 20,
+                 width: 36, height: 20, flexShrink: 0,
                  backgroundColor: scoutingMode ? RED : BORDER_DARK,
                  position: "relative",
                  cursor: "pointer",
