@@ -158,7 +158,7 @@ export default function Leads() {
         <div>
           <div className="flex items-center gap-3">
             <h1 className="m3-page-title">Leads</h1>
-            <span className="inline-flex items-center justify-center min-w-[28px] h-6 px-2 rounded-full text-[13px] font-bold text-black bg-[#e63946]">{leads.length}</span>
+            <span className="inline-flex items-center justify-center min-w-[28px] h-6 px-2 rounded-full text-[13px] font-bold text-white bg-[#e63946]">{leads.length}</span>
           </div>
         </div>
       </header>

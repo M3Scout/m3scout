@@ -862,7 +862,7 @@ export default function UserManagement() {
         <div>
           <div className="flex items-center gap-3">
             <h1 className="m3-page-title">Usuários</h1>
-            <span className="inline-flex items-center justify-center min-w-[28px] h-6 px-2 rounded-full text-[13px] font-bold text-black bg-[#e63946]">{users.length}</span>
+            <span className="inline-flex items-center justify-center min-w-[28px] h-6 px-2 rounded-full text-[13px] font-bold text-white bg-[#e63946]">{users.length}</span>
           </div>
         </div>
         {pendingCount > 0 && (
