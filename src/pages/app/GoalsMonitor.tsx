@@ -257,7 +257,7 @@ export default function GoalsMonitor() {
 
   // Fetch all goals with player info
   const { data: goalsRaw, isLoading: goalsLoading, error: goalsError } = useQuery({
-    queryKey: ["admin-goals-monitor"],
+    queryKey: ["admin-metas"],
     queryFn: async () => {
       // Use left join (no !inner) to avoid RLS filtering issues
       const { data, error } = await supabase

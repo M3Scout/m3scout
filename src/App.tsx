@@ -209,18 +209,18 @@ function AppRoutes() {
                 <Route path="teams" element={<Suspense fallback={<RouteSuspense />}><Teams /></Suspense>} />
                 
                 {/* Market */}
-                <Route path="market/ativos" element={<RequirePermission module="players"><Suspense fallback={<RouteSuspense />}><MarketAtivos /></Suspense></RequirePermission>} />
-                <Route path="market/targets" element={<RequirePermission module="players"><Suspense fallback={<RouteSuspense />}><MarketTargets /></Suspense></RequirePermission>} />
+                <Route path="ativos" element={<RequirePermission module="players"><Suspense fallback={<RouteSuspense />}><MarketAtivos /></Suspense></RequirePermission>} />
+                <Route path="monitoramento" element={<RequirePermission module="players"><Suspense fallback={<RouteSuspense />}><MarketTargets /></Suspense></RequirePermission>} />
                 
                 {/* Goals Monitor */}
-                <Route path="goals-monitor" element={<RequirePermission module="users" action="manage"><Suspense fallback={<RouteSuspense />}><GoalsMonitor /></Suspense></RequirePermission>} />
+                <Route path="metas" element={<RequirePermission module="users" action="manage"><Suspense fallback={<RouteSuspense />}><GoalsMonitor /></Suspense></RequirePermission>} />
                 
                 {/* Contracts */}
                 <Route path="contratos" element={<RequirePermission module="players"><Suspense fallback={<RouteSuspense />}><Contracts /></Suspense></RequirePermission>} />
                 
                 {/* Settings */}
                 <Route path="settings" element={<Suspense fallback={<RouteSuspense />}><Settings /></Suspense>} />
-                <Route path="settings/users" element={<RequirePermission module="users" action="manage"><Suspense fallback={<RouteSuspense />}><UserManagement /></Suspense></RequirePermission>} />
+                <Route path="usuarios" element={<RequirePermission module="users" action="manage"><Suspense fallback={<RouteSuspense />}><UserManagement /></Suspense></RequirePermission>} />
                 
                 {/* Debug routes - admin only */}
                 <Route path="debug/auth" element={<Suspense fallback={<RouteSuspense />}><DebugAuth /></Suspense>} />

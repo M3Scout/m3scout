@@ -78,16 +78,16 @@ const internalNavGroups: NavGroup[] = [
   {
     label: "Mercado",
     items: [
-      { href: "/dashboard/market/ativos", label: "Ativos M3", module: "players", icon: Briefcase },
-      { href: "/dashboard/market/targets", label: "Targets", module: "players", icon: Crosshair },
+      { href: "/dashboard/ativos", label: "Ativos M3", module: "players", icon: Briefcase },
+      { href: "/dashboard/monitoramento", label: "Targets", module: "players", icon: Crosshair },
       { href: "/dashboard/contratos", label: "Contratos", module: "players", icon: ScrollText },
     ]
   },
   {
     label: "Administração",
     items: [
-      { href: "/dashboard/goals-monitor", label: "Metas", module: "users", action: "manage", icon: Goal },
-      { href: "/dashboard/settings/users", label: "Usuários", module: "users", action: "manage", icon: UserCog },
+      { href: "/dashboard/metas", label: "Metas", module: "users", action: "manage", icon: Goal },
+      { href: "/dashboard/usuarios", label: "Usuários", module: "users", action: "manage", icon: UserCog },
     ]
   }
 ];

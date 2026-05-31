@@ -9,7 +9,7 @@ const items = [
   { to: "/dashboard/atletas", label: "Atletas", Icon: Users, match: (p: string) => p.startsWith("/dashboard/atletas") },
   { to: "/dashboard/relatorios", label: "Relatórios", Icon: ClipboardList, match: (p: string) => p.startsWith("/dashboard/relatorios") || p.startsWith("/dashboard/scouting") },
   { to: "/dashboard/aovivo", label: "Ao Vivo", Icon: Radio, match: (p: string) => p.startsWith("/dashboard/aovivo") },
-  { to: "/dashboard/goals-monitor", label: "Metas", Icon: Target, match: (p: string) => p.startsWith("/dashboard/goals") },
+  { to: "/dashboard/metas", label: "Metas", Icon: Target, match: (p: string) => p.startsWith("/dashboard/goals") },
 ];
 
 export function AppBottomNav() {
