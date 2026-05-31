@@ -144,7 +144,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 function Placeholder() {
   return (
     <div className="py-16 text-center">
-      <span className="font-barlow font-black text-lg tracking-[0.3em] text-[#6B6560] uppercase">
+      <span className="font-barlow font-extrabold text-lg tracking-[0.3em] text-[#6B6560] uppercase">
         — Seção em desenvolvimento —
       </span>
     </div>
@@ -535,7 +535,7 @@ const PlayerDetail = () => {
           {/* Info */}
           <div className="flex-1 min-w-0">
             <h1
-              className="font-barlow font-black text-[34px] leading-none tracking-tight"
+              className="font-barlow font-extrabold text-[34px] leading-none tracking-tight"
               style={{ lineHeight: 1.05 }}
             >
               {player.full_name}
@@ -778,7 +778,7 @@ const PlayerDetail = () => {
                     {player.play_style ? (
                       <>
                         <p
-                          className="font-barlow font-black text-[22px] uppercase leading-tight"
+                          className="font-barlow font-extrabold text-[22px] uppercase leading-tight"
                           style={{ color: T.accent }}
                         >
                           {player.play_style}
@@ -874,7 +874,7 @@ const PlayerDetail = () => {
                     <Label>PRONTO PARA COMPETIR?</Label>
                     {player.ready_to_compete !== null && player.ready_to_compete !== undefined ? (
                       <span
-                        className="font-barlow font-black text-[18px] uppercase"
+                        className="font-barlow font-extrabold text-[18px] uppercase"
                         style={{ color: player.ready_to_compete ? T.green : T.amber }}
                       >
                         {player.ready_to_compete ? "SIM" : "NÃO"}

@@ -991,7 +991,7 @@ p, span, h1, h2, h3, h4, h5, h6, a, li {
 /* ========== EDITORIAL PAGE TITLE (Global) ========== */
 .m3-page-title {
   font-family: 'Basis Grotesque Pro', sans-serif;
-  font-weight: 900;
+  font-weight: 800;
   font-size: 48px;
   line-height: 0.88;
   color: #fff;
@@ -1002,7 +1002,7 @@ p, span, h1, h2, h3, h4, h5, h6, a, li {
 }
 .m3-section-title {
   font-family: 'Basis Grotesque Pro', sans-serif;
-  font-weight: 900;
+  font-weight: 800;
   font-size: 28px;
   line-height: 0.88;
   color: #fff;
