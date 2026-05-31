@@ -111,6 +111,7 @@
 }
 @media (max-width: 700px) {
   .sobre__meta { grid-template-columns: 1fr; gap: 24px; }
+  .sobre__head { display: none; }
 }
 .sobre__meta-item {
   display: flex;

@@ -11,7 +11,7 @@ export function PublicLayout() {
   return (
     <div className="min-h-screen flex flex-col bg-[#0A0A0A]">
       <LandingNav />
-      <main className="flex-1 pb-20 lg:pb-0">
+      <main className="flex-1 lg:pb-0">
         <AnimatePresence mode="wait">
           <PageTransition key={location.pathname}>
             <Outlet />

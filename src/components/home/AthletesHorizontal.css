@@ -302,6 +302,7 @@
 
 @media (max-width: 800px) {
   .athletes-h { padding: 80px 0 0; }
+  .athletes-h__title { font-size: clamp(32px, 9vw, 48px); }
   .athletes-h__head { padding: 0 24px; margin-bottom: 40px; }
   .athletes-h__track { padding: 0 24px 60px; gap: 16px; scroll-padding-left: 24px; }
   .athlete-h-card { width: 78%; min-width: 240px; }
