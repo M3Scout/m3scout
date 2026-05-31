@@ -16,9 +16,9 @@
   --green: #2DCE8A;
   --yellow: #E8C44A;
 
-  --font-heading: 'Barlow Condensed', sans-serif;
-  --font-body: 'Barlow', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --font-heading: 'Basis Grotesque Pro', sans-serif;
+  --font-body: 'Basis Grotesque Pro', sans-serif;
+  --font-mono: 'Basis Grotesque Pro', sans-serif;
 
   background: var(--bg);
   color: var(--text);

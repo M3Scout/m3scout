@@ -500,14 +500,14 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
                 </defs>
                 <XAxis
                   dataKey="date"
-                  tick={{ fontFamily: "JetBrains Mono", fontSize: 9, fill: MUTED }}
+                  tick={{ fontFamily: "Basis Grotesque Pro", fontSize: 9, fill: MUTED }}
                   axisLine={{ stroke: BORDER }}
                   tickLine={false}
                 />
                 <YAxis
                   domain={[4, 10]}
                   ticks={[5, 6, 7, 8, 9, 10]}
-                  tick={{ fontFamily: "JetBrains Mono", fontSize: 9, fill: MUTED }}
+                  tick={{ fontFamily: "Basis Grotesque Pro", fontSize: 9, fill: MUTED }}
                   axisLine={{ stroke: BORDER }}
                   tickLine={false}
                 />
@@ -536,7 +536,7 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
                     label={{
                       value: `Média ${averageRating.toFixed(1)}`,
                       position: "right",
-                      fontFamily: "JetBrains Mono",
+                      fontFamily: "Basis Grotesque Pro",
                       fontSize: 9,
                       fill: MUTED,
                     }}
@@ -643,13 +643,13 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
               <BarChart data={barData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }} barGap={2}>
                 <XAxis
                   dataKey="season"
-                  tick={{ fontFamily: "JetBrains Mono", fontSize: 9, fill: MUTED }}
+                  tick={{ fontFamily: "Basis Grotesque Pro", fontSize: 9, fill: MUTED }}
                   axisLine={{ stroke: BORDER }}
                   tickLine={false}
                 />
                 <YAxis
                   allowDecimals={false}
-                  tick={{ fontFamily: "JetBrains Mono", fontSize: 9, fill: MUTED }}
+                  tick={{ fontFamily: "Basis Grotesque Pro", fontSize: 9, fill: MUTED }}
                   axisLine={{ stroke: BORDER }}
                   tickLine={false}
                 />
@@ -670,7 +670,7 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
                 <Bar dataKey={metric.a} name={metric.aLabel} fill={metric.aColor} maxBarSize={32} radius={0} />
                 <Bar dataKey={metric.b} name={metric.bLabel} fill={metric.bColor} maxBarSize={32} radius={0} />
                 <Legend
-                  wrapperStyle={{ fontFamily: "JetBrains Mono", fontSize: 9, color: MUTED, paddingTop: 8 }}
+                  wrapperStyle={{ fontFamily: "Basis Grotesque Pro", fontSize: 9, color: MUTED, paddingTop: 8 }}
                 />
               </BarChart>
             </ResponsiveContainer>
@@ -861,7 +861,7 @@ function StatBlock({ title, titleColor, stats }: { title: string; titleColor: st
         <div style={{ width: 3, height: 16, background: titleColor, borderRadius: 2, flexShrink: 0 }} />
         <span
           style={{
-            fontFamily: "Barlow Condensed, sans-serif",
+            fontFamily: "Basis Grotesque Pro, sans-serif",
             fontSize: 11,
             fontWeight: 700,
             textTransform: "uppercase",
@@ -890,7 +890,7 @@ function StatBlock({ title, titleColor, stats }: { title: string; titleColor: st
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span
                 style={{
-                  fontFamily: "Barlow Condensed, sans-serif",
+                  fontFamily: "Basis Grotesque Pro, sans-serif",
                   fontSize: 9,
                   textTransform: "uppercase",
                   letterSpacing: "0.16em",
@@ -902,7 +902,7 @@ function StatBlock({ title, titleColor, stats }: { title: string; titleColor: st
               {st.pct !== undefined && (
                 <span
                   style={{
-                    fontFamily: "JetBrains Mono, monospace",
+                    fontFamily: "Basis Grotesque Pro, sans-serif",
                     fontSize: 9,
                     fontWeight: 700,
                     borderRadius: 4,
@@ -931,7 +931,7 @@ function StatBlock({ title, titleColor, stats }: { title: string; titleColor: st
             </div>
             <span
               style={{
-                fontFamily: "JetBrains Mono, monospace",
+                fontFamily: "Basis Grotesque Pro, sans-serif",
                 fontSize: 18,
                 fontWeight: 700,
                 lineHeight: 1,

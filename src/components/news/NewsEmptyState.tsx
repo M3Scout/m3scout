@@ -41,7 +41,7 @@ export function NewsEmptyState({ hasFilters, onClearFilters }: NewsEmptyStatePro
         Comece a criar conteúdo para a Sala de Imprensa. Suas notícias aparecerão aqui.
       </p>
       <Button asChild className="gap-2">
-        <Link to="/app/news/new">
+        <Link to="/dashboard/news/new">
           <Plus className="w-4 h-4" />
           Criar primeira notícia
         </Link>

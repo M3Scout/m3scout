@@ -19,7 +19,7 @@ const kpiConfig = [
     iconColor: "text-blue-400",
     borderColor: "border-blue-500/20",
     glowColor: "group-hover:shadow-blue-500/10",
-    link: "/app/players",
+    link: "/dashboard/players",
   },
   {
     key: "reports",
@@ -30,7 +30,7 @@ const kpiConfig = [
     iconColor: "text-violet-400",
     borderColor: "border-violet-500/20",
     glowColor: "group-hover:shadow-violet-500/10",
-    link: "/app/reports",
+    link: "/dashboard/reports",
   },
   {
     key: "leads",
@@ -40,7 +40,7 @@ const kpiConfig = [
     iconColor: "text-amber-400",
     borderColor: "border-amber-500/20",
     glowColor: "group-hover:shadow-amber-500/10",
-    link: "/app/leads",
+    link: "/dashboard/leads",
   },
   {
     key: "contracts",
@@ -51,7 +51,7 @@ const kpiConfig = [
     iconColor: "text-emerald-400",
     borderColor: "border-emerald-500/20",
     glowColor: "group-hover:shadow-emerald-500/10",
-    link: "/app/contratos?status=expiring&days=90",
+    link: "/dashboard/contratos?status=expiring&days=90",
     warningThreshold: 0,
   },
 ];

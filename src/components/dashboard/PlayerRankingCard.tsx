@@ -163,7 +163,7 @@ export const PlayerRankingCard = () => {
           {players.map((player, index) => (
             <Link
               key={player.id}
-              to={`/app/players/${player.id}`}
+              to={`/dashboard/players/${player.id}`}
               className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors group"
             >
               <div className="flex items-center gap-3">
@@ -223,7 +223,7 @@ export const PlayerRankingCard = () => {
       {players.length > 0 && (
         <div className="mt-4 pt-4 border-t border-border">
           <Link 
-            to="/app/players"
+            to="/dashboard/players"
             className="text-sm text-primary hover:underline flex items-center justify-center gap-1"
           >
             Ver todos os atletas

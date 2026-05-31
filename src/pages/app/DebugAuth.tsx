@@ -83,7 +83,7 @@ export default function DebugAuth() {
   // Redirect non-admins
   useEffect(() => {
     if (!loading && !isAdmin) {
-      navigate("/app");
+      navigate("/dashboard");
     }
   }, [isAdmin, loading, navigate]);
   
@@ -211,7 +211,7 @@ export default function DebugAuth() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate("/app")}
+            onClick={() => navigate("/dashboard")}
           >
             <ArrowLeft className="w-4 h-4" />
           </Button>

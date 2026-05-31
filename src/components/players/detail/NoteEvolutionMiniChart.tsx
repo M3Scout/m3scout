@@ -51,7 +51,7 @@ export function NoteEvolutionMiniChart({ playerId, currentRating }: NoteEvolutio
         />
         <Tooltip
           contentStyle={{ background: "#0A0A0A", border: "1px solid #1C1C1C", borderRadius: 0, fontSize: 10 }}
-          itemStyle={{ color: "#F2EDE4", fontFamily: "JetBrains Mono" }}
+          itemStyle={{ color: "#F2EDE4", fontFamily: "Basis Grotesque Pro" }}
           formatter={(v: number) => [v.toFixed(1), "Nota"]}
           labelFormatter={() => ""}
         />

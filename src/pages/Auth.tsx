@@ -47,7 +47,7 @@ const Auth = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (user && !authLoading) {
-      const from = (location.state as any)?.from?.pathname || "/app";
+      const from = (location.state as any)?.from?.pathname || "/dashboard";
       navigate(from, { replace: true });
     }
   }, [user, authLoading, navigate, location]);

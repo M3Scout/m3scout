@@ -252,7 +252,7 @@ p, span, h1, h2, h3, h4, h5, h6, a, li {
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Basis Grotesque Pro', system-ui, sans-serif;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -990,7 +990,7 @@ p, span, h1, h2, h3, h4, h5, h6, a, li {
 
 /* ========== EDITORIAL PAGE TITLE (Global) ========== */
 .m3-page-title {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: 'Basis Grotesque Pro', sans-serif;
   font-weight: 900;
   font-size: 48px;
   text-transform: uppercase;
@@ -1002,7 +1002,7 @@ p, span, h1, h2, h3, h4, h5, h6, a, li {
   white-space: nowrap;
 }
 .m3-section-title {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: 'Basis Grotesque Pro', sans-serif;
   font-weight: 900;
   font-size: 28px;
   text-transform: uppercase;

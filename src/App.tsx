@@ -119,7 +119,7 @@ function AppRoutes() {
   // Logout handler for AppShell
   const handleLogout = async () => {
     await signOut();
-    window.location.href = "/app/auth";
+    window.location.href = "/dashboard/auth";
   };
 
   return (
@@ -153,14 +153,14 @@ function AppRoutes() {
 
               {/* Auth Routes */}
               <Route path="/login" element={<Suspense fallback={<RouteSuspense />}><Auth /></Suspense>} />
-              <Route path="/app/auth" element={<Suspense fallback={<RouteSuspense />}><Auth /></Suspense>} />
+              <Route path="/dashboard/auth" element={<Suspense fallback={<RouteSuspense />}><Auth /></Suspense>} />
               
               {/* Pending Access - for users without valid role */}
               <Route path="/pending-access" element={<Suspense fallback={<RouteSuspense />}><PendingAccess /></Suspense>} />
 
               {/* Protected App Routes */}
               <Route
-                path="/app"
+                path="/dashboard"
                 element={
                   <ProtectedRoute>
                     <AppLayout />

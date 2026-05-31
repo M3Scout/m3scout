@@ -33,7 +33,7 @@ export function SidebarGroupPopover({ label, items, isActive }: SidebarGroupPopo
   const GroupIcon = items[0]?.icon;
   
   const isItemActive = (href: string) => {
-    if (href === "/app") return location.pathname === "/app";
+    if (href === "/dashboard") return location.pathname === "/dashboard";
     return location.pathname.startsWith(href);
   };
 

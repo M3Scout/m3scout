@@ -164,7 +164,7 @@ function LiveHubEmptyState({ canCreate }: { canCreate: boolean }) {
 
           {/* CTA Button with pulse - only show if user can create */}
           {canCreate && (
-            <Link to="/app/live-match/new">
+            <Link to="/dashboard/live-match/new">
               <Button 
                 size="lg" 
                 className="relative bg-red-600 hover:bg-red-700 text-white gap-2.5 px-8 h-12 text-base font-semibold rounded-xl shadow-lg shadow-red-600/20 transition-all hover:shadow-xl hover:shadow-red-600/30 hover:scale-[1.02]"
@@ -555,9 +555,9 @@ export default function LiveMatchHistory() {
 
   const getMatchLink = (match: MatchWithCompetition) => {
     if (match.status === "applied") {
-      return `/app/live-match/${match.id}/review`;
+      return `/dashboard/live-match/${match.id}/review`;
     }
-    return `/app/live-match/${match.id}`;
+    return `/dashboard/live-match/${match.id}`;
   };
 
   return (
@@ -581,7 +581,7 @@ export default function LiveMatchHistory() {
         </div>
 
         {canLogEvents && (
-          <Link to="/app/live-match/new">
+          <Link to="/dashboard/live-match/new">
             <Button className="bg-red-600 hover:bg-red-700 text-white gap-2">
               <Plus className="w-4 h-4" />
               Novo Jogo

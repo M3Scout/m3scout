@@ -9,7 +9,7 @@ const items = [
   { to: "/atletas", label: "Talentos", Icon: Users, match: (p: string) => p.startsWith("/atletas") || p.startsWith("/representacao") },
   { to: "/imprensa", label: "Imprensa", Icon: Newspaper, match: (p: string) => p.startsWith("/imprensa") || p.startsWith("/news") },
   { to: "/contato", label: "Contato", Icon: Mail, match: (p: string) => p.startsWith("/contato") || p.startsWith("/contact") },
-  { to: "/app/auth", label: "Restrito", Icon: Lock, match: (p: string) => p.startsWith("/app") },
+  { to: "/dashboard/auth", label: "Restrito", Icon: Lock, match: (p: string) => p.startsWith("/dashboard") },
 ];
 
 export function MobileBottomNav() {

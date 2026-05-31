@@ -136,7 +136,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     const errorType = rolesError || (permissionsError as string) || "timeout";
 
     if (!user) {
-      return <Navigate to="/app/auth" state={{ from: location }} replace />;
+      return <Navigate to="/dashboard/auth" state={{ from: location }} replace />;
     }
 
     return (
@@ -206,7 +206,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   // Not logged in → redirect to login
   if (!user) {
-    return <Navigate to="/app/auth" state={{ from: location }} replace />;
+    return <Navigate to="/dashboard/auth" state={{ from: location }} replace />;
   }
 
   // Admin bypass → allow immediately

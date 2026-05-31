@@ -26,7 +26,7 @@ export default function DebugLiveMatch() {
   // Redirect non-admins
   useEffect(() => {
     if (!loading && !isAdmin) {
-      navigate("/app");
+      navigate("/dashboard");
     }
   }, [isAdmin, loading, navigate]);
   
@@ -94,7 +94,7 @@ export default function DebugLiveMatch() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate("/app")}
+            onClick={() => navigate("/dashboard")}
           >
             <ArrowLeft className="w-4 h-4" />
           </Button>

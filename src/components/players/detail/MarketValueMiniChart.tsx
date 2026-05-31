@@ -82,7 +82,7 @@ export function MarketValueMiniChart({ playerId, currentValue }: MarketValueMini
           />
           <Tooltip
             contentStyle={{ background: "#0A0A0A", border: "1px solid #1C1C1C", borderRadius: 0, fontSize: 10 }}
-            itemStyle={{ color: "#F2EDE4", fontFamily: "JetBrains Mono" }}
+            itemStyle={{ color: "#F2EDE4", fontFamily: "Basis Grotesque Pro" }}
             formatter={(v: number) => [`€${(v / 1_000_000).toFixed(2)}M`, ""]}
             labelFormatter={() => ""}
           />

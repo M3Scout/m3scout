@@ -128,7 +128,7 @@ export function SmartHeader({ variant = "default" }: SmartHeaderProps) {
               
               {/* ÁREA RESTRITA - Desktop (more discrete) */}
               <Link
-                to="/app/auth"
+                to="/dashboard/auth"
                 className={cn(
                   "ml-6 min-h-[36px] flex items-center gap-2 px-4",
                   "text-[10px] font-medium uppercase tracking-[0.15em]",
@@ -249,7 +249,7 @@ export function SmartHeader({ variant = "default" }: SmartHeaderProps) {
                 className="mt-10"
               >
                 <Link
-                  to="/app/auth"
+                  to="/dashboard/auth"
                   className={cn(
                     "group flex items-center justify-center gap-2 min-h-[44px] px-6 py-3",
                     "text-[11px] font-medium uppercase tracking-[0.12em]",

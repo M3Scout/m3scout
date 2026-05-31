@@ -87,9 +87,10 @@ export default {
         sans: ['"Basis Grotesque Pro"', 'Inter', 'system-ui', 'sans-serif'],
         basis: ['"Basis Grotesque Pro"', 'system-ui', 'sans-serif'],
         serif: ['"Times New Roman"', 'Times', 'serif'],
-        gotham: ['Gotham-Book', 'Gotham', 'Arial', 'sans-serif'],
-        barlow: ['"Barlow Condensed"', 'sans-serif'],
-        jetbrains: ['"JetBrains Mono"', 'monospace'],
+        mono: ['"Basis Grotesque Pro"', 'system-ui', 'sans-serif'],
+        gotham: ['"Basis Grotesque Pro"', 'sans-serif'],
+        barlow: ['"Basis Grotesque Pro"', 'sans-serif'],
+        jetbrains: ['"Basis Grotesque Pro"', 'sans-serif'],
       },
       keyframes: {
         "accordion-down": {

@@ -128,7 +128,7 @@ export function RequirePermission({ module, action = "view", children }: Require
     try {
       await signOut();
     } finally {
-      window.location.href = "/app/auth";
+      window.location.href = "/dashboard/auth";
     }
   };
 

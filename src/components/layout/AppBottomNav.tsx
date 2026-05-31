@@ -5,11 +5,11 @@ import { useSidebar } from "@/hooks/useSidebar";
 import "./MobileBottomNav.css";
 
 const items = [
-  { to: "/app", label: "Início", Icon: Home, match: (p: string) => p === "/app" || p === "/app/" },
-  { to: "/app/players", label: "Atletas", Icon: Users, match: (p: string) => p.startsWith("/app/players") },
-  { to: "/app/reports", label: "Relatórios", Icon: ClipboardList, match: (p: string) => p.startsWith("/app/reports") || p.startsWith("/app/scouting") },
-  { to: "/app/live-match", label: "Ao Vivo", Icon: Radio, match: (p: string) => p.startsWith("/app/live-match") },
-  { to: "/app/goals-monitor", label: "Metas", Icon: Target, match: (p: string) => p.startsWith("/app/goals") },
+  { to: "/dashboard", label: "Início", Icon: Home, match: (p: string) => p === "/dashboard" || p === "/dashboard/" },
+  { to: "/dashboard/players", label: "Atletas", Icon: Users, match: (p: string) => p.startsWith("/dashboard/players") },
+  { to: "/dashboard/reports", label: "Relatórios", Icon: ClipboardList, match: (p: string) => p.startsWith("/dashboard/reports") || p.startsWith("/dashboard/scouting") },
+  { to: "/dashboard/live-match", label: "Ao Vivo", Icon: Radio, match: (p: string) => p.startsWith("/dashboard/live-match") },
+  { to: "/dashboard/goals-monitor", label: "Metas", Icon: Target, match: (p: string) => p.startsWith("/dashboard/goals") },
 ];
 
 export function AppBottomNav() {
@@ -18,7 +18,7 @@ export function AppBottomNav() {
   const activeIdx = items.findIndex((i) => i.match(location.pathname));
 
   // Hide during active live match sessions — the action buttons need full screen height
-  if (location.pathname.startsWith("/app/live-match/")) return null;
+  if (location.pathname.startsWith("/dashboard/live-match/")) return null;
 
   return (
     <nav className="m3-bottom-nav" aria-label="Navegação rápida">

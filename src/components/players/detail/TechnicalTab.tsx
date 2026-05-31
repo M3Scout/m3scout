@@ -176,7 +176,7 @@ function TechRadar({ scores }: { scores: number[] }) {
               x={x.toFixed(2)}
               y={y.toFixed(2)}
               fontSize="13"
-              fontFamily="Barlow Condensed, sans-serif"
+              fontFamily="Basis Grotesque Pro, sans-serif"
               fontWeight="700"
               fill={MUTED}
               letterSpacing="1"
@@ -187,7 +187,7 @@ function TechRadar({ scores }: { scores: number[] }) {
               x={x.toFixed(2)}
               dy="16"
               fontSize="11"
-              fontFamily="Barlow Condensed, sans-serif"
+              fontFamily="Basis Grotesque Pro, sans-serif"
               fontWeight="700"
               fill={TEXT}
             >

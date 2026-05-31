@@ -50,7 +50,7 @@ export default function PendingAccess() {
         resetInflightState();
         await triggerRecovery("manual-retry");
 
-        navigate("/app", { replace: true });
+        navigate("/dashboard", { replace: true });
       }
     } catch (err) {
       console.warn("[PendingAccess] Check failed:", err);
@@ -142,7 +142,7 @@ export default function PendingAccess() {
     } catch (error) {
       console.error("[PendingAccess] signOut error:", error);
     } finally {
-      window.location.href = "/app/auth";
+      window.location.href = "/dashboard/auth";
     }
   };
 

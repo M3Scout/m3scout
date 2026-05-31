@@ -237,7 +237,7 @@ export default function UserManagement() {
   useEffect(() => {
     if (!can("users", "manage")) {
       toast.error("Acesso negado");
-      navigate("/app");
+      navigate("/dashboard");
     }
   }, [can, navigate]);
 

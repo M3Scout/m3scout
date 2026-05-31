@@ -55,39 +55,39 @@ const internalNavGroups: NavGroup[] = [
   {
     label: "Análise",
     items: [
-      { href: "/app", label: "Dashboard", module: "app", icon: LayoutDashboard },
-      { href: "/app/players", label: "Atletas", module: "players", icon: Users },
-      { href: "/app/compare", label: "Comparar", module: "compare", icon: GitCompare },
-      { href: "/app/reports", label: "Relatórios", module: "reports", icon: FileText },
+      { href: "/dashboard", label: "Dashboard", module: "app", icon: LayoutDashboard },
+      { href: "/dashboard/players", label: "Atletas", module: "players", icon: Users },
+      { href: "/dashboard/compare", label: "Comparar", module: "compare", icon: GitCompare },
+      { href: "/dashboard/reports", label: "Relatórios", module: "reports", icon: FileText },
     ]
   },
   {
     label: "Contexto Esportivo",
     items: [
-      { href: "/app/live-match", label: "Jogo Ao Vivo", module: "live_match", icon: Radio },
-      { href: "/app/competitions", label: "Competições", module: "competitions", icon: Trophy },
+      { href: "/dashboard/live-match", label: "Jogo Ao Vivo", module: "live_match", icon: Radio },
+      { href: "/dashboard/competitions", label: "Competições", module: "competitions", icon: Trophy },
     ]
   },
   {
     label: "Negócios",
     items: [
-      { href: "/app/news", label: "Notícias", module: "news", icon: Newspaper },
-      { href: "/app/leads", label: "Leads", module: "leads", icon: Target },
+      { href: "/dashboard/news", label: "Notícias", module: "news", icon: Newspaper },
+      { href: "/dashboard/leads", label: "Leads", module: "leads", icon: Target },
     ]
   },
   {
     label: "Mercado",
     items: [
-      { href: "/app/market/ativos", label: "Ativos M3", module: "players", icon: Briefcase },
-      { href: "/app/market/targets", label: "Targets", module: "players", icon: Crosshair },
-      { href: "/app/contratos", label: "Contratos", module: "players", icon: ScrollText },
+      { href: "/dashboard/market/ativos", label: "Ativos M3", module: "players", icon: Briefcase },
+      { href: "/dashboard/market/targets", label: "Targets", module: "players", icon: Crosshair },
+      { href: "/dashboard/contratos", label: "Contratos", module: "players", icon: ScrollText },
     ]
   },
   {
     label: "Administração",
     items: [
-      { href: "/app/goals-monitor", label: "Metas", module: "users", action: "manage", icon: Goal },
-      { href: "/app/settings/users", label: "Usuários", module: "users", action: "manage", icon: UserCog },
+      { href: "/dashboard/goals-monitor", label: "Metas", module: "users", action: "manage", icon: Goal },
+      { href: "/dashboard/settings/users", label: "Usuários", module: "users", action: "manage", icon: UserCog },
     ]
   }
 ];
@@ -96,16 +96,16 @@ const playerNavGroups: NavGroup[] = [
   {
     label: "Meu Espaço",
     items: [
-      { href: "/app", label: "Dashboard", module: "app", icon: LayoutDashboard },
-      { href: "/app/my-profile", label: "Meu Perfil", module: "players", icon: User },
-      { href: "/app/reports", label: "Relatórios", module: "reports", icon: FileText },
+      { href: "/dashboard", label: "Dashboard", module: "app", icon: LayoutDashboard },
+      { href: "/dashboard/my-profile", label: "Meu Perfil", module: "players", icon: User },
+      { href: "/dashboard/reports", label: "Relatórios", module: "reports", icon: FileText },
     ]
   },
   {
     label: "Jogos",
     items: [
-      { href: "/app/live-match", label: "Meus Jogos", module: "live_match", icon: Gamepad2 },
-      { href: "/app/competitions", label: "Competições", module: "competitions", icon: Trophy },
+      { href: "/dashboard/live-match", label: "Meus Jogos", module: "live_match", icon: Gamepad2 },
+      { href: "/dashboard/competitions", label: "Competições", module: "competitions", icon: Trophy },
     ]
   }
 ];
@@ -202,7 +202,7 @@ const SidebarSection = memo(function SidebarSection({
   if (visibleItems.length === 0) return null;
 
   const isActive = (href: string) => {
-    if (href === "/app") return currentPath === "/app";
+    if (href === "/dashboard") return currentPath === "/dashboard";
     return currentPath.startsWith(href);
   };
 
@@ -298,7 +298,7 @@ const MobileSection = memo(function MobileSection({
   if (visibleItems.length === 0) return null;
 
   const isActive = (href: string) => {
-    if (href === "/app") return currentPath === "/app";
+    if (href === "/dashboard") return currentPath === "/dashboard";
     return currentPath.startsWith(href);
   };
 

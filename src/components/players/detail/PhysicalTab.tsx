@@ -171,7 +171,7 @@ function PhysicalRadar({ athleteValues }: { athleteValues: number[] }) {
             dominantBaseline="middle"
             fontSize="8.5"
             fill={MUTED}
-            fontFamily="JetBrains Mono, monospace"
+            fontFamily="Basis Grotesque Pro, sans-serif"
           >
             {axis.label}
           </text>
@@ -610,7 +610,7 @@ export function PhysicalTab({
                         <CartesianGrid strokeDasharray="2 4" stroke={BORDER} vertical={false} />
                         <XAxis
                           dataKey="date"
-                          tick={{ fill: MUTED, fontSize: 9, fontFamily: "JetBrains Mono, monospace" }}
+                          tick={{ fill: MUTED, fontSize: 9, fontFamily: "Basis Grotesque Pro, sans-serif" }}
                           tickLine={false}
                           axisLine={{ stroke: BORDER }}
                           padding={{ right: 16 }}
@@ -622,7 +622,7 @@ export function PhysicalTab({
                             orientation={idx === 0 ? "left" : "right"}
                             hide={idx > 0}
                             domain={["auto", "auto"]}
-                            tick={{ fill: MUTED, fontSize: 9, fontFamily: "JetBrains Mono, monospace" }}
+                            tick={{ fill: MUTED, fontSize: 9, fontFamily: "Basis Grotesque Pro, sans-serif" }}
                             tickLine={false}
                             axisLine={false}
                             width={32}
@@ -634,7 +634,7 @@ export function PhysicalTab({
                             border: `1px solid ${BORDER}`,
                             borderRadius: 0,
                             fontSize: 11,
-                            fontFamily: "JetBrains Mono, monospace",
+                            fontFamily: "Basis Grotesque Pro, sans-serif",
                           }}
                           labelStyle={{ color: MUTED }}
                           cursor={{ stroke: MUTED, strokeWidth: 1, strokeDasharray: "4 3" }}

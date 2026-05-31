@@ -464,12 +464,12 @@ export function MarketValueTab({
 
                   <XAxis
                     dataKey="date"
-                    tick={{ fontFamily: "JetBrains Mono", fontSize: 9, fill: MUTED }}
+                    tick={{ fontFamily: "Basis Grotesque Pro", fontSize: 9, fill: MUTED }}
                     axisLine={{ stroke: BORDER }}
                     tickLine={false}
                   />
                   <YAxis
-                    tick={{ fontFamily: "JetBrains Mono", fontSize: 9, fill: MUTED }}
+                    tick={{ fontFamily: "Basis Grotesque Pro", fontSize: 9, fill: MUTED }}
                     axisLine={{ stroke: BORDER }}
                     tickLine={false}
                     tickFormatter={(v) => `${v.toFixed(1)}M`}
@@ -486,7 +486,7 @@ export function MarketValueTab({
                       label={{
                         value: formatShort(chartData[chartData.length - 1].rawValue, chartData[chartData.length - 1].currency),
                         position: "right",
-                        fontFamily: "JetBrains Mono",
+                        fontFamily: "Basis Grotesque Pro",
                         fontSize: 9,
                         fill: MUTED,
                       }}

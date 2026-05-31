@@ -58,7 +58,7 @@ export const RecentReportsCard = ({ reports }: RecentReportsCardProps) => {
         </div>
         
         <Link 
-          to="/app/reports" 
+          to="/dashboard/reports" 
           className="text-xs text-muted-foreground hover:text-zinc-300 transition-colors flex items-center gap-0.5"
         >
           Ver todos
@@ -77,7 +77,7 @@ export const RecentReportsCard = ({ reports }: RecentReportsCardProps) => {
                 whileTap={cardTap}
               >
                 <Link 
-                  to={`/app/reports/${report.id}`}
+                  to={`/dashboard/reports/${report.id}`}
                   className="group flex items-center gap-3 sm:gap-4 p-3 rounded-[var(--radius-button)] bg-zinc-900/30 hover:bg-zinc-800/30 transition-all duration-200"
                 >
                   {/* Score */}
@@ -120,7 +120,7 @@ export const RecentReportsCard = ({ reports }: RecentReportsCardProps) => {
             <FileText className="w-10 h-10 mx-auto mb-3 text-zinc-700" />
             <p className="text-sm text-muted-foreground">Nenhum relatório ainda</p>
             <Link 
-              to="/app/reports/new" 
+              to="/dashboard/reports/new" 
               className="text-xs text-primary hover:underline mt-2 inline-block"
             >
               Criar primeiro relatório

@@ -92,7 +92,7 @@ export default function NewPlayer() {
         <Shield className="w-16 h-16 text-muted-foreground" />
         <h2 className="text-xl font-semibold">Acesso Restrito</h2>
         <p className="text-muted-foreground">Você não tem permissão para cadastrar atletas.</p>
-        <Button onClick={() => navigate("/app/players")}>Voltar</Button>
+        <Button onClick={() => navigate("/dashboard/players")}>Voltar</Button>
       </div>
     );
   }
@@ -220,7 +220,7 @@ export default function NewPlayer() {
 
       toast.success("Atleta cadastrado! Redirecionando para adicionar estatísticas...");
       // Redirect to edit page so user can add stats
-      navigate(`/app/players/${newPlayer.id}/edit`);
+      navigate(`/dashboard/players/${newPlayer.id}/edit`);
     } catch (error: any) {
       console.error("Error creating player:", error);
       toast.error(error.message || "Erro ao cadastrar atleta");
@@ -237,7 +237,7 @@ export default function NewPlayer() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/app/players")}>
+        <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard/players")}>
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <div>
@@ -555,7 +555,7 @@ export default function NewPlayer() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => navigate("/app/players")}
+            onClick={() => navigate("/dashboard/players")}
           >
             Cancelar
           </Button>

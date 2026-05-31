@@ -43,6 +43,6 @@ export async function hardLogoutToAuth(timeoutMs = DEFAULT_SIGNOUT_TIMEOUT_MS) {
     // ignore
   } finally {
     clearAuthStorage();
-    window.location.href = "/app/auth";
+    window.location.href = "/dashboard/auth";
   }
 }

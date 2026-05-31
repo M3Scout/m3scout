@@ -182,7 +182,7 @@ const { user } = useAuth();
           </p>
         )}
         <div className="flex gap-3 justify-center">
-          <Link to="/app/reports">
+          <Link to="/dashboard/reports">
             <Button variant="outline">Ver lista de relatórios</Button>
           </Link>
           <Button variant="ghost" onClick={() => window.location.reload()}>
@@ -228,7 +228,7 @@ const { user } = useAuth();
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
         <div>
           <Link
-            to="/app/reports"
+            to="/dashboard/reports"
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -258,7 +258,7 @@ const { user } = useAuth();
             <Share2 className="w-4 h-4" />
             Compartilhar
           </Button>
-          <Link to={`/app/reports/${id}/edit`}>
+          <Link to={`/dashboard/reports/${id}/edit`}>
             <Button variant="outline" size="sm">
               <Edit className="w-4 h-4" />
               Editar
@@ -267,7 +267,7 @@ const { user } = useAuth();
           <PermissionGate module="reports" action="delete">
             <DeleteReportDialog
               reportId={report.id}
-              onDeleted={() => navigate("/app/reports")}
+              onDeleted={() => navigate("/dashboard/reports")}
             />
           </PermissionGate>
         </div>

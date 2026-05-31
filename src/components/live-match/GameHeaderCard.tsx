@@ -115,7 +115,7 @@ export function GameHeaderCard({
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 flex-wrap">
                 {/* Back button - pill shape */}
-                <Link to="/app/live-match">
+                <Link to="/dashboard/live-match">
                   <Button 
                     variant="ghost" 
                     size="icon" 

@@ -241,7 +241,7 @@ const ScoutingReports = () => {
             Avaliações técnicas e análises de scouting
           </p>
         </div>
-        <Link to="/app/reports/new">
+        <Link to="/dashboard/reports/new">
           <Button className="bg-[#e63946] hover:bg-[#d62839] text-white gap-2 rounded-full px-5 h-9 text-sm font-semibold">
             <Plus className="w-4 h-4" />
             Novo Relatório
@@ -339,7 +339,7 @@ const ScoutingReports = () => {
               : "Comece criando o primeiro relatório de scouting"}
           </p>
           {!searchQuery && (
-            <Link to="/app/reports/new">
+            <Link to="/dashboard/reports/new">
               <Button className="bg-[#e63946] hover:bg-[#d62839] text-white gap-2 rounded-full px-5 h-9 text-sm font-semibold">
                 <Plus className="w-4 h-4" />
                 Criar Relatório

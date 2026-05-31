@@ -149,7 +149,7 @@ const NewsForm = () => {
       queryClient.invalidateQueries({ queryKey: ["news-article", id] });
       queryClient.invalidateQueries({ queryKey: ["public-news"] });
       toast.success(isEditing ? "Notícia atualizada" : "Notícia criada");
-      navigate("/app/news");
+      navigate("/dashboard/news");
     },
     onError: (error: Error) => {
       if (error.message.includes("unique")) {
@@ -192,7 +192,7 @@ const NewsForm = () => {
           <Button 
             variant="ghost" 
             size="icon" 
-            onClick={() => navigate("/app/news")}
+            onClick={() => navigate("/dashboard/news")}
             className="w-8 h-8 text-zinc-500 hover:text-white hover:bg-zinc-800"
           >
             <ArrowLeft className="w-4 h-4" />

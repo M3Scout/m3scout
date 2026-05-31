@@ -71,7 +71,7 @@ export const RecentLeadsCard = ({ leads }: RecentLeadsCardProps) => {
         </div>
         
         <Link 
-          to="/app/leads" 
+          to="/dashboard/leads" 
           className="text-xs text-muted-foreground hover:text-zinc-300 transition-colors flex items-center gap-0.5"
         >
           Ver todos
@@ -90,7 +90,7 @@ export const RecentLeadsCard = ({ leads }: RecentLeadsCardProps) => {
                 whileTap={cardTap}
               >
                 <Link
-                  to="/app/leads"
+                  to="/dashboard/leads"
                   className="group flex items-center gap-3 p-3 rounded-[var(--radius-button)] bg-zinc-900/30 hover:bg-zinc-800/30 transition-all duration-200"
                 >
                   {/* Avatar */}

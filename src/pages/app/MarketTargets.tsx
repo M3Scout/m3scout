@@ -88,8 +88,8 @@ function getInitials(name: string): string {
 // ============ MODULE-LEVEL STYLE CONSTANTS ============
 
 const BORDER = "1px solid rgba(255,255,255,0.07)";
-const CONDENSED = '"Barlow Condensed", sans-serif';
-const MONO = '"JetBrains Mono", monospace';
+const CONDENSED = '"Basis Grotesque Pro", sans-serif';
+const MONO = '"Basis Grotesque Pro", sans-serif';
 
 // ============ CARD VISUAL (pure, no hooks — used by overlay too) ============
 
@@ -655,7 +655,7 @@ export default function MarketTargets() {
                     flexShrink: 0,
                   }} />
                   <span style={{
-                    fontFamily: '"Barlow", sans-serif',
+                    fontFamily: '"Basis Grotesque Pro", sans-serif',
                     fontSize: 12,
                     color: "#666",
                     flex: 1,

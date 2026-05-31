@@ -204,7 +204,7 @@ export default function EditPlayer() {
       const playerRow = Array.isArray(data) ? data[0] ?? null : null;
       if (error || !playerRow) {
         toast.error("Atleta não encontrado");
-        navigate("/app/players");
+        navigate("/dashboard/players");
         return;
       }
 
@@ -274,7 +274,7 @@ export default function EditPlayer() {
         <Shield className="w-16 h-16 text-muted-foreground" />
         <h2 className="text-xl font-semibold">Acesso Restrito</h2>
         <p className="text-muted-foreground">Você não tem permissão para editar atletas.</p>
-        <Button onClick={() => navigate("/app/players")}>Voltar</Button>
+        <Button onClick={() => navigate("/dashboard/players")}>Voltar</Button>
       </div>
     );
   }
@@ -447,7 +447,7 @@ export default function EditPlayer() {
       if (error) throw error;
 
       toast.success("Atleta atualizado com sucesso!");
-      navigate(`/app/players/${id}`);
+      navigate(`/dashboard/players/${id}`);
     } catch (error: any) {
       console.error("Error updating player:", error);
       toast.error(error.message || "Erro ao atualizar atleta");
@@ -522,7 +522,7 @@ export default function EditPlayer() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/app/players")}>
+        <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard/players")}>
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <div className="flex-1">
@@ -981,7 +981,7 @@ export default function EditPlayer() {
             </Button>
           )}
           <div className="flex gap-4 ml-auto">
-            <Button type="button" variant="outline" onClick={() => navigate("/app/players")}>Cancelar</Button>
+            <Button type="button" variant="outline" onClick={() => navigate("/dashboard/players")}>Cancelar</Button>
             <Button type="submit" disabled={loading}>
               {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Salvar Alterações
@@ -994,7 +994,7 @@ export default function EditPlayer() {
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         player={id ? { id, full_name: playerName } : null}
-        onSuccess={() => navigate("/app/players")}
+        onSuccess={() => navigate("/dashboard/players")}
       />
 
       {/* Image Cropper Modal */}

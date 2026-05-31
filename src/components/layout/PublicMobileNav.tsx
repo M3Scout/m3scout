@@ -52,7 +52,7 @@ export function PublicMobileNav() {
               <Icon className="w-[18px] h-[18px]" strokeWidth={active ? 2 : 1.5} />
               <span
                 style={{
-                  fontFamily: '"JetBrains Mono", monospace',
+                  fontFamily: '"Basis Grotesque Pro", sans-serif',
                   fontSize: 9,
                   fontWeight: active ? 600 : 400,
                   textTransform: "uppercase",

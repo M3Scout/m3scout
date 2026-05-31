@@ -633,7 +633,7 @@ const Competitions = () => {
             </Button>
           )}
           <span className="hidden md:inline-flex">
-            <Link to="/app/competitions/import">
+            <Link to="/dashboard/competitions/import">
               <Button variant="outline" className="rounded-full">
                 <Upload className="w-4 h-4" />
                 Importar CSV
@@ -713,7 +713,7 @@ const Competitions = () => {
                   <Plus className="w-4 h-4 mr-2" />
                   Nova Competição
                 </Button>
-                <Link to="/app/competitions/import">
+                <Link to="/dashboard/competitions/import">
                   <Button variant="outline">
                     <Upload className="w-4 h-4 mr-2" />
                     Importar CSV

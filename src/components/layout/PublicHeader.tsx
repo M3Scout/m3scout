@@ -60,7 +60,7 @@ export function PublicHeader() {
           {/* Desktop CTA - ÁREA RESTRITA */}
           <div className="hidden lg:flex items-center flex-shrink-0">
             <Link
-              to="/app/auth"
+              to="/dashboard/auth"
               className="text-[11px] font-semibold tracking-[0.1em] text-white border border-[#C0001A] px-4 py-2 rounded-sm transition-colors hover:bg-[#C0001A] hover:text-white"
             >
               ÁREA RESTRITA
@@ -101,7 +101,7 @@ export function PublicHeader() {
               
               {/* ÁREA RESTRITA - Mobile */}
               <Link
-                to="/app/auth"
+                to="/dashboard/auth"
                 className="mt-3 mx-4 flex items-center justify-center gap-2 text-[11px] font-semibold tracking-[0.1em] text-white border border-[#C0001A] px-4 py-3 rounded-sm transition-colors hover:bg-[#C0001A]"
                 onClick={() => setIsMenuOpen(false)}
               >

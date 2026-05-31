@@ -315,7 +315,7 @@ const CompetitionUsageWidget = () => {
                           >
                             <Edit className="w-4 h-4" />
                           </Button>
-                          <Link to="/app/competitions">
+                          <Link to="/dashboard/competitions">
                             <Button variant="ghost" size="icon">
                               <ExternalLink className="w-4 h-4" />
                             </Button>

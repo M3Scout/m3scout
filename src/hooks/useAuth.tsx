@@ -341,7 +341,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setPermissions(null);
         clearRbacCache();
         // Hard redirect
-        window.location.href = "/app/auth";
+        window.location.href = "/dashboard/auth";
         return false;
       }
     }
