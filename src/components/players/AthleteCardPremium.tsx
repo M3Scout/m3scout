@@ -369,14 +369,14 @@ function VisualModeCard({
 
           {/* Image */}
           <img
-            src={getOptimizedImageUrl(imageUrl, { width: 900, quality: 85, format: "avif" }) || imageUrl}
-            srcSet={getResponsiveSrcSet(imageUrl, [450, 900], 85) || undefined}
-            sizes="(max-width: 767px) 50vw, 400px"
+            src={getOptimizedImageUrl(imageUrl, { width: 1200, quality: 85, format: "avif" }) || imageUrl}
+            srcSet={getResponsiveSrcSet(imageUrl, [400, 800, 1200, 1600], 85) || undefined}
+            sizes="(max-width: 768px) 80vw, (max-width: 1200px) 33vw, 450px"
             alt={name}
             loading="eager"
             decoding="async"
-            width={900}
-            height={1200}
+            width={1200}
+            height={1600}
             className="absolute inset-0 w-full h-full object-cover object-top"
             style={{
               transform: isHovered ? 'scale(1.04)' : 'scale(1)',

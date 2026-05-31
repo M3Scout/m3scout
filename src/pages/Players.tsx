@@ -601,8 +601,8 @@ const Players = () => {
             <div className="pl-card-grid">
               {safeArray(paginatedPlayers).map((player, index) => {
                 const href = `/players/${player.slug}`;
-                const imgUrl = getOptimizedImageUrl(player.photo_url, { width: 900, quality: 85, format: "avif" }) || "/placeholder.svg";
-                const imgSrcSet = getResponsiveSrcSet(player.photo_url, [450, 900], 85);
+                const imgUrl = getOptimizedImageUrl(player.photo_url, { width: 1200, quality: 85, format: "avif" }) || "/placeholder.svg";
+                const imgSrcSet = getResponsiveSrcSet(player.photo_url, [400, 800, 1200, 1600], 85);
                 const shortPos = getShortPosition(player.position);
                 const dotColor = getPosDotColor(player.position);
                 const cardNum = String(index + 1 + (currentPage - 1) * itemsPerPage).padStart(2, "0");

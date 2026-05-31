@@ -102,14 +102,14 @@ function CarouselCard({ player, isMobile }: { player: Player; isMobile: boolean 
         {/* Image Container */}
         <div className="relative aspect-[3/4] overflow-hidden">
           <motion.img
-            src={getOptimizedImageUrl(player.photo_url, { width: 900, quality: 85, format: "avif" }) || player.photo_url || "/placeholder.svg"}
-            srcSet={getResponsiveSrcSet(player.photo_url, [450, 900], 85) || undefined}
-            sizes="(max-width: 767px) 50vw, 400px"
+            src={getOptimizedImageUrl(player.photo_url, { width: 1200, quality: 85, format: "avif" }) || player.photo_url || "/placeholder.svg"}
+            srcSet={getResponsiveSrcSet(player.photo_url, [400, 800, 1200, 1600], 85) || undefined}
+            sizes="(max-width: 768px) 80vw, (max-width: 1200px) 33vw, 450px"
             alt={player.full_name}
             loading="lazy"
             decoding="async"
-            width={900}
-            height={1200}
+            width={1200}
+            height={1600}
             className="absolute inset-0 w-full h-full object-cover object-top"
             animate={{ scale: isHovered ? 1.05 : 1 }}
             transition={{ duration: 0.4, ease: "easeOut" }}

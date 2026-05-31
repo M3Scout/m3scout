@@ -69,16 +69,18 @@ export function getResponsiveSrcSet(
 
 /**
  * sizes for grid/carousel athlete portrait cards.
- * 50vw on mobile (2-col grid), fixed 400px on desktop.
- * Paired with a 900px Supabase transform: covers 3× Retina on 300px-wide cards.
+ * 80vw on mobile, 33vw on mid-range, 450px fixed on wide desktop.
+ * At 450px × 3× DPR the browser picks the 1600w srcSet entry → crisp on 4K/Retina.
  */
-export const ATHLETE_CARD_SIZES = "(max-width: 767px) 50vw, 400px";
+export const ATHLETE_CARD_SIZES =
+  "(max-width: 768px) 80vw, (max-width: 1200px) 33vw, 450px";
 
 /**
  * sizes for the home-page horizontal carousel cards.
- * Same math as grid cards — 900px transform + 50vw mobile hint is sufficient.
+ * Same breakpoints as grid cards for consistent Retina sharpness.
  */
-export const ATHLETE_CAROUSEL_SIZES = "(max-width: 767px) 50vw, 400px";
+export const ATHLETE_CAROUSEL_SIZES =
+  "(max-width: 768px) 80vw, (max-width: 1200px) 33vw, 450px";
 
 /**
  * sizes for full-bleed hero / banner images.

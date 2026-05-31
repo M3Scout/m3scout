@@ -214,15 +214,15 @@ export function AthletesHorizontal() {
                 {p.photo_url && (
                   <>
                     <img
-                      src={getOptimizedImageUrl(p.photo_url, { width: 900, quality: 85, format: "avif" })}
-                      srcSet={getResponsiveSrcSet(p.photo_url, [450, 900], 85) || undefined}
+                      src={getOptimizedImageUrl(p.photo_url, { width: 1200, quality: 85, format: "avif" })}
+                      srcSet={getResponsiveSrcSet(p.photo_url, [400, 800, 1200, 1600], 85) || undefined}
                       sizes={ATHLETE_CAROUSEL_SIZES}
                       alt={p.full_name}
                       className="athlete-h-card__media"
                       loading={i < 2 ? "eager" : "lazy"}
                       decoding="async"
-                      width={900}
-                      height={1200}
+                      width={1200}
+                      height={1600}
                       onError={(e) => { if (p.photo_url) (e.target as HTMLImageElement).src = p.photo_url; }}
                     />
                     <div className="athlete-h-card__media-overlay" />
