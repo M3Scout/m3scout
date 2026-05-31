@@ -601,8 +601,8 @@ const Players = () => {
             <div className="pl-card-grid">
               {safeArray(paginatedPlayers).map((player, index) => {
                 const href = `/players/${player.slug}`;
-                const imgUrl = getOptimizedImageUrl(player.photo_url, { width: 1200, quality: 85, format: "avif" }) || "/placeholder.svg";
-                const imgSrcSet = getResponsiveSrcSet(player.photo_url, [800, 1200, 1920], 85);
+                const imgUrl = getOptimizedImageUrl(player.photo_url, { width: 1800, quality: 85, format: "avif" }) || "/placeholder.svg";
+                const imgSrcSet = getResponsiveSrcSet(player.photo_url, [900, 1500, 2000], 85);
                 const shortPos = getShortPosition(player.position);
                 const dotColor = getPosDotColor(player.position);
                 const cardNum = String(index + 1 + (currentPage - 1) * itemsPerPage).padStart(2, "0");
@@ -618,8 +618,8 @@ const Players = () => {
                         loading={index === 0 ? "eager" : "lazy"}
                         fetchPriority={index === 0 ? "high" : undefined}
                         decoding="async"
-                        width={400}
-                        height={533}
+                        width={900}
+                        height={1200}
                         className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-500"
                         style={{ filter: "grayscale(10%)", willChange: "transform" }}
                         onMouseOver={(e) => { (e.target as HTMLImageElement).style.transform = "scale(1.03)"; (e.target as HTMLImageElement).style.filter = "grayscale(0%)"; }}

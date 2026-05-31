@@ -56,7 +56,7 @@ export function getOptimizedImageUrl(
  */
 export function getResponsiveSrcSet(
   url: string | null | undefined,
-  widths: number[] = [800, 1200, 1920],
+  widths: number[] = [900, 1500, 2000],
   quality = 85
 ): string {
   if (!url) return "";
@@ -68,11 +68,19 @@ export function getResponsiveSrcSet(
 }
 
 /**
- * Default sizes attribute for athlete cards.
+ * sizes for the grid cards on /atletas (2-col mobile, 3-col desktop).
+ * Accurate per-column widths let the browser pick the right srcSet entry.
  */
-export const ATHLETE_CARD_SIZES = "(max-width: 480px) 100vw, (max-width: 768px) 50vw, 600px";
+export const ATHLETE_CARD_SIZES =
+  "(max-width: 767px) calc(50vw - 16px), (max-width: 1024px) calc(33vw - 16px), 440px";
 
 /**
- * Default sizes attribute for athlete profile hero.
+ * sizes for the home-page horizontal carousel cards (~78vw on mobile, ~440px on desktop).
  */
-export const ATHLETE_HERO_SIZES = "(max-width: 480px) 100vw, (max-width: 768px) 50vw, 600px";
+export const ATHLETE_CAROUSEL_SIZES =
+  "(max-width: 800px) 80vw, 440px";
+
+/**
+ * sizes for athlete profile hero (full-bleed portrait).
+ */
+export const ATHLETE_HERO_SIZES = "(max-width: 768px) 100vw, 50vw";
