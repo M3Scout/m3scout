@@ -237,7 +237,7 @@ const ScoutingReports = () => {
       <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
           <h1 className="m3-page-title">Relatórios</h1>
-          <span className="inline-flex items-center justify-center min-w-[22px] h-5 px-1.5 rounded-full text-[11px] font-bold text-white bg-[#e63946]">{totalReports}</span>
+          <span className="inline-flex items-center justify-center min-w-[28px] h-6 px-2 rounded-full text-[13px] font-bold text-black bg-[#e63946]">{totalReports}</span>
         </div>
         <Link to="/dashboard/relatorios/novo">
           <Button className="bg-[#e63946] hover:bg-[#d62839] text-white gap-2 rounded-full px-5 h-9 text-sm font-semibold">

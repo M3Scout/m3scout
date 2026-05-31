@@ -194,7 +194,7 @@ const News = () => {
         <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between animate-fade-in">
           <div className="flex items-center gap-3">
             <h1 className="m3-page-title">Notícias</h1>
-            <span className="inline-flex items-center justify-center min-w-[22px] h-5 px-1.5 rounded-full text-[11px] font-bold text-white bg-[#e63946]">{filteredArticles.length}</span>
+            <span className="inline-flex items-center justify-center min-w-[28px] h-6 px-2 rounded-full text-[13px] font-bold text-black bg-[#e63946]">{filteredArticles.length}</span>
           </div>
           <Button asChild className="gap-2 shrink-0 bg-[#e63946] hover:bg-[#d62839] text-white rounded-full px-5 h-9 text-sm font-semibold">
             <Link to="/dashboard/noticias/nova">
