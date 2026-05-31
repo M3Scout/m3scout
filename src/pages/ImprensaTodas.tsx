@@ -104,7 +104,7 @@ const ImprensaTodas = () => {
       />
 
       {/* HEADER SECTION */}
-      <section style={{ backgroundColor: '#0A0A0A', padding: `clamp(120px, 18vh, 220px) clamp(24px, 5.625vw, 72px) 80px`, borderBottom: `1px solid rgba(242,237,228,0.1)` }}>
+      <section style={{ backgroundColor: '#0A0A0A', padding: `clamp(96px, 13vh, 220px) clamp(24px, 5.625vw, 72px) 80px`, borderBottom: `1px solid rgba(242,237,228,0.1)` }}>
         <h1 style={{
           fontFamily: "'Basis Grotesque Pro', sans-serif",
           fontWeight: 900,

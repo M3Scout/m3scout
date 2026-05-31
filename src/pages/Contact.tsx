@@ -125,7 +125,7 @@ const Contact = () => {
 
   if (isSubmitted) {
     return (
-      <div style={{ backgroundColor: BLACK, padding: `clamp(120px, 18vh, 220px) ${gutter} 80px`, minHeight: "60vh", fontFamily: B }}>
+      <div style={{ backgroundColor: BLACK, padding: `clamp(96px, 13vh, 220px) ${gutter} 80px`, minHeight: "60vh", fontFamily: B }}>
         <div style={{ maxWidth: maxW, margin: "0 auto" }}>
           <h1 style={{
             fontFamily: BC,
@@ -173,7 +173,7 @@ const Contact = () => {
     <div style={{ backgroundColor: BLACK, fontFamily: B }}>
 
       {/* S1 HERO */}
-      <section style={{ backgroundColor: BLACK, padding: `clamp(120px, 18vh, 220px) ${gutter} 80px`, borderBottom: `1px solid ${BORDER_DARK}` }}>
+      <section style={{ backgroundColor: BLACK, padding: `clamp(96px, 13vh, 220px) ${gutter} 80px`, borderBottom: `1px solid ${BORDER_DARK}` }}>
         <div style={{ maxWidth: maxW, margin: "0 auto" }}>
 
 
