@@ -228,7 +228,10 @@ export default function MarketAtivos() {
     <div className="space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
-        <h1 className="m3-page-title">Ativos</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="m3-page-title">Ativos</h1>
+          <span className="inline-flex items-center justify-center min-w-[22px] h-5 px-1.5 rounded-full text-[11px] font-bold text-white bg-[#e63946]">{filteredAthletes.length}</span>
+        </div>
         <Button variant="outline" size="sm" onClick={() => refetch()} className="rounded-full">
           <RefreshCw className="w-4 h-4 mr-2" />
           Atualizar

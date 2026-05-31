@@ -57,7 +57,10 @@ export default function Contracts() {
     <div className="space-y-5 pb-8 px-[var(--padding-mobile)] md:px-0">
       {/* Header */}
       <div>
-        <h1 className="m3-page-title">Contratos</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="m3-page-title">Contratos</h1>
+          <span className="inline-flex items-center justify-center min-w-[22px] h-5 px-1.5 rounded-full text-[11px] font-bold text-white bg-[#e63946]">{contracts.length}</span>
+        </div>
       </div>
 
       {/* Search + Filters */}

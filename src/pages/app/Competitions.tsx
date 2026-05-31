@@ -562,8 +562,9 @@ const Competitions = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
+        <div className="flex items-center gap-3">
           <h1 className="m3-page-title">Competições</h1>
+          <span className="inline-flex items-center justify-center min-w-[22px] h-5 px-1.5 rounded-full text-[11px] font-bold text-white bg-[#e63946]">{competitions.length}</span>
         </div>
         <div className="flex gap-2 flex-wrap">
           <span className="hidden md:inline-flex">

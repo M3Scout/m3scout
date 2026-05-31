@@ -860,11 +860,10 @@ export default function UserManagement() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="m3-page-title">Usuários</h1>
-          <p className="text-xs text-zinc-500 mt-1 uppercase tracking-wide">
-            {users.length} usuário{users.length !== 1 ? "s" : ""} · {activeCount} ativo{activeCount !== 1 ? "s" : ""}
-            {pendingCount > 0 && ` · ${pendingCount} pendente${pendingCount !== 1 ? "s" : ""}`}
-          </p>
+          <div className="flex items-center gap-3">
+            <h1 className="m3-page-title">Usuários</h1>
+            <span className="inline-flex items-center justify-center min-w-[22px] h-5 px-1.5 rounded-full text-[11px] font-bold text-white bg-[#e63946]">{users.length}</span>
+          </div>
         </div>
         {pendingCount > 0 && (
           <Button variant="outline" className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10 rounded-full text-xs h-8 px-4" onClick={() => setStatusFilter("pending")}>
