@@ -22,9 +22,9 @@
 .marquee {
   position: relative;
   padding: 32px 0;
-  border-top: 1px solid var(--line-dark);
-  border-bottom: 1px solid var(--line-dark);
-  background: var(--bg-darker);
+  border-top: none;
+  border-bottom: none;
+  background: #E63946;
   overflow: hidden;
 }
 .marquee__track {
@@ -39,7 +39,7 @@
   font-size: 48px;
   letter-spacing: -0.02em;
   text-transform: uppercase;
-  color: #E63946;
+  color: var(--fg-dark);
   display: flex;
   align-items: center;
   gap: 64px;
