@@ -27,7 +27,7 @@ function getPlayerPhotoUrl(photoUrl: string, targetCssWidthPx: number): string {
   
   // Add Supabase transform params
   const separator = photoUrl.includes("?") ? "&" : "?";
-  return `${photoUrl}${separator}width=${reqWidth}&quality=90`;
+  return `${photoUrl}${separator}width=${reqWidth}&quality=85&format=avif`;
 }
 
 /**
@@ -76,7 +76,7 @@ function getOptimizedImageProps(photoUrl: string | null, isMobile: boolean = fal
     
     const getUnsplashUrl = (w: number) => {
       const baseUrl = photoUrl.split("?")[0];
-      return `${baseUrl}?w=${w}&q=90&fit=crop&auto=format`;
+      return `${baseUrl}?w=${w}&q=85&fit=crop&auto=format&fm=avif`;
     };
     
     if (isMobile) {

@@ -86,7 +86,7 @@ export function PositionIdentityCard({
     navigate(`/dashboard/atletas/${id}`);
   };
 
-  const defaultPhoto = "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=200&h=200&fit=crop";
+  const defaultPhoto = "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=800&h=800&fit=crop&q=85&auto=format";
 
   return (
     <article
@@ -338,7 +338,7 @@ export function PositionIdentityCardMobile({
     navigate(`/dashboard/atletas/${id}`);
   };
 
-  const defaultPhoto = "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=100&h=100&fit=crop";
+  const defaultPhoto = "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=800&h=800&fit=crop&q=85&auto=format";
 
   return (
     <article

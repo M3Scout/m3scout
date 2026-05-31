@@ -17,12 +17,12 @@ export function getOptimizedImageUrl(
   options: {
     width?: number;
     quality?: number;
-    format?: "origin" | "webp";
+    format?: "origin" | "webp" | "avif";
   } = {}
 ): string {
   if (!url) return "";
 
-  const { width = 400, quality = 75, format = "webp" } = options;
+  const { width = 1200, quality = 85, format = "avif" } = options;
 
   // Only transform Supabase storage URLs
   if (!url.includes("supabase.co/storage/")) return url;
@@ -56,8 +56,8 @@ export function getOptimizedImageUrl(
  */
 export function getResponsiveSrcSet(
   url: string | null | undefined,
-  widths: number[] = [320, 480, 800],
-  quality = 75
+  widths: number[] = [800, 1200, 1920],
+  quality = 85
 ): string {
   if (!url) return "";
   if (!url.includes("supabase.co/storage/")) return "";
@@ -70,7 +70,7 @@ export function getResponsiveSrcSet(
 /**
  * Default sizes attribute for athlete cards.
  */
-export const ATHLETE_CARD_SIZES = "(max-width: 480px) 280px, (max-width: 768px) 340px, 400px";
+export const ATHLETE_CARD_SIZES = "(max-width: 480px) 100vw, (max-width: 768px) 50vw, 600px";
 
 /**
  * Default sizes attribute for athlete profile hero.

@@ -601,8 +601,8 @@ const Players = () => {
             <div className="pl-card-grid">
               {safeArray(paginatedPlayers).map((player, index) => {
                 const href = `/players/${player.slug}`;
-                const imgUrl = getOptimizedImageUrl(player.photo_url, { width: 400, quality: 70 }) || "/placeholder.svg";
-                const imgSrcSet = getResponsiveSrcSet(player.photo_url, [280, 400, 600], 70);
+                const imgUrl = getOptimizedImageUrl(player.photo_url, { width: 1200, quality: 85, format: "avif" }) || "/placeholder.svg";
+                const imgSrcSet = getResponsiveSrcSet(player.photo_url, [800, 1200, 1920], 85);
                 const shortPos = getShortPosition(player.position);
                 const dotColor = getPosDotColor(player.position);
                 const cardNum = String(index + 1 + (currentPage - 1) * itemsPerPage).padStart(2, "0");
@@ -664,7 +664,7 @@ const Players = () => {
             <div style={{ borderBottom: `1px solid ${BORDER_DARK}` }}>
               {safeArray(paginatedPlayers).map((player, index) => {
                 const href = `/players/${player.slug}`;
-                const imgUrl = getOptimizedImageUrl(player.photo_url, { width: 160, quality: 70 }) || "/placeholder.svg";
+                const imgUrl = getOptimizedImageUrl(player.photo_url, { width: 800, quality: 85, format: "avif" }) || "/placeholder.svg";
                 const shortPos = getShortPosition(player.position);
                 const dotColor = getPosDotColor(player.position);
                 const stats = playerStats.get(player.id);

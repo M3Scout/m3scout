@@ -214,8 +214,8 @@ export function AthletesHorizontal() {
                 {p.photo_url && (
                   <>
                     <img
-                      src={getOptimizedImageUrl(p.photo_url, { width: 400, quality: 75 })}
-                      srcSet={getResponsiveSrcSet(p.photo_url, [280, 400, 600], 75) || undefined}
+                      src={getOptimizedImageUrl(p.photo_url, { width: 1200, quality: 85, format: "avif" })}
+                      srcSet={getResponsiveSrcSet(p.photo_url, [800, 1200, 1920], 85) || undefined}
                       sizes={ATHLETE_CARD_SIZES}
                       alt={p.full_name}
                       className="athlete-h-card__media"

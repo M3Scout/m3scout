@@ -31,7 +31,7 @@ const FALLBACK_PHOTOS = [
 ];
 
 const buildUnsplash = (id: string) =>
-  `https://images.unsplash.com/${id}?w=800&h=800&fit=crop&q=80&auto=format`;
+  `https://images.unsplash.com/${id}?w=1080&h=1080&fit=crop&q=85&auto=format`;
 
 const FALLBACK_POSTS: IGPost[] = FALLBACK_PHOTOS.map((id, i) => ({
   id: `fb-${i}`,

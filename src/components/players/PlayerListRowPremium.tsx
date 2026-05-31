@@ -66,7 +66,7 @@ export function PlayerListRowPremium({
 }: PlayerListRowPremiumProps) {
   const navigate = useNavigate();
   const posColor = getPositionColor(position);
-  const defaultPhoto = "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=100&h=100&fit=crop";
+  const defaultPhoto = "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=800&h=800&fit=crop&q=85&auto=format";
 
   const handleRowClick = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('[data-dropdown-trigger]')) return;
@@ -253,7 +253,7 @@ export function PlayerListRowMobilePremium({
 }: PlayerListRowPremiumProps) {
   const navigate = useNavigate();
   const posColor = getPositionColor(position);
-  const defaultPhoto = "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=100&h=100&fit=crop";
+  const defaultPhoto = "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=800&h=800&fit=crop&q=85&auto=format";
 
   const handleCardClick = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('[data-dropdown-trigger]')) return;

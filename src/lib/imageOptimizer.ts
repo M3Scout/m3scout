@@ -47,11 +47,11 @@ export interface OptimizedImageResult {
 // ============ PRESETS ============
 
 const IMAGE_PRESETS: Record<ImagePreset, { width: number; quality: number; sizes: string }> = {
-  avatar: { width: 200, quality: 80, sizes: "48px" },
-  thumbnail: { width: 300, quality: 75, sizes: "150px" },
-  card: { width: 600, quality: 80, sizes: "(max-width: 640px) 100vw, 400px" },
-  profile: { width: 1200, quality: 85, sizes: "(max-width: 768px) 100vw, 600px" },
-  hero: { width: 1920, quality: 90, sizes: "100vw" },
+  avatar: { width: 400, quality: 85, sizes: "48px" },
+  thumbnail: { width: 800, quality: 85, sizes: "150px" },
+  card: { width: 1200, quality: 85, sizes: "(max-width: 640px) 100vw, 600px" },
+  profile: { width: 1920, quality: 85, sizes: "(max-width: 768px) 100vw, 800px" },
+  hero: { width: 2000, quality: 85, sizes: "100vw" },
 };
 
 // Responsive multipliers for srcSet
@@ -140,9 +140,9 @@ export function getOptimizedImageUrl(
   
   // Resolve preset or use custom options
   const preset = options.preset ? IMAGE_PRESETS[options.preset] : null;
-  const targetWidth = options.width ?? preset?.width ?? 600;
-  const quality = options.quality ?? preset?.quality ?? 80;
-  const format = options.format ?? "webp";
+  const targetWidth = options.width ?? preset?.width ?? 1200;
+  const quality = options.quality ?? preset?.quality ?? 85;
+  const format = options.format ?? "avif";
   const sizes = preset?.sizes ?? `${targetWidth}px`;
   
   // Check if URL is Supabase Storage (supports transformations)
