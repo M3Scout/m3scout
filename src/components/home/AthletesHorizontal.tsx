@@ -104,20 +104,45 @@ export function AthletesHorizontal() {
 
   useEffect(() => {
     let cancelled = false;
+    const currentYear = new Date().getFullYear();
+
     (async () => {
-      const { data } = await supabase
-        .from("players")
-        .select("id, slug, full_name, position, age, nationality, current_club, photo_url, auto_rating, created_at")
-        .eq("is_public", true)
-        .or("is_archived.is.null,is_archived.eq.false")
-        .order("auto_rating", { ascending: false, nullsFirst: false })
-        .order("created_at", { ascending: false })
-        .limit(8);
-      if (!cancelled && data) setPlayers(data as AthletePlayer[]);
+      // Tenta o ano atual, depois o anterior (caso os dados sejam da temporada passada)
+      for (const year of [currentYear, currentYear - 1]) {
+        if (cancelled) return;
+
+        const { data: rankData } = await (supabase
+          .rpc("get_public_player_minutes_ranking", { p_season_year: year }) as any);
+
+        const rows = (rankData as any[] ?? []).slice(0, 8);
+        if (rows.length === 0) continue;
+
+        const topIds = rows.map((r: any) => r.player_id as string);
+
+        const { data } = await (supabase
+          .from("public_players_safe" as any)
+          .select("id, slug, full_name, position, age, nationality, current_club, photo_url, auto_rating, created_at")
+          .in("id", topIds) as any);
+
+        if (!cancelled && data) {
+          const byId = new Map((data as AthletePlayer[]).map((p) => [p.id, p]));
+          const ordered = topIds.map((id) => byId.get(id)).filter((p): p is AthletePlayer => !!p);
+          setPlayers(ordered);
+        }
+        return;
+      }
+
+      // Fallback: sem dados de minutos — ordena por auto_rating
+      if (!cancelled) {
+        const { data } = await (supabase
+          .from("public_players_safe" as any)
+          .select("id, slug, full_name, position, age, nationality, current_club, photo_url, auto_rating, created_at")
+          .order("auto_rating", { ascending: false, nullsFirst: false })
+          .limit(8) as any);
+        if (!cancelled && data) setPlayers(data as AthletePlayer[]);
+      }
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {

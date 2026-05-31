@@ -84,7 +84,8 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['"Basis Grotesque Pro"', 'Inter', 'system-ui', 'sans-serif'],
+        basis: ['"Basis Grotesque Pro"', 'system-ui', 'sans-serif'],
         serif: ['"Times New Roman"', 'Times', 'serif'],
         gotham: ['Gotham-Book', 'Gotham', 'Arial', 'sans-serif'],
         barlow: ['"Barlow Condensed"', 'sans-serif'],

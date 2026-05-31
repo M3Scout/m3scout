@@ -11,8 +11,8 @@
   --accent-2: #E63946;
   --line-dark: rgba(255, 255, 255, 0.1);
   --muted-dark: rgba(245, 241, 234, 0.4);
-  --display: 'Archivo Black', 'Inter', sans-serif;
-  --mono: 'Inter', ui-monospace, SFMono-Regular, monospace;
+  --display: 'Basis Grotesque Pro', sans-serif;
+  --mono: 'Basis Grotesque Pro', sans-serif;
   background: var(--bg-dark);
   color: var(--fg-dark);
   font-family: var(--mono);
@@ -70,7 +70,7 @@
   overflow: hidden;
 }
 .athletes-h__head {
-  padding: 0 40px;
+  padding: 0 72px;
   max-width: 1600px;
   margin: 0 auto 64px;
   display: flex;
@@ -81,6 +81,7 @@
 }
 .athletes-h__title {
   font-family: var(--display);
+  font-weight: 900;
   font-size: clamp(48px, 7vw, 120px);
   line-height: 0.95;
   letter-spacing: -0.03em;
@@ -275,7 +276,7 @@
 .athletes-h__progress {
   max-width: 1600px;
   margin: 0 auto 80px;
-  padding: 0 40px;
+  padding: 0 72px;
   height: 2px;
   background: transparent;
   position: relative;

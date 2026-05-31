@@ -4,8 +4,8 @@
   --fg-light: #0A0A0A;
   --line-light: rgba(10, 10, 10, 0.12);
   --accent: #E63946;
-  --display: 'Archivo Black', 'Inter', sans-serif;
-  --mono: 'Inter', ui-monospace, SFMono-Regular, monospace;
+  --display: 'Basis Grotesque Pro', sans-serif;
+  --mono: 'Basis Grotesque Pro', sans-serif;
   background: var(--bg-light);
   color: var(--fg-light);
   padding: 140px 0;
@@ -15,7 +15,7 @@
 .sobre__inner {
   max-width: 1600px;
   margin: 0 auto;
-  padding: 0 40px;
+  padding: 0 72px;
 }
 
 .sobre__head {
@@ -57,6 +57,7 @@
 
 .sobre__quote {
   font-family: var(--display);
+  font-weight: 900;
   font-size: clamp(36px, 4.4vw, 72px);
   line-height: 1.0;
   letter-spacing: -0.03em;

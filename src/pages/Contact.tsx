@@ -24,16 +24,16 @@ const WHITE_MUTED = "rgba(242,237,228,0.42)";
 const CREAM_MUTED = "rgba(15,15,15,0.42)";
 const BORDER_DARK = "rgba(242,237,228,0.1)";
 const BORDER_CREAM = "rgba(15,15,15,0.1)";
-const BC = "'Barlow Condensed', sans-serif";
-const B = "'Barlow', sans-serif";
-const JB = "'JetBrains Mono', monospace";
+const BC = "'Basis Grotesque Pro', sans-serif";
+const B = "'Basis Grotesque Pro', sans-serif";
+const JB = "'Basis Grotesque Pro', sans-serif";
 
 const channels = [
   {
     label: "E-MAIL",
-    value: "contato@m3scout.com",
+    value: "contato@m3agency.com.br",
     cta: "Enviar e-mail",
-    href: "mailto:contato@m3scout.com",
+    href: "mailto:contato@m3agency.com.br",
     external: false,
   },
   {
@@ -120,7 +120,7 @@ const Contact = () => {
     }
   };
 
-  const gutter = "clamp(20px, 4vw, 40px)";
+  const gutter = "clamp(20px, 5.625vw, 72px)";
   const maxW = "1600px";
 
   if (isSubmitted) {

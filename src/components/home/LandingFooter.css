@@ -8,8 +8,8 @@
   --accent: #E63946;
   --line-dark: rgba(255, 255, 255, 0.1);
   --muted-dark: rgba(245, 241, 234, 0.4);
-  --display: 'Archivo Black', 'Inter', sans-serif;
-  --mono: 'Inter', ui-monospace, SFMono-Regular, monospace;
+  --display: 'Basis Grotesque Pro', sans-serif;
+  --mono: 'Basis Grotesque Pro', sans-serif;
 
   background: var(--bg-darker);
   color: var(--fg-dark);
@@ -20,7 +20,7 @@
 .lp-footer__inner {
   max-width: 1600px;
   margin: 0 auto;
-  padding: 0 40px;
+  padding: 0 72px;
 }
 .lp-footer__top {
   display: grid;

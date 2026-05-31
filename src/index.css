@@ -1,3 +1,40 @@
+/* Basis Grotesque Pro */
+@font-face {
+  font-family: 'Basis Grotesque Pro';
+  src: url('/fonts/BasisGrotesquePro-Light.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Basis Grotesque Pro';
+  src: url('/fonts/BasisGrotesquePro-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Basis Grotesque Pro';
+  src: url('/fonts/BasisGrotesquePro-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Basis Grotesque Pro';
+  src: url('/fonts/BasisGrotesquePro-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Basis Grotesque Pro';
+  src: url('/fonts/BasisGrotesquePro-Black.woff2') format('woff2');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* PERFORMANCE: Google Fonts loaded async in index.html — removed @import to eliminate render-blocking */
 
 @tailwind base;

@@ -3,11 +3,10 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
-import { 
-  Newspaper, 
-  Calendar, 
-  ArrowUpRight, 
-  ChevronLeft,
+import {
+  Newspaper,
+  Calendar,
+  ArrowUpRight,
   Loader2
 } from "lucide-react";
 import { format } from "date-fns";
@@ -94,7 +93,7 @@ const ImprensaTodas = () => {
   };
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-base)', fontFamily: "'Inter', sans-serif" }}>
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-base)', fontFamily: "'Basis Grotesque Pro', sans-serif" }}>
       
       {/* Subtle grain texture */}
       <div 
@@ -105,59 +104,28 @@ const ImprensaTodas = () => {
       />
 
       {/* HEADER SECTION */}
-      <section className="relative pt-32 pb-12 md:pt-40 md:pb-16">
-        <div className="relative z-10 w-full mx-auto" style={{ maxWidth: 'var(--page-max-width)', paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
-          
-          {/* Back Link */}
-          <motion.div
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.4 }}
-            className="mb-8"
-          >
-            <Link 
-              to="/imprensa"
-              className="inline-flex items-center gap-2 text-sm text-neutral-500 hover:text-white transition-colors"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Voltar para Imprensa
-            </Link>
-          </motion.div>
-
-          {/* Title */}
-          <motion.h1 
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
-            className="text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight text-white mb-4"
-          >
-            Todas as{" "}
-            <span className="text-[#e52421]">Notícias</span>
-          </motion.h1>
-
-          {/* Subtitle */}
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
-            className="text-base md:text-lg text-neutral-400 font-light max-w-2xl leading-relaxed"
-          >
-            Arquivo completo de notícias e comunicados da M3 Agency.
-          </motion.p>
-
-          {/* Subtle divider */}
-          <motion.div
-            initial={{ opacity: 0, scaleX: 0 }}
-            animate={{ opacity: 1, scaleX: 1 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-            className="mt-8 w-20 h-px bg-gradient-to-r from-[#e52421]/60 to-transparent origin-left"
-          />
-        </div>
+      <section style={{ backgroundColor: '#0A0A0A', padding: `clamp(120px, 18vh, 220px) clamp(20px, 5.625vw, 72px) 80px`, borderBottom: `1px solid rgba(242,237,228,0.1)` }}>
+        <h1 style={{
+          fontFamily: "'Basis Grotesque Pro', sans-serif",
+          fontWeight: 900,
+          fontSize: "clamp(72px, 10vw, 120px)",
+          lineHeight: 0.87,
+          textTransform: "uppercase",
+          color: "#F2EDE4",
+          letterSpacing: "-0.02em",
+          margin: "0 0 40px 0",
+        }}>
+          TODAS AS<br />
+          <span style={{ fontWeight: 300, fontStyle: "italic", color: "#E5173F" }}>NOTÍCIAS.</span>
+        </h1>
+        <p style={{ fontFamily: "'Basis Grotesque Pro', sans-serif", fontWeight: 300, fontSize: 16, lineHeight: 1.7, color: "rgba(242,237,228,0.42)", maxWidth: 480, margin: 0 }}>
+          Arquivo completo de notícias e comunicados da M3 Agency.
+        </p>
       </section>
 
       {/* NEWS GRID */}
-      <section className="py-8 md:py-12 lg:py-16">
-        <div className="w-full mx-auto" style={{ maxWidth: 'var(--page-max-width)', paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
+      <section className="py-8 md:py-12 lg:py-16" style={{ paddingLeft: 'clamp(20px, 5.625vw, 72px)', paddingRight: 'clamp(20px, 5.625vw, 72px)' }}>
+        <div>
           
           {/* Initial Loading State */}
           {isLoading && page === 0 ? (

@@ -6,8 +6,8 @@ const CREAM = "#F2EDE4";
 const BLACK = "#0A0A0A";
 const WHITE_MUTED = "rgba(242,237,228,0.42)";
 const CREAM_MUTED = "rgba(15,15,15,0.42)";
-const BC = "'Barlow Condensed', sans-serif";
-const B = "'Barlow', sans-serif";
+const BC = "'Basis Grotesque Pro', sans-serif";
+const B = "'Basis Grotesque Pro', sans-serif";
 
 const services = [
   { number: "01", title: "Gestão de Carreira", description: "Planejamento profissional, contratos e decisões de longo prazo." },
@@ -25,7 +25,7 @@ const Sobre = () => {
     }
   }, []);
 
-  const gutter = "clamp(20px, 4vw, 40px)";
+  const gutter = "clamp(20px, 5.625vw, 72px)";
   const maxW = "1600px";
 
   return (
@@ -51,7 +51,7 @@ const Sobre = () => {
           }}>
             UMA NOVA<br />
             FORMA DE<br />
-            <span style={{ fontFamily: BC, fontWeight: 300, fontStyle: "italic", textTransform: "lowercase", color: RED }}>pensar</span>{" "}A<br />
+            <span style={{ fontFamily: "'Instrument Serif', 'Times New Roman', serif", fontWeight: 300, fontStyle: "italic", textTransform: "lowercase", color: RED }}>pensar</span>{" "}A<br />
             CARREIRA.
           </h1>
 
@@ -98,7 +98,7 @@ const Sobre = () => {
           }}>
             A M3 ATUA ONDE<br />
             TALENTO ENCONTRA<br />
-            <span style={{ fontFamily: BC, fontWeight: 300, fontStyle: "italic", textTransform: "lowercase", color: RED }}>decisão.</span>
+            <span style={{ fontFamily: "'Instrument Serif', 'Times New Roman', serif", fontWeight: 300, fontStyle: "italic", textTransform: "lowercase", color: RED }}>decisão.</span>
           </h2>
         </div>
       </section>

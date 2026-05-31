@@ -7,8 +7,8 @@
   --fg-light: #0A0A0A;
   --line-light: rgba(10, 10, 10, 0.12);
   --accent: #E63946;
-  --display: 'Archivo Black', 'Inter', sans-serif;
-  --mono: 'Inter', ui-monospace, SFMono-Regular, monospace;
+  --display: 'Basis Grotesque Pro', sans-serif;
+  --mono: 'Basis Grotesque Pro', sans-serif;
   background: var(--bg-light);
   color: var(--fg-light);
   font-family: var(--mono);
@@ -19,8 +19,8 @@
   --fg-dark: #F5F1EA;
   --accent: #E63946;
   --line-dark: rgba(255, 255, 255, 0.1);
-  --display: 'Archivo Black', 'Inter', sans-serif;
-  --mono: 'Inter', ui-monospace, SFMono-Regular, monospace;
+  --display: 'Basis Grotesque Pro', sans-serif;
+  --mono: 'Basis Grotesque Pro', sans-serif;
   background: var(--bg-dark);
   color: var(--fg-dark);
   font-family: var(--mono);
@@ -35,7 +35,7 @@
 .feed__inner {
   max-width: 1600px;
   margin: 0 auto;
-  padding: 0 40px;
+  padding: 0 72px;
 }
 .feed__head {
   display: flex;

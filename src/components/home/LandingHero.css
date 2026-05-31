@@ -9,8 +9,8 @@
   --accent: #E63946;
   --line-dark: rgba(255, 255, 255, 0.1);
   --muted-dark: rgba(245, 241, 234, 0.4);
-  --display: 'Archivo Black', 'Inter', sans-serif;
-  --mono: 'Inter', ui-monospace, SFMono-Regular, monospace;
+  --display: 'Basis Grotesque Pro', sans-serif;
+  --mono: 'Basis Grotesque Pro', sans-serif;
 
   background: var(--bg-dark);
   color: var(--fg-dark);
@@ -72,7 +72,7 @@
 .lp-nav__inner {
   max-width: 1600px;
   margin: 0 auto;
-  padding: 0 40px;
+  padding: 0 72px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -188,18 +188,17 @@
   max-width: 1600px;
   margin: 0 auto;
   width: 100%;
-  padding: 0 40px;
+  padding: 0 72px;
 }
 .lp-hero__title {
   font-family: var(--display);
+  font-weight: 900;
   font-size: clamp(64px, 11vw, 200px);
   line-height: 0.92;
   letter-spacing: -0.04em;
   text-transform: uppercase;
   text-align: left;
   margin: 0 0 40px;
-  /* Compensa o side-bearing óptico do Archivo Black em tamanho massivo
-     para o título começar visualmente alinhado com o logo e o lead */
   margin-left: -0.06em;
   color: var(--fg-dark);
 }
