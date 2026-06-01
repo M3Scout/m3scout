@@ -316,7 +316,7 @@ export default function EditPlayer() {
 
   const handleCropComplete = (croppedBlob: Blob) => {
     // Create a File from Blob for upload
-    const croppedFile = new File([croppedBlob], "avatar.jpg", { type: "image/jpeg" });
+    const croppedFile = new File([croppedBlob], "photo.webp", { type: "image/webp" });
     setPhotoFile(croppedFile);
     
     // Create preview URL

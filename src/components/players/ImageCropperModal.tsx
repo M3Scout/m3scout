@@ -51,23 +51,20 @@ async function getCroppedImg(
     throw new Error("Could not get canvas context");
   }
 
-  const outputSize = 512;
-  canvas.width = outputSize;
-  canvas.height = outputSize;
-
-  // Calculate the center of the cropped area
-  const centerX = pixelCrop.x + pixelCrop.width / 2;
-  const centerY = pixelCrop.y + pixelCrop.height / 2;
+  const outputWidth = 1200;
+  const outputHeight = 1600;
+  canvas.width = outputWidth;
+  canvas.height = outputHeight;
 
   // Save context state
   ctx.save();
 
   // Move to center, rotate, then draw
-  ctx.translate(outputSize / 2, outputSize / 2);
+  ctx.translate(outputWidth / 2, outputHeight / 2);
   ctx.rotate((rotation * Math.PI) / 180);
-  ctx.translate(-outputSize / 2, -outputSize / 2);
+  ctx.translate(-outputWidth / 2, -outputHeight / 2);
 
-  // Draw the cropped portion scaled to 512x512
+  // Draw the cropped portion scaled to 1200×1600
   ctx.drawImage(
     image,
     pixelCrop.x,
@@ -76,8 +73,8 @@ async function getCroppedImg(
     pixelCrop.height,
     0,
     0,
-    outputSize,
-    outputSize
+    outputWidth,
+    outputHeight
   );
 
   ctx.restore();
@@ -91,8 +88,8 @@ async function getCroppedImg(
           reject(new Error("Failed to create blob"));
         }
       },
-      "image/jpeg",
-      0.9
+      "image/webp",
+      0.95
     );
   });
 }
@@ -160,8 +157,8 @@ export function ImageCropperModal({
           crop={crop}
           zoom={zoom}
           rotation={rotation}
-          aspect={1}
-          cropShape="round"
+          aspect={3 / 4}
+          cropShape="rect"
           showGrid={false}
           onCropChange={onCropChange}
           onZoomChange={onZoomChange}
