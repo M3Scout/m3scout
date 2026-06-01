@@ -685,17 +685,17 @@ const Players = () => {
                       <div className="pl-scout-row-inner">
                         {/* COL 1: Photo + Identity */}
                         <div className="pl-scout-col1">
-                          <div className="pl-scout-photo">
+                          <div className="pl-scout-photo" style={{ position: "relative" }}>
                             <img
                               src={imgUrl}
                               alt={player.full_name}
                               loading={index === 0 ? "eager" : "lazy"}
                               fetchPriority={index === 0 ? "high" : undefined}
                               decoding="async"
-                              width={80}
-                              height={90}
-                              className="w-full h-full object-cover"
-                              style={{ filter: "grayscale(15%)", transition: "filter 0.3s" }}
+                              width={800}
+                              height={1067}
+                              className="absolute inset-0 w-full h-full object-cover"
+                              style={{ objectPosition: "center top", filter: "grayscale(15%)", transition: "filter 0.3s" }}
                             />
                           </div>
                           <div className="flex flex-col justify-start" style={{ minWidth: 0 }}>

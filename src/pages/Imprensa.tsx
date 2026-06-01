@@ -258,9 +258,10 @@ const Imprensa = () => {
 
                   {/* Image */}
                   <div
-                    className="h-64 md:h-auto"
+                    className="relative h-64 md:h-auto"
                     style={{
                       overflow: "hidden",
+                      minHeight: "280px",
                       filter: hoveredFeatured ? "grayscale(0%)" : "grayscale(20%)",
                       transition: "filter 0.3s ease",
                     }}
@@ -270,7 +271,7 @@ const Imprensa = () => {
                         src={featured.featured_image_url}
                         alt={featured.title}
                         crop={featured.card_crop}
-                        className="w-full h-full"
+                        className="absolute inset-0 w-full h-full"
                       />
                     ) : (
                       <div style={{ width: "100%", height: "100%", backgroundColor: "rgba(242,237,228,0.04)" }} />

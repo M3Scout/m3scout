@@ -59,13 +59,15 @@ export function CroppedNewsImage({
             src={optimizedSrc}
             alt={alt}
             className={cn(
-              "w-full h-full object-cover transition-opacity duration-300",
+              "absolute inset-0 w-full h-full object-cover transition-opacity duration-300",
               isLoading ? "opacity-0" : "opacity-100"
             )}
             style={{
               objectPosition: `${position.x}% ${position.y}%`,
-              transform: `scale(${position.scale})`,
-              transformOrigin: `${position.x}% ${position.y}%`,
+              ...(position.scale !== 1 && {
+                transform: `scale(${position.scale})`,
+                transformOrigin: `${position.x}% ${position.y}%`,
+              }),
             }}
             onLoad={() => setIsLoading(false)}
             onError={() => {
