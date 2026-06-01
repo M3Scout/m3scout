@@ -120,14 +120,8 @@ const Auth = () => {
     });
   };
 
-  // Register page-unload sign-out when keepLoggedIn = false
-  useEffect(() => {
-    if (keepLoggedIn) return;
-    // Best-effort: sign out on tab close when user chose not to keep session
-    const handler = () => { supabase.auth.signOut(); };
-    window.addEventListener("pagehide", handler);
-    return () => window.removeEventListener("pagehide", handler);
-  }, [keepLoggedIn]);
+  // Note: session storage routing is handled by the flexStorage adapter in
+  // src/integrations/supabase/client.ts — no extra hooks needed here.
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -151,11 +145,6 @@ const Auth = () => {
           toast.error(error.message);
         }
         return;
-      }
-
-      // If user chose not to keep logged in, mark session as temporary
-      if (!keepLoggedIn) {
-        try { sessionStorage.setItem("m3_temp_session", "1"); } catch { /* ignore */ }
       }
 
       toast.success("Bem-vindo(a) de volta!");

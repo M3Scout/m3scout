@@ -32,9 +32,43 @@ if (typeof window !== 'undefined') {
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
+// ── Flexible session storage ──────────────────────────────────────────────────
+// Reads the user's "Manter conectado" preference (m3_keep_logged_in) on every
+// read/write so the decision is always current — even during auto-refresh.
+//   keep = true  → localStorage  (survives browser restarts, ~30-day effective TTL)
+//   keep = false → sessionStorage (cleared when the tab/window is closed)
+const flexStorage = {
+  getItem(key: string): string | null {
+    try {
+      // sessionStorage wins: handles tabs opened without the keep flag
+      return sessionStorage.getItem(key) ?? localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  setItem(key: string, value: string): void {
+    try {
+      const keep = localStorage.getItem("m3_keep_logged_in") !== "false";
+      if (keep) {
+        localStorage.setItem(key, value);
+        sessionStorage.removeItem(key);   // clear any leftover from a previous temp session
+      } else {
+        sessionStorage.setItem(key, value);
+        localStorage.removeItem(key);     // ensure nothing persists across browser restarts
+      }
+    } catch { /* storage may be blocked in private mode */ }
+  },
+  removeItem(key: string): void {
+    try {
+      localStorage.removeItem(key);
+      sessionStorage.removeItem(key);
+    } catch { /* ignore */ }
+  },
+};
+
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
-    storage: localStorage,
+    storage: flexStorage,
     persistSession: true,
     autoRefreshToken: true,
   }
