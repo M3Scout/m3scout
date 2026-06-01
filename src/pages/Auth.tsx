@@ -46,7 +46,7 @@ function SpotlightLogo({
         aria-hidden
         className="absolute inset-0"
         style={{
-          background: `radial-gradient(circle 280px at ${rel.x}px ${rel.y}px, ${RED} 0%, #FF8C42 25%, rgba(255,107,53,0.3) 55%, transparent 70%)`,
+          background: `radial-gradient(circle 280px at ${rel.x}px ${rel.y}px, ${RED} 0%, #f0314f 25%, rgba(229,23,63,0.3) 55%, transparent 70%)`,
           WebkitMaskImage: `url(${logoM3})`,
           maskImage: `url(${logoM3})`,
           WebkitMaskSize: "100% 100%",
@@ -64,7 +64,7 @@ function SpotlightLogo({
         aria-hidden
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: `radial-gradient(circle 200px at ${rel.x}px ${rel.y}px, rgba(255,107,53,0.07) 0%, transparent 70%)`,
+          background: `radial-gradient(circle 200px at ${rel.x}px ${rel.y}px, rgba(229,23,63,0.08) 0%, transparent 70%)`,
           filter: "blur(24px)",
         }}
       />
@@ -186,7 +186,7 @@ const Auth = () => {
         <div
           className="absolute top-0 left-0 w-full h-full opacity-30"
           style={{
-            background: `radial-gradient(ellipse 60% 50% at 25% 50%, rgba(255,107,53,0.06) 0%, transparent 70%)`,
+            background: `radial-gradient(ellipse 60% 50% at 25% 50%, rgba(229,23,63,0.06) 0%, transparent 70%)`,
           }}
         />
         <div
