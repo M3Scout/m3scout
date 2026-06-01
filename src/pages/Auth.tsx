@@ -9,7 +9,7 @@ import logoM3 from "@/assets/logo-m3.png";
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
 
 const KEEP_LOGGED_IN_KEY = "m3_keep_logged_in";
-const ORANGE = "#FF6B35";
+const RED = "#E5173F";
 
 // ─── SPOTLIGHT LOGO ───────────────────────────────────────────────────────────
 
@@ -46,7 +46,7 @@ function SpotlightLogo({
         aria-hidden
         className="absolute inset-0"
         style={{
-          background: `radial-gradient(circle 280px at ${rel.x}px ${rel.y}px, ${ORANGE} 0%, #FF8C42 25%, rgba(255,107,53,0.3) 55%, transparent 70%)`,
+          background: `radial-gradient(circle 280px at ${rel.x}px ${rel.y}px, ${RED} 0%, #FF8C42 25%, rgba(255,107,53,0.3) 55%, transparent 70%)`,
           WebkitMaskImage: `url(${logoM3})`,
           maskImage: `url(${logoM3})`,
           WebkitMaskSize: "100% 100%",
@@ -170,7 +170,7 @@ const Auth = () => {
         className="min-h-screen flex items-center justify-center"
         style={{ background: "#070910", fontFamily: "'Basis Grotesque Pro', sans-serif" }}
       >
-        <Loader2 className="w-6 h-6 animate-spin" style={{ color: ORANGE }} />
+        <Loader2 className="w-6 h-6 animate-spin" style={{ color: RED }} />
       </div>
     );
   }
@@ -210,25 +210,6 @@ const Auth = () => {
       >
         {/* Giant spotlight logo */}
         <SpotlightLogo mouseX={mouse.x} mouseY={mouse.y} />
-
-        {/* Tagline below logo */}
-        <div
-          className="mt-14 text-center max-w-xs"
-          style={{ opacity: 0, animation: "fadeSlideIn 0.6s cubic-bezier(0.22,1,0.36,1) 0.35s forwards" }}
-        >
-          <p
-            className="text-xs uppercase tracking-[0.2em] mb-3"
-            style={{ color: "rgba(255,255,255,0.25)" }}
-          >
-            Football Intelligence. Not Opinion.
-          </p>
-          <p
-            className="text-sm leading-relaxed"
-            style={{ color: "rgba(255,255,255,0.18)", fontWeight: 300 }}
-          >
-            Plataforma de análise e gestão de atletas
-          </p>
-        </div>
 
         {/* Back link */}
         <a
@@ -298,11 +279,11 @@ const Auth = () => {
                 style={{
                   background: "rgba(255,255,255,0.04)",
                   border: "1px solid rgba(255,255,255,0.08)",
-                  caretColor: ORANGE,
+                  caretColor: RED,
                   fontWeight: 400,
                   fontFamily: "inherit",
                 }}
-                onFocus={e => { e.target.style.borderColor = `${ORANGE}60`; e.target.style.background = "rgba(255,255,255,0.06)"; }}
+                onFocus={e => { e.target.style.borderColor = `${RED}60`; e.target.style.background = "rgba(255,255,255,0.06)"; }}
                 onBlur={e  => { e.target.style.borderColor = "rgba(255,255,255,0.08)"; e.target.style.background = "rgba(255,255,255,0.04)"; }}
               />
             </div>
@@ -329,11 +310,11 @@ const Auth = () => {
                   style={{
                     background: "rgba(255,255,255,0.04)",
                     border: "1px solid rgba(255,255,255,0.08)",
-                    caretColor: ORANGE,
+                    caretColor: RED,
                     fontWeight: 400,
                     fontFamily: "inherit",
                   }}
-                  onFocus={e => { e.target.style.borderColor = `${ORANGE}60`; e.target.style.background = "rgba(255,255,255,0.06)"; }}
+                  onFocus={e => { e.target.style.borderColor = `${RED}60`; e.target.style.background = "rgba(255,255,255,0.06)"; }}
                   onBlur={e  => { e.target.style.borderColor = "rgba(255,255,255,0.08)"; e.target.style.background = "rgba(255,255,255,0.04)"; }}
                 />
                 <button
@@ -362,8 +343,8 @@ const Auth = () => {
                   onClick={toggleKeepLoggedIn}
                   className="relative flex-shrink-0 w-5 h-5 rounded-full transition-all duration-200 outline-none"
                   style={{
-                    background: keepLoggedIn ? ORANGE : "rgba(255,255,255,0.06)",
-                    border: keepLoggedIn ? `2px solid ${ORANGE}` : "2px solid rgba(255,255,255,0.15)",
+                    background: keepLoggedIn ? RED : "rgba(255,255,255,0.06)",
+                    border: keepLoggedIn ? `2px solid ${RED}` : "2px solid rgba(255,255,255,0.15)",
                     boxShadow: keepLoggedIn ? `0 0 12px rgba(255,107,53,0.4)` : "none",
                   }}
                 >
@@ -390,7 +371,7 @@ const Auth = () => {
                 type="button"
                 className="text-xs transition-colors duration-150"
                 style={{ color: "rgba(255,255,255,0.35)", fontWeight: 700 }}
-                onMouseEnter={e => ((e.target as HTMLElement).style.color = ORANGE)}
+                onMouseEnter={e => ((e.target as HTMLElement).style.color = RED)}
                 onMouseLeave={e => ((e.target as HTMLElement).style.color = "rgba(255,255,255,0.35)")}
                 onClick={() => toast.info("Entre em contato com o administrador para redefinir sua senha.")}
               >
@@ -404,7 +385,7 @@ const Auth = () => {
               disabled={loading}
               className="w-full h-14 flex items-center justify-center gap-2.5 rounded-full transition-all duration-200 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
-                background: loading ? "rgba(255,107,53,0.7)" : ORANGE,
+                background: loading ? "rgba(255,107,53,0.7)" : RED,
                 color: "#000",
                 fontSize: "1.05rem",
                 fontWeight: 300,
@@ -413,7 +394,7 @@ const Auth = () => {
                 fontFamily: "inherit",
               }}
               onMouseEnter={e => { if (!loading) (e.currentTarget.style.background = "#FF7A45"); }}
-              onMouseLeave={e => { if (!loading) (e.currentTarget.style.background = ORANGE); }}
+              onMouseLeave={e => { if (!loading) (e.currentTarget.style.background = RED); }}
             >
               {loading ? (
                 <>
