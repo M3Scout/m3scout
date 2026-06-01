@@ -1,12 +1,13 @@
-import { useEffect, useState, useCallback } from "react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/authContext";
 import { useContractNotificationCheck } from "@/hooks/useContractNotificationCheck";
 import { AdminSkeletonDashboard } from "@/components/admin/AdminSkeleton";
 import { AthleteDashboard } from "@/components/dashboard/athlete/AthleteDashboard";
 import { InsightsCard } from "@/components/dashboard/InsightsCard";
-import { isAbortError, logFetchError, logFetchSkipped, logFetchSuccess } from "@/lib/fetchLogger";
+import { isAbortError, logFetchError, logFetchSuccess } from "@/lib/fetchLogger";
 import { Star, Users, FileText, ArrowRight } from "lucide-react";
 import "./dashboard-v2.css";
 
