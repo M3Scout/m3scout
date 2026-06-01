@@ -393,14 +393,14 @@ const ComparePlayers = () => {
           className="flex items-center gap-3 w-full p-3 cursor-pointer hover:bg-zinc-800 active:bg-zinc-700 transition-colors rounded-lg"
         >
           <div className={cn(
-            "w-11 h-11 rounded-lg overflow-hidden flex-shrink-0 ring-2",
+            "w-11 h-11 rounded-lg overflow-hidden flex-shrink-0 ring-2 bg-zinc-900",
             posColor.ringClass
           )}>
             {player.photo_url ? (
               <img
                 src={getOptimizedImageUrl(player.photo_url, { width: 400, quality: 85, format: "avif" }) || player.photo_url || ""}
                 alt={player.full_name}
-                className="w-full h-full object-cover object-center"
+                className="w-full h-full object-contain object-center"
                 onError={e => { if (player.photo_url) (e.target as HTMLImageElement).src = player.photo_url; }}
               />
             ) : (
@@ -521,14 +521,14 @@ const ComparePlayers = () => {
                     >
                       <div className="flex items-center gap-3 w-full">
                         <div className={cn(
-                          "w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 ring-2",
+                          "w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 ring-2 bg-zinc-900",
                           posColor.ringClass
                         )}>
                           {player.photo_url ? (
                             <img
-                              src={player.photo_url}
+                              src={getOptimizedImageUrl(player.photo_url, { width: 400, quality: 85, format: "avif" }) || player.photo_url}
                               alt={player.full_name}
-                              className="w-full h-full object-cover"
+                              className="w-full h-full object-contain object-center"
                             />
                           ) : (
                             <div className="w-full h-full bg-zinc-800 flex items-center justify-center">

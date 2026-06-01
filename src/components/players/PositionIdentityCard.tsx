@@ -111,11 +111,11 @@ export function PositionIdentityCard({
       <div className="flex">
         {/* Photo Column - Smaller, editorial */}
         <div className="relative w-20 sm:w-24 flex-shrink-0 ml-2">
-          <div className="aspect-square overflow-hidden rounded-lg m-2 border border-zinc-800 group-hover:border-zinc-700 transition-colors">
+          <div className="aspect-square overflow-hidden rounded-lg m-2 border border-zinc-800 group-hover:border-zinc-700 transition-colors bg-zinc-900">
             <img
               src={getOptimizedImageUrl(photoUrl, { width: 800, quality: 85, format: "avif" }) || defaultPhoto}
               alt={fullName}
-              className="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-[1.03]"
+              className="w-full h-full object-contain object-center transition-transform duration-300 group-hover:scale-[1.03]"
             />
           </div>
         </div>
@@ -360,11 +360,11 @@ export function PositionIdentityCardMobile({
 
       <div className="flex items-center gap-3 p-3 ml-1">
         {/* Photo - Small */}
-        <div className="relative w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 border border-zinc-800">
+        <div className="relative w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 border border-zinc-800 bg-zinc-900">
           <img
             src={getOptimizedImageUrl(photoUrl, { width: 800, quality: 85, format: "avif" }) || defaultPhoto}
             alt={fullName}
-            className="w-full h-full object-cover object-center"
+            className="w-full h-full object-contain object-center"
           />
         </div>
 

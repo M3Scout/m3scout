@@ -173,7 +173,7 @@ export function TargetDetailModal({
               <div className="flex items-start gap-4">
                 <div className="w-14 h-14 rounded-lg overflow-hidden bg-secondary/50 flex items-center justify-center">
                   {target.photo_url ? (
-                    <img src={getOptimizedImageUrl(target.photo_url, { width: 400, quality: 85, format: "avif" }) || target.photo_url || ""} alt={target.name} className="w-full h-full object-cover object-center" width={400} height={400} loading="lazy" decoding="async" onError={e => { if (target.photo_url) (e.target as HTMLImageElement).src = target.photo_url; }} />
+                    <img src={getOptimizedImageUrl(target.photo_url, { width: 400, quality: 85, format: "avif" }) || target.photo_url || ""} alt={target.name} className="w-full h-full object-contain object-center" width={400} height={400} loading="lazy" decoding="async" onError={e => { if (target.photo_url) (e.target as HTMLImageElement).src = target.photo_url; }} />
                   ) : (
                     <User className="w-7 h-7 text-muted-foreground" />
                   )}

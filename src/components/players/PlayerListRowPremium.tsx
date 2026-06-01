@@ -100,14 +100,14 @@ export function PlayerListRowPremium({
 
       {/* Avatar */}
       <div className={cn(
-        "relative w-10 h-10 rounded-full overflow-hidden flex-shrink-0",
+        "relative w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-zinc-900",
         "ring-1 ring-zinc-800/60",
         "transition-all duration-200"
       )}>
         <img
           src={getOptimizedImageUrl(photoUrl, { width: 800, quality: 85, format: "avif" }) || defaultPhoto}
           alt={fullName}
-          className="w-full h-full object-cover object-center"
+          className="w-full h-full object-contain object-center"
         />
       </div>
 
@@ -278,11 +278,11 @@ export function PlayerListRowMobilePremium({
 
       {/* Content */}
       <div className="flex items-center gap-3 p-3.5 pl-4">
-        <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 ring-1 ring-zinc-800/60">
+        <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 ring-1 ring-zinc-800/60 bg-zinc-900">
           <img
             src={getOptimizedImageUrl(photoUrl, { width: 800, quality: 85, format: "avif" }) || defaultPhoto}
             alt={fullName}
-            className="w-full h-full object-cover object-center"
+            className="w-full h-full object-contain object-center"
           />
         </div>
 

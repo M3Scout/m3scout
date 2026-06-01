@@ -163,11 +163,11 @@ export function PlayerRowCard({
       />
 
       {/* Player Photo with Position Color Ring */}
-      <div className={`w-10 h-10 rounded-full overflow-hidden flex-shrink-0 ring-2 ${posColor.ringClass}`}>
+      <div className={`w-10 h-10 rounded-full overflow-hidden flex-shrink-0 ring-2 bg-zinc-900 ${posColor.ringClass}`}>
         <img
           src={getOptimizedImageUrl(photoUrl, { width: 800, quality: 85, format: "avif" }) || defaultPhoto}
           alt={fullName}
-          className="w-full h-full object-cover object-center"
+          className="w-full h-full object-contain object-center"
         />
       </div>
 
@@ -371,11 +371,11 @@ export function PlayerMobileCard({
 
       {/* Header with photo and main info */}
       <div className="flex items-center gap-3 p-3 pl-4">
-        <div className={`w-12 h-12 rounded-full overflow-hidden flex-shrink-0 ring-2 ${posColor.ringClass}`}>
+        <div className={`w-12 h-12 rounded-full overflow-hidden flex-shrink-0 ring-2 bg-zinc-900 ${posColor.ringClass}`}>
           <img
             src={getOptimizedImageUrl(photoUrl, { width: 800, quality: 85, format: "avif" }) || defaultPhoto}
             alt={fullName}
-            className="w-full h-full object-cover object-center"
+            className="w-full h-full object-contain object-center"
           />
         </div>
 
