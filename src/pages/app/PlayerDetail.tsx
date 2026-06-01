@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { safeArray } from "@/lib/utils";
+import { getOptimizedImageUrl } from "@/lib/imageUtils";
 import { useAuth } from "@/hooks/authContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { PermissionGate } from "@/components/auth/PermissionGate";
@@ -526,7 +527,12 @@ const PlayerDetail = () => {
             className={`w-20 h-20 shrink-0 border ${T.border} overflow-hidden bg-[#111] flex items-center justify-center`}
           >
             {player.photo_url ? (
-              <img src={player.photo_url} alt={player.full_name} className="w-full h-full object-cover" />
+              <img
+                src={getOptimizedImageUrl(player.photo_url, { width: 400, quality: 85, format: "avif" }) || player.photo_url || ""}
+                alt={player.full_name}
+                className="w-full h-full object-cover object-top"
+                onError={e => { if (player.photo_url) (e.target as HTMLImageElement).src = player.photo_url; }}
+              />
             ) : (
               <User className="w-8 h-8 text-[#6B6560]" />
             )}

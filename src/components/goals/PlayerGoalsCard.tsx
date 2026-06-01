@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { User, CheckCircle2, Clock, AlertTriangle, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { getOptimizedImageUrl } from "@/lib/imageUtils";
 
 // Goal type configuration
 interface GoalTypeConfig {
@@ -201,9 +202,10 @@ export function PlayerGoalsCard({ player, goals, onGoalClick }: PlayerGoalsCardP
         {/* Photo - larger */}
         {player.photo_url ? (
           <img
-            src={player.photo_url}
+            src={getOptimizedImageUrl(player.photo_url, { width: 400, quality: 85, format: "avif" }) || player.photo_url || ""}
             alt={player.full_name}
-            className="w-16 h-16 rounded-xl object-cover shrink-0 border border-zinc-800/50"
+            className="w-16 h-16 rounded-xl object-cover object-top shrink-0 border border-zinc-800/50"
+            onError={e => { if (player.photo_url) (e.target as HTMLImageElement).src = player.photo_url; }}
           />
         ) : (
           <div className="w-16 h-16 rounded-xl bg-zinc-800/80 flex items-center justify-center shrink-0 border border-zinc-700/30">

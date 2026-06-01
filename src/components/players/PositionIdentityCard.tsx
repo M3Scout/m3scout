@@ -115,7 +115,7 @@ export function PositionIdentityCard({
             <img
               src={getOptimizedImageUrl(photoUrl, { width: 800, quality: 85, format: "avif" }) || defaultPhoto}
               alt={fullName}
-              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+              className="w-full h-full object-cover object-top transition-transform duration-300 group-hover:scale-[1.03]"
             />
           </div>
         </div>
@@ -362,9 +362,9 @@ export function PositionIdentityCardMobile({
         {/* Photo - Small */}
         <div className="relative w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 border border-zinc-800">
           <img
-            src={photoUrl || defaultPhoto}
+            src={getOptimizedImageUrl(photoUrl, { width: 800, quality: 85, format: "avif" }) || defaultPhoto}
             alt={fullName}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover object-top"
           />
         </div>
 

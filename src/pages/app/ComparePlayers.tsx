@@ -60,6 +60,7 @@ import {
   type CompareAggregatedStats,
 } from "@/hooks/useComparePlayerStats";
 import type { PlayerStatRow } from "@/lib/attributeRadar";
+import { getOptimizedImageUrl } from "@/lib/imageUtils";
 
 interface Player {
   id: string;
@@ -397,9 +398,10 @@ const ComparePlayers = () => {
           )}>
             {player.photo_url ? (
               <img
-                src={player.photo_url}
+                src={getOptimizedImageUrl(player.photo_url, { width: 400, quality: 85, format: "avif" }) || player.photo_url || ""}
                 alt={player.full_name}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover object-top"
+                onError={e => { if (player.photo_url) (e.target as HTMLImageElement).src = player.photo_url; }}
               />
             ) : (
               <div className="w-full h-full bg-zinc-800 flex items-center justify-center">

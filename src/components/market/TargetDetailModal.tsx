@@ -41,6 +41,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useAuth } from "@/hooks/authContext";
 import { useTargetMarketScore } from "@/hooks/useTargetMarketScore";
+import { getOptimizedImageUrl } from "@/lib/imageUtils";
 
 interface TargetWithScore extends Target {
   market_score: {
@@ -172,7 +173,7 @@ export function TargetDetailModal({
               <div className="flex items-start gap-4">
                 <div className="w-14 h-14 rounded-lg overflow-hidden bg-secondary/50 flex items-center justify-center">
                   {target.photo_url ? (
-                    <img src={target.photo_url} alt={target.name} className="w-full h-full object-cover" width={80} height={80} loading="lazy" decoding="async" />
+                    <img src={getOptimizedImageUrl(target.photo_url, { width: 400, quality: 85, format: "avif" }) || target.photo_url || ""} alt={target.name} className="w-full h-full object-cover object-top" width={400} height={400} loading="lazy" decoding="async" onError={e => { if (target.photo_url) (e.target as HTMLImageElement).src = target.photo_url; }} />
                   ) : (
                     <User className="w-7 h-7 text-muted-foreground" />
                   )}
