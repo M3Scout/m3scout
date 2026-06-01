@@ -1,12 +1,13 @@
-import { useEffect, useState, useCallback } from "react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/authContext";
 import { useContractNotificationCheck } from "@/hooks/useContractNotificationCheck";
 import { AdminSkeletonDashboard } from "@/components/admin/AdminSkeleton";
 import { AthleteDashboard } from "@/components/dashboard/athlete/AthleteDashboard";
 import { InsightsCard } from "@/components/dashboard/InsightsCard";
-import { isAbortError, logFetchError, logFetchSkipped, logFetchSuccess } from "@/lib/fetchLogger";
+import { isAbortError, logFetchError, logFetchSuccess } from "@/lib/fetchLogger";
 import { Star, Users, FileText, ArrowRight } from "lucide-react";
 import "./dashboard-v2.css";
 
@@ -104,39 +105,24 @@ export const DashboardV2 = () => {
   const rbacReady = Boolean(session?.user) && !permissionsLoading && !rolesLoading;
   useContractNotificationCheck();
 
-  const [loading, setLoading] = useState(true);
-  const [dataReady, setDataReady] = useState(false);
-  const [hasFetched, setHasFetched] = useState(false);
+  const enabled = rbacReady;
 
-  const [stats, setStats] = useState<DashboardStats>({
-    totalPlayers: 0, reportsThisMonth: 0, totalLeads: 0, expiringContracts: 0,
-  });
-  const [positionData, setPositionData] = useState<PositionData[]>([]);
-  const [recentReports, setRecentReports] = useState<RecentReport[]>([]);
-  const [topPlayers, setTopPlayers] = useState<RankedPlayer[]>([]);
-  const [competitions, setCompetitions] = useState<CompetitionUsage[]>([]);
-
-  // Alert: find lowest-rated player
-  const lowestPlayer = topPlayers.length > 0
-    ? topPlayers.reduce((min, p) => ((p.auto_rating ?? 99) < (min.auto_rating ?? 99) ? p : min), topPlayers[0])
-    : null;
-  const showAlert = lowestPlayer && (lowestPlayer.auto_rating ?? 99) < 5.0;
-
-  const fetchAll = useCallback(async () => {
-    if (!session?.user) { logFetchSkipped("DashboardV2", "no session"); return; }
-    if (!rbacReady) { logFetchSkipped("DashboardV2", "rbac not ready"); return; }
-    if (hasFetched) return;
-    setHasFetched(true);
-
-    const start = performance.now();
-    try {
+  // ── Query 1: bundle of dashboard-wide stats (8 parallel reqs, runs ONCE per 5 min) ──
+  const overviewQuery = useQuery({
+    queryKey: ["dashboard-v2", "overview", session?.user?.id ?? null],
+    enabled,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    queryFn: async () => {
+      const start = performance.now();
       const firstDayOfMonth = new Date();
       firstDayOfMonth.setDate(1);
       firstDayOfMonth.setHours(0, 0, 0, 0);
 
       const [
         playersRes, leadsRes, contractsRes, positionsRes,
-        recentReportsRes, reportsThisMonthRes, topPlayersRes, compsRes,
+        recentReportsRes, reportsThisMonthRes, topPlayersRes,
       ] = await Promise.all([
         supabase.from("players").select("id", { count: "exact", head: true })
           .or("is_archived.is.null,is_archived.eq.false"),
@@ -155,125 +141,91 @@ export const DashboardV2 = () => {
           .not("auto_rating", "is", null)
           .or("is_archived.is.null,is_archived.eq.false")
           .order("auto_rating", { ascending: false }).limit(6),
-        supabase.from("competitions")
-          .select("id, name, display_name, tier, final_coefficient")
-          .eq("is_active", true),
       ]);
 
-      setStats({
+      const stats: DashboardStats = {
         totalPlayers: playersRes.count || 0,
         reportsThisMonth: reportsThisMonthRes.count || 0,
         totalLeads: leadsRes.count || 0,
         expiringContracts: contractsRes.count || 0,
+      };
+
+      const counts: Record<string, number> = {};
+      ((positionsRes.data as PositionRow[] | null) || []).forEach((p) => {
+        const pos = shortPos(p.position || "");
+        counts[pos] = (counts[pos] || 0) + 1;
       });
+      const positionData: PositionData[] = Object.entries(counts)
+        .map(([name, value]) => ({ name, value }))
+        .sort((a, b) => b.value - a.value).slice(0, 5);
 
-      if (positionsRes.data) {
-        const counts: Record<string, number> = {};
-        (positionsRes.data as PositionRow[]).forEach((p) => {
-          const pos = shortPos(p.position || "");
-          counts[pos] = (counts[pos] || 0) + 1;
-        });
-        setPositionData(
-          Object.entries(counts).map(([name, value]) => ({ name, value }))
-            .sort((a, b) => b.value - a.value).slice(0, 5)
-        );
+      const recentReports: RecentReport[] = ((recentReportsRes.data as unknown as RecentReportRow[] | null) || []).map((r) => ({
+        id: r.id,
+        player_name: r.players?.full_name || "—",
+        competition_name: r.competitions?.name || "—",
+        match_date: r.match_date,
+        final_score: r.final_score ?? 0,
+      }));
+
+      const topPlayers = (topPlayersRes.data as RankedPlayer[] | null) || [];
+
+      logFetchSuccess({ endpoint: "DashboardV2.overview" }, performance.now() - start);
+      return { stats, positionData, recentReports, topPlayers };
+    },
+  });
+
+  // ── Query 2: competition usage — ONE RPC call replaces 1500+ N+1 requests ──
+  const competitionsQuery = useQuery({
+    queryKey: ["dashboard-v2", "competitions-usage", currentYear],
+    enabled,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    queryFn: async () => {
+      const start = performance.now();
+      const { data, error } = await (supabase as any).rpc("get_competitions_usage", {
+        p_season_year: currentYear,
+      });
+      if (error) {
+        if (!isAbortError(error)) logFetchError(error, { endpoint: "DashboardV2.competitions" });
+        throw error;
       }
+      logFetchSuccess({ endpoint: "DashboardV2.competitions" }, performance.now() - start);
+      const rows = (data as any[] | null) || [];
+      return rows.map((r): CompetitionUsage => ({
+        id: r.id,
+        name: r.name,
+        tier: r.tier,
+        final_coefficient: Number(r.final_coefficient ?? 1),
+        usos: Number(r.usos ?? 0),
+        jogadores: Number(r.jogadores ?? 0),
+        ultimo_uso: r.ultimo_uso || null,
+      }));
+    },
+  });
 
-      if (recentReportsRes.data) {
-        setRecentReports((recentReportsRes.data as unknown as RecentReportRow[]).map((r) => ({
-          id: r.id,
-          player_name: r.players?.full_name || "—",
-          competition_name: r.competitions?.name || "—",
-          match_date: r.match_date,
-          final_score: r.final_score ?? 0,
-        })));
-      }
+  const stats = overviewQuery.data?.stats ?? { totalPlayers: 0, reportsThisMonth: 0, totalLeads: 0, expiringContracts: 0 };
+  const positionData = overviewQuery.data?.positionData ?? [];
+  const recentReports = overviewQuery.data?.recentReports ?? [];
+  const topPlayers = overviewQuery.data?.topPlayers ?? [];
+  const competitions = competitionsQuery.data ?? [];
 
-      if (topPlayersRes.data) setTopPlayers(topPlayersRes.data as RankedPlayer[]);
+  const dataReady = overviewQuery.isSuccess;
+  const loading = overviewQuery.isLoading;
 
-      if (compsRes.data) {
-        const comps = compsRes.data as CompetitionRow[];
-        const seasonYear = new Date().getFullYear();
-        const yearStart = `${seasonYear}-01-01`;
-        const nextYearStart = `${seasonYear + 1}-01-01`;
-        const usageRows = await Promise.all(
-          comps.map(async (c) => {
-            const [scoutingR, matchesR, matchIdsR, manualStatsR, legacyStatsR, lastScoutR, lastMatchR] = await Promise.all([
-              supabase.from("scouting_reports")
-                .select("player_id", { count: "exact" })
-                .eq("competition_id", c.id)
-                .is("deleted_at", null)
-                .gte("match_date", yearStart)
-                .lt("match_date", nextYearStart),
-              supabase.from("matches")
-                .select("id", { count: "exact", head: true })
-                .eq("competition_id", c.id).eq("season_year", seasonYear).eq("status", "applied"),
-              supabase.from("matches")
-                .select("id")
-                .eq("competition_id", c.id).eq("season_year", seasonYear).eq("status", "applied"),
-              supabase.from("manual_player_stats")
-                .select("player_id", { count: "exact" })
-                .eq("competition_id", c.id).eq("season_year", seasonYear).gt("games", 0),
-              supabase.from("player_stats")
-                .select("player_id", { count: "exact" })
-                .eq("competition_id", c.id).eq("season_year", seasonYear)
-                .or("is_archived.is.null,is_archived.eq.false").gt("matches", 0),
-              supabase.from("scouting_reports")
-                .select("match_date").eq("competition_id", c.id)
-                .is("deleted_at", null)
-                .gte("match_date", yearStart)
-                .lt("match_date", nextYearStart)
-                .order("match_date", { ascending: false }).limit(1).maybeSingle(),
-              supabase.from("matches")
-                .select("match_date").eq("competition_id", c.id).eq("season_year", seasonYear).eq("status", "applied")
-                .order("match_date", { ascending: false }).limit(1).maybeSingle(),
-            ]);
-            const matchIds = (matchIdsR.data as IdRow[] | null)?.map((m) => m.id) || [];
-            const matchPlayersR = matchIds.length > 0
-              ? await supabase.from("match_players").select("player_id", { count: "exact" }).in("match_id", matchIds)
-              : { data: [], count: 0 };
-            const totalUsos = (scoutingR.count || 0) + (matchesR.count || 0) + (manualStatsR.count || 0) + (legacyStatsR.count || 0);
-            const lastScouting = lastScoutR.data?.match_date || null;
-            const lastMatch = lastMatchR.data?.match_date || null;
-            const ultimoUso = lastScouting && lastMatch
-              ? (lastScouting > lastMatch ? lastScouting : lastMatch)
-              : lastScouting || lastMatch;
-            return {
-              id: c.id, name: c.display_name || c.name, tier: c.tier, final_coefficient: c.final_coefficient,
-              usos: totalUsos,
-              jogadores: uniqueCount([
-                ...((scoutingR.data as PlayerIdRow[] | null) || []).map((row) => row.player_id),
-                ...((manualStatsR.data as PlayerIdRow[] | null) || []).map((row) => row.player_id),
-                ...((legacyStatsR.data as PlayerIdRow[] | null) || []).map((row) => row.player_id),
-                ...((matchPlayersR.data as PlayerIdRow[] | null) || []).map((row) => row.player_id),
-              ]),
-              ultimo_uso: ultimoUso,
-            } as CompetitionUsage;
-          })
-        );
-        const visibleCompetitions = usageRows
-          .filter(c => c.usos > 0)
-          .sort((a, b) => (b.ultimo_uso || "").localeCompare(a.ultimo_uso || "") || b.usos - a.usos);
-        console.log(`[DashboardV2] Competições ${seasonYear} retornadas`, visibleCompetitions);
-        setCompetitions(visibleCompetitions);
-      }
-
-      logFetchSuccess({ endpoint: "DashboardV2" }, performance.now() - start);
-    } catch (err) {
-      if (isAbortError(err)) { setHasFetched(false); return; }
-      logFetchError(err, { endpoint: "DashboardV2" });
-    } finally {
-      setLoading(false);
-      setDataReady(true);
-    }
-  }, [session?.user, rbacReady, hasFetched]);
-
-  useEffect(() => { if (rbacReady && !hasFetched) fetchAll(); }, [rbacReady, hasFetched, fetchAll]);
+  // Alert: find lowest-rated player
+  const lowestPlayer = useMemo(() => (
+    topPlayers.length > 0
+      ? topPlayers.reduce((min, p) => ((p.auto_rating ?? 99) < (min.auto_rating ?? 99) ? p : min), topPlayers[0])
+      : null
+  ), [topPlayers]);
+  const showAlert = lowestPlayer && (lowestPlayer.auto_rating ?? 99) < 5.0;
 
   if (!rolesLoading && isPlayer && !isAdmin && !isScout) return <AthleteDashboard />;
   if ((loading && !dataReady && stats.totalPlayers === 0) || (!rbacReady && !dataReady)) {
     return <AdminSkeletonDashboard />;
   }
+
 
   const maxPos = Math.max(...positionData.map(p => p.value), 1);
 
