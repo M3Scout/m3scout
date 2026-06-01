@@ -2795,6 +2795,13 @@ export type Database = {
         Args: { p_match_id: string }
         Returns: number
       }
+      get_public_player_minutes_ranking: {
+        Args: { p_season_year: number }
+        Returns: {
+          player_id: string
+          total_minutes: number
+        }[]
+      }
       get_season_player_aggregates: {
         Args: { p_season_year: number }
         Returns: {
