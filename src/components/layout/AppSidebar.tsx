@@ -21,6 +21,7 @@ import {
   UserCog,
   User,
   Gamepad2,
+  ClipboardList,
   type LucideIcon,
 } from "lucide-react";
 import { useState, useEffect, useMemo, memo } from "react";
@@ -57,7 +58,8 @@ const internalNavGroups: NavGroup[] = [
     items: [
       { href: "/dashboard", label: "Dashboard", module: "app", icon: LayoutDashboard },
       { href: "/dashboard/atletas", label: "Atletas", module: "players", icon: Users },
-      { href: "/dashboard/comparar", label: "Comparar", module: "compare", icon: GitCompare },
+      { href: "/dashboard/comparar",   label: "Comparar",  module: "compare", icon: GitCompare },
+      { href: "/dashboard/prancheta", label: "Prancheta", module: "players", icon: ClipboardList },
       { href: "/dashboard/relatorios", label: "Relatórios", module: "reports", icon: FileText },
     ]
   },

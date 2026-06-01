@@ -75,6 +75,8 @@ const MarketAtivos = lazy(() => import("./pages/app/MarketAtivos"));
 const MarketTargets = lazy(() => import("./pages/app/MarketTargets"));
 const Contracts = lazy(() => import("./pages/app/Contracts"));
 
+const Prancheta = lazy(() => import("./pages/app/Prancheta"));
+
 // Admin
 const Leads = lazy(() => import("./pages/app/Leads"));
 const News = lazy(() => import("./pages/app/News"));
@@ -175,6 +177,9 @@ function AppRoutes() {
                 <Route path="atletas/novo" element={<RequirePermission module="players" action="create"><Suspense fallback={<RouteSuspense />}><NewPlayer /></Suspense></RequirePermission>} />
                 <Route path="atletas/:id" element={<RequirePermission module="players"><Suspense fallback={<RouteSuspense />}><PlayerDetail /></Suspense></RequirePermission>} />
                 <Route path="atletas/:id/editar" element={<RequirePermission module="players" action="edit"><Suspense fallback={<RouteSuspense />}><EditPlayer /></Suspense></RequirePermission>} />
+
+                {/* Prancheta tática */}
+                <Route path="prancheta" element={<RequirePermission module="players"><Suspense fallback={<RouteSuspense />}><Prancheta /></Suspense></RequirePermission>} />
 
                 {/* Compare → comparar */}
                 <Route path="comparar" element={<RequirePermission module="compare"><Suspense fallback={<RouteSuspense />}><ComparePlayers /></Suspense></RequirePermission>} />
