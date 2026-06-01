@@ -43,7 +43,7 @@
   display: grid;
   grid-template-columns: 1.3fr 1fr;
   gap: 80px;
-  align-items: end;
+  align-items: center;
   margin-bottom: 80px;
   min-height: 200px;
 }
@@ -118,6 +118,9 @@
   flex-direction: column;
   gap: 8px;
 }
+.sobre__meta-item:nth-child(1) { text-align: left;   justify-self: start;  }
+.sobre__meta-item:nth-child(2) { text-align: center; justify-self: center; }
+.sobre__meta-item:nth-child(3) { text-align: right;  justify-self: end;    }
 .sobre__meta-label {
   font-family: var(--mono);
   font-size: 10px;
