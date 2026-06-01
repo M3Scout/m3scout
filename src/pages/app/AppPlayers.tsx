@@ -100,7 +100,7 @@ const AppPlayers = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [playerToDelete, setPlayerToDelete] = useState<{ id: string; full_name: string } | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>("table");
+  const [viewMode, setViewMode] = useState<ViewMode>("scouting");
   const [paginationMode, setPaginationMode] = useState<PaginationMode>("pages");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
@@ -535,27 +535,6 @@ const AppPlayers = () => {
             </CollapsibleTrigger>
           </Collapsible>
           
-          <ToggleGroup
-            type="single"
-            value={viewMode}
-            onValueChange={(value) => value && setViewMode(value as ViewMode)}
-            className="h-8 p-0.5 rounded-full bg-zinc-900/40"
-          >
-            <ToggleGroupItem 
-              value="table" 
-              aria-label="Visualização em lista" 
-              className="px-2.5 h-7 rounded-full data-[state=on]:bg-zinc-800 data-[state=on]:text-white data-[state=off]:text-zinc-500"
-            >
-              <LayoutList className="w-3.5 h-3.5" />
-            </ToggleGroupItem>
-            <ToggleGroupItem 
-              value="scouting" 
-              aria-label="Visualização em cards" 
-              className="px-2.5 h-7 rounded-full data-[state=on]:bg-zinc-800 data-[state=on]:text-white data-[state=off]:text-zinc-500"
-            >
-              <LayoutGrid className="w-3.5 h-3.5" />
-            </ToggleGroupItem>
-          </ToggleGroup>
         </div>
 
         {/* Advanced Filters - Premium Panel */}
@@ -730,84 +709,6 @@ const AppPlayers = () => {
               Limpar Filtros
             </Button>
           </div>
-        </div>
-      ) : viewMode === "table" ? (
-        /* LIST MODE - Premium rows */
-        <div className="space-y-1 animate-fade-in delay-100 w-full min-w-0">
-          {/* Sort Controls - Premium */}
-          <div className="flex items-center justify-between mb-1 w-full min-w-0">
-            {isMobile ? (
-              <SortControlsPremium
-                sortField={sortField}
-                sortDirection={sortDirection}
-                onSort={handleSort}
-                onSortChange={(field, dir) => {
-                  setSortField(field);
-                  setSortDirection(dir);
-                }}
-                isMobile
-              />
-            ) : (
-              <SortControlsPremium
-                sortField={sortField}
-                sortDirection={sortDirection}
-                onSort={handleSort}
-              />
-            )}
-          </div>
-          
-          {/* List View - Premium Rows */}
-          {isMobile ? (
-            <div className="space-y-2">
-              {safeArray(paginatedPlayers).map((player, index) => (
-                <PlayerListRowMobilePremium
-                  key={player.id}
-                  id={player.id}
-                  fullName={player.full_name}
-                  position={player.position}
-                  age={player.age}
-                  nationality={player.nationality}
-                  currentClub={player.current_club}
-                  photoUrl={player.photo_url}
-                  autoRating={player.auto_rating}
-                  avgScore={player.avg_score}
-                  scoreTrend={player.score_trend}
-                  contractEnd={player.contract_end}
-                  isPublic={player.is_public}
-                  isArchived={player.is_archived}
-                  isAdmin={isAdmin}
-                  onArchive={() => handleArchivePlayer(player)}
-                  onDelete={() => handleDeleteClick(player)}
-                  index={index}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="space-y-1.5">
-              {safeArray(paginatedPlayers).map((player, index) => (
-                <PlayerListRowPremium
-                  key={player.id}
-                  id={player.id}
-                  fullName={player.full_name}
-                  position={player.position}
-                  age={player.age}
-                  nationality={player.nationality}
-                  currentClub={player.current_club}
-                  photoUrl={player.photo_url}
-                  autoRating={player.auto_rating}
-                  avgScore={player.avg_score}
-                  scoreTrend={player.score_trend}
-                  contractEnd={player.contract_end}
-                  isPublic={player.is_public}
-                  isArchived={player.is_archived}
-                  isAdmin={isAdmin}
-                  onArchive={() => handleArchivePlayer(player)}
-                  onDelete={() => handleDeleteClick(player)}
-                  index={index}
-                />
-              ))}
-            </div>
-          )}
         </div>
       ) : (
         /* GRID MODE - Position Identity Cards with colors */
