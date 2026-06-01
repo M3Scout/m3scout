@@ -111,8 +111,8 @@ export function AthletesHorizontal() {
       for (const year of [currentYear, currentYear - 1]) {
         if (cancelled) return;
 
-        const { data: rankData } = await (supabase
-          .rpc("get_public_player_minutes_ranking", { p_season_year: year }) as any);
+        const { data: rankData } = await ((supabase as any)
+          .rpc("get_public_player_minutes_ranking", { p_season_year: year }));
 
         const rows = (rankData as any[] ?? []).slice(0, 8);
         if (rows.length === 0) continue;
