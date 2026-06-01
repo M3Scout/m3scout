@@ -882,7 +882,7 @@ export default function GoalsMonitor() {
                   <img
                     src={getOptimizedImageUrl(selectedGoal.player.photo_url, { width: 400, quality: 85, format: "avif" }) || selectedGoal.player.photo_url || ""}
                     alt={selectedGoal.player.full_name}
-                    className="w-14 h-14 rounded-full object-cover object-top" width={400} height={400}
+                    className="w-14 h-14 rounded-full object-cover object-center" width={400} height={400}
                     onError={e => { if (selectedGoal.player.photo_url) (e.target as HTMLImageElement).src = selectedGoal.player.photo_url; }}
                     loading="lazy" decoding="async"
                   />

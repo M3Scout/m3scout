@@ -107,7 +107,7 @@ export function PlayerListRowPremium({
         <img
           src={getOptimizedImageUrl(photoUrl, { width: 800, quality: 85, format: "avif" }) || defaultPhoto}
           alt={fullName}
-          className="w-full h-full object-cover object-top"
+          className="w-full h-full object-cover object-center"
         />
       </div>
 
@@ -282,7 +282,7 @@ export function PlayerListRowMobilePremium({
           <img
             src={getOptimizedImageUrl(photoUrl, { width: 800, quality: 85, format: "avif" }) || defaultPhoto}
             alt={fullName}
-            className="w-full h-full object-cover object-top"
+            className="w-full h-full object-cover object-center"
           />
         </div>
 
