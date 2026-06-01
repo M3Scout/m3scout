@@ -925,6 +925,23 @@ p, span, h1, h2, h3, h4, h5, h6, a, li {
     }
   }
 
+  /* ── Auth page animations (21st.dev style) ── */
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes slideRightIn {
+    from { opacity: 0; transform: translateX(-24px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes testimonialIn {
+    from { opacity: 0; transform: translateY(10px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0)  scale(1); }
+  }
+  .animate-fade-slide-in   { animation: fadeSlideIn  0.55s cubic-bezier(0.22,1,0.36,1) forwards; }
+  .animate-slide-right-in  { animation: slideRightIn 0.55s cubic-bezier(0.22,1,0.36,1) forwards; }
+  .animate-testimonial-in  { animation: testimonialIn 0.6s cubic-bezier(0.22,1,0.36,1) forwards; }
+
   @media (prefers-reduced-motion: reduce) {
     .hero-glitch,
     .hero-flash {
