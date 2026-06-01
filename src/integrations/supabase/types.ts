@@ -2720,6 +2720,18 @@ export type Database = {
       end_first_half_v2: { Args: { p_game_id: string }; Returns: Json }
       end_game_v2: { Args: { p_game_id: string }; Returns: Json }
       finish_live_game: { Args: { p_game_id: string }; Returns: Json }
+      get_competitions_usage: {
+        Args: { p_season_year: number }
+        Returns: {
+          final_coefficient: number
+          id: string
+          jogadores: number
+          name: string
+          tier: string
+          ultimo_uso: string
+          usos: number
+        }[]
+      }
       get_linked_player_id: { Args: { _user_id: string }; Returns: string }
       get_live_game_clock_seconds: {
         Args: { p_match_id: string }
