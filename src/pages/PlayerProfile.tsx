@@ -16,7 +16,7 @@ import { AthleteStatsSection } from "@/components/players/public/AthleteStatsSec
 import { AthleteGamePhasesSection } from "@/components/players/public/AthleteGamePhasesSection";
 import { AthletePhysicalSection } from "@/components/players/public/AthletePhysicalSection";
 import { AthleteVideoSection } from "@/components/players/public/AthleteVideoSection";
-import { AthleteCTASection, StickyMobileCTA } from "@/components/players/public/AthleteCTASection";
+import { StickyMobileCTA } from "@/components/players/public/AthleteCTASection";
 
 // =============== INTERFACES ===============
 
@@ -355,12 +355,6 @@ const PlayerProfile = () => {
 
           {/* Video Section */}
           <AthleteVideoSection videoUrl={player.highlight_video_url} />
-
-          {/* Final CTA */}
-          <AthleteCTASection 
-            playerName={player.full_name} 
-            playerSlug={player.slug} 
-          />
 
           {/* Spacer for sticky CTA on mobile */}
           <div className="h-20 md:hidden" />
