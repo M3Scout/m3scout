@@ -291,8 +291,8 @@ const PlayerProfile = () => {
         <div 
           className="w-full mx-auto" 
           style={{ 
-            maxWidth: 'var(--page-max-width)', 
-            paddingLeft: 'var(--page-gutter)', 
+            maxWidth: '1600px',
+            paddingLeft: 'var(--page-gutter)',
             paddingRight: 'var(--page-gutter)' 
           }}
         >
