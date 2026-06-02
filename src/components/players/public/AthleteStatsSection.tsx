@@ -1,56 +1,22 @@
-import { motion, AnimatePresence } from "framer-motion";
-import { Activity, TrendingUp, Trophy, Zap } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
-import { cardHover, cardTap, pillHover } from "@/lib/animations";
 import { formatFixed } from "@/lib/formatters";
 
 interface SeasonStats {
   season_year: number;
-  matches: number;
-  minutes: number;
-  goals: number;
-  assists: number;
-  yellow_cards: number;
-  red_cards: number;
-  tackles: number;
-  interceptions: number;
-  recoveries: number;
-  shots: number;
-  shots_on_target: number;
-  key_passes: number;
-  chances_created: number;
-  successful_dribbles: number;
-  total_dribbles: number;
-  accurate_passes: number;
-  total_passes: number;
-  clearances: number;
-  saves: number;
-  goals_conceded: number;
-  clean_sheets: number;
-  penalties_saved: number;
+  matches: number; minutes: number; goals: number; assists: number;
+  yellow_cards: number; red_cards: number; tackles: number; interceptions: number;
+  recoveries: number; shots: number; shots_on_target: number; key_passes: number;
+  chances_created: number; successful_dribbles: number; total_dribbles: number;
+  accurate_passes: number; total_passes: number; clearances: number;
+  saves: number; goals_conceded: number; clean_sheets: number; penalties_saved: number;
 }
-
 interface CompetitionStats {
-  competition_id: string;
-  competition_name: string;
-  competition_type: string;
-  season_year: number;
-  matches: number;
-  minutes: number;
-  goals: number;
-  assists: number;
+  competition_id: string; competition_name: string; competition_type: string;
+  season_year: number; matches: number; minutes: number; goals: number; assists: number;
 }
-
-interface CareerTotals {
-  matches: number;
-  minutes: number;
-  goals: number;
-  assists: number;
-}
-
+interface CareerTotals { matches: number; minutes: number; goals: number; assists: number; }
 type TabValue = "current" | "per90" | "competition" | "career";
-
 interface AthleteStatsSectionProps {
   careerTotals: CareerTotals;
   careerStats: SeasonStats[];
@@ -61,301 +27,303 @@ interface AthleteStatsSectionProps {
   setActiveTab: (tab: TabValue) => void;
 }
 
-// Large KPI card with glow
-function KPICard({ 
-  label, 
-  value, 
-  highlight = false,
-  icon: Icon,
-  index = 0,
-}: { 
-  label: string;
-  value: number | string;
-  highlight?: boolean;
-  icon?: React.ElementType;
-  index?: number;
+// ── .sec-head pattern: kick label + display title + mono note ──
+function SectionHead({ idx, kick, title, note }: {
+  idx: string; kick: string; title: string; note?: string;
 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ delay: index * 0.05, duration: 0.4 }}
-      whileHover={{ scale: 1.03, y: -3 }}
-      className={cn(
-        "relative flex flex-col items-center justify-center p-4 md:p-5",
-        "rounded-2xl transition-all duration-300 cursor-default overflow-hidden",
-        highlight 
-          ? "bg-gradient-to-br from-primary/15 via-primary/10 to-transparent border border-primary/20"
-          : "bg-gradient-to-br from-zinc-800/40 via-zinc-900/30 to-transparent border border-zinc-800/30",
-        highlight && "shadow-[0_0_30px_-10px] shadow-primary/30"
-      )}
-    >
-      {/* Subtle pattern overlay */}
-      <div className="absolute inset-0 opacity-[0.02]" 
-        style={{ 
-          backgroundImage: `radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)`,
-          backgroundSize: '12px 12px'
-        }} 
-      />
-      
-      {Icon && (
-        <div className={cn(
-          "p-1.5 rounded-lg mb-2",
-          highlight ? "bg-primary/20" : "bg-zinc-800/50"
-        )}>
-          <Icon className={cn(
-            "w-3.5 h-3.5",
-            highlight ? "text-primary" : "text-zinc-500"
-          )} />
+    <div className="flex items-end justify-between gap-6 mb-11 flex-wrap">
+      <div>
+        <div className="font-editorial-mono text-[11px] tracking-[0.24em] uppercase text-[#62616a] font-medium inline-flex gap-[10px] items-center">
+          <span className="text-[#ec4525] font-semibold">{idx}</span>
+          <span className="w-[34px] h-px bg-white/15 flex-none" />
+          {kick}
         </div>
+        <h2
+          className="font-display font-semibold leading-[1.02] tracking-[-0.025em] mt-[14px] text-[#ededee]"
+          style={{ fontSize: "clamp(28px,3.4vw,44px)" }}
+        >
+          {title}
+        </h2>
+      </div>
+      {note && (
+        <p className="font-editorial-mono text-[12px] text-[#62616a] tracking-[0.04em] max-w-[280px] text-right">
+          {note}
+        </p>
       )}
-      
-      <span className={cn(
-        "text-2xl md:text-4xl font-bold tabular-nums tracking-tight",
-        highlight ? "text-foreground" : "text-zinc-300"
-      )}>
-        {value}
-      </span>
-      <span className="text-[9px] md:text-[10px] uppercase tracking-widest text-muted-foreground mt-1">
-        {label}
-      </span>
-    </motion.div>
+    </div>
   );
 }
 
-// Tab button with active indicator
-function TabButton({ 
-  active, 
-  onClick, 
-  children 
-}: { 
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
+// ── Single item inside .counters ──
+function Counter({ label, value, highlight = false, index }: {
+  label: string; value: number | string; highlight?: boolean; index: number;
 }) {
   return (
-    <motion.button
-      onClick={onClick}
-      whileHover={pillHover}
-      whileTap={cardTap}
+    <div
       className={cn(
-        "relative px-4 md:px-5 py-2.5 text-xs md:text-sm font-medium whitespace-nowrap",
-        "min-h-[44px] rounded-xl transition-all duration-200",
-        active 
-          ? "text-foreground bg-zinc-800/60" 
-          : "text-muted-foreground hover:text-foreground hover:bg-zinc-800/30"
+        "counter relative transition-colors duration-[250ms] hover:bg-[#191822]",
+        "py-[34px] px-[26px]",
+        // Desktop/tablet: right border (overflow:hidden on container clips row ends)
+        "sm:border-r sm:border-white/[0.075] sm:last:border-r-0",
+        // Mobile: bottom border instead
+        "max-sm:border-b max-sm:border-white/[0.075] max-sm:last:border-b-0"
+      )}
+      style={highlight
+        ? { background: "linear-gradient(165deg, rgba(236,69,37,0.13), transparent 70%)" }
+        : undefined
+      }
+    >
+      {/* .ci — index top-right */}
+      <span className="ci absolute top-[18px] right-[20px] font-editorial-mono text-[11px] text-[#62616a]">
+        {String(index + 1).padStart(2, "0")}
+      </span>
+      {/* .cv — main number */}
+      <div
+        className={cn(
+          "cv font-display font-semibold leading-[0.9] tracking-[-0.03em] tabular-nums",
+          highlight ? "text-[#ec4525]" : "text-[#ededee]"
+        )}
+        style={{ fontSize: "clamp(40px,5vw,62px)" }}
+      >
+        {typeof value === "number" ? value.toLocaleString("pt-BR") : value}
+      </div>
+      {/* .cl — mono label */}
+      <div className="cl font-editorial-mono text-[11px] tracking-[0.16em] uppercase text-[#62616a] mt-[16px]">
+        {label}
+      </div>
+    </div>
+  );
+}
+
+// ── .tab button — single container, border-right dividers, ::after accent ──
+function TabBtn({ active, onClick, children }: {
+  active: boolean; onClick: () => void; children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "tab relative font-editorial-mono text-[12px] tracking-[0.08em] uppercase font-semibold",
+        "px-[22px] py-[13px]",
+        "border-r border-white/[0.075] last:border-r-0",
+        "transition-all duration-200",
+        active
+          ? "on text-[#ededee] bg-[#191822]"
+          : "text-[#62616a] hover:text-[#9c9ba3] hover:bg-[#141318]"
       )}
     >
       {children}
+      {/* Active bottom accent line — mirrors .tab.on::after */}
       {active && (
-        <motion.div
-          layoutId="activeTabIndicator"
-          className="absolute bottom-0 left-3 right-3 h-0.5 bg-primary rounded-full"
-          transition={{ type: "spring", stiffness: 400, damping: 30 }}
-        />
+        <span className="absolute left-0 right-0 bottom-0 h-[2px] bg-[#ec4525]" />
       )}
-    </motion.button>
+    </button>
   );
 }
 
-// Stats grid item
-function StatGridItem({ label, value }: { label: string; value: number | string }) {
+// ── .stat-cell ──
+function StatCell({ label, value, sub }: {
+  label: string; value: number | string; sub?: string;
+}) {
   return (
-    <motion.div 
-      className="text-center p-3 rounded-xl bg-zinc-800/30 hover:bg-zinc-800/50 transition-colors"
-      whileHover={{ scale: 1.02 }}
+    <div
+      className="stat-cell border border-white/[0.075] rounded-[6px] bg-[#141318] px-[20px] py-[22px] cursor-default transition-all duration-[250ms] hover:bg-[#191822] hover:-translate-y-[3px]"
+      onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(236,69,37,0.42)"; }}
+      onMouseLeave={(e)  => { (e.currentTarget as HTMLDivElement).style.borderColor = ""; }}
     >
-      <div className="text-xl md:text-2xl font-bold text-foreground tabular-nums">{value}</div>
-      <div className="text-[9px] md:text-[10px] uppercase tracking-widest text-muted-foreground mt-0.5">{label}</div>
-    </motion.div>
+      <div
+        className="sv font-display font-semibold leading-none tracking-[-0.02em] tabular-nums text-[#ededee]"
+        style={{ fontSize: "36px" }}
+      >
+        {value}
+      </div>
+      <div className="sl font-editorial-mono text-[10.5px] tracking-[0.14em] uppercase text-[#62616a] mt-[13px]">
+        {label}
+        {sub && <span className="ss ml-1 text-[10px] opacity-70">{sub}</span>}
+      </div>
+    </div>
   );
 }
 
+// ── Competition / career list row ──
+function ListRow({ left, sub, cols }: {
+  left: React.ReactNode; sub?: string;
+  cols: { value: string | number; accent?: boolean }[];
+}) {
+  return (
+    <div className="flex items-center justify-between px-[20px] py-[16px] border border-white/[0.075] rounded-[6px] bg-[#141318] hover:bg-[#191822] transition-colors duration-[250ms] cursor-default">
+      <div>
+        <div className="font-display text-[15px] font-semibold text-[#ededee]">{left}</div>
+        {sub && <div className="font-editorial-mono text-[11px] text-[#62616a] mt-0.5">{sub}</div>}
+      </div>
+      <div className="font-editorial-mono text-[13px] font-semibold tabular-nums flex gap-5">
+        {cols.map((c, i) => (
+          <span key={i} className={c.accent ? "text-[#ec4525]" : "text-[#9c9ba3]"}>
+            {c.value}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════
 export function AthleteStatsSection({
-  careerTotals,
-  careerStats,
-  competitionStats,
-  currentSeasonStats,
-  latestAvailableSeasonYear,
-  activeTab,
-  setActiveTab,
+  careerTotals, careerStats, competitionStats, currentSeasonStats,
+  latestAvailableSeasonYear, activeTab, setActiveTab,
 }: AthleteStatsSectionProps) {
+  if (careerStats.length === 0) return null;
+
   const currentYear = new Date().getFullYear();
-  
+
+  // All data logic intact — no changes
   const calculatePer90 = (value: number, minutes: number): string => {
     if (minutes < 90) return "—";
     return formatFixed((value / minutes) * 90, 2);
   };
 
-  if (careerStats.length === 0) return null;
-
   return (
-    <motion.section 
-      className="mb-10 md:mb-14"
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-    >
-      {/* Section Header */}
-      <motion.div 
-        className="flex items-center gap-3 mb-6 md:mb-8"
-        initial={{ opacity: 0, x: -10 }}
-        whileInView={{ opacity: 1, x: 0 }}
-        viewport={{ once: true }}
-      >
-        <div className="p-2 rounded-xl bg-primary/10">
-          <Activity className="w-5 h-5 text-primary" />
+    <>
+      {/* ══ 03 · Consolidado de Carreira ══ */}
+      <section className="py-24 relative" id="carreira">
+        <SectionHead
+          idx="03"
+          kick="Consolidado de Carreira"
+          title="Números acumulados"
+          note="Números registrados ao longo da carreira do atleta."
+        />
+
+        {/* .counters — single bordered container, items with internal border-right */}
+        <div className="counters grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 border border-white/[0.075] rounded-[8px] overflow-hidden bg-[#141318]">
+          <Counter label="Jogos"   value={careerTotals.matches}                              index={0} />
+          <Counter label="Minutos" value={careerTotals.minutes.toLocaleString("pt-BR")}      index={1} />
+          <Counter label="Gols"    value={careerTotals.goals}    highlight                   index={2} />
+          <Counter label="Assist." value={careerTotals.assists}                              index={3} />
+          <Counter label="G+A"     value={careerTotals.goals + careerTotals.assists} highlight index={4} />
         </div>
-        <div>
-          <h2 className="text-xl md:text-2xl font-bold text-foreground">Estatísticas</h2>
-          <p className="text-xs text-muted-foreground">Performance consolidada</p>
+      </section>
+
+      {/* ══ 04 · Recortes ══ */}
+      <section className="py-24 relative" id="recortes">
+        <SectionHead
+          idx="04"
+          kick="Recortes"
+          title="Estatísticas por filtro"
+          note="Alterne entre temporada, médias por 90′, competição e carreira."
+        />
+
+        {/* .tabs — single bordered container, items with border-right dividers */}
+        <div className="tabs flex border border-white/[0.075] rounded-[6px] overflow-hidden w-fit mb-[30px] flex-wrap">
+          <TabBtn active={activeTab === "current"}     onClick={() => setActiveTab("current")}>
+            Temporada {latestAvailableSeasonYear ?? currentYear}
+          </TabBtn>
+          <TabBtn active={activeTab === "per90"}       onClick={() => setActiveTab("per90")}>
+            Por 90 min
+          </TabBtn>
+          <TabBtn active={activeTab === "competition"} onClick={() => setActiveTab("competition")}>
+            Por Competição
+          </TabBtn>
+          <TabBtn active={activeTab === "career"}      onClick={() => setActiveTab("career")}>
+            Carreira
+          </TabBtn>
         </div>
-      </motion.div>
 
-      {/* KPIs Row */}
-      <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 md:gap-3 mb-6">
-        <KPICard label="Jogos" value={careerTotals.matches} icon={Trophy} index={0} />
-        <KPICard label="Minutos" value={careerTotals.minutes.toLocaleString()} index={1} />
-        <KPICard label="Gols" value={careerTotals.goals} highlight icon={Zap} index={2} />
-        <KPICard label="Assist." value={careerTotals.assists} index={3} />
-        <KPICard label="G+A" value={careerTotals.goals + careerTotals.assists} highlight icon={TrendingUp} index={4} />
-      </div>
+        {/* .tabpanel — animated on tab change */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+          >
+            {/* Temporada */}
+            {activeTab === "current" && currentSeasonStats && (
+              <div className="stat-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-[14px]">
+                <StatCell label="Jogos"     value={currentSeasonStats.matches} />
+                <StatCell label="Minutos"   value={currentSeasonStats.minutes} />
+                <StatCell label="Gols"      value={currentSeasonStats.goals} />
+                <StatCell label="Assist."   value={currentSeasonStats.assists} />
+                <StatCell label="Desarmes"  value={currentSeasonStats.tackles} />
+                <StatCell label="Intercep." value={currentSeasonStats.interceptions} />
+              </div>
+            )}
+            {activeTab === "current" && !currentSeasonStats && (
+              <p className="py-8 font-editorial-mono text-[12px] text-[#62616a] text-center">
+                Sem estatísticas disponíveis ainda.
+              </p>
+            )}
 
-      {/* Tabs */}
-      <div className="flex gap-1.5 mb-6 overflow-x-auto pb-1 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-hide">
-        <TabButton active={activeTab === "current"} onClick={() => setActiveTab("current")}>
-          Temporada {latestAvailableSeasonYear ?? currentYear}
-        </TabButton>
-        <TabButton active={activeTab === "per90"} onClick={() => setActiveTab("per90")}>
-          Por 90 min
-        </TabButton>
-        <TabButton active={activeTab === "competition"} onClick={() => setActiveTab("competition")}>
-          Por Competição
-        </TabButton>
-        <TabButton active={activeTab === "career"} onClick={() => setActiveTab("career")}>
-          Carreira
-        </TabButton>
-      </div>
+            {/* Por 90 min */}
+            {activeTab === "per90" && currentSeasonStats && currentSeasonStats.minutes >= 90 && (
+              <div className="stat-grid grid grid-cols-2 sm:grid-cols-4 gap-[14px]">
+                <StatCell label="Gols/90"     value={calculatePer90(currentSeasonStats.goals, currentSeasonStats.minutes)} />
+                <StatCell label="Assist./90"  value={calculatePer90(currentSeasonStats.assists, currentSeasonStats.minutes)} />
+                <StatCell label="G+A/90"      value={calculatePer90(currentSeasonStats.goals + currentSeasonStats.assists, currentSeasonStats.minutes)} />
+                <StatCell label="Desarmes/90" value={calculatePer90(currentSeasonStats.tackles, currentSeasonStats.minutes)} />
+              </div>
+            )}
+            {activeTab === "per90" && (!currentSeasonStats || currentSeasonStats.minutes < 90) && (
+              <p className="py-8 font-editorial-mono text-[12px] text-[#62616a] text-center">
+                Mínimo de 90 minutos necessários.
+              </p>
+            )}
 
-      {/* Tab Content */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={activeTab}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.2 }}
-          className={cn(
-            "p-5 md:p-6",
-            "rounded-2xl",
-            "bg-gradient-to-br from-zinc-800/30 via-zinc-900/20 to-transparent",
-            "border border-zinc-800/30"
-          )}
-        >
-          {activeTab === "current" && currentSeasonStats && (
-            <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 md:gap-4">
-              <StatGridItem label="Jogos" value={currentSeasonStats.matches} />
-              <StatGridItem label="Minutos" value={currentSeasonStats.minutes} />
-              <StatGridItem label="Gols" value={currentSeasonStats.goals} />
-              <StatGridItem label="Assist." value={currentSeasonStats.assists} />
-              <StatGridItem label="Desarmes" value={currentSeasonStats.tackles} />
-              <StatGridItem label="Intercep." value={currentSeasonStats.interceptions} />
-            </div>
-          )}
+            {/* Por Competição */}
+            {activeTab === "competition" && competitionStats.length > 0 && (
+              <div className="space-y-[10px]">
+                {competitionStats.slice(0, 5).map((comp) => (
+                  <ListRow
+                    key={`${comp.competition_id}-${comp.season_year}`}
+                    left={comp.competition_name}
+                    sub={String(comp.season_year)}
+                    cols={[
+                      { value: `${comp.matches}J` },
+                      { value: `${comp.goals}G`, accent: true },
+                      { value: `${comp.assists}A` },
+                    ]}
+                  />
+                ))}
+              </div>
+            )}
+            {activeTab === "competition" && competitionStats.length === 0 && (
+              <p className="py-8 font-editorial-mono text-[12px] text-[#62616a] text-center">
+                Sem competições registradas.
+              </p>
+            )}
 
-          {activeTab === "current" && !currentSeasonStats && (
-            <div className="text-center py-8 text-muted-foreground text-sm">
-              Sem estatísticas disponíveis ainda.
-            </div>
-          )}
-
-          {activeTab === "per90" && currentSeasonStats && currentSeasonStats.minutes >= 90 && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4">
-              <StatGridItem label="Gols/90" value={calculatePer90(currentSeasonStats.goals, currentSeasonStats.minutes)} />
-              <StatGridItem label="Assist./90" value={calculatePer90(currentSeasonStats.assists, currentSeasonStats.minutes)} />
-              <StatGridItem label="G+A/90" value={calculatePer90(currentSeasonStats.goals + currentSeasonStats.assists, currentSeasonStats.minutes)} />
-              <StatGridItem label="Desarmes/90" value={calculatePer90(currentSeasonStats.tackles, currentSeasonStats.minutes)} />
-            </div>
-          )}
-
-          {activeTab === "per90" && (!currentSeasonStats || currentSeasonStats.minutes < 90) && (
-            <div className="text-center py-8 text-muted-foreground text-sm">
-              Mínimo de 90 minutos necessários.
-            </div>
-          )}
-
-          {activeTab === "competition" && competitionStats.length > 0 && (
-            <div className="space-y-2">
-              {competitionStats.slice(0, 5).map((comp, idx) => (
-                <motion.div 
-                  key={`${comp.competition_id}-${comp.season_year}`}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: idx * 0.05 }}
-                  whileHover={{ scale: 1.01, x: 4 }}
-                  className={cn(
-                    "flex items-center justify-between p-3.5 rounded-xl",
-                    "bg-zinc-800/20 hover:bg-zinc-800/40",
-                    "border border-transparent hover:border-zinc-700/30",
-                    "transition-all duration-200 cursor-default"
-                  )}
-                >
-                  <div>
-                    <div className="text-sm font-medium text-foreground">{comp.competition_name}</div>
-                    <div className="text-xs text-muted-foreground">{comp.season_year}</div>
+            {/* Carreira */}
+            {activeTab === "career" && (
+              <div className="space-y-[10px]">
+                {careerStats.map((season) => (
+                  <div
+                    key={season.season_year}
+                    className="flex items-center justify-between px-[20px] py-[16px] border border-white/[0.075] rounded-[6px] bg-[#141318] hover:bg-[#191822] transition-colors duration-[250ms] cursor-default"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="font-editorial-mono text-[13px] font-semibold text-[#ededee] tabular-nums">
+                        {season.season_year}
+                      </span>
+                      {season.season_year === currentYear && (
+                        <span className="font-editorial-mono text-[9px] tracking-[0.1em] uppercase text-[#ec4525] border border-[#ec4525]/40 rounded-full px-[8px] py-[3px]">
+                          Atual
+                        </span>
+                      )}
+                    </div>
+                    <div className="font-editorial-mono text-[13px] font-semibold tabular-nums flex gap-5">
+                      <span className="text-[#9c9ba3]">{season.matches}J</span>
+                      <span className="text-[#ec4525]">{season.goals}G</span>
+                      <span className="text-[#9c9ba3]">{season.assists}A</span>
+                      <span className="text-[#62616a] hidden sm:inline">{season.minutes}'</span>
+                    </div>
                   </div>
-                  <div className="flex gap-4 text-sm">
-                    <span className="text-muted-foreground tabular-nums">{comp.matches}J</span>
-                    <span className="text-foreground font-semibold tabular-nums">{comp.goals}G</span>
-                    <span className="text-muted-foreground tabular-nums">{comp.assists}A</span>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          )}
-
-          {activeTab === "competition" && competitionStats.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground text-sm">
-              Sem competições registradas.
-            </div>
-          )}
-
-          {activeTab === "career" && (
-            <div className="space-y-2">
-              {careerStats.map((season, idx) => (
-                <motion.div 
-                  key={season.season_year}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: idx * 0.05 }}
-                  whileHover={{ scale: 1.01, x: 4 }}
-                  className={cn(
-                    "flex items-center justify-between p-3.5 rounded-xl",
-                    "bg-zinc-800/20 hover:bg-zinc-800/40",
-                    "border border-transparent hover:border-zinc-700/30",
-                    "transition-all duration-200 cursor-default"
-                  )}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-foreground tabular-nums">{season.season_year}</span>
-                    {season.season_year === currentYear && (
-                      <Badge variant="outline" className="text-[9px] border-primary/50 text-primary px-1.5">
-                        Atual
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="flex gap-4 text-sm tabular-nums">
-                    <span className="text-muted-foreground">{season.matches}J</span>
-                    <span className="text-foreground font-semibold">{season.goals}G</span>
-                    <span className="text-muted-foreground">{season.assists}A</span>
-                    <span className="text-muted-foreground/60 hidden sm:inline">{season.minutes}'</span>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          )}
-        </motion.div>
-      </AnimatePresence>
-    </motion.section>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </section>
+    </>
   );
 }

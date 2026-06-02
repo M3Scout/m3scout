@@ -1,159 +1,172 @@
 import { motion } from "framer-motion";
-import { 
-  Ruler, 
-  Scale, 
-  Percent, 
-  Dumbbell,
-  Zap,
-  Timer,
-  Heart,
-  X,
-  Activity,
-} from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatFixed } from "@/lib/formatters";
 
 interface AthletePhysicalSectionProps {
-  height: number | null;
-  weight: number | null;
-  wingspan: number | null;
-  body_fat_percentage: number | null;
-  muscle_mass: number | null;
-  max_speed: number | null;
-  sprint_30m: number | null;
-  vo2_max: number | null;
+  height: number | null; weight: number | null; wingspan: number | null;
+  body_fat_percentage: number | null; muscle_mass: number | null;
+  max_speed: number | null; sprint_30m: number | null; vo2_max: number | null;
 }
 
-// Animated metric card with premium styling
-function PhysicalMetric({ 
-  label, 
-  value, 
-  unit, 
-  icon: Icon,
-  reference,
-  index = 0,
-}: { 
+interface MetricDef {
   label: string;
   value: number | null;
   unit: string;
-  icon: React.ElementType;
-  reference?: string;
-  index?: number;
-}) {
+  refMin: number | null;
+  refMax: number | null;
+  ref: string;
+  invert?: boolean;
+}
+
+// ── .fcard — physical metric card ──
+function PhysicalCard({
+  label, value, unit, refMin, refMax, ref: refText, invert = false, index,
+}: MetricDef & { index: number }) {
   const hasValue = value !== null && value !== undefined;
 
+  // Gauge percentage + "Na faixa" — mirrors Vanilla JS calculation exactly
+  let pct = 50;
+  let ok = false;
+  if (hasValue && refMin !== null && refMax !== null) {
+    const lo = refMin - (refMax - refMin) * 0.4;
+    const hi = refMax + (refMax - refMin) * 0.4;
+    pct = Math.max(4, Math.min(100, Math.round(((value as number) - lo) / (hi - lo) * 100)));
+    ok = invert
+      ? (value as number) <= refMax
+      : (value as number) >= refMin && (value as number) <= refMax;
+  }
+
+  const hasGauge = hasValue && refMin !== null && refMax !== null;
+  // Portuguese decimal format: 10.5 → "10,5"
+  const valStr = hasValue ? String(value).replace(".", ",") : null;
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 15, scale: 0.95 }}
-      whileInView={{ opacity: 1, y: 0, scale: 1 }}
-      viewport={{ once: true }}
-      transition={{ delay: index * 0.06, duration: 0.4 }}
-      whileHover={{ scale: 1.03, y: -3 }}
+    <div
       className={cn(
-        "relative p-4 rounded-2xl transition-all duration-300 cursor-default overflow-hidden group",
-        "bg-gradient-to-br from-zinc-800/40 via-zinc-900/30 to-transparent",
-        "border border-zinc-800/30",
-        "hover:border-zinc-700/40 hover:from-zinc-800/50"
+        "fcard border border-white/[0.075] rounded-[8px] bg-[#141318] p-[24px]",
+        "transition-all duration-[250ms] cursor-default",
+        !hasValue && "opacity-[0.55]"
       )}
+      onMouseEnter={(e) => {
+        if (!hasValue) return;
+        const el = e.currentTarget as HTMLDivElement;
+        el.style.borderColor = "rgba(255,255,255,0.15)";
+        el.style.background = "#191822";
+      }}
+      onMouseLeave={(e) => {
+        const el = e.currentTarget as HTMLDivElement;
+        el.style.borderColor = "";
+        el.style.background = "";
+      }}
     >
-      {/* Subtle glow on hover */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-      
-      <div className="relative">
-        <div className="flex items-center gap-2 mb-3">
-          <div className="p-1.5 rounded-lg bg-zinc-800/60 group-hover:bg-zinc-700/60 transition-colors">
-            <Icon className="w-3.5 h-3.5 text-zinc-400 group-hover:text-zinc-300 transition-colors" />
-          </div>
-          <span className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</span>
-        </div>
-        
-        {hasValue ? (
-          <>
-            <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-bold text-foreground tabular-nums">
-                {formatFixed(value, 1)}
-              </span>
-              <span className="text-xs text-muted-foreground">{unit}</span>
-            </div>
-            {reference && (
-              <motion.span 
-                className="text-[9px] text-muted-foreground/50 mt-1.5 block"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
-              >
-                Ref: {reference}
-              </motion.span>
-            )}
-          </>
-        ) : (
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <div className="w-8 h-8 rounded-lg bg-zinc-800/40 flex items-center justify-center">
-              <X className="w-4 h-4" />
-            </div>
-            <span className="text-sm italic">Não informado</span>
-          </div>
+      {/* .ftop — label + "Na faixa" badge */}
+      <div className="ftop flex justify-between items-start gap-[10px] mb-[22px]">
+        <span className="flab font-editorial-mono text-[11px] tracking-[0.14em] uppercase text-[#62616a] leading-[1.35]">
+          {label}
+        </span>
+        {ok && (
+          <span className="fok font-editorial-mono text-[10px] tracking-[0.1em] uppercase text-[#ec4525] border border-[#ec4525]/40 rounded-full px-[10px] py-[4px] whitespace-nowrap flex-none">
+            Na faixa
+          </span>
         )}
       </div>
-    </motion.div>
+
+      {/* .fval — value with unit, or "—" when empty */}
+      {hasValue ? (
+        <div className="fval font-display font-semibold text-[42px] tracking-[-0.025em] leading-none tabular-nums text-[#ededee]">
+          {valStr}
+          <span className="u font-editorial-mono text-[15px] text-[#9c9ba3] font-medium ml-[5px]">
+            {unit}
+          </span>
+        </div>
+      ) : (
+        <div className="fval font-editorial-mono text-[22px] text-[#62616a]">—</div>
+      )}
+
+      {/* .fgauge — animated gauge + ref label */}
+      {hasGauge && (
+        <div className="fgauge mt-[18px]">
+          <div
+            className="fgauge-track h-[6px] rounded-full overflow-hidden relative"
+            style={{ background: "rgba(255,255,255,0.05)" }}
+          >
+            <motion.div
+              className="fgauge-fill absolute top-0 bottom-0 left-0 rounded-full"
+              style={{ background: "linear-gradient(90deg, #ec4525, #ff5a39)" }}
+              initial={{ width: 0 }}
+              whileInView={{ width: `${pct}%` }}
+              viewport={{ once: true }}
+              transition={{ duration: 1.1, delay: index * 0.06, ease: [0.22, 1, 0.36, 1] }}
+            />
+          </div>
+          <div className="fgauge-ref font-editorial-mono text-[11px] text-[#62616a] mt-[9px] tracking-[0.02em]">
+            Ref. {refText}
+          </div>
+        </div>
+      )}
+
+      {/* No gauge but has ref text (e.g. wingspan with no range) */}
+      {!hasGauge && refText && refText !== "—" && (
+        <div className="fgauge-ref font-editorial-mono text-[11px] text-[#62616a] mt-[9px] tracking-[0.02em]">
+          {refText}
+        </div>
+      )}
+    </div>
   );
 }
 
+// ══════════════════════════════════════════════════════
 export function AthletePhysicalSection({
-  height,
-  weight,
-  wingspan,
-  body_fat_percentage,
-  muscle_mass,
-  max_speed,
-  sprint_30m,
-  vo2_max,
+  height, weight, wingspan, body_fat_percentage, muscle_mass, max_speed, sprint_30m, vo2_max,
 }: AthletePhysicalSectionProps) {
-  // Only show section if there's any physical data
-  const hasAnyData = height || weight || wingspan || body_fat_percentage || muscle_mass || max_speed || sprint_30m || vo2_max;
-  
-  if (!hasAnyData) return null;
+  if (!height && !weight && !wingspan && !body_fat_percentage && !muscle_mass && !max_speed && !sprint_30m && !vo2_max) return null;
+
+  // Metric definitions — ref ranges mirror common elite reference bands
+  const metrics: MetricDef[] = [
+    { label: "Altura",      value: height,              unit: "cm",    refMin: 175, refMax: 185, ref: "175–185 cm"  },
+    { label: "Peso",        value: weight,              unit: "kg",    refMin: 70,  refMax: 80,  ref: "70–80 kg"    },
+    { label: "Envergadura", value: wingspan,            unit: "cm",    refMin: null,refMax: null, ref: "—"           },
+    { label: "% Gordura",   value: body_fat_percentage, unit: "%",     refMin: 8,   refMax: 12,  ref: "8–12 %"      },
+    { label: "Massa Musc.", value: muscle_mass,         unit: "kg",    refMin: 50,  refMax: 65,  ref: "50–65 kg"    },
+    { label: "Vel. Máxima", value: max_speed,           unit: "km/h",  refMin: 30,  refMax: 35,  ref: "30+ km/h"    },
+    { label: "Sprint 30m",  value: sprint_30m,          unit: "s",     refMin: 3.8, refMax: 4.2, ref: "< 4.2 s",  invert: true },
+    { label: "VO₂ Máximo",  value: vo2_max,             unit: "ml/kg", refMin: 55,  refMax: 65,  ref: "55+ ml/kg"  },
+  ];
 
   return (
-    <motion.section 
-      className="mb-10 md:mb-14"
-      initial={{ opacity: 0 }}
-      whileInView={{ opacity: 1 }}
-      viewport={{ once: true }}
-    >
-      {/* Section Header */}
-      <motion.div 
-        className="flex items-center gap-3 mb-6 md:mb-8"
-        initial={{ opacity: 0, x: -10 }}
-        whileInView={{ opacity: 1, x: 0 }}
-        viewport={{ once: true }}
-      >
-        <div className="p-2 rounded-xl bg-emerald-500/10">
-          <Activity className="w-5 h-5 text-emerald-400" />
-        </div>
+    <section className="py-24 relative" id="fisico">
+      {/* .sec-head */}
+      <div className="flex items-end justify-between gap-6 mb-11 flex-wrap">
         <div>
-          <h2 className="text-xl md:text-2xl font-bold text-foreground">Dados Físicos</h2>
-          <p className="text-xs text-muted-foreground">Métricas corporais e performance</p>
+          <div className="font-editorial-mono text-[11px] tracking-[0.24em] uppercase text-[#62616a] font-medium inline-flex gap-[10px] items-center">
+            <span className="text-[#ec4525] font-semibold">06</span>
+            <span className="w-[34px] h-px bg-white/15 flex-none" />
+            Dados Físicos
+          </div>
+          <h2
+            className="font-display font-semibold leading-[1.02] tracking-[-0.025em] mt-[14px] text-[#ededee]"
+            style={{ fontSize: "clamp(28px,3.4vw,44px)" }}
+          >
+            Avaliação corporal
+          </h2>
         </div>
-      </motion.div>
-
-      {/* Primary metrics grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
-        <PhysicalMetric label="Altura" value={height} unit="cm" icon={Ruler} reference="175-185" index={0} />
-        <PhysicalMetric label="Peso" value={weight} unit="kg" icon={Scale} reference="70-80" index={1} />
-        <PhysicalMetric label="Envergadura" value={wingspan} unit="cm" icon={Ruler} index={2} />
-        <PhysicalMetric label="% Gordura" value={body_fat_percentage} unit="%" icon={Percent} reference="8-12%" index={3} />
-        <PhysicalMetric label="Massa Musc." value={muscle_mass} unit="kg" icon={Dumbbell} index={4} />
+        <p className="font-editorial-mono text-[12px] text-[#62616a] tracking-[0.04em] max-w-[280px] text-right">
+          Valor atual frente à faixa ideal de referência para a posição.
+        </p>
       </div>
 
-      {/* Performance metrics grid */}
-      {(max_speed || sprint_30m || vo2_max) && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4 mt-4">
-          <PhysicalMetric label="Vel. Máx" value={max_speed} unit="km/h" icon={Zap} reference="32+" index={5} />
-          <PhysicalMetric label="Sprint 30m" value={sprint_30m} unit="s" icon={Timer} reference="< 4.0" index={6} />
-          <PhysicalMetric label="VO2 Máx" value={vo2_max} unit="ml/kg" icon={Heart} reference="55+" index={7} />
-        </div>
-      )}
-    </motion.section>
+      {/* .fisico-grid — auto-fit, minmax(196px,1fr), gap 16px */}
+      <div
+        className="fisico-grid"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(196px, 1fr))",
+          gap: "16px",
+        }}
+      >
+        {metrics.map((m, i) => (
+          <PhysicalCard key={m.label} {...m} index={i} />
+        ))}
+      </div>
+    </section>
   );
 }

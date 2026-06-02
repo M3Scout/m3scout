@@ -253,7 +253,7 @@ const PlayerProfile = () => {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex items-center justify-center bg-[#0c0b0d]">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -269,7 +269,7 @@ const PlayerProfile = () => {
   // Not found state
   if (!player) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex items-center justify-center bg-[#0c0b0d]">
         <motion.div 
           className="text-center"
           initial={{ opacity: 0, y: 20 }}
@@ -285,15 +285,8 @@ const PlayerProfile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
-      {/* Premium background effects */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-zinc-900/40 via-background to-background" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-primary/5 blur-[150px] rounded-full" />
-        <div className="absolute bottom-0 right-0 w-[600px] h-[400px] bg-primary/3 blur-[120px] rounded-full" />
-      </div>
-
-      <div className="relative pt-24 sm:pt-28 pb-16">
+    <div className="min-h-screen bg-[#0c0b0d] overflow-x-hidden">
+      <div className="pt-24 sm:pt-28 pb-16">
         {/* Container aligned with header logo - uses same max-width and gutters */}
         <div 
           className="w-full mx-auto" 

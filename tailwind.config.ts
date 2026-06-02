@@ -91,6 +91,9 @@ export default {
         gotham: ['"Basis Grotesque Pro"', 'sans-serif'],
         barlow: ['"Basis Grotesque Pro"', 'sans-serif'],
         jetbrains: ['"Basis Grotesque Pro"', 'sans-serif'],
+        // Public athlete profile — Brutalista/Editorial design system
+        display: ['"Space Grotesk"', 'system-ui', 'sans-serif'],
+        'editorial-mono': ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
       },
       keyframes: {
         "accordion-down": {
