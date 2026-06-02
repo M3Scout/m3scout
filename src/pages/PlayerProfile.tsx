@@ -288,14 +288,7 @@ const PlayerProfile = () => {
     <div className="min-h-screen bg-[#0c0b0d] overflow-x-hidden">
       <div className="pt-24 sm:pt-28 pb-16">
         {/* Container aligned with header logo - uses same max-width and gutters */}
-        <div 
-          className="w-full mx-auto" 
-          style={{ 
-            maxWidth: '1600px',
-            paddingLeft: 'var(--page-gutter)',
-            paddingRight: 'var(--page-gutter)' 
-          }}
-        >
+        <div className="w-full max-w-[1180px] mx-auto px-[72px]">
           
           {/* Back Button */}
           <motion.div 

@@ -154,7 +154,6 @@ export function AthleteHeroSection({ player }: AthleteHeroSectionProps) {
         */}
         <div
           className="rv hero-r"
-          style={{ marginTop: "clamp(180px, 19vw, 260px)" }}
           data-d="2"
         >
           <div className="photo-wrap">
