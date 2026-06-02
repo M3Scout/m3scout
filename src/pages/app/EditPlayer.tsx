@@ -500,7 +500,7 @@ export default function EditPlayer() {
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200 flex-shrink-0",
+                  "flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200 flex-1 min-w-max",
                   activeTab === tab.id
                     ? "bg-red-600 text-white shadow-lg shadow-red-600/25"
                     : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/60"
