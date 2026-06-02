@@ -13,13 +13,13 @@ interface MetricDef {
   unit: string;
   refMin: number | null;
   refMax: number | null;
-  ref: string;
+  refText: string;
   invert?: boolean;
 }
 
 // ── .fcard — physical metric card ──
 function PhysicalCard({
-  label, value, unit, refMin, refMax, ref: refText, invert = false, index,
+  label, value, unit, refMin, refMax, refText, invert = false, index,
 }: MetricDef & { index: number }) {
   const hasValue = value !== null && value !== undefined;
 
@@ -122,14 +122,14 @@ export function AthletePhysicalSection({
 
   // Metric definitions — ref ranges mirror common elite reference bands
   const metrics: MetricDef[] = [
-    { label: "Altura",      value: height,              unit: "cm",    refMin: 175, refMax: 185, ref: "175–185 cm"  },
-    { label: "Peso",        value: weight,              unit: "kg",    refMin: 70,  refMax: 80,  ref: "70–80 kg"    },
-    { label: "Envergadura", value: wingspan,            unit: "cm",    refMin: null,refMax: null, ref: "—"           },
-    { label: "% Gordura",   value: body_fat_percentage, unit: "%",     refMin: 8,   refMax: 12,  ref: "8–12 %"      },
-    { label: "Massa Musc.", value: muscle_mass,         unit: "kg",    refMin: 50,  refMax: 65,  ref: "50–65 kg"    },
-    { label: "Vel. Máxima", value: max_speed,           unit: "km/h",  refMin: 30,  refMax: 35,  ref: "30+ km/h"    },
-    { label: "Sprint 30m",  value: sprint_30m,          unit: "s",     refMin: 3.8, refMax: 4.2, ref: "< 4.2 s",  invert: true },
-    { label: "VO₂ Máximo",  value: vo2_max,             unit: "ml/kg", refMin: 55,  refMax: 65,  ref: "55+ ml/kg"  },
+    { label: "Altura",      value: height,              unit: "cm",    refMin: 175, refMax: 185, refText: "175–185 cm"  },
+    { label: "Peso",        value: weight,              unit: "kg",    refMin: 70,  refMax: 80,  refText: "70–80 kg"    },
+    { label: "Envergadura", value: wingspan,            unit: "cm",    refMin: null,refMax: null, refText: "—"           },
+    { label: "% Gordura",   value: body_fat_percentage, unit: "%",     refMin: 8,   refMax: 12,  refText: "8–12 %"      },
+    { label: "Massa Musc.", value: muscle_mass,         unit: "kg",    refMin: 50,  refMax: 65,  refText: "50–65 kg"    },
+    { label: "Vel. Máxima", value: max_speed,           unit: "km/h",  refMin: 30,  refMax: 35,  refText: "30+ km/h"    },
+    { label: "Sprint 30m",  value: sprint_30m,          unit: "s",     refMin: 3.8, refMax: 4.2, refText: "< 4.2 s",  invert: true },
+    { label: "VO₂ Máximo",  value: vo2_max,             unit: "ml/kg", refMin: 55,  refMax: 65,  refText: "55+ ml/kg"  },
   ];
 
   return (
