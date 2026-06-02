@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useSidebar } from "@/hooks/useSidebar";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/authContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -165,6 +166,7 @@ export default function EditPlayer() {
   const [activeTab, setActiveTab] = useState("basic");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const { isCollapsed } = useSidebar();
   const canEdit = isAdmin || isScout;
 
   const TABS = useMemo(() => [
@@ -491,7 +493,7 @@ export default function EditPlayer() {
       <form onSubmit={handleSubmit}>
         {/* ── Tab Bar ── */}
         <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6">
-          <div className="flex gap-1 p-1 bg-zinc-900 rounded-2xl border border-zinc-800/80 overflow-x-auto scrollbar-none">
+          <div className="flex gap-1 p-1 w-full bg-zinc-900 rounded-2xl border border-zinc-800/80 overflow-x-auto scrollbar-none">
             {TABS.map(tab => (
               <button
                 key={tab.id}
@@ -857,7 +859,11 @@ export default function EditPlayer() {
         </div>
 
         {/* ── Fixed Bottom Bar ── */}
-        <div className="fixed bottom-0 inset-x-0 z-30 bg-zinc-950/96 backdrop-blur-md border-t border-zinc-800/60">
+        <div className={cn(
+          "fixed bottom-0 right-0 z-30 bg-zinc-950/96 backdrop-blur-md border-t border-zinc-800/60",
+          "left-0",
+          isCollapsed ? "lg:left-[64px]" : "lg:left-[224px]"
+        )}>
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
             {isAdmin ? (
               <button
