@@ -20,13 +20,11 @@ interface AthleteHeroSectionProps {
 }
 
 export function AthleteHeroSection({ player }: AthleteHeroSectionProps) {
-  // Split name: first half plain, second half dimmed — mirrors Vanilla JS logic
   const nameParts = (player.full_name ?? "").trim().split(/\s+/);
   const mid = Math.ceil(nameParts.length / 2);
   const firstName = nameParts.slice(0, mid).join(" ");
   const lastName  = nameParts.slice(mid).join(" ");
 
-  // Identity strip data — filter out nulls
   const identItems = [
     player.age           ? { label: "Idade",  value: String(player.age),  unit: "anos" } : null,
     player.current_club  ? { label: "Clube",  value: player.current_club,  unit: null   } : null,
@@ -40,26 +38,25 @@ export function AthleteHeroSection({ player }: AthleteHeroSectionProps) {
     <section className="pt-6 pb-[60px] relative" id="identidade">
 
       {/*
-        Hero grid — info LEFT, photo RIGHT.
-        items-start so both columns reference the same top edge.
-        Photo column gets margin-top that tracks the header block height
-        (kick + name + pos-line) so its top edge aligns with the .ident strip.
-        clamp(180px, 19vw, 260px) mirrors the clamp growth of the h1 font-size,
-        keeping the alignment consistent across viewport widths.
+        2-row grid on desktop:
+          Row 1, col 1 → left content (kick + name + pos + ident strip)
+          Row 1, col 2 → photo — fills row 1 height exactly, so its bottom
+                         aligns with the ident strip bottom
+          Row 2, col 1 → action buttons
+        DOM order: left content, buttons, photo
+        (buttons before photo keeps mobile stacking correct)
       */}
-      <div className="grid md:grid-cols-[1fr,minmax(300px,400px)] gap-x-14 gap-y-8 items-start">
+      <div className="grid md:grid-cols-[1fr,minmax(300px,400px)] gap-x-14 gap-y-8 md:gap-y-0">
 
-        {/* ══════════════ LEFT — IDENTIDADE ══════════════ */}
-        <div className="hero-l min-w-0">
+        {/* ══════════════ LEFT — IDENTIDADE (row 1, col 1) ══════════════ */}
+        <div className="hero-l min-w-0 md:row-start-1 md:col-start-1">
 
-          {/* .kick — mono micro-label */}
           <div className="rv font-editorial-mono text-[11px] tracking-[0.24em] uppercase text-[#62616a] font-medium inline-flex gap-[10px] items-center">
             <span className="text-[#ec4525] font-semibold">01</span>
             <span className="w-[34px] h-px bg-white/15 flex-none" />
             Scouting Report · 2026
           </div>
 
-          {/* .hero-name — display font, last part dimmed */}
           <h1
             className="rv font-display font-semibold leading-[0.92] tracking-[-0.04em] mt-[18px] mb-1.5 text-[#ededee]"
             style={{ fontSize: "clamp(44px,6.2vw,92px)" }}
@@ -75,7 +72,6 @@ export function AthleteHeroSection({ player }: AthleteHeroSectionProps) {
             )}
           </h1>
 
-          {/* .pos-line — position / role · style */}
           <div
             className="rv font-editorial-mono text-[14px] tracking-[0.04em] text-[#9c9ba3] flex gap-3 flex-wrap items-center mb-[34px]"
             data-d="2"
@@ -96,7 +92,6 @@ export function AthleteHeroSection({ player }: AthleteHeroSectionProps) {
             )}
           </div>
 
-          {/* .ident — single bordered container, items split by border-right */}
           {identItems.length > 0 && (
             <div
               className="rv border border-white/[0.075] rounded-[6px] overflow-hidden bg-[#141318]"
@@ -129,42 +124,46 @@ export function AthleteHeroSection({ player }: AthleteHeroSectionProps) {
             </div>
           )}
 
-          {/* .hero-actions — .btn-solid + .btn-line */}
-          <div className="rv flex gap-3 mt-[26px] flex-wrap" data-d="4">
-            <Link to={`/contact?player=${player.slug}`}>
-              <span className="font-editorial-mono text-[12px] tracking-[0.12em] uppercase font-semibold inline-flex items-center gap-[9px] rounded-[6px] px-5 py-[14px] bg-[#ec4525] text-[#160603] hover:bg-[#ff5a39] hover:-translate-y-0.5 transition-all duration-[220ms] cursor-pointer">
-                Falar com a M3
-                <ArrowRight className="w-3.5 h-3.5" />
-              </span>
-            </Link>
-            <Link to="#tecnico">
-              <span className="font-editorial-mono text-[12px] tracking-[0.12em] uppercase font-semibold inline-flex items-center gap-[9px] rounded-[6px] px-5 py-[14px] border border-white/15 text-[#9c9ba3] hover:text-[#ededee] hover:border-white transition-all duration-[220ms] cursor-pointer">
-                Perfil técnico
-              </span>
-            </Link>
-          </div>
-
         </div>
 
-        {/* ══════════════ RIGHT — PHOTO ══════════════ */}
+        {/* ══════════════ ACTIONS (row 2, col 1) ══════════════ */}
+        <div className="rv flex gap-3 mt-[26px] flex-wrap md:row-start-2 md:col-start-1" data-d="4">
+          <Link to={`/contact?player=${player.slug}`}>
+            <span className="font-editorial-mono text-[12px] tracking-[0.12em] uppercase font-semibold inline-flex items-center gap-[9px] rounded-[6px] px-5 py-[14px] bg-[#ec4525] text-[#160603] hover:bg-[#ff5a39] hover:-translate-y-0.5 transition-all duration-[220ms] cursor-pointer">
+              Falar com a M3
+              <ArrowRight className="w-3.5 h-3.5" />
+            </span>
+          </Link>
+          <button
+            type="button"
+            onClick={() => document.getElementById("tecnico")?.scrollIntoView({ behavior: "smooth" })}
+            className="font-editorial-mono text-[12px] tracking-[0.12em] uppercase font-semibold inline-flex items-center gap-[9px] rounded-[6px] px-5 py-[14px] border border-white/15 text-[#9c9ba3] hover:text-[#ededee] hover:border-white transition-all duration-[220ms] cursor-pointer bg-transparent"
+          >
+            Perfil técnico
+          </button>
+        </div>
+
+        {/* ══════════════ RIGHT — PHOTO (row 1, col 2) ══════════════ */}
         {/*
-          margin-top pushes photo down so its top edge aligns with .ident strip.
-          clamp(180px, 19vw, 260px) tracks the h1 clamp growth curve.
-          On mobile (< md) the margin is removed; photo stacks naturally.
+          Desktop: photo spans row 1 only, filling the height defined by the
+          left content (kick → ident strip). The img is absolute so it doesn't
+          contribute intrinsic height to the row — the left column drives the
+          row height, and the photo stretches to match it.
+          Mobile: falls back to normal aspect-[4/5] stacked below the buttons.
         */}
         <div
-          className="rv hero-r"
+          className="rv hero-r md:row-start-1 md:col-start-2 md:h-full"
           data-d="2"
         >
-          <div className="photo-wrap">
-            <div className="photo-frame relative aspect-[4/5] border border-white/15 rounded-[8px] overflow-hidden bg-[#191822] group">
+          <div className="photo-wrap md:h-full">
+            <div className="photo-frame relative aspect-[4/5] md:aspect-auto md:h-full min-h-[280px] border border-white/15 rounded-[8px] overflow-hidden bg-[#191822] group">
 
               <img
                 src={getOptimizedImageUrl(player.photo_url, { width: 1500, quality: 85, format: "avif" }) || player.photo_url || ""}
                 srcSet={getResponsiveSrcSet(player.photo_url, [750, 1500], 85) || undefined}
                 sizes="(max-width: 768px) 100vw, 400px"
                 alt={player.full_name}
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+                className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-[1.02]"
                 onError={(e) => {
                   if (player.photo_url) (e.target as HTMLImageElement).src = player.photo_url;
                 }}

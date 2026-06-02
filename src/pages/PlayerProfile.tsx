@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import { usePlayerMatchStats } from "@/hooks/usePlayerMatchStats";
 import { fetchUnifiedPlayerStats } from "@/hooks/useUnifiedPlayerStats";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -103,6 +103,11 @@ const PlayerProfile = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabValue>("current");
   const [showStickyCTA, setShowStickyCTA] = useState(false);
+
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   // Track scroll for sticky CTA
   useEffect(() => {
@@ -288,23 +293,8 @@ const PlayerProfile = () => {
     <div className="min-h-screen bg-[#0c0b0d] overflow-x-hidden">
       <div className="pt-24 sm:pt-28 pb-16">
         {/* Container aligned with header logo - uses same max-width and gutters */}
-        <div className="w-full max-w-[1180px] mx-auto px-[72px]">
+        <div className="w-full max-w-[1600px] mx-auto px-[72px]">
           
-          {/* Back Button */}
-          <motion.div 
-            initial={{ opacity: 0, x: -10 }} 
-            animate={{ opacity: 1, x: 0 }}
-            className="relative z-10 mb-6"
-          >
-            <Link 
-              to="/players" 
-              className="inline-flex items-center gap-2 text-zinc-400 hover:text-foreground transition-colors group py-2"
-            >
-              <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
-              <span className="text-sm font-medium">Voltar</span>
-            </Link>
-          </motion.div>
-
           {/* Hero Section - complete athlete header block */}
           <AthleteHeroSection 
             player={player} 

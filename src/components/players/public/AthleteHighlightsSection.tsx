@@ -210,47 +210,46 @@ export function AthleteHighlightsSection({ strengths }: AthleteHighlightsSection
           />
         </div>
 
-        {/* ── FORCAS list ── */}
+        {/* ── FORCAS list — all 6 radar axes sorted by value ── */}
         <div className="forcas flex flex-col">
-          {strengths.map((strength, i) => {
-            const axisIdx = strengthAxisMap[i];
-            const axisValue = axisIdx !== -1 ? techData[axisIdx].value : null;
-            // Active when this row's axis is highlighted (via radar hover or row hover)
-            const isActive = axisIdx !== -1 && hoveredAxis === axisIdx;
+          {[...techData]
+            .sort((a, b) => b.value - a.value)
+            .map((item, i) => {
+              const axisIdx = techData.findIndex((d) => d.label === item.label);
+              const isActive = hoveredAxis === axisIdx;
 
-            return (
-              <div
-                key={strength}
-                className="forca group flex items-center gap-5 py-6 border-b border-zinc-800 first:border-t first:border-zinc-800 cursor-default pl-0 hover:pl-4 transition-all duration-[250ms]"
-                onMouseEnter={() => axisIdx !== -1 && setHoveredAxis(axisIdx)}
-                onMouseLeave={() => setHoveredAxis(null)}
-              >
-                {/* .fn — index */}
-                <span
-                  className={cn(
-                    "fn font-editorial-mono text-[13px] font-semibold w-8 flex-none transition-colors duration-200",
-                    isActive ? "text-[#ec4525]" : "text-zinc-600",
-                    "group-hover:text-[#ec4525]"
-                  )}
+              return (
+                <div
+                  key={item.label}
+                  className="forca group flex items-center gap-5 py-6 border-b border-zinc-800 first:border-t first:border-zinc-800 cursor-default pl-0 hover:pl-4 transition-all duration-[250ms]"
+                  onMouseEnter={() => setHoveredAxis(axisIdx)}
+                  onMouseLeave={() => setHoveredAxis(null)}
                 >
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-
-                {/* .ft — title */}
-                <div className="ft flex-1 min-w-0">
-                  <h3
+                  {/* .fn — index */}
+                  <span
                     className={cn(
-                      "font-display text-xl font-bold leading-tight transition-colors duration-200",
-                      isActive ? "text-[#ec4525]" : "text-[#ededee]",
+                      "fn font-editorial-mono text-[13px] font-semibold w-8 flex-none transition-colors duration-200",
+                      isActive ? "text-[#ec4525]" : "text-zinc-600",
                       "group-hover:text-[#ec4525]"
                     )}
                   >
-                    {strength}
-                  </h3>
-                </div>
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
 
-                {/* .fv — radar axis value */}
-                {axisValue !== null && (
+                  {/* .ft — axis label */}
+                  <div className="ft flex-1 min-w-0">
+                    <h3
+                      className={cn(
+                        "font-display text-xl font-bold leading-tight transition-colors duration-200",
+                        isActive ? "text-[#ec4525]" : "text-[#ededee]",
+                        "group-hover:text-[#ec4525]"
+                      )}
+                    >
+                      {item.label}
+                    </h3>
+                  </div>
+
+                  {/* .fv — value */}
                   <span
                     className={cn(
                       "fv font-display text-3xl font-bold tabular-nums flex-none transition-colors duration-200",
@@ -258,12 +257,11 @@ export function AthleteHighlightsSection({ strengths }: AthleteHighlightsSection
                       "group-hover:text-[#ec4525]"
                     )}
                   >
-                    {axisValue}
+                    {item.value}
                   </span>
-                )}
-              </div>
-            );
-          })}
+                </div>
+              );
+            })}
         </div>
 
       </div>

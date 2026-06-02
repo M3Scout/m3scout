@@ -71,6 +71,8 @@
   color: var(--accent);
   text-transform: lowercase;
   letter-spacing: -0.02em;
+  position: relative;
+  top: -0.12em;
 }
 
 .sobre__col-right {

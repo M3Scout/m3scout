@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 
 const RED = "#E5173F";
 const CREAM = "#F2EDE4";
@@ -32,7 +31,7 @@ const Sobre = () => {
     <div style={{ fontFamily: B, backgroundColor: BLACK }}>
 
       {/* S1 HERO */}
-      <section style={{ backgroundColor: BLACK, padding: `clamp(96px, 13vh, 220px) ${gutter} 80px` }}>
+      <section style={{ backgroundColor: BLACK, padding: `136px ${gutter} 80px` }}>
         <div style={{ maxWidth: maxW, margin: "0 auto" }}>
 
 
@@ -51,29 +50,10 @@ const Sobre = () => {
           }}>
             UMA NOVA<br />
             FORMA DE<br />
-            <span style={{ fontFamily: "'Instrument Serif', 'Times New Roman', serif", fontWeight: 300, fontStyle: "italic", textTransform: "lowercase", color: RED }}>pensar</span>{" "}A<br />
+            <span style={{ fontFamily: "'Instrument Serif', 'Times New Roman', serif", fontWeight: 300, fontStyle: "italic", textTransform: "lowercase", color: RED, position: "relative", top: "-0.12em" }}>pensar</span>{" "}A<br />
             CARREIRA.
           </h1>
 
-          <p style={{ fontFamily: B, fontWeight: 300, fontSize: 18, lineHeight: 1.7, color: WHITE_MUTED, maxWidth: 480, marginBottom: 40 }}>
-            A M3 Agency é uma gestora de carreiras no futebol profissional. Operamos com dados, contexto e visão de mercado para posicionar atletas onde o talento encontra oportunidade real.
-          </p>
-
-          <Link to="/contato" style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 14,
-            fontFamily: BC,
-            fontWeight: 700,
-            fontSize: 12,
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
-            color: CREAM,
-            textDecoration: "none",
-          }}>
-            <span style={{ display: "inline-block", width: 40, height: 1, backgroundColor: RED, flexShrink: 0 }} />
-            FALAR COM A M3
-          </Link>
         </div>
       </section>
 
@@ -140,47 +120,6 @@ const Sobre = () => {
         </div>
       </section>
 
-      {/* S4 QUOTE */}
-      <section className="hidden sm:block" style={{ backgroundColor: BLACK, padding: `80px ${gutter}` }}>
-        <div style={{ maxWidth: maxW, margin: "0 auto" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 56 }}>
-            <span style={{ display: "inline-block", width: 40, height: 2, backgroundColor: RED, flexShrink: 0 }} />
-            <span style={{ fontFamily: BC, fontWeight: 700, fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: WHITE_MUTED }}>
-              M3 AGENCY · CAMPO GRANDE · 2024
-            </span>
-          </div>
-
-          <p style={{ fontFamily: BC, fontWeight: 300, fontSize: "clamp(22px, 4vw, 52px)", lineHeight: 1.15, color: WHITE_MUTED, marginBottom: 8 }}>
-            Talento sem direção é ruído.<br />
-            Direção sem estratégia é sorte.
-          </p>
-
-          <p style={{ fontFamily: BC, fontWeight: 800, fontSize: "clamp(22px, 4vw, 52px)", lineHeight: 1.15, color: CREAM, margin: 0 }}>
-            Nós trabalhamos com{" "}
-            <span style={{ color: RED }}>os dois.</span>
-          </p>
-        </div>
-      </section>
-
-      {/* S5 DATA STRIP */}
-      <section className="hidden sm:block" style={{ backgroundColor: BLACK, borderTop: "1px solid rgba(242,237,228,0.1)", padding: `48px ${gutter}` }}>
-        <div style={{ maxWidth: maxW, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24 }}>
-          {[
-            { label: "Sede", value: "Campo Grande, MS" },
-            { label: "Atuação", value: "Brasil · América do Sul" },
-            { label: "Desde", value: "2020" },
-          ].map((item) => (
-            <div key={item.label}>
-              <p style={{ fontFamily: BC, fontWeight: 700, fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: WHITE_MUTED, margin: "0 0 8px 0" }}>
-                {item.label}
-              </p>
-              <p style={{ fontFamily: BC, fontWeight: 700, fontSize: "clamp(14px, 2vw, 22px)", textTransform: "uppercase", color: CREAM, lineHeight: 1, margin: 0 }}>
-                {item.value}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
 
     </div>
   );

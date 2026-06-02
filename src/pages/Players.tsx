@@ -450,7 +450,7 @@ const Players = () => {
       <style>{RESPONSIVE_CSS}</style>
 
       {/* ━━━ S1 — HERO ━━━ */}
-      <section style={{ backgroundColor: BLACK, padding: `clamp(96px, 13vh, 200px) clamp(24px, 5.625vw, 72px) 64px` }}>
+      <section style={{ backgroundColor: BLACK, padding: `136px clamp(24px, 5.625vw, 72px) 64px` }}>
         <div>
           <h1 style={{ fontFamily: DISPLAY, fontWeight: 900, fontSize: "clamp(72px, 8vw, 120px)", lineHeight: 0.87, color: CREAM, margin: 0 }}>
             NOSSOS<br />
