@@ -13,13 +13,13 @@ interface MetricDef {
   unit: string;
   refMin: number | null;
   refMax: number | null;
-  ref: string;
+  refText: string;
   invert?: boolean;
 }
 
 // ── .fcard — physical metric card ──
 function PhysicalCard({
-  label, value, unit, refMin, refMax, ref: refText, invert = false, index,
+  label, value, unit, refMin, refMax, refText, invert = false, index,
 }: MetricDef & { index: number }) {
   const hasValue = value !== null && value !== undefined;
 
