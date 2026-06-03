@@ -8,7 +8,7 @@ interface MobilePageHeaderProps {
 export function MobilePageHeader({ title }: MobilePageHeaderProps) {
   return (
     <div
-      className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 border-b"
+      className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between border-b"
       style={{
         height: "56px",
         background: "#000000",
@@ -18,6 +18,7 @@ export function MobilePageHeader({ title }: MobilePageHeaderProps) {
       }}
     >
       <span
+        className="pl-4"
         style={{
           fontFamily: "'Basis Grotesque Pro', sans-serif",
           fontWeight: 600,
@@ -29,7 +30,7 @@ export function MobilePageHeader({ title }: MobilePageHeaderProps) {
         {title}
       </span>
 
-      <Link to="/dashboard/auth" className="flex items-center justify-center w-9 h-9 -mr-1 text-white hover:text-white transition-colors">
+      <Link to="/dashboard/auth" className="flex items-center justify-center w-9 h-9 pr-4 text-white hover:text-white transition-colors">
         <Lock size={17} strokeWidth={2} />
       </Link>
     </div>
