@@ -90,6 +90,12 @@
     inset 0 -1px 0 rgba(0, 0, 0, 0.25);
 }
 
+.m3-bottom-nav__pill--warping {
+  backdrop-filter: blur(18px) brightness(1.15) saturate(1.8);
+  -webkit-backdrop-filter: blur(18px) brightness(1.15) saturate(1.8);
+}
+
+
 
 .m3-bottom-nav__content {
   position: relative;
