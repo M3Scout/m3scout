@@ -520,11 +520,11 @@ const PlayerDetail = () => {
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <div className={`px-4 md:px-6 py-[22px] border-b ${T.border}`}>
-        <div className="flex gap-4 items-stretch">
+        <div className="flex gap-4 items-start">
 
           {/* Photo */}
           <div
-            className={`w-20 self-stretch shrink-0 border ${T.border} overflow-hidden bg-[#111] flex items-center justify-center`}
+            className={`w-28 h-28 md:w-20 md:h-20 shrink-0 border ${T.border} overflow-hidden bg-[#111] flex items-center justify-center`}
           >
             {player.photo_url ? (
               <img
