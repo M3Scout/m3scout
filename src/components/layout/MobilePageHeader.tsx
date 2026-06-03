@@ -11,7 +11,7 @@ export function MobilePageHeader({ title }: MobilePageHeaderProps) {
       className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 border-b"
       style={{
         height: "52px",
-        background: "rgba(10,10,10,0.92)",
+        background: "#141414",
         backdropFilter: "blur(14px)",
         WebkitBackdropFilter: "blur(14px)",
         borderColor: "rgba(255,255,255,0.08)",

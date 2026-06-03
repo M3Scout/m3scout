@@ -77,7 +77,7 @@ export function SmartHeader({ variant = "default" }: SmartHeaderProps) {
           isVisible ? "translate-y-0" : "-translate-y-full",
           showTransparent 
             ? "bg-transparent" 
-            : "bg-black/90 backdrop-blur-md border-b border-white/[0.04]"
+            : "bg-[#141414]/95 backdrop-blur-md border-b border-white/[0.04]"
         )}
         style={{
           top: 0,

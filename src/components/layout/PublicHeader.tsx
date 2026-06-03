@@ -20,7 +20,7 @@ export function PublicHeader() {
   };
 
   return (
-    <header className="fixed left-0 right-0 z-50 bg-[var(--bg-base)]/95 backdrop-blur-md border-b border-zinc-900" style={{ top: 0, paddingTop: 'var(--sat)', paddingLeft: 'var(--sal)', paddingRight: 'var(--sar)' }}>
+    <header className="fixed left-0 right-0 z-50 bg-[#141414]/95 backdrop-blur-md border-b border-zinc-900" style={{ top: 0, paddingTop: 'var(--sat)', paddingLeft: 'var(--sal)', paddingRight: 'var(--sar)' }}>
       {/* Container with unified max-width - matches all page content alignment */}
       <div className="w-full mx-auto" style={{ maxWidth: 'var(--page-max-width)', paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
         <div className="flex h-16 items-center justify-between">
@@ -80,7 +80,7 @@ export function PublicHeader() {
 
       {/* Mobile Navigation */}
       {isMenuOpen && (
-        <div className="lg:hidden bg-[var(--bg-base)] border-t border-zinc-900 animate-fade-in">
+        <div className="lg:hidden bg-[#141414] border-t border-zinc-900 animate-fade-in">
           <div className="w-full mx-auto py-4" style={{ maxWidth: 'var(--page-max-width)', paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
             <nav className="flex flex-col gap-1">
               {navLinks.map((link) => (
