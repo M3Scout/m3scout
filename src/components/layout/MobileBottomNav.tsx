@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, Users, Newspaper, Lock, Info, Mail } from "lucide-react";
+import { Home, Users, Newspaper, Info, Mail } from "lucide-react";
 import { motion } from "framer-motion";
 import "./MobileBottomNav.css";
 
@@ -9,7 +9,6 @@ const items = [
   { to: "/atletas", label: "Talentos", Icon: Users, match: (p: string) => p.startsWith("/atletas") || p.startsWith("/representacao") },
   { to: "/imprensa", label: "Imprensa", Icon: Newspaper, match: (p: string) => p.startsWith("/imprensa") || p.startsWith("/news") },
   { to: "/contato", label: "Contato", Icon: Mail, match: (p: string) => p.startsWith("/contato") || p.startsWith("/contact") },
-  { to: "/dashboard/auth", label: "Restrito", Icon: Lock, match: (p: string) => p.startsWith("/dashboard") },
 ];
 
 export function MobileBottomNav() {
@@ -37,8 +36,7 @@ export function MobileBottomNav() {
                 />
               )}
               <span className="m3-bottom-nav__content">
-                <Icon size={18} strokeWidth={2} />
-                {isActive && <span className="m3-bottom-nav__label">{item.label}</span>}
+                <Icon size={22} strokeWidth={2} />
               </span>
             </Link>
           );

@@ -175,7 +175,7 @@ export function AthleteHighlightsSection({ strengths }: AthleteHighlightsSection
   );
 
   return (
-    <section className="py-24 relative" id="tecnico">
+    <section className="py-12 md:py-20 relative border-b border-zinc-800/50" id="tecnico">
 
       {/* .sec-head */}
       <div className="flex items-end justify-between gap-6 mb-11 flex-wrap">
@@ -192,7 +192,7 @@ export function AthleteHighlightsSection({ strengths }: AthleteHighlightsSection
             Mapa de atributos
           </h2>
         </div>
-        <p className="font-editorial-mono text-[12px] text-[#62616a] tracking-[0.04em] max-w-[280px] text-right">
+        <p className="hidden md:block font-editorial-mono text-[12px] text-[#62616a] tracking-[0.04em] max-w-[280px] text-right">
           Escala 0–100 · derivado dos pontos fortes e do histórico de jogo.
         </p>
       </div>

@@ -91,9 +91,9 @@ export function AthleteGamePhasesSection({
   const yearLabel = latestAvailableSeasonYear ? `· Temporada ${latestAvailableSeasonYear}` : "";
 
   return (
-    <section className="py-24 relative" id="fases">
+    <section className="py-12 md:py-20 relative border-b border-zinc-800/50" id="fases">
       {/* .sec-head */}
-      <div className="flex items-end justify-between gap-6 mb-11 flex-wrap">
+      <div className="flex items-end justify-between gap-6 mb-8 md:mb-11 flex-wrap">
         <div>
           <div className="font-editorial-mono text-[11px] tracking-[0.24em] uppercase text-[#62616a] font-medium inline-flex gap-[10px] items-center">
             <span className="text-[#ec4525] font-semibold">05</span>
@@ -102,12 +102,12 @@ export function AthleteGamePhasesSection({
           </div>
           <h2
             className="font-display font-semibold leading-[1.02] tracking-[-0.025em] mt-[14px] text-[#ededee]"
-            style={{ fontSize: "clamp(28px,3.4vw,44px)" }}
+            style={{ fontSize: "clamp(24px,3.4vw,44px)" }}
           >
             Desempenho por fase
           </h2>
         </div>
-        <p className="font-editorial-mono text-[12px] text-[#62616a] tracking-[0.04em] max-w-[280px] text-right">
+        <p className="hidden md:block font-editorial-mono text-[12px] text-[#62616a] tracking-[0.04em] max-w-[280px] text-right">
           Volume registrado em cada fase, normalizado por referência.
         </p>
       </div>

@@ -171,7 +171,6 @@ export function AthletesHorizontal() {
       <div className="athletes-h">
         <header className="athletes-h__head">
           <div>
-            <div className="athletes-h__eyebrow">— Atletas representados</div>
             <h2 className="athletes-h__title">
               Talentos<br />monitorados.
             </h2>

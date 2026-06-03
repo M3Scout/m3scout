@@ -28,14 +28,16 @@ const Sobre = () => {
   const maxW = "1600px";
 
   return (
-    <div style={{ fontFamily: B, backgroundColor: BLACK }}>
+    <div style={{ fontFamily: B }} className="min-h-screen bg-[#F2EDE4] md:bg-[#0A0A0A]">
+
+
 
       {/* S1 HERO */}
-      <section style={{ backgroundColor: BLACK, padding: `136px ${gutter} 80px` }}>
+      <section style={{ backgroundColor: BLACK, padding: `136px ${gutter} 80px` }} className="hidden md:block">
         <div style={{ maxWidth: maxW, margin: "0 auto" }}>
 
 
-          <h1 style={{
+          <h1 className="hidden md:block" style={{
             fontFamily: BC,
             fontWeight: 900,
             fontSize: "clamp(58px, 11vw, 152px)",
@@ -120,6 +122,9 @@ const Sobre = () => {
         </div>
       </section>
 
+
+      {/* Mobile spacer — keeps CREAM background above bottom nav */}
+      <div className="md:hidden" style={{ backgroundColor: CREAM, height: 80 }} />
 
     </div>
   );

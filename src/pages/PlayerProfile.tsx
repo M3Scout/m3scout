@@ -16,7 +16,6 @@ import { AthleteStatsSection } from "@/components/players/public/AthleteStatsSec
 import { AthleteGamePhasesSection } from "@/components/players/public/AthleteGamePhasesSection";
 import { AthletePhysicalSection } from "@/components/players/public/AthletePhysicalSection";
 import { AthleteVideoSection } from "@/components/players/public/AthleteVideoSection";
-import { StickyMobileCTA } from "@/components/players/public/AthleteCTASection";
 
 // =============== INTERFACES ===============
 
@@ -102,21 +101,9 @@ const PlayerProfile = () => {
   const [player, setPlayer] = useState<Player | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabValue>("current");
-  const [showStickyCTA, setShowStickyCTA] = useState(false);
-
   // Scroll to top on mount
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, []);
-
-  // Track scroll for sticky CTA
-  useEffect(() => {
-    const handleScroll = () => {
-      setShowStickyCTA(window.scrollY > 300);
-    };
-    
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   // Fetch player
@@ -293,7 +280,7 @@ const PlayerProfile = () => {
     <div className="min-h-screen bg-[#0c0b0d] overflow-x-hidden">
       <div className="pt-24 sm:pt-28 pb-16">
         {/* Container aligned with header logo - uses same max-width and gutters */}
-        <div className="w-full max-w-[1600px] mx-auto px-[72px]">
+        <div className="w-full max-w-[1600px] mx-auto px-[18px] md:px-[72px]">
           
           {/* Hero Section - complete athlete header block */}
           <AthleteHeroSection 
@@ -339,17 +326,8 @@ const PlayerProfile = () => {
           {/* Video Section */}
           <AthleteVideoSection videoUrl={player.highlight_video_url} />
 
-          {/* Spacer for sticky CTA on mobile */}
-          <div className="h-20 md:hidden" />
         </div>
       </div>
-
-      {/* Sticky Mobile CTA */}
-      <StickyMobileCTA 
-        playerSlug={player.slug} 
-        playerName={player.full_name}
-        visible={showStickyCTA}
-      />
     </div>
   );
 };

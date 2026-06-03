@@ -6,7 +6,7 @@ import { calculateMatchRating, type PlayerStatsInput } from "@/lib/matchRatingEn
 import { STANDARD_MATCH_DURATION, calculateMinutesPlayed } from "@/lib/minutesPlayed";
 import { Loader2, ChevronLeft, ChevronRight, Search, ArrowRight } from "lucide-react";
 import { safeArray } from "@/lib/utils";
-import { getShortPosition } from "@/lib/positionColors";
+import { getPositionColor } from "@/lib/positionColors";
 
 /* ─── DESIGN TOKENS ─── */
 const RED = "#E5173F";
@@ -176,9 +176,10 @@ const RESPONSIVE_CSS = `
        gap: 10px;
      }
      .pl-toggle-row {
-       justify-content: center;
-       align-items: center;
-       height: 20px;
+       display: none !important;
+     }
+     .pl-toolbar-bottom-left {
+       display: none !important;
      }
 
     /* Normal grid: 2 columns */
@@ -449,21 +450,19 @@ const Players = () => {
     <div className="min-h-screen" style={{ backgroundColor: BLACK }}>
       <style>{RESPONSIVE_CSS}</style>
 
+
       {/* ━━━ S1 — HERO ━━━ */}
-      <section style={{ backgroundColor: BLACK, padding: `136px clamp(24px, 5.625vw, 72px) 64px` }}>
+      <section className="hidden md:block" style={{ backgroundColor: BLACK, padding: `136px clamp(24px, 5.625vw, 72px) 64px` }}>
         <div>
           <h1 style={{ fontFamily: DISPLAY, fontWeight: 900, fontSize: "clamp(72px, 8vw, 120px)", lineHeight: 0.87, color: CREAM, margin: 0 }}>
             NOSSOS<br />
             <span style={{ fontFamily: "'Basis Grotesque Pro', sans-serif", fontStyle: "italic", fontWeight: 300, color: RED }}>ATLETAS.</span>
           </h1>
-          <p style={{ fontFamily: BODY, fontWeight: 300, fontSize: 16, color: WHITE_MUTED, maxWidth: 480, marginTop: 32, lineHeight: 1.6 }}>
-            Curadoria, dados e contexto competitivo. Portfólio pronto para decisão.
-          </p>
         </div>
       </section>
 
       {/* ━━━ S2 — TOOLBAR (Sticky) ━━━ */}
-      <section className="sticky top-0 z-40" style={{ backgroundColor: BLACK, padding: "36px clamp(24px, 5.625vw, 72px) 16px", borderBottom: `1px solid ${BORDER_DARK}` }}>
+      <section className="sticky top-[52px] md:top-0 z-40" style={{ backgroundColor: BLACK, padding: "36px clamp(24px, 5.625vw, 72px) 16px", borderBottom: `1px solid ${BORDER_DARK}` }}>
         {/* Filters Grid */}
         <div className="pl-toolbar-filters">
           {/* Search */}
@@ -520,8 +519,8 @@ const Players = () => {
 
         {/* Bottom Row */}
         <div className="pl-toolbar-bottom">
-          {/* Left: count + year */}
-          <div className="pl-toolbar-bottom-left" style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          {/* Left: count + year — desktop only */}
+          <div className="pl-toolbar-bottom-left hidden md:flex" style={{ alignItems: "center", gap: 16 }}>
             <span style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.1em" }}>
               {filteredPlayers.length} ATLETAS NO PORTFÓLIO
             </span>
@@ -544,8 +543,8 @@ const Players = () => {
             </div>
           </div>
 
-          {/* Right: Scouting Toggle */}
-          <div className="pl-toggle-row">
+          {/* Right: Scouting Toggle — desktop only */}
+          <div className="pl-toggle-row hidden md:flex">
             <span style={{ fontFamily: MONO, fontSize: 10, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.1em" }}>
               NORMAL
             </span>
@@ -595,7 +594,7 @@ const Players = () => {
         ) : !scoutingMode ? (
           /* ━━━ S3A — MODO NORMAL (Grid) ━━━ */
           <div>
-            <span style={{ fontFamily: MONO, fontSize: 9, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.12em", display: "block", marginBottom: 24 }}>
+            <span className="hidden md:block" style={{ fontFamily: MONO, fontSize: 9, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 24 }}>
               // TALENTOS MONITORADOS
             </span>
             <div className="pl-card-grid">
@@ -603,8 +602,7 @@ const Players = () => {
                 const href = `/players/${player.slug}`;
                 const imgUrl = getOptimizedImageUrl(player.photo_url, { width: 1200, quality: 85, format: "avif" }) || "/placeholder.svg";
                 const imgSrcSet = getResponsiveSrcSet(player.photo_url, [400, 800, 1200, 1600], 85);
-                const shortPos = getShortPosition(player.position);
-                const dotColor = getPosDotColor(player.position);
+                const posColors = getPositionColor(player.position);
                 const cardNum = String(index + 1 + (currentPage - 1) * itemsPerPage).padStart(2, "0");
 
                 return (
@@ -628,12 +626,24 @@ const Players = () => {
                       />
 
                       {/* Top overlay */}
-                      <div className="absolute top-0 left-0 right-0 flex items-start justify-between" style={{ padding: "16px 16px 0" }}>
-                        <div className="flex items-center gap-2" style={{ fontFamily: MONO, fontSize: 9, color: CREAM, textTransform: "uppercase", letterSpacing: "0.1em" }}>
-                          <div style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: dotColor, flexShrink: 0 }} />
-                          {shortPos}
+                      <div className="absolute top-0 left-0 right-0 flex items-start justify-between" style={{ padding: "20px 20px 0", zIndex: 2 }}>
+                        <div
+                          className="hidden md:flex items-center gap-2"
+                          style={{
+                            fontFamily: MONO, fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase",
+                            color: CREAM,
+                            padding: "6px 12px",
+                            background: "rgba(255,255,255,0.10)",
+                            backdropFilter: "blur(10px)",
+                            WebkitBackdropFilter: "blur(10px)",
+                            border: "1px solid rgba(255,255,255,0.18)",
+                            borderRadius: 999,
+                          }}
+                        >
+                          <div style={{ width: 4, height: 4, borderRadius: "50%", background: "#ec4525", flexShrink: 0 }} />
+                          {player.position}
                         </div>
-                        <span style={{ fontFamily: MONO, fontSize: 11, color: "rgba(242,237,228,0.2)" }}>/{cardNum}</span>
+                        <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: "0.2em", color: "rgba(255,255,255,0.6)", zIndex: 2 }}>/{cardNum}</span>
                       </div>
 
                       {/* Bottom info */}
@@ -657,8 +667,8 @@ const Players = () => {
             </div>
           </div>
         ) : (
-          /* ━━━ S3B — MODO SCOUTING (List) ━━━ */
-          <div>
+          /* ━━━ S3B — MODO SCOUTING (List) — desktop only ━━━ */
+          <div className="hidden md:block">
             <span style={{ fontFamily: MONO, fontSize: 9, color: WHITE_MUTED, textTransform: "uppercase", letterSpacing: "0.12em", display: "block", marginBottom: 24 }}>
               // DADOS PRONTOS PARA DECISÃO
             </span>
@@ -666,8 +676,7 @@ const Players = () => {
               {safeArray(paginatedPlayers).map((player, index) => {
                 const href = `/players/${player.slug}`;
                 const imgUrl = getOptimizedImageUrl(player.photo_url, { width: 800, quality: 85, format: "avif" }) || "/placeholder.svg";
-                const shortPos = getShortPosition(player.position);
-                const dotColor = getPosDotColor(player.position);
+                const posColors = getPositionColor(player.position);
                 const stats = playerStats.get(player.id);
                 const physical = getPhysicalLabel(player.physical_status);
                 const rating = stats?.averageRating;
@@ -679,7 +688,7 @@ const Players = () => {
                       onMouseOut={(e) => { (e.currentTarget as HTMLDivElement).style.backgroundColor = "transparent"; }}
                     >
                       {/* Left accent bar */}
-                      <div style={{ width: 4, backgroundColor: dotColor, flexShrink: 0 }} />
+                      <div style={{ width: 4, background: `hsl(${posColors.color})`, flexShrink: 0 }} />
 
                       {/* Row content */}
                       <div className="pl-scout-row-inner">
@@ -716,8 +725,19 @@ const Players = () => {
                         <div className="pl-scout-col2">
                           {/* Tags */}
                           <div className="pl-scout-tags">
-                            <span style={{ fontFamily: MONO, fontSize: 9, color: dotColor, border: `1px solid ${dotColor}4D`, padding: "3px 8px", textTransform: "uppercase" }}>
-                              {shortPos}
+                            <span style={{
+                              display: "inline-flex", alignItems: "center", gap: 6,
+                              fontFamily: MONO, fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase",
+                              color: CREAM,
+                              padding: "5px 10px",
+                              background: "rgba(255,255,255,0.10)",
+                              backdropFilter: "blur(10px)",
+                              WebkitBackdropFilter: "blur(10px)",
+                              border: "1px solid rgba(255,255,255,0.18)",
+                              borderRadius: 999,
+                            }}>
+                              <span style={{ width: 4, height: 4, borderRadius: "50%", background: "#ec4525", flexShrink: 0, display: "inline-block" }} />
+                              {player.position}
                             </span>
                             {player.dominant_foot && (
                               <span style={{ fontFamily: MONO, fontSize: 9, color: WHITE_MUTED, border: `1px solid ${BORDER_DARK}`, padding: "3px 8px", textTransform: "uppercase" }}>

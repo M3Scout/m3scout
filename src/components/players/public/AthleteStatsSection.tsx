@@ -32,7 +32,7 @@ function SectionHead({ idx, kick, title, note }: {
   idx: string; kick: string; title: string; note?: string;
 }) {
   return (
-    <div className="flex items-end justify-between gap-6 mb-11 flex-wrap">
+    <div className="flex items-end justify-between gap-6 mb-8 md:mb-11 flex-wrap">
       <div>
         <div className="font-editorial-mono text-[11px] tracking-[0.24em] uppercase text-[#62616a] font-medium inline-flex gap-[10px] items-center">
           <span className="text-[#ec4525] font-semibold">{idx}</span>
@@ -41,13 +41,13 @@ function SectionHead({ idx, kick, title, note }: {
         </div>
         <h2
           className="font-display font-semibold leading-[1.02] tracking-[-0.025em] mt-[14px] text-[#ededee]"
-          style={{ fontSize: "clamp(28px,3.4vw,44px)" }}
+          style={{ fontSize: "clamp(24px,3.4vw,44px)" }}
         >
           {title}
         </h2>
       </div>
       {note && (
-        <p className="font-editorial-mono text-[12px] text-[#62616a] tracking-[0.04em] max-w-[280px] text-right">
+        <p className="hidden md:block font-editorial-mono text-[12px] text-[#62616a] tracking-[0.04em] max-w-[280px] text-right">
           {note}
         </p>
       )}
@@ -56,40 +56,37 @@ function SectionHead({ idx, kick, title, note }: {
 }
 
 // ── Single item inside .counters ──
-function Counter({ label, value, highlight = false, index }: {
-  label: string; value: number | string; highlight?: boolean; index: number;
+function Counter({ label, value, highlight = false, index, wide = false }: {
+  label: string; value: number | string; highlight?: boolean; index: number; wide?: boolean;
 }) {
   return (
     <div
       className={cn(
-        "counter relative transition-colors duration-[250ms] hover:bg-[#191822]",
-        "py-[34px] px-[26px]",
-        // Desktop/tablet: right border (overflow:hidden on container clips row ends)
-        "sm:border-r sm:border-white/[0.075] sm:last:border-r-0",
-        // Mobile: bottom border instead
-        "max-sm:border-b max-sm:border-white/[0.075] max-sm:last:border-b-0"
+        "counter relative rounded-xl border border-zinc-800 transition-colors duration-[250ms] hover:bg-zinc-800/50",
+        "py-[22px] px-[20px] md:py-[30px] md:px-[26px]",
+        wide && "col-span-2 lg:col-span-1",
       )}
       style={highlight
-        ? { background: "linear-gradient(165deg, rgba(236,69,37,0.13), transparent 70%)" }
-        : undefined
+        ? { background: "linear-gradient(165deg, rgba(236,69,37,0.14), rgba(20,19,24,1) 70%)", borderColor: "rgba(236,69,37,0.25)" }
+        : { background: "#141318" }
       }
     >
-      {/* .ci — index top-right */}
-      <span className="ci absolute top-[18px] right-[20px] font-editorial-mono text-[11px] text-[#62616a]">
+      {/* index — top-right */}
+      <span className="absolute top-[14px] right-[16px] font-mono text-[11px] text-zinc-500">
         {String(index + 1).padStart(2, "0")}
       </span>
-      {/* .cv — main number */}
+      {/* main number */}
       <div
         className={cn(
-          "cv font-display font-semibold leading-[0.9] tracking-[-0.03em] tabular-nums",
+          "font-display font-semibold leading-[0.9] tracking-[-0.03em] tabular-nums",
           highlight ? "text-[#ec4525]" : "text-[#ededee]"
         )}
-        style={{ fontSize: "clamp(40px,5vw,62px)" }}
+        style={{ fontSize: "clamp(36px,4.5vw,58px)" }}
       >
         {typeof value === "number" ? value.toLocaleString("pt-BR") : value}
       </div>
-      {/* .cl — mono label */}
-      <div className="cl font-editorial-mono text-[11px] tracking-[0.16em] uppercase text-[#62616a] mt-[16px]">
+      {/* label */}
+      <div className="font-editorial-mono text-[10px] tracking-[0.16em] uppercase text-zinc-500 mt-[14px]">
         {label}
       </div>
     </div>
@@ -104,19 +101,22 @@ function TabBtn({ active, onClick, children }: {
     <button
       onClick={onClick}
       className={cn(
-        "tab relative font-editorial-mono text-[12px] tracking-[0.08em] uppercase font-semibold",
-        "px-[22px] py-[13px]",
-        "border-r border-white/[0.075] last:border-r-0",
+        "tab relative flex-none whitespace-nowrap font-editorial-mono text-[12px] tracking-[0.08em] uppercase font-semibold",
+        "px-[16px] md:px-[22px] py-[10px] md:py-[13px]",
+        // Mobile: pill with own border
+        "border border-white/[0.075] rounded-full md:rounded-none md:border-0",
+        // Desktop: right border divider
+        "md:border-r md:border-white/[0.075] md:last:border-r-0",
         "transition-all duration-200",
         active
-          ? "on text-[#ededee] bg-[#191822]"
+          ? "on text-[#ededee] bg-[#ec4525] border-[#ec4525] md:bg-[#191822] md:border-white/[0.075]"
           : "text-[#62616a] hover:text-[#9c9ba3] hover:bg-[#141318]"
       )}
     >
       {children}
-      {/* Active bottom accent line — mirrors .tab.on::after */}
+      {/* Active bottom accent line — desktop only */}
       {active && (
-        <span className="absolute left-0 right-0 bottom-0 h-[2px] bg-[#ec4525]" />
+        <span className="hidden md:block absolute left-0 right-0 bottom-0 h-[2px] bg-[#ec4525]" />
       )}
     </button>
   );
@@ -186,7 +186,7 @@ export function AthleteStatsSection({
   return (
     <>
       {/* ══ 03 · Consolidado de Carreira ══ */}
-      <section className="py-24 relative" id="carreira">
+      <section className="py-12 md:py-20 relative border-b border-zinc-800/50" id="carreira">
         <SectionHead
           idx="03"
           kick="Consolidado de Carreira"
@@ -194,18 +194,18 @@ export function AthleteStatsSection({
           note="Números registrados ao longo da carreira do atleta."
         />
 
-        {/* .counters — single bordered container, items with internal border-right */}
-        <div className="counters grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 border border-white/[0.075] rounded-[8px] overflow-hidden bg-[#141318]">
-          <Counter label="Jogos"   value={careerTotals.matches}                              index={0} />
-          <Counter label="Minutos" value={careerTotals.minutes.toLocaleString("pt-BR")}      index={1} />
-          <Counter label="Gols"    value={careerTotals.goals}    highlight                   index={2} />
-          <Counter label="Assist." value={careerTotals.assists}                              index={3} />
-          <Counter label="G+A"     value={careerTotals.goals + careerTotals.assists} highlight index={4} />
+        {/* .counters — 2 cols mobile, 5 cols desktop; G+A spans full width on mobile */}
+        <div className="counters grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
+          <Counter label="G+A"     value={careerTotals.goals + careerTotals.assists} highlight wide index={0} />
+          <Counter label="Gols"    value={careerTotals.goals}    highlight                          index={1} />
+          <Counter label="Assist." value={careerTotals.assists}                                     index={2} />
+          <Counter label="Jogos"   value={careerTotals.matches}                                     index={3} />
+          <Counter label="Minutos" value={careerTotals.minutes.toLocaleString("pt-BR")}             index={4} />
         </div>
       </section>
 
       {/* ══ 04 · Recortes ══ */}
-      <section className="py-24 relative" id="recortes">
+      <section className="py-12 md:py-20 relative border-b border-zinc-800/50" id="recortes">
         <SectionHead
           idx="04"
           kick="Recortes"
@@ -213,8 +213,8 @@ export function AthleteStatsSection({
           note="Alterne entre temporada, médias por 90′, competição e carreira."
         />
 
-        {/* .tabs — single bordered container, items with border-right dividers */}
-        <div className="tabs flex border border-white/[0.075] rounded-[6px] overflow-hidden w-fit mb-[30px] flex-wrap">
+        {/* Mobile: scrollable pills. Desktop: bordered container */}
+        <div className="tabs flex gap-2 md:gap-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-1 md:pb-0 md:border md:border-white/[0.075] md:rounded-[6px] md:overflow-hidden md:w-fit mb-[24px] md:mb-[30px]">
           <TabBtn active={activeTab === "current"}     onClick={() => setActiveTab("current")}>
             Temporada {latestAvailableSeasonYear ?? currentYear}
           </TabBtn>

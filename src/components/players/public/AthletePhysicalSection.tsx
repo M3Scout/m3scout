@@ -42,7 +42,7 @@ function PhysicalCard({
   return (
     <div
       className={cn(
-        "fcard border border-white/[0.075] rounded-[8px] bg-[#141318] p-[24px]",
+        "fcard border border-white/[0.075] rounded-[8px] bg-[#141318] p-[16px] md:p-[24px]",
         "transition-all duration-[250ms] cursor-default",
         !hasValue && "opacity-[0.55]"
       )}
@@ -59,7 +59,7 @@ function PhysicalCard({
       }}
     >
       {/* .ftop — label + "Na faixa" badge */}
-      <div className="ftop flex justify-between items-start gap-[10px] mb-[22px]">
+      <div className="ftop flex justify-between items-start gap-[10px] mb-[14px] md:mb-[22px]">
         <span className="flab font-editorial-mono text-[11px] tracking-[0.14em] uppercase text-[#62616a] leading-[1.35]">
           {label}
         </span>
@@ -72,7 +72,7 @@ function PhysicalCard({
 
       {/* .fval — value with unit, or "—" when empty */}
       {hasValue ? (
-        <div className="fval font-display font-semibold text-[42px] tracking-[-0.025em] leading-none tabular-nums text-[#ededee]">
+        <div className="fval font-display font-semibold text-[28px] md:text-[42px] tracking-[-0.025em] leading-none tabular-nums text-[#ededee]">
           {valStr}
           <span className="u font-editorial-mono text-[15px] text-[#9c9ba3] font-medium ml-[5px]">
             {unit}
@@ -133,9 +133,9 @@ export function AthletePhysicalSection({
   ];
 
   return (
-    <section className="py-24 relative" id="fisico">
+    <section className="py-12 md:py-20 relative border-b border-zinc-800/50" id="fisico">
       {/* .sec-head */}
-      <div className="flex items-end justify-between gap-6 mb-11 flex-wrap">
+      <div className="flex items-end justify-between gap-6 mb-8 md:mb-11 flex-wrap">
         <div>
           <div className="font-editorial-mono text-[11px] tracking-[0.24em] uppercase text-[#62616a] font-medium inline-flex gap-[10px] items-center">
             <span className="text-[#ec4525] font-semibold">06</span>
@@ -144,25 +144,18 @@ export function AthletePhysicalSection({
           </div>
           <h2
             className="font-display font-semibold leading-[1.02] tracking-[-0.025em] mt-[14px] text-[#ededee]"
-            style={{ fontSize: "clamp(28px,3.4vw,44px)" }}
+            style={{ fontSize: "clamp(24px,3.4vw,44px)" }}
           >
             Avaliação corporal
           </h2>
         </div>
-        <p className="font-editorial-mono text-[12px] text-[#62616a] tracking-[0.04em] max-w-[280px] text-right">
+        <p className="hidden md:block font-editorial-mono text-[12px] text-[#62616a] tracking-[0.04em] max-w-[280px] text-right">
           Valor atual frente à faixa ideal de referência para a posição.
         </p>
       </div>
 
-      {/* .fisico-grid — auto-fit, minmax(196px,1fr), gap 16px */}
-      <div
-        className="fisico-grid"
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(196px, 1fr))",
-          gap: "16px",
-        }}
-      >
+      {/* .fisico-grid — 2 cols mobile, 4 cols desktop */}
+      <div className="fisico-grid grid grid-cols-2 md:grid-cols-4 gap-[12px] md:gap-[16px]">
         {metrics.map((m, i) => (
           <PhysicalCard key={m.label} {...m} index={i} />
         ))}

@@ -1,8 +1,10 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 import { useEffect, useState } from "react";
 import logoM3 from "@/assets/logo-m3.png";
 import "./LandingHero.css";
+
+const TITLE_HEADER_ROUTES = ["/sobre", "/atletas", "/players", "/imprensa", "/contato", "/contact"];
 
 const navLinks = [
   { href: "/sobre", label: "Sobre" },
@@ -13,6 +15,8 @@ const navLinks = [
 
 export function LandingNav() {
   const [scrolled, setScrolled] = useState(false);
+  const location = useLocation();
+  const hideMobile = TITLE_HEADER_ROUTES.some(r => location.pathname.startsWith(r));
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 30);
@@ -23,7 +27,7 @@ export function LandingNav() {
 
   return (
     <div className="lp-root">
-      <header className={`lp-nav ${scrolled ? "is-scrolled" : ""}`}>
+      <header className={`lp-nav ${scrolled ? "is-scrolled" : ""} ${hideMobile ? "lp-nav--hide-mobile" : ""}`}>
         <div className="lp-nav__inner">
           {/* Spacer for mobile centering */}
           <div className="lp-nav__spacer lg:hidden" />

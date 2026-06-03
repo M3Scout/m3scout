@@ -8,7 +8,7 @@
   --mono: 'Basis Grotesque Pro', sans-serif;
   background: var(--bg-light);
   color: var(--fg-light);
-  padding: 140px 0;
+  padding: 140px 0 0;
   font-family: var(--mono);
 }
 
@@ -44,8 +44,6 @@
   grid-template-columns: 1.3fr 1fr;
   gap: 80px;
   align-items: center;
-  margin-bottom: 80px;
-  min-height: 200px;
 }
 @media (max-width: 900px) {
   .sobre__main {

@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { getOptimizedImageUrl, getResponsiveSrcSet } from "@/lib/imageUtils";
+import { cn } from "@/lib/utils";
 
 interface AthleteHeroSectionProps {
   player: {
@@ -32,165 +32,183 @@ export function AthleteHeroSection({ player }: AthleteHeroSectionProps) {
     player.dominant_foot ? { label: "Pé",     value: player.dominant_foot,  unit: null   } : null,
   ].filter(Boolean) as { label: string; value: string; unit: string | null }[];
 
-  const cols = Math.min(identItems.length, 4);
+  const imgSrc = getOptimizedImageUrl(player.photo_url, { width: 1500, quality: 85, format: "avif" }) || player.photo_url || "";
+  const imgSrcSet = getResponsiveSrcSet(player.photo_url, [750, 1500], 85) || undefined;
+
+  const cornerTicks = (
+    <>
+      <span className="absolute top-[10px] left-[10px]  w-[11px] h-[11px] border-t-2 border-l-2 border-[#ec4525] z-[4]" />
+      <span className="absolute top-[10px] right-[10px] w-[11px] h-[11px] border-t-2 border-r-2 border-[#ec4525] z-[4]" />
+      <span className="absolute bottom-[10px] left-[10px]  w-[11px] h-[11px] border-b-2 border-l-2 border-[#ec4525] z-[4]" />
+      <span className="absolute bottom-[10px] right-[10px] w-[11px] h-[11px] border-b-2 border-r-2 border-[#ec4525] z-[4]" />
+    </>
+  );
+
+  const actionButtons = (
+    <div className="flex gap-3 flex-wrap">
+      <Link to={`/contact?player=${player.slug}`}>
+        <span className="font-editorial-mono text-[11px] tracking-[0.12em] uppercase font-semibold inline-flex items-center gap-[9px] rounded-[8px] px-5 py-[13px] bg-[#ec4525] text-white hover:bg-[#ff5a39] hover:-translate-y-0.5 transition-all duration-[220ms] cursor-pointer">
+          Falar com a M3
+          <ArrowRight className="w-3.5 h-3.5" />
+        </span>
+      </Link>
+      <button
+        type="button"
+        onClick={() => document.getElementById("tecnico")?.scrollIntoView({ behavior: "smooth" })}
+        className="font-editorial-mono text-[11px] tracking-[0.12em] uppercase font-semibold inline-flex items-center gap-[9px] rounded-[8px] px-5 py-[13px] border border-white/15 text-[#9c9ba3] hover:text-[#ededee] hover:border-white/40 transition-all duration-[220ms] cursor-pointer bg-transparent"
+      >
+        Perfil técnico
+      </button>
+    </div>
+  );
+
+  const identGrid = (cols: string) => (
+    <div className={cn("grid gap-2", cols)}>
+      {identItems.map((item, i) => (
+        <div
+          key={item.label}
+          className="bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-4 hover:bg-zinc-800/60 transition-colors duration-200"
+        >
+          <div className="font-editorial-mono text-[9.5px] tracking-[0.18em] uppercase text-zinc-500 mb-2 flex justify-between items-center">
+            <span>{item.label}</span>
+            <span className="font-mono text-zinc-600">{String(i + 1).padStart(2, "0")}</span>
+          </div>
+          <div className="font-display font-semibold leading-none tracking-[-0.02em] text-[#ededee] text-[22px]">
+            {item.value}
+            {item.unit && (
+              <span className="font-editorial-mono text-[11px] text-zinc-400 font-medium ml-[3px]">
+                {item.unit}
+              </span>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 
   return (
-    <section className="pt-6 pb-[60px] relative" id="identidade">
+    <section className="pt-6 pb-12 mb-12 border-b border-zinc-800/50 relative" id="identidade">
 
-      {/*
-        2-row grid on desktop:
-          Row 1, col 1 → left content (kick + name + pos + ident strip)
-          Row 1, col 2 → photo — fills row 1 height exactly, so its bottom
-                         aligns with the ident strip bottom
-          Row 2, col 1 → action buttons
-        DOM order: left content, buttons, photo
-        (buttons before photo keeps mobile stacking correct)
-      */}
-      <div className="grid md:grid-cols-[1fr,minmax(300px,400px)] gap-x-14 gap-y-8 md:gap-y-0">
+      {/* ════════════════════════════════════════════════
+          MOBILE ONLY — photo full-width, text overlaid inside
+          ════════════════════════════════════════════════ */}
+      <div className="md:hidden">
 
-        {/* ══════════════ LEFT — IDENTIDADE (row 1, col 1) ══════════════ */}
-        <div className="hero-l min-w-0 md:row-start-1 md:col-start-1">
+        {/* Photo — full width, text overlaid */}
+        <div className="relative aspect-[4/5] rounded-[12px] overflow-hidden border border-white/10 bg-[#191822] group">
+          <img
+            src={imgSrc} srcSet={imgSrcSet}
+            sizes="100vw" alt={player.full_name}
+            className="absolute inset-0 w-full h-full object-cover object-top"
+            onError={(e) => { if (player.photo_url) (e.target as HTMLImageElement).src = player.photo_url; }}
+          />
+          <div className="absolute inset-0 pointer-events-none z-[1]"
+            style={{ background: "linear-gradient(180deg, rgba(12,11,13,0.25) 0%, transparent 30%, transparent 42%, rgba(12,11,13,0.68) 70%, rgba(12,11,13,0.96) 100%)" }} />
+          {cornerTicks}
 
-          <div className="rv font-editorial-mono text-[11px] tracking-[0.24em] uppercase text-[#62616a] font-medium inline-flex gap-[10px] items-center">
+          {/* Top: ghost age number (right) */}
+          {player.age && (
+            <div className="absolute top-4 right-4 z-[3] font-display font-bold leading-[0.82] tracking-[-0.04em] select-none pointer-events-none"
+              style={{ fontSize: "80px", color: "transparent", WebkitTextStroke: "1.5px rgba(255,255,255,0.08)" }}>
+              {player.age}
+            </div>
+          )}
+
+          {/* Bottom: name + position line */}
+          <div className="absolute bottom-5 left-5 right-5 z-[3]">
+            <h1 className="font-display font-semibold leading-[0.92] tracking-[-0.04em] text-white"
+              style={{ fontSize: "clamp(34px, 9vw, 52px)" }}>
+              {firstName}
+              {lastName && <><br /><span className="text-white/55">{lastName}</span></>}
+            </h1>
+            <div className="font-editorial-mono text-[12px] tracking-[0.04em] text-white/55 flex gap-3 flex-wrap items-center mt-3">
+              <span className="text-[#ec4525] font-semibold">{player.position}</span>
+              {player.primary_tactical_role && <><span className="text-white/30">/</span><span>{player.primary_tactical_role}</span></>}
+              {player.play_style && <><span className="text-white/30">·</span><span>{player.play_style}</span></>}
+            </div>
+          </div>
+        </div>
+
+        {/* Identity cards 2×2 below photo */}
+        {identItems.length > 0 && <div className="mt-3">{identGrid("grid-cols-2")}</div>}
+
+        {/* Buttons */}
+        <div className="mt-5">{actionButtons}</div>
+      </div>
+
+      {/* ════════════════════════════════════════════════
+          DESKTOP ONLY — two-column: text left, photo right
+          ════════════════════════════════════════════════ */}
+      <div className="hidden md:grid md:grid-cols-[1fr_380px] md:items-start md:gap-14">
+
+        {/* Left column */}
+        <div className="min-w-0 flex flex-col">
+
+          {/* Kicker */}
+          <div className="font-editorial-mono text-[11px] tracking-[0.24em] uppercase text-[#62616a] font-medium inline-flex gap-[10px] items-center">
             <span className="text-[#ec4525] font-semibold">01</span>
             <span className="w-[34px] h-px bg-white/15 flex-none" />
             Scouting Report · 2026
           </div>
 
-          <h1
-            className="rv font-display font-semibold leading-[0.92] tracking-[-0.04em] mt-[18px] mb-1.5 text-[#ededee]"
-            style={{ fontSize: "clamp(44px,6.2vw,92px)" }}
-            data-d="1"
-            id="heroName"
-          >
+          {/* Name */}
+          <h1 className="font-display font-semibold leading-[0.92] tracking-[-0.04em] mt-[18px] mb-2 text-[#ededee]"
+            style={{ fontSize: "clamp(44px,6.2vw,92px)" }}>
             {firstName}
-            {lastName && (
-              <>
-                <br />
-                <span className="text-[#9c9ba3]">{lastName}</span>
-              </>
-            )}
+            {lastName && <><br /><span className="text-[#9c9ba3]">{lastName}</span></>}
           </h1>
 
-          <div
-            className="rv font-editorial-mono text-[14px] tracking-[0.04em] text-[#9c9ba3] flex gap-3 flex-wrap items-center mb-[34px]"
-            data-d="2"
-            id="posLine"
-          >
+          {/* Position line */}
+          <div className="font-editorial-mono text-[14px] tracking-[0.04em] text-[#9c9ba3] flex gap-3 flex-wrap items-center mb-8">
             <span className="text-[#ec4525] font-semibold">{player.position}</span>
-            {player.primary_tactical_role && (
-              <>
-                <span className="text-[#62616a]">/</span>
-                <span>{player.primary_tactical_role}</span>
-              </>
-            )}
-            {player.play_style && (
-              <>
-                <span className="text-[#62616a]">·</span>
-                <span>{player.play_style}</span>
-              </>
-            )}
+            {player.primary_tactical_role && <><span className="text-[#62616a]">/</span><span>{player.primary_tactical_role}</span></>}
+            {player.play_style && <><span className="text-[#62616a]">·</span><span>{player.play_style}</span></>}
           </div>
 
+          {/* Identity strip — 4 cols on desktop */}
           {identItems.length > 0 && (
-            <div
-              className="rv border border-white/[0.075] rounded-[6px] overflow-hidden bg-[#141318]"
-              style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)` }}
-              data-d="3"
-              id="identStrip"
-            >
+            <div className="grid grid-cols-4 gap-[1px] bg-zinc-800 rounded-xl overflow-hidden border border-zinc-800 mb-6">
               {identItems.map((item, i) => (
-                <div
-                  key={item.label}
-                  className={cn(
-                    "px-5 py-[18px] transition-colors duration-[250ms] hover:bg-[#191822]",
-                    i < identItems.length - 1 && "border-r border-white/[0.075]"
-                  )}
-                >
-                  <div className="font-editorial-mono text-[10px] tracking-[0.18em] uppercase text-[#62616a] mb-[10px] flex justify-between items-center">
+                <div key={item.label} className="bg-[#141318] px-5 py-[18px] hover:bg-[#191822] transition-colors duration-200">
+                  <div className="font-editorial-mono text-[9.5px] tracking-[0.18em] uppercase text-zinc-500 mb-[10px] flex justify-between items-center">
                     <span>{item.label}</span>
-                    <span className="text-[#ec4525]">{String(i + 1).padStart(2, "0")}</span>
+                    <span className="font-mono text-zinc-600">{String(i + 1).padStart(2, "0")}</span>
                   </div>
-                  <div className="font-display text-[26px] font-semibold tracking-[-0.02em] leading-none text-[#ededee]">
+                  <div className="font-display font-semibold leading-none tracking-[-0.02em] text-[#ededee] text-[26px]">
                     {item.value}
-                    {item.unit && (
-                      <span className="font-editorial-mono text-[13px] text-[#9c9ba3] font-medium ml-[3px]">
-                        {item.unit}
-                      </span>
-                    )}
+                    {item.unit && <span className="font-editorial-mono text-[13px] text-zinc-400 font-medium ml-[3px]">{item.unit}</span>}
                   </div>
                 </div>
               ))}
             </div>
           )}
 
+          {actionButtons}
         </div>
 
-        {/* ══════════════ ACTIONS (row 2, col 1) ══════════════ */}
-        <div className="rv flex gap-3 mt-[26px] flex-wrap md:row-start-2 md:col-start-1" data-d="4">
-          <Link to={`/contact?player=${player.slug}`}>
-            <span className="font-editorial-mono text-[12px] tracking-[0.12em] uppercase font-semibold inline-flex items-center gap-[9px] rounded-[6px] px-5 py-[14px] bg-[#ec4525] text-[#160603] hover:bg-[#ff5a39] hover:-translate-y-0.5 transition-all duration-[220ms] cursor-pointer">
-              Falar com a M3
-              <ArrowRight className="w-3.5 h-3.5" />
-            </span>
-          </Link>
-          <button
-            type="button"
-            onClick={() => document.getElementById("tecnico")?.scrollIntoView({ behavior: "smooth" })}
-            className="font-editorial-mono text-[12px] tracking-[0.12em] uppercase font-semibold inline-flex items-center gap-[9px] rounded-[6px] px-5 py-[14px] border border-white/15 text-[#9c9ba3] hover:text-[#ededee] hover:border-white transition-all duration-[220ms] cursor-pointer bg-transparent"
-          >
-            Perfil técnico
-          </button>
-        </div>
+        {/* Right column — photo with aspect-[4/5] */}
+        <div className="relative">
+          {/* Ghost number behind photo */}
+          <div className="absolute -top-2 -right-4 z-0 font-display font-bold leading-[0.8] tracking-[-0.04em] select-none pointer-events-none"
+            style={{ fontSize: "clamp(100px,14vw,180px)", color: "transparent", WebkitTextStroke: "1.2px rgba(255,255,255,0.07)" }}>
+            01
+          </div>
 
-        {/* ══════════════ RIGHT — PHOTO (row 1, col 2) ══════════════ */}
-        {/*
-          Desktop: photo spans row 1 only, filling the height defined by the
-          left content (kick → ident strip). The img is absolute so it doesn't
-          contribute intrinsic height to the row — the left column drives the
-          row height, and the photo stretches to match it.
-          Mobile: falls back to normal aspect-[4/5] stacked below the buttons.
-        */}
-        <div
-          className="rv hero-r md:row-start-1 md:col-start-2 md:h-full"
-          data-d="2"
-        >
-          <div className="photo-wrap md:h-full">
-            <div className="photo-frame relative aspect-[4/5] md:aspect-auto md:h-full min-h-[280px] border border-white/15 rounded-[8px] overflow-hidden bg-[#191822] group">
-
-              <img
-                src={getOptimizedImageUrl(player.photo_url, { width: 1500, quality: 85, format: "avif" }) || player.photo_url || ""}
-                srcSet={getResponsiveSrcSet(player.photo_url, [750, 1500], 85) || undefined}
-                sizes="(max-width: 768px) 100vw, 400px"
-                alt={player.full_name}
-                className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-[1.02]"
-                onError={(e) => {
-                  if (player.photo_url) (e.target as HTMLImageElement).src = player.photo_url;
-                }}
-              />
-
-              {/* Bottom gradient fade */}
-              <div
-                className="absolute inset-0 pointer-events-none z-[2]"
-                style={{ background: "linear-gradient(180deg, transparent 55%, rgba(12,11,13,0.78) 100%)" }}
-              />
-
-              {/* Corner ticks */}
-              <span className="tick tl absolute top-[9px] left-[9px]  w-[11px] h-[11px] border-t-2 border-l-2 border-[#ec4525] z-[4]" />
-              <span className="tick tr absolute top-[9px] right-[9px] w-[11px] h-[11px] border-t-2 border-r-2 border-[#ec4525] z-[4]" />
-              <span className="tick bl absolute bottom-[9px] left-[9px]  w-[11px] h-[11px] border-b-2 border-l-2 border-[#ec4525] z-[4]" />
-              <span className="tick br absolute bottom-[9px] right-[9px] w-[11px] h-[11px] border-b-2 border-r-2 border-[#ec4525] z-[4]" />
-
-              {/* Position badge */}
-              <div className="photo-meta absolute left-[14px] bottom-[14px] right-[14px] z-[5] flex justify-between items-end">
-                <span
-                  className="photo-badge font-editorial-mono text-[10px] tracking-[0.16em] uppercase font-semibold text-[#ec4525] border border-[#ec4525]/40 rounded-full px-[13px] py-[7px]"
-                  style={{ background: "rgba(12,11,13,0.60)", backdropFilter: "blur(6px)" }}
-                >
-                  {player.position}
-                </span>
-              </div>
-
+          <div className="relative aspect-[4/5] rounded-[10px] overflow-hidden border border-white/10 bg-[#191822] group z-[1]">
+            <img
+              src={imgSrc} srcSet={imgSrcSet}
+              sizes="380px" alt={player.full_name}
+              className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-[1.02]"
+              onError={(e) => { if (player.photo_url) (e.target as HTMLImageElement).src = player.photo_url; }}
+            />
+            <div className="absolute inset-0 pointer-events-none z-[2]"
+              style={{ background: "linear-gradient(180deg, transparent 50%, rgba(12,11,13,0.82) 100%)" }} />
+            {cornerTicks}
+            <div className="absolute left-[14px] bottom-[14px] z-[5]">
+              <span className="font-editorial-mono text-[10px] tracking-[0.16em] uppercase font-semibold text-[#ec4525] border border-[#ec4525]/40 rounded-full px-[13px] py-[7px]"
+                style={{ background: "rgba(12,11,13,0.60)", backdropFilter: "blur(6px)" }}>
+                {player.position}
+              </span>
             </div>
           </div>
         </div>

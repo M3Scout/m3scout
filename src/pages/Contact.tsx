@@ -172,12 +172,12 @@ const Contact = () => {
   return (
     <div style={{ backgroundColor: BLACK, fontFamily: B }}>
 
+
       {/* S1 HERO */}
-      <section style={{ backgroundColor: BLACK, padding: `clamp(96px, 13vh, 220px) ${gutter} 80px`, borderBottom: `1px solid ${BORDER_DARK}` }}>
+      <section style={{ backgroundColor: BLACK, padding: `136px ${gutter} 80px`, borderBottom: `1px solid ${BORDER_DARK}` }} className="hidden md:block">
         <div style={{ maxWidth: maxW, margin: "0 auto" }}>
 
-
-          <h1 style={{
+          <h1 className="hidden md:block" style={{
             fontFamily: BC,
             fontWeight: 900,
             fontSize: "clamp(72px, 10vw, 120px)",
@@ -193,9 +193,6 @@ const Contact = () => {
             <span style={{ fontFamily: BC, fontWeight: 300, fontStyle: "italic", color: RED }}>A M3.</span>
           </h1>
 
-          <p style={{ fontFamily: B, fontWeight: 300, fontSize: 16, lineHeight: 1.7, color: WHITE_MUTED, maxWidth: 480, margin: 0 }}>
-            Quer representar um atleta ou falar sobre oportunidades? Escolha o canal ideal ou use o formulário abaixo.
-          </p>
         </div>
       </section>
 

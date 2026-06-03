@@ -29,20 +29,6 @@ export function AboutSection() {
           </div>
         </div>
 
-        <div className="sobre__meta">
-          <div className="sobre__meta-item">
-            <span className="sobre__meta-label">Sede</span>
-            <span className="sobre__meta-val">Campo Grande · BR</span>
-          </div>
-          <div className="sobre__meta-item">
-            <span className="sobre__meta-label">Atuação</span>
-            <span className="sobre__meta-val">Brasil & Internacional</span>
-          </div>
-          <div className="sobre__meta-item">
-            <span className="sobre__meta-label">Desde</span>
-            <span className="sobre__meta-val">2024</span>
-          </div>
-        </div>
       </div>
     </section>
   );
