@@ -579,14 +579,14 @@ export function MarketValueTab({
 
                       {/* Valor */}
                       <td
-                        className="px-4 py-3 tabular-nums font-bold"
+                        className="px-4 py-3 tabular-nums font-bold whitespace-nowrap"
                         style={{ borderRight: `1px solid ${BORDER}`, color: isLatest ? A : TEXT, fontSize: isLatest ? 14 : 11 }}
                       >
                         {formatFull(entry.value, entry.currency)}
                       </td>
 
                       {/* Moeda */}
-                      <td className="px-4 py-3" style={{ borderRight: `1px solid ${BORDER}`, color: MUTED }}>
+                      <td className="px-4 py-3 whitespace-nowrap" style={{ borderRight: `1px solid ${BORDER}`, color: MUTED }}>
                         <span
                           className="text-[9px] tracking-[0.15em] uppercase px-1.5 py-0.5"
                           style={{ border: `1px solid ${BORDER}`, color: MUTED }}
@@ -596,7 +596,7 @@ export function MarketValueTab({
                       </td>
 
                       {/* Fonte */}
-                      <td className="px-4 py-3" style={{ borderRight: `1px solid ${BORDER}`, color: MUTED }}>
+                      <td className="px-4 py-3 whitespace-nowrap" style={{ borderRight: `1px solid ${BORDER}`, color: MUTED }}>
                         {entry.source || "—"}
                       </td>
 
