@@ -161,6 +161,7 @@ const RESPONSIVE_CSS = `
     .pl-toolbar-filters select {
       padding-top: 8px !important;
       padding-bottom: 8px !important;
+      font-size: 16px !important;
     }
      .pl-toolbar-bottom {
        flex-direction: row;
