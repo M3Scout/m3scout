@@ -168,9 +168,9 @@ type SeasonRowData = SeasonCompetitionStats & { source: SeasonSource };
 
 // ─── Metric selector options for the bar chart ───────────────────────────────
 const METRIC_OPTIONS = [
-  { id: "ga", label: "Gols & Assistências", a: "goals", b: "assists", aLabel: "Gols", bLabel: "Assist.", aColor: GREEN, bColor: BLUE },
-  { id: "shots", label: "Finalizações", a: "shots", b: "shots_on_target", aLabel: "FIN", bLabel: "No Gol", aColor: A, bColor: AMBER },
-  { id: "defense", label: "Defensivos", a: "tackles", b: "interceptions", aLabel: "DES", bLabel: "INT", aColor: BLUE, bColor: GREEN },
+  { id: "ga", label: "Gols & Assistências", shortLabel: "G&A", a: "goals", b: "assists", aLabel: "Gols", bLabel: "Assist.", aColor: GREEN, bColor: BLUE },
+  { id: "shots", label: "Finalizações", shortLabel: "FIN", a: "shots", b: "shots_on_target", aLabel: "FIN", bLabel: "No Gol", aColor: A, bColor: AMBER },
+  { id: "defense", label: "Defensivos", shortLabel: "DEF", a: "tackles", b: "interceptions", aLabel: "DES", bLabel: "INT", aColor: BLUE, bColor: GREEN },
 ] as const;
 type MetricId = typeof METRIC_OPTIONS[number]["id"];
 
