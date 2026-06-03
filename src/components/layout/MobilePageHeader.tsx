@@ -18,6 +18,7 @@ export function MobilePageHeader({ title }: MobilePageHeaderProps) {
       }}
     >
       <span
+        className="pl-4"
         style={{
           fontFamily: "'Basis Grotesque Pro', sans-serif",
           fontWeight: 600,
