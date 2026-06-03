@@ -524,7 +524,7 @@ const PlayerDetail = () => {
 
           {/* Photo */}
           <div
-            className={`w-20 h-20 shrink-0 border ${T.border} overflow-hidden bg-[#111] flex items-center justify-center`}
+            className={`w-20 h-20 shrink-0 border ${T.border} overflow-hidden bg-[#111] hidden md:flex items-center justify-center`}
           >
             {player.photo_url ? (
               <img
