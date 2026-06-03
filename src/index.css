@@ -1076,3 +1076,15 @@ p, span, h1, h2, h3, h4, h5, h6, a, li {
     padding-bottom: 0.125rem;
   }
 }
+
+/* ========== PREVENT iOS ZOOM ON INPUT FOCUS ========== */
+/* iOS Safari zooms into inputs when font-size < 16px. Force 16px on mobile
+   for all text-like inputs/textareas/selects across the dashboard. */
+@media screen and (max-width: 768px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
