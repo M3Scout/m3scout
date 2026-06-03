@@ -692,12 +692,12 @@ const PlayerDetail = () => {
                     { label: "ASSIST", value: statsLoading ? "…" : (seasonTotals?.assists ?? "—"), color: undefined },
                     { label: "G+A", value: statsLoading ? "…" : ga, color: T.amber },
                   ].map((s) => (
-                    <div key={s.label} className="px-3 py-4 text-center">
-                      <span className={`block text-[9px] tracking-[0.2em] uppercase ${T.muted} font-jetbrains mb-1`}>
+                    <div key={s.label} className="px-1 sm:px-3 py-4 text-center min-w-0">
+                      <span className={`block text-[9px] tracking-[0.15em] sm:tracking-[0.2em] uppercase ${T.muted} font-jetbrains mb-1 whitespace-nowrap`}>
                         {s.label}
                       </span>
                       <span
-                        className="font-jetbrains text-[28px] font-bold leading-none"
+                        className="font-jetbrains text-[16px] sm:text-[22px] md:text-[28px] font-bold leading-none whitespace-nowrap block"
                         style={{ color: s.color ?? "#F2EDE4" }}
                       >
                         {s.value}
