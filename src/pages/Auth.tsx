@@ -330,11 +330,12 @@ const Auth = () => {
                   role="checkbox"
                   aria-checked={keepLoggedIn}
                   onClick={toggleKeepLoggedIn}
-                  className="relative flex-shrink-0 w-5 h-5 rounded-full transition-all duration-200 outline-none"
+                  className="relative flex-shrink-0 rounded-full transition-all duration-200 outline-none p-0"
                   style={{
+                    width: 20, height: 20, minWidth: 20, minHeight: 20,
                     background: keepLoggedIn ? RED : "rgba(255,255,255,0.06)",
                     border: keepLoggedIn ? `2px solid ${RED}` : "2px solid rgba(255,255,255,0.15)",
-                    boxShadow: keepLoggedIn ? `0 0 12px rgba(255,107,53,0.4)` : "none",
+                    boxShadow: keepLoggedIn ? `0 0 12px rgba(229,23,63,0.4)` : "none",
                   }}
                 >
                   {keepLoggedIn && (
@@ -374,15 +375,15 @@ const Auth = () => {
               disabled={loading}
               className="w-full h-14 flex items-center justify-center gap-2.5 rounded-full transition-all duration-200 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
-                background: loading ? "rgba(255,107,53,0.7)" : RED,
-                color: "#000",
+                background: loading ? `${RED}b3` : RED,
+                color: "#fff",
                 fontSize: "1.05rem",
                 fontWeight: 300,
                 letterSpacing: "0.01em",
-                boxShadow: loading ? "none" : "0 8px 32px rgba(255,107,53,0.25)",
+                boxShadow: loading ? "none" : "0 8px 32px rgba(229,23,63,0.30)",
                 fontFamily: "inherit",
               }}
-              onMouseEnter={e => { if (!loading) (e.currentTarget.style.background = "#FF7A45"); }}
+              onMouseEnter={e => { if (!loading) (e.currentTarget.style.background = "#c9112e"); }}
               onMouseLeave={e => { if (!loading) (e.currentTarget.style.background = RED); }}
             >
               {loading ? (
