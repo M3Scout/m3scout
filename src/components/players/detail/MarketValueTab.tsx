@@ -388,10 +388,11 @@ export function MarketValueTab({
                     value={fDate}
                     onChange={(e) => setFDate(e.target.value)}
                     required
-                    className={inputCls}
-                    style={{ colorScheme: "dark" }}
+                    className={`${inputCls} max-w-full min-w-0 box-border`}
+                    style={{ colorScheme: "dark", WebkitAppearance: "none", appearance: "none" }}
                   />
                 </Field>
+
 
                 <Field label={<>Fonte <span style={{ color: "#444" }}>(opcional)</span></>}>
                   <input
