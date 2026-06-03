@@ -536,13 +536,13 @@ export function MarketValueTab({
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full font-jetbrains text-[11px]" style={{ color: TEXT }}>
+            <table className="w-full min-w-[640px] font-jetbrains text-[11px]" style={{ color: TEXT }}>
               <thead>
                 <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
                   {["DATA", "VALOR", "MOEDA", "FONTE", "NOTA", ""].map((h, i) => (
                     <th
                       key={i}
-                      className="px-4 py-2.5 text-left text-[9px] tracking-[0.18em] uppercase"
+                      className="px-4 py-2.5 text-left text-[9px] tracking-[0.18em] uppercase whitespace-nowrap"
                       style={{ color: MUTED, borderRight: i < 5 ? `1px solid ${BORDER}` : undefined }}
                     >
                       {h}
