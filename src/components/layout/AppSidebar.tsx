@@ -368,38 +368,36 @@ export function AppSidebar() {
   return (
     <>
       {/* ===== MOBILE HEADER (< 768px) ===== */}
-       <header
-         className="md:hidden fixed left-0 right-0 z-[100] border-b border-white/5 flex items-center justify-between"
-         style={{
-           top: 0,
-           height: 'calc(var(--sat) + 3.5rem)',
-           paddingTop: 'var(--sat)',
-           background: '#18181b',
-           paddingLeft: 'calc(var(--sal) + 1rem)',
-           paddingRight: 'calc(var(--sar) + 1rem)',
-         }}
-       >
-        <Link to="/" className="flex items-center">
-          <img src={logoM3} alt="M3 Agency" className="h-7 w-auto" width={70} height={28} />
-        </Link>
-        <div className="flex items-center gap-1">
-          <NotificationBell />
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className={cn(
-              "w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-150",
-              mobileMenuOpen
-                ? "bg-primary/10 text-primary"
-                : "text-zinc-400 active:bg-white/5"
-            )}
-          >
-            {mobileMenuOpen ? (
-              <X className="w-5 h-5" strokeWidth={1.5} />
-            ) : (
-              <Menu className="w-5 h-5" strokeWidth={1.5} />
-            )}
-          </button>
-        </div>
+      <header
+        className="md:hidden fixed left-0 right-0 z-[100] border-b border-white/5 flex items-center justify-between"
+        style={{
+          top: 0,
+          height: 'calc(var(--sat) + 3.5rem)',
+          paddingTop: 'var(--sat)',
+          background: '#18181b',
+          paddingLeft: 'calc(var(--sal) + 1rem)',
+          paddingRight: 'calc(var(--sar) + 1rem)',
+        }}
+      >
+        {/* Left: hamburger with dark rect background */}
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-150 bg-zinc-800 text-white active:bg-zinc-700"
+        >
+          {mobileMenuOpen ? (
+            <X className="w-5 h-5" strokeWidth={1.5} />
+          ) : (
+            <Menu className="w-5 h-5" strokeWidth={1.5} />
+          )}
+        </button>
+
+        {/* Center: Dashboard title */}
+        <span style={{ fontFamily: "'Basis Grotesque Pro', sans-serif", fontWeight: 600, fontSize: 17, color: '#f4f4f5', letterSpacing: '-0.01em', position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
+          Dashboard
+        </span>
+
+        {/* Right: bell only */}
+        <NotificationBell />
       </header>
 
       {/* ===== MOBILE DRAWER BACKDROP ===== */}
