@@ -3,7 +3,6 @@ import { AnimatePresence } from "framer-motion";
 import { AppSidebar } from "./AppSidebar";
 import { SidebarProvider, useSidebar } from "@/hooks/useSidebar";
 import { PageTransition } from "./PageTransition";
-import { AppBottomNav } from "./AppBottomNav";
 import { cn } from "@/lib/utils";
 
 function AppLayoutContent() {
