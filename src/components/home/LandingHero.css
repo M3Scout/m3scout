@@ -63,11 +63,11 @@
   top: 0; left: 0; right: 0;
   z-index: 100;
   color: var(--fg-dark);
-  background: #141414;
+  background: #ffffff;
   transition: background 0.3s ease, border-color 0.3s ease, padding 0.3s ease;
   border-bottom: 1px solid transparent;
-  padding-top: calc(24px + env(safe-area-inset-top, 0px));
-  padding-bottom: 24px;
+  padding-top: calc(26px + env(safe-area-inset-top, 0px));
+  padding-bottom: 26px;
 }
 .lp-nav__inner {
   max-width: 1600px;
@@ -79,12 +79,12 @@
   gap: 32px;
 }
 .lp-nav.is-scrolled {
-  background: #141414;
+  background: #ffffff;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom-color: var(--line-dark);
-  padding-top: calc(16px + env(safe-area-inset-top, 0px));
-  padding-bottom: 16px;
+  padding-top: calc(18px + env(safe-area-inset-top, 0px));
+  padding-bottom: 18px;
 }
 .lp-nav__logo {
   font-family: var(--display);
