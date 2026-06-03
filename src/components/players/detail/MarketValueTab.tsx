@@ -349,7 +349,7 @@ export function MarketValueTab({
       <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-px" style={{ background: BORDER }}>
 
         {/* Left: Form */}
-        <div style={{ background: BG }}>
+        <div className="min-w-0" style={{ background: BG }}>
           <SectionHead>ATUALIZAR VALOR</SectionHead>
           <div className="p-5">
             {canEdit ? (
@@ -436,7 +436,7 @@ export function MarketValueTab({
         </div>
 
         {/* Right: Chart */}
-        <div style={{ background: BG }}>
+        <div className="min-w-0" style={{ background: BG }}>
           <SectionHead>EVOLUÇÃO DO VALOR DE MERCADO</SectionHead>
           <div className="p-5">
             {chartData.length < 2 ? (
@@ -536,13 +536,13 @@ export function MarketValueTab({
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full font-jetbrains text-[11px]" style={{ color: TEXT }}>
+            <table className="w-full min-w-[640px] font-jetbrains text-[11px]" style={{ color: TEXT }}>
               <thead>
                 <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
                   {["DATA", "VALOR", "MOEDA", "FONTE", "NOTA", ""].map((h, i) => (
                     <th
                       key={i}
-                      className="px-4 py-2.5 text-left text-[9px] tracking-[0.18em] uppercase"
+                      className="px-4 py-2.5 text-left text-[9px] tracking-[0.18em] uppercase whitespace-nowrap"
                       style={{ color: MUTED, borderRight: i < 5 ? `1px solid ${BORDER}` : undefined }}
                     >
                       {h}
@@ -561,14 +561,14 @@ export function MarketValueTab({
                       onMouseLeave={(e) => (e.currentTarget.style.background = "")}
                     >
                       {/* Data */}
-                      <td className="px-4 py-3" style={{ borderRight: `1px solid ${BORDER}` }}>
+                      <td className="px-4 py-3 whitespace-nowrap" style={{ borderRight: `1px solid ${BORDER}` }}>
                         <div className="flex items-center gap-2 flex-wrap">
                           <span>
                             {format(new Date(entry.recorded_at), "dd/MM/yyyy")}
                           </span>
                           {isLatest && (
                             <span
-                              className="text-[9px] tracking-[0.15em] uppercase px-1.5 py-0.5 font-bold"
+                              className="text-[9px] tracking-[0.15em] uppercase px-1.5 py-0.5 font-bold whitespace-nowrap"
                               style={{ color: A, border: `1px solid ${A}` }}
                             >
                               ATUAL
@@ -579,14 +579,14 @@ export function MarketValueTab({
 
                       {/* Valor */}
                       <td
-                        className="px-4 py-3 tabular-nums font-bold"
+                        className="px-4 py-3 tabular-nums font-bold whitespace-nowrap"
                         style={{ borderRight: `1px solid ${BORDER}`, color: isLatest ? A : TEXT, fontSize: isLatest ? 14 : 11 }}
                       >
                         {formatFull(entry.value, entry.currency)}
                       </td>
 
                       {/* Moeda */}
-                      <td className="px-4 py-3" style={{ borderRight: `1px solid ${BORDER}`, color: MUTED }}>
+                      <td className="px-4 py-3 whitespace-nowrap" style={{ borderRight: `1px solid ${BORDER}`, color: MUTED }}>
                         <span
                           className="text-[9px] tracking-[0.15em] uppercase px-1.5 py-0.5"
                           style={{ border: `1px solid ${BORDER}`, color: MUTED }}
@@ -596,7 +596,7 @@ export function MarketValueTab({
                       </td>
 
                       {/* Fonte */}
-                      <td className="px-4 py-3" style={{ borderRight: `1px solid ${BORDER}`, color: MUTED }}>
+                      <td className="px-4 py-3 whitespace-nowrap" style={{ borderRight: `1px solid ${BORDER}`, color: MUTED }}>
                         {entry.source || "—"}
                       </td>
 

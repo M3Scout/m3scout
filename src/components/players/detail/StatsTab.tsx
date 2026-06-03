@@ -168,9 +168,9 @@ type SeasonRowData = SeasonCompetitionStats & { source: SeasonSource };
 
 // ─── Metric selector options for the bar chart ───────────────────────────────
 const METRIC_OPTIONS = [
-  { id: "ga", label: "Gols & Assistências", a: "goals", b: "assists", aLabel: "Gols", bLabel: "Assist.", aColor: GREEN, bColor: BLUE },
-  { id: "shots", label: "Finalizações", a: "shots", b: "shots_on_target", aLabel: "FIN", bLabel: "No Gol", aColor: A, bColor: AMBER },
-  { id: "defense", label: "Defensivos", a: "tackles", b: "interceptions", aLabel: "DES", bLabel: "INT", aColor: BLUE, bColor: GREEN },
+  { id: "ga", label: "Gols & Assistências", shortLabel: "G&A", a: "goals", b: "assists", aLabel: "Gols", bLabel: "Assist.", aColor: GREEN, bColor: BLUE },
+  { id: "shots", label: "Finalizações", shortLabel: "FIN", a: "shots", b: "shots_on_target", aLabel: "FIN", bLabel: "No Gol", aColor: A, bColor: AMBER },
+  { id: "defense", label: "Defensivos", shortLabel: "DEF", a: "tackles", b: "interceptions", aLabel: "DES", bLabel: "INT", aColor: BLUE, bColor: GREEN },
 ] as const;
 type MetricId = typeof METRIC_OPTIONS[number]["id"];
 
@@ -568,36 +568,38 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
       {/* ── Resumo de Carreira ──────────────────────────────────────────────── */}
       <div className="border" style={{ borderColor: BORDER }}>
         <SectionHead>RESUMO DE CARREIRA</SectionHead>
-        <div className="p-4">
-          {[
-            { label: "JOGOS", value: careerTotals.matches },
-            { label: "MINUTOS", value: careerTotals.minutes },
-            { label: "GOLS", value: careerTotals.goals, color: careerTotals.goals > 0 ? GREEN : A },
-            { label: "ASSIST", value: careerTotals.assists, color: careerTotals.assists > 0 ? GREEN : A },
-            { label: "CHUTES", value: careerTotals.shots },
-            { label: "P.DECISIVOS", value: careerTotals.key_passes },
-            { label: "DESARMES", value: careerTotals.tackles },
-            { label: "AMARELOS", value: careerTotals.yellow_cards, color: careerTotals.yellow_cards > 0 ? AMBER : undefined },
-          ].map((stat, i, arr) => (
-            <div
-              key={stat.label}
-              className="inline-flex flex-col items-center justify-center px-3 py-4 text-center"
-              style={{
-                width: `${100 / 8}%`,
-                borderRight: i < arr.length - 1 ? `1px solid ${BORDER}` : undefined,
-              }}
-            >
-              <span className="font-jetbrains text-[9px] tracking-[0.16em] uppercase mb-1.5" style={{ color: MUTED }}>
-                {stat.label}
-              </span>
-              <span
-                className="font-jetbrains text-[24px] font-bold leading-none"
-                style={{ color: stat.color ?? TEXT }}
+        <div className="p-2 sm:p-4">
+          <div className="grid grid-cols-4 md:grid-cols-8">
+            {[
+              { label: "JOGOS", value: careerTotals.matches },
+              { label: "MINUTOS", value: careerTotals.minutes },
+              { label: "GOLS", value: careerTotals.goals, color: careerTotals.goals > 0 ? GREEN : A },
+              { label: "ASSIST", value: careerTotals.assists, color: careerTotals.assists > 0 ? GREEN : A },
+              { label: "CHUTES", value: careerTotals.shots },
+              { label: "P.DECISIVOS", value: careerTotals.key_passes },
+              { label: "DESARMES", value: careerTotals.tackles },
+              { label: "AMARELOS", value: careerTotals.yellow_cards, color: careerTotals.yellow_cards > 0 ? AMBER : undefined },
+            ].map((stat, i, arr) => (
+              <div
+                key={stat.label}
+                className="flex flex-col items-center justify-center px-1 sm:px-2 py-3 sm:py-4 text-center min-w-0"
+                style={{
+                  borderRight: i < arr.length - 1 && (i + 1) % 4 !== 0 ? `1px solid ${BORDER}` : undefined,
+                  borderBottom: i < 4 ? `1px solid ${BORDER}` : undefined,
+                }}
               >
-                {stat.value}
-              </span>
-            </div>
-          ))}
+                <span className="font-jetbrains text-[8px] sm:text-[9px] tracking-[0.12em] sm:tracking-[0.16em] uppercase mb-1.5 whitespace-nowrap" style={{ color: MUTED }}>
+                  {stat.label}
+                </span>
+                <span
+                  className="font-jetbrains text-[18px] sm:text-[22px] md:text-[24px] font-bold leading-none whitespace-nowrap"
+                  style={{ color: stat.color ?? TEXT }}
+                >
+                  {stat.value}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
         {allSeasons.length > 0 && (
           <div className="px-4 py-2 border-t font-jetbrains text-[10px] tracking-wider uppercase" style={{ borderColor: BORDER, color: MUTED }}>
@@ -611,26 +613,27 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
       {/* ── Evolução por Temporada ──────────────────────────────────────────── */}
       <div className="border" style={{ borderColor: BORDER }}>
         <div
-          className="flex items-center justify-between px-4 py-3 border-b"
+          className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between px-4 py-3 border-b"
           style={{ borderColor: BORDER }}
         >
           <span className="font-barlow font-black text-[13px] tracking-[0.2em] uppercase" style={{ color: MUTED }}>
             EVOLUÇÃO POR TEMPORADA
           </span>
           {/* Metric selector */}
-          <div className="flex gap-0" style={{ border: `1px solid ${BORDER}` }}>
+          <div className="flex gap-0 self-start md:self-auto" style={{ border: `1px solid ${BORDER}` }}>
             {METRIC_OPTIONS.map((opt) => (
               <button
                 key={opt.id}
                 onClick={() => setSelectedMetric(opt.id)}
-                className="px-3 py-1 font-jetbrains text-[10px] tracking-wider uppercase transition-colors"
+                className="px-2 sm:px-3 py-1 font-jetbrains text-[10px] tracking-wider uppercase transition-colors whitespace-nowrap"
                 style={{
                   background: selectedMetric === opt.id ? A : BG,
                   color: selectedMetric === opt.id ? "#fff" : MUTED,
                   borderLeft: opt.id !== "ga" ? `1px solid ${BORDER}` : undefined,
                 }}
               >
-                {opt.label}
+                <span className="md:hidden">{opt.shortLabel}</span>
+                <span className="hidden md:inline">{opt.label}</span>
               </button>
             ))}
           </div>
@@ -694,7 +697,7 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
                     {TABLE_HEADERS.map((h, i) => (
                       <th
                         key={i}
-                        className="px-3 py-2 text-left font-jetbrains text-[9px] tracking-[0.18em] uppercase"
+                        className="px-1.5 sm:px-3 py-2 text-left font-jetbrains text-[9px] tracking-[0.18em] uppercase whitespace-nowrap"
                         style={{
                           color: MUTED,
                           borderRight: i < TABLE_HEADERS.length - 1 ? `1px solid ${BORDER}` : undefined,
@@ -967,10 +970,10 @@ function SeasonRow({ row, isGoalkeeper = false }: { row: SeasonRowData; matches?
 
   const badge =
     row.source === "manual" || row.source === "player_stats" || row.source === "live_correction"
-      ? { label: "MANUAL",       color: BLU }
+      ? { label: "MANUAL",        shortLabel: "M",   color: BLU }
       : row.source === "mixed"
-      ? { label: "LIVE + MANUAL", color: AMB }
-      : /* live */ { label: "LIVE", color: G };
+      ? { label: "LIVE + MANUAL", shortLabel: "M+L", color: AMB }
+      : /* live */ { label: "LIVE", shortLabel: "L", color: G };
 
   const ataqueStats: StatDef[] = [
     { label: "Gols",        value: s.goals,            positive: true },
@@ -1092,10 +1095,11 @@ function SeasonRow({ row, isGoalkeeper = false }: { row: SeasonRowData; matches?
         {/* Badge */}
         <td className="px-3 py-2.5">
           <span
-            className="font-jetbrains text-[9px] tracking-wider uppercase px-1.5 py-0.5"
+            className="font-jetbrains text-[9px] tracking-wider uppercase px-1.5 py-0.5 whitespace-nowrap inline-block"
             style={{ color: badge.color, border: `1px solid ${badge.color}` }}
           >
-            {badge.label}
+            <span className="md:hidden">{badge.shortLabel}</span>
+            <span className="hidden md:inline">{badge.label}</span>
           </span>
         </td>
       </tr>
