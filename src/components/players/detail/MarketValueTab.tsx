@@ -535,7 +535,7 @@ export function MarketValueTab({
             </span>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto scrollbar-hide">
             <table className="w-full min-w-[640px] font-jetbrains text-[11px]" style={{ color: TEXT }}>
               <thead>
                 <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
