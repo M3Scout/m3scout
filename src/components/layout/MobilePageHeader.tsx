@@ -33,7 +33,7 @@ export function MobilePageHeader({ title }: MobilePageHeaderProps) {
         style={{
           fontFamily: "'Basis Grotesque Pro', sans-serif",
           fontWeight: 600,
-          fontSize: 21,
+          fontSize: 25,
           color: "#ffffff",
           letterSpacing: "-0.01em",
           paddingLeft: "clamp(24px, 5.625vw, 72px)",
