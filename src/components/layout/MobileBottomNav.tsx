@@ -149,13 +149,7 @@ export function MobileBottomNav() {
                   layoutId="m3-public-nav-pill"
                   className="m3-bottom-nav__pill"
                   transition={{ type: "spring", stiffness: 320, damping: 26, mass: 0.9 }}
-                >
-                  <span
-                    key={isWarping ? "warp-on" : "warp-off"}
-                    className={`m3-bottom-nav__pill-inner${isWarping ? " m3-bottom-nav__pill--stretching" : ""}`}
-                    style={isWarping ? { filter: "url(#m3-public-glass-lens)" } : undefined}
-                  />
-                </motion.span>
+                />
               )}
 
               <span className="m3-bottom-nav__content">
