@@ -136,6 +136,14 @@
     inset 0 -1px 0 rgba(0, 0, 0, 0.35),
     0 4px 14px rgba(0, 0, 0, 0.25);
 }
+.m3-bottom-nav__pill-inner {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  transform-origin: center;
+}
+
 
 .m3-bottom-nav__pill--warping {
   backdrop-filter: blur(22px) brightness(1.18) saturate(2);
