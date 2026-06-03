@@ -289,7 +289,7 @@ export function TechnicalTab({ playerId }: TechnicalTabProps) {
 
       {/* ── KPI Strip ──────────────────────────────────────────────────────── */}
       <div
-        className="grid grid-cols-5 divide-x"
+        className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5"
         style={{ borderColor: BORDER, border: `1px solid ${BORDER}` }}
       >
         {KPI_ITEMS.map((item, i) => {
@@ -298,10 +298,13 @@ export function TechnicalTab({ playerId }: TechnicalTabProps) {
           return (
             <div
               key={item.key}
-              className="px-4 py-4 flex flex-col gap-1"
-              style={{ borderRight: i < 4 ? `1px solid ${BORDER}` : undefined }}
+              className="px-3 sm:px-4 py-4 flex flex-col gap-1 min-w-0"
+              style={{
+                borderRight: (i + 1) % 5 !== 0 ? `1px solid ${BORDER}` : undefined,
+                borderTop: i >= 2 ? `1px solid ${BORDER}` : undefined,
+              }}
             >
-              <span className="font-jetbrains text-[9px] uppercase tracking-widest" style={{ color: MUTED }}>
+              <span className="font-jetbrains text-[9px] uppercase tracking-widest whitespace-nowrap" style={{ color: MUTED }}>
                 {item.label}
               </span>
               {attrLoading ? (
