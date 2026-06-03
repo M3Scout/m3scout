@@ -121,15 +121,11 @@ export function MobileBottomNav() {
 
       <div
         ref={navRef}
-        className={`m3-bottom-nav__inner ${isWarping ? "is-warping" : ""}`}
+        className="m3-bottom-nav__inner"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
-        style={{
-          touchAction: "none",
-          userSelect: "none",
-          filter: isWarping ? "url(#m3-public-glass-lens)" : undefined,
-        }}
+        style={{ touchAction: "none", userSelect: "none" }}
       >
         {items.map((item, idx) => {
           const isDisplayActive = idx === displayIdx;
