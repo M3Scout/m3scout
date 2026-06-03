@@ -568,36 +568,38 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
       {/* ── Resumo de Carreira ──────────────────────────────────────────────── */}
       <div className="border" style={{ borderColor: BORDER }}>
         <SectionHead>RESUMO DE CARREIRA</SectionHead>
-        <div className="p-4">
-          {[
-            { label: "JOGOS", value: careerTotals.matches },
-            { label: "MINUTOS", value: careerTotals.minutes },
-            { label: "GOLS", value: careerTotals.goals, color: careerTotals.goals > 0 ? GREEN : A },
-            { label: "ASSIST", value: careerTotals.assists, color: careerTotals.assists > 0 ? GREEN : A },
-            { label: "CHUTES", value: careerTotals.shots },
-            { label: "P.DECISIVOS", value: careerTotals.key_passes },
-            { label: "DESARMES", value: careerTotals.tackles },
-            { label: "AMARELOS", value: careerTotals.yellow_cards, color: careerTotals.yellow_cards > 0 ? AMBER : undefined },
-          ].map((stat, i, arr) => (
-            <div
-              key={stat.label}
-              className="inline-flex flex-col items-center justify-center px-3 py-4 text-center"
-              style={{
-                width: `${100 / 8}%`,
-                borderRight: i < arr.length - 1 ? `1px solid ${BORDER}` : undefined,
-              }}
-            >
-              <span className="font-jetbrains text-[9px] tracking-[0.16em] uppercase mb-1.5" style={{ color: MUTED }}>
-                {stat.label}
-              </span>
-              <span
-                className="font-jetbrains text-[24px] font-bold leading-none"
-                style={{ color: stat.color ?? TEXT }}
+        <div className="p-2 sm:p-4">
+          <div className="grid grid-cols-4 md:grid-cols-8">
+            {[
+              { label: "JOGOS", value: careerTotals.matches },
+              { label: "MINUTOS", value: careerTotals.minutes },
+              { label: "GOLS", value: careerTotals.goals, color: careerTotals.goals > 0 ? GREEN : A },
+              { label: "ASSIST", value: careerTotals.assists, color: careerTotals.assists > 0 ? GREEN : A },
+              { label: "CHUTES", value: careerTotals.shots },
+              { label: "P.DECISIVOS", value: careerTotals.key_passes },
+              { label: "DESARMES", value: careerTotals.tackles },
+              { label: "AMARELOS", value: careerTotals.yellow_cards, color: careerTotals.yellow_cards > 0 ? AMBER : undefined },
+            ].map((stat, i, arr) => (
+              <div
+                key={stat.label}
+                className="flex flex-col items-center justify-center px-1 sm:px-2 py-3 sm:py-4 text-center min-w-0"
+                style={{
+                  borderRight: i < arr.length - 1 && (i + 1) % 4 !== 0 ? `1px solid ${BORDER}` : undefined,
+                  borderBottom: i < 4 ? `1px solid ${BORDER}` : undefined,
+                }}
               >
-                {stat.value}
-              </span>
-            </div>
-          ))}
+                <span className="font-jetbrains text-[8px] sm:text-[9px] tracking-[0.12em] sm:tracking-[0.16em] uppercase mb-1.5 whitespace-nowrap" style={{ color: MUTED }}>
+                  {stat.label}
+                </span>
+                <span
+                  className="font-jetbrains text-[18px] sm:text-[22px] md:text-[24px] font-bold leading-none whitespace-nowrap"
+                  style={{ color: stat.color ?? TEXT }}
+                >
+                  {stat.value}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
         {allSeasons.length > 0 && (
           <div className="px-4 py-2 border-t font-jetbrains text-[10px] tracking-wider uppercase" style={{ borderColor: BORDER, color: MUTED }}>
