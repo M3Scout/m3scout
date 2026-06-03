@@ -1095,10 +1095,11 @@ function SeasonRow({ row, isGoalkeeper = false }: { row: SeasonRowData; matches?
         {/* Badge */}
         <td className="px-3 py-2.5">
           <span
-            className="font-jetbrains text-[9px] tracking-wider uppercase px-1.5 py-0.5"
+            className="font-jetbrains text-[9px] tracking-wider uppercase px-1.5 py-0.5 whitespace-nowrap inline-block"
             style={{ color: badge.color, border: `1px solid ${badge.color}` }}
           >
-            {badge.label}
+            <span className="md:hidden">{badge.shortLabel}</span>
+            <span className="hidden md:inline">{badge.label}</span>
           </span>
         </td>
       </tr>
