@@ -436,7 +436,7 @@ export function MarketValueTab({
         </div>
 
         {/* Right: Chart */}
-        <div style={{ background: BG }}>
+        <div className="min-w-0" style={{ background: BG }}>
           <SectionHead>EVOLUÇÃO DO VALOR DE MERCADO</SectionHead>
           <div className="p-5">
             {chartData.length < 2 ? (
