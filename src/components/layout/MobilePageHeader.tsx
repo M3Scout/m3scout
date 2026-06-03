@@ -53,8 +53,8 @@ export function MobilePageHeader({ title }: MobilePageHeaderProps) {
             style={{
               width: 32,
               height: 32,
-              background: "#ffffff",
-              color: "#000000",
+              background: "#353535",
+              color: "#ffffff",
               fontFamily: "'Basis Grotesque Pro', sans-serif",
               fontWeight: 600,
               fontSize: 14,
