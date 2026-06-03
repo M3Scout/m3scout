@@ -689,7 +689,7 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
         ) : allSeasons.length === 0 ? (
           <NoData label="Sem partidas registradas" />
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto scrollbar-hide">
             <table className="w-full min-w-[640px] font-jetbrains text-[11px]" style={{ color: TEXT }}>
               <thead>
                 <UiTooltipProvider delayDuration={0}>
