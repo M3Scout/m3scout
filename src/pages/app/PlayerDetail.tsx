@@ -520,7 +520,7 @@ const PlayerDetail = () => {
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <div className={`px-4 md:px-6 py-[22px] border-b ${T.border}`}>
-        <div className="flex gap-4 items-start">
+        <div className="flex gap-4 items-stretch">
 
           {/* Photo */}
           <div
