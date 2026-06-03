@@ -66,16 +66,17 @@
    ============================================ */
 .m3-bottom-nav__pill {
   position: absolute;
-  inset: 6px 4px;
-  border-radius: 28px;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
   z-index: 0;
-  overflow: hidden;
 
-  background: rgba(58, 58, 62, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    0 2px 8px rgba(0, 0, 0, 0.30);
+  background: transparent;
+  border: 1.5px solid #e63946;
+  box-shadow: 0 0 0 3px rgba(230, 57, 70, 0.15);
 }
 
 
