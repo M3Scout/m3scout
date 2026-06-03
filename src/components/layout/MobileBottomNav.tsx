@@ -147,11 +147,17 @@ export function MobileBottomNav() {
               {isDisplayActive && (
                 <motion.span
                   layoutId="m3-public-nav-pill"
-                  className={`m3-bottom-nav__pill${isWarping ? " m3-bottom-nav__pill--warping" : ""}`}
-                  style={isWarping ? { filter: "url(#m3-public-glass-lens)" } : undefined}
-                  transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                />
+                  className="m3-bottom-nav__pill"
+                  transition={{ type: "spring", stiffness: 320, damping: 26, mass: 0.9 }}
+                >
+                  <span
+                    key={isWarping ? "warp-on" : "warp-off"}
+                    className={`m3-bottom-nav__pill-inner${isWarping ? " m3-bottom-nav__pill--stretching" : ""}`}
+                    style={isWarping ? { filter: "url(#m3-public-glass-lens)" } : undefined}
+                  />
+                </motion.span>
               )}
+
               <span className="m3-bottom-nav__content">
                 <Icon size={22} strokeWidth={2} />
               </span>
