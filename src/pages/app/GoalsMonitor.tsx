@@ -199,8 +199,8 @@ function GoalsGridView({
 
   return (
     <div className="space-y-4">
-      {/* Summary bar */}
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      {/* Summary bar — desktop only */}
+      <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
         <Users className="w-4 h-4" />
         <span>{groupedByPlayer.length} jogadores • {goals.length} metas</span>
       </div>
@@ -248,6 +248,7 @@ export default function GoalsMonitor() {
   const { can, loading: permissionsLoading, permissionsError } = usePermissions();
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
   const [goalTypeFilter, setGoalTypeFilter] = useState<string>("_all");
   const [seasonFilter, setSeasonFilter] = useState<string>("_all");
   const [statusFilter, setStatusFilter] = useState<string>("_all");
@@ -709,16 +710,38 @@ export default function GoalsMonitor() {
     <div className="min-h-screen bg-background text-foreground">
       <div className="container max-w-7xl mx-auto px-4 py-6 space-y-6">
         {/* ===== ALWAYS VISIBLE HEADER (even during RBAC/loading) ===== */}
-        <header className="flex items-start justify-between gap-3">
-          <div>
+        <header className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
             <h1 className="m3-page-title">Metas</h1>
           </div>
-
-          {/* Small non-blocking RBAC indicator */}
-          {permissionsLoading && (
-            <div className="text-xs text-muted-foreground">Sincronizando permissões…</div>
-          )}
+          <div className="flex items-center gap-2">
+            {/* Mobile: search toggle */}
+            <button
+              className="sm:hidden p-1 text-zinc-400 hover:text-white transition-colors"
+              onClick={() => setSearchOpen(v => !v)}
+              aria-label="Buscar"
+            >
+              <Search className="w-[18px] h-[18px]" />
+            </button>
+            {/* Small non-blocking RBAC indicator */}
+            {permissionsLoading && (
+              <div className="hidden sm:block text-xs text-muted-foreground">Sincronizando permissões…</div>
+            )}
+          </div>
         </header>
+
+        {/* Mobile search input */}
+        {searchOpen && (
+          <div className="sm:hidden">
+            <input
+              autoFocus
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Buscar por jogador..."
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-full px-4 py-2 text-sm text-white placeholder-zinc-500 outline-none"
+            />
+          </div>
+        )}
 
         {/* ===== RBAC DENY (never blank) ===== */}
         {!permissionsLoading && !permissionsError && !rbacAllowed ? (
@@ -735,8 +758,8 @@ export default function GoalsMonitor() {
             animate="visible"
             className="space-y-6"
           >
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        {/* Header stats — desktop only */}
+        <div className="hidden sm:flex flex-col md:flex-row md:items-center md:justify-between gap-4">
 
           {/* Quick Stats */}
           <div className="flex items-center gap-3">
@@ -761,8 +784,8 @@ export default function GoalsMonitor() {
           </div>
         </div>
 
-        {/* Filters */}
-        <Card className="bg-zinc-900/60 border-zinc-800/40">
+        {/* Filters — desktop only */}
+        <Card className="hidden sm:block bg-zinc-900/60 border-zinc-800/40">
           <CardContent className="p-4">
             <div className="flex flex-col md:flex-row gap-3">
               {/* Search */}

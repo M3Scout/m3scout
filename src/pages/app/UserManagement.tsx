@@ -177,6 +177,7 @@ export default function UserManagement() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [searchOpen, setSearchOpen] = useState(false);
   
   // Confirmation dialogs
   const [confirmAction, setConfirmAction] = useState<{
@@ -858,22 +859,43 @@ export default function UserManagement() {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="m3-page-title">Usuários</h1>
-            <span className="inline-flex items-center justify-center min-w-[28px] h-6 px-2 rounded-full text-[13px] font-bold text-white bg-[#e63946]">{users.length}</span>
-          </div>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <h1 className="m3-page-title">Usuários</h1>
+          <span className="inline-flex items-center justify-center min-w-[28px] h-6 px-2 rounded-full text-[13px] font-bold text-white bg-[#e63946]">{users.length}</span>
         </div>
-        {pendingCount > 0 && (
-          <Button variant="outline" className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10 rounded-full text-xs h-8 px-4" onClick={() => setStatusFilter("pending")}>
-            <AlertTriangle className="w-3.5 h-3.5 mr-1.5" />Ver Pendentes ({pendingCount})
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {/* Mobile: search toggle */}
+          <button
+            className="sm:hidden p-1 text-zinc-400 hover:text-white transition-colors"
+            onClick={() => setSearchOpen(v => !v)}
+            aria-label="Buscar"
+          >
+            <Search className="w-[18px] h-[18px]" />
+          </button>
+          {pendingCount > 0 && (
+            <Button variant="outline" className="hidden sm:flex border-amber-500/30 text-amber-400 hover:bg-amber-500/10 rounded-full text-xs h-8 px-4" onClick={() => setStatusFilter("pending")}>
+              <AlertTriangle className="w-3.5 h-3.5 mr-1.5" />Ver Pendentes ({pendingCount})
+            </Button>
+          )}
+        </div>
       </div>
 
-      {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      {/* Mobile search input */}
+      {searchOpen && (
+        <div className="sm:hidden">
+          <input
+            autoFocus
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Buscar por nome..."
+            className="w-full bg-zinc-900 border border-zinc-800 rounded-full px-4 py-2 text-sm text-white placeholder-zinc-500 outline-none"
+          />
+        </div>
+      )}
+
+      {/* Search and Filters — desktop only */}
+      <div className="hidden sm:flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
           <Input placeholder="Buscar por nome..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 rounded-full bg-zinc-900 border-zinc-800 text-sm h-9" />
