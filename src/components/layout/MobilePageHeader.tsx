@@ -18,19 +18,23 @@ export function MobilePageHeader({ title }: MobilePageHeaderProps) {
       }}
     >
       <span
-        className="pl-4"
         style={{
           fontFamily: "'Basis Grotesque Pro', sans-serif",
           fontWeight: 600,
           fontSize: 21,
           color: "#ffffff",
           letterSpacing: "-0.01em",
+          paddingLeft: "clamp(24px, 5.625vw, 72px)",
         }}
       >
         {title}
       </span>
 
-      <Link to="/dashboard/auth" className="flex items-center justify-center w-9 h-9 pr-4 text-white hover:text-white transition-colors">
+      <Link
+        to="/dashboard/auth"
+        className="flex items-center justify-center h-9 text-white hover:text-white transition-colors"
+        style={{ paddingRight: "clamp(24px, 5.625vw, 72px)" }}
+      >
         <Lock size={17} strokeWidth={2} />
       </Link>
     </div>
