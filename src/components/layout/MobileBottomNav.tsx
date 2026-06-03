@@ -1,6 +1,7 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Home, Users, Newspaper, Info, Mail } from "lucide-react";
 import { motion } from "framer-motion";
+import { useCallback, useEffect, useRef, useState } from "react";
 import "./MobileBottomNav.css";
 
 const items = [
@@ -13,31 +14,134 @@ const items = [
 
 export function MobileBottomNav() {
   const location = useLocation();
+  const navigate = useNavigate();
   const activeIdx = items.findIndex((i) => i.match(location.pathname));
+
+  // Drag
+  const navRef = useRef<HTMLDivElement>(null);
+  const isDraggingRef = useRef(false);
+  const didDragRef = useRef(false);
+  const dragStartXRef = useRef(0);
+  const [dragTarget, setDragTarget] = useState<number | null>(null);
+  const displayIdx = dragTarget !== null ? dragTarget : activeIdx;
+
+  // Glass warp
+  const prevDisplayRef = useRef(displayIdx);
+  const turbRef = useRef<SVGFETurbulenceElement>(null);
+  const dispRef = useRef<SVGFEDisplacementMapElement>(null);
+  const rafRef = useRef<number | null>(null);
+  const [isWarping, setIsWarping] = useState(false);
+
+  const triggerWarp = useCallback(() => {
+    if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    setIsWarping(true);
+    const startTime = performance.now();
+    const duration = 380;
+
+    const tick = (now: number) => {
+      const t = Math.min((now - startTime) / duration, 1);
+      const intensity = Math.sin(t * Math.PI);
+      turbRef.current?.setAttribute("baseFrequency", `${(intensity * 0.018).toFixed(4)}`);
+      dispRef.current?.setAttribute("scale", `${(intensity * 22).toFixed(1)}`);
+
+      if (t < 1) {
+        rafRef.current = requestAnimationFrame(tick);
+      } else {
+        turbRef.current?.setAttribute("baseFrequency", "0");
+        dispRef.current?.setAttribute("scale", "0");
+        setIsWarping(false);
+        rafRef.current = null;
+      }
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+  }, []);
+
+  useEffect(() => {
+    if (prevDisplayRef.current !== displayIdx) {
+      prevDisplayRef.current = displayIdx;
+      triggerWarp();
+    }
+  }, [displayIdx, triggerWarp]);
+
+  useEffect(() => {
+    return () => { if (rafRef.current !== null) cancelAnimationFrame(rafRef.current); };
+  }, []);
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    isDraggingRef.current = false;
+    didDragRef.current = false;
+    dragStartXRef.current = e.clientX;
+    (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (Math.abs(e.clientX - dragStartXRef.current) > 8) isDraggingRef.current = true;
+    if (!isDraggingRef.current || !navRef.current) return;
+
+    const rect = navRef.current.getBoundingClientRect();
+    const relX = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+    const idx = Math.max(0, Math.min(items.length - 1, Math.floor(relX / (rect.width / items.length))));
+    setDragTarget(idx);
+  };
+
+  const handlePointerUp = () => {
+    if (isDraggingRef.current && dragTarget !== null && dragTarget !== activeIdx) {
+      didDragRef.current = true;
+      navigate(items[dragTarget].to);
+    }
+    isDraggingRef.current = false;
+    setDragTarget(null);
+  };
 
   return (
     <nav className="m3-bottom-nav" aria-label="Navegação principal">
-      <div className="m3-bottom-nav__inner">
+      <svg width="0" height="0" style={{ position: "absolute" }}>
+        <defs>
+          <filter id="m3-public-glass-lens" x="-20%" y="-20%" width="140%" height="140%">
+            <feTurbulence ref={turbRef} type="turbulence" baseFrequency="0" numOctaves="2" seed="5" result="turbulence" />
+            <feDisplacementMap ref={dispRef} in="SourceGraphic" in2="turbulence" scale="0" xChannelSelector="R" yChannelSelector="G" />
+          </filter>
+        </defs>
+      </svg>
+
+      <div
+        ref={navRef}
+        className="m3-bottom-nav__inner"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        style={{ touchAction: "none", userSelect: "none" }}
+      >
         {items.map((item, idx) => {
+          const isDisplayActive = idx === displayIdx;
           const isActive = idx === activeIdx;
           const { Icon } = item;
           return (
             <Link
               key={item.to}
               to={item.to}
-              className={`m3-bottom-nav__item ${isActive ? "is-active" : ""}`}
+              className={`m3-bottom-nav__item ${isDisplayActive ? "is-active" : ""}`}
               aria-current={isActive ? "page" : undefined}
+              onClick={(e) => {
+                if (didDragRef.current) {
+                  e.preventDefault();
+                  didDragRef.current = false;
+                }
+              }}
             >
-              {isActive && (
+              {isDisplayActive && (
                 <motion.span
-                  layoutId="m3-bottom-nav-pill"
-                  className="m3-bottom-nav__pill"
-                  transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                  layoutId="m3-public-nav-pill"
+                  className={`m3-bottom-nav__pill${isWarping ? " m3-bottom-nav__pill--warping" : ""}`}
+                  style={isWarping ? { filter: "url(#m3-public-glass-lens)" } : undefined}
+                  transition={{ type: "spring", stiffness: 380, damping: 30 }}
                 />
               )}
               <span className="m3-bottom-nav__content">
                 <Icon size={22} strokeWidth={2} />
               </span>
+              <span className="m3-bottom-nav__label">{item.label}</span>
             </Link>
           );
         })}
