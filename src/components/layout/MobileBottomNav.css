@@ -41,14 +41,14 @@
   gap: 3px;
   height: 50px;
   border-radius: 26px;
-  color: rgba(255, 255, 255, 0.55);
+  color: #ffffff;
   text-decoration: none;
   transition: color 0.2s ease;
   -webkit-tap-highlight-color: transparent;
 }
 
 .m3-bottom-nav__item.is-active {
-  color: #e63946;
+  color: #ffffff;
 }
 
 .m3-bottom-nav__label {
