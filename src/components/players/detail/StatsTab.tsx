@@ -970,10 +970,10 @@ function SeasonRow({ row, isGoalkeeper = false }: { row: SeasonRowData; matches?
 
   const badge =
     row.source === "manual" || row.source === "player_stats" || row.source === "live_correction"
-      ? { label: "MANUAL",       color: BLU }
+      ? { label: "MANUAL",        shortLabel: "M",   color: BLU }
       : row.source === "mixed"
-      ? { label: "LIVE + MANUAL", color: AMB }
-      : /* live */ { label: "LIVE", color: G };
+      ? { label: "LIVE + MANUAL", shortLabel: "M+L", color: AMB }
+      : /* live */ { label: "LIVE", shortLabel: "L", color: G };
 
   const ataqueStats: StatDef[] = [
     { label: "Gols",        value: s.goals,            positive: true },
