@@ -349,7 +349,7 @@ export function MarketValueTab({
       <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-px" style={{ background: BORDER }}>
 
         {/* Left: Form */}
-        <div style={{ background: BG }}>
+        <div className="min-w-0" style={{ background: BG }}>
           <SectionHead>ATUALIZAR VALOR</SectionHead>
           <div className="p-5">
             {canEdit ? (
