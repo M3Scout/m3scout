@@ -8,7 +8,7 @@ interface MobilePageHeaderProps {
 export function MobilePageHeader({ title }: MobilePageHeaderProps) {
   return (
     <div
-      className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 border-b"
+      className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between border-b"
       style={{
         height: "56px",
         background: "#000000",
