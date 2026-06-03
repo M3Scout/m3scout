@@ -182,7 +182,7 @@ export default function Leads() {
 
       {/* Stats - Condensed */}
       <div className="admin-card p-5 animate-fade-in delay-75">
-        <div className="grid grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
           <div className="space-y-1">
             <p className="text-2xl font-semibold text-white tabular-nums">{stats.total}</p>
             <p className="text-[10px] text-zinc-500 uppercase tracking-wider">Total</p>

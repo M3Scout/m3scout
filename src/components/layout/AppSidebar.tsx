@@ -249,15 +249,22 @@ const MobileNavItem = memo(function MobileNavItem({
       to={item.href}
       onClick={onClick}
       className={cn(
-        "group relative flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-100",
+        "group relative flex items-center gap-3 px-4 py-2.5 transition-all duration-100",
         "active:scale-[0.98]",
-        isActive ? "text-white" : "text-zinc-400 active:bg-white/5"
+        isActive ? "" : "text-zinc-400 active:bg-white/5"
       )}
       style={{
-        background: isActive ? "rgba(230, 57, 70, 0.08)" : undefined,
-        borderLeft: isActive ? "3px solid #e63946" : "3px solid transparent",
+        borderRadius: 8,
+        background: isActive ? "rgba(230, 57, 70, 0.10)" : undefined,
       }}
     >
+      {/* Left indicator bar */}
+      {isActive && (
+        <span
+          className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-full"
+          style={{ height: "60%", background: "#e63946" }}
+        />
+      )}
       <Icon
         className={cn(
           "w-4 h-4 shrink-0 transition-colors duration-100",
@@ -267,7 +274,7 @@ const MobileNavItem = memo(function MobileNavItem({
       />
       <span className={cn(
         "text-[14px] font-medium",
-        isActive && "text-white"
+        isActive ? "text-[#e63946]" : ""
       )}>
         {item.label}
       </span>
@@ -403,7 +410,7 @@ export function AppSidebar() {
       {/* ===== MOBILE DRAWER BACKDROP ===== */}
       <div
         className={cn(
-          "md:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity duration-200",
+          "md:hidden fixed inset-0 z-[105] bg-black/60 backdrop-blur-sm transition-opacity duration-200",
           mobileMenuOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         )}
         onClick={handleMobileClose}
@@ -412,26 +419,35 @@ export function AppSidebar() {
       {/* ===== MOBILE DRAWER ===== */}
       <nav
         className={cn(
-          "md:hidden fixed left-0 bottom-0 z-50 w-[85%] max-w-[320px]",
+          "md:hidden fixed left-0 top-0 bottom-0 z-[110] w-[85%] max-w-[320px]",
           "border-r border-white/5 shadow-2xl shadow-black/50",
           "flex flex-col transition-transform duration-200 ease-out",
           mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         )}
         style={{
-          top: 'var(--sat)',
           background: "#000000",
           paddingLeft: 'var(--sal)',
           paddingBottom: 'var(--sab)',
         }}
       >
         {/* Drawer Header */}
-         <div className="shrink-0 border-b border-white/5">
-           <div className="h-14 flex items-center px-4">
-             <Link to="/" className="flex items-center" onClick={handleMobileClose}>
-               <img src={logoM3} alt="M3 Agency" className="h-7 w-auto" width={70} height={28} />
-             </Link>
-           </div>
-         </div>
+        <div
+          className="shrink-0 border-b border-white/5 flex items-center justify-between px-4"
+          style={{
+            height: 'calc(var(--sat) + 3.5rem)',
+            paddingTop: 'var(--sat)',
+          }}
+        >
+          <Link to="/" className="flex items-center" onClick={handleMobileClose}>
+            <img src={logoM3} alt="M3 Agency" className="h-7 w-auto" />
+          </Link>
+          <button
+            onClick={handleMobileClose}
+            className="w-9 h-9 flex items-center justify-center rounded-xl text-zinc-400 active:bg-white/5 transition-all duration-150"
+          >
+            <X className="w-5 h-5" strokeWidth={1.5} />
+          </button>
+        </div>
 
         {/* Drawer Content - Scrollable on mobile */}
         <div className="flex-1 overflow-y-auto overscroll-contain px-2 py-3 space-y-3">

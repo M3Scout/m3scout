@@ -707,8 +707,8 @@ export default function GoalsMonitor() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="container max-w-7xl mx-auto px-4 py-6 space-y-6">
+    <>
+      <div className="space-y-6">
         {/* ===== ALWAYS VISIBLE HEADER (even during RBAC/loading) ===== */}
         <header className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -889,6 +889,7 @@ export default function GoalsMonitor() {
 
       {/* Detail Modal */}
       <Dialog open={!!selectedGoal} onOpenChange={() => setSelectedGoal(null)}>
+
         <DialogContent className="bg-zinc-900 border-zinc-800 max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg">
@@ -1025,6 +1026,6 @@ export default function GoalsMonitor() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }

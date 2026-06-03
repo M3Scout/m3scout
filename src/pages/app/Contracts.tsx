@@ -57,7 +57,7 @@ export default function Contracts() {
   };
 
   return (
-    <div className="space-y-5 pb-8 px-[var(--padding-mobile)] md:px-0">
+    <div className="space-y-5 pb-8">
       {/* Header */}
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">

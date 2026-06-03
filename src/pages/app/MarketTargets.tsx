@@ -594,8 +594,8 @@ export default function MarketTargets() {
 
       {/* ===== KANBAN ===== */}
       <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-        <div className="mt-kanban-scroll" style={{ overflowX: "auto" }}>
-          <div className="mt-kanban-grid" style={{ minWidth: 900 }}>
+        <div className="mt-kanban-scroll">
+          <div className="mt-kanban-grid">
             {KANBAN_STAGES.map(({ key, label, color }) => (
               <KanbanColumn
                 key={key}
