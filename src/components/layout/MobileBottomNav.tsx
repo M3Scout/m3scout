@@ -138,12 +138,12 @@ export function MobileBottomNav() {
               className={`m3-bottom-nav__item ${isDisplayActive ? "is-active" : ""}`}
               aria-current={isActive ? "page" : undefined}
               onClick={(e) => {
-                if (didDragRef.current) {
-                  e.preventDefault();
-                  didDragRef.current = false;
-                }
+                // Navigation is handled in pointerUp on the parent
+                e.preventDefault();
+                didDragRef.current = false;
               }}
             >
+
               {isDisplayActive && (
                 <motion.span
                   layoutId="m3-public-nav-pill"
