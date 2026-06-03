@@ -79,7 +79,7 @@
   gap: 32px;
 }
 .lp-nav.is-scrolled {
-  background: rgba(10, 10, 10, 0.92);
+  background: #141414;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom-color: var(--line-dark);
