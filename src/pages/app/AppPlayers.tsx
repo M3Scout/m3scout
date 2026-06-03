@@ -77,7 +77,7 @@ interface Player {
   potential_rating?: number | null;
 }
 
-type SortField = "full_name" | "position" | "current_club" | "avg_score" | "auto_rating" | "contract_end" | "is_public";
+type SortField = "full_name" | "position" | "current_club" | "avg_score" | "auto_rating" | "contract_end" | "is_public" | "age";
 type SortDirection = "asc" | "desc";
 type ViewMode = "table" | "scouting";
 type PaginationMode = "pages" | "infinite";
@@ -97,6 +97,7 @@ const AppPlayers = () => {
   const [isRefetching, setIsRefetching] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [playerToDelete, setPlayerToDelete] = useState<{ id: string; full_name: string } | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -344,6 +345,10 @@ const AppPlayers = () => {
           aValue = a.is_public ? 1 : 0;
           bValue = b.is_public ? 1 : 0;
           break;
+        case "age":
+          aValue = a.age ?? -1;
+          bValue = b.age ?? -1;
+          break;
         default:
           return 0;
       }
@@ -484,14 +489,18 @@ const AppPlayers = () => {
       {/* Header */}
       <header className="flex items-center justify-between gap-3 animate-fade-in">
         <div className="flex items-center gap-3 min-w-0">
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="m3-page-title">Atletas</h1>
-              <span className="inline-flex items-center justify-center min-w-[28px] h-6 px-2 rounded-full text-[13px] font-bold text-white bg-[#e63946]">{filteredCount}</span>
-            </div>
-          </div>
+          <h1 className="m3-page-title">Atletas</h1>
+          <span className="inline-flex items-center justify-center min-w-[28px] h-6 px-2 rounded-full text-[13px] font-bold text-white bg-[#e63946]">{filteredCount}</span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          {/* Mobile: search toggle */}
+          <button
+            className="sm:hidden p-1 text-zinc-400 hover:text-white transition-colors"
+            onClick={() => setMobileSearchOpen(v => !v)}
+            aria-label="Buscar"
+          >
+            <Search className="w-[18px] h-[18px]" />
+          </button>
           <Button size="sm" asChild className="hidden md:inline-flex h-8 px-4 rounded-full text-[11px] font-medium text-white" style={{ backgroundColor: '#e63946' }}>
             <Link to="/dashboard/atletas/novo">
               <Plus className="w-3.5 h-3.5 sm:mr-1.5" />
@@ -501,8 +510,21 @@ const AppPlayers = () => {
         </div>
       </header>
 
-      {/* Search and Controls - Premium bar */}
-      <div className="space-y-2 animate-fade-in delay-75">
+      {/* Mobile search input */}
+      {mobileSearchOpen && (
+        <div className="sm:hidden animate-fade-in">
+          <input
+            autoFocus
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Buscar atleta..."
+            className="w-full bg-zinc-900 border border-zinc-800 rounded-full px-4 py-2 text-sm text-white placeholder-zinc-500 outline-none"
+          />
+        </div>
+      )}
+
+      {/* Search and Controls - Premium bar — desktop only */}
+      <div className="hidden sm:block space-y-2 animate-fade-in delay-75">
         <div className="flex gap-2 items-center">
           {/* Search */}
           <div className="relative flex-1 max-w-md">
@@ -713,28 +735,23 @@ const AppPlayers = () => {
       ) : (
         /* GRID MODE - Position Identity Cards with colors */
         <div className="space-y-4 animate-fade-in delay-100">
-          {/* Sort Controls */}
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-1.5 text-xs text-zinc-500">
-              <button 
-                onClick={() => handleSort("auto_rating")}
-                className={`flex items-center gap-1 px-3 py-1 rounded-full text-[10px] uppercase tracking-wider font-medium hover:bg-zinc-800/40 transition-colors ${sortField === "auto_rating" ? "bg-zinc-800 text-zinc-100" : ""}`}
-              >
-                OVR <SortIcon field="auto_rating" />
-              </button>
-              <button 
-                onClick={() => handleSort("full_name")}
-                className={`flex items-center gap-1 px-3 py-1 rounded-full text-[10px] uppercase tracking-wider font-medium hover:bg-zinc-800/40 transition-colors ${sortField === "full_name" ? "bg-zinc-800 text-zinc-100" : ""}`}
-              >
-                Nome <SortIcon field="full_name" />
-              </button>
-              <button 
-                onClick={() => handleSort("position")}
-                className={`flex items-center gap-1 px-3 py-1 rounded-full text-[10px] uppercase tracking-wider font-medium hover:bg-zinc-800/40 transition-colors ${sortField === "position" ? "bg-zinc-800 text-zinc-100" : ""}`}
-              >
-                Posição <SortIcon field="position" />
-              </button>
-            </div>
+          {/* Sort tabs — underline style, full width on mobile */}
+          <div className="flex w-full border-b border-zinc-800 mb-3">
+            {(["auto_rating", "full_name", "age", "position"] as SortField[]).map((field) => {
+              const labels: Record<string, string> = { auto_rating: "OVR", full_name: "Nome", age: "Idade", position: "Posição" };
+              const isActive = sortField === field;
+              return (
+                <button
+                  key={field}
+                  onClick={() => handleSort(field)}
+                  className={`flex-1 flex items-center justify-center gap-1 py-2 text-[11px] uppercase tracking-wider font-medium transition-colors border-b-2 -mb-px ${
+                    isActive ? "border-[#e63946] text-white" : "border-transparent text-zinc-500 hover:text-zinc-300"
+                  }`}
+                >
+                  {labels[field]} <SortIcon field={field} />
+                </button>
+              );
+            })}
           </div>
           
           {/* Grid View - Position Identity Cards with Stagger Animation */}

@@ -7,7 +7,7 @@ import { useState, useMemo, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Eye, Users, Handshake, CheckCircle2, XCircle } from "lucide-react";
+import { Eye, Users, Handshake, CheckCircle2, XCircle, Plus } from "lucide-react";
 import { Target as TargetType, MarketScoreTrend } from "@/types/marketScore";
 import { TargetFormModal } from "@/components/market/TargetFormModal";
 import { TargetDetailModal } from "@/components/market/TargetDetailModal";
@@ -493,9 +493,18 @@ export default function MarketTargets() {
             <span className="hidden sm:block">Monitoramento</span>
           </h1>
           <span className="inline-flex items-center justify-center min-w-[28px] h-6 px-2 rounded-full text-[13px] font-bold text-white bg-[#e63946]">{targets.length}</span>
+          {/* Mobile: + icon inline next to title, no background */}
+          <button
+            className="sm:hidden p-1 text-zinc-400 hover:text-white transition-colors"
+            onClick={() => setFormModalOpen(true)}
+            aria-label="Novo target"
+          >
+            <Plus className="w-[18px] h-[18px]" />
+          </button>
         </div>
 
-        <div className="mt-header-right">
+        {/* Desktop: red button */}
+        <div className="mt-header-right hidden sm:flex">
           <button
             onClick={() => setFormModalOpen(true)}
             style={{
@@ -513,8 +522,7 @@ export default function MarketTargets() {
               minHeight: 44,
             }}
           >
-            <span className="sm:hidden">+</span>
-            <span className="hidden sm:inline">+ NOVO TARGET</span>
+            + NOVO TARGET
           </button>
         </div>
       </div>

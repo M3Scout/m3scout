@@ -45,6 +45,7 @@ import {
   Play,
   Wifi,
   Activity,
+  Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -454,6 +455,8 @@ export default function LiveMatchHistory() {
   const { can } = usePermissions();
   const queryClient = useQueryClient();
   const [deleteMatch, setDeleteMatch] = useState<MatchWithCompetition | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [mobileSearch, setMobileSearch] = useState("");
   
   // Check permissions for actions
   const canLogEvents = can("live_match", "log");
@@ -563,29 +566,59 @@ export default function LiveMatchHistory() {
   return (
     <div className="space-y-6 pb-12">
       {/* Header */}
-      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-4">
+      <header className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
           {/* Live indicator when there's an active match */}
           {hasLiveMatch && (
-            <div className="relative">
+            <div className="relative sm:block">
               <span className="absolute inset-0 rounded-full bg-red-500/30 animate-ping" />
               <div className="relative w-3 h-3 rounded-full bg-red-500" />
             </div>
           )}
-          <div>
-            <h1 className="m3-page-title">Jogos ao vivo</h1>
-          </div>
+          {/* Mobile: "Jogos" | Desktop: "Jogos ao vivo" */}
+          <h1 className="m3-page-title">
+            <span className="sm:hidden">Jogos</span>
+            <span className="hidden sm:inline">Jogos ao vivo</span>
+          </h1>
+          <span className="inline-flex items-center justify-center min-w-[28px] h-6 px-2 rounded-full text-[13px] font-bold text-white bg-[#e63946]">
+            {matches.length}
+          </span>
         </div>
 
-        {canLogEvents && (
-          <Link to="/dashboard/aovivo/novo">
-            <Button className="bg-[#e63946] hover:bg-[#d62839] text-white gap-2 rounded-full px-5 h-9 text-sm font-semibold">
-              <Plus className="w-4 h-4" />
-              Novo jogo
-            </Button>
-          </Link>
-        )}
+        <div className="flex items-center gap-2">
+          {/* Mobile search toggle */}
+          <button
+            className="sm:hidden p-1 text-zinc-400 hover:text-white transition-colors"
+            onClick={() => setSearchOpen(v => !v)}
+            aria-label="Buscar"
+          >
+            <Search className="w-[18px] h-[18px]" />
+          </button>
+
+          {/* Desktop: Novo jogo button */}
+          {canLogEvents && (
+            <Link to="/dashboard/aovivo/novo" className="hidden sm:block">
+              <Button className="bg-[#e63946] hover:bg-[#d62839] text-white gap-2 rounded-full px-5 h-9 text-sm font-semibold">
+                <Plus className="w-4 h-4" />
+                Novo jogo
+              </Button>
+            </Link>
+          )}
+        </div>
       </header>
+
+      {/* Mobile search input */}
+      {searchOpen && (
+        <div className="sm:hidden">
+          <input
+            autoFocus
+            value={mobileSearch}
+            onChange={e => setMobileSearch(e.target.value)}
+            placeholder="Buscar jogo..."
+            className="w-full bg-zinc-900 border border-zinc-800 rounded-full px-4 py-2 text-sm text-white placeholder-zinc-500 outline-none"
+          />
+        </div>
+      )}
 
       {/* Content */}
       {isLoading ? (

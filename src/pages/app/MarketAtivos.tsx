@@ -94,6 +94,7 @@ export default function MarketAtivos() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
   const [positionFilter, setPositionFilter] = useState("Todos");
   const [ageRangeIndex, setAgeRangeIndex] = useState(0);
   const [minScore, setMinScore] = useState(0);
@@ -233,11 +234,33 @@ export default function MarketAtivos() {
           <h1 className="m3-page-title">Ativos</h1>
           <span className="inline-flex items-center justify-center min-w-[28px] h-6 px-2 rounded-full text-[13px] font-bold text-white bg-[#e63946]">{filteredAthletes.length}</span>
         </div>
-        <Button variant="outline" size="sm" onClick={() => refetch()} className="hidden sm:flex rounded-full">
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Atualizar
-        </Button>
+        <div className="flex items-center gap-2">
+          <button
+            className="sm:hidden p-1 text-zinc-400 hover:text-white transition-colors"
+            onClick={() => setSearchOpen(v => !v)}
+            aria-label="Buscar"
+          >
+            <Search className="w-[18px] h-[18px]" />
+          </button>
+          <Button variant="outline" size="sm" onClick={() => refetch()} className="hidden sm:flex rounded-full">
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Atualizar
+          </Button>
+        </div>
       </div>
+
+      {/* Mobile search input */}
+      {searchOpen && (
+        <div className="sm:hidden">
+          <input
+            autoFocus
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Buscar atleta..."
+            className="w-full bg-zinc-900 border border-zinc-800 rounded-full px-4 py-2 text-sm text-white placeholder-zinc-500 outline-none"
+          />
+        </div>
+      )}
 
       {/* Info banner for missing scores */}
       {athletesWithoutScore > 0 && (
