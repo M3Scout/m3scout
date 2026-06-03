@@ -697,7 +697,7 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
                     {TABLE_HEADERS.map((h, i) => (
                       <th
                         key={i}
-                        className="px-3 py-2 text-left font-jetbrains text-[9px] tracking-[0.18em] uppercase"
+                        className="px-1.5 sm:px-3 py-2 text-left font-jetbrains text-[9px] tracking-[0.18em] uppercase whitespace-nowrap"
                         style={{
                           color: MUTED,
                           borderRight: i < TABLE_HEADERS.length - 1 ? `1px solid ${BORDER}` : undefined,
