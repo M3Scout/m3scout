@@ -561,14 +561,14 @@ export function MarketValueTab({
                       onMouseLeave={(e) => (e.currentTarget.style.background = "")}
                     >
                       {/* Data */}
-                      <td className="px-4 py-3" style={{ borderRight: `1px solid ${BORDER}` }}>
+                      <td className="px-4 py-3 whitespace-nowrap" style={{ borderRight: `1px solid ${BORDER}` }}>
                         <div className="flex items-center gap-2 flex-wrap">
                           <span>
                             {format(new Date(entry.recorded_at), "dd/MM/yyyy")}
                           </span>
                           {isLatest && (
                             <span
-                              className="text-[9px] tracking-[0.15em] uppercase px-1.5 py-0.5 font-bold"
+                              className="text-[9px] tracking-[0.15em] uppercase px-1.5 py-0.5 font-bold whitespace-nowrap"
                               style={{ color: A, border: `1px solid ${A}` }}
                             >
                               ATUAL
