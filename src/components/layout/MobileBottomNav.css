@@ -62,12 +62,12 @@
 
 
 /* ============================================
-   Selected Pill — clean solid style, wider
+   Selected Pill — clean solid style, with padding
    ============================================ */
 .m3-bottom-nav__pill {
   position: absolute;
-  inset: 4px -8px;
-  border-radius: 34px;
+  inset: 6px 4px;
+  border-radius: 28px;
   z-index: 0;
   overflow: hidden;
 
