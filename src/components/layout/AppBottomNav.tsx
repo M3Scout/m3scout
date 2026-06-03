@@ -49,8 +49,7 @@ export function AppBottomNav() {
                 />
               )}
               <span className="m3-bottom-nav__content">
-                <Icon size={18} strokeWidth={2} />
-                {isActive && <span className="m3-bottom-nav__label">{item.label}</span>}
+                <Icon size={22} strokeWidth={2} />
               </span>
             </Link>
           );
