@@ -22,7 +22,7 @@ function AppLayoutContent() {
            "pt-[calc(var(--sat)+3.5rem)] md:pt-0"
         )}
       >
-        <div className="p-[var(--padding-mobile)] md:p-6 lg:p-8 w-full max-w-full overflow-x-hidden lg:pt-8 pb-24 md:pb-6 lg:pb-8">
+        <div className="p-[var(--padding-mobile)] md:p-6 lg:p-8 w-full max-w-full overflow-x-hidden lg:pt-8 pb-6">
           <AnimatePresence mode="wait" initial={false}>
             <PageTransition key={location.pathname}>
               <Outlet />
@@ -30,7 +30,6 @@ function AppLayoutContent() {
           </AnimatePresence>
         </div>
       </main>
-      <AppBottomNav />
     </div>
   );
 }
