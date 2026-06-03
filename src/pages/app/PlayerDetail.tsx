@@ -473,7 +473,7 @@ const PlayerDetail = () => {
       <div style={{ height: 2, background: T.accent }} />
 
       {/* ── Topbar ──────────────────────────────────────────────────────── */}
-      <div
+      <div className="hidden md:block"><div
         className={`flex items-center justify-between gap-4 px-4 md:px-6 py-3 border-b ${T.border}`}
       >
         <button
@@ -516,7 +516,7 @@ const PlayerDetail = () => {
             </PermissionGate>
           )}
         </div>
-      </div>
+      </div></div>
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <div className={`px-4 md:px-6 py-[22px] border-b ${T.border}`}>
@@ -600,7 +600,7 @@ const PlayerDetail = () => {
       </div>
 
       {/* ── Tab Bar ─────────────────────────────────────────────────────── */}
-      <div className={`border-b ${T.border} overflow-x-auto scrollbar-none`}>
+      <div className={`border-b ${T.border} overflow-x-auto scrollbar-hide`}>
         <div className="flex px-4 md:px-6">
           {TABS.map((tab) => {
             const active = activeTab === tab.id;
