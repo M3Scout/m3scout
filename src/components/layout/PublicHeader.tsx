@@ -80,7 +80,7 @@ export function PublicHeader() {
 
       {/* Mobile Navigation */}
       {isMenuOpen && (
-        <div className="lg:hidden bg-[var(--bg-base)] border-t border-zinc-900 animate-fade-in">
+        <div className="lg:hidden bg-[#141414] border-t border-zinc-900 animate-fade-in">
           <div className="w-full mx-auto py-4" style={{ maxWidth: 'var(--page-max-width)', paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
             <nav className="flex flex-col gap-1">
               {navLinks.map((link) => (
