@@ -85,14 +85,28 @@ export function MobileBottomNav() {
     setDragTarget(idx);
   };
 
-  const handlePointerUp = () => {
-    if (isDraggingRef.current && dragTarget !== null && dragTarget !== activeIdx) {
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    const wasDragging = isDraggingRef.current;
+    let targetIdx: number | null = null;
+
+    if (wasDragging && dragTarget !== null) {
+      targetIdx = dragTarget;
       didDragRef.current = true;
-      navigate(items[dragTarget].to);
+    } else if (navRef.current) {
+      // Tap — compute item under pointer and navigate
+      const rect = navRef.current.getBoundingClientRect();
+      const relX = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+      targetIdx = Math.max(0, Math.min(items.length - 1, Math.floor(relX / (rect.width / items.length))));
     }
+
+    if (targetIdx !== null && targetIdx !== activeIdx) {
+      navigate(items[targetIdx].to);
+    }
+
     isDraggingRef.current = false;
     setDragTarget(null);
   };
+
 
   return (
     <nav className="m3-bottom-nav" aria-label="Navegação principal">
@@ -124,12 +138,12 @@ export function MobileBottomNav() {
               className={`m3-bottom-nav__item ${isDisplayActive ? "is-active" : ""}`}
               aria-current={isActive ? "page" : undefined}
               onClick={(e) => {
-                if (didDragRef.current) {
-                  e.preventDefault();
-                  didDragRef.current = false;
-                }
+                // Navigation is handled in pointerUp on the parent
+                e.preventDefault();
+                didDragRef.current = false;
               }}
             >
+
               {isDisplayActive && (
                 <motion.span
                   layoutId="m3-public-nav-pill"
