@@ -374,7 +374,7 @@ export function AppSidebar() {
           top: 0,
           height: 'calc(var(--sat) + 3.5rem)',
           paddingTop: 'var(--sat)',
-          background: '#18181b',
+          background: '#000000',
           paddingLeft: 'calc(var(--sal) + 1rem)',
           paddingRight: 'calc(var(--sar) + 1rem)',
         }}
