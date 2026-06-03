@@ -18,9 +18,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { 
+import {
   Trophy,
-  Upload, 
+  Upload,
   Loader2,
   AlertTriangle,
   Plus,
@@ -28,6 +28,7 @@ import {
   HelpCircle,
   Trash2,
   Info,
+  Search,
 } from "lucide-react";
 import {
   Tooltip,
@@ -116,6 +117,8 @@ const Competitions = () => {
   const { isAdmin } = useAuth();
   const isMobile = useIsMobile();
   const [competitions, setCompetitions] = useState<Competition[]>([]);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [mobileSearch, setMobileSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [tierFilter, setTierFilter] = useState("all");
@@ -210,7 +213,7 @@ const Competitions = () => {
 
   const filteredCompetitions = useMemo(() => {
     return competitions.filter((comp) => {
-      const searchNorm = norm(searchQuery || "");
+      const searchNorm = norm(searchQuery || mobileSearch || "");
       const matchesSearch =
         searchNorm === "" ||
         norm(comp.name || "").includes(searchNorm) ||
@@ -230,7 +233,7 @@ const Competitions = () => {
         comp.final_coefficient <= coefficientFilter[1];
       return matchesSearch && matchesTier && matchesType && matchesState && matchesCountry && matchesDivision && matchesVisibility && matchesCoefficient;
     });
-  }, [competitions, searchQuery, tierFilter, typeFilter, stateFilter, countryFilter, divisionFilter, visibilityFilter, coefficientFilter]);
+  }, [competitions, searchQuery, mobileSearch, tierFilter, typeFilter, stateFilter, countryFilter, divisionFilter, visibilityFilter, coefficientFilter]);
 
   const getTypeLabel = (type: string) => {
     const found = COMPETITION_TYPES.find(t => t.value === type);
@@ -561,96 +564,115 @@ const Competitions = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <h1 className="m3-page-title">Competições</h1>
-          <span className="inline-flex items-center justify-center min-w-[28px] h-6 px-2 rounded-full text-[13px] font-bold text-white bg-[#e63946]">{competitions.length}</span>
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          <span className="hidden md:inline-flex">
-          <PermissionGate module="competitions" action="delete">
-            {competitions.length > 0 && (
-              <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                <Button 
-                  variant="outline" 
-                  className="text-destructive border-destructive/30 hover:bg-destructive/10 rounded-full"
-                  onClick={() => setDeleteDialogOpen(true)}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <h1 className="m3-page-title">Competições</h1>
+            <span className="inline-flex items-center justify-center min-w-[28px] h-6 px-2 rounded-full text-[13px] font-bold text-white bg-[#e63946]">{competitions.length}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button className="sm:hidden" onClick={() => setSearchOpen(v => !v)}>
+              <Search size={18} className="text-zinc-400" />
+            </button>
+            <div className="hidden sm:flex gap-2 flex-wrap">
+              <span className="hidden md:inline-flex">
+                <PermissionGate module="competitions" action="delete">
+                  {competitions.length > 0 && (
+                    <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                      <Button
+                        variant="outline"
+                        className="text-destructive border-destructive/30 hover:bg-destructive/10 rounded-full"
+                        onClick={() => setDeleteDialogOpen(true)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Excluir Todas
+                      </Button>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+                            <AlertTriangle className="w-5 h-5" />
+                            Excluir TODAS as Competições?
+                          </AlertDialogTitle>
+                          <AlertDialogDescription className="space-y-4">
+                            <p>
+                              Esta ação irá remover permanentemente todas as{" "}
+                              <strong>{competitions.length} competições</strong> e{" "}
+                              <strong>todos os relatórios vinculados</strong>.
+                            </p>
+                            <div className="space-y-2 pt-2">
+                              <Label>
+                                Digite <strong>{CONFIRMATION_TEXT}</strong> para confirmar:
+                              </Label>
+                              <Input
+                                value={confirmationInput}
+                                onChange={(e) => setConfirmationInput(e.target.value)}
+                                placeholder={CONFIRMATION_TEXT}
+                                className="font-mono"
+                              />
+                            </div>
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel onClick={() => setConfirmationInput("")} className="rounded-full">
+                            Cancelar
+                          </AlertDialogCancel>
+                          <Button
+                            variant="destructive"
+                            onClick={handleDeleteAll}
+                            disabled={!isConfirmationValid || isDeleting}
+                            className="rounded-full"
+                          >
+                            {isDeleting && <Loader2 className="w-4 h-4 animate-spin" />}
+                            Excluir Todas
+                          </Button>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+                </PermissionGate>
+              </span>
+              {isAdmin && competitions.length > 0 && (
+                <Button
+                  variant="outline"
+                  onClick={findDuplicates}
+                  className="hidden md:inline-flex rounded-full"
                 >
-                  <Trash2 className="w-4 h-4" />
-                  Excluir Todas
+                  <Copy className="w-4 h-4" />
+                  Remover Duplicados
                 </Button>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle className="flex items-center gap-2 text-destructive">
-                    <AlertTriangle className="w-5 h-5" />
-                    Excluir TODAS as Competições?
-                  </AlertDialogTitle>
-                  <AlertDialogDescription className="space-y-4">
-                    <p>
-                      Esta ação irá remover permanentemente todas as{" "}
-                      <strong>{competitions.length} competições</strong> e{" "}
-                      <strong>todos os relatórios vinculados</strong>.
-                    </p>
-                    <div className="space-y-2 pt-2">
-                      <Label>
-                        Digite <strong>{CONFIRMATION_TEXT}</strong> para confirmar:
-                      </Label>
-                      <Input
-                        value={confirmationInput}
-                        onChange={(e) => setConfirmationInput(e.target.value)}
-                        placeholder={CONFIRMATION_TEXT}
-                        className="font-mono"
-                      />
-                    </div>
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel onClick={() => setConfirmationInput("")} className="rounded-full">
-                    Cancelar
-                  </AlertDialogCancel>
-                  <Button
-                    variant="destructive"
-                    onClick={handleDeleteAll}
-                    disabled={!isConfirmationValid || isDeleting}
-                    className="rounded-full"
-                  >
-                    {isDeleting && <Loader2 className="w-4 h-4 animate-spin" />}
-                    Excluir Todas
+              )}
+              <span className="hidden md:inline-flex">
+                <Link to="/dashboard/competicoes/importar">
+                  <Button variant="outline" className="rounded-full">
+                    <Upload className="w-4 h-4" />
+                    Importar CSV
                   </Button>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-            )}
-          </PermissionGate>
-          </span>
-          {isAdmin && competitions.length > 0 && (
-            <Button
-              variant="outline"
-              onClick={findDuplicates}
-              className="hidden md:inline-flex rounded-full"
-            >
-              <Copy className="w-4 h-4" />
-              Remover Duplicados
-            </Button>
-          )}
-          <span className="hidden md:inline-flex">
-            <Link to="/dashboard/competicoes/importar">
-              <Button variant="outline" className="rounded-full">
-                <Upload className="w-4 h-4" />
-                Importar CSV
-              </Button>
-            </Link>
-          </span>
-          {isAdmin && (
-            <Button onClick={handleCreate} className="bg-[#e63946] hover:bg-[#d62839] text-white rounded-full">
-              <Plus className="w-4 h-4" />
-              Nova Competição
-            </Button>
-          )}
+                </Link>
+              </span>
+              {isAdmin && (
+                <Button onClick={handleCreate} className="hidden sm:flex bg-[#e63946] hover:bg-[#d62839] text-white rounded-full">
+                  <Plus className="w-4 h-4" />
+                  Nova Competição
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
+        {searchOpen && (
+          <div className="sm:hidden mt-1">
+            <input
+              autoFocus
+              value={mobileSearch}
+              onChange={e => setMobileSearch(e.target.value)}
+              placeholder="Buscar competição..."
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-full px-4 py-2 text-sm text-white placeholder-zinc-500 outline-none"
+            />
+          </div>
+        )}
       </div>
 
-      {/* Filters - New Component */}
+      {/* Filters - New Component (hidden on mobile, search handled by lupa) */}
+      <div className="hidden sm:block">
       <CompetitionFilters
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
@@ -671,6 +693,7 @@ const Competitions = () => {
         onClear={clearFilters}
         hasActiveFilters={hasActiveFilters}
       />
+      </div>
 
       {/* Info Banner */}
       <div className="flex items-center gap-2 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-sm">

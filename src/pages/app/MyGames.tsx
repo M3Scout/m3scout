@@ -33,6 +33,7 @@ import {
   MapPin,
   Play,
   Eye,
+  Search,
 } from "lucide-react";
 
 interface MatchWithRating {
@@ -229,6 +230,8 @@ function PlayerMatchCard({ match }: { match: MatchWithRating }) {
 
 export default function MyGames() {
   const { linkedPlayerId } = useAuth();
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [mobileSearch, setMobileSearch] = useState("");
 
   // Fetch matches where player is in lineup
   const { data: matches = [], isLoading } = useQuery({
@@ -334,16 +337,51 @@ export default function MyGames() {
     );
   }
 
+  const filteredMatches = useMemo(() => {
+    if (!mobileSearch.trim()) return matches;
+    const q = mobileSearch.toLowerCase();
+    return matches.filter(m =>
+      m.opponent_name.toLowerCase().includes(q) ||
+      m.team_name_display?.toLowerCase().includes(q) ||
+      m.competition?.name.toLowerCase().includes(q) ||
+      m.competition?.display_name?.toLowerCase().includes(q)
+    );
+  }, [matches, mobileSearch]);
+
+  const filteredLiveMatches = useMemo(() => filteredMatches.filter(m => m.status === "live"), [filteredMatches]);
+  const filteredUpcomingMatches = useMemo(() => filteredMatches.filter(m => m.status === "draft"), [filteredMatches]);
+  const filteredCompletedMatches = useMemo(() => filteredMatches.filter(m => ["finished", "applied"].includes(m.status)), [filteredMatches]);
+
   return (
     <div className="space-y-6 pb-12">
       {/* Header */}
-      <header>
-        <h1 className="text-2xl sm:text-3xl font-bold text-zinc-100">
-          Meus Jogos
-        </h1>
-        <p className="text-sm text-zinc-500 mt-1">
+      <header className="flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl sm:text-3xl font-bold text-zinc-100">
+              <span className="sm:hidden">Jogos</span>
+              <span className="hidden sm:inline">Meus Jogos</span>
+            </h1>
+            <span className="inline-flex items-center justify-center min-w-[28px] h-6 px-2 rounded-full text-[13px] font-bold text-white bg-[#e63946]">{matches.length}</span>
+          </div>
+          <button className="sm:hidden" onClick={() => setSearchOpen(v => !v)}>
+            <Search size={18} className="text-zinc-400" />
+          </button>
+        </div>
+        <p className="text-sm text-zinc-500 hidden sm:block">
           Partidas em que você foi escalado
         </p>
+        {searchOpen && (
+          <div className="sm:hidden mt-1">
+            <input
+              autoFocus
+              value={mobileSearch}
+              onChange={e => setMobileSearch(e.target.value)}
+              placeholder="Buscar jogo..."
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-full px-4 py-2 text-sm text-white placeholder-zinc-500 outline-none"
+            />
+          </div>
+        )}
       </header>
 
       {/* Content */}
@@ -353,12 +391,12 @@ export default function MyGames() {
             <MatchCardSkeleton key={i} index={i} />
           ))}
         </div>
-      ) : matches.length === 0 ? (
+      ) : filteredMatches.length === 0 ? (
         <EmptyState />
       ) : (
         <div className="space-y-6">
           {/* Live Matches */}
-          {liveMatches.length > 0 && (
+          {filteredLiveMatches.length > 0 && (
             <Card className="border-red-500/30 bg-zinc-900/40">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-red-400">
@@ -367,7 +405,7 @@ export default function MyGames() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {liveMatches.map(match => (
+                {filteredLiveMatches.map(match => (
                   <PlayerMatchCard key={match.id} match={match} />
                 ))}
               </CardContent>
@@ -375,7 +413,7 @@ export default function MyGames() {
           )}
 
           {/* Upcoming Matches */}
-          {upcomingMatches.length > 0 && (
+          {filteredUpcomingMatches.length > 0 && (
             <Card className="border-zinc-800/40 bg-zinc-950/50">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-zinc-300">
@@ -384,7 +422,7 @@ export default function MyGames() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {upcomingMatches.map(match => (
+                {filteredUpcomingMatches.map(match => (
                   <PlayerMatchCard key={match.id} match={match} />
                 ))}
               </CardContent>
@@ -392,7 +430,7 @@ export default function MyGames() {
           )}
 
           {/* Completed Matches */}
-          {completedMatches.length > 0 && (
+          {filteredCompletedMatches.length > 0 && (
             <Card className="border-zinc-800/40 bg-zinc-950/50">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-zinc-300">
@@ -400,11 +438,11 @@ export default function MyGames() {
                   Partidas Realizadas
                 </CardTitle>
                 <CardDescription>
-                  {completedMatches.length} partida{completedMatches.length > 1 ? 's' : ''} 
+                  {filteredCompletedMatches.length} partida{filteredCompletedMatches.length > 1 ? 's' : ''}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                {completedMatches.map(match => (
+                {filteredCompletedMatches.map(match => (
                   <PlayerMatchCard key={match.id} match={match} />
                 ))}
               </CardContent>

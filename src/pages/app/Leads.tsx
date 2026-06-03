@@ -9,16 +9,16 @@ import { toast } from "sonner";
 import { safeArray } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { 
-  Mail, 
-  Phone, 
-  Building2, 
-  Search, 
-  Eye, 
+import {
+  Mail,
+  Phone,
+  Building2,
+  Search,
+  Eye,
   Trash2,
   MessageSquare,
   ChevronRight,
-  Loader2
+  Loader2,
 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { AdminSkeletonTable } from "@/components/admin/AdminSkeleton";
@@ -47,6 +47,8 @@ export default function Leads() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [mobileSearch, setMobileSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
@@ -132,15 +134,16 @@ export default function Leads() {
     setIsViewOpen(true);
   };
 
+  const activeSearch = searchTerm || mobileSearch;
   const filteredLeads = leads.filter(lead => {
-    const matchesSearch = 
-      lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (lead.organization?.toLowerCase().includes(searchTerm.toLowerCase()) || false);
-    
+    const matchesSearch =
+      lead.name.toLowerCase().includes(activeSearch.toLowerCase()) ||
+      lead.email.toLowerCase().includes(activeSearch.toLowerCase()) ||
+      lead.subject.toLowerCase().includes(activeSearch.toLowerCase()) ||
+      (lead.organization?.toLowerCase().includes(activeSearch.toLowerCase()) || false);
+
     const matchesStatus = statusFilter === "all" || lead.status === statusFilter;
-    
+
     return matchesSearch && matchesStatus;
   });
 
@@ -154,13 +157,27 @@ export default function Leads() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <header className="admin-header animate-fade-in">
-        <div>
+      <header className="admin-header animate-fade-in flex flex-col gap-2">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <h1 className="m3-page-title">Leads</h1>
             <span className="inline-flex items-center justify-center min-w-[28px] h-6 px-2 rounded-full text-[13px] font-bold text-white bg-[#e63946]">{leads.length}</span>
           </div>
+          <button className="sm:hidden" onClick={() => setSearchOpen(v => !v)}>
+            <Search size={18} className="text-zinc-400" />
+          </button>
         </div>
+        {searchOpen && (
+          <div className="sm:hidden mt-1">
+            <input
+              autoFocus
+              value={mobileSearch}
+              onChange={e => setMobileSearch(e.target.value)}
+              placeholder="Buscar lead..."
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-full px-4 py-2 text-sm text-white placeholder-zinc-500 outline-none"
+            />
+          </div>
+        )}
       </header>
 
       {/* Stats - Condensed */}
@@ -185,8 +202,8 @@ export default function Leads() {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-4 animate-fade-in delay-100">
+      {/* Filters — hidden on mobile (search handled by lupa above) */}
+      <div className="hidden sm:flex flex-col md:flex-row gap-4 animate-fade-in delay-100">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-600" />
           <Input

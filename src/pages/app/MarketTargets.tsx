@@ -488,7 +488,10 @@ export default function MarketTargets() {
       {/* ===== HEADER ===== */}
       <div className="mt-header">
         <div className="flex items-center gap-3">
-          <h1 className="m3-page-title">Monitoramento</h1>
+          <h1 className="m3-page-title">
+            <span className="block sm:hidden">Target</span>
+            <span className="hidden sm:block">Monitoramento</span>
+          </h1>
           <span className="inline-flex items-center justify-center min-w-[28px] h-6 px-2 rounded-full text-[13px] font-bold text-white bg-[#e63946]">{targets.length}</span>
         </div>
 
@@ -510,7 +513,8 @@ export default function MarketTargets() {
               minHeight: 44,
             }}
           >
-            + NOVO TARGET
+            <span className="sm:hidden">+</span>
+            <span className="hidden sm:inline">+ NOVO TARGET</span>
           </button>
         </div>
       </div>

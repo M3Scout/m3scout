@@ -44,6 +44,7 @@ interface NavItem {
   module: string;
   action?: string;
   icon: LucideIcon;
+  hiddenOnMobile?: boolean;
 }
 
 interface NavGroup {
@@ -59,7 +60,7 @@ const internalNavGroups: NavGroup[] = [
       { href: "/dashboard", label: "Dashboard", module: "app", icon: LayoutDashboard },
       { href: "/dashboard/atletas", label: "Atletas", module: "players", icon: Users },
       { href: "/dashboard/comparar",   label: "Comparar",  module: "compare", icon: GitCompare },
-      { href: "/dashboard/prancheta", label: "Prancheta", module: "players", icon: ClipboardList },
+      { href: "/dashboard/prancheta", label: "Prancheta", module: "players", icon: ClipboardList, hiddenOnMobile: true },
       { href: "/dashboard/relatorios", label: "Relatórios", module: "reports", icon: FileText },
     ]
   },
@@ -290,6 +291,7 @@ const MobileSection = memo(function MobileSection({
 }: MobileSectionProps) {
   const visibleItems = useMemo(() =>
     group.items.filter(item => {
+      if (item.hiddenOnMobile) return false;
       if (!item.module || item.module === "app") return true;
       const action = item.action || "view";
       return can(item.module as ModuleKey, action);

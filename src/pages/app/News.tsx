@@ -14,7 +14,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Plus } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -44,6 +44,8 @@ const News = () => {
   
   // Filter state
   const [search, setSearch] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [mobileSearch, setMobileSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -140,8 +142,8 @@ const News = () => {
     let result = [...articles];
 
     // Search filter
-    if (search.trim()) {
-      const searchLower = search.toLowerCase();
+    if (search.trim() || mobileSearch.trim()) {
+      const searchLower = (search || mobileSearch).toLowerCase();
       result = result.filter(
         (a) =>
           a.title.toLowerCase().includes(searchLower) ||
@@ -170,9 +172,9 @@ const News = () => {
     });
 
     return result;
-  }, [articles, search, statusFilter, sortBy]);
+  }, [articles, search, mobileSearch, statusFilter, sortBy]);
 
-  const hasFilters = search.trim() !== "" || statusFilter !== "all";
+  const hasFilters = search.trim() !== "" || mobileSearch.trim() !== "" || statusFilter !== "all";
 
   const handleDelete = (id: string) => {
     const article = articles?.find((a) => a.id === id);
@@ -191,21 +193,39 @@ const News = () => {
     <TooltipProvider>
       <div className="space-y-6">
         {/* Header */}
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between animate-fade-in">
-          <div className="flex items-center gap-3">
-            <h1 className="m3-page-title">Notícias</h1>
-            <span className="inline-flex items-center justify-center min-w-[28px] h-6 px-2 rounded-full text-[13px] font-bold text-white bg-[#e63946]">{filteredArticles.length}</span>
+        <header className="flex flex-col gap-2 animate-fade-in">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <h1 className="m3-page-title">Notícias</h1>
+              <span className="inline-flex items-center justify-center min-w-[28px] h-6 px-2 rounded-full text-[13px] font-bold text-white bg-[#e63946]">{filteredArticles.length}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button className="sm:hidden" onClick={() => setSearchOpen(v => !v)}>
+                <Search size={18} className="text-zinc-400" />
+              </button>
+              <Button asChild className="hidden sm:flex gap-2 shrink-0 bg-[#e63946] hover:bg-[#d62839] text-white rounded-full px-5 h-9 text-sm font-semibold">
+                <Link to="/dashboard/noticias/nova">
+                  <Plus className="w-4 h-4" />
+                  Nova Notícia
+                </Link>
+              </Button>
+            </div>
           </div>
-          <Button asChild className="gap-2 shrink-0 bg-[#e63946] hover:bg-[#d62839] text-white rounded-full px-5 h-9 text-sm font-semibold">
-            <Link to="/dashboard/noticias/nova">
-              <Plus className="w-4 h-4" />
-              Nova Notícia
-            </Link>
-          </Button>
+          {searchOpen && (
+            <div className="sm:hidden mt-1">
+              <input
+                autoFocus
+                value={mobileSearch}
+                onChange={e => setMobileSearch(e.target.value)}
+                placeholder="Buscar notícia..."
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-full px-4 py-2 text-sm text-white placeholder-zinc-500 outline-none"
+              />
+            </div>
+          )}
         </header>
 
         {/* Filters */}
-        <div className="animate-fade-in" style={{ animationDelay: "50ms" }}>
+        <div className="hidden sm:block animate-fade-in" style={{ animationDelay: "50ms" }}>
           <NewsFilters
             search={search}
             onSearchChange={setSearch}

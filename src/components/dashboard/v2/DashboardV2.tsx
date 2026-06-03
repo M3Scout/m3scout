@@ -236,7 +236,7 @@ export const DashboardV2 = () => {
         {/* Page header: title + action buttons */}
         <div className="m3dash-header">
           <div className="m3dash-headline">Visão geral</div>
-          <div className="m3dash-header-actions">
+          <div className="m3dash-header-actions hidden sm:flex">
             <Link to="/dashboard/atletas" className="m3dash-btn">
               <Users size={13} /> ATLETAS
             </Link>

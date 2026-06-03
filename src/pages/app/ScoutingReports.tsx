@@ -60,6 +60,8 @@ const ScoutingReports = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<string | null>(null);
   const [groupBy, setGroupBy] = useState<GroupBy>("none");
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("all");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [mobileSearch, setMobileSearch] = useState("");
 
   const fetchReports = useCallback(async () => {
     const { data, error } = await supabase
@@ -125,7 +127,7 @@ const ScoutingReports = () => {
 
   // Filter reports by search and period
   const filteredReports = useMemo(() => {
-    const query = searchQuery.toLowerCase();
+    const query = (searchQuery || mobileSearch).toLowerCase();
     const now = new Date();
     
     return reports.filter((report) => {
@@ -158,7 +160,7 @@ const ScoutingReports = () => {
       
       return true;
     });
-  }, [reports, searchQuery, scoutNames, periodFilter]);
+  }, [reports, searchQuery, mobileSearch, scoutNames, periodFilter]);
 
   // Calculate insights for each report
   const reportsWithInsights = useMemo(() => {
@@ -234,17 +236,35 @@ const ScoutingReports = () => {
   return (
     <div className="space-y-5 pb-12">
       {/* Header */}
-      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <h1 className="m3-page-title">Relatórios</h1>
-          <span className="inline-flex items-center justify-center min-w-[28px] h-6 px-2 rounded-full text-[13px] font-bold text-white bg-[#e63946]">{totalReports}</span>
+      <header className="flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <h1 className="m3-page-title">Relatórios</h1>
+            <span className="inline-flex items-center justify-center min-w-[28px] h-6 px-2 rounded-full text-[13px] font-bold text-white bg-[#e63946]">{totalReports}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button className="sm:hidden" onClick={() => setSearchOpen(v => !v)}>
+              <Search size={18} className="text-zinc-400" />
+            </button>
+            <Link to="/dashboard/relatorios/novo" className="hidden sm:flex">
+              <Button className="bg-[#e63946] hover:bg-[#d62839] text-white gap-2 rounded-full px-5 h-9 text-sm font-semibold">
+                <Plus className="w-4 h-4" />
+                Novo Relatório
+              </Button>
+            </Link>
+          </div>
         </div>
-        <Link to="/dashboard/relatorios/novo">
-          <Button className="bg-[#e63946] hover:bg-[#d62839] text-white gap-2 rounded-full px-5 h-9 text-sm font-semibold">
-            <Plus className="w-4 h-4" />
-            Novo Relatório
-          </Button>
-        </Link>
+        {searchOpen && (
+          <div className="sm:hidden mt-1">
+            <input
+              autoFocus
+              value={mobileSearch}
+              onChange={e => setMobileSearch(e.target.value)}
+              placeholder="Buscar atleta, competição ou scout..."
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-full px-4 py-2 text-sm text-white placeholder-zinc-500 outline-none"
+            />
+          </div>
+        )}
       </header>
 
       {/* Controls Bar */}
@@ -255,7 +275,7 @@ const ScoutingReports = () => {
       >
         {/* Top row: Search + Period + Count */}
         <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-          <div className="relative flex-1 max-w-md">
+          <div className="relative flex-1 max-w-md hidden sm:block">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
             <Input
               type="text"
@@ -266,20 +286,22 @@ const ScoutingReports = () => {
             />
           </div>
 
-          <Select value={periodFilter} onValueChange={(v) => setPeriodFilter(v as PeriodFilter)}>
-            <SelectTrigger className="w-[160px] bg-zinc-900/50 border-zinc-800/50 text-sm h-9 rounded-full">
-              <Calendar className="w-3.5 h-3.5 mr-2 text-zinc-500" />
-              <SelectValue placeholder="Período" />
-            </SelectTrigger>
-            <SelectContent className="bg-zinc-900 border-zinc-800">
-              <SelectItem value="all">Todos os períodos</SelectItem>
-              <SelectItem value="7days">Últimos 7 dias</SelectItem>
-              <SelectItem value="30days">Últimos 30 dias</SelectItem>
-              <SelectItem value="season">Temporada atual</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="hidden sm:flex">
+            <Select value={periodFilter} onValueChange={(v) => setPeriodFilter(v as PeriodFilter)}>
+              <SelectTrigger className="w-[160px] bg-zinc-900/50 border-zinc-800/50 text-sm h-9 rounded-full">
+                <Calendar className="w-3.5 h-3.5 mr-2 text-zinc-500" />
+                <SelectValue placeholder="Período" />
+              </SelectTrigger>
+              <SelectContent className="bg-zinc-900 border-zinc-800">
+                <SelectItem value="all">Todos os períodos</SelectItem>
+                <SelectItem value="7days">Últimos 7 dias</SelectItem>
+                <SelectItem value="30days">Últimos 30 dias</SelectItem>
+                <SelectItem value="season">Temporada atual</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-800/40">
+          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-800/40">
             <ClipboardList className="w-3.5 h-3.5 text-zinc-600" />
             <span className="text-xs text-zinc-500 font-medium tabular-nums">
               {totalReports} relatório{totalReports !== 1 ? "s" : ""}
@@ -287,8 +309,8 @@ const ScoutingReports = () => {
           </div>
         </div>
 
-        {/* Minimal tabs for grouping */}
-        <div className="flex items-center gap-1">
+        {/* Tabs for grouping — underline style on mobile, pills on desktop */}
+        <div className="flex w-full sm:w-auto sm:items-center sm:gap-1 border-b border-zinc-800 sm:border-b-0">
           <span className="text-[10px] text-zinc-600 uppercase tracking-wider font-medium mr-2 hidden sm:inline">Agrupar</span>
           {([
             { value: "none" as GroupBy, label: "Todos" },
@@ -300,10 +322,11 @@ const ScoutingReports = () => {
               key={tab.value}
               onClick={() => setGroupBy(tab.value)}
               className={cn(
-                "text-xs px-3 py-1.5 rounded-full transition-all duration-200 font-medium",
+                "flex-1 sm:flex-none text-xs py-2 sm:py-1.5 sm:px-3 font-medium transition-all duration-200 text-center",
+                "sm:rounded-full",
                 groupBy === tab.value
-                  ? "text-zinc-100 bg-zinc-800"
-                  : "text-zinc-500 hover:text-zinc-300"
+                  ? "text-zinc-100 border-b-2 border-[#e63946] sm:border-b-0 sm:bg-zinc-800"
+                  : "text-zinc-500 hover:text-zinc-300 border-b-2 border-transparent sm:border-b-0"
               )}
             >
               {tab.label}

@@ -233,7 +233,7 @@ export default function MarketAtivos() {
           <h1 className="m3-page-title">Ativos</h1>
           <span className="inline-flex items-center justify-center min-w-[28px] h-6 px-2 rounded-full text-[13px] font-bold text-white bg-[#e63946]">{filteredAthletes.length}</span>
         </div>
-        <Button variant="outline" size="sm" onClick={() => refetch()} className="rounded-full">
+        <Button variant="outline" size="sm" onClick={() => refetch()} className="hidden sm:flex rounded-full">
           <RefreshCw className="w-4 h-4 mr-2" />
           Atualizar
         </Button>
