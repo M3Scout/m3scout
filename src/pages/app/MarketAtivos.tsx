@@ -277,8 +277,8 @@ export default function MarketAtivos() {
 
       {/* Filters */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-        {/* Search */}
-        <div className="relative">
+        {/* Search — hidden on mobile (uses header toggle instead) */}
+        <div className="relative hidden sm:block">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
           <Input
             placeholder="Buscar atleta..."

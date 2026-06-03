@@ -446,19 +446,16 @@ export default function MarketTargets() {
 
         @media (max-width: 767px) {
           .mt-header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 16px;
+            flex-direction: row;
+            align-items: center;
           }
           .mt-header-right {
-            align-items: flex-start;
-            width: 100%;
-          }
-          .mt-header-right .mt-header-meta {
-            text-align: left;
+            flex-direction: row;
+            align-items: center;
+            width: auto;
           }
           .mt-header-right button {
-            width: 100%;
+            width: auto;
           }
           .mt-funnel-strip {
             grid-template-columns: repeat(2, 1fr);
@@ -487,13 +484,18 @@ export default function MarketTargets() {
 
       {/* ===== HEADER ===== */}
       <div className="mt-header">
+        {/* Left: title + badge */}
         <div className="flex items-center gap-3">
           <h1 className="m3-page-title">
             <span className="block sm:hidden">Target</span>
             <span className="hidden sm:block">Monitoramento</span>
           </h1>
           <span className="inline-flex items-center justify-center min-w-[28px] h-6 px-2 rounded-full text-[13px] font-bold text-white bg-[#e63946]">{targets.length}</span>
-          {/* Mobile: + icon inline next to title, no background */}
+        </div>
+
+        {/* Right: mobile = plain + icon, desktop = red button */}
+        <div className="mt-header-right">
+          {/* Mobile: plain + icon, no background */}
           <button
             className="sm:hidden p-1 text-zinc-400 hover:text-white transition-colors"
             onClick={() => setFormModalOpen(true)}
@@ -501,11 +503,9 @@ export default function MarketTargets() {
           >
             <Plus className="w-[18px] h-[18px]" />
           </button>
-        </div>
-
-        {/* Desktop: red button */}
-        <div className="mt-header-right hidden sm:flex">
+          {/* Desktop: full red button */}
           <button
+            className="hidden sm:block"
             onClick={() => setFormModalOpen(true)}
             style={{
               padding: "10px 20px",
