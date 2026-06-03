@@ -613,26 +613,27 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
       {/* ── Evolução por Temporada ──────────────────────────────────────────── */}
       <div className="border" style={{ borderColor: BORDER }}>
         <div
-          className="flex items-center justify-between px-4 py-3 border-b"
+          className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between px-4 py-3 border-b"
           style={{ borderColor: BORDER }}
         >
           <span className="font-barlow font-black text-[13px] tracking-[0.2em] uppercase" style={{ color: MUTED }}>
             EVOLUÇÃO POR TEMPORADA
           </span>
           {/* Metric selector */}
-          <div className="flex gap-0" style={{ border: `1px solid ${BORDER}` }}>
+          <div className="flex gap-0 self-start md:self-auto" style={{ border: `1px solid ${BORDER}` }}>
             {METRIC_OPTIONS.map((opt) => (
               <button
                 key={opt.id}
                 onClick={() => setSelectedMetric(opt.id)}
-                className="px-3 py-1 font-jetbrains text-[10px] tracking-wider uppercase transition-colors"
+                className="px-2 sm:px-3 py-1 font-jetbrains text-[10px] tracking-wider uppercase transition-colors whitespace-nowrap"
                 style={{
                   background: selectedMetric === opt.id ? A : BG,
                   color: selectedMetric === opt.id ? "#fff" : MUTED,
                   borderLeft: opt.id !== "ga" ? `1px solid ${BORDER}` : undefined,
                 }}
               >
-                {opt.label}
+                <span className="md:hidden">{opt.shortLabel}</span>
+                <span className="hidden md:inline">{opt.label}</span>
               </button>
             ))}
           </div>
