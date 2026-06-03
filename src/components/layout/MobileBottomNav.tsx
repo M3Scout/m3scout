@@ -41,8 +41,8 @@ export function MobileBottomNav() {
     const tick = (now: number) => {
       const t = Math.min((now - startTime) / duration, 1);
       const intensity = Math.sin(t * Math.PI);
-      turbRef.current?.setAttribute("baseFrequency", `${(intensity * 0.018).toFixed(4)}`);
-      dispRef.current?.setAttribute("scale", `${(intensity * 22).toFixed(1)}`);
+      turbRef.current?.setAttribute("baseFrequency", `${(0.012 + intensity * 0.022).toFixed(4)}`);
+      dispRef.current?.setAttribute("scale", `${(intensity * 38).toFixed(1)}`);
 
       if (t < 1) {
         rafRef.current = requestAnimationFrame(tick);
