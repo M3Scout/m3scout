@@ -19,6 +19,7 @@ export interface PlayerStats {
   yellow_cards: number;
   red_cards: number;
   // Defensive stats
+  steals: number;
   tackles: number;
   interceptions: number;
   recoveries: number;
@@ -83,6 +84,7 @@ export interface PlayerStatsInput {
   yellow_cards?: number;
   red_cards?: number;
   // Defensive stats
+  steals?: number;
   tackles?: number;
   interceptions?: number;
   recoveries?: number;
@@ -136,6 +138,7 @@ export interface AggregatedStats {
   total_yellow_cards: number;
   total_red_cards: number;
   // Defensive stats
+  total_steals: number;
   total_tackles: number;
   total_interceptions: number;
   total_recoveries: number;
@@ -227,6 +230,7 @@ export async function upsertPlayerStats(
       assists: stats.assists ?? 0,
       yellow_cards: stats.yellow_cards ?? 0,
       red_cards: stats.red_cards ?? 0,
+      steals: stats.steals ?? 0,
       tackles: stats.tackles ?? 0,
       interceptions: stats.interceptions ?? 0,
       recoveries: stats.recoveries ?? 0,
@@ -267,7 +271,7 @@ export async function upsertPlayerStats(
         // Sum all numeric fields
         const sumFields = [
           'matches', 'minutes', 'goals', 'assists', 'yellow_cards', 'red_cards',
-          'tackles', 'interceptions', 'recoveries', 'saves', 'goals_conceded',
+          'steals', 'tackles', 'interceptions', 'recoveries', 'saves', 'goals_conceded',
           'clean_sheets', 'penalties_saved', 'errors_leading_to_goal',
           'aerial_duels_won', 'accurate_passes', 'total_passes',
           'duels_won', 'total_duels', 'chances_created', 'key_passes',
@@ -362,6 +366,7 @@ export async function getAggregatedPlayerStats(
       total_yellow_cards: data.reduce((sum, s) => sum + (s.yellow_cards || 0), 0),
       total_red_cards: data.reduce((sum, s) => sum + (s.red_cards || 0), 0),
       // Defensive stats
+      total_steals: data.reduce((sum, s) => sum + ((s as any).steals || 0), 0),
       total_tackles: data.reduce((sum, s) => sum + (s.tackles || 0), 0),
       total_interceptions: data.reduce((sum, s) => sum + (s.interceptions || 0), 0),
       total_recoveries: data.reduce((sum, s) => sum + (s.recoveries || 0), 0),
@@ -427,6 +432,7 @@ function createEmptyAggregatedStats(seasonYear: number): AggregatedStats {
     total_yellow_cards: 0,
     total_red_cards: 0,
     // Defensive stats
+    total_steals: 0,
     total_tackles: 0,
     total_interceptions: 0,
     total_recoveries: 0,
@@ -544,6 +550,7 @@ export async function getCareerAggregatedStats(
           total_yellow_cards: stats.reduce((sum, s) => sum + (s.yellow_cards || 0), 0),
           total_red_cards: stats.reduce((sum, s) => sum + (s.red_cards || 0), 0),
           // Defensive stats
+          total_steals: stats.reduce((sum, s) => sum + ((s as any).steals || 0), 0),
           total_tackles: stats.reduce((sum, s) => sum + (s.tackles || 0), 0),
           total_interceptions: stats.reduce((sum, s) => sum + (s.interceptions || 0), 0),
           total_recoveries: stats.reduce((sum, s) => sum + (s.recoveries || 0), 0),

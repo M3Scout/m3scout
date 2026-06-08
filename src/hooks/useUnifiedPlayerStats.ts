@@ -37,10 +37,13 @@ export interface UnifiedStats {
   // Passing & Dribbling
   accurate_passes: number;
   total_passes: number;
+  long_passes_accurate?: number;
+  long_passes_total?: number;
   successful_dribbles: number;
   total_dribbles: number;
   
   // Defensive
+  steals?: number;
   tackles: number;
   interceptions: number;
   recoveries: number;

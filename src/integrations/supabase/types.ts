@@ -1607,6 +1607,7 @@ export type Database = {
           steals: number
           successful_dribbles: number
           successful_runs_out: number
+          steals: number
           tackles: number
           times_dribbled_past: number
           total_dribbles: number

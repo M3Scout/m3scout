@@ -58,11 +58,14 @@ interface PlayerStatRow {
   crosses_failed: number;
   successful_dribbles: number;
   total_dribbles: number;
+  steals: number;
   tackles: number;
   interceptions: number;
   recoveries: number;
   clearances: number;
   times_dribbled_past: number;
+  long_passes_accurate: number;
+  long_passes_total: number;
   duels_won: number;
   total_duels: number;
   aerial_duels_won: number;
@@ -90,6 +93,7 @@ const TABLE_HEADERS = [
   { label: "NOG", tooltip: "No Gol (Finalizações Certas)" },
   { label: "AM",  tooltip: "Cartões Amarelos" },
   { label: "VE",  tooltip: "Cartão Vermelho" },
+  { label: "ROB", tooltip: "Roubadas de Bola" },
   { label: "DES", tooltip: "Desarmes" },
   { label: "INT", tooltip: "Interceptações" },
   { label: "",    tooltip: "" },
@@ -248,6 +252,7 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
           dribbles_success: ms.dribbles_success,
           dribbles_failed: ms.dribbles_failed,
           dribbles_total: ms.dribbles_success + ms.dribbles_failed,
+          steals: 0,
           tackles: ms.tackles,
           interceptions: ms.interceptions,
           recoveries: ms.recoveries,
@@ -265,6 +270,9 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
           fouls_committed: ms.fouls_committed,
           fouls_suffered: ms.fouls_suffered,
           possession_lost: 0,
+          long_passes_accurate: 0,
+          long_passes_failed: 0,
+          long_passes_total: 0,
           saves: ms.saves,
           goals_conceded: ms.goals_conceded,
           clean_sheets: ms.clean_sheets,
@@ -305,6 +313,7 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
           // total_dribbles stores FAILED count
           dribbles_failed: ps.total_dribbles,
           dribbles_total: ps.successful_dribbles + ps.total_dribbles,
+          steals: (ps as any).steals ?? 0,
           tackles: ps.tackles,
           interceptions: ps.interceptions,
           recoveries: ps.recoveries,
@@ -323,6 +332,9 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
           fouls_committed: ps.fouls_committed,
           fouls_suffered: ps.fouls_drawn,
           possession_lost: ps.possession_lost,
+          long_passes_accurate: ps.long_passes_accurate,
+          long_passes_failed: ps.long_passes_total,
+          long_passes_total: ps.long_passes_accurate + ps.long_passes_total,
           saves: ps.saves,
           goals_conceded: ps.goals_conceded,
           clean_sheets: ps.clean_sheets,
@@ -742,10 +754,11 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
                       shots_on_target: acc.shots_on_target + row.stats.shots_on_target,
                       yellow_cards:   acc.yellow_cards   + row.stats.yellow_cards,
                       red_cards:      acc.red_cards      + row.stats.red_cards,
+                      steals:         acc.steals         + row.stats.steals,
                       tackles:        acc.tackles        + row.stats.tackles,
                       interceptions:  acc.interceptions  + row.stats.interceptions,
                     }),
-                    { matches: 0, minutes: 0, goals: 0, assists: 0, shots: 0, shots_on_target: 0, yellow_cards: 0, red_cards: 0, tackles: 0, interceptions: 0 }
+                    { matches: 0, minutes: 0, goals: 0, assists: 0, shots: 0, shots_on_target: 0, yellow_cards: 0, red_cards: 0, steals: 0, tackles: 0, interceptions: 0 }
                   );
 
                   // Minutes bracket drives the color for both J and MIN cells
@@ -770,7 +783,7 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
                     /* Season header row */
                     <tr key={`yr-${yr}`} style={{ background: BORDER }}>
                       <td
-                        colSpan={12}
+                        colSpan={13}
                         className="px-3 py-1.5 font-barlow font-black text-[11px] tracking-[0.2em] uppercase"
                         style={{ color: MUTED }}
                       >
@@ -830,6 +843,7 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
                         <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${BORDER}`, color: MUTED }}>{totals.shots_on_target}</td>
                         <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${BORDER}`, color: totals.yellow_cards > 0 ? AMBER : MUTED }}>{totals.yellow_cards}</td>
                         <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${BORDER}`, color: totals.red_cards > 0 ? A : MUTED }}>{totals.red_cards}</td>
+                        <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${BORDER}`, color: MUTED }}>{totals.steals}</td>
                         <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${BORDER}`, color: MUTED }}>{totals.tackles}</td>
                         <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${BORDER}`, color: MUTED }}>{totals.interceptions}</td>
                         <td className="px-3 py-2" />
@@ -992,6 +1006,9 @@ function SeasonRow({ row, isGoalkeeper = false }: { row: SeasonRowData; matches?
     { label: "Chances",       value: s.chances_created,  positive: true },
     { label: "Cruz. Certos",  value: s.crosses_success,  positive: true, pct: (s.crosses_success + s.crosses_failed) > 0 ? (s.crosses_success / (s.crosses_success + s.crosses_failed)) * 100 : null },
     { label: "Cruz. Errados", value: s.crosses_failed,   negative: true },
+    { label: "P.Longo ✓",     value: s.long_passes_accurate, positive: true, pct: s.long_passes_total > 0 ? (s.long_passes_accurate / s.long_passes_total) * 100 : null },
+    { label: "P.Longo ✗",     value: s.long_passes_failed,   negative: true },
+    { label: "P.Longo Tot.",  value: s.long_passes_total },
   ];
 
   const drilesStats: StatDef[] = [
@@ -1002,6 +1019,7 @@ function SeasonRow({ row, isGoalkeeper = false }: { row: SeasonRowData; matches?
   ];
 
   const defesaStats: StatDef[] = [
+    { label: "Roubada Bola",    value: s.steals,                                                                      positive: true },
     { label: "Desarmes",        value: s.tackles,                                                                     positive: true },
     { label: "Intercep.",       value: s.interceptions,                                                               positive: true },
     { label: "Cortes",          value: s.clearances,                                                                  positive: true },
@@ -1084,6 +1102,10 @@ function SeasonRow({ row, isGoalkeeper = false }: { row: SeasonRowData; matches?
         <td className="px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: s.red_cards > 0 ? ACC : MUT }}>
           {s.red_cards}
         </td>
+        {/* ROB */}
+        <td className="px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>
+          {s.steals}
+        </td>
         {/* DES */}
         <td className="px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>
           {s.tackles}
@@ -1107,7 +1129,7 @@ function SeasonRow({ row, isGoalkeeper = false }: { row: SeasonRowData; matches?
       {/* Expanded stats panel — 4 category blocks, Live and Manual */}
       {expanded && (
         <tr style={{ borderBottom: `1px solid ${BRD}` }}>
-          <td colSpan={12} style={{ background: "#070707", padding: "20px 20px" }}>
+          <td colSpan={13} style={{ background: "#070707", padding: "20px 20px" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
               <StatBlock title="Ataque"          titleColor="#E5173F" stats={ataqueStats} />
               <StatBlock title="Passes"          titleColor="#F59E0B" stats={passesStats} />

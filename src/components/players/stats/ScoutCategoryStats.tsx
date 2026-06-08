@@ -91,6 +91,9 @@ export const OUTFIELD_SCOUT_CATEGORIES: ScoutCategory[] = [
       { key: "passes_total_derived", label: "Passes Tot." },
       { key: "crosses_success", label: "Cruzam. ✓", successOfFailed: "crosses_failed" },
       { key: "crosses_failed", label: "Cruzam. ✗" },
+      { key: "long_passes_accurate", label: "Passe Longo ✓", successOfFailed: "long_passes_total" },
+      { key: "long_passes_total", label: "Passe Longo ✗" },
+      { key: "long_passes_total_derived", label: "Passe Longo Tot." },
     ],
   },
   {
@@ -112,6 +115,7 @@ export const OUTFIELD_SCOUT_CATEGORIES: ScoutCategory[] = [
     color: "text-blue-400",
     bgColor: "bg-blue-500/10 border-blue-500/20",
     stats: [
+      { key: "steals", label: "Roubada de Bola" },
       { key: "tackles", label: "Desarmes" },
       { key: "interceptions", label: "Interc." },
       { key: "clearances", label: "Cortes" },

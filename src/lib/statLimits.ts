@@ -55,6 +55,7 @@ export const SEASON_STAT_LIMITS: Record<string, StatLimit> = {
   crosses_failed: { min: 0, max: 1000, label: "Cruzamentos Errados" },
 
   // Defesa
+  steals: { min: 0, max: 1000, label: "Roubadas de Bola" },
   tackles: { min: 0, max: 1000, label: "Desarmes" },
   interceptions: { min: 0, max: 1000, label: "Interceptações" },
   recoveries: { min: 0, max: 2000, label: "Recuperações" },

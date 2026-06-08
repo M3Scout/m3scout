@@ -59,6 +59,7 @@ interface SeasonStats {
   assists: number;
   yellow_cards: number;
   red_cards: number;
+  steals: number;
   tackles: number;
   interceptions: number;
   recoveries: number;
@@ -70,6 +71,8 @@ interface SeasonStats {
   total_dribbles: number;
   accurate_passes: number;
   total_passes: number;
+  long_passes_accurate: number;
+  long_passes_total: number;
   clearances: number;
   saves: number;
   goals_conceded: number;
@@ -150,10 +153,10 @@ const PlayerProfile = () => {
         acc[year] = {
           season_year: year,
           matches: 0, minutes: 0, goals: 0, assists: 0,
-          yellow_cards: 0, red_cards: 0, tackles: 0, interceptions: 0,
+          yellow_cards: 0, red_cards: 0, steals: 0, tackles: 0, interceptions: 0,
           recoveries: 0, shots: 0, shots_on_target: 0, key_passes: 0,
           chances_created: 0, successful_dribbles: 0, total_dribbles: 0,
-          accurate_passes: 0, total_passes: 0, clearances: 0,
+          accurate_passes: 0, total_passes: 0, long_passes_accurate: 0, long_passes_total: 0, clearances: 0,
           saves: 0, goals_conceded: 0, clean_sheets: 0, penalties_saved: 0,
           aerial_duels_won: 0, aerial_duels_total: 0, fouls_committed: 0,
         };
@@ -166,6 +169,7 @@ const PlayerProfile = () => {
       c.assists += s.assists;
       c.yellow_cards += s.yellow_cards;
       c.red_cards += s.red_cards;
+      c.steals += s.steals ?? 0;
       c.tackles += s.tackles;
       c.interceptions += s.interceptions;
       c.recoveries += s.recoveries;
@@ -177,6 +181,8 @@ const PlayerProfile = () => {
       c.total_dribbles += s.total_dribbles;
       c.accurate_passes += s.accurate_passes;
       c.total_passes += s.total_passes;
+      c.long_passes_accurate += s.long_passes_accurate ?? 0;
+      c.long_passes_total += s.long_passes_total ?? 0;
       c.saves += s.saves;
       c.goals_conceded += s.goals_conceded;
       c.clean_sheets += s.clean_sheets;

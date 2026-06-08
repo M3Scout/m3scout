@@ -46,6 +46,9 @@ export interface MatchDerivedStats {
   chances_created: number;
   crosses_success: number;
   crosses_failed: number;
+  long_passes_accurate: number;
+  long_passes_failed: number;
+  long_passes_total: number; // derived: accurate + failed
   
   // Dribbles/Possession (totals are derived)
   ball_actions: number;
@@ -54,6 +57,7 @@ export interface MatchDerivedStats {
   dribbles_total: number; // derived: success + failed
   
   // Defense
+  steals: number;
   tackles: number;
   interceptions: number;
   recoveries: number;
@@ -874,10 +878,14 @@ export function usePlayerMatchStatsBySeasonCompetition({
             chances_created: 0,
             crosses_success: 0,
             crosses_failed: 0,
+            long_passes_accurate: 0,
+            long_passes_failed: 0,
+            long_passes_total: 0,
             ball_actions: 0,
             dribbles_success: 0,
             dribbles_failed: 0,
             dribbles_total: 0,
+            steals: 0,
             tackles: 0,
             interceptions: 0,
             recoveries: 0,

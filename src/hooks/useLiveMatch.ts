@@ -21,7 +21,7 @@ export type MatchEventType =
   | "dribble_success" | "dribble_attempt"
   | "ball_action" | "foul_suffered" | "possession_lost"
   // Outfield - Defense
-  | "tackle" | "interception" | "recovery" | "clearance"
+  | "steal" | "tackle" | "interception" | "recovery" | "clearance"
   | "blocked_shot" | "was_dribbled"
   | "duel_won" | "duel_total" | "aerial_duel_won" | "aerial_duel_total"
   | "ground_duel_won" | "ground_duel_total"
@@ -167,6 +167,7 @@ export interface MatchPlayerStats {
   ball_actions: number;
   dribbles_success: number;
   dribbles_total: number;
+  steals: number;
   tackles: number;
   interceptions: number;
   recoveries: number;

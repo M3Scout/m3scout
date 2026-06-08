@@ -5,10 +5,11 @@ import { isGoalkeeper } from "@/lib/positionUtils";
 interface SeasonStats {
   goals: number; assists: number; shots: number; shots_on_target: number;
   key_passes: number; chances_created: number; accurate_passes: number;
-  successful_dribbles: number; tackles: number; interceptions: number;
+  successful_dribbles: number; steals: number; tackles: number; interceptions: number;
   recoveries: number; saves: number; clean_sheets: number; penalties_saved: number;
   aerial_duels_won: number; aerial_duels_total: number; fouls_committed: number;
   yellow_cards: number; red_cards: number; total_passes: number;
+  long_passes_accurate: number; long_passes_total: number;
 }
 interface AthleteGamePhasesSectionProps {
   currentSeasonStats: SeasonStats | null;
@@ -149,10 +150,13 @@ export function AthleteGamePhasesSection({
                 { label: "Chances Criadas", value: currentSeasonStats.chances_created,   max: 30 },
               ]} />
               <PhasePanel title="Passe" index={2} stats={[
-                { label: "Passes Certos",   value: currentSeasonStats.accurate_passes,   max: 500 },
-                { label: "Dribles Certos",  value: currentSeasonStats.successful_dribbles, max: 30 },
+                { label: "Passes Certos",    value: currentSeasonStats.accurate_passes,      max: 500 },
+                { label: "P. Longo Certo",   value: currentSeasonStats.long_passes_accurate, max: 150 },
+                { label: "P. Longo Tot.",    value: currentSeasonStats.long_passes_total,    max: 200 },
+                { label: "Dribles Certos",   value: currentSeasonStats.successful_dribbles,  max: 30  },
               ]} />
               <PhasePanel title="Defesa" index={3} stats={[
+                { label: "Roubada de Bola", value: currentSeasonStats.steals,            max: 30 },
                 { label: "Desarmes",        value: currentSeasonStats.tackles,           max: 40 },
                 { label: "Interceptações",  value: currentSeasonStats.interceptions,     max: 30 },
                 { label: "Recuperações",    value: currentSeasonStats.recoveries,        max: 50 },

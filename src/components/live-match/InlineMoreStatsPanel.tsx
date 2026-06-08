@@ -47,6 +47,8 @@ const OUTFIELD_STATS: { category: string; categoryKey: string; color: string; bg
       { type: "pass_total", label: "Passes Errados" },
       { type: "cross_success", label: "Cruzamentos Certos" },
       { type: "cross_failed", label: "Cruzamentos Errados" },
+      { type: "long_pass_success", label: "Passe Longo Certo" },
+      { type: "long_pass_total", label: "Passe Longo Errado" },
     ],
   },
   // DRIBLES / POSSE
@@ -72,6 +74,7 @@ const OUTFIELD_STATS: { category: string; categoryKey: string; color: string; bg
     color: "text-blue-400",
     bgColor: "bg-blue-500/10 border-blue-500/20",
     stats: [
+      { type: "steal", label: "Roubada de Bola" },
       { type: "tackle", label: "Desarmes" },
       { type: "interception", label: "Interceptações" },
       { type: "clearance", label: "Cortes" },
