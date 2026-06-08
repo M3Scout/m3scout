@@ -180,6 +180,7 @@ export const EVENT_TYPE_CONFIG: Record<MatchEventType, SummaryEventConfig> = {
   interception: { label: "Interceptações", icon: "🛡️", category: "defense", order: 31 },
   clearance: { label: "Cortes", icon: "🧹", category: "defense", order: 32 },
   recovery: { label: "Recuperações", icon: "↩️", category: "defense", order: 33 },
+  steal: { label: "Roubadas de Bola", icon: "🪝", category: "defense", order: 33.5 },
   blocked_shot: { label: "Chute Bloqueado", icon: "🖐️", category: "defense", order: 34 },
   was_dribbled: { label: "Driblado", icon: "💨", category: "defense", order: 35 },
   ground_duel_won: { label: "Duelos no Chão Ganhos", icon: "🤼", category: "defense", order: 36 },
