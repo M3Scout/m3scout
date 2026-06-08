@@ -670,6 +670,7 @@ export type Database = {
           shots: number
           shots_blocked: number
           shots_on_target: number
+          steals: number
           tackles: number
           updated_at: string
           was_dribbled: number
@@ -715,6 +716,7 @@ export type Database = {
           shots?: number
           shots_blocked?: number
           shots_on_target?: number
+          steals?: number
           tackles?: number
           updated_at?: string
           was_dribbled?: number
@@ -760,6 +762,7 @@ export type Database = {
           shots?: number
           shots_blocked?: number
           shots_on_target?: number
+          steals?: number
           tackles?: number
           updated_at?: string
           was_dribbled?: number
@@ -1601,6 +1604,7 @@ export type Database = {
           shots_blocked: number
           shots_on_target: number
           shots_on_target_against: number
+          steals: number
           successful_dribbles: number
           successful_runs_out: number
           tackles: number
@@ -1663,6 +1667,7 @@ export type Database = {
           shots_blocked?: number
           shots_on_target?: number
           shots_on_target_against?: number
+          steals?: number
           successful_dribbles?: number
           successful_runs_out?: number
           tackles?: number
@@ -1725,6 +1730,7 @@ export type Database = {
           shots_blocked?: number
           shots_on_target?: number
           shots_on_target_against?: number
+          steals?: number
           successful_dribbles?: number
           successful_runs_out?: number
           tackles?: number
@@ -2659,6 +2665,7 @@ export type Database = {
           season_year: number | null
           shots: number | null
           shots_on_target: number | null
+          steals: number | null
           successful_dribbles: number | null
           tackles: number | null
           total_dribbles: number | null
@@ -2779,6 +2786,7 @@ export type Database = {
           shots: number
           shots_blocked: number
           shots_on_target: number
+          steals: number
           tackles: number
           updated_at: string
           was_dribbled: number
@@ -3039,6 +3047,7 @@ export type Database = {
         | "blocked_shot"
         | "long_pass_success"
         | "long_pass_total"
+        | "steal"
       match_status: "draft" | "live" | "finished" | "applied"
       position_template: "outfield" | "goalkeeper"
       target_priority: "HIGH" | "MEDIUM" | "LOW"
@@ -3234,6 +3243,7 @@ export const Constants = {
         "blocked_shot",
         "long_pass_success",
         "long_pass_total",
+        "steal",
       ],
       match_status: ["draft", "live", "finished", "applied"],
       position_template: ["outfield", "goalkeeper"],
