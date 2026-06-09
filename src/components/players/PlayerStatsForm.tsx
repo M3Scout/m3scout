@@ -610,7 +610,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
     "total_runs_out", "fouls_committed", "fouls_drawn", "offsides",
     "clearances", "times_dribbled_past", "possession_lost",
     "long_passes_accurate", "long_passes_total", "successful_dribbles",
-    "total_dribbles", "crosses_success", "crosses_failed",
+    "total_dribbles", "crosses_success", "crosses_failed", "penalties_won",
   ] as const;
 
   const buildStatPayload = (stat: PlayerStat): Record<string, number> => {
