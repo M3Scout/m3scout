@@ -39,6 +39,7 @@ export const OUTFIELD_STATS: StatCategory[] = [
       { type: "shot", label: "Finalizações Fora" },
       { type: "shot_blocked", label: "Finalização Bloqueada" },
       { type: "offside", label: "Impedimento" },
+      { type: "penalty_won", label: "Pênalti Sofrido" },
     ],
   },
   // PASSES - Passes, assistências, criação e cruzamentos
