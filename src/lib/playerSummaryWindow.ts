@@ -210,6 +210,7 @@ export async function fetchLiveAggregateForWindow(
     acc.red_cards += n(r.red_cards);
     acc.fouls_committed += n(r.fouls_committed);
     acc.fouls_drawn += n(r.fouls_suffered);
+    acc.penalties_won += n((r as any).penalties_won);
     return acc;
   }, empty);
 
