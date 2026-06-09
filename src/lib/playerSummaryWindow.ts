@@ -172,6 +172,7 @@ export async function fetchLiveAggregateForWindow(
     ground_duels_won: 0, ground_duels_total: 0,
     saves: 0, goals_conceded: 0, clean_sheets: 0, penalties_saved: 0, errors_leading_to_goal: 0,
     yellow_cards: 0, red_cards: 0, fouls_committed: 0, fouls_drawn: 0,
+    penalties_won: 0,
     clearances: 0,
   };
 
