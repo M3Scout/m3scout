@@ -100,6 +100,7 @@ export interface AggregatedUnifiedStats {
   red_cards: number;
   fouls_committed: number;
   fouls_drawn: number;
+  penalties_won: number;
   clearances: number; // Derived from recoveries for compatibility
 }
 
