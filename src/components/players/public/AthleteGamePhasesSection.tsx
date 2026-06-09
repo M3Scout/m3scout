@@ -141,9 +141,10 @@ export function AthleteGamePhasesSection({
           ) : (
             <>
               <PhasePanel title="Ataque" index={0} stats={[
-                { label: "Gols",            value: currentSeasonStats.goals,            max: 20 },
-                { label: "Chutes",          value: currentSeasonStats.shots,            max: 50 },
-                { label: "Chutes no Gol",   value: currentSeasonStats.shots_on_target,  max: 30 },
+                { label: "Gols",                value: currentSeasonStats.goals,            max: 20 },
+                { label: "Chutes",              value: currentSeasonStats.shots,            max: 50 },
+                { label: "Chutes no Gol",       value: currentSeasonStats.shots_on_target,  max: 30 },
+                { label: "Pênaltis Sofridos",   value: currentSeasonStats.penalties_won ?? 0, max: 5 },
               ]} />
               <PhasePanel title="Criatividade" index={1} stats={[
                 { label: "Assistências",    value: currentSeasonStats.assists,           max: 15 },
