@@ -169,6 +169,7 @@ export async function fetchUnifiedPlayerStats(
     red_cards: Number(row.red_cards) || 0,
     fouls_committed: Number(row.fouls_committed) || 0,
     fouls_drawn: Number(row.fouls_drawn) || 0,
+    penalties_won: Number((row as any).penalties_won) || 0,
   }));
 }
 
