@@ -925,6 +925,7 @@ export function usePlayerMatchStatsBySeasonCompetition({
             goals_conceded: 0,
             clean_sheets: 0,
             penalties_saved: 0,
+            penalties_won: 0,
           },
         };
       }
