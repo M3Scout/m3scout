@@ -537,6 +537,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
         g.red_cards += statRow.red_cards ?? 0;
         g.saves += statRow.saves ?? 0;
         g.goals_conceded += statRow.goals_conceded ?? 0;
+        g.penalties_won += statRow.penalties_won ?? 0;
       }
 
       setLiveStatGroups(
