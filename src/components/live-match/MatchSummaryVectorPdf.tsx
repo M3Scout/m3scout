@@ -93,6 +93,7 @@ const EVENT_LABELS: Record<MatchEventType, string> = {
   possession_lost: "Bola Perdida",
   // Defense
   tackle: "Desarme",
+  steal: "Roubada de Bola",
   interception: "Interceptação",
   recovery: "Recuperação",
   clearance: "Corte",
