@@ -192,6 +192,7 @@ const PlayerProfile = () => {
       c.aerial_duels_won += s.aerial_duels_won ?? 0;
       c.aerial_duels_total += s.aerial_duels_total ?? 0;
       c.fouls_committed += s.fouls_committed ?? 0;
+      c.penalties_won += (s as any).penalties_won ?? 0;
     }
     
     return Object.values(acc).sort((a, b) => b.season_year - a.season_year);
