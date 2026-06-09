@@ -89,6 +89,7 @@ function sumStats(a: MatchDerivedStats, b: MatchDerivedStats): MatchDerivedStats
     goals_conceded:     a.goals_conceded     + b.goals_conceded,
     clean_sheets:       a.clean_sheets       + b.clean_sheets,
     penalties_saved:    a.penalties_saved    + b.penalties_saved,
+    penalties_won:      a.penalties_won      + b.penalties_won,
   };
 }
 
