@@ -10,6 +10,7 @@ interface SeasonStats {
   chances_created: number; successful_dribbles: number; total_dribbles: number;
   accurate_passes: number; total_passes: number; clearances: number;
   saves: number; goals_conceded: number; clean_sheets: number; penalties_saved: number;
+  penalties_won?: number;
 }
 interface CompetitionStats {
   competition_id: string; competition_name: string; competition_type: string;
