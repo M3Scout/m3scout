@@ -82,6 +82,7 @@ interface SeasonStats {
   aerial_duels_won: number;
   aerial_duels_total: number;
   fouls_committed: number;
+  penalties_won: number;
 }
 
 interface CompetitionStats {
