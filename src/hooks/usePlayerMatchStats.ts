@@ -170,6 +170,8 @@ interface MatchPlayerStats {
   possession_lost: number;
   saves: number;
   goals_conceded: number;
+  steals: number;
+  penalties_won: number;
   // Official persisted rating (Single Source of Truth)
   rating: number | null;
   rating_minutes_played: number | null;
