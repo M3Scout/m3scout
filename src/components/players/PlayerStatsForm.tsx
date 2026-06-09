@@ -154,6 +154,7 @@ function liveStatToScoutValues(g: LiveStatGroup): StatValues {
     red_cards: g.red_cards,
     saves: g.saves,
     goals_conceded: g.goals_conceded,
+    penalties_won: g.penalties_won,
   };
 }
 
