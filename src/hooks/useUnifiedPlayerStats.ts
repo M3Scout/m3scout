@@ -213,6 +213,7 @@ export function aggregateUnifiedStats(stats: UnifiedStats[]): AggregatedUnifiedS
       red_cards: acc.red_cards + s.red_cards,
       fouls_committed: acc.fouls_committed + s.fouls_committed,
       fouls_drawn: acc.fouls_drawn + s.fouls_drawn,
+      penalties_won: acc.penalties_won + (s.penalties_won ?? 0),
       clearances: acc.clearances, // Keep accumulated (not in view, derived below)
     }),
     {
