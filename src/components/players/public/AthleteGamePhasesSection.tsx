@@ -10,6 +10,7 @@ interface SeasonStats {
   aerial_duels_won: number; aerial_duels_total: number; fouls_committed: number;
   yellow_cards: number; red_cards: number; total_passes: number;
   long_passes_accurate: number; long_passes_total: number;
+  penalties_won?: number;
 }
 interface AthleteGamePhasesSectionProps {
   currentSeasonStats: SeasonStats | null;
