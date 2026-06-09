@@ -535,6 +535,11 @@ export function usePlayerMatchStats({
       goals_conceded: acc.goals_conceded + match.stats.goals_conceded,
       clean_sheets: acc.clean_sheets + match.stats.clean_sheets,
       penalties_saved: acc.penalties_saved + match.stats.penalties_saved,
+      penalties_won: acc.penalties_won + match.stats.penalties_won,
+      steals: acc.steals + match.stats.steals,
+      long_passes_accurate: acc.long_passes_accurate + match.stats.long_passes_accurate,
+      long_passes_failed: acc.long_passes_failed + match.stats.long_passes_failed,
+      long_passes_total: acc.long_passes_total + match.stats.long_passes_total,
     }),
     {
       matches: 0,
