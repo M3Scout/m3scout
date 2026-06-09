@@ -656,6 +656,7 @@ export type Database = {
           offsides: number
           passes_completed: number
           passes_total: number
+          penalties_won: number
           player_id: string
           possession_lost: number
           rating: number | null
@@ -702,6 +703,7 @@ export type Database = {
           offsides?: number
           passes_completed?: number
           passes_total?: number
+          penalties_won?: number
           player_id: string
           possession_lost?: number
           rating?: number | null
@@ -748,6 +750,7 @@ export type Database = {
           offsides?: number
           passes_completed?: number
           passes_total?: number
+          penalties_won?: number
           player_id?: string
           possession_lost?: number
           rating?: number | null
@@ -1591,6 +1594,7 @@ export type Database = {
           minutes: number
           offsides: number
           penalties_saved: number
+          penalties_won: number
           penalty_faced: number
           player_id: string
           possession_lost: number
@@ -1654,6 +1658,7 @@ export type Database = {
           minutes?: number
           offsides?: number
           penalties_saved?: number
+          penalties_won?: number
           penalty_faced?: number
           player_id: string
           possession_lost?: number
@@ -1717,6 +1722,7 @@ export type Database = {
           minutes?: number
           offsides?: number
           penalties_saved?: number
+          penalties_won?: number
           penalty_faced?: number
           player_id?: string
           possession_lost?: number
@@ -2658,6 +2664,7 @@ export type Database = {
           passes_attempted: number | null
           passes_completed: number | null
           penalties_saved: number | null
+          penalties_won: number | null
           player_id: string | null
           recoveries: number | null
           red_cards: number | null
@@ -2772,6 +2779,7 @@ export type Database = {
           offsides: number
           passes_completed: number
           passes_total: number
+          penalties_won: number
           player_id: string
           possession_lost: number
           rating: number | null
@@ -3048,6 +3056,7 @@ export type Database = {
         | "long_pass_success"
         | "long_pass_total"
         | "steal"
+        | "penalty_won"
       match_status: "draft" | "live" | "finished" | "applied"
       position_template: "outfield" | "goalkeeper"
       target_priority: "HIGH" | "MEDIUM" | "LOW"
@@ -3244,6 +3253,7 @@ export const Constants = {
         "long_pass_success",
         "long_pass_total",
         "steal",
+        "penalty_won",
       ],
       match_status: ["draft", "live", "finished", "applied"],
       position_template: ["outfield", "goalkeeper"],
