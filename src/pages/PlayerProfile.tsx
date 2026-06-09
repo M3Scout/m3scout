@@ -160,6 +160,7 @@ const PlayerProfile = () => {
           accurate_passes: 0, total_passes: 0, long_passes_accurate: 0, long_passes_total: 0, clearances: 0,
           saves: 0, goals_conceded: 0, clean_sheets: 0, penalties_saved: 0,
           aerial_duels_won: 0, aerial_duels_total: 0, fouls_committed: 0,
+          penalties_won: 0,
         };
       }
       
