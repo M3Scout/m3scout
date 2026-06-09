@@ -85,6 +85,7 @@ export interface MatchDerivedStats {
   goals_conceded: number;
   clean_sheets: number;
   penalties_saved: number;
+  penalties_won: number;
 }
 
 export interface MatchWithStats {
@@ -169,6 +170,8 @@ interface MatchPlayerStats {
   possession_lost: number;
   saves: number;
   goals_conceded: number;
+  steals: number;
+  penalties_won: number;
   // Official persisted rating (Single Source of Truth)
   rating: number | null;
   rating_minutes_played: number | null;
@@ -435,6 +438,11 @@ export function usePlayerMatchStats({
         goals_conceded: stats?.goals_conceded ?? 0,
         clean_sheets: 0,
         penalties_saved: 0,
+        penalties_won: stats?.penalties_won ?? 0,
+        steals: stats?.steals ?? 0,
+        long_passes_accurate: 0,
+        long_passes_failed: 0,
+        long_passes_total: 0,
       };
 
       uniqueMatches.push({
@@ -527,6 +535,11 @@ export function usePlayerMatchStats({
       goals_conceded: acc.goals_conceded + match.stats.goals_conceded,
       clean_sheets: acc.clean_sheets + match.stats.clean_sheets,
       penalties_saved: acc.penalties_saved + match.stats.penalties_saved,
+      penalties_won: acc.penalties_won + match.stats.penalties_won,
+      steals: acc.steals + match.stats.steals,
+      long_passes_accurate: acc.long_passes_accurate + match.stats.long_passes_accurate,
+      long_passes_failed: acc.long_passes_failed + match.stats.long_passes_failed,
+      long_passes_total: acc.long_passes_total + match.stats.long_passes_total,
     }),
     {
       matches: 0,
@@ -570,6 +583,11 @@ export function usePlayerMatchStats({
       goals_conceded: 0,
       clean_sheets: 0,
       penalties_saved: 0,
+      penalties_won: 0,
+      steals: 0,
+      long_passes_accurate: 0,
+      long_passes_failed: 0,
+      long_passes_total: 0,
     }
   );
 
@@ -907,6 +925,7 @@ export function usePlayerMatchStatsBySeasonCompetition({
             goals_conceded: 0,
             clean_sheets: 0,
             penalties_saved: 0,
+            penalties_won: 0,
           },
         };
       }

@@ -42,6 +42,7 @@ const eventConfig: Record<MatchEventType, {
   shot: { icon: <Target className="w-3.5 h-3.5" />, label: "Final. Fora", color: "text-orange-400", bgColor: "bg-orange-500/20" },
   shot_blocked: { icon: <Shield className="w-3.5 h-3.5" />, label: "Final. Bloqueada", color: "text-orange-400", bgColor: "bg-orange-500/20" },
   offside: { icon: <AlertTriangle className="w-3.5 h-3.5" />, label: "Impedimento", color: "text-red-400", bgColor: "bg-red-500/20" },
+  penalty_won: { icon: <AlertTriangle className="w-3.5 h-3.5" />, label: "Pênalti Sofrido", color: "text-emerald-400", bgColor: "bg-emerald-500/20" },
   // Passing
   assist: { icon: <HandHelping className="w-3.5 h-3.5" />, label: "Assistência", color: "text-blue-400", bgColor: "bg-blue-500/20" },
   key_pass: { icon: <Footprints className="w-3.5 h-3.5" />, label: "Passe Decisivo", color: "text-purple-400", bgColor: "bg-purple-500/20" },
@@ -58,6 +59,7 @@ const eventConfig: Record<MatchEventType, {
   possession_lost: { icon: <AlertTriangle className="w-3.5 h-3.5" />, label: "Bola Perdida", color: "text-red-400", bgColor: "bg-red-500/20" },
   // Defense
   tackle: { icon: <Shield className="w-3.5 h-3.5" />, label: "Desarme", color: "text-cyan-400", bgColor: "bg-cyan-500/20" },
+  steal: { icon: <Shield className="w-3.5 h-3.5" />, label: "Roubada de Bola", color: "text-cyan-400", bgColor: "bg-cyan-500/20" },
   interception: { icon: <Shield className="w-3.5 h-3.5" />, label: "Interceptação", color: "text-cyan-400", bgColor: "bg-cyan-500/20" },
   recovery: { icon: <Shield className="w-3.5 h-3.5" />, label: "Recuperação", color: "text-cyan-400", bgColor: "bg-cyan-500/20" },
   clearance: { icon: <Shield className="w-3.5 h-3.5" />, label: "Corte", color: "text-blue-400", bgColor: "bg-blue-500/20" },

@@ -24,6 +24,7 @@ const EVENT_LABELS: Record<MatchEventType, string> = {
   shot: "Finalização Fora",
   shot_blocked: "Final. Bloqueada",
   offside: "Impedimento",
+  penalty_won: "Pênalti Sofrido",
   // Passing
   assist: "Assistência",
   key_pass: "Passe Decisivo",
@@ -40,6 +41,7 @@ const EVENT_LABELS: Record<MatchEventType, string> = {
   possession_lost: "Bola Perdida",
   // Defense
   tackle: "Desarme",
+  steal: "Roubada de Bola",
   interception: "Interceptação",
   recovery: "Recuperação",
   clearance: "Corte",

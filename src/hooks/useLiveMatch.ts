@@ -12,7 +12,7 @@ export type PositionTemplate = "outfield" | "goalkeeper";
 export type MatchEventType =
   // Outfield - Attack
   | "goal" | "assist" | "shot" | "shot_on_target"
-  | "shot_blocked" | "offside"
+  | "shot_blocked" | "offside" | "penalty_won"
   // Outfield - Passing
   | "key_pass" | "chance_created"
   | "pass_success" | "pass_total"

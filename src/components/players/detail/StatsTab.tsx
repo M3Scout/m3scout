@@ -277,6 +277,7 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
           goals_conceded: ms.goals_conceded,
           clean_sheets: ms.clean_sheets,
           penalties_saved: ms.penalties_saved,
+          penalties_won: (ms as any).penalties_won ?? 0,
         },
       });
     });
@@ -339,6 +340,7 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
           goals_conceded: ps.goals_conceded,
           clean_sheets: ps.clean_sheets,
           penalties_saved: ps.penalties_saved,
+          penalties_won: (ps as any).penalties_won ?? 0,
         },
       });
     });

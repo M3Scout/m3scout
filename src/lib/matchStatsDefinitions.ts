@@ -39,6 +39,7 @@ export const OUTFIELD_STATS: StatCategory[] = [
       { type: "shot", label: "Finalizações Fora" },
       { type: "shot_blocked", label: "Finalização Bloqueada" },
       { type: "offside", label: "Impedimento" },
+      { type: "penalty_won", label: "Pênalti Sofrido" },
     ],
   },
   // PASSES - Passes, assistências, criação e cruzamentos
@@ -155,6 +156,7 @@ export const EVENT_TYPE_CONFIG: Record<MatchEventType, SummaryEventConfig> = {
   shot: { label: "Finalizações Fora", icon: "🎯", category: "attack", order: 3 },
   shot_blocked: { label: "Finalização Bloqueada", icon: "🚫", category: "attack", order: 4 },
   offside: { label: "Impedimento", icon: "🚩", category: "attack", order: 5 },
+  penalty_won: { label: "Pênaltis Sofridos", icon: "🅿️", category: "attack", order: 6 },
   
   // PASSES - Assistências, criação e cruzamentos
   assist: { label: "Assistências", icon: "👟", category: "passing", order: 10 },
