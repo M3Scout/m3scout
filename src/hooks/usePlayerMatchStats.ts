@@ -436,6 +436,11 @@ export function usePlayerMatchStats({
         goals_conceded: stats?.goals_conceded ?? 0,
         clean_sheets: 0,
         penalties_saved: 0,
+        penalties_won: stats?.penalties_won ?? 0,
+        steals: stats?.steals ?? 0,
+        long_passes_accurate: 0,
+        long_passes_failed: 0,
+        long_passes_total: 0,
       };
 
       uniqueMatches.push({
