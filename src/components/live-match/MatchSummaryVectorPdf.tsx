@@ -76,6 +76,7 @@ const EVENT_LABELS: Record<MatchEventType, string> = {
   shot: "Finalização Fora",
   shot_blocked: "Final. Bloqueada",
   offside: "Impedimento",
+  penalty_won: "Pênalti Sofrido",
   // Passing
   assist: "Assistência",
   key_pass: "Passe Decisivo",
