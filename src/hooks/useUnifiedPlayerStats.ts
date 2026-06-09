@@ -66,6 +66,7 @@ export interface UnifiedStats {
   red_cards: number;
   fouls_committed: number;
   fouls_drawn: number;
+  penalties_won?: number;
 }
 
 export interface AggregatedUnifiedStats {
