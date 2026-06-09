@@ -247,6 +247,7 @@ export function aggregateUnifiedStats(stats: UnifiedStats[]): AggregatedUnifiedS
       red_cards: 0,
       fouls_committed: 0,
       fouls_drawn: 0,
+      penalties_won: 0,
       clearances: 0,
     }
   );
