@@ -66,6 +66,7 @@ export interface UnifiedStats {
   red_cards: number;
   fouls_committed: number;
   fouls_drawn: number;
+  penalties_won?: number;
 }
 
 export interface AggregatedUnifiedStats {
@@ -99,6 +100,7 @@ export interface AggregatedUnifiedStats {
   red_cards: number;
   fouls_committed: number;
   fouls_drawn: number;
+  penalties_won: number;
   clearances: number; // Derived from recoveries for compatibility
 }
 
@@ -167,6 +169,7 @@ export async function fetchUnifiedPlayerStats(
     red_cards: Number(row.red_cards) || 0,
     fouls_committed: Number(row.fouls_committed) || 0,
     fouls_drawn: Number(row.fouls_drawn) || 0,
+    penalties_won: Number((row as any).penalties_won) || 0,
   }));
 }
 
@@ -210,6 +213,7 @@ export function aggregateUnifiedStats(stats: UnifiedStats[]): AggregatedUnifiedS
       red_cards: acc.red_cards + s.red_cards,
       fouls_committed: acc.fouls_committed + s.fouls_committed,
       fouls_drawn: acc.fouls_drawn + s.fouls_drawn,
+      penalties_won: acc.penalties_won + (s.penalties_won ?? 0),
       clearances: acc.clearances, // Keep accumulated (not in view, derived below)
     }),
     {
@@ -243,6 +247,7 @@ export function aggregateUnifiedStats(stats: UnifiedStats[]): AggregatedUnifiedS
       red_cards: 0,
       fouls_committed: 0,
       fouls_drawn: 0,
+      penalties_won: 0,
       clearances: 0,
     }
   );

@@ -82,6 +82,7 @@ interface SeasonStats {
   aerial_duels_won: number;
   aerial_duels_total: number;
   fouls_committed: number;
+  penalties_won: number;
 }
 
 interface CompetitionStats {
@@ -159,6 +160,7 @@ const PlayerProfile = () => {
           accurate_passes: 0, total_passes: 0, long_passes_accurate: 0, long_passes_total: 0, clearances: 0,
           saves: 0, goals_conceded: 0, clean_sheets: 0, penalties_saved: 0,
           aerial_duels_won: 0, aerial_duels_total: 0, fouls_committed: 0,
+          penalties_won: 0,
         };
       }
       
@@ -190,6 +192,7 @@ const PlayerProfile = () => {
       c.aerial_duels_won += s.aerial_duels_won ?? 0;
       c.aerial_duels_total += s.aerial_duels_total ?? 0;
       c.fouls_committed += s.fouls_committed ?? 0;
+      c.penalties_won += (s as any).penalties_won ?? 0;
     }
     
     return Object.values(acc).sort((a, b) => b.season_year - a.season_year);

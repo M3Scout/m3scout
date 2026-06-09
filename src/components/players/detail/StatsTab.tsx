@@ -998,6 +998,7 @@ function SeasonRow({ row, isGoalkeeper = false }: { row: SeasonRowData; matches?
     { label: "No Gol",      value: s.shots_on_target,  positive: true },
     { label: "Fora",        value: s.shots_off_target },
     { label: "Bloqueadas",  value: s.shots_blocked },
+    { label: "Pên. Sofridos", value: (s as any).penalties_won ?? 0, positive: true },
   ];
 
   const passesStats: StatDef[] = [

@@ -75,6 +75,7 @@ export const OUTFIELD_SCOUT_CATEGORIES: ScoutCategory[] = [
       { key: "shots_blocked", label: "Final. Bloq." },
       { key: "shots", label: "Final. Total" },
       { key: "offsides", label: "Impedim." },
+      { key: "penalties_won", label: "Pên. Sofridos" },
     ],
   },
   {

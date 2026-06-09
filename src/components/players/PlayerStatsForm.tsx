@@ -115,6 +115,7 @@ interface LiveStatGroup {
   red_cards: number;
   saves: number;
   goals_conceded: number;
+  penalties_won: number;
 }
 
 /** Convert a LiveStatGroup to the flat StatValues map ScoutCategoryStats expects. */
@@ -153,6 +154,7 @@ function liveStatToScoutValues(g: LiveStatGroup): StatValues {
     red_cards: g.red_cards,
     saves: g.saves,
     goals_conceded: g.goals_conceded,
+    penalties_won: g.penalties_won,
   };
 }
 
@@ -224,6 +226,7 @@ interface PlayerStat {
   // Crosses
   crosses_success: StatValue;
   crosses_failed: StatValue;
+  penalties_won: StatValue;
 }
 
 // Helper to normalize stat value to number for saving.
@@ -284,6 +287,7 @@ const emptyStatRow: Omit<PlayerStat, "id" | "player_id"> = {
   total_dribbles: "",
   crosses_success: "",
   crosses_failed: "",
+  penalties_won: "",
 };
 
 interface PlayerStatsFormProps {
@@ -487,6 +491,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
             ground_duels_won: 0, ground_duels_total: 0,
             yellow_cards: 0, red_cards: 0,
             saves: 0, goals_conceded: 0,
+            penalties_won: 0,
           };
         }
         const g = groupMap[key];
@@ -535,6 +540,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
         g.red_cards += statRow.red_cards ?? 0;
         g.saves += statRow.saves ?? 0;
         g.goals_conceded += statRow.goals_conceded ?? 0;
+        g.penalties_won += statRow.penalties_won ?? 0;
       }
 
       setLiveStatGroups(
@@ -604,7 +610,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
     "total_runs_out", "fouls_committed", "fouls_drawn", "offsides",
     "clearances", "times_dribbled_past", "possession_lost",
     "long_passes_accurate", "long_passes_total", "successful_dribbles",
-    "total_dribbles", "crosses_success", "crosses_failed",
+    "total_dribbles", "crosses_success", "crosses_failed", "penalties_won",
   ] as const;
 
   const buildStatPayload = (stat: PlayerStat): Record<string, number> => {
