@@ -22,12 +22,11 @@ interface PositionIdentityCardProps {
   currentClub: string | null;
   photoUrl: string | null;
   autoRating: number | null;
+  autoPotential?: number | null;
   height?: number | null;
   weight?: number | null;
   dominantFoot?: string | null;
   contractEnd: string | null;
-  overallRating?: number | null;
-  potentialRating?: number | null;
   isPublic: boolean;
   isArchived: boolean | null;
   isAdmin: boolean;
