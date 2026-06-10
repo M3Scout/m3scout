@@ -398,7 +398,8 @@ export async function recoverAuthAndRbac(
   const recoveryPromise = (async (): Promise<RecoveryResult> => {
     try {
       // (A) Get current session
-      const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
+      const { data: getSessionData, error: sessionError } = await supabase.auth.getSession();
+      let currentSession = getSessionData.session;
 
       if (sessionError) {
         console.error("[AuthRecovery] getSession error", sessionError);
@@ -422,10 +423,7 @@ export async function recoverAuthAndRbac(
           return { success: false, reason: "no-session", shouldLogout: true };
         }
         console.log("[AuthRecovery] refresh recovered the session — continuing");
-        // Continue with the recovered session
-        // (assignment to currentSession is via the `session = currentSession` below)
-        // We re-use the local var by reassigning via a let alias declared next.
-        (currentSession as unknown as Session) = refreshData.session;
+        currentSession = refreshData.session;
       }
 
     let session = currentSession;
