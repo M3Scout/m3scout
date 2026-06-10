@@ -1788,6 +1788,7 @@ export type Database = {
           agent_name: string | null
           archived_at: string | null
           areas_to_develop: string[] | null
+          auto_potential: number
           auto_rating: number | null
           auto_rating_details: Json | null
           bio_public: string | null
@@ -1848,6 +1849,7 @@ export type Database = {
           agent_name?: string | null
           archived_at?: string | null
           areas_to_develop?: string[] | null
+          auto_potential?: number
           auto_rating?: number | null
           auto_rating_details?: Json | null
           bio_public?: string | null
@@ -1908,6 +1910,7 @@ export type Database = {
           agent_name?: string | null
           archived_at?: string | null
           areas_to_develop?: string[] | null
+          auto_potential?: number
           auto_rating?: number | null
           auto_rating_details?: Json | null
           bio_public?: string | null
