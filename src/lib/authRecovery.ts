@@ -406,10 +406,26 @@ export async function recoverAuthAndRbac(
         return { success: false, reason: "session-error", shouldLogout: false };
       }
 
-      // (B) No session = definitely need login
+      // (B) No session in storage — try a refresh before giving up.
+      // getSession() can briefly return null right after the SDK rotates the
+      // refresh token (especially on tab-visible / focus events on mobile
+      // browsers). Forcing logout here causes the "sessão expirada toda hora"
+      // symptom. Only treat as logged-out if BOTH getSession and refreshSession
+      // come back empty.
       if (!currentSession?.user) {
-        console.log("[AuthRecovery] no session - redirect to login");
-        return { success: false, reason: "no-session", shouldLogout: true };
+        console.log("[AuthRecovery] no session in storage — attempting refresh before logout");
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError || !refreshData.session?.user) {
+          console.log("[AuthRecovery] refresh also returned no session - redirect to login", {
+            refreshError: refreshError?.message,
+          });
+          return { success: false, reason: "no-session", shouldLogout: true };
+        }
+        console.log("[AuthRecovery] refresh recovered the session — continuing");
+        // Continue with the recovered session
+        // (assignment to currentSession is via the `session = currentSession` below)
+        // We re-use the local var by reassigning via a let alias declared next.
+        (currentSession as unknown as Session) = refreshData.session;
       }
 
     let session = currentSession;
