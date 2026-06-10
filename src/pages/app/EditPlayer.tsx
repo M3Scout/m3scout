@@ -241,8 +241,6 @@ export default function EditPlayer() {
         agent_contact: playerRow.agent_contact || "",
         physical_status: playerRow.physical_status || "fit",
         medical_notes: playerRow.medical_notes || "",
-        overall_rating: playerRow.overall_rating?.toString() || "",
-        potential_rating: playerRow.potential_rating?.toString() || "",
         ready_to_compete: playerRow.ready_to_compete,
         estimated_level: playerRow.estimated_level || "",
         internal_evaluation_notes: playerRow.internal_evaluation_notes || "",
