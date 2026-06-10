@@ -78,8 +78,7 @@ interface Player {
   areas_to_develop: string[] | null;
   physical_status: string | null;
   medical_notes: string | null;
-  overall_rating: number | null;
-  potential_rating: number | null;
+  auto_potential: number | null;
   ready_to_compete: boolean | null;
   estimated_level: string | null;
   internal_evaluation_notes: string | null;
