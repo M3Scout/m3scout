@@ -175,6 +175,25 @@ export function PlayerListRowPremium({
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
+
+        {/* POT */}
+        {autoPotential !== null && autoPotential !== undefined && autoPotential > 0 && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-800/40">
+                  <span className="text-[9px] uppercase tracking-wider text-zinc-600 font-medium">POT</span>
+                  <span className={cn("text-sm font-extrabold tabular-nums", getGlobalRatingColor(autoPotential))}>
+                    {String(Math.round(autoPotential)).padStart(2, '0')}
+                  </span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                <p className="text-xs">Potencial (OVR + idade)</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
       </div>
 
       {/* Actions */}
