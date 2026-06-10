@@ -116,7 +116,6 @@ interface LiveStatGroup {
   red_cards: number;
   saves: number;
   goals_conceded: number;
-  penalties_won: number;
 }
 
 /** Convert a LiveStatGroup to the flat StatValues map ScoutCategoryStats expects. */
