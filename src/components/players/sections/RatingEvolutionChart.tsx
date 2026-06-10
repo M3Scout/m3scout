@@ -5,8 +5,8 @@ import { Loader2, TrendingUp, TrendingDown, Minus, Activity } from "lucide-react
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import {
-  AreaChart,
-  Area,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   Tooltip,
@@ -29,26 +29,81 @@ interface RatingEvolutionChartProps {
   currentRating: number | null;
 }
 
+// ── Cor por nota (escala Sofascore 0-10) ─────────────────────────────────────
+function getMatchRatingColor(rating: number): string {
+  if (rating >= 9.0) return "#1e3a8a"; // azul escuro — excepcional
+  if (rating >= 8.0) return "#06b6d4"; // ciano      — ótimo
+  if (rating >= 7.0) return "#22c55e"; // verde      — bom
+  if (rating >= 6.5) return "#eab308"; // amarelo    — médio-alto
+  if (rating >= 6.0) return "#f97316"; // laranja    — médio-baixo
+  return "#ef4444";                    // vermelho   — fraco
+}
+
+// ── Dot customizado com badge flutuante ───────────────────────────────────────
+const CustomDot = (props: any) => {
+  const { cx, cy, value } = props;
+  if (cx === undefined || cy === undefined || value === undefined) return null;
+
+  const color   = getMatchRatingColor(value);
+  const label   = Number(value).toFixed(1);
+  const bW      = 30;
+  const bH      = 16;
+  const bX      = cx - bW / 2;
+  const bY      = cy - 32;
+
+  return (
+    <g>
+      {/* Badge acima do ponto */}
+      <rect x={bX} y={bY} width={bW} height={bH} rx={3} fill={color} />
+      <text
+        x={cx}
+        y={bY + bH / 2}
+        textAnchor="middle"
+        dominantBaseline="central"
+        fontSize={9}
+        fontWeight="bold"
+        fill="#ffffff"
+      >
+        {label}
+      </text>
+      {/* Círculo no ponto */}
+      <circle cx={cx} cy={cy} r={4} fill={color} stroke="#09090b" strokeWidth={1.5} />
+    </g>
+  );
+};
+
+// ── Tooltip customizado ───────────────────────────────────────────────────────
+const CustomTooltip = ({ active, payload }: any) => {
+  if (!active || !payload?.length) return null;
+  const value = payload[0].value as number;
+  const color = getMatchRatingColor(value);
+  return (
+    <div className="bg-zinc-900/95 border border-zinc-800/60 rounded-lg p-3 shadow-xl backdrop-blur-sm">
+      <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1">
+        {payload[0].payload.fullDate}
+      </p>
+      <p className="text-2xl font-bold" style={{ color }}>
+        {formatFixed(value, 1)}
+      </p>
+    </div>
+  );
+};
+
+// ── Componente principal ──────────────────────────────────────────────────────
 export function RatingEvolutionChart({ playerId, currentRating }: RatingEvolutionChartProps) {
   const [history, setHistory] = useState<RatingHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchHistory();
-  }, [playerId]);
+  useEffect(() => { fetchHistory(); }, [playerId]);
 
   const fetchHistory = async () => {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("player_rating_history")
       .select("*")
       .eq("player_id", playerId)
       .order("recorded_at", { ascending: true });
 
-    if (Array.isArray(data)) {
-      setHistory(data);
-    } else {
-      setHistory([]);
-    }
+    setHistory(Array.isArray(data) ? data : []);
     setLoading(false);
   };
 
@@ -62,11 +117,11 @@ export function RatingEvolutionChart({ playerId, currentRating }: RatingEvolutio
     );
   }
 
-  // If no history, show message
   const safeHistory = Array.isArray(history) ? history : [];
+
   if (safeHistory.length === 0) {
     return (
-      <Card className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)]">
+      <Card className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center">
@@ -83,45 +138,34 @@ export function RatingEvolutionChart({ playerId, currentRating }: RatingEvolutio
               <Activity className="w-6 h-6 text-zinc-700" />
             </div>
             <p className="text-sm text-zinc-600">Sem histórico de evolução ainda</p>
-            <p className="text-[11px] text-zinc-700 mt-1">O gráfico será atualizado conforme as estatísticas mudam</p>
+            <p className="text-[11px] text-zinc-700 mt-1">
+              O gráfico será atualizado conforme as estatísticas mudam
+            </p>
           </div>
         </CardContent>
       </Card>
     );
   }
 
-  // Prepare chart data
   const chartData = safeHistory.map((entry) => ({
-    date: format(new Date(entry.recorded_at), "dd/MM", { locale: ptBR }),
+    date:     format(new Date(entry.recorded_at), "dd/MM", { locale: ptBR }),
     fullDate: format(new Date(entry.recorded_at), "dd/MM/yyyy", { locale: ptBR }),
-    rating: Number(entry.rating),
+    rating:   Number(entry.rating),
   }));
 
-  // Calculate trend
   const firstRating = safeHistory[0]?.rating ?? 0;
-  const lastRating = safeHistory.length > 0 ? (safeHistory[safeHistory.length - 1]?.rating ?? 0) : 0;
-  const trend = lastRating - firstRating;
+  const lastRating  = safeHistory[safeHistory.length - 1]?.rating ?? 0;
+  const trend       = lastRating - firstRating;
 
-  const TrendIcon = trend > 0 ? TrendingUp : trend < 0 ? TrendingDown : Minus;
+  const TrendIcon  = trend > 0 ? TrendingUp : trend < 0 ? TrendingDown : Minus;
   const trendColor = trend > 0 ? "text-emerald-400/90" : trend < 0 ? "text-rose-400/90" : "text-zinc-500";
-  const trendBg = trend > 0 ? "bg-emerald-500/[0.08] border-emerald-500/20" : 
-                  trend < 0 ? "bg-rose-500/[0.08] border-rose-500/20" : 
-                  "bg-zinc-800/40 border-zinc-700/40";
+  const trendBg    = trend > 0
+    ? "bg-emerald-500/[0.08] border-emerald-500/20"
+    : trend < 0
+    ? "bg-rose-500/[0.08] border-rose-500/20"
+    : "bg-zinc-800/40 border-zinc-700/40";
 
-  // Custom tooltip
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-zinc-900/95 border border-zinc-800/60 rounded-lg p-3 shadow-xl backdrop-blur-sm">
-          <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1">{payload[0].payload.fullDate}</p>
-          <p className="text-2xl font-bold text-white">
-            {formatFixed(payload[0].value, 1)}
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
+  const lastColor = getMatchRatingColor(lastRating);
 
   return (
     <Card className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)] overflow-hidden">
@@ -134,29 +178,23 @@ export function RatingEvolutionChart({ playerId, currentRating }: RatingEvolutio
             Evolução da Nota
           </span>
         </CardTitle>
-        <Badge 
-          variant="outline" 
-          className={cn(
-            "text-[10px] font-semibold border backdrop-blur-sm",
-            trendBg,
-            trendColor
-          )}
+        <Badge
+          variant="outline"
+          className={cn("text-[10px] font-semibold border backdrop-blur-sm", trendBg, trendColor)}
         >
           <TrendIcon className="w-3 h-3 mr-1" />
           {trend > 0 ? "+" : ""}{formatFixed(trend, 1)}
         </Badge>
       </CardHeader>
+
       <CardContent>
-        {/* Chart - Sophisticated, focus on curve */}
-        <div className="h-36 -mx-2">
+        {/* Gráfico — margem top alta para as badges não serem cortadas */}
+        <div className="h-44 -mx-2">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 5, right: 5, bottom: 0, left: -25 }}>
-              <defs>
-                <linearGradient id="ratingGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.2} />
-                  <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                </linearGradient>
-              </defs>
+            <LineChart
+              data={chartData}
+              margin={{ top: 36, right: 12, bottom: 0, left: -25 }}
+            >
               <XAxis
                 dataKey="date"
                 stroke="transparent"
@@ -166,8 +204,8 @@ export function RatingEvolutionChart({ playerId, currentRating }: RatingEvolutio
                 tick={{ fill: "hsl(240,5%,40%)" }}
               />
               <YAxis
-                domain={[0, 5]}
-                ticks={[1, 2, 3, 4, 5]}
+                domain={[3, 10]}
+                ticks={[4, 5, 6, 7, 8, 9, 10]}
                 stroke="transparent"
                 fontSize={9}
                 tickLine={false}
@@ -175,39 +213,38 @@ export function RatingEvolutionChart({ playerId, currentRating }: RatingEvolutio
                 tick={{ fill: "hsl(240,5%,40%)" }}
               />
               <Tooltip content={<CustomTooltip />} />
-              <ReferenceLine 
-                y={2.5} 
-                stroke="hsl(240,5%,25%)" 
-                strokeDasharray="4 4" 
+              {/* Linha de referência na nota 7 */}
+              <ReferenceLine
+                y={7}
+                stroke="hsl(240,5%,22%)"
+                strokeDasharray="4 4"
                 strokeWidth={1}
               />
-              <Area
+              <Line
                 type="monotone"
                 dataKey="rating"
-                stroke="hsl(var(--primary))"
-                strokeWidth={2.5}
-                fill="url(#ratingGradient)"
-                dot={false}
-                activeDot={{ 
-                  r: 5, 
-                  fill: "hsl(var(--primary))", 
-                  strokeWidth: 2,
-                  stroke: "hsl(var(--background))"
-                }}
+                stroke="#ffffff22"
+                strokeWidth={1.5}
+                dot={<CustomDot />}
+                activeDot={false}
               />
-            </AreaChart>
+            </LineChart>
           </ResponsiveContainer>
         </div>
 
-        {/* Summary - Clean footer */}
+        {/* Footer */}
         <div className="flex items-center justify-between pt-3 border-t border-zinc-800/40 mt-2">
           <div className="flex items-center gap-2">
             <span className="text-[10px] text-zinc-600 uppercase tracking-wider">Inicial</span>
-            <span className="text-sm font-semibold text-zinc-400">{formatFixed(firstRating, 1)}</span>
+            <span className="text-sm font-semibold text-zinc-400">
+              {formatFixed(firstRating, 1)}
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-[10px] text-zinc-600 uppercase tracking-wider">Atual</span>
-            <span className="text-sm font-semibold text-white">{formatFixed(lastRating, 1)}</span>
+            <span className="text-sm font-bold" style={{ color: lastColor }}>
+              {formatFixed(lastRating, 1)}
+            </span>
           </div>
         </div>
       </CardContent>
