@@ -451,8 +451,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         } else if (session?.user) {
           await handleRbac(session.user.id);
-        } else {
+        } else if (event === "SIGNED_OUT") {
+          // Only clear local state on EXPLICIT sign-out events. Some events
+          // (e.g. USER_UPDATED, INITIAL_SESSION on a slow network) can arrive
+          // with a null session momentarily and must NOT trigger a logout —
+          // that's what was causing the "sessão expirada toda hora" symptom.
           handleSignOut();
+        } else {
+          console.log("[Auth] event with null session, ignoring (not SIGNED_OUT):", event);
         }
       }
     );
