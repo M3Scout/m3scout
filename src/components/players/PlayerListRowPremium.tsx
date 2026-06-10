@@ -28,6 +28,7 @@ interface PlayerListRowPremiumProps {
   currentClub: string | null;
   photoUrl: string | null;
   autoRating: number | null;
+  autoPotential?: number | null;
   avgScore: number | null;
   scoreTrend: number | null;
   contractEnd: string | null;
