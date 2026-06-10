@@ -174,7 +174,7 @@ export const METRIC_LABELS_PT: Record<string, string> = {
   
   // === RATING ===
   rating: "Nota",
-  overall_rating: "Nota Geral",
+
   auto_rating: "Nota Automática",
   average_rating: "Nota Média",
   form_rating: "Nota de Forma",
