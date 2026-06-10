@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MarketScoreTrend } from "@/types/marketScore";
-import { computeScoreForAthleteById } from "@/lib/marketScoreService";
+import { computeScoreForAthleteById, recalculateAllActiveMarketScores } from "@/lib/marketScoreService";
 import { getPositionColor, getShortPosition } from "@/lib/positionColors";
 import { getOptimizedImageUrl } from "@/lib/imageUtils";
 import { toast } from "sonner";
@@ -100,6 +100,32 @@ export default function MarketAtivos() {
   const [minScore, setMinScore] = useState(0);
   const [trendFilter, setTrendFilter] = useState<"ALL" | MarketScoreTrend>("ALL");
   const [calculatingIds, setCalculatingIds] = useState<Set<string>>(new Set());
+  const [isRecalculatingAll, setIsRecalculatingAll] = useState(false);
+  const [recalcProgress, setRecalcProgress] = useState<{ current: number; total: number } | null>(null);
+
+  const handleRecalculateAll = async () => {
+    if (isRecalculatingAll) return;
+    setIsRecalculatingAll(true);
+    setRecalcProgress({ current: 0, total: 0 });
+    const toastId = toast.loading("Recalculando scores...");
+    try {
+      const result = await recalculateAllActiveMarketScores(
+        (current, total) => setRecalcProgress({ current, total }),
+        "Recálculo manual via botão Atualizar"
+      );
+      toast.success(
+        `Recálculo concluído: ${result.success}/${result.total} atualizados${result.failed ? ` (${result.failed} falhas)` : ""}`,
+        { id: toastId }
+      );
+      await queryClient.invalidateQueries({ queryKey: ["market-ativos"] });
+    } catch (err) {
+      console.error("Erro no recálculo em massa:", err);
+      toast.error("Erro ao recalcular scores", { id: toastId });
+    } finally {
+      setIsRecalculatingAll(false);
+      setRecalcProgress(null);
+    }
+  };
 
   // Fetch athletes with their market scores
   const { data: athletes = [], isLoading, refetch } = useQuery({
@@ -242,9 +268,17 @@ export default function MarketAtivos() {
           >
             <Search className="w-[18px] h-[18px]" />
           </button>
-          <Button variant="outline" size="sm" onClick={() => refetch()} className="hidden sm:flex rounded-full">
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Atualizar
+          <Button variant="outline" size="sm" onClick={handleRecalculateAll} disabled={isRecalculatingAll} className="hidden sm:flex rounded-full">
+            {isRecalculatingAll ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <RefreshCw className="w-4 h-4 mr-2" />
+            )}
+            {isRecalculatingAll
+              ? recalcProgress && recalcProgress.total > 0
+                ? `Recalculando ${recalcProgress.current}/${recalcProgress.total}`
+                : "Recalculando..."
+              : "Atualizar"}
           </Button>
         </div>
       </div>
