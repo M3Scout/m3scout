@@ -88,7 +88,6 @@ export interface MatchDerivedStats {
   goals_conceded: number;
   clean_sheets: number;
   penalties_saved: number;
-  penalties_won: number;
 }
 
 export interface MatchWithStats {
