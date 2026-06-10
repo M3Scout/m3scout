@@ -123,13 +123,13 @@ export function AtributoRadar({
     <div className="w-full">
       {/* ── Header ──────────────────────────────────────────────────────── */}
       {showHeader && (
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-1.5">
+        <div className="mb-3">
+          <div className="flex items-center gap-1.5 mb-2">
             <span
               className="text-[10px] tracking-[0.18em] uppercase font-bold"
               style={{ color: MUTED }}
             >
-              Visão Geral de Atributos
+              Atributos
             </span>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -149,7 +149,7 @@ export function AtributoRadar({
             </Tooltip>
           </div>
 
-          {/* Seletor de temporada */}
+          {/* Seletor de temporada abaixo do título */}
           {showYearSelector && (
             <div className="flex gap-1.5">
               {availableYears.map(year => (
