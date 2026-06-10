@@ -48,8 +48,7 @@ interface Player {
   created_at: string;
   dominant_foot: string | null;
   height: number | null;
-  overall_rating: number | null;
-  potential_rating: number | null;
+  auto_potential: number | null;
   physical_status: string | null;
   market_value: number | null;
   estimated_level: string | null;
@@ -266,7 +265,7 @@ const Players = () => {
     const fetchPlayers = async () => {
       const { data: playersData } = await (supabase
         .from("public_players_safe" as any)
-        .select(`id, slug, full_name, position, secondary_positions, age, nationality, current_club, photo_url, auto_rating, dominant_foot, height, overall_rating, potential_rating, physical_status, market_value, estimated_level, play_style, primary_tactical_role, secondary_tactical_role, created_at`)
+        .select(`id, slug, full_name, position, secondary_positions, age, nationality, current_club, photo_url, auto_rating, auto_potential, dominant_foot, height, physical_status, market_value, estimated_level, play_style, primary_tactical_role, secondary_tactical_role, created_at`)
         .order("full_name") as any);
 
       if (!playersData) { setLoading(false); return; }

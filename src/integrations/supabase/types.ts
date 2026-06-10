@@ -1820,14 +1820,12 @@ export type Database = {
           medical_notes: string | null
           muscle_mass: number | null
           nationality: string
-          overall_rating: number | null
           passports: string[] | null
           photo_url: string | null
           physical_status: string | null
           play_style: string | null
           playing_height_preference: string | null
           position: string
-          potential_rating: number | null
           primary_tactical_role: string | null
           rating_updated_at: string | null
           ready_to_compete: boolean | null
@@ -1881,14 +1879,12 @@ export type Database = {
           medical_notes?: string | null
           muscle_mass?: number | null
           nationality: string
-          overall_rating?: number | null
           passports?: string[] | null
           photo_url?: string | null
           physical_status?: string | null
           play_style?: string | null
           playing_height_preference?: string | null
           position: string
-          potential_rating?: number | null
           primary_tactical_role?: string | null
           rating_updated_at?: string | null
           ready_to_compete?: boolean | null
@@ -1942,14 +1938,12 @@ export type Database = {
           medical_notes?: string | null
           muscle_mass?: number | null
           nationality?: string
-          overall_rating?: number | null
           passports?: string[] | null
           photo_url?: string | null
           physical_status?: string | null
           play_style?: string | null
           playing_height_preference?: string | null
           position?: string
-          potential_rating?: number | null
           primary_tactical_role?: string | null
           rating_updated_at?: string | null
           ready_to_compete?: boolean | null
@@ -2516,6 +2510,7 @@ export type Database = {
         Row: {
           age: number | null
           areas_to_develop: string[] | null
+          auto_potential: number | null
           auto_rating: number | null
           bio_public: string | null
           birth_date: string | null
@@ -2537,14 +2532,12 @@ export type Database = {
           max_speed: number | null
           muscle_mass: number | null
           nationality: string | null
-          overall_rating: number | null
           passports: string[] | null
           photo_url: string | null
           physical_status: string | null
           play_style: string | null
           playing_height_preference: string | null
           position: string | null
-          potential_rating: number | null
           primary_tactical_role: string | null
           ready_to_compete: boolean | null
           secondary_positions: string[] | null
@@ -2560,6 +2553,7 @@ export type Database = {
         Insert: {
           age?: number | null
           areas_to_develop?: string[] | null
+          auto_potential?: number | null
           auto_rating?: number | null
           bio_public?: string | null
           birth_date?: string | null
@@ -2581,14 +2575,12 @@ export type Database = {
           max_speed?: number | null
           muscle_mass?: number | null
           nationality?: string | null
-          overall_rating?: number | null
           passports?: string[] | null
           photo_url?: string | null
           physical_status?: string | null
           play_style?: string | null
           playing_height_preference?: string | null
           position?: string | null
-          potential_rating?: number | null
           primary_tactical_role?: string | null
           ready_to_compete?: boolean | null
           secondary_positions?: string[] | null
@@ -2604,6 +2596,7 @@ export type Database = {
         Update: {
           age?: number | null
           areas_to_develop?: string[] | null
+          auto_potential?: number | null
           auto_rating?: number | null
           bio_public?: string | null
           birth_date?: string | null
@@ -2625,14 +2618,12 @@ export type Database = {
           max_speed?: number | null
           muscle_mass?: number | null
           nationality?: string | null
-          overall_rating?: number | null
           passports?: string[] | null
           photo_url?: string | null
           physical_status?: string | null
           play_style?: string | null
           playing_height_preference?: string | null
           position?: string | null
-          potential_rating?: number | null
           primary_tactical_role?: string | null
           ready_to_compete?: boolean | null
           secondary_positions?: string[] | null
