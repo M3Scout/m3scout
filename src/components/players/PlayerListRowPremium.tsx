@@ -335,6 +335,17 @@ export function PlayerListRowMobilePremium({
           )}
         </div>
 
+        {/* POT Badge */}
+        {autoPotential !== null && autoPotential !== undefined && autoPotential > 0 && (
+          <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-zinc-800/40 mr-1">
+            <span className="text-[8px] uppercase tracking-wider text-zinc-600 font-medium">POT</span>
+            <span className={cn("text-sm font-extrabold tabular-nums", getGlobalRatingColor(autoPotential))}>
+              {String(Math.round(autoPotential)).padStart(2, '0')}
+            </span>
+          </div>
+        )}
+
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild data-dropdown-trigger>
             <Button variant="ghost" size="icon" className="h-7 w-7 opacity-60" onClick={(e) => e.stopPropagation()}>
