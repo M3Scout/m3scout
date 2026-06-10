@@ -347,7 +347,7 @@ export default function EditPlayer() {
         agent_name: formData.agent_name || null, agent_contact: formData.agent_contact || null,
         physical_status: formData.physical_status || null, medical_notes: formData.medical_notes || null,
         ...(isAdmin && {
-          overall_rating: pf(formData.overall_rating), potential_rating: pf(formData.potential_rating),
+          
           ready_to_compete: formData.ready_to_compete, estimated_level: formData.estimated_level || null,
           internal_evaluation_notes: formData.internal_evaluation_notes || null,
         }),
