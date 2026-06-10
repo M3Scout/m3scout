@@ -227,7 +227,6 @@ interface PlayerStat {
   // Crosses
   crosses_success: StatValue;
   crosses_failed: StatValue;
-  penalties_won: StatValue;
 }
 
 // Helper to normalize stat value to number for saving.
