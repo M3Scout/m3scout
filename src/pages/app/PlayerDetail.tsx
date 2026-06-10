@@ -849,29 +849,29 @@ const PlayerDetail = () => {
                   className="grid grid-cols-2"
                   style={{ gap: 1, background: "#1C1C1C" }}
                 >
-                  {/* Nota Geral */}
+                  {/* Nota Geral (auto) */}
                   <div className={`${T.bg} p-5`}>
                     <Label>NOTA GERAL</Label>
                     <span className="font-jetbrains text-[32px] font-bold text-[#F2EDE4] leading-none">
-                      {player.overall_rating !== null && player.overall_rating !== undefined
-                        ? player.overall_rating.toFixed(1)
+                      {player.auto_rating !== null && player.auto_rating !== undefined
+                        ? Math.round(player.auto_rating)
                         : "—"}
                     </span>
-                    <span className="font-jetbrains text-[12px] text-[#6B6560] ml-1">/10</span>
+                    <span className="font-jetbrains text-[12px] text-[#6B6560] ml-1">/99</span>
                   </div>
 
-                  {/* Potencial */}
+                  {/* Potencial (auto) */}
                   <div className={`${T.bg} p-5`}>
                     <Label>POTENCIAL</Label>
                     <span
                       className="font-jetbrains text-[32px] font-bold leading-none"
                       style={{ color: T.green }}
                     >
-                      {player.potential_rating !== null && player.potential_rating !== undefined
-                        ? player.potential_rating.toFixed(1)
+                      {player.auto_potential !== null && player.auto_potential !== undefined && player.auto_potential > 0
+                        ? Math.round(player.auto_potential)
                         : "—"}
                     </span>
-                    <span className="font-jetbrains text-[12px] text-[#6B6560] ml-1">/10</span>
+                    <span className="font-jetbrains text-[12px] text-[#6B6560] ml-1">/99</span>
                   </div>
 
                   {/* Ready to compete */}
