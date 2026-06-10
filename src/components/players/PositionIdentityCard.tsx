@@ -258,25 +258,25 @@ export function PositionIdentityCard({
       <div className="flex items-center justify-between px-3 py-2 bg-zinc-900/30 border-t border-zinc-900">
         <div className="flex items-center gap-2">
           {/* OVR Chip */}
-          {overallRating && (
+          {autoRating !== null && autoRating !== undefined && (
             <div className={cn(
               "flex items-center gap-1 px-2 py-0.5 rounded border border-zinc-800 bg-zinc-900/50",
               "group-hover:border-current transition-colors",
               positionColors.borderClass
             )}>
               <span className="text-[9px] uppercase tracking-wider text-zinc-500">OVR</span>
-              <span className={cn("text-xs font-semibold tabular-nums", getRatingColor(overallRating))}>
-                {overallRating}
+              <span className={cn("text-xs font-semibold tabular-nums", getRatingColor(autoRating))}>
+                {Math.round(autoRating)}
               </span>
             </div>
           )}
 
           {/* POT Chip */}
-          {potentialRating && (
+          {autoPotential !== null && autoPotential !== undefined && autoPotential > 0 && (
             <div className="flex items-center gap-1 px-2 py-0.5 rounded border border-zinc-800 bg-zinc-900/50">
               <span className="text-[9px] uppercase tracking-wider text-zinc-500">POT</span>
-              <span className={cn("text-xs font-semibold tabular-nums", getRatingColor(potentialRating))}>
-                {potentialRating}
+              <span className={cn("text-xs font-semibold tabular-nums", getRatingColor(autoPotential))}>
+                {Math.round(autoPotential)}
               </span>
             </div>
           )}
