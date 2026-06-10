@@ -59,6 +59,7 @@ export function PlayerListRowPremium({
   currentClub,
   photoUrl,
   autoRating,
+  autoPotential,
   isPublic,
   isArchived,
   isAdmin,
