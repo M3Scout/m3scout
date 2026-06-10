@@ -182,10 +182,10 @@ function AppRoutes() {
                 <Route path="prancheta" element={<RequirePermission module="players"><Suspense fallback={<RouteSuspense />}><Prancheta /></Suspense></RequirePermission>} />
 
                 {/* Compare → comparar */}
-                <Route path="comparar" element={<RequirePermission module="compare"><Suspense fallback={<RouteSuspense />}><ComparePlayers /></Suspense></RequirePermission>} />
+                <Route path="comparar" element={<RequirePermission module="compare"><ComparePlayers /></RequirePermission>} />
 
                 {/* Reports → relatorios */}
-                <Route path="relatorios" element={<RequirePermission module="reports"><Suspense fallback={<RouteSuspense />}><ScoutingReports /></Suspense></RequirePermission>} />
+                <Route path="relatorios" element={<RequirePermission module="reports"><ScoutingReports /></RequirePermission>} />
                 <Route path="relatorios/novo" element={<RequirePermission module="reports" action="create"><Suspense fallback={<RouteSuspense />}><NewScoutingReport /></Suspense></RequirePermission>} />
                 <Route path="relatorios/:id" element={<RequirePermission module="reports"><Suspense fallback={<RouteSuspense />}><ReportDetail /></Suspense></RequirePermission>} />
                 <Route path="relatorios/:id/editar" element={<RequirePermission module="reports" action="edit"><Suspense fallback={<RouteSuspense />}><EditScoutingReport /></Suspense></RequirePermission>} />
