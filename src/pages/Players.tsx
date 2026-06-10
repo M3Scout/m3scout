@@ -48,8 +48,7 @@ interface Player {
   created_at: string;
   dominant_foot: string | null;
   height: number | null;
-  overall_rating: number | null;
-  potential_rating: number | null;
+  auto_potential: number | null;
   physical_status: string | null;
   market_value: number | null;
   estimated_level: string | null;
