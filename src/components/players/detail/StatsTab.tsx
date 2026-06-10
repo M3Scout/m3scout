@@ -591,7 +591,7 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
                 {averageRating !== null && (
                   <ReferenceLine
                     y={averageRating}
-                    stroke="#9ca3af"
+                    stroke={getMatchRatingColor(averageRating!)}
                     strokeDasharray="5 5"
                     strokeWidth={1}
                   />
