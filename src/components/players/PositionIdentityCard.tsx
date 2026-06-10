@@ -452,19 +452,19 @@ export function PositionIdentityCardMobile({
 
       {/* Metrics Row - Horizontal scroll */}
       <div className="flex items-center gap-2 px-3 py-2 bg-zinc-900/30 border-t border-zinc-900 overflow-x-auto scrollbar-hide">
-        {overallRating && (
+        {autoRating !== null && autoRating !== undefined && (
           <div className={cn(
             "flex items-center gap-1 px-2 py-0.5 rounded border border-zinc-800 bg-zinc-900/50 flex-shrink-0",
             positionColors.borderClass
           )}>
             <span className="text-[9px] uppercase tracking-wider text-zinc-500">OVR</span>
-            <span className="text-xs font-semibold tabular-nums text-zinc-300">{overallRating}</span>
+            <span className="text-xs font-semibold tabular-nums text-zinc-300">{Math.round(autoRating)}</span>
           </div>
         )}
-        {potentialRating && (
+        {autoPotential !== null && autoPotential !== undefined && autoPotential > 0 && (
           <div className="flex items-center gap-1 px-2 py-0.5 rounded border border-zinc-800 bg-zinc-900/50 flex-shrink-0">
             <span className="text-[9px] uppercase tracking-wider text-zinc-500">POT</span>
-            <span className="text-xs font-semibold tabular-nums text-zinc-300">{potentialRating}</span>
+            <span className="text-xs font-semibold tabular-nums text-zinc-300">{Math.round(autoPotential)}</span>
           </div>
         )}
         <span className={cn(
