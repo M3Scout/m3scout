@@ -815,12 +815,9 @@ export default function EditPlayer() {
                   </span>
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <Field label="Nota Geral (0–10)" filled={!!formData.overall_rating}>
-                    <input type="number" min="0" max="10" step="0.1" className={inputCls} value={formData.overall_rating} onChange={e => handleChange("overall_rating", e.target.value)} placeholder="Ex: 7.5" />
-                  </Field>
-                  <Field label="Potencial (0–10)" filled={!!formData.potential_rating}>
-                    <input type="number" min="0" max="10" step="0.1" className={inputCls} value={formData.potential_rating} onChange={e => handleChange("potential_rating", e.target.value)} placeholder="Ex: 8.0" />
-                  </Field>
+                  <div className="sm:col-span-2 p-4 rounded-xl border border-zinc-700/60 bg-zinc-900/40 text-xs text-zinc-400 leading-relaxed">
+                    <strong className="text-zinc-200">OVR e POT são automáticos.</strong> A nota geral (OVR) é calculada pelo algoritmo com base nas estatísticas, e o potencial (POT) deriva do OVR + idade. Não há mais input manual.
+                  </div>
                   <Field label="Pronto para Competir?">
                     <Select value={formData.ready_to_compete === null ? "" : formData.ready_to_compete ? "yes" : "no"} onValueChange={val => handleChange("ready_to_compete", val === "" ? null : val === "yes")}>
                       <SelectTrigger className="h-[52px] bg-zinc-800/80 border-zinc-700/60 rounded-xl text-sm text-white focus:ring-2 focus:ring-red-500/20 focus:border-red-500">
