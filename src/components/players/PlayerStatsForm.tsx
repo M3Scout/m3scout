@@ -99,6 +99,7 @@ interface LiveStatGroup {
   fouls_committed: number;
   fouls_drawn: number;
   possession_lost: number;
+  penalties_won: number;
   steals: number;
   tackles: number;
   interceptions: number;
@@ -138,6 +139,7 @@ function liveStatToScoutValues(g: LiveStatGroup): StatValues {
     fouls_committed: g.fouls_committed,
     fouls_drawn: g.fouls_drawn,
     possession_lost: g.possession_lost,
+    penalties_won: g.penalties_won,
     steals: g.steals,
     tackles: g.tackles,
     interceptions: g.interceptions,
@@ -180,6 +182,7 @@ interface PlayerStat {
   assists: StatValue;
   yellow_cards: StatValue;
   red_cards: StatValue;
+  penalties_won: StatValue;
   steals: StatValue;
   tackles: StatValue;
   interceptions: StatValue;
@@ -248,6 +251,7 @@ const emptyStatRow: Omit<PlayerStat, "id" | "player_id"> = {
   assists: "",
   yellow_cards: "",
   red_cards: "",
+  penalties_won: "",
   steals: "",
   tackles: "",
   interceptions: "",
@@ -485,7 +489,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
             crosses_success: 0, crosses_failed: 0,
             successful_dribbles: 0, total_dribbles: 0,
             fouls_committed: 0, fouls_drawn: 0, possession_lost: 0,
-            steals: 0, tackles: 0, interceptions: 0, clearances: 0, recoveries: 0, times_dribbled_past: 0,
+            penalties_won: 0, steals: 0, tackles: 0, interceptions: 0, clearances: 0, recoveries: 0, times_dribbled_past: 0,
             duels_won: 0, total_duels: 0,
             aerial_duels_won: 0, aerial_duels_total: 0,
             ground_duels_won: 0, ground_duels_total: 0,
@@ -522,6 +526,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
         g.fouls_committed += statRow.fouls_committed ?? 0;
         g.fouls_drawn += statRow.fouls_suffered ?? 0;
         g.possession_lost += statRow.possession_lost ?? 0;
+        g.penalties_won += statRow.penalties_won ?? 0;
         g.steals += statRow.steals ?? 0;
         g.tackles += statRow.tackles ?? 0;
         g.interceptions += statRow.interceptions ?? 0;
@@ -601,7 +606,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
 
   const STAT_KEYS = [
     "matches", "minutes", "goals", "assists", "yellow_cards", "red_cards",
-    "steals", "tackles", "interceptions", "recoveries", "saves", "goals_conceded",
+    "penalties_won", "steals", "tackles", "interceptions", "recoveries", "saves", "goals_conceded",
     "clean_sheets", "penalties_saved", "errors_leading_to_goal",
     "aerial_duels_won", "aerial_duels_total", "accurate_passes", "total_passes",
     "duels_won", "total_duels", "ground_duels_won", "ground_duels_total",
@@ -707,6 +712,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
           fouls_committed:    n("fouls_committed"),
           fouls_drawn:        n("fouls_drawn"),
           possession_lost:    n("possession_lost"),
+          penalties_won:      n("penalties_won"),
           tackles:            n("tackles"),
           interceptions:      n("interceptions"),
           clearances:         n("clearances"),

@@ -167,6 +167,7 @@ export interface MatchPlayerStats {
   ball_actions: number;
   dribbles_success: number;
   dribbles_total: number;
+  penalties_won: number;
   steals: number;
   tackles: number;
   interceptions: number;

@@ -58,6 +58,7 @@ interface PlayerStatRow {
   crosses_failed: number;
   successful_dribbles: number;
   total_dribbles: number;
+  penalties_won: number;
   steals: number;
   tackles: number;
   interceptions: number;
@@ -91,6 +92,7 @@ const TABLE_HEADERS = [
   { label: "A",   tooltip: "Assistências" },
   { label: "FIN", tooltip: "Finalizações" },
   { label: "NOG", tooltip: "No Gol (Finalizações Certas)" },
+  { label: "PEN", tooltip: "Pênaltis Sofridos" },
   { label: "AM",  tooltip: "Cartões Amarelos" },
   { label: "VE",  tooltip: "Cartão Vermelho" },
   { label: "ROB", tooltip: "Roubadas de Bola" },
@@ -252,6 +254,7 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
           dribbles_success: ms.dribbles_success,
           dribbles_failed: ms.dribbles_failed,
           dribbles_total: ms.dribbles_success + ms.dribbles_failed,
+          penalties_won: 0,
           steals: 0,
           tackles: ms.tackles,
           interceptions: ms.interceptions,
@@ -314,6 +317,7 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
           // total_dribbles stores FAILED count
           dribbles_failed: ps.total_dribbles,
           dribbles_total: ps.successful_dribbles + ps.total_dribbles,
+          penalties_won: (ps as any).penalties_won ?? 0,
           steals: (ps as any).steals ?? 0,
           tackles: ps.tackles,
           interceptions: ps.interceptions,
@@ -754,13 +758,14 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
                       assists:        acc.assists        + row.stats.assists,
                       shots:          acc.shots          + row.stats.shots,
                       shots_on_target: acc.shots_on_target + row.stats.shots_on_target,
+                      penalties_won:  acc.penalties_won  + (row.stats.penalties_won ?? 0),
                       yellow_cards:   acc.yellow_cards   + row.stats.yellow_cards,
                       red_cards:      acc.red_cards      + row.stats.red_cards,
                       steals:         acc.steals         + row.stats.steals,
                       tackles:        acc.tackles        + row.stats.tackles,
                       interceptions:  acc.interceptions  + row.stats.interceptions,
                     }),
-                    { matches: 0, minutes: 0, goals: 0, assists: 0, shots: 0, shots_on_target: 0, yellow_cards: 0, red_cards: 0, steals: 0, tackles: 0, interceptions: 0 }
+                    { matches: 0, minutes: 0, goals: 0, assists: 0, shots: 0, shots_on_target: 0, penalties_won: 0, yellow_cards: 0, red_cards: 0, steals: 0, tackles: 0, interceptions: 0 }
                   );
 
                   // Minutes bracket drives the color for both J and MIN cells
@@ -785,7 +790,7 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
                     /* Season header row */
                     <tr key={`yr-${yr}`} style={{ background: BORDER }}>
                       <td
-                        colSpan={13}
+                        colSpan={14}
                         className="px-3 py-1.5 font-barlow font-black text-[11px] tracking-[0.2em] uppercase"
                         style={{ color: MUTED }}
                       >
@@ -843,6 +848,7 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
                         <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${BORDER}`, color: totals.assists > 0 ? GREEN : A }}>{totals.assists}</td>
                         <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${BORDER}`, color: MUTED }}>{totals.shots}</td>
                         <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${BORDER}`, color: MUTED }}>{totals.shots_on_target}</td>
+                        <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${BORDER}`, color: MUTED }}>{totals.penalties_won}</td>
                         <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${BORDER}`, color: totals.yellow_cards > 0 ? AMBER : MUTED }}>{totals.yellow_cards}</td>
                         <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${BORDER}`, color: totals.red_cards > 0 ? A : MUTED }}>{totals.red_cards}</td>
                         <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${BORDER}`, color: MUTED }}>{totals.steals}</td>
@@ -998,7 +1004,7 @@ function SeasonRow({ row, isGoalkeeper = false }: { row: SeasonRowData; matches?
     { label: "No Gol",      value: s.shots_on_target,  positive: true },
     { label: "Fora",        value: s.shots_off_target },
     { label: "Bloqueadas",  value: s.shots_blocked },
-    { label: "Pên. Sofridos", value: (s as any).penalties_won ?? 0, positive: true },
+    { label: "Pên. Sofrido", value: s.penalties_won ?? 0, positive: true },
   ];
 
   const passesStats: StatDef[] = [
@@ -1096,6 +1102,10 @@ function SeasonRow({ row, isGoalkeeper = false }: { row: SeasonRowData; matches?
         {/* NOG */}
         <td className="px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>
           {s.shots_on_target}
+        </td>
+        {/* PEN */}
+        <td className="px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>
+          {s.penalties_won ?? 0}
         </td>
         {/* AM */}
         <td className="px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: s.yellow_cards > 0 ? AMB : MUT }}>

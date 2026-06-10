@@ -146,6 +146,15 @@ export const LIVE_EVENT_ACTIONS: LiveEventAction[] = [
     description: "Jogador em posição irregular",
     aliases: ["impedido", "offside", "fora de jogo"],
   },
+  {
+    key: "penalty_won",
+    type: "penalty_won",
+    label: "Pênalti Sofrido",
+    group: "attack",
+    icon: UserX,
+    description: "Sofreu falta e ganhou pênalti",
+    aliases: ["penalti sofrido", "pênalti", "penalty won"],
+  },
 
   // ========== PASSE ==========
   {
@@ -249,6 +258,15 @@ export const LIVE_EVENT_ACTIONS: LiveEventAction[] = [
   },
 
   // ========== DEFESA ==========
+  {
+    key: "steal",
+    type: "steal",
+    label: "Roubada de Bola",
+    group: "defense",
+    icon: ShieldCheck,
+    description: "Roubou a bola do adversário",
+    aliases: ["roubada", "steal", "roubo de bola"],
+  },
   {
     key: "tackle",
     type: "tackle",

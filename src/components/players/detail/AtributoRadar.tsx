@@ -42,9 +42,10 @@ function gridPath(f: number) {
 
 interface AtributoRadarProps {
   playerId: string;
+  filterToLatestSeason?: boolean;
 }
 
-export function AtributoRadar({ playerId }: AtributoRadarProps) {
+export function AtributoRadar({ playerId, filterToLatestSeason }: AtributoRadarProps) {
   const [scores, setScores] = useState<number[]>([0, 0, 0, 0, 0]);
   const [loaded, setLoaded] = useState(false);
 
@@ -52,10 +53,19 @@ export function AtributoRadar({ playerId }: AtributoRadarProps) {
     fetchPlayerAllAttributeScores(playerId).then((rows: AttributeScoresData[]) => {
       if (!rows.length) { setLoaded(true); return; }
 
+      let workingRows = rows;
+
+      if (filterToLatestSeason) {
+        const latestYear = rows.find(r => (r.details?.minutes ?? 0) > 0)?.season_year;
+        if (latestYear) {
+          workingRows = rows.filter(r => r.season_year === latestYear);
+        }
+      }
+
       let sumAta = 0, sumTec = 0, sumTat = 0, sumDef = 0, sumCri = 0;
       let totalMinutes = 0;
 
-      rows.forEach(r => {
+      workingRows.forEach(r => {
         const mins = (r.details?.minutes ?? 60);
         sumAta += (r.ata_score_100 ?? 0) * mins;
         sumTec += (r.tec_score_100 ?? 0) * mins;
@@ -69,7 +79,7 @@ export function AtributoRadar({ playerId }: AtributoRadarProps) {
       setScores([sumAta / div, sumTec / div, sumTat / div, sumDef / div, sumCri / div]);
       setLoaded(true);
     });
-  }, [playerId]);
+  }, [playerId, filterToLatestSeason]);
 
   return (
     <svg viewBox="0 0 230 270" className="w-full" style={{ maxHeight: 280 }}>

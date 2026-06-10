@@ -56,6 +56,9 @@ export interface MatchDerivedStats {
   dribbles_failed: number; // from dribble_attempt events
   dribbles_total: number; // derived: success + failed
   
+  // Attack — penalties won
+  penalties_won: number;
+
   // Defense
   steals: number;
   tackles: number;
@@ -903,6 +906,7 @@ export function usePlayerMatchStatsBySeasonCompetition({
             dribbles_success: 0,
             dribbles_failed: 0,
             dribbles_total: 0,
+            penalties_won: 0,
             steals: 0,
             tackles: 0,
             interceptions: 0,
@@ -1016,6 +1020,8 @@ export function usePlayerMatchStatsBySeasonCompetition({
       // Actual total = dribbles_success + dribbles_total
       s.dribbles_failed += stats?.dribbles_total ?? 0;
       s.dribbles_total += (stats?.dribbles_success ?? 0) + (stats?.dribbles_total ?? 0);
+      s.penalties_won += stats?.penalties_won ?? 0;
+      s.steals += stats?.steals ?? 0;
       s.tackles += stats?.tackles ?? 0;
       s.interceptions += stats?.interceptions ?? 0;
       s.recoveries += stats?.recoveries ?? 0;
