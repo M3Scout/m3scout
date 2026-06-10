@@ -482,7 +482,7 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
             {
               label: "MÉDIA DE NOTA",
               value: averageRating !== null ? averageRating.toFixed(1) : "—",
-              color: A,
+              color: averageRating !== null ? getMatchRatingColor(averageRating) : MUTED,
             },
             {
               label: "JOGOS AVALIADOS",
@@ -494,7 +494,9 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
               value: bestMatch?.rating.rating !== null && bestMatch?.rating.rating !== undefined
                 ? bestMatch.rating.rating.toFixed(1)
                 : "—",
-              color: GREEN,
+              color: bestMatch?.rating.rating !== null && bestMatch?.rating.rating !== undefined
+                ? getMatchRatingColor(bestMatch.rating.rating)
+                : MUTED,
             },
             {
               label: "TENDÊNCIA",
