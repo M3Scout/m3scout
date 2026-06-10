@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   ComposedChart,
   Area,
+  LineChart,
   Line,
   XAxis,
   YAxis,
@@ -100,6 +101,31 @@ const TABLE_HEADERS = [
   { label: "INT", tooltip: "Interceptações" },
   { label: "",    tooltip: "" },
 ] as const;
+
+// ─── Rating color (Sofascore scale) ──────────────────────────────────────────
+function getMatchRatingColor(rating: number): string {
+  if (rating >= 9.0) return "#1e3a8a";
+  if (rating >= 8.0) return "#06b6d4";
+  if (rating >= 7.0) return "#22c55e";
+  if (rating >= 6.5) return "#eab308";
+  if (rating >= 6.0) return "#f97316";
+  return "#ef4444";
+}
+
+const RatingDot = (props: any) => {
+  const { cx, cy, value } = props;
+  if (cx === undefined || cy === undefined || value === undefined) return null;
+  const color = getMatchRatingColor(value);
+  const label = Number(value).toFixed(1);
+  const bW = 28, bH = 15, bX = cx - bW / 2, bY = cy - 28;
+  return (
+    <g>
+      <rect x={bX} y={bY} width={bW} height={bH} rx={3} fill={color} />
+      <text x={cx} y={bY + bH / 2} textAnchor="middle" dominantBaseline="central" fontSize={8} fontWeight="bold" fill="#ffffff">{label}</text>
+      <circle cx={cx} cy={cy} r={3.5} fill={color} stroke="#0A0A0A" strokeWidth={1} />
+    </g>
+  );
+};
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const A = "#E5173F";
@@ -507,13 +533,7 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
             <NoData label="Sem partidas avaliadas" />
           ) : (
             <ResponsiveContainer width="100%" height={180}>
-              <ComposedChart data={ratingChartData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="ratingGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={A} stopOpacity={0.2} />
-                    <stop offset="95%" stopColor={A} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
+              <LineChart data={ratingChartData} margin={{ top: 34, right: 8, left: -20, bottom: 0 }}>
                 <XAxis
                   dataKey="date"
                   tick={{ fontFamily: "Basis Grotesque Pro", fontSize: 9, fill: MUTED }}
@@ -521,61 +541,43 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
                   tickLine={false}
                 />
                 <YAxis
-                  domain={[4, 10]}
+                  domain={[3, 10]}
                   ticks={[5, 6, 7, 8, 9, 10]}
                   tick={{ fontFamily: "Basis Grotesque Pro", fontSize: 9, fill: MUTED }}
                   axisLine={{ stroke: BORDER }}
                   tickLine={false}
                 />
                 <Tooltip
-                  content={(props) => (
-                    <ChartTooltip
-                      active={props.active}
-                      payload={props.payload?.map((p) => ({
-                        value: p.value as number,
-                        name: "Nota",
-                        color: A,
-                      }))}
-                      label={
-                        props.active && props.payload?.[0]
-                          ? `${(props.payload[0].payload as { opponent: string }).opponent} — ${props.label}`
-                          : props.label
-                      }
-                    />
-                  )}
+                  content={(props) => {
+                    if (!props.active || !props.payload?.length) return null;
+                    const val = props.payload[0].value as number;
+                    const opp = (props.payload[0].payload as { opponent: string }).opponent;
+                    return (
+                      <div style={{ background: BG, border: `1px solid ${BORDER}`, borderRadius: 4, padding: "4px 8px", fontSize: 10, fontWeight: "bold", color: getMatchRatingColor(val) }}>
+                        {val.toFixed(1)} <span style={{ color: MUTED, fontWeight: "normal" }}>vs {opp}</span>
+                      </div>
+                    );
+                  }}
                 />
+                <ReferenceLine y={7} stroke={BORDER} strokeDasharray="4 3" strokeWidth={1} />
                 {averageRating !== null && (
                   <ReferenceLine
                     y={averageRating}
                     stroke={MUTED}
                     strokeDasharray="4 3"
-                    label={{
-                      value: `Média ${averageRating.toFixed(1)}`,
-                      position: "right",
-                      fontFamily: "Basis Grotesque Pro",
-                      fontSize: 9,
-                      fill: MUTED,
-                    }}
+                    label={{ value: `Média ${averageRating.toFixed(1)}`, position: "right", fontFamily: "Basis Grotesque Pro", fontSize: 9, fill: MUTED }}
                   />
                 )}
-                <Area
-                  type="monotone"
-                  dataKey="rating"
-                  stroke={A}
-                  strokeWidth={1.5}
-                  fill="url(#ratingGrad)"
-                  dot={false}
-                  isAnimationActive={false}
-                />
                 <Line
                   type="monotone"
                   dataKey="rating"
-                  stroke={A}
+                  stroke="#ffffff15"
                   strokeWidth={1.5}
-                  dot={{ r: 2.5, fill: A, stroke: BG, strokeWidth: 1.5 }}
+                  dot={<RatingDot />}
+                  activeDot={false}
                   isAnimationActive={false}
                 />
-              </ComposedChart>
+              </LineChart>
             </ResponsiveContainer>
           )}
         </div>
