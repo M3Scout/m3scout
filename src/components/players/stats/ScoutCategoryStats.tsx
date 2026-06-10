@@ -379,20 +379,29 @@ export function ScoutCategoryStats({
       return;
     }
 
-    // 3) Chave "sucesso" de um par success/total: ajusta o total se necessário.
+    // 3) Chave "sucesso" de um par success/total: ajusta o total pelo MESMO delta,
+    //    preservando a quantia da chave derivada (ex: "Finalizações Fora").
     const totalKey = successToTotal[key];
     if (totalKey) {
+      const prevSuccess = getValue(values, key);
       const nextSuccess = clampStatValue(key, Math.max(0, nextRaw));
       onChange(key, nextSuccess);
-      // Recalcula a soma de todos os componentes do total considerando o novo valor.
-      const siblings = totalToSuccessKeys[totalKey] ?? [];
-      const newSiblingsSum = siblings.reduce(
-        (acc, sk) => acc + (sk === key ? nextSuccess : getValue(values, sk)),
-        0,
-      );
-      const currentTotal = getValue(values, totalKey);
-      if (newSiblingsSum > currentTotal) {
-        onChange(totalKey, clampStatValue(totalKey, newSiblingsSum));
+      const delta = nextSuccess - prevSuccess;
+      if (delta !== 0) {
+        const siblings = totalToSuccessKeys[totalKey] ?? [];
+        const newSiblingsSum = siblings.reduce(
+          (acc, sk) => acc + (sk === key ? nextSuccess : getValue(values, sk)),
+          0,
+        );
+        const currentTotal = getValue(values, totalKey);
+        // Total acompanha o delta do sucesso, garantindo no mínimo a soma dos componentes.
+        const nextTotal = clampStatValue(
+          totalKey,
+          Math.max(newSiblingsSum, currentTotal + delta),
+        );
+        if (nextTotal !== currentTotal) {
+          onChange(totalKey, nextTotal);
+        }
       }
       return;
     }
