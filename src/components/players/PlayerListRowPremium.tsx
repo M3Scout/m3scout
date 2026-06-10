@@ -266,6 +266,7 @@ export function PlayerListRowMobilePremium({
   currentClub,
   photoUrl,
   autoRating,
+  autoPotential,
   isPublic,
   isArchived,
   isAdmin,
