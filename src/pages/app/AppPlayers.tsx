@@ -851,8 +851,7 @@ const AppPlayers = () => {
                     height={player.height}
                     dominantFoot={player.dominant_foot}
                     contractEnd={player.contract_end}
-                    overallRating={player.overall_rating}
-                    potentialRating={player.potential_rating}
+                    autoPotential={player.auto_potential}
                     isPublic={player.is_public}
                     isArchived={player.is_archived}
                     isAdmin={isAdmin}
