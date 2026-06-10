@@ -88,7 +88,6 @@ export interface MatchDerivedStats {
   goals_conceded: number;
   clean_sheets: number;
   penalties_saved: number;
-  penalties_won: number;
 }
 
 export interface MatchWithStats {
@@ -929,7 +928,6 @@ export function usePlayerMatchStatsBySeasonCompetition({
             goals_conceded: 0,
             clean_sheets: 0,
             penalties_saved: 0,
-            penalties_won: 0,
           },
         };
       }
