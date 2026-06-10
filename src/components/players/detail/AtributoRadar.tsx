@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Info } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { fetchPlayerAllAttributeScores, type AttributeScoresData } from "@/lib/attributeScores";
 
 // ── SVG geometry ─────────────────────────────────────────────────────────────
@@ -124,29 +124,29 @@ export function AtributoRadar({
       {/* ── Header ──────────────────────────────────────────────────────── */}
       {showHeader && (
         <div className="mb-3">
-          <div className="flex items-center gap-1.5 mb-2">
+          <div className="flex items-center justify-between mb-2">
             <span
               className="text-[10px] tracking-[0.18em] uppercase font-bold"
               style={{ color: MUTED }}
             >
               Atributos
             </span>
-            <Tooltip>
-              <TooltipTrigger asChild>
+            <Popover>
+              <PopoverTrigger asChild>
                 <button className="flex items-center" type="button">
-                  <Info className="w-3 h-3" style={{ color: MUTED }} />
+                  <Info className="w-3.5 h-3.5" style={{ color: MUTED }} />
                 </button>
-              </TooltipTrigger>
-              <TooltipContent side="right" className="max-w-[220px] text-xs leading-relaxed">
-                <p className="font-semibold mb-1">Eixos do Radar</p>
-                <p><span className="font-medium">ATA</span> — Capacidade ofensiva (gols, chutes, pênaltis)</p>
-                <p><span className="font-medium">CRI</span> — Criação de chances e cruzamentos</p>
-                <p><span className="font-medium">TEC</span> — Passes, dribles e controle de bola</p>
-                <p><span className="font-medium">DEF</span> — Desarmes, interceptações e cortes</p>
-                <p><span className="font-medium">TAT</span> — Duelos, recuperações e disciplina</p>
-                <p className="mt-1 text-muted-foreground">Calculado por 90 min jogados.</p>
-              </TooltipContent>
-            </Tooltip>
+              </PopoverTrigger>
+              <PopoverContent side="left" className="max-w-[220px] text-xs leading-relaxed p-3">
+                <p className="font-semibold mb-1.5">Eixos do Radar</p>
+                <p className="mb-0.5"><span className="font-medium">ATA</span> — Capacidade ofensiva (gols, chutes, pênaltis)</p>
+                <p className="mb-0.5"><span className="font-medium">CRI</span> — Criação de chances e cruzamentos</p>
+                <p className="mb-0.5"><span className="font-medium">TEC</span> — Passes, dribles e controle de bola</p>
+                <p className="mb-0.5"><span className="font-medium">DEF</span> — Desarmes, interceptações e cortes</p>
+                <p className="mb-0.5"><span className="font-medium">TAT</span> — Duelos, recuperações e disciplina</p>
+                <p className="mt-1.5 text-muted-foreground">Calculado por 90 min jogados.</p>
+              </PopoverContent>
+            </Popover>
           </div>
 
           {/* Seletor de temporada abaixo do título */}
