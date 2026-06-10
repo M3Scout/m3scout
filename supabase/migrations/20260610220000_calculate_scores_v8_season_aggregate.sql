@@ -460,6 +460,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- ============================================================
 CREATE OR REPLACE FUNCTION public.recalculate_player_all_attributes(p_player_id uuid)
 RETURNS TABLE(competition_id uuid, season_year integer, result jsonb) AS $$
+#variable_conflict use_column
 BEGIN
   RETURN QUERY
   WITH all_season_competitions AS (
@@ -481,11 +482,11 @@ BEGIN
       AND m.status                       = 'applied'
       AND COALESCE(mp.is_removed, false) = false
   ),
-  -- Um competition_id representativo por season (MIN garante determinismo)
+  -- Um competition_id representativo por season (DISTINCT ON, UUID nao tem MIN nativo)
   one_per_season AS (
-    SELECT season_year, MIN(competition_id) AS competition_id
-    FROM all_season_competitions
-    GROUP BY season_year
+    SELECT DISTINCT ON (asc2.season_year) asc2.season_year, asc2.competition_id
+    FROM all_season_competitions asc2
+    ORDER BY asc2.season_year, asc2.competition_id::text
   )
   SELECT
     ops.competition_id,
@@ -501,6 +502,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- ============================================================
 CREATE OR REPLACE FUNCTION public.recalculate_all_attribute_scores()
 RETURNS TABLE(player_id uuid, player_name text, rows_processed integer) AS $$
+#variable_conflict use_column
 DECLARE
   v_player RECORD;
   v_count  integer;
