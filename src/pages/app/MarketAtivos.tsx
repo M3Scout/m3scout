@@ -196,6 +196,8 @@ export default function MarketAtivos() {
         return next;
       });
       queryClient.invalidateQueries({ queryKey: ["market-ativos"] });
+      queryClient.invalidateQueries({ queryKey: ["market-score", athlete.id] });
+      queryClient.invalidateQueries({ queryKey: ["market-score-history"] });
       toast.success("Score calculado com sucesso");
     },
     onError: (error, athlete) => {
