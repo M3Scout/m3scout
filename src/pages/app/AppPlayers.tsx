@@ -73,8 +73,7 @@ interface Player {
   weight?: number | null;
   dominant_foot?: string | null;
   estimated_level?: string | null;
-  overall_rating?: number | null;
-  potential_rating?: number | null;
+  auto_potential?: number | null;
 }
 
 type SortField = "full_name" | "position" | "current_club" | "avg_score" | "auto_rating" | "contract_end" | "is_public" | "age";
