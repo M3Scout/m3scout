@@ -268,9 +268,17 @@ export default function MarketAtivos() {
           >
             <Search className="w-[18px] h-[18px]" />
           </button>
-          <Button variant="outline" size="sm" onClick={() => refetch()} className="hidden sm:flex rounded-full">
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Atualizar
+          <Button variant="outline" size="sm" onClick={handleRecalculateAll} disabled={isRecalculatingAll} className="hidden sm:flex rounded-full">
+            {isRecalculatingAll ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <RefreshCw className="w-4 h-4 mr-2" />
+            )}
+            {isRecalculatingAll
+              ? recalcProgress && recalcProgress.total > 0
+                ? `Recalculando ${recalcProgress.current}/${recalcProgress.total}`
+                : "Recalculando..."
+              : "Atualizar"}
           </Button>
         </div>
       </div>
