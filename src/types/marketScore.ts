@@ -20,18 +20,18 @@ export type TargetPriority = 'HIGH' | 'MEDIUM' | 'LOW';
 
 export interface MarketScoreWeights {
   ageWindow: number;           // Default: 0.25 (25%)
-  performanceImpact: number;   // Default: 0.25 (25%)
+  performanceImpact: number;   // Default: 0.30 (30%)
   competitiveContext: number;  // Default: 0.20 (20%)
   consistencyReliability: number; // Default: 0.15 (15%)
-  marketProfile: number;       // Default: 0.15 (15%)
+  marketProfile: number;       // Default: 0.10 (10%)
 }
 
 export const DEFAULT_MARKET_SCORE_WEIGHTS: MarketScoreWeights = {
   ageWindow: 0.25,
-  performanceImpact: 0.25,
+  performanceImpact: 0.30,
   competitiveContext: 0.20,
   consistencyReliability: 0.15,
-  marketProfile: 0.15,
+  marketProfile: 0.10,
 };
 
 // =====================================================

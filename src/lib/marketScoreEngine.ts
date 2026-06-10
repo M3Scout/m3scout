@@ -177,101 +177,79 @@ function calculateAgeWindowScore(
 }
 
 // =====================================================
-// PILLAR 2: PERFORMANCE + IMPACT (25%)
+// PILLAR 2: PERFORMANCE + IMPACT (30%) — 100% stats-based via p90
 // =====================================================
 
 function calculatePerformanceImpactScore(
   data: ActivePlayerData
 ): PerformanceImpactDetails {
-  const { seasonStats, matchRatings, position } = data;
-  
-  // Calculate average rating (0-10 scale)
-  const validRatings = matchRatings.filter(r => r.rating > 0).map(r => r.rating);
-  const averageRating = validRatings.length > 0
-    ? validRatings.reduce((a, b) => a + b, 0) / validRatings.length
-    : null;
-  
-  // Convert 0-10 rating to 0-100 score
-  // Rating of 7.0 = 70 score, 8.0 = 85 score, 6.0 = 55 score (with curve)
-  let ratingScore = 0;
-  if (averageRating !== null) {
-    if (averageRating >= 8.0) {
-      ratingScore = 85 + (averageRating - 8.0) * 7.5; // 85-100
-    } else if (averageRating >= 7.0) {
-      ratingScore = 70 + (averageRating - 7.0) * 15; // 70-85
-    } else if (averageRating >= 6.0) {
-      ratingScore = 50 + (averageRating - 6.0) * 20; // 50-70
-    } else {
-      ratingScore = Math.max(20, averageRating * 8.33); // 0-50
-    }
-  }
-  
-  // Calculate decisive actions score based on position
+  const { seasonStats, position } = data;
+
   const {
     goals, assists, keyPasses, chancesCreated,
     tackles, interceptions, clearances
   } = seasonStats;
-  
+
   const matches = Math.max(seasonStats.matches, 1);
   const minutes = Math.max(seasonStats.minutes, 1);
+  // p90 multiplier: stat * per90 = stat per 90 minutes
   const per90 = 90 / (minutes / matches);
-  
+
   let decisiveActionsScore = 0;
   const isGK = isGoalkeeper(position);
   const isDefensive = isDefensivePosition(position);
   const isAttacking = isAttackingPosition(position);
-  
+
   if (isGK) {
-    // Goalkeeper: clean sheets, saves matter (not tracked in this input, use defensive actions)
-    const defensiveContributions = (clearances + interceptions) * per90;
-    decisiveActionsScore = Math.min(100, defensiveContributions * 15 + 40);
+    // Goalkeeper: defensive contributions p90
+    // Benchmark: ~3 defensive contributions/90 → score ~85
+    const defContrib90 = (clearances + interceptions) * per90;
+    decisiveActionsScore = Math.min(100, defContrib90 * 15 + 40);
   } else if (isDefensive) {
-    // Defensive: tackles, interceptions, clearances + occasional goals/assists
-    const defensiveActions = (tackles + interceptions + clearances) * per90;
-    const offensiveBonus = (goals * 10 + assists * 8) * per90;
-    decisiveActionsScore = Math.min(100, defensiveActions * 8 + offensiveBonus + 20);
+    // Defender: defensive actions p90 + offensive bonus
+    // Benchmark: ~5 def actions/90 → score ~60; ~8/90 → ~84
+    const defActions90 = (tackles + interceptions + clearances) * per90;
+    const offBonus90 = (goals * 10 + assists * 8) * per90;
+    decisiveActionsScore = Math.min(100, defActions90 * 8 + offBonus90 + 20);
   } else if (isAttacking) {
-    // Attacking: goals, assists, chances created, key passes
+    // Attacker: goals+assists p90 most important, then creation
+    // Benchmark: 0.5 G+A/90 → score ~60; 1.0 G+A/90 → score ~85
     const g90 = goals * per90;
     const a90 = assists * per90;
     const cc90 = chancesCreated * per90;
     const kp90 = keyPasses * per90;
-    
-    // Weighted: goals most important, then assists, then creation
     decisiveActionsScore = Math.min(100, g90 * 25 + a90 * 20 + cc90 * 8 + kp90 * 5 + 15);
   } else {
-    // Midfielder: balanced approach
+    // Midfielder: balanced contributions p90
+    // Benchmark: 0.3 G+A/90 + 4 def/90 → score ~60
     const g90 = goals * per90;
     const a90 = assists * per90;
     const kp90 = keyPasses * per90;
-    const defActions = (tackles + interceptions + seasonStats.recoveries) * per90;
-    
-    decisiveActionsScore = Math.min(100, g90 * 20 + a90 * 15 + kp90 * 8 + defActions * 5 + 20);
+    const defActions90 = (tackles + interceptions + seasonStats.recoveries) * per90;
+    decisiveActionsScore = Math.min(100, g90 * 20 + a90 * 15 + kp90 * 8 + defActions90 * 5 + 20);
   }
-  
-  // Combine rating score (60%) and decisive actions (40%)
-  const combinedScore = averageRating !== null
-    ? ratingScore * 0.6 + decisiveActionsScore * 0.4
-    : decisiveActionsScore * 0.8; // Reduce if no rating data
-  
+
+  // 100% stats-based — no rating weight
+  const combinedScore = decisiveActionsScore;
+
   let reasoning = '';
-  if (averageRating !== null) {
-    reasoning = `Nota média de ${averageRating.toFixed(1)} em ${validRatings.length} jogos.`;
-  } else {
-    reasoning = 'Sem notas de jogo registradas.';
-  }
-  
-  if (isAttacking && goals + assists > 0) {
-    reasoning += ` ${goals}G + ${assists}A na temporada.`;
+  if (isAttacking) {
+    reasoning = `${goals}G + ${assists}A | ${(goals * per90).toFixed(2)}G/90 + ${(assists * per90).toFixed(2)}A/90.`;
   } else if (isDefensive) {
-    reasoning += ` ${tackles + interceptions + clearances} ações defensivas decisivas.`;
+    const defTotal = tackles + interceptions + clearances;
+    reasoning = `${defTotal} ações def. | ${(defTotal * per90).toFixed(2)}/90.`;
+  } else if (isGK) {
+    const defContrib = clearances + interceptions;
+    reasoning = `${defContrib} contribuições def. | ${(defContrib * per90).toFixed(2)}/90.`;
+  } else {
+    reasoning = `${goals}G + ${assists}A | ${(keyPasses * per90).toFixed(2)} passes dec./90.`;
   }
-  
+
   return {
-    matchesAnalyzed: matchRatings.length,
+    matchesAnalyzed: seasonStats.matches,
     minutesPlayed: seasonStats.minutes,
-    averageRating,
-    ratingScore: Math.round(clamp(ratingScore, 0, 100)),
+    averageRating: null,
+    ratingScore: 0,
     decisiveActions: {
       goals,
       assists,
@@ -361,14 +339,18 @@ function calculateConsistencyReliabilityScore(
   const validRatings = matchRatings.filter(r => r.rating > 0).map(r => r.rating);
   const ratingVariance = validRatings.length >= 3 ? standardDeviation(validRatings) : null;
   
-  // Sample penalty: penalize if too few matches
+  // Sample penalty aligned with official playing-time brackets (StatsTab.tsx):
+  // < 1200 min  → "Amostragem Baixa"  (low)        → 0.85
+  // < 2500 min  → "Jogador de Elenco" (regular)     → 0.90
+  // ≤ 4200 min  → "Protagonista"      (protagonist) → 0.95
+  // > 4200 min  → "Zona de Risco"     (risk/peak)   → 1.0
   let samplePenalty = 1.0;
-  if (matches < 3) {
-    samplePenalty = 0.4;
-  } else if (matches < 5) {
-    samplePenalty = 0.6;
-  } else if (matches < 10) {
-    samplePenalty = 0.8;
+  if (minutes < 1200) {
+    samplePenalty = 0.85;
+  } else if (minutes < 2500) {
+    samplePenalty = 0.90;
+  } else if (minutes <= 4200) {
+    samplePenalty = 0.95;
   }
   
   // Base score components
@@ -409,8 +391,12 @@ function calculateConsistencyReliabilityScore(
   } else {
     reasoning += ' Sem jogos recentes.';
   }
-  if (samplePenalty < 1.0) {
-    reasoning += ' (Penalidade por amostra pequena)';
+  if (minutes < 1200) {
+    reasoning += ' (Amostragem baixa — < 1200 min)';
+  } else if (minutes < 2500) {
+    reasoning += ' (Jogador de elenco — 1200–2499 min)';
+  } else if (minutes <= 4200) {
+    reasoning += ' (Protagonista — 2500–4200 min)';
   }
   
   return {
