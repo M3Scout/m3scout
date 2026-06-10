@@ -68,8 +68,7 @@ export function ScoutingPlayerCard({
   contractStatus,
   contractEnd,
   estimatedLevel,
-  overallRating,
-  potentialRating,
+  autoPotential,
 }: ScoutingPlayerCardProps) {
   // App routes use id for reliability (slug may not be unique)
   const href = `/dashboard/atletas/${id}`;
