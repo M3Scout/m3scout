@@ -21,6 +21,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 
 // Public Pages - Only Index is static (landing page LCP performance)
 import Index from "./pages/Index";
+import PlayerDetail from "./pages/app/PlayerDetail";
 
 // All other public pages are lazy-loaded to reduce initial bundle size (~8MB → ~2MB)
 const Players = lazy(() => import("./pages/Players"));
@@ -48,7 +49,6 @@ const Settings = lazy(() => import("./pages/app/Settings"));
 const AppPlayers = lazy(() => import("./pages/app/AppPlayers"));
 const NewPlayer = lazy(() => import("./pages/app/NewPlayer"));
 const EditPlayer = lazy(() => import("./pages/app/EditPlayer"));
-const PlayerDetail = lazy(() => import("./pages/app/PlayerDetail"));
 
 // Compare
 const ComparePlayers = lazy(() => import("./pages/app/ComparePlayers"));
@@ -174,9 +174,15 @@ function AppRoutes() {
                 
                 {/* Players → atletas */}
                 <Route path="atletas" element={<RequirePermission module="players"><Suspense fallback={<RouteSuspense />}><AppPlayers /></Suspense></RequirePermission>} />
+                <Route path="players" element={<RequirePermission module="players"><Suspense fallback={<RouteSuspense />}><AppPlayers /></Suspense></RequirePermission>} />
                 <Route path="atletas/novo" element={<RequirePermission module="players" action="create"><Suspense fallback={<RouteSuspense />}><NewPlayer /></Suspense></RequirePermission>} />
-                <Route path="atletas/:id" element={<RequirePermission module="players"><Suspense fallback={<RouteSuspense />}><PlayerDetail /></Suspense></RequirePermission>} />
+                <Route path="players/novo" element={<RequirePermission module="players" action="create"><Suspense fallback={<RouteSuspense />}><NewPlayer /></Suspense></RequirePermission>} />
+                <Route path="atletas/:id" element={<RequirePermission module="players"><PlayerDetail /></RequirePermission>} />
+                <Route path="players/:id" element={<RequirePermission module="players"><PlayerDetail /></RequirePermission>} />
                 <Route path="atletas/:id/editar" element={<RequirePermission module="players" action="edit"><Suspense fallback={<RouteSuspense />}><EditPlayer /></Suspense></RequirePermission>} />
+                <Route path="atletas/:id/edit" element={<RequirePermission module="players" action="edit"><Suspense fallback={<RouteSuspense />}><EditPlayer /></Suspense></RequirePermission>} />
+                <Route path="players/:id/editar" element={<RequirePermission module="players" action="edit"><Suspense fallback={<RouteSuspense />}><EditPlayer /></Suspense></RequirePermission>} />
+                <Route path="players/:id/edit" element={<RequirePermission module="players" action="edit"><Suspense fallback={<RouteSuspense />}><EditPlayer /></Suspense></RequirePermission>} />
 
                 {/* Prancheta tática */}
                 <Route path="prancheta" element={<RequirePermission module="players"><Suspense fallback={<RouteSuspense />}><Prancheta /></Suspense></RequirePermission>} />
