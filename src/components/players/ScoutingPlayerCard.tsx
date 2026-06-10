@@ -19,8 +19,7 @@ interface ScoutingPlayerCardProps {
   contractStatus?: string | null;
   contractEnd?: string | null;
   estimatedLevel?: string | null;
-  overallRating?: number | null;
-  potentialRating?: number | null;
+  autoPotential?: number | null;
 }
 
 const formatContractEnd = (dateStr: string | null | undefined): string => {
