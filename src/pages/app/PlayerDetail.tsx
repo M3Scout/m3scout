@@ -988,7 +988,7 @@ const PlayerDetail = () => {
               {/* Attributes Radar */}
               <section className={`border ${T.border} p-5`}>
                 <SectionTitle>ATRIBUTOS</SectionTitle>
-                <AtributoRadar playerId={player.id} />
+                <AtributoRadar playerId={player.id} filterToLatestSeason />
               </section>
 
               {/* Market Value chart */}
