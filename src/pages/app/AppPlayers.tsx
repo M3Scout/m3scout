@@ -159,7 +159,7 @@ const AppPlayers = () => {
       let query = supabase
         .from("players")
         .select(
-          "id, slug, full_name, position, secondary_positions, age, nationality, current_club, contract_end, contract_status, is_public, photo_url, auto_rating, auto_rating_details, is_archived, height, weight, dominant_foot, estimated_level, overall_rating, potential_rating"
+          "id, slug, full_name, position, secondary_positions, age, nationality, current_club, contract_end, contract_status, is_public, photo_url, auto_rating, auto_rating_details, auto_potential, is_archived, height, weight, dominant_foot, estimated_level"
         )
         .order("full_name");
 
