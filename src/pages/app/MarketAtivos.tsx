@@ -117,7 +117,11 @@ export default function MarketAtivos() {
         `Recálculo concluído: ${result.success}/${result.total} atualizados${result.failed ? ` (${result.failed} falhas)` : ""}`,
         { id: toastId }
       );
-      await queryClient.invalidateQueries({ queryKey: ["market-ativos"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["market-ativos"] }),
+        queryClient.invalidateQueries({ queryKey: ["market-score"] }),
+        queryClient.invalidateQueries({ queryKey: ["market-score-history"] }),
+      ]);
     } catch (err) {
       console.error("Erro no recálculo em massa:", err);
       toast.error("Erro ao recalcular scores", { id: toastId });
@@ -192,6 +196,8 @@ export default function MarketAtivos() {
         return next;
       });
       queryClient.invalidateQueries({ queryKey: ["market-ativos"] });
+      queryClient.invalidateQueries({ queryKey: ["market-score", athlete.id] });
+      queryClient.invalidateQueries({ queryKey: ["market-score-history"] });
       toast.success("Score calculado com sucesso");
     },
     onError: (error, athlete) => {
