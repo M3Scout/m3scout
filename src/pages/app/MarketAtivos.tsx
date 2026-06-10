@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MarketScoreTrend } from "@/types/marketScore";
-import { computeScoreForAthleteById } from "@/lib/marketScoreService";
+import { computeScoreForAthleteById, recalculateAllActiveMarketScores } from "@/lib/marketScoreService";
 import { getPositionColor, getShortPosition } from "@/lib/positionColors";
 import { getOptimizedImageUrl } from "@/lib/imageUtils";
 import { toast } from "sonner";
