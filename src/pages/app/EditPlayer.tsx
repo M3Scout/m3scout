@@ -81,7 +81,7 @@ interface FormData {
   release_clause_amount: number | null; release_clause_currency: CurrencyCode;
   contract_status: string; passports: string[]; agent_name: string; agent_contact: string;
   physical_status: string; medical_notes: string;
-  overall_rating: string; potential_rating: string; ready_to_compete: boolean | null;
+  ready_to_compete: boolean | null;
   estimated_level: string; internal_evaluation_notes: string; internal_notes: string;
 }
 
@@ -99,7 +99,7 @@ const initialFormData: FormData = {
   contract_status: "contracted", passports: [],
   agent_name: "", agent_contact: "",
   physical_status: "fit", medical_notes: "",
-  overall_rating: "", potential_rating: "", ready_to_compete: null,
+  ready_to_compete: null,
   estimated_level: "", internal_evaluation_notes: "", internal_notes: "",
 };
 
@@ -241,8 +241,6 @@ export default function EditPlayer() {
         agent_contact: playerRow.agent_contact || "",
         physical_status: playerRow.physical_status || "fit",
         medical_notes: playerRow.medical_notes || "",
-        overall_rating: playerRow.overall_rating?.toString() || "",
-        potential_rating: playerRow.potential_rating?.toString() || "",
         ready_to_compete: playerRow.ready_to_compete,
         estimated_level: playerRow.estimated_level || "",
         internal_evaluation_notes: playerRow.internal_evaluation_notes || "",
@@ -349,7 +347,7 @@ export default function EditPlayer() {
         agent_name: formData.agent_name || null, agent_contact: formData.agent_contact || null,
         physical_status: formData.physical_status || null, medical_notes: formData.medical_notes || null,
         ...(isAdmin && {
-          overall_rating: pf(formData.overall_rating), potential_rating: pf(formData.potential_rating),
+          
           ready_to_compete: formData.ready_to_compete, estimated_level: formData.estimated_level || null,
           internal_evaluation_notes: formData.internal_evaluation_notes || null,
         }),
@@ -817,12 +815,9 @@ export default function EditPlayer() {
                   </span>
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <Field label="Nota Geral (0–10)" filled={!!formData.overall_rating}>
-                    <input type="number" min="0" max="10" step="0.1" className={inputCls} value={formData.overall_rating} onChange={e => handleChange("overall_rating", e.target.value)} placeholder="Ex: 7.5" />
-                  </Field>
-                  <Field label="Potencial (0–10)" filled={!!formData.potential_rating}>
-                    <input type="number" min="0" max="10" step="0.1" className={inputCls} value={formData.potential_rating} onChange={e => handleChange("potential_rating", e.target.value)} placeholder="Ex: 8.0" />
-                  </Field>
+                  <div className="sm:col-span-2 p-4 rounded-xl border border-zinc-700/60 bg-zinc-900/40 text-xs text-zinc-400 leading-relaxed">
+                    <strong className="text-zinc-200">OVR e POT são automáticos.</strong> A nota geral (OVR) é calculada pelo algoritmo com base nas estatísticas, e o potencial (POT) deriva do OVR + idade. Não há mais input manual.
+                  </div>
                   <Field label="Pronto para Competir?">
                     <Select value={formData.ready_to_compete === null ? "" : formData.ready_to_compete ? "yes" : "no"} onValueChange={val => handleChange("ready_to_compete", val === "" ? null : val === "yes")}>
                       <SelectTrigger className="h-[52px] bg-zinc-800/80 border-zinc-700/60 rounded-xl text-sm text-white focus:ring-2 focus:ring-red-500/20 focus:border-red-500">

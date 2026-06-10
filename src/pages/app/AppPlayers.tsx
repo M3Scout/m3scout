@@ -73,8 +73,7 @@ interface Player {
   weight?: number | null;
   dominant_foot?: string | null;
   estimated_level?: string | null;
-  overall_rating?: number | null;
-  potential_rating?: number | null;
+  auto_potential?: number | null;
 }
 
 type SortField = "full_name" | "position" | "current_club" | "avg_score" | "auto_rating" | "contract_end" | "is_public" | "age";
@@ -160,7 +159,7 @@ const AppPlayers = () => {
       let query = supabase
         .from("players")
         .select(
-          "id, slug, full_name, position, secondary_positions, age, nationality, current_club, contract_end, contract_status, is_public, photo_url, auto_rating, auto_rating_details, is_archived, height, weight, dominant_foot, estimated_level, overall_rating, potential_rating"
+          "id, slug, full_name, position, secondary_positions, age, nationality, current_club, contract_end, contract_status, is_public, photo_url, auto_rating, auto_rating_details, auto_potential, is_archived, height, weight, dominant_foot, estimated_level"
         )
         .order("full_name");
 
@@ -798,8 +797,7 @@ const AppPlayers = () => {
                     height={player.height}
                     dominantFoot={player.dominant_foot}
                     contractEnd={player.contract_end}
-                    overallRating={player.overall_rating}
-                    potentialRating={player.potential_rating}
+                    autoPotential={player.auto_potential}
                     isPublic={player.is_public}
                     isArchived={player.is_archived}
                     isAdmin={isAdmin}
@@ -853,8 +851,7 @@ const AppPlayers = () => {
                     height={player.height}
                     dominantFoot={player.dominant_foot}
                     contractEnd={player.contract_end}
-                    overallRating={player.overall_rating}
-                    potentialRating={player.potential_rating}
+                    autoPotential={player.auto_potential}
                     isPublic={player.is_public}
                     isArchived={player.is_archived}
                     isAdmin={isAdmin}

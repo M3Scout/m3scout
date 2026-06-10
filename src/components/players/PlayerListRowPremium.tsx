@@ -28,6 +28,7 @@ interface PlayerListRowPremiumProps {
   currentClub: string | null;
   photoUrl: string | null;
   autoRating: number | null;
+  autoPotential?: number | null;
   avgScore: number | null;
   scoreTrend: number | null;
   contractEnd: string | null;
@@ -58,6 +59,7 @@ export function PlayerListRowPremium({
   currentClub,
   photoUrl,
   autoRating,
+  autoPotential,
   isPublic,
   isArchived,
   isAdmin,
@@ -173,6 +175,25 @@ export function PlayerListRowPremium({
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
+
+        {/* POT */}
+        {autoPotential !== null && autoPotential !== undefined && autoPotential > 0 && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-800/40">
+                  <span className="text-[9px] uppercase tracking-wider text-zinc-600 font-medium">POT</span>
+                  <span className={cn("text-sm font-extrabold tabular-nums", getGlobalRatingColor(autoPotential))}>
+                    {String(Math.round(autoPotential)).padStart(2, '0')}
+                  </span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                <p className="text-xs">Potencial (OVR + idade)</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
       </div>
 
       {/* Actions */}
@@ -245,6 +266,7 @@ export function PlayerListRowMobilePremium({
   currentClub,
   photoUrl,
   autoRating,
+  autoPotential,
   isPublic,
   isArchived,
   isAdmin,
@@ -312,6 +334,17 @@ export function PlayerListRowMobilePremium({
             <span className="text-zinc-700 text-xs">—</span>
           )}
         </div>
+
+        {/* POT Badge */}
+        {autoPotential !== null && autoPotential !== undefined && autoPotential > 0 && (
+          <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-zinc-800/40 mr-1">
+            <span className="text-[8px] uppercase tracking-wider text-zinc-600 font-medium">POT</span>
+            <span className={cn("text-sm font-extrabold tabular-nums", getGlobalRatingColor(autoPotential))}>
+              {String(Math.round(autoPotential)).padStart(2, '0')}
+            </span>
+          </div>
+        )}
+
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild data-dropdown-trigger>

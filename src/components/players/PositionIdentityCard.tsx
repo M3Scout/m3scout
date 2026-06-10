@@ -22,12 +22,11 @@ interface PositionIdentityCardProps {
   currentClub: string | null;
   photoUrl: string | null;
   autoRating: number | null;
+  autoPotential?: number | null;
   height?: number | null;
   weight?: number | null;
   dominantFoot?: string | null;
   contractEnd: string | null;
-  overallRating?: number | null;
-  potentialRating?: number | null;
   isPublic: boolean;
   isArchived: boolean | null;
   isAdmin: boolean;
@@ -67,8 +66,7 @@ export function PositionIdentityCard({
   weight,
   dominantFoot,
   contractEnd,
-  overallRating,
-  potentialRating,
+  autoPotential,
   isPublic,
   isArchived,
   isAdmin,
@@ -260,25 +258,25 @@ export function PositionIdentityCard({
       <div className="flex items-center justify-between px-3 py-2 bg-zinc-900/30 border-t border-zinc-900">
         <div className="flex items-center gap-2">
           {/* OVR Chip */}
-          {overallRating && (
+          {autoRating !== null && autoRating !== undefined && (
             <div className={cn(
               "flex items-center gap-1 px-2 py-0.5 rounded border border-zinc-800 bg-zinc-900/50",
               "group-hover:border-current transition-colors",
               positionColors.borderClass
             )}>
               <span className="text-[9px] uppercase tracking-wider text-zinc-500">OVR</span>
-              <span className={cn("text-xs font-semibold tabular-nums", getRatingColor(overallRating))}>
-                {overallRating}
+              <span className={cn("text-xs font-semibold tabular-nums", getRatingColor(autoRating))}>
+                {Math.round(autoRating)}
               </span>
             </div>
           )}
 
           {/* POT Chip */}
-          {potentialRating && (
+          {autoPotential !== null && autoPotential !== undefined && autoPotential > 0 && (
             <div className="flex items-center gap-1 px-2 py-0.5 rounded border border-zinc-800 bg-zinc-900/50">
               <span className="text-[9px] uppercase tracking-wider text-zinc-500">POT</span>
-              <span className={cn("text-xs font-semibold tabular-nums", getRatingColor(potentialRating))}>
-                {potentialRating}
+              <span className={cn("text-xs font-semibold tabular-nums", getRatingColor(autoPotential))}>
+                {Math.round(autoPotential)}
               </span>
             </div>
           )}
@@ -319,8 +317,7 @@ export function PositionIdentityCardMobile({
   currentClub,
   photoUrl,
   autoRating,
-  overallRating,
-  potentialRating,
+  autoPotential,
   isPublic,
   isArchived,
   isAdmin,
@@ -455,19 +452,19 @@ export function PositionIdentityCardMobile({
 
       {/* Metrics Row - Horizontal scroll */}
       <div className="flex items-center gap-2 px-3 py-2 bg-zinc-900/30 border-t border-zinc-900 overflow-x-auto scrollbar-hide">
-        {overallRating && (
+        {autoRating !== null && autoRating !== undefined && (
           <div className={cn(
             "flex items-center gap-1 px-2 py-0.5 rounded border border-zinc-800 bg-zinc-900/50 flex-shrink-0",
             positionColors.borderClass
           )}>
             <span className="text-[9px] uppercase tracking-wider text-zinc-500">OVR</span>
-            <span className="text-xs font-semibold tabular-nums text-zinc-300">{overallRating}</span>
+            <span className="text-xs font-semibold tabular-nums text-zinc-300">{Math.round(autoRating)}</span>
           </div>
         )}
-        {potentialRating && (
+        {autoPotential !== null && autoPotential !== undefined && autoPotential > 0 && (
           <div className="flex items-center gap-1 px-2 py-0.5 rounded border border-zinc-800 bg-zinc-900/50 flex-shrink-0">
             <span className="text-[9px] uppercase tracking-wider text-zinc-500">POT</span>
-            <span className="text-xs font-semibold tabular-nums text-zinc-300">{potentialRating}</span>
+            <span className="text-xs font-semibold tabular-nums text-zinc-300">{Math.round(autoPotential)}</span>
           </div>
         )}
         <span className={cn(

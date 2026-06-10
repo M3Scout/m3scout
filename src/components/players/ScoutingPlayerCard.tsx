@@ -19,8 +19,7 @@ interface ScoutingPlayerCardProps {
   contractStatus?: string | null;
   contractEnd?: string | null;
   estimatedLevel?: string | null;
-  overallRating?: number | null;
-  potentialRating?: number | null;
+  autoPotential?: number | null;
 }
 
 const formatContractEnd = (dateStr: string | null | undefined): string => {
@@ -69,8 +68,7 @@ export function ScoutingPlayerCard({
   contractStatus,
   contractEnd,
   estimatedLevel,
-  overallRating,
-  potentialRating,
+  autoPotential,
 }: ScoutingPlayerCardProps) {
   // App routes use id for reliability (slug may not be unique)
   const href = `/dashboard/atletas/${id}`;
@@ -175,18 +173,18 @@ export function ScoutingPlayerCard({
         </div>
 
         {/* Bottom Ratings Bar (if available) */}
-        {(overallRating || potentialRating) && (
+        {((autoRating !== null && autoRating !== undefined) || (autoPotential !== null && autoPotential !== undefined && autoPotential > 0)) && (
           <div className="px-4 py-2 bg-zinc-900/50 border-t border-zinc-900 flex items-center gap-4">
-            {overallRating && (
+            {autoRating !== null && autoRating !== undefined && (
               <div className="flex items-center gap-1.5">
                 <span className="text-[10px] uppercase tracking-widest text-zinc-600">OVR</span>
-                <span className="text-xs text-zinc-300 font-medium">{overallRating}</span>
+                <span className="text-xs text-zinc-300 font-medium tabular-nums">{Math.round(autoRating)}</span>
               </div>
             )}
-            {potentialRating && (
+            {autoPotential !== null && autoPotential !== undefined && autoPotential > 0 && (
               <div className="flex items-center gap-1.5">
                 <span className="text-[10px] uppercase tracking-widest text-zinc-600">POT</span>
-                <span className="text-xs text-zinc-300 font-medium">{potentialRating}</span>
+                <span className="text-xs text-zinc-300 font-medium tabular-nums">{Math.round(autoPotential)}</span>
               </div>
             )}
           </div>
