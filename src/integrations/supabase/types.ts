@@ -273,6 +273,7 @@ export type Database = {
           aerial_duels_lost: number
           aerial_duels_won: number
           assists: number
+          blocked_shots: number
           chances_created: number
           clean_sheets: number
           clearances: number
@@ -296,6 +297,7 @@ export type Database = {
           passes_completed: number
           passes_failed: number
           penalties_saved: number
+          penalties_won: number
           player_id: string
           recoveries: number
           red_cards: number
@@ -311,6 +313,7 @@ export type Database = {
           aerial_duels_lost?: number
           aerial_duels_won?: number
           assists?: number
+          blocked_shots?: number
           chances_created?: number
           clean_sheets?: number
           clearances?: number
@@ -334,6 +337,7 @@ export type Database = {
           passes_completed?: number
           passes_failed?: number
           penalties_saved?: number
+          penalties_won?: number
           player_id: string
           recoveries?: number
           red_cards?: number
@@ -349,6 +353,7 @@ export type Database = {
           aerial_duels_lost?: number
           aerial_duels_won?: number
           assists?: number
+          blocked_shots?: number
           chances_created?: number
           clean_sheets?: number
           clearances?: number
@@ -372,6 +377,7 @@ export type Database = {
           passes_completed?: number
           passes_failed?: number
           penalties_saved?: number
+          penalties_won?: number
           player_id?: string
           recoveries?: number
           red_cards?: number
@@ -1563,6 +1569,7 @@ export type Database = {
           archived_at: string | null
           archived_reason: string | null
           assists: number
+          blocked_shots: number
           chances_created: number
           claims: number
           clean_sheets: number
@@ -1627,6 +1634,7 @@ export type Database = {
           archived_at?: string | null
           archived_reason?: string | null
           assists?: number
+          blocked_shots?: number
           chances_created?: number
           claims?: number
           clean_sheets?: number
@@ -1691,6 +1699,7 @@ export type Database = {
           archived_at?: string | null
           archived_reason?: string | null
           assists?: number
+          blocked_shots?: number
           chances_created?: number
           claims?: number
           clean_sheets?: number
