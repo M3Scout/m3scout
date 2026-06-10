@@ -1,22 +1,25 @@
 import { useEffect, useState } from "react";
+import { Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { fetchPlayerAllAttributeScores, type AttributeScoresData } from "@/lib/attributeScores";
 
-const CX = 115;
-const CY = 130;
+// ── SVG geometry ─────────────────────────────────────────────────────────────
+const CX = 140;
+const CY = 155;
 const R  = 86;
-const LABEL_R = R + 20;
+const LABEL_R = 110;
+const VIEW_W  = 280;
+const VIEW_H  = 300;
 
-const ACCENT = "#E5173F";
 const BORDER = "#1C1C1C";
 const MUTED  = "#6B6560";
-const TEXT   = "#F2EDE4";
 
 const AXES = [
-  { key: "ata_score_100", label: "ATA", angleDeg: -90 },
-  { key: "tec_score_100", label: "TEC", angleDeg: -18 },
-  { key: "tat_score_100", label: "TAT", angleDeg:  54 },
-  { key: "def_score_100", label: "DEF", angleDeg: 126 },
-  { key: "cri_score_100", label: "CRI", angleDeg: 198 },
+  { key: "ata_score_100", label: "ATA", fullLabel: "Ataque",       angleDeg: -90  },
+  { key: "tec_score_100", label: "TEC", fullLabel: "Técnica",      angleDeg: -18  },
+  { key: "tat_score_100", label: "TAT", fullLabel: "Tática",       angleDeg:  54  },
+  { key: "def_score_100", label: "DEF", fullLabel: "Defesa",       angleDeg: 126  },
+  { key: "cri_score_100", label: "CRI", fullLabel: "Criatividade", angleDeg: 198  },
 ] as const;
 
 const toRad = (deg: number) => (deg * Math.PI) / 180;
@@ -40,12 +43,22 @@ function gridPath(f: number) {
   }).join(" ") + " Z";
 }
 
+// ── Score color (Sofascore-style) ─────────────────────────────────────────────
+function getScoreColor(score: number): string {
+  if (score >= 80) return "#06b6d4"; // cyan  — elite
+  if (score >= 70) return "#22c55e"; // green — bom
+  if (score >= 60) return "#eab308"; // yellow — médio
+  if (score >= 50) return "#ef4444"; // red — fraco
+  return "#6b7280";                  // gray — muito fraco / sem dados
+}
+
+// ── Data helpers ──────────────────────────────────────────────────────────────
 function aggregateScores(rows: AttributeScoresData[]): number[] {
   if (!rows.length) return [0, 0, 0, 0, 0];
   let sumAta = 0, sumTec = 0, sumTat = 0, sumDef = 0, sumCri = 0;
   let totalWeight = 0;
   rows.forEach(r => {
-    const mins = Math.max(Number(r.details?.minutes ?? 0), 1); // floor 1 evita divisao por zero
+    const mins = Math.max(Number(r.details?.minutes ?? 0), 1);
     sumAta += (r.ata_score_100 ?? 0) * mins;
     sumTec += (r.tec_score_100 ?? 0) * mins;
     sumTat += (r.tat_score_100 ?? 0) * mins;
@@ -57,139 +70,181 @@ function aggregateScores(rows: AttributeScoresData[]): number[] {
   return [sumAta / div, sumTec / div, sumTat / div, sumDef / div, sumCri / div];
 }
 
+// ── Component ─────────────────────────────────────────────────────────────────
 interface AtributoRadarProps {
   playerId: string;
   filterToLatestSeason?: boolean;
+  showHeader?: boolean;
 }
 
-export function AtributoRadar({ playerId, filterToLatestSeason }: AtributoRadarProps) {
+export function AtributoRadar({
+  playerId,
+  filterToLatestSeason,
+  showHeader = true,
+}: AtributoRadarProps) {
   const [allRows, setAllRows]               = useState<AttributeScoresData[]>([]);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [selectedYear, setSelectedYear]     = useState<number | null>(null);
   const [scores, setScores]                 = useState<number[]>([0, 0, 0, 0, 0]);
   const [loaded, setLoaded]                 = useState(false);
 
-  // Carrega todos os rows e determina a temporada mais recente
   useEffect(() => {
     fetchPlayerAllAttributeScores(playerId).then((rows: AttributeScoresData[]) => {
       if (!rows.length) { setLoaded(true); return; }
-
       setAllRows(rows);
-
       const years = [...new Set(
-        rows
-          .filter(r => (r.season_year ?? 0) > 0)
-          .map(r => r.season_year as number)
-      )].sort((a, b) => b - a); // decrescente
-
+        rows.filter(r => (r.season_year ?? 0) > 0).map(r => r.season_year as number)
+      )].sort((a, b) => b - a);
       setAvailableYears(years);
-
-      // Seleciona a temporada mais recente por padrão
-      const defaultYear = years[0] ?? null;
-      setSelectedYear(defaultYear);
+      setSelectedYear(years[0] ?? null);
     });
   }, [playerId]);
 
-  // Recalcula scores quando a temporada muda
   useEffect(() => {
     if (!allRows.length) return;
-
     let workingRows = allRows;
-
     if (filterToLatestSeason || selectedYear !== null) {
       const year = selectedYear ?? Math.max(...allRows.map(r => r.season_year ?? 0));
       workingRows = allRows.filter(r => r.season_year === year);
     }
-
     setScores(aggregateScores(workingRows));
     setLoaded(true);
   }, [allRows, selectedYear, filterToLatestSeason]);
 
   const showYearSelector = availableYears.length > 1;
 
+  // Badge label positions (percentages of SVG viewBox)
+  const labelPositions = AXES.map(a => {
+    const { x, y } = pt(LABEL_R, a.angleDeg);
+    return { left: (x / VIEW_W) * 100, top: (y / VIEW_H) * 100 };
+  });
+
   return (
     <div className="w-full">
-      {/* Seletor de temporada */}
-      {showYearSelector && (
-        <div className="flex gap-2 mb-3 flex-wrap">
-          {availableYears.map(year => (
-            <button
-              key={year}
-              onClick={() => setSelectedYear(year)}
-              className="text-[10px] font-bold tracking-widest uppercase px-2 py-0.5 rounded transition-colors"
-              style={{
-                color:      year === selectedYear ? TEXT   : MUTED,
-                background: year === selectedYear ? "#2A2A2A" : "transparent",
-                border:     `1px solid ${year === selectedYear ? "#3A3A3A" : "transparent"}`,
-              }}
+      {/* ── Header ──────────────────────────────────────────────────────── */}
+      {showHeader && (
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-1.5">
+            <span
+              className="text-[10px] tracking-[0.18em] uppercase font-bold"
+              style={{ color: MUTED }}
             >
-              {year}
-            </button>
-          ))}
+              Visão Geral de Atributos
+            </span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button className="flex items-center" type="button">
+                  <Info className="w-3 h-3" style={{ color: MUTED }} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="max-w-[220px] text-xs leading-relaxed">
+                <p className="font-semibold mb-1">Eixos do Radar</p>
+                <p><span className="font-medium">ATA</span> — Capacidade ofensiva (gols, chutes, pênaltis)</p>
+                <p><span className="font-medium">CRI</span> — Criação de chances e cruzamentos</p>
+                <p><span className="font-medium">TEC</span> — Passes, dribles e controle de bola</p>
+                <p><span className="font-medium">DEF</span> — Desarmes, interceptações e cortes</p>
+                <p><span className="font-medium">TAT</span> — Duelos, recuperações e disciplina</p>
+                <p className="mt-1 text-muted-foreground">Calculado por 90 min jogados.</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+
+          {/* Seletor de temporada */}
+          {showYearSelector && (
+            <div className="flex gap-1.5">
+              {availableYears.map(year => (
+                <button
+                  key={year}
+                  onClick={() => setSelectedYear(year)}
+                  className="text-[10px] font-bold tracking-widest uppercase px-2 py-0.5 rounded transition-colors"
+                  style={{
+                    color:      year === selectedYear ? "#F2EDE4" : MUTED,
+                    background: year === selectedYear ? "#2A2A2A" : "transparent",
+                    border:     `1px solid ${year === selectedYear ? "#3A3A3A" : "transparent"}`,
+                  }}
+                >
+                  {year}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
-      <svg viewBox="0 0 230 270" className="w-full" style={{ maxHeight: 280 }}>
-        {/* Grid rings */}
-        {[0.25, 0.5, 0.75, 1].map(f => (
-          <path key={f} d={gridPath(f)} fill="none" stroke={BORDER} strokeWidth="1" />
-        ))}
+      {/* ── Radar + badges ──────────────────────────────────────────────── */}
+      <div
+        className="relative w-full"
+        style={{ aspectRatio: `${VIEW_W} / ${VIEW_H}` }}
+      >
+        {/* SVG pentagon — sem labels, sem dots */}
+        <svg
+          viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
+          className="w-full h-full"
+        >
+          {/* Grid rings */}
+          {[0.25, 0.5, 0.75, 1].map(f => (
+            <path key={f} d={gridPath(f)} fill="none" stroke={BORDER} strokeWidth="1" />
+          ))}
 
-        {/* Axis spokes */}
-        {AXES.map(a => {
-          const outer = pt(R, a.angleDeg);
-          return (
-            <line
-              key={a.key}
-              x1={CX} y1={CY}
-              x2={outer.x.toFixed(2)} y2={outer.y.toFixed(2)}
-              stroke={BORDER} strokeWidth="1"
+          {/* Axis spokes */}
+          {AXES.map(a => {
+            const outer = pt(R, a.angleDeg);
+            return (
+              <line
+                key={a.key}
+                x1={CX} y1={CY}
+                x2={outer.x.toFixed(2)} y2={outer.y.toFixed(2)}
+                stroke={BORDER} strokeWidth="1"
+              />
+            );
+          })}
+
+          {/* Data polygon — green, no dots */}
+          {loaded && (
+            <path
+              d={polygonPath(scores)}
+              fill="rgba(34,197,94,0.20)"
+              stroke="#16a34a"
+              strokeWidth="1.5"
+              strokeLinejoin="round"
             />
-          );
-        })}
+          )}
+        </svg>
 
-        {/* Data polygon */}
-        {loaded && (
-          <path d={polygonPath(scores)} fill="rgba(229,23,63,0.18)" stroke={ACCENT} strokeWidth="1.5" />
-        )}
-
-        {/* Vertex dots */}
-        {loaded && AXES.map((a, i) => {
-          const r = ((scores[i] ?? 0) / 100) * R;
-          const { x, y } = pt(r, a.angleDeg);
-          return <circle key={`dot-${a.key}`} cx={x.toFixed(2)} cy={y.toFixed(2)} r="3" fill={ACCENT} />;
-        })}
-
-        {/* Axis labels + values */}
+        {/* Badges HTML sobrepostos */}
         {AXES.map((a, i) => {
-          const { x, y } = pt(LABEL_R, a.angleDeg);
+          const { left, top } = labelPositions[i];
+          const score = loaded ? Math.round(scores[i]) : null;
           return (
-            <text key={`lv-${a.key}`} textAnchor="middle">
-              <tspan
-                x={x.toFixed(2)}
-                y={y.toFixed(2)}
-                fontSize="13"
-                fontFamily="Basis Grotesque Pro, sans-serif"
-                fontWeight="700"
-                fill={MUTED}
-                letterSpacing="1"
+            <div
+              key={a.key}
+              className="absolute flex flex-col items-center gap-0.5"
+              style={{
+                left: `${left}%`,
+                top:  `${top}%`,
+                transform: "translate(-50%, -50%)",
+              }}
+            >
+              <span
+                className="text-[10px] font-bold tracking-wider uppercase leading-none"
+                style={{ color: MUTED }}
               >
                 {a.label}
-              </tspan>
-              <tspan
-                x={x.toFixed(2)}
-                dy="16"
-                fontSize="11"
-                fontFamily="Basis Grotesque Pro, sans-serif"
-                fontWeight="700"
-                fill={TEXT}
+              </span>
+              <span
+                className="rounded px-1 py-0.5 text-[10px] font-bold text-white leading-none"
+                style={{
+                  background: score !== null ? getScoreColor(score) : "#6b7280",
+                  minWidth: 22,
+                  textAlign: "center",
+                }}
               >
-                {loaded ? String(Math.round(scores[i])) : "—"}
-              </tspan>
-            </text>
+                {score ?? "—"}
+              </span>
+            </div>
           );
         })}
-      </svg>
+      </div>
     </div>
   );
 }

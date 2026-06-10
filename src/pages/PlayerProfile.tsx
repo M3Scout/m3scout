@@ -322,7 +322,7 @@ const PlayerProfile = () => {
               </p>
             </div>
             <div className="max-w-[320px] mx-auto md:mx-0">
-              <AtributoRadar playerId={player.id} filterToLatestSeason />
+              <AtributoRadar playerId={player.id} filterToLatestSeason showHeader={false} />
             </div>
           </section>
 
