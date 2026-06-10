@@ -952,7 +952,7 @@ const PlayerDetail = () => {
                 {!marketScoreLoading && marketScore !== null ? (
                   <>
                     <p className="font-jetbrains text-[11px] mb-1" style={{ color: "#6B6560" }}>
-                      Base: {player.auto_rating !== null ? Math.round(player.auto_rating * 10) : "—"} → Ajustado: {Math.round(marketScore)}
+                      Base: {player.auto_rating !== null ? Math.min(100, Math.round(player.auto_rating)) : "—"} → Ajustado: {Math.min(100, Math.round(marketScore))}
                     </p>
                     <p className="font-jetbrains text-[11px] mb-3" style={{ color: T.amber }}>
                       {dataConfidence < 75 ? "↓" : "→"} Confiança {Math.round(dataConfidence)}%{(!marketHasData || reports.length < 3) ? " · Amostra reduzida" : ""}
