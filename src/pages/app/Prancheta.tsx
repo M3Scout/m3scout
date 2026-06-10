@@ -181,10 +181,10 @@ function DraggablePlayer({ player, inSquad }: { player: Player; inSquad: boolean
       {/* Rating / In-squad dot */}
       {inSquad
         ? <div className="flex-shrink-0 w-2 h-2 rounded-full" style={{ background: "#34d399" }} title="Em campo" />
-        : player.overall_rating != null && (
+        : player.auto_rating != null && (
           <div className="flex-shrink-0 text-[10px] font-black px-1.5 py-0.5 rounded"
             style={{ background: "rgba(229,23,63,0.1)", color: RED, border: "1px solid rgba(229,23,63,0.18)" }}>
-            {player.overall_rating.toFixed(1)}
+            {String(Math.round(player.auto_rating))}
           </div>
         )
       }
@@ -313,10 +313,10 @@ function DroppableSlot({
             </button>
 
             {/* OVR badge */}
-            {player.overall_rating != null && (
+            {player.auto_rating != null && (
               <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 z-10 text-[8px] font-black px-1.5 py-[2px] rounded-sm whitespace-nowrap"
                 style={{ background: "#050508", color: RED, border: `1px solid rgba(229,23,63,0.35)`, lineHeight: 1 }}>
-                {player.overall_rating.toFixed(1)}
+                {String(Math.round(player.auto_rating))}
               </div>
             )}
           </div>
@@ -474,7 +474,7 @@ export default function Prancheta() {
     (async () => {
       const { data } = await supabase
         .from("players")
-        .select("id, slug, full_name, position, age, photo_url, overall_rating, nationality, passports, current_club")
+        .select("id, slug, full_name, position, age, photo_url, auto_rating, nationality, passports, current_club")
         .eq("is_archived", false)
         .order("full_name");
       setPlayers((data as Player[]) ?? []);
