@@ -81,7 +81,7 @@ interface FormData {
   release_clause_amount: number | null; release_clause_currency: CurrencyCode;
   contract_status: string; passports: string[]; agent_name: string; agent_contact: string;
   physical_status: string; medical_notes: string;
-  overall_rating: string; potential_rating: string; ready_to_compete: boolean | null;
+  ready_to_compete: boolean | null;
   estimated_level: string; internal_evaluation_notes: string; internal_notes: string;
 }
 
