@@ -48,13 +48,13 @@ const Settings = lazy(() => import("./pages/app/Settings"));
 const AppPlayers = lazy(() => import("./pages/app/AppPlayers"));
 const NewPlayer = lazy(() => import("./pages/app/NewPlayer"));
 const EditPlayer = lazy(() => import("./pages/app/EditPlayer"));
-const PlayerDetail = lazy(() => import("./pages/app/PlayerDetail"));
+import PlayerDetail from "./pages/app/PlayerDetail";
 
-// Compare
-const ComparePlayers = lazy(() => import("./pages/app/ComparePlayers"));
+// Compare - static to avoid chunk-load failures after deploys
+import ComparePlayers from "./pages/app/ComparePlayers";
 
-// Reports Module
-const ScoutingReports = lazy(() => import("./pages/app/ScoutingReports"));
+// Reports Module - static to avoid chunk-load failures after deploys
+import ScoutingReports from "./pages/app/ScoutingReports";
 const NewScoutingReport = lazy(() => import("./pages/app/NewScoutingReport"));
 const EditScoutingReport = lazy(() => import("./pages/app/EditScoutingReport"));
 const ReportDetail = lazy(() => import("./pages/app/ReportDetail"));
