@@ -100,6 +100,32 @@ export default function MarketAtivos() {
   const [minScore, setMinScore] = useState(0);
   const [trendFilter, setTrendFilter] = useState<"ALL" | MarketScoreTrend>("ALL");
   const [calculatingIds, setCalculatingIds] = useState<Set<string>>(new Set());
+  const [isRecalculatingAll, setIsRecalculatingAll] = useState(false);
+  const [recalcProgress, setRecalcProgress] = useState<{ current: number; total: number } | null>(null);
+
+  const handleRecalculateAll = async () => {
+    if (isRecalculatingAll) return;
+    setIsRecalculatingAll(true);
+    setRecalcProgress({ current: 0, total: 0 });
+    const toastId = toast.loading("Recalculando scores...");
+    try {
+      const result = await recalculateAllActiveMarketScores(
+        (current, total) => setRecalcProgress({ current, total }),
+        "Recálculo manual via botão Atualizar"
+      );
+      toast.success(
+        `Recálculo concluído: ${result.success}/${result.total} atualizados${result.failed ? ` (${result.failed} falhas)` : ""}`,
+        { id: toastId }
+      );
+      await queryClient.invalidateQueries({ queryKey: ["market-ativos"] });
+    } catch (err) {
+      console.error("Erro no recálculo em massa:", err);
+      toast.error("Erro ao recalcular scores", { id: toastId });
+    } finally {
+      setIsRecalculatingAll(false);
+      setRecalcProgress(null);
+    }
+  };
 
   // Fetch athletes with their market scores
   const { data: athletes = [], isLoading, refetch } = useQuery({
