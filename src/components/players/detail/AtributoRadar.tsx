@@ -41,18 +41,19 @@ function gridPath(f: number) {
 }
 
 function aggregateScores(rows: AttributeScoresData[]): number[] {
+  if (!rows.length) return [0, 0, 0, 0, 0];
   let sumAta = 0, sumTec = 0, sumTat = 0, sumDef = 0, sumCri = 0;
-  let totalMinutes = 0;
+  let totalWeight = 0;
   rows.forEach(r => {
-    const mins = r.details?.minutes ?? 60;
+    const mins = Math.max(Number(r.details?.minutes ?? 0), 1); // floor 1 evita divisao por zero
     sumAta += (r.ata_score_100 ?? 0) * mins;
     sumTec += (r.tec_score_100 ?? 0) * mins;
     sumTat += (r.tat_score_100 ?? 0) * mins;
     sumDef += (r.def_score_100 ?? 0) * mins;
     sumCri += (r.cri_score_100 ?? 0) * mins;
-    totalMinutes += mins;
+    totalWeight += mins;
   });
-  const div = totalMinutes || 1;
+  const div = totalWeight || 1;
   return [sumAta / div, sumTec / div, sumTat / div, sumDef / div, sumCri / div];
 }
 
