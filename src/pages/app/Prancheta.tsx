@@ -27,7 +27,7 @@ interface Player {
   position: string | null;
   age: number | null;
   photo_url: string | null;
-  overall_rating: number | null;
+  auto_rating: number | null;
   nationality: string | null;
   passports: string[] | null;
   current_club: string | null;
