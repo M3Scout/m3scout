@@ -1003,6 +1003,7 @@ function SeasonRow({ row, isGoalkeeper = false }: { row: SeasonRowData; matches?
     { label: "Fora",        value: s.shots_off_target },
     { label: "Bloqueadas",  value: s.shots_blocked },
     { label: "Pên. Sofrido", value: s.penalties_won ?? 0, positive: true },
+    { label: "Impedimentos", value: s.offsides ?? 0,      negative: true },
   ];
 
   const passesStats: StatDef[] = [
