@@ -491,7 +491,6 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
             ground_duels_won: 0, ground_duels_total: 0,
             yellow_cards: 0, red_cards: 0,
             saves: 0, goals_conceded: 0,
-            penalties_won: 0,
           };
         }
         const g = groupMap[key];
