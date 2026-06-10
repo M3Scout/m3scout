@@ -1,10 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  ComposedChart,
-  Area,
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   Tooltip,
@@ -12,6 +8,7 @@ import {
   ReferenceLine,
   BarChart,
   Bar,
+  Cell,
   Legend,
 } from "recharts";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
@@ -112,18 +109,22 @@ function getMatchRatingColor(rating: number): string {
   return "#ef4444";
 }
 
-const RatingDot = (props: any) => {
-  const { cx, cy, value } = props;
-  if (cx === undefined || cy === undefined || value === undefined) return null;
+const RatingBarLabel = (props: any) => {
+  const { x, y, width, value } = props;
+  if (value === undefined) return null;
   const color = getMatchRatingColor(value);
-  const label = Number(value).toFixed(1);
-  const bW = 28, bH = 15, bX = cx - bW / 2, bY = cy - 28;
   return (
-    <g>
-      <rect x={bX} y={bY} width={bW} height={bH} rx={3} fill={color} />
-      <text x={cx} y={bY + bH / 2} textAnchor="middle" dominantBaseline="central" fontSize={8} fontWeight="bold" fill="#ffffff">{label}</text>
-      <circle cx={cx} cy={cy} r={3.5} fill={color} stroke="#0A0A0A" strokeWidth={1} />
-    </g>
+    <text
+      x={x + width / 2}
+      y={y + 14}
+      textAnchor="middle"
+      dominantBaseline="central"
+      fontSize={9}
+      fontWeight="bold"
+      fill="#ffffff"
+    >
+      {Number(value).toFixed(1)}
+    </text>
   );
 };
 
@@ -527,57 +528,80 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
 
       {/* ── Evolução das Notas ──────────────────────────────────────────────── */}
       <div className="border" style={{ borderColor: BORDER }}>
-        <SectionHead>EVOLUÇÃO DAS NOTAS M3</SectionHead>
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-3" style={{ borderBottom: `1px solid ${BORDER}` }}>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] tracking-[0.18em] uppercase font-bold" style={{ color: MUTED }}>
+              EVOLUÇÃO DAS NOTAS M3
+            </span>
+            {averageRating !== null && (
+              <span
+                className="text-[10px] font-bold px-1.5 py-0.5 rounded"
+                style={{ background: getMatchRatingColor(averageRating), color: "#ffffff" }}
+              >
+                {averageRating.toFixed(1)}
+              </span>
+            )}
+          </div>
+          {/* Legenda de cores */}
+          <div className="hidden sm:flex items-center gap-3">
+            {[
+              { label: "< 6.0", color: "#ef4444" },
+              { label: "6.0–6.4", color: "#f97316" },
+              { label: "6.5–6.9", color: "#eab308" },
+              { label: "7.0–7.9", color: "#22c55e" },
+              { label: "8.0–8.9", color: "#06b6d4" },
+              { label: "9.0+", color: "#1e3a8a" },
+            ].map(({ label, color }) => (
+              <div key={label} className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-sm inline-block" style={{ background: color }} />
+                <span className="text-[9px]" style={{ color: MUTED }}>{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div className="p-4">
           {ratingChartData.length < 2 ? (
             <NoData label="Sem partidas avaliadas" />
           ) : (
             <ResponsiveContainer width="100%" height={180}>
-              <LineChart data={ratingChartData} margin={{ top: 34, right: 8, left: -20, bottom: 0 }}>
+              <BarChart data={ratingChartData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }} barCategoryGap="20%">
                 <XAxis
                   dataKey="date"
                   tick={{ fontFamily: "Basis Grotesque Pro", fontSize: 9, fill: MUTED }}
                   axisLine={{ stroke: BORDER }}
                   tickLine={false}
                 />
-                <YAxis
-                  domain={[3, 10]}
-                  ticks={[5, 6, 7, 8, 9, 10]}
-                  tick={{ fontFamily: "Basis Grotesque Pro", fontSize: 9, fill: MUTED }}
-                  axisLine={{ stroke: BORDER }}
-                  tickLine={false}
-                />
+                <YAxis domain={[3, 10]} hide />
                 <Tooltip
+                  cursor={{ fill: "rgba(255,255,255,0.03)" }}
                   content={(props) => {
                     if (!props.active || !props.payload?.length) return null;
                     const val = props.payload[0].value as number;
                     const opp = (props.payload[0].payload as { opponent: string }).opponent;
                     return (
-                      <div style={{ background: BG, border: `1px solid ${BORDER}`, borderRadius: 4, padding: "4px 8px", fontSize: 10, fontWeight: "bold", color: getMatchRatingColor(val) }}>
-                        {val.toFixed(1)} <span style={{ color: MUTED, fontWeight: "normal" }}>vs {opp}</span>
+                      <div style={{ background: BG, border: `1px solid ${BORDER}`, borderRadius: 4, padding: "5px 10px", fontSize: 10, fontWeight: "bold", color: getMatchRatingColor(val) }}>
+                        {val.toFixed(1)}{" "}
+                        <span style={{ color: MUTED, fontWeight: "normal" }}>vs {opp}</span>
                       </div>
                     );
                   }}
                 />
-                <ReferenceLine y={7} stroke={BORDER} strokeDasharray="4 3" strokeWidth={1} />
                 {averageRating !== null && (
                   <ReferenceLine
                     y={averageRating}
-                    stroke={MUTED}
-                    strokeDasharray="4 3"
-                    label={{ value: `Média ${averageRating.toFixed(1)}`, position: "right", fontFamily: "Basis Grotesque Pro", fontSize: 9, fill: MUTED }}
+                    stroke="#9ca3af"
+                    strokeDasharray="5 5"
+                    strokeWidth={1}
                   />
                 )}
-                <Line
-                  type="monotone"
-                  dataKey="rating"
-                  stroke="#ffffff15"
-                  strokeWidth={1.5}
-                  dot={<RatingDot />}
-                  activeDot={false}
-                  isAnimationActive={false}
-                />
-              </LineChart>
+                <Bar dataKey="rating" radius={[3, 3, 3, 3]} barSize={28} label={<RatingBarLabel />} isAnimationActive={false}>
+                  {ratingChartData.map((entry, i) => (
+                    <Cell key={i} fill={getMatchRatingColor(entry.rating)} />
+                  ))}
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
           )}
         </div>
