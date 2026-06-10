@@ -99,7 +99,7 @@ const initialFormData: FormData = {
   contract_status: "contracted", passports: [],
   agent_name: "", agent_contact: "",
   physical_status: "fit", medical_notes: "",
-  overall_rating: "", potential_rating: "", ready_to_compete: null,
+  ready_to_compete: null,
   estimated_level: "", internal_evaluation_notes: "", internal_notes: "",
 };
 
