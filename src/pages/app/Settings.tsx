@@ -38,6 +38,7 @@ import {
 import { format } from "date-fns";
 import { recalculateAllAttributeScores } from "@/lib/attributeScores";
 import { BulkRecalculateGKButton } from "@/components/players/BulkRecalculateGKButton";
+import { BulkRecalculateMarketScoreButton } from "@/components/players/BulkRecalculateMarketScoreButton";
 import { ptBR } from "date-fns/locale";
 
 export default function Settings() {
@@ -579,6 +580,16 @@ export default function Settings() {
                       </div>
                     </div>
                   )}
+                </div>
+
+                <Separator className="bg-zinc-800/50" />
+
+                {/* Recalculate Market Score */}
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Recalcula o M3 Market Score de todos os atletas ativos com o motor atual (p90 por posição, pesos recalibrados, samplePenalty por minutagem).
+                  </p>
+                  <BulkRecalculateMarketScoreButton />
                 </div>
 
                 <Separator className="bg-zinc-800/50" />

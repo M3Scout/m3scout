@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { MoreVertical, Eye, Edit, FileText, Archive, ArchiveRestore, Trash2, Star, ArrowRight, Ruler, Footprints, MapPin, Calendar } from "lucide-react";
+import { MoreVertical, Eye, Edit, FileText, Archive, ArchiveRestore, Trash2, ArrowRight, Ruler, Footprints, MapPin, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -8,7 +8,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { formatFixed } from "@/lib/formatters";
 import { getPositionColor, getShortPosition } from "@/lib/positionColors";
 import { cn } from "@/lib/utils";
 import { getOptimizedImageUrl } from "@/lib/imageUtils";
@@ -154,15 +153,6 @@ export function PositionIdentityCard({
               </div>
             </div>
 
-            {/* Rating Chip - Top right */}
-            {autoRating !== null && autoRating !== undefined && (
-              <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-zinc-900 border border-zinc-800">
-                <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
-                <span className="text-xs font-semibold text-zinc-300 tabular-nums">
-                  {formatFixed(autoRating, 1)}
-                </span>
-              </div>
-            )}
           </div>
 
           {/* Secondary Info Row */}
@@ -381,16 +371,6 @@ export function PositionIdentityCardMobile({
             {age && <span className="text-zinc-500">{age} anos</span>}
           </div>
         </div>
-
-        {/* Rating Chip */}
-        {autoRating !== null && autoRating !== undefined && (
-          <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-zinc-900 border border-zinc-800">
-            <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
-            <span className="text-xs font-semibold text-zinc-300 tabular-nums">
-              {formatFixed(autoRating, 1)}
-            </span>
-          </div>
-        )}
 
         {/* Actions */}
         <DropdownMenu>

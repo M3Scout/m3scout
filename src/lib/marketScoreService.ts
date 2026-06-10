@@ -395,6 +395,176 @@ export async function computeScoreForAthleteById(
 }
 
 // =====================================================
+// BULK RECALCULATE ALL ACTIVE ATHLETES (uses unified view for accuracy)
+// =====================================================
+
+export async function recalculateAllActiveMarketScores(
+  onProgress?: (current: number, total: number, playerName: string, success: boolean) => void,
+  reason: string = 'Recálculo em massa'
+): Promise<{ success: number; failed: number; total: number }> {
+  const currentYear = new Date().getFullYear();
+  let successCount = 0;
+  let failedCount = 0;
+
+  // 1. Fetch all non-archived players
+  const { data: players, error: playersError } = await supabase
+    .from('players')
+    .select('id, full_name, position, secondary_positions, birth_date')
+    .eq('is_archived', false)
+    .order('full_name');
+
+  if (playersError || !players?.length) return { success: 0, failed: 0, total: 0 };
+
+  // 2. Fetch aggregated season stats for all players at once via the unified view
+  const { data: allStats } = await supabase
+    .from('unified_player_season_stats')
+    .select('player_id,matches,minutes,goals,assists,key_passes,chances_created,tackles,interceptions,recoveries,aerial_duels_won,aerial_duels_total,duels_won,total_duels,dribbles_completed,dribbles_attempted,passes_completed,passes_attempted')
+    .eq('season_year', currentYear);
+
+  // Sum across competitions per player
+  const statsMap: Record<string, {
+    matches: number; minutes: number; goals: number; assists: number;
+    key_passes: number; chances_created: number; tackles: number;
+    interceptions: number; recoveries: number; aerial_duels_won: number;
+    aerial_duels_total: number; duels_won: number; total_duels: number;
+    dribbles_completed: number; dribbles_attempted: number;
+    passes_completed: number; passes_attempted: number;
+  }> = {};
+
+  for (const row of allStats ?? []) {
+    if (!statsMap[row.player_id]) {
+      statsMap[row.player_id] = {
+        matches: 0, minutes: 0, goals: 0, assists: 0, key_passes: 0,
+        chances_created: 0, tackles: 0, interceptions: 0, recoveries: 0,
+        aerial_duels_won: 0, aerial_duels_total: 0, duels_won: 0,
+        total_duels: 0, dribbles_completed: 0, dribbles_attempted: 0,
+        passes_completed: 0, passes_attempted: 0,
+      };
+    }
+    const s = statsMap[row.player_id];
+    s.matches        += Number(row.matches ?? 0);
+    s.minutes        += Number(row.minutes ?? 0);
+    s.goals          += Number(row.goals ?? 0);
+    s.assists        += Number(row.assists ?? 0);
+    s.key_passes     += Number(row.key_passes ?? 0);
+    s.chances_created+= Number(row.chances_created ?? 0);
+    s.tackles        += Number(row.tackles ?? 0);
+    s.interceptions  += Number(row.interceptions ?? 0);
+    s.recoveries     += Number(row.recoveries ?? 0);
+    s.aerial_duels_won  += Number(row.aerial_duels_won ?? 0);
+    s.aerial_duels_total+= Number(row.aerial_duels_total ?? 0);
+    s.duels_won      += Number(row.duels_won ?? 0);
+    s.total_duels    += Number(row.total_duels ?? 0);
+    s.dribbles_completed += Number(row.dribbles_completed ?? 0);
+    s.dribbles_attempted += Number(row.dribbles_attempted ?? 0);
+    s.passes_completed   += Number(row.passes_completed ?? 0);
+    s.passes_attempted   += Number(row.passes_attempted ?? 0);
+  }
+
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  // 3. Process each player sequentially
+  for (let i = 0; i < players.length; i++) {
+    const player = players[i];
+    const ps = statsMap[player.id];
+
+    if (!ps || ps.matches === 0) {
+      onProgress?.(i + 1, players.length, player.full_name, true);
+      continue;
+    }
+
+    try {
+      // Per-match data: rating, clearances, dates, competition coefficient
+      const { data: matchRows } = await supabase
+        .from('match_player_stats')
+        .select(`
+          rating, clearances,
+          matches!inner(
+            id, match_date, competition_id, season_year, status,
+            competitions(final_coefficient)
+          )
+        `)
+        .eq('player_id', player.id)
+        .eq('matches.season_year', currentYear)
+        .eq('matches.status', 'applied');
+
+      const matchRatings = (matchRows ?? []).map(m => {
+        const match = (m as any).matches;
+        return {
+          matchId: match?.id ?? '',
+          matchDate: match?.match_date ?? '',
+          rating: m.rating ?? 0,
+          competitionId: match?.competition_id ?? null,
+          competitionCoefficient: match?.competitions?.final_coefficient ?? 1.0,
+        };
+      });
+
+      const matchesLast30Days = matchRatings.filter(
+        m => m.matchDate && new Date(m.matchDate) >= thirtyDaysAgo
+      ).length;
+
+      const totalClearances = (matchRows ?? []).reduce(
+        (acc, m) => acc + ((m as any).clearances ?? 0), 0
+      );
+
+      const birthDate = player.birth_date ?? null;
+      const age = birthDate
+        ? Math.floor((Date.now() - new Date(birthDate).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+        : null;
+
+      const activePlayerData: ActivePlayerData = {
+        playerId: player.id,
+        fullName: player.full_name,
+        position: player.position ?? 'Meia',
+        secondaryPositions: (player as any).secondary_positions ?? [],
+        birthDate,
+        age,
+        seasonStats: {
+          matches:         ps.matches,
+          minutes:         ps.minutes,
+          goals:           ps.goals,
+          assists:         ps.assists,
+          keyPasses:       ps.key_passes,
+          chancesCreated:  ps.chances_created,
+          tackles:         ps.tackles,
+          interceptions:   ps.interceptions,
+          recoveries:      ps.recoveries,
+          clearances:      totalClearances,
+          duelsWon:        ps.duels_won,
+          duelsTotal:      ps.total_duels,
+          aerialDuelsWon:  ps.aerial_duels_won,
+          aerialDuelsTotal:ps.aerial_duels_total,
+          dribblesSuccess: ps.dribbles_completed,
+          dribblesTotal:   ps.dribbles_attempted,
+          passesCompleted: ps.passes_completed,
+          passesTotal:     ps.passes_attempted,
+          crossesSuccess:  0,
+          crossesFailed:   0,
+        },
+        matchRatings,
+        matchesLast30Days,
+      };
+
+      const { error } = await computeAndPersistActiveScore(activePlayerData, reason);
+
+      if (error) {
+        failedCount++;
+        onProgress?.(i + 1, players.length, player.full_name, false);
+      } else {
+        successCount++;
+        onProgress?.(i + 1, players.length, player.full_name, true);
+      }
+    } catch {
+      failedCount++;
+      onProgress?.(i + 1, players.length, player.full_name, false);
+    }
+  }
+
+  return { success: successCount, failed: failedCount, total: players.length };
+}
+
+// =====================================================
 // BATCH RECALCULATE ALL ACTIVE ATHLETES
 // =====================================================
 
