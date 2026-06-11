@@ -293,10 +293,10 @@ export function AtributoRadar({
                   >
                     {score ?? "—"}
                   </span>
-                  {/* Compare score — blue */}
+                  {/* Compare score — same color scale as main */}
                   <span
                     className="rounded px-1 py-0.5 text-[9px] font-bold text-white leading-none"
-                    style={{ background: "#2563eb", minWidth: 20, textAlign: "center" }}
+                    style={{ background: cmpScore !== null ? getScoreColor(cmpScore) : "#6b7280", minWidth: 20, textAlign: "center" }}
                   >
                     {cmpScore ?? "—"}
                   </span>
