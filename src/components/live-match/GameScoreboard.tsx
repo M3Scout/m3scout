@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  Play, Pause, Timer, Plus, Minus, Flag,
+  Play, Pause, Timer, Flag,
   StopCircle, ChevronUp, Radio, Zap, Clock,
   ArrowRight, FastForward
 } from "lucide-react";
@@ -535,69 +535,31 @@ export function GameScoreboard({
                     </Button>
                   </div>
 
-                  {/* Group 2: Acréscimos + Fast Forward */}
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {/* Acréscimo control */}
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-4 h-4 text-zinc-500 hidden sm:block" />
-                      <span className="text-xs text-zinc-400 hidden sm:inline">Acréscimo:</span>
+                  {/* Group 2: Fast Forward */}
+                  {isLive && onSkipTime && (
+                    <div className="flex items-center gap-2">
                       <Button
+                        size="lg"
                         variant="outline"
-                        size="icon"
-                        className="h-9 w-9 bg-zinc-800 border-zinc-700 hover:bg-zinc-700"
-                        onMouseDown={() => startHold(() => adjustAddedTime(-1))}
-                        onMouseUp={stopHold}
-                        onMouseLeave={stopHold}
-                        onTouchStart={(e) => { e.preventDefault(); startHold(() => adjustAddedTime(-1)); }}
-                        onTouchEnd={stopHold}
-                        disabled={currentAddedTime === 0}
+                        className="gap-2 border-zinc-600 text-zinc-300 hover:bg-zinc-700 h-11 px-4"
+                        onClick={() => { onSkipTime(300); toast.success("+5 min", { duration: 1000 }); }}
+                        disabled={isPending}
                       >
-                        <Minus className="w-4 h-4" />
+                        <FastForward className="w-4 h-4" />
+                        +5 min
                       </Button>
-                      <Badge className="text-base font-bold min-w-[2.5rem] justify-center h-9 bg-zinc-700 text-zinc-100 px-2">
-                        +{currentAddedTime}
-                      </Badge>
                       <Button
+                        size="lg"
                         variant="outline"
-                        size="icon"
-                        className="h-9 w-9 bg-zinc-800 border-zinc-700 hover:bg-zinc-700"
-                        onMouseDown={() => startHold(() => adjustAddedTime(1))}
-                        onMouseUp={stopHold}
-                        onMouseLeave={stopHold}
-                        onTouchStart={(e) => { e.preventDefault(); startHold(() => adjustAddedTime(1)); }}
-                        onTouchEnd={stopHold}
-                        disabled={currentAddedTime >= 15}
+                        className="gap-2 border-zinc-600 text-zinc-300 hover:bg-zinc-700 h-11 px-4"
+                        onClick={() => { onSkipTime(2700); toast.success("+45 min", { duration: 1000 }); }}
+                        disabled={isPending}
                       >
-                        <Plus className="w-4 h-4" />
+                        <FastForward className="w-4 h-4" />
+                        +45 min
                       </Button>
                     </div>
-
-                    {/* Fast Forward buttons */}
-                    {isLive && onSkipTime && (
-                      <>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="gap-1 border-zinc-600 text-zinc-300 hover:bg-zinc-700 h-9 px-3 text-xs"
-                          onClick={() => { onSkipTime(300); toast.success("+5 min", { duration: 1000 }); }}
-                          disabled={isPending}
-                        >
-                          <FastForward className="w-3 h-3" />
-                          +5 min
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="gap-1 border-zinc-600 text-zinc-300 hover:bg-zinc-700 h-9 px-3 text-xs"
-                          onClick={() => { onSkipTime(2700); toast.success("+45 min", { duration: 1000 }); }}
-                          disabled={isPending}
-                        >
-                          <FastForward className="w-3 h-3" />
-                          +45 min
-                        </Button>
-                      </>
-                    )}
-                  </div>
+                  )}
                 </div>
               )}
             </div>
