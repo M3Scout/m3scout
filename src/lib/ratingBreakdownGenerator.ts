@@ -42,11 +42,32 @@ const STAT_MAPPINGS: StatMapping[] = [
   {
     stat: "goal",
     label: "Gol",
-    weight: WEIGHTS.goal.weight, // Base weight, will be overridden by dynamic
+    weight: WEIGHTS.goal.weight,
     category: "attack",
     getValue: (s) => Math.max(0, s.goals ?? 0),
     hasDynamicWeight: true,
     getDynamicWeight: computeGoalWeight,
+  },
+  {
+    stat: "penalty_won",
+    label: "Pênalti sofrido",
+    weight: WEIGHTS.penalty_won.weight,
+    category: "attack",
+    getValue: (s) => Math.max(0, s.penalties_won ?? 0),
+  },
+  {
+    stat: "chance_created",
+    label: "Chance criada",
+    weight: WEIGHTS.chance_created.weight,
+    category: "attack",
+    getValue: (s) => Math.max(0, s.chances_created ?? 0),
+  },
+  {
+    stat: "shot_on_post",
+    label: "Finalização na trave",
+    weight: WEIGHTS.shot_on_post.weight,
+    category: "attack",
+    getValue: (s) => Math.max(0, s.shots_on_post ?? 0),
   },
   {
     stat: "shot_on_target",
@@ -54,7 +75,13 @@ const STAT_MAPPINGS: StatMapping[] = [
     weight: WEIGHTS.shot_on_target.weight,
     category: "attack",
     getValue: (s) => Math.max(0, s.shots_on_target ?? 0),
-    maxImpact: 0.40,
+  },
+  {
+    stat: "shot_off_target",
+    label: "Finalização para fora",
+    weight: WEIGHTS.shot_off_target.weight,
+    category: "attack",
+    getValue: (s) => Math.max(0, s.shots ?? 0),
   },
   
   // === CREATION ===
@@ -73,19 +100,11 @@ const STAT_MAPPINGS: StatMapping[] = [
     getValue: (s) => Math.max(0, s.key_passes ?? 0),
   },
   {
-    stat: "chance_created",
-    label: "Chance criada",
-    weight: WEIGHTS.chance_created.weight,
-    category: "creation",
-    getValue: (s) => Math.max(0, s.chances_created ?? 0),
-  },
-  {
     stat: "dribble_success",
     label: "Drible certo",
     weight: WEIGHTS.dribble_success.weight,
     category: "creation",
     getValue: (s) => Math.max(0, s.dribbles_success ?? 0),
-    maxImpact: 0.30,
   },
   {
     stat: "dribble_failed",
@@ -131,7 +150,6 @@ const STAT_MAPPINGS: StatMapping[] = [
     weight: WEIGHTS.pass_completed.weight,
     category: "passing",
     getValue: (s) => Math.max(0, s.passes_completed ?? 0),
-    maxImpact: 0.20,
   },
   {
     stat: "pass_failed",
@@ -170,13 +188,6 @@ const STAT_MAPPINGS: StatMapping[] = [
     weight: WEIGHTS.shot_blocked.weight,
     category: "defense",
     getValue: (s) => Math.max(0, s.blocked_shots ?? 0),
-  },
-  {
-    stat: "recovery",
-    label: "Recuperação",
-    weight: WEIGHTS.recovery.weight,
-    category: "defense",
-    getValue: (s) => Math.max(0, s.recoveries ?? 0),
   },
   {
     stat: "ground_duel_won",
@@ -270,7 +281,6 @@ const GK_STAT_MAPPINGS: StatMapping[] = [
     weight: GK_WEIGHTS.pass_completed.weight,
     category: "passing",
     getValue: (s) => Math.max(0, s.passes_completed ?? 0),
-    maxImpact: 0.20,
   },
   {
     stat: "pass_failed",
