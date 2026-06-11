@@ -114,8 +114,8 @@ interface MetricConfig {
 // Per-90 caps for normalization to 0-100
 const METRIC_CONFIGS: Record<string, MetricConfig> = {
   // ATA (Ataque)
-  goals_p90: { floor: 0, target: 0.7 },
-  assists_p90: { floor: 0, target: 0.4 },
+  goals_p90: { floor: 0, target: 0.60 },
+  assists_p90: { floor: 0, target: 0.35 },
   shots_p90: { floor: 0, target: 4.0 },
   shots_on_target_p90: { floor: 0, target: 2.0 },
   shots_on_post_p90: { floor: 0, target: 0.5 },
@@ -125,18 +125,20 @@ const METRIC_CONFIGS: Record<string, MetricConfig> = {
   chances_created_p90: { floor: 0, target: 2.5 },
   dribble_success_rate: { floor: 0.20, target: 0.70 },
   progressive_passes_p90: { floor: 0, target: 5.0 },
-  
-  // DEF (Defesa) - tackles, interceptions, recoveries, duels_won, clearances
-  tackles_p90: { floor: 0, target: 5.0 },
+
+  // DEF (Defesa)
+  tackles_p90: { floor: 0, target: 4.0 },
   interceptions_p90: { floor: 0, target: 3.0 },
   recoveries_p90: { floor: 0, target: 8.0 },
   duels_win_rate: { floor: 0.30, target: 0.70 },
   clearances_p90: { floor: 0, target: 4.0 },
-  
-  // TÉC (Técnica) - passes_completed, pass_accuracy, ball_control
+  shots_blocked_p90: { floor: 0, target: 1.5 },
+
+  // TÉC (Técnica)
   pass_accuracy: { floor: 0.55, target: 0.90 },
-  passes_p90: { floor: 10, target: 60 },
-  ball_control: { floor: 0.20, target: 0.70 }, // dribbles_completed / dribbles_total
+  passes_p90: { floor: 10, target: 55 },
+  ball_control: { floor: 0.20, target: 0.70 },
+  long_passes_accurate_p90: { floor: 0, target: 4.0 },
   
   // TÁT (Disciplina/Tática) - yellow_cards (inv), red_cards (inv), fouls_committed (inv), fouls_drawn, turnovers (inv)
   yellow_cards_p90: { floor: 0, target: 0.5, invert: true },
@@ -177,17 +179,19 @@ const OUTFIELD_WEIGHTS = {
     progressive_passes_p90: 0.15,
   },
   tec: {
-    pass_accuracy: 0.40,
+    pass_accuracy: 0.30,
     passes_p90: 0.20,
-    ball_control: 0.25,
+    ball_control: 0.20,
     progressive_passes_p90: 0.15,
+    long_passes_accurate_p90: 0.15,
   },
   def: {
-    tackles_p90: 0.25,
+    tackles_p90: 0.20,
     interceptions_p90: 0.20,
-    recoveries_p90: 0.20,
-    duels_win_rate: 0.20,
+    recoveries_p90: 0.15,
+    duels_win_rate: 0.15,
     clearances_p90: 0.15,
+    shots_blocked_p90: 0.15,
   },
   tat: {
     yellow_cards_p90: 0.20,
@@ -421,6 +425,8 @@ function calculateRates(stats: PlayerStatRow): Record<string, number> {
   const interceptions_p90 = per90(stats.interceptions, minutes);
   const recoveries_p90 = per90(stats.recoveries, minutes);
   const clearances_p90 = per90(stats.clearances || 0, minutes);
+  const shots_blocked_p90 = per90(stats.shots_blocked || 0, minutes);
+  const long_passes_accurate_p90 = per90(stats.long_passes_accurate || 0, minutes);
   
   // Per-90 rates (TÁT)
   const yellow_cards_p90 = per90(stats.yellow_cards, minutes);
@@ -472,7 +478,10 @@ function calculateRates(stats: PlayerStatRow): Record<string, number> {
     interceptions_p90,
     recoveries_p90,
     clearances_p90,
+    shots_blocked_p90,
     duels_win_rate,
+    // TÉC
+    long_passes_accurate_p90,
     // TÉC
     passes_p90,
     pass_accuracy,
