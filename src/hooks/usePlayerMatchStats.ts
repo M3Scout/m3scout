@@ -933,6 +933,8 @@ export function usePlayerMatchStatsBySeasonCompetition({
             goals_conceded: 0,
             clean_sheets: 0,
             penalties_saved: 0,
+            shots_on_post: 0,
+            progressive_passes: 0,
           },
         };
       }
