@@ -68,6 +68,7 @@ const OUTFIELD_STATS: { category: string; color: string; bgColor: string; stats:
       { type: "shot", label: "Final. Fora" },
       { type: "shot_blocked", label: "Final. Bloq." },
       { type: "shot_on_post", label: "Na Trave" },
+      { type: "penalty_won", label: "Pên. Sofrido" },
       { type: "offside", label: "Impedim." },
     ],
   },
