@@ -222,7 +222,7 @@ export function LiveMatchStatsSection({ playerId, playerPosition }: LiveMatchSta
                   return (
                     <Link 
                       key={match.match_id}
-                      to={`/dashboard/aovivo/${match.match_id}/review`}
+                      to={`/dashboard/aovivo/${match.match_id}/revisao`}
                       className="block"
                     >
                       <div 

@@ -111,7 +111,7 @@ function PlayerMatchCard({ match }: { match: MatchWithRating }) {
   const ratingBg = hasRating ? getRatingBgColor(match.rating!) : "";
   
   const matchLink = isApplied 
-    ? `/app/live-match/${match.id}/review` 
+    ? `/app/live-match/${match.id}/revisao` 
     : `/app/live-match/${match.id}`;
 
   return (

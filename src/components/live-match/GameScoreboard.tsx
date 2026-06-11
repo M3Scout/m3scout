@@ -528,7 +528,7 @@ export function GameScoreboard({
                       className="gap-2 border-zinc-600 text-zinc-300 hover:bg-zinc-800 h-11"
                       asChild
                     >
-                      <Link to={`/dashboard/aovivo/${matchId}/review`}>
+                      <Link to={`/dashboard/aovivo/${matchId}/revisao`}>
                         <ArrowRight className="w-5 h-5" />
                         <span className="hidden sm:inline">Revisar</span>
                       </Link>
@@ -585,7 +585,7 @@ export function GameScoreboard({
                   className="h-14 gap-2 border-blue-500/50 text-blue-400 hover:bg-blue-500/10"
                   asChild
                 >
-                  <Link to={`/dashboard/aovivo/${matchId}/review`}>
+                  <Link to={`/dashboard/aovivo/${matchId}/revisao`}>
                     <ArrowRight className="w-5 h-5" />
                     Revisar
                   </Link>

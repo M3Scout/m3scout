@@ -124,7 +124,7 @@ export function MatchHeader({
                     className="h-10 sm:h-9 px-3 sm:px-4 bg-blue-600 hover:bg-blue-700 shadow-[0_0_15px_rgba(59,130,246,0.4)] hover:shadow-[0_0_20px_rgba(59,130,246,0.5)]"
                     asChild
                   >
-                    <Link to={`/dashboard/aovivo/${match.id}/review`}>
+                    <Link to={`/dashboard/aovivo/${match.id}/revisao`}>
                       Revisar
                       <ArrowRight className="h-4 w-4 ml-1" />
                     </Link>

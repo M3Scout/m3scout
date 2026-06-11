@@ -179,7 +179,7 @@ export function AthleteRatingEvolutionCard({
             recentMatches.map((match) => (
               <Link
                 key={match.id}
-                to={`/dashboard/aovivo/${match.id}/review`}
+                to={`/dashboard/aovivo/${match.id}/revisao`}
                 className="flex items-center justify-between p-2 rounded-lg bg-zinc-900/30 hover:bg-zinc-800/40 transition-colors group"
               >
                 <div className="flex items-center gap-2 min-w-0">
