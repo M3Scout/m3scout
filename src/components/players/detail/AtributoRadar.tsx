@@ -151,14 +151,7 @@ export function AtributoRadar({
     setLoaded(true);
   }, [allRows, selectedYear, compareYear, filterToLatestSeason]);
 
-  // When primary year changes, drop compare if it's now the same
-  const handleSelectYear = (year: number) => {
-    setSelectedYear(year);
-    if (compareYear === year) setCompareYear(null);
-  };
-
   const showYearSelector = availableYears.length > 1;
-  const compareOptions   = availableYears.filter(y => y !== selectedYear);
   const isComparing      = compareYear !== null;
 
   // Badge label positions (percentages of SVG viewBox)
@@ -198,36 +191,23 @@ export function AtributoRadar({
             </Popover>
           </div>
 
-          {/* Primary year selector */}
+          {/* Year pills — primary always green, others toggle comparison */}
           {showYearSelector && (
-            <div className="flex gap-1.5 mb-2">
-              {availableYears.map(year => (
-                <Pill
-                  key={year}
-                  label={String(year)}
-                  active={year === selectedYear}
-                  color="green"
-                  onClick={() => handleSelectYear(year)}
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Compare selector — only when there are other years */}
-          {compareOptions.length > 0 && (
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[9px] uppercase tracking-widest" style={{ color: MUTED }}>
-                Comparar:
-              </span>
-              {compareOptions.map(year => (
-                <Pill
-                  key={year}
-                  label={String(year)}
-                  active={year === compareYear}
-                  color="blue"
-                  onClick={() => setCompareYear(compareYear === year ? null : year)}
-                />
-              ))}
+            <div className="flex gap-1.5">
+              {availableYears.map(year => {
+                const isPrimary = year === selectedYear;
+                return (
+                  <Pill
+                    key={year}
+                    label={String(year)}
+                    active={isPrimary || year === compareYear}
+                    color={isPrimary ? "green" : "blue"}
+                    onClick={() => {
+                      if (!isPrimary) setCompareYear(compareYear === year ? null : year);
+                    }}
+                  />
+                );
+              })}
             </div>
           )}
         </div>
