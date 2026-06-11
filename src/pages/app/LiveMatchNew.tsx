@@ -255,7 +255,7 @@ export default function LiveMatchNew() {
       } else {
         toast.success("Jogo criado em modo pré-jogo.");
       }
-      navigate(`/app/live-match/${data.id}`);
+      navigate(`/dashboard/aovivo/${data.id}`);
     },
     onError: (error) => {
       if (error.message !== "Preencha os campos obrigatórios") {
