@@ -61,6 +61,7 @@ export interface PlayerStatRow {
   times_dribbled_past?: number;
   shots_on_post?: number;
   progressive_passes?: number;
+  steals?: number;
 }
 
 export interface AttributeScores {
@@ -126,21 +127,26 @@ const METRIC_CONFIGS: Record<string, MetricConfig> = {
   dribble_success_rate: { floor: 0.20, target: 0.70 },
   progressive_passes_p90: { floor: 0, target: 5.0 },
 
-  // DEF (Defesa)
+  // DEF + TAT
   tackles_p90: { floor: 0, target: 4.0 },
   interceptions_p90: { floor: 0, target: 3.0 },
   recoveries_p90: { floor: 0, target: 8.0 },
-  duels_win_rate: { floor: 0.30, target: 0.70 },
+  steals_p90: { floor: 0, target: 3.0 },
   clearances_p90: { floor: 0, target: 4.0 },
   shots_blocked_p90: { floor: 0, target: 1.5 },
+  ground_duels_won_p90: { floor: 0, target: 3.75 },
+  aerial_duels_won_p90: { floor: 0, target: 2.25 },
+  ground_duels_lost_p90: { floor: 0, target: 4.0, invert: true },
+  aerial_duels_lost_p90: { floor: 0, target: 3.0, invert: true },
+  times_dribbled_past_p90: { floor: 0, target: 2.80, invert: true },
 
   // TÉC (Técnica)
   pass_accuracy: { floor: 0.55, target: 0.90 },
   passes_p90: { floor: 10, target: 55 },
   ball_control: { floor: 0.20, target: 0.70 },
   long_passes_accurate_p90: { floor: 0, target: 4.0 },
-  
-  // TÁT (Disciplina/Tática) - yellow_cards (inv), red_cards (inv), fouls_committed (inv), fouls_drawn, turnovers (inv)
+
+  // TÁT disciplina
   yellow_cards_p90: { floor: 0, target: 0.5, invert: true },
   red_cards_p90: { floor: 0, target: 0.15, invert: true },
   fouls_committed_p90: { floor: 0, target: 2.5, invert: true },
@@ -186,19 +192,31 @@ const OUTFIELD_WEIGHTS = {
     long_passes_accurate_p90: 0.15,
   },
   def: {
-    tackles_p90: 0.20,
-    interceptions_p90: 0.20,
-    recoveries_p90: 0.15,
-    duels_win_rate: 0.15,
-    clearances_p90: 0.15,
-    shots_blocked_p90: 0.15,
+    tackles_p90: 0.15,
+    steals_p90: 0.12,
+    recoveries_p90: 0.08,
+    interceptions_p90: 0.15,
+    clearances_p90: 0.10,
+    shots_blocked_p90: 0.10,
+    ground_duels_won_p90: 0.08,
+    aerial_duels_won_p90: 0.08,
+    ground_duels_lost_p90: 0.04,
+    aerial_duels_lost_p90: 0.04,
+    times_dribbled_past_p90: 0.06,
   },
   tat: {
-    yellow_cards_p90: 0.20,
-    red_cards_p90: 0.20,
-    fouls_committed_p90: 0.20,
-    fouls_drawn_p90: 0.15,
-    possession_lost_p90: 0.25,
+    steals_p90: 0.12,
+    progressive_passes_p90: 0.10,
+    tackles_p90: 0.10,
+    interceptions_p90: 0.10,
+    recoveries_p90: 0.08,
+    ground_duels_won_p90: 0.08,
+    aerial_duels_won_p90: 0.08,
+    ground_duels_lost_p90: 0.05,
+    aerial_duels_lost_p90: 0.05,
+    fouls_committed_p90: 0.08,
+    yellow_cards_p90: 0.06,
+    red_cards_p90: 0.10,
   },
 };
 
@@ -350,6 +368,7 @@ function aggregateStats(statsRows: PlayerStatRow[]): PlayerStatRow {
     times_dribbled_past: 0,
     shots_on_post: 0,
     progressive_passes: 0,
+    steals: 0,
   };
 
   for (const row of statsRows) {
@@ -397,6 +416,7 @@ function aggregateStats(statsRows: PlayerStatRow[]): PlayerStatRow {
     agg.times_dribbled_past! += row.times_dribbled_past || 0;
     agg.shots_on_post! += row.shots_on_post || 0;
     agg.progressive_passes! += row.progressive_passes || 0;
+    agg.steals! += row.steals || 0;
   }
 
   return agg;
@@ -420,13 +440,19 @@ function calculateRates(stats: PlayerStatRow): Record<string, number> {
   const chances_created_p90 = per90(stats.chances_created, minutes);
   const progressive_passes_p90 = per90(stats.progressive_passes || 0, minutes);
   
-  // Per-90 rates (DEF)
+  // Per-90 rates (DEF + TAT)
   const tackles_p90 = per90(stats.tackles, minutes);
   const interceptions_p90 = per90(stats.interceptions, minutes);
   const recoveries_p90 = per90(stats.recoveries, minutes);
+  const steals_p90 = per90(stats.steals || 0, minutes);
   const clearances_p90 = per90(stats.clearances || 0, minutes);
   const shots_blocked_p90 = per90(stats.shots_blocked || 0, minutes);
   const long_passes_accurate_p90 = per90(stats.long_passes_accurate || 0, minutes);
+  const ground_duels_won_p90 = per90(stats.ground_duels_won || 0, minutes);
+  const aerial_duels_won_p90 = per90(stats.aerial_duels_won || 0, minutes);
+  const ground_duels_lost_p90 = per90(Math.max(0, (stats.ground_duels_total || 0) - (stats.ground_duels_won || 0)), minutes);
+  const aerial_duels_lost_p90 = per90(Math.max(0, (stats.aerial_duels_total || 0) - (stats.aerial_duels_won || 0)), minutes);
+  const times_dribbled_past_p90 = per90(stats.times_dribbled_past || 0, minutes);
   
   // Per-90 rates (TÁT)
   const yellow_cards_p90 = per90(stats.yellow_cards, minutes);
@@ -473,12 +499,18 @@ function calculateRates(stats: PlayerStatRow): Record<string, number> {
     chances_created_p90,
     dribble_success_rate,
     progressive_passes_p90,
-    // DEF
+    // DEF + TAT
     tackles_p90,
     interceptions_p90,
     recoveries_p90,
+    steals_p90,
     clearances_p90,
     shots_blocked_p90,
+    ground_duels_won_p90,
+    aerial_duels_won_p90,
+    ground_duels_lost_p90,
+    aerial_duels_lost_p90,
+    times_dribbled_past_p90,
     duels_win_rate,
     // TÉC
     long_passes_accurate_p90,

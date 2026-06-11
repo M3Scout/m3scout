@@ -56,6 +56,7 @@ interface LiveStatsTotals {
   errors_leading_to_goal: number;
   shots_on_post: number;
   progressive_passes: number;
+  steals: number;
 }
 
 interface ManualStatsTotals {
@@ -91,6 +92,7 @@ interface ManualStatsTotals {
   errors_leading_to_goal: number;
   shots_on_post: number;
   progressive_passes: number;
+  steals: number;
 }
 
 interface UnifiedAttributeStatsResult {
@@ -188,6 +190,7 @@ export function useAttributeUnifiedStats({
         errors_leading_to_goal: 0,
         shots_on_post: 0,
         progressive_passes: 0,
+        steals: 0,
       };
 
       if (matchIds.length > 0) {
@@ -295,6 +298,7 @@ export function useAttributeUnifiedStats({
             liveStatsTotals.goals_conceded += stats.goals_conceded ?? 0;
             liveStatsTotals.shots_on_post += stats.shots_on_post ?? 0;
             liveStatsTotals.progressive_passes += stats.progressive_passes ?? 0;
+            liveStatsTotals.steals += stats.steals ?? 0;
           }
         }
       }
@@ -349,6 +353,7 @@ export function useAttributeUnifiedStats({
         errors_leading_to_goal: 0,
         shots_on_post: 0,
         progressive_passes: 0,
+        steals: 0,
       };
 
       for (const row of manualData || []) {
@@ -384,6 +389,7 @@ export function useAttributeUnifiedStats({
         manualStatsTotals.errors_leading_to_goal += row.errors_leading_to_goal ?? 0;
         manualStatsTotals.shots_on_post += row.shots_on_post ?? 0;
         manualStatsTotals.progressive_passes += row.progressive_passes ?? 0;
+        manualStatsTotals.steals += row.steals ?? 0;
       }
 
       // 3. MERGE: Sum live + manual (they represent DIFFERENT games)
@@ -425,6 +431,10 @@ export function useAttributeUnifiedStats({
         // New metrics
         shots_on_post: liveStatsTotals.shots_on_post + manualStatsTotals.shots_on_post,
         progressive_passes: liveStatsTotals.progressive_passes + manualStatsTotals.progressive_passes,
+        steals: liveStatsTotals.steals + manualStatsTotals.steals,
+        // Duels separados por tipo (live usa duels_won como ground duels)
+        ground_duels_won: liveStatsTotals.duels_won + manualStatsTotals.duels_won,
+        ground_duels_total: liveStatsTotals.duels_total + manualStatsTotals.total_duels,
       };
 
       return {
