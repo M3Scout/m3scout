@@ -459,105 +459,27 @@ export function GameScoreboard({
               // Landscape: more compact padding
               "tablet-landscape:px-5 tablet-landscape:pb-3 tablet-landscape:space-y-2"
             )}>
-              {/* Added time controls - Hide on landscape (shown inline in timer area) */}
-              <div className={cn(
-                "bg-zinc-800/40 rounded-xl p-3 border border-zinc-700/40",
-                // Landscape: hide this section (controls shown inline)
-                "tablet-landscape:hidden"
-              )}>
-                <div className="flex flex-wrap items-center gap-2 w-full">
-                  {/* Main controls: Label + minus/value/plus */}
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Clock className="w-4 h-4 text-zinc-500 hidden sm:block" />
-                    <span className="text-xs text-zinc-400 hidden sm:inline">Acréscimo:</span>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8 sm:h-9 sm:w-9 bg-zinc-800 border-zinc-700 hover:bg-zinc-700"
-                        onMouseDown={() => startHold(() => adjustAddedTime(-1))}
-                        onMouseUp={stopHold}
-                        onMouseLeave={stopHold}
-                        onTouchStart={(e) => { e.preventDefault(); startHold(() => adjustAddedTime(-1)); }}
-                        onTouchEnd={stopHold}
-                        disabled={currentAddedTime === 0}
-                      >
-                        <Minus className="w-4 h-4" />
-                      </Button>
-                      <Badge className="text-base sm:text-lg font-bold min-w-[2.5rem] sm:min-w-[3rem] justify-center h-8 sm:h-9 bg-zinc-700 text-zinc-100">
-                        +{currentAddedTime}
-                      </Badge>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8 sm:h-9 sm:w-9 bg-zinc-800 border-zinc-700 hover:bg-zinc-700"
-                        onMouseDown={() => startHold(() => adjustAddedTime(1))}
-                        onMouseUp={stopHold}
-                        onMouseLeave={stopHold}
-                        onTouchStart={(e) => { e.preventDefault(); startHold(() => adjustAddedTime(1)); }}
-                        onTouchEnd={stopHold}
-                        disabled={currentAddedTime >= 15}
-                      >
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Preset chips - flex-wrap with responsive sizing */}
-                  <div className="flex items-center gap-1 flex-wrap flex-1 justify-end min-w-0">
-                    {ADDED_TIME_CHIPS.map((chip) => (
-                      <Button
-                        key={chip}
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 sm:h-8 px-2 text-[11px] sm:text-xs text-zinc-400 hover:text-zinc-100 hover:bg-zinc-700/50"
-                        onClick={() => {
-                          onUpdateAddedTime(half, currentAddedTime + chip);
-                          toast.success(`+${currentAddedTime + chip} min`, { duration: 1000 });
-                        }}
-                      >
-                        +{chip}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Main action buttons - horizontal on landscape */}
-              <div className={cn(
-                "grid gap-2",
-                // Normal: 3 columns
-                "grid-cols-3",
-                // Landscape: 4 columns with smaller buttons
-                "tablet-landscape:grid-cols-4 tablet-landscape:gap-3"
-              )}>
-                {isWaitingSecondHalf ? (
-                  <Button
-                    size="lg"
-                    variant="info"
-                    className={cn(
-                      "gap-2 font-semibold",
-                      "col-span-3 h-14 text-lg",
-                      "tablet-landscape:col-span-4 tablet-landscape:h-11 tablet-landscape:text-base"
-                    )}
-                    onClick={onStartSecondHalf}
-                    disabled={isPending}
-                  >
-                    <Play className="w-5 h-5" />
-                    Iniciar 2º Tempo
-                  </Button>
-                ) : (
-                  <>
+              {/* Action area */}
+              {isWaitingSecondHalf ? (
+                <Button
+                  size="lg"
+                  variant="info"
+                  className="w-full gap-2 font-semibold h-14 text-lg tablet-landscape:h-11 tablet-landscape:text-base"
+                  onClick={onStartSecondHalf}
+                  disabled={isPending}
+                >
+                  <Play className="w-5 h-5" />
+                  Iniciar 2º Tempo
+                </Button>
+              ) : (
+                <div className="flex flex-wrap justify-between items-center gap-3">
+                  {/* Group 1: Main controls */}
+                  <div className="flex items-center gap-2">
                     {/* Play/Pause - hidden on landscape (shown inline in timer) */}
                     <Button
                       size="lg"
                       variant={isRunning ? "warning" : "success"}
-                      className={cn(
-                        "gap-2 font-semibold col-span-1",
-                        "h-14 text-lg",
-                        // Landscape: hide (shown inline above)
-                        "tablet-landscape:hidden"
-                      )}
+                      className="gap-2 font-semibold h-11 tablet-landscape:hidden"
                       onClick={onPlayPause}
                       disabled={isPending}
                     >
@@ -574,15 +496,55 @@ export function GameScoreboard({
                       )}
                     </Button>
 
-                    {/* Added time adjust - show on landscape */}
-                    <div className={cn(
-                      "hidden",
-                      "tablet-landscape:flex tablet-landscape:items-center tablet-landscape:gap-1"
-                    )}>
+                    {/* End Half / Finish */}
+                    {half === 1 ? (
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        className="gap-2 border-blue-500/50 text-blue-400 hover:bg-blue-500/10 h-11"
+                        onClick={() => setConfirmEndHalfOpen(true)}
+                        disabled={isPending || displaySeconds === 0}
+                      >
+                        <Flag className="w-5 h-5" />
+                        <span className="hidden sm:inline">Intervalo</span>
+                      </Button>
+                    ) : (
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        className="gap-2 border-red-500/50 text-red-400 hover:bg-red-500/10 h-11"
+                        onClick={() => setConfirmFinishOpen(true)}
+                        disabled={isPending || displaySeconds === 0}
+                      >
+                        <StopCircle className="w-5 h-5" />
+                        <span className="hidden sm:inline">Encerrar</span>
+                      </Button>
+                    )}
+
+                    {/* Review */}
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="gap-2 border-zinc-600 text-zinc-300 hover:bg-zinc-800 h-11"
+                      asChild
+                    >
+                      <Link to={`/dashboard/aovivo/${matchId}/review`}>
+                        <ArrowRight className="w-5 h-5" />
+                        <span className="hidden sm:inline">Revisar</span>
+                      </Link>
+                    </Button>
+                  </div>
+
+                  {/* Group 2: Acréscimos + Fast Forward */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {/* Acréscimo control */}
+                    <div className="flex items-center gap-1">
+                      <Clock className="w-4 h-4 text-zinc-500 hidden sm:block" />
+                      <span className="text-xs text-zinc-400 hidden sm:inline">Acréscimo:</span>
                       <Button
                         variant="outline"
                         size="icon"
-                        className="h-11 w-11 bg-zinc-800 border-zinc-700 hover:bg-zinc-700"
+                        className="h-9 w-9 bg-zinc-800 border-zinc-700 hover:bg-zinc-700"
                         onMouseDown={() => startHold(() => adjustAddedTime(-1))}
                         onMouseUp={stopHold}
                         onMouseLeave={stopHold}
@@ -592,13 +554,13 @@ export function GameScoreboard({
                       >
                         <Minus className="w-4 h-4" />
                       </Button>
-                      <Badge className="text-lg font-bold min-w-[3rem] justify-center h-11 bg-zinc-700 text-zinc-100 px-3">
+                      <Badge className="text-base font-bold min-w-[2.5rem] justify-center h-9 bg-zinc-700 text-zinc-100 px-2">
                         +{currentAddedTime}
                       </Badge>
                       <Button
                         variant="outline"
                         size="icon"
-                        className="h-11 w-11 bg-zinc-800 border-zinc-700 hover:bg-zinc-700"
+                        className="h-9 w-9 bg-zinc-800 border-zinc-700 hover:bg-zinc-700"
                         onMouseDown={() => startHold(() => adjustAddedTime(1))}
                         onMouseUp={stopHold}
                         onMouseLeave={stopHold}
@@ -612,14 +574,11 @@ export function GameScoreboard({
 
                     {/* Fast Forward buttons */}
                     {isLive && onSkipTime && (
-                      <div className={cn(
-                        "col-span-3 flex items-center justify-center gap-2",
-                        "tablet-landscape:col-span-1 tablet-landscape:flex-col tablet-landscape:gap-1"
-                      )}>
+                      <>
                         <Button
                           size="sm"
                           variant="outline"
-                          className="gap-1 border-zinc-600 text-zinc-300 hover:bg-zinc-700 h-8 px-3 text-xs"
+                          className="gap-1 border-zinc-600 text-zinc-300 hover:bg-zinc-700 h-9 px-3 text-xs"
                           onClick={() => { onSkipTime(300); toast.success("+5 min", { duration: 1000 }); }}
                           disabled={isPending}
                         >
@@ -629,68 +588,18 @@ export function GameScoreboard({
                         <Button
                           size="sm"
                           variant="outline"
-                          className="gap-1 border-zinc-600 text-zinc-300 hover:bg-zinc-700 h-8 px-3 text-xs"
+                          className="gap-1 border-zinc-600 text-zinc-300 hover:bg-zinc-700 h-9 px-3 text-xs"
                           onClick={() => { onSkipTime(2700); toast.success("+45 min", { duration: 1000 }); }}
                           disabled={isPending}
                         >
                           <FastForward className="w-3 h-3" />
                           +45 min
                         </Button>
-                      </div>
+                      </>
                     )}
-
-                    {/* End Half / Finish */}
-                    {half === 1 ? (
-                      <Button
-                        size="lg"
-                        variant="outline"
-                        className={cn(
-                          "gap-2 border-blue-500/50 text-blue-400 hover:bg-blue-500/10",
-                          "h-14",
-                          "tablet-landscape:h-11"
-                        )}
-                        onClick={() => setConfirmEndHalfOpen(true)}
-                        disabled={isPending || displaySeconds === 0}
-                      >
-                        <Flag className="w-5 h-5" />
-                        <span className="hidden sm:inline tablet-landscape:inline">Intervalo</span>
-                      </Button>
-                    ) : (
-                      <Button
-                        size="lg"
-                        variant="outline"
-                        className={cn(
-                          "gap-2 border-red-500/50 text-red-400 hover:bg-red-500/10",
-                          "h-14",
-                          "tablet-landscape:h-11"
-                        )}
-                        onClick={() => setConfirmFinishOpen(true)}
-                        disabled={isPending || displaySeconds === 0}
-                      >
-                        <StopCircle className="w-5 h-5" />
-                        <span className="hidden sm:inline tablet-landscape:inline">Encerrar</span>
-                      </Button>
-                    )}
-
-                    {/* Review */}
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      className={cn(
-                        "gap-2 border-zinc-600 text-zinc-300 hover:bg-zinc-800",
-                        "h-14",
-                        "tablet-landscape:h-11"
-                      )}
-                      asChild
-                    >
-                      <Link to={`/dashboard/aovivo/${matchId}/review`}>
-                        <ArrowRight className="w-5 h-5" />
-                        <span className="hidden sm:inline tablet-landscape:inline">Revisar</span>
-                      </Link>
-                    </Button>
-                  </>
-                )}
-              </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
