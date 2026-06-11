@@ -544,6 +544,8 @@ export function usePlayerMatchStats({
       long_passes_accurate: acc.long_passes_accurate + match.stats.long_passes_accurate,
       long_passes_failed: acc.long_passes_failed + match.stats.long_passes_failed,
       long_passes_total: acc.long_passes_total + match.stats.long_passes_total,
+      shots_on_post: acc.shots_on_post + (match.stats.shots_on_post ?? 0),
+      progressive_passes: acc.progressive_passes + (match.stats.progressive_passes ?? 0),
     }),
     {
       matches: 0,
@@ -592,6 +594,8 @@ export function usePlayerMatchStats({
       long_passes_accurate: 0,
       long_passes_failed: 0,
       long_passes_total: 0,
+      shots_on_post: 0,
+      progressive_passes: 0,
     }
   );
 
@@ -929,6 +933,8 @@ export function usePlayerMatchStatsBySeasonCompetition({
             goals_conceded: 0,
             clean_sheets: 0,
             penalties_saved: 0,
+            shots_on_post: 0,
+            progressive_passes: 0,
           },
         };
       }

@@ -124,6 +124,8 @@ const EVENT_LABELS: Record<MatchEventType, string> = {
   substitution: "Substituição",
   player_on: "Entrou",
   player_off: "Saiu",
+  progressive_pass: "Passe Progressivo",
+  shot_on_post: "Finalização na Trave",
 };
 
 // Heatmap intensity colors

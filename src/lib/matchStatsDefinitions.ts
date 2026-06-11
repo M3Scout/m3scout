@@ -212,6 +212,8 @@ export const EVENT_TYPE_CONFIG: Record<MatchEventType, SummaryEventConfig> = {
   substitution: { label: "Substituição", icon: "🔄", category: "meta", order: 90 },
   player_on: { label: "Entrou", icon: "➡️", category: "meta", order: 91 },
   player_off: { label: "Saiu", icon: "⬅️", category: "meta", order: 92 },
+  progressive_pass: { label: "Passe Progressivo", icon: "➡️", category: "passing", order: 17 },
+  shot_on_post: { label: "Finalização na Trave", icon: "🥅", category: "attack", order: 6 },
 };
 
 // Category colors for visual grouping in summary
