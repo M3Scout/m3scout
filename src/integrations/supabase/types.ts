@@ -665,6 +665,7 @@ export type Database = {
           penalties_won: number
           player_id: string
           possession_lost: number
+          progressive_passes: number
           rating: number | null
           rating_breakdown: Json | null
           rating_computed_at: string | null
@@ -676,6 +677,7 @@ export type Database = {
           saves: number
           shots: number
           shots_blocked: number
+          shots_on_post: number
           shots_on_target: number
           steals: number
           tackles: number
@@ -712,6 +714,7 @@ export type Database = {
           penalties_won?: number
           player_id: string
           possession_lost?: number
+          progressive_passes?: number
           rating?: number | null
           rating_breakdown?: Json | null
           rating_computed_at?: string | null
@@ -723,6 +726,7 @@ export type Database = {
           saves?: number
           shots?: number
           shots_blocked?: number
+          shots_on_post?: number
           shots_on_target?: number
           steals?: number
           tackles?: number
@@ -759,6 +763,7 @@ export type Database = {
           penalties_won?: number
           player_id?: string
           possession_lost?: number
+          progressive_passes?: number
           rating?: number | null
           rating_breakdown?: Json | null
           rating_computed_at?: string | null
@@ -770,6 +775,7 @@ export type Database = {
           saves?: number
           shots?: number
           shots_blocked?: number
+          shots_on_post?: number
           shots_on_target?: number
           steals?: number
           tackles?: number
@@ -1605,6 +1611,7 @@ export type Database = {
           penalty_faced: number
           player_id: string
           possession_lost: number
+          progressive_passes: number
           punches: number
           recoveries: number
           red_cards: number
@@ -1613,6 +1620,7 @@ export type Database = {
           season_year: number
           shots: number
           shots_blocked: number
+          shots_on_post: number
           shots_on_target: number
           shots_on_target_against: number
           steals: number
@@ -1670,6 +1678,7 @@ export type Database = {
           penalty_faced?: number
           player_id: string
           possession_lost?: number
+          progressive_passes?: number
           punches?: number
           recoveries?: number
           red_cards?: number
@@ -1678,6 +1687,7 @@ export type Database = {
           season_year?: number
           shots?: number
           shots_blocked?: number
+          shots_on_post?: number
           shots_on_target?: number
           shots_on_target_against?: number
           steals?: number
@@ -1735,6 +1745,7 @@ export type Database = {
           penalty_faced?: number
           player_id?: string
           possession_lost?: number
+          progressive_passes?: number
           punches?: number
           recoveries?: number
           red_cards?: number
@@ -1743,6 +1754,7 @@ export type Database = {
           season_year?: number
           shots?: number
           shots_blocked?: number
+          shots_on_post?: number
           shots_on_target?: number
           shots_on_target_against?: number
           steals?: number
@@ -2785,6 +2797,7 @@ export type Database = {
           penalties_won: number
           player_id: string
           possession_lost: number
+          progressive_passes: number
           rating: number | null
           rating_breakdown: Json | null
           rating_computed_at: string | null
@@ -2796,6 +2809,7 @@ export type Database = {
           saves: number
           shots: number
           shots_blocked: number
+          shots_on_post: number
           shots_on_target: number
           steals: number
           tackles: number
@@ -3060,6 +3074,8 @@ export type Database = {
         | "long_pass_total"
         | "steal"
         | "penalty_won"
+        | "progressive_pass"
+        | "shot_on_post"
       match_status: "draft" | "live" | "finished" | "applied"
       position_template: "outfield" | "goalkeeper"
       target_priority: "HIGH" | "MEDIUM" | "LOW"
@@ -3257,6 +3273,8 @@ export const Constants = {
         "long_pass_total",
         "steal",
         "penalty_won",
+        "progressive_pass",
+        "shot_on_post",
       ],
       match_status: ["draft", "live", "finished", "applied"],
       position_template: ["outfield", "goalkeeper"],
