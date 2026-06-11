@@ -90,6 +90,8 @@ function sumStats(a: MatchDerivedStats, b: MatchDerivedStats): MatchDerivedStats
     clean_sheets:       a.clean_sheets       + b.clean_sheets,
     penalties_saved:    a.penalties_saved    + b.penalties_saved,
     penalties_won:      a.penalties_won      + b.penalties_won,
+    shots_on_post:      (a.shots_on_post ?? 0)      + (b.shots_on_post ?? 0),
+    progressive_passes: (a.progressive_passes ?? 0) + (b.progressive_passes ?? 0),
   };
 }
 
