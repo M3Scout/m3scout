@@ -47,14 +47,14 @@ export const WEIGHTS = {
   pass_completed:    { weight:  0.02, label: "Passe Certo",            category: "passing"    as const },
   cross_success:     { weight:  0.02, label: "Cruzamento Certo",       category: "creation"   as const },
 
-  // AÇÕES DEFENSIVAS
-  tackle:            { weight:  0.08, label: "Desarme",                category: "defense"    as const },
+  // AÇÕES DEFENSIVAS (hierarquia por dificuldade e impacto tático)
+  steal:             { weight:  0.12, label: "Roubada de Bola",        category: "defense"    as const },
+  tackle:            { weight:  0.10, label: "Desarme",                category: "defense"    as const },
   interception:      { weight:  0.08, label: "Interceptação",          category: "defense"    as const },
-  clearance:         { weight:  0.08, label: "Corte",                  category: "defense"    as const },
   shot_blocked:      { weight:  0.08, label: "Chute Bloqueado",        category: "defense"    as const },
-  steal:             { weight:  0.08, label: "Roubada de Bola",        category: "defense"    as const },
   ground_duel_won:   { weight:  0.05, label: "Duelo no Chão Ganho",    category: "defense"    as const },
   aerial_duel_won:   { weight:  0.05, label: "Duelo Aéreo Ganho",      category: "defense"    as const },
+  clearance:         { weight:  0.04, label: "Corte",                  category: "defense"    as const },
 
   // AÇÕES NEGATIVAS (PUNIÇÕES)
   red_card:          { weight: -1.50, label: "Cartão Vermelho",        category: "discipline" as const },
