@@ -72,6 +72,8 @@ const EVENT_LABELS: Record<MatchEventType, string> = {
   substitution: "Substituição",
   player_on: "Entrou em Campo",
   player_off: "Saiu de Campo",
+  progressive_pass: "Passe Progressivo",
+  shot_on_post: "Finalização na Trave",
 };
 
 interface EventLogDrawerProps {
