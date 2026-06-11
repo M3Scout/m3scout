@@ -90,6 +90,8 @@ const eventConfig: Record<MatchEventType, {
   substitution: { icon: <ArrowRightLeft className="w-3.5 h-3.5" />, label: "Substituição", color: "text-amber-400", bgColor: "bg-amber-500/20" },
   player_on: { icon: <ArrowUp className="w-3.5 h-3.5" />, label: "Entrou em Campo", color: "text-green-400", bgColor: "bg-green-500/20" },
   player_off: { icon: <ArrowDown className="w-3.5 h-3.5" />, label: "Saiu de Campo", color: "text-orange-400", bgColor: "bg-orange-500/20" },
+  progressive_pass: { icon: <Footprints className="w-3.5 h-3.5" />, label: "Passe Progressivo", color: "text-emerald-400", bgColor: "bg-emerald-500/20" },
+  shot_on_post: { icon: <Target className="w-3.5 h-3.5" />, label: "Finalização na Trave", color: "text-yellow-400", bgColor: "bg-yellow-500/20" },
 };
 
 interface EventTimelineProps {
