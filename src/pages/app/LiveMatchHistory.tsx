@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
@@ -56,6 +56,10 @@ import {
   Wifi,
   Activity,
   Search,
+  Upload,
+  X,
+  Image,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -128,6 +132,88 @@ interface MatchEditDialogProps {
   isPending: boolean;
 }
 
+// Reusable logo upload widget
+function LogoUploadField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (url: string) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleFile = async (file: File) => {
+    if (!file.type.startsWith("image/")) { toast.error("Apenas imagens"); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error("Máx. 5 MB"); return; }
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `match-logos/edit-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from("team-logos").upload(path, file);
+      if (error) throw error;
+      const { data } = supabase.storage.from("team-logos").getPublicUrl(path);
+      onChange(data.publicUrl);
+      toast.success("Logo atualizado!");
+    } catch {
+      toast.error("Erro no upload");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs text-zinc-400">{label}</Label>
+      <div className="flex items-center gap-3">
+        {/* Preview */}
+        <div className="w-12 h-12 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center shrink-0 overflow-hidden">
+          {value ? (
+            <img src={value} alt="" className="w-full h-full object-contain p-1" />
+          ) : (
+            <Image className="w-5 h-5 text-zinc-600" />
+          )}
+        </div>
+        {/* Buttons */}
+        <div className="flex flex-col gap-1">
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => inputRef.current?.click()}
+            disabled={uploading}
+            className="h-8 text-xs gap-1.5 border-zinc-700"
+          >
+            {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+            {value ? "Trocar" : "Upload"}
+          </Button>
+          {value && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => onChange("")}
+              className="h-6 text-[10px] text-zinc-500 hover:text-red-400 gap-1 px-2"
+            >
+              <X className="h-3 w-3" />
+              Remover
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MatchEditDialog({ match, onClose, onSave, isPending }: MatchEditDialogProps) {
   const [form, setForm] = useState<EditForm>({
     team_name_display: "",
@@ -162,21 +248,21 @@ function MatchEditDialog({ match, onClose, onSave, isPending }: MatchEditDialogP
             <Input value={form.team_name_display} onChange={set("team_name_display")}
               placeholder="Nome do time" className="bg-zinc-800 border-zinc-700" />
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs text-zinc-400">Escudo do Time da Casa (URL)</Label>
-            <Input value={form.team_logo_url} onChange={set("team_logo_url")}
-              placeholder="https://..." className="bg-zinc-800 border-zinc-700" />
-          </div>
+          <LogoUploadField
+            label="Escudo do Time da Casa"
+            value={form.team_logo_url}
+            onChange={url => setForm(prev => ({ ...prev, team_logo_url: url }))}
+          />
           <div className="space-y-1.5">
             <Label className="text-xs text-zinc-400">Time Visitante</Label>
             <Input value={form.opponent_name} onChange={set("opponent_name")}
               placeholder="Nome do adversário" className="bg-zinc-800 border-zinc-700" />
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs text-zinc-400">Escudo do Time Visitante (URL)</Label>
-            <Input value={form.opponent_logo_url} onChange={set("opponent_logo_url")}
-              placeholder="https://..." className="bg-zinc-800 border-zinc-700" />
-          </div>
+          <LogoUploadField
+            label="Escudo do Time Visitante"
+            value={form.opponent_logo_url}
+            onChange={url => setForm(prev => ({ ...prev, opponent_logo_url: url }))}
+          />
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose} className="border-zinc-700">
