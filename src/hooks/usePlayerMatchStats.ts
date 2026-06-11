@@ -594,6 +594,8 @@ export function usePlayerMatchStats({
       long_passes_accurate: 0,
       long_passes_failed: 0,
       long_passes_total: 0,
+      shots_on_post: 0,
+      progressive_passes: 0,
     }
   );
 
