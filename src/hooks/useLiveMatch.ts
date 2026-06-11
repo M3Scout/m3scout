@@ -12,10 +12,10 @@ export type PositionTemplate = "outfield" | "goalkeeper";
 export type MatchEventType =
   // Outfield - Attack
   | "goal" | "assist" | "shot" | "shot_on_target"
-  | "shot_blocked" | "offside" | "penalty_won"
+  | "shot_blocked" | "shot_on_post" | "offside" | "penalty_won"
   // Outfield - Passing
   | "key_pass" | "chance_created"
-  | "pass_success" | "pass_total"
+  | "pass_success" | "pass_total" | "progressive_pass"
   | "cross_success" | "cross_failed"
   // Outfield - Dribbles/Possession
   | "dribble_success" | "dribble_attempt"
@@ -162,6 +162,8 @@ export interface MatchPlayerStats {
   chances_created: number;
   passes_completed: number;
   passes_total: number;
+  progressive_passes: number;
+  shots_on_post: number;
   crosses_success: number;
   crosses_failed: number;
   ball_actions: number;
@@ -382,9 +384,9 @@ export function useLiveMatch(matchId: string) {
     // Uses the same list as derivedBallActions.ts for consistency with post-game summary
     const BALL_ACTION_EVENTS: MatchEventType[] = [
       // Attack
-      "goal", "shot_on_target", "shot", "shot_blocked", "assist", "key_pass", "chance_created",
+      "goal", "shot_on_target", "shot", "shot_blocked", "shot_on_post", "assist", "key_pass", "chance_created",
       // Passing
-      "pass_success", "pass_total", "cross_success", "cross_failed",
+      "pass_success", "pass_total", "progressive_pass", "cross_success", "cross_failed",
       // Dribbles
       "dribble_success", "dribble_attempt", "possession_lost",
       // Defense with possession

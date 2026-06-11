@@ -227,6 +227,9 @@ interface PlayerStat {
   // Crosses
   crosses_success: StatValue;
   crosses_failed: StatValue;
+  // New stats
+  progressive_passes: StatValue;
+  shots_on_post: StatValue;
 }
 
 // Helper to normalize stat value to number for saving.
@@ -288,6 +291,8 @@ const emptyStatRow: Omit<PlayerStat, "id" | "player_id"> = {
   total_dribbles: "",
   crosses_success: "",
   crosses_failed: "",
+  progressive_passes: "",
+  shots_on_post: "",
 };
 
 interface PlayerStatsFormProps {
@@ -642,6 +647,7 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
     "clearances", "times_dribbled_past", "possession_lost",
     "long_passes_accurate", "long_passes_total", "successful_dribbles",
     "total_dribbles", "crosses_success", "crosses_failed", "penalties_won",
+    "progressive_passes", "shots_on_post",
   ] as const;
 
   const buildStatPayload = (stat: PlayerStat): Record<string, number> => {
@@ -726,9 +732,11 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
           shots:              n("shots"),
           shots_on_target:    n("shots_on_target"),
           shots_blocked:      n("shots_blocked"),
+          shots_on_post:      n("shots_on_post"),
           offsides:           n("offsides"),
           accurate_passes:    n("accurate_passes"),
           total_passes:       n("total_passes"),
+          progressive_passes: n("progressive_passes"),
           key_passes:         n("key_passes"),
           chances_created:    n("chances_created"),
           crosses_success:    n("crosses_success"),

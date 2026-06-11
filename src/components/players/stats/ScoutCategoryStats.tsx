@@ -73,6 +73,7 @@ export const OUTFIELD_SCOUT_CATEGORIES: ScoutCategory[] = [
       { key: "shots_on_target", label: "Final. Gol", successOf: "shots" },
       { key: "shots_off_target_derived", label: "Finalizações Fora" },
       { key: "shots_blocked", label: "Final. Bloq." },
+      { key: "shots_on_post", label: "Na Trave" },
       { key: "shots", label: "Final. Total" },
       { key: "offsides", label: "Impedim." },
       { key: "penalties_won", label: "Pên. Sofrido" },
@@ -89,6 +90,7 @@ export const OUTFIELD_SCOUT_CATEGORIES: ScoutCategory[] = [
       { key: "chances_created", label: "Chances" },
       { key: "accurate_passes", label: "Passes ✓", successOfFailed: "total_passes" },
       { key: "total_passes", label: "Passes ✗" },
+      { key: "progressive_passes", label: "Pass. Prog." },
       { key: "passes_total_derived", label: "Passes Tot." },
       { key: "crosses_success", label: "Cruzam. ✓", successOfFailed: "crosses_failed" },
       { key: "crosses_failed", label: "Cruzam. ✗" },
@@ -122,7 +124,7 @@ export const OUTFIELD_SCOUT_CATEGORIES: ScoutCategory[] = [
       { key: "clearances", label: "Cortes" },
       { key: "recoveries", label: "Recup." },
       { key: "shots_blocked", label: "Chute Bloq." },
-      { key: "times_dribbled_past", label: "Driblado" },
+      { key: "times_dribbled_past", label: "Dribles Sofridos" },
       { key: "ground_duels_won", label: "Duelo Chão ✓", successOfFailed: "ground_duels_total" },
       { key: "ground_duels_total", label: "Duelo Chão ✗" },
       { key: "ground_duels_total_derived", label: "Duelo Chão Tot." },
@@ -207,10 +209,10 @@ const DERIVED_FAILED_MAP: Record<
   string,
   { successKey: string | string[]; totalKey: string }
 > = {
-  // Finalizações Fora = Total − No Gol − Bloqueadas
+  // Finalizações Fora = Total − No Gol − Bloqueadas − Na Trave
   // `shots` na DB armazena o total real de finalizações (única exceção ao padrão)
   shots_off_target_derived: {
-    successKey: ["shots_on_target", "shots_blocked"],
+    successKey: ["shots_on_target", "shots_blocked", "shots_on_post"],
     totalKey: "shots",
   },
 };
@@ -225,7 +227,7 @@ const DERIVED_FAILED_MAP: Record<
  * total verdadeiro. O total real é success + falha, calculado aqui.
  */
 const DERIVED_SUM_MAP: Record<string, string[]> = {
-  passes_total_derived:        ["accurate_passes",      "total_passes"],
+  passes_total_derived:        ["accurate_passes",      "total_passes", "progressive_passes"],
   dribbles_total_derived:      ["successful_dribbles",  "total_dribbles"],
   ground_duels_total_derived:  ["ground_duels_won",     "ground_duels_total"],
   aerial_duels_total_derived:  ["aerial_duels_won",     "aerial_duels_total"],

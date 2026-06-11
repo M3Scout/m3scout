@@ -48,7 +48,9 @@ export const EVENT_LABELS_PTBR: Record<string, string> = {
   recovery: "Recuperações",
   clearance: "Cortes",
   blocked_shot: "Chute Bloqueado",
-  was_dribbled: "Driblado",
+  was_dribbled: "Dribles Sofridos",
+  progressive_pass: "Passe Progressivo",
+  shot_on_post: "Finalização na Trave",
   
   // Duels
   duel_won: "Duelos Ganhos",

@@ -36,12 +36,14 @@ export interface MatchDerivedStats {
   shots_on_target: number;
   shots_off_target: number; // derived: shots - shots_on_target
   shots_blocked: number; // Offensive - our shot was blocked
+  shots_on_post: number;
   offsides: number;
   
   // Passing (totals are derived)
   passes_completed: number;
   passes_failed: number; // from pass_total events
-  passes_total: number; // derived: completed + failed
+  progressive_passes: number;
+  passes_total: number; // derived: completed + failed + progressive
   key_passes: number;
   chances_created: number;
   crosses_success: number;
@@ -358,11 +360,12 @@ export function usePlayerMatchStats({
       if (minutesPlayed <= 0) continue;
 
       // CRITICAL: In our DB schema, `shots` field stores shots OFF TARGET (not total)
-      // shots_total = shots (off target) + shots_on_target + shots_blocked
+      // shots_total = shots (off target) + shots_on_target + shots_blocked + shots_on_post
       const shotsOffTarget = stats?.shots ?? 0;
       const shotsOnTarget = stats?.shots_on_target ?? 0;
       const shotsBlocked = stats?.shots_blocked ?? 0;
-      const shotsTotal = shotsOffTarget + shotsOnTarget + shotsBlocked;
+      const shotsOnPost = (stats as any)?.shots_on_post ?? 0;
+      const shotsTotal = shotsOffTarget + shotsOnTarget + shotsBlocked + shotsOnPost;
 
       const derivedStats: MatchDerivedStats = {
         matches: 1,
@@ -374,13 +377,12 @@ export function usePlayerMatchStats({
         shots_on_target: shotsOnTarget,
         shots_off_target: shotsOffTarget,
         shots_blocked: shotsBlocked,
+        shots_on_post: shotsOnPost,
         offsides: stats?.offsides ?? 0,
         passes_completed: stats?.passes_completed ?? 0,
-        // CRITICAL: In our DB schema, passes_total stores FAILED passes count, NOT actual total
-        // passes_failed = passes_total (the stored "total" IS the failed count)
-        // Actual total = passes_completed + passes_total (success + failed)
         passes_failed: stats?.passes_total ?? 0,
-        passes_total: (stats?.passes_completed ?? 0) + (stats?.passes_total ?? 0),
+        progressive_passes: (stats as any)?.progressive_passes ?? 0,
+        passes_total: (stats?.passes_completed ?? 0) + (stats?.passes_total ?? 0) + ((stats as any)?.progressive_passes ?? 0),
         key_passes: stats?.key_passes ?? 0,
         chances_created: stats?.chances_created ?? 0,
         crosses_success: stats?.crosses_success ?? 0,

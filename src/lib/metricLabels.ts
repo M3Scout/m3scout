@@ -119,8 +119,10 @@ export const METRIC_LABELS_PT: Record<string, string> = {
   dribbles_total: "Total de Dribles",
   dribbles_per_90: "Dribles/90",
   dribble_success_rate: "Taxa de Dribles",
-  times_dribbled_past: "Vezes Driblado",
-  was_dribbled: "Vezes Driblado",
+  times_dribbled_past: "Dribles Sofridos",
+  was_dribbled: "Dribles Sofridos",
+  progressive_passes: "Passes Progressivos",
+  shots_on_post: "Finalizações na Trave",
   
   // === DISCIPLINA ===
   discipline: "Disciplina",
