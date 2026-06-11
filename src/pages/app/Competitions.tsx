@@ -21,6 +21,7 @@ import {
 import {
   Trophy,
   Upload,
+  Download,
   Loader2,
   AlertTriangle,
   Plus,
@@ -561,6 +562,36 @@ const Competitions = () => {
 
   const isConfirmationValid = confirmationInput === CONFIRMATION_TEXT;
 
+  const handleExportCSV = () => {
+    const headers = ["name", "display_name", "competition_code", "country", "state", "type", "division", "phase", "base_coefficient", "computed_coefficient", "final_coefficient", "tier", "visibility_score", "is_active", "is_unique", "has_phases"];
+    const rows = filteredCompetitions.map(c => [
+      c.name,
+      c.display_name ?? "",
+      c.competition_code ?? "",
+      c.country,
+      c.state ?? "",
+      c.type,
+      c.division ?? "",
+      c.phase ?? "",
+      c.base_coefficient,
+      c.computed_coefficient,
+      c.final_coefficient,
+      c.tier,
+      c.visibility_score ?? "",
+      c.is_active,
+      c.is_unique ?? "",
+      c.has_phases,
+    ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(","));
+    const csv = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `competicoes_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -649,6 +680,12 @@ const Competitions = () => {
                   </Button>
                 </Link>
               </span>
+              {filteredCompetitions.length > 0 && (
+                <Button variant="outline" className="hidden md:inline-flex rounded-full" onClick={handleExportCSV}>
+                  <Download className="w-4 h-4" />
+                  Exportar CSV
+                </Button>
+              )}
               {isAdmin && (
                 <Button onClick={handleCreate} className="hidden sm:flex bg-[#e63946] hover:bg-[#d62839] text-white rounded-full">
                   <Plus className="w-4 h-4" />
