@@ -733,8 +733,11 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
 
       toast.success("Estatísticas salvas com sucesso!");
       setLiveEdits({});
-      invalidatePlayerSummary(playerId); // Invalida cache do "Resumo WhatsApp"
-      fetchData(); // Refresh to get real IDs
+      invalidatePlayerSummary(playerId);
+      // Recalculate attribute scores so radar reflects new/updated stats
+      supabase.rpc("recalculate_player_all_attributes", { p_player_id: playerId })
+        .then(({ error }) => { if (error) console.warn("[save] recalculate_player_all_attributes failed", error); });
+      fetchData();
     } catch (error: any) {
       console.error(error);
       toast.error(error.message || "Erro ao salvar estatísticas");
