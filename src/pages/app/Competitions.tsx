@@ -662,16 +662,6 @@ const Competitions = () => {
                   )}
                 </PermissionGate>
               </span>
-              {isAdmin && competitions.length > 0 && (
-                <Button
-                  variant="outline"
-                  onClick={findDuplicates}
-                  className="hidden md:inline-flex rounded-full"
-                >
-                  <Copy className="w-4 h-4" />
-                  Remover Duplicados
-                </Button>
-              )}
               <span className="hidden md:inline-flex">
                 <Link to="/dashboard/competicoes/importar">
                   <Button variant="outline" className="rounded-full">
