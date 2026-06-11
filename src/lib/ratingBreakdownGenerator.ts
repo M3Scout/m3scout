@@ -150,7 +150,6 @@ const STAT_MAPPINGS: StatMapping[] = [
     weight: WEIGHTS.pass_completed.weight,
     category: "passing",
     getValue: (s) => Math.max(0, s.passes_completed ?? 0),
-    maxImpact: 0.20,
   },
   {
     stat: "pass_failed",
@@ -189,13 +188,6 @@ const STAT_MAPPINGS: StatMapping[] = [
     weight: WEIGHTS.shot_blocked.weight,
     category: "defense",
     getValue: (s) => Math.max(0, s.blocked_shots ?? 0),
-  },
-  {
-    stat: "recovery",
-    label: "Recuperação",
-    weight: WEIGHTS.recovery.weight,
-    category: "defense",
-    getValue: (s) => Math.max(0, s.recoveries ?? 0),
   },
   {
     stat: "ground_duel_won",
@@ -289,7 +281,6 @@ const GK_STAT_MAPPINGS: StatMapping[] = [
     weight: GK_WEIGHTS.pass_completed.weight,
     category: "passing",
     getValue: (s) => Math.max(0, s.passes_completed ?? 0),
-    maxImpact: 0.20,
   },
   {
     stat: "pass_failed",
