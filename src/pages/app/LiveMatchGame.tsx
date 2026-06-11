@@ -131,6 +131,7 @@ function LiveMatchGameInner({ matchId }: { matchId: string }) {
     endFirstHalf,
     startSecondHalf,
     updateAddedTime,
+    skipTime,
     finishGame,
     forceFinishGame,
     regenerateSummary,
@@ -607,6 +608,7 @@ function LiveMatchGameInner({ matchId }: { matchId: string }) {
             onEndHalf={() => endFirstHalf.mutate()}
             onStartSecondHalf={() => startSecondHalf.mutate()}
             onUpdateAddedTime={(half, minutes) => updateAddedTime.mutate({ half, minutes })}
+            onSkipTime={(secs) => skipTime.mutate(secs)}
             onFinishGame={handleFinishGame}
             onMinuteChange={handleMinuteChange}
             onTimerInfoChange={handleTimerInfoChange}
@@ -614,7 +616,8 @@ function LiveMatchGameInner({ matchId }: { matchId: string }) {
               playPauseClock.isPending ||
               endFirstHalf.isPending ||
               startSecondHalf.isPending ||
-              finishGame.isPending
+              finishGame.isPending ||
+              skipTime.isPending
             }
           />
         )}

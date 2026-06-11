@@ -837,6 +837,39 @@ export function useLiveMatch(matchId: string) {
     },
   });
 
+  const skipTime = useMutation({
+    mutationFn: async (seconds: number) => {
+      if (!match) throw new Error("Match not found");
+
+      let currentElapsed = match.elapsed_seconds_in_half;
+      const isRunning = match.clock_status === "running";
+      if (isRunning && match.half_start_time) {
+        const start = new Date(match.half_start_time).getTime();
+        currentElapsed += Math.floor((Date.now() - start) / 1000);
+      }
+
+      const updatePayload: Record<string, unknown> = {
+        elapsed_seconds_in_half: currentElapsed + seconds,
+      };
+      if (isRunning) {
+        updatePayload.half_start_time = new Date().toISOString();
+      }
+
+      const { error } = await supabase
+        .from("matches")
+        .update(updatePayload)
+        .eq("id", matchId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["match", matchId] });
+    },
+    onError: () => {
+      toast.error("Erro ao avançar tempo");
+    },
+  });
+
   // Finish game using RPC V3 - also persists ratings
   const finishGame = useMutation({
     mutationFn: async () => {
@@ -1250,6 +1283,7 @@ export function useLiveMatch(matchId: string) {
     endFirstHalf,
     startSecondHalf,
     updateAddedTime,
+    skipTime,
     finishGame,
     forceFinishGame,
 
