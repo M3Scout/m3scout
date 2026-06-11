@@ -54,6 +54,8 @@ interface LiveStatsTotals {
   clean_sheets: number;
   penalties_saved: number;
   errors_leading_to_goal: number;
+  shots_on_post: number;
+  progressive_passes: number;
 }
 
 interface ManualStatsTotals {
@@ -87,6 +89,8 @@ interface ManualStatsTotals {
   clean_sheets: number;
   penalties_saved: number;
   errors_leading_to_goal: number;
+  shots_on_post: number;
+  progressive_passes: number;
 }
 
 interface UnifiedAttributeStatsResult {
@@ -182,6 +186,8 @@ export function useAttributeUnifiedStats({
         clean_sheets: 0,
         penalties_saved: 0,
         errors_leading_to_goal: 0,
+        shots_on_post: 0,
+        progressive_passes: 0,
       };
 
       if (matchIds.length > 0) {
@@ -287,6 +293,8 @@ export function useAttributeUnifiedStats({
             liveStatsTotals.possession_lost += stats.possession_lost ?? 0;
             liveStatsTotals.saves += stats.saves ?? 0;
             liveStatsTotals.goals_conceded += stats.goals_conceded ?? 0;
+            liveStatsTotals.shots_on_post += stats.shots_on_post ?? 0;
+            liveStatsTotals.progressive_passes += stats.progressive_passes ?? 0;
           }
         }
       }
@@ -339,6 +347,8 @@ export function useAttributeUnifiedStats({
         clean_sheets: 0,
         penalties_saved: 0,
         errors_leading_to_goal: 0,
+        shots_on_post: 0,
+        progressive_passes: 0,
       };
 
       for (const row of manualData || []) {
@@ -372,6 +382,8 @@ export function useAttributeUnifiedStats({
         manualStatsTotals.clean_sheets += row.clean_sheets ?? 0;
         manualStatsTotals.penalties_saved += row.penalties_saved ?? 0;
         manualStatsTotals.errors_leading_to_goal += row.errors_leading_to_goal ?? 0;
+        manualStatsTotals.shots_on_post += row.shots_on_post ?? 0;
+        manualStatsTotals.progressive_passes += row.progressive_passes ?? 0;
       }
 
       // 3. MERGE: Sum live + manual (they represent DIFFERENT games)
@@ -410,6 +422,9 @@ export function useAttributeUnifiedStats({
         fouls_committed: liveStatsTotals.fouls_committed + manualStatsTotals.fouls_committed,
         fouls_drawn: liveStatsTotals.fouls_suffered + manualStatsTotals.fouls_drawn,
         possession_lost: liveStatsTotals.possession_lost + manualStatsTotals.possession_lost,
+        // New metrics
+        shots_on_post: liveStatsTotals.shots_on_post + manualStatsTotals.shots_on_post,
+        progressive_passes: liveStatsTotals.progressive_passes + manualStatsTotals.progressive_passes,
       };
 
       return {

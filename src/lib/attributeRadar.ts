@@ -59,6 +59,8 @@ export interface PlayerStatRow {
   long_passes_accurate?: number;
   long_passes_total?: number;
   times_dribbled_past?: number;
+  shots_on_post?: number;
+  progressive_passes?: number;
 }
 
 export interface AttributeScores {
@@ -111,16 +113,18 @@ interface MetricConfig {
 
 // Per-90 caps for normalization to 0-100
 const METRIC_CONFIGS: Record<string, MetricConfig> = {
-  // ATA (Ataque) - gols, assists, shots, shots_on_target
+  // ATA (Ataque)
   goals_p90: { floor: 0, target: 0.7 },
   assists_p90: { floor: 0, target: 0.4 },
   shots_p90: { floor: 0, target: 4.0 },
   shots_on_target_p90: { floor: 0, target: 2.0 },
-  
-  // CRI (Criatividade) - key_passes, chances_created, dribbles_completed
+  shots_on_post_p90: { floor: 0, target: 0.5 },
+
+  // CRI (Criatividade)
   key_passes_p90: { floor: 0, target: 2.5 },
   chances_created_p90: { floor: 0, target: 2.5 },
   dribble_success_rate: { floor: 0.20, target: 0.70 },
+  progressive_passes_p90: { floor: 0, target: 5.0 },
   
   // DEF (Defesa) - tackles, interceptions, recoveries, duels_won, clearances
   tackles_p90: { floor: 0, target: 5.0 },
@@ -157,23 +161,26 @@ const METRIC_CONFIGS: Record<string, MetricConfig> = {
 // ATTRIBUTE WEIGHT CONFIG (V2 - Spec Aligned)
 // ============================================================================
 
-// Standard outfield weights matching spec formula
+// Standard outfield weights
 const OUTFIELD_WEIGHTS = {
   ata: {
-    goals_p90: 0.40,
-    assists_p90: 0.25,
-    shots_p90: 0.15,
+    goals_p90: 0.35,
+    assists_p90: 0.20,
+    shots_p90: 0.10,
     shots_on_target_p90: 0.20,
+    shots_on_post_p90: 0.15,
   },
   cri: {
-    key_passes_p90: 0.40,
-    chances_created_p90: 0.35,
-    dribble_success_rate: 0.25,
+    key_passes_p90: 0.35,
+    chances_created_p90: 0.30,
+    dribble_success_rate: 0.20,
+    progressive_passes_p90: 0.15,
   },
   tec: {
-    pass_accuracy: 0.45,
-    passes_p90: 0.25,
-    ball_control: 0.30,
+    pass_accuracy: 0.40,
+    passes_p90: 0.20,
+    ball_control: 0.25,
+    progressive_passes_p90: 0.15,
   },
   def: {
     tackles_p90: 0.25,
@@ -272,20 +279,10 @@ function ratio(numerator: number, denominator: number, fallback = 0): number {
  * Determine confidence level based on total minutes.
  */
 function getConfidenceLevel(minutes: number): ConfidenceLevel {
-  if (minutes < 100) return "none";   // ~1 match minimum
-  if (minutes < 270) return "low";    // 3 matches worth
-  if (minutes < 540) return "medium"; // 6 matches worth
+  if (minutes < 45) return "none";    // less than half a match
+  if (minutes < 180) return "low";    // under 2 full matches
+  if (minutes < 450) return "medium"; // under 5 full matches
   return "high";
-}
-
-/**
- * Apply shrinkage to raw score based on sample size.
- * Regresses toward 50 for small samples.
- */
-function applyShrinkage(rawScore: number, minutes: number): number {
-  // Alpha ranges from 0.3 (very small sample) to 1.0 (large sample)
-  const alpha = clamp(minutes / 900, 0.3, 1.0);
-  return 50 + (rawScore - 50) * alpha;
 }
 
 /**
@@ -347,6 +344,8 @@ function aggregateStats(statsRows: PlayerStatRow[]): PlayerStatRow {
     long_passes_accurate: 0,
     long_passes_total: 0,
     times_dribbled_past: 0,
+    shots_on_post: 0,
+    progressive_passes: 0,
   };
 
   for (const row of statsRows) {
@@ -392,6 +391,8 @@ function aggregateStats(statsRows: PlayerStatRow[]): PlayerStatRow {
     agg.long_passes_accurate! += row.long_passes_accurate || 0;
     agg.long_passes_total! += row.long_passes_total || 0;
     agg.times_dribbled_past! += row.times_dribbled_past || 0;
+    agg.shots_on_post! += row.shots_on_post || 0;
+    agg.progressive_passes! += row.progressive_passes || 0;
   }
 
   return agg;
@@ -408,10 +409,12 @@ function calculateRates(stats: PlayerStatRow): Record<string, number> {
   const assists_p90 = per90(stats.assists, minutes);
   const shots_p90 = per90(stats.shots, minutes);
   const shots_on_target_p90 = per90(stats.shots_on_target, minutes);
-  
+  const shots_on_post_p90 = per90(stats.shots_on_post || 0, minutes);
+
   // Per-90 rates (CRI)
   const key_passes_p90 = per90(stats.key_passes, minutes);
   const chances_created_p90 = per90(stats.chances_created, minutes);
+  const progressive_passes_p90 = per90(stats.progressive_passes || 0, minutes);
   
   // Per-90 rates (DEF)
   const tackles_p90 = per90(stats.tackles, minutes);
@@ -458,10 +461,12 @@ function calculateRates(stats: PlayerStatRow): Record<string, number> {
     assists_p90,
     shots_p90,
     shots_on_target_p90,
+    shots_on_post_p90,
     // CRI
     key_passes_p90,
     chances_created_p90,
     dribble_success_rate,
+    progressive_passes_p90,
     // DEF
     tackles_p90,
     interceptions_p90,
@@ -568,11 +573,8 @@ export function computeRadarAttributes(
   const rawDef = calculateWeightedAttribute(metricScores, weights.def);
   const rawTat = calculateWeightedAttribute(metricScores, weights.tat);
   
-  // Apply shrinkage for sample size
   const confidence = getConfidenceLevel(minutes);
-  const alpha = clamp(minutes / 900, 0.3, 1.0);
-  
-  // Build raw scores object
+
   const rawScores: AttributeScores = {
     ata: rawAta,
     tec: rawTec,
@@ -580,24 +582,22 @@ export function computeRadarAttributes(
     def: rawDef,
     cri: rawCri,
   };
-  
-  // Apply shrinkage and clamp
+
   const finalScores: AttributeScores = {
-    ata: Math.round(clamp(applyShrinkage(rawAta, minutes), 0, 100)),
-    tec: Math.round(clamp(applyShrinkage(rawTec, minutes), 0, 100)),
-    tat: Math.round(clamp(applyShrinkage(rawTat, minutes), 0, 100)),
-    def: Math.round(clamp(applyShrinkage(rawDef, minutes), 0, 100)),
-    cri: Math.round(clamp(applyShrinkage(rawCri, minutes), 0, 100)),
+    ata: Math.round(clamp(rawAta, 0, 100)),
+    tec: Math.round(clamp(rawTec, 0, 100)),
+    tat: Math.round(clamp(rawTat, 0, 100)),
+    def: Math.round(clamp(rawDef, 0, 100)),
+    cri: Math.round(clamp(rawCri, 0, 100)),
   };
-  
-  // Build debug object
+
   const debug: RadarDebug = {
     totals: { matches, minutes, goals, assists },
     rates,
     metricScores,
     attributeScores: rawScores,
     confidence,
-    alpha,
+    alpha: clamp(minutes / 900, 0, 1),
   };
   
   // Log once if requested (or in dev mode)
