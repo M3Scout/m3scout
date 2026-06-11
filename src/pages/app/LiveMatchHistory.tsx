@@ -20,6 +20,15 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -40,6 +49,7 @@ import {
   Pause,
   FileText,
   Trash2,
+  Pencil,
   MoreVertical,
   Eye,
   Play,
@@ -102,6 +112,88 @@ const statusConfig: Record<MatchStatus, { label: string; bgClass: string; textCl
     icon: <CheckCircle2 className="h-3 w-3" /> 
   },
 };
+
+// ── Edit Dialog ───────────────────────────────────────────────────────────────
+interface EditForm {
+  team_name_display: string;
+  team_logo_url: string;
+  opponent_name: string;
+  opponent_logo_url: string;
+}
+
+interface MatchEditDialogProps {
+  match: MatchWithCompetition | null;
+  onClose: () => void;
+  onSave: (id: string, form: EditForm) => void;
+  isPending: boolean;
+}
+
+function MatchEditDialog({ match, onClose, onSave, isPending }: MatchEditDialogProps) {
+  const [form, setForm] = useState<EditForm>({
+    team_name_display: "",
+    team_logo_url: "",
+    opponent_name: "",
+    opponent_logo_url: "",
+  });
+
+  useEffect(() => {
+    if (match) {
+      setForm({
+        team_name_display: match.team_name_display ?? "",
+        team_logo_url:     match.team_logo_url     ?? "",
+        opponent_name:     match.opponent_name      ?? "",
+        opponent_logo_url: match.opponent_logo_url  ?? "",
+      });
+    }
+  }, [match]);
+
+  const set = (key: keyof EditForm) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm(prev => ({ ...prev, [key]: e.target.value }));
+
+  return (
+    <Dialog open={!!match} onOpenChange={onClose}>
+      <DialogContent className="bg-zinc-900 border-zinc-800 max-w-md">
+        <DialogHeader>
+          <DialogTitle>Editar Informações da Partida</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="space-y-1.5">
+            <Label className="text-xs text-zinc-400">Time da Casa</Label>
+            <Input value={form.team_name_display} onChange={set("team_name_display")}
+              placeholder="Nome do time" className="bg-zinc-800 border-zinc-700" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-zinc-400">Escudo do Time da Casa (URL)</Label>
+            <Input value={form.team_logo_url} onChange={set("team_logo_url")}
+              placeholder="https://..." className="bg-zinc-800 border-zinc-700" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-zinc-400">Time Visitante</Label>
+            <Input value={form.opponent_name} onChange={set("opponent_name")}
+              placeholder="Nome do adversário" className="bg-zinc-800 border-zinc-700" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-zinc-400">Escudo do Time Visitante (URL)</Label>
+            <Input value={form.opponent_logo_url} onChange={set("opponent_logo_url")}
+              placeholder="https://..." className="bg-zinc-800 border-zinc-700" />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} className="border-zinc-700">
+            Cancelar
+          </Button>
+          <Button
+            onClick={() => match && onSave(match.id, form)}
+            disabled={isPending || !form.opponent_name.trim()}
+            className="bg-[#e63946] hover:bg-[#d62839] text-white"
+          >
+            {isPending ? "Salvando..." : "Salvar"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 // Skeleton for loading state
 function MatchCardSkeleton({ index }: { index: number }) {
@@ -203,11 +295,12 @@ interface MatchCardProps {
   match: MatchWithCompetition;
   link: string;
   onDelete?: () => void;
+  onEdit?: () => void;
   canDelete?: boolean;
   index: number;
 }
 
-function MatchCard({ match, link, onDelete, canDelete = false, index }: MatchCardProps) {
+function MatchCard({ match, link, onDelete, onEdit, canDelete = false, index }: MatchCardProps) {
   const config = statusConfig[match.status];
   const competitionName = match.competition?.display_name || match.competition?.name || "Competição";
   const isLive = match.status === "live";
@@ -365,13 +458,18 @@ function MatchCard({ match, link, onDelete, canDelete = false, index }: MatchCar
                     )}
                   </Link>
                 </DropdownMenuItem>
+                {onEdit && (
+                  <DropdownMenuItem
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEdit(); }}
+                    className="cursor-pointer"
+                  >
+                    <Pencil className="w-3.5 h-3.5 mr-2" />
+                    Editar
+                  </DropdownMenuItem>
+                )}
                 {canDelete && onDelete && (
-                  <DropdownMenuItem 
-                    onClick={(e) => { 
-                      e.preventDefault(); 
-                      e.stopPropagation();
-                      onDelete(); 
-                    }}
+                  <DropdownMenuItem
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(); }}
                     className="text-red-400 focus:text-red-400 focus:bg-red-500/10 cursor-pointer"
                   >
                     <Trash2 className="w-3.5 h-3.5 mr-2" />
@@ -396,17 +494,19 @@ interface MatchSectionProps {
   matches: MatchWithCompetition[];
   getMatchLink: (match: MatchWithCompetition) => string;
   onDeleteClick?: (match: MatchWithCompetition) => void;
+  onEditClick?: (match: MatchWithCompetition) => void;
   canDelete?: boolean;
 }
 
-function MatchSection({ 
-  title, 
-  icon, 
-  iconColorClass, 
+function MatchSection({
+  title,
+  icon,
+  iconColorClass,
   borderColorClass = "border-zinc-800/60",
-  matches, 
-  getMatchLink, 
+  matches,
+  getMatchLink,
   onDeleteClick,
+  onEditClick,
   canDelete = false,
 }: MatchSectionProps) {
   if (matches.length === 0) return null;
@@ -441,6 +541,7 @@ function MatchSection({
             match={match}
             link={getMatchLink(match)}
             onDelete={onDeleteClick ? () => onDeleteClick(match) : undefined}
+            onEdit={onEditClick ? () => onEditClick(match) : undefined}
             canDelete={canDelete}
             index={i}
           />
@@ -455,6 +556,7 @@ export default function LiveMatchHistory() {
   const { can } = usePermissions();
   const queryClient = useQueryClient();
   const [deleteMatch, setDeleteMatch] = useState<MatchWithCompetition | null>(null);
+  const [editMatch, setEditMatch]     = useState<MatchWithCompetition | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileSearch, setMobileSearch] = useState("");
   
@@ -527,6 +629,27 @@ export default function LiveMatchHistory() {
       supabase.removeChannel(channel);
     };
   }, [user, queryClient]);
+
+  const editMatchMutation = useMutation({
+    mutationFn: async ({ id, form }: { id: string; form: EditForm }) => {
+      const { error } = await supabase
+        .from("matches")
+        .update({
+          team_name_display: form.team_name_display || null,
+          team_logo_url:     form.team_logo_url     || null,
+          opponent_name:     form.opponent_name,
+          opponent_logo_url: form.opponent_logo_url  || null,
+        })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["matches-history"] });
+      toast.success("Partida atualizada");
+      setEditMatch(null);
+    },
+    onError: () => toast.error("Erro ao salvar"),
+  });
 
   const deleteMatchMutation = useMutation({
     mutationFn: async (matchId: string) => {
@@ -658,6 +781,7 @@ export default function LiveMatchHistory() {
                       match={match}
                       link={getMatchLink(match)}
                       onDelete={() => setDeleteMatch(match)}
+                      onEdit={() => setEditMatch(match)}
                       canDelete={canDeleteMatches}
                       index={i}
                     />
@@ -675,6 +799,7 @@ export default function LiveMatchHistory() {
               matches={finishedMatches}
               getMatchLink={getMatchLink}
               onDeleteClick={setDeleteMatch}
+              onEditClick={setEditMatch}
               canDelete={canDeleteMatches}
             />
 
@@ -686,6 +811,7 @@ export default function LiveMatchHistory() {
               matches={appliedMatches}
               getMatchLink={getMatchLink}
               onDeleteClick={setDeleteMatch}
+              onEditClick={setEditMatch}
               canDelete={canDeleteMatches}
             />
 
@@ -697,11 +823,20 @@ export default function LiveMatchHistory() {
               matches={draftMatches}
               getMatchLink={getMatchLink}
               onDeleteClick={setDeleteMatch}
+              onEditClick={setEditMatch}
               canDelete={canDeleteMatches}
             />
           </AnimatePresence>
         </div>
       )}
+
+      {/* Edit match dialog */}
+      <MatchEditDialog
+        match={editMatch}
+        onClose={() => setEditMatch(null)}
+        onSave={(id, form) => editMatchMutation.mutate({ id, form })}
+        isPending={editMatchMutation.isPending}
+      />
 
       {/* Delete confirmation dialog */}
       <AlertDialog open={!!deleteMatch} onOpenChange={() => setDeleteMatch(null)}>

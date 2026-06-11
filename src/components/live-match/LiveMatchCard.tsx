@@ -24,6 +24,7 @@ import {
   Play,
   MoreVertical,
   Trash2,
+  Pencil,
   Goal,
   HandHelping,
   CreditCard,
@@ -79,6 +80,7 @@ interface LiveMatchCardProps {
   match: MatchWithCompetition;
   link: string;
   onDelete?: () => void;
+  onEdit?: () => void;
   canDelete?: boolean;
   index: number;
 }
@@ -176,7 +178,7 @@ const quickEventConfig: Record<QuickEventType, {
   },
 };
 
-export function LiveMatchCard({ match, link, onDelete, canDelete = false, index }: LiveMatchCardProps) {
+export function LiveMatchCard({ match, link, onDelete, onEdit, canDelete = false, index }: LiveMatchCardProps) {
   const queryClient = useQueryClient();
   const { displayTime, displayMinute, half } = useLiveTimer(match);
   const [quickEventType, setQuickEventType] = useState<QuickEventType | null>(null);
@@ -395,8 +397,17 @@ export function LiveMatchCard({ match, link, onDelete, canDelete = false, index 
                         Continuar
                       </Link>
                     </DropdownMenuItem>
+                    {onEdit && (
+                      <DropdownMenuItem
+                        onClick={onEdit}
+                        className="cursor-pointer"
+                      >
+                        <Pencil className="w-3.5 h-3.5 mr-2" />
+                        Editar
+                      </DropdownMenuItem>
+                    )}
                     {canDelete && onDelete && (
-                      <DropdownMenuItem 
+                      <DropdownMenuItem
                         onClick={onDelete}
                         className="text-red-400 focus:text-red-400 focus:bg-red-500/10 cursor-pointer"
                       >
