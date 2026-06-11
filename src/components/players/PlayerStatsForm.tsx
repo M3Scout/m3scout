@@ -449,10 +449,39 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
       setStats(statsRes.data || []);
       setCompetitions(compRes.data || []);
 
-      // Build a minutes map: match_id → minutes_played
+      // Build a minutes map: match_id → minutes_played (from match_players, static)
       const minutesMap: Record<string, number> = {};
       for (const mp of minutesRes.data || []) {
         minutesMap[mp.match_id] = mp.minutes_played ?? 0;
+      }
+
+      // Override with player_field_presence (authoritative actual minutes, same source
+      // as usePlayerMatchStats). This fixes the case where match_players.minutes_played
+      // is a stale initial value (e.g. 50 min) but actual presence was 62 min.
+      const liveMatchIds = Array.from(new Set(
+        (livePlayersRes.data || []).map((r: any) => r.match_id as string)
+      ));
+      if (liveMatchIds.length > 0) {
+        const { data: presenceRows } = await supabase
+          .from("player_field_presence")
+          .select("match_id, period, entered_at_seconds, exited_at_seconds")
+          .eq("player_id", playerId)
+          .in("match_id", liveMatchIds);
+
+        if (presenceRows && presenceRows.length > 0) {
+          const END_HALF = 45 * 60;
+          const presenceMap: Record<string, number> = {};
+          for (const r of presenceRows as { match_id: string; period: number | null; entered_at_seconds: number | null; exited_at_seconds: number | null }[]) {
+            const period = r.period ?? 1;
+            const entryS = r.entered_at_seconds ?? 0;
+            const exitS  = Math.min(r.exited_at_seconds ?? END_HALF, END_HALF);
+            const entryMin = period === 1 ? Math.floor(entryS / 60) : 45 + Math.floor((entryS - END_HALF) / 60);
+            const exitMin  = period === 1 ? Math.floor(exitS  / 60) : 45 + Math.floor((exitS  - END_HALF) / 60);
+            presenceMap[r.match_id] = (presenceMap[r.match_id] ?? 0) + Math.max(0, exitMin - entryMin);
+          }
+          // Presence overrides static match_players.minutes_played
+          Object.assign(minutesMap, presenceMap);
+        }
       }
 
       const statsByMatchId: Record<string, any> = {};
@@ -497,7 +526,9 @@ export function PlayerStatsForm({ playerId, playerPosition }: PlayerStatsFormPro
         if (statRow.id) g.matchPlayerStatIds.push(statRow.id as string);
         if (!g.matchIds.includes(row.match_id as string)) g.matchIds.push(row.match_id as string);
         if (match.status === "applied") g.appliedCount += 1;
-        const mins = row.minutes_played ?? minutesMap[row.match_id as string] ?? 0;
+        // minutesMap already has presence-based minutes if available (authoritative),
+        // falling back to match_players.minutes_played for matches without presence data.
+        const mins = minutesMap[row.match_id as string] ?? row.minutes_played ?? 0;
         if (mins > 0) g.matches += 1;
         g.minutes += mins;
         g.goals += statRow.goals ?? 0;
