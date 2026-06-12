@@ -89,19 +89,20 @@ export function calculateAttributeScores(
   );
 
   const cri = clamp(
-    score(cc,  0.80) * 0.35 +
-    score(kp,  2.20) * 0.25 +
-    score(pp,  5.00) * 0.20 +
-    score(crs, 1.50) * 0.15 +
+    score(cc,  0.60) * 0.25 +
+    score(kp,  1.50) * 0.25 +
+    score(ast, 0.30) * 0.20 +
+    score(pp,  5.00) * 0.15 +
+    score(crs, 1.00) * 0.10 +
     scoreNeg(crf, 4.00) * 0.05
   );
 
   const tec = clamp(
-    score(ast,  0.45) * 0.25 +
-    score(acp,  45.0) * 0.15 +
-    score(drs,  3.00) * 0.15 +
-    score(pp,   5.00) * 0.10 +
-    score(lpA,  4.00) * 0.10 +
+    score(ast,  0.30) * 0.25 +
+    score(acp,  25.0) * 0.15 +
+    score(drs,  2.00) * 0.15 +
+    score(pp,   3.50) * 0.10 +
+    score(lpA,  2.00) * 0.10 +
     score(fd,   2.60) * 0.05 +
     scoreNeg(pf,   12.0) * 0.05 +
     scoreNeg(lpF,  6.00) * 0.05 +
@@ -110,31 +111,31 @@ export function calculateAttributeScores(
   );
 
   const tat = clamp(
-    score(int_, 2.45) * 0.15 +
-    score(pp,   5.00) * 0.12 +
-    score(rcv,  9.00) * 0.10 +
-    score(stl,  3.00) * 0.10 +
-    score(tkl,  4.00) * 0.08 +
-    score(gdW,  3.75) * 0.06 +
-    score(adW,  2.25) * 0.06 +
+    score(int_, 1.20) * 0.15 +
+    score(pp,   3.50) * 0.12 +
+    score(rcv,  4.50) * 0.10 +
+    score(stl,  1.50) * 0.10 +
+    score(tkl,  2.00) * 0.08 +
+    score(gdW,  2.50) * 0.06 +
+    score(adW,  1.50) * 0.06 +
     scoreNeg(fc,  3.00) * 0.08 +
     scoreNeg(rc,  0.05) * 0.12 +
     scoreNeg(yc,  0.30) * 0.06 +
-    scoreNeg(gdL, 4.00) * 0.04 +
-    scoreNeg(adL, 3.00) * 0.03
+    scoreNeg(gdL, 3.00) * 0.04 +
+    scoreNeg(adL, 2.00) * 0.03
   );
 
   const def = clamp(
-    score(stl,  3.00) * 0.20 +
-    score(tkl,  4.00) * 0.12 +
-    score(int_, 2.45) * 0.12 +
-    score(rcv,  9.00) * 0.10 +
-    score(clr,  4.20) * 0.10 +
-    score(blk,  1.50) * 0.10 +
-    score(gdW,  3.75) * 0.08 +
-    score(adW,  2.25) * 0.08 +
-    scoreNeg(gdL, 4.00) * 0.06 +
-    scoreNeg(adL, 3.00) * 0.04
+    score(stl,  1.50) * 0.20 +
+    score(tkl,  2.00) * 0.12 +
+    score(int_, 1.20) * 0.12 +
+    score(rcv,  4.50) * 0.10 +
+    score(clr,  1.50) * 0.10 +
+    score(blk,  1.00) * 0.10 +
+    score(gdW,  2.50) * 0.08 +
+    score(adW,  1.50) * 0.08 +
+    scoreNeg(gdL, 3.00) * 0.06 +
+    scoreNeg(adL, 2.00) * 0.04
   );
 
   return {
