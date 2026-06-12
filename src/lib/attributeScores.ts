@@ -129,24 +129,32 @@ export async function calculateAndSaveAttributeScores(
 }
 
 /**
- * Recalculate all attribute scores for a player (all competitions/seasons)
+ * Recalculate attribute scores for a player across all seasons.
  */
 export async function recalculatePlayerAllAttributes(
   playerId: string
 ): Promise<{ success: boolean; count: number; error?: string }> {
   try {
-    const { data, error } = await supabase.rpc("recalculate_player_all_attributes", {
-      p_player_id: playerId,
-    });
+    const { data: liveSeasons } = await supabase
+      .from("match_players")
+      .select("match:matches!inner(season_year)")
+      .eq("player_id", playerId)
+      .neq("is_removed", true)
+      .in("match.status", ["finished", "applied"]);
 
-    if (error) {
-      console.error("[ATTR_SCORES] Recalculate error:", error);
-      return { success: false, count: 0, error: error.message };
-    }
+    const { data: psSeasons } = await supabase
+      .from("player_stats")
+      .select("season_year")
+      .eq("player_id", playerId);
 
-    const count = Array.isArray(data) ? data.length : 0;
-    console.log(`[ATTR_SCORES] Recalculated ${count} rows for player ${playerId}`);
-    
+    const years = new Set<number>();
+    for (const r of (liveSeasons ?? []) as any[]) if (r.match?.season_year) years.add(r.match.season_year);
+    for (const r of (psSeasons ?? [])) years.add(r.season_year);
+
+    const results = await Promise.all(
+      Array.from(years).map(yr => recalculatePlayerScores(playerId, yr))
+    );
+    const count = results.filter(r => r.success).length;
     return { success: true, count };
   } catch (e) {
     console.error("[ATTR_SCORES] Exception:", e);

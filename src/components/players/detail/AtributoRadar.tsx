@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { Info } from "lucide-react";
+import { Info, RefreshCw } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { fetchPlayerAllAttributeScores, type AttributeScoresData } from "@/lib/attributeScores";
+import { recalculatePlayerScores } from "@/lib/recalculatePlayerScores";
 
 // ── SVG geometry ─────────────────────────────────────────────────────────────
 const CX = 140;
@@ -118,18 +119,53 @@ export function AtributoRadar({
   const [scores, setScores]                 = useState<number[]>([0, 0, 0, 0, 0]);
   const [compareScores, setCompareScores]   = useState<number[]>([0, 0, 0, 0, 0]);
   const [loaded, setLoaded]                 = useState(false);
+  const [recalculating, setRecalculating]   = useState(false);
+
+  const loadScores = async () => {
+    const rows = await fetchPlayerAllAttributeScores(playerId);
+    if (!rows.length) { setLoaded(true); return; }
+
+    // Auto-recalc if any row has an old engine version
+    const hasOldEngine = rows.some(r => {
+      const v = (r.details as any)?.engine_version ?? "";
+      return !v.startsWith("v25");
+    });
+    if (hasOldEngine) {
+      const years = [...new Set(rows.map(r => r.season_year as number))];
+      await Promise.all(years.map(yr => recalculatePlayerScores(playerId, yr)));
+      const fresh = await fetchPlayerAllAttributeScores(playerId);
+      applyRows(fresh);
+      return;
+    }
+    applyRows(rows);
+  };
+
+  const applyRows = (rows: AttributeScoresData[]) => {
+    setAllRows(rows);
+    const years = [...new Set(
+      rows.filter(r => (r.season_year ?? 0) > 0).map(r => r.season_year as number)
+    )].sort((a, b) => b - a);
+    setAvailableYears(years);
+    setSelectedYear(prev => prev ?? (years[0] ?? null));
+    setLoaded(true);
+  };
+
+  const handleRecalculate = async () => {
+    if (recalculating) return;
+    setRecalculating(true);
+    const year = selectedYear;
+    try {
+      if (year) await recalculatePlayerScores(playerId, year);
+      const fresh = await fetchPlayerAllAttributeScores(playerId);
+      applyRows(fresh);
+    } finally {
+      setRecalculating(false);
+    }
+  };
 
   // Fetch all rows once
   useEffect(() => {
-    fetchPlayerAllAttributeScores(playerId).then((rows: AttributeScoresData[]) => {
-      if (!rows.length) { setLoaded(true); return; }
-      setAllRows(rows);
-      const years = [...new Set(
-        rows.filter(r => (r.season_year ?? 0) > 0).map(r => r.season_year as number)
-      )].sort((a, b) => b - a);
-      setAvailableYears(years);
-      setSelectedYear(years[0] ?? null);
-    });
+    loadScores();
   }, [playerId]);
 
   // Recompute scores whenever selection changes
@@ -173,7 +209,17 @@ export function AtributoRadar({
             >
               Atributos
             </span>
-            <Popover>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={handleRecalculate}
+                disabled={recalculating}
+                title="Recalcular atributos"
+                type="button"
+                className="flex items-center justify-center w-5 h-5 rounded hover:bg-zinc-800/60 transition-colors disabled:opacity-40"
+              >
+                <RefreshCw className={`w-3 h-3 ${recalculating ? "animate-spin" : ""}`} style={{ color: MUTED }} />
+              </button>
+              <Popover>
               <PopoverTrigger asChild>
                 <button className="flex items-center" type="button">
                   <Info className="w-3.5 h-3.5" style={{ color: MUTED }} />
@@ -189,6 +235,7 @@ export function AtributoRadar({
                 <p className="mt-1.5 text-muted-foreground">Calculado por 90 min jogados.</p>
               </PopoverContent>
             </Popover>
+            </div>
           </div>
 
           {/* Year pills — primary always green, others toggle comparison */}
