@@ -24,8 +24,14 @@ export interface AttributeScoreOutput {
 
 const clamp = (v: number, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, v));
 const p90 = (v: number, minutes: number) => (v * 90) / minutes;
-const score = (raw: number, benchmark: number) => clamp((raw / benchmark) * 100);
-const scoreNeg = (raw: number, benchmark: number) => clamp(100 - (raw / benchmark) * 100);
+
+const BASE_SCORE     = 15;
+const SCALABLE_RANGE = 100 - BASE_SCORE; // 85
+
+const score    = (raw: number, benchmark: number) =>
+  Math.min(100, BASE_SCORE + (raw / benchmark) * SCALABLE_RANGE);
+const scoreNeg = (raw: number, benchmark: number) =>
+  Math.max(BASE_SCORE, 100 - (raw / benchmark) * SCALABLE_RANGE);
 
 export function calculateAttributeScores(
   stats: MatchDerivedStats,
