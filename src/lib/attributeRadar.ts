@@ -677,7 +677,7 @@ export function computeRadarAttributes(
       },
       finalScores,
       confidence,
-      alpha: alpha.toFixed(2),
+      
     });
   }
   
