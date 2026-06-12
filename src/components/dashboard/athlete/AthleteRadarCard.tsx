@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
+import { recalculatePlayerScores } from "@/lib/recalculatePlayerScores";
 
 interface AthleteRadarCardProps {
   athleteId: string;
@@ -78,7 +79,7 @@ export function AthleteRadarCard({ athleteId, athletePosition }: AthleteRadarCar
     fetchSeasons();
   }, [athleteId]);
 
-  // 2. Busca scores da temporada selecionada
+  // 2. Busca scores da temporada selecionada (auto-recalcula se engine antigo)
   useEffect(() => {
     if (selectedSeason === null) return;
 
@@ -87,20 +88,42 @@ export function AthleteRadarCard({ athleteId, athletePosition }: AthleteRadarCar
       try {
         const { data } = await supabase
           .from("player_attribute_scores")
-          .select("ata_score_100, tec_score_100, tat_score_100, def_score_100, cri_score_100, attr_confidence")
+          .select("ata_score_100, tec_score_100, tat_score_100, def_score_100, cri_score_100, attr_confidence, details")
           .eq("player_id", athleteId)
           .eq("season_year", selectedSeason)
           .order("updated_at", { ascending: false })
           .limit(1);
 
-        if (data && data.length > 0) {
+        const row = data?.[0] ?? null;
+        const engineVersion = (row?.details as any)?.engine_version ?? "";
+        const needsRecalc = !row || !engineVersion.startsWith("v25");
+
+        if (needsRecalc) {
+          await recalculatePlayerScores(athleteId, selectedSeason);
+          const { data: fresh } = await supabase
+            .from("player_attribute_scores")
+            .select("ata_score_100, tec_score_100, tat_score_100, def_score_100, cri_score_100, attr_confidence")
+            .eq("player_id", athleteId)
+            .eq("season_year", selectedSeason)
+            .order("updated_at", { ascending: false })
+            .limit(1);
+          const freshRow = fresh?.[0] ?? null;
+          setScores(freshRow ? {
+            ata: freshRow.ata_score_100, tec: freshRow.tec_score_100,
+            tat: freshRow.tat_score_100, def: freshRow.def_score_100,
+            cri: freshRow.cri_score_100, confidence: freshRow.attr_confidence,
+          } : null);
+          return;
+        }
+
+        if (row) {
           setScores({
-            ata:        data[0].ata_score_100,
-            tec:        data[0].tec_score_100,
-            tat:        data[0].tat_score_100,
-            def:        data[0].def_score_100,
-            cri:        data[0].cri_score_100,
-            confidence: data[0].attr_confidence,
+            ata:        row.ata_score_100,
+            tec:        row.tec_score_100,
+            tat:        row.tat_score_100,
+            def:        row.def_score_100,
+            cri:        row.cri_score_100,
+            confidence: row.attr_confidence,
           });
         } else {
           setScores(null);
