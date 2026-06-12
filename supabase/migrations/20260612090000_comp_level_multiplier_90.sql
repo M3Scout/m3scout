@@ -83,7 +83,7 @@ BEGIN
   WHERE player_id = p_player_id AND ata_score_100 IS NOT NULL;
 
   IF v_year1 IS NULL THEN
-    UPDATE public.players SET auto_rating = NULL, auto_potential = NULL WHERE id = p_player_id;
+    UPDATE public.players SET auto_rating = NULL, auto_potential = 0 WHERE id = p_player_id;
     RETURN;
   END IF;
 
