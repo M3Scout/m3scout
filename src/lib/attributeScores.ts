@@ -11,7 +11,7 @@ import { recalculatePlayerScores, recalculateAllPlayerScores } from "@/lib/recal
 export interface AttributeScoresData {
   id: string;
   player_id: string;
-  competition_id: string;
+  competition_id: string | null;
   season_year: number;
   ata_score_100: number | null;
   tec_score_100: number | null;

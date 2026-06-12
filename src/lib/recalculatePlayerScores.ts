@@ -373,7 +373,7 @@ export async function recalculatePlayerScores(
       .from("player_attribute_scores")
       .insert({
         player_id:      playerId,
-        competition_id: null,
+        competition_id: null as any,
         season_year:    seasonYear,
         ata_score_100:  output.ata,
         tec_score_100:  output.tec,
@@ -386,6 +386,7 @@ export async function recalculatePlayerScores(
           matches:        output.matches,
           per90:          output.per90,
           final_scores:   { ata: output.ata, cri: output.cri, tec: output.tec, def: output.def, tat: output.tat },
+          raw_stats:      totalStats,
           engine_version: "v25-ts",
           data_source:    "mergeSeasonRows(live + player_stats)",
         },

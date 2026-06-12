@@ -81,10 +81,10 @@ export function calculateAttributeScores(
 
   // ── Axis scores ────────────────────────────────────────────────────────────
   const ata = clamp(
-    score(g,    0.60) * 0.45 +
-    score(sot,  1.80) * 0.30 +
-    score(sop,  0.50) * 0.10 +
-    score(penW, 0.10) * 0.05 +
+    score(g,    0.60) * 0.50 +
+    score(sot,  1.80) * 0.25 +
+    score(penW, 0.10) * 0.10 +
+    score(sop,  0.50) * 0.05 +
     scoreNeg(off, 1.50) * 0.10
   );
 
@@ -97,10 +97,10 @@ export function calculateAttributeScores(
   );
 
   const tec = clamp(
-    score(acp,  45.0) * 0.20 +
-    score(ast,  0.45) * 0.15 +
+    score(ast,  0.45) * 0.25 +
+    score(acp,  45.0) * 0.15 +
     score(drs,  3.00) * 0.15 +
-    score(pp,   5.00) * 0.15 +
+    score(pp,   5.00) * 0.10 +
     score(lpA,  4.00) * 0.10 +
     score(fd,   2.60) * 0.05 +
     scoreNeg(pf,   12.0) * 0.05 +
@@ -110,32 +110,31 @@ export function calculateAttributeScores(
   );
 
   const tat = clamp(
-    score(stl,  3.00) * 0.12 +
-    score(pp,   5.00) * 0.10 +
-    score(tkl,  4.00) * 0.10 +
-    score(int_, 2.45) * 0.10 +
-    score(rcv,  9.00) * 0.08 +
-    score(gdW,  3.75) * 0.08 +
-    score(adW,  2.25) * 0.08 +
-    scoreNeg(gdL, 4.00) * 0.05 +
-    scoreNeg(adL, 3.00) * 0.05 +
+    score(int_, 2.45) * 0.15 +
+    score(pp,   5.00) * 0.12 +
+    score(rcv,  9.00) * 0.10 +
+    score(stl,  3.00) * 0.10 +
+    score(tkl,  4.00) * 0.08 +
+    score(gdW,  3.75) * 0.06 +
+    score(adW,  2.25) * 0.06 +
     scoreNeg(fc,  3.00) * 0.08 +
+    scoreNeg(rc,  0.05) * 0.12 +
     scoreNeg(yc,  0.30) * 0.06 +
-    scoreNeg(rc,  0.05) * 0.10
+    scoreNeg(gdL, 4.00) * 0.04 +
+    scoreNeg(adL, 3.00) * 0.03
   );
 
   const def = clamp(
-    score(tkl,  4.00) * 0.15 +
-    score(stl,  3.00) * 0.12 +
-    score(rcv,  9.00) * 0.08 +
-    score(int_, 2.45) * 0.15 +
+    score(stl,  3.00) * 0.20 +
+    score(tkl,  4.00) * 0.12 +
+    score(int_, 2.45) * 0.12 +
+    score(rcv,  9.00) * 0.10 +
     score(clr,  4.20) * 0.10 +
     score(blk,  1.50) * 0.10 +
     score(gdW,  3.75) * 0.08 +
     score(adW,  2.25) * 0.08 +
-    scoreNeg(gdL, 4.00) * 0.04 +
-    scoreNeg(adL, 3.00) * 0.04 +
-    scoreNeg(wdb, 2.80) * 0.06
+    scoreNeg(gdL, 4.00) * 0.06 +
+    scoreNeg(adL, 3.00) * 0.04
   );
 
   return {

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Info, RefreshCw } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { fetchPlayerAllAttributeScores, type AttributeScoresData } from "@/lib/attributeScores";
+import { fetchPlayerAllAttributeScores, recalculatePlayerAllAttributes, type AttributeScoresData } from "@/lib/attributeScores";
 import { recalculatePlayerScores } from "@/lib/recalculatePlayerScores";
 
 // ── SVG geometry ─────────────────────────────────────────────────────────────
@@ -121,25 +121,6 @@ export function AtributoRadar({
   const [loaded, setLoaded]                 = useState(false);
   const [recalculating, setRecalculating]   = useState(false);
 
-  const loadScores = async () => {
-    const rows = await fetchPlayerAllAttributeScores(playerId);
-    if (!rows.length) { setLoaded(true); return; }
-
-    // Auto-recalc if any row has an old engine version
-    const hasOldEngine = rows.some(r => {
-      const v = (r.details as any)?.engine_version ?? "";
-      return !v.startsWith("v25");
-    });
-    if (hasOldEngine) {
-      const years = [...new Set(rows.map(r => r.season_year as number))];
-      await Promise.all(years.map(yr => recalculatePlayerScores(playerId, yr)));
-      const fresh = await fetchPlayerAllAttributeScores(playerId);
-      applyRows(fresh);
-      return;
-    }
-    applyRows(rows);
-  };
-
   const applyRows = (rows: AttributeScoresData[]) => {
     setAllRows(rows);
     const years = [...new Set(
@@ -150,12 +131,49 @@ export function AtributoRadar({
     setLoaded(true);
   };
 
+  const loadScores = async () => {
+    const rows = await fetchPlayerAllAttributeScores(playerId);
+
+    // No scores at all — bootstrap from source data (e.g. after a failed insert wiped the table)
+    if (!rows.length) {
+      try {
+        await recalculatePlayerAllAttributes(playerId);
+        const fresh = await fetchPlayerAllAttributeScores(playerId);
+        applyRows(fresh);
+      } catch {
+        setLoaded(true);
+      }
+      return;
+    }
+
+    const hasOldEngine = rows.some(r => {
+      const v = (r.details as any)?.engine_version ?? "";
+      return !v.startsWith("v25");
+    });
+
+    if (hasOldEngine) {
+      try {
+        const years = [...new Set(rows.map(r => r.season_year as number))];
+        await Promise.all(years.map(yr => recalculatePlayerScores(playerId, yr)));
+        const fresh = await fetchPlayerAllAttributeScores(playerId);
+        applyRows(fresh.length ? fresh : rows);
+      } catch {
+        applyRows(rows);
+      }
+      return;
+    }
+    applyRows(rows);
+  };
+
   const handleRecalculate = async () => {
     if (recalculating) return;
     setRecalculating(true);
-    const year = selectedYear;
     try {
-      if (year) await recalculatePlayerScores(playerId, year);
+      if (selectedYear) {
+        await recalculatePlayerScores(playerId, selectedYear);
+      } else {
+        await recalculatePlayerAllAttributes(playerId);
+      }
       const fresh = await fetchPlayerAllAttributeScores(playerId);
       applyRows(fresh);
     } finally {
