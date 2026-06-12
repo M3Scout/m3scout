@@ -6,6 +6,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { recalculatePlayerScores, recalculateAllPlayerScores } from "@/lib/recalculatePlayerScores";
 
 export interface AttributeScoresData {
   id: string;
@@ -102,50 +103,29 @@ export async function fetchPlayerAllAttributeScores(
 }
 
 /**
- * Calculate and persist attribute scores for a specific player/competition/season
+ * Calculate and persist attribute scores for a specific player/season.
+ * Uses the TypeScript pipeline (mergeSeasonRows + calculateAttributeScores).
+ * competitionId parameter kept for backwards compatibility but ignored
+ * (scores are computed across all competitions for the year).
  */
 export async function calculateAndSaveAttributeScores(
   playerId: string,
-  competitionId: string,
+  _competitionId: string,
   seasonYear: number
 ): Promise<{ success: boolean; scores?: AttributeScoresResult; error?: string }> {
-  try {
-    const { data, error } = await supabase.rpc("calculate_player_attribute_scores", {
-      p_player_id: playerId,
-      p_competition_id: competitionId,
-      p_season_year: seasonYear,
-    });
-
-    if (error) {
-      console.error("[ATTR_SCORES] RPC error:", error);
-      return { success: false, error: error.message };
-    }
-
-    // Type assert the JSON response
-    const result = data as Record<string, unknown> | null;
-
-    if (result?.error) {
-      console.error("[ATTR_SCORES] Calculation error:", result.error);
-      return { success: false, error: String(result.error) };
-    }
-
-    const confidence = (result?.confidence as number) ?? 0;
-    return {
-      success: true,
-      scores: {
-        ata: (result?.ata as number) ?? 0,
-        tec: (result?.tec as number) ?? 0,
-        def: (result?.def as number) ?? 0,
-        tat: (result?.tat as number) ?? 0,
-        cri: (result?.cri as number) ?? 0,
-        confidence,
-        confidenceLevel: getConfidenceLevelFromValue(confidence),
-      },
-    };
-  } catch (e) {
-    console.error("[ATTR_SCORES] Exception:", e);
-    return { success: false, error: String(e) };
+  const result = await recalculatePlayerScores(playerId, seasonYear);
+  if (!result.success) {
+    return { success: false, error: result.error };
   }
+  const confidence = result.minutes > 0 ? Math.min(1, result.minutes / 900) : 0;
+  return {
+    success: true,
+    scores: {
+      ata: result.ata, tec: result.tec, def: result.def, tat: result.tat, cri: result.cri,
+      confidence,
+      confidenceLevel: getConfidenceLevelFromValue(confidence),
+    },
+  };
 }
 
 /**
@@ -175,29 +155,23 @@ export async function recalculatePlayerAllAttributes(
 }
 
 /**
- * Recalculate all players' attribute scores
+ * Recalculate all players' attribute scores.
+ * Uses the TypeScript pipeline in chunks of 5 to avoid memory/timeout issues.
  */
-export async function recalculateAllAttributeScores(): Promise<{
+export async function recalculateAllAttributeScores(
+  onProgress?: (done: number, total: number) => void
+): Promise<{
   success: boolean;
   players: { player_id: string; player_name: string; rows_processed: number }[];
   error?: string;
 }> {
-  try {
-    const { data, error } = await supabase.rpc("recalculate_all_attribute_scores");
-
-    if (error) {
-      console.error("[ATTR_SCORES] Global recalculate error:", error);
-      return { success: false, players: [], error: error.message };
-    }
-
-    const players = (data || []) as { player_id: string; player_name: string; rows_processed: number }[];
-    console.log(`[ATTR_SCORES] Recalculated scores for ${players.length} players`);
-    
-    return { success: true, players };
-  } catch (e) {
-    console.error("[ATTR_SCORES] Exception:", e);
-    return { success: false, players: [], error: String(e) };
-  }
+  const { success, results, error } = await recalculateAllPlayerScores(onProgress);
+  const players = results.map(r => ({
+    player_id: r.playerId,
+    player_name: r.playerId,
+    rows_processed: r.success ? 1 : 0,
+  }));
+  return { success, players, error };
 }
 
 /**
