@@ -21,6 +21,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/authContext";
+import { recalculatePlayerScores } from "@/lib/recalculatePlayerScores";
 
 interface SeasonStats {
   matches: number;
@@ -190,6 +191,7 @@ export function SeasonStatsCard({ playerId, onStatsChange }: SeasonStatsCardProp
     setDialogOpen(false);
     fetchStats();
     onStatsChange?.();
+    recalculatePlayerScores(playerId, currentYear).catch(console.warn);
   };
 
   const handleInputChange = (field: keyof SeasonStats, value: number) => {

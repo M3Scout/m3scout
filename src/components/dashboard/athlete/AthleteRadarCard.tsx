@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Hexagon, Loader2, Info, ChevronDown } from "lucide-react";
+import { Hexagon, Loader2, Info, ChevronDown, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
 import { fadeInUp } from "@/lib/animations";
 import { Badge } from "@/components/ui/badge";
@@ -138,6 +138,28 @@ export function AthleteRadarCard({ athleteId, athletePosition }: AthleteRadarCar
     fetchScores();
   }, [athleteId, selectedSeason]);
 
+  const [recalculating, setRecalculating] = useState(false);
+
+  const handleRecalculate = async () => {
+    if (!selectedSeason || recalculating) return;
+    setRecalculating(true);
+    try {
+      await recalculatePlayerScores(athleteId, selectedSeason);
+      const { data } = await supabase
+        .from("player_attribute_scores")
+        .select("ata_score_100, tec_score_100, tat_score_100, def_score_100, cri_score_100, attr_confidence")
+        .eq("player_id", athleteId)
+        .eq("season_year", selectedSeason)
+        .order("updated_at", { ascending: false })
+        .limit(1);
+      const row = data?.[0];
+      if (row) setScores({ ata: row.ata_score_100, tec: row.tec_score_100, tat: row.tat_score_100,
+                           def: row.def_score_100, cri: row.cri_score_100, confidence: row.attr_confidence });
+    } finally {
+      setRecalculating(false);
+    }
+  };
+
   const hasData = scores && Object.values(scores).some((v) => v !== null && v > 0);
   const confidenceInfo = getConfidenceLabel(scores?.confidence ?? null);
 
@@ -186,6 +208,17 @@ export function AthleteRadarCard({ athleteId, athletePosition }: AthleteRadarCar
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Botão recalcular */}
+          {selectedSeason && (
+            <button
+              onClick={handleRecalculate}
+              disabled={recalculating || loading}
+              title="Recalcular atributos"
+              className="flex items-center justify-center w-7 h-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-zinc-800/60 transition-colors disabled:opacity-40"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${recalculating ? "animate-spin" : ""}`} />
+            </button>
+          )}
           {/* Seletor de temporada */}
           {availableSeasons.length > 0 && (
             <DropdownMenu>
