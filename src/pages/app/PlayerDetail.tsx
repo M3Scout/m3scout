@@ -663,10 +663,7 @@ const PlayerDetail = () => {
         ) : (
 
           /* ── Overview ────────────────────────────────────────────────── */
-          <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
-
-            {/* ── Left column ─────────────────────────────────────────── */}
-            <div className="space-y-8">
+          <div className="space-y-8">
 
               {/* Season KPIs */}
               <section>
@@ -885,10 +882,9 @@ const PlayerDetail = () => {
                   </div>
                 </div>
               </section>
-            </div>
 
-            {/* ── Right Sidebar ─────────────────────────────────────────── */}
-            <div className="space-y-5">
+            {/* ── Sidebar cards — abaixo do tópico 03 ─────────────────── */}
+            <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
 
               {/* M3 Market Score */}
               <section className={`${CARD} p-5`} style={CARD_STYLE}>
@@ -1070,7 +1066,6 @@ const PlayerDetail = () => {
                 )}
               </section>
             </div>
-          </div>
         )}
       </div>
 
