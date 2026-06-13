@@ -712,39 +712,19 @@ const ComparePlayers = () => {
             <CompareStatBlock title="Produção Ofensiva" icon={Target}>
               <CompareStatRow
                 label="Gols"
-                values={createStatValues(
-                  (p) => p.aggregatedStats?.goals ?? null,
-                  (p) => per90(p.aggregatedStats?.goals ?? null, p.aggregatedStats?.minutes ?? null)
-                )}
-                per90Mode={true}
+                values={createStatValues((p) => p.aggregatedStats?.goals ?? null)}
               />
               <CompareStatRow
                 label="Assistências"
-                values={createStatValues(
-                  (p) => p.aggregatedStats?.assists ?? null,
-                  (p) => per90(p.aggregatedStats?.assists ?? null, p.aggregatedStats?.minutes ?? null)
-                )}
-                per90Mode={true}
+                values={createStatValues((p) => p.aggregatedStats?.assists ?? null)}
               />
               <CompareStatRow
                 label="G+A"
-                values={createStatValues(
-                  (p) => {
-                    const g = p.aggregatedStats?.goals ?? 0;
-                    const a = p.aggregatedStats?.assists ?? 0;
-                    return g + a;
-                  },
-                  (p) => per90((p.aggregatedStats?.goals ?? 0) + (p.aggregatedStats?.assists ?? 0), p.aggregatedStats?.minutes ?? null)
-                )}
-                per90Mode={true}
+                values={createStatValues((p) => (p.aggregatedStats?.goals ?? 0) + (p.aggregatedStats?.assists ?? 0))}
               />
               <CompareStatRow
                 label="Finalizações"
-                values={createStatValues(
-                  (p) => p.aggregatedStats?.shots ?? null,
-                  (p) => per90(p.aggregatedStats?.shots ?? null, p.aggregatedStats?.minutes ?? null)
-                )}
-                per90Mode={true}
+                values={createStatValues((p) => p.aggregatedStats?.shots ?? null)}
               />
               <CompareStatRow
                 label="% Conversão"
@@ -772,27 +752,15 @@ const ComparePlayers = () => {
               />
               <CompareStatRow
                 label="Passes Decisivos"
-                values={createStatValues(
-                  (p) => p.aggregatedStats?.key_passes ?? null,
-                  (p) => per90(p.aggregatedStats?.key_passes ?? null, p.aggregatedStats?.minutes ?? null)
-                )}
-                per90Mode={true}
+                values={createStatValues((p) => p.aggregatedStats?.key_passes ?? null)}
               />
               <CompareStatRow
                 label="Chances Criadas"
-                values={createStatValues(
-                  (p) => p.aggregatedStats?.chances_created ?? null,
-                  (p) => per90(p.aggregatedStats?.chances_created ?? null, p.aggregatedStats?.minutes ?? null)
-                )}
-                per90Mode={true}
+                values={createStatValues((p) => p.aggregatedStats?.chances_created ?? null)}
               />
               <CompareStatRow
                 label="Dribles"
-                values={createStatValues(
-                  (p) => p.aggregatedStats?.successful_dribbles ?? null,
-                  (p) => per90(p.aggregatedStats?.successful_dribbles ?? null, p.aggregatedStats?.minutes ?? null)
-                )}
-                per90Mode={true}
+                values={createStatValues((p) => p.aggregatedStats?.successful_dribbles ?? null)}
               />
               <CompareStatRow
                 label="% Dribles"
@@ -810,35 +778,19 @@ const ComparePlayers = () => {
             <CompareStatBlock title="Defesa" icon={Shield}>
               <CompareStatRow
                 label="Desarmes"
-                values={createStatValues(
-                  (p) => p.aggregatedStats?.tackles ?? null,
-                  (p) => per90(p.aggregatedStats?.tackles ?? null, p.aggregatedStats?.minutes ?? null)
-                )}
-                per90Mode={true}
+                values={createStatValues((p) => p.aggregatedStats?.tackles ?? null)}
               />
               <CompareStatRow
                 label="Interceptações"
-                values={createStatValues(
-                  (p) => p.aggregatedStats?.interceptions ?? null,
-                  (p) => per90(p.aggregatedStats?.interceptions ?? null, p.aggregatedStats?.minutes ?? null)
-                )}
-                per90Mode={true}
+                values={createStatValues((p) => p.aggregatedStats?.interceptions ?? null)}
               />
               <CompareStatRow
                 label="Recuperações"
-                values={createStatValues(
-                  (p) => p.aggregatedStats?.recoveries ?? null,
-                  (p) => per90(p.aggregatedStats?.recoveries ?? null, p.aggregatedStats?.minutes ?? null)
-                )}
-                per90Mode={true}
+                values={createStatValues((p) => p.aggregatedStats?.recoveries ?? null)}
               />
               <CompareStatRow
                 label="Duelos Ganhos"
-                values={createStatValues(
-                  (p) => p.aggregatedStats?.duels_won ?? null,
-                  (p) => per90(p.aggregatedStats?.duels_won ?? null, p.aggregatedStats?.minutes ?? null)
-                )}
-                per90Mode={true}
+                values={createStatValues((p) => p.aggregatedStats?.duels_won ?? null)}
               />
               <CompareStatRow
                 label="% Duelos"
