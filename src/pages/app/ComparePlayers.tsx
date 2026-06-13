@@ -60,7 +60,27 @@ import {
   type CompareAggregatedStats,
 } from "@/hooks/useComparePlayerStats";
 import type { PlayerStatRow } from "@/lib/attributeRadar";
+import { fetchPlayerAllAttributeScores, type AttributeScoresData } from "@/lib/attributeScores";
+import type { RadarPlayerData } from "@/components/players/ComparisonRadarOverlay";
 import { getOptimizedImageUrl } from "@/lib/imageUtils";
+
+function aggregateLatestSeason(rows: AttributeScoresData[]): number[] {
+  if (!rows.length) return [0, 0, 0, 0, 0];
+  const latestYear = Math.max(...rows.map(r => r.season_year ?? 0));
+  const yr = rows.filter(r => r.season_year === latestYear);
+  let sumAta = 0, sumTec = 0, sumTat = 0, sumDef = 0, sumCri = 0, w = 0;
+  yr.forEach(r => {
+    const mins = Math.max(Number(r.details?.minutes ?? 0), 1);
+    sumAta += (r.ata_score_100 ?? 0) * mins;
+    sumTec += (r.tec_score_100 ?? 0) * mins;
+    sumTat += (r.tat_score_100 ?? 0) * mins;
+    sumDef += (r.def_score_100 ?? 0) * mins;
+    sumCri += (r.cri_score_100 ?? 0) * mins;
+    w += mins;
+  });
+  const d = w || 1;
+  return [sumAta / d, sumTec / d, sumTat / d, sumDef / d, sumCri / d];
+}
 
 interface Player {
   id: string;
@@ -98,6 +118,10 @@ const ComparePlayers = () => {
   // Filters - season and competition
   const [seasonFilter, setSeasonFilter] = useState<string>("all");
   const [competitionFilter, setCompetitionFilter] = useState<string>("all");
+
+  // Radar: scores pré-calculados de player_attribute_scores
+  const [radarScores, setRadarScores] = useState<Record<string, number[]>>({});
+  const [loadingRadar, setLoadingRadar] = useState(false);
 
   // Debug logging helper
   const debugLog = useCallback((label: string, data: any) => {
@@ -143,6 +167,24 @@ const ComparePlayers = () => {
   useEffect(() => {
     fetchPlayers();
   }, []);
+
+  // Busca scores pré-calculados para o radar sempre que os jogadores selecionados mudam
+  useEffect(() => {
+    if (!selectedPlayers.length) {
+      setRadarScores({});
+      return;
+    }
+    setLoadingRadar(true);
+    Promise.all(
+      selectedPlayers.map(p =>
+        fetchPlayerAllAttributeScores(p.id).then(rows => ({ id: p.id, scores: aggregateLatestSeason(rows) }))
+      )
+    ).then(results => {
+      const map: Record<string, number[]> = {};
+      results.forEach(r => { map[r.id] = r.scores; });
+      setRadarScores(map);
+    }).finally(() => setLoadingRadar(false));
+  }, [selectedPlayers.map(p => p.id).join(",")]);
 
   const fetchPlayers = async () => {
     const { data } = await supabase
@@ -700,13 +742,12 @@ const ComparePlayers = () => {
 
           {/* Radar Comparison */}
           <ComparisonRadarOverlay
-            players={playersWithStats.map((p) => ({
+            players={selectedPlayers.map(p => ({
               id: p.id,
               name: p.full_name,
-              position: p.position,
-              statsRows: p.filteredRows.map(toRadarRow),
-            }))}
-            loading={loadingStats}
+              scores: radarScores[p.id] ?? [0, 0, 0, 0, 0],
+            } satisfies RadarPlayerData))}
+            loading={loadingRadar}
           />
 
           {/* Stats Blocks Grid */}
