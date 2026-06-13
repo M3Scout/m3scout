@@ -108,7 +108,7 @@ const MUTED   = "#62616a";
 const FG      = "#ededee";
 const GREEN   = "#22c55e";
 const AMBER   = "#f59e0b";
-const CARD    = "rounded-xl bg-zinc-900/50 border border-zinc-800/60";
+const CARD    = "rounded-xl bg-zinc-900/50 border border-zinc-800/60 hover:bg-zinc-800/60 transition-colors duration-200";
 const DIVIDER = "border-zinc-800/60";
 
 // ─── Atoms ───────────────────────────────────────────────────────────────────
