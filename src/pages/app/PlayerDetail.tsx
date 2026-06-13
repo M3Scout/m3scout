@@ -103,39 +103,29 @@ interface ScoutingReport {
 
 // ─── Design tokens ───────────────────────────────────────────────────────────
 
-const T = {
-  bg: "bg-[#0A0A0A]",
-  text: "text-[#F2EDE4]",
-  accent: "#E5173F",
-  border: "border-[#1C1C1C]",
-  muted: "text-[#6B6560]",
-  green: "#22C55E",
-  amber: "#F59E0B",
-} as const;
+const ACCENT  = "#ec4525";
+const MUTED   = "#62616a";
+const FG      = "#ededee";
+const GREEN   = "#22c55e";
+const AMBER   = "#f59e0b";
+const CARD    = "rounded-xl bg-zinc-900/50 border border-zinc-800/60";
+const DIVIDER = "border-zinc-800/60";
 
-const TABS = [
-  { id: "overview", label: "Visão geral" },
-  { id: "stats", label: "Estatísticas" },
-  { id: "market", label: "Valor de mercado" },
-  { id: "physical", label: "Físico" },
-  { id: "technical", label: "Técnico" },
-  { id: "medical", label: "Médico" },
-  { id: "contract", label: "Contrato" },
-] as const;
+// ─── Atoms ───────────────────────────────────────────────────────────────────
 
-// ─── Small atoms ─────────────────────────────────────────────────────────────
-
-function Label({ children }: { children: React.ReactNode }) {
+function SectionLabel({ n, children }: { n: string; children: React.ReactNode }) {
   return (
-    <span className={`block text-[10px] tracking-[0.18em] uppercase ${T.muted} font-barlow font-bold mb-1`}>
+    <div className="font-editorial-mono text-[11px] tracking-[0.24em] uppercase mb-[14px]" style={{ color: MUTED }}>
+      <span style={{ color: ACCENT }} className="font-semibold">{n}</span>
+      <span className="inline-block w-[34px] h-px bg-white/15 mx-[10px] align-middle" />
       {children}
-    </span>
+    </div>
   );
 }
 
-function SectionTitle({ children }: { children: React.ReactNode }) {
+function CardLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className={`text-[10px] tracking-[0.18em] uppercase ${T.muted} font-barlow font-bold mb-3`}>
+    <p className="font-editorial-mono text-[9.5px] tracking-[0.22em] uppercase mb-[10px]" style={{ color: MUTED }}>
       {children}
     </p>
   );
@@ -144,7 +134,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 function Placeholder() {
   return (
     <div className="py-16 text-center">
-      <span className="font-barlow font-extrabold text-lg tracking-[0.3em] text-[#6B6560] uppercase">
+      <span className="font-editorial-mono text-sm tracking-[0.3em] uppercase" style={{ color: MUTED }}>
         — Seção em desenvolvimento —
       </span>
     </div>
@@ -160,30 +150,26 @@ function formatMarketValue(value: number | null, currency: string | null) {
 }
 
 function getMarketScoreTier(score: number): { label: string; color: string } {
-  if (score >= 86) return { label: "ELITE",      color: "#22C55E" };
-  if (score >= 71) return { label: "ALTO",       color: "#22C55E" };
-  if (score >= 51) return { label: "MÉDIO",      color: "#F59E0B" };
-  if (score >= 31) return { label: "BAIXO",      color: "#E5173F" };
-  return              { label: "MUITO BAIXO", color: "#E5173F" };
+  if (score >= 86) return { label: "ELITE",      color: GREEN };
+  if (score >= 71) return { label: "ALTO",       color: GREEN };
+  if (score >= 51) return { label: "MÉDIO",      color: AMBER };
+  if (score >= 31) return { label: "BAIXO",      color: ACCENT };
+  return              { label: "MUITO BAIXO", color: ACCENT };
 }
 
 const PLAY_STYLE_DESC: Record<string, string> = {
-  // Meio-campo
   "BOX-TO-BOX":           "Meio-campista incansável que atua em ambas as áreas, contribuindo na recuperação de bola e na chegada ao ataque com alta intensidade.",
   "VOLANTE DE CONTENÇÃO": "Jogador focado na marcação e proteção à frente da zaga, especialista em interceptações e combate direto para anular o adversário.",
   "ARMADOR RECUADO":      "Atua à frente da defesa para ditar o ritmo do jogo, distribuindo passes curtos e longos com precisão para iniciar a organização ofensiva.",
   "MEIA-ARMADOR":         "Especialista no último passe e criação de chances, utiliza visão de jogo privilegiada para servir os atacantes em zonas de finalização.",
   "MEZZALA":              "Meio-campista que flutua do centro para os lados, oferecendo amplitude ofensiva e infiltração constante na área adversária.",
   "FALSO TREQUARTISTA":   "Armador que recua para organizar a posse de bola, mas mantém liberdade total para criar jogadas no terço final do campo.",
-  // Ataque e pontas
   "FALSO PONTA":          "Atua partindo do lado para o centro para atrair a marcação, liberando o corredor lateral para a subida dos companheiros.",
   "PONTA INVERTIDO":      "Joga no lado oposto ao pé preferencial, focando em cortes para o centro para buscar o chute ou passes decisivos por dentro.",
   "FALSO 9":              "Centroavante que recua para o meio-campo para atrair zagueiros, priorizando a armação de jogadas e a abertura de espaços na defesa.",
   "OPORTUNISTA":          "Atacante de referência física, focado em posicionamento dentro da área para finalizar rapidamente as jogadas de ataque.",
-  // Defesa e gol
   "ZAGUEIRO CONSTRUTOR":  "Defensor com técnica apurada que inicia a saída de bola com passes verticais e qualidade na transição ofensiva.",
   "GOLEIRO-LINHA":        "Goleiro que joga adiantado e participa ativamente da posse de bola, atuando como um líbero para antecipar lançamentos adversários.",
-  // Legacy entries kept for backward compatibility
   "BOX-TO-BOX (legacy)":  "Meio-campista incansável que atua em ambas as áreas, contribuindo tanto na recuperação de bola quanto na chegada ao ataque.",
   "ARMADOR":              "Jogador criativo com visão de jogo privilegiada, responsável por ditar o ritmo da equipe e servir os companheiros com passes decisivos.",
   "CONSTRUTOR":           "Jogador que inicia a organização ofensiva, conectando a defesa ao meio-campo com passes precisos e mantendo a posse de bola.",
@@ -213,13 +199,18 @@ function getMarketScoreExplanation(score: number, confidence: number, sample: nu
   return "Score consistente com perfil de mercado. Dados suficientes para avaliação confiável do valor do atleta.";
 }
 
-// ─── Module-level constants ───────────────────────────────────────────────────
-// Shared between the query .limit(), reliability math, and the list render so
-// they can never drift out of sync with each other.
 const RECENT_REPORTS_LIMIT = 5;
-// Computed once at module load — avoids a per-render Date allocation and the
-// edge-case glitch if the app is open across midnight on New Year's Eve.
 const CURRENT_YEAR = new Date().getFullYear();
+
+const TABS = [
+  { id: "overview",  label: "Visão geral" },
+  { id: "stats",     label: "Estatísticas" },
+  { id: "market",    label: "Valor de mercado" },
+  { id: "physical",  label: "Físico" },
+  { id: "technical", label: "Técnico" },
+  { id: "medical",   label: "Médico" },
+  { id: "contract",  label: "Contrato" },
+] as const;
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
@@ -235,7 +226,6 @@ const PlayerDetail = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("overview");
 
-  // Permissions
   const hasViewPermission = can("players", "view");
   const isOwnAthlete = (isPlayer || isPlayerRole) && linkedPlayerId === id;
   const isPlayerRoleOnly = (isPlayer || isPlayerRole) && !isAdmin && !isScout;
@@ -244,20 +234,17 @@ const PlayerDetail = () => {
   const canEdit = canEditPlayer;
   const canCreateReport = can("reports", "create");
 
-  // Live match stats for current season (by competition too, for correction logic)
   const { totals: liveTotals, byCompetition: liveByCompetition, isLoading: liveStatsLoading } = usePlayerMatchStats({
     playerId: id ?? "",
     seasonYear: CURRENT_YEAR,
     enabled: !!id,
   });
 
-  // Manual stats (manual_player_stats table — external games not in live match system)
   const { manualStats, isLoading: manualLoading } = useManualPlayerStats({
     playerId: id ?? "",
     enabled: !!id,
   });
 
-  // Player_stats table (entries via PlayerStatsForm) — includes is_live_correction flag
   const { data: playerStatsRows = [], isLoading: psLoading } = useQuery({
     queryKey: ["player-stats-overview", id, CURRENT_YEAR],
     queryFn: async () => {
@@ -279,25 +266,17 @@ const PlayerDetail = () => {
     enabled: !!id,
   });
 
-  // Merged totals applying is_live_correction override semantics:
-  //   • Correction row exists for competition → use ONLY that row, subtract raw LIVE for that comp.
-  //   • No correction → sum LIVE + additive player_stats rows.
-  //   • manual_player_stats → always additive.
   const seasonTotals = useMemo(() => {
-    // Competitions that have a correction row (override semantics)
     const correctedCompIds = new Set(
       playerStatsRows
         .filter(ps => ps.is_live_correction)
         .map(ps => ps.competition_id)
         .filter((c): c is string => !!c),
     );
-
-    // Start from live totals, then subtract corrected-competition contributions
     let matches = liveTotals?.matches ?? 0;
     let minutes = liveTotals?.minutes ?? 0;
     let goals   = liveTotals?.goals   ?? 0;
     let assists = liveTotals?.assists  ?? 0;
-
     for (const compId of correctedCompIds) {
       const live = liveByCompetition[compId];
       if (live) {
@@ -307,8 +286,6 @@ const PlayerDetail = () => {
         assists -= live.stats.assists;
       }
     }
-
-    // manual_player_stats: always additive
     manualStats
       .filter(ms => ms.season_year === CURRENT_YEAR)
       .forEach(ms => {
@@ -317,9 +294,6 @@ const PlayerDetail = () => {
         goals   += ms.goals   ?? 0;
         assists += ms.assists ?? 0;
       });
-
-    // player_stats: correction rows always count; non-correction rows only count
-    // when their competition has no correction (avoids double-counting stale rows)
     playerStatsRows.forEach(ps => {
       const isCorrected = !ps.is_live_correction && correctedCompIds.has(ps.competition_id ?? "___none");
       if (!isCorrected) {
@@ -329,18 +303,16 @@ const PlayerDetail = () => {
         assists += ps.assists ?? 0;
       }
     });
-
     return {
       matches: Math.max(0, matches),
       minutes: Math.max(0, minutes),
       goals:   Math.max(0, goals),
       assists: Math.max(0, assists),
     };
-  }, [liveTotals, liveByCompetition, manualStats, playerStatsRows, CURRENT_YEAR]);
+  }, [liveTotals, liveByCompetition, manualStats, playerStatsRows]);
 
   const statsLoading = liveStatsLoading || manualLoading || psLoading;
 
-  // Market score hook
   const { displayScore: marketScore, scoreLoading: marketScoreLoading, dataConfidence, hasEnoughData: marketHasData } = useMarketScore({
     playerId: id ?? "",
     playerName: player?.full_name ?? "",
@@ -378,18 +350,15 @@ const PlayerDetail = () => {
     fetchData();
   }, [id]);
 
-  // KPI: average scout note — only valid (non-null) scores count
   const avgScoutNote = useMemo(() => {
     const valid = reports.filter(r => r.final_score !== null && r.final_score !== undefined);
     if (!valid.length) return null;
     return valid.reduce((s, r) => s + r.final_score!, 0) / valid.length;
   }, [reports]);
 
-  // Season computed
   const ga = (seasonTotals?.goals ?? 0) + (seasonTotals?.assists ?? 0);
-  const tierCfg = marketScore !== null ? getMarketScoreTier(Math.round(marketScore)) : { label: "", color: "#E5173F" };
+  const tierCfg = marketScore !== null ? getMarketScoreTier(Math.round(marketScore)) : { label: "", color: ACCENT };
 
-  // Rating history for Note Evolution delta
   const { data: ratingHistory = [] } = useQuery({
     queryKey: ["player-rating-history-overview", id],
     queryFn: async () => {
@@ -403,20 +372,20 @@ const PlayerDetail = () => {
     },
     enabled: !!id,
   });
+
   const initialRating: number | null = ratingHistory.length > 0 ? ratingHistory[0].rating : null;
   const ratingDelta: number | null =
     initialRating !== null && player !== null && player.auto_rating !== null
       ? player.auto_rating - initialRating
       : null;
 
-  // Reliability
   const reliabilityPct = Math.min(100, Math.round((reports.length / RECENT_REPORTS_LIMIT) * 100));
-  const reliabilityColor = reliabilityPct > 70 ? T.green : reliabilityPct >= 50 ? T.amber : T.accent;
+  const reliabilityColor = reliabilityPct > 70 ? GREEN : reliabilityPct >= 50 ? AMBER : ACCENT;
   const reliabilityLabel = reliabilityPct > 70 ? "ALTA" : reliabilityPct >= 50 ? "MÉDIA" : "BAIXA";
 
   const handleDeleteSuccess = () => navigate("/dashboard/atletas");
 
-  // ── Loading ──────────────────────────────────────────────────────────────
+  // ── Loading ───────────────────────────────────────────────────────────────
 
   if (loading) {
     return (
@@ -460,137 +429,154 @@ const PlayerDetail = () => {
     );
   }
 
-  // ── Render ───────────────────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────────────────
+
+  const imgSrc = player.photo_url
+    ? getOptimizedImageUrl(player.photo_url, { width: 600, quality: 85, format: "avif" }) || player.photo_url
+    : null;
 
   return (
     <div
-      className={`${T.bg} ${T.text} -mx-4 -mt-4 md:-mx-6 md:-mt-6 lg:-mx-8 lg:-mt-8 pb-24 md:pb-8`}
-      style={{ fontFamily: "'Basis Grotesque Pro', sans-serif" }}
+      className="-mx-4 -mt-4 md:-mx-6 md:-mt-6 lg:-mx-8 lg:-mt-8 pb-24 md:pb-8"
+      style={{ background: "#0c0b0d", color: FG, fontFamily: "'Space Grotesk', system-ui, sans-serif" }}
     >
+      {/* Top accent line */}
+      <div style={{ height: 2, background: ACCENT }} />
 
-      {/* ── Top accent line ─────────────────────────────────────────────── */}
-      <div style={{ height: 2, background: T.accent }} />
+      {/* ── Topbar ────────────────────────────────────────────────────────── */}
+      <div className="hidden md:block">
+        <div className={`flex items-center justify-between gap-4 px-6 py-3 border-b ${DIVIDER}`}>
+          <button
+            onClick={() => navigate("/dashboard/atletas")}
+            className="flex items-center gap-1.5 font-editorial-mono text-[11px] tracking-[0.14em] uppercase transition-colors"
+            style={{ color: MUTED }}
+            onMouseEnter={e => (e.currentTarget.style.color = FG)}
+            onMouseLeave={e => (e.currentTarget.style.color = MUTED)}
+          >
+            <ArrowLeft className="w-3 h-3" />
+            ATLETAS / {player.full_name.toUpperCase()}
+          </button>
 
-      {/* ── Topbar ──────────────────────────────────────────────────────── */}
-      <div className="hidden md:block"><div
-        className={`flex items-center justify-between gap-4 px-4 md:px-6 py-3 border-b ${T.border}`}
-      >
-        <button
-          onClick={() => navigate("/dashboard/atletas")}
-          className="flex items-center gap-1.5 font-jetbrains text-[11px] tracking-[0.14em] text-[#6B6560] hover:text-[#F2EDE4] transition-colors uppercase"
-        >
-          <ArrowLeft className="w-3 h-3" />
-          ATLETAS / {player.full_name.toUpperCase()}
-        </button>
-
-        <div className="flex items-center gap-2 shrink-0">
-          {canCreateReport && (
-            <Link
-              to={`/dashboard/relatorios/novo?player=${player.id}`}
-              className={`flex items-center gap-1.5 px-3 py-1.5 border ${T.border} font-jetbrains text-[11px] tracking-wider uppercase text-[#F2EDE4] hover:border-[#E5173F] transition-colors`}
-            >
-              <FileText className="w-3 h-3" />
-              + NOVO RELATÓRIO
-            </Link>
-          )}
-          {canEdit && (
-            <Link
-              to={`/dashboard/atletas/${player.id}/editar`}
-              className={`flex items-center gap-1.5 px-3 py-1.5 border ${T.border} font-jetbrains text-[11px] tracking-wider uppercase text-[#F2EDE4] hover:border-[#F2EDE4] transition-colors`}
-            >
-              <Edit className="w-3 h-3" />
-              EDITAR
-            </Link>
-          )}
-          {isAdmin && (
-            <PermissionGate module="players" action="delete">
-              <button
-                onClick={() => setDeleteDialogOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 font-jetbrains text-[11px] tracking-wider uppercase text-white hover:opacity-80 transition-opacity"
-                style={{ background: T.accent }}
+          <div className="flex items-center gap-2 shrink-0">
+            {canCreateReport && (
+              <Link
+                to={`/dashboard/relatorios/novo?player=${player.id}`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-800 font-editorial-mono text-[10px] tracking-wider uppercase transition-colors hover:border-zinc-600`}
+                style={{ color: FG }}
               >
-                <Trash2 className="w-3 h-3" />
-                EXCLUIR
-              </button>
-            </PermissionGate>
-          )}
+                <FileText className="w-3 h-3" />
+                + NOVO RELATÓRIO
+              </Link>
+            )}
+            {canEdit && (
+              <Link
+                to={`/dashboard/atletas/${player.id}/editar`}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-800 font-editorial-mono text-[10px] tracking-wider uppercase transition-colors hover:border-zinc-600"
+                style={{ color: FG }}
+              >
+                <Edit className="w-3 h-3" />
+                EDITAR
+              </Link>
+            )}
+            {isAdmin && (
+              <PermissionGate module="players" action="delete">
+                <button
+                  onClick={() => setDeleteDialogOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-editorial-mono text-[10px] tracking-wider uppercase text-white hover:opacity-80 transition-opacity"
+                  style={{ background: ACCENT }}
+                >
+                  <Trash2 className="w-3 h-3" />
+                  EXCLUIR
+                </button>
+              </PermissionGate>
+            )}
+          </div>
         </div>
-      </div></div>
+      </div>
 
-      {/* ── Header ──────────────────────────────────────────────────────── */}
-      <div className={`px-4 md:px-6 py-[22px] border-b ${T.border}`}>
-        <div className="flex gap-4 items-start">
+      {/* ── Hero Header ───────────────────────────────────────────────────── */}
+      <div className={`px-4 md:px-6 py-8 border-b ${DIVIDER}`}>
+        <div className="flex gap-6 items-start">
 
           {/* Photo */}
-          <div
-            className={`w-20 h-20 shrink-0 border ${T.border} overflow-hidden bg-[#111] hidden md:flex items-center justify-center`}
-          >
-            {player.photo_url ? (
+          {imgSrc && (
+            <div className="relative w-[90px] h-[90px] md:w-[110px] md:h-[110px] shrink-0 rounded-xl overflow-hidden border border-zinc-800 hidden md:block">
               <img
-                src={getOptimizedImageUrl(player.photo_url, { width: 400, quality: 85, format: "avif" }) || player.photo_url || ""}
+                src={imgSrc}
                 alt={player.full_name}
                 className="w-full h-full object-cover object-center"
                 onError={e => { if (player.photo_url) (e.target as HTMLImageElement).src = player.photo_url; }}
               />
-            ) : (
-              <User className="w-8 h-8 text-[#6B6560]" />
-            )}
-          </div>
+              {/* Corner ticks */}
+              <span className="absolute top-[6px] left-[6px]  w-[9px] h-[9px] border-t-[2px] border-l-[2px] z-10" style={{ borderColor: ACCENT }} />
+              <span className="absolute top-[6px] right-[6px] w-[9px] h-[9px] border-t-[2px] border-r-[2px] z-10" style={{ borderColor: ACCENT }} />
+              <span className="absolute bottom-[6px] left-[6px]  w-[9px] h-[9px] border-b-[2px] border-l-[2px] z-10" style={{ borderColor: ACCENT }} />
+              <span className="absolute bottom-[6px] right-[6px] w-[9px] h-[9px] border-b-[2px] border-r-[2px] z-10" style={{ borderColor: ACCENT }} />
+            </div>
+          )}
+          {!imgSrc && (
+            <div className="w-[90px] h-[90px] md:w-[110px] md:h-[110px] shrink-0 rounded-xl border border-zinc-800 hidden md:flex items-center justify-center bg-zinc-900">
+              <User className="w-8 h-8" style={{ color: MUTED }} />
+            </div>
+          )}
 
           {/* Info */}
           <div className="flex-1 min-w-0">
+            {/* Position pill */}
+            <div className="font-editorial-mono text-[11px] tracking-[0.2em] uppercase font-semibold mb-2" style={{ color: ACCENT }}>
+              {player.position}
+              {safeArray(player.secondary_positions).length > 0 && (
+                <span style={{ color: MUTED }} className="font-normal">
+                  {" "}· {safeArray(player.secondary_positions).slice(0, 2).join(" / ")}
+                </span>
+              )}
+            </div>
+
+            {/* Name */}
             <h1
-              className="font-barlow font-extrabold text-[34px] leading-none tracking-tight"
-              style={{ lineHeight: 1.05 }}
+              className="font-display font-bold leading-[0.95] tracking-[-0.03em] mb-3"
+              style={{ fontSize: "clamp(28px, 4vw, 52px)", color: FG }}
             >
               {player.full_name}
             </h1>
 
-            {/* Meta-row */}
-            <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 mt-1.5 font-jetbrains text-[12px] text-[#6B6560]">
-              <span style={{ color: T.accent }} className="font-bold">
-                {player.position}
-              </span>
-              {safeArray(player.secondary_positions).length > 0 && (
-                <>
-                  <span>·</span>
-                  <span>{safeArray(player.secondary_positions).slice(0, 2).join(" / ")}</span>
-                </>
-              )}
-              {player.age && <><span>·</span><span>{player.age} anos</span></>}
-              {player.height && <><span>·</span><span>{player.height}cm</span></>}
-              {player.dominant_foot && <><span>·</span><span>{player.dominant_foot}</span></>}
-              {player.nationality && <><span>·</span><span>{player.nationality}</span></>}
-            </div>
-
-            {/* Badges */}
-            <div className="flex flex-wrap gap-1.5 mt-2.5">
+            {/* Meta chips */}
+            <div className="flex flex-wrap gap-1.5">
               {/* Public/Private */}
-              <span className={`inline-flex items-center gap-1 px-2 py-0.5 border ${T.border} font-jetbrains text-[10px] tracking-wider uppercase text-[#6B6560]`}>
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-zinc-800 font-editorial-mono text-[10px] tracking-wider uppercase" style={{ color: MUTED }}>
                 {player.is_public
                   ? <><Eye className="w-2.5 h-2.5" />PÚBLICO</>
-                  : <><EyeOff className="w-2.5 h-2.5" />PRIVADO</>
-                }
+                  : <><EyeOff className="w-2.5 h-2.5" />PRIVADO</>}
               </span>
 
-              {/* Contract status */}
+              {player.age && (
+                <span className="inline-flex items-center px-2.5 py-1 rounded-lg border border-zinc-800 font-editorial-mono text-[10px] tracking-wider uppercase" style={{ color: MUTED }}>
+                  {player.age} anos
+                </span>
+              )}
+              {player.height && (
+                <span className="inline-flex items-center px-2.5 py-1 rounded-lg border border-zinc-800 font-editorial-mono text-[10px] tracking-wider uppercase" style={{ color: MUTED }}>
+                  {player.height} cm
+                </span>
+              )}
+              {player.dominant_foot && (
+                <span className="inline-flex items-center px-2.5 py-1 rounded-lg border border-zinc-800 font-editorial-mono text-[10px] tracking-wider uppercase" style={{ color: MUTED }}>
+                  {player.dominant_foot}
+                </span>
+              )}
+              {player.current_club && (
+                <span className="inline-flex items-center px-2.5 py-1 rounded-lg border border-zinc-800 font-editorial-mono text-[10px] tracking-wider uppercase" style={{ color: MUTED }}>
+                  {player.current_club}
+                </span>
+              )}
               {player.contract_status && (
-                <span className={`inline-flex items-center px-2 py-0.5 border ${T.border} font-jetbrains text-[10px] tracking-wider uppercase text-[#6B6560]`}>
+                <span className="inline-flex items-center px-2.5 py-1 rounded-lg border border-zinc-800 font-editorial-mono text-[10px] tracking-wider uppercase" style={{ color: MUTED }}>
                   {player.contract_status === "contracted" ? "CONTRATADO" : player.contract_status.toUpperCase()}
                 </span>
               )}
-
-              {/* Auto rating */}
               {player.auto_rating !== null && player.auto_rating !== undefined && (
-                <span className={`inline-flex items-center px-2 py-0.5 border ${T.border} font-jetbrains text-[10px] tracking-wider uppercase text-[#F2EDE4]`}>
+                <span className="inline-flex items-center px-2.5 py-1 rounded-lg border border-zinc-800 font-editorial-mono text-[10px] tracking-wider uppercase" style={{ color: FG }}>
                   ★ {player.auto_rating.toFixed(1)}/10
-                </span>
-              )}
-
-              {/* Club */}
-              {player.current_club && (
-                <span className={`inline-flex items-center px-2 py-0.5 border ${T.border} font-jetbrains text-[10px] tracking-wider uppercase text-[#6B6560]`}>
-                  {player.current_club}
                 </span>
               )}
             </div>
@@ -598,8 +584,8 @@ const PlayerDetail = () => {
         </div>
       </div>
 
-      {/* ── Tab Bar ─────────────────────────────────────────────────────── */}
-      <div className={`border-b ${T.border} overflow-x-auto scrollbar-hide`}>
+      {/* ── Tab Bar ───────────────────────────────────────────────────────── */}
+      <div className={`border-b ${DIVIDER} overflow-x-auto scrollbar-hide`}>
         <div className="flex px-4 md:px-6">
           {TABS.map((tab) => {
             const active = activeTab === tab.id;
@@ -607,13 +593,12 @@ const PlayerDetail = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`pr-4 md:pr-5 py-3 font-jetbrains text-[11px] tracking-[0.15em] uppercase shrink-0 transition-colors flex flex-col items-start ${
-                  active ? "text-[#F2EDE4]" : "text-[#6B6560] hover:text-[#F2EDE4]"
-                }`}
+                className="pr-5 py-3 font-editorial-mono text-[11px] tracking-[0.15em] uppercase shrink-0 transition-colors"
+                style={{ color: active ? FG : MUTED }}
               >
                 <span
-                  className="border-b-2 pb-px"
-                  style={{ borderColor: active ? T.accent : "transparent" }}
+                  className="pb-px border-b-2"
+                  style={{ borderColor: active ? ACCENT : "transparent" }}
                 >
                   {tab.label}
                 </span>
@@ -623,8 +608,8 @@ const PlayerDetail = () => {
         </div>
       </div>
 
-      {/* ── Tab Content ─────────────────────────────────────────────────── */}
-      <div className="px-4 md:px-6 py-6">
+      {/* ── Tab Content ───────────────────────────────────────────────────── */}
+      <div className="px-4 md:px-6 py-8">
         {activeTab === "stats" ? (
           <StatsTab playerId={player.id} playerPosition={player.position} />
         ) : activeTab === "market" ? (
@@ -675,296 +660,260 @@ const PlayerDetail = () => {
         ) : activeTab !== "overview" ? (
           <Placeholder />
         ) : (
-          /* ── Overview ──────────────────────────────────────────────── */
-          <div className="grid gap-0 lg:grid-cols-[1fr_340px]">
+
+          /* ── Overview ────────────────────────────────────────────────── */
+          <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
 
             {/* ── Left column ─────────────────────────────────────────── */}
-            <div className={`lg:border-r ${T.border} lg:pr-6 space-y-0`}>
+            <div className="space-y-8">
 
-              {/* Season Stats */}
-              <section className={`border ${T.border} mb-5`}>
-                <div className={`grid grid-cols-5 divide-x divide-[#1C1C1C]`}>
-                  {[
-                    { label: "JOGOS", value: statsLoading ? "…" : (seasonTotals?.matches ?? "—"), color: undefined },
-                    { label: "MIN", value: statsLoading ? "…" : (seasonTotals?.minutes ?? "—"), color: undefined },
-                    { label: "GOLS", value: statsLoading ? "…" : (seasonTotals?.goals ?? "—"), color: T.accent },
-                    { label: "ASSIST", value: statsLoading ? "…" : (seasonTotals?.assists ?? "—"), color: undefined },
-                    { label: "G+A", value: statsLoading ? "…" : ga, color: T.amber },
-                  ].map((s) => (
-                    <div key={s.label} className="px-1 sm:px-3 py-4 text-center min-w-0">
-                      <span className={`block text-[9px] tracking-[0.15em] sm:tracking-[0.2em] uppercase ${T.muted} font-jetbrains mb-1 whitespace-nowrap`}>
-                        {s.label}
-                      </span>
-                      <span
-                        className="font-jetbrains text-[16px] sm:text-[22px] md:text-[28px] font-bold leading-none whitespace-nowrap block"
-                        style={{ color: s.color ?? "#F2EDE4" }}
-                      >
-                        {s.value}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <div className={`border-t ${T.border} px-4 py-2`}>
-                  <span className="font-jetbrains text-[10px] tracking-wider uppercase text-[#6B6560]">
-                    TEMPORADA {new Date().getFullYear()}
-                  </span>
+              {/* Season KPIs */}
+              <section>
+                <SectionLabel n="01">TEMPORADA {CURRENT_YEAR}</SectionLabel>
+                <div className={`${CARD} overflow-hidden`}>
+                  <div className="grid grid-cols-5 divide-x divide-zinc-800/60">
+                    {[
+                      { label: "JOGOS",  value: statsLoading ? "…" : (seasonTotals?.matches ?? "—"), color: FG    },
+                      { label: "MIN",    value: statsLoading ? "…" : (seasonTotals?.minutes ?? "—"), color: FG    },
+                      { label: "GOLS",   value: statsLoading ? "…" : (seasonTotals?.goals   ?? "—"), color: ACCENT},
+                      { label: "ASSIST", value: statsLoading ? "…" : (seasonTotals?.assists  ?? "—"), color: FG    },
+                      { label: "G+A",    value: statsLoading ? "…" : ga,                              color: AMBER },
+                    ].map((s) => (
+                      <div key={s.label} className="px-2 sm:px-4 py-5 text-center">
+                        <span className="block font-editorial-mono text-[9px] tracking-[0.2em] uppercase mb-2" style={{ color: MUTED }}>
+                          {s.label}
+                        </span>
+                        <span
+                          className="font-display font-bold leading-none tabular-nums"
+                          style={{ fontSize: "clamp(20px,3vw,32px)", color: s.color }}
+                        >
+                          {s.value}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </section>
 
-              {/* Info Cards Grid */}
-              <section className={`border ${T.border} mb-5`}>
-                <div className={`grid grid-cols-1 md:grid-cols-2`} style={{ gap: 1, background: "#1C1C1C" }}>
+              {/* Info Grid */}
+              <section>
+                <SectionLabel n="02">PERFIL DO ATLETA</SectionLabel>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 
                   {/* Identity */}
-                  <div className={`${T.bg} p-4`}>
-                    <SectionTitle>IDENTIDADE</SectionTitle>
-                    <dl className="space-y-1.5">
+                  <div className={`${CARD} p-5`}>
+                    <CardLabel>IDENTIDADE</CardLabel>
+                    <dl className="space-y-2">
                       {[
-                        { k: "Posição", v: player.position },
-                        { k: "Idade", v: player.age ? `${player.age} anos` : null },
-                        { k: "Altura", v: player.height ? `${player.height} cm` : null },
-                        { k: "Pé dominante", v: player.dominant_foot },
-                        { k: "País", v: player.nationality },
-                        { k: "Clube", v: player.current_club },
-                      ].filter((x) => x.v).map(({ k, v }) => (
+                        { k: "Posição",       v: player.position },
+                        { k: "Idade",         v: player.age ? `${player.age} anos` : null },
+                        { k: "Altura",        v: player.height ? `${player.height} cm` : null },
+                        { k: "Pé dominante",  v: player.dominant_foot },
+                        { k: "País",          v: player.nationality },
+                        { k: "Clube",         v: player.current_club },
+                      ].filter(x => x.v).map(({ k, v }) => (
                         <div key={k} className="flex justify-between gap-2">
-                          <dt className="font-jetbrains text-[10px] text-[#6B6560] uppercase tracking-wider shrink-0">{k}</dt>
-                          <dd className="font-jetbrains text-[11px] text-[#F2EDE4] text-right">{v}</dd>
+                          <dt className="font-editorial-mono text-[10px] tracking-wider uppercase" style={{ color: MUTED }}>{k}</dt>
+                          <dd className="font-editorial-mono text-[11px]" style={{ color: FG }}>{v}</dd>
                         </div>
                       ))}
                     </dl>
                   </div>
 
                   {/* Contract */}
-                  <div className={`${T.bg} p-4`}>
-                    <SectionTitle>CONTRATO</SectionTitle>
-                    <dl className="space-y-1.5">
+                  <div className={`${CARD} p-5`}>
+                    <CardLabel>CONTRATO</CardLabel>
+                    <dl className="space-y-2">
                       {[
-                        { k: "Status", v: player.contract_status },
-                        { k: "Início", v: player.contract_start ? format(new Date(player.contract_start), "MMM yyyy", { locale: ptBR }) : null },
-                        { k: "Término", v: player.contract_end ? format(new Date(player.contract_end), "MMM yyyy", { locale: ptBR }) : null },
-                        { k: "Agente", v: player.agent_name },
+                        { k: "Status",  v: player.contract_status },
+                        { k: "Início",  v: player.contract_start ? format(new Date(player.contract_start), "MMM yyyy", { locale: ptBR }) : null },
+                        { k: "Término", v: player.contract_end   ? format(new Date(player.contract_end),   "MMM yyyy", { locale: ptBR }) : null },
+                        { k: "Agente",  v: player.agent_name },
                         { k: "Salário", v: player.salary_info },
-                      ].filter((x) => x.v).map(({ k, v }) => (
+                      ].filter(x => x.v).map(({ k, v }) => (
                         <div key={k} className="flex justify-between gap-2">
-                          <dt className="font-jetbrains text-[10px] text-[#6B6560] uppercase tracking-wider shrink-0">{k}</dt>
-                          <dd className="font-jetbrains text-[11px] text-[#F2EDE4] text-right">{v}</dd>
+                          <dt className="font-editorial-mono text-[10px] tracking-wider uppercase" style={{ color: MUTED }}>{k}</dt>
+                          <dd className="font-editorial-mono text-[11px]" style={{ color: FG }}>{v}</dd>
                         </div>
                       ))}
                       {!player.contract_status && !player.contract_start && (
-                        <p className="font-jetbrains text-[11px] text-[#6B6560]">Sem informações de contrato.</p>
+                        <p className="font-editorial-mono text-[11px]" style={{ color: MUTED }}>Sem informações de contrato.</p>
                       )}
                     </dl>
                   </div>
 
                   {/* Tactical */}
-                  <div className={`${T.bg} p-4`}>
-                    <SectionTitle>PERFIL TÁTICO</SectionTitle>
-                    <dl className="space-y-1.5">
+                  <div className={`${CARD} p-5`}>
+                    <CardLabel>PERFIL TÁTICO</CardLabel>
+                    <dl className="space-y-2">
                       {[
-                        { k: "Função principal", v: player.primary_tactical_role },
-                        { k: "Função secundária", v: player.secondary_tactical_role },
-                        { k: "Preferência", v: player.playing_height_preference },
-                      ].filter((x) => x.v).map(({ k, v }) => (
+                        { k: "Função principal",   v: player.primary_tactical_role },
+                        { k: "Função secundária",  v: player.secondary_tactical_role },
+                        { k: "Preferência",        v: player.playing_height_preference },
+                      ].filter(x => x.v).map(({ k, v }) => (
                         <div key={k} className="flex justify-between gap-2">
-                          <dt className="font-jetbrains text-[10px] text-[#6B6560] uppercase tracking-wider shrink-0">{k}</dt>
-                          <dd className="font-jetbrains text-[11px] text-[#F2EDE4] text-right">{v}</dd>
+                          <dt className="font-editorial-mono text-[10px] tracking-wider uppercase" style={{ color: MUTED }}>{k}</dt>
+                          <dd className="font-editorial-mono text-[11px]" style={{ color: FG }}>{v}</dd>
                         </div>
                       ))}
                       {!player.primary_tactical_role && (
-                        <p className="font-jetbrains text-[11px] text-[#6B6560]">Sem perfil tático definido.</p>
+                        <p className="font-editorial-mono text-[11px]" style={{ color: MUTED }}>Sem perfil tático definido.</p>
                       )}
                     </dl>
                   </div>
 
-                  {/* Style */}
-                  <div className={`${T.bg} p-4`}>
-                    <SectionTitle>ESTILO DE JOGO</SectionTitle>
+                  {/* Play style */}
+                  <div className={`${CARD} p-5`}>
+                    <CardLabel>ESTILO DE JOGO</CardLabel>
                     {player.play_style ? (
                       <>
-                        <p
-                          className="font-barlow font-extrabold text-[22px] uppercase leading-tight"
-                          style={{ color: T.accent }}
-                        >
+                        <p className="font-display font-bold text-[20px] uppercase leading-tight mb-1" style={{ color: ACCENT }}>
                           {player.play_style}
                         </p>
-                        <p className="font-barlow text-[12px] mt-1" style={{ color: "#6B6560" }}>
+                        <p className="font-editorial-mono text-[11px] leading-relaxed" style={{ color: MUTED }}>
                           {getPlayStyleDesc(player.play_style)}
                         </p>
                       </>
                     ) : (
-                      <p className="font-barlow text-[11px] text-[#6B6560]">Não definido.</p>
+                      <p className="font-editorial-mono text-[11px]" style={{ color: MUTED }}>Não definido.</p>
                     )}
                   </div>
 
                   {/* Strengths */}
-                  <div className={`${T.bg} p-4`}>
-                    <SectionTitle>PONTOS FORTES</SectionTitle>
+                  <div className={`${CARD} p-5`}>
+                    <CardLabel>PONTOS FORTES</CardLabel>
                     {safeArray(player.strengths).length > 0 ? (
                       <div className="flex flex-wrap gap-2">
                         {safeArray(player.strengths).map((s, i) => (
                           <span
                             key={i}
-                            className="font-barlow font-bold text-[11px] uppercase tracking-wide px-[10px] py-[3px]"
-                            style={{ border: `1px solid ${T.green}`, color: T.green }}
+                            className="font-editorial-mono text-[10px] uppercase tracking-wide px-2.5 py-1 rounded-lg border"
+                            style={{ borderColor: GREEN, color: GREEN }}
                           >
                             {s}
                           </span>
                         ))}
                       </div>
                     ) : (
-                      <p className="font-barlow text-[11px] text-[#6B6560]">Nenhum ponto forte cadastrado.</p>
+                      <p className="font-editorial-mono text-[11px]" style={{ color: MUTED }}>Nenhum ponto forte cadastrado.</p>
                     )}
                   </div>
 
                   {/* Weaknesses */}
-                  <div className={`${T.bg} p-4`}>
-                    <SectionTitle>ÁREAS DE DESENVOLVIMENTO</SectionTitle>
+                  <div className={`${CARD} p-5`}>
+                    <CardLabel>ÁREAS DE DESENVOLVIMENTO</CardLabel>
                     {safeArray(player.areas_to_develop).length > 0 ? (
                       <div className="flex flex-wrap gap-2">
                         {safeArray(player.areas_to_develop).map((s, i) => (
                           <span
                             key={i}
-                            className="font-barlow font-bold text-[11px] uppercase tracking-wide px-[10px] py-[3px]"
-                            style={{ border: `1px solid ${T.amber}`, color: T.amber }}
+                            className="font-editorial-mono text-[10px] uppercase tracking-wide px-2.5 py-1 rounded-lg border"
+                            style={{ borderColor: AMBER, color: AMBER }}
                           >
                             {s}
                           </span>
                         ))}
                       </div>
                     ) : (
-                      <p className="font-barlow text-[11px] text-[#6B6560]">Nenhuma área registrada.</p>
+                      <p className="font-editorial-mono text-[11px]" style={{ color: MUTED }}>Nenhuma área registrada.</p>
                     )}
                   </div>
                 </div>
               </section>
 
-              {/* Internal Evaluation (private section, same access rules as before) */}
-              <section className={`border ${T.border} mb-5`}>
-                <div className={`px-4 py-3 border-b ${T.border} flex items-center gap-2`}>
-                  <SectionTitle>AVALIAÇÃO INTERNA</SectionTitle>
-                  <Lock className="w-3 h-3 text-[#6B6560] mb-3" />
-                </div>
-                <div
-                  className="grid grid-cols-2"
-                  style={{ gap: 1, background: "#1C1C1C" }}
-                >
-                  {/* Nota Geral (auto) */}
-                  <div className={`${T.bg} p-5`}>
-                    <Label>NOTA GERAL</Label>
-                    <span className="font-jetbrains text-[32px] font-bold text-[#F2EDE4] leading-none">
+              {/* Internal Evaluation */}
+              <section>
+                <SectionLabel n="03">
+                  <span className="inline-flex items-center gap-1.5">
+                    AVALIAÇÃO INTERNA <Lock className="w-3 h-3 inline" style={{ color: MUTED }} />
+                  </span>
+                </SectionLabel>
+                <div className="grid grid-cols-2 gap-3">
+
+                  <div className={`${CARD} p-5`}>
+                    <CardLabel>NOTA GERAL</CardLabel>
+                    <p className="font-display font-bold leading-none" style={{ fontSize: 40, color: FG }}>
                       {player.auto_rating !== null && player.auto_rating !== undefined
                         ? Math.round(player.auto_rating)
                         : "—"}
-                    </span>
-                    <span className="font-jetbrains text-[12px] text-[#6B6560] ml-1">/99</span>
+                      <span className="font-editorial-mono text-[13px] ml-1" style={{ color: MUTED }}>/99</span>
+                    </p>
                   </div>
 
-                  {/* Potencial (auto) */}
-                  <div className={`${T.bg} p-5`}>
-                    <Label>POTENCIAL</Label>
-                    <span
-                      className="font-jetbrains text-[32px] font-bold leading-none"
-                      style={{ color: T.green }}
-                    >
+                  <div className={`${CARD} p-5`}>
+                    <CardLabel>POTENCIAL</CardLabel>
+                    <p className="font-display font-bold leading-none" style={{ fontSize: 40, color: GREEN }}>
                       {player.auto_potential !== null && player.auto_potential !== undefined && player.auto_potential > 0
                         ? Math.round(player.auto_potential)
                         : "—"}
-                    </span>
-                    <span className="font-jetbrains text-[12px] text-[#6B6560] ml-1">/99</span>
+                      <span className="font-editorial-mono text-[13px] ml-1" style={{ color: MUTED }}>/99</span>
+                    </p>
                   </div>
 
-                  {/* Ready to compete */}
-                  <div className={`${T.bg} p-5`}>
-                    <Label>PRONTO PARA COMPETIR?</Label>
+                  <div className={`${CARD} p-5`}>
+                    <CardLabel>PRONTO PARA COMPETIR?</CardLabel>
                     {player.ready_to_compete !== null && player.ready_to_compete !== undefined ? (
-                      <span
-                        className="font-barlow font-extrabold text-[18px] uppercase"
-                        style={{ color: player.ready_to_compete ? T.green : T.amber }}
-                      >
+                      <p className="font-display font-bold text-[22px] uppercase" style={{ color: player.ready_to_compete ? GREEN : AMBER }}>
                         {player.ready_to_compete ? "SIM" : "NÃO"}
-                      </span>
+                      </p>
                     ) : (
-                      <span className="font-jetbrains text-[20px] font-bold text-[#6B6560]">—</span>
+                      <p className="font-display font-bold text-[24px]" style={{ color: MUTED }}>—</p>
                     )}
                   </div>
 
-                  {/* Estimated Level */}
-                  <div className={`${T.bg} p-5`}>
-                    <Label>NÍVEL ESTIMADO</Label>
+                  <div className={`${CARD} p-5`}>
+                    <CardLabel>NÍVEL ESTIMADO</CardLabel>
                     {player.estimated_level ? (
                       <span
-                        className="font-barlow font-bold text-[13px] uppercase tracking-wide px-[10px] py-[3px] inline-block"
-                        style={{ border: `1px solid ${T.amber}`, color: T.amber }}
+                        className="font-editorial-mono text-[11px] uppercase tracking-wide px-2.5 py-1 rounded-lg border inline-block"
+                        style={{ borderColor: AMBER, color: AMBER }}
                       >
                         {player.estimated_level}
                       </span>
                     ) : (
-                      <span className="font-jetbrains text-[20px] font-bold text-[#6B6560]">—</span>
+                      <p className="font-display font-bold text-[24px]" style={{ color: MUTED }}>—</p>
                     )}
                   </div>
                 </div>
               </section>
             </div>
 
-            {/* ── Right Sidebar ────────────────────────────────────────── */}
-            <div className="lg:pl-6 space-y-5 mt-5 lg:mt-0">
+            {/* ── Right Sidebar ─────────────────────────────────────────── */}
+            <div className="space-y-5">
 
               {/* M3 Market Score */}
-              <section className={`border ${T.border} p-5`}>
-                <SectionTitle>M3 MARKET SCORE</SectionTitle>
+              <section className={`${CARD} p-5`}>
+                <CardLabel>M3 MARKET SCORE</CardLabel>
 
-                {/* Score number + tier label */}
                 <div className="flex items-baseline gap-3 mb-2">
-                  <span
-                    className="font-jetbrains font-bold leading-none"
-                    style={{ fontSize: 76, color: "#F2EDE4", lineHeight: 1 }}
-                  >
+                  <span className="font-display font-bold leading-none" style={{ fontSize: 68, color: FG, lineHeight: 1 }}>
                     {marketScoreLoading ? "…" : marketScore !== null ? Math.round(marketScore) : "—"}
                   </span>
-                  <span className="font-jetbrains text-[12px] text-[#6B6560]">/100</span>
+                  <span className="font-editorial-mono text-[11px]" style={{ color: MUTED }}>/100</span>
                   {!marketScoreLoading && marketScore !== null && (
-                    <span
-                      className="font-barlow font-extrabold text-[12px] uppercase tracking-wider"
-                      style={{ color: tierCfg.color }}
-                    >
+                    <span className="font-editorial-mono text-[11px] uppercase tracking-wider font-semibold" style={{ color: tierCfg.color }}>
                       {tierCfg.label}
                     </span>
                   )}
                 </div>
 
-                {/* Progress bar */}
-                <div
-                  className="w-full mb-3 overflow-hidden"
-                  style={{ height: 2, background: "#1C1C1C" }}
-                >
+                <div className="w-full mb-3 overflow-hidden rounded-full" style={{ height: 2, background: "rgba(255,255,255,0.06)" }}>
                   <div
-                    style={{
-                      height: "100%",
-                      width: `${marketScore ?? 0}%`,
-                      background: tierCfg.color,
-                      transition: "width 0.6s ease",
-                    }}
+                    style={{ height: "100%", width: `${marketScore ?? 0}%`, background: tierCfg.color, transition: "width 0.6s ease" }}
                   />
                 </div>
 
-                {/* Meta lines + explanation — only when score exists */}
                 {!marketScoreLoading && marketScore !== null ? (
                   <>
-                    <p className="font-jetbrains text-[11px] mb-1" style={{ color: "#6B6560" }}>
+                    <p className="font-editorial-mono text-[11px] mb-1" style={{ color: MUTED }}>
                       Base: {player.auto_rating !== null ? Math.min(100, Math.round(player.auto_rating)) : "—"} → Ajustado: {Math.min(100, Math.round(marketScore))}
                     </p>
-                    <p className="font-jetbrains text-[11px] mb-3" style={{ color: T.amber }}>
+                    <p className="font-editorial-mono text-[11px] mb-3" style={{ color: AMBER }}>
                       {dataConfidence < 75 ? "↓" : "→"} Confiança {Math.round(dataConfidence)}%{(!marketHasData || reports.length < 3) ? " · Amostra reduzida" : ""}
                     </p>
                     <div
-                      className="font-jetbrains text-[11px] leading-relaxed"
-                      style={{
-                        background: "#0D0D0D",
-                        borderLeft: "2px solid #F59E0B",
-                        padding: "9px 12px",
-                        color: "#6B6560",
-                      }}
+                      className="font-editorial-mono text-[11px] leading-relaxed rounded-lg p-3"
+                      style={{ background: "rgba(255,255,255,0.04)", borderLeft: `2px solid ${AMBER}`, color: MUTED }}
                     >
                       {getMarketScoreExplanation(Math.round(marketScore), Math.round(dataConfidence), reports.length)}
                     </div>
@@ -977,8 +926,8 @@ const PlayerDetail = () => {
                       player.contract_status === "contracted" ? "Contrato ativo" : null,
                     ].filter(Boolean).slice(0, 3).map((insight, i) => (
                       <li key={i} className="flex items-center gap-2">
-                        <span className="w-[3px] h-[3px] shrink-0" style={{ background: T.accent }} />
-                        <span className="font-jetbrains text-[11px] text-[#6B6560]">{insight}</span>
+                        <span className="w-1 h-1 rounded-full shrink-0" style={{ background: ACCENT }} />
+                        <span className="font-editorial-mono text-[11px]" style={{ color: MUTED }}>{insight}</span>
                       </li>
                     ))}
                   </ul>
@@ -986,49 +935,40 @@ const PlayerDetail = () => {
               </section>
 
               {/* Attributes Radar */}
-              <section className={`border ${T.border} p-5`}>
+              <section className={`${CARD} p-5`}>
                 <AtributoRadar playerId={player.id} filterToLatestSeason />
               </section>
 
-              {/* Market Value chart */}
-              <section className={`border ${T.border} p-5`}>
+              {/* Market Value */}
+              <section className={`${CARD} p-5`}>
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-[10px] tracking-[0.18em] uppercase font-barlow font-bold" style={{ color: "#6B6560" }}>
-                    VALOR DE MERCADO
-                  </p>
+                  <CardLabel>VALOR DE MERCADO</CardLabel>
                   {player.market_value_trend && (() => {
                     const t = player.market_value_trend.toLowerCase();
                     const cfg = t === "up"
-                      ? { icon: "↗", label: "EM ALTA",  color: T.green  }
+                      ? { icon: "↗", label: "EM ALTA",  color: GREEN  }
                       : t === "down"
-                      ? { icon: "↘", label: "EM BAIXA", color: T.accent }
-                      : { icon: "→", label: "ESTÁVEL",  color: "#6B6560" };
+                      ? { icon: "↘", label: "EM BAIXA", color: ACCENT }
+                      : { icon: "→", label: "ESTÁVEL",  color: MUTED  };
                     return (
-                      <span className="font-barlow font-bold text-[11px] uppercase tracking-wide" style={{ color: cfg.color }}>
+                      <span className="font-editorial-mono text-[10px] uppercase tracking-wide font-semibold" style={{ color: cfg.color }}>
                         {cfg.icon} {cfg.label}
                       </span>
                     );
                   })()}
                 </div>
-                <div className="flex items-baseline gap-1 mb-3">
-                  <span className="font-jetbrains text-[18px] font-bold" style={{ color: T.green }}>
-                    {formatMarketValue(player.market_value, player.market_value_currency)}
-                  </span>
-                </div>
+                <p className="font-display font-bold text-[22px] mb-3" style={{ color: GREEN }}>
+                  {formatMarketValue(player.market_value, player.market_value_currency)}
+                </p>
                 <MarketValueMiniChart playerId={player.id} currentValue={player.market_value} />
               </section>
 
-              {/* Note Evolution chart */}
-              <section className={`border ${T.border} p-5`}>
+              {/* Note Evolution */}
+              <section className={`${CARD} p-5`}>
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-[10px] tracking-[0.18em] uppercase font-barlow font-bold" style={{ color: "#6B6560" }}>
-                    EVOLUÇÃO DA NOTA
-                  </p>
+                  <CardLabel>EVOLUÇÃO DA NOTA</CardLabel>
                   {ratingDelta !== null && (
-                    <span
-                      className="font-jetbrains text-[13px]"
-                      style={{ color: ratingDelta >= 0 ? T.green : T.accent }}
-                    >
+                    <span className="font-editorial-mono text-[13px] font-bold" style={{ color: ratingDelta >= 0 ? GREEN : ACCENT }}>
                       {ratingDelta >= 0 ? "+" : "−"}{Math.abs(ratingDelta).toFixed(1)}
                     </span>
                   )}
@@ -1037,18 +977,12 @@ const PlayerDetail = () => {
                 {initialRating !== null && player.auto_rating !== null && (
                   <div className="flex items-start justify-between mt-3">
                     <div>
-                      <p className="font-barlow font-bold text-[10px] uppercase mb-0.5" style={{ color: "#6B6560", letterSpacing: "0.12em" }}>
-                        INICIAL
-                      </p>
-                      <p className="font-jetbrains text-[22px] font-bold" style={{ color: "#6B6560" }}>
-                        {initialRating.toFixed(1)}
-                      </p>
+                      <p className="font-editorial-mono text-[9px] uppercase tracking-[0.14em] mb-1" style={{ color: MUTED }}>INICIAL</p>
+                      <p className="font-display font-bold text-[22px]" style={{ color: MUTED }}>{initialRating.toFixed(1)}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-barlow font-bold text-[10px] uppercase mb-0.5" style={{ color: "#6B6560", letterSpacing: "0.12em" }}>
-                        ATUAL
-                      </p>
-                      <p className="font-jetbrains text-[22px] font-bold" style={{ color: ratingDelta !== null && ratingDelta >= 0 ? T.green : T.accent }}>
+                      <p className="font-editorial-mono text-[9px] uppercase tracking-[0.14em] mb-1" style={{ color: MUTED }}>ATUAL</p>
+                      <p className="font-display font-bold text-[22px]" style={{ color: ratingDelta !== null && ratingDelta >= 0 ? GREEN : ACCENT }}>
                         {player.auto_rating.toFixed(1)}
                       </p>
                     </div>
@@ -1057,79 +991,66 @@ const PlayerDetail = () => {
               </section>
 
               {/* Reliability */}
-              <section className={`border ${T.border} p-5`}>
+              <section className={`${CARD} p-5`}>
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-[10px] tracking-[0.18em] uppercase font-barlow font-bold" style={{ color: "#6B6560" }}>
-                    CONFIABILIDADE
-                  </p>
-                  <span
-                    className="font-jetbrains text-[22px] font-bold"
-                    style={{ color: reliabilityColor }}
-                  >
+                  <CardLabel>CONFIABILIDADE</CardLabel>
+                  <span className="font-display font-bold text-[22px]" style={{ color: reliabilityColor }}>
                     {reliabilityPct}%
                   </span>
                 </div>
                 <span
-                  className="font-barlow font-bold text-[11px] uppercase tracking-wide px-[10px] py-[3px] inline-block mb-3"
-                  style={{ border: `1px solid ${reliabilityColor}`, color: reliabilityColor }}
+                  className="font-editorial-mono text-[10px] uppercase tracking-wide px-2.5 py-1 rounded-lg border inline-block mb-3"
+                  style={{ borderColor: reliabilityColor, color: reliabilityColor }}
                 >
                   {reliabilityLabel}
                 </span>
-                <div className="w-full overflow-hidden" style={{ height: 2, background: "#1C1C1C" }}>
+                <div className="w-full overflow-hidden rounded-full" style={{ height: 2, background: "rgba(255,255,255,0.06)" }}>
                   <div
-                    style={{
-                      height: "100%",
-                      width: `${reliabilityPct}%`,
-                      background: reliabilityColor,
-                      transition: "width 0.6s ease",
-                    }}
+                    style={{ height: "100%", width: `${reliabilityPct}%`, background: reliabilityColor, transition: "width 0.6s ease" }}
                   />
                 </div>
-                <p className="font-jetbrains text-[10px] text-[#6B6560] mt-2 tracking-wider uppercase">
+                <p className="font-editorial-mono text-[10px] uppercase tracking-wider mt-2" style={{ color: MUTED }}>
                   Baseado em {reports.length} relatório{reports.length !== 1 ? "s" : ""}
                 </p>
               </section>
 
               {/* Recent Reports */}
-              <section className={`border ${T.border} p-5`}>
-                <div className="flex items-start justify-between">
-                  <SectionTitle>RELATÓRIOS RECENTES</SectionTitle>
+              <section className={`${CARD} p-5`}>
+                <div className="flex items-start justify-between mb-3">
+                  <CardLabel>RELATÓRIOS RECENTES</CardLabel>
                   {avgScoutNote !== null && (
                     <div className="text-right">
-                      <p className="font-jetbrains font-bold text-[18px]" style={{ color: avgScoutNote > 70 ? T.green : avgScoutNote >= 50 ? T.amber : T.accent }}>
+                      <p className="font-display font-bold text-[18px]" style={{ color: avgScoutNote > 70 ? GREEN : avgScoutNote >= 50 ? AMBER : ACCENT }}>
                         {avgScoutNote.toFixed(1)}
                       </p>
-                      <p className="font-jetbrains text-[9px] tracking-wider uppercase" style={{ color: "#6B6560" }}>
-                        Média (últimos 5 jogos)
+                      <p className="font-editorial-mono text-[9px] tracking-wider uppercase" style={{ color: MUTED }}>
+                        Média (últimos 5)
                       </p>
                     </div>
                   )}
                 </div>
                 {reports.length === 0 ? (
-                  <p className="font-barlow text-[11px] text-[#6B6560]">Nenhum relatório encontrado.</p>
+                  <p className="font-editorial-mono text-[11px]" style={{ color: MUTED }}>Nenhum relatório encontrado.</p>
                 ) : (
                   <ul className="space-y-2">
                     {reports.slice(0, RECENT_REPORTS_LIMIT).map((r) => {
                       const score = r.final_score ?? 0;
-                      const scoreColor = score > 70 ? T.green : score >= 50 ? T.amber : "#F2EDE4";
+                      const scoreColor = score > 70 ? GREEN : score >= 50 ? AMBER : FG;
                       return (
                         <li
                           key={r.id}
-                          className={`flex items-center justify-between pb-2 border-b ${T.border} last:border-0 last:pb-0`}
+                          className={`flex items-center justify-between pb-2 border-b border-zinc-800/60 last:border-0 last:pb-0`}
                         >
                           <div>
-                            <p className="font-barlow font-bold text-[12px] uppercase tracking-wide" style={{ color: "#F2EDE4" }}>
+                            <p className="font-display font-semibold text-[13px] uppercase tracking-wide" style={{ color: FG }}>
                               {r.competition?.name ?? "—"}
                             </p>
-                            <p className="font-jetbrains text-[10px] text-[#6B6560]">
+                            <p className="font-editorial-mono text-[10px]" style={{ color: MUTED }}>
                               {format(new Date(r.match_date), "dd MMM yyyy", { locale: ptBR })}
                             </p>
                           </div>
                           <Link to={`/dashboard/relatorios/${r.id}`}>
-                            <span
-                              className="font-jetbrains font-bold text-[15px]"
-                              style={{ color: scoreColor }}
-                            >
+                            <span className="font-display font-bold text-[15px]" style={{ color: scoreColor }}>
                               {r.final_score?.toFixed(1) ?? "—"}
                             </span>
                           </Link>
