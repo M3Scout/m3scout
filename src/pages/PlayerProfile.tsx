@@ -299,7 +299,7 @@ const PlayerProfile = () => {
           />
 
           {/* Highlights Section - Pontos Fortes */}
-          <AthleteHighlightsSection strengths={player.strengths} />
+          <AthleteHighlightsSection strengths={player.strengths} playerId={player.id} />
 
           {/* Attribute Radar Section */}
           <section className="mt-16 md:mt-24">
