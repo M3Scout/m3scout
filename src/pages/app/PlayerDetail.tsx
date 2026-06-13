@@ -108,7 +108,8 @@ const MUTED   = "#62616a";
 const FG      = "#ededee";
 const GREEN   = "#22c55e";
 const AMBER   = "#f59e0b";
-const CARD    = "rounded-xl bg-zinc-900/50 border border-zinc-800/60 hover:bg-zinc-800/60 transition-colors duration-200";
+const CARD       = "rounded-xl border transition-colors duration-[250ms] hover:bg-zinc-800/50";
+const CARD_STYLE = { background: "#141318", borderColor: "rgba(255,255,255,0.07)" } as const;
 const DIVIDER = "border-zinc-800/60";
 
 // ─── Atoms ───────────────────────────────────────────────────────────────────
@@ -709,7 +710,7 @@ const PlayerDetail = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 
                   {/* Identity */}
-                  <div className={`${CARD} p-5`}>
+                  <div className={`${CARD} p-5`} style={CARD_STYLE}>
                     <CardLabel>IDENTIDADE</CardLabel>
                     <dl className="space-y-2">
                       {[
@@ -729,7 +730,7 @@ const PlayerDetail = () => {
                   </div>
 
                   {/* Contract */}
-                  <div className={`${CARD} p-5`}>
+                  <div className={`${CARD} p-5`} style={CARD_STYLE}>
                     <CardLabel>CONTRATO</CardLabel>
                     <dl className="space-y-2">
                       {[
@@ -751,7 +752,7 @@ const PlayerDetail = () => {
                   </div>
 
                   {/* Tactical */}
-                  <div className={`${CARD} p-5`}>
+                  <div className={`${CARD} p-5`} style={CARD_STYLE}>
                     <CardLabel>PERFIL TÁTICO</CardLabel>
                     <dl className="space-y-2">
                       {[
@@ -771,7 +772,7 @@ const PlayerDetail = () => {
                   </div>
 
                   {/* Play style */}
-                  <div className={`${CARD} p-5`}>
+                  <div className={`${CARD} p-5`} style={CARD_STYLE}>
                     <CardLabel>ESTILO DE JOGO</CardLabel>
                     {player.play_style ? (
                       <>
@@ -788,7 +789,7 @@ const PlayerDetail = () => {
                   </div>
 
                   {/* Strengths */}
-                  <div className={`${CARD} p-5`}>
+                  <div className={`${CARD} p-5`} style={CARD_STYLE}>
                     <CardLabel>PONTOS FORTES</CardLabel>
                     {safeArray(player.strengths).length > 0 ? (
                       <div className="flex flex-wrap gap-2">
@@ -808,7 +809,7 @@ const PlayerDetail = () => {
                   </div>
 
                   {/* Weaknesses */}
-                  <div className={`${CARD} p-5`}>
+                  <div className={`${CARD} p-5`} style={CARD_STYLE}>
                     <CardLabel>ÁREAS DE DESENVOLVIMENTO</CardLabel>
                     {safeArray(player.areas_to_develop).length > 0 ? (
                       <div className="flex flex-wrap gap-2">
@@ -838,7 +839,7 @@ const PlayerDetail = () => {
                 </SectionLabel>
                 <div className="grid grid-cols-2 gap-3">
 
-                  <div className={`${CARD} p-5`}>
+                  <div className={`${CARD} p-5`} style={CARD_STYLE}>
                     <CardLabel>NOTA GERAL</CardLabel>
                     <p className="font-display font-bold leading-none" style={{ fontSize: 40, color: FG }}>
                       {player.auto_rating !== null && player.auto_rating !== undefined
@@ -848,7 +849,7 @@ const PlayerDetail = () => {
                     </p>
                   </div>
 
-                  <div className={`${CARD} p-5`}>
+                  <div className={`${CARD} p-5`} style={CARD_STYLE}>
                     <CardLabel>POTENCIAL</CardLabel>
                     <p className="font-display font-bold leading-none" style={{ fontSize: 40, color: GREEN }}>
                       {player.auto_potential !== null && player.auto_potential !== undefined && player.auto_potential > 0
@@ -858,7 +859,7 @@ const PlayerDetail = () => {
                     </p>
                   </div>
 
-                  <div className={`${CARD} p-5`}>
+                  <div className={`${CARD} p-5`} style={CARD_STYLE}>
                     <CardLabel>PRONTO PARA COMPETIR?</CardLabel>
                     {player.ready_to_compete !== null && player.ready_to_compete !== undefined ? (
                       <p className="font-display font-bold text-[22px] uppercase" style={{ color: player.ready_to_compete ? GREEN : AMBER }}>
@@ -869,7 +870,7 @@ const PlayerDetail = () => {
                     )}
                   </div>
 
-                  <div className={`${CARD} p-5`}>
+                  <div className={`${CARD} p-5`} style={CARD_STYLE}>
                     <CardLabel>NÍVEL ESTIMADO</CardLabel>
                     {player.estimated_level ? (
                       <span
@@ -890,7 +891,7 @@ const PlayerDetail = () => {
             <div className="space-y-5">
 
               {/* M3 Market Score */}
-              <section className={`${CARD} p-5`}>
+              <section className={`${CARD} p-5`} style={CARD_STYLE}>
                 <CardLabel>M3 MARKET SCORE</CardLabel>
 
                 <div className="flex items-baseline gap-3 mb-2">
@@ -943,12 +944,12 @@ const PlayerDetail = () => {
               </section>
 
               {/* Attributes Radar */}
-              <section className={`${CARD} p-5`}>
+              <section className={`${CARD} p-5`} style={CARD_STYLE}>
                 <AtributoRadar playerId={player.id} filterToLatestSeason />
               </section>
 
               {/* Market Value */}
-              <section className={`${CARD} p-5`}>
+              <section className={`${CARD} p-5`} style={CARD_STYLE}>
                 <div className="flex items-center justify-between mb-3">
                   <CardLabel>VALOR DE MERCADO</CardLabel>
                   {player.market_value_trend && (() => {
@@ -972,7 +973,7 @@ const PlayerDetail = () => {
               </section>
 
               {/* Note Evolution */}
-              <section className={`${CARD} p-5`}>
+              <section className={`${CARD} p-5`} style={CARD_STYLE}>
                 <div className="flex items-center justify-between mb-3">
                   <CardLabel>EVOLUÇÃO DA NOTA</CardLabel>
                   {ratingDelta !== null && (
@@ -999,7 +1000,7 @@ const PlayerDetail = () => {
               </section>
 
               {/* Reliability */}
-              <section className={`${CARD} p-5`}>
+              <section className={`${CARD} p-5`} style={CARD_STYLE}>
                 <div className="flex items-center justify-between mb-3">
                   <CardLabel>CONFIABILIDADE</CardLabel>
                   <span className="font-display font-bold text-[22px]" style={{ color: reliabilityColor }}>
@@ -1023,7 +1024,7 @@ const PlayerDetail = () => {
               </section>
 
               {/* Recent Reports */}
-              <section className={`${CARD} p-5`}>
+              <section className={`${CARD} p-5`} style={CARD_STYLE}>
                 <div className="flex items-start justify-between mb-3">
                   <CardLabel>RELATÓRIOS RECENTES</CardLabel>
                   {avgScoutNote !== null && (
