@@ -670,28 +670,36 @@ const PlayerDetail = () => {
               {/* Season KPIs */}
               <section>
                 <SectionLabel n="01">TEMPORADA {CURRENT_YEAR}</SectionLabel>
-                <div className={`${CARD} overflow-hidden`}>
-                  <div className="grid grid-cols-5 divide-x divide-zinc-800/60">
-                    {[
-                      { label: "JOGOS",  value: statsLoading ? "…" : (seasonTotals?.matches ?? "—"), color: FG    },
-                      { label: "MIN",    value: statsLoading ? "…" : (seasonTotals?.minutes ?? "—"), color: FG    },
-                      { label: "GOLS",   value: statsLoading ? "…" : (seasonTotals?.goals   ?? "—"), color: ACCENT},
-                      { label: "ASSIST", value: statsLoading ? "…" : (seasonTotals?.assists  ?? "—"), color: FG    },
-                      { label: "G+A",    value: statsLoading ? "…" : ga,                              color: AMBER },
-                    ].map((s) => (
-                      <div key={s.label} className="px-2 sm:px-4 py-5 text-center">
-                        <span className="block font-editorial-mono text-[9px] tracking-[0.2em] uppercase mb-2" style={{ color: MUTED }}>
-                          {s.label}
-                        </span>
-                        <span
-                          className="font-display font-bold leading-none tabular-nums"
-                          style={{ fontSize: "clamp(20px,3vw,32px)", color: s.color }}
-                        >
-                          {s.value}
-                        </span>
+                <div className="grid grid-cols-5 gap-2">
+                  {[
+                    { label: "G+A",    value: statsLoading ? "…" : ga,                               highlight: true  },
+                    { label: "GOLS",   value: statsLoading ? "…" : (seasonTotals?.goals   ?? "—"),   highlight: true  },
+                    { label: "ASSIST", value: statsLoading ? "…" : (seasonTotals?.assists  ?? "—"),  highlight: false },
+                    { label: "JOGOS",  value: statsLoading ? "…" : (seasonTotals?.matches ?? "—"),   highlight: false },
+                    { label: "MIN",    value: statsLoading ? "…" : (seasonTotals?.minutes ?? "—"),   highlight: false },
+                  ].map((s, i) => (
+                    <div
+                      key={s.label}
+                      className="relative rounded-xl border transition-colors duration-[250ms] hover:bg-zinc-800/50 py-5 px-4"
+                      style={s.highlight
+                        ? { background: "linear-gradient(165deg, rgba(236,69,37,0.14), rgba(20,19,24,1) 70%)", borderColor: "rgba(236,69,37,0.25)" }
+                        : { background: "#141318", borderColor: "rgba(255,255,255,0.07)" }
+                      }
+                    >
+                      <span className="absolute top-3 right-3 font-editorial-mono text-[10px] text-zinc-500">
+                        {String(i + 1).padStart(2, "0")}
+                      </span>
+                      <div
+                        className="font-display font-bold leading-[0.9] tracking-[-0.03em] tabular-nums mb-3"
+                        style={{ fontSize: "clamp(24px,3vw,40px)", color: s.highlight ? ACCENT : FG }}
+                      >
+                        {typeof s.value === "number" ? s.value.toLocaleString("pt-BR") : s.value}
                       </div>
-                    ))}
-                  </div>
+                      <div className="font-editorial-mono text-[9px] tracking-[0.16em] uppercase" style={{ color: MUTED }}>
+                        {s.label}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </section>
 
