@@ -23,7 +23,7 @@ const AXES = [
 ] as const;
 
 // Cores por jogador — mesmo verde/azul do AtributoRadar para p1/p2
-const PLAYER_COLORS = [
+export const PLAYER_COLORS = [
   { stroke: "#16a34a", fill: "rgba(34,197,94,0.20)"   },
   { stroke: "#2563eb", fill: "rgba(59,130,246,0.18)"  },
   { stroke: "#f97316", fill: "rgba(249,115,22,0.15)"  },

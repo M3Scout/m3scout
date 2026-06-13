@@ -1,13 +1,7 @@
 import { motion } from "framer-motion";
-import { LucideIcon, TrendingUp, Minus } from "lucide-react";
-import { getPositionColor } from "@/lib/positionColors";
+import { LucideIcon, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { PLAYER_COLORS } from "@/components/players/ComparisonRadarOverlay";
 
 interface StatValue {
   playerId: string;
@@ -71,7 +65,7 @@ export function CompareStatRow({
     <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${values.length}, 1fr)` }}>
       {values.map((stat, idx) => {
         const isBest = !allEqual && bestIdx === idx && numericValues.length > 1;
-        const posColor = getPositionColor(stat.position);
+        const color = PLAYER_COLORS[idx % PLAYER_COLORS.length];
 
         return (
           <motion.div
@@ -79,32 +73,28 @@ export function CompareStatRow({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.05 }}
-            className={cn(
-              "relative p-3 rounded-lg text-center transition-all",
-              isBest 
-                ? cn("ring-1", posColor.ringClass, posColor.bgClass)
-                : "bg-zinc-900/50"
-            )}
+            className="relative p-3 rounded-lg text-center transition-all"
+            style={isBest ? {
+              background: color.fill,
+              outline: `1px solid ${color.stroke}`,
+            } : { background: "rgba(24,24,27,0.5)" }}
           >
-            {/* Winner indicator */}
             {isBest && (
               <div className="absolute top-1 right-1">
-                <TrendingUp className={cn("w-3 h-3", posColor.textClass)} />
+                <TrendingUp className="w-3 h-3" style={{ color: color.stroke }} />
               </div>
             )}
 
-            {/* Value */}
-            <p className={cn(
-              "text-xl font-bold tabular-nums",
-              isBest ? posColor.textClass : "text-zinc-300"
-            )}>
-              {per90Mode && stat.per90 !== undefined && stat.per90 !== null 
-                ? formatValue(stat.per90) 
+            <p
+              className="text-xl font-bold tabular-nums"
+              style={{ color: isBest ? color.stroke : "#d4d4d8" }}
+            >
+              {per90Mode && stat.per90 !== undefined && stat.per90 !== null
+                ? formatValue(stat.per90)
                 : formatValue(stat.value)
               }
             </p>
 
-            {/* Label */}
             <p className="text-[10px] text-zinc-500 uppercase tracking-wider mt-0.5">
               {label}
             </p>
@@ -179,38 +169,31 @@ export function CompareBarRow({ label, values, maxValue: customMax, higherIsBett
         {values.map((stat, idx) => {
           const numValue = typeof stat.value === 'number' ? stat.value : 0;
           const percentage = Math.min((numValue / maxValue) * 100, 100);
-          const posColor = getPositionColor(stat.position);
           const isBest = bestIdx === idx && values.length > 1;
-
+          const color = PLAYER_COLORS[idx % PLAYER_COLORS.length];
           return (
             <div key={stat.playerId} className="flex items-center gap-3">
-              {/* Player name */}
               <span className="text-xs text-zinc-400 w-20 truncate">
                 {stat.playerName.split(' ')[0]}
               </span>
 
-              {/* Bar */}
               <div className="flex-1 h-5 bg-zinc-800/50 rounded-full overflow-hidden relative">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${percentage}%` }}
                   transition={{ duration: 0.6, delay: idx * 0.1, ease: "easeOut" }}
-                  className={cn(
-                    "h-full rounded-full transition-all",
-                    posColor.accentClass,
-                    isBest && "shadow-lg"
-                  )}
+                  className="h-full rounded-full"
                   style={{
-                    boxShadow: isBest ? `0 0 12px ${posColor.color}` : undefined
+                    background: color.stroke,
+                    boxShadow: isBest ? `0 0 12px ${color.stroke}` : undefined,
                   }}
                 />
               </div>
 
-              {/* Value */}
-              <span className={cn(
-                "text-sm font-bold tabular-nums w-10 text-right",
-                isBest ? posColor.textClass : "text-zinc-400"
-              )}>
+              <span
+                className="text-sm font-bold tabular-nums w-10 text-right"
+                style={{ color: isBest ? color.stroke : "#a1a1aa" }}
+              >
                 {Math.round(numValue)}
               </span>
             </div>
