@@ -301,30 +301,6 @@ const PlayerProfile = () => {
           {/* Highlights Section - Pontos Fortes */}
           <AthleteHighlightsSection strengths={player.strengths} playerId={player.id} />
 
-          {/* Attribute Radar Section */}
-          <section className="mt-16 md:mt-24">
-            <div className="flex items-end justify-between gap-6 mb-8 md:mb-10 flex-wrap">
-              <div>
-                <div className="font-editorial-mono text-[11px] tracking-[0.24em] uppercase text-[#62616a] font-medium inline-flex gap-[10px] items-center">
-                  <span className="text-[#ec4525] font-semibold">02</span>
-                  <span className="w-[34px] h-px bg-white/15 flex-none" />
-                  ANÁLISE TÉCNICA
-                </div>
-                <h2
-                  className="font-display font-semibold leading-[1.02] tracking-[-0.025em] mt-[14px] text-[#ededee]"
-                  style={{ fontSize: "clamp(24px,3.4vw,44px)" }}
-                >
-                  Mapa de Atributos
-                </h2>
-              </div>
-              <p className="hidden md:block font-editorial-mono text-[12px] text-[#62616a] tracking-[0.04em] max-w-[240px] text-right leading-relaxed">
-                Temporada mais recente<br />calculado por 90 min
-              </p>
-            </div>
-            <div className="max-w-[320px] mx-auto md:mx-0">
-              <AtributoRadar playerId={player.id} filterToLatestSeason showHeader={false} />
-            </div>
-          </section>
 
           {/* Statistics Section */}
           {!statsLoading && careerStats.length > 0 && (
