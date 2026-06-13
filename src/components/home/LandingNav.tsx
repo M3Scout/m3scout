@@ -4,10 +4,9 @@ import { useEffect, useState } from "react";
 import logoM3 from "@/assets/logo-m3.png";
 import "./LandingHero.css";
 
-const TITLE_HEADER_ROUTES = ["/sobre", "/atletas", "/players", "/imprensa", "/contato", "/contact"];
+const TITLE_HEADER_ROUTES = ["/atletas", "/players", "/imprensa", "/contato", "/contact"];
 
 const navLinks = [
-  { href: "/sobre", label: "Sobre" },
   { href: "/atletas", label: "Talentos" },
   { href: "/imprensa", label: "Imprensa" },
   { href: "/contato", label: "Contato" },

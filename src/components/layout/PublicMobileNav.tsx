@@ -1,10 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Home, Users, Newspaper, Mail, Info } from "lucide-react";
+import { Home, Users, Newspaper, Mail } from "lucide-react";
 
 const navItems = [
   { href: "/", label: "Home", icon: Home },
-  { href: "/sobre", label: "Sobre", icon: Info },
   { href: "/atletas", label: "Talentos", icon: Users },
   { href: "/imprensa", label: "Imprensa", icon: Newspaper },
   { href: "/contato", label: "Contato", icon: Mail },
