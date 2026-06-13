@@ -104,13 +104,13 @@ const ComparePlayers = () => {
   const [loading, setLoading] = useState(true);
   const [openSelector, setOpenSelector] = useState<number | null>(null);
 
-  // Filters - season and competition
-  const [seasonFilter, setSeasonFilter] = useState<string>("all");
-  const [competitionFilter, setCompetitionFilter] = useState<string>("all");
-
   // Radar: dados pré-calculados de player_attribute_scores
   const [radarRowsMap, setRadarRowsMap] = useState<Record<string, AttributeScoresData[]>>({});
   const [radarYear, setRadarYear] = useState<number | null>(null);
+
+  // Filters derivados do ano selecionado no radar (sem estado separado)
+  const seasonFilter = radarYear ? String(radarYear) : "all";
+  const competitionFilter = "all";
   const [loadingRadar, setLoadingRadar] = useState(false);
 
   // Debug logging helper
@@ -193,39 +193,6 @@ const ComparePlayers = () => {
     }
     setLoading(false);
   };
-
-  // Compute available years/competitions from merged rows (same universe as Profile)
-  const availableYears = useMemo(() => {
-    const years = new Set<number>();
-    for (const s of slotStats) {
-      for (const r of s.rows) years.add(r.season_year);
-    }
-    return Array.from(years).sort((a, b) => b - a);
-  }, [slot0.rows, slot1.rows, slot2.rows, slot3.rows]);
-
-  const availableCompetitions = useMemo(() => {
-    const map = new Map<string, string>();
-    const rows = slotStats.flatMap((s) => s.rows);
-    const seasonFiltered = seasonFilter !== "all"
-      ? rows.filter((r) => r.season_year === Number(seasonFilter))
-      : rows;
-
-    for (const r of seasonFiltered) {
-      if (r.competition_id && r.competition_name) {
-        map.set(r.competition_id, r.competition_name);
-      }
-    }
-
-    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
-  }, [slot0.rows, slot1.rows, slot2.rows, slot3.rows, seasonFilter]);
-
-  // No auto-select of season - respect user's "all" choice for career view
-  // Users can manually change to specific seasons if needed
-
-  // Reset competition filter when season changes
-  useEffect(() => {
-    setCompetitionFilter("all");
-  }, [seasonFilter]);
 
   // Anos disponíveis no radar (união de todos os jogadores)
   const availableRadarYears = useMemo(() => {
