@@ -1066,6 +1066,7 @@ const PlayerDetail = () => {
                 )}
               </section>
             </div>
+          </div>
         )}
       </div>
 
