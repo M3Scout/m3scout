@@ -64,6 +64,34 @@ interface ComparisonRadarOverlayProps {
   players: RadarPlayerData[];
   loading?: boolean;
   className?: string;
+  availableYears?: number[];
+  selectedYear?: number | null;
+  onYearChange?: (year: number) => void;
+}
+
+function Pill({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="text-[10px] font-bold tracking-widest uppercase px-2 py-0.5 rounded transition-colors"
+      style={
+        active
+          ? { color: "#F2EDE4", background: "#2A2A2A", border: "1px solid #3A3A3A" }
+          : { color: MUTED, background: "transparent", border: "1px solid transparent" }
+      }
+    >
+      {label}
+    </button>
+  );
 }
 
 // ── Componente ────────────────────────────────────────────────────────────────
@@ -72,6 +100,9 @@ export function ComparisonRadarOverlay({
   players,
   loading = false,
   className,
+  availableYears = [],
+  selectedYear = null,
+  onYearChange,
 }: ComparisonRadarOverlayProps) {
   const labelPositions = AXES.map(a => {
     const { x, y } = pt(LABEL_R, a.angleDeg);
@@ -84,9 +115,23 @@ export function ComparisonRadarOverlay({
     <Card className={cn("bg-zinc-900 border-zinc-800 shadow-lg overflow-hidden", className)}>
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-800/50">
-        <span className="text-[10px] tracking-[0.18em] uppercase font-bold" style={{ color: MUTED }}>
-          Atributos
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] tracking-[0.18em] uppercase font-bold" style={{ color: MUTED }}>
+            Atributos
+          </span>
+          {availableYears.length > 1 && onYearChange && (
+            <div className="flex gap-1">
+              {availableYears.map(year => (
+                <Pill
+                  key={year}
+                  label={String(year)}
+                  active={year === selectedYear}
+                  onClick={() => onYearChange(year)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
         <Popover>
           <PopoverTrigger asChild>
             <button className="flex items-center" type="button">

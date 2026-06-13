@@ -29,7 +29,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ArrowLeft,
   Loader2,
@@ -113,14 +112,14 @@ const ComparePlayers = () => {
   const [selectedPlayers, setSelectedPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [openSelector, setOpenSelector] = useState<number | null>(null);
-  const [viewMode, setViewMode] = useState<"absolute" | "per90">("absolute");
-  
+
   // Filters - season and competition
   const [seasonFilter, setSeasonFilter] = useState<string>("all");
   const [competitionFilter, setCompetitionFilter] = useState<string>("all");
 
-  // Radar: scores pré-calculados de player_attribute_scores
-  const [radarScores, setRadarScores] = useState<Record<string, number[]>>({});
+  // Radar: dados pré-calculados de player_attribute_scores
+  const [radarRowsMap, setRadarRowsMap] = useState<Record<string, AttributeScoresData[]>>({});
+  const [radarYear, setRadarYear] = useState<number | null>(null);
   const [loadingRadar, setLoadingRadar] = useState(false);
 
   // Debug logging helper
@@ -168,21 +167,26 @@ const ComparePlayers = () => {
     fetchPlayers();
   }, []);
 
-  // Busca scores pré-calculados para o radar sempre que os jogadores selecionados mudam
+  // Busca rows de player_attribute_scores para o radar
   useEffect(() => {
     if (!selectedPlayers.length) {
-      setRadarScores({});
+      setRadarRowsMap({});
+      setRadarYear(null);
       return;
     }
     setLoadingRadar(true);
     Promise.all(
       selectedPlayers.map(p =>
-        fetchPlayerAllAttributeScores(p.id).then(rows => ({ id: p.id, scores: aggregateLatestSeason(rows) }))
+        fetchPlayerAllAttributeScores(p.id).then(rows => ({ id: p.id, rows }))
       )
     ).then(results => {
-      const map: Record<string, number[]> = {};
-      results.forEach(r => { map[r.id] = r.scores; });
-      setRadarScores(map);
+      const map: Record<string, AttributeScoresData[]> = {};
+      results.forEach(r => { map[r.id] = r.rows; });
+      setRadarRowsMap(map);
+      // Inicializa o ano com o mais recente disponível entre todos os jogadores
+      const allYears = results.flatMap(r => r.rows.map(row => row.season_year ?? 0));
+      const latestYear = allYears.length ? Math.max(...allYears) : null;
+      setRadarYear(prev => prev ?? latestYear);
     }).finally(() => setLoadingRadar(false));
   }, [selectedPlayers.map(p => p.id).join(",")]);
 
@@ -231,6 +235,25 @@ const ComparePlayers = () => {
   useEffect(() => {
     setCompetitionFilter("all");
   }, [seasonFilter]);
+
+  // Anos disponíveis no radar (união de todos os jogadores)
+  const availableRadarYears = useMemo(() => {
+    const years = new Set<number>();
+    Object.values(radarRowsMap).forEach(rows =>
+      rows.forEach(r => { if (r.season_year) years.add(r.season_year); })
+    );
+    return Array.from(years).sort((a, b) => b - a);
+  }, [radarRowsMap]);
+
+  // Scores do radar para o ano selecionado
+  const radarPlayers = useMemo(() => {
+    return selectedPlayers.map(p => {
+      const rows = radarRowsMap[p.id] ?? [];
+      const yr = radarYear ?? (availableRadarYears[0] ?? null);
+      const filtered = yr ? rows.filter(r => r.season_year === yr) : rows;
+      return { id: p.id, name: p.full_name, scores: aggregateLatestSeason(filtered.length ? filtered : rows) };
+    });
+  }, [selectedPlayers, radarRowsMap, radarYear, availableRadarYears]);
 
   const playersWithStats = useMemo((): PlayerWithStats[] => {
     return selectedPlayers.map((player, idx) => {
@@ -319,7 +342,6 @@ const ComparePlayers = () => {
       const shotsPer90 = minutesPlayed > 0 ? (shotsRaw / minutesPlayed) * 90 : null;
       
       debugStatsLog(`Player: ${p.full_name}`, {
-        mode: viewMode,
         filters: { season: seasonFilter, competition: competitionFilter },
         raw_fields: {
           minutes_played: minutesPlayed,
@@ -337,11 +359,10 @@ const ComparePlayers = () => {
           passes_pct_display: passesPct,
           dribbles_pct_display: dribblesPct,
         },
-        per90_mode_active: viewMode === "per90",
         note: "If shots changes when toggling per90, check if different field is used",
       });
     });
-  }, [playersWithStats, viewMode, seasonFilter, competitionFilter, debugStats, debugStatsLog]);
+  }, [playersWithStats, seasonFilter, competitionFilter, debugStats, debugStatsLog]);
 
   // Create stat values array - USES filteredPlayers for current filter context
   const createStatValues = (
@@ -714,17 +735,6 @@ const ComparePlayers = () => {
               </div>
             )}
 
-            {/* View Mode Toggle */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-zinc-500 uppercase tracking-wider">Modo:</span>
-              <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "absolute" | "per90")}>
-                <TabsList className="h-8 bg-zinc-800">
-                  <TabsTrigger value="absolute" className="text-xs h-7 px-3">Absoluto</TabsTrigger>
-                  <TabsTrigger value="per90" className="text-xs h-7 px-3">Por 90 min</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-
             {/* Export + Info */}
             <div className="flex items-center gap-3 ml-auto">
               <div className="flex items-center gap-1.5 text-xs text-zinc-500">
@@ -742,12 +752,11 @@ const ComparePlayers = () => {
 
           {/* Radar Comparison */}
           <ComparisonRadarOverlay
-            players={selectedPlayers.map(p => ({
-              id: p.id,
-              name: p.full_name,
-              scores: radarScores[p.id] ?? [0, 0, 0, 0, 0],
-            } satisfies RadarPlayerData))}
+            players={radarPlayers}
             loading={loadingRadar}
+            availableYears={availableRadarYears}
+            selectedYear={radarYear ?? availableRadarYears[0] ?? null}
+            onYearChange={setRadarYear}
           />
 
           {/* Stats Blocks Grid */}
@@ -786,7 +795,7 @@ const ComparePlayers = () => {
                   (p) => p.aggregatedStats?.goals ?? null,
                   (p) => per90(p.aggregatedStats?.goals ?? null, p.aggregatedStats?.minutes ?? null)
                 )}
-                per90Mode={viewMode === "per90"}
+                per90Mode={true}
               />
               <CompareStatRow
                 label="Assistências"
@@ -794,7 +803,7 @@ const ComparePlayers = () => {
                   (p) => p.aggregatedStats?.assists ?? null,
                   (p) => per90(p.aggregatedStats?.assists ?? null, p.aggregatedStats?.minutes ?? null)
                 )}
-                per90Mode={viewMode === "per90"}
+                per90Mode={true}
               />
               <CompareStatRow
                 label="G+A"
@@ -806,7 +815,7 @@ const ComparePlayers = () => {
                   },
                   (p) => per90((p.aggregatedStats?.goals ?? 0) + (p.aggregatedStats?.assists ?? 0), p.aggregatedStats?.minutes ?? null)
                 )}
-                per90Mode={viewMode === "per90"}
+                per90Mode={true}
               />
               <CompareStatRow
                 label="Finalizações"
@@ -814,7 +823,7 @@ const ComparePlayers = () => {
                   (p) => p.aggregatedStats?.shots ?? null,
                   (p) => per90(p.aggregatedStats?.shots ?? null, p.aggregatedStats?.minutes ?? null)
                 )}
-                per90Mode={viewMode === "per90"}
+                per90Mode={true}
               />
               <CompareStatRow
                 label="% Conversão"
@@ -846,7 +855,7 @@ const ComparePlayers = () => {
                   (p) => p.aggregatedStats?.key_passes ?? null,
                   (p) => per90(p.aggregatedStats?.key_passes ?? null, p.aggregatedStats?.minutes ?? null)
                 )}
-                per90Mode={viewMode === "per90"}
+                per90Mode={true}
               />
               <CompareStatRow
                 label="Chances Criadas"
@@ -854,7 +863,7 @@ const ComparePlayers = () => {
                   (p) => p.aggregatedStats?.chances_created ?? null,
                   (p) => per90(p.aggregatedStats?.chances_created ?? null, p.aggregatedStats?.minutes ?? null)
                 )}
-                per90Mode={viewMode === "per90"}
+                per90Mode={true}
               />
               <CompareStatRow
                 label="Dribles"
@@ -862,7 +871,7 @@ const ComparePlayers = () => {
                   (p) => p.aggregatedStats?.successful_dribbles ?? null,
                   (p) => per90(p.aggregatedStats?.successful_dribbles ?? null, p.aggregatedStats?.minutes ?? null)
                 )}
-                per90Mode={viewMode === "per90"}
+                per90Mode={true}
               />
               <CompareStatRow
                 label="% Dribles"
@@ -884,7 +893,7 @@ const ComparePlayers = () => {
                   (p) => p.aggregatedStats?.tackles ?? null,
                   (p) => per90(p.aggregatedStats?.tackles ?? null, p.aggregatedStats?.minutes ?? null)
                 )}
-                per90Mode={viewMode === "per90"}
+                per90Mode={true}
               />
               <CompareStatRow
                 label="Interceptações"
@@ -892,7 +901,7 @@ const ComparePlayers = () => {
                   (p) => p.aggregatedStats?.interceptions ?? null,
                   (p) => per90(p.aggregatedStats?.interceptions ?? null, p.aggregatedStats?.minutes ?? null)
                 )}
-                per90Mode={viewMode === "per90"}
+                per90Mode={true}
               />
               <CompareStatRow
                 label="Recuperações"
@@ -900,7 +909,7 @@ const ComparePlayers = () => {
                   (p) => p.aggregatedStats?.recoveries ?? null,
                   (p) => per90(p.aggregatedStats?.recoveries ?? null, p.aggregatedStats?.minutes ?? null)
                 )}
-                per90Mode={viewMode === "per90"}
+                per90Mode={true}
               />
               <CompareStatRow
                 label="Duelos Ganhos"
@@ -908,7 +917,7 @@ const ComparePlayers = () => {
                   (p) => p.aggregatedStats?.duels_won ?? null,
                   (p) => per90(p.aggregatedStats?.duels_won ?? null, p.aggregatedStats?.minutes ?? null)
                 )}
-                per90Mode={viewMode === "per90"}
+                per90Mode={true}
               />
               <CompareStatRow
                 label="% Duelos"
