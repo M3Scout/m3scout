@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -36,13 +36,12 @@ function useLatestAttributeScores(playerId: string | undefined) {
   });
 }
 
-function buildScores(rows: any[]): { label: string; key: AxisKey; value: number }[] {
+function buildScores(rows: any[], year: number | null): { label: string; key: AxisKey; value: number }[] {
   if (!rows.length) return AXES.map(a => ({ ...a, value: 0 }));
 
-  const latestYear = Math.max(...rows.map((r: any) => r.season_year ?? 0));
-  const yearRows = rows.filter((r: any) => r.season_year === latestYear);
+  const targetYear = year ?? Math.max(...rows.map((r: any) => r.season_year ?? 0));
+  const yearRows = rows.filter((r: any) => r.season_year === targetYear);
 
-  // Weight by minutes
   let sumAta = 0, sumTec = 0, sumTat = 0, sumDef = 0, sumCri = 0, w = 0;
   yearRows.forEach((r: any) => {
     const mins = Math.max(Number(r.details?.minutes ?? 0), 1);
@@ -55,15 +54,10 @@ function buildScores(rows: any[]): { label: string; key: AxisKey; value: number 
   });
   const d = w || 1;
 
-  const values: Record<AxisKey, number> = {
-    ata: Math.round(sumAta / d),
-    tec: Math.round(sumTec / d),
-    tat: Math.round(sumTat / d),
-    def: Math.round(sumDef / d),
-    cri: Math.round(sumCri / d),
-  };
-
-  return AXES.map(a => ({ ...a, value: values[a.key] }));
+  return AXES.map(a => ({
+    ...a,
+    value: Math.round({ ata: sumAta, tec: sumTec, tat: sumTat, def: sumDef, cri: sumCri }[a.key] / d),
+  }));
 }
 
 // ── Radar SVG ──────────────────────────────────────────────────────────────
@@ -200,14 +194,22 @@ function RadarChart({
 // ══════════════════════════════════════════════════════════════════════════
 export function AthleteHighlightsSection({ strengths, playerId }: AthleteHighlightsSectionProps) {
   const [hoveredAxis, setHoveredAxis] = useState<number | null>(null);
+  const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const { data: rows = [] } = useLatestAttributeScores(playerId);
 
-  const hasStrengths = Array.isArray(strengths) && strengths.length > 0;
+  const availableYears = useMemo(() => {
+    const years = Array.from(new Set(rows.map((r: any) => r.season_year as number)))
+      .filter(Boolean)
+      .sort((a, b) => b - a);
+    return years;
+  }, [rows]);
+
+  const activeYear = selectedYear ?? availableYears[0] ?? null;
+
   const hasScores = rows.length > 0;
+  if (!hasScores && !(Array.isArray(strengths) && strengths.length > 0)) return null;
 
-  if (!hasStrengths && !hasScores) return null;
-
-  const techData = buildScores(rows);
+  const techData = buildScores(rows, activeYear);
   const hasAnyValue = techData.some(d => d.value > 0);
   if (!hasAnyValue) return null;
 
@@ -229,9 +231,24 @@ export function AthleteHighlightsSection({ strengths, playerId }: AthleteHighlig
             Mapa de atributos
           </h2>
         </div>
-        <p className="hidden md:block font-editorial-mono text-[12px] text-[#62616a] tracking-[0.04em] max-w-[280px] text-right">
-          Escala 0–100 · calculado por 90 min jogados.
-        </p>
+        {availableYears.length > 1 && (
+          <div className="flex gap-1.5">
+            {availableYears.map(year => (
+              <button
+                key={year}
+                type="button"
+                onClick={() => setSelectedYear(year)}
+                className="font-editorial-mono text-[11px] tracking-[0.12em] uppercase px-3 py-1 rounded transition-all duration-200"
+                style={year === activeYear
+                  ? { color: "#ededee", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)" }
+                  : { color: "#62616a", background: "transparent", border: "1px solid transparent" }
+                }
+              >
+                {year}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Radar + List */}
