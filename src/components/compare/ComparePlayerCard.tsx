@@ -58,7 +58,7 @@ export function ComparePlayerCard({ player, onRemove, index }: ComparePlayerCard
         <div className="flex items-start gap-3">
           {/* Avatar with position ring */}
           <div className={cn(
-            "relative w-14 h-14 rounded-xl overflow-hidden flex-shrink-0",
+            "relative w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-zinc-900",
             "ring-2",
             posColor.ringClass
           )}>
@@ -66,7 +66,7 @@ export function ComparePlayerCard({ player, onRemove, index }: ComparePlayerCard
               <img
                 src={getOptimizedImageUrl(player.photo_url, { width: 400, quality: 85, format: "avif" }) || player.photo_url || ""}
                 alt={player.full_name}
-                className="w-full h-full object-cover object-center"
+                className="w-full h-full object-contain object-[center_20%]"
                 onError={e => { if (player.photo_url) (e.target as HTMLImageElement).src = player.photo_url; }}
               />
             ) : (

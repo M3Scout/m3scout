@@ -109,7 +109,7 @@ const FG      = "#ededee";
 const GREEN   = "#22c55e";
 const AMBER   = "#f59e0b";
 const CARD       = "rounded-xl border transition-colors duration-[250ms] hover:bg-zinc-800/50";
-const CARD_STYLE = { background: "#141318", borderColor: "rgba(255,255,255,0.07)" } as const;
+const CARD_STYLE = { background: "#0f0f10", borderColor: "rgba(255,255,255,0.07)" } as const;
 const DIVIDER = "border-zinc-800/60";
 
 // ─── Atoms ───────────────────────────────────────────────────────────────────
@@ -505,7 +505,7 @@ const PlayerDetail = () => {
               <img
                 src={imgSrc}
                 alt={player.full_name}
-                className="w-full h-full object-cover object-center"
+                className="w-full h-full object-cover object-top"
                 onError={e => { if (player.photo_url) (e.target as HTMLImageElement).src = player.photo_url; }}
               />
               {/* Corner ticks */}
@@ -543,14 +543,7 @@ const PlayerDetail = () => {
 
             {/* Meta chips */}
             <div className="flex flex-wrap gap-1.5">
-              {/* Public/Private */}
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-zinc-800 font-editorial-mono text-[10px] tracking-wider uppercase" style={{ color: MUTED }}>
-                {player.is_public
-                  ? <><Eye className="w-2.5 h-2.5" />PÚBLICO</>
-                  : <><EyeOff className="w-2.5 h-2.5" />PRIVADO</>}
-              </span>
-
-              {player.age && (
+{player.age && (
                 <span className="inline-flex items-center px-2.5 py-1 rounded-lg border border-zinc-800 font-editorial-mono text-[10px] tracking-wider uppercase" style={{ color: MUTED }}>
                   {player.age} anos
                 </span>
@@ -577,7 +570,7 @@ const PlayerDetail = () => {
               )}
               {player.auto_rating !== null && player.auto_rating !== undefined && (
                 <span className="inline-flex items-center px-2.5 py-1 rounded-lg border border-zinc-800 font-editorial-mono text-[10px] tracking-wider uppercase" style={{ color: FG }}>
-                  ★ {player.auto_rating.toFixed(1)}/10
+                  ★ {player.auto_rating.toFixed(1)}/100
                 </span>
               )}
             </div>
@@ -586,23 +579,22 @@ const PlayerDetail = () => {
       </div>
 
       {/* ── Tab Bar ───────────────────────────────────────────────────────── */}
-      <div className={`border-b ${DIVIDER} overflow-x-auto scrollbar-hide`}>
-        <div className="flex px-4 md:px-6">
+      <div className="overflow-x-auto scrollbar-hide">
+        <div className="flex gap-1.5 px-4 md:px-6 py-3">
           {TABS.map((tab) => {
             const active = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className="pr-5 py-3 font-editorial-mono text-[11px] tracking-[0.15em] uppercase shrink-0 transition-colors"
-                style={{ color: active ? FG : MUTED }}
+                className="flex-1 px-2 py-1.5 font-editorial-mono text-[10px] tracking-[0.12em] uppercase rounded-lg border transition-colors duration-150 whitespace-nowrap text-center"
+                style={{
+                  background: active ? ACCENT : "transparent",
+                  color: active ? "#fff" : MUTED,
+                  borderColor: active ? ACCENT : "rgba(255,255,255,0.07)",
+                }}
               >
-                <span
-                  className="pb-px border-b-2"
-                  style={{ borderColor: active ? ACCENT : "transparent" }}
-                >
-                  {tab.label}
-                </span>
+                {tab.label}
               </button>
             );
           })}
@@ -681,7 +673,7 @@ const PlayerDetail = () => {
                       className="relative rounded-xl border transition-colors duration-[250ms] hover:bg-zinc-800/50 py-5 px-4"
                       style={s.highlight
                         ? { background: "linear-gradient(165deg, rgba(236,69,37,0.14), rgba(20,19,24,1) 70%)", borderColor: "rgba(236,69,37,0.25)" }
-                        : { background: "#141318", borderColor: "rgba(255,255,255,0.07)" }
+                        : { background: "#0f0f10", borderColor: "rgba(255,255,255,0.07)" }
                       }
                     >
                       <span className="absolute top-3 right-3 font-editorial-mono text-[10px] text-zinc-500">
@@ -718,9 +710,9 @@ const PlayerDetail = () => {
                         { k: "País",          v: player.nationality },
                         { k: "Clube",         v: player.current_club },
                       ].filter(x => x.v).map(({ k, v }) => (
-                        <div key={k} className="flex justify-between gap-2">
+                        <div key={k} className="flex justify-between items-center gap-2 px-3 py-1.5 rounded-md" style={{ background: "rgba(255,255,255,0.05)" }}>
                           <dt className="font-editorial-mono text-[10px] tracking-wider uppercase" style={{ color: MUTED }}>{k}</dt>
-                          <dd className="font-editorial-mono text-[11px]" style={{ color: FG }}>{v}</dd>
+                          <dd className="font-editorial-mono text-[10px] tracking-[0.08em] uppercase" style={{ color: FG }}>{v}</dd>
                         </div>
                       ))}
                     </dl>
@@ -737,9 +729,9 @@ const PlayerDetail = () => {
                         { k: "Agente",  v: player.agent_name },
                         { k: "Salário", v: player.salary_info },
                       ].filter(x => x.v).map(({ k, v }) => (
-                        <div key={k} className="flex justify-between gap-2">
+                        <div key={k} className="flex justify-between items-center gap-2 px-3 py-1.5 rounded-md" style={{ background: "rgba(255,255,255,0.05)" }}>
                           <dt className="font-editorial-mono text-[10px] tracking-wider uppercase" style={{ color: MUTED }}>{k}</dt>
-                          <dd className="font-editorial-mono text-[11px]" style={{ color: FG }}>{v}</dd>
+                          <dd className="font-editorial-mono text-[10px] tracking-[0.08em] uppercase" style={{ color: FG }}>{v}</dd>
                         </div>
                       ))}
                       {!player.contract_status && !player.contract_start && (
@@ -757,9 +749,9 @@ const PlayerDetail = () => {
                         { k: "Função secundária",  v: player.secondary_tactical_role },
                         { k: "Preferência",        v: player.playing_height_preference },
                       ].filter(x => x.v).map(({ k, v }) => (
-                        <div key={k} className="flex justify-between gap-2">
+                        <div key={k} className="flex justify-between items-center gap-2 px-3 py-1.5 rounded-md" style={{ background: "rgba(255,255,255,0.05)" }}>
                           <dt className="font-editorial-mono text-[10px] tracking-wider uppercase" style={{ color: MUTED }}>{k}</dt>
-                          <dd className="font-editorial-mono text-[11px]" style={{ color: FG }}>{v}</dd>
+                          <dd className="font-editorial-mono text-[10px] tracking-[0.08em] uppercase" style={{ color: FG }}>{v}</dd>
                         </div>
                       ))}
                       {!player.primary_tactical_role && (

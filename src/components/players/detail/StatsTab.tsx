@@ -129,30 +129,31 @@ const RatingBarLabel = (props: any) => {
 };
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
-const A = "#E5173F";
-const GREEN = "#22C55E";
-const BLUE = "#3B82F6";
-const AMBER = "#F59E0B";
-const BORDER = "#1C1C1C";
-const BG = "#0A0A0A";
-const TEXT = "#F2EDE4";
-const MUTED = "#6B6560";
+const A      = "#ec4525";
+const GREEN  = "#22c55e";
+const BLUE   = "#3b82f6";
+const AMBER  = "#f59e0b";
+const BORDER = "rgba(255,255,255,0.07)";
+const BG     = "#0c0b0d";
+const TEXT   = "#ededee";
+const MUTED  = "#62616a";
+const CARD_BG     = "#0f0f10";
+const CARD_BORDER = "rgba(255,255,255,0.07)";
 
 // ─── Shared atoms ─────────────────────────────────────────────────────────────
 function Label({ children }: { children: React.ReactNode }) {
   return (
-    <span className="block font-jetbrains text-[10px] tracking-[0.18em] uppercase mb-1" style={{ color: MUTED }}>
+    <span className="block font-editorial-mono text-[9.5px] tracking-[0.22em] uppercase mb-1" style={{ color: MUTED }}>
       {children}
     </span>
   );
 }
 
-function SectionHead({ children }: { children: React.ReactNode }) {
+let _sectionCounter = 0;
+function SectionHead({ n, children }: { n?: string; children: React.ReactNode }) {
   return (
-    <div
-      className="px-4 py-3 border-b font-barlow font-black text-[13px] tracking-[0.2em] uppercase"
-      style={{ borderColor: BORDER, color: MUTED }}
-    >
+    <div className="font-editorial-mono text-[11px] tracking-[0.24em] uppercase px-5 pt-5 pb-3" style={{ color: MUTED }}>
+      {n && <><span style={{ color: A }} className="font-semibold">{n}</span><span className="inline-block w-[34px] h-px bg-white/15 mx-[10px] align-middle" /></>}
       {children}
     </div>
   );
@@ -161,7 +162,7 @@ function SectionHead({ children }: { children: React.ReactNode }) {
 function NoData({ label = "Sem dados disponíveis" }: { label?: string }) {
   return (
     <div className="py-10 flex items-center justify-center">
-      <span className="font-jetbrains text-[11px] tracking-wider uppercase" style={{ color: MUTED }}>
+      <span className="font-editorial-mono text-[11px] tracking-wider uppercase" style={{ color: MUTED }}>
         {label}
       </span>
     </div>
@@ -181,8 +182,8 @@ const ChartTooltip = ({
   if (!active || !payload?.length) return null;
   return (
     <div
-      className="font-jetbrains text-[11px] px-3 py-2"
-      style={{ background: BG, border: `1px solid ${BORDER}`, color: TEXT }}
+      className="font-editorial-mono text-[11px] px-3 py-2 rounded-lg"
+      style={{ background: CARD_BG, border: `1px solid ${CARD_BORDER}`, color: TEXT }}
     >
       {label && <p style={{ color: MUTED }} className="mb-1 text-[10px]">{label}</p>}
       {payload.map((p, i) => (
@@ -479,93 +480,88 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
     <div className="space-y-5">
 
       {/* ── KPI Strip ──────────────────────────────────────────────────────── */}
-      <div className="border" style={{ borderColor: BORDER }}>
-        <div className="grid grid-cols-2 md:grid-cols-4">
-          {[
-            {
-              label: "MÉDIA DE NOTA",
-              value: averageRating !== null ? averageRating.toFixed(1) : "—",
-              color: averageRating !== null ? getMatchRatingColor(averageRating) : MUTED,
-            },
-            {
-              label: "JOGOS AVALIADOS",
-              value: ratedMatches.filter((m) => m.rating.hasRating).length || "—",
-              color: TEXT,
-            },
-            {
-              label: "MELHOR NOTA",
-              value: bestMatch?.rating.rating !== null && bestMatch?.rating.rating !== undefined
-                ? bestMatch.rating.rating.toFixed(1)
-                : "—",
-              color: bestMatch?.rating.rating !== null && bestMatch?.rating.rating !== undefined
-                ? getMatchRatingColor(bestMatch.rating.rating)
-                : MUTED,
-            },
-            {
-              label: "TENDÊNCIA",
-              value: <TrendIcon className="w-5 h-5" style={{ color: trendColor }} />,
-              sub: trendLabel,
-              color: trendColor,
-            },
-          ].map((kpi, i, arr) => (
-            <div
-              key={i}
-              className="px-5 py-4"
-              style={{ borderRight: i < arr.length - 1 ? `1px solid ${BORDER}` : undefined }}
-            >
-              <Label>{kpi.label}</Label>
-              {"sub" in kpi ? (
-                <div className="flex items-center gap-2">
-                  {kpi.value}
-                  <span className="font-jetbrains text-[11px] font-bold" style={{ color: kpi.color }}>
-                    {kpi.sub}
-                  </span>
-                </div>
-              ) : (
-                <span className="font-jetbrains text-[22px] font-bold leading-none" style={{ color: kpi.color }}>
-                  {kpi.value}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          {
+            label: "MÉDIA DE NOTA",
+            value: averageRating !== null ? averageRating.toFixed(1) : "—",
+            color: averageRating !== null ? getMatchRatingColor(averageRating) : MUTED,
+          },
+          {
+            label: "JOGOS AVALIADOS",
+            value: ratedMatches.filter((m) => m.rating.hasRating).length || "—",
+            color: TEXT,
+          },
+          {
+            label: "MELHOR NOTA",
+            value: bestMatch?.rating.rating !== null && bestMatch?.rating.rating !== undefined
+              ? bestMatch.rating.rating.toFixed(1)
+              : "—",
+            color: bestMatch?.rating.rating !== null && bestMatch?.rating.rating !== undefined
+              ? getMatchRatingColor(bestMatch.rating.rating)
+              : MUTED,
+          },
+          {
+            label: "TENDÊNCIA",
+            value: <TrendIcon className="w-5 h-5" style={{ color: trendColor }} />,
+            sub: trendLabel,
+            color: trendColor,
+          },
+        ].map((kpi, i) => (
+          <div
+            key={i}
+            className="relative rounded-xl border px-5 py-4 transition-colors duration-200 hover:bg-zinc-800/50"
+            style={{ background: CARD_BG, borderColor: CARD_BORDER }}
+          >
+            <Label>{kpi.label}</Label>
+            {"sub" in kpi ? (
+              <div className="flex items-center gap-2 mt-1">
+                {kpi.value}
+                <span className="font-editorial-mono text-[11px] font-bold" style={{ color: kpi.color }}>
+                  {kpi.sub}
                 </span>
-              )}
-            </div>
-          ))}
-        </div>
+              </div>
+            ) : (
+              <span className="font-display font-bold leading-none tabular-nums" style={{ fontSize: 28, color: kpi.color }}>
+                {kpi.value}
+              </span>
+            )}
+          </div>
+        ))}
       </div>
 
       {/* ── Evolução das Notas ──────────────────────────────────────────────── */}
-      <div className="border" style={{ borderColor: BORDER }}>
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3" style={{ borderBottom: `1px solid ${BORDER}` }}>
+      <div className="rounded-xl border overflow-hidden" style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
+        <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: CARD_BORDER }}>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] tracking-[0.18em] uppercase font-bold" style={{ color: MUTED }}>
+            <span className="font-editorial-mono text-[11px] tracking-[0.22em] uppercase" style={{ color: MUTED }}>
               EVOLUÇÃO DAS NOTAS M3
             </span>
             {averageRating !== null && (
               <span
-                className="text-[10px] font-bold px-1.5 py-0.5 rounded"
-                style={{ background: getMatchRatingColor(averageRating), color: "#ffffff" }}
+                className="font-editorial-mono text-[10px] font-bold px-1.5 py-0.5 rounded-md"
+                style={{ background: getMatchRatingColor(averageRating), color: "#fff" }}
               >
                 {averageRating.toFixed(1)}
               </span>
             )}
           </div>
-          {/* Legenda de cores */}
           <div className="hidden sm:flex items-center gap-3">
             {[
-              { label: "< 6.0", color: "#ef4444" },
+              { label: "< 6.0",   color: "#ef4444" },
               { label: "6.0–6.4", color: "#f97316" },
               { label: "6.5–6.9", color: "#eab308" },
               { label: "7.0–7.9", color: "#22c55e" },
               { label: "8.0–8.9", color: "#06b6d4" },
-              { label: "9.0+", color: "#1e3a8a" },
+              { label: "9.0+",    color: "#1e3a8a" },
             ].map(({ label, color }) => (
               <div key={label} className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-sm inline-block" style={{ background: color }} />
-                <span className="text-[9px]" style={{ color: MUTED }}>{label}</span>
+                <span className="font-editorial-mono text-[9px]" style={{ color: MUTED }}>{label}</span>
               </div>
             ))}
           </div>
         </div>
-
         <div className="p-4">
           {ratingChartData.length < 2 ? (
             <NoData label="Sem partidas avaliadas" />
@@ -574,8 +570,8 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
               <BarChart data={ratingChartData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }} barCategoryGap="20%">
                 <XAxis
                   dataKey="date"
-                  tick={{ fontFamily: "Basis Grotesque Pro", fontSize: 9, fill: MUTED }}
-                  axisLine={{ stroke: BORDER }}
+                  tick={{ fontFamily: "JetBrains Mono", fontSize: 9, fill: MUTED }}
+                  axisLine={{ stroke: CARD_BORDER }}
                   tickLine={false}
                 />
                 <YAxis domain={[3, 10]} hide />
@@ -586,7 +582,7 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
                     const val = props.payload[0].value as number;
                     const opp = (props.payload[0].payload as { opponent: string }).opponent;
                     return (
-                      <div style={{ background: BG, border: `1px solid ${BORDER}`, borderRadius: 4, padding: "5px 10px", fontSize: 10, fontWeight: "bold", color: getMatchRatingColor(val) }}>
+                      <div className="font-editorial-mono rounded-lg" style={{ background: CARD_BG, border: `1px solid ${CARD_BORDER}`, padding: "5px 10px", fontSize: 10, fontWeight: "bold", color: getMatchRatingColor(val) }}>
                         {val.toFixed(1)}{" "}
                         <span style={{ color: MUTED, fontWeight: "normal" }}>vs {opp}</span>
                       </div>
@@ -594,14 +590,9 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
                   }}
                 />
                 {averageRating !== null && (
-                  <ReferenceLine
-                    y={averageRating}
-                    stroke={getMatchRatingColor(averageRating!)}
-                    strokeDasharray="5 5"
-                    strokeWidth={1}
-                  />
+                  <ReferenceLine y={averageRating} stroke={getMatchRatingColor(averageRating!)} strokeDasharray="5 5" strokeWidth={1} />
                 )}
-                <Bar dataKey="rating" radius={[3, 3, 3, 3]} barSize={28} label={<RatingBarLabel />} isAnimationActive={false}>
+                <Bar dataKey="rating" radius={[4, 4, 4, 4]} barSize={28} label={<RatingBarLabel />} isAnimationActive={false}>
                   {ratingChartData.map((entry, i) => (
                     <Cell key={i} fill={getMatchRatingColor(entry.rating)} />
                   ))}
@@ -613,43 +604,44 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
       </div>
 
       {/* ── Resumo de Carreira ──────────────────────────────────────────────── */}
-      <div className="border" style={{ borderColor: BORDER }}>
-        <SectionHead>RESUMO DE CARREIRA</SectionHead>
-        <div className="p-2 sm:p-4">
-          <div className="grid grid-cols-4 md:grid-cols-8">
-            {[
-              { label: "JOGOS", value: careerTotals.matches },
-              { label: "MINUTOS", value: careerTotals.minutes },
-              { label: "GOLS", value: careerTotals.goals, color: careerTotals.goals > 0 ? GREEN : A },
-              { label: "ASSIST", value: careerTotals.assists, color: careerTotals.assists > 0 ? GREEN : A },
-              { label: "CHUTES", value: careerTotals.shots },
-              { label: "P.DECISIVOS", value: careerTotals.key_passes },
-              { label: "DESARMES", value: careerTotals.tackles },
-              { label: "AMARELOS", value: careerTotals.yellow_cards, color: careerTotals.yellow_cards > 0 ? AMBER : undefined },
-            ].map((stat, i, arr) => (
+      <div className="rounded-xl border overflow-hidden" style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
+        <SectionHead n="01">RESUMO DE CARREIRA</SectionHead>
+        <div className="grid grid-cols-4 md:grid-cols-8 gap-2 px-4 pb-4">
+          {[
+            { label: "JOGOS",    value: careerTotals.matches,                      highlight: false },
+            { label: "MINUTOS",  value: careerTotals.minutes,                      highlight: false },
+            { label: "GOLS",     value: careerTotals.goals,                        highlight: true  },
+            { label: "ASSIST",   value: careerTotals.assists,                      highlight: true  },
+            { label: "CHUTES",   value: careerTotals.shots,                        highlight: false },
+            { label: "CHANCES",  value: careerTotals.key_passes,                   highlight: false },
+            { label: "DESARMES", value: careerTotals.tackles,                      highlight: false },
+            { label: "AMARELOS", value: careerTotals.yellow_cards,                 highlight: false },
+          ].map((stat, i) => (
+            <div
+              key={stat.label}
+              className="relative rounded-xl border py-4 px-3 transition-colors duration-[250ms] hover:bg-zinc-800/50"
+              style={stat.highlight
+                ? { background: "linear-gradient(165deg, rgba(236,69,37,0.14), rgba(20,19,24,1) 70%)", borderColor: "rgba(236,69,37,0.25)" }
+                : { background: "#0c0b0d", borderColor: CARD_BORDER }
+              }
+            >
+              <span className="absolute top-2 right-2 font-editorial-mono text-[9px]" style={{ color: MUTED }}>
+                {String(i + 1).padStart(2, "0")}
+              </span>
               <div
-                key={stat.label}
-                className="flex flex-col items-center justify-center px-1 sm:px-2 py-3 sm:py-4 text-center min-w-0"
-                style={{
-                  borderRight: i < arr.length - 1 && (i + 1) % 4 !== 0 ? `1px solid ${BORDER}` : undefined,
-                  borderBottom: i < 4 ? `1px solid ${BORDER}` : undefined,
-                }}
+                className="font-display font-bold leading-[0.9] tracking-[-0.03em] tabular-nums mb-2"
+                style={{ fontSize: "clamp(18px,2.5vw,28px)", color: stat.highlight ? A : TEXT }}
               >
-                <span className="font-jetbrains text-[8px] sm:text-[9px] tracking-[0.12em] sm:tracking-[0.16em] uppercase mb-1.5 whitespace-nowrap" style={{ color: MUTED }}>
-                  {stat.label}
-                </span>
-                <span
-                  className="font-jetbrains text-[18px] sm:text-[22px] md:text-[24px] font-bold leading-none whitespace-nowrap"
-                  style={{ color: stat.color ?? TEXT }}
-                >
-                  {stat.value}
-                </span>
+                {typeof stat.value === "number" ? stat.value.toLocaleString("pt-BR") : stat.value}
               </div>
-            ))}
-          </div>
+              <div className="font-editorial-mono text-[9px] tracking-[0.16em] uppercase" style={{ color: MUTED }}>
+                {stat.label}
+              </div>
+            </div>
+          ))}
         </div>
         {allSeasons.length > 0 && (
-          <div className="px-4 py-2 border-t font-jetbrains text-[10px] tracking-wider uppercase" style={{ borderColor: BORDER, color: MUTED }}>
+          <div className="px-5 py-2 border-t font-editorial-mono text-[10px] tracking-wider uppercase" style={{ borderColor: CARD_BORDER, color: MUTED }}>
             {allSeasons.length} temporada{allSeasons.length !== 1 ? "s" : ""}
             {" · "}
             {seasonStats.length + manualStats.length + playerStats.length} competiç{(seasonStats.length + manualStats.length + playerStats.length) !== 1 ? "ões" : "ão"}
@@ -658,25 +650,21 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
       </div>
 
       {/* ── Evolução por Temporada ──────────────────────────────────────────── */}
-      <div className="border" style={{ borderColor: BORDER }}>
-        <div
-          className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between px-4 py-3 border-b"
-          style={{ borderColor: BORDER }}
-        >
-          <span className="font-barlow font-black text-[13px] tracking-[0.2em] uppercase" style={{ color: MUTED }}>
+      <div className="rounded-xl border overflow-hidden" style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between px-5 py-4 border-b" style={{ borderColor: CARD_BORDER }}>
+          <span className="font-editorial-mono text-[11px] tracking-[0.22em] uppercase" style={{ color: MUTED }}>
             EVOLUÇÃO POR TEMPORADA
           </span>
-          {/* Metric selector */}
-          <div className="flex gap-0 self-start md:self-auto" style={{ border: `1px solid ${BORDER}` }}>
+          <div className="flex gap-1 self-start md:self-auto">
             {METRIC_OPTIONS.map((opt) => (
               <button
                 key={opt.id}
                 onClick={() => setSelectedMetric(opt.id)}
-                className="px-2 sm:px-3 py-1 font-jetbrains text-[10px] tracking-wider uppercase transition-colors whitespace-nowrap"
+                className="px-3 py-1 font-editorial-mono text-[10px] tracking-wider uppercase rounded-lg transition-colors whitespace-nowrap border"
                 style={{
-                  background: selectedMetric === opt.id ? A : BG,
+                  background: selectedMetric === opt.id ? A : "transparent",
                   color: selectedMetric === opt.id ? "#fff" : MUTED,
-                  borderLeft: opt.id !== "ga" ? `1px solid ${BORDER}` : undefined,
+                  borderColor: selectedMetric === opt.id ? A : CARD_BORDER,
                 }}
               >
                 <span className="md:hidden">{opt.shortLabel}</span>
@@ -691,37 +679,21 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
           ) : (
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={barData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }} barGap={2}>
-                <XAxis
-                  dataKey="season"
-                  tick={{ fontFamily: "Basis Grotesque Pro", fontSize: 9, fill: MUTED }}
-                  axisLine={{ stroke: BORDER }}
-                  tickLine={false}
-                />
-                <YAxis
-                  allowDecimals={false}
-                  tick={{ fontFamily: "Basis Grotesque Pro", fontSize: 9, fill: MUTED }}
-                  axisLine={{ stroke: BORDER }}
-                  tickLine={false}
-                />
+                <XAxis dataKey="season" tick={{ fontFamily: "JetBrains Mono", fontSize: 9, fill: MUTED }} axisLine={{ stroke: CARD_BORDER }} tickLine={false} />
+                <YAxis allowDecimals={false} tick={{ fontFamily: "JetBrains Mono", fontSize: 9, fill: MUTED }} axisLine={{ stroke: CARD_BORDER }} tickLine={false} />
                 <Tooltip
                   cursor={{ fill: "transparent" }}
                   content={(props) => (
                     <ChartTooltip
                       active={props.active}
-                      payload={props.payload?.map((p) => ({
-                        value: p.value as number,
-                        name: p.name as string,
-                        color: p.color as string,
-                      }))}
+                      payload={props.payload?.map((p) => ({ value: p.value as number, name: p.name as string, color: p.color as string }))}
                       label={props.label ? `Temporada ${props.label}` : undefined}
                     />
                   )}
                 />
-                <Bar dataKey={metric.a} name={metric.aLabel} fill={metric.aColor} maxBarSize={32} radius={0} />
-                <Bar dataKey={metric.b} name={metric.bLabel} fill={metric.bColor} maxBarSize={32} radius={0} />
-                <Legend
-                  wrapperStyle={{ fontFamily: "Basis Grotesque Pro", fontSize: 9, color: MUTED, paddingTop: 8 }}
-                />
+                <Bar dataKey={metric.a} name={metric.aLabel} fill={metric.aColor} maxBarSize={32} radius={[4,4,4,4]} />
+                <Bar dataKey={metric.b} name={metric.bLabel} fill={metric.bColor} maxBarSize={32} radius={[4,4,4,4]} />
+                <Legend wrapperStyle={{ fontFamily: "JetBrains Mono", fontSize: 9, color: MUTED, paddingTop: 8 }} />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -729,45 +701,38 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
       </div>
 
       {/* ── Detalhes por Temporada ──────────────────────────────────────────── */}
-      <div className="border" style={{ borderColor: BORDER }}>
-        <SectionHead>DETALHES POR TEMPORADA</SectionHead>
+      <div className="rounded-xl border overflow-hidden" style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
+        <SectionHead n="02">DETALHES POR TEMPORADA</SectionHead>
         {isLoading ? (
           <NoData label="Carregando…" />
         ) : allSeasons.length === 0 ? (
           <NoData label="Sem partidas registradas" />
         ) : (
           <div className="overflow-x-auto scrollbar-hide">
-            <table className="w-full min-w-[640px] font-jetbrains text-[11px]" style={{ color: TEXT }}>
+            <table className="w-full min-w-[640px] font-editorial-mono text-[11px]" style={{ color: TEXT }}>
               <thead>
                 <UiTooltipProvider delayDuration={0}>
-                  <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
+                  <tr style={{ borderBottom: `1px solid ${CARD_BORDER}` }}>
                     {TABLE_HEADERS.map((h, i) => (
                       <th
                         key={i}
-                        className="px-1.5 sm:px-3 py-2 text-left font-jetbrains text-[9px] tracking-[0.18em] uppercase whitespace-nowrap"
-                        style={{
-                          color: MUTED,
-                          borderRight: i < TABLE_HEADERS.length - 1 ? `1px solid ${BORDER}` : undefined,
-                        }}
+                        className="px-1.5 sm:px-3 py-2 text-left font-editorial-mono text-[9px] tracking-[0.18em] uppercase whitespace-nowrap"
+                        style={{ color: MUTED, borderRight: i < TABLE_HEADERS.length - 1 ? `1px solid ${CARD_BORDER}` : undefined }}
                       >
                         {h.tooltip ? (
                           <UiTooltip>
                             <UiTooltipTrigger asChild>
-                              <span style={{ borderBottom: "1px dotted #383530", cursor: "default" }}>
-                                {h.label}
-                              </span>
+                              <span style={{ borderBottom: `1px dotted ${MUTED}`, cursor: "default" }}>{h.label}</span>
                             </UiTooltipTrigger>
                             <UiTooltipContent
                               side="top"
-                              className="font-jetbrains text-[11px] px-2 py-1"
-                              style={{ background: "#111", border: `1px solid ${BORDER}`, borderRadius: 0, color: TEXT }}
+                              className="font-editorial-mono text-[11px] px-2 py-1 rounded-lg"
+                              style={{ background: CARD_BG, border: `1px solid ${CARD_BORDER}`, color: TEXT }}
                             >
                               {h.tooltip}
                             </UiTooltipContent>
                           </UiTooltip>
-                        ) : (
-                          h.label
-                        )}
+                        ) : h.label}
                       </th>
                     ))}
                   </tr>
@@ -775,39 +740,35 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
               </thead>
               <tbody>
                 {allSeasons.map((yr) => {
-                  // mergeSeasonRows é chamado APENAS aqui (visualização pública).
-                  // O estado mergedBySeason permanece intacto para a tela de edição.
                   const rows = mergeSeasonRows(mergedBySeason[yr] ?? []);
-
                   const totals = rows.reduce(
                     (acc, row) => ({
-                      matches:        acc.matches        + row.stats.matches,
-                      minutes:        acc.minutes        + row.stats.minutes,
-                      goals:          acc.goals          + row.stats.goals,
-                      assists:        acc.assists        + row.stats.assists,
-                      shots:          acc.shots          + row.stats.shots,
+                      matches:         acc.matches         + row.stats.matches,
+                      minutes:         acc.minutes         + row.stats.minutes,
+                      goals:           acc.goals           + row.stats.goals,
+                      assists:         acc.assists         + row.stats.assists,
+                      shots:           acc.shots           + row.stats.shots,
                       shots_on_target: acc.shots_on_target + row.stats.shots_on_target,
-                      penalties_won:  acc.penalties_won  + (row.stats.penalties_won ?? 0),
-                      yellow_cards:   acc.yellow_cards   + row.stats.yellow_cards,
-                      red_cards:      acc.red_cards      + row.stats.red_cards,
-                      steals:         acc.steals         + row.stats.steals,
-                      tackles:        acc.tackles        + row.stats.tackles,
-                      interceptions:  acc.interceptions  + row.stats.interceptions,
+                      penalties_won:   acc.penalties_won   + (row.stats.penalties_won ?? 0),
+                      yellow_cards:    acc.yellow_cards    + row.stats.yellow_cards,
+                      red_cards:       acc.red_cards       + row.stats.red_cards,
+                      steals:          acc.steals          + row.stats.steals,
+                      tackles:         acc.tackles         + row.stats.tackles,
+                      interceptions:   acc.interceptions   + row.stats.interceptions,
                     }),
                     { matches: 0, minutes: 0, goals: 0, assists: 0, shots: 0, shots_on_target: 0, penalties_won: 0, yellow_cards: 0, red_cards: 0, steals: 0, tackles: 0, interceptions: 0 }
                   );
 
-                  // Minutes bracket drives the color for both J and MIN cells
                   const minBracket =
                     totals.minutes > 4200  ? "risk" :
                     totals.minutes >= 2500 ? "protagonist" :
                     totals.minutes >= 1200 ? "regular" : "low";
 
                   const minColor =
-                    minBracket === "risk"        ? "#b91c1c" :  // red-700
-                    minBracket === "protagonist" ? "#34d399" :  // emerald-400
-                    minBracket === "regular"     ? "#fbbf24" :  // amber-400
-                                                   "#fb7185";   // rose-400
+                    minBracket === "risk"        ? "#b91c1c" :
+                    minBracket === "protagonist" ? "#34d399" :
+                    minBracket === "regular"     ? "#fbbf24" :
+                                                   "#fb7185";
 
                   const minTooltip =
                     minBracket === "risk"        ? "Zona de Risco. Atleta desgastado. Propensão altíssima a queda de rendimento e lesões." :
@@ -816,18 +777,16 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
                                                    "Amostragem baixa. Dados pouco confiáveis. Ritmo de jogo prejudicado.";
 
                   return [
-                    /* Season header row */
-                    <tr key={`yr-${yr}`} style={{ background: BORDER }}>
+                    <tr key={`yr-${yr}`} style={{ background: "rgba(255,255,255,0.03)" }}>
                       <td
                         colSpan={14}
-                        className="px-3 py-1.5 font-barlow font-black text-[11px] tracking-[0.2em] uppercase"
+                        className="px-4 py-1.5 font-editorial-mono text-[10px] tracking-[0.22em] uppercase"
                         style={{ color: MUTED }}
                       >
                         {yr}
                       </td>
                     </tr>,
 
-                    /* Competition rows */
                     ...rows.map((row: SeasonRowData) => (
                       <SeasonRow
                         key={row.id}
@@ -837,52 +796,34 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
                       />
                     )),
 
-                    /* Totals row — only shown when there are 2+ competition rows */
                     ...(rows.length > 1 ? [
-                      <tr key={`total-${yr}`} style={{ borderTop: `2px solid #2A2725`, background: "#131210" }}>
-                        <td
-                          className="px-3 py-2 font-barlow font-black text-[11px] tracking-[0.15em] uppercase"
-                          style={{ borderRight: `1px solid ${BORDER}`, color: MUTED }}
-                        >
+                      <tr key={`total-${yr}`} style={{ borderTop: `2px solid rgba(255,255,255,0.06)`, background: "rgba(255,255,255,0.02)" }}>
+                        <td className="px-3 py-2 font-editorial-mono text-[10px] tracking-[0.15em] uppercase" style={{ borderRight: `1px solid ${CARD_BORDER}`, color: MUTED }}>
                           TOTAL {yr}
                         </td>
-                        <td
-                          className={`px-3 py-2 text-right tabular-nums font-bold text-[13px]${minBracket === "risk" ? " animate-pulse" : ""}`}
-                          style={{ borderRight: `1px solid ${BORDER}`, color: minColor }}
-                        >
-                          {totals.matches}
-                        </td>
-                        <td
-                          className={`px-3 py-2 text-right tabular-nums font-bold text-[13px]${minBracket === "risk" ? " animate-pulse" : ""}`}
-                          style={{ borderRight: `1px solid ${BORDER}`, color: minColor }}
-                        >
+                        <td className={`px-3 py-2 text-right tabular-nums font-bold text-[13px]${minBracket === "risk" ? " animate-pulse" : ""}`} style={{ borderRight: `1px solid ${CARD_BORDER}`, color: minColor }}>{totals.matches}</td>
+                        <td className={`px-3 py-2 text-right tabular-nums font-bold text-[13px]${minBracket === "risk" ? " animate-pulse" : ""}`} style={{ borderRight: `1px solid ${CARD_BORDER}`, color: minColor }}>
                           <UiTooltipProvider>
                             <UiTooltip>
                               <UiTooltipTrigger asChild>
-                                <span style={{ borderBottom: `1px dotted ${minColor}`, cursor: "default" }}>
-                                  {totals.minutes}
-                                </span>
+                                <span style={{ borderBottom: `1px dotted ${minColor}`, cursor: "default" }}>{totals.minutes}</span>
                               </UiTooltipTrigger>
-                              <UiTooltipContent
-                                side="top"
-                                className="font-jetbrains text-[11px] px-2 py-1 max-w-[260px] text-center"
-                                style={{ background: "#111", border: `1px solid ${minColor}`, borderRadius: 0, color: TEXT }}
-                              >
+                              <UiTooltipContent side="top" className="font-editorial-mono text-[11px] px-2 py-1 max-w-[260px] text-center rounded-lg" style={{ background: CARD_BG, border: `1px solid ${minColor}`, color: TEXT }}>
                                 {minTooltip}
                               </UiTooltipContent>
                             </UiTooltip>
                           </UiTooltipProvider>
                         </td>
-                        <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${BORDER}`, color: totals.goals > 0 ? GREEN : A }}>{totals.goals}</td>
-                        <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${BORDER}`, color: totals.assists > 0 ? GREEN : A }}>{totals.assists}</td>
-                        <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${BORDER}`, color: MUTED }}>{totals.shots}</td>
-                        <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${BORDER}`, color: MUTED }}>{totals.shots_on_target}</td>
-                        <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${BORDER}`, color: MUTED }}>{totals.penalties_won}</td>
-                        <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${BORDER}`, color: totals.yellow_cards > 0 ? AMBER : MUTED }}>{totals.yellow_cards}</td>
-                        <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${BORDER}`, color: totals.red_cards > 0 ? A : MUTED }}>{totals.red_cards}</td>
-                        <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${BORDER}`, color: MUTED }}>{totals.steals}</td>
-                        <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${BORDER}`, color: MUTED }}>{totals.tackles}</td>
-                        <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${BORDER}`, color: MUTED }}>{totals.interceptions}</td>
+                        <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${CARD_BORDER}`, color: totals.goals   > 0 ? GREEN : A    }}>{totals.goals}</td>
+                        <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${CARD_BORDER}`, color: totals.assists > 0 ? GREEN : A    }}>{totals.assists}</td>
+                        <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${CARD_BORDER}`, color: MUTED }}>{totals.shots}</td>
+                        <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${CARD_BORDER}`, color: MUTED }}>{totals.shots_on_target}</td>
+                        <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${CARD_BORDER}`, color: MUTED }}>{totals.penalties_won}</td>
+                        <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${CARD_BORDER}`, color: totals.yellow_cards > 0 ? AMBER : MUTED }}>{totals.yellow_cards}</td>
+                        <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${CARD_BORDER}`, color: totals.red_cards > 0 ? A : MUTED }}>{totals.red_cards}</td>
+                        <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${CARD_BORDER}`, color: MUTED }}>{totals.steals}</td>
+                        <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${CARD_BORDER}`, color: MUTED }}>{totals.tackles}</td>
+                        <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${CARD_BORDER}`, color: MUTED }}>{totals.interceptions}</td>
                         <td className="px-3 py-2" />
                       </tr>
                     ] : []),
@@ -910,73 +851,30 @@ interface StatDef {
 function StatBlock({ title, titleColor, stats }: { title: string; titleColor: string; stats: StatDef[] }) {
   return (
     <div>
-      {/* Section header: left accent bar + title */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-        <div style={{ width: 3, height: 16, background: titleColor, borderRadius: 2, flexShrink: 0 }} />
-        <span
-          style={{
-            fontFamily: "Basis Grotesque Pro, sans-serif",
-            fontSize: 11,
-            fontWeight: 700,
-            textTransform: "uppercase",
-            letterSpacing: "0.2em",
-            color: titleColor,
-          }}
-        >
+      <div className="flex items-center gap-2 mb-3">
+        <div style={{ width: 3, height: 14, background: titleColor, borderRadius: 2, flexShrink: 0 }} />
+        <span className="font-editorial-mono text-[10px] tracking-[0.22em] uppercase font-semibold" style={{ color: titleColor }}>
           {title}
         </span>
       </div>
-      {/* Stat cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
+      <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
         {stats.map((st) => (
           <div
             key={st.label}
-            style={{
-              background: "linear-gradient(180deg, rgba(255,255,255,0.055) 0%, rgba(255,255,255,0.02) 100%)",
-              border: "1px solid rgba(255,255,255,0.07)",
-              borderRadius: 8,
-              padding: "10px 12px",
-              display: "flex",
-              flexDirection: "column",
-              gap: 5,
-            }}
+            className="rounded-lg px-3 py-2.5 flex flex-col gap-1"
+            style={{ background: "#0c0b0d", border: `1px solid ${CARD_BORDER}` }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span
-                style={{
-                  fontFamily: "Basis Grotesque Pro, sans-serif",
-                  fontSize: 9,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.16em",
-                  color: "#7D7874",
-                }}
-              >
+            <div className="flex justify-between items-center">
+              <span className="font-editorial-mono text-[8.5px] tracking-[0.16em] uppercase" style={{ color: MUTED }}>
                 {st.label}
               </span>
               {st.pct !== undefined && (
                 <span
+                  className="font-editorial-mono text-[8.5px] font-bold rounded px-1"
                   style={{
-                    fontFamily: "Basis Grotesque Pro, sans-serif",
-                    fontSize: 9,
-                    fontWeight: 700,
-                    borderRadius: 4,
-                    padding: "1px 5px",
-                    color:
-                      st.pct === null ? "#7D7874"
-                      : st.pct >= 60   ? "#34D399"
-                      : st.pct >= 50   ? "#F59E0B"
-                      :                  "#FB7185",
-                    background:
-                      st.pct === null ? "rgba(125,120,116,0.12)"
-                      : st.pct >= 60   ? "rgba(52,211,153,0.15)"
-                      : st.pct >= 50   ? "rgba(245,158,11,0.15)"
-                      :                  "rgba(251,113,133,0.15)",
-                    border: `1px solid ${
-                      st.pct === null ? "rgba(125,120,116,0.25)"
-                      : st.pct >= 60   ? "rgba(52,211,153,0.3)"
-                      : st.pct >= 50   ? "rgba(245,158,11,0.3)"
-                      :                  "rgba(251,113,133,0.3)"
-                    }`,
+                    color:      st.pct === null ? MUTED : st.pct >= 60 ? "#34D399" : st.pct >= 50 ? "#F59E0B" : "#FB7185",
+                    background: st.pct === null ? "rgba(98,97,106,0.12)" : st.pct >= 60 ? "rgba(52,211,153,0.15)" : st.pct >= 50 ? "rgba(245,158,11,0.15)" : "rgba(251,113,133,0.15)",
+                    border: `1px solid ${st.pct === null ? "rgba(98,97,106,0.25)" : st.pct >= 60 ? "rgba(52,211,153,0.3)" : st.pct >= 50 ? "rgba(245,158,11,0.3)" : "rgba(251,113,133,0.3)"}`,
                   }}
                 >
                   {st.pct === null ? "0%" : `${Math.round(st.pct)}%`}
@@ -984,17 +882,10 @@ function StatBlock({ title, titleColor, stats }: { title: string; titleColor: st
               )}
             </div>
             <span
+              className="font-display font-bold leading-none tabular-nums"
               style={{
-                fontFamily: "Basis Grotesque Pro, sans-serif",
                 fontSize: 18,
-                fontWeight: 700,
-                lineHeight: 1,
-                color:
-                  st.positive && st.value > 0
-                    ? "#34D399"
-                    : st.negative && st.value > 0
-                    ? "#FB7185"
-                    : "#F3F4F6",
+                color: st.positive && st.value > 0 ? "#34D399" : st.negative && st.value > 0 ? "#FB7185" : TEXT,
               }}
             >
               {st.value}
@@ -1011,13 +902,13 @@ function SeasonRow({ row, isGoalkeeper = false }: { row: SeasonRowData; matches?
   const [expanded, setExpanded] = useState(false);
   const s = row.stats;
 
-  const ACC = "#E5173F";
-  const G   = "#22C55E";
-  const AMB = "#F59E0B";
-  const BRD = "#1C1C1C";
-  const TXT = "#F2EDE4";
-  const MUT = "#6B6560";
-  const BLU = "#3B82F6";
+  const ACC = A;
+  const G   = GREEN;
+  const AMB = AMBER;
+  const BRD = CARD_BORDER;
+  const TXT = TEXT;
+  const MUT = MUTED;
+  const BLU = BLUE;
 
   const badge =
     row.source === "manual" || row.source === "player_stats" || row.source === "live_correction"
@@ -1090,7 +981,7 @@ function SeasonRow({ row, isGoalkeeper = false }: { row: SeasonRowData; matches?
         className="transition-colors"
         style={{ borderBottom: `1px solid ${BRD}`, cursor: "pointer" }}
         onClick={() => setExpanded((e) => !e)}
-        onMouseEnter={(e) => (e.currentTarget.style.background = "#111")}
+        onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.03)")}
         onMouseLeave={(e) => (e.currentTarget.style.background = "")}
       >
         {/* Competição */}
@@ -1162,7 +1053,7 @@ function SeasonRow({ row, isGoalkeeper = false }: { row: SeasonRowData; matches?
         {/* Badge */}
         <td className="px-3 py-2.5">
           <span
-            className="font-jetbrains text-[9px] tracking-wider uppercase px-1.5 py-0.5 whitespace-nowrap inline-block"
+            className="font-editorial-mono text-[9px] tracking-wider uppercase px-1.5 py-0.5 rounded-md whitespace-nowrap inline-block"
             style={{ color: badge.color, border: `1px solid ${badge.color}` }}
           >
             <span className="md:hidden">{badge.shortLabel}</span>
@@ -1174,7 +1065,7 @@ function SeasonRow({ row, isGoalkeeper = false }: { row: SeasonRowData; matches?
       {/* Expanded stats panel — 4 category blocks, Live and Manual */}
       {expanded && (
         <tr style={{ borderBottom: `1px solid ${BRD}` }}>
-          <td colSpan={13} style={{ background: "#070707", padding: "20px 20px" }}>
+          <td colSpan={13} style={{ background: CARD_BG, padding: "20px 20px" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
               <StatBlock title="Ataque"          titleColor="#E5173F" stats={ataqueStats} />
               <StatBlock title="Passes"          titleColor="#F59E0B" stats={passesStats} />

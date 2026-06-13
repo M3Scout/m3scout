@@ -325,7 +325,7 @@ function SuggestionCard({ suggestion, index, onSelect }: SuggestionCardProps) {
             <img
               src={player.photo_url}
               alt={player.full_name}
-              className="w-full h-full object-cover" width={48} height={48}
+              className="w-full h-full object-cover object-top" width={48} height={48}
             />
           ) : (
             <div className="w-full h-full bg-zinc-700 sm:bg-zinc-800 flex items-center justify-center">
@@ -446,7 +446,7 @@ export function InlineSuggestion({
         posColor.ringClass
       )}>
         {player.photo_url ? (
-          <img src={player.photo_url} alt="" className="w-full h-full object-cover" width={48} height={48} loading="lazy" decoding="async" />
+          <img src={player.photo_url} alt="" className="w-full h-full object-cover object-top" width={48} height={48} loading="lazy" decoding="async" />
         ) : (
           <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
             <User className="w-3 h-3 text-zinc-600" />

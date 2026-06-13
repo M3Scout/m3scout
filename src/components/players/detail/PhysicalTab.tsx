@@ -17,17 +17,17 @@ import { parseDateSafe } from "@/lib/dateUtils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 // ─── Design tokens ───────────────────────────────────────────────────────────
+const ACCENT      = "#ec4525";
+const GREEN       = "#22c55e";
+const AMBER       = "#f59e0b";
+const CARD_BG     = "#0f0f10";
+const CARD_BORDER = "rgba(255,255,255,0.07)";
+const INPUT_BG    = "#0c0b0d";
+const INPUT_BORDER = "rgba(255,255,255,0.12)";
+const MUTED       = "#62616a";
+const TEXT        = "#ededee";
 
-const ACCENT  = "#E5173F";
-const GREEN   = "#22C55E";
-const AMBER   = "#F59E0B";
-const BORDER  = "#1C1C1C";
-const MUTED   = "#6B6560";
-const TEXT    = "#F2EDE4";
-const BG      = "#0A0A0A";
-
-// ─── Metric config for evolution chart ───────────────────────────────────────
-
+// ─── Metric config ────────────────────────────────────────────────────────────
 const METRIC_CONFIG = {
   weight:              { label: "Peso",          unit: "kg",        color: "hsl(217,91%,60%)" },
   body_fat_percentage: { label: "% Gordura",     unit: "%",         color: "hsl(0,84%,60%)"   },
@@ -39,11 +39,8 @@ const METRIC_CONFIG = {
 
 type MetricKey = keyof typeof METRIC_CONFIG;
 
-// ─── Ranges for progress bars and status badges ───────────────────────────────
-
-const METRIC_RANGES: Record<string, {
-  min: number; idealLow: number; idealHigh: number; max: number; inverse?: boolean;
-}> = {
+// ─── Ranges ───────────────────────────────────────────────────────────────────
+const METRIC_RANGES: Record<string, { min: number; idealLow: number; idealHigh: number; max: number; inverse?: boolean }> = {
   height:              { min: 160, idealLow: 170, idealHigh: 190, max: 200 },
   weight:              { min: 55,  idealLow: 65,  idealHigh: 85,  max: 100 },
   wingspan:            { min: 160, idealLow: 175, idealHigh: 200, max: 215 },
@@ -55,8 +52,7 @@ const METRIC_RANGES: Record<string, {
   vo2_max:             { min: 40,  idealLow: 50,  idealHigh: 65,  max: 75 },
 };
 
-// ─── Radar axes (5-point pentagon) ───────────────────────────────────────────
-
+// ─── Radar axes ───────────────────────────────────────────────────────────────
 const RADAR_AXES = [
   { key: "max_speed",           label: "Velocidade",    elite: 36,  inverse: false, rangeMax: 40  },
   { key: "sprint_30m",          label: "Sprint",        elite: 3.9, inverse: true,  rangeMax: 5.0 },
@@ -66,7 +62,6 @@ const RADAR_AXES = [
 ] as const;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
 const normalizeForRadar = (value: number | null, axisKey: string): number => {
   if (value == null || !Number.isFinite(value)) return 0;
   const axis = RADAR_AXES.find(a => a.key === axisKey);
@@ -75,8 +70,7 @@ const normalizeForRadar = (value: number | null, axisKey: string): number => {
     const norm = ((axis.rangeMax - value) / (axis.rangeMax - axis.elite)) * 100;
     return Math.max(0, Math.min(100, norm));
   }
-  const norm = (value / axis.elite) * 100;
-  return Math.max(0, Math.min(100, norm));
+  return Math.max(0, Math.min(100, (value / axis.elite) * 100));
 };
 
 const calcBMI = (weight?: number | null, height?: number | null): number | null => {
@@ -86,93 +80,52 @@ const calcBMI = (weight?: number | null, height?: number | null): number | null 
 
 const calcMuscleMassPct = (weight?: number | null, bf?: number | null): number | null => {
   if (!weight || bf == null) return null;
-  const leanMass = weight * (1 - bf / 100);
-  return (leanMass * 0.5 / weight) * 100;
+  return (weight * (1 - bf / 100) * 0.5 / weight) * 100;
 };
 
-const getMetricStatus = (
-  value: number | null,
-  key: string,
-): { pct: number; status: "low" | "ideal" | "high" | "none" } => {
+const getMetricStatus = (value: number | null, key: string): { pct: number; status: "low" | "ideal" | "high" | "none" } => {
   if (value == null || !Number.isFinite(value)) return { pct: 0, status: "none" };
   const r = METRIC_RANGES[key];
   if (!r) return { pct: 50, status: "ideal" };
   const clamped = Math.max(r.min, Math.min(r.max, value));
   const pct = ((clamped - r.min) / (r.max - r.min)) * 100;
   let status: "low" | "ideal" | "high";
-  if (r.inverse) {
-    if (value < r.idealLow) status = "low";
-    else if (value <= r.idealHigh) status = "ideal";
-    else status = "high";
-  } else {
-    if (value < r.idealLow) status = "low";
-    else if (value <= r.idealHigh) status = "ideal";
-    else status = "high";
-  }
+  if (value < r.idealLow) status = "low";
+  else if (value <= r.idealHigh) status = "ideal";
+  else status = "high";
   return { pct, status };
 };
 
 // ─── SVG Pentagon Radar ───────────────────────────────────────────────────────
-
 const CX = 120, CY = 115, R = 82;
-
 const axisPoint = (idx: number, factor: number) => {
   const angle = (idx * 72 - 90) * (Math.PI / 180);
   return { x: CX + R * factor * Math.cos(angle), y: CY + R * factor * Math.sin(angle) };
 };
-
 const pointsStr = (pts: { x: number; y: number }[]) =>
   pts.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
 
 function PhysicalRadar({ athleteValues }: { athleteValues: number[] }) {
   const rings = [0.25, 0.5, 0.75, 1.0];
-  const elitePts  = RADAR_AXES.map((_, i) => axisPoint(i, 1.0));
+  const elitePts   = RADAR_AXES.map((_, i) => axisPoint(i, 1.0));
   const athletePts = athleteValues.map((v, i) => axisPoint(i, v / 100));
-  const LABEL_FACTOR = 1.22;
-
   return (
     <svg viewBox="0 0 240 230" className="w-full max-w-[260px] mx-auto">
       {rings.map(r => (
-        <polygon
-          key={r}
-          points={pointsStr(RADAR_AXES.map((_, i) => axisPoint(i, r)))}
-          fill="none"
-          stroke={BORDER}
-          strokeWidth="1"
-        />
+        <polygon key={r} points={pointsStr(RADAR_AXES.map((_, i) => axisPoint(i, r)))}
+          fill="none" stroke={CARD_BORDER} strokeWidth="1" />
       ))}
       {RADAR_AXES.map((_, i) => {
         const outer = axisPoint(i, 1.0);
-        return (
-          <line key={i} x1={CX} y1={CY} x2={outer.x} y2={outer.y} stroke={BORDER} strokeWidth="1" />
-        );
+        return <line key={i} x1={CX} y1={CY} x2={outer.x} y2={outer.y} stroke={CARD_BORDER} strokeWidth="1" />;
       })}
-      <polygon
-        points={pointsStr(elitePts)}
-        fill={`${ACCENT}14`}
-        stroke={ACCENT}
-        strokeWidth="1.5"
-        strokeDasharray="4 3"
-      />
-      <polygon
-        points={pointsStr(athletePts)}
-        fill={`${GREEN}28`}
-        stroke={GREEN}
-        strokeWidth="2"
-      />
+      <polygon points={pointsStr(elitePts)} fill={`${ACCENT}14`} stroke={ACCENT} strokeWidth="1.5" strokeDasharray="4 3" />
+      <polygon points={pointsStr(athletePts)} fill={`${GREEN}28`} stroke={GREEN} strokeWidth="2" />
       {RADAR_AXES.map((axis, i) => {
-        const pt = axisPoint(i, LABEL_FACTOR);
+        const pt = axisPoint(i, 1.22);
         return (
-          <text
-            key={i}
-            x={pt.x}
-            y={pt.y}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            fontSize="8.5"
-            fill={MUTED}
-            fontFamily="Basis Grotesque Pro, sans-serif"
-          >
+          <text key={i} x={pt.x} y={pt.y} textAnchor="middle" dominantBaseline="middle"
+            fontSize="8.5" fill={MUTED} fontFamily="JetBrains Mono, monospace">
             {axis.label}
           </text>
         );
@@ -181,31 +134,23 @@ function PhysicalRadar({ athleteValues }: { athleteValues: number[] }) {
   );
 }
 
-// ─── Metric card ──────────────────────────────────────────────────────────────
-
-interface MetricCardProps {
-  label: string;
-  value: number | null;
-  unit: string;
-  rangeKey: string;
-  decimals?: number;
-}
-
+// ─── Status badge ─────────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: "low" | "ideal" | "high" }) {
   const cfg = {
-    low:   { label: "BAIXO", color: AMBER },
-    ideal: { label: "IDEAL", color: GREEN },
+    low:   { label: "BAIXO", color: AMBER  },
+    ideal: { label: "IDEAL", color: GREEN  },
     high:  { label: "ALTO",  color: ACCENT },
   }[status];
   return (
-    <span
-      className="font-jetbrains text-[9px] tracking-wider border px-1.5 py-0.5"
-      style={{ color: cfg.color, borderColor: cfg.color }}
-    >
+    <span className="font-editorial-mono text-[9px] tracking-wider border px-1.5 py-0.5 rounded-md"
+      style={{ color: cfg.color, borderColor: cfg.color }}>
       {cfg.label}
     </span>
   );
 }
+
+// ─── Metric card ──────────────────────────────────────────────────────────────
+interface MetricCardProps { label: string; value: number | null; unit: string; rangeKey: string; decimals?: number }
 
 function MetricCard({ label, value, unit, rangeKey, decimals = 1 }: MetricCardProps) {
   const hasValue = value != null && Number.isFinite(value);
@@ -213,38 +158,26 @@ function MetricCard({ label, value, unit, rangeKey, decimals = 1 }: MetricCardPr
   const barColor = status === "ideal" ? GREEN : status === "low" ? AMBER : ACCENT;
 
   return (
-    <div className="p-4">
+    <div className="rounded-xl border p-4 transition-colors duration-[250ms] hover:bg-zinc-800/50"
+      style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
       <div className="flex items-start justify-between gap-2 mb-3">
-        <span
-          className="font-barlow text-[10px] uppercase tracking-widest leading-tight"
-          style={{ color: MUTED }}
-        >
+        <span className="font-editorial-mono text-[10px] uppercase tracking-[0.18em] leading-tight" style={{ color: MUTED }}>
           {label}
         </span>
         {hasValue && status !== "none" && <StatusBadge status={status} />}
       </div>
-
       {hasValue ? (
         <>
-          <div
-            className="font-jetbrains text-[26px] leading-none tabular-nums"
-            style={{ color: TEXT }}
-          >
+          <div className="font-display font-bold leading-none tabular-nums" style={{ fontSize: 26, color: TEXT }}>
             {value!.toFixed(decimals)}
-            <span className="text-[12px] ml-1" style={{ color: MUTED }}>{unit}</span>
+            <span className="font-editorial-mono text-[12px] ml-1" style={{ color: MUTED }}>{unit}</span>
           </div>
-          <div className="mt-3 h-[2px]" style={{ background: BORDER }}>
-            <div
-              className="h-full"
-              style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: barColor }}
-            />
+          <div className="mt-3 h-[2px] rounded-full" style={{ background: CARD_BORDER }}>
+            <div className="h-full rounded-full" style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: barColor }} />
           </div>
         </>
       ) : (
-        <div
-          className="font-jetbrains text-[10px] uppercase tracking-wider mt-2"
-          style={{ color: MUTED }}
-        >
+        <div className="font-editorial-mono text-[10px] uppercase tracking-wider mt-2" style={{ color: MUTED }}>
           DADO NÃO COLETADO
         </div>
       )}
@@ -253,98 +186,42 @@ function MetricCard({ label, value, unit, rangeKey, decimals = 1 }: MetricCardPr
 }
 
 // ─── Section header ───────────────────────────────────────────────────────────
-
-function SectionHeader({ title }: { title: string }) {
+function SectionHead({ n, children, action }: { n?: string; children: React.ReactNode; action?: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-3 mb-4">
-      <div className="w-[3px] h-[14px]" style={{ background: ACCENT }} />
-      <h3
-        className="font-barlow text-[13px] uppercase tracking-widest"
-        style={{ color: TEXT }}
-      >
-        {title}
-      </h3>
-    </div>
-  );
-}
-
-function SectionHeaderWithAction({ title, action }: { title: string; action?: React.ReactNode }) {
-  return (
-    <div className="flex items-center justify-between mb-4">
-      <div className="flex items-center gap-3">
-        <div className="w-[3px] h-[14px]" style={{ background: ACCENT }} />
-        <h3 className="font-barlow text-[13px] uppercase tracking-widest" style={{ color: TEXT }}>
-          {title}
-        </h3>
+    <div className="flex items-center justify-between mb-3">
+      <div className="font-editorial-mono text-[11px] tracking-[0.24em] uppercase" style={{ color: MUTED }}>
+        {n && <><span style={{ color: ACCENT }} className="font-semibold">{n}</span><span className="inline-block w-[34px] h-px bg-white/15 mx-[10px] align-middle" /></>}
+        {children}
       </div>
       {action}
     </div>
   );
 }
 
-// ─── Metric grid wrapper ──────────────────────────────────────────────────────
-
-function MetricGrid({ children, cols = 3 }: { children: React.ReactNode; cols?: number }) {
-  const colCls = cols === 3 ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-1 sm:grid-cols-2";
-  return (
-    <div
-      className={`grid ${colCls} gap-px border`}
-      style={{ background: BORDER, borderColor: BORDER }}
-    >
-      {children}
-    </div>
-  );
-}
-
-function GridCell({ children }: { children: React.ReactNode }) {
-  return <div style={{ background: BG }}>{children}</div>;
-}
-
-// ─── Form field atoms ─────────────────────────────────────────────────────────
-
+// ─── Form atoms ───────────────────────────────────────────────────────────────
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
-    <label className="block font-jetbrains text-[9px] uppercase tracking-[0.18em] mb-1.5" style={{ color: MUTED }}>
+    <label className="block font-editorial-mono text-[9.5px] uppercase tracking-[0.2em] mb-1.5" style={{ color: MUTED }}>
       {children}
     </label>
   );
 }
 
-function FieldInput({
-  type = "number",
-  value,
-  onChange,
-  placeholder,
-  step,
-}: {
-  type?: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  step?: string;
+function FieldInput({ type = "number", value, onChange, placeholder, step }: {
+  type?: string; value: string; onChange: (v: string) => void; placeholder?: string; step?: string;
 }) {
   return (
-    <input
-      type={type}
-      value={value}
-      onChange={e => onChange(e.target.value)}
-      placeholder={placeholder}
-      step={step}
-      className="w-full font-jetbrains text-[12px] px-3 py-2.5 outline-none transition-colors"
-      style={{
-        background: "#0D0D0D",
-        border: `1px solid ${BORDER}`,
-        color: TEXT,
-        borderRadius: 0,
-      }}
-      onFocus={e => (e.currentTarget.style.borderColor = MUTED)}
-      onBlur={e => (e.currentTarget.style.borderColor = BORDER)}
+    <input type={type} value={value} onChange={e => onChange(e.target.value)}
+      placeholder={placeholder} step={step}
+      className="w-full font-editorial-mono text-[12px] px-3 py-2.5 rounded-lg outline-none transition-colors"
+      style={{ background: INPUT_BG, border: `1px solid ${INPUT_BORDER}`, color: TEXT, colorScheme: type === "date" ? "dark" : undefined }}
+      onFocus={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)")}
+      onBlur={e => (e.currentTarget.style.borderColor = INPUT_BORDER)}
     />
   );
 }
 
-// ─── Physical history record type ─────────────────────────────────────────────
-
+// ─── Physical history record ──────────────────────────────────────────────────
 interface PhysicalHistoryRecord {
   id: string;
   recorded_at: string;
@@ -357,19 +234,9 @@ interface PhysicalHistoryRecord {
   notes: string | null;
 }
 
-const EMPTY_FORM = {
-  recorded_at: "",
-  weight: "",
-  body_fat_percentage: "",
-  muscle_mass: "",
-  max_speed: "",
-  sprint_30m: "",
-  vo2_max: "",
-  notes: "",
-};
+const EMPTY_FORM = { recorded_at: "", weight: "", body_fat_percentage: "", muscle_mass: "", max_speed: "", sprint_30m: "", vo2_max: "", notes: "" };
 
 // ─── Props ────────────────────────────────────────────────────────────────────
-
 interface PhysicalTabProps {
   playerId: string;
   playerPosition?: string | null;
@@ -384,7 +251,6 @@ interface PhysicalTabProps {
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
-
 export function PhysicalTab({
   playerId,
   playerHeight,
@@ -420,19 +286,19 @@ export function PhysicalTab({
 
   const latest = history && history.length > 0 ? history[history.length - 1] : null;
 
-  const resolvedWeight   = latest?.weight               ?? playerWeight    ?? null;
-  const resolvedBodyFat  = latest?.body_fat_percentage  ?? playerBodyFat   ?? null;
-  const resolvedMuscle   = latest?.muscle_mass          ?? playerMuscle    ?? null;
-  const resolvedMaxSpeed = latest?.max_speed            ?? playerMaxSpeed  ?? null;
-  const resolvedSprint   = latest?.sprint_30m           ?? playerSprint30m ?? null;
-  const resolvedVo2      = latest?.vo2_max              ?? playerVo2Max    ?? null;
+  const resolvedWeight   = latest?.weight              ?? playerWeight    ?? null;
+  const resolvedBodyFat  = latest?.body_fat_percentage ?? playerBodyFat   ?? null;
+  const resolvedMuscle   = latest?.muscle_mass         ?? playerMuscle    ?? null;
+  const resolvedMaxSpeed = latest?.max_speed           ?? playerMaxSpeed  ?? null;
+  const resolvedSprint   = latest?.sprint_30m          ?? playerSprint30m ?? null;
+  const resolvedVo2      = latest?.vo2_max             ?? playerVo2Max    ?? null;
 
-  const bmi = calcBMI(resolvedWeight, playerHeight);
+  const bmi           = calcBMI(resolvedWeight, playerHeight);
   const muscleMassPct = calcMuscleMassPct(resolvedWeight, resolvedBodyFat);
 
   const radarValues = RADAR_AXES.map(axis => {
     let value: number | null = null;
-    if (axis.key === "max_speed")                value = resolvedMaxSpeed;
+    if      (axis.key === "max_speed")           value = resolvedMaxSpeed;
     else if (axis.key === "sprint_30m")          value = resolvedSprint;
     else if (axis.key === "vo2_max")             value = resolvedVo2;
     else if (axis.key === "body_fat_percentage") value = resolvedBodyFat;
@@ -459,26 +325,15 @@ export function PhysicalTab({
   };
 
   const openDialog = () => {
-    setForm({
-      ...EMPTY_FORM,
-      recorded_at: format(new Date(), "yyyy-MM-dd"),
-    });
+    setForm({ ...EMPTY_FORM, recorded_at: format(new Date(), "yyyy-MM-dd") });
     setDialogOpen(true);
   };
 
   const handleSave = async () => {
-    if (!user) {
-      toast.error("É necessário estar autenticado");
-      return;
-    }
-    const hasAtLeastOne =
-      form.weight || form.body_fat_percentage || form.muscle_mass ||
+    if (!user) { toast.error("É necessário estar autenticado"); return; }
+    const hasAtLeastOne = form.weight || form.body_fat_percentage || form.muscle_mass ||
       form.max_speed || form.sprint_30m || form.vo2_max;
-    if (!hasAtLeastOne) {
-      toast.error("Preencha ao menos um campo de medida");
-      return;
-    }
-
+    if (!hasAtLeastOne) { toast.error("Preencha ao menos um campo de medida"); return; }
     setSubmitting(true);
     try {
       const { error } = await supabase.from("player_physical_history").insert({
@@ -493,16 +348,11 @@ export function PhysicalTab({
         notes:               form.notes               || null,
         created_by:          user.id,
       });
-
       if (error) {
-        if (error.code === "23505") {
-          toast.error("Já existe um registro para esta data");
-        } else {
-          throw error;
-        }
+        if (error.code === "23505") toast.error("Já existe um registro para esta data");
+        else throw error;
         return;
       }
-
       toast.success("Avaliação registrada com sucesso");
       queryClient.invalidateQueries({ queryKey: ["player-physical-history", playerId] });
       queryClient.invalidateQueries({ queryKey: ["latest-physical-evaluation", playerId] });
@@ -515,73 +365,57 @@ export function PhysicalTab({
     }
   };
 
-  // ── Add-data button (reused in multiple section headers) ──────────────────
   const addButton = canEdit ? (
-    <button
-      onClick={openDialog}
-      className="font-jetbrains text-[9px] uppercase tracking-[0.18em] px-3 py-1.5 border transition-colors"
-      style={{ borderColor: ACCENT, color: ACCENT, background: `${ACCENT}0D` }}
+    <button onClick={openDialog}
+      className="font-editorial-mono text-[9px] uppercase tracking-[0.18em] px-3 py-1.5 border rounded-lg transition-colors"
+      style={{ borderColor: ACCENT, color: ACCENT, background: `${ACCENT}0d` }}
       onMouseEnter={e => (e.currentTarget.style.background = `${ACCENT}20`)}
-      onMouseLeave={e => (e.currentTarget.style.background = `${ACCENT}0D`)}
-    >
+      onMouseLeave={e => (e.currentTarget.style.background = `${ACCENT}0d`)}>
       ＋ ADICIONAR DADOS
     </button>
   ) : null;
 
-  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <>
-      <div className="space-y-8 py-6">
+      <div className="space-y-5 py-4">
 
-        {/* ── 1. Evolução Física ──────────────────────────────────────────── */}
-        <section>
-          <SectionHeader title="Evolução Física" />
-          <div className="border p-4" style={{ borderColor: BORDER }}>
+        {/* ── 1. Evolução Física ──────────────────────────────────────── */}
+        <div>
+          <SectionHead n="01" action={addButton}>EVOLUÇÃO FÍSICA</SectionHead>
+          <div className="rounded-xl border overflow-hidden p-4" style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
             {/* Filter pills */}
             <div className="flex flex-wrap gap-2 mb-5">
-              {(Object.entries(METRIC_CONFIG) as [MetricKey, typeof METRIC_CONFIG[MetricKey]][]).map(
-                ([key, cfg]) => {
-                  const isActive = activeMetrics.includes(key);
-                  return (
-                    <button
-                      key={key}
-                      onClick={() => toggleMetric(key)}
-                      className="font-jetbrains text-[10px] uppercase tracking-wider px-3 py-1.5 border transition-colors"
-                      style={{
-                        borderColor: isActive ? ACCENT : BORDER,
-                        color: isActive ? ACCENT : MUTED,
-                        background: isActive ? `${ACCENT}12` : "transparent",
-                      }}
-                    >
-                      <span
-                        className="inline-block w-1.5 h-1.5 rounded-full mr-1.5 align-middle"
-                        style={{ backgroundColor: cfg.color }}
-                      />
-                      {cfg.label}
-                    </button>
-                  );
-                }
-              )}
+              {(Object.entries(METRIC_CONFIG) as [MetricKey, typeof METRIC_CONFIG[MetricKey]][]).map(([key, cfg]) => {
+                const isActive = activeMetrics.includes(key);
+                return (
+                  <button key={key} onClick={() => toggleMetric(key)}
+                    className="font-editorial-mono text-[10px] uppercase tracking-wider px-3 py-1.5 border rounded-lg transition-colors"
+                    style={{
+                      borderColor: isActive ? ACCENT : CARD_BORDER,
+                      color: isActive ? ACCENT : MUTED,
+                      background: isActive ? `${ACCENT}12` : "transparent",
+                    }}>
+                    <span className="inline-block w-1.5 h-1.5 rounded-full mr-1.5 align-middle" style={{ backgroundColor: cfg.color }} />
+                    {cfg.label}
+                  </button>
+                );
+              })}
             </div>
 
             {/* Chart */}
             {isLoading ? (
               <div className="h-[220px] flex items-center justify-center">
-                <span className="font-jetbrains text-[11px] uppercase tracking-wider" style={{ color: MUTED }}>
-                  CARREGANDO...
-                </span>
+                <span className="font-editorial-mono text-[11px] uppercase tracking-wider" style={{ color: MUTED }}>CARREGANDO...</span>
               </div>
             ) : chartData.length === 0 ? (
               <div className="h-[220px] flex flex-col items-center justify-center gap-3">
-                <span className="font-jetbrains text-[11px] uppercase tracking-wider" style={{ color: MUTED }}>
+                <span className="font-editorial-mono text-[11px] uppercase tracking-wider" style={{ color: MUTED }}>
                   SEM AVALIAÇÕES REGISTRADAS
                 </span>
                 {canEdit && (
-                  <button
-                    onClick={openDialog}
-                    className="font-jetbrains text-[9px] uppercase tracking-[0.18em] px-4 py-2 border transition-colors"
-                    style={{ borderColor: ACCENT, color: ACCENT, background: `${ACCENT}0D` }}
-                  >
+                  <button onClick={openDialog}
+                    className="font-editorial-mono text-[9px] uppercase tracking-[0.18em] px-4 py-2 border rounded-lg transition-colors"
+                    style={{ borderColor: ACCENT, color: ACCENT, background: `${ACCENT}0d` }}>
                     ＋ ADICIONAR PRIMEIRA AVALIAÇÃO
                   </button>
                 )}
@@ -591,51 +425,33 @@ export function PhysicalTab({
                 chartData.some(d => d[key] != null && Number.isFinite(d[key] as number))
               );
               const noDataMetrics = activeMetrics.filter(m => !metricsWithData.includes(m));
-
               if (metricsWithData.length === 0) {
                 return (
                   <div className="h-[220px] flex items-center justify-center">
-                    <span className="font-jetbrains text-[11px] uppercase tracking-wider" style={{ color: MUTED }}>
+                    <span className="font-editorial-mono text-[11px] uppercase tracking-wider" style={{ color: MUTED }}>
                       SEM DADOS PARA AS MÉTRICAS SELECIONADAS
                     </span>
                   </div>
                 );
               }
-
               return (
                 <>
                   <div className="h-[220px] -mx-2">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={chartData} margin={{ top: 5, right: 40, left: -20, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="2 4" stroke={BORDER} vertical={false} />
-                        <XAxis
-                          dataKey="date"
-                          tick={{ fill: MUTED, fontSize: 9, fontFamily: "Basis Grotesque Pro, sans-serif" }}
-                          tickLine={false}
-                          axisLine={{ stroke: BORDER }}
-                          padding={{ right: 16 }}
-                        />
+                        <CartesianGrid strokeDasharray="2 4" stroke={CARD_BORDER} vertical={false} />
+                        <XAxis dataKey="date"
+                          tick={{ fill: MUTED, fontSize: 9, fontFamily: "JetBrains Mono" }}
+                          tickLine={false} axisLine={{ stroke: CARD_BORDER }} padding={{ right: 16 }} />
                         {metricsWithData.map((key, idx) => (
-                          <YAxis
-                            key={key}
-                            yAxisId={key}
+                          <YAxis key={key} yAxisId={key}
                             orientation={idx === 0 ? "left" : "right"}
-                            hide={idx > 0}
-                            domain={["auto", "auto"]}
-                            tick={{ fill: MUTED, fontSize: 9, fontFamily: "Basis Grotesque Pro, sans-serif" }}
-                            tickLine={false}
-                            axisLine={false}
-                            width={32}
-                          />
+                            hide={idx > 0} domain={["auto", "auto"]}
+                            tick={{ fill: MUTED, fontSize: 9, fontFamily: "JetBrains Mono" }}
+                            tickLine={false} axisLine={false} width={32} />
                         ))}
                         <Tooltip
-                          contentStyle={{
-                            background: BG,
-                            border: `1px solid ${BORDER}`,
-                            borderRadius: 0,
-                            fontSize: 11,
-                            fontFamily: "Basis Grotesque Pro, sans-serif",
-                          }}
+                          contentStyle={{ background: CARD_BG, border: `1px solid ${CARD_BORDER}`, borderRadius: 12, fontSize: 11, fontFamily: "JetBrains Mono" }}
                           labelStyle={{ color: MUTED }}
                           cursor={{ stroke: MUTED, strokeWidth: 1, strokeDasharray: "4 3" }}
                           formatter={(value: number, name: string) => {
@@ -644,24 +460,17 @@ export function PhysicalTab({
                           }}
                         />
                         {metricsWithData.map(key => (
-                          <Line
-                            key={key}
-                            yAxisId={key}
-                            type="monotone"
-                            dataKey={key}
-                            stroke={METRIC_CONFIG[key].color}
-                            strokeWidth={2}
+                          <Line key={key} yAxisId={key} type="monotone" dataKey={key}
+                            stroke={METRIC_CONFIG[key].color} strokeWidth={2}
                             dot={{ fill: METRIC_CONFIG[key].color, strokeWidth: 0, r: 3 }}
                             activeDot={{ r: 5, strokeWidth: 0 }}
-                            connectNulls
-                            isAnimationActive={false}
-                          />
+                            connectNulls isAnimationActive={false} />
                         ))}
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
                   {noDataMetrics.length > 0 && (
-                    <p className="font-jetbrains text-[10px] uppercase tracking-wider text-center mt-3" style={{ color: MUTED }}>
+                    <p className="font-editorial-mono text-[10px] uppercase tracking-wider text-center mt-3" style={{ color: MUTED }}>
                       Sem dados para: {noDataMetrics.map(m => METRIC_CONFIG[m].label).join(", ")}
                     </p>
                   )}
@@ -669,34 +478,30 @@ export function PhysicalTab({
               );
             })()}
           </div>
-        </section>
+        </div>
 
-        {/* ── 2. Performance vs Elite ─────────────────────────────────────── */}
-        <section>
-          <SectionHeader title="Performance vs Elite" />
-          <div className="border p-6" style={{ borderColor: BORDER }}>
+        {/* ── 2. Performance vs Elite ──────────────────────────────────── */}
+        <div>
+          <SectionHead n="02">PERFORMANCE VS ELITE</SectionHead>
+          <div className="rounded-xl border p-6" style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
             <div className="flex flex-col md:flex-row items-center gap-8">
               <div className="flex-1 flex justify-center">
                 <PhysicalRadar athleteValues={radarValues} />
               </div>
               <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-2 font-jetbrains text-[10px] uppercase tracking-wider">
-                  <svg width="28" height="10">
-                    <line x1="0" y1="5" x2="28" y2="5" stroke={ACCENT} strokeWidth="1.5" strokeDasharray="4 3" />
-                  </svg>
+                <div className="flex items-center gap-2 font-editorial-mono text-[10px] uppercase tracking-wider">
+                  <svg width="28" height="10"><line x1="0" y1="5" x2="28" y2="5" stroke={ACCENT} strokeWidth="1.5" strokeDasharray="4 3" /></svg>
                   <span style={{ color: MUTED }}>Benchmark Elite</span>
                 </div>
-                <div className="flex items-center gap-2 font-jetbrains text-[10px] uppercase tracking-wider">
-                  <svg width="28" height="10">
-                    <line x1="0" y1="5" x2="28" y2="5" stroke={GREEN} strokeWidth="2" />
-                  </svg>
+                <div className="flex items-center gap-2 font-editorial-mono text-[10px] uppercase tracking-wider">
+                  <svg width="28" height="10"><line x1="0" y1="5" x2="28" y2="5" stroke={GREEN} strokeWidth="2" /></svg>
                   <span style={{ color: MUTED }}>Atleta</span>
                 </div>
-                <div className="mt-3 space-y-2 border-t pt-3" style={{ borderColor: BORDER }}>
+                <div className="mt-3 space-y-2 border-t pt-3" style={{ borderColor: CARD_BORDER }}>
                   {RADAR_AXES.map((axis, i) => (
-                    <div key={axis.key} className="flex items-center gap-3 font-jetbrains text-[11px]">
+                    <div key={axis.key} className="flex items-center gap-3 font-editorial-mono text-[11px]">
                       <span className="w-[108px]" style={{ color: MUTED }}>{axis.label}</span>
-                      <div className="flex-1 h-[1px]" style={{ background: BORDER }} />
+                      <div className="flex-1 h-[1px]" style={{ background: CARD_BORDER }} />
                       <span style={{ color: radarValues[i] >= 75 ? GREEN : radarValues[i] >= 40 ? TEXT : ACCENT }}>
                         {radarValues[i].toFixed(0)}%
                       </span>
@@ -706,201 +511,93 @@ export function PhysicalTab({
               </div>
             </div>
           </div>
-        </section>
+        </div>
 
-        {/* ── 3. Medidas Corporais ─────────────────────────────────────────── */}
-        <section>
-          <SectionHeaderWithAction title="Medidas Corporais" action={addButton} />
-          <MetricGrid>
-            <GridCell>
-              <MetricCard label="Altura" value={playerHeight ?? null} unit="cm" rangeKey="height" decimals={0} />
-            </GridCell>
-            <GridCell>
-              <MetricCard label="Peso" value={resolvedWeight} unit="kg" rangeKey="weight" />
-            </GridCell>
-            <GridCell>
-              <MetricCard label="Envergadura" value={playerWingspan ?? null} unit="cm" rangeKey="wingspan" decimals={0} />
-            </GridCell>
-          </MetricGrid>
-        </section>
+        {/* ── 3. Medidas Corporais ─────────────────────────────────────── */}
+        <div>
+          <SectionHead n="03" action={addButton}>MEDIDAS CORPORAIS</SectionHead>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <MetricCard label="Altura"      value={playerHeight ?? null} unit="cm"  rangeKey="height"  decimals={0} />
+            <MetricCard label="Peso"        value={resolvedWeight}       unit="kg"  rangeKey="weight"              />
+            <MetricCard label="Envergadura" value={playerWingspan ?? null} unit="cm" rangeKey="wingspan" decimals={0} />
+          </div>
+        </div>
 
-        {/* ── 4. Composição Corporal ───────────────────────────────────────── */}
-        <section>
-          <SectionHeader title="Composição Corporal" />
-          <MetricGrid>
-            <GridCell>
-              <MetricCard label="% Gordura" value={resolvedBodyFat} unit="%" rangeKey="body_fat_percentage" />
-            </GridCell>
-            <GridCell>
-              <MetricCard label="% Massa Muscular" value={muscleMassPct} unit="%" rangeKey="muscle_mass_pct" />
-            </GridCell>
-            <GridCell>
-              <MetricCard label="IMC" value={bmi} unit="" rangeKey="bmi" />
-            </GridCell>
-          </MetricGrid>
-        </section>
+        {/* ── 4. Composição Corporal ───────────────────────────────────── */}
+        <div>
+          <SectionHead n="04">COMPOSIÇÃO CORPORAL</SectionHead>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <MetricCard label="% Gordura"        value={resolvedBodyFat} unit="%"  rangeKey="body_fat_percentage" />
+            <MetricCard label="% Massa Muscular"  value={muscleMassPct}  unit="%"  rangeKey="muscle_mass_pct"     />
+            <MetricCard label="IMC"               value={bmi}            unit=""   rangeKey="bmi"                  />
+          </div>
+        </div>
 
-        {/* ── 5. Performance ───────────────────────────────────────────────── */}
-        <section>
-          <SectionHeader title="Performance" />
-          <MetricGrid>
-            <GridCell>
-              <MetricCard label="Vel. Máx" value={resolvedMaxSpeed} unit="km/h" rangeKey="max_speed" />
-            </GridCell>
-            <GridCell>
-              <MetricCard label="Sprint 30m" value={resolvedSprint} unit="s" rangeKey="sprint_30m" decimals={2} />
-            </GridCell>
-            <GridCell>
-              <MetricCard label="VO2 Máx" value={resolvedVo2} unit="ml/kg/min" rangeKey="vo2_max" />
-            </GridCell>
-          </MetricGrid>
-        </section>
+        {/* ── 5. Performance ───────────────────────────────────────────── */}
+        <div>
+          <SectionHead n="05">PERFORMANCE</SectionHead>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <MetricCard label="Vel. Máx"  value={resolvedMaxSpeed} unit="km/h"      rangeKey="max_speed"  />
+            <MetricCard label="Sprint 30m" value={resolvedSprint}   unit="s"         rangeKey="sprint_30m" decimals={2} />
+            <MetricCard label="VO2 Máx"   value={resolvedVo2}      unit="ml/kg/min" rangeKey="vo2_max"    />
+          </div>
+        </div>
 
-        {/* ── Footer ───────────────────────────────────────────────────────── */}
+        {/* ── Footer ───────────────────────────────────────────────────── */}
         {latest && (
-          <div className="border-t pt-4" style={{ borderColor: BORDER }}>
-            <span className="font-jetbrains text-[10px] uppercase tracking-wider" style={{ color: MUTED }}>
+          <div className="border-t pt-4" style={{ borderColor: CARD_BORDER }}>
+            <span className="font-editorial-mono text-[10px] uppercase tracking-wider" style={{ color: MUTED }}>
               ÚLTIMA AVALIAÇÃO: {format(parseDateSafe(latest.recorded_at), "dd/MM/yyyy")}
             </span>
           </div>
         )}
       </div>
 
-      {/* ── Add Physical Data Dialog ─────────────────────────────────────── */}
+      {/* ── Add Physical Data Dialog ─────────────────────────────────── */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent
-          className="max-w-md p-0 gap-0 overflow-hidden"
-          style={{ background: BG, border: `1px solid ${BORDER}`, borderRadius: 0, boxShadow: "0 16px 48px rgba(0,0,0,0.8)" }}
-        >
-          {/* Header */}
-          <DialogHeader
-            className="px-5 py-4"
-            style={{ borderBottom: `1px solid ${BORDER}` }}
-          >
-            <DialogTitle
-              className="font-barlow font-black text-[13px] uppercase tracking-[0.2em]"
-              style={{ color: TEXT }}
-            >
+        <DialogContent className="max-w-md p-0 gap-0 overflow-hidden rounded-xl"
+          style={{ background: CARD_BG, border: `1px solid ${CARD_BORDER}` }}>
+          <DialogHeader className="px-5 py-4" style={{ borderBottom: `1px solid ${CARD_BORDER}` }}>
+            <DialogTitle className="font-display font-bold text-[13px] uppercase tracking-[0.2em]" style={{ color: TEXT }}>
               NOVA AVALIAÇÃO FÍSICA
             </DialogTitle>
           </DialogHeader>
 
-          {/* Form */}
           <div className="px-5 py-5 space-y-4">
-            {/* Date — full width */}
             <div>
               <FieldLabel>Data da Avaliação</FieldLabel>
-              <FieldInput
-                type="date"
-                value={form.recorded_at}
-                onChange={v => setForm(f => ({ ...f, recorded_at: v }))}
-              />
+              <FieldInput type="date" value={form.recorded_at} onChange={v => setForm(f => ({ ...f, recorded_at: v }))} />
             </div>
-
-            {/* 2-column grid */}
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <FieldLabel>Peso (kg)</FieldLabel>
-                <FieldInput
-                  value={form.weight}
-                  onChange={v => setForm(f => ({ ...f, weight: v }))}
-                  placeholder="75.5"
-                  step="0.1"
-                />
-              </div>
-              <div>
-                <FieldLabel>% Gordura</FieldLabel>
-                <FieldInput
-                  value={form.body_fat_percentage}
-                  onChange={v => setForm(f => ({ ...f, body_fat_percentage: v }))}
-                  placeholder="12.5"
-                  step="0.1"
-                />
-              </div>
-              <div>
-                <FieldLabel>Massa Muscular (kg)</FieldLabel>
-                <FieldInput
-                  value={form.muscle_mass}
-                  onChange={v => setForm(f => ({ ...f, muscle_mass: v }))}
-                  placeholder="38.0"
-                  step="0.1"
-                />
-              </div>
-              <div>
-                <FieldLabel>Vel. Máx (km/h)</FieldLabel>
-                <FieldInput
-                  value={form.max_speed}
-                  onChange={v => setForm(f => ({ ...f, max_speed: v }))}
-                  placeholder="32.5"
-                  step="0.1"
-                />
-              </div>
-              <div>
-                <FieldLabel>Sprint 30m (s)</FieldLabel>
-                <FieldInput
-                  value={form.sprint_30m}
-                  onChange={v => setForm(f => ({ ...f, sprint_30m: v }))}
-                  placeholder="4.25"
-                  step="0.01"
-                />
-              </div>
-              <div>
-                <FieldLabel>VO2 Máx (ml/kg/min)</FieldLabel>
-                <FieldInput
-                  value={form.vo2_max}
-                  onChange={v => setForm(f => ({ ...f, vo2_max: v }))}
-                  placeholder="55.0"
-                  step="0.1"
-                />
-              </div>
+              <div><FieldLabel>Peso (kg)</FieldLabel><FieldInput value={form.weight} onChange={v => setForm(f => ({ ...f, weight: v }))} placeholder="75.5" step="0.1" /></div>
+              <div><FieldLabel>% Gordura</FieldLabel><FieldInput value={form.body_fat_percentage} onChange={v => setForm(f => ({ ...f, body_fat_percentage: v }))} placeholder="12.5" step="0.1" /></div>
+              <div><FieldLabel>Massa Muscular (kg)</FieldLabel><FieldInput value={form.muscle_mass} onChange={v => setForm(f => ({ ...f, muscle_mass: v }))} placeholder="38.0" step="0.1" /></div>
+              <div><FieldLabel>Vel. Máx (km/h)</FieldLabel><FieldInput value={form.max_speed} onChange={v => setForm(f => ({ ...f, max_speed: v }))} placeholder="32.5" step="0.1" /></div>
+              <div><FieldLabel>Sprint 30m (s)</FieldLabel><FieldInput value={form.sprint_30m} onChange={v => setForm(f => ({ ...f, sprint_30m: v }))} placeholder="4.25" step="0.01" /></div>
+              <div><FieldLabel>VO2 Máx (ml/kg/min)</FieldLabel><FieldInput value={form.vo2_max} onChange={v => setForm(f => ({ ...f, vo2_max: v }))} placeholder="55.0" step="0.1" /></div>
             </div>
-
-            {/* Notes — full width */}
             <div>
               <FieldLabel>Observações</FieldLabel>
-              <textarea
-                value={form.notes}
-                onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-                placeholder="Notas sobre a avaliação..."
-                rows={2}
-                className="w-full font-jetbrains text-[12px] px-3 py-2.5 outline-none resize-none transition-colors"
-                style={{
-                  background: "#0D0D0D",
-                  border: `1px solid ${BORDER}`,
-                  color: TEXT,
-                  borderRadius: 0,
-                }}
-                onFocus={e => (e.currentTarget.style.borderColor = MUTED)}
-                onBlur={e => (e.currentTarget.style.borderColor = BORDER)}
-              />
+              <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                placeholder="Notas sobre a avaliação..." rows={2}
+                className="w-full font-editorial-mono text-[12px] px-3 py-2.5 rounded-lg outline-none resize-none transition-colors"
+                style={{ background: INPUT_BG, border: `1px solid ${INPUT_BORDER}`, color: TEXT }}
+                onFocus={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)")}
+                onBlur={e => (e.currentTarget.style.borderColor = INPUT_BORDER)} />
             </div>
           </div>
 
-          {/* Footer actions */}
-          <div
-            className="px-5 py-4 flex gap-3"
-            style={{ borderTop: `1px solid ${BORDER}` }}
-          >
-            <button
-              onClick={() => setDialogOpen(false)}
-              disabled={submitting}
-              className="flex-1 font-jetbrains text-[10px] uppercase tracking-[0.18em] py-2.5 border transition-colors"
-              style={{ borderColor: BORDER, color: MUTED }}
-              onMouseEnter={e => (e.currentTarget.style.borderColor = MUTED)}
-              onMouseLeave={e => (e.currentTarget.style.borderColor = BORDER)}
-            >
+          <div className="px-5 py-4 flex gap-3" style={{ borderTop: `1px solid ${CARD_BORDER}` }}>
+            <button onClick={() => setDialogOpen(false)} disabled={submitting}
+              className="flex-1 font-editorial-mono text-[10px] uppercase tracking-[0.18em] py-2.5 border rounded-lg transition-colors"
+              style={{ borderColor: CARD_BORDER, color: MUTED }}
+              onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)")}
+              onMouseLeave={e => (e.currentTarget.style.borderColor = CARD_BORDER)}>
               CANCELAR
             </button>
-            <button
-              onClick={handleSave}
-              disabled={submitting}
-              className="flex-[2] font-jetbrains text-[10px] uppercase tracking-[0.18em] py-2.5 transition-opacity"
-              style={{
-                background: ACCENT,
-                color: "#fff",
-                opacity: submitting ? 0.6 : 1,
-              }}
-            >
+            <button onClick={handleSave} disabled={submitting}
+              className="flex-[2] font-editorial-mono text-[10px] uppercase tracking-[0.18em] py-2.5 rounded-lg transition-opacity"
+              style={{ background: ACCENT, color: "#fff", opacity: submitting ? 0.6 : 1 }}>
               {submitting ? "SALVANDO..." : "SALVAR AVALIAÇÃO"}
             </button>
           </div>

@@ -77,9 +77,13 @@ function SpotlightLogo({
 const Auth = () => {
   const navigate  = useNavigate();
   const location  = useLocation();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, signUp } = useAuth();
+
+  // Mode
+  const [mode, setMode] = useState<"login" | "register">("login");
 
   // Form state
+  const [name,         setName]         = useState("");
   const [email,        setEmail]        = useState("");
   const [password,     setPassword]     = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -125,6 +129,24 @@ const Auth = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (mode === "register") {
+      if (!name.trim() || !email.trim() || !password) {
+        toast.error("Preencha todos os campos");
+        return;
+      }
+      setLoading(true);
+      try {
+        const { error } = await signUp(email.trim(), password, name.trim());
+        if (error) { toast.error(error.message); return; }
+        toast.success("Conta criada! Verifique seu e-mail para confirmar.");
+        setMode("login");
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
     if (!email.trim() || !password) {
       toast.error("Preencha e-mail e senha");
       return;
@@ -235,18 +257,52 @@ const Auth = () => {
               className="text-3xl sm:text-4xl text-white mb-2"
               style={{ fontWeight: 300, letterSpacing: "-0.02em", lineHeight: 1.15 }}
             >
-              Bem-vindo(a)
+              {mode === "login" ? "Bem-vindo(a)" : "Criar conta"}
             </h1>
             <p
               className="text-sm leading-relaxed"
               style={{ color: "rgba(255,255,255,0.38)", fontWeight: 400 }}
             >
-              Acesse sua conta e continue sua jornada conosco.
+              {mode === "login"
+                ? "Acesse sua conta e continue sua jornada conosco."
+                : "Preencha os dados para criar sua conta."}
             </p>
           </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Name (register only) */}
+            {mode === "register" && (
+              <div>
+                <label
+                  htmlFor="auth-name"
+                  className="block text-[11px] uppercase tracking-[0.18em] mb-2"
+                  style={{ color: "rgba(255,255,255,0.45)", fontWeight: 700 }}
+                >
+                  Nome completo
+                </label>
+                <input
+                  id="auth-name"
+                  type="text"
+                  autoComplete="name"
+                  required
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  placeholder="Seu nome"
+                  className="w-full h-12 px-4 rounded-xl text-sm text-white outline-none transition-all duration-200"
+                  style={{
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    caretColor: RED,
+                    fontWeight: 400,
+                    fontFamily: "inherit",
+                  }}
+                  onFocus={e => { e.target.style.borderColor = `${RED}60`; e.target.style.background = "rgba(255,255,255,0.06)"; }}
+                  onBlur={e  => { e.target.style.borderColor = "rgba(255,255,255,0.08)"; e.target.style.background = "rgba(255,255,255,0.04)"; }}
+                />
+              </div>
+            )}
+
             {/* Email */}
             <div>
               <label
@@ -322,7 +378,8 @@ const Auth = () => {
             </div>
 
             {/* Keep logged in + Forgot password */}
-            <div className="flex items-center justify-between">
+            {mode === "register" && <div />}
+            <div className={mode === "register" ? "hidden" : "flex items-center justify-between"}>
               {/* Circular checkbox */}
               <label className="flex items-center gap-2.5 cursor-pointer select-none group">
                 <button
@@ -389,17 +446,32 @@ const Auth = () => {
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Entrando…
+                  {mode === "register" ? "Criando conta…" : "Entrando…"}
                 </>
               ) : (
-                "Entrar"
+                mode === "register" ? "Criar conta" : "Entrar"
               )}
             </button>
           </form>
 
+          {/* Toggle login/register */}
+          <p className="text-center text-sm mt-6" style={{ color: "rgba(255,255,255,0.35)" }}>
+            {mode === "login" ? "Não tem uma conta?" : "Já tem uma conta?"}{" "}
+            <button
+              type="button"
+              onClick={() => { setMode(m => m === "login" ? "register" : "login"); setName(""); }}
+              className="transition-colors duration-150"
+              style={{ color: RED, fontWeight: 600 }}
+              onMouseEnter={e => ((e.target as HTMLElement).style.color = "#c9112e")}
+              onMouseLeave={e => ((e.target as HTMLElement).style.color = RED)}
+            >
+              {mode === "login" ? "Criar conta" : "Entrar"}
+            </button>
+          </p>
+
           {/* Footer */}
           <p
-            className="text-center text-[11px] mt-8"
+            className="text-center text-[11px] mt-6"
             style={{ color: "rgba(255,255,255,0.15)", fontWeight: 300 }}
           >
             © {new Date().getFullYear()} M3 Agency. Todos os direitos reservados.

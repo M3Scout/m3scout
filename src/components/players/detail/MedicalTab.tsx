@@ -22,40 +22,37 @@ import {
 } from "@/components/ui/alert-dialog";
 
 // ─── Design tokens ───────────────────────────────────────────────────────────
-
-const ACCENT = "#E5173F";
-const GREEN  = "#22C55E";
-const AMBER  = "#F59E0B";
-const BLUE   = "#3B82F6";
-const BORDER = "#1C1C1C";
-const MUTED  = "#6B6560";
-const TEXT   = "#F2EDE4";
-const BG     = "#0A0A0A";
-const NOTE_BORDER = "#282828";
+const ACCENT      = "#ec4525";
+const GREEN       = "#22c55e";
+const AMBER       = "#f59e0b";
+const BLUE        = "#3b82f6";
+const CARD_BG     = "#0f0f10";
+const CARD_BORDER = "rgba(255,255,255,0.07)";
+const INPUT_BG    = "#0c0b0d";
+const INPUT_BORDER = "rgba(255,255,255,0.12)";
+const MUTED       = "#62616a";
+const TEXT        = "#ededee";
 
 // ─── Status config ────────────────────────────────────────────────────────────
-
 type StatusKey = "apto" | "fit" | "recovering" | "em_recuperacao" | "injured" | "lesionado" | "transition" | "transicao" | "retorno_progressivo";
 
 const STATUS_CONFIG: Record<StatusKey, { label: string; description: string; color: string; icon: string }> = {
-  fit:                  { label: "APTO PARA ATIVIDADE",   description: "Atleta liberado para treinos e competições",       color: GREEN,  icon: "check" },
-  apto:                 { label: "APTO PARA ATIVIDADE",   description: "Atleta liberado para treinos e competições",       color: GREEN,  icon: "check" },
-  recovering:           { label: "EM RECUPERAÇÃO",        description: "Atleta em tratamento médico supervisionado",       color: AMBER,  icon: "pulse" },
-  em_recuperacao:       { label: "EM RECUPERAÇÃO",        description: "Atleta em tratamento médico supervisionado",       color: AMBER,  icon: "pulse" },
-  injured:              { label: "AFASTADO POR LESÃO",    description: "Atleta em período de recuperação completa",        color: ACCENT, icon: "x"     },
-  lesionado:            { label: "AFASTADO POR LESÃO",    description: "Atleta em período de recuperação completa",        color: ACCENT, icon: "x"     },
-  transition:           { label: "RETORNO PROGRESSIVO",   description: "Atleta em transição para atividades normais",      color: BLUE,   icon: "arrow" },
-  transicao:            { label: "RETORNO PROGRESSIVO",   description: "Atleta em transição para atividades normais",      color: BLUE,   icon: "arrow" },
-  retorno_progressivo:  { label: "RETORNO PROGRESSIVO",   description: "Atleta em transição para atividades normais",      color: BLUE,   icon: "arrow" },
+  fit:                 { label: "APTO PARA ATIVIDADE",  description: "Atleta liberado para treinos e competições",      color: GREEN,  icon: "check" },
+  apto:                { label: "APTO PARA ATIVIDADE",  description: "Atleta liberado para treinos e competições",      color: GREEN,  icon: "check" },
+  recovering:          { label: "EM RECUPERAÇÃO",       description: "Atleta em tratamento médico supervisionado",      color: AMBER,  icon: "pulse" },
+  em_recuperacao:      { label: "EM RECUPERAÇÃO",       description: "Atleta em tratamento médico supervisionado",      color: AMBER,  icon: "pulse" },
+  injured:             { label: "AFASTADO POR LESÃO",   description: "Atleta em período de recuperação completa",       color: ACCENT, icon: "x"     },
+  lesionado:           { label: "AFASTADO POR LESÃO",   description: "Atleta em período de recuperação completa",       color: ACCENT, icon: "x"     },
+  transition:          { label: "RETORNO PROGRESSIVO",  description: "Atleta em transição para atividades normais",     color: BLUE,   icon: "arrow" },
+  transicao:           { label: "RETORNO PROGRESSIVO",  description: "Atleta em transição para atividades normais",     color: BLUE,   icon: "arrow" },
+  retorno_progressivo: { label: "RETORNO PROGRESSIVO",  description: "Atleta em transição para atividades normais",     color: BLUE,   icon: "arrow" },
 };
 
 const DEFAULT_STATUS = STATUS_CONFIG.apto;
-
 const getStatus = (s: string | null | undefined) =>
   STATUS_CONFIG[(s?.toLowerCase() as StatusKey) ?? "apto"] ?? DEFAULT_STATUS;
 
 // ─── Severity config ──────────────────────────────────────────────────────────
-
 const SEVERITY_CONFIG: Record<string, { label: string; color: string }> = {
   leve:  { label: "LEVE",     color: GREEN  },
   mild:  { label: "LEVE",     color: GREEN  },
@@ -70,21 +67,19 @@ const getSeverity = (s: string) =>
   SEVERITY_CONFIG[s.toLowerCase()] ?? { label: s.toUpperCase(), color: MUTED };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
 const fmtDays = (start: string, end: string | null): string => {
   const d = daysBetween(start, end);
-  if (d < 7) return `${d} dias`;
+  if (d < 7)  return `${d} dias`;
   if (d < 30) return `${Math.floor(d / 7)} sem.`;
   return `${Math.floor(d / 30)} meses`;
 };
 
 const inputCls =
-  "w-full bg-[#0A0A0A] border border-[#1C1C1C] font-jetbrains text-[13px] text-[#F2EDE4] px-3 py-2.5 outline-none focus:border-[#E5173F] placeholder:text-[#6B6560] transition-colors";
-
-const labelCls = "block font-barlow text-[10px] uppercase tracking-widest mb-1.5";
+  "w-full font-editorial-mono text-[13px] px-3 py-2.5 rounded-lg outline-none transition-colors placeholder:opacity-40";
+const inputStyle = { background: INPUT_BG, border: `1px solid ${INPUT_BORDER}`, color: TEXT };
+const labelCls = "block font-editorial-mono text-[9.5px] uppercase tracking-[0.2em] mb-1.5";
 
 // ─── Injury type ──────────────────────────────────────────────────────────────
-
 interface Injury {
   id: string;
   injury_type: string;
@@ -99,11 +94,9 @@ const COMMON_INJURIES = [
   "Fratura", "Tendinite", "Pubalgia", "Lesão no ombro", "Lombalgia", "Fadiga muscular",
 ];
 
-// ─── Status icons (inline SVG paths) ─────────────────────────────────────────
-
+// ─── Status icons ─────────────────────────────────────────────────────────────
 function StatusIcon({ type, color, size = 52 }: { type: string; color: string; size?: number }) {
-  const s = size;
-  const sw = size * 0.09;
+  const s = size, sw = size * 0.09;
   if (type === "check") return (
     <svg width={s} height={s} viewBox="0 0 52 52" fill="none">
       <circle cx="26" cy="26" r="22" stroke={color} strokeWidth={sw} />
@@ -123,7 +116,6 @@ function StatusIcon({ type, color, size = 52 }: { type: string; color: string; s
       <polyline points="10,26 18,26 22,16 26,36 30,20 34,26 42,26" stroke={color} strokeWidth={sw} strokeLinecap="square" strokeLinejoin="miter" />
     </svg>
   );
-  // arrow / retorno progressivo
   return (
     <svg width={s} height={s} viewBox="0 0 52 52" fill="none">
       <circle cx="26" cy="26" r="22" stroke={color} strokeWidth={sw} />
@@ -133,15 +125,12 @@ function StatusIcon({ type, color, size = 52 }: { type: string; color: string; s
 }
 
 // ─── Section header ───────────────────────────────────────────────────────────
-
-function SectionHeader({ title, action }: { title: string; action?: React.ReactNode }) {
+function SectionHead({ n, children, action }: { n?: string; children: React.ReactNode; action?: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between mb-4">
-      <div className="flex items-center gap-3">
-        <div className="w-[3px] h-[14px]" style={{ background: ACCENT }} />
-        <h3 className="font-barlow text-[13px] uppercase tracking-widest" style={{ color: TEXT }}>
-          {title}
-        </h3>
+    <div className="flex items-center justify-between mb-3">
+      <div className="font-editorial-mono text-[11px] tracking-[0.24em] uppercase" style={{ color: MUTED }}>
+        {n && <><span style={{ color: ACCENT }} className="font-semibold">{n}</span><span className="inline-block w-[34px] h-px bg-white/15 mx-[10px] align-middle" /></>}
+        {children}
       </div>
       {action}
     </div>
@@ -149,7 +138,6 @@ function SectionHeader({ title, action }: { title: string; action?: React.ReactN
 }
 
 // ─── Injury form state ────────────────────────────────────────────────────────
-
 const emptyInjuryForm = () => ({
   injury_type: "",
   custom_type: false,
@@ -160,7 +148,6 @@ const emptyInjuryForm = () => ({
 });
 
 // ─── Props ────────────────────────────────────────────────────────────────────
-
 interface MedicalTabProps {
   playerId: string;
   playerPhysicalStatus?: string | null;
@@ -170,7 +157,6 @@ interface MedicalTabProps {
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
-
 export function MedicalTab({
   playerId,
   playerPhysicalStatus,
@@ -180,7 +166,6 @@ export function MedicalTab({
 }: MedicalTabProps) {
   const qc = useQueryClient();
 
-  // ── Injury dialogs ──
   const [addOpen, setAddOpen] = useState(false);
   const [editInjury, setEditInjury] = useState<Injury | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Injury | null>(null);
@@ -188,12 +173,10 @@ export function MedicalTab({
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  // ── Medical note dialog ──
   const [noteOpen, setNoteOpen] = useState(false);
   const [noteText, setNoteText] = useState(playerMedicalNotes ?? "");
   const [savingNote, setSavingNote] = useState(false);
 
-  // ── Data ──
   const { data: injuries, isLoading } = useQuery({
     queryKey: ["player-injuries", playerId],
     queryFn: async () => {
@@ -208,15 +191,9 @@ export function MedicalTab({
   });
 
   const invalidateInjuries = () => qc.invalidateQueries({ queryKey: ["player-injuries", playerId] });
-
-  // ── Status ──
   const status = getStatus(playerPhysicalStatus);
 
-  // ── Add injury ──
-  const openAdd = () => {
-    setInjuryForm(emptyInjuryForm());
-    setAddOpen(true);
-  };
+  const openAdd = () => { setInjuryForm(emptyInjuryForm()); setAddOpen(true); };
 
   const openEdit = (inj: Injury) => {
     setInjuryForm({
@@ -232,7 +209,7 @@ export function MedicalTab({
 
   const handleSaveInjury = async () => {
     if (!injuryForm.injury_type) return toast.error("Informe o tipo de lesão");
-    if (!injuryForm.start_date) return toast.error("Informe a data de início");
+    if (!injuryForm.start_date)  return toast.error("Informe a data de início");
     setSaving(true);
     try {
       const payload = {
@@ -281,10 +258,7 @@ export function MedicalTab({
   const handleSaveNote = async () => {
     setSavingNote(true);
     try {
-      const { error } = await supabase
-        .from("players")
-        .update({ medical_notes: noteText || null })
-        .eq("id", playerId);
+      const { error } = await supabase.from("players").update({ medical_notes: noteText || null }).eq("id", playerId);
       if (error) throw error;
       toast.success("Observação salva");
       setNoteOpen(false);
@@ -296,36 +270,27 @@ export function MedicalTab({
     }
   };
 
-  const openNote = () => {
-    setNoteText(playerMedicalNotes ?? "");
-    setNoteOpen(true);
-  };
+  const openNote = () => { setNoteText(playerMedicalNotes ?? ""); setNoteOpen(true); };
 
-  // ── Injury form (shared by add + edit) ──
   const InjuryForm = (
     <div className="space-y-4 pt-2">
-      {/* Tipo */}
       <div>
         <label className={labelCls} style={{ color: MUTED }}>Tipo de Lesão</label>
         {injuryForm.custom_type ? (
           <div className="flex gap-2">
-            <input
-              className={inputCls}
+            <input className={inputCls} style={inputStyle}
               placeholder="Descreva a lesão..."
               value={injuryForm.injury_type}
-              onChange={e => setInjuryForm(f => ({ ...f, injury_type: e.target.value }))}
-            />
-            <button
-              type="button"
-              className="font-jetbrains text-[10px] uppercase tracking-wider px-3 border border-[#1C1C1C] text-[#6B6560] hover:border-[#6B6560] transition-colors whitespace-nowrap"
-              onClick={() => setInjuryForm(f => ({ ...f, custom_type: false, injury_type: "" }))}
-            >
+              onChange={e => setInjuryForm(f => ({ ...f, injury_type: e.target.value }))} />
+            <button type="button"
+              className="font-editorial-mono text-[10px] uppercase tracking-wider px-3 rounded-lg border transition-colors"
+              style={{ borderColor: CARD_BORDER, color: MUTED }}
+              onClick={() => setInjuryForm(f => ({ ...f, custom_type: false, injury_type: "" }))}>
               ← Lista
             </button>
           </div>
         ) : (
-          <select
-            className={inputCls}
+          <select className={inputCls} style={{ ...inputStyle, appearance: "none" }}
             value={injuryForm.injury_type}
             onChange={e => {
               if (e.target.value === "__custom__") {
@@ -333,8 +298,7 @@ export function MedicalTab({
               } else {
                 setInjuryForm(f => ({ ...f, injury_type: e.target.value }));
               }
-            }}
-          >
+            }}>
             <option value="">Selecione...</option>
             {COMMON_INJURIES.map(i => <option key={i} value={i}>{i}</option>)}
             <option value="__custom__">+ Outro tipo</option>
@@ -342,72 +306,52 @@ export function MedicalTab({
         )}
       </div>
 
-      {/* Severidade */}
       <div>
         <label className={labelCls} style={{ color: MUTED }}>Gravidade</label>
-        <select
-          className={inputCls}
+        <select className={inputCls} style={{ ...inputStyle, appearance: "none" }}
           value={injuryForm.severity}
-          onChange={e => setInjuryForm(f => ({ ...f, severity: e.target.value }))}
-        >
+          onChange={e => setInjuryForm(f => ({ ...f, severity: e.target.value }))}>
           <option value="leve">Leve</option>
           <option value="media">Moderada</option>
           <option value="grave">Grave</option>
         </select>
       </div>
 
-      {/* Datas */}
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className={labelCls} style={{ color: MUTED }}>Data de Início</label>
-          <input
-            type="date"
-            className={inputCls}
+          <input type="date" className={inputCls} style={{ ...inputStyle, colorScheme: "dark" }}
             value={injuryForm.start_date}
-            onChange={e => setInjuryForm(f => ({ ...f, start_date: e.target.value }))}
-          />
+            onChange={e => setInjuryForm(f => ({ ...f, start_date: e.target.value }))} />
         </div>
         <div>
-          <label className={labelCls} style={{ color: MUTED }}>Retorno <span style={{ color: MUTED }}>(opcional)</span></label>
-          <input
-            type="date"
-            className={inputCls}
+          <label className={labelCls} style={{ color: MUTED }}>Retorno <span style={{ opacity: 0.5 }}>(opcional)</span></label>
+          <input type="date" className={inputCls} style={{ ...inputStyle, colorScheme: "dark" }}
             value={injuryForm.return_date}
             min={injuryForm.start_date}
-            onChange={e => setInjuryForm(f => ({ ...f, return_date: e.target.value }))}
-          />
+            onChange={e => setInjuryForm(f => ({ ...f, return_date: e.target.value }))} />
         </div>
       </div>
 
-      {/* Notas */}
       <div>
-        <label className={labelCls} style={{ color: MUTED }}>Observações <span style={{ color: MUTED }}>(opcional)</span></label>
-        <textarea
-          className={`${inputCls} resize-none`}
-          rows={3}
-          placeholder="Detalhes sobre a lesão..."
+        <label className={labelCls} style={{ color: MUTED }}>Observações <span style={{ opacity: 0.5 }}>(opcional)</span></label>
+        <textarea className={`${inputCls} resize-none`} style={inputStyle}
+          rows={3} placeholder="Detalhes sobre a lesão..."
           value={injuryForm.notes}
-          onChange={e => setInjuryForm(f => ({ ...f, notes: e.target.value }))}
-        />
+          onChange={e => setInjuryForm(f => ({ ...f, notes: e.target.value }))} />
       </div>
 
-      {/* Actions */}
       <div className="flex gap-2 pt-2">
-        <button
-          type="button"
+        <button type="button"
           onClick={() => { setAddOpen(false); setEditInjury(null); }}
           disabled={saving}
-          className="flex-1 font-jetbrains text-[11px] uppercase tracking-wider py-2.5 border border-[#1C1C1C] text-[#6B6560] hover:border-[#6B6560] transition-colors"
-        >
+          className="flex-1 font-editorial-mono text-[11px] uppercase tracking-wider py-2.5 rounded-lg border transition-colors"
+          style={{ borderColor: CARD_BORDER, color: MUTED }}>
           Cancelar
         </button>
-        <button
-          type="button"
-          onClick={handleSaveInjury}
-          disabled={saving}
-          className="flex-1 font-jetbrains text-[11px] uppercase tracking-wider py-2.5 text-[#F2EDE4] transition-colors"
-          style={{ background: ACCENT }}
-        >
+        <button type="button" onClick={handleSaveInjury} disabled={saving}
+          className="flex-1 font-editorial-mono text-[11px] uppercase tracking-wider py-2.5 rounded-lg text-white transition-opacity"
+          style={{ background: ACCENT, opacity: saving ? 0.6 : 1 }}>
           {saving ? "SALVANDO..." : "SALVAR"}
         </button>
       </div>
@@ -415,119 +359,98 @@ export function MedicalTab({
   );
 
   return (
-    <div className="space-y-8 py-6">
+    <div className="space-y-5 py-4">
 
-      {/* ── 1. Status Físico Atual ──────────────────────────────────────────── */}
-      <section>
-        <SectionHeader title="Status Físico Atual" />
-        <div
-          className="border p-8 flex flex-col items-center gap-4 text-center"
-          style={{ borderColor: BORDER }}
-        >
+      {/* ── 1. Status Físico Atual ──────────────────────────────────────── */}
+      <div>
+        <SectionHead n="01">STATUS FÍSICO ATUAL</SectionHead>
+        <div className="rounded-xl border p-8 flex flex-col items-center gap-4 text-center"
+          style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
           <StatusIcon type={status.icon} color={status.color} size={56} />
           <div>
-            <p
-              className="font-barlow text-[22px] uppercase tracking-[0.18em] leading-none"
-              style={{ color: status.color }}
-            >
+            <p className="font-display font-bold text-[20px] uppercase tracking-[0.12em] leading-none" style={{ color: status.color }}>
               {status.label}
             </p>
-            <p className="font-jetbrains text-[11px] mt-2 uppercase tracking-wider" style={{ color: MUTED }}>
+            <p className="font-editorial-mono text-[11px] mt-2 uppercase tracking-wider" style={{ color: MUTED }}>
               {status.description}
             </p>
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* ── 2. Histórico de Lesões ──────────────────────────────────────────── */}
-      <section>
-        <SectionHeader
-          title={`Histórico de Lesões${injuries && injuries.length > 0 ? ` (${injuries.length})` : ""}`}
+      {/* ── 2. Histórico de Lesões ──────────────────────────────────────── */}
+      <div>
+        <SectionHead
+          n="02"
           action={
             canEdit ? (
-              <button
-                onClick={openAdd}
-                className="font-jetbrains text-[10px] uppercase tracking-wider px-3 py-1.5 border transition-colors"
-                style={{ borderColor: ACCENT, color: ACCENT }}
-              >
+              <button onClick={openAdd}
+                className="font-editorial-mono text-[10px] uppercase tracking-wider px-3 py-1.5 border rounded-lg transition-colors"
+                style={{ borderColor: ACCENT, color: ACCENT }}>
                 + Registrar Lesão
               </button>
             ) : null
           }
-        />
+        >
+          {`HISTÓRICO DE LESÕES${injuries && injuries.length > 0 ? ` (${injuries.length})` : ""}`}
+        </SectionHead>
 
         {isLoading ? (
-          <div className="border p-8 flex items-center justify-center" style={{ borderColor: BORDER }}>
-            <span className="font-jetbrains text-[11px] uppercase tracking-wider" style={{ color: MUTED }}>
-              CARREGANDO...
-            </span>
+          <div className="rounded-xl border p-8 flex items-center justify-center" style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
+            <span className="font-editorial-mono text-[11px] uppercase tracking-wider" style={{ color: MUTED }}>CARREGANDO...</span>
           </div>
         ) : !injuries || injuries.length === 0 ? (
-          /* Empty state */
-          <div className="border p-10 flex flex-col items-center gap-3 text-center" style={{ borderColor: BORDER }}>
-            <div className="border p-4" style={{ borderColor: BORDER }}>
+          <div className="rounded-xl border p-10 flex flex-col items-center gap-3 text-center"
+            style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
+            <div className="rounded-xl border p-4" style={{ borderColor: CARD_BORDER }}>
               <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
                 <circle cx="16" cy="16" r="13" stroke={GREEN} strokeWidth="1.5" />
                 <polyline points="8,17 13,22 24,11" stroke={GREEN} strokeWidth="1.5" strokeLinecap="square" />
               </svg>
             </div>
-            <p className="font-barlow text-[14px] uppercase tracking-widest" style={{ color: TEXT }}>
+            <p className="font-display font-bold text-[14px] uppercase tracking-widest" style={{ color: TEXT }}>
               Histórico Clínico Limpo
             </p>
-            <p className="font-jetbrains text-[10px] uppercase tracking-wider" style={{ color: MUTED }}>
+            <p className="font-editorial-mono text-[10px] uppercase tracking-wider" style={{ color: MUTED }}>
               Nenhuma lesão registrada no prontuário
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {injuries.map(inj => {
               const sev = getSeverity(inj.severity);
               const isOngoing = !inj.return_date;
               return (
-                <div key={inj.id} className="border" style={{ borderColor: BORDER }}>
-                  {/* Card header */}
-                  <div
-                    className="flex items-start justify-between px-4 pt-4 pb-3"
-                    style={{ borderBottom: `1px solid ${BORDER}` }}
-                  >
+                <div key={inj.id} className="rounded-xl border overflow-hidden" style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
+                  <div className="flex items-start justify-between px-4 pt-4 pb-3" style={{ borderBottom: `1px solid ${CARD_BORDER}` }}>
                     <div className="flex-1">
                       <div className="flex items-center gap-3 flex-wrap">
-                        <span className="font-barlow text-[15px] uppercase tracking-wider" style={{ color: TEXT }}>
+                        <span className="font-editorial-mono text-[14px] uppercase tracking-wider" style={{ color: TEXT }}>
                           {inj.injury_type}
                         </span>
                         {isOngoing && (
-                          <span
-                            className="font-jetbrains text-[9px] uppercase tracking-wider border px-1.5 py-0.5"
-                            style={{ color: ACCENT, borderColor: ACCENT }}
-                          >
+                          <span className="font-editorial-mono text-[9px] uppercase tracking-wider border px-1.5 py-0.5 rounded-md"
+                            style={{ color: ACCENT, borderColor: ACCENT }}>
                             EM TRATAMENTO
                           </span>
                         )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 ml-3">
-                      {/* Severity badge */}
-                      <span
-                        className="font-jetbrains text-[9px] uppercase tracking-wider border px-2 py-0.5"
-                        style={{ color: sev.color, borderColor: sev.color }}
-                      >
+                      <span className="font-editorial-mono text-[9px] uppercase tracking-wider border px-2 py-0.5 rounded-md"
+                        style={{ color: sev.color, borderColor: sev.color }}>
                         {sev.label}
                       </span>
-                      {/* Edit / Delete */}
                       {canEdit && (
                         <>
-                          <button
-                            onClick={() => openEdit(inj)}
-                            className="font-jetbrains text-[10px] uppercase tracking-wider border px-2 py-0.5 transition-colors"
-                            style={{ color: MUTED, borderColor: BORDER }}
-                          >
+                          <button onClick={() => openEdit(inj)}
+                            className="font-editorial-mono text-[10px] uppercase tracking-wider border px-2 py-0.5 rounded-md transition-colors"
+                            style={{ color: MUTED, borderColor: CARD_BORDER }}>
                             EDITAR
                           </button>
-                          <button
-                            onClick={() => setDeleteTarget(inj)}
-                            className="font-jetbrains text-[10px] uppercase tracking-wider border px-2 py-0.5 transition-colors"
-                            style={{ color: ACCENT, borderColor: ACCENT }}
-                          >
+                          <button onClick={() => setDeleteTarget(inj)}
+                            className="font-editorial-mono text-[10px] uppercase tracking-wider border px-2 py-0.5 rounded-md transition-colors"
+                            style={{ color: ACCENT, borderColor: ACCENT }}>
                             EXCLUIR
                           </button>
                         </>
@@ -535,77 +458,62 @@ export function MedicalTab({
                     </div>
                   </div>
 
-                  {/* Stats grid */}
-                  <div className="grid grid-cols-3 divide-x px-0" style={{ borderBottom: `1px solid ${BORDER}`, ['--tw-divide-opacity' as any]: 1, borderColor: BORDER } as React.CSSProperties}>
+                  <div className="grid grid-cols-3">
                     {[
-                      { label: "INÍCIO",       value: formatDateMediumBR(inj.start_date) },
-                      { label: "RETORNO",      value: inj.return_date ? formatDateMediumBR(inj.return_date) : "—" },
-                      { label: "AFASTAMENTO",  value: fmtDays(inj.start_date, inj.return_date) },
+                      { label: "INÍCIO",      value: formatDateMediumBR(inj.start_date) },
+                      { label: "RETORNO",     value: inj.return_date ? formatDateMediumBR(inj.return_date) : "—" },
+                      { label: "AFASTAMENTO", value: fmtDays(inj.start_date, inj.return_date) },
                     ].map((col, i) => (
-                      <div
-                        key={i}
-                        className="px-4 py-3"
-                        style={{ borderRight: i < 2 ? `1px solid ${BORDER}` : undefined }}
-                      >
-                        <p className="font-jetbrains text-[9px] uppercase tracking-widest mb-1" style={{ color: MUTED }}>
-                          {col.label}
-                        </p>
-                        <p className="font-jetbrains text-[13px]" style={{ color: TEXT }}>
-                          {col.value}
-                        </p>
+                      <div key={i} className="px-4 py-3"
+                        style={{ borderRight: i < 2 ? `1px solid ${CARD_BORDER}` : undefined }}>
+                        <p className="font-editorial-mono text-[9px] uppercase tracking-widest mb-1" style={{ color: MUTED }}>{col.label}</p>
+                        <p className="font-editorial-mono text-[13px]" style={{ color: TEXT }}>{col.value}</p>
                       </div>
                     ))}
                   </div>
 
-                  {/* Notes */}
                   {inj.notes && (
-                    <div
-                      className="mx-4 my-3 pl-3 py-1"
-                      style={{ borderLeft: `2px solid ${NOTE_BORDER}` }}
-                    >
-                      <p className="font-jetbrains text-[11px] leading-relaxed" style={{ color: MUTED }}>
-                        {inj.notes}
-                      </p>
+                    <div className="mx-4 my-3 pl-3 py-1" style={{ borderLeft: `2px solid ${CARD_BORDER}` }}>
+                      <p className="font-editorial-mono text-[11px] leading-relaxed" style={{ color: MUTED }}>{inj.notes}</p>
                     </div>
                   )}
-
-                  {/* No notes padding */}
                   {!inj.notes && <div className="pb-1" />}
                 </div>
               );
             })}
           </div>
         )}
-      </section>
+      </div>
 
-      {/* ── 3. Observações Médicas ──────────────────────────────────────────── */}
-      <section>
-        <SectionHeader
-          title="Observações Médicas"
+      {/* ── 3. Observações Médicas ──────────────────────────────────────── */}
+      <div>
+        <SectionHead
+          n="03"
           action={
             canEdit ? (
-              <button
-                onClick={openNote}
-                className="font-jetbrains text-[10px] uppercase tracking-wider px-3 py-1.5 border transition-colors"
-                style={{ borderColor: BORDER, color: MUTED }}
-              >
+              <button onClick={openNote}
+                className="font-editorial-mono text-[10px] uppercase tracking-wider px-3 py-1.5 border rounded-lg transition-colors"
+                style={{ borderColor: CARD_BORDER, color: MUTED }}>
                 {playerMedicalNotes ? "EDITAR" : "+ NOVA OBSERVAÇÃO"}
               </button>
             ) : null
           }
-        />
+        >
+          OBSERVAÇÕES MÉDICAS
+        </SectionHead>
 
         {playerMedicalNotes ? (
-          <div className="border" style={{ borderColor: BORDER }}>
-            <div className="mx-4 my-4 pl-3" style={{ borderLeft: `2px solid ${NOTE_BORDER}` }}>
-              <p className="font-jetbrains text-[12px] leading-relaxed whitespace-pre-wrap" style={{ color: TEXT }}>
+          <div className="rounded-xl border overflow-hidden" style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
+            <div className="mx-4 my-4 pl-3" style={{ borderLeft: `2px solid ${CARD_BORDER}` }}>
+              <p className="font-editorial-mono text-[12px] leading-relaxed whitespace-pre-wrap" style={{ color: TEXT }}>
                 {playerMedicalNotes}
               </p>
             </div>
           </div>
         ) : (
-          <div className="border p-10 flex flex-col items-center gap-3 text-center" style={{ borderColor: BORDER }}>
-            <div className="border p-4" style={{ borderColor: BORDER }}>
+          <div className="rounded-xl border p-10 flex flex-col items-center gap-3 text-center"
+            style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
+            <div className="rounded-xl border p-4" style={{ borderColor: CARD_BORDER }}>
               <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
                 <rect x="5" y="4" width="18" height="20" stroke={MUTED} strokeWidth="1.2" />
                 <line x1="9" y1="10" x2="19" y2="10" stroke={MUTED} strokeWidth="1.2" />
@@ -613,30 +521,26 @@ export function MedicalTab({
                 <line x1="9" y1="18" x2="15" y2="18" stroke={MUTED} strokeWidth="1.2" />
               </svg>
             </div>
-            <p className="font-barlow text-[14px] uppercase tracking-widest" style={{ color: MUTED }}>
-              Sem Observações
-            </p>
-            <p className="font-jetbrains text-[10px] uppercase tracking-wider" style={{ color: MUTED }}>
+            <p className="font-editorial-mono text-[13px] uppercase tracking-widest" style={{ color: MUTED }}>Sem Observações</p>
+            <p className="font-editorial-mono text-[10px] uppercase tracking-wider" style={{ color: MUTED }}>
               Nenhuma observação médica registrada
             </p>
             {canEdit && (
-              <button
-                onClick={openNote}
-                className="mt-2 font-jetbrains text-[10px] uppercase tracking-wider px-4 py-2 border transition-colors"
-                style={{ borderColor: ACCENT, color: ACCENT }}
-              >
+              <button onClick={openNote}
+                className="mt-2 font-editorial-mono text-[10px] uppercase tracking-wider px-4 py-2 border rounded-lg transition-colors"
+                style={{ borderColor: ACCENT, color: ACCENT }}>
                 + Nova Observação
               </button>
             )}
           </div>
         )}
-      </section>
+      </div>
 
-      {/* ── Add Injury Dialog ──────────────────────────────────────────────── */}
+      {/* ── Add Injury Dialog ──────────────────────────────────────────── */}
       <Dialog open={addOpen} onOpenChange={o => !o && setAddOpen(false)}>
-        <DialogContent className="max-w-md" style={{ background: BG, borderColor: BORDER }}>
+        <DialogContent className="max-w-md rounded-xl" style={{ background: CARD_BG, border: `1px solid ${CARD_BORDER}` }}>
           <DialogHeader>
-            <DialogTitle className="font-barlow text-[14px] uppercase tracking-widest" style={{ color: TEXT }}>
+            <DialogTitle className="font-display font-bold text-[14px] uppercase tracking-widest" style={{ color: TEXT }}>
               Registrar Nova Lesão
             </DialogTitle>
           </DialogHeader>
@@ -644,11 +548,11 @@ export function MedicalTab({
         </DialogContent>
       </Dialog>
 
-      {/* ── Edit Injury Dialog ─────────────────────────────────────────────── */}
+      {/* ── Edit Injury Dialog ─────────────────────────────────────────── */}
       <Dialog open={!!editInjury} onOpenChange={o => !o && setEditInjury(null)}>
-        <DialogContent className="max-w-md" style={{ background: BG, borderColor: BORDER }}>
+        <DialogContent className="max-w-md rounded-xl" style={{ background: CARD_BG, border: `1px solid ${CARD_BORDER}` }}>
           <DialogHeader>
-            <DialogTitle className="font-barlow text-[14px] uppercase tracking-widest" style={{ color: TEXT }}>
+            <DialogTitle className="font-display font-bold text-[14px] uppercase tracking-widest" style={{ color: TEXT }}>
               Editar Lesão
             </DialogTitle>
           </DialogHeader>
@@ -656,75 +560,60 @@ export function MedicalTab({
         </DialogContent>
       </Dialog>
 
-      {/* ── Delete Injury Alert ────────────────────────────────────────────── */}
+      {/* ── Delete Injury Alert ────────────────────────────────────────── */}
       <AlertDialog open={!!deleteTarget} onOpenChange={o => !o && setDeleteTarget(null)}>
-        <AlertDialogContent style={{ background: BG, borderColor: BORDER }}>
+        <AlertDialogContent className="rounded-xl" style={{ background: CARD_BG, border: `1px solid ${CARD_BORDER}` }}>
           <AlertDialogHeader>
-            <AlertDialogTitle className="font-barlow text-[14px] uppercase tracking-widest" style={{ color: TEXT }}>
+            <AlertDialogTitle className="font-display font-bold text-[14px] uppercase tracking-widest" style={{ color: TEXT }}>
               Excluir Lesão
             </AlertDialogTitle>
-            <AlertDialogDescription className="font-jetbrains text-[11px]" style={{ color: MUTED }}>
+            <AlertDialogDescription className="font-editorial-mono text-[11px]" style={{ color: MUTED }}>
               Tem certeza que deseja excluir o registro de{" "}
               <span style={{ color: TEXT }}>"{deleteTarget?.injury_type}"</span>?{" "}
               Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel
-              disabled={deleting}
-              className="font-jetbrains text-[10px] uppercase tracking-wider"
-              style={{ background: "transparent", borderColor: BORDER, color: MUTED }}
-            >
+            <AlertDialogCancel disabled={deleting}
+              className="font-editorial-mono text-[10px] uppercase tracking-wider rounded-lg"
+              style={{ background: "transparent", borderColor: CARD_BORDER, color: MUTED }}>
               Cancelar
             </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteInjury}
-              disabled={deleting}
-              className="font-jetbrains text-[10px] uppercase tracking-wider"
-              style={{ background: ACCENT, color: TEXT, border: "none" }}
-            >
+            <AlertDialogAction onClick={handleDeleteInjury} disabled={deleting}
+              className="font-editorial-mono text-[10px] uppercase tracking-wider rounded-lg"
+              style={{ background: ACCENT, color: TEXT, border: "none" }}>
               {deleting ? "EXCLUINDO..." : "EXCLUIR"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* ── Medical Note Dialog ────────────────────────────────────────────── */}
+      {/* ── Medical Note Dialog ────────────────────────────────────────── */}
       <Dialog open={noteOpen} onOpenChange={o => !o && setNoteOpen(false)}>
-        <DialogContent className="max-w-md" style={{ background: BG, borderColor: BORDER }}>
+        <DialogContent className="max-w-md rounded-xl" style={{ background: CARD_BG, border: `1px solid ${CARD_BORDER}` }}>
           <DialogHeader>
-            <DialogTitle className="font-barlow text-[14px] uppercase tracking-widest" style={{ color: TEXT }}>
+            <DialogTitle className="font-display font-bold text-[14px] uppercase tracking-widest" style={{ color: TEXT }}>
               Observação Médica
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-2">
             <div>
               <label className={labelCls} style={{ color: MUTED }}>Observação</label>
-              <textarea
-                className={`${inputCls} resize-none`}
+              <textarea className={`${inputCls} resize-none`} style={inputStyle}
                 rows={6}
                 placeholder="Registre observações médicas relevantes sobre o atleta..."
                 value={noteText}
-                onChange={e => setNoteText(e.target.value)}
-              />
+                onChange={e => setNoteText(e.target.value)} />
             </div>
             <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setNoteOpen(false)}
-                disabled={savingNote}
-                className="flex-1 font-jetbrains text-[11px] uppercase tracking-wider py-2.5 border transition-colors"
-                style={{ borderColor: BORDER, color: MUTED }}
-              >
+              <button type="button" onClick={() => setNoteOpen(false)} disabled={savingNote}
+                className="flex-1 font-editorial-mono text-[11px] uppercase tracking-wider py-2.5 border rounded-lg transition-colors"
+                style={{ borderColor: CARD_BORDER, color: MUTED }}>
                 Cancelar
               </button>
-              <button
-                type="button"
-                onClick={handleSaveNote}
-                disabled={savingNote}
-                className="flex-1 font-jetbrains text-[11px] uppercase tracking-wider py-2.5"
-                style={{ background: ACCENT, color: TEXT }}
-              >
+              <button type="button" onClick={handleSaveNote} disabled={savingNote}
+                className="flex-1 font-editorial-mono text-[11px] uppercase tracking-wider py-2.5 rounded-lg"
+                style={{ background: ACCENT, color: TEXT }}>
                 {savingNote ? "SALVANDO..." : "SALVAR"}
               </button>
             </div>
