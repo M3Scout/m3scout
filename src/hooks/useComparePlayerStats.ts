@@ -47,6 +47,10 @@ export interface CompareStatRow {
   errors_leading_to_goal: number;
   clearances: number;
   ball_actions: number;
+  steals: number;
+  long_passes_accurate: number;
+  long_passes_total: number;
+  penalties_won: number;
 }
 
 export interface CompareAggregatedStats
@@ -93,6 +97,10 @@ function aggregate(rows: CompareStatRow[]): CompareAggregatedStats | null {
       errors_leading_to_goal: acc.errors_leading_to_goal + r.errors_leading_to_goal,
       clearances:         acc.clearances         + r.clearances,
       ball_actions:       acc.ball_actions       + r.ball_actions,
+      steals:             acc.steals             + r.steals,
+      long_passes_accurate: acc.long_passes_accurate + r.long_passes_accurate,
+      long_passes_total:  acc.long_passes_total  + r.long_passes_total,
+      penalties_won:      acc.penalties_won      + r.penalties_won,
     }),
     {
       matches: 0, minutes: 0, goals: 0, assists: 0, shots: 0, shots_on_target: 0,
@@ -103,6 +111,7 @@ function aggregate(rows: CompareStatRow[]): CompareAggregatedStats | null {
       yellow_cards: 0, red_cards: 0, fouls_committed: 0, fouls_drawn: 0,
       saves: 0, goals_conceded: 0, clean_sheets: 0, penalties_saved: 0,
       errors_leading_to_goal: 0, clearances: 0, ball_actions: 0,
+      steals: 0, long_passes_accurate: 0, long_passes_total: 0, penalties_won: 0,
     }
   );
 }
@@ -146,6 +155,10 @@ function publicRowToCompareRow(row: PublicSeasonRow): CompareStatRow {
     errors_leading_to_goal: 0,
     clearances:          safeInt(s.clearances),
     ball_actions:        safeInt(s.ball_actions),
+    steals:              safeInt(s.steals),
+    long_passes_accurate: safeInt(s.long_passes_accurate),
+    long_passes_total:   safeInt(s.long_passes_total),
+    penalties_won:       safeInt(s.penalties_won),
   };
 }
 

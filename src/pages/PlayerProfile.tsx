@@ -3,8 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
-import { usePlayerMatchStats } from "@/hooks/usePlayerMatchStats";
-import { fetchUnifiedPlayerStats } from "@/hooks/useUnifiedPlayerStats";
+import { useComparePlayerStats } from "@/hooks/useComparePlayerStats";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -79,7 +78,6 @@ interface SeasonStats {
   goals_conceded: number;
   clean_sheets: number;
   penalties_saved: number;
-  // GK-specific
   aerial_duels_won: number;
   aerial_duels_total: number;
   fouls_committed: number;
@@ -127,29 +125,17 @@ const PlayerProfile = () => {
     fetchPlayer();
   }, [slug]);
 
-  // Match-derived stats
-  const {
-    matches: matchDerivedMatches,
-    isLoading: statsLoading,
-  } = usePlayerMatchStats({
-    playerId: player?.id ?? "",
-    enabled: !!player?.id,
+  // Unified stats — mesmas 3 fontes + mergeSeasonRows do StatsTab
+  const { rows: mergedRows, isLoading: unifiedLoading } = useComparePlayerStats({
+    playerId: player?.id ?? null,
+    seasonFilter: "all",
+    competitionFilter: "all",
   });
 
-  // Unified stats (Live + Manual)
-  const { data: unifiedStatsData } = useQuery({
-    queryKey: ["unified-player-stats-public", player?.id],
-    queryFn: () => fetchUnifiedPlayerStats(player?.id ?? ""),
-    enabled: !!player?.id,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  // Career stats aggregation
+  // Career stats aggregation (por temporada)
   const careerStats: SeasonStats[] = useMemo(() => {
-    const stats = unifiedStatsData || [];
     const acc: Record<number, SeasonStats> = {};
-    
-    for (const s of stats) {
+    for (const s of mergedRows) {
       const year = s.season_year;
       if (!acc[year]) {
         acc[year] = {
@@ -158,46 +144,48 @@ const PlayerProfile = () => {
           yellow_cards: 0, red_cards: 0, steals: 0, tackles: 0, interceptions: 0,
           recoveries: 0, shots: 0, shots_on_target: 0, key_passes: 0,
           chances_created: 0, successful_dribbles: 0, total_dribbles: 0,
-          accurate_passes: 0, total_passes: 0, long_passes_accurate: 0, long_passes_total: 0, clearances: 0,
+          accurate_passes: 0, total_passes: 0,
+          long_passes_accurate: 0, long_passes_total: 0,
+          clearances: 0,
+          aerial_duels_won: 0, aerial_duels_total: 0,
+          fouls_committed: 0,
           saves: 0, goals_conceded: 0, clean_sheets: 0, penalties_saved: 0,
-          aerial_duels_won: 0, aerial_duels_total: 0, fouls_committed: 0,
           penalties_won: 0,
         };
       }
-      
       const c = acc[year];
-      c.matches += s.matches;
-      c.minutes += s.minutes;
-      c.goals += s.goals;
-      c.assists += s.assists;
-      c.yellow_cards += s.yellow_cards;
-      c.red_cards += s.red_cards;
-      c.steals += s.steals ?? 0;
-      c.tackles += s.tackles;
-      c.interceptions += s.interceptions;
-      c.recoveries += s.recoveries;
-      c.shots += s.shots;
-      c.shots_on_target += s.shots_on_target;
-      c.key_passes += s.key_passes;
-      c.chances_created += s.chances_created;
+      c.matches  += s.matches;
+      c.minutes  += s.minutes;
+      c.goals    += s.goals;
+      c.assists  += s.assists;
+      c.yellow_cards      += s.yellow_cards;
+      c.red_cards         += s.red_cards;
+      c.tackles           += s.tackles;
+      c.interceptions     += s.interceptions;
+      c.recoveries        += s.recoveries;
+      c.shots             += s.shots;
+      c.shots_on_target   += s.shots_on_target;
+      c.key_passes        += s.key_passes;
+      c.chances_created   += s.chances_created;
       c.successful_dribbles += s.successful_dribbles;
-      c.total_dribbles += s.total_dribbles;
-      c.accurate_passes += s.accurate_passes;
-      c.total_passes += s.total_passes;
-      c.long_passes_accurate += s.long_passes_accurate ?? 0;
-      c.long_passes_total += s.long_passes_total ?? 0;
-      c.saves += s.saves;
-      c.goals_conceded += s.goals_conceded;
-      c.clean_sheets += s.clean_sheets;
-      c.penalties_saved += s.penalties_saved;
-      c.aerial_duels_won += s.aerial_duels_won ?? 0;
-      c.aerial_duels_total += s.aerial_duels_total ?? 0;
-      c.fouls_committed += s.fouls_committed ?? 0;
-      c.penalties_won += (s as any).penalties_won ?? 0;
+      c.total_dribbles    += s.total_dribbles;
+      c.accurate_passes   += s.accurate_passes;
+      c.total_passes      += s.total_passes;
+      c.long_passes_accurate += s.long_passes_accurate;
+      c.long_passes_total += s.long_passes_total;
+      c.clearances        += s.clearances;
+      c.aerial_duels_won  += s.aerial_duels_won;
+      c.aerial_duels_total += s.aerial_duels_total;
+      c.fouls_committed   += s.fouls_committed;
+      c.steals            += s.steals;
+      c.penalties_won     += s.penalties_won;
+      c.saves             += s.saves;
+      c.goals_conceded    += s.goals_conceded;
+      c.clean_sheets      += s.clean_sheets;
+      c.penalties_saved   += s.penalties_saved;
     }
-    
     return Object.values(acc).sort((a, b) => b.season_year - a.season_year);
-  }, [unifiedStatsData]);
+  }, [mergedRows]);
 
   const latestAvailableSeasonYear: number | null = useMemo(() => {
     if (careerStats.length === 0) return null;
@@ -211,12 +199,9 @@ const PlayerProfile = () => {
 
   // Competition stats
   const competitionStats: CompetitionStats[] = useMemo(() => {
-    const stats = unifiedStatsData || [];
     const acc: Record<string, CompetitionStats> = {};
-    
-    for (const s of stats) {
+    for (const s of mergedRows) {
       if (!s.competition_id) continue;
-      
       const key = `${s.competition_id}-${s.season_year}`;
       if (!acc[key]) {
         acc[key] = {
@@ -227,21 +212,18 @@ const PlayerProfile = () => {
           matches: 0, minutes: 0, goals: 0, assists: 0,
         };
       }
-      
       const c = acc[key];
       c.matches += s.matches;
       c.minutes += s.minutes;
-      c.goals += s.goals;
+      c.goals   += s.goals;
       c.assists += s.assists;
     }
-    
     return Object.values(acc).sort((a, b) => b.season_year - a.season_year);
-  }, [unifiedStatsData]);
+  }, [mergedRows]);
 
   // Career totals
   const careerTotals = useMemo(() => {
-    const stats = unifiedStatsData || [];
-    return stats.reduce(
+    return mergedRows.reduce(
       (acc, s) => ({
         matches: acc.matches + s.matches,
         minutes: acc.minutes + s.minutes,
@@ -250,7 +232,7 @@ const PlayerProfile = () => {
       }),
       { matches: 0, minutes: 0, goals: 0, assists: 0 }
     );
-  }, [unifiedStatsData]);
+  }, [mergedRows]);
 
   // Loading state
   if (loading) {
@@ -303,7 +285,7 @@ const PlayerProfile = () => {
 
 
           {/* Statistics Section */}
-          {!statsLoading && careerStats.length > 0 && (
+          {!unifiedLoading && careerStats.length > 0 && (
             <AthleteStatsSection
               careerTotals={careerTotals}
               careerStats={careerStats}
