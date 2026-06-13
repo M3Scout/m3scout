@@ -23,13 +23,6 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   ArrowLeft,
   Loader2,
   User,
@@ -40,8 +33,6 @@ import {
   Footprints,
   Info,
   Search,
-  Calendar,
-  Filter,
 } from "lucide-react";
 import { cn, safeArray } from "@/lib/utils";
 import { formatFixed } from "@/lib/formatters";
@@ -700,54 +691,17 @@ const ComparePlayers = () => {
           className="space-y-6"
         >
           {/* Controls */}
-          <div className="flex flex-wrap items-center gap-4 p-4 rounded-xl bg-zinc-900/50 border border-zinc-800/50">
-            {/* Season Filter */}
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-zinc-500" />
-              <Select value={seasonFilter} onValueChange={setSeasonFilter}>
-                <SelectTrigger className="h-8 w-[120px] text-xs bg-zinc-800 border-zinc-700">
-                  <SelectValue placeholder="Temporada" />
-                </SelectTrigger>
-                <SelectContent className="bg-zinc-900 border-zinc-800">
-                  <SelectItem value="all">Todas</SelectItem>
-                  {availableYears.map(year => (
-                    <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className="flex items-center justify-end gap-3">
+            <div className="flex items-center gap-1.5 text-xs text-zinc-500">
+              <Info className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Melhor valor destacado automaticamente</span>
             </div>
-
-            {/* Competition Filter */}
-            {availableCompetitions.length > 0 && (
-              <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4 text-zinc-500" />
-                <Select value={competitionFilter} onValueChange={setCompetitionFilter}>
-                  <SelectTrigger className="h-8 w-[180px] text-xs bg-zinc-800 border-zinc-700">
-                    <SelectValue placeholder="Competição" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-zinc-900 border-zinc-800">
-                    <SelectItem value="all">Todas</SelectItem>
-                    {availableCompetitions.map(comp => (
-                      <SelectItem key={comp.id} value={comp.id}>{comp.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            {/* Export + Info */}
-            <div className="flex items-center gap-3 ml-auto">
-              <div className="flex items-center gap-1.5 text-xs text-zinc-500">
-                <Info className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Melhor valor destacado automaticamente</span>
-              </div>
-               <ExportComparePdfButton
-                 players={playersWithStats.map((p) => ({
-                   ...p,
-                   statsRows: p.filteredRows.map(toRadarRow),
-                 }))}
-               />
-            </div>
+            <ExportComparePdfButton
+              players={playersWithStats.map((p) => ({
+                ...p,
+                statsRows: p.filteredRows.map(toRadarRow),
+              }))}
+            />
           </div>
 
           {/* Radar Comparison */}
