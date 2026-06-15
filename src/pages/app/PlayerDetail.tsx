@@ -655,6 +655,7 @@ const PlayerDetail = () => {
             contractNotes={player.contract_notes}
             m3ContractStart={player.m3_contract_start ?? null}
             m3ContractEnd={player.m3_contract_end ?? null}
+            onPlayerUpdate={refetchPlayer}
           />
         ) : activeTab !== "overview" ? (
           <Placeholder />

@@ -5,8 +5,13 @@ import { parseDateSafe, formatDateMediumBR } from "@/lib/dateUtils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useAuth } from "@/hooks/authContext";
-import { ChevronUp, ChevronDown, Pencil } from "lucide-react";
+import { ChevronUp, ChevronDown, Pencil, Loader2 } from "lucide-react";
 import { EditContractModal } from "@/components/players/sections/EditContractModal";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 // ─── Design tokens ───────────────────────────────────────────────────────────
 const ACCENT      = "#ec4525";
@@ -105,6 +110,7 @@ interface ContractTabProps {
   contractNotes: string | null;
   m3ContractStart: string | null;
   m3ContractEnd: string | null;
+  onPlayerUpdate: () => void;
 }
 
 export function ContractTab({
@@ -121,12 +127,44 @@ export function ContractTab({
   contractNotes,
   m3ContractStart,
   m3ContractEnd,
+  onPlayerUpdate,
 }: ContractTabProps) {
   const queryClient = useQueryClient();
   const { isAdmin, isScout } = useAuth();
   const canEdit = isAdmin || isScout;
   const [reordering, setReordering] = useState(false);
   const [editingContract, setEditingContract] = useState<ContractRecord | null>(null);
+  const [editingM3, setEditingM3] = useState(false);
+  const [m3StartDraft, setM3StartDraft] = useState("");
+  const [m3EndDraft, setM3EndDraft] = useState("");
+  const [m3Saving, setM3Saving] = useState(false);
+
+  const openM3Editor = () => {
+    setM3StartDraft(m3ContractStart ?? "");
+    setM3EndDraft(m3ContractEnd ?? "");
+    setEditingM3(true);
+  };
+
+  const saveM3 = async () => {
+    setM3Saving(true);
+    try {
+      const { error } = await supabase
+        .from("players")
+        .update({
+          m3_contract_start: m3StartDraft || null,
+          m3_contract_end: m3EndDraft || null,
+        })
+        .eq("id", playerId);
+      if (error) throw error;
+      toast.success("Contrato com M3 atualizado");
+      setEditingM3(false);
+      onPlayerUpdate();
+    } catch {
+      toast.error("Erro ao salvar contrato com M3");
+    } finally {
+      setM3Saving(false);
+    }
+  };
 
   const { data: history = [], isLoading } = useQuery({
     queryKey: ["player-contract-history", playerId],
@@ -416,7 +454,63 @@ export function ContractTab({
 
       {/* ── Contrato com M3 ──────────────────────────────────────────── */}
       <div>
-        <SectionHead n="03">CONTRATO COM M3</SectionHead>
+        <div className="flex items-center justify-between mb-3">
+          <div className="font-editorial-mono text-[11px] tracking-[0.24em] uppercase" style={{ color: MUTED }}>
+            <span style={{ color: ACCENT }} className="font-semibold">03</span>
+            <span className="inline-block w-[34px] h-px bg-white/15 mx-[10px] align-middle" />
+            CONTRATO COM M3
+          </div>
+          {canEdit && (
+            <button
+              onClick={openM3Editor}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-colors hover:bg-white/5"
+              style={{ color: MUTED }}
+              title="Editar contrato com M3"
+            >
+              <Pencil className="w-3 h-3" />
+              <span className="font-editorial-mono text-[10px] uppercase tracking-wider">Editar</span>
+            </button>
+          )}
+        </div>
+
+        {/* Edit dialog */}
+        <Dialog open={editingM3} onOpenChange={setEditingM3}>
+          <DialogContent className="max-w-sm bg-zinc-950 border-zinc-800">
+            <DialogHeader>
+              <DialogTitle className="font-editorial-mono text-sm uppercase tracking-wider">
+                Contrato com M3
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 pt-2">
+              <div className="space-y-2">
+                <Label className="text-xs text-zinc-400 font-editorial-mono uppercase tracking-wider">
+                  Data de Assinatura
+                </Label>
+                <Input
+                  type="date"
+                  value={m3StartDraft}
+                  onChange={e => setM3StartDraft(e.target.value)}
+                  className="h-11 bg-zinc-900/50 border-zinc-800 font-editorial-mono"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs text-zinc-400 font-editorial-mono uppercase tracking-wider">
+                  Data de Vencimento
+                </Label>
+                <Input
+                  type="date"
+                  value={m3EndDraft}
+                  onChange={e => setM3EndDraft(e.target.value)}
+                  className="h-11 bg-zinc-900/50 border-zinc-800 font-editorial-mono"
+                />
+              </div>
+              <Button onClick={saveM3} disabled={m3Saving} className="w-full h-11">
+                {m3Saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Salvando...</> : "Salvar"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {(() => {
           const m3Days = daysUntil(m3ContractEnd);
           const m3Expired  = m3Days !== null && m3Days < 0;
