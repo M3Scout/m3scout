@@ -56,11 +56,22 @@ function TikTokIcon({ className }: { className?: string }) {
   );
 }
 
+const INITIAL_BATCH = 6;
+const BATCH_STEP = 6;
+const MAX_POSTS = 12;
+
 export function FeedAndCta() {
-  const [posts, setPosts] = useState<IGPost[]>(FALLBACK_POSTS);
+  const [posts, setPosts] = useState<IGPost[] | null>(null);
+  const [visibleCount, setVisibleCount] = useState(INITIAL_BATCH);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+    // Show fallback quickly so the page isn't empty, then try to upgrade with real posts.
+    const fallbackTimer = setTimeout(() => {
+      if (!cancelled) setPosts((p) => p ?? FALLBACK_POSTS);
+    }, 600);
+
     const t = setTimeout(async () => {
       try {
         const { data } = await supabase.functions.invoke("instagram-feed", {
@@ -68,10 +79,8 @@ export function FeedAndCta() {
         });
         if (cancelled || !data?.posts?.length) return;
 
-        // Edge function returns { id, imageUrl, permalink, caption, mediaType }
-        // Normalize to IGPost shape used by the UI.
         const normalized: IGPost[] = data.posts
-          .slice(0, 12)
+          .slice(0, MAX_POSTS)
           .map((p: any, i: number) => ({
             id: p.id ?? `ig-${i}`,
             media_url: p.imageUrl || p.media_url || buildUnsplash(FALLBACK_PHOTOS[i % FALLBACK_PHOTOS.length]),
@@ -83,15 +92,38 @@ export function FeedAndCta() {
           .filter((p: IGPost) => !!p.media_url);
 
         if (normalized.length) setPosts(normalized);
+        else setPosts((p) => p ?? FALLBACK_POSTS);
       } catch {
-        // keep fallback
+        setPosts((p) => p ?? FALLBACK_POSTS);
       }
     }, 800);
     return () => {
       cancelled = true;
       clearTimeout(t);
+      clearTimeout(fallbackTimer);
     };
   }, []);
+
+  // Infinite scroll: reveal more posts as user scrolls
+  useEffect(() => {
+    if (!posts || visibleCount >= Math.min(posts.length, MAX_POSTS)) return;
+    const node = sentinelRef.current;
+    if (!node) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setVisibleCount((c) => Math.min(c + BATCH_STEP, MAX_POSTS));
+        }
+      },
+      { rootMargin: "300px" }
+    );
+    io.observe(node);
+    return () => io.disconnect();
+  }, [posts, visibleCount]);
+
+  const isLoading = posts === null;
+  const visiblePosts = (posts ?? []).slice(0, visibleCount);
+  const skeletonCount = isLoading ? INITIAL_BATCH : 0;
 
   return (
     <>
