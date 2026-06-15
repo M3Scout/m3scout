@@ -1112,7 +1112,7 @@ export type Database = {
         Row: {
           ata_score_100: number | null
           attr_confidence: number | null
-          competition_id: string
+          competition_id: string | null
           cri_score_100: number | null
           def_score_100: number | null
           details: Json | null
@@ -1126,7 +1126,7 @@ export type Database = {
         Insert: {
           ata_score_100?: number | null
           attr_confidence?: number | null
-          competition_id: string
+          competition_id?: string | null
           cri_score_100?: number | null
           def_score_100?: number | null
           details?: Json | null
@@ -1140,7 +1140,7 @@ export type Database = {
         Update: {
           ata_score_100?: number | null
           attr_confidence?: number | null
-          competition_id?: string
+          competition_id?: string | null
           cri_score_100?: number | null
           def_score_100?: number | null
           details?: Json | null
@@ -1620,6 +1620,8 @@ export type Database = {
           season_year: number
           shots: number
           shots_blocked: number
+          shots_blocked_att: number
+          shots_off_target: number
           shots_on_post: number
           shots_on_target: number
           shots_on_target_against: number
@@ -1687,6 +1689,8 @@ export type Database = {
           season_year?: number
           shots?: number
           shots_blocked?: number
+          shots_blocked_att?: number
+          shots_off_target?: number
           shots_on_post?: number
           shots_on_target?: number
           shots_on_target_against?: number
@@ -1754,6 +1758,8 @@ export type Database = {
           season_year?: number
           shots?: number
           shots_blocked?: number
+          shots_blocked_att?: number
+          shots_off_target?: number
           shots_on_post?: number
           shots_on_target?: number
           shots_on_target_against?: number
