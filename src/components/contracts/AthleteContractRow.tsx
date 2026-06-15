@@ -49,17 +49,17 @@ export function AthleteContractRow({ group }: AthleteContractRowProps) {
     )}>
       {/* ── Collapsed header ── */}
       <button
-        className="w-full flex items-center gap-3 px-4 py-3"
+        className="w-full flex items-center gap-4 px-4 py-4"
         onClick={() => setExpanded(v => !v)}
       >
-        <Avatar className="h-9 w-9 border border-zinc-800 shrink-0">
+        <Avatar className="h-14 w-14 border border-zinc-800 shrink-0">
           <AvatarImage src={group.player_photo_url || undefined} alt={group.player_name} />
-          <AvatarFallback className="bg-zinc-800 text-zinc-500 text-[10px]">{initials}</AvatarFallback>
+          <AvatarFallback className="bg-zinc-800 text-zinc-500 text-[13px]">{initials}</AvatarFallback>
         </Avatar>
 
         <div className="flex-1 min-w-0 text-left">
-          <p className="text-sm font-bold text-zinc-100 truncate">{group.player_name}</p>
-          <p className="text-[10px] text-zinc-600 uppercase tracking-wider font-medium">{group.player_position}</p>
+          <p className="text-[15px] font-bold text-zinc-100 truncate">{group.player_name}</p>
+          <p className="text-[11px] text-zinc-600 uppercase tracking-wider font-medium mt-0.5">{group.player_position}</p>
         </div>
 
         <span className="hidden sm:block text-[10px] text-zinc-600 font-editorial-mono shrink-0">
