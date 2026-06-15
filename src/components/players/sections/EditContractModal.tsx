@@ -101,27 +101,23 @@ export function EditContractModal({
     const file = e.target.files?.[0];
     if (!file || !contract) return;
 
-    const ext = file.name.split(".").pop();
-    const path = `${playerId}/${contract.id}.${ext}`;
+    const ext = file.name.split(".").pop() ?? "pdf";
+    const storagePath = `${playerId}/${contract.id}.${ext}`;
 
     setIsUploading(true);
     try {
       const { error: upErr } = await supabase.storage
         .from("contracts")
-        .upload(path, file, { upsert: true });
+        .upload(storagePath, file, { upsert: true });
       if (upErr) throw upErr;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from("contracts")
-        .getPublicUrl(path);
 
       const { error: dbErr } = await supabase
         .from("player_contract_history")
-        .update({ contract_file_url: publicUrl })
+        .update({ contract_file_url: storagePath })
         .eq("id", contract.id);
       if (dbErr) throw dbErr;
 
-      setFileUrl(publicUrl);
+      setFileUrl(storagePath);
       toast.success("Contrato enviado com sucesso");
       onSuccess();
     } catch {
@@ -130,6 +126,18 @@ export function EditContractModal({
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
+  };
+
+  const handleViewFile = async () => {
+    if (!fileUrl) return;
+    const { data, error } = await supabase.storage
+      .from("contracts")
+      .createSignedUrl(fileUrl, 3600);
+    if (error || !data?.signedUrl) {
+      toast.error("Erro ao abrir o arquivo");
+      return;
+    }
+    window.open(data.signedUrl, "_blank");
   };
 
   const handleSave = async () => {
@@ -336,7 +344,7 @@ export function EditContractModal({
                   variant="outline"
                   size="sm"
                   className="gap-2 border-zinc-700 text-zinc-300 hover:bg-zinc-800"
-                  onClick={() => window.open(fileUrl, "_blank")}
+                  onClick={handleViewFile}
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
                   Visualizar
