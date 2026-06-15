@@ -9,6 +9,8 @@ export interface PlayerContractGroup {
   player_position: string;
   agent_name: string | null;
   agent_contact: string | null;
+  m3_contract_start: string | null;
+  m3_contract_end: string | null;
   club_contracts: ContractWithPlayer[];
   worst_status: "expired" | "expiring" | "active" | "no_end_date";
 }
@@ -29,7 +31,7 @@ function worstStatus(contracts: ContractWithPlayer[]): PlayerContractGroup["wors
 
 export function useContractsByPlayer(filterStatus?: string, filterDays?: number) {
   const [allRaw, setAllRaw] = useState<ContractWithPlayer[]>([]);
-  const [agentMap, setAgentMap] = useState<Record<string, { agent_name: string | null; agent_contact: string | null }>>({});
+  const [agentMap, setAgentMap] = useState<Record<string, { agent_name: string | null; agent_contact: string | null; m3_contract_start: string | null; m3_contract_end: string | null }>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [counts, setCounts] = useState({ total: 0, expired: 0, expiring: 0, active: 0 });
@@ -44,7 +46,8 @@ export function useContractsByPlayer(filterStatus?: string, filterDays?: number)
           .select(`
             id, player_id, club_name, contract_type, start_date, end_date,
             players!player_contract_history_player_id_fkey (
-              full_name, photo_url, position, is_archived, agent_name, agent_contact
+              full_name, photo_url, position, is_archived, agent_name, agent_contact,
+              m3_contract_start, m3_contract_end
             )
           `)
           .order("end_date", { ascending: true, nullsFirst: false });
@@ -54,7 +57,7 @@ export function useContractsByPlayer(filterStatus?: string, filterDays?: number)
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        const newAgentMap: Record<string, { agent_name: string | null; agent_contact: string | null }> = {};
+        const newAgentMap: Record<string, { agent_name: string | null; agent_contact: string | null; m3_contract_start: string | null; m3_contract_end: string | null }> = {};
 
         const processed: ContractWithPlayer[] = (data || [])
           .filter((c: any) => !c.players?.is_archived)
@@ -63,6 +66,8 @@ export function useContractsByPlayer(filterStatus?: string, filterDays?: number)
               newAgentMap[c.player_id] = {
                 agent_name: c.players?.agent_name ?? null,
                 agent_contact: c.players?.agent_contact ?? null,
+                m3_contract_start: c.players?.m3_contract_start ?? null,
+                m3_contract_end: c.players?.m3_contract_end ?? null,
               };
             }
 
@@ -131,6 +136,8 @@ export function useContractsByPlayer(filterStatus?: string, filterDays?: number)
           player_position: c.player_position,
           agent_name: agentMap[c.player_id]?.agent_name ?? null,
           agent_contact: agentMap[c.player_id]?.agent_contact ?? null,
+          m3_contract_start: agentMap[c.player_id]?.m3_contract_start ?? null,
+          m3_contract_end: agentMap[c.player_id]?.m3_contract_end ?? null,
           club_contracts: [],
           worst_status: "no_end_date",
         });

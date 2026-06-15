@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ChevronDown, Building2, Briefcase, Eye, Phone, User } from "lucide-react";
+import { ChevronDown, Building2, Briefcase, Eye, CalendarClock } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ContractStatusBadge } from "./ContractStatusBadge";
 import { cn } from "@/lib/utils";
@@ -30,7 +30,15 @@ export function AthleteContractRow({ group }: AthleteContractRowProps) {
     .toUpperCase();
 
   const worstContract = group.club_contracts.find(c => c.status === group.worst_status);
-  const hasAgentInfo = group.agent_name || group.agent_contact;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const m3Days = group.m3_contract_end
+    ? Math.ceil((new Date(group.m3_contract_end + "T00:00:00").getTime() - today.getTime()) / 86400000)
+    : null;
+  const m3Expired  = m3Days !== null && m3Days < 0;
+  const m3Critical = m3Days !== null && m3Days >= 0 && m3Days <= 30;
+  const m3Warning  = m3Days !== null && m3Days > 30 && m3Days <= 90;
 
   return (
     <div className={cn(
@@ -111,33 +119,50 @@ export function AthleteContractRow({ group }: AthleteContractRowProps) {
           {/* Divider */}
           <div className="mx-4 border-t border-zinc-800/40" />
 
-          {/* Agência */}
+          {/* Agência / Contrato M3 */}
           <div className="px-4 pt-3 pb-4">
             <div className="flex items-center gap-1.5 mb-3">
               <Briefcase size={11} className="text-zinc-500" />
               <span className="font-editorial-mono text-[10px] tracking-[0.22em] uppercase text-zinc-500">
-                Agência
+                Contrato M3
               </span>
             </div>
 
-            {hasAgentInfo ? (
-              <div className="rounded-lg border border-zinc-800/50 bg-zinc-950/60 px-3 py-2.5 space-y-1.5">
-                {group.agent_name && (
-                  <div className="flex items-center gap-2">
-                    <User size={11} className="text-zinc-500 shrink-0" />
-                    <p className="text-[13px] font-semibold text-zinc-200">{group.agent_name}</p>
+            {group.m3_contract_end ? (() => {
+              const color = m3Expired || m3Critical ? "#ec4525" : m3Warning ? "#f59e0b" : "#22c55e";
+              const label = m3Expired ? "VENCIDO" : m3Critical ? "CRÍTICO" : m3Warning ? "EXPIRANDO" : "ATIVO";
+              const endFormatted = format(new Date(group.m3_contract_end + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR });
+
+              return (
+                <div className="rounded-lg border bg-zinc-950/60 px-3 py-2.5"
+                  style={{ borderColor: `${color}40` }}>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <CalendarClock size={11} style={{ color }} className="shrink-0" />
+                      <div>
+                        <p className="text-[10px] text-zinc-500 font-editorial-mono uppercase tracking-wider">
+                          Vencimento
+                        </p>
+                        <p className="text-[13px] font-semibold" style={{ color }}>
+                          {endFormatted}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="font-editorial-mono text-[9px] uppercase tracking-wider border px-1.5 py-0.5 rounded-md shrink-0"
+                      style={{ color, borderColor: color }}>
+                      {label}
+                    </span>
                   </div>
-                )}
-                {group.agent_contact && (
-                  <div className="flex items-center gap-2">
-                    <Phone size={11} className="text-zinc-500 shrink-0" />
-                    <p className="text-[12px] text-zinc-400">{group.agent_contact}</p>
-                  </div>
-                )}
-              </div>
-            ) : (
+                  {(m3Expired || m3Critical || m3Warning) && m3Days !== null && (
+                    <p className="font-editorial-mono text-[10px] mt-1.5" style={{ color }}>
+                      {m3Expired ? `Expirou há ${Math.abs(m3Days)} dias` : `${m3Days} dias restantes`}
+                    </p>
+                  )}
+                </div>
+              );
+            })() : (
               <p className="text-[11px] text-zinc-600 italic font-editorial-mono">
-                Sem agente registrado
+                Contrato com M3 não registrado
               </p>
             )}
           </div>
