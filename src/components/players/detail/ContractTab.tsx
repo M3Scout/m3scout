@@ -5,7 +5,8 @@ import { parseDateSafe, formatDateMediumBR } from "@/lib/dateUtils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useAuth } from "@/hooks/authContext";
-import { ChevronUp, ChevronDown } from "lucide-react";
+import { ChevronUp, ChevronDown, Pencil } from "lucide-react";
+import { EditContractModal } from "@/components/players/sections/EditContractModal";
 
 // ─── Design tokens ───────────────────────────────────────────────────────────
 const ACCENT      = "#ec4525";
@@ -121,6 +122,7 @@ export function ContractTab({
   const { isAdmin, isScout } = useAuth();
   const canEdit = isAdmin || isScout;
   const [reordering, setReordering] = useState(false);
+  const [editingContract, setEditingContract] = useState<ContractRecord | null>(null);
 
   const { data: history = [], isLoading } = useQuery({
     queryKey: ["player-contract-history", playerId],
@@ -280,6 +282,20 @@ export function ContractTab({
       <div>
         <SectionHead n="02">HISTÓRICO DE CLUBES</SectionHead>
 
+        {/* Edit modal — rendered outside the list to avoid z-index issues */}
+        <EditContractModal
+          open={!!editingContract}
+          onOpenChange={(open) => !open && setEditingContract(null)}
+          contract={editingContract ? {
+            ...editingContract,
+            is_current: editingContract.is_current ?? false,
+            is_archived: editingContract.is_archived ?? false,
+          } : null}
+          playerId={playerId}
+          onSuccess={() => queryClient.invalidateQueries({ queryKey: ["player-contract-history", playerId] })}
+          canEdit={canEdit}
+        />
+
         {isLoading ? (
           <div className="rounded-xl border py-8 flex items-center justify-center" style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
             <span className="font-editorial-mono text-[10px] uppercase tracking-wider" style={{ color: MUTED }}>CARREGANDO...</span>
@@ -360,6 +376,16 @@ export function ContractTab({
                           style={{ color: typeCfg.color, borderColor: typeCfg.color }}>
                           {typeCfg.label}
                         </span>
+                        {canEdit && (
+                          <button
+                            onClick={() => setEditingContract(c)}
+                            className="flex items-center justify-center w-6 h-6 rounded-md transition-colors hover:bg-white/5"
+                            style={{ color: MUTED }}
+                            title="Editar contrato"
+                          >
+                            <Pencil className="w-3 h-3" />
+                          </button>
+                        )}
                         {canEdit && history.length > 1 && (
                           <div className="flex flex-col" style={{ gap: "1px" }}>
                             <button onClick={() => handleReorder(i, "up")} disabled={i === 0 || reordering}
