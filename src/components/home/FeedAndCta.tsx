@@ -175,7 +175,14 @@ export function FeedAndCta() {
             </header>
 
             <div className="feed__grid">
-              {posts.slice(0, 12).map((p, i) => {
+              {isLoading &&
+                Array.from({ length: skeletonCount }).map((_, i) => (
+                  <div key={`sk-${i}`} className="post post--skeleton" aria-hidden="true">
+                    <div className="post__shimmer" />
+                  </div>
+                ))}
+
+              {visiblePosts.map((p, i) => {
                 const tag = TAGS[i % TAGS.length];
                 const img =
                   p.media_type === "VIDEO" && p.thumbnail_url
@@ -197,13 +204,13 @@ export function FeedAndCta() {
                       alt={caption}
                       className="post__media"
                       loading="lazy"
+                      decoding="async"
                       referrerPolicy="no-referrer"
                       onError={(e) => {
                         const el = e.currentTarget;
                         const fallback = buildUnsplash(
                           FALLBACK_PHOTOS[i % FALLBACK_PHOTOS.length]
                         );
-                        // Avoid infinite loop if fallback also fails
                         if (el.src !== fallback) {
                           el.src = fallback;
                         } else {
@@ -219,6 +226,9 @@ export function FeedAndCta() {
                 );
               })}
             </div>
+            {!isLoading && posts && visibleCount < Math.min(posts.length, MAX_POSTS) && (
+              <div ref={sentinelRef} className="feed__sentinel" aria-hidden="true" />
+            )}
           </div>
         </div>
       </section>
