@@ -64,16 +64,9 @@ export function AthleteContractRow({ group }: AthleteContractRowProps) {
           <p className="text-[11px] text-zinc-600 uppercase tracking-wider font-medium mt-0.5">{group.player_position}</p>
         </div>
 
-        <span className="hidden sm:block text-[10px] text-zinc-600 font-editorial-mono shrink-0">
+        <span className="text-[10px] text-zinc-600 font-editorial-mono shrink-0">
           {group.club_contracts.length} contrato{group.club_contracts.length !== 1 ? "s" : ""}
         </span>
-
-        <div className="shrink-0">
-          <ContractStatusBadge
-            status={group.worst_status}
-            daysToExpire={worstContract?.days_to_expire ?? null}
-          />
-        </div>
 
         <ChevronDown
           size={15}
