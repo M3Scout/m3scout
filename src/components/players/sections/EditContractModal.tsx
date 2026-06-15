@@ -1,5 +1,29 @@
 import { useState, useEffect } from "react";
 import { Building2, Loader2, Archive, Star } from "lucide-react";
+
+// ─── Currency helpers (BRL) ───────────────────────────────────────────────────
+function formatBRL(value: number): string {
+  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
+}
+
+/** Converts any stored value to a BRL display string.
+ *  Handles plain integers (stored as "3208000" → R$ 3.208.000,00)
+ *  and already-formatted strings (kept as-is for re-display). */
+function initBRL(stored: string | null | undefined): string {
+  if (!stored) return "";
+  // Already looks like currency — return it directly
+  if (stored.includes("R$")) return stored;
+  // Pure integer → treat as whole reais
+  const n = parseInt(stored.replace(/\D/g, ""), 10);
+  return isNaN(n) ? stored : formatBRL(n);
+}
+
+/** Real-time formatter: extracts digits from typed input and formats as BRL cents. */
+function handleBRLInput(raw: string): string {
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return "";
+  return formatBRL(parseInt(digits, 10) / 100);
+}
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -61,8 +85,8 @@ export function EditContractModal({
         contract_type: contract.contract_type || "permanent",
         start_date: contract.start_date || "",
         end_date: contract.end_date || "",
-        transfer_fee: contract.transfer_fee || "",
-        salary_info: contract.salary_info || "",
+        transfer_fee: initBRL(contract.transfer_fee),
+        salary_info: initBRL(contract.salary_info),
         notes: contract.notes || "",
       });
     }
@@ -305,9 +329,10 @@ export function EditContractModal({
               <Label htmlFor="edit_transfer_fee" className="text-xs text-zinc-400">Valor da Transferência</Label>
               <Input
                 id="edit_transfer_fee"
-                placeholder="€ 5M"
+                placeholder="R$ 0,00"
+                inputMode="numeric"
                 value={formData.transfer_fee}
-                onChange={(e) => setFormData({ ...formData, transfer_fee: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, transfer_fee: handleBRLInput(e.target.value) })}
                 className="h-11 bg-zinc-900/50 border-zinc-800"
                 disabled={!canEdit}
               />
@@ -316,9 +341,10 @@ export function EditContractModal({
               <Label htmlFor="edit_salary_info" className="text-xs text-zinc-400">Salário</Label>
               <Input
                 id="edit_salary_info"
-                placeholder="€ 50k/mês"
+                placeholder="R$ 0,00"
+                inputMode="numeric"
                 value={formData.salary_info}
-                onChange={(e) => setFormData({ ...formData, salary_info: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, salary_info: handleBRLInput(e.target.value) })}
                 className="h-11 bg-zinc-900/50 border-zinc-800"
                 disabled={!canEdit}
               />
