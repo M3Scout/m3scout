@@ -44,13 +44,13 @@ export function useContractsByPlayer(filterStatus?: string, filterDays?: number)
         const { data, error: fetchError } = await supabase
           .from("player_contract_history")
           .select(`
-            id, player_id, club_name, contract_type, start_date, end_date,
+            id, player_id, club_name, contract_type, start_date, end_date, sort_order,
             players!player_contract_history_player_id_fkey (
               full_name, photo_url, position, is_archived, agent_name, agent_contact,
               m3_contract_start, m3_contract_end
             )
           `)
-          .order("end_date", { ascending: true, nullsFirst: false });
+          .order("sort_order", { ascending: true, nullsFirst: false });
 
         if (fetchError) throw fetchError;
 
@@ -93,6 +93,7 @@ export function useContractsByPlayer(filterStatus?: string, filterDays?: number)
               end_date: c.end_date,
               days_to_expire: daysToExpire,
               status,
+              sort_order: c.sort_order ?? null,
             };
           });
 
@@ -145,10 +146,15 @@ export function useContractsByPlayer(filterStatus?: string, filterDays?: number)
       map.get(c.player_id)!.club_contracts.push(c);
     }
 
-    let groups = Array.from(map.values()).map(g => ({
-      ...g,
-      worst_status: worstStatus(g.club_contracts),
-    }));
+    let groups = Array.from(map.values()).map(g => {
+      const sorted = [...g.club_contracts].sort((a, b) => {
+        if (a.sort_order !== null && b.sort_order !== null) return a.sort_order - b.sort_order;
+        if (a.sort_order !== null) return -1;
+        if (b.sort_order !== null) return 1;
+        return new Date(b.start_date).getTime() - new Date(a.start_date).getTime();
+      });
+      return { ...g, club_contracts: sorted, worst_status: worstStatus(g.club_contracts) };
+    });
 
     // Apply filter: keep athletes that have ≥1 contract matching the filter
     if (filterStatus) {

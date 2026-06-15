@@ -13,6 +13,7 @@ export interface ContractWithPlayer {
   end_date: string | null;
   days_to_expire: number | null;
   status: "expired" | "expiring" | "active" | "no_end_date";
+  sort_order: number | null;
 }
 
 export function useContracts(filterStatus?: string, filterDays?: number) {
