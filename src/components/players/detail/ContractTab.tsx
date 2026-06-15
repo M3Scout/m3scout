@@ -1,11 +1,11 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { parseDateSafe, formatDateMediumBR } from "@/lib/dateUtils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useAuth } from "@/hooks/authContext";
-import { ChevronUp, ChevronDown, Pencil, Loader2 } from "lucide-react";
+import { ChevronUp, ChevronDown, Pencil, Loader2, Upload, ExternalLink, FileText } from "lucide-react";
 import { EditContractModal } from "@/components/players/sections/EditContractModal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -111,6 +111,7 @@ interface ContractTabProps {
   contractNotes: string | null;
   m3ContractStart: string | null;
   m3ContractEnd: string | null;
+  m3ContractFileUrl: string | null;
   onPlayerUpdate: () => void;
 }
 
@@ -128,6 +129,7 @@ export function ContractTab({
   contractNotes,
   m3ContractStart,
   m3ContractEnd,
+  m3ContractFileUrl,
   onPlayerUpdate,
 }: ContractTabProps) {
   const queryClient = useQueryClient();
@@ -139,6 +141,8 @@ export function ContractTab({
   const [m3StartDraft, setM3StartDraft] = useState("");
   const [m3EndDraft, setM3EndDraft] = useState("");
   const [m3Saving, setM3Saving] = useState(false);
+  const [m3Uploading, setM3Uploading] = useState(false);
+  const m3FileRef = useRef<HTMLInputElement>(null);
 
   const openM3Editor = () => {
     setM3StartDraft(m3ContractStart ?? "");
@@ -165,6 +169,41 @@ export function ContractTab({
     } finally {
       setM3Saving(false);
     }
+  };
+
+  const handleM3FileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const ext = file.name.split(".").pop() ?? "pdf";
+    const storagePath = `m3/${playerId}.${ext}`;
+    setM3Uploading(true);
+    try {
+      const { error: upErr } = await supabase.storage
+        .from("contracts")
+        .upload(storagePath, file, { upsert: true });
+      if (upErr) throw upErr;
+      const { error: dbErr } = await supabase
+        .from("players")
+        .update({ m3_contract_file_url: storagePath })
+        .eq("id", playerId);
+      if (dbErr) throw dbErr;
+      toast.success("Arquivo enviado com sucesso");
+      onPlayerUpdate();
+    } catch {
+      toast.error("Erro ao enviar o arquivo");
+    } finally {
+      setM3Uploading(false);
+      if (m3FileRef.current) m3FileRef.current.value = "";
+    }
+  };
+
+  const viewM3File = async () => {
+    if (!m3ContractFileUrl) return;
+    const { data, error } = await supabase.storage
+      .from("contracts")
+      .createSignedUrl(m3ContractFileUrl, 3600);
+    if (error || !data?.signedUrl) { toast.error("Erro ao abrir o arquivo"); return; }
+    window.open(data.signedUrl, "_blank");
   };
 
   const { data: history = [], isLoading } = useQuery({
@@ -505,6 +544,54 @@ export function ContractTab({
                   className="h-11 bg-zinc-900/50 border-zinc-800 font-editorial-mono"
                 />
               </div>
+
+              {/* Arquivo do contrato M3 */}
+              <div className="space-y-2">
+                <Label className="text-xs text-zinc-400 font-editorial-mono uppercase tracking-wider">
+                  Arquivo do Contrato
+                </Label>
+                <div className="flex gap-2">
+                  <input
+                    ref={m3FileRef}
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    className="hidden"
+                    onChange={handleM3FileUpload}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 gap-2 border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+                    onClick={() => m3FileRef.current?.click()}
+                    disabled={m3Uploading}
+                  >
+                    {m3Uploading
+                      ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Enviando...</>
+                      : <><Upload className="w-3.5 h-3.5" />{m3ContractFileUrl ? "Substituir" : "Enviar contrato"}</>
+                    }
+                  </Button>
+                  {m3ContractFileUrl && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="gap-2 border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+                      onClick={viewM3File}
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      Visualizar
+                    </Button>
+                  )}
+                </div>
+                {m3ContractFileUrl && (
+                  <div className="flex items-center gap-1.5 text-[11px] text-zinc-500">
+                    <FileText className="w-3 h-3 shrink-0" />
+                    <span>Arquivo anexado</span>
+                  </div>
+                )}
+              </div>
+
               <Button onClick={saveM3} disabled={m3Saving} className="w-full h-11">
                 {m3Saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Salvando...</> : "Salvar"}
               </Button>

@@ -1840,6 +1840,7 @@ export type Database = {
           max_speed: number | null
           medical_notes: string | null
           m3_contract_end: string | null
+          m3_contract_file_url: string | null
           m3_contract_start: string | null
           muscle_mass: number | null
           nationality: string
@@ -1901,6 +1902,7 @@ export type Database = {
           max_speed?: number | null
           medical_notes?: string | null
           m3_contract_end?: string | null
+          m3_contract_file_url?: string | null
           m3_contract_start?: string | null
           muscle_mass?: number | null
           nationality: string
@@ -1962,6 +1964,7 @@ export type Database = {
           max_speed?: number | null
           medical_notes?: string | null
           m3_contract_end?: string | null
+          m3_contract_file_url?: string | null
           m3_contract_start?: string | null
           muscle_mass?: number | null
           nationality?: string
