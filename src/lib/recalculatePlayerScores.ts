@@ -381,7 +381,7 @@ export async function recalculatePlayerScores(
         tat_score_100:  output.tat,
         cri_score_100:  output.cri,
         attr_confidence: output.confidence,
-        details: {
+        details: ({
           minutes:        output.minutes,
           matches:        output.matches,
           per90:          output.per90,
@@ -389,7 +389,7 @@ export async function recalculatePlayerScores(
           raw_stats:      totalStats,
           engine_version: "v25-ts",
           data_source:    "mergeSeasonRows(live + player_stats)",
-        },
+        } as any),
         updated_at: new Date().toISOString(),
       }]);
 
