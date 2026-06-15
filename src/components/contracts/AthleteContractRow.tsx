@@ -51,7 +51,7 @@ export function AthleteContractRow({ group }: AthleteContractRowProps) {
         className="w-full flex items-center gap-4 px-4 py-4"
         onClick={() => setExpanded(v => !v)}
       >
-        <div className="h-[62px] w-[50px] rounded-lg border border-zinc-800 bg-zinc-800 shrink-0 overflow-hidden flex items-center justify-center">
+        <div className="h-[62px] w-[62px] rounded-lg border border-zinc-800 bg-zinc-800 shrink-0 overflow-hidden flex items-center justify-center">
           {group.player_photo_url ? (
             <img src={group.player_photo_url} alt={group.player_name} className="h-full w-full object-cover object-top" />
           ) : (
