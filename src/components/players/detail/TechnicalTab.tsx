@@ -1,219 +1,16 @@
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  fetchPlayerAllAttributeScores,
-  type AttributeScoresData,
-} from "@/lib/attributeScores";
+import { useComparePlayerStats } from "@/hooks/useComparePlayerStats";
+import { AthleteHighlightsSection } from "@/components/players/public/AthleteHighlightsSection";
+import { AthleteGamePhasesSection } from "@/components/players/public/AthleteGamePhasesSection";
 import { formatDateMediumBR } from "@/lib/dateUtils";
 
-// ─── Design tokens ───────────────────────────────────────────────────────────
-
-const ACCENT = "#E5173F";
+const ACCENT = "#ec4525";
 const BORDER = "#1C1C1C";
 const MUTED  = "#6B6560";
 const TEXT   = "#F2EDE4";
 const BG     = "#0A0A0A";
-
-// ─── Category & sub-attribute config ─────────────────────────────────────────
-
-const CATEGORIES = [
-  {
-    key: "ata" as const,
-    scoreKey: "ata_score_100" as const,
-    label: "ATAQUE",
-    attrs: [
-      { key: "goals_p90",         label: "Gols" },
-      { key: "assists_p90",       label: "Assistências" },
-      { key: "shots_p90",         label: "Finalizações" },
-      { key: "shots_on_target_p90", label: "Fin. no Gol" },
-    ],
-  },
-  {
-    key: "cri" as const,
-    scoreKey: "cri_score_100" as const,
-    label: "CRIATIVIDADE",
-    attrs: [
-      { key: "key_passes_p90",      label: "Passes-chave" },
-      { key: "chances_created_p90", label: "Chances Criadas" },
-      { key: "dribble_success_rate", label: "Dribles" },
-    ],
-  },
-  {
-    key: "tec" as const,
-    scoreKey: "tec_score_100" as const,
-    label: "TÉCNICA",
-    attrs: [
-      { key: "pass_accuracy", label: "Precisão de Passe" },
-      { key: "passes_p90",    label: "Volume de Passe" },
-      { key: "ball_control",  label: "Controle de Bola" },
-    ],
-  },
-  {
-    key: "def" as const,
-    scoreKey: "def_score_100" as const,
-    label: "DEFESA",
-    attrs: [
-      { key: "tackles_p90",       label: "Desarmes" },
-      { key: "interceptions_p90", label: "Interceptações" },
-      { key: "recoveries_p90",    label: "Recuperações" },
-      { key: "duels_win_rate",    label: "Duelos" },
-      { key: "clearances_p90",    label: "Cortes" },
-    ],
-  },
-  {
-    key: "tat" as const,
-    scoreKey: "tat_score_100" as const,
-    label: "TÁTICO",
-    attrs: [
-      { key: "yellow_cards_p90",    label: "Amarelos" },
-      { key: "red_cards_p90",       label: "Vermelhos" },
-      { key: "fouls_committed_p90", label: "Faltas Cometidas" },
-      { key: "fouls_drawn_p90",     label: "Faltas Sofridas" },
-      { key: "possession_lost_p90", label: "Posse Perdida" },
-    ],
-  },
-] as const;
-
-// ─── Aggregation helpers ──────────────────────────────────────────────────────
-
-interface AggregatedScores {
-  ata: number; tec: number; def: number; tat: number; cri: number;
-  subScores: Record<string, number>;
-  hasData: boolean;
-}
-
-function aggregateScores(rows: AttributeScoresData[]): AggregatedScores {
-  if (!rows.length) return { ata: 0, tec: 0, def: 0, tat: 0, cri: 0, subScores: {}, hasData: false };
-
-  let totalMin = 0;
-  let wAta = 0, wTec = 0, wDef = 0, wTat = 0, wCri = 0;
-  const wSub: Record<string, number> = {};
-
-  rows.forEach(r => {
-    const mins = r.details?.minutes ?? 60;
-    totalMin += mins;
-    wAta += (r.ata_score_100 ?? 0) * mins;
-    wTec += (r.tec_score_100 ?? 0) * mins;
-    wDef += (r.def_score_100 ?? 0) * mins;
-    wTat += (r.tat_score_100 ?? 0) * mins;
-    wCri += (r.cri_score_100 ?? 0) * mins;
-
-    const raw = (r.details as { raw_scores?: Record<string, number> } | null)?.raw_scores ?? {};
-    Object.entries(raw).forEach(([k, v]) => {
-      wSub[k] = (wSub[k] ?? 0) + v * mins;
-    });
-  });
-
-  const d = totalMin || 1;
-  const subScores: Record<string, number> = {};
-  Object.entries(wSub).forEach(([k, v]) => { subScores[k] = v / d; });
-
-  return {
-    ata: wAta / d, tec: wTec / d, def: wDef / d,
-    tat: wTat / d, cri: wCri / d,
-    subScores,
-    hasData: totalMin > 0,
-  };
-}
-
-// ─── Pentagon radar (same math as AtributoRadar.tsx) ─────────────────────────
-
-const CX = 115, CY = 130, R = 86;
-const LABEL_R = R + 20;
-const RADAR_AXES = [
-  { key: "ata" as const, label: "ATA", angleDeg: -90  },
-  { key: "tec" as const, label: "TEC", angleDeg: -18  },
-  { key: "tat" as const, label: "TAT", angleDeg:  54  },
-  { key: "def" as const, label: "DEF", angleDeg:  126 },
-  { key: "cri" as const, label: "CRI", angleDeg:  198 },
-] as const;
-
-const toRad = (deg: number) => (deg * Math.PI) / 180;
-const pt = (r: number, deg: number) => ({ x: CX + r * Math.cos(toRad(deg)), y: CY + r * Math.sin(toRad(deg)) });
-
-function pentagonPath(scores: number[]) {
-  return RADAR_AXES.map((a, i) => {
-    const { x, y } = pt(((scores[i] ?? 0) / 100) * R, a.angleDeg);
-    return `${i === 0 ? "M" : "L"}${x.toFixed(2)},${y.toFixed(2)}`;
-  }).join(" ") + " Z";
-}
-
-function gridPath(f: number) {
-  return RADAR_AXES.map((a, i) => {
-    const { x, y } = pt(R * f, a.angleDeg);
-    return `${i === 0 ? "M" : "L"}${x.toFixed(2)},${y.toFixed(2)}`;
-  }).join(" ") + " Z";
-}
-
-function TechRadar({ scores }: { scores: number[] }) {
-  return (
-    <svg viewBox="0 0 230 270" className="w-full" style={{ maxHeight: 270 }}>
-      {/* Grid rings */}
-      {[0.25, 0.5, 0.75, 1].map(f => (
-        <path key={f} d={gridPath(f)} fill="none" stroke={BORDER} strokeWidth="1" />
-      ))}
-      {/* Axis spokes */}
-      {RADAR_AXES.map(a => {
-        const outer = pt(R, a.angleDeg);
-        return (
-          <line key={a.key} x1={CX} y1={CY} x2={outer.x.toFixed(2)} y2={outer.y.toFixed(2)} stroke={BORDER} strokeWidth="1" />
-        );
-      })}
-      {/* Data polygon */}
-      <path d={pentagonPath(scores)} fill="rgba(229,23,63,0.18)" stroke={ACCENT} strokeWidth="1.5" />
-      {/* Vertex dots */}
-      {RADAR_AXES.map((a, i) => {
-        const r = ((scores[i] ?? 0) / 100) * R;
-        const { x, y } = pt(r, a.angleDeg);
-        return <circle key={`dot-${a.key}`} cx={x.toFixed(2)} cy={y.toFixed(2)} r="3" fill={ACCENT} />;
-      })}
-      {/* Axis labels + values — entirely outside the polygon */}
-      {RADAR_AXES.map((a, i) => {
-        const { x, y } = pt(LABEL_R, a.angleDeg);
-        return (
-          <text key={`lv-${a.key}`} textAnchor="middle">
-            <tspan
-              x={x.toFixed(2)}
-              y={y.toFixed(2)}
-              fontSize="13"
-              fontFamily="Basis Grotesque Pro, sans-serif"
-              fontWeight="700"
-              fill={MUTED}
-              letterSpacing="1"
-            >
-              {a.label}
-            </tspan>
-            <tspan
-              x={x.toFixed(2)}
-              dy="16"
-              fontSize="11"
-              fontFamily="Basis Grotesque Pro, sans-serif"
-              fontWeight="700"
-              fill={TEXT}
-            >
-              {String(Math.round(scores[i] ?? 0))}
-            </tspan>
-          </text>
-        );
-      })}
-    </svg>
-  );
-}
-
-// ─── Section header ───────────────────────────────────────────────────────────
-
-function SectionHeader({ title }: { title: string }) {
-  return (
-    <div className="flex items-center gap-3 mb-4">
-      <div className="w-[3px] h-[14px]" style={{ background: ACCENT }} />
-      <h3 className="font-barlow text-[13px] uppercase tracking-widest" style={{ color: TEXT }}>
-        {title}
-      </h3>
-    </div>
-  );
-}
-
-// ─── Scouting report type ─────────────────────────────────────────────────────
 
 interface ReportRow {
   id: string;
@@ -224,22 +21,82 @@ interface ReportRow {
   scout_id: string;
 }
 
-// ─── Props ────────────────────────────────────────────────────────────────────
-
 interface TechnicalTabProps {
   playerId: string;
+  playerPosition?: string;
+  strengths?: string[] | null;
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
-
-export function TechnicalTab({ playerId }: TechnicalTabProps) {
-  // Attribute scores
-  const { data: attrRows = [], isLoading: attrLoading } = useQuery({
-    queryKey: ["player-attr-scores-tech", playerId],
-    queryFn: () => fetchPlayerAllAttributeScores(playerId),
+export function TechnicalTab({ playerId, playerPosition, strengths }: TechnicalTabProps) {
+  // Season stats for the phases section
+  const { rows: mergedRows } = useComparePlayerStats({
+    playerId,
+    seasonFilter: "all",
+    competitionFilter: "all",
   });
 
-  // Scouting reports
+  const careerStats = useMemo(() => {
+    const acc: Record<number, {
+      season_year: number; matches: number; minutes: number; goals: number; assists: number;
+      yellow_cards: number; red_cards: number; steals: number; tackles: number;
+      interceptions: number; recoveries: number; shots: number; shots_on_target: number;
+      key_passes: number; chances_created: number; successful_dribbles: number;
+      total_dribbles: number; accurate_passes: number; total_passes: number;
+      long_passes_accurate: number; long_passes_total: number; clearances: number;
+      aerial_duels_won: number; aerial_duels_total: number; fouls_committed: number;
+      saves: number; goals_conceded: number; clean_sheets: number;
+      penalties_saved: number; penalties_won: number;
+    }> = {};
+
+    for (const s of mergedRows) {
+      const year = s.season_year;
+      if (!acc[year]) {
+        acc[year] = {
+          season_year: year,
+          matches: 0, minutes: 0, goals: 0, assists: 0, yellow_cards: 0, red_cards: 0,
+          steals: 0, tackles: 0, interceptions: 0, recoveries: 0, shots: 0,
+          shots_on_target: 0, key_passes: 0, chances_created: 0,
+          successful_dribbles: 0, total_dribbles: 0, accurate_passes: 0, total_passes: 0,
+          long_passes_accurate: 0, long_passes_total: 0, clearances: 0,
+          aerial_duels_won: 0, aerial_duels_total: 0, fouls_committed: 0,
+          saves: 0, goals_conceded: 0, clean_sheets: 0, penalties_saved: 0, penalties_won: 0,
+        };
+      }
+      const c = acc[year];
+      c.matches += s.matches;           c.minutes += s.minutes;
+      c.goals += s.goals;               c.assists += s.assists;
+      c.yellow_cards += s.yellow_cards; c.red_cards += s.red_cards;
+      c.steals += s.steals;             c.tackles += s.tackles;
+      c.interceptions += s.interceptions; c.recoveries += s.recoveries;
+      c.shots += s.shots;               c.shots_on_target += s.shots_on_target;
+      c.key_passes += s.key_passes;     c.chances_created += s.chances_created;
+      c.successful_dribbles += s.successful_dribbles;
+      c.total_dribbles += s.total_dribbles;
+      c.accurate_passes += s.accurate_passes;
+      c.total_passes += s.total_passes;
+      c.long_passes_accurate += s.long_passes_accurate;
+      c.long_passes_total += s.long_passes_total;
+      c.clearances += s.clearances;
+      c.aerial_duels_won += s.aerial_duels_won;
+      c.aerial_duels_total += s.aerial_duels_total;
+      c.fouls_committed += s.fouls_committed;
+      c.saves += s.saves;               c.goals_conceded += s.goals_conceded;
+      c.clean_sheets += s.clean_sheets; c.penalties_saved += s.penalties_saved;
+      c.penalties_won += s.penalties_won;
+    }
+    return Object.values(acc).sort((a, b) => b.season_year - a.season_year);
+  }, [mergedRows]);
+
+  const latestAvailableSeasonYear = careerStats.length > 0 ? careerStats[0].season_year : null;
+
+  const [phasesYear, setPhasesYear] = useState<number | null>(null);
+  const currentSeasonStats = useMemo(() => {
+    if (!careerStats.length) return null;
+    if (phasesYear) return careerStats.find(s => s.season_year === phasesYear) ?? careerStats[0];
+    return careerStats[0];
+  }, [careerStats, phasesYear]);
+
+  // Scouting reports for the history table
   const { data: reports = [], isLoading: reportsLoading } = useQuery({
     queryKey: ["scouting-reports-tech", playerId],
     queryFn: async () => {
@@ -254,7 +111,6 @@ export function TechnicalTab({ playerId }: TechnicalTabProps) {
     },
   });
 
-  // Fetch scout names from distinct scout_ids
   const scoutIds = [...new Set(reports.map(r => r.scout_id).filter(Boolean))];
   const { data: scouts = [] } = useQuery({
     queryKey: ["scout-profiles-tech", scoutIds.join(",")],
@@ -271,161 +127,39 @@ export function TechnicalTab({ playerId }: TechnicalTabProps) {
 
   const scoutMap = Object.fromEntries(scouts.map(s => [s.user_id, s.full_name ?? "Scout"]));
 
-  // Aggregate scores
-  const agg = aggregateScores(attrRows);
-  const radarScores = [agg.ata, agg.tec, agg.tat, agg.def, agg.cri];
-
-  // KPI strip items (same order as categories)
-  const KPI_ITEMS = [
-    { key: "ata", label: "ATAQUE",      value: agg.ata },
-    { key: "tec", label: "TÉCNICA",     value: agg.tec },
-    { key: "def", label: "DEFESA",      value: agg.def },
-    { key: "tat", label: "TÁTICO",      value: agg.tat },
-    { key: "cri", label: "CRIATIVIDADE",value: agg.cri },
-  ];
-
   return (
-    <div className="space-y-8 py-6">
+    <div>
+      {/* ── Mapa de Atributos ─────────────────────────────────────────────── */}
+      <AthleteHighlightsSection
+        playerId={playerId}
+        strengths={strengths ?? null}
+        compact
+        onYearChange={setPhasesYear}
+      />
 
-      {/* ── KPI Strip ──────────────────────────────────────────────────────── */}
-      <div
-        className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5"
-        style={{ borderColor: BORDER, border: `1px solid ${BORDER}` }}
-      >
-        {KPI_ITEMS.map((item, i) => {
-          const val = item.value;
-          const hasVal = agg.hasData;
-          return (
-            <div
-              key={item.key}
-              className="px-3 sm:px-4 py-4 flex flex-col gap-1 min-w-0"
-              style={{
-                borderRight: (i + 1) % 5 !== 0 ? `1px solid ${BORDER}` : undefined,
-                borderTop: i >= 2 ? `1px solid ${BORDER}` : undefined,
-              }}
-            >
-              <span className="font-jetbrains text-[9px] uppercase tracking-widest whitespace-nowrap" style={{ color: MUTED }}>
-                {item.label}
-              </span>
-              {attrLoading ? (
-                <span className="font-jetbrains text-[22px]" style={{ color: MUTED }}>…</span>
-              ) : hasVal ? (
-                <>
-                  <span className="font-jetbrains text-[24px] leading-none tabular-nums" style={{ color: TEXT }}>
-                    {Math.round(val)}
-                  </span>
-                  <div className="mt-1.5 h-[2px]" style={{ background: BORDER }}>
-                    <div
-                      className="h-full"
-                      style={{ width: `${Math.min(val, 100)}%`, background: ACCENT }}
-                    />
-                  </div>
-                </>
-              ) : (
-                <span className="font-jetbrains text-[14px]" style={{ color: MUTED }}>—</span>
-              )}
-            </div>
-          );
-        })}
-      </div>
+      {/* ── Desempenho por Fase ───────────────────────────────────────────── */}
+      <AthleteGamePhasesSection
+        currentSeasonStats={currentSeasonStats}
+        latestAvailableSeasonYear={phasesYear ?? latestAvailableSeasonYear}
+        playerPosition={playerPosition}
+        compact
+      />
 
-      {/* ── Atributos Técnicos ─────────────────────────────────────────────── */}
-      <section>
-        <SectionHeader title="Atributos Técnicos" />
-
-        {/* Radar + category cards in 2-col grid */}
-        <div className="grid gap-0 lg:grid-cols-[240px_1fr]" style={{ border: `1px solid ${BORDER}` }}>
-
-          {/* Radar */}
-          <div
-            className="flex items-center justify-center p-6"
-            style={{ borderRight: `1px solid ${BORDER}` }}
-          >
-            {attrLoading ? (
-              <div className="flex items-center justify-center h-[200px]">
-                <span className="font-jetbrains text-[10px] uppercase tracking-wider" style={{ color: MUTED }}>
-                  CARREGANDO...
-                </span>
-              </div>
-            ) : !agg.hasData ? (
-              <div className="flex flex-col items-center justify-center h-[200px] gap-2 text-center">
-                <span className="font-jetbrains text-[10px] uppercase tracking-wider" style={{ color: MUTED }}>
-                  SEM DADOS
-                </span>
-                <span className="font-jetbrains text-[9px]" style={{ color: MUTED }}>
-                  Nenhuma avaliação computada
-                </span>
-              </div>
-            ) : (
-              <TechRadar scores={radarScores} />
-            )}
-          </div>
-
-          {/* Category attribute cards — 2-col grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2">
-            {CATEGORIES.map((cat, catIdx) => {
-              const catScore = agg[cat.key];
-              const isLastRow = catIdx === CATEGORIES.length - 1;
-              return (
-                <div
-                  key={cat.key}
-                  className="p-4"
-                  style={{
-                    borderBottom: !isLastRow ? `1px solid ${BORDER}` : undefined,
-                    borderLeft: `1px solid ${BORDER}`,
-                  }}
-                >
-                  {/* Category header */}
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="font-barlow text-[11px] uppercase tracking-widest" style={{ color: TEXT }}>
-                      {cat.label}
-                    </span>
-                    <span className="font-jetbrains text-[13px] tabular-nums" style={{ color: agg.hasData ? ACCENT : MUTED }}>
-                      {agg.hasData ? Math.round(catScore) : "—"}
-                    </span>
-                  </div>
-
-                  {/* Sub-attributes */}
-                  <div className="space-y-2.5">
-                    {cat.attrs.map(attr => {
-                      const raw = agg.subScores[attr.key];
-                      const hasV = raw != null && Number.isFinite(raw);
-                      const pct = hasV ? Math.min(100, Math.max(0, raw)) : 0;
-                      return (
-                        <div key={attr.key}>
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="font-jetbrains text-[10px]" style={{ color: MUTED }}>
-                              {attr.label}
-                            </span>
-                            <span className="font-jetbrains text-[10px] tabular-nums" style={{ color: hasV ? TEXT : MUTED }}>
-                              {hasV ? Math.round(raw) : "—"}
-                            </span>
-                          </div>
-                          <div className="h-[2px]" style={{ background: BORDER }}>
-                            <div
-                              className="h-full"
-                              style={{
-                                width: `${pct}%`,
-                                background: hasV ? ACCENT : "transparent",
-                              }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+      {/* ── Histórico de Avaliações Técnicas ──────────────────────────────── */}
+      <section className="py-12 md:py-16 border-b border-zinc-800/50">
+        <div className="font-editorial-mono text-[11px] tracking-[0.24em] uppercase mb-[14px]" style={{ color: MUTED }}>
+          <span style={{ color: ACCENT }} className="font-semibold">03</span>
+          <span className="inline-block mx-[10px] w-[34px] h-px bg-white/15 align-middle" />
+          Histórico Técnico
         </div>
-      </section>
+        <h2
+          className="font-display font-semibold leading-[1.02] tracking-[-0.025em] mb-8 text-[#ededee]"
+          style={{ fontSize: "clamp(24px,3.4vw,44px)" }}
+        >
+          Avaliações de Scout
+        </h2>
 
-      {/* ── Histórico de Avaliações Técnicas ───────────────────────────────── */}
-      <section>
-        <SectionHeader title="Histórico de Avaliações Técnicas" />
-        <div className="border" style={{ borderColor: BORDER }}>
-          {/* Table header */}
+        <div style={{ border: `1px solid ${BORDER}` }}>
           <div
             className="grid grid-cols-[120px_140px_80px_1fr] px-4 py-2"
             style={{ borderBottom: `1px solid ${BORDER}`, background: "#0D0D0D" }}
@@ -437,7 +171,6 @@ export function TechnicalTab({ playerId }: TechnicalTabProps) {
             ))}
           </div>
 
-          {/* Rows */}
           {reportsLoading ? (
             <div className="px-4 py-8 text-center">
               <span className="font-jetbrains text-[10px] uppercase tracking-wider" style={{ color: MUTED }}>
@@ -446,7 +179,7 @@ export function TechnicalTab({ playerId }: TechnicalTabProps) {
             </div>
           ) : reports.length === 0 ? (
             <div className="px-4 py-10 flex flex-col items-center gap-2 text-center">
-              <span className="font-barlow text-[14px] uppercase tracking-widest" style={{ color: MUTED }}>
+              <span className="font-jetbrains text-[14px] uppercase tracking-widest" style={{ color: MUTED }}>
                 SEM AVALIAÇÕES
               </span>
               <span className="font-jetbrains text-[10px] uppercase tracking-wider" style={{ color: MUTED }}>
@@ -463,17 +196,12 @@ export function TechnicalTab({ playerId }: TechnicalTabProps) {
                   background: i % 2 === 1 ? "#080808" : BG,
                 }}
               >
-                {/* Data */}
                 <span className="font-jetbrains text-[11px]" style={{ color: MUTED }}>
                   {formatDateMediumBR(r.match_date)}
                 </span>
-
-                {/* Scout */}
                 <span className="font-jetbrains text-[11px] truncate pr-2" style={{ color: TEXT }}>
                   {scoutMap[r.scout_id] ?? "—"}
                 </span>
-
-                {/* Nota */}
                 <div className="flex items-center gap-1.5">
                   <span
                     className="font-jetbrains text-[13px] tabular-nums font-bold"
@@ -483,8 +211,6 @@ export function TechnicalTab({ playerId }: TechnicalTabProps) {
                   </span>
                   <span className="font-jetbrains text-[9px]" style={{ color: MUTED }}>/5</span>
                 </div>
-
-                {/* Observação */}
                 <span
                   className="font-jetbrains text-[11px] leading-relaxed"
                   style={{ color: r.technical_notes ? TEXT : MUTED }}
@@ -500,7 +226,6 @@ export function TechnicalTab({ playerId }: TechnicalTabProps) {
           )}
         </div>
 
-        {/* Row count footer */}
         {reports.length > 0 && (
           <p className="font-jetbrains text-[10px] uppercase tracking-wider mt-2 text-right" style={{ color: MUTED }}>
             {reports.length} {reports.length === 1 ? "avaliação" : "avaliações"}

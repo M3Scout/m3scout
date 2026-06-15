@@ -599,7 +599,7 @@ const Competitions = () => {
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <h1 className="m3-page-title">Competições</h1>
-            <span className="inline-flex items-center justify-center min-w-[28px] h-6 px-2 rounded-full text-[13px] font-bold text-white bg-[#e63946]">{competitions.length}</span>
+            <span className="inline-flex items-center justify-center min-w-[24px] h-5 px-1.5 rounded-full font-editorial-mono text-[10px] font-bold text-white" style={{ background: "#ec4525" }}>{competitions.length}</span>
           </div>
           <div className="flex items-center gap-2">
             <button className="sm:hidden" onClick={() => setSearchOpen(v => !v)}>
@@ -612,7 +612,7 @@ const Competitions = () => {
                     <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
                       <Button
                         variant="outline"
-                        className="text-destructive border-destructive/30 hover:bg-destructive/10 rounded-full"
+                        className="text-red-400 border-red-500/30 hover:bg-red-500/10 rounded-full font-editorial-mono text-[11px] tracking-wider"
                         onClick={() => setDeleteDialogOpen(true)}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -692,7 +692,8 @@ const Competitions = () => {
               value={mobileSearch}
               onChange={e => setMobileSearch(e.target.value)}
               placeholder="Buscar competição..."
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-full px-4 py-2 text-sm text-white placeholder-zinc-500 outline-none"
+              className="w-full rounded-xl px-4 py-2.5 text-sm outline-none"
+              style={{ background: "#0f0f10", border: "1px solid rgba(255,255,255,0.07)", color: "#ededee" }}
             />
           </div>
         )}
@@ -723,10 +724,12 @@ const Competitions = () => {
       </div>
 
       {/* Info Banner */}
-      <div className="flex items-center gap-2 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-sm">
-        <Info className="w-4 h-4 text-blue-400 shrink-0" />
-        <p className="text-muted-foreground">
-          O <span className="text-blue-400 font-medium">coeficiente</span> de cada competição influencia diretamente o score automático dos atletas. 
+      <div className="flex items-center gap-3 p-3 rounded-xl border" style={{ background: "rgba(59,130,246,0.05)", borderColor: "rgba(59,130,246,0.15)" }}>
+        <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: "rgba(59,130,246,0.12)" }}>
+          <Info className="w-3.5 h-3.5 text-blue-400" />
+        </div>
+        <p className="font-editorial-mono text-[11px]" style={{ color: "#93c5fd" }}>
+          O <span className="text-blue-300 font-semibold">coeficiente</span> de cada competição influencia diretamente o score automático dos atletas.
           Competições Tier S/A pesam mais na avaliação.
         </p>
       </div>
@@ -744,12 +747,12 @@ const Competitions = () => {
           <Loader2 className="w-6 h-6 animate-spin text-primary" />
         </div>
       ) : filteredCompetitions.length === 0 ? (
-        <div className="rounded-lg border border-border/50 bg-card/30 p-12 text-center">
-          <Trophy className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
-          <p className="text-lg font-medium mb-2">
-            {hasActiveFilters ? "Nenhuma competição encontrada com estes filtros." : "Nenhuma competição cadastrada"}
+        <div className="rounded-xl border p-12 text-center" style={{ background: "#0f0f10", borderColor: "rgba(255,255,255,0.07)" }}>
+          <Trophy className="w-10 h-10 mx-auto mb-4" style={{ color: "#62616a" }} />
+          <p className="font-display font-semibold text-[15px] mb-1.5" style={{ color: "#ededee" }}>
+            {hasActiveFilters ? "Nenhuma competição encontrada" : "Nenhuma competição cadastrada"}
           </p>
-          <p className="text-sm text-muted-foreground mb-6">
+          <p className="font-editorial-mono text-[11px] mb-6" style={{ color: "#62616a" }}>
             {hasActiveFilters
               ? "Ajuste ou remova os filtros para ver resultados."
               : "Crie uma nova competição ou importe um arquivo CSV."

@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils";
 interface AthleteHighlightsSectionProps {
   strengths: string[] | null;
   playerId?: string;
+  compact?: boolean;
+  onYearChange?: (year: number | null) => void;
 }
 
 // 5 eixos — mesma ordem do AtributoRadar
@@ -192,7 +194,7 @@ function RadarChart({
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-export function AthleteHighlightsSection({ strengths, playerId }: AthleteHighlightsSectionProps) {
+export function AthleteHighlightsSection({ strengths, playerId, compact, onYearChange }: AthleteHighlightsSectionProps) {
   const [hoveredAxis, setHoveredAxis] = useState<number | null>(null);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const { data: rows = [] } = useLatestAttributeScores(playerId);
@@ -206,6 +208,9 @@ export function AthleteHighlightsSection({ strengths, playerId }: AthleteHighlig
 
   const activeYear = selectedYear ?? availableYears[0] ?? null;
 
+  // Notify parent of the active year whenever it changes
+  useMemo(() => { onYearChange?.(activeYear); }, [activeYear]);
+
   const hasScores = rows.length > 0;
   if (!hasScores && !(Array.isArray(strengths) && strengths.length > 0)) return null;
 
@@ -214,19 +219,21 @@ export function AthleteHighlightsSection({ strengths, playerId }: AthleteHighlig
   if (!hasAnyValue) return null;
 
   return (
-    <section className="py-12 md:py-20 relative border-b border-zinc-800/50" id="tecnico">
+    <section className={compact ? "pb-8 relative border-b border-zinc-800/50" : "py-12 md:py-20 relative border-b border-zinc-800/50"} id="tecnico">
 
       {/* Header */}
       <div className="flex items-end justify-between gap-6 mb-11 flex-wrap">
         <div>
-          <div className="font-editorial-mono text-[11px] tracking-[0.24em] uppercase text-[#62616a] font-medium inline-flex gap-[10px] items-center">
-            <span className="text-[#ec4525] font-semibold">02</span>
-            <span className="w-[34px] h-px bg-white/15 flex-none" />
-            Perfil Técnico
-          </div>
+          {!compact && (
+            <div className="font-editorial-mono text-[11px] tracking-[0.24em] uppercase text-[#62616a] font-medium inline-flex gap-[10px] items-center">
+              <span className="text-[#ec4525] font-semibold">02</span>
+              <span className="w-[34px] h-px bg-white/15 flex-none" />
+              Perfil Técnico
+            </div>
+          )}
           <h2
-            className="font-display font-semibold leading-[1.02] tracking-[-0.025em] mt-[14px] text-[#ededee]"
-            style={{ fontSize: "clamp(28px,3.4vw,44px)" }}
+            className="font-display font-semibold leading-[1.02] tracking-[-0.025em] text-[#ededee]"
+            style={{ fontSize: "clamp(28px,3.4vw,44px)", marginTop: compact ? 0 : 14 }}
           >
             Mapa de atributos
           </h2>
@@ -237,7 +244,7 @@ export function AthleteHighlightsSection({ strengths, playerId }: AthleteHighlig
               <button
                 key={year}
                 type="button"
-                onClick={() => setSelectedYear(year)}
+                onClick={() => { setSelectedYear(year); onYearChange?.(year); }}
                 className="font-editorial-mono text-[11px] tracking-[0.12em] uppercase px-3 py-1 rounded transition-all duration-200"
                 style={year === activeYear
                   ? { color: "#ededee", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)" }
@@ -257,7 +264,7 @@ export function AthleteHighlightsSection({ strengths, playerId }: AthleteHighlig
         {/* Radar */}
         <div className="flex justify-center">
           <RadarChart
-            data={techData}
+            data={compact ? techData.map(d => ({ ...d, label: d.key.toUpperCase() })) : techData}
             hoveredAxis={hoveredAxis}
             onAxisEnter={(i) => setHoveredAxis(i)}
             onAxisLeave={() => setHoveredAxis(null)}

@@ -1,13 +1,5 @@
 import * as React from "react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { 
-  MoreHorizontal, 
-  Edit, 
-  Trash2,
-  MapPin,
-  Info
-} from "lucide-react";
+import { Edit, Trash2, MoreHorizontal, MapPin, Info } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,6 +15,11 @@ import {
 import { TierBadge, CoefficientBar, TypeBadge, StatusBadge, VisibilityDisplay } from "./CompetitionVisuals";
 import { getTierFromCoefficient } from "@/lib/tierClassification";
 import { PermissionGate } from "@/components/auth/PermissionGate";
+
+const CARD_BG     = "#0f0f10";
+const CARD_BORDER = "rgba(255,255,255,0.07)";
+const TEXT        = "#ededee";
+const MUTED       = "#62616a";
 
 interface Competition {
   id: string;
@@ -55,8 +52,11 @@ export function CompetitionRowCard({ competition, isAdmin, onEdit, onDelete }: C
   const tier = getTierFromCoefficient(competition.final_coefficient);
 
   return (
-    <div className="group relative flex items-center gap-4 p-4 rounded-lg border border-border/50 bg-card/30 hover:bg-card/60 hover:border-border transition-all duration-200">
-      {/* Tier Badge - Most prominent */}
+    <div
+      className="group relative flex items-center gap-4 p-3.5 rounded-xl border transition-colors duration-[250ms] hover:bg-zinc-800/30"
+      style={{ background: CARD_BG, borderColor: CARD_BORDER }}
+    >
+      {/* Tier */}
       <div className="shrink-0">
         <TierBadge tier={tier} size="lg" />
       </div>
@@ -64,14 +64,14 @@ export function CompetitionRowCard({ competition, isAdmin, onEdit, onDelete }: C
       {/* Main Info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
-          <h3 className="font-semibold text-foreground truncate">
+          <h3 className="font-display font-semibold text-[13px] truncate" style={{ color: TEXT }}>
             {competition.display_name || competition.name}
           </h3>
           {competition.display_name && competition.name !== competition.display_name && (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Info className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                  <Info className="w-3 h-3 shrink-0" style={{ color: MUTED }} />
                 </TooltipTrigger>
                 <TooltipContent>
                   <p className="text-xs">{competition.name}</p>
@@ -83,21 +83,26 @@ export function CompetitionRowCard({ competition, isAdmin, onEdit, onDelete }: C
         <div className="flex items-center gap-2 flex-wrap">
           <TypeBadge type={competition.type} />
           {competition.state && (
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              <MapPin className="w-3 h-3" />
+            <span className="flex items-center gap-1 font-editorial-mono text-[10px]" style={{ color: MUTED }}>
+              <MapPin className="w-2.5 h-2.5" />
               {competition.state}
             </span>
           )}
           {competition.division && (
-            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+            <span
+              className="font-editorial-mono text-[9px] uppercase px-1.5 py-0.5 rounded-md"
+              style={{ border: `1px solid ${CARD_BORDER}`, color: MUTED }}
+            >
               {competition.division}
-            </Badge>
+            </span>
           )}
-          <span className="text-xs text-muted-foreground">{competition.country}</span>
+          <span className="font-editorial-mono text-[10px]" style={{ color: MUTED }}>
+            {competition.country}
+          </span>
         </div>
       </div>
 
-      {/* Coefficient Bar */}
+      {/* Coefficient */}
       <div className="hidden sm:block shrink-0">
         <CoefficientBar value={competition.final_coefficient} />
       </div>
@@ -117,22 +122,25 @@ export function CompetitionRowCard({ competition, isAdmin, onEdit, onDelete }: C
         <div className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
+              <button
+                className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors"
+                style={{ color: MUTED }}
+                onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
+                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+              >
                 <MoreHorizontal className="w-4 h-4" />
-              </Button>
+              </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-popover border border-border">
+            <DropdownMenuContent align="end" style={{ background: "#111113", borderColor: CARD_BORDER }}>
               <DropdownMenuItem onClick={() => onEdit(competition)}>
-                <Edit className="w-4 h-4 mr-2" />
-                Editar
+                <Edit className="w-4 h-4 mr-2" /> Editar
               </DropdownMenuItem>
               <PermissionGate module="competitions" action="delete">
                 <DropdownMenuItem
                   onClick={() => onDelete(competition)}
-                  className="text-destructive focus:text-destructive"
+                  className="text-red-400 focus:text-red-400"
                 >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Excluir
+                  <Trash2 className="w-4 h-4 mr-2" /> Excluir
                 </DropdownMenuItem>
               </PermissionGate>
             </DropdownMenuContent>
@@ -143,84 +151,72 @@ export function CompetitionRowCard({ competition, isAdmin, onEdit, onDelete }: C
   );
 }
 
-// Mobile Card version
 export function CompetitionMobileCard({ competition, isAdmin, onEdit, onDelete }: CompetitionRowCardProps) {
   const tier = getTierFromCoefficient(competition.final_coefficient);
   const [expanded, setExpanded] = React.useState(false);
 
   return (
     <div
-      className="p-4 rounded-lg border border-border/50 bg-card/30 space-y-3"
+      className="p-4 rounded-xl border space-y-3 cursor-pointer transition-colors duration-[250ms]"
+      style={{ background: CARD_BG, borderColor: CARD_BORDER }}
       onClick={() => setExpanded(!expanded)}
     >
-      {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-foreground truncate">
+          <h3 className="font-display font-semibold text-[13px] truncate mb-1" style={{ color: TEXT }}>
             {competition.display_name || competition.name}
           </h3>
-          <div className="flex items-center gap-2 mt-1">
+          <div className="flex items-center gap-2">
             <TypeBadge type={competition.type} />
             {competition.state && (
-              <span className="text-xs text-muted-foreground">{competition.state}</span>
+              <span className="font-editorial-mono text-[10px]" style={{ color: MUTED }}>{competition.state}</span>
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0 flex-nowrap">
+        <div className="flex items-center gap-2 shrink-0">
           <TierBadge tier={tier} size="md" />
           <StatusBadge isActive={competition.is_active} />
         </div>
       </div>
 
-      {/* Coefficient */}
       <CoefficientBar value={competition.final_coefficient} size="sm" />
 
-      {/* Expanded Content */}
       {expanded && (
-        <div className="pt-3 border-t border-border/30 space-y-3 animate-fade-in">
-          <div className="grid grid-cols-2 gap-4 text-sm">
+        <div className="pt-3 space-y-3" style={{ borderTop: `1px solid ${CARD_BORDER}` }}>
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <p className="text-xs text-muted-foreground">País</p>
-              <p className="font-medium">{competition.country}</p>
+              <p className="font-editorial-mono text-[9px] uppercase mb-1" style={{ color: MUTED }}>País</p>
+              <p className="font-display text-[12px]" style={{ color: TEXT }}>{competition.country}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Visibilidade</p>
-              <p className="font-medium text-blue-400">{competition.visibility_score ?? 50}</p>
+              <p className="font-editorial-mono text-[9px] uppercase mb-1" style={{ color: MUTED }}>Visibilidade</p>
+              <p className="font-display text-[12px] text-blue-400">{competition.visibility_score ?? 50}</p>
             </div>
             {competition.division && (
               <div>
-                <p className="text-xs text-muted-foreground">Divisão</p>
-                <p className="font-medium">{competition.division}</p>
+                <p className="font-editorial-mono text-[9px] uppercase mb-1" style={{ color: MUTED }}>Divisão</p>
+                <p className="font-display text-[12px]" style={{ color: TEXT }}>{competition.division}</p>
               </div>
             )}
           </div>
-          
+
           {isAdmin && (
             <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit(competition);
-                }}
+              <button
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg font-editorial-mono text-[10px] uppercase tracking-wider transition-colors"
+                style={{ border: `1px solid ${CARD_BORDER}`, color: TEXT }}
+                onClick={e => { e.stopPropagation(); onEdit(competition); }}
               >
-                <Edit className="w-4 h-4 mr-2" />
-                Editar
-              </Button>
+                <Edit className="w-3.5 h-3.5" /> Editar
+              </button>
               <PermissionGate module="competitions" action="delete">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-destructive border-destructive/30"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete(competition);
-                  }}
+                <button
+                  className="flex items-center justify-center p-2 rounded-lg transition-colors"
+                  style={{ border: "1px solid rgba(239,68,68,0.3)", color: "#f87171" }}
+                  onClick={e => { e.stopPropagation(); onDelete(competition); }}
                 >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
               </PermissionGate>
             </div>
           )}

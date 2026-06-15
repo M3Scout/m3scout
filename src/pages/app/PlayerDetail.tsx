@@ -580,14 +580,14 @@ const PlayerDetail = () => {
 
       {/* ── Tab Bar ───────────────────────────────────────────────────────── */}
       <div className="overflow-x-auto scrollbar-hide">
-        <div className="flex gap-1.5 px-4 md:px-6 py-3">
+        <div className="flex gap-1.5 px-4 md:px-6 py-3 w-max min-w-full">
           {TABS.map((tab) => {
             const active = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className="flex-1 px-2 py-1.5 font-editorial-mono text-[10px] tracking-[0.12em] uppercase rounded-lg border transition-colors duration-150 whitespace-nowrap text-center"
+                className="px-3 py-1.5 font-editorial-mono text-[10px] tracking-[0.12em] uppercase rounded-lg border transition-colors duration-150 whitespace-nowrap text-center flex-none"
                 style={{
                   background: active ? ACCENT : "transparent",
                   color: active ? "#fff" : MUTED,
@@ -635,7 +635,11 @@ const PlayerDetail = () => {
             canEdit={canEdit}
           />
         ) : activeTab === "technical" ? (
-          <TechnicalTab playerId={player.id} />
+          <TechnicalTab
+            playerId={player.id}
+            playerPosition={player.position}
+            strengths={player.strengths}
+          />
         ) : activeTab === "contract" ? (
           <ContractTab
             playerId={player.id}
@@ -660,7 +664,7 @@ const PlayerDetail = () => {
               {/* Season KPIs */}
               <section>
                 <SectionLabel n="01">TEMPORADA {CURRENT_YEAR}</SectionLabel>
-                <div className="grid grid-cols-5 gap-2">
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                   {[
                     { label: "G+A",    value: statsLoading ? "…" : ga,                               highlight: true  },
                     { label: "GOLS",   value: statsLoading ? "…" : (seasonTotals?.goals   ?? "—"),   highlight: true  },

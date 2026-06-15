@@ -83,21 +83,21 @@ interface PlayerStatRow {
 
 // ─── Table header definitions ─────────────────────────────────────────────────
 const TABLE_HEADERS = [
-  { label: "COMPETIÇÃO", tooltip: "" },
-  { label: "J",   tooltip: "Jogos" },
-  { label: "MIN", tooltip: "Minutos" },
-  { label: "G",   tooltip: "Gols" },
-  { label: "A",   tooltip: "Assistências" },
-  { label: "FIN", tooltip: "Finalizações" },
-  { label: "NOG", tooltip: "No Gol (Finalizações Certas)" },
-  { label: "PEN", tooltip: "Pênaltis Sofridos" },
-  { label: "AM",  tooltip: "Cartões Amarelos" },
-  { label: "VE",  tooltip: "Cartão Vermelho" },
-  { label: "ROB", tooltip: "Roubadas de Bola" },
-  { label: "DES", tooltip: "Desarmes" },
-  { label: "INT", tooltip: "Interceptações" },
-  { label: "",    tooltip: "" },
-] as const;
+  { label: "COMPETIÇÃO", tooltip: "",                              mobile: true  },
+  { label: "J",          tooltip: "Jogos",                        mobile: true  },
+  { label: "MIN",        tooltip: "Minutos",                      mobile: true  },
+  { label: "G",          tooltip: "Gols",                         mobile: true  },
+  { label: "A",          tooltip: "Assistências",                 mobile: true  },
+  { label: "FIN",        tooltip: "Finalizações",                 mobile: false },
+  { label: "NOG",        tooltip: "No Gol (Finalizações Certas)", mobile: false },
+  { label: "PEN",        tooltip: "Pênaltis Sofridos",            mobile: false },
+  { label: "AM",         tooltip: "Cartões Amarelos",             mobile: true  },
+  { label: "VE",         tooltip: "Cartão Vermelho",              mobile: false },
+  { label: "ROB",        tooltip: "Roubadas de Bola",             mobile: false },
+  { label: "DES",        tooltip: "Desarmes",                     mobile: false },
+  { label: "INT",        tooltip: "Interceptações",               mobile: false },
+  { label: "",           tooltip: "",                             mobile: false },
+];
 
 // ─── Rating color (Sofascore scale) ──────────────────────────────────────────
 function getMatchRatingColor(rating: number): string {
@@ -398,41 +398,24 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
       }));
   }, [ratedMatches]);
 
-  // Career totals (all seasons, live + manual_player_stats + player_stats)
+  // Career totals — derived from the same merged rows the table displays so
+  // live_correction overrides are not double-counted with the original live data.
   const careerTotals = useMemo(() => {
     const t = { matches: 0, minutes: 0, goals: 0, assists: 0, shots: 0, key_passes: 0, tackles: 0, yellow_cards: 0 };
-    seasonStats.forEach(({ stats: s }) => {
-      t.matches += s.matches;
-      t.minutes += s.minutes;
-      t.goals += s.goals;
-      t.assists += s.assists;
-      t.shots += s.shots;
-      t.key_passes += s.key_passes;
-      t.tackles += s.tackles;
-      t.yellow_cards += s.yellow_cards;
-    });
-    manualStats.forEach(ms => {
-      t.matches += ms.games;
-      t.minutes += ms.minutes;
-      t.goals += ms.goals;
-      t.assists += ms.assists;
-      t.shots += ms.shots;
-      t.key_passes += ms.key_passes;
-      t.tackles += ms.tackles;
-      t.yellow_cards += ms.yellow_cards;
-    });
-    playerStats.forEach(ps => {
-      t.matches += ps.matches;
-      t.minutes += ps.minutes;
-      t.goals += ps.goals;
-      t.assists += ps.assists;
-      t.shots += ps.shots;
-      t.key_passes += ps.key_passes;
-      t.tackles += ps.tackles;
-      t.yellow_cards += ps.yellow_cards;
+    allSeasons.forEach(yr => {
+      mergeSeasonRows(mergedBySeason[yr] ?? []).forEach(row => {
+        t.matches     += row.stats.matches;
+        t.minutes     += row.stats.minutes;
+        t.goals       += row.stats.goals;
+        t.assists     += row.stats.assists;
+        t.shots       += row.stats.shots;
+        t.key_passes  += row.stats.key_passes;
+        t.tackles     += row.stats.tackles;
+        t.yellow_cards += row.stats.yellow_cards;
+      });
     });
     return t;
-  }, [seasonStats, manualStats, playerStats]);
+  }, [allSeasons, mergedBySeason]);
 
   // Bar chart: one entry per season, live + manual_player_stats + player_stats aggregated
   const barData = useMemo(() => {
@@ -531,7 +514,7 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
       </div>
 
       {/* ── Evolução das Notas ──────────────────────────────────────────────── */}
-      <div className="rounded-xl border overflow-hidden" style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
+      <div className="rounded-xl border" style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
         <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: CARD_BORDER }}>
           <div className="flex items-center gap-2">
             <span className="font-editorial-mono text-[11px] tracking-[0.22em] uppercase" style={{ color: MUTED }}>
@@ -604,9 +587,9 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
       </div>
 
       {/* ── Resumo de Carreira ──────────────────────────────────────────────── */}
-      <div className="rounded-xl border overflow-hidden" style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
+      <div className="rounded-xl border" style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
         <SectionHead n="01">RESUMO DE CARREIRA</SectionHead>
-        <div className="grid grid-cols-4 md:grid-cols-8 gap-2 px-4 pb-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-2 px-4 pb-4">
           {[
             { label: "JOGOS",    value: careerTotals.matches,                      highlight: false },
             { label: "MINUTOS",  value: careerTotals.minutes,                      highlight: false },
@@ -650,17 +633,17 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
       </div>
 
       {/* ── Evolução por Temporada ──────────────────────────────────────────── */}
-      <div className="rounded-xl border overflow-hidden" style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
-        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between px-5 py-4 border-b" style={{ borderColor: CARD_BORDER }}>
+      <div className="rounded-xl border" style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
+        <div className="flex items-center justify-between gap-3 px-5 py-4 border-b" style={{ borderColor: CARD_BORDER }}>
           <span className="font-editorial-mono text-[11px] tracking-[0.22em] uppercase" style={{ color: MUTED }}>
             EVOLUÇÃO POR TEMPORADA
           </span>
-          <div className="flex gap-1 self-start md:self-auto">
+          <div className="flex gap-2 flex-none">
             {METRIC_OPTIONS.map((opt) => (
               <button
                 key={opt.id}
                 onClick={() => setSelectedMetric(opt.id)}
-                className="px-3 py-1 font-editorial-mono text-[10px] tracking-wider uppercase rounded-lg transition-colors whitespace-nowrap border"
+                className="px-2 py-0.5 font-editorial-mono text-[10px] tracking-wider uppercase rounded transition-colors whitespace-nowrap border"
                 style={{
                   background: selectedMetric === opt.id ? A : "transparent",
                   color: selectedMetric === opt.id ? "#fff" : MUTED,
@@ -677,10 +660,10 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
           {barData.length === 0 ? (
             <NoData />
           ) : (
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={barData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }} barGap={2}>
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={barData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} barGap={2}>
                 <XAxis dataKey="season" tick={{ fontFamily: "JetBrains Mono", fontSize: 9, fill: MUTED }} axisLine={{ stroke: CARD_BORDER }} tickLine={false} />
-                <YAxis allowDecimals={false} tick={{ fontFamily: "JetBrains Mono", fontSize: 9, fill: MUTED }} axisLine={{ stroke: CARD_BORDER }} tickLine={false} />
+                <YAxis allowDecimals={false} width={24} tick={{ fontFamily: "JetBrains Mono", fontSize: 9, fill: MUTED }} axisLine={{ stroke: CARD_BORDER }} tickLine={false} />
                 <Tooltip
                   cursor={{ fill: "transparent" }}
                   content={(props) => (
@@ -701,22 +684,22 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
       </div>
 
       {/* ── Detalhes por Temporada ──────────────────────────────────────────── */}
-      <div className="rounded-xl border overflow-hidden" style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
+      <div className="rounded-xl border" style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
         <SectionHead n="02">DETALHES POR TEMPORADA</SectionHead>
         {isLoading ? (
           <NoData label="Carregando…" />
         ) : allSeasons.length === 0 ? (
           <NoData label="Sem partidas registradas" />
         ) : (
-          <div className="overflow-x-auto scrollbar-hide">
-            <table className="w-full min-w-[640px] font-editorial-mono text-[11px]" style={{ color: TEXT }}>
+          <div>
+            <table className="w-full font-editorial-mono text-[11px]" style={{ color: TEXT }}>
               <thead>
                 <UiTooltipProvider delayDuration={0}>
                   <tr style={{ borderBottom: `1px solid ${CARD_BORDER}` }}>
                     {TABLE_HEADERS.map((h, i) => (
                       <th
                         key={i}
-                        className="px-1.5 sm:px-3 py-2 text-left font-editorial-mono text-[9px] tracking-[0.18em] uppercase whitespace-nowrap"
+                        className={`px-1.5 sm:px-3 py-2 text-left font-editorial-mono text-[9px] tracking-[0.18em] uppercase whitespace-nowrap${!h.mobile ? " hidden sm:table-cell" : ""}`}
                         style={{ color: MUTED, borderRight: i < TABLE_HEADERS.length - 1 ? `1px solid ${CARD_BORDER}` : undefined }}
                       >
                         {h.tooltip ? (
@@ -773,8 +756,8 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
                   const minTooltip =
                     minBracket === "risk"        ? "Zona de Risco. Atleta desgastado. Propensão altíssima a queda de rendimento e lesões." :
                     minBracket === "protagonist" ? "Protagonista. Titular absoluto. Dados altamente confiáveis para análise de mercado." :
-                    minBracket === "regular"     ? "Jogador de elenco. Reserva imediato ou titular que perdeu metade da temporada por lesão." :
-                                                   "Amostragem baixa. Dados pouco confiáveis. Ritmo de jogo prejudicado.";
+                    minBracket === "regular"     ? "Jogador de Elenco. Reserva imediato ou titular que perdeu espaço durante a temporada por opção técnica, tática ou devido a lesão." :
+                                                   "Amostragem Baixa. Minutagem escassa e ritmo de jogo prejudicado. Atleta precisa conquistar espaço ou sequência para melhor validação de desempenho.";
 
                   return [
                     <tr key={`yr-${yr}`} style={{ background: "rgba(255,255,255,0.03)" }}>
@@ -802,13 +785,13 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
                           TOTAL {yr}
                         </td>
                         <td className={`px-3 py-2 text-right tabular-nums font-bold text-[13px]${minBracket === "risk" ? " animate-pulse" : ""}`} style={{ borderRight: `1px solid ${CARD_BORDER}`, color: minColor }}>{totals.matches}</td>
-                        <td className={`px-3 py-2 text-right tabular-nums font-bold text-[13px]${minBracket === "risk" ? " animate-pulse" : ""}`} style={{ borderRight: `1px solid ${CARD_BORDER}`, color: minColor }}>
+                        <td className={`px-3 py-2 text-right tabular-nums font-bold text-[13px] whitespace-nowrap${minBracket === "risk" ? " animate-pulse" : ""}`} style={{ borderRight: `1px solid ${CARD_BORDER}`, color: minColor }}>
                           <UiTooltipProvider>
                             <UiTooltip>
                               <UiTooltipTrigger asChild>
                                 <span style={{ borderBottom: `1px dotted ${minColor}`, cursor: "default" }}>{totals.minutes}</span>
                               </UiTooltipTrigger>
-                              <UiTooltipContent side="top" className="font-editorial-mono text-[11px] px-2 py-1 max-w-[260px] text-center rounded-lg" style={{ background: CARD_BG, border: `1px solid ${minColor}`, color: TEXT }}>
+                              <UiTooltipContent side="top" collisionPadding={16} className="font-editorial-mono text-[11px] px-3 py-2 max-w-[220px] text-center rounded-lg whitespace-normal break-words" style={{ background: CARD_BG, border: `1px solid ${minColor}`, color: TEXT }}>
                                 {minTooltip}
                               </UiTooltipContent>
                             </UiTooltip>
@@ -816,15 +799,15 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
                         </td>
                         <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${CARD_BORDER}`, color: totals.goals   > 0 ? GREEN : A    }}>{totals.goals}</td>
                         <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${CARD_BORDER}`, color: totals.assists > 0 ? GREEN : A    }}>{totals.assists}</td>
-                        <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${CARD_BORDER}`, color: MUTED }}>{totals.shots}</td>
-                        <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${CARD_BORDER}`, color: MUTED }}>{totals.shots_on_target}</td>
-                        <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${CARD_BORDER}`, color: MUTED }}>{totals.penalties_won}</td>
+                        <td className="hidden sm:table-cell px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${CARD_BORDER}`, color: MUTED }}>{totals.shots}</td>
+                        <td className="hidden sm:table-cell px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${CARD_BORDER}`, color: MUTED }}>{totals.shots_on_target}</td>
+                        <td className="hidden sm:table-cell px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${CARD_BORDER}`, color: MUTED }}>{totals.penalties_won}</td>
                         <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${CARD_BORDER}`, color: totals.yellow_cards > 0 ? AMBER : MUTED }}>{totals.yellow_cards}</td>
-                        <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${CARD_BORDER}`, color: totals.red_cards > 0 ? A : MUTED }}>{totals.red_cards}</td>
-                        <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${CARD_BORDER}`, color: MUTED }}>{totals.steals}</td>
-                        <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${CARD_BORDER}`, color: MUTED }}>{totals.tackles}</td>
-                        <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${CARD_BORDER}`, color: MUTED }}>{totals.interceptions}</td>
-                        <td className="px-3 py-2" />
+                        <td className="hidden sm:table-cell px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${CARD_BORDER}`, color: totals.red_cards > 0 ? A : MUTED }}>{totals.red_cards}</td>
+                        <td className="hidden sm:table-cell px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${CARD_BORDER}`, color: MUTED }}>{totals.steals}</td>
+                        <td className="hidden sm:table-cell px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${CARD_BORDER}`, color: MUTED }}>{totals.tackles}</td>
+                        <td className="hidden sm:table-cell px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${CARD_BORDER}`, color: MUTED }}>{totals.interceptions}</td>
+                        <td className="hidden sm:table-cell px-3 py-2" />
                       </tr>
                     ] : []),
                   ];
@@ -833,6 +816,43 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
             </table>
           </div>
         )}
+      </div>
+
+      {/* ── Legenda de Minutos ──────────────────────────────────────────────── */}
+      <div className="rounded-xl border p-4" style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
+        <p className="font-editorial-mono text-[11px] tracking-[0.18em] uppercase mb-4" style={{ color: MUTED }}>
+          Legenda · Minutos por Temporada
+        </p>
+        <div className="flex flex-col gap-4">
+          {[
+            { color: "#34d399", range: "2500 – 4200 min", label: "Protagonista",      desc: "Titular absoluto. Dados altamente confiáveis para análise de mercado." },
+            { color: "#fbbf24", range: "1200 – 2499 min", label: "Jogador de Elenco", desc: "Reserva imediato ou titular que perdeu espaço durante a temporada por opção técnica, tática ou devido a lesão." },
+            { color: "#fb7185", range: "< 1200 min",       label: "Amostragem Baixa", desc: "Minutagem escassa e ritmo de jogo prejudicado. Atleta precisa conquistar espaço ou sequência para melhor validação de desempenho." },
+            { color: "#b91c1c", range: "> 4200 min",       label: "Zona de Risco",    desc: "Atleta desgastado. Alta propensão a queda de rendimento e lesões." },
+          ].map(item => (
+            <div key={item.label} className="flex items-start gap-3">
+              <div className="flex-none w-3 h-3 rounded-full mt-[2px]" style={{ background: item.color }} />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-baseline gap-2.5 flex-wrap mb-1">
+                  <span className="font-editorial-mono text-[13px] font-semibold" style={{ color: item.color }}>
+                    {item.label}
+                  </span>
+                  <span className="font-editorial-mono text-[11px] tracking-[0.08em]" style={{ color: MUTED }}>
+                    {item.range}
+                  </span>
+                </div>
+                <p className="font-editorial-mono text-[12px] leading-relaxed" style={{ color: MUTED }}>
+                  {item.desc}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="mt-4 pt-3 border-t" style={{ borderColor: CARD_BORDER }}>
+          <p className="font-editorial-mono text-[10px] tracking-[0.1em]" style={{ color: MUTED }}>
+            Fonte: <span style={{ color: TEXT }}>FIFPRO</span> · Sindicato Mundial dos Jogadores de Futebol
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -849,20 +869,28 @@ interface StatDef {
 }
 
 function StatBlock({ title, titleColor, stats }: { title: string; titleColor: string; stats: StatDef[] }) {
+  const r = parseInt(titleColor.slice(1, 3), 16);
+  const g = parseInt(titleColor.slice(3, 5), 16);
+  const b = parseInt(titleColor.slice(5, 7), 16);
+  const tint = (a: number) => `rgba(${r},${g},${b},${a})`;
+
   return (
-    <div>
-      <div className="flex items-center gap-2 mb-3">
-        <div style={{ width: 3, height: 14, background: titleColor, borderRadius: 2, flexShrink: 0 }} />
-        <span className="font-editorial-mono text-[10px] tracking-[0.22em] uppercase font-semibold" style={{ color: titleColor }}>
-          {title}
-        </span>
+    <div
+      className="rounded-xl border p-4"
+      style={{ background: tint(0.07), borderColor: tint(0.28) }}
+    >
+      <div
+        className="font-editorial-mono text-[11px] tracking-[0.22em] uppercase font-bold mb-4"
+        style={{ color: titleColor }}
+      >
+        {title}
       </div>
-      <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {stats.map((st) => (
           <div
             key={st.label}
             className="rounded-lg px-3 py-2.5 flex flex-col gap-1"
-            style={{ background: "#0c0b0d", border: `1px solid ${CARD_BORDER}` }}
+            style={{ background: "rgba(8,8,8,0.95)", border: `1px solid rgba(255,255,255,0.07)` }}
           >
             <div className="flex justify-between items-center">
               <span className="font-editorial-mono text-[8.5px] tracking-[0.16em] uppercase" style={{ color: MUTED }}>
@@ -874,7 +902,7 @@ function StatBlock({ title, titleColor, stats }: { title: string; titleColor: st
                   style={{
                     color:      st.pct === null ? MUTED : st.pct >= 60 ? "#34D399" : st.pct >= 50 ? "#F59E0B" : "#FB7185",
                     background: st.pct === null ? "rgba(98,97,106,0.12)" : st.pct >= 60 ? "rgba(52,211,153,0.15)" : st.pct >= 50 ? "rgba(245,158,11,0.15)" : "rgba(251,113,133,0.15)",
-                    border: `1px solid ${st.pct === null ? "rgba(98,97,106,0.25)" : st.pct >= 60 ? "rgba(52,211,153,0.3)" : st.pct >= 50 ? "rgba(245,158,11,0.3)" : "rgba(251,113,133,0.3)"}`,
+                    border:     `1px solid ${st.pct === null ? "rgba(98,97,106,0.25)" : st.pct >= 60 ? "rgba(52,211,153,0.3)" : st.pct >= 50 ? "rgba(245,158,11,0.3)" : "rgba(251,113,133,0.3)"}`,
                   }}
                 >
                   {st.pct === null ? "0%" : `${Math.round(st.pct)}%`}
@@ -918,60 +946,61 @@ function SeasonRow({ row, isGoalkeeper = false }: { row: SeasonRowData; matches?
       : /* live */ { label: "LIVE", shortLabel: "L", color: G };
 
   const ataqueStats: StatDef[] = [
-    { label: "Gols",        value: s.goals,            positive: true },
-    { label: "Assistências", value: s.assists,          positive: true },
-    { label: "Finalizações", value: s.shots },
-    { label: "No Gol",      value: s.shots_on_target,  positive: true },
-    { label: "Fora",        value: s.shots_off_target },
-    { label: "Bloqueadas",  value: s.shots_blocked },
-    { label: "Na Trave",    value: (s as any).shots_on_post ?? 0, positive: true },
-    { label: "Pên. Sofrido", value: s.penalties_won ?? 0, positive: true },
-    { label: "Impedimentos", value: s.offsides ?? 0,      negative: true },
+    { label: "Gols",          value: s.goals,                            positive: true  },
+    { label: "Final. Gol",    value: s.shots_on_target,                  positive: true  },
+    { label: "Final. Fora",   value: s.shots_off_target                                  },
+    { label: "Final. Bloq.",  value: s.shots_blocked                                     },
+    { label: "Na Trave",      value: (s as any).shots_on_post ?? 0,      positive: true  },
+    { label: "Final. Total",  value: s.shots                                              },
+    { label: "Impedim.",      value: s.offsides ?? 0,                    negative: true  },
+    { label: "Pên. Sofrido",  value: s.penalties_won ?? 0,               positive: true  },
   ];
 
   const passesStats: StatDef[] = [
-    { label: "Certos",        value: s.passes_completed, positive: true },
-    { label: "Errados",       value: s.passes_failed,    negative: true },
-    { label: "Progressivos",  value: (s as any).progressive_passes ?? 0, positive: true },
-    { label: "Total",         value: s.passes_total,     pct: s.passes_total > 0 ? (s.passes_completed / s.passes_total) * 100 : null },
-    { label: "Decisivos",     value: s.key_passes,       positive: true },
-    { label: "Chances",       value: s.chances_created,  positive: true },
-    { label: "Cruz. Certos",  value: s.crosses_success,  positive: true, pct: (s.crosses_success + s.crosses_failed) > 0 ? (s.crosses_success / (s.crosses_success + s.crosses_failed)) * 100 : null },
-    { label: "Cruz. Errados", value: s.crosses_failed,   negative: true },
-    { label: "P.Longo ✓",     value: s.long_passes_accurate, positive: true, pct: s.long_passes_total > 0 ? (s.long_passes_accurate / s.long_passes_total) * 100 : null },
-    { label: "P.Longo ✗",     value: s.long_passes_failed,   negative: true },
-    { label: "P.Longo Tot.",  value: s.long_passes_total },
+    { label: "Assist.",          value: s.assists,                       positive: true  },
+    { label: "Passes Dec.",      value: s.key_passes,                    positive: true  },
+    { label: "Chances",          value: s.chances_created,               positive: true  },
+    { label: "Passes ✓",         value: s.passes_completed,              positive: true, pct: s.passes_total > 0 ? (s.passes_completed / s.passes_total) * 100 : null },
+    { label: "Passes ✗",         value: s.passes_failed,                 negative: true  },
+    { label: "Pass. Prog.",      value: (s as any).progressive_passes ?? 0, positive: true },
+    { label: "Passes Tot.",      value: s.passes_total                                   },
+    { label: "Cruzam. ✓",        value: s.crosses_success,               positive: true, pct: (s.crosses_success + s.crosses_failed) > 0 ? (s.crosses_success / (s.crosses_success + s.crosses_failed)) * 100 : null },
+    { label: "Cruzam. ✗",        value: s.crosses_failed,                negative: true  },
+    { label: "Passe Longo ✓",    value: s.long_passes_accurate,          positive: true, pct: s.long_passes_total > 0 ? (s.long_passes_accurate / s.long_passes_total) * 100 : null },
+    { label: "Passe Longo ✗",    value: s.long_passes_failed,            negative: true  },
+    { label: "Passe Longo Tot.", value: s.long_passes_total                              },
   ];
 
   const drilesStats: StatDef[] = [
-    { label: "Drible ✓",   value: s.dribbles_success, positive: true, pct: s.dribbles_total > 0 ? (s.dribbles_success / s.dribbles_total) * 100 : null },
-    { label: "Drible ✗",   value: s.dribbles_failed,  negative: true },
-    { label: "Falta Sof.", value: s.fouls_suffered },
-    { label: "Posse Perd.", value: s.possession_lost,  negative: true },
+    { label: "Dribles ✓",    value: s.dribbles_success,  positive: true, pct: s.dribbles_total > 0 ? (s.dribbles_success / s.dribbles_total) * 100 : null },
+    { label: "Dribles ✗",    value: s.dribbles_failed,   negative: true  },
+    { label: "Dribles Tot.", value: s.dribbles_total                      },
+    { label: "Faltas Sof.",  value: s.fouls_suffered                      },
+    { label: "Bolas Perd.",  value: s.possession_lost,   negative: true  },
   ];
 
   const defesaStats: StatDef[] = [
-    { label: "Roubada Bola",    value: s.steals,                                                                      positive: true },
-    { label: "Desarmes",        value: s.tackles,                                                                     positive: true },
-    { label: "Intercep.",       value: s.interceptions,                                                               positive: true },
-    { label: "Cortes",          value: s.clearances,                                                                  positive: true },
-    { label: "Recuper.",        value: s.recoveries,                                                                  positive: true },
-    { label: "Chute Bloq.",     value: s.blocked_shots,                                                               positive: true },
-    { label: "Dribles Sofridos", value: s.was_dribbled,                                                               negative: true },
-    { label: "Duelo Chão ✓",    value: s.ground_duels_won,                                                            positive: true },
-    { label: "Duelo Chão ✗",    value: Math.max(0, s.ground_duels_total - s.ground_duels_won),                        negative: true },
-    { label: "Duelo Chão Tot.", value: s.ground_duels_total,                                                          pct: s.ground_duels_total > 0 ? (s.ground_duels_won / s.ground_duels_total) * 100 : null },
-    { label: "Duelo Aéreo ✓",   value: s.aerial_duels_won,                                                            positive: true },
-    { label: "Duelo Aéreo ✗",   value: Math.max(0, s.aerial_duels_total - s.aerial_duels_won),                        negative: true },
-    { label: "Duelo Aéreo Tot.", value: s.aerial_duels_total,                                                         pct: s.aerial_duels_total > 0 ? (s.aerial_duels_won / s.aerial_duels_total) * 100 : null },
-    { label: "Faltas Com.",     value: s.fouls_committed,                                                             negative: true },
-    { label: "Amarelos",        value: s.yellow_cards,                                                                negative: true },
-    { label: "Vermelhos",       value: s.red_cards,                                                                   negative: true },
+    { label: "Roubada de Bola",  value: s.steals,                                                positive: true  },
+    { label: "Desarmes",         value: s.tackles,                                               positive: true  },
+    { label: "Interc.",          value: s.interceptions,                                         positive: true  },
+    { label: "Cortes",           value: s.clearances,                                            positive: true  },
+    { label: "Recup.",           value: s.recoveries,                                            positive: true  },
+    { label: "Chute Bloq.",      value: s.blocked_shots,                                         positive: true  },
+    { label: "Dribles Sofridos", value: s.was_dribbled,                                          negative: true  },
+    { label: "Duelo Chão ✓",     value: s.ground_duels_won,                                      positive: true, pct: s.ground_duels_total > 0 ? (s.ground_duels_won / s.ground_duels_total) * 100 : null },
+    { label: "Duelo Chão ✗",     value: Math.max(0, s.ground_duels_total - s.ground_duels_won),  negative: true  },
+    { label: "Duelo Chão Tot.",  value: s.ground_duels_total                                                     },
+    { label: "Duelo Aéreo ✓",    value: s.aerial_duels_won,                                      positive: true, pct: s.aerial_duels_total > 0 ? (s.aerial_duels_won / s.aerial_duels_total) * 100 : null },
+    { label: "Duelo Aéreo ✗",    value: Math.max(0, s.aerial_duels_total - s.aerial_duels_won),  negative: true  },
+    { label: "Duelo Aéreo Tot.", value: s.aerial_duels_total                                                     },
+    { label: "Faltas Com.",      value: s.fouls_committed,                                        negative: true  },
+    { label: "Amarelos",         value: s.yellow_cards,                                           negative: true  },
+    { label: "Vermelhos",        value: s.red_cards,                                              negative: true  },
     ...(isGoalkeeper ? [
-      { label: "Defesas",      value: s.saves,                                      positive: true },
-      { label: "Gols Sof.",    value: s.goals_conceded,                             negative: true },
-      { label: "Clean Sheets", value: s.clean_sheets,                               positive: true },
-      { label: "Pen. Salvos",  value: s.penalties_saved,                            positive: true },
+      { label: "Defesas",       value: s.saves,            positive: true },
+      { label: "Gols Sof.",     value: s.goals_conceded,   negative: true },
+      { label: "Clean Sheets",  value: s.clean_sheets,     positive: true },
+      { label: "Pen. Salvos",   value: s.penalties_saved,  positive: true },
     ] as StatDef[] : []),
   ];
 
@@ -1007,7 +1036,7 @@ function SeasonRow({ row, isGoalkeeper = false }: { row: SeasonRowData; matches?
           {s.matches}
         </td>
         {/* MIN */}
-        <td className="px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>
+        <td className="px-3 py-2.5 text-right tabular-nums whitespace-nowrap" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>
           {s.minutes}
         </td>
         {/* G */}
@@ -1019,15 +1048,15 @@ function SeasonRow({ row, isGoalkeeper = false }: { row: SeasonRowData; matches?
           {s.assists}
         </td>
         {/* FIN */}
-        <td className="px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>
+        <td className="hidden sm:table-cell px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>
           {s.shots}
         </td>
         {/* NOG */}
-        <td className="px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>
+        <td className="hidden sm:table-cell px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>
           {s.shots_on_target}
         </td>
         {/* PEN */}
-        <td className="px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>
+        <td className="hidden sm:table-cell px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>
           {s.penalties_won ?? 0}
         </td>
         {/* AM */}
@@ -1035,23 +1064,23 @@ function SeasonRow({ row, isGoalkeeper = false }: { row: SeasonRowData; matches?
           {s.yellow_cards}
         </td>
         {/* VE */}
-        <td className="px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: s.red_cards > 0 ? ACC : MUT }}>
+        <td className="hidden sm:table-cell px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: s.red_cards > 0 ? ACC : MUT }}>
           {s.red_cards}
         </td>
         {/* ROB */}
-        <td className="px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>
+        <td className="hidden sm:table-cell px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>
           {s.steals}
         </td>
         {/* DES */}
-        <td className="px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>
+        <td className="hidden sm:table-cell px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>
           {s.tackles}
         </td>
         {/* INT */}
-        <td className="px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>
+        <td className="hidden sm:table-cell px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>
           {s.interceptions}
         </td>
         {/* Badge */}
-        <td className="px-3 py-2.5">
+        <td className="hidden sm:table-cell px-3 py-2.5">
           <span
             className="font-editorial-mono text-[9px] tracking-wider uppercase px-1.5 py-0.5 rounded-md whitespace-nowrap inline-block"
             style={{ color: badge.color, border: `1px solid ${badge.color}` }}
@@ -1069,7 +1098,7 @@ function SeasonRow({ row, isGoalkeeper = false }: { row: SeasonRowData; matches?
             <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
               <StatBlock title="Ataque"          titleColor="#E5173F" stats={ataqueStats} />
               <StatBlock title="Passes"          titleColor="#F59E0B" stats={passesStats} />
-              <StatBlock title="Dribles / Posse" titleColor="#3B82F6" stats={drilesStats} />
+              <StatBlock title="Dribles / Posse" titleColor="#06b6d4" stats={drilesStats} />
               <StatBlock title="Defesa"          titleColor="#6B9EE5" stats={defesaStats} />
             </div>
           </td>

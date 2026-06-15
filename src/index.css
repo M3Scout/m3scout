@@ -260,6 +260,12 @@ p, span, h1, h2, h3, h4, h5, h6, a, li {
   }
 }
 
+/* Dashboard: força Basis Grotesque Pro em todas as classes de fonte editorial */
+.dashboard-root .font-display,
+.dashboard-root .font-editorial-mono {
+  font-family: 'Basis Grotesque Pro', system-ui, sans-serif !important;
+}
+
 @layer components {
   /* ========== GLOBAL CONTAINER - Aligned with Header Logo ========== */
   /* This container ensures all public page content aligns with the header logo */

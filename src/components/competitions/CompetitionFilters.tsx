@@ -1,9 +1,6 @@
 import * as React from "react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -15,15 +12,19 @@ import { Search, Filter, X, Globe, MapPin } from "lucide-react";
 import { TierBadge } from "./CompetitionVisuals";
 import { cn } from "@/lib/utils";
 
-const TIERS = ["S", "A", "B", "C", "D"] as const;
+const CARD_BG     = "#0f0f10";
+const CARD_BORDER = "rgba(255,255,255,0.07)";
+const TEXT        = "#ededee";
+const MUTED       = "#62616a";
+const ACCENT      = "#ec4525";
 
+const TIERS = ["S", "A", "B", "C", "D"] as const;
 const COMPETITION_TYPES = [
-  { value: "league", label: "Liga" },
-  { value: "cup", label: "Copa" },
-  { value: "state_league", label: "Estadual" },
+  { value: "league",      label: "Liga"        },
+  { value: "cup",         label: "Copa"        },
+  { value: "state_league",label: "Estadual"    },
   { value: "continental", label: "Continental" },
 ];
-
 const COEF_MIN = 0;
 const COEF_MAX = 1.20;
 
@@ -49,56 +50,34 @@ interface CompetitionFiltersProps {
 }
 
 export function CompetitionFilters({
-  searchQuery,
-  onSearchChange,
-  tierFilter,
-  onTierChange,
-  typeFilter,
-  onTypeChange,
-  countryFilter,
-  onCountryChange,
-  stateFilter,
-  onStateChange,
-  visibilityFilter,
-  onVisibilityChange,
-  coefficientFilter,
-  onCoefficientChange,
-  countries,
-  states,
-  onClear,
-  hasActiveFilters,
+  searchQuery, onSearchChange,
+  tierFilter, onTierChange,
+  typeFilter, onTypeChange,
+  countryFilter, onCountryChange,
+  stateFilter, onStateChange,
+  visibilityFilter, onVisibilityChange,
+  coefficientFilter, onCoefficientChange,
+  countries, states,
+  onClear, hasActiveFilters,
 }: CompetitionFiltersProps) {
   const [showAdvanced, setShowAdvanced] = React.useState(false);
-
-  // ── Debounced search ──────────────────────────────────────────────────────
   const [inputValue, setInputValue] = React.useState(searchQuery);
   const debounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Sync local input when parent resets (e.g. clearFilters)
-  React.useEffect(() => {
-    setInputValue(searchQuery);
-  }, [searchQuery]);
+  React.useEffect(() => { setInputValue(searchQuery); }, [searchQuery]);
 
   const handleSearchInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setInputValue(value);
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      onSearchChange(value);
-    }, 350);
+    debounceRef.current = setTimeout(() => onSearchChange(value), 350);
   };
 
-  React.useEffect(() => {
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, []);
+  React.useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
 
-  // ── Coefficient inputs ────────────────────────────────────────────────────
   const [coefMinRaw, setCoefMinRaw] = React.useState(String(coefficientFilter[0]));
   const [coefMaxRaw, setCoefMaxRaw] = React.useState(String(coefficientFilter[1]));
 
-  // Sync local strings when parent resets
   React.useEffect(() => {
     setCoefMinRaw(String(coefficientFilter[0]));
     setCoefMaxRaw(String(coefficientFilter[1]));
@@ -106,23 +85,18 @@ export function CompetitionFilters({
 
   const commitCoefMin = (raw: string) => {
     const parsed = parseFloat(raw);
-    const value = isNaN(parsed)
-      ? COEF_MIN
-      : Math.min(Math.max(parsed, COEF_MIN), coefficientFilter[1]);
+    const value = isNaN(parsed) ? COEF_MIN : Math.min(Math.max(parsed, COEF_MIN), coefficientFilter[1]);
     setCoefMinRaw(value.toFixed(2));
     onCoefficientChange([value, coefficientFilter[1]]);
   };
 
   const commitCoefMax = (raw: string) => {
     const parsed = parseFloat(raw);
-    const value = isNaN(parsed)
-      ? COEF_MAX
-      : Math.max(Math.min(parsed, COEF_MAX), coefficientFilter[0]);
+    const value = isNaN(parsed) ? COEF_MAX : Math.max(Math.min(parsed, COEF_MAX), coefficientFilter[0]);
     setCoefMaxRaw(value.toFixed(2));
     onCoefficientChange([coefficientFilter[0], value]);
   };
 
-  // ── Active filter count ───────────────────────────────────────────────────
   const activeCount = [
     tierFilter !== "all",
     typeFilter !== "all",
@@ -132,190 +106,177 @@ export function CompetitionFilters({
     coefficientFilter[0] > COEF_MIN || coefficientFilter[1] < COEF_MAX,
   ].filter(Boolean).length;
 
-  const isCoefficientActive =
-    coefficientFilter[0] > COEF_MIN || coefficientFilter[1] < COEF_MAX;
+  const selectStyle = {
+    background: CARD_BG,
+    border: `1px solid ${CARD_BORDER}`,
+    color: TEXT,
+  };
 
   return (
-    <div className="space-y-4">
-      {/* Quick Tier Filters + Search */}
-      <div className="flex flex-col lg:flex-row gap-4">
-        {/* Search — value is local (debounced), visual sync on parent reset */}
+    <div className="space-y-3">
+      {/* Row 1: search + tier pills + toggle */}
+      <div className="flex flex-col lg:flex-row gap-3">
+        {/* Search */}
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: MUTED }} />
           <Input
             type="text"
             placeholder="Buscar competição..."
             value={inputValue}
             onChange={handleSearchInput}
-            className="pl-10 rounded-full"
+            className="pl-9 rounded-lg h-9 text-[12px] border-0 focus-visible:ring-0"
+            style={selectStyle}
           />
         </div>
 
-        {/* Quick Tier Chips */}
+        {/* Tier pills */}
         <div className="flex items-center gap-1.5">
-          <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium mr-1">Tier</span>
+          <span className="font-editorial-mono text-[9px] uppercase tracking-wider mr-1" style={{ color: MUTED }}>Tier</span>
           <button
             onClick={() => onTierChange("all")}
-            className={cn(
-              "text-xs px-3 py-1.5 rounded-full transition-all duration-200 font-medium",
-              tierFilter === "all"
-                ? "bg-zinc-700 text-zinc-100"
-                : "text-zinc-500 hover:text-zinc-300"
-            )}
+            className="font-editorial-mono text-[10px] px-3 py-1.5 rounded-lg border transition-colors duration-150"
+            style={{
+              background: tierFilter === "all" ? "rgba(255,255,255,0.08)" : "transparent",
+              borderColor: tierFilter === "all" ? "rgba(255,255,255,0.2)" : CARD_BORDER,
+              color: tierFilter === "all" ? TEXT : MUTED,
+            }}
           >
             Todos
           </button>
-          {TIERS.map((tier) => (
+          {TIERS.map(tier => (
             <button
               key={tier}
               onClick={() => onTierChange(tier)}
-              className={cn(
-                "text-xs px-3 py-1.5 rounded-full transition-all duration-200 font-semibold",
-                tierFilter === tier
-                  ? "ring-1 ring-offset-1 ring-offset-background"
-                  : "opacity-70 hover:opacity-100"
-              )}
+              className="rounded-lg px-1.5 py-1 transition-all duration-150"
+              style={{ opacity: tierFilter === tier ? 1 : 0.55 }}
             >
               <TierBadge tier={tier} size="sm" showTooltip={false} />
             </button>
           ))}
         </div>
 
-        {/* Toggle Advanced */}
+        {/* Toggle advanced */}
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
+          <button
             onClick={() => setShowAdvanced(!showAdvanced)}
-            className={cn("rounded-full", showAdvanced && "bg-secondary")}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-editorial-mono text-[10px] uppercase tracking-wider border transition-colors duration-150"
+            style={{
+              background: showAdvanced ? "rgba(255,255,255,0.06)" : "transparent",
+              borderColor: activeCount > 0 ? ACCENT : CARD_BORDER,
+              color: activeCount > 0 ? ACCENT : MUTED,
+            }}
           >
-            <Filter className="w-4 h-4 mr-2" />
+            <Filter className="w-3 h-3" />
             Filtros
             {activeCount > 0 && (
-              <Badge variant="secondary" className="ml-2 h-5 px-1.5">
+              <span
+                className="font-editorial-mono text-[9px] px-1.5 py-0.5 rounded-full"
+                style={{ background: ACCENT, color: "#fff" }}
+              >
                 {activeCount}
-              </Badge>
+              </span>
             )}
-          </Button>
+          </button>
           {hasActiveFilters && (
-            <Button variant="ghost" size="sm" onClick={onClear} className="rounded-full">
-              <X className="w-4 h-4 mr-1" />
-              Limpar
-            </Button>
+            <button
+              onClick={onClear}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg font-editorial-mono text-[10px] uppercase tracking-wider transition-colors duration-150"
+              style={{ color: MUTED }}
+              onMouseEnter={e => (e.currentTarget.style.color = TEXT)}
+              onMouseLeave={e => (e.currentTarget.style.color = MUTED)}
+            >
+              <X className="w-3 h-3" /> Limpar
+            </button>
           )}
         </div>
       </div>
 
       {/* Advanced Filters */}
       {showAdvanced && (
-        <div className="p-4 rounded-lg border border-border/50 bg-card/30 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 animate-fade-in">
-          {/* Type */}
-          <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">Tipo</Label>
+        <div
+          className="p-4 rounded-xl border grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4"
+          style={{ background: CARD_BG, borderColor: CARD_BORDER }}
+        >
+          {/* Tipo */}
+          <div className="space-y-1.5">
+            <label className="font-editorial-mono text-[9px] uppercase tracking-wider" style={{ color: MUTED }}>Tipo</label>
             <Select value={typeFilter} onValueChange={onTypeChange}>
-              <SelectTrigger>
+              <SelectTrigger className="rounded-lg h-8 text-[11px] border-0 focus:ring-0" style={selectStyle}>
                 <SelectValue placeholder="Todos" />
               </SelectTrigger>
-              <SelectContent className="bg-popover border border-border">
+              <SelectContent style={{ background: "#111113", borderColor: CARD_BORDER }}>
                 <SelectItem value="all">Todos</SelectItem>
-                {COMPETITION_TYPES.map((type) => (
-                  <SelectItem key={type.value} value={type.value}>
-                    {type.label}
-                  </SelectItem>
-                ))}
+                {COMPETITION_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
 
-          {/* Country */}
-          <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">País</Label>
+          {/* País */}
+          <div className="space-y-1.5">
+            <label className="font-editorial-mono text-[9px] uppercase tracking-wider" style={{ color: MUTED }}>País</label>
             <Select value={countryFilter} onValueChange={onCountryChange}>
-              <SelectTrigger>
-                <Globe className="w-4 h-4 mr-2 text-muted-foreground" />
+              <SelectTrigger className="rounded-lg h-8 text-[11px] border-0 focus:ring-0" style={selectStyle}>
+                <Globe className="w-3 h-3 mr-1.5 shrink-0" style={{ color: MUTED }} />
                 <SelectValue placeholder="Todos" />
               </SelectTrigger>
-              <SelectContent className="bg-popover border border-border">
+              <SelectContent style={{ background: "#111113", borderColor: CARD_BORDER }}>
                 <SelectItem value="all">Todos</SelectItem>
-                {countries.map((country) => (
-                  <SelectItem key={country} value={country}>
-                    {country}
-                  </SelectItem>
-                ))}
+                {countries.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
 
-          {/* State */}
-          <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">Estado</Label>
+          {/* Estado */}
+          <div className="space-y-1.5">
+            <label className="font-editorial-mono text-[9px] uppercase tracking-wider" style={{ color: MUTED }}>Estado</label>
             <Select value={stateFilter} onValueChange={onStateChange}>
-              <SelectTrigger>
-                <MapPin className="w-4 h-4 mr-2 text-muted-foreground" />
+              <SelectTrigger className="rounded-lg h-8 text-[11px] border-0 focus:ring-0" style={selectStyle}>
+                <MapPin className="w-3 h-3 mr-1.5 shrink-0" style={{ color: MUTED }} />
                 <SelectValue placeholder="Todos" />
               </SelectTrigger>
-              <SelectContent className="bg-popover border border-border">
+              <SelectContent style={{ background: "#111113", borderColor: CARD_BORDER }}>
                 <SelectItem value="all">Todos</SelectItem>
-                {states.map((state) => (
-                  <SelectItem key={state} value={state}>
-                    {state}
-                  </SelectItem>
-                ))}
+                {states.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
 
-          {/* Coefficient Range */}
-          <div className="space-y-2 col-span-2 md:col-span-1 lg:col-span-1">
-            <Label
-              className={cn(
-                "text-xs",
-                isCoefficientActive ? "text-primary font-medium" : "text-muted-foreground"
-              )}
-            >
-              Coeficiente
-            </Label>
+          {/* Coeficiente */}
+          <div className="space-y-1.5 col-span-2 md:col-span-1">
+            <label className="font-editorial-mono text-[9px] uppercase tracking-wider" style={{ color: MUTED }}>Coeficiente</label>
             <div className="flex items-center gap-1.5">
               <Input
-                type="number"
-                min={COEF_MIN}
-                max={COEF_MAX}
-                step={0.01}
+                type="number" min={COEF_MIN} max={COEF_MAX} step={0.01}
                 value={coefMinRaw}
-                onChange={(e) => setCoefMinRaw(e.target.value)}
+                onChange={e => setCoefMinRaw(e.target.value)}
                 onBlur={() => commitCoefMin(coefMinRaw)}
-                onKeyDown={(e) => e.key === "Enter" && commitCoefMin(coefMinRaw)}
-                className="w-[72px] text-center text-xs tabular-nums px-2"
-                placeholder="0.00"
+                onKeyDown={e => e.key === "Enter" && commitCoefMin(coefMinRaw)}
+                className="w-[60px] text-center text-[11px] tabular-nums px-1 rounded-lg h-8 border-0 focus-visible:ring-0"
+                style={selectStyle}
               />
-              <span className="text-muted-foreground text-xs select-none">–</span>
+              <span className="font-editorial-mono text-[10px]" style={{ color: MUTED }}>–</span>
               <Input
-                type="number"
-                min={COEF_MIN}
-                max={COEF_MAX}
-                step={0.01}
+                type="number" min={COEF_MIN} max={COEF_MAX} step={0.01}
                 value={coefMaxRaw}
-                onChange={(e) => setCoefMaxRaw(e.target.value)}
+                onChange={e => setCoefMaxRaw(e.target.value)}
                 onBlur={() => commitCoefMax(coefMaxRaw)}
-                onKeyDown={(e) => e.key === "Enter" && commitCoefMax(coefMaxRaw)}
-                className="w-[72px] text-center text-xs tabular-nums px-2"
-                placeholder="1.20"
+                onKeyDown={e => e.key === "Enter" && commitCoefMax(coefMaxRaw)}
+                className="w-[60px] text-center text-[11px] tabular-nums px-1 rounded-lg h-8 border-0 focus-visible:ring-0"
+                style={selectStyle}
               />
             </div>
           </div>
 
-          {/* Visibility Slider */}
-          <div className="space-y-2 col-span-2 md:col-span-1 lg:col-span-2">
-            <Label className="text-xs text-muted-foreground">
+          {/* Visibilidade */}
+          <div className="space-y-1.5 col-span-2 lg:col-span-2">
+            <label className="font-editorial-mono text-[9px] uppercase tracking-wider" style={{ color: MUTED }}>
               Visibilidade: {visibilityFilter[0]} – {visibilityFilter[1]}
-            </Label>
+            </label>
             <div className="pt-2 px-1">
               <Slider
                 value={visibilityFilter}
-                onValueChange={(v) => onVisibilityChange(v as [number, number])}
-                min={0}
-                max={100}
-                step={10}
+                onValueChange={v => onVisibilityChange(v as [number, number])}
+                min={0} max={100} step={10}
               />
             </div>
           </div>

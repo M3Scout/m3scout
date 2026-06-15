@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -81,12 +81,6 @@ const formatDateShort = (iso: string | null) => {
   return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" });
 };
 
-const getScoreClass = (score: number) => {
-  if (score >= 65) return "m3dash-report-score--green";
-  if (score >= 55) return "m3dash-report-score--yellow";
-  return "m3dash-report-score--red";
-};
-
 const getInitials = (name: string) => {
   const parts = name.split(" ").filter(Boolean);
   if (parts.length === 0) return "?";
@@ -99,6 +93,165 @@ const currentMonth = now.toLocaleDateString("pt-BR", { month: "short" }).toUpper
 const currentYear = now.getFullYear();
 
 const uniqueCount = (values: Array<string | null | undefined>) => new Set(values.filter(Boolean)).size;
+
+// ── Multi-player radar ────────────────────────────────────────────────────
+const RADAR_COLORS = ["#06b6d4", "#2DCE8A", "#E8C44A", "#ec4525", "#a855f7", "#f97316"];
+const RADAR_AXES = [
+  { key: "ata", label: "ATA" },
+  { key: "tec", label: "TEC" },
+  { key: "tat", label: "TAT" },
+  { key: "def", label: "DEF" },
+  { key: "cri", label: "CRI" },
+] as const;
+
+interface PlayerRadarData {
+  id: string;
+  full_name: string;
+  color: string;
+  scores: { ata: number; tec: number; tat: number; def: number; cri: number };
+  avg: number;
+}
+
+function MultiPlayerRadar({ players, availableYears, selectedYear, onYearChange }: {
+  players: PlayerRadarData[];
+  availableYears: number[];
+  selectedYear: number | null;
+  onYearChange: (y: number) => void;
+}) {
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const hoveredPlayer = players.find(p => p.id === hoveredId) ?? null;
+
+  const SIZE = 280;
+  const CX = SIZE / 2;
+  const CY = SIZE / 2;
+  const R = SIZE / 2 - 46;
+  const N = 5;
+
+  const angle = (i: number) => -Math.PI / 2 + (i * 2 * Math.PI) / N;
+  const pt = (i: number, r: number): [number, number] => [
+    CX + Math.cos(angle(i)) * r,
+    CY + Math.sin(angle(i)) * r,
+  ];
+
+  const SCORE_KEYS: (keyof PlayerRadarData["scores"])[] = ["ata", "tec", "tat", "def", "cri"];
+
+  return (
+    <div className="flex flex-col items-center" style={{ padding: "16px 20px 20px" }}>
+      {availableYears.length > 1 && (
+        <div className="flex gap-1.5 mb-3 self-start">
+          {availableYears.map(year => (
+            <button
+              key={year}
+              type="button"
+              onClick={() => onYearChange(year)}
+              className="font-editorial-mono text-[10px] tracking-[0.12em] uppercase px-2.5 py-1 rounded transition-all duration-200"
+              style={year === selectedYear
+                ? { color: "#ededee", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)" }
+                : { color: "#62616a", background: "transparent", border: "1px solid transparent" }
+              }
+            >
+              {year}
+            </button>
+          ))}
+        </div>
+      )}
+      <svg viewBox={`0 0 ${SIZE} ${SIZE}`} className="h-auto overflow-visible" style={{ width: "100%", maxWidth: 340 }}>
+        {[0.25, 0.5, 0.75, 1].map(f => {
+          const pts = RADAR_AXES.map((_, i) => pt(i, R * f).join(",")).join(" ");
+          return <polygon key={f} points={pts} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="1" />;
+        })}
+        {RADAR_AXES.map((_, i) => {
+          const [x, y] = pt(i, R);
+          return <line key={i} x1={CX} y1={CY} x2={x} y2={y} stroke="rgba(255,255,255,0.07)" strokeWidth="1" />;
+        })}
+        {/* Visual polygons — pointer events disabled so fill doesn't block smaller shapes */}
+        {players.map(p => {
+          const vals = SCORE_KEYS.map(k => p.scores[k]);
+          const pts = vals.map((v, i) => pt(i, R * (v / 100)).join(",")).join(" ");
+          const isHovered = hoveredId === p.id;
+          return (
+            <polygon
+              key={p.id}
+              points={pts}
+              fill={isHovered ? `${p.color}33` : `${p.color}1a`}
+              stroke={p.color}
+              strokeWidth={isHovered ? 2 : 1.5}
+              strokeLinejoin="round"
+              style={{ pointerEvents: "none", transition: "fill 0.15s" }}
+            />
+          );
+        })}
+        {/* Hit-area polygons — invisible thick stroke, detect hover by line only */}
+        {players.map(p => {
+          const vals = SCORE_KEYS.map(k => p.scores[k]);
+          const pts = vals.map((v, i) => pt(i, R * (v / 100)).join(",")).join(" ");
+          return (
+            <polygon
+              key={`hit-${p.id}`}
+              points={pts}
+              fill="none"
+              stroke="white"
+              strokeWidth="12"
+              strokeOpacity="0"
+              strokeLinejoin="round"
+              pointerEvents="stroke"
+              style={{ cursor: "default" }}
+              onMouseEnter={() => setHoveredId(p.id)}
+              onMouseLeave={() => setHoveredId(null)}
+            />
+          );
+        })}
+        {RADAR_AXES.map((ax, i) => {
+          const [lx, ly] = pt(i, R + 22);
+          const anchor = Math.abs(lx - CX) < 8 ? "middle" : lx > CX ? "start" : "end";
+          const score = hoveredPlayer ? hoveredPlayer.scores[ax.key] : null;
+          return (
+            <g key={ax.key}>
+              <text
+                x={lx} y={score !== null ? ly - 7 : ly}
+                textAnchor={anchor}
+                dominantBaseline="middle"
+                fill="#62616a"
+                style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: "10px", letterSpacing: "0.06em", transition: "y 0.15s" }}
+              >
+                {ax.label}
+              </text>
+              {score !== null && (
+                <text
+                  x={lx} y={ly + 8}
+                  textAnchor={anchor}
+                  dominantBaseline="middle"
+                  fill={hoveredPlayer!.color}
+                  style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: "11px", fontWeight: 600 }}
+                >
+                  {score}
+                </text>
+              )}
+            </g>
+          );
+        })}
+      </svg>
+
+      <div className="flex flex-row flex-wrap gap-x-5 gap-y-2 mt-3">
+        {players.map(p => (
+          <Link
+            key={p.id}
+            to={`/dashboard/atletas/${p.id}`}
+            className="flex items-center gap-2 transition-opacity"
+            style={{ opacity: hoveredId && hoveredId !== p.id ? 0.35 : 1 }}
+            onMouseEnter={() => setHoveredId(p.id)}
+            onMouseLeave={() => setHoveredId(null)}
+          >
+            <div className="w-2.5 h-2.5 rounded-full flex-none" style={{ background: p.color }} />
+            <span className="font-display text-[10px] font-medium text-[#ededee]">
+              {p.full_name.split(" ")[0]}
+            </span>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export const DashboardV2 = () => {
   const { isAdmin, isScout, isPlayer, rolesLoading, session, permissionsLoading } = useAuth();
@@ -206,9 +359,67 @@ export const DashboardV2 = () => {
 
   const stats = overviewQuery.data?.stats ?? { totalPlayers: 0, reportsThisMonth: 0, totalLeads: 0, expiringContracts: 0 };
   const positionData = overviewQuery.data?.positionData ?? [];
-  const recentReports = overviewQuery.data?.recentReports ?? [];
   const topPlayers = overviewQuery.data?.topPlayers ?? [];
   const competitions = competitionsQuery.data ?? [];
+
+  const topPlayerIds = useMemo(() => topPlayers.map(p => p.id), [topPlayers]);
+
+  const radarQuery = useQuery({
+    queryKey: ["dashboard-v2", "player-radar", topPlayerIds.join(",")],
+    enabled: enabled && topPlayerIds.length > 0,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("player_attribute_scores")
+        .select("player_id, season_year, ata_score_100, tec_score_100, tat_score_100, def_score_100, cri_score_100, details")
+        .in("player_id", topPlayerIds);
+      if (error) throw error;
+      return (data ?? []) as Array<{
+        player_id: string; season_year: number;
+        ata_score_100: number | null; tec_score_100: number | null;
+        tat_score_100: number | null; def_score_100: number | null;
+        cri_score_100: number | null; details: Record<string, unknown> | null;
+      }>;
+    },
+  });
+
+  const availableRadarYears = useMemo(() => {
+    const rows = radarQuery.data ?? [];
+    return Array.from(new Set(rows.map(r => r.season_year)))
+      .filter(y => y >= 2024)
+      .sort((a, b) => b - a);
+  }, [radarQuery.data]);
+
+  const [radarYear, setRadarYear] = useState<number | null>(null);
+  const activeRadarYear = radarYear ?? availableRadarYears[0] ?? null;
+
+  const playerRadarData = useMemo((): PlayerRadarData[] => {
+    const rows = radarQuery.data ?? [];
+    return topPlayers.slice(0, 6).map((p, idx) => {
+      const pRows = rows.filter(r => r.player_id === p.id);
+      const targetYear = activeRadarYear ?? (pRows.length > 0 ? Math.max(...pRows.map(r => r.season_year)) : null);
+      const yRows = targetYear ? pRows.filter(r => r.season_year === targetYear) : [];
+      let ata = 0, tec = 0, tat = 0, def = 0, cri = 0, w = 0;
+      yRows.forEach(r => {
+        const mins = Math.max(Number((r.details as any)?.minutes ?? 0), 1);
+        ata += (r.ata_score_100 ?? 0) * mins;
+        tec += (r.tec_score_100 ?? 0) * mins;
+        tat += (r.tat_score_100 ?? 0) * mins;
+        def += (r.def_score_100 ?? 0) * mins;
+        cri += (r.cri_score_100 ?? 0) * mins;
+        w += mins;
+      });
+      const d = w || 1;
+      const scores = {
+        ata: Math.round(ata / d), tec: Math.round(tec / d),
+        tat: Math.round(tat / d), def: Math.round(def / d), cri: Math.round(cri / d),
+      };
+      const avg = Math.round((scores.ata + scores.tec + scores.tat + scores.def + scores.cri) / 5);
+      return { id: p.id, full_name: p.full_name, color: RADAR_COLORS[idx], scores, avg };
+    }).filter(p => p.avg > 0);
+  }, [topPlayers, radarQuery.data, activeRadarYear]);
 
   const dataReady = overviewQuery.isSuccess;
   const loading = overviewQuery.isLoading;
@@ -384,31 +595,25 @@ export const DashboardV2 = () => {
             )}
           </div>
 
-          {/* [Row 2, Col 1] Relatórios Recentes */}
+          {/* [Row 2, Col 1] Radar de Atributos */}
           <div className="m3dash-section">
             <div className="m3dash-section-head">
               <div className="m3dash-section-title">
-                <span className="red">// </span>Relatórios Recentes
+                <span className="red">// </span>Radar de Atributos
               </div>
-              <Link to="/dashboard/relatorios" className="m3dash-section-link">
-                Ver Todos <ArrowRight size={10} style={{ display: "inline", verticalAlign: "middle" }} />
+              <Link to="/dashboard/atletas" className="m3dash-section-link">
+                Ver Atletas <ArrowRight size={10} style={{ display: "inline", verticalAlign: "middle" }} />
               </Link>
             </div>
-            {recentReports.length === 0 ? (
-              <div className="m3dash-empty">Nenhum relatório ainda</div>
+            {playerRadarData.length === 0 ? (
+              <div className="m3dash-empty">Sem dados de atributos</div>
             ) : (
-              recentReports.map(r => (
-                <Link key={r.id} to={`/dashboard/relatorios/${r.id}`} className="m3dash-report">
-                  <div className={`m3dash-report-score ${getScoreClass(r.final_score)}`}>
-                    {(r.final_score ?? 0).toFixed(1)}
-                  </div>
-                  <div className="m3dash-report-info">
-                    <div className="m3dash-report-name">{r.player_name}</div>
-                    <div className="m3dash-report-comp">{r.competition_name}</div>
-                  </div>
-                  <div className="m3dash-report-date">{formatDateShort(r.match_date)}</div>
-                </Link>
-              ))
+              <MultiPlayerRadar
+                players={playerRadarData}
+                availableYears={availableRadarYears}
+                selectedYear={activeRadarYear}
+                onYearChange={setRadarYear}
+              />
             )}
           </div>
 
