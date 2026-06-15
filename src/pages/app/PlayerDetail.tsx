@@ -653,6 +653,8 @@ const PlayerDetail = () => {
             agentName={player.agent_name}
             agentContact={player.agent_contact}
             contractNotes={player.contract_notes}
+            m3ContractStart={player.m3_contract_start ?? null}
+            m3ContractEnd={player.m3_contract_end ?? null}
           />
         ) : activeTab !== "overview" ? (
           <Placeholder />

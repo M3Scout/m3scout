@@ -103,6 +103,8 @@ interface ContractTabProps {
   agentName: string | null;
   agentContact: string | null;
   contractNotes: string | null;
+  m3ContractStart: string | null;
+  m3ContractEnd: string | null;
 }
 
 export function ContractTab({
@@ -117,6 +119,8 @@ export function ContractTab({
   agentName,
   agentContact,
   contractNotes,
+  m3ContractStart,
+  m3ContractEnd,
 }: ContractTabProps) {
   const queryClient = useQueryClient();
   const { isAdmin, isScout } = useAuth();
@@ -408,6 +412,88 @@ export function ContractTab({
             })}
           </div>
         )}
+      </div>
+
+      {/* ── Contrato com M3 ──────────────────────────────────────────── */}
+      <div>
+        <SectionHead n="03">CONTRATO COM M3</SectionHead>
+        {(() => {
+          const m3Days = daysUntil(m3ContractEnd);
+          const m3Expired  = m3Days !== null && m3Days < 0;
+          const m3Critical = m3Days !== null && m3Days >= 0 && m3Days <= 30;
+          const m3Warning  = m3Days !== null && m3Days > 30 && m3Days <= 90;
+
+          const alertColor = m3Expired || m3Critical ? ACCENT : m3Warning ? AMBER : GREEN;
+
+          const fmtDate = (d: string | null) =>
+            d ? format(parseDateSafe(d), "dd/MM/yyyy", { locale: ptBR }) : null;
+
+          if (!m3ContractStart && !m3ContractEnd) {
+            return (
+              <div className="rounded-xl border py-8 flex items-center justify-center"
+                style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
+                <span className="font-editorial-mono text-[10px] uppercase tracking-wider" style={{ color: MUTED }}>
+                  CONTRATO COM M3 NÃO REGISTRADO
+                </span>
+              </div>
+            );
+          }
+
+          return (
+            <div className="rounded-xl border overflow-hidden" style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
+              {(m3Expired || m3Critical || m3Warning) && (
+                <div className="px-5 py-2.5" style={{
+                  background: `${alertColor}0d`,
+                  borderBottom: `1px solid ${alertColor}33`,
+                  borderLeft: `3px solid ${alertColor}`,
+                }}>
+                  <p className="font-editorial-mono text-[10px] uppercase tracking-[0.18em]" style={{ color: alertColor }}>
+                    {m3Expired
+                      ? `CONTRATO VENCIDO — Expirou em ${fmtDate(m3ContractEnd)}`
+                      : m3Critical
+                      ? `VENCIMENTO CRÍTICO — ${m3Days} dias restantes`
+                      : `PRÓXIMO DO VENCIMENTO — ${m3Days} dias restantes`}
+                  </p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-3">
+                <div className="p-5" style={{ borderRight: `1px solid ${CARD_BORDER}` }}>
+                  <p className="font-editorial-mono text-[9.5px] uppercase tracking-[0.2em] mb-1.5" style={{ color: MUTED }}>
+                    ASSINATURA
+                  </p>
+                  <p className="font-editorial-mono text-[14px]" style={{ color: TEXT }}>
+                    {fmtDate(m3ContractStart) ?? <span style={{ color: MUTED }}>—</span>}
+                  </p>
+                </div>
+
+                <div className="p-5" style={{ borderRight: `1px solid ${CARD_BORDER}` }}>
+                  <p className="font-editorial-mono text-[9.5px] uppercase tracking-[0.2em] mb-1.5" style={{ color: MUTED }}>
+                    VENCIMENTO
+                  </p>
+                  <p className="font-editorial-mono text-[14px]"
+                    style={{ color: m3Expired || m3Critical || m3Warning ? alertColor : TEXT }}>
+                    {fmtDate(m3ContractEnd) ?? <span style={{ color: MUTED }}>—</span>}
+                  </p>
+                </div>
+
+                <div className="p-5">
+                  <p className="font-editorial-mono text-[9.5px] uppercase tracking-[0.2em] mb-1.5" style={{ color: MUTED }}>
+                    STATUS
+                  </p>
+                  {m3ContractEnd ? (
+                    <span className="font-editorial-mono text-[10px] uppercase tracking-wider border px-2 py-1 rounded-md inline-block"
+                      style={{ color: alertColor, borderColor: alertColor }}>
+                      {m3Expired ? "VENCIDO" : m3Critical ? "CRÍTICO" : m3Warning ? "EXPIRANDO" : "ATIVO"}
+                    </span>
+                  ) : (
+                    <span className="font-editorial-mono text-[10px]" style={{ color: MUTED }}>—</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

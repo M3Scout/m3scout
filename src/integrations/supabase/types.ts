@@ -1836,6 +1836,8 @@ export type Database = {
           market_value_trend: string | null
           max_speed: number | null
           medical_notes: string | null
+          m3_contract_end: string | null
+          m3_contract_start: string | null
           muscle_mass: number | null
           nationality: string
           passports: string[] | null
@@ -1895,6 +1897,8 @@ export type Database = {
           market_value_trend?: string | null
           max_speed?: number | null
           medical_notes?: string | null
+          m3_contract_end?: string | null
+          m3_contract_start?: string | null
           muscle_mass?: number | null
           nationality: string
           passports?: string[] | null
@@ -1954,6 +1958,8 @@ export type Database = {
           market_value_trend?: string | null
           max_speed?: number | null
           medical_notes?: string | null
+          m3_contract_end?: string | null
+          m3_contract_start?: string | null
           muscle_mass?: number | null
           nationality?: string
           passports?: string[] | null
