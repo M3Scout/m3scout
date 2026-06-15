@@ -232,3 +232,31 @@
   .cta-strip__sub { font-size: 15px; }
   .cta-strip__btn { padding: 16px 26px; font-size: 11px; }
 }
+
+/* ---------- Skeleton / Shimmer ---------- */
+.post--skeleton {
+  background: #ece7df;
+  overflow: hidden;
+  position: relative;
+  pointer-events: none;
+}
+.post__shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,0.55) 50%,
+    rgba(255,255,255,0) 100%
+  );
+  transform: translateX(-100%);
+  animation: feed-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes feed-shimmer {
+  100% { transform: translateX(100%); }
+}
+.feed__sentinel {
+  height: 1px;
+  width: 100%;
+  margin-top: 24px;
+}

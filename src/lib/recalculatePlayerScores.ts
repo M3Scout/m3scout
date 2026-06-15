@@ -371,7 +371,7 @@ export async function recalculatePlayerScores(
 
     const { error: insertErr } = await supabase
       .from("player_attribute_scores")
-      .insert({
+      .insert([{
         player_id:      playerId,
         competition_id: null as any,
         season_year:    seasonYear,
@@ -381,7 +381,7 @@ export async function recalculatePlayerScores(
         tat_score_100:  output.tat,
         cri_score_100:  output.cri,
         attr_confidence: output.confidence,
-        details: {
+        details: ({
           minutes:        output.minutes,
           matches:        output.matches,
           per90:          output.per90,
@@ -389,9 +389,9 @@ export async function recalculatePlayerScores(
           raw_stats:      totalStats,
           engine_version: "v25-ts",
           data_source:    "mergeSeasonRows(live + player_stats)",
-        },
+        } as any),
         updated_at: new Date().toISOString(),
-      });
+      }]);
 
     if (insertErr) throw insertErr;
 
