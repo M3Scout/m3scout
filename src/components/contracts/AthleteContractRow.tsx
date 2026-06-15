@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ChevronDown, Building2, Briefcase, Eye, CalendarClock } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ContractStatusBadge } from "./ContractStatusBadge";
 import { cn } from "@/lib/utils";
 import type { PlayerContractGroup } from "@/hooks/useContractsByPlayer";
@@ -52,10 +51,13 @@ export function AthleteContractRow({ group }: AthleteContractRowProps) {
         className="w-full flex items-center gap-4 px-4 py-4"
         onClick={() => setExpanded(v => !v)}
       >
-        <Avatar className="h-14 w-14 border border-zinc-800 shrink-0">
-          <AvatarImage src={group.player_photo_url || undefined} alt={group.player_name} />
-          <AvatarFallback className="bg-zinc-800 text-zinc-500 text-[13px]">{initials}</AvatarFallback>
-        </Avatar>
+        <div className="h-14 w-12 rounded-lg border border-zinc-800 bg-zinc-800 shrink-0 overflow-hidden flex items-center justify-center">
+          {group.player_photo_url ? (
+            <img src={group.player_photo_url} alt={group.player_name} className="h-full w-full object-cover object-top" />
+          ) : (
+            <span className="text-zinc-500 text-[13px] font-medium">{initials}</span>
+          )}
+        </div>
 
         <div className="flex-1 min-w-0 text-left">
           <p className="text-[15px] font-bold text-zinc-100 truncate">{group.player_name}</p>
