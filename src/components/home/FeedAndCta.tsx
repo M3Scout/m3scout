@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Instagram, Youtube } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import "./FeedAndCta.css";
