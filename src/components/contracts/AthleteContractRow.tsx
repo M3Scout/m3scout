@@ -43,8 +43,8 @@ export function AthleteContractRow({ group }: AthleteContractRowProps) {
     <div className={cn(
       "rounded-xl border transition-all duration-200",
       expanded
-        ? "border-zinc-700/50 bg-zinc-900/70"
-        : "border-zinc-800/30 bg-zinc-900/50 hover:border-zinc-700/40 hover:bg-zinc-900/70"
+        ? "border-zinc-700/60 bg-zinc-800/60"
+        : "border-zinc-700/40 bg-zinc-800/40 hover:border-zinc-700/60 hover:bg-zinc-800/60"
     )}>
       {/* ── Collapsed header ── */}
       <button
