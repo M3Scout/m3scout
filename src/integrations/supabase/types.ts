@@ -1180,6 +1180,7 @@ export type Database = {
           archived_at: string | null
           club_country: string | null
           club_name: string
+          contract_file_url: string | null
           contract_type: string
           created_at: string
           created_by: string | null
@@ -1199,6 +1200,7 @@ export type Database = {
           archived_at?: string | null
           club_country?: string | null
           club_name: string
+          contract_file_url?: string | null
           contract_type?: string
           created_at?: string
           created_by?: string | null
@@ -1218,6 +1220,7 @@ export type Database = {
           archived_at?: string | null
           club_country?: string | null
           club_name?: string
+          contract_file_url?: string | null
           contract_type?: string
           created_at?: string
           created_by?: string | null

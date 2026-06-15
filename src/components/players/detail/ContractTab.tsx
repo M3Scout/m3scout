@@ -94,6 +94,7 @@ interface ContractRecord {
   is_current: boolean | null;
   is_archived: boolean | null;
   sort_order: number | null;
+  contract_file_url: string | null;
 }
 
 interface ContractTabProps {

@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Building2, Loader2, Archive, Star } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Building2, Loader2, Archive, Star, Upload, FileText, ExternalLink } from "lucide-react";
 
 // ─── Currency helpers (BRL) ───────────────────────────────────────────────────
 function formatBRL(value: number): string {
@@ -46,6 +46,7 @@ interface ContractData {
   notes: string | null;
   is_current: boolean;
   is_archived: boolean;
+  contract_file_url?: string | null;
 }
 
 interface EditContractModalProps {
@@ -57,15 +58,18 @@ interface EditContractModalProps {
   canEdit: boolean;
 }
 
-export function EditContractModal({ 
-  open, 
-  onOpenChange, 
-  contract, 
+export function EditContractModal({
+  open,
+  onOpenChange,
+  contract,
   playerId,
   onSuccess,
-  canEdit 
+  canEdit
 }: EditContractModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [fileUrl, setFileUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     club_name: "",
     club_country: "",
@@ -89,8 +93,44 @@ export function EditContractModal({
         salary_info: initBRL(contract.salary_info),
         notes: contract.notes || "",
       });
+      setFileUrl(contract.contract_file_url ?? null);
     }
   }, [contract]);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !contract) return;
+
+    const ext = file.name.split(".").pop();
+    const path = `${playerId}/${contract.id}.${ext}`;
+
+    setIsUploading(true);
+    try {
+      const { error: upErr } = await supabase.storage
+        .from("contracts")
+        .upload(path, file, { upsert: true });
+      if (upErr) throw upErr;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("contracts")
+        .getPublicUrl(path);
+
+      const { error: dbErr } = await supabase
+        .from("player_contract_history")
+        .update({ contract_file_url: publicUrl })
+        .eq("id", contract.id);
+      if (dbErr) throw dbErr;
+
+      setFileUrl(publicUrl);
+      toast.success("Contrato enviado com sucesso");
+      onSuccess();
+    } catch {
+      toast.error("Erro ao enviar o contrato");
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   const handleSave = async () => {
     if (!contract || !canEdit) return;
@@ -261,7 +301,58 @@ export function EditContractModal({
           )}
           
           <Separator className="bg-zinc-800" />
-          
+
+          {/* Arquivo do contrato */}
+          <div className="space-y-2">
+            <Label className="text-xs text-zinc-400">Arquivo do Contrato</Label>
+            <div className="flex gap-2">
+              {canEdit && (
+                <>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 gap-2 border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                  >
+                    {isUploading
+                      ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Enviando...</>
+                      : <><Upload className="w-3.5 h-3.5" />{fileUrl ? "Substituir arquivo" : "Enviar contrato"}</>
+                    }
+                  </Button>
+                </>
+              )}
+              {fileUrl && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+                  onClick={() => window.open(fileUrl, "_blank")}
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  Visualizar
+                </Button>
+              )}
+            </div>
+            {fileUrl && (
+              <div className="flex items-center gap-1.5 text-[11px] text-zinc-500">
+                <FileText className="w-3 h-3 shrink-0" />
+                <span className="truncate">Arquivo anexado</span>
+              </div>
+            )}
+          </div>
+
+          <Separator className="bg-zinc-800" />
+
           {/* Form Fields */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2 col-span-2">
