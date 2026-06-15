@@ -12,11 +12,11 @@ interface AthleteHighlightsSectionProps {
 
 // 5 eixos — mesma ordem do AtributoRadar
 const AXES = [
-  { key: "ata", label: "Ataque" },
-  { key: "tec", label: "Técnica" },
-  { key: "tat", label: "Tática" },
-  { key: "def", label: "Defesa" },
-  { key: "cri", label: "Criatividade" },
+  { key: "ata", label: "ATA" },
+  { key: "tec", label: "TEC" },
+  { key: "tat", label: "TAT" },
+  { key: "def", label: "DEF" },
+  { key: "cri", label: "CRI" },
 ] as const;
 
 type AxisKey = typeof AXES[number]["key"];
@@ -264,7 +264,7 @@ export function AthleteHighlightsSection({ strengths, playerId, compact, onYearC
         {/* Radar */}
         <div className="flex justify-center">
           <RadarChart
-            data={compact ? techData.map(d => ({ ...d, label: d.key.toUpperCase() })) : techData}
+            data={techData}
             hoveredAxis={hoveredAxis}
             onAxisEnter={(i) => setHoveredAxis(i)}
             onAxisLeave={() => setHoveredAxis(null)}
