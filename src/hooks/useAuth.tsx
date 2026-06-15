@@ -168,7 +168,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(!bootState.skipLoading);
+  // Always start loading=true: even with a valid localStorage cache, user/session
+  // are null until onAuthStateChange / initSession resolves (async). Starting
+  // false causes ProtectedRoute to see !user and redirect before the session is
+  // confirmed — the root cause of the white-screen-on-first-load bug.
+  const [loading, setLoading] = useState(true);
+  // rolesLoading can skip if we have a fresh RBAC cache — the RBAC state is
+  // populated synchronously from cache before the first ProtectedRoute render.
   const [rolesLoading, setRolesLoading] = useState(!bootState.skipLoading);
   const [rolesError, setRolesError] = useState<string | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
