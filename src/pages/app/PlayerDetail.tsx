@@ -580,14 +580,14 @@ const PlayerDetail = () => {
 
       {/* ── Tab Bar ───────────────────────────────────────────────────────── */}
       <div className="overflow-x-auto scrollbar-hide">
-        <div className="flex gap-1.5 px-4 md:px-6 py-3 w-max min-w-full">
+        <div className="flex gap-1.5 px-4 md:px-6 py-3 w-max md:w-auto min-w-full">
           {TABS.map((tab) => {
             const active = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className="px-3 py-1.5 font-editorial-mono text-[10px] tracking-[0.12em] uppercase rounded-lg border transition-colors duration-150 whitespace-nowrap text-center flex-none"
+                className="px-3 py-1.5 font-editorial-mono text-[10px] tracking-[0.12em] uppercase rounded-lg border transition-colors duration-150 whitespace-nowrap text-center flex-none md:flex-1"
                 style={{
                   background: active ? ACCENT : "transparent",
                   color: active ? "#fff" : MUTED,
