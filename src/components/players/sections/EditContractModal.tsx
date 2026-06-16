@@ -192,7 +192,7 @@ export function EditContractModal({
     try {
       const { error: upErr } = await supabase.storage
         .from("contracts")
-        .upload(storagePath, file, { upsert: true });
+        .upload(storagePath, file, { upsert: true, contentType: file.type });
       if (upErr) throw upErr;
       // signed URL válida por 10 anos
       const { data: signed, error: signErr } = await supabase.storage
