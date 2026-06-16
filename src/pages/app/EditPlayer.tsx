@@ -212,11 +212,6 @@ export default function EditPlayer() {
         .limit(1);
       const derivedClub = contracts?.[0]?.club_name || playerRow.current_club || "";
 
-      // Keep players.current_club in sync
-      if (derivedClub && derivedClub !== playerRow.current_club) {
-        await supabase.from("players").update({ current_club: derivedClub }).eq("id", id);
-      }
-
       setFormData({
         full_name: playerRow.full_name || "",
         position: playerRow.position || "",
