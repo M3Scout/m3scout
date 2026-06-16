@@ -112,7 +112,7 @@ export function AthleteContractRow({ group }: AthleteContractRowProps) {
                     <div className="flex-1 min-w-0">
                       <p className="text-[13px] font-semibold text-zinc-100 truncate">{c.club_name}</p>
                       <div className="flex items-center gap-1.5 mt-0.5">
-                        <p className="text-[11px] font-bold text-zinc-300 tabular-nums">
+                        <p className="text-[11px] font-bold text-zinc-500 tabular-nums">
                           {c.start_date && format(new Date(c.start_date + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR })}
                           {c.end_date && (
                             <> → {format(new Date(c.end_date + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR })}</>
