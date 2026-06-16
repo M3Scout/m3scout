@@ -234,19 +234,19 @@ function MultiPlayerRadar({ players, availableYears, selectedYear, onYearChange 
 
       <div className="flex flex-row flex-wrap gap-x-5 gap-y-2 mt-3">
         {players.map(p => (
-          <Link
+          <button
             key={p.id}
-            to={`/dashboard/atletas/${p.id}`}
             className="flex items-center gap-2 transition-opacity"
             style={{ opacity: hoveredId && hoveredId !== p.id ? 0.35 : 1 }}
             onMouseEnter={() => setHoveredId(p.id)}
             onMouseLeave={() => setHoveredId(null)}
+            onClick={() => setHoveredId(hoveredId === p.id ? null : p.id)}
           >
             <div className="w-2.5 h-2.5 rounded-full flex-none" style={{ background: p.color }} />
             <span className="font-display text-[10px] font-medium text-[#ededee]">
               {p.full_name.split(" ")[0]}
             </span>
-          </Link>
+          </button>
         ))}
       </div>
     </div>
