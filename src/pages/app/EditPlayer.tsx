@@ -201,6 +201,22 @@ export default function EditPlayer() {
         navigate("/dashboard/atletas");
         return;
       }
+
+      // Derive current_club from the first contract in history (lowest sort_order)
+      const { data: contracts } = await supabase
+        .from("player_contract_history")
+        .select("club_name, sort_order")
+        .eq("player_id", id)
+        .eq("is_archived", false)
+        .order("sort_order", { ascending: true })
+        .limit(1);
+      const derivedClub = contracts?.[0]?.club_name || playerRow.current_club || "";
+
+      // Keep players.current_club in sync
+      if (derivedClub && derivedClub !== playerRow.current_club) {
+        await supabase.from("players").update({ current_club: derivedClub }).eq("id", id);
+      }
+
       setFormData({
         full_name: playerRow.full_name || "",
         position: playerRow.position || "",
@@ -209,7 +225,7 @@ export default function EditPlayer() {
         birth_date: playerRow.birth_date || "",
         height: playerRow.height?.toString() || "",
         dominant_foot: playerRow.dominant_foot || "",
-        current_club: playerRow.current_club || "",
+        current_club: derivedClub,
         country: playerRow.country || "Brasil",
         bio_public: playerRow.bio_public || "",
         highlight_video_url: playerRow.highlight_video_url || "",
@@ -589,7 +605,13 @@ export default function EditPlayer() {
                     <input type="date" className={inputCls} value={formData.birth_date} onChange={e => handleChange("birth_date", e.target.value)} />
                   </Field>
                   <Field label="Clube Atual" filled={!!formData.current_club}>
-                    <input className={inputCls} value={formData.current_club} onChange={e => handleChange("current_club", e.target.value)} placeholder="Ex: Atlético-MS" />
+                    <input
+                      className={`${inputCls} opacity-60 cursor-not-allowed`}
+                      value={formData.current_club}
+                      readOnly
+                      placeholder="Preenchido pelo histórico de contratos"
+                      title="Preenchido automaticamente pelo primeiro contrato no histórico"
+                    />
                   </Field>
                   <Field label="País de Atuação">
                     <input className={inputCls} value={formData.country} onChange={e => handleChange("country", e.target.value)} placeholder="Brasil" />
