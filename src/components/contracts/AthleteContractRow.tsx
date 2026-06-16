@@ -17,8 +17,8 @@ function transferInfo(c: ContractWithPlayer): { fee: string; label: string } {
 
   if (c.contract_type === "loan") return { fee: "-", label: "Empréstimo" };
   if (c.contract_type === "youth") return { fee: "-", label: "Base/Formação" };
-  if (hasFee) return { fee: c.transfer_fee!, label: "Definitivo" };
-  return { fee: "-", label: "Sem custo" };
+  if (hasFee) return { fee: c.transfer_fee!, label: "" };
+  return { fee: "", label: "Sem custo" };
 }
 
 interface AthleteContractRowProps {
@@ -128,8 +128,8 @@ export function AthleteContractRow({ group }: AthleteContractRowProps) {
 
                     {/* Transfer value / type */}
                     <div className="text-right shrink-0">
-                      <p className="text-[13px] font-semibold tabular-nums" style={{ color: GREEN }}>{ti.fee}</p>
-                      <p className="text-[11px] font-medium" style={{ color: GREEN }}>{ti.label}</p>
+                      {ti.fee && <p className="text-[13px] font-semibold tabular-nums" style={{ color: GREEN }}>{ti.fee}</p>}
+                      {ti.label && <p className="text-[13px] font-semibold" style={{ color: GREEN }}>{ti.label}</p>}
                     </div>
                   </div>
                 );
