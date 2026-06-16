@@ -50,12 +50,13 @@ export function AthleteContractRow({ group }: AthleteContractRowProps) {
     <div className={cn(
       "rounded-xl border transition-all duration-200",
       expanded
-        ? "border-zinc-700/60 bg-zinc-800/60"
-        : "border-zinc-700/40 bg-zinc-800/40 hover:border-zinc-700/60 hover:bg-zinc-800/60"
-    )}>
+        ? "border-zinc-700/50"
+        : "border-zinc-700/30 hover:border-zinc-700/50"
+    )}
+    style={{ background: "#1f2225" }}>
       {/* ── Collapsed header ── */}
       <button
-        className="w-full flex items-center gap-4 px-4 py-4"
+        className="w-full flex items-center gap-4 px-4 py-4 rounded-xl transition-colors duration-200 hover:bg-[#141617]"
         onClick={() => setExpanded(v => !v)}
       >
         <div className="h-[62px] w-[62px] rounded-lg border border-zinc-800 bg-zinc-800 shrink-0 overflow-hidden flex items-center justify-center">
