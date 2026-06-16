@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ChevronDown, ArrowLeftRight, Briefcase, Eye, CalendarClock, Shield } from "lucide-react";
-import { ContractStatusBadge } from "./ContractStatusBadge";
 import { cn } from "@/lib/utils";
 import type { PlayerContractGroup } from "@/hooks/useContractsByPlayer";
 import type { ContractWithPlayer } from "@/hooks/useContracts";
@@ -108,18 +107,24 @@ export function AthleteContractRow({ group }: AthleteContractRowProps) {
                     {/* Club + dates */}
                     <div className="flex-1 min-w-0">
                       <p className="text-[13px] font-semibold text-zinc-100 truncate">{c.club_name}</p>
-                      <p className="text-[11px] text-zinc-500 tabular-nums mt-0.5">
-                        {c.start_date && format(new Date(c.start_date + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR })}
-                        {c.end_date && (
-                          <> → {format(new Date(c.end_date + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR })}</>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <p className="text-[11px] font-bold text-zinc-300 tabular-nums">
+                          {c.start_date && format(new Date(c.start_date + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR })}
+                          {c.end_date && (
+                            <> → {format(new Date(c.end_date + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR })}</>
+                          )}
+                        </p>
+                        {c.days_to_expire !== null && c.days_to_expire >= 0 && c.days_to_expire <= 90 && (
+                          <span className="text-[10px] text-zinc-600 tabular-nums">
+                            · {c.days_to_expire}d
+                          </span>
                         )}
-                      </p>
+                      </div>
                     </div>
 
                     {/* Transfer value / type */}
                     <div className="text-right shrink-0">
                       <p className="text-[13px] font-semibold" style={{ color: tl.color }}>{tl.text}</p>
-                      <ContractStatusBadge status={c.status} daysToExpire={c.days_to_expire} />
                     </div>
                   </div>
                 );
