@@ -255,6 +255,9 @@ export function ContractTab({
     }
   };
 
+  // Derive current club from the first history entry (top of list = most recent)
+  const derivedCurrentClub = history.length > 0 ? history[0].club_name : currentClub;
+
   const statusCfg = getStatusCfg(contractStatus);
   const days = daysUntil(contractEnd);
   const isExpiring = days !== null && days > 0 && days <= 180;
@@ -263,7 +266,7 @@ export function ContractTab({
   const showAlert = isFree || isExpiring || isExpired;
 
   const detailItems = [
-    { label: "Clube Atual",          value: currentClub   },
+    { label: "Clube Atual",          value: derivedCurrentClub },
     { label: "País",                 value: country       },
     { label: "Vínculo",              value: contractStatus ? statusCfg.label : null },
     { label: "Salário",              value: salaryInfo    },

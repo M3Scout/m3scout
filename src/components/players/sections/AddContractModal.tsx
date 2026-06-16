@@ -98,6 +98,13 @@ export function AddContractModal({ open, onOpenChange, playerId, onSuccess }: Ad
           sort_order: newSortOrder,
         });
       if (error) throw error;
+
+      // Sync players.current_club so all views (header, grid, public) reflect the new club
+      await supabase
+        .from("players")
+        .update({ current_club: formData.club_name })
+        .eq("id", playerId);
+
       toast.success("Contrato adicionado com sucesso");
       reset();
       onOpenChange(false);
