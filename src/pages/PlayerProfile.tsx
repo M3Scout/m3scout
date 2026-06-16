@@ -119,7 +119,18 @@ const PlayerProfile = () => {
         .eq("slug", slug)
         .limit(1) as any);
       const playerRow = Array.isArray(data) ? data[0] ?? null : null;
-      if (playerRow) setPlayer(playerRow);
+      if (playerRow) {
+        // Derive current club from most recent contract (same logic as ContractTab)
+        const { data: contracts } = await supabase
+          .from("player_contract_history")
+          .select("club_name")
+          .eq("player_id", playerRow.id)
+          .eq("is_archived", false)
+          .order("start_date", { ascending: false })
+          .limit(1);
+        const derivedClub = contracts?.[0]?.club_name ?? playerRow.current_club;
+        setPlayer({ ...playerRow, current_club: derivedClub });
+      }
       setLoading(false);
     };
     fetchPlayer();
