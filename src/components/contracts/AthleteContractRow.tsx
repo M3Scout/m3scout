@@ -7,14 +7,18 @@ import { cn } from "@/lib/utils";
 import type { PlayerContractGroup } from "@/hooks/useContractsByPlayer";
 import type { ContractWithPlayer } from "@/hooks/useContracts";
 
-function transferLabel(c: ContractWithPlayer): { text: string; color: string } {
-  if (c.contract_type === "loan") return { text: "Empréstimo", color: "#3b82f6" };
-  if (c.contract_type === "youth") return { text: "Base/Formação", color: "#8b5cf6" };
-  const fee = c.transfer_fee?.replace(/\s/g, "");
-  if (fee && fee !== "R$0,00" && fee !== "R$0.00" && fee !== "0") {
-    return { text: c.transfer_fee!, color: "#22c55e" };
-  }
-  return { text: "Sem custo", color: "#22c55e" };
+const GREEN = "#22c55e";
+
+function transferInfo(c: ContractWithPlayer): { fee: string; label: string } {
+  const hasFee = (() => {
+    const f = c.transfer_fee?.replace(/\s/g, "");
+    return !!f && f !== "R$0,00" && f !== "R$0.00" && f !== "0";
+  })();
+
+  if (c.contract_type === "loan") return { fee: "-", label: "Empréstimo" };
+  if (c.contract_type === "youth") return { fee: "-", label: "Base/Formação" };
+  if (hasFee) return { fee: c.transfer_fee!, label: "Definitivo" };
+  return { fee: "-", label: "Sem custo" };
 }
 
 interface AthleteContractRowProps {
@@ -92,7 +96,7 @@ export function AthleteContractRow({ group }: AthleteContractRowProps) {
 
             <div className="divide-y divide-zinc-800/50">
               {group.club_contracts.map(c => {
-                const tl = transferLabel(c);
+                const ti = transferInfo(c);
                 return (
                   <div key={c.id} className="flex items-center gap-3 py-3">
                     {/* Logo */}
@@ -124,7 +128,8 @@ export function AthleteContractRow({ group }: AthleteContractRowProps) {
 
                     {/* Transfer value / type */}
                     <div className="text-right shrink-0">
-                      <p className="text-[13px] font-semibold" style={{ color: tl.color }}>{tl.text}</p>
+                      <p className="text-[13px] font-semibold tabular-nums" style={{ color: GREEN }}>{ti.fee}</p>
+                      <p className="text-[11px] font-medium" style={{ color: GREEN }}>{ti.label}</p>
                     </div>
                   </div>
                 );
