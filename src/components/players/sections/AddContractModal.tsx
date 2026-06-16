@@ -57,6 +57,30 @@ export function AddContractModal({ open, onOpenChange, playerId, onSuccess }: Ad
     }
     setIsSubmitting(true);
     try {
+      // Fetch existing contracts to determine sort_order
+      const { data: existing } = await supabase
+        .from("player_contract_history")
+        .select("id, sort_order")
+        .eq("player_id", playerId)
+        .eq("is_archived", false);
+
+      const rows = existing ?? [];
+
+      // Ensure all existing rows have a sort_order (assign 10, 20, 30... if missing)
+      const needsOrder = rows.filter(r => r.sort_order === null);
+      if (needsOrder.length > 0) {
+        const base = rows.filter(r => r.sort_order !== null).length;
+        await Promise.all(
+          needsOrder.map((r, i) =>
+            supabase.from("player_contract_history").update({ sort_order: (base + i + 1) * 10 }).eq("id", r.id)
+          )
+        );
+      }
+
+      // New contract goes to top: sort_order = min existing - 10 (or 0 if none)
+      const knownOrders = rows.map(r => r.sort_order).filter((o): o is number => o !== null);
+      const newSortOrder = knownOrders.length > 0 ? Math.min(...knownOrders) - 10 : 0;
+
       const { error } = await supabase
         .from("player_contract_history")
         .insert({
@@ -71,6 +95,7 @@ export function AddContractModal({ open, onOpenChange, playerId, onSuccess }: Ad
           notes: formData.notes || null,
           is_current: false,
           is_archived: false,
+          sort_order: newSortOrder,
         });
       if (error) throw error;
       toast.success("Contrato adicionado com sucesso");
