@@ -55,7 +55,7 @@ export function AthleteContractRow({ group }: AthleteContractRowProps) {
     )}>
       {/* ── Collapsed header ── */}
       <button
-        className="w-full flex items-center gap-4 px-4 py-4 rounded-xl transition-colors duration-200 hover:bg-[#141617]"
+        className="w-full flex items-center gap-4 px-4 py-4 rounded-xl transition-colors duration-200 hover:bg-[#0d0e0f]"
         onClick={() => setExpanded(v => !v)}
       >
         <div className="h-[62px] w-[62px] rounded-lg border border-zinc-800 bg-zinc-800 shrink-0 overflow-hidden flex items-center justify-center">
@@ -98,7 +98,7 @@ export function AthleteContractRow({ group }: AthleteContractRowProps) {
               {group.club_contracts.map(c => {
                 const ti = transferInfo(c);
                 return (
-                  <div key={c.id} className="flex items-center gap-3 py-3 px-2 -mx-2 rounded-lg transition-colors duration-150 hover:bg-[#141516]">
+                  <div key={c.id} className="flex items-center gap-3 py-3 px-2 -mx-2 rounded-lg transition-colors duration-150 hover:bg-[#0d0e0f]">
                     {/* Logo */}
                     <div className="w-10 h-10 rounded-lg bg-zinc-800/60 border border-zinc-700/40 shrink-0 overflow-hidden flex items-center justify-center">
                       {c.club_logo_url ? (
