@@ -48,7 +48,7 @@ export function AthleteContractRow({ group }: AthleteContractRowProps) {
 
   return (
     <div className={cn(
-      "rounded-xl border transition-all duration-200 bg-[#1f2225]",
+      "rounded-xl border transition-all duration-200 bg-[#1e2124]",
       expanded
         ? "border-zinc-700/50"
         : "border-zinc-700/30 hover:border-zinc-700/50"
