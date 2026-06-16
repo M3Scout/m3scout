@@ -161,7 +161,7 @@ export function AthleteContractRow({ group }: AthleteContractRowProps) {
               const endFormatted = format(new Date(group.m3_contract_end + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR });
 
               return (
-                <div className="rounded-lg border bg-zinc-950/60 px-3 py-2.5"
+                <div className="rounded-lg border bg-[#0d0e0f] px-3 py-2.5"
                   style={{ borderColor: `${color}40` }}>
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
