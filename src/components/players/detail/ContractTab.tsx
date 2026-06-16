@@ -5,8 +5,9 @@ import { parseDateSafe, formatDateMediumBR } from "@/lib/dateUtils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useAuth } from "@/hooks/authContext";
-import { ChevronUp, ChevronDown, Pencil, Loader2, Upload, ExternalLink, FileText } from "lucide-react";
+import { ChevronUp, ChevronDown, Pencil, Plus, Loader2, Upload, ExternalLink, FileText } from "lucide-react";
 import { EditContractModal } from "@/components/players/sections/EditContractModal";
+import { AddContractModal } from "@/components/players/sections/AddContractModal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -138,6 +139,7 @@ export function ContractTab({
   const canEdit = isAdmin || isScout;
   const [reordering, setReordering] = useState(false);
   const [editingContract, setEditingContract] = useState<ContractRecord | null>(null);
+  const [addingContract, setAddingContract] = useState(false);
   const [editingM3, setEditingM3] = useState(false);
   const [m3StartDraft, setM3StartDraft] = useState("");
   const [m3EndDraft, setM3EndDraft] = useState("");
@@ -363,7 +365,31 @@ export function ContractTab({
 
       {/* ── Histórico de Clubes ───────────────────────────────────────── */}
       <div>
-        <SectionHead n="02">HISTÓRICO DE CLUBES</SectionHead>
+        <div className="flex items-center justify-between mb-3">
+          <div className="font-editorial-mono text-[11px] tracking-[0.24em] uppercase" style={{ color: MUTED }}>
+            <span style={{ color: ACCENT }} className="font-semibold">02</span>
+            <span className="inline-block w-[34px] h-px bg-white/15 mx-[10px] align-middle" />
+            HISTÓRICO DE CLUBES
+          </div>
+          {canEdit && (
+            <button
+              onClick={() => setAddingContract(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-colors hover:bg-white/5"
+              style={{ color: MUTED }}
+              title="Adicionar contrato"
+            >
+              <Plus className="w-3 h-3" />
+              <span className="font-editorial-mono text-[10px] uppercase tracking-wider">Adicionar</span>
+            </button>
+          )}
+        </div>
+
+        <AddContractModal
+          open={addingContract}
+          onOpenChange={setAddingContract}
+          playerId={playerId}
+          onSuccess={() => queryClient.invalidateQueries({ queryKey: ["player-contract-history", playerId] })}
+        />
 
         {/* Edit modal — rendered outside the list to avoid z-index issues */}
         <EditContractModal
