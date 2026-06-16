@@ -119,7 +119,9 @@ export function AthleteContractRow({ group }: AthleteContractRowProps) {
                           )}
                         </p>
                         {c.days_to_expire !== null && c.days_to_expire >= 0 && c.days_to_expire <= 90 && (
-                          <span className="text-[10px] text-zinc-600 tabular-nums">
+                          <span className="text-[10px] font-medium tabular-nums" style={{
+                            color: c.days_to_expire <= 30 ? "#ec4525" : c.days_to_expire <= 60 ? "#f59e0b" : "#62616a"
+                          }}>
                             · {c.days_to_expire}d
                           </span>
                         )}
