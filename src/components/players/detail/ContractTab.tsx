@@ -85,6 +85,7 @@ interface ContractRecord {
   id: string;
   club_name: string;
   club_country: string | null;
+  club_logo_url: string | null;
   contract_type: string;
   start_date: string;
   end_date: string | null;

@@ -44,7 +44,7 @@ export function useContractsByPlayer(filterStatus?: string, filterDays?: number)
         const { data, error: fetchError } = await supabase
           .from("player_contract_history")
           .select(`
-            id, player_id, club_name, contract_type, start_date, end_date, sort_order,
+            id, player_id, club_name, club_logo_url, contract_type, transfer_fee, start_date, end_date, sort_order,
             players!player_contract_history_player_id_fkey (
               full_name, photo_url, position, is_archived, agent_name, agent_contact,
               m3_contract_start, m3_contract_end
@@ -88,7 +88,9 @@ export function useContractsByPlayer(filterStatus?: string, filterDays?: number)
               player_photo_url: c.players?.photo_url || null,
               player_position: c.players?.position || "N/D",
               club_name: c.club_name,
+              club_logo_url: c.club_logo_url ?? null,
               contract_type: c.contract_type,
+              transfer_fee: c.transfer_fee ?? null,
               start_date: c.start_date,
               end_date: c.end_date,
               days_to_expire: daysToExpire,

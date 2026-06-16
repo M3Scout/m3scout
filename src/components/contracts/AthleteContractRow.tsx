@@ -2,17 +2,21 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ChevronDown, Building2, Briefcase, Eye, CalendarClock } from "lucide-react";
+import { ChevronDown, ArrowLeftRight, Briefcase, Eye, CalendarClock, Shield } from "lucide-react";
 import { ContractStatusBadge } from "./ContractStatusBadge";
 import { cn } from "@/lib/utils";
 import type { PlayerContractGroup } from "@/hooks/useContractsByPlayer";
+import type { ContractWithPlayer } from "@/hooks/useContracts";
 
-const contractTypeLabels: Record<string, string> = {
-  permanent: "Definitivo",
-  loan: "Empréstimo",
-  trial: "Teste",
-  youth: "Base/Formação",
-};
+function transferLabel(c: ContractWithPlayer): { text: string; color: string } {
+  if (c.contract_type === "loan") return { text: "Empréstimo", color: "#3b82f6" };
+  if (c.contract_type === "youth") return { text: "Base/Formação", color: "#8b5cf6" };
+  const fee = c.transfer_fee?.replace(/\s/g, "");
+  if (fee && fee !== "R$0,00" && fee !== "R$0.00" && fee !== "0") {
+    return { text: c.transfer_fee!, color: "#22c55e" };
+  }
+  return { text: "Sem custo", color: "#22c55e" };
+}
 
 interface AthleteContractRowProps {
   group: PlayerContractGroup;
@@ -78,36 +82,48 @@ export function AthleteContractRow({ group }: AthleteContractRowProps) {
       {expanded && (
         <div className="border-t border-zinc-800/40">
 
-          {/* Clubes */}
+          {/* Histórico de Transferências */}
           <div className="px-4 pt-4 pb-3">
             <div className="flex items-center gap-1.5 mb-3">
-              <Building2 size={11} className="text-zinc-500" />
+              <ArrowLeftRight size={11} className="text-zinc-500" />
               <span className="font-editorial-mono text-[10px] tracking-[0.22em] uppercase text-zinc-500">
-                Clubes
+                Histórico de Transferências
               </span>
             </div>
 
-            <div className="space-y-2">
-              {group.club_contracts.map(c => (
-                <div
-                  key={c.id}
-                  className="flex items-center gap-3 rounded-lg border border-zinc-800/50 bg-zinc-950/60 px-3 py-2.5"
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-semibold text-zinc-200 truncate">{c.club_name}</p>
-                    <p className="text-[10px] text-zinc-500 mt-0.5 tabular-nums">
-                      {contractTypeLabels[c.contract_type] || c.contract_type}
-                      {c.start_date && (
-                        <> · {format(new Date(c.start_date + "T00:00:00"), "MM/yyyy", { locale: ptBR })}</>
+            <div className="divide-y divide-zinc-800/50">
+              {group.club_contracts.map(c => {
+                const tl = transferLabel(c);
+                return (
+                  <div key={c.id} className="flex items-center gap-3 py-3">
+                    {/* Logo */}
+                    <div className="w-10 h-10 rounded-lg bg-zinc-800/60 border border-zinc-700/40 shrink-0 overflow-hidden flex items-center justify-center">
+                      {c.club_logo_url ? (
+                        <img src={c.club_logo_url} alt={c.club_name} className="w-full h-full object-contain p-0.5" />
+                      ) : (
+                        <Shield size={18} className="text-zinc-600" />
                       )}
-                      {c.end_date && (
-                        <> → {format(new Date(c.end_date + "T00:00:00"), "MM/yyyy", { locale: ptBR })}</>
-                      )}
-                    </p>
+                    </div>
+
+                    {/* Club + dates */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-semibold text-zinc-100 truncate">{c.club_name}</p>
+                      <p className="text-[11px] text-zinc-500 tabular-nums mt-0.5">
+                        {c.start_date && format(new Date(c.start_date + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR })}
+                        {c.end_date && (
+                          <> → {format(new Date(c.end_date + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR })}</>
+                        )}
+                      </p>
+                    </div>
+
+                    {/* Transfer value / type */}
+                    <div className="text-right shrink-0">
+                      <p className="text-[13px] font-semibold" style={{ color: tl.color }}>{tl.text}</p>
+                      <ContractStatusBadge status={c.status} daysToExpire={c.days_to_expire} />
+                    </div>
                   </div>
-                  <ContractStatusBadge status={c.status} daysToExpire={c.days_to_expire} />
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 

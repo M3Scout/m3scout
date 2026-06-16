@@ -8,7 +8,9 @@ export interface ContractWithPlayer {
   player_photo_url: string | null;
   player_position: string;
   club_name: string;
+  club_logo_url: string | null;
   contract_type: string;
+  transfer_fee: string | null;
   start_date: string;
   end_date: string | null;
   days_to_expire: number | null;

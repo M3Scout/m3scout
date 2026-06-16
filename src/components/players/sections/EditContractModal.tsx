@@ -38,6 +38,7 @@ interface ContractData {
   id: string;
   club_name: string;
   club_country: string | null;
+  club_logo_url?: string | null;
   contract_type: string;
   start_date: string;
   end_date: string | null;
@@ -73,6 +74,7 @@ export function EditContractModal({
   const [formData, setFormData] = useState({
     club_name: "",
     club_country: "",
+    club_logo_url: "",
     contract_type: "permanent",
     start_date: "",
     end_date: "",
@@ -86,6 +88,7 @@ export function EditContractModal({
       setFormData({
         club_name: contract.club_name || "",
         club_country: contract.club_country || "",
+        club_logo_url: contract.club_logo_url || "",
         contract_type: contract.contract_type || "permanent",
         start_date: contract.start_date || "",
         end_date: contract.end_date || "",
@@ -155,6 +158,7 @@ export function EditContractModal({
         .update({
           club_name: formData.club_name,
           club_country: formData.club_country || null,
+          club_logo_url: formData.club_logo_url || null,
           contract_type: formData.contract_type,
           start_date: formData.start_date,
           end_date: formData.end_date || null,
@@ -373,6 +377,22 @@ export function EditContractModal({
                 className="h-11 bg-zinc-900/50 border-zinc-800"
                 disabled={!canEdit}
               />
+            </div>
+            <div className="space-y-2 col-span-2">
+              <Label htmlFor="edit_club_logo" className="text-xs text-zinc-400">URL da Logo do Clube</Label>
+              <div className="flex gap-2 items-center">
+                {formData.club_logo_url && (
+                  <img src={formData.club_logo_url} alt="logo" className="w-8 h-8 object-contain rounded bg-zinc-800 shrink-0" />
+                )}
+                <Input
+                  id="edit_club_logo"
+                  placeholder="https://..."
+                  value={formData.club_logo_url}
+                  onChange={(e) => setFormData({ ...formData, club_logo_url: e.target.value })}
+                  className="h-11 bg-zinc-900/50 border-zinc-800 flex-1"
+                  disabled={!canEdit}
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit_club_country" className="text-xs text-zinc-400">País</Label>

@@ -1179,6 +1179,7 @@ export type Database = {
         Row: {
           archived_at: string | null
           club_country: string | null
+          club_logo_url: string | null
           club_name: string
           contract_file_url: string | null
           contract_type: string
@@ -1199,6 +1200,7 @@ export type Database = {
         Insert: {
           archived_at?: string | null
           club_country?: string | null
+          club_logo_url?: string | null
           club_name: string
           contract_file_url?: string | null
           contract_type?: string
@@ -1219,6 +1221,7 @@ export type Database = {
         Update: {
           archived_at?: string | null
           club_country?: string | null
+          club_logo_url?: string | null
           club_name?: string
           contract_file_url?: string | null
           contract_type?: string
