@@ -118,6 +118,11 @@ export function AthleteContractRow({ group }: AthleteContractRowProps) {
                             <> → {format(new Date(c.end_date + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR })}</>
                           )}
                         </p>
+                        {c.days_to_expire !== null && c.days_to_expire < 0 && (
+                          <span className="text-[10px] font-medium" style={{ color: "#ec4525" }}>
+                            · FIM
+                          </span>
+                        )}
                         {c.days_to_expire !== null && c.days_to_expire >= 0 && c.days_to_expire <= 90 && (
                           <span className="text-[10px] font-medium tabular-nums" style={{
                             color: c.days_to_expire <= 30 ? "#ec4525" : c.days_to_expire <= 60 ? "#f59e0b" : "#62616a"
