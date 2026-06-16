@@ -69,8 +69,10 @@ export function EditContractModal({
 }: EditContractModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isLogoUploading, setIsLogoUploading] = useState(false);
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     club_name: "",
     club_country: "",
@@ -178,6 +180,34 @@ export function EditContractModal({
       toast.error("Erro ao atualizar contrato");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !contract) return;
+    const ext = file.name.split(".").pop() ?? "png";
+    const path = `clubs/${contract.id}.${ext}`;
+    setIsLogoUploading(true);
+    try {
+      const { error: upErr } = await supabase.storage
+        .from("logos")
+        .upload(path, file, { upsert: true });
+      if (upErr) throw upErr;
+      const { data: { publicUrl } } = supabase.storage.from("logos").getPublicUrl(path);
+      setFormData(f => ({ ...f, club_logo_url: publicUrl }));
+      const { error: dbErr } = await supabase
+        .from("player_contract_history")
+        .update({ club_logo_url: publicUrl })
+        .eq("id", contract.id);
+      if (dbErr) throw dbErr;
+      toast.success("Logo enviada com sucesso");
+      onSuccess();
+    } catch {
+      toast.error("Erro ao enviar logo");
+    } finally {
+      setIsLogoUploading(false);
+      if (logoInputRef.current) logoInputRef.current.value = "";
     }
   };
 
@@ -379,19 +409,40 @@ export function EditContractModal({
               />
             </div>
             <div className="space-y-2 col-span-2">
-              <Label htmlFor="edit_club_logo" className="text-xs text-zinc-400">URL da Logo do Clube</Label>
+              <Label className="text-xs text-zinc-400">Logo do Clube</Label>
               <div className="flex gap-2 items-center">
-                {formData.club_logo_url && (
-                  <img src={formData.club_logo_url} alt="logo" className="w-8 h-8 object-contain rounded bg-zinc-800 shrink-0" />
+                {/* Preview */}
+                <div className="w-11 h-11 rounded-lg bg-zinc-800 border border-zinc-700 shrink-0 overflow-hidden flex items-center justify-center">
+                  {formData.club_logo_url ? (
+                    <img src={formData.club_logo_url} alt="logo" className="w-full h-full object-contain p-1" />
+                  ) : (
+                    <span className="text-zinc-600 text-[10px]">—</span>
+                  )}
+                </div>
+                {canEdit && (
+                  <>
+                    <input
+                      ref={logoInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleLogoUpload}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 gap-2 border-zinc-700 text-zinc-300 hover:bg-zinc-800 h-11"
+                      onClick={() => logoInputRef.current?.click()}
+                      disabled={isLogoUploading}
+                    >
+                      {isLogoUploading
+                        ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Enviando...</>
+                        : <><Upload className="w-3.5 h-3.5" />{formData.club_logo_url ? "Trocar logo" : "Enviar logo"}</>
+                      }
+                    </Button>
+                  </>
                 )}
-                <Input
-                  id="edit_club_logo"
-                  placeholder="https://..."
-                  value={formData.club_logo_url}
-                  onChange={(e) => setFormData({ ...formData, club_logo_url: e.target.value })}
-                  className="h-11 bg-zinc-900/50 border-zinc-800 flex-1"
-                  disabled={!canEdit}
-                />
               </div>
             </div>
             <div className="space-y-2">
