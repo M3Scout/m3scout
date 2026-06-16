@@ -187,18 +187,23 @@ export function EditContractModal({
     const file = e.target.files?.[0];
     if (!file || !contract) return;
     const ext = file.name.split(".").pop() ?? "png";
-    const path = `clubs/${contract.id}.${ext}`;
+    const storagePath = `logos/${contract.id}.${ext}`;
     setIsLogoUploading(true);
     try {
       const { error: upErr } = await supabase.storage
-        .from("logos")
-        .upload(path, file, { upsert: true });
+        .from("contracts")
+        .upload(storagePath, file, { upsert: true });
       if (upErr) throw upErr;
-      const { data: { publicUrl } } = supabase.storage.from("logos").getPublicUrl(path);
-      setFormData(f => ({ ...f, club_logo_url: publicUrl }));
+      // signed URL válida por 10 anos
+      const { data: signed, error: signErr } = await supabase.storage
+        .from("contracts")
+        .createSignedUrl(storagePath, 315360000);
+      if (signErr || !signed?.signedUrl) throw signErr;
+      const logoUrl = signed.signedUrl;
+      setFormData(f => ({ ...f, club_logo_url: logoUrl }));
       const { error: dbErr } = await supabase
         .from("player_contract_history")
-        .update({ club_logo_url: publicUrl })
+        .update({ club_logo_url: logoUrl })
         .eq("id", contract.id);
       if (dbErr) throw dbErr;
       toast.success("Logo enviada com sucesso");
@@ -292,15 +297,15 @@ export function EditContractModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md bg-zinc-950 border-zinc-800">
+      <DialogContent className="max-w-2xl bg-zinc-950 border-zinc-800">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Building2 className="w-5 h-5 text-primary" />
             Editar Contrato
           </DialogTitle>
         </DialogHeader>
-        
-        <div className="space-y-4 pt-4">
+
+        <div className="space-y-3 pt-2 max-h-[75vh] overflow-y-auto pr-1">
           {/* Quick Actions */}
           {canEdit && (
             <div className="flex gap-2">
@@ -528,7 +533,7 @@ export function EditContractModal({
               placeholder="Notas sobre o contrato..."
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              className="bg-zinc-900/50 border-zinc-800 min-h-[80px]"
+              className="bg-zinc-900/50 border-zinc-800 min-h-[56px]"
               disabled={!canEdit}
             />
           </div>
