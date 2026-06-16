@@ -128,8 +128,8 @@ export function AthleteContractRow({ group }: AthleteContractRowProps) {
 
                     {/* Transfer value / type */}
                     <div className="text-right shrink-0">
-                      {ti.fee && <p className="text-[13px] font-semibold tabular-nums" style={{ color: GREEN }}>{ti.fee}</p>}
-                      {ti.label && <p className="text-[13px] font-semibold" style={{ color: GREEN }}>{ti.label}</p>}
+                      {ti.fee && <p className="text-[13px] font-bold tabular-nums" style={{ color: GREEN }}>{ti.fee}</p>}
+                      {ti.label && <p className="text-[13px] font-bold" style={{ color: GREEN }}>{ti.label}</p>}
                     </div>
                   </div>
                 );
