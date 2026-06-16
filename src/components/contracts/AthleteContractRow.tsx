@@ -88,17 +88,17 @@ export function AthleteContractRow({ group }: AthleteContractRowProps) {
           {/* Histórico de Transferências */}
           <div className="px-4 pt-4 pb-3">
             <div className="flex items-center gap-1.5 mb-3">
-              <ArrowLeftRight size={11} className="text-zinc-500" />
-              <span className="font-editorial-mono text-[10px] tracking-[0.22em] uppercase text-zinc-500">
+              <ArrowLeftRight size={11} className="text-zinc-100" />
+              <span className="font-editorial-mono text-[10px] tracking-[0.22em] uppercase text-zinc-100 font-bold">
                 Histórico de Transferências
               </span>
             </div>
 
-            <div className="divide-y divide-zinc-800/50">
+            <div className="divide-y divide-zinc-700/60">
               {group.club_contracts.map(c => {
                 const ti = transferInfo(c);
                 return (
-                  <div key={c.id} className="flex items-center gap-3 py-3">
+                  <div key={c.id} className="flex items-center gap-3 py-3 px-2 -mx-2 rounded-lg transition-colors duration-150 hover:bg-[#141516]">
                     {/* Logo */}
                     <div className="w-10 h-10 rounded-lg bg-zinc-800/60 border border-zinc-700/40 shrink-0 overflow-hidden flex items-center justify-center">
                       {c.club_logo_url ? (
@@ -149,8 +149,8 @@ export function AthleteContractRow({ group }: AthleteContractRowProps) {
           {/* Agência / Contrato M3 */}
           <div className="px-4 pt-3 pb-4">
             <div className="flex items-center gap-1.5 mb-3">
-              <Briefcase size={11} className="text-zinc-500" />
-              <span className="font-editorial-mono text-[10px] tracking-[0.22em] uppercase text-zinc-500">
+              <Briefcase size={11} className="text-zinc-100" />
+              <span className="font-editorial-mono text-[10px] tracking-[0.22em] uppercase text-zinc-100 font-bold">
                 Contrato M3
               </span>
             </div>
