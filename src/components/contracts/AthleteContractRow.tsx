@@ -100,14 +100,11 @@ export function AthleteContractRow({ group }: AthleteContractRowProps) {
                 return (
                   <div key={c.id} className="flex items-center gap-3 py-3 px-2 -mx-2 rounded-lg transition-colors duration-150 hover:bg-[#0d0e0f]">
                     {/* Logo */}
-                    <div className={cn(
-                      "w-10 h-10 rounded-lg shrink-0 overflow-hidden flex items-center justify-center",
-                      !c.club_logo_url && "bg-zinc-800/60 border border-zinc-700/40"
-                    )}>
+                    <div className="w-10 h-10 shrink-0 flex items-center justify-center">
                       {c.club_logo_url ? (
                         <img src={c.club_logo_url} alt={c.club_name} className="w-10 h-10 object-contain" />
                       ) : (
-                        <Shield size={18} className="text-zinc-600" />
+                        <Shield size={28} className="text-zinc-600" fill="currentColor" />
                       )}
                     </div>
 
