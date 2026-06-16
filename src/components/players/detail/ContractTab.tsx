@@ -224,24 +224,13 @@ export function ContractTab({
       const rows = (data ?? []) as ContractRecord[];
 
       // Auto-initialize sort_order for contracts that don't have one (by start_date DESC)
-      const nullRows = rows.filter(r => r.sort_order === null);
-      if (nullRows.length > 0) {
-        const byDate = [...rows].sort((a, b) =>
-          new Date(b.start_date).getTime() - new Date(a.start_date).getTime()
-        );
-        const updates = byDate
-          .filter(r => r.sort_order === null)
-          .map((r, i) => {
-            const order = (byDate.filter(x => x.sort_order !== null).length + i) * 10;
-            r.sort_order = order;
-            return supabase.from("player_contract_history").update({ sort_order: order }).eq("id", r.id);
-          });
-        await Promise.all(updates);
-      }
-
+      // Always sort by start_date DESC — keeps date order consistent with /dashboard/contratos
+      // sort_order is used only as tiebreaker when dates are equal
       return rows.sort((a, b) => {
+        const dateDiff = new Date(b.start_date).getTime() - new Date(a.start_date).getTime();
+        if (dateDiff !== 0) return dateDiff;
         if (a.sort_order !== null && b.sort_order !== null) return a.sort_order - b.sort_order;
-        return new Date(b.start_date).getTime() - new Date(a.start_date).getTime();
+        return 0;
       });
     },
   });

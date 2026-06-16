@@ -150,10 +150,10 @@ export function useContractsByPlayer(filterStatus?: string, filterDays?: number)
 
     let groups = Array.from(map.values()).map(g => {
       const sorted = [...g.club_contracts].sort((a, b) => {
+        const dateDiff = new Date(b.start_date).getTime() - new Date(a.start_date).getTime();
+        if (dateDiff !== 0) return dateDiff;
         if (a.sort_order !== null && b.sort_order !== null) return a.sort_order - b.sort_order;
-        if (a.sort_order !== null) return -1;
-        if (b.sort_order !== null) return 1;
-        return new Date(b.start_date).getTime() - new Date(a.start_date).getTime();
+        return 0;
       });
       return { ...g, club_contracts: sorted, worst_status: worstStatus(g.club_contracts) };
     });
