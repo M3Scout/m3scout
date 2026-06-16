@@ -255,20 +255,31 @@ export function ContractTab({
     }
   };
 
-  // Derive current club from the first history entry (top of list = most recent)
-  const derivedCurrentClub = history.length > 0 ? history[0].club_name : currentClub;
+  // ── Derive all contract info from history (first = most current) ──────────
+  const topContract = history.length > 0 ? history[0] : null;
+  const derivedCurrentClub = topContract?.club_name ?? currentClub;
+  const derivedStart        = topContract?.start_date ?? contractStart;
+  const derivedEnd          = topContract?.end_date   ?? contractEnd;
 
-  const statusCfg = getStatusCfg(contractStatus);
-  const days = daysUntil(contractEnd);
+  // Status: if top contract exists and end_date hasn't passed → contracted/loan, else free
+  const derivedStatus = (() => {
+    if (!topContract) return contractStatus;
+    const daysLeft = daysUntil(topContract.end_date);
+    if (topContract.end_date && daysLeft !== null && daysLeft < 0) return "free";
+    return topContract.contract_type === "loan" ? "emprestado" : "contracted";
+  })();
+
+  const statusCfg = getStatusCfg(derivedStatus);
+  const days = daysUntil(derivedEnd);
   const isExpiring = days !== null && days > 0 && days <= 180;
-  const isFree = ["free", "livre"].includes(contractStatus?.toLowerCase() ?? "");
+  const isFree = ["free", "livre"].includes(derivedStatus?.toLowerCase() ?? "");
   const isExpired = days !== null && days < 0;
   const showAlert = isFree || isExpiring || isExpired;
 
   const detailItems = [
     { label: "Clube Atual",          value: derivedCurrentClub },
     { label: "País",                 value: country       },
-    { label: "Vínculo",              value: contractStatus ? statusCfg.label : null },
+    { label: "Vínculo",              value: derivedStatus ? statusCfg.label : null },
     { label: "Salário",              value: salaryInfo    },
     { label: "Cláusula de Rescisão", value: releaseClause },
     { label: "Agente",               value: agentName, sub: agentContact ?? undefined },
@@ -289,8 +300,8 @@ export function ContractTab({
             {isFree
               ? "ATLETA DISPONÍVEL — Sem clube / Livre no mercado"
               : isExpired
-              ? `CONTRATO VENCIDO — Expirou em ${formatDateMediumBR(contractEnd!)}`
-              : `CONTRATO PRÓXIMO DO VENCIMENTO — ${days} dias restantes (${formatDateMediumBR(contractEnd!)})`}
+              ? `CONTRATO VENCIDO — Expirou em ${formatDateMediumBR(derivedEnd!)}`
+              : `CONTRATO PRÓXIMO DO VENCIMENTO — ${days} dias restantes (${formatDateMediumBR(derivedEnd!)})`}
           </p>
         </div>
       )}
@@ -312,7 +323,7 @@ export function ContractTab({
           style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
           <span className="font-editorial-mono text-[9px] uppercase tracking-[0.2em]" style={{ color: MUTED }}>CLUBE ATUAL</span>
           <span className="font-editorial-mono text-[13px] leading-tight" style={{ color: TEXT }}>
-            {currentClub ?? <span style={{ color: MUTED }}>—</span>}
+            {derivedCurrentClub ?? <span style={{ color: MUTED }}>—</span>}
           </span>
         </div>
 
@@ -321,7 +332,7 @@ export function ContractTab({
           style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
           <span className="font-editorial-mono text-[9px] uppercase tracking-[0.2em]" style={{ color: MUTED }}>INÍCIO DO CONTRATO</span>
           <span className="font-editorial-mono text-[13px]" style={{ color: TEXT }}>
-            {contractStart ? fmtPeriod(contractStart) : <span style={{ color: MUTED }}>—</span>}
+            {derivedStart ? fmtPeriod(derivedStart) : <span style={{ color: MUTED }}>—</span>}
           </span>
         </div>
 
@@ -330,7 +341,7 @@ export function ContractTab({
           style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
           <span className="font-editorial-mono text-[9px] uppercase tracking-[0.2em]" style={{ color: MUTED }}>TÉRMINO DO CONTRATO</span>
           <span className="font-editorial-mono text-[13px]" style={{ color: isExpiring || isExpired ? AMBER : TEXT }}>
-            {contractEnd ? fmtPeriod(contractEnd) : <span style={{ color: MUTED }}>—</span>}
+            {derivedEnd ? fmtPeriod(derivedEnd) : <span style={{ color: MUTED }}>—</span>}
           </span>
           {isExpiring && (
             <span className="font-editorial-mono text-[9px] uppercase tracking-wider" style={{ color: AMBER }}>
