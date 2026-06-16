@@ -50,6 +50,9 @@ const getTypeCfg = (type: string) => {
 const fmtPeriod = (date: string) =>
   format(parseDateSafe(date), "MMM yyyy", { locale: ptBR }).toUpperCase();
 
+const fmtFull = (date: string) =>
+  format(parseDateSafe(date), "dd/MM/yyyy", { locale: ptBR });
+
 const daysUntil = (dateStr: string | null): number | null => {
   if (!dateStr) return null;
   const diff = parseDateSafe(dateStr).getTime() - Date.now();
@@ -332,7 +335,7 @@ export function ContractTab({
           style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
           <span className="font-editorial-mono text-[9px] uppercase tracking-[0.2em]" style={{ color: MUTED }}>INÍCIO DO CONTRATO</span>
           <span className="font-editorial-mono text-[13px]" style={{ color: TEXT }}>
-            {derivedStart ? fmtPeriod(derivedStart) : <span style={{ color: MUTED }}>—</span>}
+            {derivedStart ? fmtFull(derivedStart) : <span style={{ color: MUTED }}>—</span>}
           </span>
         </div>
 
@@ -341,7 +344,7 @@ export function ContractTab({
           style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
           <span className="font-editorial-mono text-[9px] uppercase tracking-[0.2em]" style={{ color: MUTED }}>TÉRMINO DO CONTRATO</span>
           <span className="font-editorial-mono text-[13px]" style={{ color: isExpiring || isExpired ? AMBER : TEXT }}>
-            {derivedEnd ? fmtPeriod(derivedEnd) : <span style={{ color: MUTED }}>—</span>}
+            {derivedEnd ? fmtFull(derivedEnd) : <span style={{ color: MUTED }}>—</span>}
           </span>
           {isExpiring && (
             <span className="font-editorial-mono text-[9px] uppercase tracking-wider" style={{ color: AMBER }}>
