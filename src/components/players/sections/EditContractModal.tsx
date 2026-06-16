@@ -100,7 +100,8 @@ export function EditContractModal({
       });
       setFileUrl(contract.contract_file_url ?? null);
     }
-  }, [contract]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contract?.id]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
