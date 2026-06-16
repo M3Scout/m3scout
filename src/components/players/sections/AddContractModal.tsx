@@ -66,20 +66,43 @@ export function AddContractModal({ open, onOpenChange, playerId, onSuccess }: Ad
 
       const rows = existing ?? [];
 
-      // Ensure all existing rows have a sort_order (assign 10, 20, 30... if missing)
-      const needsOrder = rows.filter(r => r.sort_order === null);
+      // Sort existing by start_date DESC to find the right position for the new contract
+      const sorted = [...rows].sort((a, b) =>
+        new Date(b.start_date ?? 0).getTime() - new Date(a.start_date ?? 0).getTime()
+      );
+
+      // Ensure all existing have sort_order; assign by date position if missing
+      const needsOrder = sorted.filter(r => r.sort_order === null);
       if (needsOrder.length > 0) {
-        const base = rows.filter(r => r.sort_order !== null).length;
         await Promise.all(
-          needsOrder.map((r, i) =>
-            supabase.from("player_contract_history").update({ sort_order: (base + i + 1) * 10 }).eq("id", r.id)
+          sorted.map((r, i) =>
+            r.sort_order === null
+              ? supabase.from("player_contract_history").update({ sort_order: i * 10 }).eq("id", r.id)
+              : Promise.resolve()
           )
         );
+        sorted.forEach((r, i) => { if (r.sort_order === null) r.sort_order = i * 10; });
       }
 
-      // New contract goes to top: sort_order = min existing - 10 (or 0 if none)
-      const knownOrders = rows.map(r => r.sort_order).filter((o): o is number => o !== null);
-      const newSortOrder = knownOrders.length > 0 ? Math.min(...knownOrders) - 10 : 0;
+      // Position new contract based on its start_date relative to existing ones
+      const newDate = new Date(formData.start_date).getTime();
+      const insertIdx = sorted.findIndex(r => new Date(r.start_date ?? 0).getTime() < newDate);
+
+      let newSortOrder: number;
+      if (sorted.length === 0) {
+        newSortOrder = 0;
+      } else if (insertIdx === 0) {
+        // Most recent → goes first
+        newSortOrder = (sorted[0].sort_order ?? 0) - 10;
+      } else if (insertIdx === -1) {
+        // Oldest → goes last
+        newSortOrder = (sorted[sorted.length - 1].sort_order ?? (sorted.length - 1) * 10) + 10;
+      } else {
+        // Middle — interpolate between neighbours
+        const prev = sorted[insertIdx - 1].sort_order ?? (insertIdx - 1) * 10;
+        const next = sorted[insertIdx].sort_order ?? insertIdx * 10;
+        newSortOrder = Math.floor((prev + next) / 2);
+      }
 
       const { error } = await supabase
         .from("player_contract_history")

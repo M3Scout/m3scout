@@ -219,14 +219,28 @@ export function ContractTab({
         .from("player_contract_history")
         .select("*")
         .eq("player_id", playerId)
-        .eq("is_archived", false)
-        .order("sort_order", { ascending: true });
+        .eq("is_archived", false);
       if (error) throw error;
       const rows = (data ?? []) as ContractRecord[];
+
+      // Auto-initialize sort_order for contracts that don't have one (by start_date DESC)
+      const nullRows = rows.filter(r => r.sort_order === null);
+      if (nullRows.length > 0) {
+        const byDate = [...rows].sort((a, b) =>
+          new Date(b.start_date).getTime() - new Date(a.start_date).getTime()
+        );
+        const updates = byDate
+          .filter(r => r.sort_order === null)
+          .map((r, i) => {
+            const order = (byDate.filter(x => x.sort_order !== null).length + i) * 10;
+            r.sort_order = order;
+            return supabase.from("player_contract_history").update({ sort_order: order }).eq("id", r.id);
+          });
+        await Promise.all(updates);
+      }
+
       return rows.sort((a, b) => {
         if (a.sort_order !== null && b.sort_order !== null) return a.sort_order - b.sort_order;
-        if (a.sort_order !== null) return -1;
-        if (b.sort_order !== null) return 1;
         return new Date(b.start_date).getTime() - new Date(a.start_date).getTime();
       });
     },
