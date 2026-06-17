@@ -324,11 +324,25 @@ const PlayerDetail = () => {
     enabled: !!id && !!player,
   });
 
+  const deriveCurrentClub = async (playerId: string, fallback: string | null): Promise<string | null> => {
+    const { data } = await supabase
+      .from("player_contract_history")
+      .select("club_name")
+      .eq("player_id", playerId)
+      .eq("is_archived", false)
+      .order("start_date", { ascending: false })
+      .limit(1);
+    return data?.[0]?.club_name ?? fallback;
+  };
+
   const refetchPlayer = async () => {
     if (!id) return;
     const { data } = await supabase.from("players").select("*").eq("id", id).limit(1);
     const row = Array.isArray(data) ? data[0] ?? null : null;
-    if (row) setPlayer(row as Player);
+    if (row) {
+      const club = await deriveCurrentClub(id, row.current_club);
+      setPlayer({ ...(row as Player), current_club: club });
+    }
   };
 
   useEffect(() => {
@@ -344,7 +358,10 @@ const PlayerDetail = () => {
           .limit(RECENT_REPORTS_LIMIT),
       ]);
       const row = Array.isArray(playerRes.data) ? playerRes.data[0] ?? null : null;
-      if (row) setPlayer(row as Player);
+      if (row) {
+        const club = await deriveCurrentClub(id, row.current_club);
+        setPlayer({ ...(row as Player), current_club: club });
+      }
       if (reportsRes.data) setReports(reportsRes.data as ScoutingReport[]);
       setLoading(false);
     };

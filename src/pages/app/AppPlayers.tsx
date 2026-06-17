@@ -242,20 +242,41 @@ const AppPlayers = () => {
         };
       });
 
+      // Derive current_club from most recent contract (start_date DESC)
+      const { data: contractRows } = await supabase
+        .from("player_contract_history")
+        .select("player_id, club_name, start_date")
+        .eq("is_archived", false)
+        .order("start_date", { ascending: false });
+
+      const currentClubMap: Record<string, string> = {};
+      if (Array.isArray(contractRows)) {
+        for (const c of contractRows) {
+          if (c.player_id && c.club_name && !currentClubMap[c.player_id]) {
+            currentClubMap[c.player_id] = c.club_name;
+          }
+        }
+      }
+
+      const playersWithClub = playersWithScores.map(p => ({
+        ...p,
+        current_club: currentClubMap[p.id] ?? p.current_club,
+      }));
+
       logFetchSuccess({ endpoint: "AppPlayers" }, performance.now() - fetchStart);
-      
+
       // Log when updating (for debugging stale-while-revalidate)
       const prevCount = lastFetchRef.current?.count ?? 0;
-      const newCount = playersWithScores.length;
+      const newCount = playersWithClub.length;
       if (import.meta.env.DEV && prevCount > 0 && prevCount !== newCount) {
         console.log(`[AppPlayers] Data updated: ${prevCount} → ${newCount} players`);
       }
-      
+
       lastFetchRef.current = { count: newCount, timestamp: Date.now() };
-      
+
       // Only update if we got valid data
-      if (Array.isArray(playersWithScores)) {
-        setPlayers(playersWithScores);
+      if (Array.isArray(playersWithClub)) {
+        setPlayers(playersWithClub);
       }
     } catch (error) {
       // Handle AbortError gracefully
