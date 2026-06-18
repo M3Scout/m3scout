@@ -102,7 +102,7 @@ export function MatchSummaryPdfButton({
         const player = matchPlayers.find(mp => mp.player_id === selectedPlayerIds[0]);
         const playerName = player?.player?.full_name
           ?.split(" ")
-          .slice(-1)[0]
+          .slice(0, 1)[0]
           .toLowerCase()
           .replace(/\s+/g, "-") || "jogador";
         filename = `resumo-jogo-${playerName}-${match.opponent_name.replace(/\s+/g, '-').toLowerCase()}-${format(new Date(match.match_date), 'yyyy-MM-dd')}.pdf`;
