@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
-import { cn } from "@/lib/utils";
-import { Home, Users, Newspaper, Mail } from "lucide-react";
+import { Home, Users, Newspaper, Mail, UserCircle, Lock } from "lucide-react";
+import { useAuth } from "@/hooks/authContext";
 
 const navItems = [
   { href: "/", label: "Home", icon: Home },
@@ -11,11 +11,17 @@ const navItems = [
 
 export function PublicMobileNav() {
   const location = useLocation();
+  const { user } = useAuth();
 
   const isActive = (href: string) => {
     if (href === "/") return location.pathname === "/";
     return location.pathname.startsWith(href);
   };
+
+  const authHref = user ? "/dashboard" : "/login";
+  const AuthIcon = user ? Lock : UserCircle;
+  const authLabel = user ? "Dashboard" : "Login";
+  const activeAuth = isActive(authHref);
 
   return (
     <nav
@@ -63,6 +69,26 @@ export function PublicMobileNav() {
             </Link>
           );
         })}
+        <Link
+          to={authHref}
+          className="flex flex-col items-center justify-center gap-0.5 py-2 flex-1 transition-colors duration-150"
+          style={{
+            color: activeAuth ? "#ffffff" : "rgba(255,255,255,0.35)",
+          }}
+        >
+          <AuthIcon className="w-[18px] h-[18px]" strokeWidth={activeAuth ? 2 : 1.5} />
+          <span
+            style={{
+              fontFamily: '"Basis Grotesque Pro", sans-serif',
+              fontSize: 9,
+              fontWeight: activeAuth ? 600 : 400,
+              textTransform: "uppercase",
+              letterSpacing: "0.04em",
+            }}
+          >
+            {authLabel}
+          </span>
+        </Link>
       </div>
     </nav>
   );

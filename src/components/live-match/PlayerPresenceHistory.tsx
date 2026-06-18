@@ -96,7 +96,7 @@ export function PlayerPresenceHistory({ matchId, matchPlayers = [], className }:
     return (
       <div className={cn("space-y-3 animate-pulse", className)}>
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-16 bg-zinc-800/50 rounded-2xl" />
+          <div key={i} className="h-14 rounded-xl animate-pulse" style={{ background: "rgba(255,255,255,0.04)" }} />
         ))}
       </div>
     );
@@ -107,7 +107,7 @@ export function PlayerPresenceHistory({ matchId, matchPlayers = [], className }:
       <div
         className={cn(
           "flex flex-col items-center justify-center py-8 text-center",
-          "bg-zinc-900/60 rounded-2xl border border-white/5",
+          "rounded-xl",
           className
         )}
       >
@@ -122,7 +122,7 @@ export function PlayerPresenceHistory({ matchId, matchPlayers = [], className }:
     return (
       <div className={cn(
         "flex flex-col items-center justify-center py-8 text-center",
-        "bg-zinc-900/60 rounded-2xl border border-white/5",
+        "rounded-xl",
         className
       )}>
         <Clock className="w-10 h-10 text-zinc-600 mb-3" />
@@ -162,10 +162,10 @@ export function PlayerPresenceHistory({ matchId, matchPlayers = [], className }:
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             className={cn(
-              "rounded-2xl overflow-hidden",
-              "bg-zinc-900/60 border border-white/5",
+              "rounded-xl overflow-hidden",
               "transition-all duration-200"
             )}
+            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)" }}
           >
             {/* Player Header */}
             <button
@@ -221,16 +221,15 @@ export function PlayerPresenceHistory({ matchId, matchPlayers = [], className }:
                   animate={{ height: "auto", opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
                   transition={{ duration: 0.2 }}
-                  className="overflow-hidden border-t border-zinc-800/50"
+                  className="overflow-hidden border-t"
+                  style={{ borderColor: "rgba(255,255,255,0.07)" }}
                 >
-                  <div className="p-3 space-y-2 bg-zinc-800/20">
+                  <div className="p-3 space-y-2" style={{ background: "rgba(0,0,0,0.20)" }}>
                     {group.records.map((record, idx) => (
                       <div
                         key={record.id}
-                        className={cn(
-                          "flex items-center gap-3 p-2.5 rounded-xl",
-                          "bg-zinc-800/40 border border-zinc-700/30"
-                        )}
+                        className="flex items-center gap-3 p-2.5 rounded-xl"
+                        style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.10)" }}
                       >
                         <div className={cn(
                           "flex items-center justify-center w-8 h-8 rounded-full shrink-0",

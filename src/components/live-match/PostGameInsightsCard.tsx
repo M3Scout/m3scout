@@ -288,7 +288,7 @@ function PlayerSummaryRow({ player, analysis, matchId, seasonYear, playerEvents,
   }, [analysis.zoneHeatmap.percentages, previousGames, matchId]);
 
   return (
-    <div className="p-3 rounded-lg bg-zinc-900/40 border border-zinc-800/40 space-y-3">
+    <div className="p-3.5 rounded-xl space-y-3" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)" }}>
       {/* Player Header */}
       <div className="flex items-center gap-2">
         <Avatar className="h-7 w-7">
@@ -508,73 +508,32 @@ export function PostGameInsightsCard({
   }
 
   return (
-    <div className="space-y-6">
-      {/* ============================================ */}
-      {/* SECTION 1: Mapas de Calor da Partida */}
-      {/* ============================================ */}
-      <Card className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95">
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-            <MapPin className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-400" />
-            Mapas de Calor da Partida
-          </CardTitle>
-          <CardDescription className="text-sm mt-1">
-            Distribuição de atuação por zonas do campo
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-4 sm:p-6">
-          {/* Responsive Grid: 1 col mobile, 2 cols tablet, 3 cols desktop */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {playerAnalyses.map(({ player, analysis, minutesPlayed }) => (
-              <HeatmapCard
-                 key={`${matchId}:${player.id}`}
-                player={{ ...player, minutes_played: minutesPlayed }}
-                analysis={analysis}
-                matchId={matchId}
-                seasonYear={seasonYear}
-              />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* ============================================ */}
-      {/* SECTION 2: Resumo por Jogador */}
-      {/* ============================================ */}
-      <Card className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95">
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-            <BarChart3 className="h-5 w-5 sm:h-6 sm:w-6" />
-            Resumo por Jogador
-          </CardTitle>
-          <CardDescription className="text-sm mt-1">
-            Indicadores rápidos e pontos-chave
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-4 sm:p-6">
-          <ScrollArea className="h-[400px] sm:h-[480px]">
-            <div className="space-y-3 pr-3">
-              {playerAnalyses.map(({ player, analysis, normalizedStats }) => {
-                // Filter events for this specific player
-                const playerEvents = matchEvents.filter(e => e.player_id === player.player_id);
-                // Use normalized stats instead of raw stats for consistency
-                
-                return (
-                  <PlayerSummaryRow
-                    key={`${matchId}:${player.id}`}
-                    player={player}
-                    analysis={analysis}
-                    matchId={matchId}
-                    seasonYear={seasonYear}
-                    playerEvents={playerEvents}
-                    playerStats={normalizedStats}
-                  />
-                );
-              })}
-            </div>
-          </ScrollArea>
-        </CardContent>
-      </Card>
+    <div className="rounded-xl border overflow-hidden" style={{ background: "#161618", borderColor: "rgba(255,255,255,0.10)" }}>
+      <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: "rgba(255,255,255,0.09)" }}>
+        <div className="flex items-center gap-2.5">
+          <BarChart3 className="w-4 h-4" style={{ color: "#62616a" }} />
+          <span className="font-display font-semibold text-[15px]" style={{ color: "#ededee" }}>Resumo por Jogador</span>
+        </div>
+        <span className="font-editorial-mono text-[10px]" style={{ color: "#62616a" }}>
+          {playerAnalyses.length} atleta{playerAnalyses.length !== 1 ? "s" : ""}
+        </span>
+      </div>
+      <div className="p-4 space-y-3">
+        {playerAnalyses.map(({ player, analysis, normalizedStats }) => {
+          const playerEvents = matchEvents.filter(e => e.player_id === player.player_id);
+          return (
+            <PlayerSummaryRow
+              key={`${matchId}:${player.id}`}
+              player={player}
+              analysis={analysis}
+              matchId={matchId}
+              seasonYear={seasonYear}
+              playerEvents={playerEvents}
+              playerStats={normalizedStats}
+            />
+          );
+        })}
+      </div>
     </div>
   );
 }

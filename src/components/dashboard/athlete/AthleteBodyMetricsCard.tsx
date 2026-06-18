@@ -1,163 +1,258 @@
 import { useState, useEffect } from "react";
-import { Scale, Percent, Activity, Calculator, Loader2 } from "lucide-react";
-import { motion } from "framer-motion";
-import { fadeInUp } from "@/lib/animations";
 import { supabase } from "@/integrations/supabase/client";
+import { Loader2 } from "lucide-react";
+
+// ── Design tokens ──────────────────────────────────────────────────────────────
+const CARD_BG     = "#0f0f10";
+const CARD_BORDER = "rgba(255,255,255,0.07)";
+const MUTED       = "#62616a";
+const TEXT        = "#ededee";
+const GREEN       = "#22c55e";
+const RED         = "#ec4525";
+
+// ── Ranges (same as PhysicalTab) ──────────────────────────────────────────────
+const RANGES: Record<string, {
+  min: number; idealLow: number; idealHigh: number; max: number; inverse?: boolean;
+  refLabel: string;
+}> = {
+  height:              { min: 160, idealLow: 170, idealHigh: 190, max: 200, refLabel: "170-190 cm" },
+  weight:              { min: 55,  idealLow: 65,  idealHigh: 85,  max: 100, refLabel: "65-85 kg"   },
+  wingspan:            { min: 160, idealLow: 175, idealHigh: 200, max: 215, refLabel: "175-200 cm" },
+  body_fat_percentage: { min: 5,   idealLow: 8,   idealHigh: 15,  max: 25,  inverse: true, refLabel: "8-15 %"  },
+  muscle_mass:         { min: 40,  idealLow: 44,  idealHigh: 55,  max: 60,  refLabel: "44-55 %"   },
+  max_speed:           { min: 25,  idealLow: 30,  idealHigh: 35,  max: 40,  refLabel: "30+ km/h"   },
+  sprint_30m:          { min: 3.5, idealLow: 3.8, idealHigh: 4.3, max: 5.0, inverse: true, refLabel: "< 4.3 s"  },
+  vo2_max:             { min: 40,  idealLow: 50,  idealHigh: 65,  max: 75,  refLabel: "55+ ml/kg"  },
+};
+
+type Status = "ideal" | "low" | "high" | "none";
+
+function getStatus(value: number | null, key: string): { pct: number; status: Status } {
+  if (value == null || !Number.isFinite(value)) return { pct: 0, status: "none" };
+  const r = RANGES[key];
+  if (!r) return { pct: 50, status: "ideal" };
+  const clamped = Math.max(r.min, Math.min(r.max, value));
+  const pct = ((clamped - r.min) / (r.max - r.min)) * 100;
+  let status: Status;
+  if (value < r.idealLow)      status = "low";
+  else if (value <= r.idealHigh) status = "ideal";
+  else                           status = "high";
+  return { pct, status };
+}
+
+// ── Status badge ──────────────────────────────────────────────────────────────
+function StatusBadge({ status }: { status: Status }) {
+  if (status === "none") return null;
+  const cfg = {
+    ideal: { label: "IDEAL",  color: GREEN },
+    low:   { label: "ABAIXO", color: RED   },
+    high:  { label: "ACIMA",  color: RED   },
+  }[status];
+  return (
+    <span
+      className="font-editorial-mono text-[9px] tracking-wider border px-1.5 py-0.5 rounded-md flex-shrink-0"
+      style={{ color: cfg.color, borderColor: cfg.color }}
+    >
+      {cfg.label}
+    </span>
+  );
+}
+
+// ── Metric card ───────────────────────────────────────────────────────────────
+function MetricCard({
+  label,
+  value,
+  unit,
+  rangeKey,
+  decimals = 1,
+}: {
+  label: string;
+  value: number | null;
+  unit: string;
+  rangeKey: string;
+  decimals?: number;
+}) {
+  const hasValue   = value != null && Number.isFinite(value);
+  const { pct, status } = getStatus(value, rangeKey);
+  const refLabel   = RANGES[rangeKey]?.refLabel ?? "";
+
+  return (
+    <div
+      className="rounded-xl border p-4 transition-colors duration-[250ms] hover:bg-zinc-800/30"
+      style={{ background: CARD_BG, borderColor: CARD_BORDER }}
+    >
+      {/* Label + badge */}
+      <div className="flex items-start justify-between gap-2 mb-3">
+        <span
+          className="font-editorial-mono text-[10px] uppercase tracking-[0.18em] leading-tight"
+          style={{ color: MUTED }}
+        >
+          {label}
+        </span>
+        {hasValue && <StatusBadge status={status} />}
+      </div>
+
+      {hasValue ? (
+        <>
+          {/* Value */}
+          <div
+            className="font-display font-bold leading-none tabular-nums"
+            style={{ fontSize: 26, color: TEXT }}
+          >
+            {value!.toFixed(decimals)}
+            <span
+              className="font-editorial-mono ml-1"
+              style={{ fontSize: 12, color: MUTED }}
+            >
+              {unit}
+            </span>
+          </div>
+
+          {/* Progress bar */}
+          <div
+            className="mt-3 h-[2px] rounded-full"
+            style={{ background: "rgba(255,255,255,0.07)" }}
+          >
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: GREEN }}
+            />
+          </div>
+
+          {/* Ref label */}
+          {refLabel && (
+            <p
+              className="font-editorial-mono text-[9.5px] mt-1.5"
+              style={{ color: MUTED }}
+            >
+              Ref. {refLabel}
+            </p>
+          )}
+        </>
+      ) : (
+        <div
+          className="font-editorial-mono text-[10px] uppercase tracking-wider mt-2"
+          style={{ color: MUTED }}
+        >
+          —
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Data ──────────────────────────────────────────────────────────────────────
+interface Metrics {
+  height: number | null;
+  wingspan: number | null;
+  weight: number | null;
+  body_fat_percentage: number | null;
+  muscle_mass: number | null;
+  max_speed: number | null;
+  sprint_30m: number | null;
+  vo2_max: number | null;
+}
 
 interface AthleteBodyMetricsCardProps {
   athleteId: string;
 }
 
-interface BodyMetrics {
-  weight: number | null;
-  body_fat_percentage: number | null;
-  muscle_mass: number | null;
-  height: number | null;
-}
-
-function calculateBMI(weight: number | null, heightCm: number | null): number | null {
-  if (!weight || !heightCm || heightCm <= 0) return null;
-  const heightM = heightCm / 100;
-  return weight / (heightM * heightM);
-}
-
-function getBMIStatus(bmi: number | null): { label: string; color: string } {
-  if (bmi === null) return { label: "—", color: "text-zinc-500" };
-  if (bmi < 18.5) return { label: "Abaixo", color: "text-yellow-400" };
-  if (bmi < 25) return { label: "Normal", color: "text-emerald-400" };
-  if (bmi < 30) return { label: "Sobrepeso", color: "text-amber-400" };
-  return { label: "Obesidade", color: "text-red-400" };
-}
-
 export function AthleteBodyMetricsCard({ athleteId }: AthleteBodyMetricsCardProps) {
   const [loading, setLoading] = useState(true);
-  const [metrics, setMetrics] = useState<BodyMetrics | null>(null);
+  const [metrics, setMetrics] = useState<Metrics | null>(null);
 
   useEffect(() => {
-    const fetchMetrics = async () => {
+    const fetch = async () => {
       try {
-        const { data } = await supabase
+        // 1. Base data from players
+        const { data: player } = await supabase
           .from("players")
-          .select("weight, body_fat_percentage, muscle_mass, height")
+          .select("height, wingspan, weight, body_fat_percentage, muscle_mass, max_speed, sprint_30m, vo2_max")
           .eq("id", athleteId)
           .limit(1);
 
-        if (data && data.length > 0) {
-          setMetrics(data[0]);
-        }
-      } catch (error) {
-        console.error("Error fetching body metrics:", error);
+        // 2. Latest physical history record (overrides player data)
+        const { data: hist } = await supabase
+          .from("player_physical_history")
+          .select("weight, body_fat_percentage, muscle_mass, max_speed, sprint_30m, vo2_max")
+          .eq("player_id", athleteId)
+          .order("recorded_at", { ascending: false })
+          .limit(1);
+
+        const p = player?.[0] ?? null;
+        const h = hist?.[0] ?? null;
+
+        setMetrics({
+          height:              p?.height              ?? null,
+          wingspan:            p?.wingspan            ?? null,
+          weight:              h?.weight              ?? p?.weight              ?? null,
+          body_fat_percentage: h?.body_fat_percentage ?? p?.body_fat_percentage ?? null,
+          muscle_mass:         h?.muscle_mass         ?? p?.muscle_mass         ?? null,
+          max_speed:           h?.max_speed           ?? p?.max_speed           ?? null,
+          sprint_30m:          h?.sprint_30m          ?? p?.sprint_30m          ?? null,
+          vo2_max:             h?.vo2_max             ?? p?.vo2_max             ?? null,
+        });
+      } catch (e) {
+        console.error("[AthleteBodyMetricsCard]", e);
       } finally {
         setLoading(false);
       }
     };
-
-    fetchMetrics();
+    fetch();
   }, [athleteId]);
 
-  const bmi = calculateBMI(metrics?.weight ?? null, metrics?.height ?? null);
-  const bmiStatus = getBMIStatus(bmi);
-
-  const cards = [
-    {
-      icon: Scale,
-      label: "Peso",
-      value: metrics?.weight ?? null,
-      unit: "kg",
-      color: "from-blue-500/20 to-blue-600/10",
-      iconColor: "text-blue-400",
-    },
-    {
-      icon: Percent,
-      label: "% Gordura",
-      value: metrics?.body_fat_percentage ?? null,
-      unit: "%",
-      color: "from-amber-500/20 to-amber-600/10",
-      iconColor: "text-amber-400",
-    },
-    {
-      icon: Activity,
-      label: "% M. Muscular",
-      value: metrics?.muscle_mass ?? null,
-      unit: "%",
-      color: "from-emerald-500/20 to-emerald-600/10",
-      iconColor: "text-emerald-400",
-    },
-    {
-      icon: Calculator,
-      label: "IMC",
-      value: bmi,
-      unit: bmiStatus.label,
-      color: "from-violet-500/20 to-violet-600/10",
-      iconColor: "text-violet-400",
-      unitColor: bmiStatus.color,
-    },
-  ];
+  // Muscle mass % — same formula as PhysicalTab: (1 - bf/100) * 50
+  const muscleMassPct =
+    metrics?.weight != null && metrics?.body_fat_percentage != null
+      ? (1 - metrics.body_fat_percentage / 100) * 50
+      : null;
 
   if (loading) {
     return (
-      <motion.div 
-        {...fadeInUp}
-        className="rounded-[var(--radius-card)] bg-zinc-900/60 backdrop-blur-sm shadow-sm overflow-hidden flex-1 flex items-center justify-center min-h-[200px]"
+      <div
+        className="rounded-xl border flex items-center justify-center min-h-[200px]"
+        style={{ background: CARD_BG, borderColor: CARD_BORDER }}
       >
-        <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" />
-      </motion.div>
+        <Loader2 className="w-5 h-5 animate-spin" style={{ color: MUTED }} />
+      </div>
     );
   }
 
   return (
-    <motion.div 
-      {...fadeInUp}
-      transition={{ delay: 0.45 }}
-      className="rounded-[var(--radius-card)] bg-zinc-900/60 backdrop-blur-sm shadow-sm overflow-hidden flex flex-col flex-1"
+    <div
+      className="rounded-xl border overflow-hidden"
+      style={{ background: CARD_BG, borderColor: CARD_BORDER }}
     >
-      {/* Header */}
-      <div className="px-4 sm:px-5 py-4 border-b border-zinc-800/40 bg-zinc-900/50 flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-[var(--radius-button)] bg-gradient-to-br from-cyan-500/20 to-teal-600/10 flex items-center justify-center">
-          <Scale className="w-4 h-4 text-cyan-400" />
-        </div>
-        <div>
-          <h2 className="text-sm font-semibold text-foreground">Medidas Corporais</h2>
-          <p className="text-[10px] text-muted-foreground">Composição física</p>
-        </div>
+      {/* ── Header ──────────────────────────────────────────────────────── */}
+      <div
+        className="flex items-center justify-between px-5 py-4 border-b"
+        style={{ borderColor: CARD_BORDER }}
+      >
+        <span
+          className="font-editorial-mono text-[11px] tracking-[0.22em] uppercase"
+          style={{ color: MUTED }}
+        >
+          // Medidas Corporais
+        </span>
+        <span className="font-editorial-mono text-[9.5px]" style={{ color: MUTED }}>
+          Valor atual frente à faixa ideal
+        </span>
       </div>
 
-      {/* Metrics Grid */}
-      <div className="p-4 flex-1 grid grid-cols-2 gap-3">
-        {cards.map((card, index) => {
-          const Icon = card.icon;
-          const hasValue = card.value !== null;
-          
-          return (
-            <motion.div
-              key={card.label}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 * index }}
-              className={`p-3 rounded-xl bg-gradient-to-br ${card.color} border border-white/5 flex flex-col items-center justify-center text-center min-h-[90px]`}
-            >
-              <div className={`w-8 h-8 rounded-lg bg-zinc-900/50 flex items-center justify-center mb-2`}>
-                <Icon className={`w-4 h-4 ${card.iconColor}`} />
-              </div>
-              
-              {hasValue ? (
-                <>
-                  <p className="text-lg font-bold text-foreground leading-none">
-                    {typeof card.value === 'number' ? card.value.toFixed(1) : card.value}
-                  </p>
-                  <p className={`text-[10px] mt-1 ${card.unitColor || 'text-muted-foreground'}`}>
-                    {card.unit}
-                  </p>
-                </>
-              ) : (
-                <p className="text-xs text-zinc-500">Não informado</p>
-              )}
-              
-              <p className="text-[10px] text-zinc-500 mt-1">{card.label}</p>
-            </motion.div>
-          );
-        })}
+      {/* ── Grid ────────────────────────────────────────────────────────── */}
+      <div className="p-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {/* Row 1 */}
+        <MetricCard label="Altura"     value={metrics?.height              ?? null} unit="cm"       rangeKey="height"              decimals={0} />
+        <MetricCard label="Peso"       value={metrics?.weight              ?? null} unit="kg"       rangeKey="weight"                           />
+        <MetricCard label="Envergadura" value={metrics?.wingspan           ?? null} unit="cm"       rangeKey="wingspan"             decimals={0} />
+        <MetricCard label="% Gordura"  value={metrics?.body_fat_percentage ?? null} unit="%"        rangeKey="body_fat_percentage"              />
+
+        {/* Row 2 */}
+        <MetricCard label="% Massa Musc." value={muscleMassPct}                unit="%"        rangeKey="muscle_mass"                      />
+        <MetricCard label="Vel. Máxima" value={metrics?.max_speed          ?? null} unit="km/h"     rangeKey="max_speed"                        />
+        <MetricCard label="Sprint 30m"  value={metrics?.sprint_30m         ?? null} unit="s"        rangeKey="sprint_30m"          decimals={2}  />
+        <MetricCard label="VO₂ Máximo"  value={metrics?.vo2_max            ?? null} unit="ml/kg"    rangeKey="vo2_max"                          />
       </div>
-    </motion.div>
+    </div>
   );
 }

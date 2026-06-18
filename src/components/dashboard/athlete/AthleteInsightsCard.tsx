@@ -1,21 +1,44 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { 
-  Zap, 
-  TrendingUp, 
-  TrendingDown,
-  Target,
-  Shield,
-  AlertTriangle,
-  Flame,
-  Award,
-  Loader2
+import {
+  Target, Shield, AlertTriangle, TrendingUp, TrendingDown,
+  Minus, Crosshair, Zap, Award, ChevronRight, Loader2,
 } from "lucide-react";
-import { motion } from "framer-motion";
-import { fadeInUp } from "@/lib/animations";
-import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
+
+// ── Design tokens ──────────────────────────────────────────────────────────────
+const CARD_BG    = "#0f0f10";
+const CARD_BORDER = "rgba(255,255,255,0.07)";
+const MUTED      = "#62616a";
+const TEXT       = "#ededee";
+const RED        = "#ec4525";
+const AMBER      = "#f59e0b";
+const GREEN      = "#22c55e";
+const BLUE       = "#06b6d4";
+
+type Severity = "alert" | "warning" | "good" | "neutral";
+
+interface Insight {
+  id: string;
+  icon: React.ElementType;
+  severity: Severity;
+  title: string;
+  description: string;
+  href?: string;
+}
+
+interface LiveStats {
+  shots_on_target: number;
+  shots_off_target: number;
+  shots_blocked: number;
+  shots_on_post: number;
+  crosses_success: number;
+  crosses_failed: number;
+  dribbles_success: number;
+  dribbles_total: number;
+  chances_created: number;
+  key_passes: number;
+}
 
 interface AthleteInsightsCardProps {
   athleteId: string;
@@ -28,20 +51,25 @@ interface AthleteInsightsCardProps {
   minutes: number;
   yellowCards?: number;
   redCards?: number;
-  strengths?: string[];
-  areasToImprove?: string[];
+  liveStats?: LiveStats | null;
 }
 
-interface Insight {
-  id: string;
-  icon: React.ElementType;
-  title: string;
-  description: string;
-  tooltip: string;
-  priority: number;
-  iconBg: string;
-  iconColor: string;
+function severityColor(s: Severity): string {
+  if (s === "alert")   return RED;
+  if (s === "warning") return AMBER;
+  if (s === "good")    return GREEN;
+  return TEXT;
 }
+
+function severityIconBg(s: Severity): string {
+  if (s === "alert")   return "rgba(236,69,37,0.15)";
+  if (s === "warning") return "rgba(245,158,11,0.15)";
+  if (s === "good")    return "rgba(34,197,94,0.15)";
+  return "rgba(255,255,255,0.06)";
+}
+
+function fmt1(n: number) { return n.toFixed(1); }
+function fmt0(n: number) { return Math.round(n).toString(); }
 
 export function AthleteInsightsCard({
   athleteId,
@@ -53,280 +81,311 @@ export function AthleteInsightsCard({
   matches,
   minutes,
   yellowCards = 0,
-  redCards = 0,
-  strengths = [],
-  areasToImprove = [],
+  redCards    = 0,
+  liveStats,
 }: AthleteInsightsCardProps) {
   const [loading, setLoading] = useState(true);
-  const [attributeData, setAttributeData] = useState<{
-    ata: number | null;
-    tec: number | null;
-    tat: number | null;
-    def: number | null;
-    cri: number | null;
-  } | null>(null);
+  const [attrData, setAttrData] = useState<{
+    current: { ata: number | null; tec: number | null; tat: number | null; def: number | null; cri: number | null } | null;
+    previous: { ata: number | null } | null;
+  }>({ current: null, previous: null });
 
   useEffect(() => {
-    const fetchAttributes = async () => {
+    const fetchAttrs = async () => {
       try {
+        const currentYear = new Date().getFullYear();
         const { data } = await supabase
           .from("player_attribute_scores")
-          .select("ata_score_100, tec_score_100, tat_score_100, def_score_100, cri_score_100")
+          .select("ata_score_100, tec_score_100, tat_score_100, def_score_100, cri_score_100, season_year")
           .eq("player_id", athleteId)
-          .order("updated_at", { ascending: false })
-          .limit(1);
+          .in("season_year", [currentYear, currentYear - 1])
+          .order("updated_at", { ascending: false });
 
-        if (data && data.length > 0) {
-          setAttributeData({
-            ata: data[0].ata_score_100,
-            tec: data[0].tec_score_100,
-            tat: data[0].tat_score_100,
-            def: data[0].def_score_100,
-            cri: data[0].cri_score_100,
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching attributes:", error);
+        const cur = data?.find(r => r.season_year === currentYear) ?? null;
+        const prev = data?.find(r => r.season_year === currentYear - 1) ?? null;
+
+        setAttrData({
+          current: cur
+            ? { ata: cur.ata_score_100, tec: cur.tec_score_100, tat: cur.tat_score_100, def: cur.def_score_100, cri: cur.cri_score_100 }
+            : null,
+          previous: prev ? { ata: prev.ata_score_100 } : null,
+        });
+      } catch (e) {
+        console.error("[AthleteInsightsCard]", e);
       } finally {
         setLoading(false);
       }
     };
-
-    fetchAttributes();
+    fetchAttrs();
   }, [athleteId]);
 
   const insights = useMemo((): Insight[] => {
-    const result: Insight[] = [];
+    const list: Insight[] = [];
+    const profileHref = `/dashboard/atletas/${athleteId}?tab=stats`;
 
-    // 1. Strongest attribute (from radar)
-    if (attributeData) {
-      const attrs = [
-        { key: "ata", label: "Ataque", value: attributeData.ata },
-        { key: "tec", label: "Técnica", value: attributeData.tec },
-        { key: "tat", label: "Tática", value: attributeData.tat },
-        { key: "def", label: "Defesa", value: attributeData.def },
-        { key: "cri", label: "Criatividade", value: attributeData.cri },
-      ].filter(a => a.value !== null);
-
-      if (attrs.length > 0) {
-        const strongest = attrs.reduce((a, b) => ((a.value ?? 0) > (b.value ?? 0) ? a : b));
-        result.push({
-          id: "strength",
-          icon: Flame,
-          title: `Ponto Forte: ${strongest.label}`,
-          description: `Índice de ${Math.round(strongest.value ?? 0)}/100 em ${strongest.label}`,
-          tooltip: `Seu maior destaque técnico baseado em estatísticas`,
-          priority: 1,
-          iconBg: "bg-emerald-500/20",
-          iconColor: "text-emerald-400",
-        });
-
-        // 2. Area to develop
-        const weakest = attrs.reduce((a, b) => ((a.value ?? 100) < (b.value ?? 100) ? a : b));
-        if (weakest.key !== strongest.key) {
-          result.push({
-            id: "develop",
-            icon: Target,
-            title: `A Desenvolver: ${weakest.label}`,
-            description: `Índice de ${Math.round(weakest.value ?? 0)}/100 - espaço para evoluir`,
-            tooltip: `Área com maior potencial de crescimento`,
-            priority: 2,
-            iconBg: "bg-amber-500/20",
-            iconColor: "text-amber-400",
-          });
-        }
-      }
-    } else if (strengths.length > 0) {
-      // Fallback to player.strengths if no attribute data
-      result.push({
-        id: "strength",
-        icon: Flame,
-        title: `Ponto Forte: ${strengths[0]}`,
-        description: `Característica destacada no perfil`,
-        tooltip: `Habilidade principal do atleta`,
-        priority: 1,
-        iconBg: "bg-emerald-500/20",
-        iconColor: "text-emerald-400",
-      });
-    }
-
-    if (areasToImprove.length > 0 && result.length < 2) {
-      result.push({
-        id: "develop",
-        icon: Target,
-        title: `A Desenvolver: ${areasToImprove[0]}`,
-        description: `Área identificada para evolução`,
-        tooltip: `Ponto de atenção para treinamento`,
-        priority: 2,
-        iconBg: "bg-amber-500/20",
-        iconColor: "text-amber-400",
-      });
-    }
-
-    // 3. Rating trend
-    if (averageRating !== null) {
-      const trendIcon = recentTrend === "up" ? TrendingUp : recentTrend === "down" ? TrendingDown : Zap;
-      const trendLabel = recentTrend === "up" ? "Em Alta" : recentTrend === "down" ? "Em Baixa" : "Estável";
-      const trendColor = recentTrend === "up" ? "emerald" : recentTrend === "down" ? "red" : "blue";
-      
-      result.push({
-        id: "trend",
-        icon: trendIcon,
-        title: `Tendência: ${trendLabel}`,
-        description: `Nota média: ${averageRating.toFixed(1)} nos últimos jogos`,
-        tooltip: `Baseado na evolução das suas últimas 5 partidas`,
-        priority: 3,
-        iconBg: `bg-${trendColor}-500/20`,
-        iconColor: `text-${trendColor}-400`,
-      });
-    }
-
-    // 4. Offensive contribution (G+A per 90 or per match)
-    if (matches > 0 && minutes > 0) {
-      const contributions = goals + assists;
-      const per90 = minutes >= 90 ? (contributions / minutes) * 90 : null;
-      const perMatch = contributions / matches;
-
-      if (contributions > 0) {
-        result.push({
-          id: "offensive",
-          icon: Award,
-          title: `Participação Ofensiva`,
-          description: per90 !== null 
-            ? `${per90.toFixed(2)} G+A por 90 min` 
-            : `${perMatch.toFixed(2)} G+A por jogo`,
-          tooltip: `${goals} gols + ${assists} assistências em ${matches} partidas`,
-          priority: 4,
-          iconBg: "bg-violet-500/20",
-          iconColor: "text-violet-400",
+    // ── 1. Participação em Gol (G+A) ─────────────────────────────────────────
+    {
+      const ga = goals + assists;
+      const per90 = minutes >= 90 ? (ga / minutes) * 90 : null;
+      if (ga === 0) {
+        list.push({
+          id: "ga",
+          icon: Target,
+          severity: "alert",
+          title: "Sem Participações Diretas em Gol",
+          description: `${matches} jogos sem gol ou assistência registrada ainda.`,
+          href: profileHref,
         });
       } else {
-        result.push({
-          id: "offensive",
-          icon: Award,
-          title: `Participação Ofensiva`,
-          description: `Nenhuma participação direta em gols ainda`,
-          tooltip: `Continue trabalhando para contribuir com gols e assistências`,
-          priority: 4,
-          iconBg: "bg-zinc-500/20",
-          iconColor: "text-zinc-400",
+        const sev: Severity = per90 !== null && per90 >= 0.4 ? "good" : per90 !== null && per90 >= 0.15 ? "neutral" : "warning";
+        list.push({
+          id: "ga",
+          icon: Target,
+          severity: sev,
+          title: `Participações em Gol: ${ga} (G+A)`,
+          description: per90 !== null
+            ? `${fmt1(per90)} G+A/90 min · ${goals}G + ${assists}A em ${matches} jogos.`
+            : `${goals} gols + ${assists} assistências em ${matches} jogos.`,
+          href: profileHref,
         });
       }
     }
 
-    // 5. Discipline indicator
-    const cards = yellowCards + (redCards * 2);
-    if (matches > 0) {
-      const cardsPerMatch = cards / matches;
-      const isGoodDiscipline = cardsPerMatch < 0.3;
-      
-      result.push({
-        id: "discipline",
-        icon: isGoodDiscipline ? Shield : AlertTriangle,
-        title: isGoodDiscipline ? "Disciplina Exemplar" : "Atenção à Disciplina",
-        description: isGoodDiscipline 
-          ? `${yellowCards} amarelos em ${matches} jogos`
-          : `${yellowCards} amarelos${redCards > 0 ? `, ${redCards} vermelhos` : ""} em ${matches} jogos`,
-        tooltip: isGoodDiscipline 
-          ? "Excelente controle disciplinar"
-          : "Taxa de cartões acima da média - atenção necessária",
-        priority: 5,
-        iconBg: isGoodDiscipline ? "bg-blue-500/20" : "bg-red-500/20",
-        iconColor: isGoodDiscipline ? "text-blue-400" : "text-red-400",
+    // ── 2. Precisão de Finalização ────────────────────────────────────────────
+    if (liveStats) {
+      const totalShots = (liveStats.shots_on_target ?? 0) + (liveStats.shots_off_target ?? 0) + (liveStats.shots_blocked ?? 0) + (liveStats.shots_on_post ?? 0);
+      if (totalShots >= 4) {
+        const pct = (liveStats.shots_on_target / totalShots) * 100;
+        const sev: Severity = pct >= 45 ? "good" : pct >= 30 ? "neutral" : "alert";
+        list.push({
+          id: "shots",
+          icon: Crosshair,
+          severity: sev,
+          title: pct < 30
+            ? `Finalização no Alvo: Abaixo do Esperado`
+            : pct >= 45
+              ? `Boa Precisão de Finalização`
+              : `Finalização no Alvo: Razoável`,
+          description: `${fmt0(pct)}% das finalizações no gol (${liveStats.shots_on_target}/${totalShots} chutes).`,
+          href: profileHref,
+        });
+      }
+    }
+
+    // ── 3. Aproveitamento de Cruzamentos ─────────────────────────────────────
+    if (liveStats) {
+      const totalCrosses = (liveStats.crosses_success ?? 0) + (liveStats.crosses_failed ?? 0);
+      if (totalCrosses >= 5) {
+        const pct = (liveStats.crosses_success / totalCrosses) * 100;
+        const sev: Severity = pct >= 50 ? "good" : pct >= 30 ? "warning" : "alert";
+        list.push({
+          id: "crosses",
+          icon: Zap,
+          severity: sev,
+          title: pct < 30
+            ? `Cruzamentos: Aproveitamento Crítico`
+            : pct >= 50
+              ? `Bom Aproveitamento de Cruzamentos`
+              : `Cruzamentos: Atenção`,
+          description: `${fmt0(pct)}% de aproveitamento (${liveStats.crosses_success}/${totalCrosses} certos).`,
+          href: profileHref,
+        });
+      } else if (liveStats.chances_created > 0 || liveStats.key_passes > 0) {
+        // Fallback: criação de chances
+        const sev: Severity = liveStats.chances_created >= 10 ? "good" : liveStats.chances_created >= 4 ? "neutral" : "warning";
+        list.push({
+          id: "crosses",
+          icon: Zap,
+          severity: sev,
+          title: `Criação de Chances`,
+          description: `${liveStats.chances_created} chances criadas · ${liveStats.key_passes} passes decisivos.`,
+          href: profileHref,
+        });
+      }
+    }
+
+    // ── 4. Dribles ────────────────────────────────────────────────────────────
+    if (liveStats && liveStats.dribbles_total >= 5) {
+      const pct = (liveStats.dribbles_success / liveStats.dribbles_total) * 100;
+      const sev: Severity = pct >= 60 ? "good" : pct >= 40 ? "neutral" : "warning";
+      list.push({
+        id: "dribbles",
+        icon: Award,
+        severity: sev,
+        title: pct >= 60
+          ? `Dribles: Alta Taxa de Sucesso`
+          : pct >= 40
+            ? `Dribles: Aproveitamento Médio`
+            : `Dribles: Atenção ao Aproveitamento`,
+        description: `${fmt0(pct)}% de sucesso (${liveStats.dribbles_success}/${liveStats.dribbles_total} tentativas).`,
+        href: profileHref,
       });
     }
 
-    // Ensure we have exactly 5 insights (add fallbacks if needed)
-    while (result.length < 5) {
-      const fallbackIndex = result.length;
-      const fallbacks: Insight[] = [
-        {
-          id: `fallback-${fallbackIndex}`,
-          icon: Zap,
-          title: "Continue Treinando",
-          description: "Mais dados serão gerados conforme você joga",
-          tooltip: "Insights aparecem com mais partidas registradas",
-          priority: 10 + fallbackIndex,
-          iconBg: "bg-zinc-500/20",
-          iconColor: "text-zinc-400",
-        },
-      ];
-      result.push(fallbacks[0]);
+    // ── 5. Nota de Ataque (ATA) vs ano anterior ───────────────────────────────
+    {
+      const ata = attrData.current?.ata ?? null;
+      const prevAta = attrData.previous?.ata ?? null;
+      if (ata !== null) {
+        let title: string;
+        let description: string;
+        let sev: Severity;
+        if (prevAta !== null) {
+          const delta = ata - prevAta;
+          sev = delta >= 5 ? "good" : delta <= -5 ? "alert" : ata >= 60 ? "good" : ata >= 40 ? "neutral" : "warning";
+          const direction = delta >= 5 ? "↑ subiu" : delta <= -5 ? "↓ caiu" : "manteve";
+          title = `Nota de Ataque: ${fmt0(ata)}/100`;
+          description = `${direction} ${Math.abs(delta) >= 2 ? Math.round(Math.abs(delta)) + " pontos" : "estável"} vs temporada anterior (${fmt0(prevAta)}).`;
+        } else {
+          sev = ata >= 60 ? "good" : ata >= 40 ? "neutral" : "warning";
+          title = `Nota de Ataque: ${fmt0(ata)}/100`;
+          description = ata < 40
+            ? `Índice ofensivo abaixo de 40 — espaço para evolução.`
+            : ata >= 60
+              ? `Bom índice ofensivo na temporada atual.`
+              : `Índice ofensivo dentro da média.`;
+        }
+        list.push({ id: "ata", icon: TrendingUp, severity: sev, title, description, href: profileHref });
+      }
     }
 
-    return result.slice(0, 5).sort((a, b) => a.priority - b.priority);
-  }, [attributeData, averageRating, recentTrend, goals, assists, matches, minutes, yellowCards, redCards, strengths, areasToImprove]);
+    // ── 6. Disciplina / Minutagem ─────────────────────────────────────────────
+    {
+      const avgMin = matches > 0 ? minutes / matches : 0;
+      const cardsPerMatch = matches > 0 ? (yellowCards + redCards * 2) / matches : 0;
 
-  if (loading) {
-    return (
-      <motion.div 
-        {...fadeInUp}
-        className="rounded-[var(--radius-card)] bg-zinc-900/60 backdrop-blur-sm shadow-sm overflow-hidden flex-1 flex items-center justify-center min-h-[300px]"
-      >
-        <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" />
-      </motion.div>
-    );
-  }
+      if (cardsPerMatch >= 0.5 || redCards > 0) {
+        list.push({
+          id: "discipline",
+          icon: AlertTriangle,
+          severity: "alert",
+          title: `Disciplina: Atenção aos Cartões`,
+          description: `${yellowCards} amarelo${yellowCards !== 1 ? "s" : ""}${redCards > 0 ? ` + ${redCards} vermelho${redCards !== 1 ? "s" : ""}` : ""} em ${matches} jogos.`,
+          href: profileHref,
+        });
+      } else if (avgMin < 60 && matches >= 5) {
+        list.push({
+          id: "discipline",
+          icon: AlertTriangle,
+          severity: "warning",
+          title: `Minutagem Abaixo do Esperado`,
+          description: `Média de ${fmt0(avgMin)} min/jogo em ${matches} partidas — abaixo de 60 min.`,
+          href: profileHref,
+        });
+      } else {
+        const TIcon = recentTrend === "up" ? TrendingUp : recentTrend === "down" ? TrendingDown : Minus;
+        const trendLabel = recentTrend === "up" ? "Em Alta" : recentTrend === "down" ? "Em Baixa" : "Estável";
+        const sev: Severity = recentTrend === "up" ? "good" : recentTrend === "down" ? "warning" : "neutral";
+        list.push({
+          id: "discipline",
+          icon: TIcon,
+          severity: sev,
+          title: `Tendência de Nota: ${trendLabel}`,
+          description: averageRating !== null
+            ? `Nota média ${averageRating.toFixed(1)} · ${fmt0(avgMin)} min/jogo · ${yellowCards} amarelo${yellowCards !== 1 ? "s" : ""}.`
+            : `Média de ${fmt0(avgMin)} min/jogo em ${matches} partidas.`,
+          href: profileHref,
+        });
+      }
+    }
+
+    // ── Preenche até 6 insights ────────────────────────────────────────────────
+    while (list.length < 6) {
+      list.push({
+        id: `fill-${list.length}`,
+        icon: Shield,
+        severity: "neutral",
+        title: "Mais dados em breve",
+        description: "Registre mais partidas para gerar novos insights.",
+        href: profileHref,
+      });
+    }
+
+    return list.slice(0, 6);
+  }, [attrData, averageRating, recentTrend, goals, assists, matches, minutes, yellowCards, redCards, liveStats, athleteId]);
 
   return (
-    <motion.div 
-      {...fadeInUp}
-      transition={{ delay: 0.3 }}
-      className="rounded-[var(--radius-card)] bg-zinc-900/60 backdrop-blur-sm shadow-sm overflow-hidden flex flex-col flex-1"
+    <div
+      className="rounded-xl border overflow-hidden flex flex-col flex-1"
+      style={{ background: CARD_BG, borderColor: CARD_BORDER }}
     >
-      {/* Header */}
-      <div className="px-4 sm:px-5 py-4 border-b border-zinc-800/40 bg-zinc-900/50 flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-[var(--radius-button)] bg-gradient-to-br from-primary/20 to-red-600/10 flex items-center justify-center">
-          <Zap className="w-4 h-4 text-primary" />
-        </div>
-        <div>
-          <h2 className="text-sm font-semibold text-foreground">Insights do Atleta</h2>
-          <p className="text-[10px] text-muted-foreground">Análise personalizada</p>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between">
-        <div className="space-y-2">
-          {insights.map((insight, index) => (
-            <Tooltip key={insight.id}>
-              <TooltipTrigger asChild>
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.1 * index }}
-                  className="group flex items-center gap-3 p-2.5 rounded-[var(--radius-button)] bg-zinc-900/30 hover:bg-zinc-800/40 transition-all cursor-pointer"
-                >
-                  <div className={`w-8 h-8 rounded-lg ${insight.iconBg} flex items-center justify-center shrink-0`}>
-                    <insight.icon className={`w-4 h-4 ${insight.iconColor}`} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-foreground truncate">
-                      {insight.title}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground truncate">
-                      {insight.description}
-                    </p>
-                  </div>
-                </motion.div>
-              </TooltipTrigger>
-              <TooltipContent side="right" className="max-w-[200px]">
-                <p className="text-xs">{insight.tooltip}</p>
-              </TooltipContent>
-            </Tooltip>
-          ))}
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div className="px-4 py-3 border-t border-zinc-800/30 bg-zinc-900/30">
-        <Link 
-          to={`/dashboard/atletas/${athleteId}?tab=technical`}
-          className="text-xs text-primary hover:text-primary/80 transition-colors"
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      <div
+        className="flex items-center justify-between px-5 py-4 border-b"
+        style={{ borderColor: CARD_BORDER }}
+      >
+        <span
+          className="font-editorial-mono text-[11px] tracking-[0.22em] uppercase"
+          style={{ color: MUTED }}
         >
-          Ver perfil técnico completo →
-        </Link>
+          // INSIGHTS DO ATLETA
+        </span>
+        <span className="font-editorial-mono text-[10px] tracking-[0.1em]" style={{ color: MUTED }}>
+          {new Date().getFullYear()}
+        </span>
       </div>
-    </motion.div>
+
+      {/* ── Insights list ──────────────────────────────────────────────────── */}
+      {loading ? (
+        <div className="flex-1 flex items-center justify-center py-10">
+          <Loader2 className="w-5 h-5 animate-spin" style={{ color: MUTED }} />
+        </div>
+      ) : (
+        <div className="flex flex-col divide-y" style={{ borderColor: CARD_BORDER }}>
+          {insights.map((insight) => {
+            const Icon  = insight.icon;
+            const color = severityColor(insight.severity);
+            const bg    = severityIconBg(insight.severity);
+
+            const inner = (
+              <div
+                className="flex items-center gap-4 px-5 py-4 transition-colors duration-150 group cursor-pointer"
+                style={{ borderColor: CARD_BORDER }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = "rgba(255,255,255,0.02)"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = ""; }}
+              >
+                {/* Icon */}
+                <div
+                  className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{ background: bg }}
+                >
+                  <Icon className="w-4 h-4" style={{ color }} />
+                </div>
+
+                {/* Text */}
+                <div className="flex-1 min-w-0">
+                  <p
+                    className="font-editorial-mono text-[12px] font-semibold leading-tight tracking-[0.02em] truncate"
+                    style={{ color }}
+                  >
+                    {insight.title}
+                  </p>
+                  <p
+                    className="font-editorial-mono text-[10.5px] mt-0.5 leading-snug line-clamp-2"
+                    style={{ color: MUTED }}
+                  >
+                    {insight.description}
+                  </p>
+                </div>
+
+                {/* Chevron */}
+                <ChevronRight
+                  className="w-4 h-4 flex-shrink-0 transition-transform group-hover:translate-x-0.5"
+                  style={{ color: MUTED }}
+                />
+              </div>
+            );
+
+            return insight.href ? (
+              <Link key={insight.id} to={insight.href} className="block" style={{ borderColor: CARD_BORDER }}>
+                {inner}
+              </Link>
+            ) : (
+              <div key={insight.id} style={{ borderColor: CARD_BORDER }}>{inner}</div>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }

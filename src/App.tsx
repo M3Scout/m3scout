@@ -42,6 +42,7 @@ const PendingAccess = lazy(() => import("./pages/PendingAccess"));
 // Dashboard & Core
 const Dashboard = lazy(() => import("./pages/app/Dashboard"));
 const MyProfile = lazy(() => import("./pages/app/MyProfile"));
+const MyContracts = lazy(() => import("./pages/app/MyContracts"));
 const Settings = lazy(() => import("./pages/app/Settings"));
 
 // Players Module
@@ -222,6 +223,7 @@ function AppRoutes() {
                 
                 {/* Contracts */}
                 <Route path="contratos" element={<RequirePermission module="players"><Suspense fallback={<RouteSuspense />}><Contracts /></Suspense></RequirePermission>} />
+                <Route path="meus-contratos" element={<Suspense fallback={<RouteSuspense />}><MyContracts /></Suspense>} />
                 
                 {/* Settings */}
                 <Route path="settings" element={<Suspense fallback={<RouteSuspense />}><Settings /></Suspense>} />

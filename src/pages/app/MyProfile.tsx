@@ -30,7 +30,7 @@ export default function MyProfile() {
 
   // Redirect to full PlayerDetail page
   if (linkedPlayerId) {
-    return <Navigate to={`/app/players/${linkedPlayerId}`} replace />;
+    return <Navigate to={`/dashboard/atletas/${linkedPlayerId}`} replace />;
   }
 
   // Fallback - shouldn't reach here normally

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/authContext";
 import { AdminSkeletonDashboard } from "@/components/admin/AdminSkeleton";
@@ -11,10 +12,16 @@ import { AthleteBodyMetricsCard } from "./AthleteBodyMetricsCard";
 import { AthleteReportsCard } from "./AthleteReportsCard";
 import { AthleteSeasonGoalsCard } from "./AthleteSeasonGoalsCard";
 import { AthleteAchievementsCard } from "./AthleteAchievementsCard";
+import { EliteInsights } from "./EliteInsights";
 import { MarketScoreCard } from "@/components/players/sections/MarketScoreCard";
 import { usePlayerMatchRatings } from "@/hooks/usePlayerMatchRatings";
+import { usePlayerMatchStats } from "@/hooks/usePlayerMatchStats";
+import { useManualPlayerStats } from "@/hooks/useManualPlayerStats";
+import { useMergedSeasonTotals } from "@/hooks/useMergedSeasonTotals";
 import { motion } from "framer-motion";
 import { staggerContainer, staggerItem } from "@/lib/animations";
+
+const CURRENT_YEAR = new Date().getFullYear();
 
 interface AthleteData {
   id: string;
@@ -42,7 +49,7 @@ export function AthleteDashboard() {
   const [athlete, setAthlete] = useState<AthleteData | null>(null);
   const [reports, setReports] = useState<ScoutingReport[]>([]);
 
-  // Fetch match ratings using the centralized hook
+  // Fetch match ratings (for averageRating, evolution chart, trend)
   const {
     matches: matchesWithRatings,
     totals,
@@ -56,8 +63,136 @@ export function AthleteDashboard() {
   });
 
   // Type-safe trend casting
-  const recentTrend: "up" | "down" | "stable" = 
+  const recentTrend: "up" | "down" | "stable" =
     rawRecentTrend === "up" || rawRecentTrend === "down" ? rawRecentTrend : "stable";
+
+  // All matches stats (live system) — used for merged season totals
+  const { totals: liveTotals, byCompetition: liveByCompetition, isLoading: liveStatsLoading } = usePlayerMatchStats({
+    playerId: linkedPlayerId || "",
+    seasonYear: CURRENT_YEAR,
+    enabled: !!linkedPlayerId,
+  });
+
+  // Manual/external stats (games not tracked via live match)
+  const { manualStats, isLoading: manualLoading } = useManualPlayerStats({
+    playerId: linkedPlayerId || "",
+    enabled: !!linkedPlayerId,
+  });
+
+  // Historical player_stats rows (corrections + non-live competitions)
+  const { data: playerStatsRows = [], isLoading: psLoading } = useQuery({
+    queryKey: ["athlete-dashboard-player-stats", linkedPlayerId, CURRENT_YEAR],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("player_stats")
+        .select("matches, minutes, goals, assists, shots, shots_on_target, shots_blocked, crosses_success, crosses_failed, successful_dribbles, total_dribbles, is_live_correction, competition_id")
+        .eq("player_id", linkedPlayerId!)
+        .eq("season_year", CURRENT_YEAR);
+      if (error) throw error;
+      return (data ?? []) as {
+        matches: number;
+        minutes: number;
+        goals: number;
+        assists: number;
+        shots: number;
+        shots_on_target: number;
+        shots_blocked: number;
+        crosses_success: number;
+        crosses_failed: number;
+        successful_dribbles: number;
+        total_dribbles: number; // stores FAILED count
+        is_live_correction: boolean | null;
+        competition_id: string | null;
+      }[];
+    },
+    enabled: !!linkedPlayerId,
+  });
+
+  // Full 3-source merge for EliteInsights (live + player_stats manual/correction)
+  const { data: mergedTotals, isLoading: mergedLoading } = useMergedSeasonTotals(
+    linkedPlayerId || null,
+    CURRENT_YEAR
+  );
+
+  // Merge live + manual + historical into season totals (same logic as PlayerDetail/StatsTab)
+  const seasonTotals = useMemo(() => {
+    const correctedCompIds = new Set(
+      playerStatsRows
+        .filter(ps => ps.is_live_correction)
+        .map(ps => ps.competition_id)
+        .filter((c): c is string => !!c),
+    );
+    let matches          = liveTotals?.matches          ?? 0;
+    let minutes          = liveTotals?.minutes          ?? 0;
+    let goals            = liveTotals?.goals            ?? 0;
+    let assists          = liveTotals?.assists          ?? 0;
+    let shots            = liveTotals?.shots            ?? 0;
+    let shots_on_target  = liveTotals?.shots_on_target  ?? 0;
+    let crosses_success  = liveTotals?.crosses_success  ?? 0;
+    let crosses_failed   = liveTotals?.crosses_failed   ?? 0;
+    let dribbles_success = liveTotals?.dribbles_success ?? 0;
+    let dribbles_total   = liveTotals?.dribbles_total   ?? 0;
+
+    for (const compId of correctedCompIds) {
+      const live = liveByCompetition[compId];
+      if (live) {
+        matches          -= live.stats.matches;
+        minutes          -= live.stats.minutes;
+        goals            -= live.stats.goals;
+        assists          -= live.stats.assists;
+        shots            -= live.stats.shots            ?? 0;
+        shots_on_target  -= live.stats.shots_on_target  ?? 0;
+        crosses_success  -= live.stats.crosses_success  ?? 0;
+        crosses_failed   -= live.stats.crosses_failed   ?? 0;
+        dribbles_success -= live.stats.dribbles_success ?? 0;
+        dribbles_total   -= live.stats.dribbles_total   ?? 0;
+      }
+    }
+
+    manualStats
+      .filter(ms => ms.season_year === CURRENT_YEAR)
+      .forEach(ms => {
+        matches          += ms.games;
+        minutes          += ms.minutes;
+        goals            += ms.goals            ?? 0;
+        assists          += ms.assists          ?? 0;
+        shots            += ms.shots            ?? 0;
+        shots_on_target  += ms.shots_on_target  ?? 0;
+        dribbles_success += ms.dribbles_success ?? 0;
+        dribbles_total   += (ms.dribbles_success ?? 0) + (ms.dribbles_failed ?? 0);
+      });
+
+    playerStatsRows.forEach(ps => {
+      const isCorrected = !ps.is_live_correction && correctedCompIds.has(ps.competition_id ?? "___none");
+      if (!isCorrected) {
+        matches          += ps.matches            ?? 0;
+        minutes          += ps.minutes            ?? 0;
+        goals            += ps.goals              ?? 0;
+        assists          += ps.assists            ?? 0;
+        shots            += ps.shots              ?? 0;
+        shots_on_target  += ps.shots_on_target    ?? 0;
+        crosses_success  += ps.crosses_success    ?? 0;
+        crosses_failed   += ps.crosses_failed     ?? 0;
+        dribbles_success += ps.successful_dribbles ?? 0;
+        // total_dribbles in player_stats stores FAILED count
+        dribbles_total   += (ps.successful_dribbles ?? 0) + (ps.total_dribbles ?? 0);
+      }
+    });
+
+    return {
+      matches:          Math.max(0, matches),
+      minutes:          Math.max(0, minutes),
+      goals:            Math.max(0, goals),
+      assists:          Math.max(0, assists),
+      shots:            Math.max(0, shots),
+      shots_on_target:  Math.max(0, shots_on_target),
+      shots_off_target: Math.max(0, shots - shots_on_target),
+      crosses_success:  Math.max(0, crosses_success),
+      crosses_failed:   Math.max(0, crosses_failed),
+      dribbles_success: Math.max(0, dribbles_success),
+      dribbles_total:   Math.max(0, dribbles_total),
+    };
+  }, [liveTotals, liveByCompetition, manualStats, playerStatsRows]);
 
   // Fetch athlete data and reports
   useEffect(() => {
@@ -151,7 +286,7 @@ export function AthleteDashboard() {
     return pos === 'gk' || pos === 'goleiro' || pos === 'goalkeeper';
   }, [athlete?.position]);
 
-  if (loading || ratingsLoading) {
+  if (loading || ratingsLoading || liveStatsLoading || manualLoading || psLoading) {
     return <AdminSkeletonDashboard />;
   }
 
@@ -185,11 +320,11 @@ export function AthleteDashboard() {
 
       {/* KPI Cards */}
       <motion.div variants={staggerItem}>
-        <AthleteKPICards 
-          matches={totals?.matches ?? 0}
-          minutes={totals?.minutes ?? 0}
-          goals={totals?.goals ?? 0}
-          assists={totals?.assists ?? 0}
+        <AthleteKPICards
+          matches={seasonTotals.matches}
+          minutes={seasonTotals.minutes}
+          goals={seasonTotals.goals}
+          assists={seasonTotals.assists}
           averageRating={averageRating}
           athleteId={athlete.id}
         />
@@ -201,19 +336,29 @@ export function AthleteDashboard() {
         className="grid grid-cols-1 lg:grid-cols-2 gap-[var(--gap-mobile)] md:gap-6 items-stretch w-full max-w-full"
       >
         <div className="flex min-w-0 w-full">
-          <AthleteInsightsCard 
+          <AthleteInsightsCard
             athleteId={athlete.id}
             athletePosition={athlete.position}
             averageRating={averageRating}
             recentTrend={recentTrend}
-            goals={totals?.goals ?? 0}
-            assists={totals?.assists ?? 0}
-            matches={totals?.matches ?? 0}
-            minutes={totals?.minutes ?? 0}
+            goals={seasonTotals.goals}
+            assists={seasonTotals.assists}
+            matches={seasonTotals.matches}
+            minutes={seasonTotals.minutes}
             yellowCards={yellowCards}
             redCards={redCards}
-            strengths={athlete.strengths}
-            areasToImprove={athlete.areas_to_develop}
+            liveStats={{
+              shots_on_target:  seasonTotals.shots_on_target,
+              shots_off_target: seasonTotals.shots_off_target,
+              shots_blocked:    0,
+              shots_on_post:    0,
+              crosses_success:  seasonTotals.crosses_success,
+              crosses_failed:   seasonTotals.crosses_failed,
+              dribbles_success: seasonTotals.dribbles_success,
+              dribbles_total:   seasonTotals.dribbles_total,
+              chances_created:  totals?.chances_created ?? 0,
+              key_passes:       totals?.key_passes      ?? 0,
+            }}
           />
         </div>
 
@@ -258,19 +403,18 @@ export function AthleteDashboard() {
 
       {/* Row 4: Season Goals (100% width) */}
       <motion.div variants={staggerItem} className="w-full">
-        <AthleteSeasonGoalsCard 
+        <AthleteSeasonGoalsCard
           athleteId={athlete.id}
           currentStats={{
-            goals: totals?.goals ?? 0,
-            assists: totals?.assists ?? 0,
-            matches: totals?.matches ?? 0,
-            minutes: totals?.minutes ?? 0,
+            goals: seasonTotals.goals,
+            assists: seasonTotals.assists,
+            matches: seasonTotals.matches,
+            minutes: seasonTotals.minutes,
             saves: totals?.saves ?? 0,
             clean_sheets: totals?.clean_sheets ?? 0,
             shots: totals?.shots ?? 0,
             tackles: totals?.tackles ?? 0,
             yellow_cards: yellowCards,
-            // New goal types
             interceptions: totals?.interceptions ?? 0,
             passes_completed: totals?.passes_completed ?? 0,
             passes_total: totals?.passes_total ?? 0,
@@ -281,7 +425,16 @@ export function AthleteDashboard() {
         />
       </motion.div>
 
-      {/* Row 5: Achievements + Reports */}
+      {/* Row 5: Elite Insights */}
+      <motion.div variants={staggerItem} className="w-full">
+        <EliteInsights
+          athletePosition={athlete.position}
+          totals={mergedTotals}
+          isLoading={mergedLoading}
+        />
+      </motion.div>
+
+      {/* Row 6: Achievements + Reports */}
       <motion.div 
         variants={staggerItem} 
         className="grid grid-cols-1 lg:grid-cols-2 gap-[var(--gap-mobile)] md:gap-6 items-stretch w-full max-w-full"

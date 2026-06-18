@@ -1,20 +1,4 @@
-/**
- * M3 Market Score Card
- * 
- * Premium card displaying the athlete's Market Score (0-100) with:
- * - Score badge with color-coded faixas
- * - 30-day trend indicator
- * - Expandable breakdown by pillar
- * - Auto-generated insights
- * - Confidence factor transparency
- * - Internal notes and history modals
- */
-
 import { useState, useMemo, useEffect, useRef } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Collapsible,
@@ -38,7 +22,6 @@ import {
   FileText,
   History,
   AlertTriangle,
-  Sparkles,
   BarChart3,
   Info,
   ShieldCheck,
@@ -51,6 +34,12 @@ import { MarketScoreHistoryModal } from "./MarketScoreHistoryModal";
 import { MarketScoreNotesModal } from "./MarketScoreNotesModal";
 import { cn } from "@/lib/utils";
 
+// ── Design tokens ──────────────────────────────────────────────────────────────
+const CARD_BG     = "#0f0f10";
+const CARD_BORDER = "rgba(255,255,255,0.07)";
+const MUTED       = "#62616a";
+const TEXT        = "#ededee";
+
 interface MarketScoreCardProps {
   athleteId: string;
   athleteName: string;
@@ -60,210 +49,104 @@ interface MarketScoreCardProps {
   age?: number | null;
 }
 
-// Color config based on score range
-function getScoreColor(score: number): {
-  bg: string;
-  text: string;
-  border: string;
-  label: string;
-} {
-  if (score >= 85) {
-    return {
-      bg: "bg-emerald-500/20",
-      text: "text-emerald-400",
-      border: "border-emerald-500/50",
-      label: "Elite",
-    };
-  }
-  if (score >= 70) {
-    return {
-      bg: "bg-green-500/20",
-      text: "text-green-400",
-      border: "border-green-500/50",
-      label: "Alto",
-    };
-  }
-  if (score >= 50) {
-    return {
-      bg: "bg-yellow-500/20",
-      text: "text-yellow-400",
-      border: "border-yellow-500/50",
-      label: "Médio",
-    };
-  }
-  return {
-    bg: "bg-red-500/20",
-    text: "text-red-400",
-    border: "border-red-500/50",
-    label: "Baixo",
-  };
+// ── Score color palette ────────────────────────────────────────────────────────
+function getScoreStyle(score: number): { color: string; label: string; bg: string } {
+  if (score >= 85) return { color: "#06b6d4", label: "Elite",  bg: "rgba(6,182,212,0.12)"  };
+  if (score >= 70) return { color: "#22c55e", label: "Alto",   bg: "rgba(34,197,94,0.12)"  };
+  if (score >= 50) return { color: "#f59e0b", label: "Médio",  bg: "rgba(245,158,11,0.12)" };
+  return             { color: "#ef4444",  label: "Baixo",  bg: "rgba(239,68,68,0.12)"  };
 }
 
-// Trend icon component
-function TrendIndicator({
-  trend,
-  className,
-}: {
-  trend: MarketScoreTrend;
-  className?: string;
-}) {
-  if (trend === "UP") {
-    return <TrendingUp className={cn("text-emerald-400", className)} />;
-  }
-  if (trend === "DOWN") {
-    return <TrendingDown className={cn("text-red-400", className)} />;
-  }
-  return <Minus className={cn("text-muted-foreground", className)} />;
+// ── Trend icon ─────────────────────────────────────────────────────────────────
+function TrendIcon({ trend, size = 12 }: { trend: MarketScoreTrend; size?: number }) {
+  const s = { width: size, height: size };
+  if (trend === "UP")   return <TrendingUp  style={{ ...s, color: "#22c55e" }} />;
+  if (trend === "DOWN") return <TrendingDown style={{ ...s, color: "#ef4444" }} />;
+  return <Minus style={{ ...s, color: MUTED }} />;
 }
 
-// Pillar row component
-function PillarRow({
-  label,
-  score,
-  icon,
-}: {
-  label: string;
-  score: number;
-  icon?: React.ReactNode;
-}) {
-  const scoreColor = getScoreColor(score);
-
+// ── Pillar progress row ────────────────────────────────────────────────────────
+function PillarRow({ label, score }: { label: string; score: number }) {
+  const { color } = getScoreStyle(score);
   return (
-    <div className="flex items-center gap-3">
-      {icon && <div className="text-muted-foreground w-4 h-4">{icon}</div>}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-sm text-muted-foreground truncate">{label}</span>
-          <span className={cn("text-sm font-medium", scoreColor.text)}>
-            {score.toFixed(0)}
-          </span>
-        </div>
-        <Progress value={score} className="h-1.5" />
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between">
+        <span className="font-editorial-mono text-[10.5px] tracking-[0.04em]" style={{ color: MUTED }}>
+          {label}
+        </span>
+        <span className="font-editorial-mono text-[11px] font-bold tabular-nums" style={{ color }}>
+          {score.toFixed(0)}
+        </span>
+      </div>
+      <div className="h-[3px] rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+        <div
+          className="h-full rounded-full transition-all duration-500"
+          style={{ width: `${score}%`, background: color }}
+        />
       </div>
     </div>
   );
 }
 
-// Calculate base score (before sample penalty adjustment)
-// This shows what the score would be with full sample confidence
+// ── Utility functions (unchanged logic) ───────────────────────────────────────
 function calculateBaseScore(breakdown: MarketScoreBreakdown | null): number | null {
   if (!breakdown) return null;
-  
   const { consistencyReliabilityDetails, weightsUsed } = breakdown;
   const samplePenalty = consistencyReliabilityDetails.samplePenalty;
-  
-  // If no penalty applied, base = final
   if (samplePenalty >= 1.0) return null;
-  
-  // Reverse-engineer the base consistency score (before penalty)
-  // The penalty affects only the consistency pillar
   const actualConsistencyScore = breakdown.scoreConsistencyReliability;
   const baseConsistencyScore = Math.min(100, actualConsistencyScore / samplePenalty);
-  
-  // Calculate what scoreTotal would be with full confidence
   const baseScore = Math.round(
     breakdown.scoreAgeWindow * weightsUsed.ageWindow +
     breakdown.scorePerformanceImpact * weightsUsed.performanceImpact +
     breakdown.scoreCompetitiveContext * weightsUsed.competitiveContext +
     baseConsistencyScore * weightsUsed.consistencyReliability +
-    breakdown.scoreMarketProfile * weightsUsed.marketProfile
+    breakdown.scoreMarketProfile * weightsUsed.marketProfile,
   );
-  
   return Math.min(100, baseScore);
 }
 
-// Get confidence explanation based on data quality
 function getConfidenceExplanation(breakdown: MarketScoreBreakdown | null): string {
-  if (!breakdown) return '';
-  
+  if (!breakdown) return "";
   const { consistencyReliabilityDetails, performanceImpactDetails } = breakdown;
-  const matches = consistencyReliabilityDetails.totalMatches;
+  const matches      = consistencyReliabilityDetails.totalMatches;
   const samplePenalty = consistencyReliabilityDetails.samplePenalty;
   const ratingVariance = consistencyReliabilityDetails.ratingVariance;
-  
   const reasons: string[] = [];
-  
-  if (matches < 3) {
-    reasons.push(`poucos jogos analisados (${matches})`);
-  } else if (matches < 5) {
-    reasons.push(`amostra moderada (${matches} jogos)`);
-  }
-  
-  if (ratingVariance !== null && ratingVariance > 1.0) {
-    reasons.push('alta variação de notas');
-  }
-  
-  if (performanceImpactDetails.averageRating === null) {
-    reasons.push('sem notas de jogo registradas');
-  }
-  
-  if (consistencyReliabilityDetails.matchesLast30Days === 0) {
-    reasons.push('sem jogos nos últimos 30 dias');
-  }
-  
-  if (reasons.length === 0) return 'Dados suficientes para análise confiável.';
-  
-  return `Ajuste aplicado por: ${reasons.join(', ')}.`;
+  if (matches < 3) reasons.push(`poucos jogos analisados (${matches})`);
+  else if (matches < 5) reasons.push(`amostra moderada (${matches} jogos)`);
+  if (ratingVariance !== null && ratingVariance > 1.0) reasons.push("alta variação de notas");
+  if (performanceImpactDetails.averageRating === null) reasons.push("sem notas de jogo registradas");
+  if (consistencyReliabilityDetails.matchesLast30Days === 0) reasons.push("sem jogos nos últimos 30 dias");
+  if (reasons.length === 0) return "Dados suficientes para análise confiável.";
+  return `Ajuste aplicado por: ${reasons.join(", ")}.`;
 }
 
-// Generate insights from breakdown
 function generateInsights(breakdown: MarketScoreBreakdown | null): string[] {
   if (!breakdown) return [];
-
   const insights: string[] = [];
-
-  // Age window insight
-  if (breakdown.scoreAgeWindow >= 80) {
-    insights.push("Janela de evolução ideal para a posição");
-  } else if (breakdown.scoreAgeWindow >= 70 && breakdown.ageWindowDetails.age && breakdown.ageWindowDetails.age < 23) {
+  if (breakdown.scoreAgeWindow >= 80) insights.push("Janela de evolução ideal para a posição");
+  else if (breakdown.scoreAgeWindow >= 70 && breakdown.ageWindowDetails.age && breakdown.ageWindowDetails.age < 23)
     insights.push("Alto potencial de valorização pela idade");
-  }
-
-  // Performance insight
-  if (breakdown.scorePerformanceImpact >= 75) {
-    insights.push("Desempenho acima da média da posição");
-  } else if (breakdown.performanceImpactDetails.decisiveActionsScore >= 70) {
-    insights.push("Impacto decisivo em partidas");
-  }
-
-  // Competitive context
-  if (breakdown.scoreCompetitiveContext >= 70) {
-    insights.push("Contexto competitivo elevando o valor");
-  }
-
-  // Consistency
-  if (breakdown.scoreConsistencyReliability >= 75) {
-    insights.push("Alta regularidade nas últimas partidas");
-  } else if (breakdown.consistencyReliabilityDetails.matchesLast30Days >= 4) {
+  if (breakdown.scorePerformanceImpact >= 75) insights.push("Desempenho acima da média da posição");
+  else if (breakdown.performanceImpactDetails.decisiveActionsScore >= 70) insights.push("Impacto decisivo em partidas");
+  if (breakdown.scoreCompetitiveContext >= 70) insights.push("Contexto competitivo elevando o valor");
+  if (breakdown.scoreConsistencyReliability >= 75) insights.push("Alta regularidade nas últimas partidas");
+  else if (breakdown.consistencyReliabilityDetails.matchesLast30Days >= 4)
     insights.push("Ritmo de jogo intenso (ativo nos últimos 30 dias)");
-  }
-
-  // Market profile
-  if (breakdown.marketProfileDetails.versatilityScore >= 70) {
-    insights.push("Versatilidade posicional agrega valor de mercado");
-  }
+  if (breakdown.marketProfileDetails.versatilityScore >= 70) insights.push("Versatilidade posicional agrega valor de mercado");
   if (breakdown.marketProfileDetails.keyTraits.length > 0) {
     const trait = breakdown.marketProfileDetails.keyTraits[0];
-    if (trait.includes("dribble")) {
-      insights.push("Perfil técnico diferenciado em dribles");
-    } else if (trait.includes("aerial")) {
-      insights.push("Dominância no jogo aéreo");
-    } else if (trait.includes("pass")) {
-      insights.push("Qualidade de passe acima da média");
-    } else if (trait.includes("recovery")) {
-      insights.push("Alta capacidade de recuperação de bola");
-    }
+    if (trait.includes("dribble"))  insights.push("Perfil técnico diferenciado em dribles");
+    else if (trait.includes("aerial")) insights.push("Dominância no jogo aéreo");
+    else if (trait.includes("pass"))   insights.push("Qualidade de passe acima da média");
+    else if (trait.includes("recovery")) insights.push("Alta capacidade de recuperação de bola");
   }
-
-  // Trend insight
-  if (breakdown.trend30d === "UP") {
-    insights.push("Tendência de valorização nos últimos 30 dias");
-  }
-
-  // Limit to 3 insights
+  if (breakdown.trend30d === "UP") insights.push("Tendência de valorização nos últimos 30 dias");
   return insights.slice(0, 3);
 }
 
+// ── Component ──────────────────────────────────────────────────────────────────
 export function MarketScoreCard({
   athleteId,
   athleteName,
@@ -281,7 +164,7 @@ export function MarketScoreCard({
     scoreLoading,
     breakdown,
     breakdownLoading,
-    displayScore, // SINGLE SOURCE OF TRUTH - always from database
+    displayScore,
     history,
     historyLoading,
     recalculate,
@@ -298,143 +181,150 @@ export function MarketScoreCard({
     enabled: true,
   });
 
-  // Auto-calculate score if not persisted yet (first time opening profile)
   const hasAutoCalculated = useRef(false);
   useEffect(() => {
-    // If score is not persisted but breakdown is available, auto-persist
     if (!scoreLoading && !breakdownLoading && breakdown && !score && !hasAutoCalculated.current && !isRecalculating) {
       hasAutoCalculated.current = true;
-      recalculate('Cálculo inicial ao abrir perfil');
+      recalculate("Cálculo inicial ao abrir perfil");
     }
   }, [score, breakdown, scoreLoading, breakdownLoading, recalculate, isRecalculating]);
 
-  // Compute insights
   const insights = useMemo(() => generateInsights(breakdown), [breakdown]);
 
-  // CRITICAL: Always use displayScore (persisted DB value) - not computed breakdown
-  // This ensures consistency between Profile and Listing pages
-  const scoreTotal = displayScore ?? 0;
-  const scoreColor = getScoreColor(scoreTotal);
-  // Trend also comes from persisted DB value only
-  const trend = score?.trend_30d ?? "FLAT";
-  const lastCalculated = score?.last_calculated_at
+  const scoreTotal  = displayScore ?? 0;
+  const scoreStyle  = getScoreStyle(scoreTotal);
+  const trend       = score?.trend_30d ?? "FLAT";
+  const lastCalc    = score?.last_calculated_at
     ? format(new Date(score.last_calculated_at), "dd MMM yyyy, HH:mm", { locale: ptBR })
     : null;
 
-  // Calculate confidence transparency data
-  const baseScore = useMemo(() => calculateBaseScore(breakdown), [breakdown]);
+  const baseScore            = useMemo(() => calculateBaseScore(breakdown), [breakdown]);
   const confidenceExplanation = useMemo(() => getConfidenceExplanation(breakdown), [breakdown]);
-  const samplePenalty = breakdown?.consistencyReliabilityDetails.samplePenalty ?? 1.0;
-  const hasConfidenceAdjustment = samplePenalty < 1.0 && baseScore !== null && baseScore > scoreTotal;
+  const samplePenalty        = breakdown?.consistencyReliabilityDetails.samplePenalty ?? 1.0;
+  const hasConfidenceAdjust  = samplePenalty < 1.0 && baseScore !== null && baseScore > scoreTotal;
 
-  // Loading state
+  // ── Loading ──────────────────────────────────────────────────────────────────
   if (scoreLoading || breakdownLoading) {
     return (
-      <Card className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Sparkles className="w-4 h-4 text-primary" />
-            M3 Market Score
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center gap-4">
-            <Skeleton className="w-20 h-20 rounded-xl" />
-            <div className="space-y-2 flex-1">
-              <Skeleton className="h-4 w-32" />
-              <Skeleton className="h-3 w-24" />
+      <div
+        className="rounded-xl border overflow-hidden flex flex-col flex-1"
+        style={{ background: CARD_BG, borderColor: CARD_BORDER }}
+      >
+        <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: CARD_BORDER }}>
+          <Skeleton className="h-3 w-32 bg-zinc-800" />
+          <Skeleton className="h-3 w-20 bg-zinc-800" />
+        </div>
+        <div className="px-5 py-6 space-y-4">
+          <div className="flex items-start gap-5">
+            <Skeleton className="w-20 h-20 rounded-xl bg-zinc-800" />
+            <div className="flex-1 space-y-2 pt-1">
+              <Skeleton className="h-3 w-24 bg-zinc-800" />
+              <Skeleton className="h-3 w-36 bg-zinc-800" />
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
+  // ── Render ───────────────────────────────────────────────────────────────────
   return (
     <>
-      <Card className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Sparkles className="w-4 h-4 text-primary" />
-              M3 Market Score
-            </CardTitle>
-            {lastCalculated && (
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Clock className="w-3 h-3" />
-                <span>{lastCalculated}</span>
-              </div>
-            )}
-          </div>
-        </CardHeader>
+      <div
+        className="rounded-xl border overflow-hidden flex flex-col flex-1"
+        style={{ background: CARD_BG, borderColor: CARD_BORDER }}
+      >
+        {/* ── Header ─────────────────────────────────────────────────────── */}
+        <div
+          className="flex items-center justify-between px-5 py-4 border-b"
+          style={{ borderColor: CARD_BORDER }}
+        >
+          <span
+            className="font-editorial-mono text-[11px] tracking-[0.22em] uppercase"
+            style={{ color: MUTED }}
+          >
+            // M3 Market Score
+          </span>
+          {lastCalc && (
+            <div className="flex items-center gap-1.5">
+              <Clock className="w-3 h-3" style={{ color: MUTED }} />
+              <span className="font-editorial-mono text-[9.5px]" style={{ color: MUTED }}>
+                {lastCalc}
+              </span>
+            </div>
+          )}
+        </div>
 
-        <CardContent className="space-y-4">
-          {/* Main Score Display */}
-          <div className="flex items-start gap-4">
-            {/* Score Badge - show loading state when recalculating */}
+        <div className="px-5 py-5 space-y-5">
+          {/* ── Main score + trend ───────────────────────────────────────── */}
+          <div className="flex items-start gap-5">
+            {/* Score badge */}
             <div
-              className={cn(
-                "relative flex flex-col items-center justify-center w-20 h-20 rounded-xl border-2 transition-opacity",
-                scoreColor.bg,
-                scoreColor.border,
-                isRecalculating && "opacity-60"
-              )}
+              className="relative flex flex-col items-center justify-center w-[80px] h-[80px] rounded-xl flex-shrink-0 transition-opacity"
+              style={{
+                background: scoreStyle.bg,
+                border: `1.5px solid ${scoreStyle.color}33`,
+                opacity: isRecalculating ? 0.5 : 1,
+              }}
             >
-              {isRecalculating ? (
-                <>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                  </div>
-                  <span className={cn("text-3xl font-bold opacity-30", scoreColor.text)}>
-                    {scoreTotal.toFixed(0)}
-                  </span>
-                </>
-              ) : (
-                <>
-                  <span className={cn("text-3xl font-bold", scoreColor.text)}>
-                    {scoreTotal.toFixed(0)}
-                  </span>
-                  <span className={cn("text-[10px] font-medium uppercase tracking-wider", scoreColor.text)}>
-                    {scoreColor.label}
-                  </span>
-                </>
+              {isRecalculating && (
+                <div className="absolute inset-0 flex items-center justify-center rounded-xl">
+                  <div
+                    className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin"
+                    style={{ borderColor: `${scoreStyle.color}66`, borderTopColor: "transparent" }}
+                  />
+                </div>
               )}
+              <span
+                className="font-display font-semibold leading-none tabular-nums"
+                style={{ fontSize: 32, color: scoreStyle.color }}
+              >
+                {scoreTotal.toFixed(0)}
+              </span>
+              <span
+                className="font-editorial-mono text-[9px] tracking-[0.12em] uppercase mt-1"
+                style={{ color: scoreStyle.color }}
+              >
+                {scoreStyle.label}
+              </span>
             </div>
 
-            {/* Trend & Info */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center flex-wrap gap-2 mb-2">
-                <Badge variant="secondary" className="text-xs gap-1">
-                  <TrendIndicator trend={trend} className="w-3 h-3" />
-                  <span>30 dias</span>
-                </Badge>
-                
-                {/* Confidence Badge with Tooltip */}
-                {dataConfidence < 60 && (
+            {/* Trend + badges + actions */}
+            <div className="flex-1 min-w-0 pt-0.5">
+              {/* Trend + confidence */}
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                {/* Trend pill */}
+                <div
+                  className="flex items-center gap-1 px-2 py-1 rounded-lg"
+                  style={{ background: "rgba(255,255,255,0.05)", border: `1px solid ${CARD_BORDER}` }}
+                >
+                  <TrendIcon trend={trend} size={11} />
+                  <span className="font-editorial-mono text-[9.5px]" style={{ color: MUTED }}>30 dias</span>
+                </div>
+
+                {/* Confidence badge */}
+                {dataConfidence < 60 ? (
                   <TooltipProvider>
                     <Tooltip delayDuration={200}>
                       <TooltipTrigger asChild>
-                        <Badge 
-                          variant="outline" 
-                          className="text-xs gap-1 border-yellow-500/50 text-yellow-400 cursor-help"
+                        <div
+                          className="flex items-center gap-1 px-2 py-1 rounded-lg cursor-help"
+                          style={{ background: "rgba(245,158,11,0.10)", border: "1px solid rgba(245,158,11,0.25)" }}
                         >
-                          <AlertTriangle className="w-3 h-3" />
-                          Amostra reduzida
-                        </Badge>
+                          <AlertTriangle className="w-3 h-3" style={{ color: "#f59e0b" }} />
+                          <span className="font-editorial-mono text-[9.5px]" style={{ color: "#f59e0b" }}>
+                            Amostra reduzida
+                          </span>
+                        </div>
                       </TooltipTrigger>
-                      <TooltipContent 
-                        side="bottom" 
-                        className="max-w-[280px] bg-zinc-900 border-zinc-800 p-3"
-                      >
+                      <TooltipContent side="bottom" className="max-w-[280px] bg-zinc-900 border-zinc-800 p-3">
                         <div className="space-y-2">
                           <div className="flex items-center gap-2 font-medium text-yellow-400">
                             <ShieldCheck className="w-4 h-4" />
-                            Fator de Confiabilidade: {dataConfidence}%
+                            Confiabilidade: {dataConfidence}%
                           </div>
-                          <p className="text-xs text-muted-foreground leading-relaxed">
-                            {confidenceExplanation}
-                          </p>
-                          {hasConfidenceAdjustment && baseScore && (
+                          <p className="text-xs text-muted-foreground leading-relaxed">{confidenceExplanation}</p>
+                          {hasConfidenceAdjust && baseScore && (
                             <div className="pt-1 border-t border-zinc-800 text-xs">
                               <span className="text-muted-foreground">Score base: </span>
                               <span className="font-medium">{baseScore}</span>
@@ -446,25 +336,21 @@ export function MarketScoreCard({
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
-                )}
-                
-                {/* High confidence badge */}
-                {dataConfidence >= 60 && (
+                ) : (
                   <TooltipProvider>
                     <Tooltip delayDuration={200}>
                       <TooltipTrigger asChild>
-                        <Badge 
-                          variant="outline" 
-                          className="text-xs gap-1 border-emerald-500/30 text-emerald-400/80 cursor-help"
+                        <div
+                          className="flex items-center gap-1 px-2 py-1 rounded-lg cursor-help"
+                          style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.20)" }}
                         >
-                          <ShieldCheck className="w-3 h-3" />
-                          {dataConfidence}% confiança
-                        </Badge>
+                          <ShieldCheck className="w-3 h-3" style={{ color: "#22c55e" }} />
+                          <span className="font-editorial-mono text-[9.5px]" style={{ color: "#22c55e" }}>
+                            {dataConfidence}% confiança
+                          </span>
+                        </div>
                       </TooltipTrigger>
-                      <TooltipContent 
-                        side="bottom" 
-                        className="max-w-[240px] bg-zinc-900 border-zinc-800 p-3"
-                      >
+                      <TooltipContent side="bottom" className="max-w-[240px] bg-zinc-900 border-zinc-800 p-3">
                         <p className="text-xs text-muted-foreground">
                           Dados suficientes para análise confiável. Score calculado com amostra adequada de jogos e minutos.
                         </p>
@@ -474,134 +360,146 @@ export function MarketScoreCard({
                 )}
               </div>
 
-              {/* Quick Actions */}
-              <div className="flex items-center gap-2 mt-3">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 px-2 text-xs"
+              {/* Ghost actions */}
+              <div className="flex items-center gap-2">
+                <button
                   onClick={() => setNotesModalOpen(true)}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors"
+                  style={{
+                    background: "rgba(255,255,255,0.04)",
+                    border: `1px solid ${CARD_BORDER}`,
+                    color: MUTED,
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.07)")}
+                  onMouseLeave={e => (e.currentTarget.style.background = "rgba(255,255,255,0.04)")}
                 >
-                  <FileText className="w-3 h-3 mr-1" />
-                  Nota interna
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 px-2 text-xs"
+                  <FileText className="w-3 h-3" />
+                  <span className="font-editorial-mono text-[10px]">Nota interna</span>
+                </button>
+                <button
                   onClick={() => setHistoryModalOpen(true)}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors"
+                  style={{
+                    background: "rgba(255,255,255,0.04)",
+                    border: `1px solid ${CARD_BORDER}`,
+                    color: MUTED,
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.07)")}
+                  onMouseLeave={e => (e.currentTarget.style.background = "rgba(255,255,255,0.04)")}
                 >
-                  <History className="w-3 h-3 mr-1" />
-                  Histórico
-                </Button>
+                  <History className="w-3 h-3" />
+                  <span className="font-editorial-mono text-[10px]">Histórico</span>
+                </button>
               </div>
             </div>
           </div>
 
-          {/* Confidence Adjustment Explanation (shown when there's a meaningful adjustment) */}
-          {hasConfidenceAdjustment && baseScore && (
-            <div className="flex items-start gap-2 p-3 rounded-lg bg-zinc-800/50 border border-zinc-700/50">
-              <Info className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-              <div className="text-xs space-y-1">
+          {/* ── Confidence adjustment block ───────────────────────────────── */}
+          {hasConfidenceAdjust && baseScore && (
+            <div
+              className="flex items-start gap-3 p-3 rounded-lg"
+              style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${CARD_BORDER}` }}
+            >
+              <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: MUTED }} />
+              <div className="space-y-1">
                 <div className="flex items-baseline gap-2 flex-wrap">
-                  <span className="text-muted-foreground">Score Base:</span>
-                  <span className="font-semibold text-foreground">{baseScore}</span>
-                  <span className="text-muted-foreground mx-1">→</span>
-                  <span className="text-muted-foreground">Score Ajustado:</span>
-                  <span className={cn("font-semibold", scoreColor.text)}>{scoreTotal}</span>
+                  <span className="font-editorial-mono text-[10px]" style={{ color: MUTED }}>Score Base:</span>
+                  <span className="font-editorial-mono text-[11px] font-bold" style={{ color: TEXT }}>{baseScore}</span>
+                  <span className="font-editorial-mono text-[10px]" style={{ color: MUTED }}>→ Ajustado:</span>
+                  <span className="font-editorial-mono text-[11px] font-bold" style={{ color: scoreStyle.color }}>{scoreTotal}</span>
                 </div>
-                <p className="text-muted-foreground leading-relaxed">
-                  Fator de confiabilidade de <span className="font-medium text-yellow-400">{Math.round(samplePenalty * 100)}%</span> aplicado.{' '}
+                <p className="font-editorial-mono text-[10px] leading-relaxed" style={{ color: MUTED }}>
+                  Fator de confiabilidade{" "}
+                  <span style={{ color: "#f59e0b" }}>{Math.round(samplePenalty * 100)}%</span> aplicado.{" "}
                   {confidenceExplanation}
                 </p>
               </div>
             </div>
           )}
 
-          {/* Sample Warning (only show if no adjustment explanation and not enough data) */}
-          {!hasEnoughData && !hasConfidenceAdjustment && (
-            <div className="flex items-start gap-2 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
-              <AlertTriangle className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
-              <p className="text-xs text-yellow-400/90">
-                Score com amostra reduzida — confiabilidade moderada. 
-                Adicione mais partidas para aumentar a precisão.
+          {/* ── Sample warning ────────────────────────────────────────────── */}
+          {!hasEnoughData && !hasConfidenceAdjust && (
+            <div
+              className="flex items-start gap-3 p-3 rounded-lg"
+              style={{ background: "rgba(245,158,11,0.07)", border: "1px solid rgba(245,158,11,0.18)" }}
+            >
+              <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: "#f59e0b" }} />
+              <p className="font-editorial-mono text-[10px] leading-relaxed" style={{ color: "#f59e0b" }}>
+                Score com amostra reduzida — confiabilidade moderada. Adicione mais partidas para aumentar a precisão.
               </p>
             </div>
           )}
 
-          {/* Breakdown Accordion */}
+          {/* ── Breakdown accordion ───────────────────────────────────────── */}
           <Collapsible open={breakdownOpen} onOpenChange={setBreakdownOpen}>
             <CollapsibleTrigger asChild>
-              <Button
-                variant="ghost"
-                className="w-full justify-between h-9 px-3 hover:bg-zinc-800/50"
+              <button
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors"
+                style={{
+                  background: "rgba(255,255,255,0.03)",
+                  border: `1px solid ${CARD_BORDER}`,
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
+                onMouseLeave={e => (e.currentTarget.style.background = "rgba(255,255,255,0.03)")}
               >
-                <span className="flex items-center gap-2 text-sm">
-                  <BarChart3 className="w-4 h-4" />
-                  Ver composição do score
+                <span className="flex items-center gap-2">
+                  <BarChart3 className="w-3.5 h-3.5" style={{ color: MUTED }} />
+                  <span className="font-editorial-mono text-[10.5px] tracking-[0.06em]" style={{ color: MUTED }}>
+                    Composição do score
+                  </span>
                 </span>
-                {breakdownOpen ? (
-                  <ChevronUp className="w-4 h-4" />
-                ) : (
-                  <ChevronDown className="w-4 h-4" />
-                )}
-              </Button>
+                {breakdownOpen
+                  ? <ChevronUp  className="w-3.5 h-3.5" style={{ color: MUTED }} />
+                  : <ChevronDown className="w-3.5 h-3.5" style={{ color: MUTED }} />
+                }
+              </button>
             </CollapsibleTrigger>
-            <CollapsibleContent className="pt-3 space-y-3">
-              <PillarRow
-                label="Idade & Janela de Evolução"
-                score={breakdown?.scoreAgeWindow ?? 0}
-              />
-              <PillarRow
-                label="Performance + Impacto"
-                score={breakdown?.scorePerformanceImpact ?? 0}
-              />
-              <PillarRow
-                label="Contexto Competitivo"
-                score={breakdown?.scoreCompetitiveContext ?? 0}
-              />
-              <PillarRow
-                label="Consistência & Confiabilidade"
-                score={breakdown?.scoreConsistencyReliability ?? 0}
-              />
-              <PillarRow
-                label="Perfil de Mercado"
-                score={breakdown?.scoreMarketProfile ?? 0}
-              />
+            <CollapsibleContent className="pt-4 space-y-3">
+              <PillarRow label="Idade & Janela de Evolução"   score={breakdown?.scoreAgeWindow              ?? 0} />
+              <PillarRow label="Performance + Impacto"        score={breakdown?.scorePerformanceImpact       ?? 0} />
+              <PillarRow label="Contexto Competitivo"         score={breakdown?.scoreCompetitiveContext      ?? 0} />
+              <PillarRow label="Consistência & Confiabilidade" score={breakdown?.scoreConsistencyReliability ?? 0} />
+              <PillarRow label="Perfil de Mercado"            score={breakdown?.scoreMarketProfile           ?? 0} />
             </CollapsibleContent>
           </Collapsible>
 
-          {/* Insights Section */}
+          {/* ── Insights ─────────────────────────────────────────────────── */}
           {insights.length > 0 && (
-            <div className="pt-2 border-t border-zinc-800/50">
-              <div className="flex items-center gap-2 mb-2">
-                <Lightbulb className="w-4 h-4 text-primary" />
-                <span className="text-sm font-medium">Insights de Mercado</span>
+            <div
+              className="pt-4 border-t"
+              style={{ borderColor: CARD_BORDER }}
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <Lightbulb className="w-3.5 h-3.5" style={{ color: MUTED }} />
+                <span
+                  className="font-editorial-mono text-[10px] tracking-[0.16em] uppercase"
+                  style={{ color: MUTED }}
+                >
+                  Insights de Mercado
+                </span>
               </div>
-              <ul className="space-y-1.5">
+              <ul className="space-y-2">
                 {insights.map((insight, idx) => (
-                  <li
-                    key={idx}
-                    className="flex items-start gap-2 text-sm text-muted-foreground"
-                  >
-                    <span className="text-primary mt-1">•</span>
-                    <span>{insight}</span>
+                  <li key={idx} className="flex items-start gap-2">
+                    <span className="font-editorial-mono text-[10px] mt-0.5" style={{ color: "#ec4525" }}>•</span>
+                    <span className="font-editorial-mono text-[10.5px] leading-snug" style={{ color: MUTED }}>
+                      {insight}
+                    </span>
                   </li>
                 ))}
               </ul>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Modals */}
+      {/* Modals — sem mudança */}
       <MarketScoreHistoryModal
         open={historyModalOpen}
         onOpenChange={setHistoryModalOpen}
         events={history}
         loading={historyLoading}
       />
-
       <MarketScoreNotesModal
         open={notesModalOpen}
         onOpenChange={setNotesModalOpen}

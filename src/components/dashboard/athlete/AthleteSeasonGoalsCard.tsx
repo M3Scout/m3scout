@@ -1,31 +1,28 @@
 import { useState, useEffect, useMemo } from "react";
-import { 
-  Target, 
-  Trophy, 
-  Loader2, 
-  TrendingUp, 
-  CheckCircle2,
-  Plus,
-  Pencil,
-  X,
-  Save,
-  ChevronDown,
-  ChevronUp,
-  History,
-  Calendar
+import {
+  Target, Trophy, Loader2, Plus, Pencil, X, Save,
+  History, Calendar, ChevronDown, Lightbulb, CheckCircle2,
+  AlertTriangle, Zap, TrendingUp,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { fadeInUp } from "@/lib/animations";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AnimatePresence, motion } from "framer-motion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+// ── Design tokens ──────────────────────────────────────────────────────────────
+const CARD_BG      = "#0f0f10";
+const CARD_BORDER  = "rgba(255,255,255,0.07)";
+const MUTED        = "#62616a";
+const TEXT         = "#ededee";
+const GREEN        = "#22c55e";
+const AMBER        = "#f59e0b";
+const RED          = "#ec4525";
+const INPUT_BG     = "#0c0b0d";
+const INPUT_BORDER = "rgba(255,255,255,0.12)";
+
+// ── Types ─────────────────────────────────────────────────────────────────────
 interface SeasonGoal {
   id: string;
   goal_type: string;
@@ -45,13 +42,11 @@ interface AthleteSeasonGoalsCardProps {
     shots?: number;
     tackles?: number;
     yellow_cards?: number;
-    // New goal types
     interceptions?: number;
     passes_completed?: number;
     passes_total?: number;
     dribbles_success?: number;
     dribbles_total?: number;
-    // Goalkeeper-specific stats
     goals_conceded?: number;
     claims_success?: number;
     claims_total?: number;
@@ -64,265 +59,146 @@ interface AthleteSeasonGoalsCardProps {
 interface GoalTypeConfig {
   label: string;
   icon: string;
-  color: string;
   minValue: number;
   maxValue: number;
   step: number;
   unit?: string;
   type: "accumulation" | "limit";
   limitLabel?: string;
-  description: string; // Added for better UX
+  description: string;
 }
 
-// Goal type keys MUST match exactly the database constraint values
+// ── Goal type registry ────────────────────────────────────────────────────────
 const GOAL_TYPE_CONFIG: Record<string, GoalTypeConfig> = {
-  goals: { 
-    label: "Gols", 
-    icon: "⚽", 
-    color: "emerald", 
-    minValue: 1, 
-    maxValue: 50, 
-    step: 1, 
-    type: "accumulation",
-    description: "Quantidade de gols marcados na temporada"
-  },
-  assists: { 
-    label: "Assistências", 
-    icon: "🅰️", 
-    color: "blue", 
-    minValue: 1, 
-    maxValue: 30, 
-    step: 1, 
-    type: "accumulation",
-    description: "Passes decisivos para gols"
-  },
-  matches: { 
-    label: "Partidas", 
-    icon: "🏟️", 
-    color: "violet", 
-    minValue: 5, 
-    maxValue: 60, 
-    step: 5, 
-    type: "accumulation",
-    description: "Total de jogos disputados"
-  },
-  minutes: { 
-    label: "Minutos", 
-    icon: "⏱️", 
-    color: "amber", 
-    minValue: 250, 
-    maxValue: 5000, 
-    step: 50, 
-    unit: "min", 
-    type: "accumulation",
-    description: "Tempo total em campo (em minutos)"
-  },
-  shots: { 
-    label: "Finalizações", 
-    icon: "🎯", 
-    color: "orange", 
-    minValue: 10, 
-    maxValue: 150, 
-    step: 5, 
-    type: "accumulation",
-    description: "Chutes a gol durante a temporada"
-  },
-  tackles: { 
-    label: "Desarmes", 
-    icon: "🦵", 
-    color: "cyan", 
-    minValue: 10, 
-    maxValue: 150, 
-    step: 5, 
-    type: "accumulation",
-    description: "Recuperações de bola com sucesso"
-  },
-  interceptions: { 
-    label: "Interceptações", 
-    icon: "🧲", 
-    color: "indigo", 
-    minValue: 1, 
-    maxValue: 200, 
-    step: 5, 
-    type: "accumulation",
-    description: "Quantidade de interceptações na temporada"
-  },
-  pass_accuracy: { 
-    label: "Aproveitamento de Passe", 
-    icon: "📊", 
-    color: "teal", 
-    minValue: 1, 
-    maxValue: 100, 
-    step: 1, 
-    unit: "%",
-    type: "accumulation",
-    description: "Percentual de acerto de passe na temporada"
-  },
-  dribble_accuracy: { 
-    label: "Aproveitamento de Dribles", 
-    icon: "🏃", 
-    color: "purple", 
-    minValue: 1, 
-    maxValue: 100, 
-    step: 1, 
-    unit: "%",
-    type: "accumulation",
-    description: "Percentual de acerto de dribles na temporada"
-  },
-  yellow_cards_max: {
-    label: "Amarelos", 
-    icon: "🟨", 
-    color: "yellow", 
-    minValue: 1, 
-    maxValue: 15, 
-    step: 1, 
-    type: "limit", 
-    limitLabel: "máx.",
-    description: "Limite máximo de cartões (quanto menos, melhor)"
-  },
-  saves: { 
-    label: "Defesas Totais", 
-    icon: "🧤", 
-    color: "cyan", 
-    minValue: 1, 
-    maxValue: 300, 
-    step: 10, 
-    type: "accumulation",
-    description: "Total de defesas na temporada"
-  },
-  saves_difficult: { 
-    label: "Defesas Difíceis", 
-    icon: "🦸", 
-    color: "rose", 
-    minValue: 1, 
-    maxValue: 120, 
-    step: 5, 
-    type: "accumulation",
-    description: "Defesas difíceis na temporada (indisponível - sem dados)"
-  },
-  clean_sheets: { 
-    label: "Clean Sheets", 
-    icon: "🛡️", 
-    color: "green", 
-    minValue: 1, 
-    maxValue: 30, 
-    step: 1, 
-    type: "accumulation",
-    description: "Jogos sem sofrer gols"
-  },
-  // New goalkeeper goal types
-  goals_conceded_max: {
-    label: "Gols Sofridos", 
-    icon: "🥅", 
-    color: "red", 
-    minValue: 0, 
-    maxValue: 80, 
-    step: 1, 
-    type: "limit", 
-    limitLabel: "máx.",
-    description: "Limite máximo de gols sofridos (quanto menos, melhor)"
-  },
-  goalkeeper_claims_accuracy: { 
-    label: "Saídas do Gol Corretas", 
-    icon: "🧤", 
-    color: "teal", 
-    minValue: 1, 
-    maxValue: 100, 
-    step: 1, 
-    unit: "%",
-    type: "accumulation",
-    description: "Percentual de saídas do gol bem-sucedidas"
-  },
-  penalty_save_rate: { 
-    label: "Pênaltis Defendidos", 
-    icon: "🥊", 
-    color: "purple", 
-    minValue: 1, 
-    maxValue: 100, 
-    step: 1, 
-    unit: "%",
-    type: "accumulation",
-    description: "Percentual de pênaltis defendidos"
-  },
+  goals:                   { label: "Gols",                    icon: "⚽", minValue: 1,   maxValue: 50,   step: 1,  type: "accumulation", description: "Quantidade de gols marcados na temporada" },
+  assists:                 { label: "Assistências",             icon: "🅰️", minValue: 1,   maxValue: 30,   step: 1,  type: "accumulation", description: "Passes decisivos para gols" },
+  matches:                 { label: "Partidas",                 icon: "🏟️", minValue: 5,   maxValue: 60,   step: 5,  type: "accumulation", description: "Total de jogos disputados" },
+  minutes:                 { label: "Minutos",                  icon: "⏱️", minValue: 250, maxValue: 5000, step: 50, unit: "min", type: "accumulation", description: "Tempo total em campo" },
+  shots:                   { label: "Finalizações",             icon: "🎯", minValue: 10,  maxValue: 150,  step: 5,  type: "accumulation", description: "Chutes a gol durante a temporada" },
+  tackles:                 { label: "Desarmes",                 icon: "🦵", minValue: 10,  maxValue: 150,  step: 5,  type: "accumulation", description: "Recuperações de bola com sucesso" },
+  interceptions:           { label: "Interceptações",           icon: "🧲", minValue: 1,   maxValue: 200,  step: 5,  type: "accumulation", description: "Quantidade de interceptações na temporada" },
+  pass_accuracy:           { label: "Aproveitamento de Passe",  icon: "📊", minValue: 1,   maxValue: 100,  step: 1,  unit: "%", type: "accumulation", description: "Percentual de acerto de passe" },
+  dribble_accuracy:        { label: "Aproveitamento de Dribles",icon: "🏃", minValue: 1,   maxValue: 100,  step: 1,  unit: "%", type: "accumulation", description: "Percentual de acerto de dribles" },
+  yellow_cards_max:        { label: "Amarelos",                 icon: "🟨", minValue: 1,   maxValue: 15,   step: 1,  type: "limit", limitLabel: "máx.", description: "Limite máximo de cartões amarelos" },
+  saves:                   { label: "Defesas Totais",           icon: "🧤", minValue: 1,   maxValue: 300,  step: 10, type: "accumulation", description: "Total de defesas na temporada" },
+  saves_difficult:         { label: "Defesas Difíceis",         icon: "🦸", minValue: 1,   maxValue: 120,  step: 5,  type: "accumulation", description: "Defesas difíceis na temporada" },
+  clean_sheets:            { label: "Clean Sheets",             icon: "🛡️", minValue: 1,   maxValue: 30,   step: 1,  type: "accumulation", description: "Jogos sem sofrer gols" },
+  goals_conceded_max:      { label: "Gols Sofridos",            icon: "🥅", minValue: 0,   maxValue: 80,   step: 1,  type: "limit", limitLabel: "máx.", description: "Limite máximo de gols sofridos" },
+  goalkeeper_claims_accuracy: { label: "Saídas Corretas",       icon: "🧤", minValue: 1,   maxValue: 100,  step: 1,  unit: "%", type: "accumulation", description: "Percentual de saídas bem-sucedidas" },
+  penalty_save_rate:       { label: "Pênaltis Defendidos",      icon: "🥊", minValue: 1,   maxValue: 100,  step: 1,  unit: "%", type: "accumulation", description: "Percentual de pênaltis defendidos" },
 };
 
-// These slugs must match DB constraint values
-const OUTFIELD_GOAL_TYPES = ["goals", "assists", "matches", "minutes", "shots", "tackles", "interceptions", "pass_accuracy", "dribble_accuracy", "yellow_cards_max"];
-const GK_GOAL_TYPES = ["saves", "saves_difficult", "clean_sheets", "matches", "minutes", "interceptions", "pass_accuracy", "dribble_accuracy", "yellow_cards_max", "goals_conceded_max", "goalkeeper_claims_accuracy", "penalty_save_rate"];
+const OUTFIELD_GOAL_TYPES = ["goals","assists","matches","minutes","shots","tackles","interceptions","pass_accuracy","dribble_accuracy","yellow_cards_max"];
+const GK_GOAL_TYPES = ["saves","saves_difficult","clean_sheets","matches","minutes","interceptions","pass_accuracy","dribble_accuracy","yellow_cards_max","goals_conceded_max","goalkeeper_claims_accuracy","penalty_save_rate"];
 
-// For accumulation: higher = better (green when complete)
-// For limit: lower = better (green when under limit, red/warning when approaching/exceeding)
-const getProgressColor = (percentage: number, isLimit: boolean): string => {
+// ── Progress bar color ─────────────────────────────────────────────────────────
+function getBarColor(pct: number, isLimit: boolean): string {
   if (isLimit) {
-    if (percentage >= 100) return "bg-red-500";
-    if (percentage >= 75) return "bg-amber-500";
-    if (percentage >= 50) return "bg-yellow-500";
-    return "bg-emerald-500";
+    if (pct >= 100) return RED;
+    if (pct >= 75)  return AMBER;
+    return GREEN;
   }
-  if (percentage >= 100) return "bg-emerald-500";
-  if (percentage >= 75) return "bg-blue-500";
-  if (percentage >= 50) return "bg-amber-500";
-  return "bg-zinc-500";
-};
+  if (pct >= 100) return GREEN;
+  if (pct >= 75)  return "#3b82f6"; // blue
+  if (pct >= 40)  return AMBER;
+  return MUTED;
+}
 
-export function AthleteSeasonGoalsCard({ 
-  athleteId, 
+// ── Contextual tip generator ──────────────────────────────────────────────────
+function getGoalTip(goalType: string, current: number, target: number, pct: number, isLimit: boolean): string {
+  if (isLimit) {
+    const remaining = target - current;
+    if (current > target) return `Limite ultrapassado em ${current - target}. Foco total na disciplina.`;
+    if (pct >= 80) return `Atenção: apenas ${remaining} restante${remaining !== 1 ? "s" : ""}. Controle emocional é prioridade.`;
+    if (pct >= 50) return `Metade do limite usada. Mantenha a cabeça fria nas disputas.`;
+    return `Ótima disciplina até aqui. Continue assim.`;
+  }
+  const remaining = target - current;
+  if (pct >= 100) return `Meta conquistada! Considere elevar o desafio para a próxima fase.`;
+  if (pct >= 75)  return `Faltam apenas ${remaining}. Você está muito perto — não baixe o ritmo!`;
+  if (pct >= 50)  return `Boa metade do caminho. Mantenha a constância nas próximas rodadas.`;
+  switch (goalType) {
+    case "goals":       return `Foque na qualidade das finalizações. Menos é mais quando a bola entra.`;
+    case "assists":     return `Tomadas de decisão rápidas no último terço aumentam seu índice de assistências.`;
+    case "matches":     return `Presença constante mostra ao treinador que você está disponível e comprometido.`;
+    case "minutes":     return `Cada minuto em campo é uma vitrine. Entrega total mesmo quando entra no segundo tempo.`;
+    case "shots":       return `Busque mais situações de chute. Jogadores que finalizam mais criam mais gols.`;
+    case "tackles":     return `Posicionamento tático antecipado melhora sua taxa de desarmes.`;
+    case "interceptions": return `Leitura de jogo é a chave. Estude os padrões de passe do adversário.`;
+    case "pass_accuracy": return `Simplicidade é precisão. Prefira o passe seguro ao arriscado.`;
+    case "dribble_accuracy": return `Drible no momento certo, com velocidade de decisão. Menos tentativas, mais sucesso.`;
+    default:            return `Trabalho consistente e foco diário levam à conquista.`;
+  }
+}
+
+// ── Styled Input ──────────────────────────────────────────────────────────────
+function DarkInput({ value, onChange, min, max, step }: {
+  value: number; onChange: (v: number) => void; min?: number; max?: number; step?: number;
+}) {
+  return (
+    <input
+      type="number"
+      value={value}
+      onChange={e => onChange(Number(e.target.value))}
+      min={min} max={max} step={step}
+      className="font-editorial-mono text-[13px] w-20 px-2.5 py-1.5 rounded-lg outline-none text-center"
+      style={{ background: INPUT_BG, border: `1px solid ${INPUT_BORDER}`, color: TEXT }}
+      onFocus={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.3)")}
+      onBlur={e => (e.currentTarget.style.borderColor = INPUT_BORDER)}
+    />
+  );
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
+export function AthleteSeasonGoalsCard({
+  athleteId,
   currentStats,
-  isGoalkeeper = false 
+  isGoalkeeper = false,
 }: AthleteSeasonGoalsCardProps) {
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [goals, setGoals] = useState<SeasonGoal[]>([]);
+  const [loading, setLoading]                       = useState(true);
+  const [saving, setSaving]                         = useState(false);
+  const [goals, setGoals]                           = useState<SeasonGoal[]>([]);
   const [previousSeasonGoals, setPreviousSeasonGoals] = useState<Record<number, SeasonGoal[]>>({});
-  const [showAddDialog, setShowAddDialog] = useState(false);
-  const [newGoalType, setNewGoalType] = useState<string>("");
-  const [newGoalValue, setNewGoalValue] = useState<number>(0);
-  const [editingGoal, setEditingGoal] = useState<SeasonGoal | null>(null);
-  const [showHistory, setShowHistory] = useState(false);
-  
+  const [showAddDialog, setShowAddDialog]           = useState(false);
+  const [newGoalType, setNewGoalType]               = useState<string>("");
+  const [newGoalValue, setNewGoalValue]             = useState<number>(0);
+  const [editingGoal, setEditingGoal]               = useState<SeasonGoal | null>(null);
+  const [showHistory, setShowHistory]               = useState(false);
+
   const currentYear = new Date().getFullYear();
   const availableGoalTypes = isGoalkeeper ? GK_GOAL_TYPES : OUTFIELD_GOAL_TYPES;
 
-  useEffect(() => {
-    fetchGoals();
-  }, [athleteId, currentYear]);
+  useEffect(() => { fetchGoals(); }, [athleteId, currentYear]);
 
   const fetchGoals = async () => {
     try {
-      // Fetch current year goals
-      const { data: currentData, error: currentError } = await supabase
+      const { data: cur, error: e1 } = await supabase
         .from("player_season_goals")
         .select("id, goal_type, target_value, season_year")
         .eq("player_id", athleteId)
         .eq("season_year", currentYear);
+      if (e1) throw e1;
+      setGoals(cur || []);
 
-      if (currentError) throw currentError;
-      setGoals(currentData || []);
-
-      // Fetch previous seasons (last 3 years)
-      const { data: historyData, error: historyError } = await supabase
+      const { data: hist, error: e2 } = await supabase
         .from("player_season_goals")
         .select("id, goal_type, target_value, season_year")
         .eq("player_id", athleteId)
         .lt("season_year", currentYear)
         .gte("season_year", currentYear - 3)
         .order("season_year", { ascending: false });
+      if (e2) throw e2;
 
-      if (historyError) throw historyError;
-
-      // Group by season year
       const grouped: Record<number, SeasonGoal[]> = {};
-      (historyData || []).forEach((goal) => {
-        if (goal.season_year) {
-          if (!grouped[goal.season_year]) {
-            grouped[goal.season_year] = [];
-          }
-          grouped[goal.season_year].push(goal);
+      (hist || []).forEach(g => {
+        if (g.season_year) {
+          if (!grouped[g.season_year]) grouped[g.season_year] = [];
+          grouped[g.season_year].push(g);
         }
       });
       setPreviousSeasonGoals(grouped);
-    } catch (error) {
-      console.error("Error fetching season goals:", error);
+    } catch (err) {
+      console.error("[SeasonGoals] fetch error", err);
     } finally {
       setLoading(false);
     }
@@ -330,532 +206,463 @@ export function AthleteSeasonGoalsCard({
 
   const getCurrentValue = (goalType: string): number => {
     switch (goalType) {
-      case "goals": return currentStats.goals;
-      case "assists": return currentStats.assists;
-      case "matches": return currentStats.matches;
-      case "minutes": return currentStats.minutes;
-      case "saves": return currentStats.saves;
-      case "clean_sheets": return currentStats.clean_sheets;
-      case "shots": return currentStats.shots ?? 0;
-      case "tackles": return currentStats.tackles ?? 0;
+      case "goals":       return currentStats.goals;
+      case "assists":     return currentStats.assists;
+      case "matches":     return currentStats.matches;
+      case "minutes":     return currentStats.minutes;
+      case "saves":       return currentStats.saves;
+      case "clean_sheets":return currentStats.clean_sheets;
+      case "shots":       return currentStats.shots ?? 0;
+      case "tackles":     return currentStats.tackles ?? 0;
       case "yellow_cards_max": return currentStats.yellow_cards ?? 0;
       case "interceptions": return currentStats.interceptions ?? 0;
       case "pass_accuracy": {
-        const completed = currentStats.passes_completed ?? 0;
-        const total = currentStats.passes_total ?? 0;
-        if (total === 0) return 0;
-        // Return percentage with 1 decimal
-        return Math.round((completed / total) * 1000) / 10;
+        const c = currentStats.passes_completed ?? 0, t = currentStats.passes_total ?? 0;
+        return t === 0 ? 0 : Math.round((c / t) * 1000) / 10;
       }
       case "dribble_accuracy": {
-        const success = currentStats.dribbles_success ?? 0;
-        const total = currentStats.dribbles_total ?? 0;
-        if (total === 0) return 0;
-        // Return percentage with 1 decimal
-        return Math.round((success / total) * 1000) / 10;
+        const s = currentStats.dribbles_success ?? 0, t = currentStats.dribbles_total ?? 0;
+        return t === 0 ? 0 : Math.round((s / t) * 1000) / 10;
       }
-      case "saves_difficult": return 0; // Not tracked yet in DB
-      // New goalkeeper goal types
+      case "saves_difficult": return 0;
       case "goals_conceded_max": return currentStats.goals_conceded ?? 0;
       case "goalkeeper_claims_accuracy": {
-        const success = currentStats.claims_success ?? 0;
-        const total = currentStats.claims_total ?? 0;
-        if (total === 0) return 0;
-        return Math.round((success / total) * 1000) / 10;
+        const s = currentStats.claims_success ?? 0, t = currentStats.claims_total ?? 0;
+        return t === 0 ? 0 : Math.round((s / t) * 1000) / 10;
       }
       case "penalty_save_rate": {
-        const saved = currentStats.penalties_saved ?? 0;
-        const faced = currentStats.penalties_faced ?? 0;
-        if (faced === 0) return 0;
-        return Math.round((saved / faced) * 1000) / 10;
+        const s = currentStats.penalties_saved ?? 0, f = currentStats.penalties_faced ?? 0;
+        return f === 0 ? 0 : Math.round((s / f) * 1000) / 10;
       }
       default: return 0;
     }
   };
 
   const handleAddGoal = async () => {
-    if (!newGoalType || newGoalValue <= 0) {
-      toast.error("Selecione um tipo e valor válido para a meta");
-      return;
-    }
-
+    if (!newGoalType || newGoalValue <= 0) { toast.error("Selecione um tipo e valor válido"); return; }
     const config = GOAL_TYPE_CONFIG[newGoalType];
     if (newGoalValue < config.minValue || newGoalValue > config.maxValue) {
-      toast.error(`O valor deve estar entre ${config.minValue} e ${config.maxValue}`);
-      return;
+      toast.error(`Valor entre ${config.minValue} e ${config.maxValue}`); return;
     }
-
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from("player_season_goals")
-        .upsert({
-          player_id: athleteId,
-          season_year: currentYear,
-          goal_type: newGoalType,
-          target_value: newGoalValue,
-        }, {
-          onConflict: "player_id,season_year,goal_type"
-        });
-
+      const { error } = await supabase.from("player_season_goals").upsert({
+        player_id: athleteId, season_year: currentYear, goal_type: newGoalType, target_value: newGoalValue,
+      }, { onConflict: "player_id,season_year,goal_type" });
       if (error) throw error;
-
-      toast.success("Meta adicionada com sucesso!");
-      setShowAddDialog(false);
-      setNewGoalType("");
-      setNewGoalValue(0);
+      toast.success("Meta criada!");
+      setShowAddDialog(false); setNewGoalType(""); setNewGoalValue(0);
       await fetchGoals();
-    } catch (error) {
-      console.error("Error adding goal:", error);
-      toast.error("Erro ao adicionar meta");
-    } finally {
-      setSaving(false);
-    }
+    } catch { toast.error("Erro ao criar meta"); }
+    finally { setSaving(false); }
   };
 
   const handleUpdateGoal = async (goalId: string, newValue: number) => {
     const goal = goals.find(g => g.id === goalId);
     if (!goal) return;
-
     const config = GOAL_TYPE_CONFIG[goal.goal_type];
     if (newValue < config.minValue || newValue > config.maxValue) {
-      toast.error(`O valor deve estar entre ${config.minValue} e ${config.maxValue}`);
-      return;
+      toast.error(`Valor entre ${config.minValue} e ${config.maxValue}`); return;
     }
-
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from("player_season_goals")
-        .update({ target_value: newValue })
-        .eq("id", goalId);
-
+      const { error } = await supabase.from("player_season_goals").update({ target_value: newValue }).eq("id", goalId);
       if (error) throw error;
-
-      toast.success("Meta atualizada!");
-      setEditingGoal(null);
-      await fetchGoals();
-    } catch (error) {
-      console.error("Error updating goal:", error);
-      toast.error("Erro ao atualizar meta");
-    } finally {
-      setSaving(false);
-    }
+      toast.success("Meta atualizada!"); setEditingGoal(null); await fetchGoals();
+    } catch { toast.error("Erro ao atualizar meta"); }
+    finally { setSaving(false); }
   };
 
   const handleDeleteGoal = async (goalId: string) => {
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from("player_season_goals")
-        .delete()
-        .eq("id", goalId);
-
+      const { error } = await supabase.from("player_season_goals").delete().eq("id", goalId);
       if (error) throw error;
-
-      toast.success("Meta removida");
-      await fetchGoals();
-    } catch (error) {
-      console.error("Error deleting goal:", error);
-      toast.error("Erro ao remover meta");
-    } finally {
-      setSaving(false);
-    }
+      toast.success("Meta removida"); await fetchGoals();
+    } catch { toast.error("Erro ao remover meta"); }
+    finally { setSaving(false); }
   };
 
   const existingGoalTypes = goals.map(g => g.goal_type);
   const availableToAdd = availableGoalTypes.filter(t => !existingGoalTypes.includes(t));
   const previousYears = Object.keys(previousSeasonGoals).map(Number).sort((a, b) => b - a);
 
+  const completedGoals = useMemo(() => goals.filter(g => {
+    const config = GOAL_TYPE_CONFIG[g.goal_type];
+    const cur = getCurrentValue(g.goal_type);
+    return config?.type === "limit" ? cur <= g.target_value : cur >= g.target_value;
+  }).length, [goals, currentStats]);
+
   if (loading) {
     return (
-      <motion.div 
-        {...fadeInUp}
-        className="rounded-[var(--radius-card)] bg-zinc-900/60 backdrop-blur-sm shadow-sm overflow-hidden flex items-center justify-center min-h-[200px] flex-1"
-      >
-        <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" />
-      </motion.div>
+      <div className="rounded-xl border flex items-center justify-center min-h-[220px]"
+        style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
+        <Loader2 className="w-5 h-5 animate-spin" style={{ color: MUTED }} />
+      </div>
     );
   }
 
-  const completedGoals = goals.filter(g => {
-    const config = GOAL_TYPE_CONFIG[g.goal_type];
-    const current = getCurrentValue(g.goal_type);
-    if (config?.type === "limit") {
-      return current <= g.target_value;
-    }
-    return current >= g.target_value;
-  }).length;
-
   return (
-    <motion.div 
-      {...fadeInUp}
-      transition={{ delay: 0.5 }}
-      className="rounded-[var(--radius-card)] bg-zinc-900/60 backdrop-blur-sm shadow-sm overflow-hidden flex-1 flex flex-col"
-    >
-      {/* Header */}
-      <div className="px-4 sm:px-5 py-4 border-b border-zinc-800/40 bg-zinc-900/50 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-[var(--radius-button)] bg-gradient-to-br from-emerald-500/20 to-green-600/10 flex items-center justify-center">
-            <Target className="w-4 h-4 text-emerald-400" />
-          </div>
+    <>
+      <div className="rounded-xl border overflow-hidden flex flex-col"
+        style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
+
+        {/* ── Header ─────────────────────────────────────────────────────── */}
+        <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: CARD_BORDER }}>
           <div>
-            <h2 className="text-sm font-semibold text-foreground">Metas da Temporada</h2>
-            <p className="text-[10px] text-muted-foreground">Temporada {currentYear}</p>
+            <span className="font-editorial-mono text-[11px] tracking-[0.22em] uppercase" style={{ color: MUTED }}>
+              // Metas da Temporada
+            </span>
+            <span className="font-editorial-mono text-[9.5px] ml-3" style={{ color: MUTED }}>
+              {currentYear}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            {goals.length > 0 && (
+              <span
+                className="font-editorial-mono text-[10px] font-bold px-2.5 py-1 rounded-lg"
+                style={{
+                  background: completedGoals === goals.length ? "rgba(34,197,94,0.12)" : "rgba(255,255,255,0.05)",
+                  color: completedGoals === goals.length ? GREEN : MUTED,
+                  border: `1px solid ${completedGoals === goals.length ? "rgba(34,197,94,0.25)" : CARD_BORDER}`,
+                }}
+              >
+                {completedGoals}/{goals.length} completas
+              </span>
+            )}
+            {previousYears.length > 0 && (
+              <button
+                onClick={() => setShowHistory(!showHistory)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors"
+                style={{ border: `1px solid ${CARD_BORDER}`, color: MUTED, background: "transparent" }}
+                onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")}
+                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+              >
+                <History className="w-3 h-3" />
+                <span className="font-editorial-mono text-[10px]">Histórico</span>
+              </button>
+            )}
+            {availableToAdd.length > 0 && (
+              <button
+                onClick={() => setShowAddDialog(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-opacity font-editorial-mono text-[10px] font-bold tracking-wider"
+                style={{ background: RED, color: "#fff" }}
+                onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
+                onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
+              >
+                <Plus className="w-3.5 h-3.5" />
+                META
+              </button>
+            )}
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {goals.length > 0 && (
-            <Badge 
-              variant={completedGoals === goals.length ? "success" : "secondary"} 
-              className="text-[10px]"
-            >
-              {completedGoals}/{goals.length}
-            </Badge>
-          )}
-          
-          {previousYears.length > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowHistory(!showHistory)}
-              className="h-7 px-2 text-xs"
-            >
-              <History className="w-3.5 h-3.5 mr-1" />
-              Histórico
-            </Button>
-          )}
-          
-          {availableToAdd.length > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowAddDialog(true)}
-              className="h-7 px-2 text-xs"
-            >
-              <Plus className="w-3.5 h-3.5 mr-1" />
-              Meta
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* Goals List */}
-      <div className="p-4 flex-1 overflow-auto">
-        {goals.length === 0 ? (
-          <div className="py-8 text-center">
-            <Trophy className="w-10 h-10 mx-auto mb-3 text-zinc-700" />
-            <p className="text-sm text-muted-foreground">Nenhuma meta definida</p>
-            <p className="text-[11px] text-zinc-600 mt-1 mb-4">
-              Defina suas metas pessoais para a temporada
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowAddDialog(true)}
-              className="text-xs"
-            >
-              <Plus className="w-3.5 h-3.5 mr-1" />
-              Criar primeira meta
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {goals.map((goal, index) => {
-              const config = GOAL_TYPE_CONFIG[goal.goal_type] || { 
-                label: goal.goal_type, 
-                icon: "🎯", 
-                color: "zinc",
-                minValue: 1,
-                maxValue: 100,
-                step: 1,
-                type: "accumulation" as const,
-                description: "",
+        {/* ── Goals list ─────────────────────────────────────────────────── */}
+        <div className="flex flex-col divide-y" style={{ borderColor: CARD_BORDER }}>
+          {goals.length === 0 ? (
+            <div className="px-5 py-10 flex flex-col items-center text-center gap-4">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,0.04)", border: `1px solid ${CARD_BORDER}` }}>
+                <Target className="w-6 h-6" style={{ color: MUTED }} />
+              </div>
+              <div>
+                <p className="font-display font-semibold text-[15px]" style={{ color: TEXT }}>Nenhuma meta definida</p>
+                <p className="font-editorial-mono text-[10.5px] mt-1 leading-snug" style={{ color: MUTED }}>
+                  Defina metas pessoais para acompanhar seu crescimento na temporada.
+                </p>
+              </div>
+              {availableToAdd.length > 0 && (
+                <button
+                  onClick={() => setShowAddDialog(true)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg font-editorial-mono text-[10px] font-bold tracking-wider transition-opacity"
+                  style={{ background: RED, color: "#fff" }}
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  CRIAR PRIMEIRA META
+                </button>
+              )}
+            </div>
+          ) : (
+            goals.map((goal, idx) => {
+              const config = GOAL_TYPE_CONFIG[goal.goal_type] ?? {
+                label: goal.goal_type, icon: "🎯", type: "accumulation" as const,
+                minValue: 1, maxValue: 100, step: 1, description: "",
               };
-              const current = getCurrentValue(goal.goal_type);
-              const percentage = Math.min((current / goal.target_value) * 100, 100);
-              const isLimit = config.type === "limit";
-              const isComplete = isLimit 
-                ? current <= goal.target_value
-                : current >= goal.target_value;
-              const isEditingThis = editingGoal?.id === goal.id;
+              const current     = getCurrentValue(goal.goal_type);
+              const pct         = Math.min((current / goal.target_value) * 100, 100);
+              const isLimit     = config.type === "limit";
+              const isComplete  = isLimit ? current <= goal.target_value : current >= goal.target_value;
               const isOverLimit = isLimit && current > goal.target_value;
+              const isEditing   = editingGoal?.id === goal.id;
+              const barColor    = getBarColor(pct, isLimit);
+              const tip         = getGoalTip(goal.goal_type, current, goal.target_value, pct, isLimit);
+              const isPct       = goal.goal_type === "pass_accuracy" || goal.goal_type === "dribble_accuracy";
+              const isMin       = goal.goal_type === "minutes";
+
+              const formatValue = (v: number) => isPct ? `${v.toFixed(1)}%` : isMin ? `${v.toLocaleString("pt-BR")} min` : String(v);
 
               return (
                 <motion.div
                   key={goal.id}
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 * index }}
-                  className="space-y-2"
+                  transition={{ delay: 0.06 * idx }}
+                  className="px-5 py-4 group"
+                  style={{ borderColor: CARD_BORDER }}
+                  onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.015)")}
+                  onMouseLeave={e => (e.currentTarget.style.background = "")}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-base">{config.icon}</span>
-                      <span className="text-xs font-medium text-foreground">
-                        {config.label}
-                        {isLimit && <span className="text-zinc-500 ml-1">({config.limitLabel})</span>}
-                      </span>
-                      {isComplete && !isLimit && (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                      )}
-                      {isLimit && !isOverLimit && (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                      )}
-                      {isOverLimit && (
-                        <span className="text-[10px] text-red-400 font-medium">Excedido!</span>
-                      )}
+                  {/* Row 1: icon + label + status + counter */}
+                  <div className="flex items-start justify-between gap-3 mb-2.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-[15px] flex-shrink-0">{config.icon}</span>
+                      <div className="min-w-0">
+                        <span className="font-editorial-mono text-[11px] font-semibold tracking-[0.04em]" style={{ color: TEXT }}>
+                          {config.label}
+                          {isLimit && (
+                            <span className="font-editorial-mono text-[9px] ml-1.5" style={{ color: MUTED }}>({config.limitLabel})</span>
+                          )}
+                        </span>
+                        {/* Status indicators */}
+                        {isComplete && !isOverLimit && (
+                          <span className="ml-2 inline-flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3 inline" style={{ color: GREEN }} />
+                            <span className="font-editorial-mono text-[9px]" style={{ color: GREEN }}>
+                              {isLimit ? "Dentro do limite" : "Meta atingida!"}
+                            </span>
+                          </span>
+                        )}
+                        {isOverLimit && (
+                          <span className="ml-2 inline-flex items-center gap-1">
+                            <AlertTriangle className="w-3 h-3 inline" style={{ color: RED }} />
+                            <span className="font-editorial-mono text-[9px]" style={{ color: RED }}>Limite excedido</span>
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    
-                    <div className="flex items-center gap-1.5">
-                      {isEditingThis ? (
-                        <div className="flex items-center gap-1">
-                          <Input
-                            type="number"
+
+                    {/* Counter + edit */}
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      {isEditing ? (
+                        <>
+                          <DarkInput
                             value={editingGoal.target_value}
-                            onChange={(e) => setEditingGoal({ ...editingGoal, target_value: Number(e.target.value) })}
-                            className="w-16 h-6 text-xs px-2"
-                            min={config.minValue}
-                            max={config.maxValue}
-                            step={config.step}
+                            onChange={v => setEditingGoal({ ...editingGoal, target_value: v })}
+                            min={config.minValue} max={config.maxValue} step={config.step}
                           />
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleUpdateGoal(goal.id, editingGoal.target_value)}
-                            disabled={saving}
-                            className="h-6 w-6 p-0"
-                          >
-                            <Save className="w-3 h-3 text-emerald-400" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setEditingGoal(null)}
-                            className="h-6 w-6 p-0"
-                          >
-                            <X className="w-3 h-3 text-muted-foreground" />
-                          </Button>
-                        </div>
+                          <button onClick={() => handleUpdateGoal(goal.id, editingGoal.target_value)} disabled={saving}
+                            className="p-1.5 rounded-lg transition-colors" style={{ color: GREEN }}
+                            onMouseEnter={e => (e.currentTarget.style.background = "rgba(34,197,94,0.12)")}
+                            onMouseLeave={e => (e.currentTarget.style.background = "")}>
+                            <Save className="w-3.5 h-3.5" />
+                          </button>
+                          <button onClick={() => setEditingGoal(null)}
+                            className="p-1.5 rounded-lg transition-colors" style={{ color: MUTED }}
+                            onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.07)")}
+                            onMouseLeave={e => (e.currentTarget.style.background = "")}>
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </>
                       ) : (
                         <>
-                          <span className={`text-sm font-bold tabular-nums ${
-                            isLimit 
-                              ? (isOverLimit ? 'text-red-400' : 'text-emerald-400')
-                              : (isComplete ? 'text-emerald-400' : 'text-foreground')
-                          }`}>
-                            {(goal.goal_type === "pass_accuracy" || goal.goal_type === "dribble_accuracy") 
-                              ? `${current.toFixed(1)}%` : current}
-                          </span>
-                          <span className="text-xs text-muted-foreground">/</span>
-                          <span className="text-xs text-muted-foreground tabular-nums">
-                            {(goal.goal_type === "pass_accuracy" || goal.goal_type === "dribble_accuracy")
-                              ? `${goal.target_value}%`
-                              : goal.goal_type === "minutes" 
-                                ? `${goal.target_value} min` 
-                                : goal.target_value}
-                            {isLimit && " máx."}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
+                          <div className="flex items-baseline gap-1">
+                            <span className="font-display font-bold tabular-nums" style={{ fontSize: 20, color: isOverLimit ? RED : (isComplete ? GREEN : TEXT) }}>
+                              {isPct ? current.toFixed(1) : current}
+                            </span>
+                            <span className="font-editorial-mono text-[11px]" style={{ color: MUTED }}>/</span>
+                            <span className="font-editorial-mono text-[11px]" style={{ color: MUTED }}>
+                              {isPct ? `${goal.target_value}%` : isMin ? `${goal.target_value} min` : goal.target_value}
+                              {isLimit && !isPct && !isMin && " máx."}
+                            </span>
+                          </div>
+                          <button
                             onClick={() => setEditingGoal(goal)}
-                            className="h-5 w-5 p-0 ml-1 opacity-50 hover:opacity-100"
-                          >
-                            <Pencil className="w-2.5 h-2.5" />
-                          </Button>
+                            className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                            style={{ color: MUTED }}
+                            onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.07)")}
+                            onMouseLeave={e => (e.currentTarget.style.background = "")}>
+                            <Pencil className="w-3 h-3" />
+                          </button>
                         </>
                       )}
                     </div>
                   </div>
 
-                  <div className="relative">
-                    <Progress 
-                      value={percentage} 
-                      className={`h-2 ${isLimit ? 'bg-emerald-900/30' : 'bg-zinc-800'}`}
-                    />
-                    <div 
-                      className={`absolute top-0 left-0 h-2 rounded-full transition-all duration-500 ${getProgressColor(percentage, isLimit)}`}
-                      style={{ width: `${percentage}%` }}
+                  {/* Progress bar */}
+                  <div className="h-[3px] rounded-full mb-2.5" style={{ background: "rgba(255,255,255,0.06)" }}>
+                    <motion.div
+                      className="h-full rounded-full"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.min(pct, 100)}%` }}
+                      transition={{ duration: 0.7, delay: 0.1 * idx, ease: "easeOut" }}
+                      style={{ backgroundColor: barColor }}
                     />
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <p className="text-[10px] text-muted-foreground">
-                      {isLimit ? (
-                        isOverLimit ? (
-                          <span className="text-red-400">Limite excedido em {current - goal.target_value}!</span>
-                        ) : current === goal.target_value ? (
-                          <span className="text-amber-400">No limite exato ⚠️</span>
-                        ) : (
-                          <span className="text-emerald-400">
-                            Restam {goal.target_value - current} cartões ✓
-                          </span>
-                        )
-                      ) : isComplete ? (
-                        <span className="text-emerald-400">Meta atingida! 🎉</span>
-                      ) : (goal.goal_type === "pass_accuracy" || goal.goal_type === "dribble_accuracy") ? (
-                        <>Faltam {(goal.target_value - current).toFixed(1)}% para a meta</>
-                      ) : (
-                        <>Faltam {goal.goal_type === "minutes" 
-                          ? (goal.target_value - current) + " minutos"
-                          : (goal.target_value - current) + ` ${config.label.toLowerCase()}`}</>
-                      )}
-                    </p>
-                    <Button
-                      variant="ghost"
-                      size="sm"
+                  {/* Coach tip + remove */}
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-1.5">
+                      <Lightbulb className="w-3 h-3 flex-shrink-0 mt-0.5" style={{ color: isComplete ? GREEN : isOverLimit ? RED : AMBER }} />
+                      <p className="font-editorial-mono text-[10px] leading-snug" style={{ color: MUTED }}>
+                        {tip}
+                      </p>
+                    </div>
+                    <button
                       onClick={() => handleDeleteGoal(goal.id)}
                       disabled={saving}
-                      className="h-5 px-1.5 text-[10px] text-zinc-600 hover:text-red-400"
+                      className="font-editorial-mono text-[9px] tracking-wider uppercase flex-shrink-0 transition-colors"
+                      style={{ color: MUTED }}
+                      onMouseEnter={e => (e.currentTarget.style.color = RED)}
+                      onMouseLeave={e => (e.currentTarget.style.color = MUTED)}
                     >
                       Remover
-                    </Button>
+                    </button>
                   </div>
                 </motion.div>
               );
-            })}
-          </div>
-        )}
+            })
+          )}
+        </div>
 
-        {/* Previous Seasons History */}
+        {/* ── Previous seasons (collapsible) ─────────────────────────────── */}
         <AnimatePresence>
           {showHistory && previousYears.length > 0 && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="mt-6 pt-4 border-t border-zinc-800/40"
+              className="border-t overflow-hidden"
+              style={{ borderColor: CARD_BORDER }}
             >
-              <div className="flex items-center gap-2 mb-4">
-                <Calendar className="w-4 h-4 text-muted-foreground" />
-                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                  Temporadas Anteriores
-                </h3>
-              </div>
-
-              <div className="space-y-4">
-                {previousYears.map((year) => (
-                  <Collapsible key={year}>
-                    <CollapsibleTrigger className="flex items-center justify-between w-full py-2 px-3 rounded-lg bg-zinc-800/30 hover:bg-zinc-800/50 transition-colors">
-                      <div className="flex items-center gap-2">
-                        <Trophy className="w-3.5 h-3.5 text-amber-500" />
-                        <span className="text-sm font-medium text-foreground">Temporada {year}</span>
-                        <Badge variant="secondary" className="text-[10px]">
-                          {previousSeasonGoals[year]?.length || 0} metas
-                        </Badge>
-                      </div>
-                      <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="pt-2 px-3">
-                      <div className="space-y-2">
-                        {previousSeasonGoals[year]?.map((goal) => {
-                          const config = GOAL_TYPE_CONFIG[goal.goal_type] || {
-                            label: goal.goal_type,
-                            icon: "🎯",
-                            type: "accumulation",
-                          };
-                          return (
-                            <div
-                              key={goal.id}
-                              className="flex items-center justify-between py-1.5 px-2 rounded bg-zinc-900/50"
-                            >
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm">{config.icon}</span>
-                                <span className="text-xs text-foreground">{config.label}</span>
+              <div className="px-5 py-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Calendar className="w-3.5 h-3.5" style={{ color: MUTED }} />
+                  <span className="font-editorial-mono text-[10px] uppercase tracking-[0.18em]" style={{ color: MUTED }}>
+                    Temporadas anteriores
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {previousYears.map(year => (
+                    <Collapsible key={year}>
+                      <CollapsibleTrigger className="w-full">
+                        <div
+                          className="flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors"
+                          style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${CARD_BORDER}` }}
+                          onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
+                          onMouseLeave={e => (e.currentTarget.style.background = "rgba(255,255,255,0.03)")}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Trophy className="w-3.5 h-3.5" style={{ color: AMBER }} />
+                            <span className="font-editorial-mono text-[11px] font-semibold" style={{ color: TEXT }}>
+                              Temporada {year}
+                            </span>
+                            <span className="font-editorial-mono text-[9.5px] px-2 py-0.5 rounded-md"
+                              style={{ background: "rgba(255,255,255,0.06)", color: MUTED }}>
+                              {previousSeasonGoals[year]?.length || 0} metas
+                            </span>
+                          </div>
+                          <ChevronDown className="w-3.5 h-3.5" style={{ color: MUTED }} />
+                        </div>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <div className="mt-2 space-y-1 pl-2">
+                          {previousSeasonGoals[year]?.map(g => {
+                            const cfg = GOAL_TYPE_CONFIG[g.goal_type] ?? { label: g.goal_type, icon: "🎯", type: "accumulation" as const };
+                            return (
+                              <div key={g.id} className="flex items-center justify-between px-3 py-2 rounded-lg"
+                                style={{ background: "rgba(255,255,255,0.02)" }}>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[12px]">{cfg.icon}</span>
+                                  <span className="font-editorial-mono text-[10.5px]" style={{ color: MUTED }}>{cfg.label}</span>
+                                </div>
+                                <span className="font-editorial-mono text-[10px]" style={{ color: MUTED }}>
+                                  Meta: {g.target_value}
+                                  {g.goal_type === "minutes" ? " min" : ""}
+                                  {g.goal_type === "pass_accuracy" || g.goal_type === "dribble_accuracy" ? "%" : ""}
+                                  {cfg.type === "limit" ? " máx." : ""}
+                                </span>
                               </div>
-                              <span className="text-xs text-muted-foreground tabular-nums">
-                                Meta: {goal.target_value}
-                                {goal.goal_type === "minutes" ? " min" : ""}
-                                {goal.goal_type === "pass_accuracy" ? "%" : ""}
-                                {config.type === "limit" ? " máx." : ""}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </CollapsibleContent>
-                  </Collapsible>
-                ))}
+                            );
+                          })}
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  ))}
+                </div>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* ── Footer tip ─────────────────────────────────────────────────── */}
+        {goals.length > 0 && (
+          <div className="px-5 py-3 border-t flex items-center gap-2" style={{ borderColor: CARD_BORDER }}>
+            <TrendingUp className="w-3 h-3 flex-shrink-0" style={{ color: MUTED }} />
+            <span className="font-editorial-mono text-[9.5px]" style={{ color: MUTED }}>
+              {completedGoals === goals.length
+                ? "Todas as metas atingidas — eleve o desafio para a próxima fase!"
+                : `${goals.length - completedGoals} meta${goals.length - completedGoals > 1 ? "s" : ""} em aberto · Clique no lápis para editar valores`}
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* Footer */}
-      {goals.length > 0 && (
-        <div className="px-4 py-3 border-t border-zinc-800/30 bg-zinc-900/30">
-          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-            <TrendingUp className="w-3 h-3" />
-            <span>Clique no lápis para editar suas metas</span>
-          </div>
-        </div>
-      )}
-
-      {/* Add Goal Dialog with Enhanced Select */}
+      {/* ── Add Goal Dialog ─────────────────────────────────────────────── */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent className="sm:max-w-[420px]">
-          <DialogHeader>
-            <DialogTitle>Nova Meta</DialogTitle>
-            <DialogDescription>
-              Defina uma meta pessoal para a temporada {currentYear}
+        <DialogContent className="sm:max-w-[420px] p-0 gap-0 overflow-hidden rounded-xl"
+          style={{ background: CARD_BG, border: `1px solid ${CARD_BORDER}` }}>
+          <DialogHeader className="px-5 py-4 border-b" style={{ borderColor: CARD_BORDER }}>
+            <DialogTitle className="font-editorial-mono text-[11px] uppercase tracking-[0.22em]" style={{ color: MUTED }}>
+              // Nova Meta — {currentYear}
+            </DialogTitle>
+            <DialogDescription className="font-editorial-mono text-[10px]" style={{ color: MUTED }}>
+              Defina uma meta pessoal para acompanhar na temporada.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Tipo de Meta</label>
-              <Select value={newGoalType} onValueChange={(v) => {
+          <div className="px-5 py-5 space-y-4">
+            {/* Type select */}
+            <div className="space-y-1.5">
+              <label className="font-editorial-mono text-[9.5px] uppercase tracking-[0.2em]" style={{ color: MUTED }}>
+                Tipo de meta
+              </label>
+              <Select value={newGoalType} onValueChange={v => {
                 setNewGoalType(v);
-                const config = GOAL_TYPE_CONFIG[v];
-                if (config) {
-                  setNewGoalValue(config.minValue);
-                }
+                const cfg = GOAL_TYPE_CONFIG[v];
+                if (cfg) setNewGoalValue(cfg.minValue);
               }}>
-                <SelectTrigger className="h-auto py-2">
+                <SelectTrigger className="font-editorial-mono text-[11px] h-auto py-2.5"
+                  style={{ background: INPUT_BG, border: `1px solid ${INPUT_BORDER}`, color: TEXT }}>
                   <SelectValue placeholder="Selecione o tipo de meta">
                     {newGoalType && GOAL_TYPE_CONFIG[newGoalType] && (
                       <div className="flex items-center gap-2">
-                        <span className="text-lg">{GOAL_TYPE_CONFIG[newGoalType].icon}</span>
-                        <div className="text-left">
-                          <span className="font-medium">{GOAL_TYPE_CONFIG[newGoalType].label}</span>
-                          {GOAL_TYPE_CONFIG[newGoalType].type === "limit" && (
-                            <span className="text-xs text-amber-500 ml-1">(limite)</span>
-                          )}
-                        </div>
+                        <span>{GOAL_TYPE_CONFIG[newGoalType].icon}</span>
+                        <span>{GOAL_TYPE_CONFIG[newGoalType].label}</span>
+                        {GOAL_TYPE_CONFIG[newGoalType].type === "limit" && (
+                          <span className="text-[9px]" style={{ color: AMBER }}>(limite)</span>
+                        )}
                       </div>
                     )}
                   </SelectValue>
                 </SelectTrigger>
-                <SelectContent className="max-h-[300px]">
-                  {availableToAdd.map((type) => {
-                    const config = GOAL_TYPE_CONFIG[type];
+                <SelectContent className="max-h-[300px]" style={{ background: "#111", border: `1px solid ${CARD_BORDER}` }}>
+                  {availableToAdd.map(type => {
+                    const cfg = GOAL_TYPE_CONFIG[type];
                     return (
-                      <SelectItem 
-                        key={type} 
-                        value={type}
-                        className="py-3 cursor-pointer"
-                      >
+                      <SelectItem key={type} value={type} className="py-3 cursor-pointer">
                         <div className="flex items-start gap-3">
-                          <span className="text-xl mt-0.5">{config.icon}</span>
-                          <div className="flex flex-col">
+                          <span className="text-xl mt-0.5">{cfg.icon}</span>
+                          <div>
                             <div className="flex items-center gap-1.5">
-                              <span className="font-medium text-foreground">{config.label}</span>
-                              {config.type === "limit" && (
-                                <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-amber-500/50 text-amber-500">
-                                  limite
-                                </Badge>
+                              <span className="font-editorial-mono text-[11px] font-semibold" style={{ color: TEXT }}>{cfg.label}</span>
+                              {cfg.type === "limit" && (
+                                <span className="font-editorial-mono text-[9px] px-1.5 py-0.5 rounded border" style={{ color: AMBER, borderColor: AMBER }}>limite</span>
                               )}
                             </div>
-                            <span className="text-[11px] text-muted-foreground mt-0.5 leading-tight">
-                              {config.description}
-                            </span>
-                            <span className="text-[10px] text-zinc-500 mt-1">
-                              {config.type === "limit" ? "Quanto menos, melhor" : `${config.minValue} – ${config.maxValue}`}
-                              {config.unit ? ` ${config.unit}` : ""}
-                            </span>
+                            <p className="font-editorial-mono text-[10px] mt-0.5" style={{ color: MUTED }}>{cfg.description}</p>
+                            <p className="font-editorial-mono text-[9px] mt-0.5" style={{ color: MUTED }}>
+                              {cfg.type === "limit" ? "Quanto menos, melhor" : `${cfg.minValue} – ${cfg.maxValue}`}
+                              {cfg.unit ? ` ${cfg.unit}` : ""}
+                            </p>
                           </div>
                         </div>
                       </SelectItem>
@@ -865,66 +672,61 @@ export function AthleteSeasonGoalsCard({
               </Select>
             </div>
 
+            {/* Value input */}
             {newGoalType && (
-              <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="space-y-3 p-4 rounded-lg bg-zinc-800/30 border border-zinc-700/30"
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xl">{GOAL_TYPE_CONFIG[newGoalType]?.icon}</span>
-                  <span className="font-medium text-foreground">{GOAL_TYPE_CONFIG[newGoalType]?.label}</span>
-                  {GOAL_TYPE_CONFIG[newGoalType]?.type === "limit" && (
-                    <Badge variant="outline" className="text-[9px] px-1.5 border-amber-500/50 text-amber-500">
-                      limite máximo
-                    </Badge>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium flex items-center justify-between">
-                    <span>Valor da Meta</span>
-                    <span className="text-[10px] text-muted-foreground font-normal">
-                      {GOAL_TYPE_CONFIG[newGoalType]?.minValue} – {GOAL_TYPE_CONFIG[newGoalType]?.maxValue}
-                      {GOAL_TYPE_CONFIG[newGoalType]?.unit ? ` ${GOAL_TYPE_CONFIG[newGoalType]?.unit}` : ""}
-                    </span>
+              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                className="space-y-2 p-4 rounded-xl" style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${CARD_BORDER}` }}>
+                <div className="flex items-center justify-between">
+                  <label className="font-editorial-mono text-[9.5px] uppercase tracking-[0.2em]" style={{ color: MUTED }}>
+                    Valor alvo
                   </label>
-                  <Input
-                    type="number"
-                    value={newGoalValue}
-                    onChange={(e) => setNewGoalValue(Number(e.target.value))}
-                    min={GOAL_TYPE_CONFIG[newGoalType]?.minValue}
-                    max={GOAL_TYPE_CONFIG[newGoalType]?.maxValue}
-                    step={GOAL_TYPE_CONFIG[newGoalType]?.step}
-                    className="text-lg font-bold h-12"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {GOAL_TYPE_CONFIG[newGoalType]?.type === "limit" ? (
-                      <span className="text-amber-400">
-                        ⚠️ Meta de limite: você quer ficar abaixo de {newGoalValue} {GOAL_TYPE_CONFIG[newGoalType]?.label.toLowerCase()}
-                      </span>
-                    ) : newGoalType === "minutes" ? (
-                      `${newGoalValue} minutos em campo`
-                    ) : (
-                      `Alcançar ${newGoalValue} ${GOAL_TYPE_CONFIG[newGoalType]?.label.toLowerCase()}`
-                    )}
-                  </p>
+                  <span className="font-editorial-mono text-[9px]" style={{ color: MUTED }}>
+                    {GOAL_TYPE_CONFIG[newGoalType]?.minValue} – {GOAL_TYPE_CONFIG[newGoalType]?.maxValue}
+                    {GOAL_TYPE_CONFIG[newGoalType]?.unit ? ` ${GOAL_TYPE_CONFIG[newGoalType]?.unit}` : ""}
+                  </span>
                 </div>
+                <input
+                  type="number"
+                  value={newGoalValue}
+                  onChange={e => setNewGoalValue(Number(e.target.value))}
+                  min={GOAL_TYPE_CONFIG[newGoalType]?.minValue}
+                  max={GOAL_TYPE_CONFIG[newGoalType]?.maxValue}
+                  step={GOAL_TYPE_CONFIG[newGoalType]?.step}
+                  className="w-full font-display font-bold text-center text-[32px] py-3 rounded-xl outline-none"
+                  style={{ background: INPUT_BG, border: `1px solid ${INPUT_BORDER}`, color: TEXT }}
+                  onFocus={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.3)")}
+                  onBlur={e => (e.currentTarget.style.borderColor = INPUT_BORDER)}
+                />
+                <p className="font-editorial-mono text-[10px] text-center" style={{ color: MUTED }}>
+                  {GOAL_TYPE_CONFIG[newGoalType]?.type === "limit"
+                    ? `⚠ Meta de limite: ficar abaixo de ${newGoalValue} ${GOAL_TYPE_CONFIG[newGoalType]?.label.toLowerCase()}`
+                    : newGoalType === "minutes"
+                      ? `${newGoalValue} minutos totais em campo`
+                      : `Alcançar ${newGoalValue} ${GOAL_TYPE_CONFIG[newGoalType]?.label.toLowerCase()}`}
+                </p>
               </motion.div>
             )}
+          </div>
 
-            <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" onClick={() => setShowAddDialog(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={handleAddGoal} disabled={saving || !newGoalType || newGoalValue <= 0}>
-                {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
-                Criar Meta
-              </Button>
-            </div>
+          <div className="px-5 py-4 flex gap-3 border-t" style={{ borderColor: CARD_BORDER }}>
+            <button onClick={() => setShowAddDialog(false)}
+              className="flex-1 font-editorial-mono text-[10px] uppercase tracking-[0.18em] py-2.5 border rounded-lg transition-colors"
+              style={{ borderColor: CARD_BORDER, color: MUTED }}
+              onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)")}
+              onMouseLeave={e => (e.currentTarget.style.borderColor = CARD_BORDER)}>
+              CANCELAR
+            </button>
+            <button
+              onClick={handleAddGoal}
+              disabled={saving || !newGoalType || newGoalValue <= 0}
+              className="flex-[2] flex items-center justify-center gap-2 font-editorial-mono text-[10px] uppercase tracking-[0.18em] py-2.5 rounded-lg transition-opacity"
+              style={{ background: RED, color: "#fff", opacity: (saving || !newGoalType || newGoalValue <= 0) ? 0.5 : 1 }}>
+              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
+              CRIAR META
+            </button>
           </div>
         </DialogContent>
       </Dialog>
-    </motion.div>
+    </>
   );
 }

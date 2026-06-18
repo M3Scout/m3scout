@@ -1,386 +1,414 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Hexagon, Loader2, Info, ChevronDown, RefreshCw } from "lucide-react";
-import { motion } from "framer-motion";
-import { fadeInUp } from "@/lib/animations";
-import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { supabase } from "@/integrations/supabase/client";
+import { Info, Loader2, RefreshCw } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { fetchPlayerAllAttributeScores, recalculatePlayerAllAttributes, type AttributeScoresData } from "@/lib/attributeScores";
 import { recalculatePlayerScores } from "@/lib/recalculatePlayerScores";
 
+// ── Design tokens ──────────────────────────────────────────────────────────────
+const CARD_BG     = "#0f0f10";
+const CARD_BORDER = "rgba(255,255,255,0.07)";
+const MUTED       = "#62616a";
+const RED_BADGE   = "#ec4525";
+
+// ── SVG geometry (same as AtributoRadar) ──────────────────────────────────────
+const CX      = 140;
+const CY      = 155;
+const R       = 86;
+const LABEL_R = 112;
+const VIEW_W  = 280;
+const VIEW_H  = 300;
+const BORDER  = "#1C1C1C";
+
+const AXES = [
+  { key: "ata_score_100", label: "ATA", fullLabel: "Ataque",       angleDeg: -90  },
+  { key: "tec_score_100", label: "TEC", fullLabel: "Técnica",      angleDeg: -18  },
+  { key: "tat_score_100", label: "TAT", fullLabel: "Tática",       angleDeg:  54  },
+  { key: "def_score_100", label: "DEF", fullLabel: "Defesa",       angleDeg: 126  },
+  { key: "cri_score_100", label: "CRI", fullLabel: "Criatividade", angleDeg: 198  },
+] as const;
+
+const toRad = (deg: number) => (deg * Math.PI) / 180;
+const pt = (r: number, angleDeg: number) => ({
+  x: CX + r * Math.cos(toRad(angleDeg)),
+  y: CY + r * Math.sin(toRad(angleDeg)),
+});
+
+function polygonPath(scores: number[]) {
+  return AXES.map((a, i) => {
+    const r = ((scores[i] ?? 0) / 100) * R;
+    const { x, y } = pt(r, a.angleDeg);
+    return `${i === 0 ? "M" : "L"}${x.toFixed(2)},${y.toFixed(2)}`;
+  }).join(" ") + " Z";
+}
+
+function gridPath(f: number) {
+  return AXES.map((a, i) => {
+    const { x, y } = pt(R * f, a.angleDeg);
+    return `${i === 0 ? "M" : "L"}${x.toFixed(2)},${y.toFixed(2)}`;
+  }).join(" ") + " Z";
+}
+
+function getScoreColor(score: number): string {
+  if (score >= 80) return "#06b6d4";
+  if (score >= 70) return "#22c55e";
+  if (score >= 60) return "#eab308";
+  if (score >= 50) return "#ef4444";
+  return "#6b7280";
+}
+
+function aggregateScores(rows: AttributeScoresData[]): number[] {
+  if (!rows.length) return [0, 0, 0, 0, 0];
+  let sumAta = 0, sumTec = 0, sumTat = 0, sumDef = 0, sumCri = 0;
+  let totalWeight = 0;
+  rows.forEach(r => {
+    const mins = Math.max(Number(r.details?.minutes ?? 0), 1);
+    sumAta += (r.ata_score_100 ?? 0) * mins;
+    sumTec += (r.tec_score_100 ?? 0) * mins;
+    sumTat += (r.tat_score_100 ?? 0) * mins;
+    sumDef += (r.def_score_100 ?? 0) * mins;
+    sumCri += (r.cri_score_100 ?? 0) * mins;
+    totalWeight += mins;
+  });
+  const div = totalWeight || 1;
+  return [sumAta / div, sumTec / div, sumTat / div, sumDef / div, sumCri / div];
+}
+
+// ── Pill button ───────────────────────────────────────────────────────────────
+function Pill({
+  label,
+  active,
+  color = "green",
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  color?: "green" | "blue";
+  onClick: () => void;
+}) {
+  const activeStyle =
+    color === "blue"
+      ? { color: "#93c5fd", background: "#1e3a5f", border: "1px solid #2563eb" }
+      : { color: "#F2EDE4", background: "#2A2A2A", border: "1px solid #3A3A3A" };
+  const inactiveStyle = { color: MUTED, background: "transparent", border: "1px solid transparent" };
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="font-editorial-mono text-[11px] font-bold tracking-wider uppercase px-2.5 py-1 rounded-lg transition-colors"
+      style={active ? activeStyle : inactiveStyle}
+    >
+      {label}
+    </button>
+  );
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
 interface AthleteRadarCardProps {
   athleteId: string;
   athletePosition: string;
 }
 
-interface AttributeScores {
-  ata: number | null;
-  tec: number | null;
-  tat: number | null;
-  def: number | null;
-  cri: number | null;
-  confidence: number | null;
-}
-
-const ATTRIBUTES = [
-  { key: "ata", label: "ATA", fullLabel: "Ataque",      angle: -90  },
-  { key: "tec", label: "TÉC", fullLabel: "Técnica",     angle: -18  },
-  { key: "tat", label: "TÁT", fullLabel: "Tática",      angle: 54   },
-  { key: "def", label: "DEF", fullLabel: "Defesa",      angle: 126  },
-  { key: "cri", label: "CRI", fullLabel: "Criatividade",angle: 198  },
-];
-
-const getConfidenceLabel = (confidence: number | null): { label: string; variant: "default" | "secondary" | "outline" } => {
-  if (confidence === null) return { label: "Sem dados", variant: "outline" };
-  if (confidence >= 0.7)   return { label: "Alta Confiança",  variant: "default"   };
-  if (confidence >= 0.4)   return { label: "Média Confiança", variant: "secondary" };
-  return { label: "Baixa Confiança", variant: "outline" };
-};
-
-function polarToCartesian(centerX: number, centerY: number, radius: number, angleInDegrees: number) {
-  const angleInRadians = (angleInDegrees * Math.PI) / 180;
-  return {
-    x: centerX + radius * Math.cos(angleInRadians),
-    y: centerY + radius * Math.sin(angleInRadians),
-  };
-}
-
-export function AthleteRadarCard({ athleteId, athletePosition }: AthleteRadarCardProps) {
-  const [loading, setLoading]               = useState(true);
-  const [scores, setScores]                 = useState<AttributeScores | null>(null);
-  const [availableSeasons, setAvailableSeasons] = useState<number[]>([]);
-  const [selectedSeason, setSelectedSeason] = useState<number | null>(null);
-
-  // 1. Busca temporadas disponíveis e seleciona a mais recente
-  useEffect(() => {
-    const fetchSeasons = async () => {
-      const { data } = await supabase
-        .from("player_attribute_scores")
-        .select("season_year")
-        .eq("player_id", athleteId)
-        .not("season_year", "is", null)
-        .order("season_year", { ascending: false });
-
-      if (data && data.length > 0) {
-        const seasons = [...new Set(data.map((r) => r.season_year as number))].sort((a, b) => b - a);
-        setAvailableSeasons(seasons);
-        setSelectedSeason(seasons[0]); // mais recente por padrão
-      } else {
-        setLoading(false);
-      }
-    };
-
-    fetchSeasons();
-  }, [athleteId]);
-
-  // 2. Busca scores da temporada selecionada (auto-recalcula se engine antigo)
-  useEffect(() => {
-    if (selectedSeason === null) return;
-
-    const fetchScores = async () => {
-      setLoading(true);
-      try {
-        const { data } = await supabase
-          .from("player_attribute_scores")
-          .select("ata_score_100, tec_score_100, tat_score_100, def_score_100, cri_score_100, attr_confidence, details")
-          .eq("player_id", athleteId)
-          .eq("season_year", selectedSeason)
-          .order("updated_at", { ascending: false })
-          .limit(1);
-
-        const row = data?.[0] ?? null;
-        const engineVersion = (row?.details as any)?.engine_version ?? "";
-        const needsRecalc = !row || !engineVersion.startsWith("v25");
-
-        if (needsRecalc) {
-          await recalculatePlayerScores(athleteId, selectedSeason);
-          const { data: fresh } = await supabase
-            .from("player_attribute_scores")
-            .select("ata_score_100, tec_score_100, tat_score_100, def_score_100, cri_score_100, attr_confidence")
-            .eq("player_id", athleteId)
-            .eq("season_year", selectedSeason)
-            .order("updated_at", { ascending: false })
-            .limit(1);
-          const freshRow = fresh?.[0] ?? null;
-          setScores(freshRow ? {
-            ata: freshRow.ata_score_100, tec: freshRow.tec_score_100,
-            tat: freshRow.tat_score_100, def: freshRow.def_score_100,
-            cri: freshRow.cri_score_100, confidence: freshRow.attr_confidence,
-          } : null);
-          return;
-        }
-
-        if (row) {
-          setScores({
-            ata:        row.ata_score_100,
-            tec:        row.tec_score_100,
-            tat:        row.tat_score_100,
-            def:        row.def_score_100,
-            cri:        row.cri_score_100,
-            confidence: row.attr_confidence,
-          });
-        } else {
-          setScores(null);
-        }
-      } catch (error) {
-        console.error("Error fetching attribute scores:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchScores();
-  }, [athleteId, selectedSeason]);
-
+export function AthleteRadarCard({ athleteId }: AthleteRadarCardProps) {
+  const [allRows, setAllRows]             = useState<AttributeScoresData[]>([]);
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
+  const [selectedYear, setSelectedYear]   = useState<number | null>(null);
+  const [compareYear, setCompareYear]     = useState<number | null>(null);
+  const [scores, setScores]               = useState<number[]>([0, 0, 0, 0, 0]);
+  const [compareScores, setCompareScores] = useState<number[]>([0, 0, 0, 0, 0]);
+  const [loaded, setLoaded]               = useState(false);
   const [recalculating, setRecalculating] = useState(false);
 
+  const applyRows = (rows: AttributeScoresData[]) => {
+    setAllRows(rows);
+    const years = [...new Set(
+      rows.filter(r => (r.season_year ?? 0) > 0).map(r => r.season_year as number),
+    )].sort((a, b) => b - a);
+    setAvailableYears(years);
+    setSelectedYear(prev => prev ?? (years[0] ?? null));
+    setLoaded(true);
+  };
+
+  const loadScores = async () => {
+    const rows = await fetchPlayerAllAttributeScores(athleteId);
+    if (!rows.length) {
+      try {
+        await recalculatePlayerAllAttributes(athleteId);
+        const fresh = await fetchPlayerAllAttributeScores(athleteId);
+        applyRows(fresh);
+      } catch {
+        setLoaded(true);
+      }
+      return;
+    }
+    const hasOldEngine = rows.some(r => {
+      const v = (r.details as any)?.engine_version ?? "";
+      return !v.startsWith("v25");
+    });
+    if (hasOldEngine) {
+      try {
+        const years = [...new Set(rows.map(r => r.season_year as number))];
+        await Promise.all(years.map(yr => recalculatePlayerScores(athleteId, yr)));
+        const fresh = await fetchPlayerAllAttributeScores(athleteId);
+        applyRows(fresh.length ? fresh : rows);
+      } catch {
+        applyRows(rows);
+      }
+      return;
+    }
+    applyRows(rows);
+  };
+
   const handleRecalculate = async () => {
-    if (!selectedSeason || recalculating) return;
+    if (recalculating) return;
     setRecalculating(true);
     try {
-      await recalculatePlayerScores(athleteId, selectedSeason);
-      const { data } = await supabase
-        .from("player_attribute_scores")
-        .select("ata_score_100, tec_score_100, tat_score_100, def_score_100, cri_score_100, attr_confidence")
-        .eq("player_id", athleteId)
-        .eq("season_year", selectedSeason)
-        .order("updated_at", { ascending: false })
-        .limit(1);
-      const row = data?.[0];
-      if (row) setScores({ ata: row.ata_score_100, tec: row.tec_score_100, tat: row.tat_score_100,
-                           def: row.def_score_100, cri: row.cri_score_100, confidence: row.attr_confidence });
+      if (selectedYear) {
+        await recalculatePlayerScores(athleteId, selectedYear);
+      } else {
+        await recalculatePlayerAllAttributes(athleteId);
+      }
+      const fresh = await fetchPlayerAllAttributeScores(athleteId);
+      applyRows(fresh);
     } finally {
       setRecalculating(false);
     }
   };
 
-  const hasData = scores && Object.values(scores).some((v) => v !== null && v > 0);
-  const confidenceInfo = getConfidenceLabel(scores?.confidence ?? null);
+  useEffect(() => { loadScores(); }, [athleteId]);
 
-  const size       = 180;
-  const center     = size / 2;
-  const maxRadius  = 65;
-  const gridLevels = [0.33, 0.66, 1];
-
-  const getPolygonPoints = () => {
-    if (!scores) return "";
-    return ATTRIBUTES.map((attr) => {
-      const value = (scores[attr.key as keyof AttributeScores] as number) || 0;
-      const normalizedValue = Math.min(value / 100, 1);
-      const point = polarToCartesian(center, center, maxRadius * normalizedValue, attr.angle);
-      return `${point.x},${point.y}`;
-    }).join(" ");
-  };
-
-  if (loading) {
-    return (
-      <motion.div
-        {...fadeInUp}
-        className="rounded-[var(--radius-card)] bg-zinc-900/60 backdrop-blur-sm shadow-sm overflow-hidden flex-1 flex items-center justify-center min-h-[280px]"
-      >
-        <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" />
-      </motion.div>
+  // Recompute scores on selection change
+  useEffect(() => {
+    if (!allRows.length) return;
+    const year = selectedYear ?? Math.max(...allRows.map(r => r.season_year ?? 0));
+    setScores(aggregateScores(allRows.filter(r => r.season_year === year)));
+    setCompareScores(
+      compareYear !== null
+        ? aggregateScores(allRows.filter(r => r.season_year === compareYear))
+        : [0, 0, 0, 0, 0],
     );
-  }
+  }, [allRows, selectedYear, compareYear]);
+
+  const isComparing = compareYear !== null;
+
+  const labelPositions = AXES.map(a => {
+    const { x, y } = pt(LABEL_R, a.angleDeg);
+    return { left: (x / VIEW_W) * 100, top: (y / VIEW_H) * 100 };
+  });
 
   return (
-    <motion.div
-      {...fadeInUp}
-      transition={{ delay: 0.4 }}
-      className="rounded-[var(--radius-card)] bg-zinc-900/60 backdrop-blur-sm shadow-sm overflow-hidden flex flex-col flex-1"
+    <div
+      className="rounded-xl border overflow-hidden flex flex-col flex-1"
+      style={{ background: CARD_BG, borderColor: CARD_BORDER }}
     >
-      {/* Header */}
-      <div className="px-4 sm:px-5 py-4 border-b border-zinc-800/40 bg-zinc-900/50 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-[var(--radius-button)] bg-gradient-to-br from-violet-500/20 to-purple-600/10 flex items-center justify-center">
-            <Hexagon className="w-4 h-4 text-violet-400" />
-          </div>
-          <div>
-            <h2 className="text-sm font-semibold text-foreground">Radar de Atributos</h2>
-            <p className="text-[10px] text-muted-foreground">Perfil técnico-tático</p>
-          </div>
-        </div>
-
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      <div
+        className="flex items-center justify-between px-5 py-4 border-b"
+        style={{ borderColor: CARD_BORDER }}
+      >
+        <span
+          className="font-editorial-mono text-[11px] tracking-[0.22em] uppercase"
+          style={{ color: MUTED }}
+        >
+          Atributos
+        </span>
         <div className="flex items-center gap-2">
-          {/* Botão recalcular */}
-          {selectedSeason && (
-            <button
-              onClick={handleRecalculate}
-              disabled={recalculating || loading}
-              title="Recalcular atributos"
-              className="flex items-center justify-center w-7 h-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-zinc-800/60 transition-colors disabled:opacity-40"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${recalculating ? "animate-spin" : ""}`} />
-            </button>
-          )}
-          {/* Seletor de temporada */}
-          {availableSeasons.length > 0 && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md hover:bg-zinc-800/60">
-                  {selectedSeason ?? "—"}
-                  <ChevronDown className="w-3 h-3" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="min-w-[80px]">
-                {availableSeasons.map((year) => (
-                  <DropdownMenuItem
-                    key={year}
-                    className={`text-xs ${year === selectedSeason ? "text-primary font-semibold" : ""}`}
-                    onSelect={() => setSelectedSeason(year)}
-                  >
-                    {year}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Badge variant={confidenceInfo.variant} className="text-[10px] cursor-help">
-                {confidenceInfo.label}
-              </Badge>
-            </TooltipTrigger>
-            <TooltipContent side="left" className="max-w-[200px]">
-              <p className="text-xs">
-                Confiança baseada na quantidade de minutos jogados e partidas analisadas
-              </p>
-            </TooltipContent>
-          </Tooltip>
+          <button
+            onClick={handleRecalculate}
+            disabled={recalculating}
+            title="Recalcular atributos"
+            type="button"
+            className="flex items-center justify-center w-6 h-6 rounded hover:bg-zinc-800/60 transition-colors disabled:opacity-40"
+            style={{ color: MUTED }}
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${recalculating ? "animate-spin" : ""}`} />
+          </button>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className="flex items-center justify-center w-6 h-6 rounded hover:bg-zinc-800/60 transition-colors"
+                style={{ color: MUTED }}
+              >
+                <Info className="w-3.5 h-3.5" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent side="left" className="max-w-[230px] text-xs leading-relaxed p-3">
+              <p className="font-semibold mb-1.5">Eixos do Radar</p>
+              <p className="mb-0.5"><span className="font-medium">ATA</span> — Capacidade ofensiva: gols, chutes e pênaltis</p>
+              <p className="mb-0.5"><span className="font-medium">CRI</span> — Criação de chances, cruzamentos e passes decisivos</p>
+              <p className="mb-0.5"><span className="font-medium">TEC</span> — Passes certos, dribles e controle de bola</p>
+              <p className="mb-0.5"><span className="font-medium">DEF</span> — Desarmes, interceptações e cortes defensivos</p>
+              <p className="mb-0.5"><span className="font-medium">TAT</span> — Duelos ganhos, recuperações e disciplina</p>
+              <p className="mt-1.5 text-muted-foreground">Todos os índices calculados por 90 min jogados.</p>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
 
-      {/* Radar SVG */}
-      <div className="px-6 py-6 flex-1 flex items-center justify-center">
-        {hasData ? (
-          <div className="relative">
-            <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-              <defs>
-                <linearGradient id="radarGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%"   stopColor="hsl(var(--primary))" stopOpacity="0.4" />
-                  <stop offset="100%" stopColor="hsl(270, 70%, 60%)"  stopOpacity="0.25" />
-                </linearGradient>
-              </defs>
-
-              {gridLevels.map((level, i) => {
-                const points = ATTRIBUTES.map((attr) => {
-                  const point = polarToCartesian(center, center, maxRadius * level, attr.angle);
-                  return `${point.x},${point.y}`;
-                }).join(" ");
-                return (
-                  <polygon
-                    key={i}
-                    points={points}
-                    fill="none"
-                    stroke="hsl(var(--muted-foreground))"
-                    strokeOpacity={0.08}
-                    strokeWidth={1}
-                  />
-                );
-              })}
-
-              {ATTRIBUTES.map((attr) => {
-                const point = polarToCartesian(center, center, maxRadius, attr.angle);
-                return (
-                  <line
-                    key={attr.key}
-                    x1={center} y1={center}
-                    x2={point.x} y2={point.y}
-                    stroke="hsl(var(--muted-foreground))"
-                    strokeOpacity={0.06}
-                    strokeWidth={1}
-                  />
-                );
-              })}
-
-              <polygon
-                points={getPolygonPoints()}
-                fill="url(#radarGradient)"
-                stroke="hsl(var(--primary))"
-                strokeWidth={1.5}
-                strokeLinejoin="round"
+      {/* ── Season pills ────────────────────────────────────────────────────── */}
+      {availableYears.length > 0 && (
+        <div className="flex items-center gap-2 px-5 pt-4 pb-1">
+          {availableYears.slice(0, 4).map(year => {
+            const isPrimary = year === selectedYear;
+            const isComp    = year === compareYear;
+            return (
+              <Pill
+                key={year}
+                label={String(year)}
+                active={isPrimary || isComp}
+                color={isPrimary ? "green" : "blue"}
+                onClick={() => {
+                  if (!isPrimary) {
+                    setCompareYear(isComp ? null : year);
+                  }
+                }}
               />
+            );
+          })}
+        </div>
+      )}
 
-              {ATTRIBUTES.map((attr) => {
-                const value = (scores?.[attr.key as keyof AttributeScores] as number) || 0;
-                const normalizedValue = Math.min(value / 100, 1);
-                const point = polarToCartesian(center, center, maxRadius * normalizedValue, attr.angle);
-                return (
-                  <circle
-                    key={attr.key}
-                    cx={point.x} cy={point.y}
-                    r={3}
-                    fill="hsl(var(--primary))"
-                    stroke="hsl(var(--background))"
-                    strokeWidth={1.5}
-                  />
-                );
-              })}
-            </svg>
-
-            {ATTRIBUTES.map((attr) => {
-              const labelRadius = maxRadius + 28;
-              const point = polarToCartesian(center, center, labelRadius, attr.angle);
-              const value = (scores?.[attr.key as keyof AttributeScores] as number) || 0;
-              return (
-                <Tooltip key={attr.key}>
-                  <TooltipTrigger asChild>
-                    <div
-                      className="absolute flex flex-col items-center justify-center cursor-help"
-                      style={{
-                        left: point.x,
-                        top: point.y,
-                        transform: "translate(-50%, -50%)",
-                        minWidth: 36,
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      <span className="text-[11px] font-semibold text-foreground leading-none tracking-wide" style={{ whiteSpace: "nowrap" }}>
-                        {attr.label}
-                      </span>
-                      <span className="text-[10px] font-medium text-primary leading-none mt-0.5">
-                        {Math.round(value)}
-                      </span>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="text-xs">
-                    {attr.fullLabel}: {Math.round(value)}/100
-                  </TooltipContent>
-                </Tooltip>
-              );
-            })}
+      {/* ── Radar SVG ───────────────────────────────────────────────────────── */}
+      <div className="flex-1 flex items-center justify-center px-4 pb-2 pt-1">
+        {!loaded ? (
+          <div className="py-12 flex items-center justify-center w-full">
+            <Loader2 className="w-5 h-5 animate-spin" style={{ color: MUTED }} />
           </div>
         ) : (
-          <div className="text-center py-6">
-            <Hexagon className="w-10 h-10 mx-auto mb-3 text-zinc-700" />
-            <p className="text-sm text-muted-foreground">Sem dados suficientes</p>
-            <p className="text-[11px] text-zinc-600 mt-1">
-              Jogue mais partidas para gerar seu radar
-            </p>
+          <div
+            className="relative w-full"
+            style={{ aspectRatio: `${VIEW_W} / ${VIEW_H}`, maxWidth: 300 }}
+          >
+            <svg viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} className="w-full h-full">
+              {/* Grid rings */}
+              {[0.25, 0.5, 0.75, 1].map(f => (
+                <path key={f} d={gridPath(f)} fill="none" stroke={BORDER} strokeWidth="1" />
+              ))}
+
+              {/* Axis spokes */}
+              {AXES.map(a => {
+                const outer = pt(R, a.angleDeg);
+                return (
+                  <line
+                    key={a.key}
+                    x1={CX} y1={CY}
+                    x2={outer.x.toFixed(2)} y2={outer.y.toFixed(2)}
+                    stroke={BORDER} strokeWidth="1"
+                  />
+                );
+              })}
+
+              {/* Comparison polygon — blue, behind main */}
+              {isComparing && (
+                <path
+                  d={polygonPath(compareScores)}
+                  fill="rgba(59,130,246,0.18)"
+                  stroke="#2563eb"
+                  strokeWidth="1.5"
+                  strokeLinejoin="round"
+                />
+              )}
+
+              {/* Main polygon — green */}
+              <path
+                d={polygonPath(scores)}
+                fill="rgba(34,197,94,0.20)"
+                stroke="#16a34a"
+                strokeWidth="1.5"
+                strokeLinejoin="round"
+              />
+            </svg>
+
+            {/* Attribute labels + score badges */}
+            {AXES.map((a, i) => {
+              const { left, top } = labelPositions[i];
+              const score    = Math.round(scores[i]);
+              const cmpScore = isComparing ? Math.round(compareScores[i]) : null;
+              return (
+                <div
+                  key={a.key}
+                  className="absolute flex flex-col items-center gap-0.5"
+                  style={{
+                    left: `${left}%`,
+                    top:  `${top}%`,
+                    transform: "translate(-50%, -50%)",
+                  }}
+                >
+                  <span
+                    className="font-editorial-mono text-[10px] font-bold tracking-wider uppercase leading-none"
+                    style={{ color: MUTED }}
+                  >
+                    {a.label}
+                  </span>
+
+                  {isComparing ? (
+                    <div className="flex items-center gap-0.5">
+                      <span
+                        className="rounded px-1 py-0.5 font-editorial-mono text-[9px] font-bold text-white leading-none"
+                        style={{ background: getScoreColor(score), minWidth: 20, textAlign: "center" }}
+                      >
+                        {score}
+                      </span>
+                      <span
+                        className="rounded px-1 py-0.5 font-editorial-mono text-[9px] font-bold text-white leading-none"
+                        style={{ background: cmpScore !== null ? getScoreColor(cmpScore) : "#6b7280", minWidth: 20, textAlign: "center" }}
+                      >
+                        {cmpScore ?? "—"}
+                      </span>
+                    </div>
+                  ) : (
+                    <span
+                      className="rounded px-1 py-0.5 font-editorial-mono text-[10px] font-bold text-white leading-none"
+                      style={{ background: getScoreColor(score), minWidth: 22, textAlign: "center" }}
+                    >
+                      {score}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* Legend when comparing */}
+            {isComparing && (
+              <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center gap-4 pb-1">
+                <div className="flex items-center gap-1">
+                  <span className="w-3 h-0.5 inline-block rounded" style={{ background: "#16a34a" }} />
+                  <span className="font-editorial-mono text-[9px] font-bold" style={{ color: "#16a34a" }}>
+                    {selectedYear}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="w-3 h-0.5 inline-block rounded" style={{ background: "#2563eb" }} />
+                  <span className="font-editorial-mono text-[9px] font-bold" style={{ color: "#93c5fd" }}>
+                    {compareYear}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      {/* Footer */}
-      <div className="px-4 py-3 border-t border-zinc-800/30 bg-zinc-900/30 flex items-center justify-between">
-        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-          <Info className="w-3 h-3" />
-          <span>Calculado das estatísticas</span>
+      {/* ── Footer ──────────────────────────────────────────────────────────── */}
+      <div
+        className="flex items-center justify-between px-5 py-3 border-t"
+        style={{ borderColor: CARD_BORDER }}
+      >
+        <div className="flex items-center gap-1.5">
+          <Info className="w-3 h-3" style={{ color: MUTED }} />
+          <span className="font-editorial-mono text-[9.5px]" style={{ color: MUTED }}>
+            Calculado das estatísticas
+          </span>
         </div>
         <Link
           to={`/dashboard/atletas/${athleteId}?tab=technical`}
-          className="text-xs text-primary hover:text-primary/80 transition-colors"
+          className="font-editorial-mono text-[10px] transition-opacity hover:opacity-70"
+          style={{ color: RED_BADGE }}
         >
           Ver detalhes →
         </Link>
       </div>
-    </motion.div>
+    </div>
   );
 }

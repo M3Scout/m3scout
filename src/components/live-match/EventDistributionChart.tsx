@@ -187,42 +187,35 @@ export function EventDistributionChart({
   const halfTimeMinute = Math.floor(matchDuration / 2);
 
   return (
-    <Card ref={chartRef} data-export-target className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95">
-      <CardHeader className="pb-4 sm:pb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-              <Activity className="h-5 w-5 sm:h-6 sm:w-6" />
-              Distribuição de Eventos
-            </CardTitle>
-            <CardDescription className="text-sm mt-1">
-              Intensidade do jogo ao longo do tempo
-            </CardDescription>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => exportToPng(chartRef.current)}
-            disabled={isExporting}
-            className="shrink-0 self-start sm:self-auto"
-          >
-            <Download className="h-4 w-4 mr-1" />
-            {isExporting ? "..." : "PNG"}
-          </Button>
+    <div ref={chartRef} data-export-target className="rounded-xl border overflow-hidden" style={{ background: "#161618", borderColor: "rgba(255,255,255,0.10)" }}>
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: "rgba(255,255,255,0.09)" }}>
+        <div className="flex items-center gap-2.5">
+          <Activity className="w-4 h-4" style={{ color: "#62616a" }} />
+          <span className="font-display font-semibold text-[15px]" style={{ color: "#ededee" }}>Distribuição de Eventos</span>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4 sm:space-y-5 p-4 sm:p-6">
-        {/* Summary badges */}
-        <div className="flex flex-wrap gap-2 sm:gap-3">
-          <Badge variant="secondary" className="text-xs sm:text-sm px-2.5 sm:px-3 py-1">
-            1º Tempo: {stats.firstHalf} eventos
-          </Badge>
-          <Badge variant="secondary" className="text-xs sm:text-sm px-2.5 sm:px-3 py-1">
-            2º Tempo: {stats.secondHalf} eventos
-          </Badge>
-          <Badge variant="outline" className="text-xs sm:text-sm px-2.5 sm:px-3 py-1">
-            Pico: {stats.peakMinute}' ({stats.peakCount} eventos)
-          </Badge>
+        <button
+          onClick={() => exportToPng(chartRef.current)}
+          disabled={isExporting}
+          className="flex items-center gap-1.5 font-editorial-mono text-[10px] uppercase tracking-wider px-3 py-1.5 rounded-lg border transition-colors hover:bg-zinc-800/40 disabled:opacity-50"
+          style={{ borderColor: "rgba(255,255,255,0.12)", color: "#ededee" }}
+        >
+          <Download className="h-3.5 w-3.5" />
+          {isExporting ? "..." : "PNG"}
+        </button>
+      </div>
+      <div className="p-4 sm:p-5 space-y-4">
+        {/* Summary pills */}
+        <div className="flex flex-wrap gap-2">
+          {[
+            { label: `1º Tempo: ${stats.firstHalf} eventos` },
+            { label: `2º Tempo: ${stats.secondHalf} eventos` },
+            { label: `Pico: ${stats.peakMinute}' (${stats.peakCount} eventos)` },
+          ].map(({ label }) => (
+            <span key={label} className="font-editorial-mono text-[10px] px-2.5 py-1 rounded-md" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.10)", color: "#ededee" }}>
+              {label}
+            </span>
+          ))}
         </div>
 
         {/* Chart */}
@@ -346,23 +339,23 @@ export function EventDistributionChart({
         </div>
 
         {/* Legend */}
-        <div className="flex flex-wrap justify-center gap-4 text-xs text-muted-foreground">
+        <div className="flex flex-wrap justify-center gap-4 font-editorial-mono text-[10px]" style={{ color: "#62616a" }}>
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-0.5 bg-primary rounded" />
+            <div className="w-3 h-0.5 rounded" style={{ background: "#ec4525" }} />
             <span>Intensidade (média móvel)</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-muted-foreground opacity-50" />
+            <div className="w-2 h-2 rounded-full" style={{ background: "rgba(255,255,255,0.30)" }} />
             <span>Eventos por minuto</span>
           </div>
           {keyMoments.filter((m) => m.type === "goal").length > 0 && (
             <div className="flex items-center gap-1.5">
-              <div className="w-0.5 h-3 bg-green-500 rounded" />
+              <div className="w-0.5 h-3 rounded" style={{ background: "#22c55e" }} />
               <span>Gols</span>
             </div>
           )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

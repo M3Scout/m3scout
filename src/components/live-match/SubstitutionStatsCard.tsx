@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowRightLeft, Clock, ArrowDown, ArrowUp, Timer, Download } from "lucide-react";
 import { useExportPng } from "@/hooks/useExportPng";
 import { calculateMinutesPlayed, getMinutesPlayedPercent, STANDARD_MATCH_DURATION } from "@/lib/minutesPlayed";
@@ -247,75 +246,66 @@ export function SubstitutionStatsCard({
   }
 
   return (
-    <Card ref={cardRef} data-export-target className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95">
-      <CardHeader className="pb-4 sm:pb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-              <ArrowRightLeft className="h-5 w-5 sm:h-6 sm:w-6" />
-              Substituições e Tempo em Campo
-            </CardTitle>
-            <CardDescription className="text-sm mt-1">
-              {summaryStats.totalSubs} substituição{summaryStats.totalSubs !== 1 ? "ões" : ""} • 
-              {summaryStats.playersUsedCount} jogadores utilizados
-            </CardDescription>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => exportToPng(cardRef.current)}
-            disabled={isExporting}
-            className="shrink-0 self-start sm:self-auto"
-          >
-            <Download className="h-4 w-4 mr-1" />
-            {isExporting ? "..." : "PNG"}
-          </Button>
+    <div ref={cardRef} data-export-target className="rounded-xl border overflow-hidden" style={{ background: "#161618", borderColor: "rgba(255,255,255,0.10)" }}>
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: "rgba(255,255,255,0.09)" }}>
+        <div className="flex items-center gap-2.5">
+          <ArrowRightLeft className="w-4 h-4" style={{ color: "#62616a" }} />
+          <span className="font-display font-semibold text-[15px]" style={{ color: "#ededee" }}>Substituições e Tempo em Campo</span>
+          <span className="font-editorial-mono text-[10px]" style={{ color: "#62616a" }}>
+            {summaryStats.totalSubs} sub · {summaryStats.playersUsedCount} jogadores
+          </span>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-5 sm:space-y-6 p-4 sm:p-6">
+        <button
+          onClick={() => exportToPng(cardRef.current)}
+          disabled={isExporting}
+          className="flex items-center gap-1.5 font-editorial-mono text-[10px] uppercase tracking-wider px-3 py-1.5 rounded-lg border transition-colors hover:bg-zinc-800/40 disabled:opacity-50"
+          style={{ borderColor: "rgba(255,255,255,0.12)", color: "#ededee" }}
+        >
+          <Download className="h-3.5 w-3.5" />
+          {isExporting ? "..." : "PNG"}
+        </button>
+      </div>
+      <div className="p-4 sm:p-5 space-y-4">
         {/* Summary Grid */}
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-          <div className="text-center p-4 sm:p-5 rounded-xl bg-zinc-900/60 border border-zinc-800/40">
-            <p className="text-2xl sm:text-3xl font-bold">{summaryStats.totalSubs}</p>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-1">Substituições</p>
-          </div>
-          <div className="text-center p-4 sm:p-5 rounded-xl bg-zinc-900/60 border border-zinc-800/40">
-            <p className="text-2xl sm:text-3xl font-bold">{summaryStats.startersCount}</p>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-1">Titulares</p>
-          </div>
-          <div className="text-center p-4 sm:p-5 rounded-xl bg-zinc-900/60 border border-zinc-800/40">
-            <p className="text-2xl sm:text-3xl font-bold">{summaryStats.playersUsedCount}</p>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-1">Jogadores</p>
-          </div>
-          <div className="text-center p-4 sm:p-5 rounded-xl bg-zinc-900/60 border border-zinc-800/40">
-            <p className="text-2xl sm:text-3xl font-bold">{summaryStats.avgMinutes}'</p>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-1">Média Min.</p>
-          </div>
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {[
+            { value: summaryStats.totalSubs,         label: "Substituições" },
+            { value: summaryStats.startersCount,     label: "Titulares"     },
+            { value: summaryStats.playersUsedCount,  label: "Jogadores"     },
+            { value: `${summaryStats.avgMinutes}'`,  label: "Média Min."    },
+          ].map(({ value, label }) => (
+            <div key={label} className="flex flex-col gap-1 p-4 rounded-xl" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.10)" }}>
+              <span className="font-display font-bold tabular-nums" style={{ fontSize: 30, lineHeight: 1, color: "#ededee" }}>{value}</span>
+              <span className="font-editorial-mono text-[10px] uppercase tracking-wider" style={{ color: "#62616a" }}>{label}</span>
+            </div>
+          ))}
         </div>
 
         {/* Substitutions Timeline */}
         {substitutions.length > 0 && (
-          <div className="space-y-3">
-            <h4 className="text-sm sm:text-base font-medium flex items-center gap-2">
-              <Timer className="h-4 w-4 sm:h-5 sm:w-5" />
+          <div className="space-y-2.5">
+            <h4 className="font-editorial-mono text-[10px] uppercase tracking-wider flex items-center gap-2" style={{ color: "#62616a" }}>
+              <Timer className="h-3.5 w-3.5" />
               Timeline de Substituições
             </h4>
-            <div className="space-y-2 sm:space-y-3">
+            <div className="space-y-2">
               {substitutions.map((sub, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center gap-3 p-3 sm:p-4 rounded-xl border border-zinc-800/40 bg-zinc-900/60"
+                  className="flex items-center gap-3 p-3 rounded-xl"
+                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)" }}
                 >
-                  <Badge variant="outline" className="shrink-0 font-mono text-xs sm:text-sm px-2 sm:px-3">
+                  <span className="font-editorial-mono text-[11px] font-bold shrink-0 tabular-nums px-2 py-1 rounded-lg" style={{ background: "rgba(255,255,255,0.07)", color: "#ededee" }}>
                     {sub.displayMinute}
-                  </Badge>
+                  </span>
                   <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                     {/* Player Out */}
-                    <div className="flex items-center gap-1.5 sm:gap-2 flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
                       <ArrowDown className="h-4 w-4 text-red-500 shrink-0" />
-                      <Avatar className="h-7 w-7 sm:h-8 sm:w-8 shrink-0">
+                      <Avatar className="h-7 w-7 shrink-0">
                         <AvatarImage src={sub.playerOut.player?.photo_url || undefined} />
-                        <AvatarFallback className="text-[10px] sm:text-xs">
+                        <AvatarFallback className="text-[10px]">
                           {sub.playerOut.player?.full_name.slice(0, 2).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
@@ -323,26 +313,26 @@ export function SubstitutionStatsCard({
                         {sub.playerOut.player?.full_name.split(" ").slice(-1)[0]}
                       </span>
                     </div>
-                    
-                    <ArrowRightLeft className="h-4 w-4 text-muted-foreground shrink-0" />
-                    
+
+                    <ArrowRightLeft className="h-3.5 w-3.5 shrink-0" style={{ color: "#62616a" }} />
+
                     {/* Player In */}
-                    <div className="flex items-center gap-1.5 sm:gap-2 flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
                       <ArrowUp className="h-4 w-4 text-emerald-500 shrink-0" />
-                      <Avatar className="h-7 w-7 sm:h-8 sm:w-8 shrink-0">
+                      <Avatar className="h-7 w-7 shrink-0">
                         <AvatarImage src={sub.playerIn.player?.photo_url || undefined} />
-                        <AvatarFallback className="text-[10px] sm:text-xs">
+                        <AvatarFallback className="text-[10px]">
                           {sub.playerIn.player?.full_name.slice(0, 2).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="text-xs sm:text-sm truncate">
+                      <span className="font-display text-[13px] truncate" style={{ color: "#ededee" }}>
                         {sub.playerIn.player?.full_name.split(" ").slice(-1)[0]}
                       </span>
                     </div>
                   </div>
-                  <Badge variant="secondary" className="text-[10px] sm:text-xs shrink-0">
+                  <span className="font-editorial-mono text-[9px] px-2 py-0.5 rounded-md shrink-0" style={{ background: "rgba(255,255,255,0.07)", color: "#62616a" }}>
                     {sub.half === 1 ? "1T" : "2T"}
-                  </Badge>
+                  </span>
                 </div>
               ))}
             </div>
@@ -350,87 +340,63 @@ export function SubstitutionStatsCard({
         )}
 
         {/* Time on Field List */}
-        <div className="space-y-2">
-          <h4 className="text-sm font-medium flex items-center gap-2">
-            <Clock className="h-4 w-4" />
+        <div className="space-y-2.5">
+          <h4 className="font-editorial-mono text-[10px] uppercase tracking-wider flex items-center gap-2" style={{ color: "#62616a" }}>
+            <Clock className="h-3.5 w-3.5" />
             Tempo em Campo por Jogador
           </h4>
-          <ScrollArea className="h-[300px]">
-            <div className="space-y-1.5 pr-3">
+          <div className="space-y-1.5">
               {playerTimeStats.map((stat) => {
                 if (!stat.player.player) return null;
-                
                 const percentPlayed = getMinutesPlayedPercent(stat.minutesPlayed);
-                
                 return (
                   <div
                     key={stat.player.id}
-                    className="flex items-center gap-2 p-2 rounded-lg border"
+                    className="flex items-center gap-3 p-3 rounded-xl"
+                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)" }}
                   >
                     <Avatar className="h-8 w-8 shrink-0">
                       <AvatarImage src={stat.player.player.photo_url || undefined} />
-                      <AvatarFallback className="text-xs">
+                      <AvatarFallback className="font-display text-xs">
                         {stat.player.player.full_name.slice(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    
+
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium truncate">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-display font-semibold text-[13px] truncate" style={{ color: "#ededee" }}>
                           {stat.player.player.full_name}
                         </span>
                         {stat.started && (
-                          <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 shrink-0">
-                            TIT
-                          </Badge>
+                          <span className="font-editorial-mono text-[9px] px-1.5 py-0.5 rounded border" style={{ color: "#62616a", borderColor: "rgba(255,255,255,0.10)" }}>TIT</span>
                         )}
-                        {stat.wasSubstitutedIn && (
-                          <ArrowUp className="h-3 w-3 text-green-500 shrink-0" />
-                        )}
-                        {stat.wasSubstitutedOut && (
-                          <ArrowDown className="h-3 w-3 text-red-500 shrink-0" />
-                        )}
+                        {stat.wasSubstitutedIn  && <ArrowUp   className="h-3 w-3 text-green-500 shrink-0" />}
+                        {stat.wasSubstitutedOut && <ArrowDown  className="h-3 w-3 text-red-500 shrink-0" />}
                       </div>
-                      
-                      {/* Time bar */}
-                      <div className="flex items-center gap-2 mt-1">
-                        <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-primary rounded-full transition-all"
-                            style={{ width: `${Math.min(percentPlayed, 100)}%` }}
-                          />
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.08)" }}>
+                          <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(percentPlayed, 100)}%`, background: "#ec4525" }} />
                         </div>
-                        <span className="text-[10px] text-muted-foreground shrink-0 w-8 text-right">
-                          {percentPlayed}%
-                        </span>
+                        <span className="font-editorial-mono text-[10px] shrink-0 w-8 text-right" style={{ color: "#62616a" }}>{percentPlayed}%</span>
                       </div>
-                      
-                      {/* Entry/Exit info - always show regulatory range (capped at 90) */}
                       {stat.rangeDisplay !== "—" && (
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-[10px] text-muted-foreground">
-                            {stat.rangeDisplay}
-                          </span>
-                        </div>
+                        <span className="font-editorial-mono text-[10px] mt-0.5 block" style={{ color: "#62616a" }}>{stat.rangeDisplay}</span>
                       )}
                     </div>
-                    
+
                     <div className="text-right shrink-0">
-                      <p className="text-sm font-bold">{stat.minutesPlayed} min</p>
-                      <p className="text-[9px] text-muted-foreground">(regulamentar)</p>
+                      <p className="font-display font-bold text-[13px]" style={{ color: "#ededee" }}>{stat.minutesPlayed} min</p>
+                      <p className="font-editorial-mono text-[9px]" style={{ color: "#62616a" }}>(regulamentar)</p>
                       {stat.hasAddedTime && stat.minutesPlayedTotal > stat.minutesPlayed && (
-                        <p className="text-[9px] text-muted-foreground/70">
-                          c/ acrés: {stat.minutesPlayedTotal} min
-                        </p>
+                        <p className="font-editorial-mono text-[9px]" style={{ color: "rgba(98,97,106,0.7)" }}>c/ acrés: {stat.minutesPlayedTotal}</p>
                       )}
                     </div>
                   </div>
                 );
               })}
-            </div>
-          </ScrollArea>
+          </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

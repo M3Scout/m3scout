@@ -455,3 +455,24 @@ export async function recalculateAllPlayerScores(
     return { success: false, results: [], error: String(e) };
   }
 }
+
+/**
+ * Returns the fully merged MatchDerivedStats totals for a player + season
+ * without persisting anything. Used for read-only displays like EliteInsights.
+ * Applies the exact same merge pipeline as recalculatePlayerScores:
+ *   live + player_stats (manual / live_correction) → mergeSeasonRows → sum all competitions
+ */
+export async function getMergedSeasonTotals(
+  playerId: string,
+  seasonYear: number
+): Promise<MatchDerivedStats> {
+  const [liveRows, psRows] = await Promise.all([
+    fetchLiveSeasonRows(playerId, seasonYear),
+    fetchPlayerStatsRows(playerId, seasonYear),
+  ]);
+  const merged = mergeSeasonRows([...liveRows, ...psRows] as PublicSeasonRow[]);
+  return merged.reduce(
+    (acc, row) => sumMatchDerivedStats(acc, row.stats),
+    emptyStats()
+  );
+}

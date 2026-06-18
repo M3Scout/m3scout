@@ -1,10 +1,11 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, Users, Newspaper, Mail } from "lucide-react";
+import { Home, Users, Newspaper, Mail, UserCircle, Lock } from "lucide-react";
 import { motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useAuth } from "@/hooks/authContext";
 import "./MobileBottomNav.css";
 
-const items = [
+const baseItems = [
   { to: "/", label: "Home", Icon: Home, match: (p: string) => p === "/" },
   { to: "/atletas", label: "Talentos", Icon: Users, match: (p: string) => p.startsWith("/atletas") || p.startsWith("/representacao") },
   { to: "/imprensa", label: "Imprensa", Icon: Newspaper, match: (p: string) => p.startsWith("/imprensa") || p.startsWith("/news") },
@@ -14,6 +15,13 @@ const items = [
 export function MobileBottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const authItem = user
+    ? { to: "/dashboard", label: "Dashboard", Icon: Lock, match: (p: string) => p.startsWith("/dashboard") }
+    : { to: "/login", label: "Login", Icon: UserCircle, match: (p: string) => p.startsWith("/login") };
+
+  const items = [...baseItems, authItem];
   const activeIdx = items.findIndex((i) => i.match(location.pathname));
 
   // Drag

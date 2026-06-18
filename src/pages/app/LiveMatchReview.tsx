@@ -28,7 +28,6 @@ import { toast } from "sonner";
 import { HalfStatsComparison } from "@/components/live-match/HalfStatsComparison";
 import { SubstitutionStatsCard } from "@/components/live-match/SubstitutionStatsCard";
 import { EventDistributionChart } from "@/components/live-match/EventDistributionChart";
-import { PlayerActivityHeatmap } from "@/components/live-match/PlayerActivityHeatmap";
 import { PlayerPresenceHistory } from "@/components/live-match/PlayerPresenceHistory";
 import { MatchSummaryPdfButton } from "@/components/live-match/MatchSummaryPdfButton";
 import { MatchRatingsCard } from "@/components/live-match/MatchRatingsCard";
@@ -51,6 +50,34 @@ import {
   X,
   Clock,
 } from "lucide-react";
+
+// ── Design tokens ─────────────────────────────────────────────────────────────
+const CARD_BG     = "#161618";
+const CARD_BORDER = "rgba(255,255,255,0.10)";
+const TEXT        = "#ededee";
+const MUTED       = "#62616a";
+const ACCENT      = "#ec4525";
+const GREEN       = "#2DCE8A";
+const AMBER       = "#f59e0b";
+
+// ── Section wrapper ────────────────────────────────────────────────────────────
+function SectionCard({ icon, title, count, accentBorder, children }: {
+  icon?: React.ReactNode; title: string; count?: string;
+  accentBorder?: string; children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-xl border overflow-hidden" style={{ background: CARD_BG, borderColor: accentBorder ?? CARD_BORDER }}>
+      <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: CARD_BORDER }}>
+        <div className="flex items-center gap-2.5">
+          {icon}
+          <span className="font-display font-semibold text-[15px]" style={{ color: TEXT }}>{title}</span>
+        </div>
+        {count && <span className="font-editorial-mono text-[10px] tabular-nums" style={{ color: MUTED }}>{count}</span>}
+      </div>
+      <div className="p-4 sm:p-5">{children}</div>
+    </div>
+  );
+}
 
 // Map match events to player_stats columns
 // NOTE: Events like dribble_success and dribble_attempt are NOT mapped directly to total_dribbles
@@ -422,24 +449,25 @@ export default function LiveMatchReview() {
   const infoCount = inconsistencies.filter((i) => i.type === "info").length;
 
   return (
-    <div className="container max-w-6xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
-      {/* Header */}
+    <div className="space-y-5">
+
+      {/* ── Header ── */}
       <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
-            <Link to={`/dashboard/aovivo/${matchId}`}>
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
-          </Button>
+        <div className="flex items-center gap-3">
+          <Link
+            to={`/dashboard/aovivo/${matchId}`}
+            className="flex items-center justify-center w-8 h-8 rounded-lg transition-colors hover:bg-zinc-800"
+            style={{ color: MUTED }}
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </Link>
           <div>
-            <h1 className="text-2xl font-bold">Revisão do Jogo</h1>
-            <p className="text-muted-foreground">
-              {competitionName} • vs {match.opponent_name}
+            <h1 className="m3-page-title">Revisão do Jogo</h1>
+            <p className="font-editorial-mono text-[11px] mt-0.5" style={{ color: MUTED }}>
+              {competitionName} · vs {match.opponent_name}
             </p>
           </div>
         </div>
-        
-        {/* PDF Export Button */}
         <MatchSummaryPdfButton
           match={match}
           matchPlayers={matchPlayers}
@@ -449,52 +477,34 @@ export default function LiveMatchReview() {
         />
       </div>
 
-      {/* Summary card with stats by half */}
-      <Card className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95">
-        <CardHeader className="pb-4 sm:pb-6">
-          <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-            <Users className="h-5 w-5 sm:h-6 sm:w-6" />
-            Resumo
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-5 sm:space-y-6">
-          {/* Global summary */}
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-            <div className="text-center p-4 sm:p-5 rounded-xl bg-zinc-900/60 border border-zinc-800/40">
-              <p className="text-2xl sm:text-3xl lg:text-4xl font-bold">{matchPlayers.length}</p>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-1">Jogadores</p>
-            </div>
-            <div className="text-center p-4 sm:p-5 rounded-xl bg-zinc-900/60 border border-zinc-800/40">
-              <p className="text-2xl sm:text-3xl lg:text-4xl font-bold">{matchEvents.length}</p>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-1">Eventos</p>
-            </div>
-            <div className="text-center p-4 sm:p-5 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-              <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-emerald-400">
-                {matchEvents.filter((e) => e.event_type === "goal").length}
-              </p>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-1">Gols</p>
-            </div>
-            <div className="text-center p-4 sm:p-5 rounded-xl bg-sky-500/10 border border-sky-500/20">
-              <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-sky-400">
-                {matchEvents.filter((e) => e.event_type === "assist").length}
-              </p>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-1">Assistências</p>
-            </div>
+      {/* ── Resumo ── */}
+      <SectionCard icon={<Users className="w-4 h-4" style={{ color: MUTED }} />} title="Resumo">
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { value: matchPlayers.length, label: "Jogadores", color: TEXT, bg: "rgba(255,255,255,0.03)", border: CARD_BORDER },
+              { value: matchEvents.length,  label: "Eventos",   color: TEXT, bg: "rgba(255,255,255,0.03)", border: CARD_BORDER },
+              { value: matchEvents.filter(e => e.event_type === "goal").length,   label: "Gols",         color: GREEN, bg: "rgba(45,206,138,0.07)",   border: "rgba(45,206,138,0.22)"  },
+              { value: matchEvents.filter(e => e.event_type === "assist").length, label: "Assistências", color: "#38bdf8", bg: "rgba(56,189,248,0.07)", border: "rgba(56,189,248,0.22)" },
+            ].map(({ value, label, color, bg, border }) => (
+              <div key={label} className="rounded-xl p-4 flex flex-col gap-1" style={{ background: bg, border: `1px solid ${border}` }}>
+                <span className="font-display font-bold tabular-nums" style={{ fontSize: 34, color, lineHeight: 1 }}>{value}</span>
+                <span className="font-editorial-mono text-[10px] uppercase tracking-wider" style={{ color: MUTED }}>{label}</span>
+              </div>
+            ))}
           </div>
-
-          {/* Stats by half */}
           <HalfStatsComparison events={matchEvents} matchPlayers={matchPlayers} />
-        </CardContent>
-      </Card>
+        </div>
+      </SectionCard>
 
-      {/* Match Ratings - Shows after match is finished */}
+      {/* ── Match Ratings ── */}
       <MatchRatingsCard
         matchPlayers={matchPlayers}
         playerStatsMap={playerStatsMap}
         matchStatus={match.status}
       />
 
-      {/* Post-Game Insights - Zone heatmap, quick indicators, strengths/improvements */}
+      {/* ── Post-Game Insights ── */}
       <PostGameInsightsCard
         matchPlayers={matchPlayers}
         playerStatsMap={playerStatsMap}
@@ -505,7 +515,7 @@ export default function LiveMatchReview() {
         matchEvents={matchEvents}
       />
 
-      {/* Substitution Stats */}
+      {/* ── Substituições ── */}
       <SubstitutionStatsCard
         matchPlayers={matchPlayers}
         matchEvents={matchEvents}
@@ -515,399 +525,282 @@ export default function LiveMatchReview() {
         matchId={match.id}
       />
 
-      {/* Event Distribution Chart */}
+      {/* ── Distribuição de Eventos ── */}
       <EventDistributionChart
         matchEvents={matchEvents}
         matchDuration={match.duration_minutes}
       />
 
-      {/* Player Activity Heatmap */}
-      <PlayerActivityHeatmap
-        matchPlayers={matchPlayers}
-        matchEvents={matchEvents}
-        matchDuration={match.duration_minutes}
-      />
+      {/* ── Presença em Campo ── */}
+      <SectionCard
+        icon={<Clock className="w-4 h-4" style={{ color: MUTED }} />}
+        title="Histórico de Presença em Campo"
+        count={`${matchPlayers.length} atleta${matchPlayers.length !== 1 ? "s" : ""}`}
+      >
+        <PlayerPresenceHistory matchId={matchId!} matchPlayers={matchPlayers} />
+      </SectionCard>
 
-      {/* Player Presence History */}
-      <Card className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95">
-        <CardHeader className="pb-4 sm:pb-6">
-          <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-            <Clock className="h-5 w-5 sm:h-6 sm:w-6" />
-            Histórico de Presença em Campo
-          </CardTitle>
-          <CardDescription className="text-sm">
-            Intervalos de tempo em que cada atleta esteve em campo
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-4 sm:p-6">
-          <PlayerPresenceHistory matchId={matchId!} matchPlayers={matchPlayers} />
-        </CardContent>
-      </Card>
-
-      {/* Inconsistencies */}
+      {/* ── Inconsistências ── */}
       {inconsistencies.length > 0 && (
-        <Card className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95">
-          <CardHeader className="pb-4 sm:pb-6">
-            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-              <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 text-amber-500" />
-              Checklist de Inconsistências
-            </CardTitle>
-            <CardDescription className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2">
+        <div className="rounded-xl border overflow-hidden" style={{ background: CARD_BG, borderColor: "rgba(245,158,11,0.20)" }}>
+          <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: CARD_BORDER }}>
+            <div className="flex items-center gap-2.5">
+              <AlertTriangle className="w-4 h-4" style={{ color: AMBER }} />
+              <span className="font-display font-semibold text-[15px]" style={{ color: TEXT }}>Checklist de Inconsistências</span>
+            </div>
+            <div className="flex items-center gap-1.5">
               {errorCount > 0 && (
-                <Badge variant="destructive" className="text-xs sm:text-sm">
+                <span className="font-editorial-mono text-[9px] px-2 py-0.5 rounded-md border" style={{ color: ACCENT, borderColor: ACCENT }}>
                   {errorCount} erro{errorCount > 1 ? "s" : ""}
-                </Badge>
+                </span>
               )}
               {warningCount > 0 && (
-                <Badge variant="outline" className="text-xs sm:text-sm border-amber-500 text-amber-500">
+                <span className="font-editorial-mono text-[9px] px-2 py-0.5 rounded-md border" style={{ color: AMBER, borderColor: AMBER }}>
                   {warningCount} aviso{warningCount > 1 ? "s" : ""}
-                </Badge>
+                </span>
               )}
               {infoCount > 0 && (
-                <Badge variant="outline" className="text-xs sm:text-sm">
-                  {infoCount} info{infoCount > 1 ? "s" : ""}
-                </Badge>
+                <span className="font-editorial-mono text-[9px] px-2 py-0.5 rounded-md border" style={{ color: MUTED, borderColor: CARD_BORDER }}>
+                  {infoCount} info
+                </span>
               )}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-4 sm:p-6">
-            <ScrollArea className="h-[280px] sm:h-[320px]">
-              <div className="space-y-2 sm:space-y-3 pr-2">
-                {inconsistencies.map((issue, idx) => (
-                  <Alert
-                    key={idx}
-                    variant={issue.type === "error" ? "destructive" : "default"}
-                    className={`p-3 sm:p-4 ${issue.type === "info" ? "border-zinc-800/40 bg-zinc-900/40" : issue.type === "warning" ? "border-amber-500/30 bg-amber-500/5" : ""}`}
-                  >
-                    {issue.type === "error" ? (
-                      <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5" />
-                    ) : issue.type === "warning" ? (
-                      <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500" />
-                    ) : (
-                      <Info className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
-                    )}
-                    <AlertTitle className="text-sm sm:text-base">{issue.playerName}</AlertTitle>
-                    <AlertDescription className="text-xs sm:text-sm">{issue.message}</AlertDescription>
-                  </Alert>
-                ))}
+            </div>
+          </div>
+          <div className="p-4 space-y-2">
+            {inconsistencies.map((issue, idx) => (
+              <div
+                key={idx}
+                className="flex items-start gap-3 p-3 rounded-lg"
+                style={{
+                  background: issue.type === "error" ? "rgba(236,69,37,0.07)" : issue.type === "warning" ? "rgba(245,158,11,0.07)" : "rgba(255,255,255,0.03)",
+                  border: `1px solid ${issue.type === "error" ? "rgba(236,69,37,0.25)" : issue.type === "warning" ? "rgba(245,158,11,0.25)" : CARD_BORDER}`,
+                }}
+              >
+                {issue.type === "error"
+                  ? <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: ACCENT }} />
+                  : issue.type === "warning"
+                  ? <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: AMBER }} />
+                  : <Info className="w-4 h-4 shrink-0 mt-0.5" style={{ color: MUTED }} />}
+                <div>
+                  <p className="font-display font-semibold text-[12px]" style={{ color: TEXT }}>{issue.playerName}</p>
+                  <p className="font-editorial-mono text-[11px] mt-0.5" style={{ color: MUTED }}>{issue.message}</p>
+                </div>
               </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
+            ))}
+          </div>
+        </div>
       )}
 
-      {/* Player stats preview */}
-      <Card className="border-zinc-800/40 bg-gradient-to-b from-zinc-950/95 via-zinc-950/90 to-zinc-900/95">
-        <CardHeader className="pb-4 sm:pb-6">
-          <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-            <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6" />
-            Estatísticas por Jogador
-          </CardTitle>
-          <CardDescription className="text-sm mt-1">
-            Valores que serão adicionados às estatísticas existentes
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-4 sm:p-6">
-          <ScrollArea className="h-[420px] sm:h-[480px]">
-            <div className="space-y-3 sm:space-y-4 pr-2">
-              {matchPlayers.map((mp) => {
-                if (!mp.player) return null;
-                const counts = (playerEventCounts[mp.player_id] || {}) as Partial<Record<MatchEventType, number>>;
-                const statEntries = Object.entries(counts)
-                  .filter(([_, v]) => (v ?? 0) > 0)
-                  .sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0));
-                const isApplied = appliedPlayerIds.includes(mp.player_id);
-                const isEditing = editingPlayerId === mp.player_id;
-                
-                // Use standardized minutes calculation
-                // CRITICAL: Calculate minutes from timeline (started, entered, exited)
-                // Do NOT use mp.minutes_played as source of truth - it may be stale
-                const hasSessionOverride = manualMinutes[mp.player_id] !== undefined;
-                
-                // Calculate from timeline only (ignoring any stale minutes_played value)
-                const minutesInfo = calculateMinutesPlayed({
-                  started: mp.started,
-                  entered_minute: mp.entered_minute,
-                  exited_minute: mp.exited_minute,
-                  minutes_played: null, // Force calculation from timeline
-                });
-                
-                // Display: session override > calculated from timeline
-                const displayMinutes = hasSessionOverride 
-                  ? manualMinutes[mp.player_id]
-                  : minutesInfo.minutesPlayed;
-                
-                // Determine how minutes were calculated for display
-                const getMinutesLabel = () => {
-                  if (hasSessionOverride) return "editado";
-                  // Show the timeline range instead of "(manual)"
-                  return minutesInfo.rangeDisplay;
-                };
+      {/* ── Estatísticas por Jogador ── */}
+      <SectionCard
+        icon={<TrendingUp className="w-4 h-4" style={{ color: MUTED }} />}
+        title="Estatísticas por Jogador"
+        count={`${matchPlayers.length} atleta${matchPlayers.length !== 1 ? "s" : ""}`}
+      >
+        <div className="space-y-3">
+          {matchPlayers.map((mp) => {
+            if (!mp.player) return null;
+            const counts = (playerEventCounts[mp.player_id] || {}) as Partial<Record<MatchEventType, number>>;
+            const statEntries = Object.entries(counts)
+              .filter(([_, v]) => (v ?? 0) > 0)
+              .sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0));
+            const isApplied = appliedPlayerIds.includes(mp.player_id);
+            const isEditing = editingPlayerId === mp.player_id;
 
-                const handleStartEdit = () => {
-                  setEditingPlayerId(mp.player_id);
-                  setEditValue(displayMinutes.toString());
-                };
+            const hasSessionOverride = manualMinutes[mp.player_id] !== undefined;
+            const minutesInfo = calculateMinutesPlayed({
+              started: mp.started,
+              entered_minute: mp.entered_minute,
+              exited_minute: mp.exited_minute,
+              minutes_played: null,
+            });
+            const displayMinutes = hasSessionOverride ? manualMinutes[mp.player_id] : minutesInfo.minutesPlayed;
+            const getMinutesLabel = () => hasSessionOverride ? "editado" : minutesInfo.rangeDisplay;
 
-                const handleConfirmEdit = () => {
-                  const value = parseInt(editValue);
-                  if (!isNaN(value) && value >= 0 && value <= match.duration_minutes) {
-                    setManualMinutes(prev => ({ ...prev, [mp.player_id]: value }));
-                  }
-                  setEditingPlayerId(null);
-                  setEditValue("");
-                };
+            const handleStartEdit = () => { setEditingPlayerId(mp.player_id); setEditValue(displayMinutes.toString()); };
+            const handleConfirmEdit = () => {
+              const value = parseInt(editValue);
+              if (!isNaN(value) && value >= 0 && value <= match.duration_minutes) {
+                setManualMinutes(prev => ({ ...prev, [mp.player_id]: value }));
+              }
+              setEditingPlayerId(null); setEditValue("");
+            };
+            const handleCancelEdit = () => { setEditingPlayerId(null); setEditValue(""); };
+            const handleResetMinutes = () => { setManualMinutes(prev => { const next = { ...prev }; delete next[mp.player_id]; return next; }); };
 
-                const handleCancelEdit = () => {
-                  setEditingPlayerId(null);
-                  setEditValue("");
-                };
+            const stats = playerStatsMap[mp.player_id];
+            const ballActions = stats ? calculateBallActionsFromMatchStats(stats) : 0;
 
-                const handleResetMinutes = () => {
-                  setManualMinutes(prev => {
-                    const next = { ...prev };
-                    delete next[mp.player_id];
-                    return next;
-                  });
-                };
+            return (
+              <div
+                key={mp.id}
+                className="flex items-start gap-3 p-4 rounded-xl border transition-colors duration-200"
+                style={{
+                  background: isApplied ? "rgba(45,206,138,0.07)" : "rgba(255,255,255,0.04)",
+                  borderColor: isApplied ? "rgba(45,206,138,0.30)" : "rgba(255,255,255,0.09)",
+                }}
+              >
+                <Avatar className="h-10 w-10 shrink-0">
+                  <AvatarImage src={mp.player.photo_url || undefined} />
+                  <AvatarFallback className="text-xs font-display">
+                    {mp.player.full_name.slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
 
-                return (
-                  <div
-                    key={mp.id}
-                    className={`flex items-start gap-3 sm:gap-4 p-4 sm:p-5 rounded-xl border transition-all ${
-                      isApplied 
-                        ? "border-emerald-500/50 bg-emerald-500/5" 
-                        : "border-zinc-800/40 bg-zinc-900/40"
-                    }`}
-                  >
-                    <Avatar className="h-10 w-10 sm:h-12 sm:w-12 shrink-0">
-                      <AvatarImage src={mp.player.photo_url || undefined} />
-                      <AvatarFallback className="text-xs sm:text-sm">
-                        {mp.player.full_name.slice(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-medium text-sm sm:text-base">{mp.player.full_name}</p>
-                        {isApplied && (
-                          <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-500" />
-                        )}
-                        {/* Rating Badge - show for finished/applied matches */}
-                        {(match.status === "finished" || match.status === "applied") && (() => {
-                          const stats = playerStatsMap[mp.player_id];
-                          // SINGLE SOURCE OF TRUTH: Read persisted rating, never recalculate
-                          const minutesInfo = calcMinutesForRating({
-                            started: mp.started,
-                            entered_minute: mp.entered_minute,
-                            exited_minute: mp.exited_minute,
-                            minutes_played: mp.minutes_played,
-                          });
-                          
-                          // If no rating persisted or 0 minutes, show "no rating"
-                          if (!stats?.rating || minutesInfo.minutesPlayed === 0) {
-                            return <PlayerRatingBadge rating={noRatingResult()} playerName={mp.player.full_name} size="sm" />;
-                          }
-                          
-                          const playerRating = persistedRatingToResult(
-                            stats.rating,
-                            stats.rating_minutes_played ?? minutesInfo.minutesPlayed,
-                            stats.rating_minutes_factor ?? null
-                          );
-                          return <PlayerRatingBadge rating={playerRating} playerName={mp.player.full_name} size="sm" />;
-                        })()}
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2 mt-1">
-                        <span className="text-xs sm:text-sm text-muted-foreground">
-                          {mp.player.position}
-                        </span>
-                        <span className="text-xs sm:text-sm text-muted-foreground">•</span>
-                        
-                        {isEditing ? (
-                          <div className="flex items-center gap-1">
-                            <Input
-                              type="number"
-                              min={0}
-                              max={match.duration_minutes}
-                              value={editValue}
-                              onChange={(e) => setEditValue(e.target.value)}
-                              className="h-5 w-14 text-xs px-1 py-0"
-                              autoFocus
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") handleConfirmEdit();
-                                if (e.key === "Escape") handleCancelEdit();
-                              }}
-                            />
-                            <span className="text-[10px] text-muted-foreground">min</span>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-5 w-5"
-                              onClick={handleConfirmEdit}
-                            >
-                              <Check className="h-3 w-3 text-green-500" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-5 w-5"
-                              onClick={handleCancelEdit}
-                            >
-                              <X className="h-3 w-3 text-muted-foreground" />
-                            </Button>
-                          </div>
-                        ) : (
-                          <>
-                            <Badge 
-                              variant={hasSessionOverride ? "default" : "secondary"} 
-                              className={`text-[10px] px-1.5 py-0 h-4 font-medium cursor-pointer hover:opacity-80 ${
-                                hasSessionOverride ? "bg-primary" : ""
-                              }`}
-                              onClick={handleStartEdit}
-                            >
-                              {displayMinutes} min
-                              <Pencil className="h-2.5 w-2.5 ml-1" />
-                            </Badge>
-                            <span className="text-[10px] text-muted-foreground italic">
-                              ({getMinutesLabel()})
-                            </span>
-                            {hasSessionOverride && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-4 w-4 ml-1"
-                                onClick={handleResetMinutes}
-                                title="Resetar para valor calculado"
-                              >
-                                <X className="h-2.5 w-2.5" />
-                              </Button>
-                            )}
-                          </>
-                        )}
-                      </div>
-                      <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-2 sm:mt-3">
-                        {/* Derived stat: Ações com a Bola - always show first */}
-                        {(() => {
-                          const stats = playerStatsMap[mp.player_id];
-                          const ballActions = stats ? calculateBallActionsFromMatchStats(stats) : 0;
-                          return ballActions > 0 ? (
-                            <Badge 
-                              variant="secondary" 
-                              className="text-[10px] sm:text-xs px-2 py-0.5 bg-cyan-500/10 border-cyan-500/30 text-cyan-400"
-                              title="Estatística derivada automaticamente"
-                            >
-                              Ações com a Bola: {ballActions}
-                            </Badge>
-                          ) : null;
-                        })()}
-                        {statEntries.length === 0 && !(() => {
-                          const stats = playerStatsMap[mp.player_id];
-                          const ballActions = stats ? calculateBallActionsFromMatchStats(stats) : 0;
-                          return ballActions > 0;
-                        })() ? (
-                          <Badge variant="outline" className="text-xs sm:text-sm">
-                            Sem estatísticas
-                          </Badge>
-                        ) : (
-                          statEntries
-                            // Filter out ball_action since it's already shown as derived stat above
-                            .filter(([type]) => type !== "ball_action")
-                            .slice(0, 8)
-                            .map(([type, value]) => (
-                            <Badge 
-                              key={type} 
-                              variant="secondary" 
-                              className="text-[10px] sm:text-xs px-2 py-0.5"
-                            >
-                              {EVENT_LABELS[type as MatchEventType] || type}: +{value}
-                            </Badge>
-                          ))
-                        )}
-                        {statEntries.length > 8 && (
-                          <Badge variant="outline" className="text-[10px] sm:text-xs px-2 py-0.5">
-                            +{statEntries.length - 8} mais
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-9 w-9 sm:h-10 sm:w-10 shrink-0"
-                      asChild
-                    >
-                      <Link to={`/dashboard/atletas/${mp.player_id}`} target="_blank">
-                        <ExternalLink className="h-4 w-4 sm:h-5 sm:w-5" />
-                      </Link>
-                    </Button>
+                <div className="flex-1 min-w-0">
+                  {/* Name row */}
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <span className="font-display font-semibold text-[14px]" style={{ color: TEXT }}>{mp.player.full_name}</span>
+                    {isApplied && <CheckCircle2 className="h-4 w-4" style={{ color: GREEN }} />}
+                    {(match.status === "finished" || match.status === "applied") && (() => {
+                      const ratingInfo = calcMinutesForRating({ started: mp.started, entered_minute: mp.entered_minute, exited_minute: mp.exited_minute, minutes_played: mp.minutes_played });
+                      if (!stats?.rating || ratingInfo.minutesPlayed === 0) return <PlayerRatingBadge rating={noRatingResult()} playerName={mp.player.full_name} size="sm" />;
+                      const playerRating = persistedRatingToResult(stats.rating, stats.rating_minutes_played ?? ratingInfo.minutesPlayed, stats.rating_minutes_factor ?? null);
+                      return <PlayerRatingBadge rating={playerRating} playerName={mp.player.full_name} size="sm" />;
+                    })()}
                   </div>
-                );
-              })}
-            </div>
-          </ScrollArea>
-        </CardContent>
-      </Card>
 
-      {/* Actions */}
-      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sticky bottom-4 bg-zinc-950/95 backdrop-blur-lg p-4 sm:p-5 -mx-4 rounded-xl border border-zinc-800/40 shadow-xl">
-        <Button variant="outline" asChild className="flex-1 h-11 sm:h-12 text-sm sm:text-base">
-          <Link to={`/dashboard/aovivo/${matchId}`}>
-            <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-            Voltar e Corrigir
-          </Link>
-        </Button>
+                  {/* Position + minutes */}
+                  <div className="flex flex-wrap items-center gap-2 mb-2.5">
+                    <span className="font-editorial-mono text-[10px]" style={{ color: MUTED }}>{mp.player.position}</span>
+                    <span style={{ color: CARD_BORDER }}>·</span>
+                    {isEditing ? (
+                      <div className="flex items-center gap-1">
+                        <Input type="number" min={0} max={match.duration_minutes} value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          className="h-5 w-14 text-xs px-1 py-0" autoFocus
+                          onKeyDown={(e) => { if (e.key === "Enter") handleConfirmEdit(); if (e.key === "Escape") handleCancelEdit(); }}
+                        />
+                        <span className="font-editorial-mono text-[10px]" style={{ color: MUTED }}>min</span>
+                        <button onClick={handleConfirmEdit} className="flex items-center justify-center w-5 h-5 rounded hover:bg-zinc-800">
+                          <Check className="h-3 w-3" style={{ color: GREEN }} />
+                        </button>
+                        <button onClick={handleCancelEdit} className="flex items-center justify-center w-5 h-5 rounded hover:bg-zinc-800">
+                          <X className="h-3 w-3" style={{ color: MUTED }} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={handleStartEdit}
+                          className="flex items-center gap-1 font-editorial-mono text-[10px] px-2 py-0.5 rounded-md border cursor-pointer transition-colors hover:bg-zinc-800"
+                          style={{ color: hasSessionOverride ? GREEN : MUTED, borderColor: hasSessionOverride ? "rgba(45,206,138,0.4)" : CARD_BORDER }}
+                        >
+                          {displayMinutes} min <Pencil className="h-2.5 w-2.5" />
+                        </button>
+                        <span className="font-editorial-mono text-[10px] italic" style={{ color: MUTED }}>({getMinutesLabel()})</span>
+                        {hasSessionOverride && (
+                          <button onClick={handleResetMinutes} className="flex items-center justify-center w-4 h-4 rounded hover:bg-zinc-800" title="Resetar">
+                            <X className="h-2.5 w-2.5" style={{ color: MUTED }} />
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Stat badges */}
+                  <div className="flex flex-wrap gap-1.5">
+                    {ballActions > 0 && (
+                      <span className="font-editorial-mono text-[10px] px-2 py-0.5 rounded-md border" style={{ color: "#22d3ee", borderColor: "rgba(34,211,238,0.3)", background: "rgba(34,211,238,0.07)" }}>
+                        Ações com a Bola: {ballActions}
+                      </span>
+                    )}
+                    {statEntries.length === 0 && ballActions === 0 ? (
+                      <span className="font-editorial-mono text-[10px] px-2 py-0.5 rounded-md border" style={{ color: MUTED, borderColor: CARD_BORDER }}>
+                        Sem estatísticas
+                      </span>
+                    ) : (
+                      statEntries
+                        .filter(([type]) => type !== "ball_action")
+                        .slice(0, 10)
+                        .map(([type, value]) => (
+                          <span key={type} className="font-editorial-mono text-[10px] px-2 py-0.5 rounded-md border" style={{ color: MUTED, borderColor: CARD_BORDER, background: "rgba(255,255,255,0.03)" }}>
+                            {EVENT_LABELS[type as MatchEventType] || type}: +{value}
+                          </span>
+                        ))
+                    )}
+                    {statEntries.length > 10 && (
+                      <span className="font-editorial-mono text-[10px] px-2 py-0.5 rounded-md border" style={{ color: MUTED, borderColor: CARD_BORDER }}>
+                        +{statEntries.length - 10} mais
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <Link to={`/dashboard/atletas/${mp.player_id}`} target="_blank"
+                  className="flex items-center justify-center w-8 h-8 rounded-lg shrink-0 transition-colors hover:bg-zinc-800"
+                  style={{ color: MUTED }}
+                >
+                  <ExternalLink className="h-4 w-4" />
+                </Link>
+              </div>
+            );
+          })}
+        </div>
+      </SectionCard>
+
+      {/* ── Actions ── */}
+      <div
+        className="sticky bottom-4 flex flex-col sm:flex-row gap-3 rounded-xl border p-4"
+        style={{ background: `${CARD_BG}f0`, backdropFilter: "blur(16px)", borderColor: CARD_BORDER, boxShadow: "0 8px 32px rgba(0,0,0,0.6)" }}
+      >
+        <Link
+          to={`/dashboard/aovivo/${matchId}`}
+          className="flex-1 flex items-center justify-center gap-2 h-11 rounded-lg border font-editorial-mono text-[11px] uppercase tracking-wider transition-colors hover:bg-zinc-800/40"
+          style={{ borderColor: "rgba(255,255,255,0.12)", color: TEXT }}
+        >
+          <ArrowLeft className="w-4 h-4" /> Voltar e Corrigir
+        </Link>
 
         {match.status !== "applied" && (
-          <Button
+          <button
             onClick={() => applyStats.mutate()}
             disabled={applyStats.isPending || hasErrors}
-            className="flex-1 bg-emerald-600 hover:bg-emerald-700 h-11 sm:h-12 text-sm sm:text-base"
-            size="lg"
+            className="flex-1 flex items-center justify-center gap-2 h-11 rounded-lg font-editorial-mono text-[11px] uppercase tracking-wider transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ background: GREEN, color: "#0a1a12" }}
           >
             {applyStats.isPending ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white mr-2" />
-                Aplicando...
-              </>
+              <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" /> Aplicando...</>
             ) : (
-              <>
-                <Upload className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-                Aplicar Estatísticas
-              </>
+              <><Upload className="w-4 h-4" /> Aplicar Estatísticas</>
             )}
-          </Button>
+          </button>
         )}
 
         {match.status === "applied" && (
-          <div className="flex-1 flex items-center justify-center gap-2 p-4 sm:p-5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-            <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6" />
-            <span className="font-medium text-sm sm:text-base">Estatísticas Aplicadas!</span>
+          <div className="flex-1 flex items-center justify-center gap-2 h-11 rounded-lg font-editorial-mono text-[11px] uppercase tracking-wider"
+            style={{ background: "rgba(45,206,138,0.10)", color: GREEN, border: "1px solid rgba(45,206,138,0.30)" }}>
+            <CheckCircle2 className="h-4 w-4" /> Estatísticas Aplicadas
           </div>
         )}
       </div>
 
-      {/* Success message with links */}
+      {/* ── Success links ── */}
       {match.status === "applied" && appliedPlayerIds.length > 0 && (
-        <Card className="border-emerald-500/30 bg-emerald-500/5">
-          <CardContent className="py-5 sm:py-6 px-4 sm:px-6">
-            <p className="text-sm sm:text-base text-center text-muted-foreground mb-4">
-              Os ratings dos jogadores foram recalculados automaticamente.
-            </p>
-            <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
-              {matchPlayers.slice(0, 5).map((mp) => (
-                mp.player && (
-                  <Button key={mp.id} variant="outline" size="sm" asChild className="text-xs sm:text-sm">
-                    <Link to={`/dashboard/atletas/${mp.player_id}`}>
-                      Ver {mp.player.full_name.split(" ")[0]}
-                    </Link>
-                  </Button>
-                )
-              ))}
-              {matchPlayers.length > 5 && (
-                <Badge variant="outline" className="text-xs sm:text-sm">+{matchPlayers.length - 5} jogadores</Badge>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="rounded-xl border p-4 sm:p-5" style={{ background: "rgba(45,206,138,0.05)", borderColor: "rgba(45,206,138,0.20)" }}>
+          <p className="font-editorial-mono text-[11px] text-center mb-4" style={{ color: MUTED }}>
+            Os ratings dos jogadores foram recalculados automaticamente.
+          </p>
+          <div className="flex flex-wrap justify-center gap-2">
+            {matchPlayers.slice(0, 5).map((mp) =>
+              mp.player && (
+                <Link
+                  key={mp.id}
+                  to={`/dashboard/atletas/${mp.player_id}`}
+                  className="font-editorial-mono text-[10px] uppercase tracking-wider px-3 py-1.5 rounded-lg border transition-colors hover:bg-zinc-800/40"
+                  style={{ borderColor: "rgba(255,255,255,0.12)", color: TEXT }}
+                >
+                  Ver {mp.player.full_name.split(" ")[0]}
+                </Link>
+              )
+            )}
+            {matchPlayers.length > 5 && (
+              <span className="font-editorial-mono text-[10px] px-3 py-1.5 rounded-lg border" style={{ color: MUTED, borderColor: CARD_BORDER }}>
+                +{matchPlayers.length - 5} jogadores
+              </span>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
