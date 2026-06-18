@@ -808,12 +808,12 @@ export function MatchSummaryVectorPdf({
             ))}
           </View>
 
-          {/* Player reports — title + first card never split (anti-orphan) */}
+          {/* Player reports — always start on a new page */}
           {filteredPlayers.length > 0 && (() => {
             const [first, ...rest] = filteredPlayers;
             return (
               <>
-                <View wrap={false} style={{ marginTop: 4 }}>
+                <View break style={{ marginTop: 0 }}>
                   <Text style={s.secTitle}>Estatísticas por Jogador</Text>
                   {renderPlayerCard(first)}
                 </View>
