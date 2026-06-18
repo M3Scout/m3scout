@@ -227,6 +227,23 @@ const s = StyleSheet.create({
   pcSWTitle: { fontSize: 6, fontWeight: 700, marginBottom: 3 },
   pcSWItem: { fontSize: 5.5, color: D.g600, marginBottom: 2, paddingLeft: 4 },
 
+  // ── Player summary row (Resumo por Jogador) ──────────────────────────────
+  sumCard: { borderRadius: 8, borderWidth: 1, borderColor: D.g200, overflow: "hidden", marginBottom: 8 },
+  sumHead: { backgroundColor: D.dark2, flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 12, paddingVertical: 9 },
+  sumPhoto: { width: 30, height: 30, borderRadius: 15, backgroundColor: D.g700 },
+  sumPhotoInit: { width: 30, height: 30, borderRadius: 15, backgroundColor: D.g800, alignItems: "center", justifyContent: "center" },
+  sumPhotoInitTxt: { fontSize: 10, fontWeight: 700, color: D.g400 },
+  sumName: { fontSize: 9, fontWeight: 700, color: D.textWhite },
+  sumPosBadge: { fontSize: 6, fontWeight: 700, paddingHorizontal: 5, paddingVertical: 2, borderRadius: 3, marginTop: 2 },
+  sumBody: { padding: 10 },
+  sumProfileBox: { marginBottom: 8, paddingHorizontal: 8, paddingVertical: 6, borderRadius: 5, borderWidth: 1, borderColor: D.g200, backgroundColor: D.g50 },
+  sumProfileLbl: { fontSize: 6, color: D.textMuted, fontWeight: 700, marginBottom: 3 },
+  sumProfileTxt: { fontSize: 7, color: D.text, lineHeight: 1.4 },
+  sumIndRow: { flexDirection: "row", gap: 6, marginBottom: 6 },
+  sumIndItem: { flex: 1, flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 6, paddingVertical: 5, borderRadius: 5, borderWidth: 1 },
+  sumIndLbl: { fontSize: 5.5, color: D.textMuted },
+  sumIndVal: { fontSize: 8, fontWeight: 700 },
+
   // ── Summary chips ─────────────────────────────────────────────────────────
   summaryBox: {
     flexDirection: "row", flexWrap: "wrap", gap: 4,
@@ -445,6 +462,121 @@ export function MatchSummaryVectorPdf({
       <Text style={s.footerTxt} render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />
     </View>
   );
+
+  const renderPlayerSummaryCard = (mp: MatchPlayer) => {
+    if (!mp.player) return null;
+    const stats = playerStatsMap[mp.player_id];
+    const minutesInfo = calculateMinutesPlayed({
+      started: mp.started,
+      entered_minute: mp.entered_minute,
+      exited_minute: mp.exited_minute,
+      minutes_played: null,
+    });
+    const mins = minutesInfo.minutesPlayed;
+    const initials = mp.player.full_name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
+
+    let profileLabel = "—";
+    let profileColors = { bg: D.g100, text: D.textMuted };
+    let profileDesc = "";
+    let indicators: Array<{ id: string; label: string; value: string; type: "positive" | "neutral" | "negative"; icon: string }> = [];
+
+    if (mins >= 10 && stats) {
+      const normalized = normalizeMatchStats(stats, {
+        started: mp.started,
+        entered_minute: mp.entered_minute ?? null,
+        exited_minute: mp.exited_minute ?? null,
+        minutes_played: mp.minutes_played,
+      });
+      const ballActions = calculateBallActionsFromMatchStats(stats);
+      const statsInput: MatchStatsInput = {
+        goals: normalized.goals ?? 0, assists: normalized.assists ?? 0,
+        shots: normalized.shots_total, shots_on_target: normalized.shots_on_target ?? 0,
+        shots_blocked: normalized.shots_blocked ?? 0, key_passes: normalized.key_passes ?? 0,
+        chances_created: normalized.chances_created ?? 0, passes_completed: normalized.passes_completed ?? 0,
+        passes_total: normalized.passes_total_derived, dribbles_success: normalized.dribbles_success ?? 0,
+        dribbles_total: normalized.dribbles_total_derived, tackles: normalized.tackles ?? 0,
+        interceptions: normalized.interceptions ?? 0, clearances: normalized.clearances ?? 0,
+        recoveries: normalized.recoveries ?? 0, duels_won: normalized.duels_won ?? 0,
+        duels_total: normalized.duels_total_derived, aerial_duels_won: normalized.aerial_duels_won ?? 0,
+        aerial_duels_total: normalized.aerial_duels_total_derived, fouls_committed: normalized.fouls_committed ?? 0,
+        fouls_suffered: normalized.fouls_suffered ?? 0, yellow_cards: normalized.yellow_cards ?? 0,
+        red_cards: normalized.red_cards ?? 0, possession_lost: normalized.possession_lost ?? 0,
+        saves: normalized.saves ?? 0, goals_conceded: normalized.goals_conceded ?? 0,
+        blocked_shots: normalized.blocked_shots ?? 0, was_dribbled: normalized.was_dribbled ?? 0,
+        ball_actions: ballActions, crosses_success: normalized.crosses_success ?? 0,
+        crosses_failed: normalized.crosses_failed ?? 0, offsides: normalized.offsides ?? 0,
+      };
+      const profile = classifyMatchProfile(matchPlayerStatsToInput(stats), mins);
+      const eff = calculateMatchEfficiency(matchPlayerStatsToInput(stats), mins);
+      const pc = PROFILE_COLOR[profile.primary.key];
+      const scout = generateScoutingText(mp.player.position, profile.primary.key, eff.level, false);
+      const analysis = generatePostGameAnalysis(mp.player.position, statsInput, mins);
+
+      profileLabel = profile.primary.label;
+      profileColors = pc;
+      profileDesc = scout.combinedText.slice(0, 140) + (scout.combinedText.length > 140 ? "…" : "");
+      indicators = analysis.quickIndicators.slice(0, 4) as typeof indicators;
+    }
+
+    // Pair indicators into rows of 2
+    const indRows: (typeof indicators)[] = [];
+    for (let i = 0; i < indicators.length; i += 2) indRows.push(indicators.slice(i, i + 2));
+
+    return (
+      <View key={mp.id} style={s.sumCard} wrap={false}>
+        {/* Dark header */}
+        <View style={s.sumHead}>
+          {playerPhotoBase64[mp.player_id] ? (
+            <Image src={playerPhotoBase64[mp.player_id]} style={s.sumPhoto} />
+          ) : mp.player.photo_url ? (
+            <Image src={mp.player.photo_url} style={s.sumPhoto} />
+          ) : (
+            <View style={s.sumPhotoInit}><Text style={s.sumPhotoInitTxt}>{initials}</Text></View>
+          )}
+          <View style={{ flex: 1 }}>
+            <Text style={s.sumName}>{mp.player.full_name}</Text>
+            <View style={{ ...s.sumPosBadge, backgroundColor: profileColors.bg }}>
+              <Text style={{ fontSize: 6, fontWeight: 700, color: profileColors.text }}>{mp.player.position}</Text>
+            </View>
+          </View>
+          <View style={{ paddingHorizontal: 6, paddingVertical: 3, borderRadius: 4, backgroundColor: "rgba(255,255,255,0.07)" }}>
+            <Text style={{ fontSize: 7, color: D.textWhiteMuted }}>{mins} min</Text>
+          </View>
+        </View>
+
+        {/* Body */}
+        {(profileDesc || indicators.length > 0) && (
+          <View style={s.sumBody}>
+            {profileDesc ? (
+              <View style={s.sumProfileBox}>
+                <Text style={s.sumProfileLbl}>Perfil de Atuação</Text>
+                <Text style={s.sumProfileTxt}>{profileDesc}</Text>
+              </View>
+            ) : null}
+            {indRows.map((row, ri) => (
+              <View key={ri} style={s.sumIndRow}>
+                {row.map((ind) => {
+                  const bg = ind.type === "positive" ? D.greenFaint : ind.type === "negative" ? "#FEE2E2" : D.g100;
+                  const border = ind.type === "positive" ? "#86EFAC" : ind.type === "negative" ? "#FECACA" : D.g200;
+                  const valColor = ind.type === "positive" ? D.green : ind.type === "negative" ? "#EF4444" : D.text;
+                  return (
+                    <View key={ind.id} style={{ ...s.sumIndItem, backgroundColor: bg, borderColor: border }}>
+                      <Text style={{ fontSize: 9 }}>{ind.icon}</Text>
+                      <View>
+                        <Text style={s.sumIndLbl}>{ind.label}</Text>
+                        <Text style={{ ...s.sumIndVal, color: valColor }}>{ind.value}</Text>
+                      </View>
+                    </View>
+                  );
+                })}
+                {row.length === 1 && <View style={{ flex: 1 }} />}
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
+    );
+  };
 
   const renderPlayerCard = (mp: MatchPlayer) => {
     if (!mp.player) return null;
@@ -782,13 +914,15 @@ export function MatchSummaryVectorPdf({
         </View>
       </Page>
 
-      {/* Page 2+: Player cards — guaranteed new page via separate <Page> */}
+      {/* Page 2+: Summary + Player stats — guaranteed new page */}
       {filteredPlayers.length > 0 && (
         <Page size="A4" style={s.page}>
           <PageHeader compact />
           <Footer />
           <View style={s.body}>
-            <Text style={s.secTitle}>Estatísticas por Jogador</Text>
+            <Text style={s.secTitle}>Resumo por Jogador</Text>
+            {filteredPlayers.map(renderPlayerSummaryCard)}
+            <Text style={{ ...s.secTitle, marginTop: 14 }}>Estatísticas por Jogador</Text>
             {filteredPlayers.map(renderPlayerCard)}
           </View>
         </Page>
