@@ -308,49 +308,50 @@ export function AthleteSeasonGoalsCard({
         style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
 
         {/* ── Header ─────────────────────────────────────────────────────── */}
-        <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: CARD_BORDER }}>
-          <div>
-            <span className="font-editorial-mono text-[11px] tracking-[0.22em] uppercase" style={{ color: MUTED }}>
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 sm:px-5 py-3 sm:py-4 border-b" style={{ borderColor: CARD_BORDER }}>
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="font-editorial-mono text-[10px] sm:text-[11px] tracking-[0.18em] sm:tracking-[0.22em] uppercase" style={{ color: MUTED }}>
               // Metas da Temporada
             </span>
-            <span className="font-editorial-mono text-[9.5px] ml-3" style={{ color: MUTED }}>
+            <span className="font-editorial-mono text-[9px] sm:text-[9.5px]" style={{ color: MUTED }}>
               {currentYear}
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
             {goals.length > 0 && (
               <span
-                className="font-editorial-mono text-[10px] font-bold px-2.5 py-1 rounded-lg"
+                className="font-editorial-mono text-[9px] sm:text-[10px] font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg whitespace-nowrap"
                 style={{
                   background: completedGoals === goals.length ? "rgba(34,197,94,0.12)" : "rgba(255,255,255,0.05)",
                   color: completedGoals === goals.length ? GREEN : MUTED,
                   border: `1px solid ${completedGoals === goals.length ? "rgba(34,197,94,0.25)" : CARD_BORDER}`,
                 }}
               >
-                {completedGoals}/{goals.length} completas
+                {completedGoals}/{goals.length}
+                <span className="hidden sm:inline"> completas</span>
               </span>
             )}
             {previousYears.length > 0 && (
               <button
                 onClick={() => setShowHistory(!showHistory)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors"
+                className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg transition-colors"
                 style={{ border: `1px solid ${CARD_BORDER}`, color: MUTED, background: "transparent" }}
                 onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")}
                 onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
               >
                 <History className="w-3 h-3" />
-                <span className="font-editorial-mono text-[10px]">Histórico</span>
+                <span className="font-editorial-mono text-[9px] sm:text-[10px] hidden sm:inline">Histórico</span>
               </button>
             )}
             {availableToAdd.length > 0 && (
               <button
                 onClick={() => setShowAddDialog(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-opacity font-editorial-mono text-[10px] font-bold tracking-wider"
+                className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg transition-opacity font-editorial-mono text-[9px] sm:text-[10px] font-bold tracking-wider"
                 style={{ background: RED, color: "#fff" }}
                 onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
                 onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
               >
-                <Plus className="w-3.5 h-3.5" />
+                <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                 META
               </button>
             )}

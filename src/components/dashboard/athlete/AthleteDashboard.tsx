@@ -303,7 +303,7 @@ export function AthleteDashboard() {
 
   return (
     <motion.div 
-      className="space-y-[var(--gap-mobile)] md:space-y-6 pb-8 px-[var(--padding-mobile)] md:px-0 w-full max-w-full overflow-x-hidden"
+      className="space-y-[var(--gap-mobile)] md:space-y-6 pb-8 w-full max-w-full overflow-x-hidden"
       variants={staggerContainer}
       initial="hidden"
       animate="visible"

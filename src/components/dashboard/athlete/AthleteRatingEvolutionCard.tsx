@@ -167,11 +167,11 @@ export function AthleteRatingEvolutionCard({
         ].map((kpi, i) => (
           <div
             key={i}
-            className="px-4 py-4"
+            className="px-3 py-3 sm:px-4 sm:py-4"
             style={{ borderColor: CARD_BORDER }}
           >
             <span
-              className="block font-editorial-mono text-[9.5px] tracking-[0.22em] uppercase mb-1.5"
+              className="block font-editorial-mono text-[8.5px] sm:text-[9.5px] tracking-[0.18em] sm:tracking-[0.22em] uppercase mb-1 sm:mb-1.5"
               style={{ color: MUTED }}
             >
               {kpi.label}
@@ -296,7 +296,7 @@ export function AthleteRatingEvolutionCard({
           >
             Últimos jogos
           </p>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {ratedMatches.slice(0, 4).map((m) => {
               const color = getRatingColor(m.rating!);
               return (
