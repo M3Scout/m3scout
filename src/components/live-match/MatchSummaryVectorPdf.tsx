@@ -754,9 +754,9 @@ export function MatchSummaryVectorPdf({
             </View>
           </View>
 
-          {/* ── Events + Player reports (continues on same flow) ─────────── */}
+          {/* ── Events + Player reports ──────────────────────────────────── */}
 
-          {/* Events summary chips */}
+          {/* "Eventos por Tempo" title + summary chips + first half columns kept together */}
           {(() => {
             const all = [...evsByHalf.first, ...evsByHalf.second];
             const totals: Record<string, number> = {};
@@ -765,22 +765,25 @@ export function MatchSummaryVectorPdf({
               totals[lbl] = (totals[lbl] ?? 0) + 1;
             });
             const sorted = Object.entries(totals).sort((a, b) => b[1] - a[1]);
-            if (!sorted.length) return null;
             return (
-              <View style={s.summaryBox} wrap={false}>
-                <Text style={s.summaryTitle}>Resumo de Totais ({all.length} eventos)</Text>
-                {sorted.map(([lbl, cnt]) => (
-                  <View key={lbl} style={s.summaryChip}>
-                    <Text style={s.summaryChipLbl}>{lbl}:</Text>
-                    <Text style={s.summaryChipVal}>{cnt}</Text>
+              <View wrap={false} style={{ marginTop: 12 }}>
+                <Text style={s.secTitle}>Eventos por Tempo</Text>
+                {sorted.length > 0 && (
+                  <View style={s.summaryBox}>
+                    <Text style={s.summaryTitle}>Resumo de Totais ({all.length} eventos)</Text>
+                    {sorted.map(([lbl, cnt]) => (
+                      <View key={lbl} style={s.summaryChip}>
+                        <Text style={s.summaryChipLbl}>{lbl}:</Text>
+                        <Text style={s.summaryChipVal}>{cnt}</Text>
+                      </View>
+                    ))}
                   </View>
-                ))}
+                )}
               </View>
             );
           })()}
 
-          {/* Events by half */}
-          <Text style={s.secTitle}>Eventos por Tempo</Text>
+          {/* Half columns — can wrap/break naturally */}
           <View style={s.eventsGrid}>
             {[
               { title: `1º TEMPO (${evsByHalf.first.length})`, events: evsByHalf.first },
@@ -805,13 +808,19 @@ export function MatchSummaryVectorPdf({
             ))}
           </View>
 
-          {/* Player reports */}
-          {filteredPlayers.length > 0 && (
-            <>
-              <Text style={{ ...s.secTitle, marginTop: 4 }}>Estatísticas por Jogador</Text>
-              {filteredPlayers.map(renderPlayerCard)}
-            </>
-          )}
+          {/* Player reports — title + first card never split (anti-orphan) */}
+          {filteredPlayers.length > 0 && (() => {
+            const [first, ...rest] = filteredPlayers;
+            return (
+              <>
+                <View wrap={false} style={{ marginTop: 4 }}>
+                  <Text style={s.secTitle}>Estatísticas por Jogador</Text>
+                  {renderPlayerCard(first)}
+                </View>
+                {rest.map(renderPlayerCard)}
+              </>
+            );
+          })()}
         </View>
       </Page>
 
