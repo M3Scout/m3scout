@@ -158,8 +158,8 @@ export function PlayerSelectPdfModal({
                       onCheckedChange={() => handleToggle(mp.player_id)}
                       className="pointer-events-none"
                     />
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={mp.player.photo_url || undefined} />
+                    <Avatar className="h-8 w-8 shrink-0">
+                      <AvatarImage src={mp.player.photo_url || undefined} className="object-cover" />
                       <AvatarFallback className="text-xs">
                         {mp.player.full_name.slice(0, 2).toUpperCase()}
                       </AvatarFallback>
