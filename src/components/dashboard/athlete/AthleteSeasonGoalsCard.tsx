@@ -346,7 +346,7 @@ export function AthleteSeasonGoalsCard({
             {availableToAdd.length > 0 && (
               <button
                 onClick={() => setShowAddDialog(true)}
-                className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg transition-opacity font-editorial-mono text-[9px] sm:text-[10px] font-bold tracking-wider"
+                className="flex items-center self-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md transition-opacity font-editorial-mono text-[9px] sm:text-[10px] font-bold tracking-wider"
                 style={{ background: RED, color: "#fff" }}
                 onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
                 onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
