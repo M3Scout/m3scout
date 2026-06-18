@@ -561,7 +561,6 @@ export function MatchSummaryVectorPdf({
                   const valColor = ind.type === "positive" ? D.green : ind.type === "negative" ? "#EF4444" : D.text;
                   return (
                     <View key={ind.id} style={{ ...s.sumIndItem, backgroundColor: bg, borderColor: border }}>
-                      <Text style={{ fontSize: 9 }}>{ind.icon}</Text>
                       <View>
                         <Text style={s.sumIndLbl}>{ind.label}</Text>
                         <Text style={{ ...s.sumIndVal, color: valColor }}>{ind.value}</Text>
