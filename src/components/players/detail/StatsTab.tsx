@@ -545,44 +545,52 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
             ))}
           </div>
         </div>
-        <div className="p-4">
+        <div className="pt-4 pb-2">
           {ratingChartData.length < 2 ? (
-            <NoData label="Sem partidas avaliadas" />
-          ) : (
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={ratingChartData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }} barCategoryGap="20%">
-                <XAxis
-                  dataKey="date"
-                  tick={{ fontFamily: "JetBrains Mono", fontSize: 9, fill: MUTED }}
-                  axisLine={{ stroke: CARD_BORDER }}
-                  tickLine={false}
-                />
-                <YAxis domain={[3, 10]} hide />
-                <Tooltip
-                  cursor={{ fill: "rgba(255,255,255,0.03)" }}
-                  content={(props) => {
-                    if (!props.active || !props.payload?.length) return null;
-                    const val = props.payload[0].value as number;
-                    const opp = (props.payload[0].payload as { opponent: string }).opponent;
-                    return (
-                      <div className="font-editorial-mono rounded-lg" style={{ background: CARD_BG, border: `1px solid ${CARD_BORDER}`, padding: "5px 10px", fontSize: 10, fontWeight: "bold", color: getMatchRatingColor(val) }}>
-                        {val.toFixed(1)}{" "}
-                        <span style={{ color: MUTED, fontWeight: "normal" }}>vs {opp}</span>
-                      </div>
-                    );
-                  }}
-                />
-                {averageRating !== null && (
-                  <ReferenceLine y={averageRating} stroke={getMatchRatingColor(averageRating!)} strokeDasharray="5 5" strokeWidth={1} />
-                )}
-                <Bar dataKey="rating" radius={[4, 4, 4, 4]} barSize={28} label={<RatingBarLabel />} isAnimationActive={false}>
-                  {ratingChartData.map((entry, i) => (
-                    <Cell key={i} fill={getMatchRatingColor(entry.rating)} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          )}
+            <div className="px-4"><NoData label="Sem partidas avaliadas" /></div>
+          ) : (() => {
+            const minWidth = Math.max(ratingChartData.length * 52, 280);
+            return (
+              <div className="overflow-x-auto sm:overflow-x-visible">
+                <div style={{ minWidth }}>
+                  <ResponsiveContainer width="100%" height={180}>
+                    <BarChart data={ratingChartData} margin={{ top: 16, right: 12, left: 12, bottom: 0 }} barCategoryGap="28%">
+                      <XAxis
+                        dataKey="date"
+                        tick={{ fontFamily: "JetBrains Mono", fontSize: 9, fill: MUTED }}
+                        axisLine={{ stroke: CARD_BORDER }}
+                        tickLine={false}
+                        interval={0}
+                      />
+                      <YAxis domain={[3, 10]} hide />
+                      <Tooltip
+                        cursor={{ fill: "rgba(255,255,255,0.03)" }}
+                        content={(props) => {
+                          if (!props.active || !props.payload?.length) return null;
+                          const val = props.payload[0].value as number;
+                          const opp = (props.payload[0].payload as { opponent: string }).opponent;
+                          return (
+                            <div className="font-editorial-mono rounded-lg" style={{ background: CARD_BG, border: `1px solid ${CARD_BORDER}`, padding: "5px 10px", fontSize: 10, fontWeight: "bold", color: getMatchRatingColor(val) }}>
+                              {val.toFixed(1)}{" "}
+                              <span style={{ color: MUTED, fontWeight: "normal" }}>vs {opp}</span>
+                            </div>
+                          );
+                        }}
+                      />
+                      {averageRating !== null && (
+                        <ReferenceLine y={averageRating} stroke={getMatchRatingColor(averageRating!)} strokeDasharray="5 5" strokeWidth={1} />
+                      )}
+                      <Bar dataKey="rating" radius={[4, 4, 4, 4]} barSize={24} label={<RatingBarLabel />} isAnimationActive={false}>
+                        {ratingChartData.map((entry, i) => (
+                          <Cell key={i} fill={getMatchRatingColor(entry.rating)} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </div>
 
