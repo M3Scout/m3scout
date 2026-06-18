@@ -141,7 +141,7 @@ export function MatchRatingsCard({
               </div>
 
               <Avatar className="h-8 w-8 shrink-0">
-                <AvatarImage src={player.photoUrl || undefined} />
+                <AvatarImage src={player.photoUrl || undefined} className="object-cover object-top" />
                 <AvatarFallback className="font-display text-[10px]">{player.playerName.slice(0, 2).toUpperCase()}</AvatarFallback>
               </Avatar>
 

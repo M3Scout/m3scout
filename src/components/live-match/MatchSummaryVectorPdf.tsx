@@ -196,7 +196,7 @@ const s = StyleSheet.create({
     backgroundColor: D.dark2, flexDirection: "row",
     alignItems: "center", gap: 12, paddingHorizontal: 12, paddingVertical: 10,
   },
-  pcPhoto: { width: 40, height: 40, borderRadius: 20, backgroundColor: D.g700, objectFit: "cover" as const },
+  pcPhoto: { width: 40, height: 40, borderRadius: 20, backgroundColor: D.g700, objectFit: "cover" as const, objectPosition: "center top" },
   pcPhotoInit: { width: 40, height: 40, borderRadius: 20, backgroundColor: D.g800, alignItems: "center", justifyContent: "center" },
   pcPhotoInitTxt: { fontSize: 14, fontWeight: 700, color: D.g400 },
   pcName:     { fontSize: 11, fontWeight: 700, color: D.textWhite },
@@ -230,7 +230,7 @@ const s = StyleSheet.create({
   // ── Player summary row (Resumo por Jogador) ──────────────────────────────
   sumCard: { borderRadius: 8, borderWidth: 1, borderColor: D.g200, overflow: "hidden", marginBottom: 8 },
   sumHead: { backgroundColor: D.dark2, flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 12, paddingVertical: 9 },
-  sumPhoto: { width: 30, height: 30, borderRadius: 15, backgroundColor: D.g700, objectFit: "cover" as const },
+  sumPhoto: { width: 30, height: 30, borderRadius: 15, backgroundColor: D.g700, objectFit: "cover" as const, objectPosition: "center top" },
   sumPhotoInit: { width: 30, height: 30, borderRadius: 15, backgroundColor: D.g800, alignItems: "center", justifyContent: "center" },
   sumPhotoInitTxt: { fontSize: 10, fontWeight: 700, color: D.g400 },
   sumName: { fontSize: 9, fontWeight: 700, color: D.textWhite },

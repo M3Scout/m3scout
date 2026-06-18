@@ -161,7 +161,7 @@ export function PlayerStatsAccordion({ events, matchPlayers }: PlayerStatsAccord
               className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#0d0e0f] transition-colors duration-200"
             >
               <Avatar className="h-8 w-8 shrink-0">
-                <AvatarImage src={row.photoUrl || undefined} />
+                <AvatarImage src={row.photoUrl || undefined} className="object-cover object-top" />
                 <AvatarFallback className="font-display text-[10px] bg-zinc-800">
                   {row.name.slice(0, 2).toUpperCase()}
                 </AvatarFallback>

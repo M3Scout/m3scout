@@ -159,7 +159,7 @@ export function PlayerSelectPdfModal({
                       className="pointer-events-none"
                     />
                     <Avatar className="h-8 w-8 shrink-0">
-                      <AvatarImage src={mp.player.photo_url || undefined} className="object-cover" />
+                      <AvatarImage src={mp.player.photo_url || undefined} className="object-cover object-top" />
                       <AvatarFallback className="text-xs">
                         {mp.player.full_name.slice(0, 2).toUpperCase()}
                       </AvatarFallback>
