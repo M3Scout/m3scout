@@ -215,7 +215,7 @@ export function AthleteRatingEvolutionCard({
       </div>
 
       {/* ── Bar Chart ────────────────────────────────────────────────────────── */}
-      <div className="px-4 pt-4 pb-2">
+      <div className="pt-4 pb-2">
         {chartData.length < 2 ? (
           <div className="py-10 flex items-center justify-center">
             <span
@@ -225,66 +225,76 @@ export function AthleteRatingEvolutionCard({
               Sem partidas avaliadas
             </span>
           </div>
-        ) : (
-          <ResponsiveContainer width="100%" height={160}>
-            <BarChart
-              data={chartData}
-              margin={{ top: 4, right: 8, left: -20, bottom: 0 }}
-              barCategoryGap="20%"
-            >
-              <XAxis
-                dataKey="date"
-                tick={{ fontFamily: "JetBrains Mono, monospace", fontSize: 9, fill: MUTED }}
-                axisLine={{ stroke: CARD_BORDER }}
-                tickLine={false}
-              />
-              <YAxis domain={[3, 10]} hide />
-              <Tooltip
-                cursor={{ fill: "rgba(255,255,255,0.03)" }}
-                content={(props) => {
-                  if (!props.active || !props.payload?.length) return null;
-                  const val = props.payload[0].value as number;
-                  const opp = (props.payload[0].payload as { opponent: string }).opponent;
-                  return (
-                    <div
-                      className="font-editorial-mono rounded-lg"
-                      style={{
-                        background: CARD_BG,
-                        border: `1px solid ${CARD_BORDER}`,
-                        padding: "5px 10px",
-                        fontSize: 10,
-                        fontWeight: "bold",
-                        color: getRatingColor(val),
+        ) : (() => {
+          // Each bar needs at least 52px to show label + date without crowding.
+          // On mobile we scroll horizontally; on sm+ the chart fills the container.
+          const minWidth = Math.max(chartData.length * 52, 280);
+          return (
+            <div className="overflow-x-auto sm:overflow-x-visible -mx-0 px-0">
+              <div style={{ minWidth }}>
+                <ResponsiveContainer width="100%" height={180}>
+                  <BarChart
+                    data={chartData}
+                    margin={{ top: 16, right: 12, left: 12, bottom: 0 }}
+                    barCategoryGap="28%"
+                  >
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontFamily: "JetBrains Mono, monospace", fontSize: 9, fill: MUTED }}
+                      axisLine={{ stroke: CARD_BORDER }}
+                      tickLine={false}
+                      interval={0}
+                    />
+                    <YAxis domain={[3, 10]} hide />
+                    <Tooltip
+                      cursor={{ fill: "rgba(255,255,255,0.03)" }}
+                      content={(props) => {
+                        if (!props.active || !props.payload?.length) return null;
+                        const val = props.payload[0].value as number;
+                        const opp = (props.payload[0].payload as { opponent: string }).opponent;
+                        return (
+                          <div
+                            className="font-editorial-mono rounded-lg"
+                            style={{
+                              background: CARD_BG,
+                              border: `1px solid ${CARD_BORDER}`,
+                              padding: "5px 10px",
+                              fontSize: 10,
+                              fontWeight: "bold",
+                              color: getRatingColor(val),
+                            }}
+                          >
+                            {val.toFixed(1)}{" "}
+                            <span style={{ color: MUTED, fontWeight: "normal" }}>vs {opp}</span>
+                          </div>
+                        );
                       }}
+                    />
+                    {averageRating !== null && (
+                      <ReferenceLine
+                        y={averageRating}
+                        stroke={getRatingColor(averageRating)}
+                        strokeDasharray="5 5"
+                        strokeWidth={1}
+                      />
+                    )}
+                    <Bar
+                      dataKey="rating"
+                      radius={[4, 4, 4, 4]}
+                      barSize={24}
+                      label={<RatingBarLabel />}
+                      isAnimationActive={false}
                     >
-                      {val.toFixed(1)}{" "}
-                      <span style={{ color: MUTED, fontWeight: "normal" }}>vs {opp}</span>
-                    </div>
-                  );
-                }}
-              />
-              {averageRating !== null && (
-                <ReferenceLine
-                  y={averageRating}
-                  stroke={getRatingColor(averageRating)}
-                  strokeDasharray="5 5"
-                  strokeWidth={1}
-                />
-              )}
-              <Bar
-                dataKey="rating"
-                radius={[4, 4, 4, 4]}
-                barSize={28}
-                label={<RatingBarLabel />}
-                isAnimationActive={false}
-              >
-                {chartData.map((entry, i) => (
-                  <Cell key={i} fill={getRatingColor(entry.rating)} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        )}
+                      {chartData.map((entry, i) => (
+                        <Cell key={i} fill={getRatingColor(entry.rating)} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* ── Últimos 4 jogos em grid 2×2 ──────────────────────────────────────── */}
