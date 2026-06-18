@@ -60,12 +60,12 @@ export function MatchRatingsCard({
     return null;
   }
   
-  const CARD_BG     = "#161618";
-  const CARD_BORDER = "rgba(255,255,255,0.10)";
-  const ROW_BG      = "rgba(255,255,255,0.04)";
-  const ROW_BORDER  = "rgba(255,255,255,0.09)";
-  const TEXT        = "#ededee";
-  const MUTED       = "#62616a";
+  const CARD_BG      = "#16181a";
+  const CARD_BORDER  = "rgba(63,63,70,0.30)";
+  const ROW_BG       = "#0d0e0f";
+  const ROW_BORDER   = "rgba(39,39,42,0.40)";
+  const TEXT         = "#ededee";
+  const MUTED        = "#62616a";
 
   return (
     <div className="rounded-xl border overflow-hidden" style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
@@ -123,7 +123,7 @@ export function MatchRatingsCard({
           {sortedPlayers.map((player, index) => (
             <div
               key={player.playerId}
-              className="flex items-center gap-3 p-3 rounded-xl transition-colors duration-150 hover:brightness-110"
+              className="flex items-center gap-3 p-3 rounded-xl transition-colors duration-200 hover:brightness-105"
               style={{
                 background: index === 0 ? "rgba(45,206,138,0.07)" : ROW_BG,
                 border: `1px solid ${index === 0 ? "rgba(45,206,138,0.20)" : ROW_BORDER}`,

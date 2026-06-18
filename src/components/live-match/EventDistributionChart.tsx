@@ -187,9 +187,9 @@ export function EventDistributionChart({
   const halfTimeMinute = Math.floor(matchDuration / 2);
 
   return (
-    <div ref={chartRef} data-export-target className="rounded-xl border overflow-hidden" style={{ background: "#161618", borderColor: "rgba(255,255,255,0.10)" }}>
+    <div ref={chartRef} data-export-target className="rounded-xl border overflow-hidden" style={{ background: "#16181a", borderColor: "rgba(63,63,70,0.30)" }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: "rgba(255,255,255,0.09)" }}>
+      <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: "rgba(39,39,42,0.40)" }}>
         <div className="flex items-center gap-2.5">
           <Activity className="w-4 h-4" style={{ color: "#62616a" }} />
           <span className="font-display font-semibold text-[15px]" style={{ color: "#ededee" }}>Distribuição de Eventos</span>
@@ -198,7 +198,7 @@ export function EventDistributionChart({
           onClick={() => exportToPng(chartRef.current)}
           disabled={isExporting}
           className="flex items-center gap-1.5 font-editorial-mono text-[10px] uppercase tracking-wider px-3 py-1.5 rounded-lg border transition-colors hover:bg-zinc-800/40 disabled:opacity-50"
-          style={{ borderColor: "rgba(255,255,255,0.12)", color: "#ededee" }}
+          style={{ borderColor: "rgba(63,63,70,0.40)", color: "#ededee" }}
         >
           <Download className="h-3.5 w-3.5" />
           {isExporting ? "..." : "PNG"}
@@ -212,7 +212,7 @@ export function EventDistributionChart({
             { label: `2º Tempo: ${stats.secondHalf} eventos` },
             { label: `Pico: ${stats.peakMinute}' (${stats.peakCount} eventos)` },
           ].map(({ label }) => (
-            <span key={label} className="font-editorial-mono text-[10px] px-2.5 py-1 rounded-md" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.10)", color: "#ededee" }}>
+            <span key={label} className="font-editorial-mono text-[10px] px-2.5 py-1 rounded-md" style={{ background: "#0d0e0f", border: "1px solid rgba(39,39,42,0.40)", color: "#ededee" }}>
               {label}
             </span>
           ))}

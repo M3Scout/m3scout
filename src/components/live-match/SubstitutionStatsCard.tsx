@@ -246,9 +246,9 @@ export function SubstitutionStatsCard({
   }
 
   return (
-    <div ref={cardRef} data-export-target className="rounded-xl border overflow-hidden" style={{ background: "#161618", borderColor: "rgba(255,255,255,0.10)" }}>
+    <div ref={cardRef} data-export-target className="rounded-xl border overflow-hidden" style={{ background: "#16181a", borderColor: "rgba(63,63,70,0.30)" }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: "rgba(255,255,255,0.09)" }}>
+      <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: "rgba(39,39,42,0.40)" }}>
         <div className="flex items-center gap-2.5">
           <ArrowRightLeft className="w-4 h-4" style={{ color: "#62616a" }} />
           <span className="font-display font-semibold text-[15px]" style={{ color: "#ededee" }}>Substituições e Tempo em Campo</span>
@@ -260,7 +260,7 @@ export function SubstitutionStatsCard({
           onClick={() => exportToPng(cardRef.current)}
           disabled={isExporting}
           className="flex items-center gap-1.5 font-editorial-mono text-[10px] uppercase tracking-wider px-3 py-1.5 rounded-lg border transition-colors hover:bg-zinc-800/40 disabled:opacity-50"
-          style={{ borderColor: "rgba(255,255,255,0.12)", color: "#ededee" }}
+          style={{ borderColor: "rgba(63,63,70,0.40)", color: "#ededee" }}
         >
           <Download className="h-3.5 w-3.5" />
           {isExporting ? "..." : "PNG"}
@@ -275,7 +275,7 @@ export function SubstitutionStatsCard({
             { value: summaryStats.playersUsedCount,  label: "Jogadores"     },
             { value: `${summaryStats.avgMinutes}'`,  label: "Média Min."    },
           ].map(({ value, label }) => (
-            <div key={label} className="flex flex-col gap-1 p-4 rounded-xl" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.10)" }}>
+            <div key={label} className="flex flex-col gap-1 p-4 rounded-xl" style={{ background: "#0d0e0f", border: "1px solid rgba(39,39,42,0.40)" }}>
               <span className="font-display font-bold tabular-nums" style={{ fontSize: 30, lineHeight: 1, color: "#ededee" }}>{value}</span>
               <span className="font-editorial-mono text-[10px] uppercase tracking-wider" style={{ color: "#62616a" }}>{label}</span>
             </div>
@@ -294,9 +294,9 @@ export function SubstitutionStatsCard({
                 <div
                   key={idx}
                   className="flex items-center gap-3 p-3 rounded-xl"
-                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)" }}
+                  style={{ background: "#0d0e0f", border: "1px solid rgba(39,39,42,0.40)" }}
                 >
-                  <span className="font-editorial-mono text-[11px] font-bold shrink-0 tabular-nums px-2 py-1 rounded-lg" style={{ background: "rgba(255,255,255,0.07)", color: "#ededee" }}>
+                  <span className="font-editorial-mono text-[11px] font-bold shrink-0 tabular-nums px-2 py-1 rounded-lg" style={{ background: "rgba(63,63,70,0.20)", color: "#ededee" }}>
                     {sub.displayMinute}
                   </span>
                   <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
@@ -330,7 +330,7 @@ export function SubstitutionStatsCard({
                       </span>
                     </div>
                   </div>
-                  <span className="font-editorial-mono text-[9px] px-2 py-0.5 rounded-md shrink-0" style={{ background: "rgba(255,255,255,0.07)", color: "#62616a" }}>
+                  <span className="font-editorial-mono text-[9px] px-2 py-0.5 rounded-md shrink-0" style={{ background: "rgba(63,63,70,0.20)", color: "#62616a" }}>
                     {sub.half === 1 ? "1T" : "2T"}
                   </span>
                 </div>
@@ -353,7 +353,7 @@ export function SubstitutionStatsCard({
                   <div
                     key={stat.player.id}
                     className="flex items-center gap-3 p-3 rounded-xl"
-                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)" }}
+                    style={{ background: "#0d0e0f", border: "1px solid rgba(39,39,42,0.40)" }}
                   >
                     <Avatar className="h-8 w-8 shrink-0">
                       <AvatarImage src={stat.player.player.photo_url || undefined} />
@@ -368,13 +368,13 @@ export function SubstitutionStatsCard({
                           {stat.player.player.full_name}
                         </span>
                         {stat.started && (
-                          <span className="font-editorial-mono text-[9px] px-1.5 py-0.5 rounded border" style={{ color: "#62616a", borderColor: "rgba(255,255,255,0.10)" }}>TIT</span>
+                          <span className="font-editorial-mono text-[9px] px-1.5 py-0.5 rounded border" style={{ color: "#62616a", borderColor: "rgba(39,39,42,0.40)" }}>TIT</span>
                         )}
                         {stat.wasSubstitutedIn  && <ArrowUp   className="h-3 w-3 text-green-500 shrink-0" />}
                         {stat.wasSubstitutedOut && <ArrowDown  className="h-3 w-3 text-red-500 shrink-0" />}
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.08)" }}>
+                        <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(63,63,70,0.20)" }}>
                           <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(percentPlayed, 100)}%`, background: "#ec4525" }} />
                         </div>
                         <span className="font-editorial-mono text-[10px] shrink-0 w-8 text-right" style={{ color: "#62616a" }}>{percentPlayed}%</span>

@@ -288,7 +288,7 @@ function PlayerSummaryRow({ player, analysis, matchId, seasonYear, playerEvents,
   }, [analysis.zoneHeatmap.percentages, previousGames, matchId]);
 
   return (
-    <div className="p-3.5 rounded-xl space-y-3" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)" }}>
+    <div className="p-3.5 rounded-xl space-y-3" style={{ background: "#0d0e0f", border: "1px solid rgba(39,39,42,0.40)" }}>
       {/* Player Header */}
       <div className="flex items-center gap-2">
         <Avatar className="h-7 w-7">
@@ -508,8 +508,8 @@ export function PostGameInsightsCard({
   }
 
   return (
-    <div className="rounded-xl border overflow-hidden" style={{ background: "#161618", borderColor: "rgba(255,255,255,0.10)" }}>
-      <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: "rgba(255,255,255,0.09)" }}>
+    <div className="rounded-xl border overflow-hidden" style={{ background: "#16181a", borderColor: "rgba(63,63,70,0.30)" }}>
+      <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: "rgba(39,39,42,0.40)" }}>
         <div className="flex items-center gap-2.5">
           <BarChart3 className="w-4 h-4" style={{ color: "#62616a" }} />
           <span className="font-display font-semibold text-[15px]" style={{ color: "#ededee" }}>Resumo por Jogador</span>

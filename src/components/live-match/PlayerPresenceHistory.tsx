@@ -165,12 +165,12 @@ export function PlayerPresenceHistory({ matchId, matchPlayers = [], className }:
               "rounded-xl overflow-hidden",
               "transition-all duration-200"
             )}
-            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)" }}
+            style={{ background: "#16181a", border: "1px solid rgba(63,63,70,0.30)" }}
           >
             {/* Player Header */}
             <button
               onClick={() => togglePlayer(playerId)}
-              className="w-full flex items-center gap-3 p-3 hover:bg-white/5 transition-colors"
+              className="w-full flex items-center gap-3 p-3 hover:bg-[#0d0e0f] transition-colors duration-200"
             >
               <Avatar className={cn("h-10 w-10 border-2 shrink-0", positionColors.borderClass)}>
                 <AvatarImage src={safePhoto || undefined} />
@@ -222,14 +222,14 @@ export function PlayerPresenceHistory({ matchId, matchPlayers = [], className }:
                   exit={{ height: 0, opacity: 0 }}
                   transition={{ duration: 0.2 }}
                   className="overflow-hidden border-t"
-                  style={{ borderColor: "rgba(255,255,255,0.07)" }}
+                  style={{ borderColor: "rgba(39,39,42,0.40)" }}
                 >
-                  <div className="p-3 space-y-2" style={{ background: "rgba(0,0,0,0.20)" }}>
+                  <div className="p-3 space-y-2" style={{ background: "#0d0e0f" }}>
                     {group.records.map((record, idx) => (
                       <div
                         key={record.id}
                         className="flex items-center gap-3 p-2.5 rounded-xl"
-                        style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.10)" }}
+                        style={{ background: "#0d0e0f", border: "1px solid rgba(39,39,42,0.40)" }}
                       >
                         <div className={cn(
                           "flex items-center justify-center w-8 h-8 rounded-full shrink-0",

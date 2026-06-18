@@ -1,12 +1,6 @@
 /**
- * Match Summary PDF using @react-pdf/renderer
- * Vector-based PDF for crisp text rendering
- * 
- * Supports:
- * - Complete statistics by half (using matchStatsDefinitions)
- * - Player activity heatmap
- * - Event distribution summary
- * - Filter by specific players
+ * Match Summary PDF — redesigned v3
+ * Dark header, brand red accents, no heatmaps, per-player performance sections.
  */
 import React from "react";
 import {
@@ -18,28 +12,24 @@ import {
   StyleSheet,
   Svg,
   Line as SvgLine,
-  Rect,
-  Circle,
-  G,
   Path,
-  Polyline,
+  Circle,
   Defs,
   LinearGradient,
   Stop,
+  G,
 } from "@react-pdf/renderer";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { PDF_COLORS } from "@/lib/pdfStyles";
 import { Match, MatchPlayer, MatchEvent, MatchEventType, MatchPlayerStats } from "@/hooks/useLiveMatch";
 import { calculateMinutesPlayed } from "@/lib/minutesPlayed";
-import { persistedRatingToResult, getRatingBgColor, matchPlayerStatsToInput } from "@/lib/matchRatingEngine";
+import { matchPlayerStatsToInput } from "@/lib/matchRatingEngine";
 import { classifyMatchProfile, type MatchProfileKey } from "@/lib/matchProfileEngine";
-import { calculateMatchEfficiency, getEfficiencyColorHex, getEfficiencyBgColorHex, type EfficiencyLevel } from "@/lib/matchEfficiencyEngine";
+import { calculateMatchEfficiency, type EfficiencyLevel } from "@/lib/matchEfficiencyEngine";
 import { generateScoutingText } from "@/lib/scoutingTextEngine";
 import { generatePostGameAnalysis, type MatchStatsInput } from "@/lib/postGameAnalysis";
 import { calculateBallActionsFromMatchStats } from "@/lib/derivedBallActions";
 import { normalizeMatchStats } from "@/lib/normalizeMatchStats";
-import { MiniFieldHeatmapPdf } from "./MiniFieldHeatmapPdf";
 import {
   EVENT_TYPE_CONFIG,
   COMPUTED_STATS,
@@ -47,621 +37,222 @@ import {
   EventCountsMap,
 } from "@/lib/matchStatsDefinitions";
 
-// Efficiency colors for PDF
-const EFFICIENCY_COLORS: Record<EfficiencyLevel | "none", { bg: string; text: string; label: string }> = {
-  high: { bg: "#D1FAE5", text: "#065F46", label: "Alta" },
-  medium: { bg: "#FEF3C7", text: "#92400E", label: "Média" },
-  low: { bg: "#FEE2E2", text: "#991B1B", label: "Baixa" },
-  none: { bg: "#E5E7EB", text: "#6B7280", label: "—" },
+// ── Design tokens ────────────────────────────────────────────────────────────
+const D = {
+  // Page
+  pageBg: "#FFFFFF",
+  // Header dark band
+  dark: "#111111",
+  dark2: "#1A1A1A",
+  // Brand
+  red: "#EC4525",
+  redFaint: "#FFF1EE",
+  // Text
+  text: "#0F0F10",
+  textMuted: "#62616A",
+  textWhite: "#FFFFFF",
+  textWhiteMuted: "#9CA3AF",
+  // Neutrals
+  g50:  "#FAFAFA",
+  g100: "#F4F4F5",
+  g200: "#E4E4E7",
+  g300: "#D1D5DB",
+  g400: "#A1A1AA",
+  g500: "#71717A",
+  g600: "#52525B",
+  g700: "#3F3F46",
+  g800: "#27272A",
+  g900: "#18181B",
+  // Semantic
+  green: "#16A34A",
+  greenFaint: "#DCFCE7",
+  blue: "#1D4ED8",
+  blueFaint: "#DBEAFE",
+  amber: "#D97706",
+  amberFaint: "#FEF3C7",
+  // Efficiency
+  effHigh:   { bg: "#D1FAE5", text: "#065F46" },
+  effMedium: { bg: "#FEF3C7", text: "#92400E" },
+  effLow:    { bg: "#FEE2E2", text: "#991B1B" },
+  effNone:   { bg: "#E5E7EB", text: "#6B7280" },
 };
 
-// Profile colors for PDF
-const PROFILE_COLORS: Record<MatchProfileKey, { bg: string; text: string }> = {
-  decisive_efficient: { bg: "#DCFCE7", text: "#166534" },
-  participative_impact: { bg: "#D1FAE5", text: "#065F46" },
-  participative_no_impact: { bg: "#FFEDD5", text: "#C2410C" },
-  efficient_low_volume: { bg: "#FEF3C7", text: "#92400E" },
-  unproductive_volume: { bg: "#FEE2E2", text: "#991B1B" },
-  defensive_dominant: { bg: "#DBEAFE", text: "#1E40AF" },
-  defensive_consistent: { bg: "#CFFAFE", text: "#0E7490" },
-  high_defensive_risk: { bg: "#FECACA", text: "#B91C1C" },
-  low_general_impact: { bg: "#E5E7EB", text: "#374151" },
+// Profile palette
+const PROFILE_COLOR: Record<MatchProfileKey, { bg: string; text: string }> = {
+  decisive_efficient:       { bg: "#DCFCE7", text: "#166534" },
+  participative_impact:     { bg: "#D1FAE5", text: "#065F46" },
+  participative_no_impact:  { bg: "#FFEDD5", text: "#C2410C" },
+  efficient_low_volume:     { bg: "#FEF3C7", text: "#92400E" },
+  unproductive_volume:      { bg: "#FEE2E2", text: "#991B1B" },
+  defensive_dominant:       { bg: "#DBEAFE", text: "#1E40AF" },
+  defensive_consistent:     { bg: "#CFFAFE", text: "#0E7490" },
+  high_defensive_risk:      { bg: "#FECACA", text: "#B91C1C" },
+  low_general_impact:       { bg: "#E5E7EB", text: "#374151" },
 };
 
-// Event type labels (backup)
 const EVENT_LABELS: Record<MatchEventType, string> = {
-  // Attack
-  goal: "Gol",
-  shot_on_target: "Finalização Gol",
-  shot: "Finalização Fora",
-  shot_blocked: "Final. Bloqueada",
-  offside: "Impedimento",
-  penalty_won: "Pênalti Sofrido",
-  // Passing
-  assist: "Assistência",
-  key_pass: "Passe Decisivo",
-  chance_created: "Chance Criada",
-  pass_success: "Passe Certo",
-  pass_total: "Passe Errado",
-  cross_success: "Cruz. Certo",
-  cross_failed: "Cruz. Errado",
-  // Dribbles/Possession
-  ball_action: "Ação c/ Bola",
-  dribble_success: "Drible Certo",
-  dribble_attempt: "Drible Errado",
-  foul_suffered: "Falta Sofrida",
-  possession_lost: "Bola Perdida",
-  // Defense
-  tackle: "Desarme",
-  steal: "Roubada de Bola",
-  interception: "Interceptação",
-  recovery: "Recuperação",
-  clearance: "Corte",
-  blocked_shot: "Chute Bloqueado",
-  was_dribbled: "Driblado",
-  ground_duel_won: "Duelo no Chão (Ganho)",
-  ground_duel_total: "Duelo no Chão (Perdido)",
-  duel_won: "Duelo (Ganho)",
-  duel_total: "Duelo (Perdido)",
-  aerial_duel_won: "Duelo Aéreo (Ganho)",
-  aerial_duel_total: "Duelo Aéreo (Perdido)",
-  foul_committed: "Falta Cometida",
-  yellow: "Amarelo",
-  red: "Vermelho",
-  // Goalkeeper
-  save: "Defesa",
-  goal_conceded: "Gol Sofrido",
-  clean_sheet: "Clean Sheet",
-  penalty_saved: "Pênalti Def.",
-  error_led_to_goal: "Erro→Gol",
-  box_save: "Def. Área",
-  punch: "Soco",
-  high_claim: "Bola Alta",
-  sweeper_action: "Saída Gol",
-  long_pass_success: "Lançamento Certo",
-  long_pass_total: "Lançamento Errado",
-  // Meta
-  substitution: "Substituição",
-  player_on: "Entrou",
-  player_off: "Saiu",
-  progressive_pass: "Passe Progressivo",
-  shot_on_post: "Finalização na Trave",
+  goal: "Gol", shot_on_target: "Finalização Gol", shot: "Finalização Fora",
+  shot_blocked: "Final. Bloqueada", offside: "Impedimento", penalty_won: "Pênalti Sofrido",
+  assist: "Assistência", key_pass: "Passe Decisivo", chance_created: "Chance Criada",
+  pass_success: "Passe Certo", pass_total: "Passe Errado", cross_success: "Cruzamento Certo",
+  cross_failed: "Cruzamento Errado", ball_action: "Ação c/ Bola", dribble_success: "Drible Certo",
+  dribble_attempt: "Drible Errado", foul_suffered: "Falta Sofrida", possession_lost: "Bola Perdida",
+  tackle: "Desarme", steal: "Roubada de Bola", interception: "Interceptação",
+  recovery: "Recuperação", clearance: "Corte", blocked_shot: "Chute Bloqueado",
+  was_dribbled: "Driblado", ground_duel_won: "Duelo Chão (G)", ground_duel_total: "Duelo Chão (P)",
+  duel_won: "Duelo (G)", duel_total: "Duelo (P)", aerial_duel_won: "Duelo Aéreo (G)",
+  aerial_duel_total: "Duelo Aéreo (P)", foul_committed: "Falta Cometida",
+  yellow: "Amarelo", red: "Vermelho", save: "Defesa", goal_conceded: "Gol Sofrido",
+  clean_sheet: "Clean Sheet", penalty_saved: "Pênalti Defendido", error_led_to_goal: "Erro→Gol",
+  box_save: "Defesa Área", punch: "Soco", high_claim: "Bola Alta", sweeper_action: "Saída Gol",
+  long_pass_success: "Lançamento Certo", long_pass_total: "Lançamento Errado",
+  substitution: "Substituição", player_on: "Entrou", player_off: "Saiu",
+  progressive_pass: "Passe Progressivo", shot_on_post: "Trave",
 };
 
-// Heatmap intensity colors
-const HEATMAP_COLORS = {
-  offField: "#E5E7EB", // gray-200
-  noEvents: "#F3F4F6", // gray-100
-  low: "#86EFAC", // green-300
-  medium: "#FDE047", // yellow-300
-  high: "#FB923C", // orange-400
-  veryHigh: "#EF4444", // red-500
-};
+// ── Styles ────────────────────────────────────────────────────────────────────
+const s = StyleSheet.create({
+  page: { padding: 0, backgroundColor: D.pageBg, fontFamily: "Helvetica" },
 
-const styles = StyleSheet.create({
-  page: {
-    padding: 28,
-    fontFamily: "Helvetica",
-    fontSize: 10,
-    color: PDF_COLORS.gray900,
-    backgroundColor: PDF_COLORS.white,
-  },
-  // Header - Compact
-  header: {
+  // ── Dark header band ─────────────────────────────────────────────────────
+  headerBand: {
+    backgroundColor: D.dark,
+    paddingHorizontal: 28,
+    paddingTop: 20,
+    paddingBottom: 16,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
-    paddingBottom: 8,
-    borderBottom: `2px solid ${PDF_COLORS.brandRed}`,
   },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
+  headerLeft:  { flexDirection: "row", alignItems: "center", gap: 12 },
+  headerRight: { alignItems: "flex-end" },
+  logo:        { height: 32, objectFit: "contain" as const },
+  logoSm:      { height: 22, objectFit: "contain" as const },
+  h1:   { fontSize: 17, fontWeight: 700, color: D.textWhite },
+  h1Sm: { fontSize: 13, fontWeight: 700, color: D.textWhite },
+  sub:  { fontSize: 8,  color: D.textWhiteMuted, marginTop: 2 },
+  matchTitle: { fontSize: 11, fontWeight: 700, color: D.textWhite, textAlign: "right" },
+  matchMeta:  { fontSize: 8,  color: D.textWhiteMuted, marginTop: 2, textAlign: "right" },
+  playerTag:  { fontSize: 8,  color: D.red, marginTop: 3, fontWeight: 700, textAlign: "right" },
+  redLine: { height: 2, backgroundColor: D.red },
+
+  // ── Page content wrapper ─────────────────────────────────────────────────
+  body: { paddingHorizontal: 28, paddingTop: 20, paddingBottom: 36 },
+
+  // ── KPI row ──────────────────────────────────────────────────────────────
+  kpiRow:  { flexDirection: "row", gap: 8, marginBottom: 16 },
+  kpiCard: {
+    flex: 1, borderRadius: 6, padding: 10,
+    borderWidth: 1, borderColor: D.g200, backgroundColor: D.g50,
+    borderTopWidth: 3,
   },
-  logo: {
-    height: 36,
-    objectFit: "contain" as const,
+  kpiVal: { fontSize: 22, fontWeight: 700, color: D.text, lineHeight: 1 },
+  kpiLbl: { fontSize: 7, color: D.textMuted, marginTop: 3, textTransform: "uppercase", letterSpacing: 0.5 },
+
+  // ── Section title ─────────────────────────────────────────────────────────
+  secTitle: { fontSize: 10, fontWeight: 700, color: D.text, marginBottom: 8 },
+  secSub:   { fontSize: 7, color: D.textMuted, marginBottom: 8, marginTop: -5 },
+
+  // ── Stats table ───────────────────────────────────────────────────────────
+  table: { borderRadius: 6, borderWidth: 1, borderColor: D.g200, overflow: "hidden", marginBottom: 16 },
+  tHead: { flexDirection: "row", backgroundColor: D.dark },
+  tHCell: { flex: 1, paddingVertical: 5, paddingHorizontal: 4, fontSize: 7, fontWeight: 700, color: D.textWhite, textAlign: "center" },
+  tHCellWide: { flex: 2, paddingVertical: 5, paddingHorizontal: 6, fontSize: 7, fontWeight: 700, color: D.textWhiteMuted, textAlign: "center" },
+  tRow: { flexDirection: "row", borderTopWidth: 1, borderColor: D.g200 },
+  tRowAlt: { flexDirection: "row", borderTopWidth: 1, borderColor: D.g200, backgroundColor: D.g50 },
+  tCell: { flex: 1, paddingVertical: 4, paddingHorizontal: 4, fontSize: 9, fontWeight: 700, textAlign: "center", color: D.text },
+  tCellWide: { flex: 2, paddingVertical: 4, paddingHorizontal: 6, fontSize: 7, color: D.textMuted, textAlign: "center" },
+
+  // ── Distribution chart ────────────────────────────────────────────────────
+  chartBox: { borderRadius: 6, borderWidth: 1, borderColor: D.g200, padding: 10, backgroundColor: D.g50 },
+  distRow: { flexDirection: "row", gap: 6, marginBottom: 8 },
+  distCard: { flex: 1, backgroundColor: D.g100, borderRadius: 4, padding: 6, alignItems: "center" },
+  distCardHl: { flex: 1, backgroundColor: D.amberFaint, borderRadius: 4, padding: 6, alignItems: "center", borderWidth: 1, borderColor: "#FDE68A" },
+  distVal: { fontSize: 13, fontWeight: 700, color: D.text },
+  distLbl: { fontSize: 6, color: D.textMuted, marginTop: 2 },
+
+  // ── Events columns ────────────────────────────────────────────────────────
+  eventsGrid: { flexDirection: "row", gap: 10, marginBottom: 16 },
+  eventsCol: { flex: 1, borderRadius: 6, borderWidth: 1, borderColor: D.g200, overflow: "hidden" },
+  eventsColHead: { backgroundColor: D.g100, paddingVertical: 5, paddingHorizontal: 8, borderBottomWidth: 1, borderColor: D.g200 },
+  eventsColTitle: { fontSize: 8, fontWeight: 700, color: D.text },
+  eventsBody: { paddingHorizontal: 8, paddingVertical: 6 },
+  eventItem: { flexDirection: "row", alignItems: "center", marginBottom: 3 },
+  eventMin: {
+    backgroundColor: D.g200, paddingHorizontal: 4, paddingVertical: 2,
+    borderRadius: 3, fontSize: 7, fontWeight: 700, color: D.g700,
+    marginRight: 5, minWidth: 24, textAlign: "center",
   },
-  logoSmall: {
-    height: 24,
-    objectFit: "contain" as const,
-  },
-  headerTitle: {
-    fontSize: 16,
-    fontWeight: 700,
-    color: PDF_COLORS.gray900,
-  },
-  headerSubtitle: {
-    fontSize: 9,
-    color: PDF_COLORS.gray500,
-    marginTop: 1,
-  },
-  headerRight: {
-    alignItems: "flex-end",
-  },
-  matchTitle: {
-    fontSize: 12,
-    fontWeight: 700,
-    color: PDF_COLORS.gray900,
-  },
-  matchDate: {
-    fontSize: 9,
-    color: PDF_COLORS.gray500,
-    marginTop: 1,
-  },
-  matchVenue: {
-    fontSize: 8,
-    color: PDF_COLORS.gray400,
-    marginTop: 1,
-  },
-  playerFilter: {
-    fontSize: 9,
-    color: PDF_COLORS.brandRed,
-    marginTop: 2,
-    fontWeight: 700,
-  },
-  // Stats Grid
-  statsGrid: {
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 12,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: PDF_COLORS.gray100,
-    borderRadius: 4,
-    padding: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 45,
-  },
-  statCardGreen: {
-    flex: 1,
-    backgroundColor: "#DCFCE7",
-    borderRadius: 4,
-    padding: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 45,
-  },
-  statCardBlue: {
-    flex: 1,
-    backgroundColor: "#DBEAFE",
-    borderRadius: 4,
-    padding: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 45,
-  },
-  statValue: {
-    fontSize: 18,
-    fontWeight: 700,
-    color: PDF_COLORS.gray900,
-    textAlign: "center",
-  },
-  statValueGreen: {
-    fontSize: 18,
-    fontWeight: 700,
-    color: PDF_COLORS.green,
-    textAlign: "center",
-  },
-  statValueBlue: {
-    fontSize: 18,
-    fontWeight: 700,
-    color: PDF_COLORS.blue,
-    textAlign: "center",
-  },
-  statLabel: {
-    fontSize: 7,
-    color: PDF_COLORS.gray500,
-    marginTop: 2,
-    textAlign: "center",
-  },
-  // Section - Anti-orphan container
-  sectionBlock: {
-    marginTop: 10,
-    marginBottom: 6,
-  },
-  sectionTitle: {
-    fontSize: 11,
-    fontWeight: 700,
-    color: PDF_COLORS.gray900,
-    marginBottom: 6,
-  },
-  sectionSubtitle: {
-    fontSize: 7,
-    color: PDF_COLORS.gray500,
-    marginBottom: 6,
-    marginTop: -4,
-  },
-  // Table - Compact
-  table: {
-    marginBottom: 10,
-    borderRadius: 4,
-    border: `1px solid ${PDF_COLORS.gray200}`,
-    overflow: "hidden",
-  },
-  tableHeaderRow: {
-    flexDirection: "row",
-    backgroundColor: PDF_COLORS.gray100,
-  },
-  tableHeaderCell: {
-    flex: 1,
-    padding: 4,
-    fontSize: 8,
-    fontWeight: 600,
-    textAlign: "center",
-    color: PDF_COLORS.gray600,
-    borderRight: `1px solid ${PDF_COLORS.gray200}`,
-  },
-  tableHeaderCellWide: {
-    flex: 2,
-    padding: 4,
-    fontSize: 8,
-    fontWeight: 600,
-    textAlign: "center",
-    color: PDF_COLORS.gray600,
-    borderRight: `1px solid ${PDF_COLORS.gray200}`,
-  },
-  tableRow: {
-    flexDirection: "row",
-    borderTop: `1px solid ${PDF_COLORS.gray200}`,
-  },
-  tableCell: {
-    flex: 1,
-    padding: 3,
-    fontSize: 9,
-    fontWeight: 700,
-    textAlign: "center",
-    borderRight: `1px solid ${PDF_COLORS.gray200}`,
-  },
-  tableCellWide: {
-    flex: 2,
-    padding: 3,
-    fontSize: 7,
-    color: PDF_COLORS.gray600,
-    textAlign: "center",
-    borderRight: `1px solid ${PDF_COLORS.gray200}`,
-  },
-  tableCellLabel: {
-    flex: 1,
-    padding: 3,
-    fontSize: 8,
-    color: PDF_COLORS.gray600,
-    textAlign: "center",
-    borderRight: `1px solid ${PDF_COLORS.gray200}`,
-  },
-  // Events Grid
-  eventsGrid: {
-    flexDirection: "row",
-    gap: 12,
-    marginBottom: 16,
-  },
-  eventsColumn: {
-    flex: 1,
-    border: `1px solid ${PDF_COLORS.gray200}`,
-    borderRadius: 6,
-    padding: 10,
-    backgroundColor: PDF_COLORS.white,
-  },
-  eventsColumnTitle: {
-    fontSize: 10,
-    fontWeight: 600,
-    color: PDF_COLORS.gray700,
-    marginBottom: 8,
-    paddingBottom: 4,
-    borderBottom: `1px solid ${PDF_COLORS.gray200}`,
-  },
-  eventItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 3,
-    minHeight: 12,
-  },
-  eventItemCompact: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 2,
-    minHeight: 10,
-  },
-  eventMinute: {
-    backgroundColor: PDF_COLORS.gray200,
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    borderRadius: 2,
-    fontSize: 7,
-    fontWeight: 600,
-    marginRight: 6,
-    minWidth: 24,
-    textAlign: "center",
-  },
-  eventType: {
-    fontSize: 8,
-    fontWeight: 600,
-    color: PDF_COLORS.gray800,
-    marginRight: 3,
-  },
-  eventPlayer: {
-    fontSize: 8,
-    color: PDF_COLORS.gray500,
-    flex: 1,
-  },
-  // Event Summary Totals
-  eventSummaryContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 4,
-    marginBottom: 10,
-    padding: 8,
-    backgroundColor: PDF_COLORS.gray100,
-    borderRadius: 4,
-  },
-  eventSummaryTitle: {
-    fontSize: 9,
-    fontWeight: 600,
-    color: PDF_COLORS.gray700,
-    marginBottom: 4,
-    width: "100%",
-  },
-  eventSummaryChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: PDF_COLORS.white,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 3,
-    border: `1px solid ${PDF_COLORS.gray200}`,
-  },
-  eventSummaryChipLabel: {
-    fontSize: 7,
-    color: PDF_COLORS.gray600,
-    marginRight: 4,
-  },
-  eventSummaryChipValue: {
-    fontSize: 8,
-    fontWeight: 700,
-    color: PDF_COLORS.gray900,
-  },
-  // Players Grid
-  playersGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
+  eventType:   { fontSize: 7, fontWeight: 700, color: D.text, marginRight: 3 },
+  eventPlayer: { fontSize: 7, color: D.textMuted, flex: 1 },
+  eventsEmpty: { fontSize: 7, color: D.g400, padding: 8, textAlign: "center" },
+
+  // ── Player card ───────────────────────────────────────────────────────────
   playerCard: {
-    width: "48%",
-    border: `1px solid ${PDF_COLORS.gray200}`,
-    borderRadius: 6,
-    padding: 10,
-    backgroundColor: PDF_COLORS.white,
+    borderRadius: 8, borderWidth: 1, borderColor: D.g200,
+    overflow: "hidden", marginBottom: 12,
   },
-  playerCardHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    marginBottom: 8,
+  pcHead: {
+    backgroundColor: D.dark2, flexDirection: "row",
+    alignItems: "center", gap: 12, paddingHorizontal: 12, paddingVertical: 10,
   },
-  playerPhoto: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: PDF_COLORS.gray200,
+  pcPhoto: { width: 40, height: 40, borderRadius: 20, backgroundColor: D.g700 },
+  pcPhotoInit: { width: 40, height: 40, borderRadius: 20, backgroundColor: D.g800, alignItems: "center", justifyContent: "center" },
+  pcPhotoInitTxt: { fontSize: 14, fontWeight: 700, color: D.g400 },
+  pcName:     { fontSize: 11, fontWeight: 700, color: D.textWhite },
+  pcPosition: { fontSize: 8, color: D.textWhiteMuted, marginTop: 2 },
+  pcRating: {
+    marginLeft: "auto", paddingHorizontal: 7, paddingVertical: 4,
+    borderRadius: 5, alignItems: "center",
   },
-  playerPhotoPlaceholder: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: PDF_COLORS.gray200,
-    alignItems: "center",
-    justifyContent: "center",
+  pcRatingTxt: { fontSize: 14, fontWeight: 700, color: D.textWhite },
+  pcRatingLbl: { fontSize: 6, color: "rgba(255,255,255,0.6)", marginTop: 1 },
+  pcBody:    { padding: 12 },
+  pcMetaRow: { flexDirection: "row", gap: 6, marginBottom: 10, flexWrap: "wrap" },
+  pcBadge: {
+    paddingHorizontal: 6, paddingVertical: 3, borderRadius: 4,
+    fontSize: 7, fontWeight: 700,
   },
-  playerPhotoInitials: {
-    fontSize: 12,
-    fontWeight: 700,
-    color: PDF_COLORS.gray500,
+  pcStatPills: { flexDirection: "row", flexWrap: "wrap", gap: 5, marginBottom: 10 },
+  pcStatPill: {
+    flexDirection: "row", alignItems: "center", gap: 3,
+    backgroundColor: D.g100, borderRadius: 4,
+    paddingHorizontal: 6, paddingVertical: 3, borderWidth: 1, borderColor: D.g200,
   },
-  playerInfo: {
-    flex: 1,
+  pcStatLbl: { fontSize: 6, color: D.textMuted },
+  pcStatVal: { fontSize: 8, fontWeight: 700, color: D.text },
+  pcScoutText: { fontSize: 6, color: D.g600, lineHeight: 1.4, marginBottom: 8 },
+  pcSWRow: { flexDirection: "row", gap: 10 },
+  pcSWCol: { flex: 1, borderRadius: 4, padding: 6 },
+  pcSWTitle: { fontSize: 6, fontWeight: 700, marginBottom: 3 },
+  pcSWItem: { fontSize: 5.5, color: D.g600, marginBottom: 2, paddingLeft: 4 },
+
+  // ── Summary chips ─────────────────────────────────────────────────────────
+  summaryBox: {
+    flexDirection: "row", flexWrap: "wrap", gap: 4,
+    marginBottom: 12, padding: 8,
+    backgroundColor: D.g50, borderRadius: 6,
+    borderWidth: 1, borderColor: D.g200,
   },
-  playerName: {
-    fontSize: 10,
-    fontWeight: 600,
-    color: PDF_COLORS.gray900,
+  summaryTitle: { fontSize: 7, fontWeight: 700, color: D.text, width: "100%", marginBottom: 3 },
+  summaryChip: {
+    flexDirection: "row", alignItems: "center",
+    backgroundColor: D.pageBg, paddingHorizontal: 5, paddingVertical: 2,
+    borderRadius: 3, borderWidth: 1, borderColor: D.g200,
   },
-  playerPosition: {
-    fontSize: 8,
-    color: PDF_COLORS.gray500,
-    marginTop: 2,
-  },
-  playerMeta: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 6,
-  },
-  playerBadgeStarter: {
-    backgroundColor: "#DCFCE7", // green-100
-    paddingHorizontal: 5,
-    paddingVertical: 2,
-    borderRadius: 3,
-    fontSize: 7,
-    fontWeight: 600,
-    color: "#166534", // green-800
-  },
-  playerBadgeSub: {
-    backgroundColor: "#DBEAFE", // blue-100
-    paddingHorizontal: 5,
-    paddingVertical: 2,
-    borderRadius: 3,
-    fontSize: 7,
-    fontWeight: 600,
-    color: "#1E40AF", // blue-800
-  },
-  playerMinutes: {
-    backgroundColor: PDF_COLORS.gray100,
-    paddingHorizontal: 5,
-    paddingVertical: 2,
-    borderRadius: 3,
-    fontSize: 7,
-    color: PDF_COLORS.gray600,
-  },
-  playerStats: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-  },
-  playerStatBadge: {
-    backgroundColor: PDF_COLORS.gray100,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 4,
-    fontSize: 8,
-    color: PDF_COLORS.gray700,
-  },
-  noStats: {
-    fontSize: 8,
-    color: PDF_COLORS.gray300,
-  },
-  // Distribution summary
-  distributionRow: {
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 8,
-  },
-  distributionCard: {
-    flex: 1,
-    backgroundColor: PDF_COLORS.gray100,
-    borderRadius: 3,
-    padding: 6,
-    alignItems: "center",
-  },
-  distributionCardHighlight: {
-    flex: 1,
-    backgroundColor: "#FEF3C7", // amber-100
-    borderRadius: 3,
-    padding: 6,
-    alignItems: "center",
-  },
-  distributionValue: {
-    fontSize: 14,
-    fontWeight: 700,
-    color: PDF_COLORS.gray900,
-  },
-  distributionLabel: {
-    fontSize: 6,
-    color: PDF_COLORS.gray500,
-    marginTop: 2,
-  },
-  // Heatmap
-  heatmapContainer: {
-    marginBottom: 14,
-    border: `1px solid ${PDF_COLORS.gray200}`,
-    borderRadius: 6,
-    padding: 10,
-  },
-  heatmapLegend: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 10,
-    paddingBottom: 8,
-    borderBottom: `1px solid ${PDF_COLORS.gray200}`,
-  },
-  heatmapLegendLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  heatmapLegendBox: {
-    width: 12,
-    height: 12,
-    borderRadius: 2,
-  },
-  heatmapLegendText: {
-    fontSize: 7,
-    color: PDF_COLORS.gray500,
-  },
-  heatmapHeader: {
-    flexDirection: "row",
-    marginBottom: 6,
-  },
-  heatmapPlayerCol: {
-    width: 100,
-  },
-  heatmapCellsHeader: {
-    flex: 1,
-    flexDirection: "row",
-  },
-  heatmapTimeLabel: {
-    flex: 1,
-    fontSize: 7,
-    textAlign: "center",
-    color: PDF_COLORS.gray400,
-  },
-  heatmapTotalCol: {
-    width: 32,
-    fontSize: 7,
-    textAlign: "center",
-    color: PDF_COLORS.gray500,
-    fontWeight: 600,
-  },
-  heatmapRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 3,
-  },
-  heatmapPlayerInfo: {
-    width: 100,
-    paddingRight: 8,
-  },
-  heatmapPlayerName: {
-    fontSize: 8,
-    fontWeight: 600,
-    color: PDF_COLORS.gray900,
-  },
-  heatmapPlayerPosition: {
-    fontSize: 6,
-    color: PDF_COLORS.gray400,
-  },
-  heatmapCells: {
-    flex: 1,
-    flexDirection: "row",
-    gap: 2,
-  },
-  heatmapCell: {
-    flex: 1,
-    height: 14,
-    borderRadius: 2,
-  },
-  heatmapTotal: {
-    width: 32,
-    fontSize: 9,
-    fontWeight: 600,
-    textAlign: "center",
-    color: PDF_COLORS.gray700,
-  },
-  // Footer
+  summaryChipLbl: { fontSize: 6, color: D.textMuted, marginRight: 3 },
+  summaryChipVal: { fontSize: 7, fontWeight: 700, color: D.text },
+
+  // ── Footer ────────────────────────────────────────────────────────────────
   footer: {
-    position: "absolute",
-    bottom: 20,
-    left: 32,
-    right: 32,
-    textAlign: "center",
-    fontSize: 7,
-    color: PDF_COLORS.gray400,
-    borderTop: `1px solid ${PDF_COLORS.gray200}`,
-    paddingTop: 8,
+    position: "absolute", bottom: 16, left: 28, right: 28,
+    flexDirection: "row", justifyContent: "space-between",
+    borderTopWidth: 1, borderColor: D.g200, paddingTop: 6,
   },
-  pageNumber: {
-    position: "absolute",
-    bottom: 20,
-    right: 32,
-    fontSize: 7,
-    color: PDF_COLORS.gray400,
-  },
+  footerTxt: { fontSize: 6, color: D.g400 },
 });
 
+// ── Props ─────────────────────────────────────────────────────────────────────
 interface MatchSummaryVectorPdfProps {
   match: Match;
   matchPlayers: MatchPlayer[];
@@ -670,13 +261,9 @@ interface MatchSummaryVectorPdfProps {
   playerStatsMap?: Record<string, MatchPlayerStats>;
   teamName: string;
   logoUrl?: string;
-  selectedPlayerIds?: string[]; // Filter for specific players
-  /** Pre-converted player photos as base64 data URLs (player_id -> base64) */
+  selectedPlayerIds?: string[];
   playerPhotoBase64?: Record<string, string>;
 }
-
-// Heatmap interval size in minutes
-const HEATMAP_INTERVAL = 5;
 
 export function MatchSummaryVectorPdf({
   match,
@@ -689,1147 +276,550 @@ export function MatchSummaryVectorPdf({
   selectedPlayerIds,
   playerPhotoBase64 = {},
 }: MatchSummaryVectorPdfProps) {
-  // Determine match duration
   const matchDuration = match.duration_minutes || 90;
-  
-  // Filter players if selectedPlayerIds is provided
-  const filteredPlayers = selectedPlayerIds && selectedPlayerIds.length > 0
+
+  const filteredPlayers = selectedPlayerIds?.length
     ? matchPlayers.filter((mp) => selectedPlayerIds.includes(mp.player_id))
     : matchPlayers;
 
-  // Filter events for selected players
-  const filteredEvents = selectedPlayerIds && selectedPlayerIds.length > 0
+  const filteredEvents = selectedPlayerIds?.length
     ? matchEvents.filter((e) => selectedPlayerIds.includes(e.player_id))
     : matchEvents;
 
-  // Calculate stats by half using the same logic as HalfStatsComparison
+  // ── Data helpers ───────────────────────────────────────────────────────────
   const getHalfStats = () => {
-    const eventCounts: EventCountsMap = {};
-    
-    filteredEvents.forEach((event) => {
-      if (event.event_status === "voided" || !event.count_in_stats) return;
-      
-      const half = event.half === 2 ? "second" : "first";
-      const eventType = event.event_type as MatchEventType;
-      
-      if (!eventCounts[eventType]) {
-        eventCounts[eventType] = { first: 0, second: 0 };
-      }
-      eventCounts[eventType]![half] += event.value || 1;
+    const ec: EventCountsMap = {};
+    let subF = 0, subS = 0;
+    filteredEvents.forEach((e) => {
+      if (e.event_status === "voided" || !e.count_in_stats) return;
+      const half = e.half === 2 ? "second" : "first";
+      const t = e.event_type as MatchEventType;
+      if (!ec[t]) ec[t] = { first: 0, second: 0 };
+      ec[t]![half] += e.value || 1;
     });
-
-    // Count substitutions
-    let subsFirstHalf = 0;
-    let subsSecondHalf = 0;
-    filteredEvents.forEach((event) => {
-      if (event.event_type === "player_on" && event.event_status !== "voided") {
-        if (event.half === 2 || event.period === 2) {
-          subsSecondHalf++;
-        } else {
-          subsFirstHalf++;
-        }
+    filteredEvents.forEach((e) => {
+      if (e.event_type === "player_on" && e.event_status !== "voided") {
+        (e.half === 2 || e.period === 2) ? subS++ : subF++;
       }
     });
-
-    // Build stats rows
-    interface StatsRow {
-      id: string;
-      label: string;
-      icon: string;
-      first: number;
-      second: number;
-      total: number;
-      order: number;
-    }
-    
-    const rows: StatsRow[] = [];
-    
-    // Add direct event type rows
-    SUMMARY_EVENT_TYPES.forEach((type) => {
-      const counts = eventCounts[type];
-      if (!counts) return;
-      
-      const total = counts.first + counts.second;
-      if (total > 0) {
-        const config = EVENT_TYPE_CONFIG[type];
-        rows.push({
-          id: type,
-          label: config.label,
-          icon: config.icon,
-          first: counts.first,
-          second: counts.second,
-          total,
-          order: config.order,
-        });
-      }
+    const rows: Array<{ id: string; label: string; first: number; second: number; total: number; order: number }> = [];
+    SUMMARY_EVENT_TYPES.forEach((t) => {
+      const c = ec[t]; if (!c) return;
+      const total = c.first + c.second; if (!total) return;
+      const cfg = EVENT_TYPE_CONFIG[t];
+      rows.push({ id: t, label: cfg.label, first: c.first, second: c.second, total, order: cfg.order });
     });
-
-    // Add computed stats
-    COMPUTED_STATS.forEach((computedStat) => {
-      const computed = computedStat.compute(eventCounts);
-      const total = computed.first + computed.second;
-      if (total > 0) {
-        rows.push({
-          id: computedStat.id,
-          label: computedStat.label,
-          icon: computedStat.icon,
-          first: computed.first,
-          second: computed.second,
-          total,
-          order: computedStat.order,
-        });
-      }
+    COMPUTED_STATS.forEach((cs) => {
+      const c = cs.compute(ec);
+      const total = c.first + c.second; if (!total) return;
+      rows.push({ id: cs.id, label: cs.label, first: c.first, second: c.second, total, order: cs.order });
     });
-
-    // Sort by order
     rows.sort((a, b) => a.order - b.order);
-
     return {
       rows,
-      substitutions: { first: subsFirstHalf, second: subsSecondHalf },
-      totals: {
-        goals: (eventCounts.goal?.first || 0) + (eventCounts.goal?.second || 0),
-        assists: (eventCounts.assist?.first || 0) + (eventCounts.assist?.second || 0),
-      }
+      subs: { first: subF, second: subS },
+      goals: (ec.goal?.first ?? 0) + (ec.goal?.second ?? 0),
+      assists: (ec.assist?.first ?? 0) + (ec.assist?.second ?? 0),
     };
   };
 
-  // Calculate event distribution summary
-  const getDistributionStats = () => {
-    const validEvents = filteredEvents.filter(
-      (e) => e.event_status !== "voided" && e.count_in_stats !== false
-    );
-    const firstHalfEvents = validEvents.filter((e) => e.half === 1).length;
-    const secondHalfEvents = validEvents.filter((e) => e.half === 2).length;
-    
-    // Find peak minute
-    const minuteCounts: Record<number, number> = {};
-    validEvents.forEach((event) => {
-      let eventMinute: number | null = event.minute;
-      if (eventMinute === null && event.game_time_seconds !== null) {
-        eventMinute = Math.floor(event.game_time_seconds / 60);
-      }
-      if (eventMinute !== null && eventMinute >= 0) {
-        minuteCounts[eventMinute] = (minuteCounts[eventMinute] || 0) + 1;
-      }
+  const getDistStats = () => {
+    const valid = filteredEvents.filter((e) => e.event_status !== "voided" && e.count_in_stats !== false);
+    const f1 = valid.filter((e) => e.half === 1).length;
+    const f2 = valid.filter((e) => e.half === 2).length;
+    const mins: Record<number, number> = {};
+    valid.forEach((e) => {
+      const m = e.minute ?? (e.game_time_seconds != null ? Math.floor(e.game_time_seconds / 60) : null);
+      if (m != null && m >= 0) mins[m] = (mins[m] ?? 0) + 1;
     });
-
-    let peakMinute = 0;
-    let peakCount = 0;
-    Object.entries(minuteCounts).forEach(([min, count]) => {
-      if (count > peakCount) {
-        peakCount = count;
-        peakMinute = parseInt(min);
-      }
-    });
-
-    return {
-      firstHalf: firstHalfEvents,
-      secondHalf: secondHalfEvents,
-      peakMinute,
-      peakCount,
-      total: validEvents.length,
-    };
+    let peakMin = 0, peakCnt = 0;
+    Object.entries(mins).forEach(([m, c]) => { if (c > peakCnt) { peakCnt = c; peakMin = +m; } });
+    return { f1, f2, peakMin, peakCnt, total: valid.length };
   };
 
-  // Calculate chart data for distribution graph (events per minute + smoothed)
   const getChartData = () => {
-    const validEvents = filteredEvents.filter(
-      (e) => e.event_status !== "voided" && e.count_in_stats !== false
-    );
-    
-    // Create array with all minutes (0 to matchDuration)
+    const valid = filteredEvents.filter((e) => e.event_status !== "voided" && e.count_in_stats !== false);
     const data: Array<{ minute: number; total: number; smoothed: number; goals: number }> = [];
-    for (let i = 0; i <= matchDuration; i++) {
-      data.push({ minute: i, total: 0, smoothed: 0, goals: 0 });
-    }
-
-    // Count events per minute
-    validEvents.forEach((event) => {
-      let eventMinute: number | null = event.minute;
-      if (eventMinute === null && event.game_time_seconds !== null) {
-        eventMinute = Math.floor(event.game_time_seconds / 60);
-      }
-      if (eventMinute === null || eventMinute < 0 || eventMinute > matchDuration + 15) return;
-      
-      const idx = Math.min(Math.floor(eventMinute), data.length - 1);
-      if (idx >= 0 && idx < data.length) {
-        data[idx].total++;
-        if (event.event_type === "goal") data[idx].goals++;
-      }
+    for (let i = 0; i <= matchDuration; i++) data.push({ minute: i, total: 0, smoothed: 0, goals: 0 });
+    valid.forEach((e) => {
+      let m = e.minute ?? (e.game_time_seconds != null ? Math.floor(e.game_time_seconds / 60) : null);
+      if (m == null || m < 0 || m > matchDuration + 15) return;
+      const idx = Math.min(Math.floor(m), data.length - 1);
+      data[idx].total++;
+      if (e.event_type === "goal") data[idx].goals++;
     });
-
-    // Apply 5-minute moving average for smoothed line
-    const smoothedData = data.map((point, idx) => {
-      const windowSize = 5;
-      const start = Math.max(0, idx - Math.floor(windowSize / 2));
-      const end = Math.min(data.length - 1, idx + Math.floor(windowSize / 2));
-      
-      let sum = 0;
-      let count = 0;
-      for (let i = start; i <= end; i++) {
-        sum += data[i].total;
-        count++;
-      }
-      
-      return {
-        ...point,
-        smoothed: count > 0 ? Number((sum / count).toFixed(2)) : 0,
-      };
+    const smoothed = data.map((p, i) => {
+      const w = 5, start = Math.max(0, i - 2), end = Math.min(data.length - 1, i + 2);
+      let sum = 0, cnt = 0;
+      for (let j = start; j <= end; j++) { sum += data[j].total; cnt++; }
+      return { ...p, smoothed: cnt > 0 ? +(sum / cnt).toFixed(2) : 0 };
     });
-
-    // Find max for Y scaling
-    const maxEvents = Math.max(...smoothedData.map(d => Math.max(d.total, d.smoothed)), 1);
-    
-    // Get goal minutes for markers
-    const goalMinutes = smoothedData.filter(d => d.goals > 0).map(d => d.minute);
-
-    return { data: smoothedData, maxEvents, goalMinutes };
+    const maxEv = Math.max(...smoothed.map((d) => Math.max(d.total, d.smoothed)), 1);
+    const goalMinutes = smoothed.filter((d) => d.goals > 0).map((d) => d.minute);
+    return { data: smoothed, maxEv, goalMinutes };
   };
 
-  // Calculate heatmap data
-  const getHeatmapData = () => {
-    const intervals = Math.ceil(matchDuration / HEATMAP_INTERVAL);
-    const EXCLUDED_EVENT_TYPES = ["player_on", "player_off", "substitution"];
-    
-    const activePlayers = filteredPlayers.filter(
-      (mp) => mp.player && !mp.is_removed
-    );
-
-    const playerData = activePlayers.map((mp) => {
-      const playerEvents = filteredEvents.filter((e) => {
-        if (e.player_id !== mp.player_id) return false;
-        if (e.event_status === "voided") return false;
-        if (e.count_in_stats === false) return false;
-        if (EXCLUDED_EVENT_TYPES.includes(e.event_type)) return false;
-        return e.game_time_seconds !== null || e.minute !== null;
-      });
-
-      const intervalCounts: number[] = [];
-      for (let i = 0; i < intervals; i++) {
-        const start = i * HEATMAP_INTERVAL;
-        const end = (i + 1) * HEATMAP_INTERVAL;
-        
-        const count = playerEvents.filter((e) => {
-          const eventMinute = e.game_time_seconds !== null 
-            ? Math.floor(e.game_time_seconds / 60) 
-            : e.minute;
-          if (eventMinute === null) return false;
-          return eventMinute >= start && eventMinute < end;
-        }).length;
-        
-        intervalCounts.push(count);
-      }
-
-      return {
-        player: mp,
-        intervalCounts,
-        totalEvents: playerEvents.length,
-      };
-    });
-
-    // Sort by total events
-    playerData.sort((a, b) => b.totalEvents - a.totalEvents);
-
-    // Find global max for color scaling
-    const globalMax = Math.max(...playerData.flatMap((p) => p.intervalCounts), 1);
-
-    return { playerData, intervals, globalMax };
-  };
-
-  // Group events by half - ONLY include active (non-voided) events
   const getEventsByHalf = () => {
-    const first: MatchEvent[] = [];
-    const second: MatchEvent[] = [];
-
-    filteredEvents.forEach((event) => {
-      // CRITICAL: Skip voided events - they should NOT appear in event lists
-      if (event.event_status === "voided" || event.count_in_stats === false) return;
-      
-      if (event.half === 2) {
-        second.push(event);
-      } else {
-        first.push(event);
-      }
+    const f: MatchEvent[] = [], s: MatchEvent[] = [];
+    filteredEvents.forEach((e) => {
+      if (e.event_status === "voided" || e.count_in_stats === false) return;
+      (e.half === 2 ? s : f).push(e);
     });
-
-    const sortByMinute = (a: MatchEvent, b: MatchEvent) => (a.minute ?? 0) - (b.minute ?? 0);
-    
-    return {
-      firstHalf: first.sort(sortByMinute),
-      secondHalf: second.sort(sortByMinute),
-    };
+    const sort = (arr: MatchEvent[]) => arr.sort((a, b) => (a.minute ?? 0) - (b.minute ?? 0));
+    return { first: sort(f), second: sort(s) };
   };
 
-  const getPlayerName = (playerId: string) => {
-    const mp = matchPlayers.find((p) => p.player_id === playerId);
-    return mp?.player?.full_name || "Jogador";
-  };
+  const playerName = (id: string) => matchPlayers.find((p) => p.player_id === id)?.player?.full_name ?? "Jogador";
 
-  const getHeatmapColor = (count: number, globalMax: number): string => {
-    if (count === 0) return HEATMAP_COLORS.noEvents;
-    const intensity = count / globalMax;
-    if (intensity >= 0.8) return HEATMAP_COLORS.veryHigh;
-    if (intensity >= 0.6) return HEATMAP_COLORS.high;
-    if (intensity >= 0.4) return HEATMAP_COLORS.medium;
-    return HEATMAP_COLORS.low;
-  };
+  // ── Derived data ───────────────────────────────────────────────────────────
+  const halfStats  = getHalfStats();
+  const distStats  = getDistStats();
+  const chartData  = getChartData();
+  const evsByHalf  = getEventsByHalf();
 
-  const halfStats = getHalfStats();
-  const distributionStats = getDistributionStats();
-  const chartData = getChartData();
-  const heatmapData = getHeatmapData();
-  const eventsByHalf = getEventsByHalf();
-  const competitionName = match.competition?.display_name || match.competition?.name || "Competição";
-  const displayTeamName = match.team_name_display || teamName || "Time";
-  const halfTimeMinute = Math.floor(matchDuration / 2);
-
-  // Chart dimensions for SVG - compact to fit on page 1
-  const CHART_WIDTH = 500;
-  const CHART_HEIGHT = 80; // Reduced from 100 for better page fit
-  const CHART_PADDING = { top: 8, right: 10, bottom: 16, left: 25 };
-  const plotWidth = CHART_WIDTH - CHART_PADDING.left - CHART_PADDING.right;
-  const plotHeight = CHART_HEIGHT - CHART_PADDING.top - CHART_PADDING.bottom;
-
-  // Generate SVG path for smoothed line
-  const generateSmoothedPath = () => {
-    if (chartData.data.length === 0) return "";
-    const xScale = plotWidth / matchDuration;
-    const yScale = plotHeight / chartData.maxEvents;
-    
-    const points = chartData.data.map((d, i) => {
-      const x = CHART_PADDING.left + (d.minute * xScale);
-      const y = CHART_PADDING.top + plotHeight - (d.smoothed * yScale);
-      return `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
-    });
-    
-    return points.join(' ');
-  };
-
-  // Generate closed area path for gradient fill (smoothed line + baseline)
-  const generateAreaPath = () => {
-    if (chartData.data.length === 0) return "";
-    const xScale = plotWidth / matchDuration;
-    const yScale = plotHeight / chartData.maxEvents;
-    const baseline = CHART_PADDING.top + plotHeight;
-    
-    // Start at bottom-left
-    let path = `M ${CHART_PADDING.left} ${baseline}`;
-    
-    // Line up to first point then follow the curve
-    chartData.data.forEach((d) => {
-      const x = CHART_PADDING.left + (d.minute * xScale);
-      const y = CHART_PADDING.top + plotHeight - (d.smoothed * yScale);
-      path += ` L ${x.toFixed(1)} ${y.toFixed(1)}`;
-    });
-    
-    // Close path back to baseline
-    const lastX = CHART_PADDING.left + plotWidth;
-    path += ` L ${lastX} ${baseline} Z`;
-    
-    return path;
-  };
-
-  // Generate dots for raw events
-  const generateEventDots = () => {
-    const xScale = plotWidth / matchDuration;
-    const yScale = plotHeight / chartData.maxEvents;
-    
-    return chartData.data
-      .filter(d => d.total > 0)
-      .map(d => ({
-        cx: CHART_PADDING.left + (d.minute * xScale),
-        cy: CHART_PADDING.top + plotHeight - (d.total * yScale),
-        minute: d.minute,
-      }));
-  };
-
-  // Generate time labels for heatmap
-  const timeLabels: string[] = [];
-  for (let i = 0; i < heatmapData.intervals; i++) {
-    if (i % 3 === 0) {
-      timeLabels.push(`${i * HEATMAP_INTERVAL}'`);
-    } else {
-      timeLabels.push("");
-    }
-  }
-
-  // Determine if filtered
-  const isFiltered = selectedPlayerIds && selectedPlayerIds.length > 0;
-  const filterPlayerNames = isFiltered 
-    ? filteredPlayers.map(mp => mp.player?.full_name).filter(Boolean).join(", ")
+  const competition = match.competition?.display_name || match.competition?.name || "Competição";
+  const displayTeam = match.team_name_display || teamName || "Time";
+  const halfMin     = Math.floor(matchDuration / 2);
+  const isFiltered  = !!(selectedPlayerIds?.length);
+  const filterNames = isFiltered
+    ? filteredPlayers.map((mp) => mp.player?.full_name).filter(Boolean).join(", ")
     : null;
+  const now = format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
 
-  return (
-    <Document>
-      {/* Page 1: Header, Stats, Distribution */}
-      <Page size="A4" style={styles.page}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            {logoUrl && (
-              <Image src={logoUrl} style={styles.logo} />
-            )}
-            <View>
-              <Text style={styles.headerTitle}>Resumo do Jogo</Text>
-              <Text style={styles.headerSubtitle}>{competitionName}</Text>
-            </View>
+  // SVG chart helpers
+  const CW = 500, CH = 80;
+  const CP = { t: 8, r: 8, b: 16, l: 22 };
+  const PW = CW - CP.l - CP.r, PH = CH - CP.t - CP.b;
+  const xS = PW / matchDuration;
+  const yS = PH / chartData.maxEv;
+
+  const areaPath = (() => {
+    if (!chartData.data.length) return "";
+    const bl = CP.t + PH;
+    let p = `M ${CP.l} ${bl}`;
+    chartData.data.forEach((d) => {
+      p += ` L ${(CP.l + d.minute * xS).toFixed(1)} ${(CP.t + PH - d.smoothed * yS).toFixed(1)}`;
+    });
+    return p + ` L ${CP.l + PW} ${bl} Z`;
+  })();
+
+  const linePath = chartData.data.map((d, i) =>
+    `${i === 0 ? "M" : "L"} ${(CP.l + d.minute * xS).toFixed(1)} ${(CP.t + PH - d.smoothed * yS).toFixed(1)}`
+  ).join(" ");
+
+  const dots = chartData.data.filter((d) => d.total > 0).map((d) => ({
+    cx: CP.l + d.minute * xS,
+    cy: CP.t + PH - d.total * yS,
+  }));
+
+  // ── Render helpers ─────────────────────────────────────────────────────────
+  const PageHeader = ({ compact }: { compact?: boolean }) => (
+    <>
+      <View style={s.headerBand}>
+        <View style={s.headerLeft}>
+          {logoUrl && <Image src={logoUrl} style={compact ? s.logoSm : s.logo} />}
+          <View>
+            <Text style={compact ? s.h1Sm : s.h1}>Resumo do Jogo</Text>
+            <Text style={s.sub}>{compact ? `${displayTeam} vs ${match.opponent_name}` : competition}</Text>
           </View>
-          <View style={styles.headerRight}>
-            <Text style={styles.matchTitle}>{displayTeamName} vs {match.opponent_name}</Text>
-            <Text style={styles.matchDate}>
+        </View>
+        {!compact && (
+          <View style={s.headerRight}>
+            <Text style={s.matchTitle}>{displayTeam} vs {match.opponent_name}</Text>
+            <Text style={s.matchMeta}>
               {format(new Date(match.match_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-              {match.match_start_time && ` • ${format(new Date(match.match_start_time), "HH:mm")}`}
+              {match.match_start_time && ` · ${format(new Date(match.match_start_time), "HH:mm")}`}
             </Text>
-            {match.venue && (
-              <Text style={styles.matchVenue}>{match.venue}</Text>
-            )}
-            {filterPlayerNames && (
-              <Text style={styles.playerFilter}>Jogador: {filterPlayerNames}</Text>
-            )}
+            {match.venue && <Text style={s.matchMeta}>{match.venue}</Text>}
+            {filterNames && <Text style={s.playerTag}>Jogador: {filterNames}</Text>}
           </View>
+        )}
+      </View>
+      <View style={s.redLine} />
+    </>
+  );
+
+  const Footer = ({ page }: { page: number }) => (
+    <View style={s.footer} fixed>
+      <Text style={s.footerTxt}>Gerado por M3 Scouting · {now}</Text>
+      <Text style={s.footerTxt}>{page}</Text>
+    </View>
+  );
+
+  const renderPlayerCard = (mp: MatchPlayer) => {
+    if (!mp.player) return null;
+    const stats = playerStatsMap[mp.player_id];
+    const minutesInfo = calculateMinutesPlayed({
+      started: mp.started,
+      entered_minute: mp.entered_minute,
+      exited_minute: mp.exited_minute,
+      minutes_played: null,
+    });
+    const mins = minutesInfo.minutesPlayed;
+    const initials = mp.player.full_name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
+
+    // Rating
+    const ratingVal = stats?.rating ?? null;
+    const ratingBg = ratingVal == null ? D.g600
+      : ratingVal < 6   ? "#EF4444"
+      : ratingVal < 6.5 ? "#F97316"
+      : ratingVal < 7   ? "#F59E0B"
+      : ratingVal < 8   ? "#22C55E"
+      : ratingVal < 9   ? "#06B6D4"
+                        : "#3B82F6";
+
+    // Analysis
+    const ballActions = stats ? calculateBallActionsFromMatchStats(stats) : 0;
+    const counts = playerEventCounts[mp.player_id] ?? {};
+    const statEntries = Object.entries(counts)
+      .filter(([, v]) => (v ?? 0) > 0)
+      .sort(([, a], [, b]) => (b ?? 0) - (a ?? 0))
+      .slice(0, 6);
+
+    let profileEl: JSX.Element | null = null;
+    let effEl: JSX.Element | null = null;
+    let scoutEl: JSX.Element | null = null;
+    let swEl: JSX.Element | null = null;
+
+    if (mins >= 10 && stats) {
+      const normalized = normalizeMatchStats(stats, {
+        started: mp.started,
+        entered_minute: mp.entered_minute ?? null,
+        exited_minute: mp.exited_minute ?? null,
+        minutes_played: mp.minutes_played,
+      });
+      const statsInput: MatchStatsInput = {
+        goals: normalized.goals ?? 0, assists: normalized.assists ?? 0,
+        shots: normalized.shots_total, shots_on_target: normalized.shots_on_target ?? 0,
+        shots_blocked: normalized.shots_blocked ?? 0, key_passes: normalized.key_passes ?? 0,
+        chances_created: normalized.chances_created ?? 0, passes_completed: normalized.passes_completed ?? 0,
+        passes_total: normalized.passes_total_derived, dribbles_success: normalized.dribbles_success ?? 0,
+        dribbles_total: normalized.dribbles_total_derived, tackles: normalized.tackles ?? 0,
+        interceptions: normalized.interceptions ?? 0, clearances: normalized.clearances ?? 0,
+        recoveries: normalized.recoveries ?? 0, duels_won: normalized.duels_won ?? 0,
+        duels_total: normalized.duels_total_derived, aerial_duels_won: normalized.aerial_duels_won ?? 0,
+        aerial_duels_total: normalized.aerial_duels_total_derived, fouls_committed: normalized.fouls_committed ?? 0,
+        fouls_suffered: normalized.fouls_suffered ?? 0, yellow_cards: normalized.yellow_cards ?? 0,
+        red_cards: normalized.red_cards ?? 0, possession_lost: normalized.possession_lost ?? 0,
+        saves: normalized.saves ?? 0, goals_conceded: normalized.goals_conceded ?? 0,
+        blocked_shots: normalized.blocked_shots ?? 0, was_dribbled: normalized.was_dribbled ?? 0,
+        ball_actions: ballActions, crosses_success: normalized.crosses_success ?? 0,
+        crosses_failed: normalized.crosses_failed ?? 0, offsides: normalized.offsides ?? 0,
+      };
+
+      const profile = classifyMatchProfile(matchPlayerStatsToInput(stats), mins);
+      const eff = calculateMatchEfficiency(matchPlayerStatsToInput(stats), mins);
+      const pc = PROFILE_COLOR[profile.primary.key];
+      const ec = D[`eff${eff.level.charAt(0).toUpperCase() + eff.level.slice(1)}` as "effHigh" | "effMedium" | "effLow"] ?? D.effNone;
+      const scout = generateScoutingText(mp.player.position, profile.primary.key, eff.level, false);
+      const analysis = generatePostGameAnalysis(mp.player.position, statsInput, mins);
+
+      profileEl = (
+        <View style={{ ...s.pcBadge, backgroundColor: pc.bg }}>
+          <Text style={{ fontSize: 6, fontWeight: 700, color: pc.text }}>{profile.primary.label}</Text>
         </View>
-
-        {/* Global Stats */}
-        <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{filteredPlayers.length}</Text>
-            <Text style={styles.statLabel}>Jogadores</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{filteredEvents.length}</Text>
-            <Text style={styles.statLabel}>Eventos</Text>
-          </View>
-          <View style={styles.statCardGreen}>
-            <Text style={styles.statValueGreen}>{halfStats.totals.goals}</Text>
-            <Text style={styles.statLabel}>Gols</Text>
-          </View>
-          <View style={styles.statCardBlue}>
-            <Text style={styles.statValueBlue}>{halfStats.totals.assists}</Text>
-            <Text style={styles.statLabel}>Assistências</Text>
-          </View>
+      );
+      effEl = (
+        <View style={{ ...s.pcBadge, backgroundColor: ec.bg }}>
+          <Text style={{ fontSize: 6, fontWeight: 700, color: ec.text }}>Efic: {eff.level === "high" ? "Alta" : eff.level === "medium" ? "Média" : "Baixa"}</Text>
         </View>
-
-        {/* Stats by Half - Complete Table (wrap allowed - can break across pages) */}
-        <Text style={styles.sectionTitle}>Estatísticas por Tempo</Text>
-        <View style={styles.table}>
-          <View style={styles.tableHeaderRow}>
-            <Text style={styles.tableHeaderCell}>1º TEMPO</Text>
-            <Text style={styles.tableHeaderCellWide}>Estatística</Text>
-            <Text style={styles.tableHeaderCell}>2º TEMPO</Text>
-            <Text style={styles.tableHeaderCell}>TOTAL</Text>
-          </View>
-          {halfStats.rows.map((row) => (
-            <View key={row.id} style={styles.tableRow} wrap={false}>
-              <Text style={styles.tableCell}>{row.first}</Text>
-              <Text style={styles.tableCellWide}>{row.label}</Text>
-              <Text style={styles.tableCell}>{row.second}</Text>
-              <Text style={styles.tableCell}>{row.total}</Text>
-            </View>
-          ))}
-          {(halfStats.substitutions.first > 0 || halfStats.substitutions.second > 0) && (
-            <View style={styles.tableRow} wrap={false}>
-              <Text style={styles.tableCell}>{halfStats.substitutions.first}</Text>
-              <Text style={styles.tableCellWide}>Substituições</Text>
-              <Text style={styles.tableCell}>{halfStats.substitutions.second}</Text>
-              <Text style={styles.tableCell}>{halfStats.substitutions.first + halfStats.substitutions.second}</Text>
-            </View>
-          )}
-        </View>
-
-        {/* Distribution Chart Section - Compact block that stays together */}
-        {/* wrap={false} ensures title+cards+chart never split across pages */}
-        <View wrap={false} style={{ marginTop: 8 }}>
-          <Text style={{ ...styles.sectionTitle, marginBottom: 4 }}>Distribuição de Eventos</Text>
-          <Text style={{ ...styles.sectionSubtitle, marginBottom: 6 }}>Intensidade do jogo ao longo do tempo</Text>
-          
-          {/* Distribution Summary Cards - Compact */}
-          <View style={{ ...styles.distributionRow, marginBottom: 6 }}>
-            <View style={styles.distributionCard}>
-              <Text style={styles.distributionValue}>{distributionStats.firstHalf}</Text>
-              <Text style={styles.distributionLabel}>1º TEMPO</Text>
-            </View>
-            <View style={styles.distributionCard}>
-              <Text style={styles.distributionValue}>{distributionStats.secondHalf}</Text>
-              <Text style={styles.distributionLabel}>2º TEMPO</Text>
-            </View>
-            <View style={styles.distributionCardHighlight}>
-              <Text style={styles.distributionValue}>{distributionStats.peakMinute}'</Text>
-              <Text style={styles.distributionLabel}>PICO ({distributionStats.peakCount} eventos)</Text>
-            </View>
-            <View style={styles.distributionCard}>
-              <Text style={styles.distributionValue}>{distributionStats.total}</Text>
-              <Text style={styles.distributionLabel}>TOTAL</Text>
-            </View>
-          </View>
-
-          {/* SVG Chart - Compact container */}
-          <View style={{ border: `1px solid ${PDF_COLORS.gray200}`, borderRadius: 4, padding: 6, backgroundColor: PDF_COLORS.white }}>
-            <Svg width={CHART_WIDTH} height={CHART_HEIGHT} viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}>
-              {/* Grid lines (horizontal) */}
-              {[0, 0.25, 0.5, 0.75, 1].map((ratio, idx) => (
-                <SvgLine
-                  key={`grid-h-${idx}`}
-                  x1={CHART_PADDING.left}
-                  y1={CHART_PADDING.top + plotHeight * (1 - ratio)}
-                  x2={CHART_WIDTH - CHART_PADDING.right}
-                  y2={CHART_PADDING.top + plotHeight * (1 - ratio)}
-                  stroke={PDF_COLORS.gray200}
-                  strokeWidth={0.5}
-                  strokeDasharray="2,2"
-                />
-              ))}
-
-              {/* Gradient definition */}
-              <Defs>
-                <LinearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-                  <Stop offset="0%" stopColor={PDF_COLORS.brandRed} stopOpacity={0.3} />
-                  <Stop offset="100%" stopColor={PDF_COLORS.brandRed} stopOpacity={0.02} />
-                </LinearGradient>
-              </Defs>
-
-              {/* Area fill under smoothed line */}
-              <Path
-                d={generateAreaPath()}
-                fill="url(#areaGradient)"
-                stroke="none"
-              />
-
-              {/* Half-time vertical line */}
-              <SvgLine
-                x1={CHART_PADDING.left + (halfTimeMinute / matchDuration) * plotWidth}
-                y1={CHART_PADDING.top}
-                x2={CHART_PADDING.left + (halfTimeMinute / matchDuration) * plotWidth}
-                y2={CHART_PADDING.top + plotHeight}
-                stroke={PDF_COLORS.gray400}
-                strokeWidth={1}
-                strokeDasharray="4,3"
-              />
-
-              {/* Goal markers (green vertical lines) */}
-              {chartData.goalMinutes.map((min, idx) => (
-                <SvgLine
-                  key={`goal-${idx}`}
-                  x1={CHART_PADDING.left + (min / matchDuration) * plotWidth}
-                  y1={CHART_PADDING.top}
-                  x2={CHART_PADDING.left + (min / matchDuration) * plotWidth}
-                  y2={CHART_PADDING.top + plotHeight}
-                  stroke="#22c55e"
-                  strokeWidth={2}
-                  strokeOpacity={0.7}
-                />
-              ))}
-
-              {/* Smoothed line (main intensity curve) */}
-              <Path
-                d={generateSmoothedPath()}
-                stroke={PDF_COLORS.brandRed}
-                strokeWidth={2}
-                fill="none"
-              />
-
-              {/* Event dots */}
-              {generateEventDots().map((dot, idx) => (
-                <Circle
-                  key={`dot-${idx}`}
-                  cx={dot.cx}
-                  cy={dot.cy}
-                  r={2.5}
-                  fill={PDF_COLORS.gray400}
-                  fillOpacity={0.6}
-                />
-              ))}
-
-              {/* X-axis */}
-              <SvgLine
-                x1={CHART_PADDING.left}
-                y1={CHART_PADDING.top + plotHeight}
-                x2={CHART_WIDTH - CHART_PADDING.right}
-                y2={CHART_PADDING.top + plotHeight}
-                stroke={PDF_COLORS.gray300}
-                strokeWidth={1}
-              />
-
-              {/* X-axis labels */}
-              {[0, 15, 30, 45, 60, 75, 90].filter(m => m <= matchDuration).map((minute) => (
-                <G key={`xlabel-${minute}`}>
-                  <SvgLine
-                    x1={CHART_PADDING.left + (minute / matchDuration) * plotWidth}
-                    y1={CHART_PADDING.top + plotHeight}
-                    x2={CHART_PADDING.left + (minute / matchDuration) * plotWidth}
-                    y2={CHART_PADDING.top + plotHeight + 3}
-                    stroke={PDF_COLORS.gray400}
-                    strokeWidth={0.5}
-                  />
-                </G>
-              ))}
-            </Svg>
-
-            {/* X-axis text labels (outside SVG for better font rendering) */}
-            <View style={{ flexDirection: "row", justifyContent: "space-between", paddingLeft: CHART_PADDING.left - 5, paddingRight: CHART_PADDING.right }}>
-              {[0, 15, 30, 45, 60, 75, 90].filter(m => m <= matchDuration).map((minute) => (
-                <Text key={`xlbl-${minute}`} style={{ fontSize: 7, color: PDF_COLORS.gray400 }}>{minute}'</Text>
-              ))}
-            </View>
-
-            {/* Legend */}
-            <View style={{ flexDirection: "row", justifyContent: "center", gap: 16, marginTop: 6 }}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                <View style={{ width: 12, height: 2, backgroundColor: PDF_COLORS.brandRed, borderRadius: 1 }} />
-                <Text style={{ fontSize: 7, color: PDF_COLORS.gray500 }}>Intensidade (média móvel)</Text>
-              </View>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                <View style={{ width: 5, height: 5, backgroundColor: PDF_COLORS.gray400, borderRadius: 2.5 }} />
-                <Text style={{ fontSize: 7, color: PDF_COLORS.gray500 }}>Eventos por minuto</Text>
-              </View>
-              {chartData.goalMinutes.length > 0 && (
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                  <View style={{ width: 2, height: 10, backgroundColor: "#22c55e", borderRadius: 1 }} />
-                  <Text style={{ fontSize: 7, color: PDF_COLORS.gray500 }}>Gols</Text>
-                </View>
-              )}
-            </View>
-          </View>
-        </View>
-
-        {/* Footer */}
-        <Text style={styles.footer}>
-          Gerado por M3 Scouting • {format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+      );
+      scoutEl = (
+        <Text style={s.pcScoutText}>
+          {scout.combinedText.slice(0, 160)}{scout.combinedText.length > 160 ? "…" : ""}
         </Text>
-        <Text style={styles.pageNumber}>1</Text>
-      </Page>
+      );
 
-      {/* Page 2: Activity Heatmap + Events */}
-      <Page size="A4" style={styles.page}>
-        {/* Compact Header */}
-        <View style={{ ...styles.header, marginBottom: 16, paddingBottom: 12 }}>
-          <View style={styles.headerLeft}>
-            {logoUrl && <Image src={logoUrl} style={styles.logoSmall} />}
-            <View>
-              <Text style={{ fontSize: 14, fontWeight: 700 }}>Resumo do Jogo</Text>
-              <Text style={{ fontSize: 9, color: PDF_COLORS.gray500 }}>
-                {displayTeamName} vs {match.opponent_name}
+      const hasS = analysis.strengthsImprovements.strengths.length > 0;
+      const hasI = analysis.strengthsImprovements.improvements.length > 0;
+      if (hasS || hasI) {
+        swEl = (
+          <View style={s.pcSWRow}>
+            {hasS && (
+              <View style={{ ...s.pcSWCol, backgroundColor: D.greenFaint }}>
+                <Text style={{ ...s.pcSWTitle, color: D.green }}>✓ Pontos Fortes</Text>
+                {analysis.strengthsImprovements.strengths.slice(0, 3).map((t, i) => (
+                  <Text key={i} style={s.pcSWItem}>· {t.slice(0, 70)}{t.length > 70 ? "…" : ""}</Text>
+                ))}
+              </View>
+            )}
+            {hasI && (
+              <View style={{ ...s.pcSWCol, backgroundColor: D.amberFaint }}>
+                <Text style={{ ...s.pcSWTitle, color: D.amber }}>⚠ A Melhorar</Text>
+                {analysis.strengthsImprovements.improvements.slice(0, 3).map((t, i) => (
+                  <Text key={i} style={s.pcSWItem}>· {t.slice(0, 70)}{t.length > 70 ? "…" : ""}</Text>
+                ))}
+              </View>
+            )}
+          </View>
+        );
+      }
+    }
+
+    return (
+      <View key={mp.id} style={s.playerCard} wrap={false}>
+        {/* Dark header */}
+        <View style={s.pcHead}>
+          {playerPhotoBase64[mp.player_id] ? (
+            <Image src={playerPhotoBase64[mp.player_id]} style={s.pcPhoto} />
+          ) : mp.player.photo_url ? (
+            <Image src={mp.player.photo_url} style={s.pcPhoto} />
+          ) : (
+            <View style={s.pcPhotoInit}><Text style={s.pcPhotoInitTxt}>{initials}</Text></View>
+          )}
+          <View style={{ flex: 1 }}>
+            <Text style={s.pcName}>{mp.player.full_name}</Text>
+            <Text style={s.pcPosition}>{mp.player.position}</Text>
+          </View>
+          {/* Rating */}
+          <View style={{ ...s.pcRating, backgroundColor: ratingBg }}>
+            <Text style={s.pcRatingTxt}>{ratingVal != null ? ratingVal.toFixed(1) : "—"}</Text>
+            <Text style={s.pcRatingLbl}>NOTA</Text>
+          </View>
+        </View>
+
+        {/* Body */}
+        <View style={s.pcBody}>
+          {/* Meta row */}
+          <View style={s.pcMetaRow}>
+            <View style={{ ...s.pcBadge, backgroundColor: mp.started ? D.greenFaint : D.blueFaint }}>
+              <Text style={{ fontSize: 6, fontWeight: 700, color: mp.started ? D.green : D.blue }}>
+                {mp.started ? "TITULAR" : "RESERVA"}
               </Text>
             </View>
-          </View>
-        </View>
-
-        {/* Activity Heatmap */}
-        <Text style={styles.sectionTitle}>Mapa de Atividade</Text>
-        <Text style={styles.sectionSubtitle}>Intensidade de eventos por jogador a cada {HEATMAP_INTERVAL} minutos</Text>
-        
-        <View style={styles.heatmapContainer}>
-          {/* Legend */}
-          <View style={styles.heatmapLegend}>
-            <View style={styles.heatmapLegendLeft}>
-              <Text style={styles.heatmapLegendText}>Menos ativo</Text>
-              <View style={{ ...styles.heatmapLegendBox, backgroundColor: HEATMAP_COLORS.low }} />
-              <View style={{ ...styles.heatmapLegendBox, backgroundColor: HEATMAP_COLORS.medium }} />
-              <View style={{ ...styles.heatmapLegendBox, backgroundColor: HEATMAP_COLORS.high }} />
-              <View style={{ ...styles.heatmapLegendBox, backgroundColor: HEATMAP_COLORS.veryHigh }} />
-              <Text style={styles.heatmapLegendText}>Mais ativo</Text>
+            <View style={{ ...s.pcBadge, backgroundColor: D.g100, borderWidth: 1, borderColor: D.g200 }}>
+              <Text style={{ fontSize: 6, color: D.textMuted }}>{mins} min</Text>
             </View>
-            <View style={styles.heatmapLegendLeft}>
-              <View style={{ ...styles.heatmapLegendBox, backgroundColor: HEATMAP_COLORS.noEvents, borderWidth: 1, borderColor: PDF_COLORS.gray300, borderStyle: "dashed" }} />
-              <Text style={styles.heatmapLegendText}>Sem eventos</Text>
-            </View>
+            {profileEl}
+            {effEl}
           </View>
 
-          {/* Time axis */}
-          <View style={styles.heatmapHeader}>
-            <View style={styles.heatmapPlayerCol} />
-            <View style={styles.heatmapCellsHeader}>
-              {timeLabels.map((label, idx) => (
-                <Text key={idx} style={styles.heatmapTimeLabel}>{label}</Text>
+          {/* Scouting text */}
+          {scoutEl}
+
+          {/* Stat pills */}
+          {(statEntries.length > 0 || ballActions > 0) && (
+            <View style={s.pcStatPills}>
+              {ballActions > 0 && (
+                <View style={{ ...s.pcStatPill, backgroundColor: "#164E63", borderColor: "#0E7490" }}>
+                  <Text style={{ ...s.pcStatLbl, color: "#67E8F9" }}>Ações</Text>
+                  <Text style={{ ...s.pcStatVal, color: "#22D3EE" }}>{ballActions}</Text>
+                </View>
+              )}
+              {statEntries.map(([type, val]) => (
+                <View key={type} style={s.pcStatPill}>
+                  <Text style={s.pcStatLbl}>{EVENT_LABELS[type as MatchEventType] ?? type}</Text>
+                  <Text style={s.pcStatVal}>{val}</Text>
+                </View>
               ))}
             </View>
-            <Text style={styles.heatmapTotalCol}>Total</Text>
+          )}
+
+          {/* Strengths / Improvements */}
+          {swEl}
+        </View>
+      </View>
+    );
+  };
+
+  // ── Document ───────────────────────────────────────────────────────────────
+  return (
+    <Document>
+
+      {/* ── PAGE 1: Match overview ────────────────────────────────────────── */}
+      <Page size="A4" style={s.page}>
+        <PageHeader />
+        <View style={s.body}>
+
+          {/* KPI row */}
+          <View style={s.kpiRow}>
+            {[
+              { val: filteredPlayers.length, lbl: "Jogadores",    color: D.g700 },
+              { val: filteredEvents.length,  lbl: "Eventos",      color: D.g700 },
+              { val: halfStats.goals,        lbl: "Gols",         color: D.green },
+              { val: halfStats.assists,      lbl: "Assistências", color: D.blue  },
+            ].map(({ val, lbl, color }) => (
+              <View key={lbl} style={{ ...s.kpiCard, borderTopColor: color }}>
+                <Text style={{ ...s.kpiVal, color }}>{val}</Text>
+                <Text style={s.kpiLbl}>{lbl}</Text>
+              </View>
+            ))}
           </View>
 
-          {/* Player rows - limit to 18 for page fit */}
-          {heatmapData.playerData.slice(0, 18).map(({ player, intervalCounts, totalEvents }) => {
-            if (!player.player) return null;
-            return (
-              <View key={player.id} style={styles.heatmapRow}>
-                <View style={styles.heatmapPlayerInfo}>
-                  <Text style={styles.heatmapPlayerName}>
-                    {player.player.full_name.split(" ").slice(-1)[0]}
-                  </Text>
-                  <Text style={styles.heatmapPlayerPosition}>{player.player.position}</Text>
-                </View>
-                <View style={styles.heatmapCells}>
-                  {intervalCounts.map((count, idx) => (
-                    <View
-                      key={idx}
-                      style={{
-                        ...styles.heatmapCell,
-                        backgroundColor: getHeatmapColor(count, heatmapData.globalMax),
-                      }}
-                    />
-                  ))}
-                </View>
-                <Text style={styles.heatmapTotal}>{totalEvents}</Text>
+          {/* Stats table */}
+          <Text style={s.secTitle}>Estatísticas por Tempo</Text>
+          <View style={s.table}>
+            <View style={s.tHead}>
+              <Text style={s.tHCell}>1º TEMPO</Text>
+              <Text style={s.tHCellWide}>Estatística</Text>
+              <Text style={s.tHCell}>2º TEMPO</Text>
+              <Text style={s.tHCell}>TOTAL</Text>
+            </View>
+            {halfStats.rows.map((row, i) => (
+              <View key={row.id} style={i % 2 === 0 ? s.tRow : s.tRowAlt} wrap={false}>
+                <Text style={{ ...s.tCell, color: row.first > row.second ? D.red : D.text }}>{row.first}</Text>
+                <Text style={s.tCellWide}>{row.label}</Text>
+                <Text style={{ ...s.tCell, color: row.second > row.first ? D.red : D.text }}>{row.second}</Text>
+                <Text style={{ ...s.tCell, color: D.text }}>{row.total}</Text>
               </View>
-            );
-          })}
-        </View>
+            ))}
+            {(halfStats.subs.first > 0 || halfStats.subs.second > 0) && (
+              <View style={halfStats.rows.length % 2 === 0 ? s.tRow : s.tRowAlt} wrap={false}>
+                <Text style={s.tCell}>{halfStats.subs.first}</Text>
+                <Text style={s.tCellWide}>Substituições</Text>
+                <Text style={s.tCell}>{halfStats.subs.second}</Text>
+                <Text style={s.tCell}>{halfStats.subs.first + halfStats.subs.second}</Text>
+              </View>
+            )}
+          </View>
 
-        {/* Events by Half - Section with anti-orphan header */}
-        <View style={styles.sectionBlock}>
-          <Text style={styles.sectionTitle}>Eventos por Tempo</Text>
-          
-          {/* Event Summary Totals - Kept with title */}
+          {/* Distribution chart */}
+          <View wrap={false}>
+            <Text style={s.secTitle}>Distribuição de Eventos</Text>
+            <Text style={s.secSub}>Intensidade de atividade ao longo da partida</Text>
+            <View style={s.distRow}>
+              {[
+                { val: distStats.f1, lbl: "1º TEMPO", hl: false },
+                { val: distStats.f2, lbl: "2º TEMPO", hl: false },
+                { val: `${distStats.peakMin}'`, lbl: `PICO (${distStats.peakCnt} ev)`, hl: true },
+                { val: distStats.total, lbl: "TOTAL", hl: false },
+              ].map(({ val, lbl, hl }) => (
+                <View key={lbl} style={hl ? s.distCardHl : s.distCard}>
+                  <Text style={s.distVal}>{val}</Text>
+                  <Text style={s.distLbl}>{lbl}</Text>
+                </View>
+              ))}
+            </View>
+            <View style={s.chartBox}>
+              <Svg width={CW} height={CH} viewBox={`0 0 ${CW} ${CH}`}>
+                <Defs>
+                  <LinearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+                    <Stop offset="0%" stopColor={D.red} stopOpacity={0.25} />
+                    <Stop offset="100%" stopColor={D.red} stopOpacity={0.01} />
+                  </LinearGradient>
+                </Defs>
+                {[0, 0.5, 1].map((r, i) => (
+                  <SvgLine key={i}
+                    x1={CP.l} y1={CP.t + PH * (1 - r)}
+                    x2={CW - CP.r} y2={CP.t + PH * (1 - r)}
+                    stroke={D.g200} strokeWidth={0.5} strokeDasharray="2,3"
+                  />
+                ))}
+                <Path d={areaPath} fill="url(#g1)" stroke="none" />
+                <SvgLine
+                  x1={CP.l + (halfMin / matchDuration) * PW} y1={CP.t}
+                  x2={CP.l + (halfMin / matchDuration) * PW} y2={CP.t + PH}
+                  stroke={D.g300} strokeWidth={1} strokeDasharray="4,3"
+                />
+                {chartData.goalMinutes.map((m, i) => (
+                  <SvgLine key={i}
+                    x1={CP.l + (m / matchDuration) * PW} y1={CP.t}
+                    x2={CP.l + (m / matchDuration) * PW} y2={CP.t + PH}
+                    stroke={D.green} strokeWidth={1.5} strokeOpacity={0.7}
+                  />
+                ))}
+                <Path d={linePath} stroke={D.red} strokeWidth={2} fill="none" />
+                {dots.map((d, i) => (
+                  <Circle key={i} cx={d.cx} cy={d.cy} r={2} fill={D.g400} fillOpacity={0.5} />
+                ))}
+                <SvgLine
+                  x1={CP.l} y1={CP.t + PH}
+                  x2={CW - CP.r} y2={CP.t + PH}
+                  stroke={D.g300} strokeWidth={1}
+                />
+              </Svg>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", paddingHorizontal: CP.l - 4, marginTop: 2 }}>
+                {[0, 15, 30, 45, 60, 75, 90].filter((m) => m <= matchDuration).map((m) => (
+                  <Text key={m} style={{ fontSize: 6, color: D.g400 }}>{m}'</Text>
+                ))}
+              </View>
+              <View style={{ flexDirection: "row", justifyContent: "center", gap: 14, marginTop: 5 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
+                  <View style={{ width: 10, height: 2, backgroundColor: D.red, borderRadius: 1 }} />
+                  <Text style={{ fontSize: 6, color: D.g500 }}>Intensidade</Text>
+                </View>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
+                  <View style={{ width: 4, height: 4, backgroundColor: D.g400, borderRadius: 2 }} />
+                  <Text style={{ fontSize: 6, color: D.g500 }}>Eventos/min</Text>
+                </View>
+                {chartData.goalMinutes.length > 0 && (
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
+                    <View style={{ width: 2, height: 8, backgroundColor: D.green, borderRadius: 1 }} />
+                    <Text style={{ fontSize: 6, color: D.g500 }}>Gols</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          </View>
+        </View>
+        <Footer page={1} />
+      </Page>
+
+      {/* ── PAGE 2: Events + Player reports ──────────────────────────────── */}
+      <Page size="A4" style={s.page}>
+        <PageHeader compact />
+        <View style={s.body}>
+
+          {/* Events summary chips */}
           {(() => {
-            // Calculate totals by event type
-            const allEvents = [...eventsByHalf.firstHalf, ...eventsByHalf.secondHalf];
+            const all = [...evsByHalf.first, ...evsByHalf.second];
             const totals: Record<string, number> = {};
-            allEvents.forEach(event => {
-              const label = EVENT_LABELS[event.event_type] || event.event_type;
-              totals[label] = (totals[label] || 0) + 1;
+            all.forEach((e) => {
+              const lbl = EVENT_LABELS[e.event_type] ?? e.event_type;
+              totals[lbl] = (totals[lbl] ?? 0) + 1;
             });
-            
-            // Sort by count descending
-            const sortedTotals = Object.entries(totals)
-              .sort((a, b) => b[1] - a[1]);
-            
-            if (sortedTotals.length === 0) return null;
-            
+            const sorted = Object.entries(totals).sort((a, b) => b[1] - a[1]);
+            if (!sorted.length) return null;
             return (
-              <View style={styles.eventSummaryContainer} wrap={false}>
-                <Text style={styles.eventSummaryTitle}>
-                  Resumo de Totais ({allEvents.length} eventos)
-                </Text>
-                {sortedTotals.map(([label, count]) => (
-                  <View key={label} style={styles.eventSummaryChip}>
-                    <Text style={styles.eventSummaryChipLabel}>{label}:</Text>
-                    <Text style={styles.eventSummaryChipValue}>{count}</Text>
+              <View style={s.summaryBox} wrap={false}>
+                <Text style={s.summaryTitle}>Resumo de Totais ({all.length} eventos)</Text>
+                {sorted.map(([lbl, cnt]) => (
+                  <View key={lbl} style={s.summaryChip}>
+                    <Text style={s.summaryChipLbl}>{lbl}:</Text>
+                    <Text style={s.summaryChipVal}>{cnt}</Text>
                   </View>
                 ))}
               </View>
             );
           })()}
-        </View>
-        
-        <View style={styles.eventsGrid}>
-          {/* First Half - ALL EVENTS */}
-          <View style={styles.eventsColumn}>
-            <Text style={styles.eventsColumnTitle}>
-              1º TEMPO ({eventsByHalf.firstHalf.length})
-            </Text>
-            {eventsByHalf.firstHalf
-              .sort((a, b) => (a.minute ?? 0) - (b.minute ?? 0))
-              .map((event) => (
-                <View key={event.id} style={styles.eventItem}>
-                  <Text style={styles.eventMinute}>
-                    {event.display_minute || `${event.minute}'`}
-                  </Text>
-                  <Text style={styles.eventType}>{EVENT_LABELS[event.event_type]}</Text>
-                  <Text style={styles.eventPlayer}>- {getPlayerName(event.player_id)}</Text>
+
+          {/* Events by half */}
+          <Text style={s.secTitle}>Eventos por Tempo</Text>
+          <View style={s.eventsGrid}>
+            {[
+              { title: `1º TEMPO (${evsByHalf.first.length})`, events: evsByHalf.first },
+              { title: `2º TEMPO (${evsByHalf.second.length})`, events: evsByHalf.second },
+            ].map(({ title, events }) => (
+              <View key={title} style={s.eventsCol}>
+                <View style={s.eventsColHead}>
+                  <Text style={s.eventsColTitle}>{title}</Text>
                 </View>
-              ))}
-          </View>
-
-          {/* Second Half - ALL EVENTS */}
-          <View style={styles.eventsColumn}>
-            <Text style={styles.eventsColumnTitle}>
-              2º TEMPO ({eventsByHalf.secondHalf.length})
-            </Text>
-            {eventsByHalf.secondHalf
-              .sort((a, b) => (a.minute ?? 0) - (b.minute ?? 0))
-              .map((event) => (
-                <View key={event.id} style={styles.eventItem}>
-                  <Text style={styles.eventMinute}>
-                    {event.display_minute || `${event.minute}'`}
-                  </Text>
-                  <Text style={styles.eventType}>{EVENT_LABELS[event.event_type]}</Text>
-                  <Text style={styles.eventPlayer}>- {getPlayerName(event.player_id)}</Text>
-                </View>
-              ))}
-          </View>
-        </View>
-
-        {/* Footer */}
-        <Text style={styles.footer}>
-          Gerado por M3 Scouting • {format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-        </Text>
-        {/* Player Stats Section - Title + first cards grouped to prevent orphan title */}
-        {(() => {
-          // Split players into first row (2 cards) and rest to prevent orphan title
-          const firstRowPlayers = filteredPlayers.slice(0, 2);
-          const remainingPlayers = filteredPlayers.slice(2, 16);
-          
-          const renderPlayerCard = (mp: MatchPlayer) => {
-            if (!mp.player) return null;
-            const counts = playerEventCounts[mp.player_id] || {};
-            const stats = playerStatsMap[mp.player_id];
-            
-            // Calculate derived ball_actions
-            const ballActions = stats ? calculateBallActionsFromMatchStats(stats) : 0;
-            
-            const statEntries = Object.entries(counts)
-              .filter(([_, v]) => (v ?? 0) > 0)
-              .slice(0, 4); // Reduced to 4 to make room for ball_actions
-            
-            const initials = mp.player.full_name
-              .split(" ")
-              .slice(0, 2)
-              .map((n) => n[0])
-              .join("")
-              .toUpperCase();
-            
-            // Calculate minutes played using standardized logic
-            // CRITICAL: Calculate from timeline (ignoring stale minutes_played)
-            // This ensures PDF matches the web UI exactly
-            const minutesInfo = calculateMinutesPlayed({
-              started: mp.started,
-              entered_minute: mp.entered_minute,
-              exited_minute: mp.exited_minute,
-              minutes_played: null, // Force calculation from timeline
-            });
-            const minutesPlayed = minutesInfo.minutesPlayed;
-
-            return (
-              <View key={mp.id} style={styles.playerCard} wrap={false}>
-                <View style={styles.playerCardHeader}>
-                  {/* Use pre-converted base64 photo, fallback to direct URL, then placeholder */}
-                  {playerPhotoBase64[mp.player_id] ? (
-                    <Image src={playerPhotoBase64[mp.player_id]} style={styles.playerPhoto} />
-                  ) : mp.player.photo_url ? (
-                    <Image src={mp.player.photo_url} style={styles.playerPhoto} />
-                  ) : (
-                    <View style={styles.playerPhotoPlaceholder}>
-                      <Text style={styles.playerPhotoInitials}>{initials}</Text>
+                <View style={s.eventsBody}>
+                  {events.length === 0 ? (
+                    <Text style={s.eventsEmpty}>Nenhum evento</Text>
+                  ) : events.map((e) => (
+                    <View key={e.id} style={s.eventItem}>
+                      <Text style={s.eventMin}>{e.display_minute || `${e.minute}'`}</Text>
+                      <Text style={s.eventType}>{EVENT_LABELS[e.event_type]}</Text>
+                      <Text style={s.eventPlayer}>· {playerName(e.player_id)}</Text>
                     </View>
-                  )}
-                  <View style={styles.playerInfo}>
-                    <Text style={styles.playerName}>{mp.player.full_name}</Text>
-                    <Text style={styles.playerPosition}>{mp.player.position}</Text>
-                  </View>
-                </View>
-                <View style={styles.playerMeta}>
-                  <Text style={mp.started ? styles.playerBadgeStarter : styles.playerBadgeSub}>
-                    {mp.started ? "TITULAR" : "RESERVA"}
-                  </Text>
-                  {minutesPlayed > 0 && (
-                    <Text style={styles.playerMinutes}>{minutesPlayed} min</Text>
-                  )}
-                  {/* Match Rating Badge */}
-                  {(match.status === "finished" || match.status === "applied") && (() => {
-                    const stats = playerStatsMap[mp.player_id];
-                    
-                    // SINGLE SOURCE OF TRUTH: Read persisted rating, never recalculate
-                    // Players with no rating (0 minutes or null) show "—"
-                    if (!stats?.rating || minutesPlayed === 0) {
-                      return (
-                        <View style={{ backgroundColor: "#6b7280", paddingLeft: 4, paddingRight: 4, paddingTop: 2, paddingBottom: 2, borderRadius: 3 }}>
-                          <Text style={{ fontSize: 8, fontWeight: 700, color: "#ffffff" }}>—</Text>
-                        </View>
-                      );
-                    }
-                    
-                    // Use persisted rating value
-                    const r = stats.rating;
-                    // SofaScore color bands: <6=red, 6-6.4=orange, 6.5-6.9=amber, 7-7.9=green, 8-8.9=cyan, 9+=blue
-                    const bgColor = r < 6.0 ? "#ef4444" : r < 6.5 ? "#f97316" : r < 7.0 ? "#f59e0b" : r < 8.0 ? "#22c55e" : r < 9.0 ? "#06b6d4" : "#3b82f6";
-                    return (
-                      <View style={{ backgroundColor: bgColor, paddingLeft: 4, paddingRight: 4, paddingTop: 2, paddingBottom: 2, borderRadius: 3 }}>
-                        <Text style={{ fontSize: 8, fontWeight: 700, color: "#ffffff" }}>{r.toFixed(1)}</Text>
-                      </View>
-                    );
-                  })()}
-                </View>
-                {/* Match Profile + Efficiency + Professional Scouting Text */}
-                {minutesPlayed >= 10 && (() => {
-                  const stats = playerStatsMap[mp.player_id];
-                  const statsInput = matchPlayerStatsToInput(stats);
-                  const profile = classifyMatchProfile(statsInput, minutesPlayed);
-                  const efficiency = calculateMatchEfficiency(statsInput, minutesPlayed);
-                  const profileColors = PROFILE_COLORS[profile.primary.key];
-                  const efficiencyColors = EFFICIENCY_COLORS[efficiency.level];
-                  // Generate professional position-adapted scouting text
-                  const scoutingText = generateScoutingText(
-                    mp.player.position,
-                    profile.primary.key,
-                    efficiency.level,
-                    minutesPlayed < 10
-                  );
-                  return (
-                    <View style={{ marginBottom: 6 }}>
-                      <View style={{ flexDirection: "row", gap: 4, marginBottom: 3, flexWrap: "wrap" }}>
-                        {/* Profile Badge */}
-                        <View style={{ 
-                          backgroundColor: profileColors.bg, 
-                          paddingHorizontal: 5, 
-                          paddingVertical: 2, 
-                          borderRadius: 3,
-                        }}>
-                          <Text style={{ fontSize: 6, fontWeight: 600, color: profileColors.text }}>
-                            {profile.primary.label}
-                          </Text>
-                        </View>
-                        {/* Efficiency Badge */}
-                        <View style={{ 
-                          backgroundColor: efficiencyColors.bg, 
-                          paddingHorizontal: 5, 
-                          paddingVertical: 2, 
-                          borderRadius: 3,
-                        }}>
-                          <Text style={{ fontSize: 6, fontWeight: 600, color: efficiencyColors.text }}>
-                            Efic: {efficiencyColors.label}
-                          </Text>
-                        </View>
-                      </View>
-                      {/* Professional Scouting Text - Position-adapted */}
-                      <Text style={{ fontSize: 5.5, color: PDF_COLORS.gray600, lineHeight: 1.35 }}>
-                        {scoutingText.combinedText.slice(0, 120)}{scoutingText.combinedText.length > 120 ? '...' : ''}
-                      </Text>
-                    </View>
-                  );
-                })()}
-                <View style={styles.playerStats}>
-                  {/* Derived stat: Ações com a Bola - always first if > 0 */}
-                  {ballActions > 0 && (
-                    <Text key="ball_actions" style={{
-                      ...styles.playerStatBadge,
-                      backgroundColor: '#164E63', // cyan-900
-                      color: '#22D3EE', // cyan-400
-                    }}>
-                      Ações: {ballActions}
-                    </Text>
-                  )}
-                  {statEntries.length > 0 || ballActions > 0 ? (
-                    statEntries.map(([type, value]) => (
-                      <Text key={type} style={styles.playerStatBadge}>
-                        {EVENT_LABELS[type as MatchEventType]}: {value}
-                      </Text>
-                    ))
-                  ) : (
-                    <Text style={styles.noStats}>Sem estatísticas</Text>
-                  )}
+                  ))}
                 </View>
               </View>
-            );
-          };
+            ))}
+          </View>
 
-          return (
+          {/* Player reports */}
+          {filteredPlayers.length > 0 && (
             <>
-              {/* ATOMIC BLOCK: Title + First Row of Cards - NEVER SPLIT */}
-              <View wrap={false} style={styles.sectionBlock}>
-                <Text style={styles.sectionTitle}>Estatísticas por Jogador</Text>
-                <View style={styles.playersGrid}>
-                  {firstRowPlayers.map(renderPlayerCard)}
-                </View>
-              </View>
-              
-              {/* Remaining cards - can break between pages but not within cards */}
-              {remainingPlayers.length > 0 && (
-                <View style={styles.playersGrid}>
-                  {remainingPlayers.map(renderPlayerCard)}
-                </View>
-              )}
+              <Text style={{ ...s.secTitle, marginTop: 4 }}>Estatísticas por Jogador</Text>
+              {filteredPlayers.map(renderPlayerCard)}
             </>
-          );
-        })()}
-
-        {/* Post-Game Analysis Section - Only for finished matches */}
-        {(match.status === "finished" || match.status === "applied") && (
-          <View style={{ marginTop: 16 }} wrap={false}>
-          {/* Section Header - kept with first card */}
-          <View wrap={false}>
-            <Text style={styles.sectionTitle}>Análise Pós-Jogo</Text>
-            <Text style={styles.sectionSubtitle}>Zonas de atuação, indicadores rápidos e pontos-chave</Text>
-          </View>
-          
-          {filteredPlayers.slice(0, 12).map((mp) => {
-              if (!mp.player) return null;
-              
-              const stats = playerStatsMap[mp.player_id];
-              const minutesInput = {
-                started: mp.started,
-                entered_minute: mp.entered_minute ?? null,
-                exited_minute: mp.exited_minute ?? null,
-                minutes_played: mp.minutes_played,
-              };
-
-              // IMPORTANT: Normalize stats exactly like the web summary does.
-              // In our schema, passes_total/dribbles_total store FAILED counts, so we must use derived totals.
-              const normalized = normalizeMatchStats(stats, minutesInput);
-
-              // Match Summary uses derived ball actions (never trust stored value)
-              const ballActions = stats ? calculateBallActionsFromMatchStats(stats) : 0;
-
-              const statsInput: MatchStatsInput = {
-                goals: normalized.goals ?? 0,
-                assists: normalized.assists ?? 0,
-                shots: normalized.shots_total,
-                shots_on_target: normalized.shots_on_target ?? 0,
-                shots_blocked: normalized.shots_blocked ?? 0,
-                key_passes: normalized.key_passes ?? 0,
-                chances_created: normalized.chances_created ?? 0,
-                passes_completed: normalized.passes_completed ?? 0,
-                passes_total: normalized.passes_total_derived,
-                dribbles_success: normalized.dribbles_success ?? 0,
-                dribbles_total: normalized.dribbles_total_derived,
-                tackles: normalized.tackles ?? 0,
-                interceptions: normalized.interceptions ?? 0,
-                clearances: normalized.clearances ?? 0,
-                recoveries: normalized.recoveries ?? 0,
-                duels_won: normalized.duels_won ?? 0,
-                duels_total: normalized.duels_total_derived,
-                aerial_duels_won: normalized.aerial_duels_won ?? 0,
-                aerial_duels_total: normalized.aerial_duels_total_derived,
-                fouls_committed: normalized.fouls_committed ?? 0,
-                fouls_suffered: normalized.fouls_suffered ?? 0,
-                yellow_cards: normalized.yellow_cards ?? 0,
-                red_cards: normalized.red_cards ?? 0,
-                possession_lost: normalized.possession_lost ?? 0,
-                saves: normalized.saves ?? 0,
-                goals_conceded: normalized.goals_conceded ?? 0,
-                blocked_shots: normalized.blocked_shots ?? 0,
-                was_dribbled: normalized.was_dribbled ?? 0,
-                ball_actions: ballActions,
-                crosses_success: normalized.crosses_success ?? 0,
-                crosses_failed: normalized.crosses_failed ?? 0,
-                offsides: normalized.offsides ?? 0,
-              };
-              
-              const minutesInfo = calculateMinutesPlayed({
-                started: mp.started,
-                entered_minute: mp.entered_minute,
-                exited_minute: mp.exited_minute,
-                minutes_played: mp.minutes_played,
-              });
-              const minutesPlayed = minutesInfo.minutesPlayed;
-              
-              // CRITICAL FIX: Skip players who didn't play (0 minutes)
-              // This prevents false heatmaps for players who never entered the field
-              // Also skip if less than 10 minutes for meaningful analysis
-              if (minutesPlayed <= 0) return null;
-              
-              const analysis = generatePostGameAnalysis(mp.player.position, statsInput, minutesPlayed);
-              const { quickIndicators, strengthsImprovements, zoneHeatmap } = analysis;
-              
-              // Skip if no meaningful data
-              if (quickIndicators.length === 0 && strengthsImprovements.strengths.length === 0 && strengthsImprovements.improvements.length === 0) {
-                return null;
-              }
-              
-              const getZoneColor = (intensity: "low" | "medium" | "high"): string => {
-                switch (intensity) {
-                  case "high": return "#10B981"; // emerald-500
-                  case "medium": return "#34D399"; // emerald-400
-                  case "low": return PDF_COLORS.gray300;
-                  default: return PDF_COLORS.gray200;
-                }
-              };
-              
-              const getIndicatorColors = (type: "positive" | "neutral" | "negative") => {
-                switch (type) {
-                  case "positive": return { bg: "#D1FAE5", text: "#065F46", border: "#A7F3D0" };
-                  case "negative": return { bg: "#FEE2E2", text: "#991B1B", border: "#FECACA" };
-                  default: return { bg: PDF_COLORS.gray100, text: PDF_COLORS.gray700, border: PDF_COLORS.gray300 };
-                }
-              };
-              
-              return (
-                <View key={mp.id} style={{
-                  paddingVertical: 10,
-                  paddingHorizontal: 10,
-                  backgroundColor: PDF_COLORS.gray50,
-                  borderRadius: 4,
-                  marginBottom: 8,
-                  borderWidth: 1,
-                  borderColor: PDF_COLORS.gray200,
-                }} wrap={false}>
-                  {/* Player Header Row */}
-                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                    <View>
-                      <Text style={{ fontSize: 11, fontWeight: 700, color: PDF_COLORS.gray900, marginBottom: 2 }}>
-                        {mp.player.full_name}
-                      </Text>
-                      <Text style={{ fontSize: 8, color: PDF_COLORS.gray500 }}>
-                        {mp.player.position} • {minutesPlayed} min
-                      </Text>
-                    </View>
-                    
-                    {/* Quick Indicators - Compact row */}
-                    {quickIndicators.length > 0 && (
-                      <View style={{ flexDirection: "row", gap: 4 }}>
-                        {quickIndicators.slice(0, 4).map((indicator) => {
-                          const colors = getIndicatorColors(indicator.type);
-                          return (
-                            <View key={indicator.id} style={{
-                              paddingVertical: 2,
-                              paddingHorizontal: 5,
-                              borderRadius: 3,
-                              backgroundColor: colors.bg,
-                              borderWidth: 1,
-                              borderColor: colors.border,
-                              alignItems: "center",
-                            }}>
-                              <Text style={{ fontSize: 5, color: colors.text }}>
-                                {indicator.label}
-                              </Text>
-                              <Text style={{ fontSize: 7, fontWeight: 600, color: colors.text }}>
-                                {indicator.value}
-                              </Text>
-                            </View>
-                          );
-                        })}
-                      </View>
-                    )}
-                  </View>
-                  
-                  {/* Horizontal Heatmap - Main Visual (Landscape) */}
-                  {/* Real football field ratio: ~105m x 68m = 1.54:1 (length:width) */}
-                  {/* For horizontal layout: width = length, height = width → ratio ~1.5:1 */}
-                  <View style={{ alignItems: "center", marginBottom: 10 }}>
-                    <MiniFieldHeatmapPdf
-                      percentages={zoneHeatmap.percentages}
-                      matchId={match.id}
-                      playerId={mp.player_id}
-                      width={360}
-                      height={220}
-                      showLegend={true}
-                      showIntensityBars={true}
-                      orientation="horizontal"
-                    />
-                  </View>
-                  
-                  {/* Strengths & Improvements in columns */}
-                  <View style={{ flexDirection: "row", gap: 12 }}>
-                    {strengthsImprovements.strengths.length > 0 && (
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 7, fontWeight: 700, color: "#065F46", marginBottom: 3 }}>✓ Pontos Fortes</Text>
-                        {strengthsImprovements.strengths.slice(0, 2).map((s, i) => (
-                          <Text key={i} style={{ fontSize: 6, color: PDF_COLORS.gray600, marginBottom: 1, paddingLeft: 4 }}>
-                            • {s.slice(0, 60)}{s.length > 60 ? '...' : ''}
-                          </Text>
-                        ))}
-                      </View>
-                    )}
-                    {strengthsImprovements.improvements.length > 0 && (
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 7, fontWeight: 700, color: "#92400E", marginBottom: 3 }}>⚠ A Melhorar</Text>
-                        {strengthsImprovements.improvements.slice(0, 2).map((s, i) => (
-                          <Text key={i} style={{ fontSize: 6, color: PDF_COLORS.gray600, marginBottom: 1, paddingLeft: 4 }}>
-                            • {s.slice(0, 60)}{s.length > 60 ? '...' : ''}
-                          </Text>
-                        ))}
-                      </View>
-                    )}
-                  </View>
-                </View>
-              );
-            })}
-          </View>
-        )}
-
-        {/* Footer */}
-        <Text style={styles.footer} fixed>
-          Gerado por M3 Scouting • {format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-        </Text>
+          )}
+        </View>
+        <Footer page={2} />
       </Page>
+
     </Document>
   );
 }

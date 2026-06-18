@@ -25,7 +25,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { HalfStatsComparison } from "@/components/live-match/HalfStatsComparison";
+import { PlayerStatsAccordion } from "@/components/live-match/PlayerStatsAccordion";
 import { SubstitutionStatsCard } from "@/components/live-match/SubstitutionStatsCard";
 import { EventDistributionChart } from "@/components/live-match/EventDistributionChart";
 import { PlayerPresenceHistory } from "@/components/live-match/PlayerPresenceHistory";
@@ -52,13 +52,16 @@ import {
 } from "lucide-react";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
-const CARD_BG     = "#161618";
-const CARD_BORDER = "rgba(255,255,255,0.10)";
-const TEXT        = "#ededee";
-const MUTED       = "#62616a";
-const ACCENT      = "#ec4525";
-const GREEN       = "#2DCE8A";
-const AMBER       = "#f59e0b";
+const CARD_BG          = "#16181a";
+const CARD_BORDER      = "rgba(63,63,70,0.30)";
+const CARD_BORDER_OPEN = "rgba(63,63,70,0.50)";
+const INNER_BG         = "#0d0e0f";
+const INNER_BORDER     = "rgba(39,39,42,0.40)";
+const TEXT             = "#ededee";
+const MUTED            = "#62616a";
+const ACCENT           = "#ec4525";
+const GREEN            = "#2DCE8A";
+const AMBER            = "#f59e0b";
 
 // ── Section wrapper ────────────────────────────────────────────────────────────
 function SectionCard({ icon, title, count, accentBorder, children }: {
@@ -67,7 +70,7 @@ function SectionCard({ icon, title, count, accentBorder, children }: {
 }) {
   return (
     <div className="rounded-xl border overflow-hidden" style={{ background: CARD_BG, borderColor: accentBorder ?? CARD_BORDER }}>
-      <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: CARD_BORDER }}>
+      <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: INNER_BORDER }}>
         <div className="flex items-center gap-2.5">
           {icon}
           <span className="font-display font-semibold text-[15px]" style={{ color: TEXT }}>{title}</span>
@@ -493,7 +496,7 @@ export default function LiveMatchReview() {
               </div>
             ))}
           </div>
-          <HalfStatsComparison events={matchEvents} matchPlayers={matchPlayers} />
+          <PlayerStatsAccordion events={matchEvents} matchPlayers={matchPlayers} />
         </div>
       </SectionCard>
 
@@ -636,8 +639,8 @@ export default function LiveMatchReview() {
                 key={mp.id}
                 className="flex items-start gap-3 p-4 rounded-xl border transition-colors duration-200"
                 style={{
-                  background: isApplied ? "rgba(45,206,138,0.07)" : "rgba(255,255,255,0.04)",
-                  borderColor: isApplied ? "rgba(45,206,138,0.30)" : "rgba(255,255,255,0.09)",
+                  background: isApplied ? "rgba(45,206,138,0.07)" : INNER_BG,
+                  borderColor: isApplied ? "rgba(45,206,138,0.30)" : INNER_BORDER,
                 }}
               >
                 <Avatar className="h-10 w-10 shrink-0">
