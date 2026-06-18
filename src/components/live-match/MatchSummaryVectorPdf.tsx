@@ -754,36 +754,8 @@ export function MatchSummaryVectorPdf({
             </View>
           </View>
 
-          {/* ── Events + Player reports ──────────────────────────────────── */}
-
-          {/* "Eventos por Tempo" title + summary chips + first half columns kept together */}
-          {(() => {
-            const all = [...evsByHalf.first, ...evsByHalf.second];
-            const totals: Record<string, number> = {};
-            all.forEach((e) => {
-              const lbl = EVENT_LABELS[e.event_type] ?? e.event_type;
-              totals[lbl] = (totals[lbl] ?? 0) + 1;
-            });
-            const sorted = Object.entries(totals).sort((a, b) => b[1] - a[1]);
-            return (
-              <View wrap={false} style={{ marginTop: 12 }}>
-                <Text style={s.secTitle}>Eventos por Tempo</Text>
-                {sorted.length > 0 && (
-                  <View style={s.summaryBox}>
-                    <Text style={s.summaryTitle}>Resumo de Totais ({all.length} eventos)</Text>
-                    {sorted.map(([lbl, cnt]) => (
-                      <View key={lbl} style={s.summaryChip}>
-                        <Text style={s.summaryChipLbl}>{lbl}:</Text>
-                        <Text style={s.summaryChipVal}>{cnt}</Text>
-                      </View>
-                    ))}
-                  </View>
-                )}
-              </View>
-            );
-          })()}
-
-          {/* Half columns — can wrap/break naturally */}
+          {/* Events by half */}
+          <Text style={{ ...s.secTitle, marginTop: 12 }}>Eventos por Tempo</Text>
           <View style={s.eventsGrid}>
             {[
               { title: `1º TEMPO (${evsByHalf.first.length})`, events: evsByHalf.first },
@@ -807,22 +779,20 @@ export function MatchSummaryVectorPdf({
               </View>
             ))}
           </View>
-
-          {/* Player reports — always start on a new page */}
-          {filteredPlayers.length > 0 && (() => {
-            const [first, ...rest] = filteredPlayers;
-            return (
-              <>
-                <View break style={{ marginTop: 0 }}>
-                  <Text style={s.secTitle}>Estatísticas por Jogador</Text>
-                  {renderPlayerCard(first)}
-                </View>
-                {rest.map(renderPlayerCard)}
-              </>
-            );
-          })()}
         </View>
       </Page>
+
+      {/* Page 2+: Player cards — guaranteed new page via separate <Page> */}
+      {filteredPlayers.length > 0 && (
+        <Page size="A4" style={s.page}>
+          <PageHeader compact />
+          <Footer />
+          <View style={s.body}>
+            <Text style={s.secTitle}>Estatísticas por Jogador</Text>
+            {filteredPlayers.map(renderPlayerCard)}
+          </View>
+        </Page>
+      )}
 
     </Document>
   );
