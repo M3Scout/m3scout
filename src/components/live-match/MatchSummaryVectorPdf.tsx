@@ -137,7 +137,7 @@ const s = StyleSheet.create({
   redLine: { height: 2, backgroundColor: D.red },
 
   // ── Page content wrapper ─────────────────────────────────────────────────
-  body: { paddingHorizontal: 28, paddingTop: 20, paddingBottom: 36 },
+  body: { paddingHorizontal: 28, paddingTop: 20, paddingBottom: 44 },
 
   // ── KPI row ──────────────────────────────────────────────────────────────
   kpiRow:  { flexDirection: "row", gap: 8, marginBottom: 16 },
@@ -439,10 +439,10 @@ export function MatchSummaryVectorPdf({
     </>
   );
 
-  const Footer = ({ page }: { page: number }) => (
+  const Footer = () => (
     <View style={s.footer} fixed>
       <Text style={s.footerTxt}>Gerado por M3 Scouting · {now}</Text>
-      <Text style={s.footerTxt}>{page}</Text>
+      <Text style={s.footerTxt} render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />
     </View>
   );
 
@@ -626,9 +626,11 @@ export function MatchSummaryVectorPdf({
   return (
     <Document>
 
-      {/* ── PAGE 1: Match overview ────────────────────────────────────────── */}
+      {/* Single page — react-pdf breaks automatically when content overflows */}
       <Page size="A4" style={s.page}>
         <PageHeader />
+        {/* Footer fixed: repeats on every auto-generated page */}
+        <Footer />
         <View style={s.body}>
 
           {/* KPI row */}
@@ -751,14 +753,8 @@ export function MatchSummaryVectorPdf({
               </View>
             </View>
           </View>
-        </View>
-        <Footer page={1} />
-      </Page>
 
-      {/* ── PAGE 2: Events + Player reports ──────────────────────────────── */}
-      <Page size="A4" style={s.page}>
-        <PageHeader compact />
-        <View style={s.body}>
+          {/* ── Events + Player reports (continues on same flow) ─────────── */}
 
           {/* Events summary chips */}
           {(() => {
@@ -817,7 +813,6 @@ export function MatchSummaryVectorPdf({
             </>
           )}
         </View>
-        <Footer page={2} />
       </Page>
 
     </Document>
