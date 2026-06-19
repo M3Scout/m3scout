@@ -67,10 +67,6 @@ export function CroppedNewsImage({
             )}
             style={{
               objectPosition: `${position.x}% ${position.y}%`,
-              ...(position.scale !== 1 && {
-                transform: `scale(${position.scale})`,
-                transformOrigin: `${position.x}% ${position.y}%`,
-              }),
             }}
             onLoad={() => setIsLoading(false)}
             onError={() => {
