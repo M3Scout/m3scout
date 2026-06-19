@@ -45,6 +45,7 @@ export function getOptimizedImageUrl(
     width: String(width),
     quality: String(quality),
     format,
+    resize: "contain",
   });
 
   return `${baseUrl}/storage/v1/render/image/public/${cleanPath}?${params}`;

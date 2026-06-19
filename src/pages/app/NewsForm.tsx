@@ -18,6 +18,7 @@ import { ArrowLeft, Save, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { ImageCropEditor, type CropPosition } from "@/components/news/ImageCropEditor";
 import { NewsImageUpload } from "@/components/news/NewsImageUpload";
+import { getOptimizedImageUrl } from "@/lib/imageUtils";
 
 const categories = [
   "Institucional",
@@ -319,7 +320,10 @@ const NewsForm = () => {
                 Arraste cada imagem para posicionar o enquadramento. O preview é exatamente o que vai aparecer nas páginas.
               </p>
               <ImageCropEditor
-                imageUrl={formData.featured_image_url}
+                imageUrl={
+                  getOptimizedImageUrl(formData.featured_image_url, { width: 1200, quality: 85, format: "avif" })
+                  || formData.featured_image_url
+                }
                 heroCrop={formData.hero_crop}
                 cardCrop={formData.card_crop}
                 onHeroCropChange={(crop) =>
