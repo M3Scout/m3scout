@@ -59,6 +59,8 @@ const Imprensa = () => {
 
   const { data: articles, isLoading } = useQuery({
     queryKey: ["public-news-vitrine"],
+    staleTime: 0,
+    refetchOnMount: true,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("news_articles")
@@ -201,7 +203,7 @@ const Imprensa = () => {
                   to={`/imprensa/${featured.slug}`}
                   onMouseEnter={() => setHoveredFeatured(true)}
                   onMouseLeave={() => setHoveredFeatured(false)}
-                  className="grid grid-cols-1 md:grid-cols-[1fr_420px]"
+                  className="grid grid-cols-1 md:grid-cols-[2fr_1fr] md:items-start"
                   style={{
                     border: `1px solid ${BORDER_DARK}`,
                     borderBottom: "none",
@@ -255,10 +257,10 @@ const Imprensa = () => {
 
                   {/* Image */}
                   <div
-                    className="relative h-64 md:h-auto"
+                    className="relative"
                     style={{
+                      aspectRatio: "4/3",
                       overflow: "hidden",
-                      minHeight: "280px",
                       filter: hoveredFeatured ? "grayscale(0%)" : "grayscale(20%)",
                       transition: "filter 0.3s ease",
                     }}
@@ -299,10 +301,11 @@ const Imprensa = () => {
                       {article.featured_image_url && (
                         <div
                           style={{
-                            height: 200,
+                            aspectRatio: "4 / 3",
                             overflow: "hidden",
                             filter: hoveredArticle === article.id ? "grayscale(0%)" : "grayscale(20%)",
                             transition: "filter 0.3s ease",
+                            position: "relative",
                           }}
                         >
                           <CroppedNewsImage
@@ -313,23 +316,38 @@ const Imprensa = () => {
                           />
                         </div>
                       )}
-                      <div style={{ padding: "20px 22px" }}>
-                        <p style={{ fontFamily: JB, fontSize: 9, color: WHITE_MUTED, margin: "0 0 8px 0", opacity: 0.7 }}>
+                      <div style={{ padding: "16px 20px" }}>
+                        <p style={{ fontFamily: JB, fontSize: 9, color: WHITE_MUTED, margin: "0 0 6px 0", opacity: 0.7 }}>
                           {format(new Date(article.publish_date), "dd MMM yyyy", { locale: ptBR })}
                         </p>
                         <h3 style={{
                           fontFamily: BC,
                           fontWeight: 700,
-                          fontSize: 17,
+                          fontSize: 15,
                           textTransform: "uppercase",
                           color: CREAM,
-                          lineHeight: 1.1,
-                          margin: "0 0 8px 0",
+                          lineHeight: 1.15,
+                          margin: "0 0 6px 0",
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical" as const,
+                          overflow: "hidden",
                         }}>
                           {article.title}
                         </h3>
                         {article.excerpt && (
-                          <p style={{ fontFamily: B, fontWeight: 300, fontSize: 13, color: WHITE_MUTED, lineHeight: 1.55, margin: 0 }}>
+                          <p style={{
+                            fontFamily: B,
+                            fontWeight: 300,
+                            fontSize: 12,
+                            color: WHITE_MUTED,
+                            lineHeight: 1.5,
+                            margin: 0,
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical" as const,
+                            overflow: "hidden",
+                          }}>
                             {article.excerpt}
                           </p>
                         )}

@@ -148,6 +148,8 @@ const NewsForm = () => {
       queryClient.invalidateQueries({ queryKey: ["admin-news"] });
       queryClient.invalidateQueries({ queryKey: ["news-article", id] });
       queryClient.invalidateQueries({ queryKey: ["public-news"] });
+      queryClient.invalidateQueries({ queryKey: ["public-news-vitrine"] });
+      queryClient.invalidateQueries({ queryKey: ["news-detail"] });
       toast.success(isEditing ? "Notícia atualizada" : "Notícia criada");
       navigate("/dashboard/noticias");
     },
@@ -313,14 +315,17 @@ const NewsForm = () => {
               Enquadramento da Imagem
             </Label>
             <div className="p-4 rounded-lg border border-zinc-800 bg-zinc-900/30">
+              <p className="text-[11px] text-zinc-500 mb-4">
+                Arraste cada imagem para posicionar o enquadramento. O preview é exatamente o que vai aparecer nas páginas.
+              </p>
               <ImageCropEditor
                 imageUrl={formData.featured_image_url}
                 heroCrop={formData.hero_crop}
                 cardCrop={formData.card_crop}
-                onHeroCropChange={(crop) => 
+                onHeroCropChange={(crop) =>
                   setFormData((prev) => ({ ...prev, hero_crop: crop }))
                 }
-                onCardCropChange={(crop) => 
+                onCardCropChange={(crop) =>
                   setFormData((prev) => ({ ...prev, card_crop: crop }))
                 }
               />

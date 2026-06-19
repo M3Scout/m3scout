@@ -11,6 +11,8 @@ const NewsDetail = () => {
 
   const { data: article, isLoading, error } = useQuery({
     queryKey: ["news-detail", slug],
+    staleTime: 0,
+    refetchOnMount: true,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("news_articles")
@@ -55,8 +57,9 @@ const NewsDetail = () => {
   }
 
   return (
-      <div className="min-h-screen bg-[#0B0B0D]">
-        <div className="w-full max-w-[1100px] mx-auto" style={{ paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
+    <div className="min-h-screen bg-[#0B0B0D]">
+      <div className="w-full mx-auto" style={{ maxWidth: 'var(--page-max-width)', paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
+
         {/* Back link */}
         <div className="pt-32 pb-8">
           <Link
@@ -69,28 +72,21 @@ const NewsDetail = () => {
         </div>
 
         {/* Article Header */}
-        <header className="pb-10 border-b border-zinc-800">
-          {/* Meta */}
+        <header className="pb-10 border-b border-zinc-800 max-w-[860px]">
           <div className="flex items-center gap-4 mb-6">
             <div className="flex items-center gap-2 text-sm text-zinc-500">
               <Calendar className="w-4 h-4" />
               <time dateTime={article.publish_date}>
-                {format(new Date(article.publish_date), "dd 'de' MMMM 'de' yyyy", {
-                  locale: ptBR,
-                })}
+                {format(new Date(article.publish_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
               </time>
             </div>
             <span className="px-3 py-1 bg-[#e52421]/10 text-[#e52421] rounded text-xs font-medium uppercase tracking-wide">
               {article.category}
             </span>
           </div>
-
-          {/* Title */}
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight mb-6">
             {article.title}
           </h1>
-
-          {/* Excerpt */}
           {article.excerpt && (
             <p className="text-lg md:text-xl text-zinc-400 leading-relaxed">
               {article.excerpt}
@@ -98,14 +94,14 @@ const NewsDetail = () => {
           )}
         </header>
 
-        {/* Featured Image with crop */}
+        {/* Featured Image — full width of page container, 16:9 */}
         {article.featured_image_url && (
           <div className="py-10">
             <CroppedNewsImage
               src={article.featured_image_url}
               alt={article.title}
               crop={article.hero_crop as CropPosition | null}
-              className="w-full rounded-xl max-h-[500px]"
+              className="w-full rounded-xl"
               aspectRatio={16 / 9}
             />
           </div>
@@ -114,17 +110,17 @@ const NewsDetail = () => {
         {/* Content */}
         <article className="py-10 md:py-14">
           <div className="max-w-[780px] prose prose-invert prose-lg">
-            {article.content.split("\n").map((paragraph, index) => (
+            {article.content.split("\n").map((paragraph, index) =>
               paragraph.trim() && (
                 <p key={index} className="text-zinc-300 leading-relaxed mb-6">
                   {paragraph}
                 </p>
               )
-            ))}
+            )}
           </div>
         </article>
 
-        {/* Signature Section */}
+        {/* Signature */}
         <section className="pt-10 pb-16 md:pb-20 border-t border-zinc-800">
           <p className="text-xl md:text-2xl">
             <span className="text-white font-bold">M3 Agency.</span>

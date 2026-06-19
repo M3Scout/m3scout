@@ -16,9 +16,10 @@ interface CroppedNewsImageProps {
   className?: string;
   width?: number;
   aspectRatio?: number;
+  objectFit?: "cover" | "contain";
 }
 
-const DEFAULT_CROP: CropPosition = { x: 50, y: 50, scale: 1 };
+const DEFAULT_CROP: CropPosition = { x: 50, y: 20, scale: 1 };
 
 export function CroppedNewsImage({
   src,
@@ -27,6 +28,7 @@ export function CroppedNewsImage({
   className,
   aspectRatio,
   width = 1200,
+  objectFit = "cover",
 }: CroppedNewsImageProps) {
   const position = crop ?? DEFAULT_CROP;
   const [hasError, setHasError] = useState(false);
@@ -59,7 +61,8 @@ export function CroppedNewsImage({
             src={optimizedSrc}
             alt={alt}
             className={cn(
-              "absolute inset-0 w-full h-full object-cover transition-opacity duration-300",
+              "absolute inset-0 w-full h-full transition-opacity duration-300",
+              objectFit === "contain" ? "object-contain" : "object-cover",
               isLoading ? "opacity-0" : "opacity-100"
             )}
             style={{
