@@ -72,7 +72,7 @@ const NewsDetail = () => {
         </div>
 
         {/* Article Header */}
-        <header className="pb-10 border-b border-zinc-800 max-w-[860px]">
+        <header className="pb-10 border-b border-zinc-800">
           <div className="flex items-center gap-4 mb-6">
             <div className="flex items-center gap-2 text-sm text-zinc-500">
               <Calendar className="w-4 h-4" />
@@ -109,7 +109,7 @@ const NewsDetail = () => {
 
         {/* Content */}
         <article className="py-10 md:py-14">
-          <div className="max-w-[780px] prose prose-invert prose-lg">
+          <div className="prose prose-invert prose-lg max-w-none">
             {article.content.split("\n").map((paragraph, index) =>
               paragraph.trim() && (
                 <p key={index} className="text-zinc-300 leading-relaxed mb-6">
