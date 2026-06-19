@@ -19,7 +19,7 @@ interface CroppedNewsImageProps {
   objectFit?: "cover" | "contain";
 }
 
-const DEFAULT_CROP: CropPosition = { x: 50, y: 20, scale: 1 };
+const DEFAULT_CROP: CropPosition = { x: 50, y: 25, scale: 1 };
 
 export function CroppedNewsImage({
   src,
@@ -30,7 +30,9 @@ export function CroppedNewsImage({
   width = 1200,
   objectFit = "cover",
 }: CroppedNewsImageProps) {
-  const position = crop ?? DEFAULT_CROP;
+  // Crops with scale > 1 were set with the old editor (which had a zoom slider).
+  // Those position values don't translate correctly to the CSS-only approach, so fall back to default.
+  const position = (crop && crop.scale <= 1) ? crop : DEFAULT_CROP;
   const [hasError, setHasError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
