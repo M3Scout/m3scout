@@ -58,7 +58,7 @@ const NewsDetail = () => {
 
   return (
     <div className="min-h-screen bg-[#0B0B0D]">
-      <div className="w-full mx-auto" style={{ maxWidth: 'var(--page-max-width)', paddingLeft: 'var(--page-gutter)', paddingRight: 'var(--page-gutter)' }}>
+      <div className="w-full mx-auto" style={{ maxWidth: '1600px', paddingLeft: 'clamp(24px, 4.5vw, 72px)', paddingRight: 'clamp(24px, 4.5vw, 72px)' }}>
 
         {/* Back link */}
         <div className="pt-32 pb-8">
