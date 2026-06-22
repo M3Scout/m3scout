@@ -112,6 +112,18 @@ interface ContractRecord {
   is_current: boolean | null;
 }
 
+const CONTRACT_TYPE_PT: Record<string, string> = {
+  permanent:   "Definitivo",
+  loan:        "Empréstimo",
+  free:        "Livre",
+  free_agent:  "Livre",
+  negotiation: "Negociação",
+  negociacao:  "Negociação",
+  contratado:  "Contratado",
+  contracted:  "Contratado",
+};
+const fmtContractType = (v: string) => CONTRACT_TYPE_PT[v.toLowerCase()] ?? v;
+
 // ─── Design tokens ───────────────────────────────────────────────────────────
 
 const ACCENT  = "#ec4525";
@@ -781,7 +793,7 @@ const PlayerDetail = () => {
                     <dl className="space-y-2">
                       {currentContract ? [
                         { k: "Clube",   v: currentContract.club_name },
-                        { k: "Tipo",    v: currentContract.contract_type },
+                        { k: "Tipo",    v: fmtContractType(currentContract.contract_type) },
                         { k: "Início",  v: format(new Date(currentContract.start_date), "MMM yyyy", { locale: ptBR }) },
                         { k: "Término", v: currentContract.end_date ? format(new Date(currentContract.end_date), "MMM yyyy", { locale: ptBR }) : null },
                         { k: "Salário", v: currentContract.salary_info },
@@ -793,7 +805,7 @@ const PlayerDetail = () => {
                           <dd className="font-editorial-mono text-[10px] tracking-[0.08em] uppercase" style={{ color: FG }}>{v}</dd>
                         </div>
                       )) : [
-                        { k: "Status", v: player.contract_status },
+                        { k: "Status", v: player.contract_status ? fmtContractType(player.contract_status) : null },
                         { k: "Início",  v: player.contract_start ? format(new Date(player.contract_start), "MMM yyyy", { locale: ptBR }) : null },
                         { k: "Término", v: player.contract_end   ? format(new Date(player.contract_end),   "MMM yyyy", { locale: ptBR }) : null },
                         { k: "Agente",  v: player.agent_name },
