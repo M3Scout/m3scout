@@ -103,7 +103,7 @@ const formSchema = z.object({
   // 5. Veredito
   recommendation_grade: z.enum(["A", "B", "C", "D"]).optional(),
   highlight_video_url:  z.string().url("URL inválida").optional().or(z.literal("")),
-  notes_internal:       z.string().max(2000).optional(),
+  notes_internal:       z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
