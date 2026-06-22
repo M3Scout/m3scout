@@ -101,6 +101,17 @@ interface ScoutingReport {
   competition: { name: string } | null;
 }
 
+interface ContractRecord {
+  id: string;
+  club_name: string;
+  contract_type: string;
+  start_date: string;
+  end_date: string | null;
+  salary_info: string | null;
+  notes: string | null;
+  is_current: boolean | null;
+}
+
 // ─── Design tokens ───────────────────────────────────────────────────────────
 
 const ACCENT  = "#ec4525";
@@ -223,6 +234,7 @@ const PlayerDetail = () => {
 
   const [player, setPlayer] = useState<Player | null>(null);
   const [reports, setReports] = useState<ScoutingReport[]>([]);
+  const [currentContract, setCurrentContract] = useState<ContractRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("overview");
@@ -337,18 +349,29 @@ const PlayerDetail = () => {
 
   const refetchPlayer = async () => {
     if (!id) return;
-    const { data } = await supabase.from("players").select("*").eq("id", id).limit(1);
+    const [{ data }, contractRes] = await Promise.all([
+      supabase.from("players").select("*").eq("id", id).limit(1),
+      supabase
+        .from("player_contract_history")
+        .select("id, club_name, contract_type, start_date, end_date, salary_info, notes, is_current")
+        .eq("player_id", id)
+        .eq("is_archived", false)
+        .order("start_date", { ascending: false })
+        .limit(1),
+    ]);
     const row = Array.isArray(data) ? data[0] ?? null : null;
     if (row) {
       const club = await deriveCurrentClub(id, row.current_club);
       setPlayer({ ...(row as Player), current_club: club });
     }
+    const contract = Array.isArray(contractRes.data) ? contractRes.data[0] ?? null : null;
+    setCurrentContract(contract as ContractRecord | null);
   };
 
   useEffect(() => {
     if (!id) return;
     const fetchData = async () => {
-      const [playerRes, reportsRes] = await Promise.all([
+      const [playerRes, reportsRes, contractRes] = await Promise.all([
         supabase.from("players").select("*").eq("id", id).limit(1),
         supabase
           .from("scouting_reports")
@@ -356,6 +379,13 @@ const PlayerDetail = () => {
           .eq("player_id", id)
           .order("match_date", { ascending: false })
           .limit(RECENT_REPORTS_LIMIT),
+        supabase
+          .from("player_contract_history")
+          .select("id, club_name, contract_type, start_date, end_date, salary_info, notes, is_current")
+          .eq("player_id", id)
+          .eq("is_archived", false)
+          .order("start_date", { ascending: false })
+          .limit(1),
       ]);
       const row = Array.isArray(playerRes.data) ? playerRes.data[0] ?? null : null;
       if (row) {
@@ -363,6 +393,8 @@ const PlayerDetail = () => {
         setPlayer({ ...(row as Player), current_club: club });
       }
       if (reportsRes.data) setReports(reportsRes.data as ScoutingReport[]);
+      const contract = Array.isArray(contractRes.data) ? contractRes.data[0] ?? null : null;
+      setCurrentContract(contract as ContractRecord | null);
       setLoading(false);
     };
     fetchData();
@@ -743,12 +775,25 @@ const PlayerDetail = () => {
                     </dl>
                   </div>
 
-                  {/* Contract */}
+                  {/* Contract — sourced from player_contract_history (latest non-archived) */}
                   <div className={`${CARD} p-5`} style={CARD_STYLE}>
                     <CardLabel>CONTRATO</CardLabel>
                     <dl className="space-y-2">
-                      {[
-                        { k: "Status",  v: player.contract_status },
+                      {currentContract ? [
+                        { k: "Clube",   v: currentContract.club_name },
+                        { k: "Tipo",    v: currentContract.contract_type },
+                        { k: "Início",  v: format(new Date(currentContract.start_date), "MMM yyyy", { locale: ptBR }) },
+                        { k: "Término", v: currentContract.end_date ? format(new Date(currentContract.end_date), "MMM yyyy", { locale: ptBR }) : null },
+                        { k: "Salário", v: currentContract.salary_info },
+                        { k: "Agente",  v: player.agent_name },
+                        { k: "Obs.",    v: currentContract.notes },
+                      ].filter(x => x.v).map(({ k, v }) => (
+                        <div key={k} className="flex justify-between items-center gap-2 px-3 py-1.5 rounded-md" style={{ background: "rgba(255,255,255,0.05)" }}>
+                          <dt className="font-editorial-mono text-[10px] tracking-wider uppercase" style={{ color: MUTED }}>{k}</dt>
+                          <dd className="font-editorial-mono text-[10px] tracking-[0.08em] uppercase" style={{ color: FG }}>{v}</dd>
+                        </div>
+                      )) : [
+                        { k: "Status", v: player.contract_status },
                         { k: "Início",  v: player.contract_start ? format(new Date(player.contract_start), "MMM yyyy", { locale: ptBR }) : null },
                         { k: "Término", v: player.contract_end   ? format(new Date(player.contract_end),   "MMM yyyy", { locale: ptBR }) : null },
                         { k: "Agente",  v: player.agent_name },
@@ -759,7 +804,7 @@ const PlayerDetail = () => {
                           <dd className="font-editorial-mono text-[10px] tracking-[0.08em] uppercase" style={{ color: FG }}>{v}</dd>
                         </div>
                       ))}
-                      {!player.contract_status && !player.contract_start && (
+                      {!currentContract && !player.contract_status && !player.contract_start && (
                         <p className="font-editorial-mono text-[11px]" style={{ color: MUTED }}>Sem informações de contrato.</p>
                       )}
                     </dl>

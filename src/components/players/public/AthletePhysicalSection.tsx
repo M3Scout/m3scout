@@ -36,8 +36,8 @@ function PhysicalCard({
   }
 
   const hasGauge = hasValue && refMin !== null && refMax !== null;
-  // Portuguese decimal format: 10.5 → "10,5"
-  const valStr = hasValue ? String(value).replace(".", ",") : null;
+  // Portuguese decimal format: 10.5 → "10,5" — round to 1 decimal to avoid float artifacts
+  const valStr = hasValue ? (value as number).toFixed(1).replace(".", ",").replace(/,0$/, "") : null;
 
   return (
     <div
