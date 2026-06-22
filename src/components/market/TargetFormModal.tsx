@@ -149,6 +149,25 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 const INPUT_CLS = "h-9 bg-white/[0.04] border-white/[0.07] text-[13px] placeholder:text-zinc-600 focus-visible:ring-1 focus-visible:ring-[#ec4525]/40 focus-visible:border-[#ec4525]/40";
 const SELECT_TRIGGER_CLS = "h-9 bg-white/[0.04] border-white/[0.07] text-[13px] focus:ring-1 focus:ring-[#ec4525]/40";
 
+// Renders one star: empty, half-filled (left 50%), or full
+function StarIcon({ fill }: { fill: "empty" | "half" | "full" }) {
+  if (fill === "full") {
+    return <Star className="w-5 h-5 fill-[#ec4525] text-[#ec4525]" />;
+  }
+  if (fill === "empty") {
+    return <Star className="w-5 h-5 text-zinc-700" />;
+  }
+  // Half: clip filled star to left 50%
+  return (
+    <div className="relative w-5 h-5">
+      <Star className="absolute inset-0 w-5 h-5 text-zinc-700" />
+      <div className="absolute inset-0 overflow-hidden" style={{ width: "50%" }}>
+        <Star className="w-5 h-5 fill-[#ec4525] text-[#ec4525]" />
+      </div>
+    </div>
+  );
+}
+
 function StarRating({ value, onChange, label, sub }: {
   value: number | null;
   onChange: (v: number) => void;
@@ -156,35 +175,44 @@ function StarRating({ value, onChange, label, sub }: {
   sub: string;
 }) {
   const [hover, setHover] = useState<number | null>(null);
-  const active = hover ?? value ?? 0;
+  const display = hover ?? value ?? 0;
+
+  const getFill = (star: number): "empty" | "half" | "full" => {
+    if (display >= star) return "full";
+    if (display >= star - 0.5) return "half";
+    return "empty";
+  };
+
+  const resolveValue = (e: React.MouseEvent<HTMLDivElement>, star: number) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    return e.clientX - rect.left < rect.width / 2 ? star - 0.5 : star;
+  };
+
   return (
     <div className="flex items-center justify-between py-2.5 px-3 rounded-lg bg-white/[0.02] border border-white/[0.04]">
       <div>
         <p className="text-[13px] font-medium text-[#ededee] leading-tight">{label}</p>
         <p className="text-[10px] text-[#62616a] mt-0.5">{sub}</p>
       </div>
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-0.5">
         {[1, 2, 3, 4, 5].map((star) => (
-          <button
+          <div
             key={star}
-            type="button"
-            onClick={() => onChange(star === value ? 0 : star)}
-            onMouseEnter={() => setHover(star)}
+            className="w-6 h-6 flex items-center justify-center cursor-pointer transition-transform hover:scale-110"
+            onMouseMove={(e) => setHover(resolveValue(e, star))}
             onMouseLeave={() => setHover(null)}
-            className="transition-transform hover:scale-110"
+            onClick={(e) => {
+              const v = resolveValue(e, star);
+              onChange(v === value ? 0 : v);
+            }}
           >
-            <Star
-              className={cn(
-                "w-5 h-5 transition-colors",
-                star <= active
-                  ? "fill-[#ec4525] text-[#ec4525]"
-                  : "text-zinc-700 hover:text-zinc-500"
-              )}
-            />
-          </button>
+            <StarIcon fill={getFill(star)} />
+          </div>
         ))}
         {value !== null && value > 0 && (
-          <span className="ml-1.5 font-mono text-[11px] text-[#ec4525] w-4 text-center">{value}</span>
+          <span className="ml-2 font-mono text-[12px] text-[#ec4525] w-6 text-center tabular-nums">
+            {value % 1 === 0 ? value : value.toFixed(1)}
+          </span>
         )}
       </div>
     </div>
