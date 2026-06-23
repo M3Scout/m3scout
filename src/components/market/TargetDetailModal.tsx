@@ -241,7 +241,7 @@ export function TargetDetailModal({ open, onOpenChange, target, onEdit, onSucces
         >
           {/* ── HEADER BANNER ─────────────────────────────────────────── */}
           <div
-            className="relative px-6 pt-6 pb-5"
+            className="relative pl-6 pr-14 pt-6 pb-5"
             style={{ background: "linear-gradient(135deg, #0f0d14 0%, #12101a 100%)", borderBottom: `1px solid ${BDR}` }}
           >
             <div className="flex items-start gap-4">
