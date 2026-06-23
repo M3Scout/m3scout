@@ -398,7 +398,7 @@ export function TargetDetailModal({ open, onOpenChange, target, onEdit, onSucces
                   <SectionLabel>Notas do Scout</SectionLabel>
                   <div className="flex gap-2 p-3 rounded-lg" style={{ background: BG_CARD, border: `1px solid ${BDR}` }}>
                     <FileText className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: MUTED }} />
-                    <p className="text-[12px] leading-relaxed" style={{ color: "#9c9ba3" }}>{target.notes_internal}</p>
+                    <p className="text-[12px] leading-relaxed whitespace-pre-wrap" style={{ color: "#9c9ba3" }}>{target.notes_internal}</p>
                   </div>
                 </div>
               )}
