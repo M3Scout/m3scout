@@ -453,10 +453,10 @@ export default function MarketTargets() {
       </DndContext>
 
       {/* ── FOOTER PANELS ─────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-3">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
 
-        {/* Atividade Recente */}
-        <div className="rounded-2xl border overflow-hidden" style={{ background: BG2, borderColor: BDR }}>
+        {/* Atividade Recente — spans 3 kanban columns */}
+        <div className="lg:col-span-3 rounded-2xl border overflow-hidden" style={{ background: BG2, borderColor: BDR }}>
           <div className="flex items-center gap-3 px-5 py-3.5 border-b" style={{ borderColor: BDR }}>
             <span className="font-mono text-[10px] font-semibold" style={{ color: ACCENT }}>01</span>
             <div className="h-px w-5" style={{ background: BDR }} />
@@ -501,8 +501,8 @@ export default function MarketTargets() {
           </div>
         </div>
 
-        {/* Market Score Ranking */}
-        <div className="rounded-2xl border overflow-hidden" style={{ background: BG2, borderColor: BDR }}>
+        {/* Market Score Ranking — spans 1 kanban column (Descartado) */}
+        <div className="lg:col-span-1 rounded-2xl border overflow-hidden" style={{ background: BG2, borderColor: BDR }}>
           <div className="flex items-center gap-3 px-5 py-3.5 border-b" style={{ borderColor: BDR }}>
             <span className="font-mono text-[10px] font-semibold" style={{ color: ACCENT }}>02</span>
             <div className="h-px w-5" style={{ background: BDR }} />
