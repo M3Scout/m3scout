@@ -232,6 +232,9 @@ function buildInsights(
       },
     ];
 
+    // Track best positive per player (only emit the top 1 to avoid flooding)
+    let bestPositive: { pct: number; r: typeof rateRules[number] } | null = null;
+
     for (const r of rateRules) {
       if (r.total < r.minTotal) continue;
       const pct = (r.success / r.total) * 100;
@@ -255,15 +258,24 @@ function buildInsights(
           link,
         });
       } else if (pct >= r.positiveThreshold) {
-        out.push({
-          id: `positive-${r.key.toLowerCase()}-${p.player_id}`, category: "positive", priority: 6,
-          icon: Star,
-          title: `${firstName}: Em Alta em ${r.key}`,
-          description: `${pct.toFixed(0)}% de aproveitamento. Excelente desempenho.`,
-          tooltip: `${p.full_name} — ${r.key}: ${pct.toFixed(1)}% (${r.success}/${r.total}) em ${year}. Acima do benchmark de referência.`,
-          link,
-        });
+        // Keep only the best positive per player
+        if (!bestPositive || pct > bestPositive.pct) {
+          bestPositive = { pct, r };
+        }
       }
+    }
+
+    // Emit single best positive for this player
+    if (bestPositive) {
+      const { pct, r } = bestPositive;
+      out.push({
+        id: `positive-${r.key.toLowerCase()}-${p.player_id}`, category: "positive", priority: 6,
+        icon: Star,
+        title: `${firstName}: Em Alta em ${r.key}`,
+        description: `${pct.toFixed(0)}% de aproveitamento. Excelente desempenho.`,
+        tooltip: `${p.full_name} — ${r.key}: ${pct.toFixed(1)}% (${r.success}/${r.total}) em ${year}. Melhor stat acima do benchmark.`,
+        link,
+      });
     }
   }
 
@@ -369,8 +381,13 @@ function InsightChip({
       animate={{ opacity: 1, x: 0,  scale: 1 }}
       exit={{ opacity: 0, x: -10, scale: 0.95 }}
       transition={{ delay: index * 0.05, duration: 0.3, ease: "easeOut" }}
-      className="relative shrink-0 w-[210px] rounded-xl flex flex-col gap-2.5 p-3.5 group"
-      style={{ background: cat.bg, border: `1px solid ${cat.border}` }}
+      className="relative rounded-xl flex flex-col gap-2.5 p-3.5 group"
+      style={{
+        background: cat.bg,
+        border: `1px solid ${cat.border}`,
+        flex: "0 0 calc(25% - 9px)",
+        minWidth: "180px",
+      }}
     >
       {/* Dismiss */}
       <button
@@ -641,9 +658,7 @@ export const InsightsCard = () => {
             </motion.div>
           ) : (
             filtered.map((insight, i) => (
-              <div key={insight.id} style={{ scrollSnapAlign: "start" }}>
-                <InsightChip insight={insight} index={i} onDismiss={handleDismiss} />
-              </div>
+              <InsightChip key={insight.id} insight={insight} index={i} onDismiss={handleDismiss} />
             ))
           )}
         </AnimatePresence>
