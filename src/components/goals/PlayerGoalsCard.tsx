@@ -23,6 +23,7 @@ const GOAL_TYPE_CONFIG: Record<string, GoalTypeConfig> = {
   shots:                    { label: "Finalizações",    icon: "🎯", color: "orange",  hex: "#f97316", type: "accumulation" },
   tackles:                  { label: "Desarmes",        icon: "🦵", color: "cyan",    hex: "#06b6d4", type: "accumulation" },
   interceptions:            { label: "Interceptações",  icon: "🧲", color: "indigo",  hex: "#6366f1", type: "accumulation" },
+  clearances:               { label: "Cortes",          icon: "🛡️", color: "slate",   hex: "#64748b", type: "accumulation" },
   pass_accuracy:            { label: "Passe %",         icon: "📊", color: "teal",    hex: "#14b8a6", type: "accumulation", unit: "%" },
   dribble_accuracy:         { label: "Dribles %",       icon: "🏃", color: "purple",  hex: "#a855f7", type: "accumulation", unit: "%" },
   yellow_cards_max:         { label: "Amarelos",        icon: "🟨", color: "yellow",  hex: "#eab308", type: "limit", limitLabel: "máx." },

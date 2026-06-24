@@ -452,6 +452,7 @@ export default function GoalsMonitor({ playerIdFilter }: { playerIdFilter?: stri
             const manualSaves = manualStats.reduce((sum, s) => sum + (s.saves || 0), 0);
             const manualCleanSheets = manualStats.reduce((sum, s) => sum + (s.clean_sheets || 0), 0);
             const manualInterceptions = manualStats.reduce((sum, s) => sum + (s.interceptions || 0), 0);
+            const manualClearances = manualStats.reduce((sum, s) => sum + (s.clearances || 0), 0);
             const manualPassesCompleted = manualStats.reduce((sum, s) => sum + (s.passes_completed || 0), 0);
             const manualPassesFailed = manualStats.reduce((sum, s) => sum + (s.passes_failed || 0), 0);
             const manualPassesTotal = manualPassesCompleted + manualPassesFailed;
@@ -475,6 +476,8 @@ export default function GoalsMonitor({ playerIdFilter }: { playerIdFilter?: stri
             const legacySaves = legacyStats.reduce((sum, s) => sum + (s.saves || 0), 0);
             const legacyCleanSheets = legacyStats.reduce((sum, s) => sum + (s.clean_sheets || 0), 0);
             const legacyInterceptions = legacyStats.reduce((sum, s) => sum + (s.interceptions || 0), 0);
+            const legacyClearances = legacyStats.reduce((sum, s) => sum + (s.clearances || 0), 0);
+            const liveClearances = liveStats.reduce((sum, s) => sum + (s.clearances || 0), 0);
             // Legacy: accurate_passes = completed; total_passes = FAILED (same quirk as live stats)
             const legacyPassesCompleted = legacyStats.reduce((sum, s) => sum + (s.accurate_passes || 0), 0);
             const legacyPassesFailed    = legacyStats.reduce((sum, s) => sum + (s.total_passes || 0), 0);
@@ -507,6 +510,7 @@ export default function GoalsMonitor({ playerIdFilter }: { playerIdFilter?: stri
               saves: liveSaves + manualSaves + legacySaves,
               clean_sheets: manualCleanSheets + legacyCleanSheets,
               interceptions: liveInterceptions + manualInterceptions + legacyInterceptions,
+              clearances: liveClearances + manualClearances + legacyClearances,
               passes_completed: livePassesCompleted + manualPassesCompleted + legacyPassesCompleted,
               passes_total: livePassesTotal + manualPassesTotal + legacyPassesTotal,
               dribbles_success: liveDribblesSuccess + manualDribblesSuccess + legacyDribblesSuccess,
@@ -558,6 +562,7 @@ export default function GoalsMonitor({ playerIdFilter }: { playerIdFilter?: stri
           case "saves": currentValue = playerSeasonStats.saves; break;
           case "clean_sheets": currentValue = playerSeasonStats.clean_sheets; break;
           case "interceptions": currentValue = playerSeasonStats.interceptions; break;
+          case "clearances": currentValue = (playerSeasonStats as any).clearances ?? 0; break;
           case "pass_accuracy": {
             const completed = playerSeasonStats.passes_completed ?? 0;
             const total = playerSeasonStats.passes_total ?? 0;
@@ -931,6 +936,7 @@ export default function GoalsMonitor({ playerIdFilter }: { playerIdFilter?: stri
           onOpenChange={setAddGoalOpen}
           playerId={playerIdFilter}
           isGoalkeeper={isGoalkeeper}
+          playerPosition={playerProfile?.position ?? ""}
           existingGoalTypes={goalsRaw?.filter(g => g.season_year === new Date().getFullYear()).map(g => g.goal_type) ?? []}
           onSuccess={() => { void queryClient.invalidateQueries({ queryKey: ["admin-metas", playerIdFilter] }); }}
         />
