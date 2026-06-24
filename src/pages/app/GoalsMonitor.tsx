@@ -226,10 +226,11 @@ function GoalsGridView({
   );
 }
 
-export default function GoalsMonitor() {
+export default function GoalsMonitor({ playerIdFilter }: { playerIdFilter?: string } = {}) {
   const isDev = import.meta.env.DEV;
   const { isAdmin } = useAuth();
   const { can, loading: permissionsLoading, permissionsError } = usePermissions();
+  const isPlayerView = !!playerIdFilter;
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -243,10 +244,10 @@ export default function GoalsMonitor() {
 
   // Fetch all goals with player info
   const { data: goalsRaw, isLoading: goalsLoading, error: goalsError } = useQuery({
-    queryKey: ["admin-metas"],
+    queryKey: ["admin-metas", playerIdFilter],
     queryFn: async () => {
       // Use left join (no !inner) to avoid RLS filtering issues
-      const { data, error } = await supabase
+      let query = supabase
         .from("player_season_goals")
         .select(`
           id,
@@ -264,6 +265,10 @@ export default function GoalsMonitor() {
           )
         `)
         .order("created_at", { ascending: false });
+
+      if (playerIdFilter) query = query.eq("player_id", playerIdFilter);
+
+      const { data, error } = await query;
 
       if (error) {
         console.error("[GoalsMonitor] Query error:", error);
@@ -670,7 +675,7 @@ export default function GoalsMonitor() {
   const isLoading = goalsLoading || (playerIds.length > 0 && isStatsActuallyLoading);
 
   const goals = goalsRaw ?? [];
-  const rbacAllowed = isAdmin || can("users", "manage");
+  const rbacAllowed = isPlayerView || isAdmin || can("users", "manage");
 
   // Debug log (dev only)
   if (isDev) {
@@ -754,8 +759,8 @@ export default function GoalsMonitor() {
           </div>
         )}
 
-        {/* ── FILTER BAR ─────────────────────────────────────────────────── */}
-        {!permissionsLoading && !permissionsError && rbacAllowed && (
+        {/* ── FILTER BAR (oculto na view do atleta) ──────────────────────── */}
+        {!isPlayerView && !permissionsLoading && !permissionsError && rbacAllowed && (
           <div className="hidden sm:flex items-center gap-2 p-3 rounded-2xl" style={{ background: DT.bg2, border: `1px solid ${DT.bdr}` }}>
             {/* Search */}
             <div className="relative flex-1">

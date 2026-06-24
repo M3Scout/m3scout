@@ -101,6 +101,7 @@ const playerNavGroups: NavGroup[] = [
     items: [
       { href: "/dashboard", label: "Dashboard", module: "app", icon: LayoutDashboard },
       { href: "/dashboard/my-profile", label: "Meu Perfil", module: "players", icon: User },
+      { href: "/dashboard/minhas-metas", label: "Metas", module: "app", icon: Target },
       { href: "/dashboard/meus-contratos", label: "Contratos", module: "app", icon: ScrollText },
       { href: "/dashboard/relatorios", label: "Relatórios", module: "reports", icon: FileText },
     ]

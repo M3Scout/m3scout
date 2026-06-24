@@ -84,6 +84,7 @@ const News = lazy(() => import("./pages/app/News"));
 const NewsForm = lazy(() => import("./pages/app/NewsForm"));
 const Teams = lazy(() => import("./pages/app/Teams"));
 const GoalsMonitor = lazy(() => import("./pages/app/GoalsMonitor"));
+const MyGoalsPage  = lazy(() => import("./pages/app/MyGoalsPage"));
 const UserManagement = lazy(() => import("./pages/app/UserManagement"));
 
 // Debug Pages
@@ -218,8 +219,10 @@ function AppRoutes() {
                 <Route path="ativos" element={<RequirePermission module="players"><Suspense fallback={<RouteSuspense />}><MarketAtivos /></Suspense></RequirePermission>} />
                 <Route path="monitoramento" element={<RequirePermission module="players"><Suspense fallback={<RouteSuspense />}><MarketTargets /></Suspense></RequirePermission>} />
                 
-                {/* Goals Monitor */}
+                {/* Goals Monitor — admin */}
                 <Route path="metas" element={<RequirePermission module="users" action="manage"><Suspense fallback={<RouteSuspense />}><GoalsMonitor /></Suspense></RequirePermission>} />
+                {/* Goals Monitor — player (own goals only) */}
+                <Route path="minhas-metas" element={<Suspense fallback={<RouteSuspense />}><MyGoalsPage /></Suspense>} />
                 
                 {/* Contracts */}
                 <Route path="contratos" element={<RequirePermission module="players"><Suspense fallback={<RouteSuspense />}><Contracts /></Suspense></RequirePermission>} />
