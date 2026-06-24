@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Target,
   Search,
@@ -37,6 +37,7 @@ import { fetchPlayerMatchStatsRaw } from "@/lib/playerMatchStatsProvider";
 import { useAuth } from "@/hooks/authContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { PlayerGoalsCard } from "@/components/goals/PlayerGoalsCard";
+import { AddGoalDialog } from "@/components/goals/AddGoalDialog";
 import { getOptimizedImageUrl } from "@/lib/imageUtils";
 
 // Goal type configuration (mirrored from AthleteSeasonGoalsCard)
@@ -230,6 +231,7 @@ export default function GoalsMonitor({ playerIdFilter }: { playerIdFilter?: stri
   const isDev = import.meta.env.DEV;
   const { isAdmin } = useAuth();
   const { can, loading: permissionsLoading, permissionsError } = usePermissions();
+  const queryClient = useQueryClient();
   const isPlayerView = !!playerIdFilter;
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -239,6 +241,7 @@ export default function GoalsMonitor({ playerIdFilter }: { playerIdFilter?: stri
   const [statusFilter, setStatusFilter] = useState<string>("_all");
   const [sortBy, setSortBy] = useState<SortOption>("recent");
   const [selectedGoal, setSelectedGoal] = useState<GoalWithProgress | null>(null);
+  const [addGoalOpen, setAddGoalOpen] = useState(false);
   
   const currentYear = new Date().getFullYear();
 
@@ -712,12 +715,24 @@ export default function GoalsMonitor({ playerIdFilter }: { playerIdFilter?: stri
             )}
           </div>
           <div className="flex items-center gap-2">
-            <button
-              className="sm:hidden p-1 transition-colors" style={{ color: DT.muted }}
-              onClick={() => setSearchOpen(v => !v)} aria-label="Buscar"
-            >
-              <Search className="w-[18px] h-[18px]" />
-            </button>
+            {isPlayerView && (
+              <button
+                onClick={() => setAddGoalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-full font-mono text-[11px] tracking-[0.1em] uppercase text-white transition-all duration-200 hover:scale-105 active:scale-95"
+                style={{ background: DT.accent }}
+              >
+                <span className="text-base leading-none">+</span>
+                <span className="hidden sm:inline">Meta</span>
+              </button>
+            )}
+            {!isPlayerView && (
+              <button
+                className="sm:hidden p-1 transition-colors" style={{ color: DT.muted }}
+                onClick={() => setSearchOpen(v => !v)} aria-label="Buscar"
+              >
+                <Search className="w-[18px] h-[18px]" />
+              </button>
+            )}
             {permissionsLoading && (
               <span className="hidden sm:block font-mono text-[10px]" style={{ color: DT.muted }}>Sincronizando…</span>
             )}
@@ -871,8 +886,19 @@ export default function GoalsMonitor({ playerIdFilter }: { playerIdFilter?: stri
                 <p className="font-mono text-[11px]" style={{ color: "rgba(255,255,255,0.1)" }}>
                   {searchQuery || goalTypeFilter !== "_all" || statusFilter !== "_all"
                     ? "Tente ajustar os filtros"
-                    : "Os jogadores podem criar metas no dashboard deles"}
+                    : isPlayerView
+                      ? "Clique em + Meta para adicionar"
+                      : "Os jogadores podem criar metas no dashboard deles"}
                 </p>
+                {isPlayerView && filteredGoals.length === 0 && (
+                  <button
+                    onClick={() => setAddGoalOpen(true)}
+                    className="mx-auto flex items-center gap-2 px-5 py-2.5 rounded-full font-mono text-[11px] uppercase tracking-wide text-white transition-all hover:scale-105"
+                    style={{ background: DT.accent }}
+                  >
+                    + Criar primeira meta
+                  </button>
+                )}
               </div>
             ) : (
               <GoalsGridView goals={filteredGoals} onGoalClick={setSelectedGoal} />
@@ -880,6 +906,17 @@ export default function GoalsMonitor({ playerIdFilter }: { playerIdFilter?: stri
           </motion.div>
         )}
       </div>
+
+      {/* Add Goal Dialog — player view only */}
+      {isPlayerView && playerIdFilter && (
+        <AddGoalDialog
+          open={addGoalOpen}
+          onOpenChange={setAddGoalOpen}
+          playerId={playerIdFilter}
+          existingGoalTypes={goalsRaw?.filter(g => g.season_year === new Date().getFullYear()).map(g => g.goal_type) ?? []}
+          onSuccess={() => { void queryClient.invalidateQueries({ queryKey: ["admin-metas", playerIdFilter] }); }}
+        />
+      )}
 
       {/* Detail Modal */}
       <Dialog open={!!selectedGoal} onOpenChange={() => setSelectedGoal(null)}>
