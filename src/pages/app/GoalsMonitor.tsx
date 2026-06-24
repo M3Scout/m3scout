@@ -475,12 +475,14 @@ export default function GoalsMonitor({ playerIdFilter }: { playerIdFilter?: stri
             const legacySaves = legacyStats.reduce((sum, s) => sum + (s.saves || 0), 0);
             const legacyCleanSheets = legacyStats.reduce((sum, s) => sum + (s.clean_sheets || 0), 0);
             const legacyInterceptions = legacyStats.reduce((sum, s) => sum + (s.interceptions || 0), 0);
-            // Legacy uses accurate_passes (completed) and total_passes
+            // Legacy: accurate_passes = completed; total_passes = FAILED (same quirk as live stats)
             const legacyPassesCompleted = legacyStats.reduce((sum, s) => sum + (s.accurate_passes || 0), 0);
-            const legacyPassesTotal = legacyStats.reduce((sum, s) => sum + (s.total_passes || 0), 0);
-            // Legacy uses successful_dribbles and total_dribbles
+            const legacyPassesFailed    = legacyStats.reduce((sum, s) => sum + (s.total_passes || 0), 0);
+            const legacyPassesTotal     = legacyPassesCompleted + legacyPassesFailed;
+            // Legacy: successful_dribbles = success; total_dribbles = FAILED (not total)
             const legacyDribblesSuccess = legacyStats.reduce((sum, s) => sum + (s.successful_dribbles || 0), 0);
-            const legacyDribblesTotal = legacyStats.reduce((sum, s) => sum + (s.total_dribbles || 0), 0);
+            const legacyDribblesFailed  = legacyStats.reduce((sum, s) => sum + (s.total_dribbles || 0), 0);
+            const legacyDribblesTotal   = legacyDribblesSuccess + legacyDribblesFailed;
             // Goalkeeper-specific (legacy)
             const legacyGoalsConceded = legacyStats.reduce((sum, s) => sum + (s.goals_conceded || 0), 0);
             const legacyPenaltiesSaved = legacyStats.reduce((sum, s) => sum + (s.penalties_saved || 0), 0);
