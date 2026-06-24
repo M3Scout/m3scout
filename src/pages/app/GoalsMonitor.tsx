@@ -153,34 +153,23 @@ function StatusBadge({ status, isLimit }: { status: GoalStatus; isLimit: boolean
 }
 
 // Group goals by player and render as cards
-function GoalsGridView({ 
-  goals, 
-  onGoalClick 
-}: { 
-  goals: GoalWithProgress[]; 
+function GoalsGridView({
+  goals,
+  onGoalClick
+}: {
+  goals: GoalWithProgress[];
   onGoalClick: (goal: GoalWithProgress) => void;
 }) {
-  // Group goals by player_id
-  const groupedByPlayer = useMemo(() => {
-    const map = new Map<string, {
-      player: GoalWithProgress["player"];
-      goals: GoalWithProgress[];
-    }>();
+  const [openPlayerId, setOpenPlayerId] = useState<string | null>(null);
 
+  const groupedByPlayer = useMemo(() => {
+    const map = new Map<string, { player: GoalWithProgress["player"]; goals: GoalWithProgress[] }>();
     goals.forEach(goal => {
       if (!goal.player) return;
-      
       const existing = map.get(goal.player_id);
-      if (existing) {
-        existing.goals.push(goal);
-      } else {
-        map.set(goal.player_id, {
-          player: goal.player,
-          goals: [goal],
-        });
-      }
+      if (existing) existing.goals.push(goal);
+      else map.set(goal.player_id, { player: goal.player, goals: [goal] });
     });
-
     return Array.from(map.values());
   }, [goals]);
 
@@ -196,20 +185,19 @@ function GoalsGridView({
 
   return (
     <div className="space-y-4">
-      {/* Summary bar — desktop only */}
       <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
         <Users className="w-4 h-4" />
         <span>{groupedByPlayer.length} jogadores • {goals.length} metas</span>
       </div>
 
-      {/* Player cards grid */}
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
         {groupedByPlayer.map(({ player, goals: playerGoals }) => {
           if (!player) return null;
-          
           return (
             <PlayerGoalsCard
               key={player.id}
+              expanded={openPlayerId === player.id}
+              onToggle={() => setOpenPlayerId(prev => prev === player.id ? null : player.id)}
               player={{
                 id: player.id,
                 full_name: player.full_name,
@@ -226,8 +214,7 @@ function GoalsGridView({
                 percentage: g.percentage,
                 status: g.status,
               }))}
-              onGoalClick={(goal) => {
-                // Find the full goal object to pass to modal
+              onGoalClick={goal => {
                 const fullGoal = playerGoals.find(g => g.id === goal.id);
                 if (fullGoal) onGoalClick(fullGoal);
               }}

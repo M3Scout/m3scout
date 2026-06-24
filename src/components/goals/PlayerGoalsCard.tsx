@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { User, CheckCircle2, Clock, AlertTriangle, ChevronDown } from "lucide-react";
 import { getOptimizedImageUrl } from "@/lib/imageUtils";
@@ -56,6 +56,8 @@ interface PlayerData {
 interface PlayerGoalsCardProps {
   player: PlayerData;
   goals: GoalData[];
+  expanded: boolean;
+  onToggle: () => void;
   onGoalClick?: (goal: GoalData) => void;
 }
 
@@ -162,9 +164,7 @@ function GoalRow({ goal, onClick }: { goal: GoalData; onClick?: () => void }) {
 
 // ─── Main card ────────────────────────────────────────────────────────────────
 
-export function PlayerGoalsCard({ player, goals, onGoalClick }: PlayerGoalsCardProps) {
-  const [expanded, setExpanded] = useState(false);
-
+export function PlayerGoalsCard({ player, goals, expanded, onToggle, onGoalClick }: PlayerGoalsCardProps) {
   const summary = useMemo(() => {
     const completed  = goals.filter(g => g.status === "completed").length;
     const exceeded   = goals.filter(g => g.status === "exceeded").length;
@@ -206,7 +206,7 @@ export function PlayerGoalsCard({ player, goals, onGoalClick }: PlayerGoalsCardP
       {/* ── HEADER (clicável) ──────────────────────────────────────────── */}
       <div
         className="flex items-start gap-3 p-4 pb-3 cursor-pointer select-none"
-        onClick={() => setExpanded(v => !v)}
+        onClick={onToggle}
       >
         {/* Photo */}
         <div className="relative flex-none">
@@ -230,7 +230,7 @@ export function PlayerGoalsCard({ player, goals, onGoalClick }: PlayerGoalsCardP
         {/* Info */}
         <div className="flex-1 min-w-0 pt-0.5">
           <p className="font-display font-bold text-[13px] uppercase leading-tight truncate" style={{ color: FG }}>
-            {player.full_name}
+            {player.full_name.split(" ")[0]}
           </p>
           <p className="font-mono text-[10px] mt-0.5 truncate" style={{ color: MUTED }}>
             {player.position}{player.age ? ` · ${player.age}a` : ""}
