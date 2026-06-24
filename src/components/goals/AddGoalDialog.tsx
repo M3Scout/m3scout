@@ -37,7 +37,8 @@ const GOAL_TYPE_CONFIG: Record<string, GoalTypeCfg> = {
   penalty_save_rate:          { label: "Pênaltis Defendidos",       icon: "🥊", minValue: 1,   maxValue: 100,  step: 1,  unit: "%", type: "accumulation", description: "Percentual de pênaltis defendidos" },
 };
 
-const ALL_TYPES = Object.keys(GOAL_TYPE_CONFIG);
+const OUTFIELD_TYPES = ["goals","assists","matches","minutes","shots","tackles","interceptions","pass_accuracy","dribble_accuracy","yellow_cards_max"];
+const GK_TYPES       = ["saves","saves_difficult","clean_sheets","matches","minutes","interceptions","pass_accuracy","dribble_accuracy","yellow_cards_max","goals_conceded_max","goalkeeper_claims_accuracy","penalty_save_rate"];
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
@@ -56,22 +57,25 @@ interface AddGoalDialogProps {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   playerId: string;
+  isGoalkeeper?: boolean;
   existingGoalTypes?: string[];
   onSuccess?: () => void;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function AddGoalDialog({ open, onOpenChange, playerId, existingGoalTypes = [], onSuccess }: AddGoalDialogProps) {
+export function AddGoalDialog({ open, onOpenChange, playerId, isGoalkeeper = false, existingGoalTypes = [], onSuccess }: AddGoalDialogProps) {
   const [saving, setSaving]         = useState(false);
   const [newGoalType, setNewGoalType] = useState("");
   const [newGoalValue, setNewGoalValue] = useState(0);
 
   const currentYear = new Date().getFullYear();
 
+  const allowedTypes = isGoalkeeper ? GK_TYPES : OUTFIELD_TYPES;
+
   const availableToAdd = useMemo(() =>
-    ALL_TYPES.filter(t => !existingGoalTypes.includes(t)),
-    [existingGoalTypes]
+    allowedTypes.filter(t => !existingGoalTypes.includes(t)),
+    [allowedTypes, existingGoalTypes]
   );
 
   const handleAdd = async () => {

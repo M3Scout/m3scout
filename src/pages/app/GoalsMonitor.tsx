@@ -242,6 +242,21 @@ export default function GoalsMonitor({ playerIdFilter }: { playerIdFilter?: stri
   const [sortBy, setSortBy] = useState<SortOption>("recent");
   const [selectedGoal, setSelectedGoal] = useState<GoalWithProgress | null>(null);
   const [addGoalOpen, setAddGoalOpen] = useState(false);
+
+  const { data: playerProfile } = useQuery({
+    queryKey: ["player-position", playerIdFilter],
+    queryFn: async () => {
+      const { data } = await supabase.from("players").select("position").eq("id", playerIdFilter!).single();
+      return data;
+    },
+    enabled: !!playerIdFilter,
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const isGoalkeeper = useMemo(() => {
+    const pos = (playerProfile?.position ?? "").toLowerCase();
+    return pos.includes("goleiro") || pos === "gk" || pos.includes("goalkeeper");
+  }, [playerProfile]);
   
   const currentYear = new Date().getFullYear();
 
@@ -913,6 +928,7 @@ export default function GoalsMonitor({ playerIdFilter }: { playerIdFilter?: stri
           open={addGoalOpen}
           onOpenChange={setAddGoalOpen}
           playerId={playerIdFilter}
+          isGoalkeeper={isGoalkeeper}
           existingGoalTypes={goalsRaw?.filter(g => g.season_year === new Date().getFullYear()).map(g => g.goal_type) ?? []}
           onSuccess={() => { void queryClient.invalidateQueries({ queryKey: ["admin-metas", playerIdFilter] }); }}
         />
