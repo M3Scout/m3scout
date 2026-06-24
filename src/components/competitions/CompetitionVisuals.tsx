@@ -211,19 +211,22 @@ const COUNTRY_FLAGS: Record<string, string> = {
   "Coreia do Sul": "🇰🇷", "South Korea": "🇰🇷",
   "China": "🇨🇳",
   "Arábia Saudita": "🇸🇦", "Saudi Arabia": "🇸🇦",
-  "Qatar": "🇶🇦",
+  "Catar": "🇶🇦", "Qatar": "🇶🇦",
   "Emirados Árabes": "🇦🇪", "UAE": "🇦🇪",
+  "Irã": "🇮🇷", "Iran": "🇮🇷",
   // África
   "África do Sul": "🇿🇦", "South Africa": "🇿🇦",
   "Marrocos": "🇲🇦", "Morocco": "🇲🇦",
   "Egito": "🇪🇬", "Egypt": "🇪🇬",
   "Nigéria": "🇳🇬", "Nigeria": "🇳🇬",
-  // Internacional
+  // Confederações / Internacional
+  "CONMEBOL": "🌎",
+  "UEFA": "🌍",
   "Internacional": "🌍",
 };
 
 export function getCountryFlag(country: string): string {
-  return COUNTRY_FLAGS[country] ?? "🏳️";
+  return COUNTRY_FLAGS[country.trim()] ?? "🏳️";
 }
 
 // ── VisibilityDisplay ────────────────────────────────────────────────────────
