@@ -268,12 +268,12 @@ export function PlayerGoalsCard({ player, goals, expanded, onToggle, onGoalClick
         {/* Ring + chevron */}
         <div className="flex flex-col items-center gap-1 flex-none">
           <div className="relative flex items-center justify-center">
-            <ProgressRing pct={summary.avgPct} color={ringColor} size={64} />
-            <div className="absolute inset-0 flex items-center justify-center gap-0.5">
-              <span className="font-display font-bold text-[15px] leading-none" style={{ color: ringColor }}>
+            <ProgressRing pct={summary.avgPct} color={ringColor} size={48} />
+            <div className="absolute inset-0 flex items-center justify-center gap-[2px]">
+              <span className="font-display font-bold text-[11px] leading-none" style={{ color: ringColor }}>
                 {summary.avgPct}
               </span>
-              <span className="font-mono text-[9px] leading-none" style={{ color: MUTED }}>%</span>
+              <span className="font-mono text-[8px] leading-none" style={{ color: MUTED }}>%</span>
             </div>
           </div>
           <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
