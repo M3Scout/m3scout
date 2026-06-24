@@ -1,37 +1,36 @@
 import { useMemo } from "react";
 import { motion } from "framer-motion";
-import { User, CheckCircle2, Clock, AlertTriangle, TrendingUp } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
+import { User, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
 import { getOptimizedImageUrl } from "@/lib/imageUtils";
 
-// Goal type configuration
+// ─── Types ────────────────────────────────────────────────────────────────────
+
 interface GoalTypeConfig {
   label: string;
   icon: string;
   color: string;
+  hex: string;
   type: "accumulation" | "limit";
   limitLabel?: string;
 }
 
 const GOAL_TYPE_CONFIG: Record<string, GoalTypeConfig> = {
-  goals: { label: "Gols", icon: "⚽", color: "emerald", type: "accumulation" },
-  assists: { label: "Assistências", icon: "🅰️", color: "blue", type: "accumulation" },
-  matches: { label: "Partidas", icon: "🏟️", color: "violet", type: "accumulation" },
-  minutes: { label: "Minutos", icon: "⏱️", color: "amber", type: "accumulation" },
-  shots: { label: "Finalizações", icon: "🎯", color: "orange", type: "accumulation" },
-  tackles: { label: "Desarmes", icon: "🦵", color: "cyan", type: "accumulation" },
-  interceptions: { label: "Interceptações", icon: "🧲", color: "indigo", type: "accumulation" },
-  pass_accuracy: { label: "Passe %", icon: "📊", color: "teal", type: "accumulation" },
-  dribble_accuracy: { label: "Dribles %", icon: "🏃", color: "purple", type: "accumulation" },
-  yellow_cards_max: { label: "Amarelos", icon: "🟨", color: "yellow", type: "limit", limitLabel: "máx." },
-  saves: { label: "Defesas", icon: "🧤", color: "cyan", type: "accumulation" },
-  saves_difficult: { label: "Defesas Difíceis", icon: "🦸", color: "rose", type: "accumulation" },
-  clean_sheets: { label: "Clean Sheets", icon: "🛡️", color: "green", type: "accumulation" },
-  // New goalkeeper goal types
-  goals_conceded_max: { label: "Gols Sofridos", icon: "🥅", color: "red", type: "limit", limitLabel: "máx." },
-  goalkeeper_claims_accuracy: { label: "Saídas Corretas", icon: "🧤", color: "teal", type: "accumulation" },
-  penalty_save_rate: { label: "Pênaltis %", icon: "🥊", color: "purple", type: "accumulation" },
+  goals:                    { label: "Gols",            icon: "⚽", color: "emerald", hex: "#22c55e", type: "accumulation" },
+  assists:                  { label: "Assistências",    icon: "🅰️", color: "blue",    hex: "#3b82f6", type: "accumulation" },
+  matches:                  { label: "Partidas",        icon: "🏟️", color: "violet",  hex: "#8b5cf6", type: "accumulation" },
+  minutes:                  { label: "Minutos",         icon: "⏱️", color: "amber",   hex: "#f59e0b", type: "accumulation" },
+  shots:                    { label: "Finalizações",    icon: "🎯", color: "orange",  hex: "#f97316", type: "accumulation" },
+  tackles:                  { label: "Desarmes",        icon: "🦵", color: "cyan",    hex: "#06b6d4", type: "accumulation" },
+  interceptions:            { label: "Interceptações",  icon: "🧲", color: "indigo",  hex: "#6366f1", type: "accumulation" },
+  pass_accuracy:            { label: "Passe %",         icon: "📊", color: "teal",    hex: "#14b8a6", type: "accumulation" },
+  dribble_accuracy:         { label: "Dribles %",       icon: "🏃", color: "purple",  hex: "#a855f7", type: "accumulation" },
+  yellow_cards_max:         { label: "Amarelos",        icon: "🟨", color: "yellow",  hex: "#eab308", type: "limit", limitLabel: "máx." },
+  saves:                    { label: "Defesas",         icon: "🧤", color: "cyan",    hex: "#06b6d4", type: "accumulation" },
+  saves_difficult:          { label: "Def. Difíceis",  icon: "🦸", color: "rose",    hex: "#f43f5e", type: "accumulation" },
+  clean_sheets:             { label: "Clean Sheets",   icon: "🛡️", color: "green",   hex: "#22c55e", type: "accumulation" },
+  goals_conceded_max:       { label: "Gols Sofridos",  icon: "🥅", color: "red",     hex: "#ef4444", type: "limit", limitLabel: "máx." },
+  goalkeeper_claims_accuracy: { label: "Saídas %",     icon: "🧤", color: "teal",    hex: "#14b8a6", type: "accumulation" },
+  penalty_save_rate:        { label: "Pênaltis %",     icon: "🥊", color: "purple",  hex: "#a855f7", type: "accumulation" },
 };
 
 type GoalStatus = "in_progress" | "completed" | "exceeded";
@@ -60,230 +59,224 @@ interface PlayerGoalsCardProps {
   onGoalClick?: (goal: GoalData) => void;
 }
 
-// Get progress bar color based on percentage and goal type
-function getProgressColor(percentage: number, isLimit: boolean): string {
-  if (isLimit) {
-    if (percentage >= 100) return "bg-red-500";
-    if (percentage >= 75) return "bg-amber-500";
-    if (percentage >= 50) return "bg-yellow-500";
-    return "bg-emerald-500";
-  }
-  if (percentage >= 100) return "bg-emerald-500";
-  if (percentage >= 75) return "bg-blue-500";
-  if (percentage >= 50) return "bg-amber-500";
-  return "bg-zinc-600";
+// ─── Design tokens ────────────────────────────────────────────────────────────
+
+const ACCENT = "#ec4525";
+const FG     = "#ededee";
+const MUTED  = "#62616a";
+const BDR    = "rgba(255,255,255,0.07)";
+const BG     = "#0f0e13";
+
+// ─── Circular progress ring ───────────────────────────────────────────────────
+
+function ProgressRing({ pct, color, size = 52 }: { pct: number; color: string; size?: number }) {
+  const r  = (size - 6) / 2;
+  const c  = 2 * Math.PI * r;
+  const offset = c - (Math.min(pct, 100) / 100) * c;
+  return (
+    <svg width={size} height={size} className="rotate-[-90deg]">
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={5} />
+      <circle
+        cx={size / 2} cy={size / 2} r={r} fill="none"
+        stroke={color} strokeWidth={5}
+        strokeLinecap="round"
+        strokeDasharray={c}
+        strokeDashoffset={offset}
+        style={{ transition: "stroke-dashoffset 0.8s ease" }}
+      />
+    </svg>
+  );
 }
 
-// Compact status indicator
-function StatusIndicator({ status, isLimit }: { status: GoalStatus; isLimit: boolean }) {
-  if (status === "completed" && !isLimit) {
-    return <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />;
-  }
-  if (status === "exceeded") {
-    return <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />;
-  }
-  if (status === "completed" && isLimit) {
-    return <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />;
-  }
-  return <Clock className="w-4 h-4 text-zinc-500 shrink-0" />;
+// ─── Status icon ─────────────────────────────────────────────────────────────
+
+function StatusDot({ status, isLimit }: { status: GoalStatus; isLimit: boolean }) {
+  if (status === "exceeded")               return <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0" />;
+  if (status === "completed" && !isLimit)  return <CheckCircle2  className="w-3.5 h-3.5 text-emerald-400 shrink-0" />;
+  if (status === "completed" && isLimit)   return <CheckCircle2  className="w-3.5 h-3.5 text-emerald-400 shrink-0" />;
+  return <Clock className="w-3.5 h-3.5 shrink-0" style={{ color: MUTED }} />;
 }
 
-// Goal row inside the card
-function GoalRow({ 
-  goal, 
-  onClick 
-}: { 
-  goal: GoalData; 
-  onClick?: () => void;
-}) {
-  const config = GOAL_TYPE_CONFIG[goal.goal_type] || {
-    label: goal.goal_type,
-    icon: "🎯",
-    type: "accumulation" as const,
-  };
-  const isLimit = config.type === "limit";
+// ─── Goal row ─────────────────────────────────────────────────────────────────
+
+function GoalRow({ goal, onClick }: { goal: GoalData; onClick?: () => void }) {
+  const cfg = GOAL_TYPE_CONFIG[goal.goal_type] ?? { label: goal.goal_type, icon: "🎯", hex: ACCENT, type: "accumulation" as const };
+  const isLimit = cfg.type === "limit";
+
+  const barColor = (() => {
+    if (isLimit) {
+      if (goal.percentage >= 100) return "#ef4444";
+      if (goal.percentage >= 75)  return "#f59e0b";
+      return "#22c55e";
+    }
+    if (goal.percentage >= 100) return "#22c55e";
+    if (goal.percentage >= 75)  return "#3b82f6";
+    if (goal.percentage >= 40)  return cfg.hex;
+    return MUTED;
+  })();
 
   return (
     <motion.div
-      whileHover={{ backgroundColor: "rgba(255,255,255,0.03)" }}
+      whileHover={{ backgroundColor: "rgba(255,255,255,0.025)" }}
       whileTap={{ scale: 0.995 }}
       onClick={onClick}
-      className="group flex items-center gap-3 py-2.5 px-3 -mx-3 rounded-lg cursor-pointer transition-colors"
+      className="flex items-center gap-3 px-3 py-2.5 -mx-3 rounded-lg cursor-pointer transition-colors"
     >
-      {/* Icon */}
-      <span className="text-lg shrink-0">{config.icon}</span>
-      
-      {/* Label + Progress */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between gap-2 mb-1">
-          <span className="text-sm text-zinc-300 truncate">
-            {config.label}
-            {isLimit && <span className="text-zinc-600 ml-1 text-[10px]">(máx.)</span>}
+      {/* Category dot */}
+      <div className="w-6 h-6 rounded-md flex items-center justify-center flex-none text-[13px]"
+        style={{ background: `${cfg.hex}12`, border: `1px solid ${cfg.hex}25` }}>
+        {cfg.icon}
+      </div>
+
+      {/* Label + bar */}
+      <div className="flex-1 min-w-0 space-y-1">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[12px] font-mono leading-none truncate" style={{ color: FG }}>
+            {cfg.label}
+            {isLimit && <span className="ml-1 text-[10px]" style={{ color: MUTED }}>(máx.)</span>}
           </span>
-          <div className="flex items-center gap-1.5 shrink-0">
-            {/* Current value - prominent */}
-            <span className="text-base font-semibold text-foreground tabular-nums">
+          <div className="flex items-center gap-1 flex-none tabular-nums">
+            <span className="text-[13px] font-semibold font-display" style={{ color: FG }}>
               {goal.currentValue}
             </span>
-            <span className="text-zinc-600 text-sm">/</span>
-            {/* Target - secondary */}
-            <span className="text-sm text-zinc-500 tabular-nums">
-              {goal.target_value}
-            </span>
+            <span className="text-[11px]" style={{ color: MUTED }}>/</span>
+            <span className="text-[11px]" style={{ color: MUTED }}>{goal.target_value}</span>
           </div>
         </div>
-        
-        {/* Progress bar - thicker and shorter */}
-        <div className="h-2 bg-zinc-800/80 rounded-full overflow-hidden">
+        <div className="h-[3px] rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.05)" }}>
           <motion.div
             initial={{ width: 0 }}
-            animate={{ width: `${goal.percentage}%` }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
-            className={cn(
-              "h-full rounded-full transition-colors",
-              getProgressColor(goal.percentage, isLimit)
-            )}
+            animate={{ width: `${Math.min(goal.percentage, 100)}%` }}
+            transition={{ duration: 0.7, ease: "easeOut" }}
+            className="h-full rounded-full"
+            style={{ background: barColor }}
           />
         </div>
       </div>
-      
-      {/* Status indicator */}
-      <StatusIndicator status={goal.status} isLimit={isLimit} />
+
+      {/* Status */}
+      <StatusDot status={goal.status} isLimit={isLimit} />
     </motion.div>
   );
 }
 
+// ─── Main card ────────────────────────────────────────────────────────────────
+
 export function PlayerGoalsCard({ player, goals, onGoalClick }: PlayerGoalsCardProps) {
-  // Summary stats
   const summary = useMemo(() => {
-    const completed = goals.filter(g => g.status === "completed").length;
-    const exceeded = goals.filter(g => g.status === "exceeded").length;
+    const completed  = goals.filter(g => g.status === "completed").length;
+    const exceeded   = goals.filter(g => g.status === "exceeded").length;
     const inProgress = goals.filter(g => g.status === "in_progress").length;
-    const avgProgress = goals.length > 0
-      ? Math.round(goals.reduce((sum, g) => sum + g.percentage, 0) / goals.length)
+    const avgPct     = goals.length > 0
+      ? Math.round(goals.reduce((s, g) => s + g.percentage, 0) / goals.length)
       : 0;
-    return { completed, exceeded, inProgress, avgProgress, total: goals.length };
+    return { completed, exceeded, inProgress, avgPct, total: goals.length };
   }, [goals]);
 
-  // Get unique seasons
-  const seasons = useMemo(() => {
-    return [...new Set(goals.map(g => g.season_year))].sort((a, b) => b - a);
-  }, [goals]);
+  const seasons = useMemo(() =>
+    [...new Set(goals.map(g => g.season_year))].sort((a, b) => b - a),
+    [goals]
+  );
+
+  const ringColor = summary.exceeded > 0 ? "#ef4444"
+    : summary.avgPct >= 100 ? "#22c55e"
+    : summary.avgPct >= 75  ? "#3b82f6"
+    : summary.avgPct >= 40  ? ACCENT
+    : MUTED;
+
+  const topBarColor = summary.exceeded > 0 ? "#ef4444"
+    : summary.completed === summary.total && summary.total > 0 ? "#22c55e"
+    : "transparent";
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -2 }}
       transition={{ duration: 0.3 }}
-      className={cn(
-        "relative rounded-xl overflow-hidden",
-        "bg-gradient-to-b from-zinc-900/95 via-zinc-900/90 to-zinc-950/95",
-        "border border-zinc-800/50",
-        "shadow-[0_4px_24px_-6px_hsl(0_0%_0%/0.5)]",
-        "hover:border-zinc-700/60 hover:shadow-[0_8px_32px_-8px_hsl(0_0%_0%/0.6)]",
-        "transition-all duration-300"
-      )}
+      className="relative rounded-2xl overflow-hidden flex flex-col"
+      style={{ background: BG, border: `1px solid ${BDR}` }}
     >
-      {/* Top accent bar based on overall progress */}
-      <div 
-        className={cn(
-          "absolute top-0 left-0 right-0 h-0.5",
-          summary.completed === summary.total && summary.total > 0
-            ? "bg-emerald-500"
-            : summary.exceeded > 0
-              ? "bg-red-500"
-              : "bg-zinc-700"
-        )}
-      />
+      {/* Top accent line */}
+      {topBarColor !== "transparent" && (
+        <div className="h-[2px]" style={{ background: `linear-gradient(90deg, ${topBarColor}, transparent)` }} />
+      )}
 
-      {/* Header - Player info */}
-      <div className="p-4 pb-3 flex items-start gap-4">
-        {/* Photo - larger */}
-        {player.photo_url ? (
-          <img
-            src={getOptimizedImageUrl(player.photo_url, { width: 400, quality: 85, format: "avif" }) || player.photo_url || ""}
-            alt={player.full_name}
-            className="w-16 h-16 rounded-xl object-cover object-center shrink-0 border border-zinc-800/50"
-            onError={e => { if (player.photo_url) (e.target as HTMLImageElement).src = player.photo_url; }}
-          />
-        ) : (
-          <div className="w-16 h-16 rounded-xl bg-zinc-800/80 flex items-center justify-center shrink-0 border border-zinc-700/30">
-            <User className="w-7 h-7 text-zinc-600" />
-          </div>
-        )}
-
-        <div className="flex-1 min-w-0">
-          {/* Name - prominent */}
-          <h3 className="text-base font-semibold text-foreground truncate leading-tight">
-            {player.full_name}
-          </h3>
-          
-          {/* Position + Age as subtitle */}
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {player.position}
-            {player.age && <span className="text-zinc-600"> • {player.age} anos</span>}
-          </p>
-
-          {/* Season badges */}
-          <div className="flex items-center gap-1.5 mt-2">
-            {seasons.map(year => (
-              <Badge 
-                key={year} 
-                variant="outline" 
-                className="text-[10px] px-1.5 py-0 h-5 bg-zinc-800/50 border-zinc-700/50 text-zinc-400"
-              >
-                {year}
-              </Badge>
-            ))}
+      {/* ── HEADER ─────────────────────────────────────────────────────── */}
+      <div className="flex items-start gap-3 p-4 pb-3">
+        {/* Photo */}
+        <div className="relative flex-none">
+          <div className="w-14 h-14 rounded-xl overflow-hidden"
+            style={{ border: `1px solid ${BDR}`, background: "rgba(255,255,255,0.04)" }}>
+            {player.photo_url ? (
+              <img
+                src={getOptimizedImageUrl(player.photo_url, { width: 200, quality: 85, format: "avif" }) || player.photo_url}
+                alt={player.full_name}
+                className="w-full h-full object-cover object-top"
+                onError={e => { if (player.photo_url) (e.target as HTMLImageElement).src = player.photo_url; }}
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <User className="w-6 h-6" style={{ color: MUTED }} />
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Quick summary stats */}
-        <div className="flex flex-col items-end gap-1 shrink-0">
-          {/* Average progress */}
-          <div className="flex items-center gap-1">
-            <TrendingUp className="w-3.5 h-3.5 text-zinc-500" />
-            <span className="text-lg font-semibold text-foreground tabular-nums">
-              {summary.avgProgress}%
-            </span>
+        {/* Info */}
+        <div className="flex-1 min-w-0 pt-0.5">
+          <p className="font-display font-bold text-[13px] uppercase leading-tight truncate" style={{ color: FG }}>
+            {player.full_name}
+          </p>
+          <p className="font-mono text-[10px] mt-0.5 truncate" style={{ color: MUTED }}>
+            {player.position}{player.age ? ` · ${player.age}a` : ""}
+          </p>
+          <div className="flex items-center gap-1.5 mt-1.5">
+            {seasons.map(y => (
+              <span key={y} className="font-mono text-[9px] px-1.5 py-0.5 rounded"
+                style={{ color: MUTED, border: `1px solid ${BDR}`, background: "rgba(255,255,255,0.025)" }}>
+                {y}
+              </span>
+            ))}
+            {/* mini counters */}
+            <div className="ml-auto flex items-center gap-1.5">
+              {summary.completed > 0 && (
+                <span className="flex items-center gap-0.5 font-mono text-[9px]" style={{ color: "#22c55e" }}>
+                  <CheckCircle2 className="w-2.5 h-2.5" />{summary.completed}
+                </span>
+              )}
+              {summary.inProgress > 0 && (
+                <span className="flex items-center gap-0.5 font-mono text-[9px]" style={{ color: MUTED }}>
+                  <Clock className="w-2.5 h-2.5" />{summary.inProgress}
+                </span>
+              )}
+              {summary.exceeded > 0 && (
+                <span className="flex items-center gap-0.5 font-mono text-[9px]" style={{ color: "#ef4444" }}>
+                  <AlertTriangle className="w-2.5 h-2.5" />{summary.exceeded}
+                </span>
+              )}
+            </div>
           </div>
-          
-          {/* Completed count */}
-          <div className="flex items-center gap-2 text-[10px]">
-            {summary.completed > 0 && (
-              <span className="flex items-center gap-0.5 text-emerald-400">
-                <CheckCircle2 className="w-3 h-3" />
-                {summary.completed}
-              </span>
-            )}
-            {summary.inProgress > 0 && (
-              <span className="flex items-center gap-0.5 text-zinc-500">
-                <Clock className="w-3 h-3" />
-                {summary.inProgress}
-              </span>
-            )}
-            {summary.exceeded > 0 && (
-              <span className="flex items-center gap-0.5 text-red-400">
-                <AlertTriangle className="w-3 h-3" />
-                {summary.exceeded}
-              </span>
-            )}
+        </div>
+
+        {/* Ring + percentage */}
+        <div className="relative flex-none flex items-center justify-center">
+          <ProgressRing pct={summary.avgPct} color={ringColor} size={52} />
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="font-display font-bold text-[12px] leading-none" style={{ color: ringColor }}>
+              {summary.avgPct}
+            </span>
+            <span className="font-mono text-[8px] leading-none mt-0.5" style={{ color: MUTED }}>%</span>
           </div>
         </div>
       </div>
 
       {/* Divider */}
-      <div className="h-px bg-zinc-800/60 mx-4" />
+      <div className="h-px mx-4" style={{ background: BDR }} />
 
-      {/* Goals list - compact rows */}
-      <div className="px-4 py-2">
-        {goals.map((goal) => (
-          <GoalRow
-            key={goal.id}
-            goal={goal}
-            onClick={() => onGoalClick?.(goal)}
-          />
+      {/* ── GOALS LIST ─────────────────────────────────────────────────── */}
+      <div className="px-4 py-2 flex-1">
+        {goals.map(g => (
+          <GoalRow key={g.id} goal={g} onClick={() => onGoalClick?.(g)} />
         ))}
       </div>
     </motion.div>

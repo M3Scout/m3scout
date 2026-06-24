@@ -1,9 +1,8 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { 
-  Target, 
-  Search, 
-  Loader2, 
+import {
+  Target,
+  Search,
   Trophy,
   TrendingUp,
   CheckCircle2,
@@ -17,14 +16,13 @@ import { motion } from "framer-motion";
 import { fadeInUp } from "@/lib/animations";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from "@/components/ui/select";
 import {
   Dialog,
@@ -32,7 +30,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Card, CardContent } from "@/components/ui/card";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -706,183 +703,188 @@ export default function GoalsMonitor() {
     });
   }
 
+  // ── Design tokens (local) ──────────────────────────────────────────────────
+  const DT = { accent: "#ec4525", fg: "#ededee", muted: "#62616a", bdr: "rgba(255,255,255,0.07)", bg2: "#0f0e13" };
+
   return (
     <>
-      <div className="space-y-6">
-        {/* ===== ALWAYS VISIBLE HEADER (even during RBAC/loading) ===== */}
+      <div className="space-y-5">
+        {/* ── HEADER ─────────────────────────────────────────────────────── */}
         <header className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <h1 className="m3-page-title">Metas</h1>
+            {stats.total > 0 && (
+              <span className="inline-flex items-center justify-center min-w-[22px] h-5 px-1.5 rounded-full font-mono text-[10px] font-bold text-white" style={{ background: DT.accent }}>
+                {stats.total}
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2">
-            {/* Mobile: search toggle */}
             <button
-              className="sm:hidden p-1 text-zinc-400 hover:text-white transition-colors"
-              onClick={() => setSearchOpen(v => !v)}
-              aria-label="Buscar"
+              className="sm:hidden p-1 transition-colors" style={{ color: DT.muted }}
+              onClick={() => setSearchOpen(v => !v)} aria-label="Buscar"
             >
               <Search className="w-[18px] h-[18px]" />
             </button>
-            {/* Small non-blocking RBAC indicator */}
             {permissionsLoading && (
-              <div className="hidden sm:block text-xs text-muted-foreground">Sincronizando permissões…</div>
+              <span className="hidden sm:block font-mono text-[10px]" style={{ color: DT.muted }}>Sincronizando…</span>
             )}
           </div>
         </header>
 
-        {/* Mobile search input */}
+        {/* Mobile search */}
         {searchOpen && (
           <div className="sm:hidden">
-            <input
-              autoFocus
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
+            <input autoFocus value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
               placeholder="Buscar por jogador..."
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-full px-4 py-2 text-sm text-white placeholder-zinc-500 outline-none"
+              className="w-full rounded-xl px-4 py-2.5 text-[13px] font-mono outline-none"
+              style={{ background: DT.bg2, border: `1px solid ${DT.bdr}`, color: DT.fg }}
             />
           </div>
         )}
 
-        {/* ===== RBAC DENY (never blank) ===== */}
-        {!permissionsLoading && !permissionsError && !rbacAllowed ? (
-          <div className="rounded-xl border border-border/50 bg-card/50 p-4">
-            <p className="text-sm font-medium">Sem permissão</p>
-            <p className="text-xs text-muted-foreground">Você não tem acesso ao monitor de metas.</p>
-          </div>
-        ) : (
-          /* ===== MAIN CONTENT ===== */
-          /* Keep existing UI below (filters/table/cards). */
-          <motion.div
-            variants={fadeInUp}
-            initial="hidden"
-            animate="visible"
-            className="space-y-6"
-          >
-        {/* Header stats — desktop only */}
-        <div className="hidden sm:flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-
-          {/* Quick Stats */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-800/50">
-              <span className="text-xs text-muted-foreground">Total:</span>
-              <span className="text-sm font-medium text-foreground">{stats.total}</span>
-            </div>
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="text-sm font-medium text-emerald-400">{stats.completed}</span>
-            </div>
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-500/10">
-              <Clock className="w-3.5 h-3.5 text-zinc-400" />
-              <span className="text-sm font-medium text-zinc-400">{stats.inProgress}</span>
-            </div>
-            {stats.exceeded > 0 && (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10">
-                <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
-                <span className="text-sm font-medium text-red-400">{stats.exceeded}</span>
+        {/* ── STAT CARDS ─────────────────────────────────────────────────── */}
+        {!isLoading && stats.total > 0 && (
+          <div className="hidden sm:grid grid-cols-4 gap-3">
+            {[
+              { label: "Total", value: stats.total,      color: DT.muted,   icon: Trophy },
+              { label: "Concluídas", value: stats.completed, color: "#22c55e", icon: CheckCircle2 },
+              { label: "Em andamento", value: stats.inProgress, color: DT.muted, icon: Clock },
+              { label: "Excedidas",  value: stats.exceeded,  color: "#ef4444", icon: AlertTriangle },
+            ].map(({ label, value, color, icon: Icon }) => (
+              <div key={label} className="rounded-xl p-4 flex items-center gap-3 group"
+                style={{ background: DT.bg2, border: `1px solid ${DT.bdr}` }}>
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-none"
+                  style={{ background: `${color}12`, border: `1px solid ${color}25` }}>
+                  <Icon className="w-3.5 h-3.5" style={{ color }} strokeWidth={1.5} />
+                </div>
+                <div>
+                  <p className="font-display font-bold text-[22px] leading-none" style={{ color: DT.fg }}>{value}</p>
+                  <p className="font-mono text-[9px] mt-0.5 uppercase tracking-wide" style={{ color: DT.muted }}>{label}</p>
+                </div>
               </div>
-            )}
+            ))}
           </div>
-        </div>
-
-        {/* Filters — desktop only */}
-        <Card className="hidden sm:block bg-zinc-900/60 border-zinc-800/40">
-          <CardContent className="p-4">
-            <div className="flex flex-col md:flex-row gap-3">
-              {/* Search */}
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por jogador..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 bg-zinc-800/50 border-zinc-700/50"
-                />
-              </div>
-
-              {/* Goal Type Filter */}
-              <Select value={goalTypeFilter} onValueChange={setGoalTypeFilter}>
-                <SelectTrigger className="w-full md:w-[160px] bg-zinc-800/50 border-zinc-700/50">
-                  <SelectValue placeholder="Tipo de meta" />
-                </SelectTrigger>
-                <SelectContent className="bg-zinc-900 border-zinc-800">
-                  <SelectItem value="_all">Todas as metas</SelectItem>
-                  {Object.entries(GOAL_TYPE_CONFIG).map(([key, config]) => (
-                    <SelectItem key={key} value={key}>
-                      {config.icon} {config.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              {/* Season Filter */}
-              <Select value={seasonFilter} onValueChange={setSeasonFilter}>
-                <SelectTrigger className="w-full md:w-[140px] bg-zinc-800/50 border-zinc-700/50">
-                  <SelectValue placeholder="Temporada" />
-                </SelectTrigger>
-                <SelectContent className="bg-zinc-900 border-zinc-800">
-                  <SelectItem value="_all">Todas</SelectItem>
-                  {availableSeasons.map(year => (
-                    <SelectItem key={year} value={String(year)}>{year}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              {/* Status Filter */}
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full md:w-[160px] bg-zinc-800/50 border-zinc-700/50">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent className="bg-zinc-900 border-zinc-800">
-                  <SelectItem value="_all">Todos status</SelectItem>
-                  <SelectItem value="in_progress">Em andamento</SelectItem>
-                  <SelectItem value="completed">Concluída</SelectItem>
-                  <SelectItem value="exceeded">Excedido</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* Sort */}
-              <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
-                <SelectTrigger className="w-full md:w-[160px] bg-zinc-800/50 border-zinc-700/50">
-                  <SelectValue placeholder="Ordenar" />
-                </SelectTrigger>
-                <SelectContent className="bg-zinc-900 border-zinc-800">
-                  <SelectItem value="recent">Mais recentes</SelectItem>
-                  <SelectItem value="oldest">Mais antigas</SelectItem>
-                  <SelectItem value="progress_high">Maior progresso</SelectItem>
-                  <SelectItem value="progress_low">Menor progresso</SelectItem>
-                  <SelectItem value="player_name">Por jogador</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Content */}
-        {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 text-muted-foreground animate-spin" />
-          </div>
-        ) : goalsError ? (
-          <div className="rounded-xl border border-border/50 bg-card/50 p-4">
-            <p className="text-sm font-medium">Erro ao carregar metas</p>
-            <p className="mt-1 text-xs text-muted-foreground">{String(goalsError)}</p>
-          </div>
-        ) : filteredGoals.length === 0 ? (
-          <div className="py-20 text-center">
-            <Trophy className="w-12 h-12 mx-auto mb-4 text-zinc-700" />
-            <p className="text-lg text-muted-foreground">Nenhuma meta criada ainda</p>
-            <p className="text-sm text-zinc-600 mt-1">
-              {searchQuery || goalTypeFilter !== "_all" || statusFilter !== "_all"
-                ? "Tente ajustar os filtros"
-                : "Os jogadores podem criar metas no dashboard deles"}
-            </p>
-          </div>
-        ) : (
-          <GoalsGridView 
-            goals={filteredGoals} 
-            onGoalClick={setSelectedGoal} 
-          />
         )}
+
+        {/* ── FILTER BAR ─────────────────────────────────────────────────── */}
+        {!permissionsLoading && !permissionsError && rbacAllowed && (
+          <div className="hidden sm:flex items-center gap-2 p-3 rounded-2xl" style={{ background: DT.bg2, border: `1px solid ${DT.bdr}` }}>
+            {/* Search */}
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: DT.muted }} />
+              <Input
+                placeholder="Buscar por jogador..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="pl-8 h-9 text-[13px] font-mono bg-white/[0.03] border-white/[0.06] placeholder:text-zinc-600 focus-visible:ring-1 focus-visible:ring-[#ec4525]/40"
+              />
+            </div>
+
+            <div className="h-6 w-px" style={{ background: DT.bdr }} />
+
+            {/* Goal Type */}
+            <Select value={goalTypeFilter} onValueChange={setGoalTypeFilter}>
+              <SelectTrigger className="w-[155px] h-9 text-[11px] font-mono bg-white/[0.03] border-white/[0.06]">
+                <SelectValue placeholder="Tipo de meta" />
+              </SelectTrigger>
+              <SelectContent className="bg-[#0f0e13] border-white/[0.07]">
+                <SelectItem value="_all" className="font-mono text-[12px]">Todas as metas</SelectItem>
+                {Object.entries(GOAL_TYPE_CONFIG).map(([key, cfg]) => (
+                  <SelectItem key={key} value={key} className="font-mono text-[12px]">{cfg.icon} {cfg.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Season */}
+            <Select value={seasonFilter} onValueChange={setSeasonFilter}>
+              <SelectTrigger className="w-[120px] h-9 text-[11px] font-mono bg-white/[0.03] border-white/[0.06]">
+                <SelectValue placeholder="Temporada" />
+              </SelectTrigger>
+              <SelectContent className="bg-[#0f0e13] border-white/[0.07]">
+                <SelectItem value="_all" className="font-mono text-[12px]">Todas</SelectItem>
+                {availableSeasons.map(y => (
+                  <SelectItem key={y} value={String(y)} className="font-mono text-[12px]">{y}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Status quick-pills */}
+            <div className="flex items-center gap-1.5">
+              {[
+                { val: "_all",       label: "Todos" },
+                { val: "in_progress", label: "Andamento" },
+                { val: "completed",   label: "Concluído" },
+                { val: "exceeded",    label: "Excedido" },
+              ].map(({ val, label }) => (
+                <button key={val} onClick={() => setStatusFilter(val)}
+                  className="h-9 px-3 rounded-lg font-mono text-[10px] uppercase tracking-wide transition-all duration-150"
+                  style={{
+                    background: statusFilter === val ? `${DT.accent}18` : "rgba(255,255,255,0.025)",
+                    border: `1px solid ${statusFilter === val ? `${DT.accent}50` : DT.bdr}`,
+                    color: statusFilter === val ? DT.accent : DT.muted,
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <div className="h-6 w-px" style={{ background: DT.bdr }} />
+
+            {/* Sort */}
+            <Select value={sortBy} onValueChange={v => setSortBy(v as SortOption)}>
+              <SelectTrigger className="w-[145px] h-9 text-[11px] font-mono bg-white/[0.03] border-white/[0.06]">
+                <SelectValue placeholder="Ordenar" />
+              </SelectTrigger>
+              <SelectContent className="bg-[#0f0e13] border-white/[0.07]">
+                <SelectItem value="recent"        className="font-mono text-[12px]">Mais recentes</SelectItem>
+                <SelectItem value="oldest"        className="font-mono text-[12px]">Mais antigas</SelectItem>
+                <SelectItem value="progress_high" className="font-mono text-[12px]">Maior progresso</SelectItem>
+                <SelectItem value="progress_low"  className="font-mono text-[12px]">Menor progresso</SelectItem>
+                <SelectItem value="player_name"   className="font-mono text-[12px]">Por jogador</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {/* ===== RBAC DENY ===== */}
+        {!permissionsLoading && !permissionsError && !rbacAllowed ? (
+          <div className="rounded-xl p-4" style={{ border: `1px solid ${DT.bdr}` }}>
+            <p className="text-sm font-medium" style={{ color: DT.fg }}>Sem permissão</p>
+            <p className="text-xs mt-1" style={{ color: DT.muted }}>Você não tem acesso ao monitor de metas.</p>
+          </div>
+        ) : (
+          <motion.div variants={fadeInUp} initial="hidden" animate="visible" className="space-y-5">
+            {/* ── CONTENT ──────────────────────────────────────────────── */}
+            {isLoading ? (
+              <div className="grid gap-4 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="h-[300px] rounded-2xl animate-pulse" style={{ background: DT.bg2, border: `1px solid ${DT.bdr}` }} />
+                ))}
+              </div>
+            ) : goalsError ? (
+              <div className="rounded-xl p-4" style={{ border: `1px solid ${DT.bdr}` }}>
+                <p className="text-sm font-medium" style={{ color: DT.fg }}>Erro ao carregar metas</p>
+                <p className="mt-1 text-xs" style={{ color: DT.muted }}>{String(goalsError)}</p>
+              </div>
+            ) : filteredGoals.length === 0 ? (
+              <div className="py-20 text-center space-y-3">
+                <Trophy className="w-10 h-10 mx-auto" style={{ color: "rgba(255,255,255,0.08)" }} />
+                <p className="font-display font-semibold text-[15px]" style={{ color: "rgba(255,255,255,0.2)" }}>
+                  {searchQuery || goalTypeFilter !== "_all" || statusFilter !== "_all"
+                    ? "Nenhum resultado"
+                    : "Nenhuma meta criada ainda"}
+                </p>
+                <p className="font-mono text-[11px]" style={{ color: "rgba(255,255,255,0.1)" }}>
+                  {searchQuery || goalTypeFilter !== "_all" || statusFilter !== "_all"
+                    ? "Tente ajustar os filtros"
+                    : "Os jogadores podem criar metas no dashboard deles"}
+                </p>
+              </div>
+            ) : (
+              <GoalsGridView goals={filteredGoals} onGoalClick={setSelectedGoal} />
+            )}
           </motion.div>
         )}
       </div>
