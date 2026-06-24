@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, ChevronLeft, Check } from "lucide-react";
+import { Loader2, ChevronLeft, Check, Minus, Plus } from "lucide-react";
 import {
   Dialog, DialogContent, DialogTitle,
 } from "@/components/ui/dialog";
@@ -218,7 +218,7 @@ const GK_TYPES = [
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
 const BG       = "#0a0a0d";
-const BG2      = "#111116";
+const BG2      = "#13131a";
 const BDR      = "rgba(255,255,255,0.07)";
 const MUTED    = "#62616a";
 const TEXT     = "#ededee";
@@ -284,7 +284,7 @@ function GoalTypeCard({
             </span>
           )}
         </div>
-        <p className="font-mono text-[10.5px] leading-snug" style={{ color: MUTED }}>
+        <p className="font-mono text-[10.5px] leading-snug" style={{ color: "#9998a3" }}>
           {cfg.benchmark(posGroup)}
         </p>
       </div>
@@ -366,7 +366,7 @@ export function AddGoalDialog({
         <DialogTitle className="sr-only">Nova Meta — {currentYear}</DialogTitle>
 
         {/* Header */}
-        <div className="px-5 pt-5 pb-4 flex items-center justify-between shrink-0"
+        <div className="pl-5 pr-14 pt-5 pb-4 flex items-center justify-between shrink-0"
           style={{ borderBottom: `1px solid ${BDR}` }}>
           <div className="flex items-center gap-3">
             {newGoalType && (
@@ -412,8 +412,10 @@ export function AddGoalDialog({
                     posGroup={posGroup}
                     selected={false}
                     onClick={() => {
+                      const cfg = GOAL_TYPE_CONFIG[type];
+                      const qv = getQuickValues(type, cfg, posGroup);
                       setNewGoalType(type);
-                      setNewGoalValue(GOAL_TYPE_CONFIG[type].minValue);
+                      setNewGoalValue(qv[0]);
                     }}
                   />
                 ))}
@@ -455,31 +457,39 @@ export function AddGoalDialog({
                     </span>
                   </div>
 
-                  <div className="relative">
-                    <input
-                      type="number"
-                      value={newGoalValue}
-                      onChange={e => setNewGoalValue(Number(e.target.value))}
-                      min={selectedCfg!.minValue}
-                      max={selectedCfg!.maxValue}
-                      step={selectedCfg!.step}
-                      className="w-full font-display font-bold text-center rounded-xl outline-none py-4"
-                      style={{
-                        fontSize: 40,
-                        background: INPUT_BG,
-                        border: `1.5px solid ${INPUT_BDR}`,
-                        color: selectedCfg!.hex,
-                        letterSpacing: "-0.02em",
-                      }}
-                      onFocus={e => (e.currentTarget.style.borderColor = `${selectedCfg!.hex}60`)}
-                      onBlur={e => (e.currentTarget.style.borderColor = INPUT_BDR)}
-                    />
-                    {selectedCfg!.unit && (
-                      <span className="absolute right-4 top-1/2 -translate-y-1/2 font-display font-bold text-[20px]"
-                        style={{ color: `${selectedCfg!.hex}60` }}>
-                        {selectedCfg!.unit}
+                  <div className="flex items-center gap-3">
+                    {/* − button */}
+                    <button
+                      onClick={() => setNewGoalValue(v => Math.max(selectedCfg!.minValue, v - selectedCfg!.step))}
+                      className="w-14 h-14 rounded-2xl flex items-center justify-center flex-none transition-all active:scale-95"
+                      style={{ background: "rgba(255,255,255,0.06)", border: `1.5px solid rgba(255,255,255,0.1)`, color: TEXT }}
+                    >
+                      <Minus className="w-5 h-5" />
+                    </button>
+
+                    {/* Value display */}
+                    <div
+                      className="flex-1 flex items-center justify-center rounded-2xl py-4 gap-1"
+                      style={{ background: INPUT_BG, border: `1.5px solid ${selectedCfg!.hex}40` }}
+                    >
+                      <span className="font-display font-bold tabular-nums" style={{ fontSize: 44, color: selectedCfg!.hex, letterSpacing: "-0.03em" }}>
+                        {newGoalValue}
                       </span>
-                    )}
+                      {selectedCfg!.unit && (
+                        <span className="font-display font-bold text-[22px] self-end mb-1" style={{ color: `${selectedCfg!.hex}70` }}>
+                          {selectedCfg!.unit}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* + button */}
+                    <button
+                      onClick={() => setNewGoalValue(v => Math.min(selectedCfg!.maxValue, v + selectedCfg!.step))}
+                      className="w-14 h-14 rounded-2xl flex items-center justify-center flex-none transition-all active:scale-95"
+                      style={{ background: `${selectedCfg!.hex}18`, border: `1.5px solid ${selectedCfg!.hex}50`, color: selectedCfg!.hex }}
+                    >
+                      <Plus className="w-5 h-5" />
+                    </button>
                   </div>
 
                   {/* Quick values */}
