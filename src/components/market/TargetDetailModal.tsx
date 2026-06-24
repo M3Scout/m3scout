@@ -249,19 +249,28 @@ export function TargetDetailModal({ open, onOpenChange, target, onEdit, onSucces
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
-          className="p-0 overflow-hidden"
+          className="p-0 overflow-hidden flex flex-col"
           style={{
             maxWidth: "min(900px, 95vw)",
-            maxHeight: "90vh",
+            height: "90vh",
             background: "#0a0a0d",
             border: `1px solid ${BDR}`,
           }}
         >
           {/* ── HEADER BANNER ─────────────────────────────────────────── */}
           <div
-            className="relative pl-6 pr-14 pt-6 pb-5"
+            className="relative pl-6 pr-24 pt-6 pb-5 shrink-0"
             style={{ background: "linear-gradient(135deg, #0f0d14 0%, #12101a 100%)", borderBottom: `1px solid ${BDR}` }}
           >
+            {/* Edit button — always visible in header */}
+            <button
+              onClick={() => onEdit?.(target)}
+              title="Editar atleta"
+              className="absolute right-12 top-4 w-8 h-8 flex items-center justify-center rounded-lg transition-all hover:scale-105"
+              style={{ background: `${ACCENT}22`, border: `1px solid ${ACCENT}55`, color: ACCENT }}
+            >
+              <Edit className="w-3.5 h-3.5" />
+            </button>
             <div className="flex items-start gap-4">
               {/* Avatar */}
               <div className="w-16 h-16 rounded-xl overflow-hidden flex-none" style={{ background: "rgba(255,255,255,0.05)", border: `1px solid ${BDR}` }}>
@@ -333,8 +342,8 @@ export function TargetDetailModal({ open, onOpenChange, target, onEdit, onSucces
 
           {/* ── BODY: 2 COLUMNS ──────────────────────────────────────── */}
           <div
-            className="grid overflow-auto"
-            style={{ gridTemplateColumns: "1fr 1fr", maxHeight: "calc(90vh - 160px)" }}
+            className="grid overflow-auto flex-1 min-h-0"
+            style={{ gridTemplateColumns: "1fr 1fr" }}
           >
             {/* ── LEFT COLUMN ──────────────────────────────────────────── */}
             <div className="px-6 py-5 space-y-5 overflow-y-auto" style={{ borderRight: `1px solid ${BDR}` }}>
