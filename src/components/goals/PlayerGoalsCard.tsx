@@ -1,6 +1,6 @@
-import { useMemo } from "react";
-import { motion } from "framer-motion";
-import { User, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
+import { useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { User, CheckCircle2, Clock, AlertTriangle, ChevronDown } from "lucide-react";
 import { getOptimizedImageUrl } from "@/lib/imageUtils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -163,6 +163,8 @@ function GoalRow({ goal, onClick }: { goal: GoalData; onClick?: () => void }) {
 // ─── Main card ────────────────────────────────────────────────────────────────
 
 export function PlayerGoalsCard({ player, goals, onGoalClick }: PlayerGoalsCardProps) {
+  const [expanded, setExpanded] = useState(false);
+
   const summary = useMemo(() => {
     const completed  = goals.filter(g => g.status === "completed").length;
     const exceeded   = goals.filter(g => g.status === "exceeded").length;
@@ -201,8 +203,11 @@ export function PlayerGoalsCard({ player, goals, onGoalClick }: PlayerGoalsCardP
         <div className="h-[2px]" style={{ background: `linear-gradient(90deg, ${topBarColor}, transparent)` }} />
       )}
 
-      {/* ── HEADER ─────────────────────────────────────────────────────── */}
-      <div className="flex items-start gap-3 p-4 pb-3">
+      {/* ── HEADER (clicável) ──────────────────────────────────────────── */}
+      <div
+        className="flex items-start gap-3 p-4 pb-3 cursor-pointer select-none"
+        onClick={() => setExpanded(v => !v)}
+      >
         {/* Photo */}
         <div className="relative flex-none">
           <div className="w-14 h-14 rounded-xl overflow-hidden"
@@ -258,27 +263,43 @@ export function PlayerGoalsCard({ player, goals, onGoalClick }: PlayerGoalsCardP
           </div>
         </div>
 
-        {/* Ring + percentage */}
-        <div className="relative flex-none flex items-center justify-center">
-          <ProgressRing pct={summary.avgPct} color={ringColor} size={52} />
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="font-display font-bold text-[12px] leading-none" style={{ color: ringColor }}>
-              {summary.avgPct}
-            </span>
-            <span className="font-mono text-[8px] leading-none mt-0.5" style={{ color: MUTED }}>%</span>
+        {/* Ring + percentage + chevron */}
+        <div className="flex flex-col items-center gap-1 flex-none">
+          <div className="relative flex items-center justify-center">
+            <ProgressRing pct={summary.avgPct} color={ringColor} size={52} />
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="font-display font-bold text-[12px] leading-none" style={{ color: ringColor }}>
+                {summary.avgPct}
+              </span>
+              <span className="font-mono text-[8px] leading-none mt-0.5" style={{ color: MUTED }}>%</span>
+            </div>
           </div>
+          <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
+            <ChevronDown className="w-3.5 h-3.5" style={{ color: MUTED }} />
+          </motion.div>
         </div>
       </div>
 
-      {/* Divider */}
-      <div className="h-px mx-4" style={{ background: BDR }} />
-
-      {/* ── GOALS LIST ─────────────────────────────────────────────────── */}
-      <div className="px-4 py-2 flex-1">
-        {goals.map(g => (
-          <GoalRow key={g.id} goal={g} onClick={() => onGoalClick?.(g)} />
-        ))}
-      </div>
+      {/* ── GOALS LIST (colapsável) ─────────────────────────────────────── */}
+      <AnimatePresence initial={false}>
+        {expanded && (
+          <motion.div
+            key="goals"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: "easeInOut" }}
+            style={{ overflow: "hidden" }}
+          >
+            <div className="h-px mx-4" style={{ background: BDR }} />
+            <div className="px-4 py-2">
+              {goals.map(g => (
+                <GoalRow key={g.id} goal={g} onClick={() => onGoalClick?.(g)} />
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
