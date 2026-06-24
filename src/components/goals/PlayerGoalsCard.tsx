@@ -229,21 +229,12 @@ export function PlayerGoalsCard({ player, goals, expanded, onToggle, onGoalClick
 
         {/* Info */}
         <div className="flex-1 min-w-0 pt-0.5">
-          <p className="font-display font-bold text-[13px] uppercase leading-tight truncate" style={{ color: FG }}>
-            {player.full_name.split(" ")[0]}
-          </p>
-          <p className="font-mono text-[10px] mt-0.5 truncate" style={{ color: MUTED }}>
-            {player.position}{player.age ? ` · ${player.age}a` : ""}
-          </p>
-          <div className="flex items-center gap-1.5 mt-1.5">
-            {seasons.map(y => (
-              <span key={y} className="font-mono text-[9px] px-1.5 py-0.5 rounded"
-                style={{ color: MUTED, border: `1px solid ${BDR}`, background: "rgba(255,255,255,0.025)" }}>
-                {y}
-              </span>
-            ))}
-            {/* mini counters */}
-            <div className="ml-auto flex items-center gap-1.5">
+          {/* Name + counters na mesma linha */}
+          <div className="flex items-center gap-2 min-w-0">
+            <p className="font-display font-bold text-[13px] uppercase leading-tight truncate" style={{ color: FG }}>
+              {player.full_name.split(" ")[0]}
+            </p>
+            <div className="flex items-center gap-1.5 flex-none">
               {summary.completed > 0 && (
                 <span className="flex items-center gap-0.5 font-mono text-[9px]" style={{ color: "#22c55e" }}>
                   <CheckCircle2 className="w-2.5 h-2.5" />{summary.completed}
@@ -261,17 +252,28 @@ export function PlayerGoalsCard({ player, goals, expanded, onToggle, onGoalClick
               )}
             </div>
           </div>
+          <p className="font-mono text-[10px] mt-0.5 truncate" style={{ color: MUTED }}>
+            {player.position}{player.age ? ` · ${player.age}a` : ""}
+          </p>
+          <div className="flex items-center gap-1.5 mt-1.5">
+            {seasons.map(y => (
+              <span key={y} className="font-mono text-[9px] px-1.5 py-0.5 rounded"
+                style={{ color: MUTED, border: `1px solid ${BDR}`, background: "rgba(255,255,255,0.025)" }}>
+                {y}
+              </span>
+            ))}
+          </div>
         </div>
 
-        {/* Ring + percentage + chevron */}
+        {/* Ring + chevron */}
         <div className="flex flex-col items-center gap-1 flex-none">
           <div className="relative flex items-center justify-center">
-            <ProgressRing pct={summary.avgPct} color={ringColor} size={52} />
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="font-display font-bold text-[12px] leading-none" style={{ color: ringColor }}>
+            <ProgressRing pct={summary.avgPct} color={ringColor} size={64} />
+            <div className="absolute inset-0 flex items-center justify-center gap-0.5">
+              <span className="font-display font-bold text-[15px] leading-none" style={{ color: ringColor }}>
                 {summary.avgPct}
               </span>
-              <span className="font-mono text-[8px] leading-none mt-0.5" style={{ color: MUTED }}>%</span>
+              <span className="font-mono text-[9px] leading-none" style={{ color: MUTED }}>%</span>
             </div>
           </div>
           <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
