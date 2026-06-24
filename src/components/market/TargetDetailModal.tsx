@@ -161,6 +161,7 @@ export function TargetDetailModal({ open, onOpenChange, target, onEdit, onSucces
   const queryClient = useQueryClient();
   const [observationModalOpen, setObservationModalOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deletingObsId, setDeletingObsId] = useState<string | null>(null);
 
   const { data: observations = [], isLoading: observationsLoading } = useQuery({
     queryKey: ["target-observations", target?.id],
@@ -196,6 +197,23 @@ export function TargetDetailModal({ open, onOpenChange, target, onEdit, onSucces
       toast({ title: "Erro ao excluir", variant: "destructive" });
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleDeleteObs = async (obsId: string) => {
+    if (!confirm("Excluir esta observação?")) return;
+    setDeletingObsId(obsId);
+    try {
+      const { error } = await supabase.from("target_observations").delete().eq("id", obsId);
+      if (error) throw error;
+      toast({ title: "Observação excluída" });
+      queryClient.invalidateQueries({ queryKey: ["target-observations", target?.id] });
+      recalculate("Observação removida");
+      onSuccess?.();
+    } catch {
+      toast({ title: "Erro ao excluir", variant: "destructive" });
+    } finally {
+      setDeletingObsId(null);
     }
   };
 
@@ -532,22 +550,35 @@ export function TargetDetailModal({ open, onOpenChange, target, onEdit, onSucces
                     {observations.map(obs => (
                       <div
                         key={obs.id}
-                        className="p-3 rounded-lg space-y-1"
+                        className="group/obs p-3 rounded-lg space-y-1"
                         style={{ background: BG_CARD, border: `1px solid ${BDR}` }}
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1.5">
-                            <Calendar className="w-3 h-3" style={{ color: MUTED }} />
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <Calendar className="w-3 h-3 flex-none" style={{ color: MUTED }} />
                             <Mono style={{ color: MUTED } as React.CSSProperties}>
                               {format(new Date(obs.observation_date), "dd MMM yyyy", { locale: ptBR })}
                               {obs.minutes_observed ? ` · ${obs.minutes_observed} min` : ""}
                             </Mono>
                           </div>
-                          {obs.performance_rating && (
-                            <span className="font-mono text-[10px] px-2 py-0.5 rounded-full" style={{ color: ACCENT, background: `${ACCENT}15`, border: `1px solid ${ACCENT}30` }}>
-                              {obs.performance_rating}/10
-                            </span>
-                          )}
+                          <div className="flex items-center gap-2 flex-none">
+                            {obs.performance_rating && (
+                              <span className="font-mono text-[10px] px-2 py-0.5 rounded-full" style={{ color: ACCENT, background: `${ACCENT}15`, border: `1px solid ${ACCENT}30` }}>
+                                {obs.performance_rating}/10
+                              </span>
+                            )}
+                            <button
+                              onClick={() => handleDeleteObs(obs.id)}
+                              disabled={deletingObsId === obs.id}
+                              className="opacity-0 group-hover/obs:opacity-100 w-6 h-6 flex items-center justify-center rounded-md transition-all duration-150 hover:bg-red-500/15"
+                              title="Excluir observação"
+                            >
+                              {deletingObsId === obs.id
+                                ? <span className="w-3 h-3 border border-t-transparent rounded-full animate-spin" style={{ borderColor: "#ef4444" }} />
+                                : <Trash2 className="w-3.5 h-3.5" style={{ color: "#ef4444" }} />
+                              }
+                            </button>
+                          </div>
                         </div>
                         {obs.match_context && (
                           <p className="text-[11px] font-mono" style={{ color: MUTED }}>{obs.match_context}</p>
