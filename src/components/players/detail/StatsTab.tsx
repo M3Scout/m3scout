@@ -90,7 +90,7 @@ const TABLE_HEADERS = [
   { label: "A",          tooltip: "Assistências",                 mobile: true  },
   { label: "FIN",        tooltip: "Finalizações",                 mobile: false },
   { label: "NOG",        tooltip: "No Gol (Finalizações Certas)", mobile: false },
-  { label: "PEN",        tooltip: "Pênaltis Sofridos",            mobile: false },
+  { label: "PASS %",     tooltip: "Aproveitamento de Passe",      mobile: false },
   { label: "AM",         tooltip: "Cartões Amarelos",             mobile: true  },
   { label: "VE",         tooltip: "Cartão Vermelho",              mobile: false },
   { label: "ROB",        tooltip: "Roubadas de Bola",             mobile: false },
@@ -734,20 +734,21 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
                   const rows = mergeSeasonRows(mergedBySeason[yr] ?? []);
                   const totals = rows.reduce(
                     (acc, row) => ({
-                      matches:         acc.matches         + row.stats.matches,
-                      minutes:         acc.minutes         + row.stats.minutes,
-                      goals:           acc.goals           + row.stats.goals,
-                      assists:         acc.assists         + row.stats.assists,
-                      shots:           acc.shots           + row.stats.shots,
-                      shots_on_target: acc.shots_on_target + row.stats.shots_on_target,
-                      penalties_won:   acc.penalties_won   + (row.stats.penalties_won ?? 0),
-                      yellow_cards:    acc.yellow_cards    + row.stats.yellow_cards,
-                      red_cards:       acc.red_cards       + row.stats.red_cards,
-                      steals:          acc.steals          + row.stats.steals,
-                      tackles:         acc.tackles         + row.stats.tackles,
-                      interceptions:   acc.interceptions   + row.stats.interceptions,
+                      matches:          acc.matches          + row.stats.matches,
+                      minutes:          acc.minutes          + row.stats.minutes,
+                      goals:            acc.goals            + row.stats.goals,
+                      assists:          acc.assists          + row.stats.assists,
+                      shots:            acc.shots            + row.stats.shots,
+                      shots_on_target:  acc.shots_on_target  + row.stats.shots_on_target,
+                      passes_completed: acc.passes_completed + (row.stats.passes_completed ?? 0),
+                      passes_total:     acc.passes_total     + (row.stats.passes_total ?? 0),
+                      yellow_cards:     acc.yellow_cards     + row.stats.yellow_cards,
+                      red_cards:        acc.red_cards        + row.stats.red_cards,
+                      steals:           acc.steals           + row.stats.steals,
+                      tackles:          acc.tackles          + row.stats.tackles,
+                      interceptions:    acc.interceptions    + row.stats.interceptions,
                     }),
-                    { matches: 0, minutes: 0, goals: 0, assists: 0, shots: 0, shots_on_target: 0, penalties_won: 0, yellow_cards: 0, red_cards: 0, steals: 0, tackles: 0, interceptions: 0 }
+                    { matches: 0, minutes: 0, goals: 0, assists: 0, shots: 0, shots_on_target: 0, passes_completed: 0, passes_total: 0, yellow_cards: 0, red_cards: 0, steals: 0, tackles: 0, interceptions: 0 }
                   );
 
                   const minBracket =
@@ -809,7 +810,15 @@ export function StatsTab({ playerId, playerPosition }: StatsTabProps) {
                         <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${CARD_BORDER}`, color: totals.assists > 0 ? GREEN : A    }}>{totals.assists}</td>
                         <td className="hidden sm:table-cell px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${CARD_BORDER}`, color: MUTED }}>{totals.shots}</td>
                         <td className="hidden sm:table-cell px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${CARD_BORDER}`, color: MUTED }}>{totals.shots_on_target}</td>
-                        <td className="hidden sm:table-cell px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${CARD_BORDER}`, color: MUTED }}>{totals.penalties_won}</td>
+                        {(() => {
+                          const tp = totals.passes_total > 0 ? Math.round((totals.passes_completed / totals.passes_total) * 1000) / 10 : null;
+                          const tpColor = tp === null ? MUTED : tp >= 80 ? GREEN : tp >= 65 ? AMBER : tp >= 50 ? MUTED : A;
+                          return (
+                            <td className="hidden sm:table-cell px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${CARD_BORDER}`, color: tpColor }}>
+                              {tp === null ? "—" : `${tp}%`}
+                            </td>
+                          );
+                        })()}
                         <td className="px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${CARD_BORDER}`, color: totals.yellow_cards > 0 ? AMBER : MUTED }}>{totals.yellow_cards}</td>
                         <td className="hidden sm:table-cell px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${CARD_BORDER}`, color: totals.red_cards > 0 ? A : MUTED }}>{totals.red_cards}</td>
                         <td className="hidden sm:table-cell px-3 py-2 text-right tabular-nums font-bold text-[13px]" style={{ borderRight: `1px solid ${CARD_BORDER}`, color: MUTED }}>{totals.steals}</td>
@@ -1063,10 +1072,16 @@ function SeasonRow({ row, isGoalkeeper = false }: { row: SeasonRowData; matches?
         <td className="hidden sm:table-cell px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>
           {s.shots_on_target}
         </td>
-        {/* PEN */}
-        <td className="hidden sm:table-cell px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: MUT }}>
-          {s.penalties_won ?? 0}
-        </td>
+        {/* PASS % */}
+        {(() => {
+          const pct = s.passes_total > 0 ? Math.round((s.passes_completed / s.passes_total) * 1000) / 10 : null;
+          const pctColor = pct === null ? MUT : pct >= 80 ? GREEN : pct >= 65 ? AMBER : pct >= 50 ? MUT : ACC;
+          return (
+            <td className="hidden sm:table-cell px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: pctColor }}>
+              {pct === null ? <span style={{ color: MUT }}>—</span> : `${pct}%`}
+            </td>
+          );
+        })()}
         {/* AM */}
         <td className="px-3 py-2.5 text-right tabular-nums" style={{ borderRight: `1px solid ${BRD}`, color: s.yellow_cards > 0 ? AMB : MUT }}>
           {s.yellow_cards}
