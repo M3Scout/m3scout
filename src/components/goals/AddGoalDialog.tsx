@@ -555,6 +555,8 @@ export function AddGoalDialog({
 
 function getQuickValues(type: string, cfg: GoalTypeCfg, pos: PosGroup): number[] {
   const posQuicks: Partial<Record<string, Partial<Record<PosGroup, number[]>>>> = {
+    matches:         { cb: [25,30,35,42], lb: [25,30,35,42], dm: [25,30,36,42], cam: [20,25,30,38], winger: [20,25,30,38], st: [20,25,30,38], unknown: [20,28,35,45] },
+    minutes:         { cb: [1200,2500,3000,4200], lb: [1200,2500,3000,4200], dm: [1200,2500,3000,4200], cam: [1200,2000,2800,3500], winger: [1200,2000,2800,3500], st: [1200,2000,2800,3500], unknown: [1200,2500,3000,4200] },
     shots:           { cb: [20,25,30,35], lb: [25,30,40,45], dm: [40,50,60,65], cam: [65,75,90,95], winger: [80,95,110,120], st: [110,130,150,160] },
     tackles:         { cb: [40,50,55,60], lb: [80,90,100,120], dm: [75,100,120,140], cam: [25,30,35,45], winger: [40,45,55,60], st: [15,20,25,30] },
     interceptions:   { cb: [60,65,70,80], lb: [40,45,50,60], dm: [60,70,80,90], cam: [20,25,30,35], winger: [20,25,30,40], st: [10,12,15,20] },
