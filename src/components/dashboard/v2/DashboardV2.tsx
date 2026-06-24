@@ -504,18 +504,8 @@ export const DashboardV2 = () => {
         </div>
 
         {/* Insights — Full Width */}
-        <div className="m3dash-section m3dash-insights-full">
-          <div className="m3dash-section-head">
-            <div className="m3dash-section-title">
-              <span className="red">// </span>Insights da Plataforma
-            </div>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--muted2)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-              Auto
-            </span>
-          </div>
-          <div className="m3dash-insights-wrap">
-            <InsightsCard />
-          </div>
+        <div className="m3dash-insights-full">
+          <InsightsCard />
         </div>
 
         {/* 2×2 Content Grid */}

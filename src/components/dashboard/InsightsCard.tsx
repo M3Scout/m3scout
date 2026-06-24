@@ -381,12 +381,13 @@ function InsightChip({
       animate={{ opacity: 1, x: 0,  scale: 1 }}
       exit={{ opacity: 0, x: -10, scale: 0.95 }}
       transition={{ delay: index * 0.05, duration: 0.3, ease: "easeOut" }}
-      className="relative rounded-xl flex flex-col gap-2.5 p-3.5 group"
+      className="relative rounded-xl flex flex-col gap-3 p-4 group"
       style={{
         background: cat.bg,
         border: `1px solid ${cat.border}`,
         flex: "0 0 calc(25% - 9px)",
-        minWidth: "180px",
+        minWidth: "200px",
+        minHeight: "160px",
       }}
     >
       {/* Dismiss */}
@@ -630,7 +631,7 @@ export const InsightsCard = () => {
       {/* Cards row */}
       <div
         ref={scrollRef}
-        className="flex gap-3 p-4 overflow-x-auto scrollbar-none"
+        className="flex gap-3 p-4 pb-5 overflow-x-auto scrollbar-none"
         style={{ scrollSnapType: "x mandatory" }}
       >
         <AnimatePresence mode="popLayout">
