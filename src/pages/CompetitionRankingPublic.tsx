@@ -43,6 +43,7 @@ interface Competition {
 }
 
 import { TIER_COLORS, getTierThresholdsTooltip, getTierFromCoefficient } from "@/lib/tierClassification";
+import { getCountryFlag } from "@/components/competitions/CompetitionVisuals";
 
 const COMPETITION_TYPES = [
   { value: "league", label: "Liga" },
@@ -272,7 +273,10 @@ const CompetitionRankingPublic = () => {
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-sm">{comp.country}</span>
+                      <span className="text-sm flex items-center gap-1">
+                        <span>{getCountryFlag(comp.country)}</span>
+                        {comp.country}
+                      </span>
                       <span className="text-xs text-muted-foreground">{getTypeLabel(comp.type)}</span>
                     </div>
                   </TableCell>

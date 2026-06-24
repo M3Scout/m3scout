@@ -12,7 +12,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { TierBadge, CoefficientBar, TypeBadge, StatusBadge, VisibilityDisplay } from "./CompetitionVisuals";
+import { TierBadge, CoefficientBar, TypeBadge, StatusBadge, VisibilityDisplay, getCountryFlag } from "./CompetitionVisuals";
 import { getTierFromCoefficient } from "@/lib/tierClassification";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 
@@ -96,7 +96,8 @@ export function CompetitionRowCard({ competition, isAdmin, onEdit, onDelete }: C
               {competition.division}
             </span>
           )}
-          <span className="font-editorial-mono text-[10px]" style={{ color: MUTED }}>
+          <span className="flex items-center gap-1 font-editorial-mono text-[10px]" style={{ color: MUTED }}>
+            <span>{getCountryFlag(competition.country)}</span>
             {competition.country}
           </span>
         </div>
@@ -186,7 +187,10 @@ export function CompetitionMobileCard({ competition, isAdmin, onEdit, onDelete }
           <div className="grid grid-cols-2 gap-3">
             <div>
               <p className="font-editorial-mono text-[9px] uppercase mb-1" style={{ color: MUTED }}>País</p>
-              <p className="font-display text-[12px]" style={{ color: TEXT }}>{competition.country}</p>
+              <p className="font-display text-[12px] flex items-center gap-1" style={{ color: TEXT }}>
+                <span>{getCountryFlag(competition.country)}</span>
+                {competition.country}
+              </p>
             </div>
             <div>
               <p className="font-editorial-mono text-[9px] uppercase mb-1" style={{ color: MUTED }}>Visibilidade</p>

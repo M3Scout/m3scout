@@ -165,6 +165,67 @@ export function StatusBadge({ isActive, className }: { isActive: boolean; classN
   );
 }
 
+// ── CountryFlag ──────────────────────────────────────────────────────────────
+
+const COUNTRY_FLAGS: Record<string, string> = {
+  // América do Sul
+  "Brasil": "🇧🇷", "Brazil": "🇧🇷",
+  "Argentina": "🇦🇷",
+  "Uruguai": "🇺🇾", "Uruguay": "🇺🇾",
+  "Paraguai": "🇵🇾", "Paraguay": "🇵🇾",
+  "Chile": "🇨🇱",
+  "Colômbia": "🇨🇴", "Colombia": "🇨🇴",
+  "Peru": "🇵🇪",
+  "Venezuela": "🇻🇪",
+  "Equador": "🇪🇨", "Ecuador": "🇪🇨",
+  "Bolívia": "🇧🇴", "Bolivia": "🇧🇴",
+  // América Central/Norte
+  "México": "🇲🇽", "Mexico": "🇲🇽",
+  "Estados Unidos": "🇺🇸", "USA": "🇺🇸",
+  "Costa Rica": "🇨🇷",
+  // Europa
+  "Espanha": "🇪🇸", "Spain": "🇪🇸",
+  "Portugal": "🇵🇹",
+  "França": "🇫🇷", "France": "🇫🇷",
+  "Alemanha": "🇩🇪", "Germany": "🇩🇪",
+  "Itália": "🇮🇹", "Italy": "🇮🇹",
+  "Inglaterra": "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "England": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+  "Reino Unido": "🇬🇧", "United Kingdom": "🇬🇧",
+  "Holanda": "🇳🇱", "Netherlands": "🇳🇱", "Países Baixos": "🇳🇱",
+  "Bélgica": "🇧🇪", "Belgium": "🇧🇪",
+  "Suíça": "🇨🇭", "Switzerland": "🇨🇭",
+  "Áustria": "🇦🇹", "Austria": "🇦🇹",
+  "Turquia": "🇹🇷", "Turkey": "🇹🇷",
+  "Rússia": "🇷🇺", "Russia": "🇷🇺",
+  "Polônia": "🇵🇱", "Poland": "🇵🇱",
+  "Grécia": "🇬🇷", "Greece": "🇬🇷",
+  "Ucrânia": "🇺🇦", "Ukraine": "🇺🇦",
+  "Sérvia": "🇷🇸", "Serbia": "🇷🇸",
+  "Croácia": "🇭🇷", "Croatia": "🇭🇷",
+  "Dinamarca": "🇩🇰", "Denmark": "🇩🇰",
+  "Noruega": "🇳🇴", "Norway": "🇳🇴",
+  "Suécia": "🇸🇪", "Sweden": "🇸🇪",
+  "Escócia": "🏴󠁧󠁢󠁳󠁣󠁴󠁿", "Scotland": "🏴󠁧󠁢󠁳󠁣󠁴󠁿",
+  // Ásia/Oriente Médio
+  "Japão": "🇯🇵", "Japan": "🇯🇵",
+  "Coreia do Sul": "🇰🇷", "South Korea": "🇰🇷",
+  "China": "🇨🇳",
+  "Arábia Saudita": "🇸🇦", "Saudi Arabia": "🇸🇦",
+  "Qatar": "🇶🇦",
+  "Emirados Árabes": "🇦🇪", "UAE": "🇦🇪",
+  // África
+  "África do Sul": "🇿🇦", "South Africa": "🇿🇦",
+  "Marrocos": "🇲🇦", "Morocco": "🇲🇦",
+  "Egito": "🇪🇬", "Egypt": "🇪🇬",
+  "Nigéria": "🇳🇬", "Nigeria": "🇳🇬",
+  // Internacional
+  "Internacional": "🌍",
+};
+
+export function getCountryFlag(country: string): string {
+  return COUNTRY_FLAGS[country] ?? "🏳️";
+}
+
 // ── VisibilityDisplay ────────────────────────────────────────────────────────
 
 export function VisibilityDisplay({ score, className }: { score: number | null; className?: string }) {
