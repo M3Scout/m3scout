@@ -265,8 +265,8 @@ export function PlayerGoalsCard({ player, goals, expanded, onToggle, onGoalClick
           </div>
         </div>
 
-        {/* Ring + chevron */}
-        <div className="flex flex-col items-center gap-1 flex-none">
+        {/* Ring + chevron lado a lado */}
+        <div className="flex items-center gap-1.5 flex-none">
           <div className="relative flex items-center justify-center">
             <ProgressRing pct={summary.avgPct} color={ringColor} size={48} />
             <div className="absolute inset-0 flex items-center justify-center gap-[2px]">
