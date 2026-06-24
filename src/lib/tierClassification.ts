@@ -1,12 +1,12 @@
 /**
  * Centralized Tier Classification System
- * 
+ *
  * Official thresholds (Regra Definitiva):
- * - Tier S: coeficiente > 1.01
- * - Tier A: 0.97 <= coeficiente <= 1.01
- * - Tier B: 0.93 <= coeficiente < 0.97
- * - Tier C: 0.89 <= coeficiente < 0.93
- * - Tier D: coeficiente < 0.89
+ * - Tier S: final_coefficient >= 0.9400
+ * - Tier A: 0.8500 <= final_coefficient < 0.9400
+ * - Tier B: 0.7400 <= final_coefficient < 0.8500
+ * - Tier C: 0.6000 <= final_coefficient < 0.7400
+ * - Tier D: final_coefficient < 0.6000
  */
 
 export type TierLevel = 'S' | 'A' | 'B' | 'C' | 'D';
@@ -19,21 +19,14 @@ export interface TierInfo {
   maxCoefficient: number | null;
 }
 
-/**
- * Get tier from coefficient value
- * Uses the official thresholds defined in the system
- */
 export function getTierFromCoefficient(coefficient: number): TierLevel {
-  if (coefficient > 1.01) return 'S';
-  if (coefficient >= 0.97) return 'A';
-  if (coefficient >= 0.93) return 'B';
-  if (coefficient >= 0.89) return 'C';
+  if (coefficient >= 0.94) return 'S';
+  if (coefficient >= 0.85) return 'A';
+  if (coefficient >= 0.74) return 'B';
+  if (coefficient >= 0.60) return 'C';
   return 'D';
 }
 
-/**
- * Get detailed tier information
- */
 export function getTierInfo(tier: TierLevel): TierInfo {
   switch (tier) {
     case 'S':
@@ -41,7 +34,7 @@ export function getTierInfo(tier: TierLevel): TierInfo {
         tier: 'S',
         label: 'Elite',
         description: 'Competições de elite mundial',
-        minCoefficient: 1.02,
+        minCoefficient: 0.94,
         maxCoefficient: null,
       };
     case 'A':
@@ -49,24 +42,24 @@ export function getTierInfo(tier: TierLevel): TierInfo {
         tier: 'A',
         label: 'Alto',
         description: 'Competições de alto nível',
-        minCoefficient: 0.97,
-        maxCoefficient: 1.01,
+        minCoefficient: 0.85,
+        maxCoefficient: 0.9399,
       };
     case 'B':
       return {
         tier: 'B',
         label: 'Médio',
         description: 'Competições de nível intermediário',
-        minCoefficient: 0.93,
-        maxCoefficient: 0.96,
+        minCoefficient: 0.74,
+        maxCoefficient: 0.8499,
       };
     case 'C':
       return {
         tier: 'C',
         label: 'Base',
         description: 'Competições de base',
-        minCoefficient: 0.89,
-        maxCoefficient: 0.92,
+        minCoefficient: 0.60,
+        maxCoefficient: 0.7399,
       };
     case 'D':
       return {
@@ -74,14 +67,11 @@ export function getTierInfo(tier: TierLevel): TierInfo {
         label: 'Inferior',
         description: 'Competições de nível inferior',
         minCoefficient: null,
-        maxCoefficient: 0.88,
+        maxCoefficient: 0.5999,
       };
   }
 }
 
-/**
- * Get CSS classes for tier badge styling
- */
 export function getTierColorClasses(tier: TierLevel | string): string {
   switch (tier) {
     case 'S':
@@ -99,9 +89,6 @@ export function getTierColorClasses(tier: TierLevel | string): string {
   }
 }
 
-/**
- * Get admin badge classes for tier styling
- */
 export function getTierAdminBadgeClass(tier: TierLevel | string): string {
   switch (tier) {
     case 'S':
@@ -119,9 +106,6 @@ export function getTierAdminBadgeClass(tier: TierLevel | string): string {
   }
 }
 
-/**
- * TIER_COLORS constant for backward compatibility
- */
 export const TIER_COLORS: Record<string, string> = {
   S: getTierColorClasses('S'),
   A: getTierColorClasses('A'),
@@ -130,26 +114,20 @@ export const TIER_COLORS: Record<string, string> = {
   D: getTierColorClasses('D'),
 };
 
-/**
- * All tier thresholds for display in tooltips
- */
 export const TIER_THRESHOLDS = {
-  S: { min: 1.02, max: null, label: '> 1.01' },
-  A: { min: 0.97, max: 1.01, label: '0.97 – 1.01' },
-  B: { min: 0.93, max: 0.96, label: '0.93 – 0.96' },
-  C: { min: 0.89, max: 0.92, label: '0.89 – 0.92' },
-  D: { min: null, max: 0.88, label: '< 0.89' },
+  S: { min: 0.94,  max: null,   label: '>= 0.9400' },
+  A: { min: 0.85,  max: 0.9399, label: '0.8500 – 0.9399' },
+  B: { min: 0.74,  max: 0.8499, label: '0.7400 – 0.8499' },
+  C: { min: 0.60,  max: 0.7399, label: '0.6000 – 0.7399' },
+  D: { min: null,  max: 0.5999, label: '< 0.6000' },
 } as const;
 
-/**
- * Get formatted tier thresholds for tooltip display
- */
 export function getTierThresholdsTooltip(): Array<{ tier: TierLevel; range: string; colorClass: string }> {
   return [
-    { tier: 'S', range: '> 1.01', colorClass: 'text-amber-400' },
-    { tier: 'A', range: '0.97 – 1.01', colorClass: 'text-emerald-400' },
-    { tier: 'B', range: '0.93 – 0.96', colorClass: 'text-blue-400' },
-    { tier: 'C', range: '0.89 – 0.92', colorClass: 'text-zinc-400' },
-    { tier: 'D', range: '< 0.89', colorClass: 'text-red-400' },
+    { tier: 'S', range: '>= 0.9400',        colorClass: 'text-amber-400' },
+    { tier: 'A', range: '0.8500 – 0.9399',  colorClass: 'text-emerald-400' },
+    { tier: 'B', range: '0.7400 – 0.8499',  colorClass: 'text-blue-400' },
+    { tier: 'C', range: '0.6000 – 0.7399',  colorClass: 'text-zinc-400' },
+    { tier: 'D', range: '< 0.6000',         colorClass: 'text-red-400' },
   ];
 }

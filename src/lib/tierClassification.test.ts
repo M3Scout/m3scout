@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { 
-  getTierFromCoefficient, 
-  getTierColorClasses, 
+import {
+  getTierFromCoefficient,
+  getTierColorClasses,
   getTierAdminBadgeClass,
   getTierInfo,
   TIER_COLORS,
@@ -9,73 +9,73 @@ import {
 } from './tierClassification';
 
 describe('getTierFromCoefficient', () => {
-  describe('Tier S (> 1.01)', () => {
-    it('should return S for coefficient 1.02', () => {
-      expect(getTierFromCoefficient(1.02)).toBe('S');
+  describe('Tier S (>= 0.9400)', () => {
+    it('should return S for coefficient 0.9400 (edge case)', () => {
+      expect(getTierFromCoefficient(0.9400)).toBe('S');
     });
 
-    it('should return S for coefficient 1.04 (Bundesliga case)', () => {
-      expect(getTierFromCoefficient(1.04)).toBe('S');
+    it('should return S for coefficient 0.95', () => {
+      expect(getTierFromCoefficient(0.95)).toBe('S');
     });
 
-    it('should return S for coefficient 1.10', () => {
-      expect(getTierFromCoefficient(1.10)).toBe('S');
+    it('should return S for coefficient 1.00', () => {
+      expect(getTierFromCoefficient(1.00)).toBe('S');
     });
 
-    it('should return S for coefficient 1.50', () => {
-      expect(getTierFromCoefficient(1.50)).toBe('S');
-    });
-  });
-
-  describe('Tier A (0.97 - 1.01)', () => {
-    it('should return A for coefficient 1.01 (edge case)', () => {
-      expect(getTierFromCoefficient(1.01)).toBe('A');
-    });
-
-    it('should return A for coefficient 0.99', () => {
-      expect(getTierFromCoefficient(0.99)).toBe('A');
-    });
-
-    it('should return A for coefficient 0.97 (edge case)', () => {
-      expect(getTierFromCoefficient(0.97)).toBe('A');
+    it('should return S for coefficient 1.20', () => {
+      expect(getTierFromCoefficient(1.20)).toBe('S');
     });
   });
 
-  describe('Tier B (0.93 - 0.96)', () => {
-    it('should return B for coefficient 0.96', () => {
-      expect(getTierFromCoefficient(0.96)).toBe('B');
+  describe('Tier A (0.8500 - 0.9399)', () => {
+    it('should return A for coefficient 0.9399 (edge case)', () => {
+      expect(getTierFromCoefficient(0.9399)).toBe('A');
     });
 
-    it('should return B for coefficient 0.94', () => {
-      expect(getTierFromCoefficient(0.94)).toBe('B');
+    it('should return A for coefficient 0.90', () => {
+      expect(getTierFromCoefficient(0.90)).toBe('A');
     });
 
-    it('should return B for coefficient 0.93 (edge case)', () => {
-      expect(getTierFromCoefficient(0.93)).toBe('B');
-    });
-  });
-
-  describe('Tier C (0.89 - 0.92)', () => {
-    it('should return C for coefficient 0.92', () => {
-      expect(getTierFromCoefficient(0.92)).toBe('C');
-    });
-
-    it('should return C for coefficient 0.90', () => {
-      expect(getTierFromCoefficient(0.90)).toBe('C');
-    });
-
-    it('should return C for coefficient 0.89 (edge case)', () => {
-      expect(getTierFromCoefficient(0.89)).toBe('C');
+    it('should return A for coefficient 0.8500 (edge case)', () => {
+      expect(getTierFromCoefficient(0.8500)).toBe('A');
     });
   });
 
-  describe('Tier D (< 0.89)', () => {
-    it('should return D for coefficient 0.88', () => {
-      expect(getTierFromCoefficient(0.88)).toBe('D');
+  describe('Tier B (0.7400 - 0.8499)', () => {
+    it('should return B for coefficient 0.8499 (edge case)', () => {
+      expect(getTierFromCoefficient(0.8499)).toBe('B');
     });
 
-    it('should return D for coefficient 0.50', () => {
-      expect(getTierFromCoefficient(0.50)).toBe('D');
+    it('should return B for coefficient 0.80', () => {
+      expect(getTierFromCoefficient(0.80)).toBe('B');
+    });
+
+    it('should return B for coefficient 0.7400 (edge case)', () => {
+      expect(getTierFromCoefficient(0.7400)).toBe('B');
+    });
+  });
+
+  describe('Tier C (0.6000 - 0.7399)', () => {
+    it('should return C for coefficient 0.7399 (edge case)', () => {
+      expect(getTierFromCoefficient(0.7399)).toBe('C');
+    });
+
+    it('should return C for coefficient 0.67', () => {
+      expect(getTierFromCoefficient(0.67)).toBe('C');
+    });
+
+    it('should return C for coefficient 0.6000 (edge case)', () => {
+      expect(getTierFromCoefficient(0.6000)).toBe('C');
+    });
+  });
+
+  describe('Tier D (< 0.6000)', () => {
+    it('should return D for coefficient 0.5999 (edge case)', () => {
+      expect(getTierFromCoefficient(0.5999)).toBe('D');
+    });
+
+    it('should return D for coefficient 0.40', () => {
+      expect(getTierFromCoefficient(0.40)).toBe('D');
     });
 
     it('should return D for coefficient 0', () => {
@@ -84,25 +84,36 @@ describe('getTierFromCoefficient', () => {
   });
 
   describe('Edge cases boundary precision', () => {
-    // Testing the exact boundary between tiers
-    it('1.010 should be A (not S)', () => {
-      expect(getTierFromCoefficient(1.010)).toBe('A');
+    it('0.9400 should be S', () => {
+      expect(getTierFromCoefficient(0.9400)).toBe('S');
     });
 
-    it('1.011 should be S', () => {
-      expect(getTierFromCoefficient(1.011)).toBe('S');
+    it('0.9399 should be A (not S)', () => {
+      expect(getTierFromCoefficient(0.9399)).toBe('A');
     });
 
-    it('0.969 should be B (not A)', () => {
-      expect(getTierFromCoefficient(0.969)).toBe('B');
+    it('0.8500 should be A', () => {
+      expect(getTierFromCoefficient(0.8500)).toBe('A');
     });
 
-    it('0.929 should be C (not B)', () => {
-      expect(getTierFromCoefficient(0.929)).toBe('C');
+    it('0.8499 should be B (not A)', () => {
+      expect(getTierFromCoefficient(0.8499)).toBe('B');
     });
 
-    it('0.889 should be D (not C)', () => {
-      expect(getTierFromCoefficient(0.889)).toBe('D');
+    it('0.7400 should be B', () => {
+      expect(getTierFromCoefficient(0.7400)).toBe('B');
+    });
+
+    it('0.7399 should be C (not B)', () => {
+      expect(getTierFromCoefficient(0.7399)).toBe('C');
+    });
+
+    it('0.6000 should be C', () => {
+      expect(getTierFromCoefficient(0.6000)).toBe('C');
+    });
+
+    it('0.5999 should be D (not C)', () => {
+      expect(getTierFromCoefficient(0.5999)).toBe('D');
     });
   });
 });
@@ -110,14 +121,14 @@ describe('getTierFromCoefficient', () => {
 describe('getTierColorClasses', () => {
   it('should return correct color classes for each tier', () => {
     expect(getTierColorClasses('S')).toContain('amber');
-    expect(getTierColorClasses('A')).toContain('primary');
-    expect(getTierColorClasses('B')).toContain('emerald');
-    expect(getTierColorClasses('C')).toContain('muted');
-    expect(getTierColorClasses('D')).toContain('destructive');
+    expect(getTierColorClasses('A')).toContain('emerald');
+    expect(getTierColorClasses('B')).toContain('blue');
+    expect(getTierColorClasses('C')).toContain('zinc');
+    expect(getTierColorClasses('D')).toContain('red');
   });
 
   it('should return default class for unknown tier', () => {
-    expect(getTierColorClasses('X')).toContain('muted');
+    expect(getTierColorClasses('X')).toContain('zinc');
   });
 });
 
@@ -136,7 +147,7 @@ describe('getTierInfo', () => {
     const info = getTierInfo('S');
     expect(info.tier).toBe('S');
     expect(info.label).toBe('Elite');
-    expect(info.minCoefficient).toBe(1.02);
+    expect(info.minCoefficient).toBe(0.94);
     expect(info.maxCoefficient).toBeNull();
   });
 
@@ -144,8 +155,8 @@ describe('getTierInfo', () => {
     const info = getTierInfo('A');
     expect(info.tier).toBe('A');
     expect(info.label).toBe('Alto');
-    expect(info.minCoefficient).toBe(0.97);
-    expect(info.maxCoefficient).toBe(1.01);
+    expect(info.minCoefficient).toBe(0.85);
+    expect(info.maxCoefficient).toBe(0.9399);
   });
 
   it('should return correct info for Tier D', () => {
@@ -153,7 +164,7 @@ describe('getTierInfo', () => {
     expect(info.tier).toBe('D');
     expect(info.label).toBe('Inferior');
     expect(info.minCoefficient).toBeNull();
-    expect(info.maxCoefficient).toBe(0.88);
+    expect(info.maxCoefficient).toBe(0.5999);
   });
 });
 
@@ -169,10 +180,10 @@ describe('TIER_COLORS constant', () => {
 
 describe('TIER_THRESHOLDS constant', () => {
   it('should have correct threshold labels', () => {
-    expect(TIER_THRESHOLDS.S.label).toBe('> 1.01');
-    expect(TIER_THRESHOLDS.A.label).toBe('0.97 – 1.01');
-    expect(TIER_THRESHOLDS.B.label).toBe('0.93 – 0.96');
-    expect(TIER_THRESHOLDS.C.label).toBe('0.89 – 0.92');
-    expect(TIER_THRESHOLDS.D.label).toBe('< 0.89');
+    expect(TIER_THRESHOLDS.S.label).toBe('>= 0.9400');
+    expect(TIER_THRESHOLDS.A.label).toBe('0.8500 – 0.9399');
+    expect(TIER_THRESHOLDS.B.label).toBe('0.7400 – 0.8499');
+    expect(TIER_THRESHOLDS.C.label).toBe('0.6000 – 0.7399');
+    expect(TIER_THRESHOLDS.D.label).toBe('< 0.6000');
   });
 });
