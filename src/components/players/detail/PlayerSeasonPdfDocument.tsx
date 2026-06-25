@@ -62,8 +62,7 @@ function delta(curr: number, prev: number): number | null {
 function yoyStr(d: number | null, prevYear: number): string {
   if (d === null) return "";
   const sign = d >= 0 ? "+" : "";
-  const arrow = d >= 5 ? " ↑" : d <= -5 ? " ↓" : " →";
-  return `${sign}${Math.round(d)}% vs ${prevYear}${arrow}`;
+  return `${sign}${Math.round(d)}% vs ${prevYear}`;
 }
 function yoyColor(d: number | null, invertBad = false): string {
   if (d === null) return C.g400;
@@ -187,12 +186,12 @@ function buildInsights(
       yoy: minYoy, yoyColor: minYoyC });
   } else if (min >= 1200) {
     out.push({ level: "regular", metric: "Minutagem · Jogador de Elenco",
-      ref: `Atual: ${n(min)} min em ${matches} jogos · Protagonista: ≥2.500 min · Mínimo confiável: 1.200 min${prevMinStr}`,
+      ref: `Atual: ${n(min)} min em ${matches} jogos · Protagonista: >=2.500 min · Mínimo confiável: 1.200 min${prevMinStr}`,
       text: "Reserva imediato ou titular que perdeu espaço por opção técnica ou lesão. Dados confiáveis dentro do contexto, porém amostra parcial da temporada.",
       yoy: minYoy, yoyColor: minYoyC });
   } else {
     out.push({ level: "critico", metric: "Minutagem · Amostragem Baixa",
-      ref: `Atual: ${n(min)} min em ${matches} jogos · Mínimo recomendado: 1.200 min · Ideal (Protagonista): ≥2.500 min${prevMinStr}`,
+      ref: `Atual: ${n(min)} min em ${matches} jogos · Mínimo recomendado: 1.200 min · Ideal (Protagonista): >=2.500 min${prevMinStr}`,
       text: "Minutagem escassa compromete a confiabilidade estatística. O atleta precisa de sequência de minutos para que os números sejam representativos de seu real nível.",
       yoy: minYoy, yoyColor: minYoyC });
   }
@@ -202,15 +201,15 @@ function buildInsights(
     const tk = getTierFromCoefficient(avgC) as keyof typeof TIER;
     if (tk === "S" || tk === "A") {
       out.push({ level: "bom", metric: `Nível de Competição · Tier ${tk}`,
-        ref: `Coef. médio ponderado: ${fd(avgC, 2)} · Tier ${tk} — ${TIER[tk].label} · Referência S: ≥0.94 · A: ≥0.85`,
+        ref: `Coef. médio ponderado: ${fd(avgC, 2)} · Tier ${tk} — ${TIER[tk].label} · Referência S: >=0.94 · A: >=0.85`,
         text: "Estatísticas obtidas contra concorrência de alto nível, o que aumenta o valor de mercado dos números desta temporada." });
     } else if (tk === "B") {
       out.push({ level: "regular", metric: "Nível de Competição · Tier B",
-        ref: `Coef. médio ponderado: ${fd(avgC, 2)} · Tier B — Intermediário · Referência alta: ≥0.85 (Tier A)`,
+        ref: `Coef. médio ponderado: ${fd(avgC, 2)} · Tier B — Intermediário · Referência alta: >=0.85 (Tier A)`,
         text: "Nível de competição moderado. Os números representam bom parâmetro base, mas exigem ajuste ao comparar com mercados de topo." });
     } else {
       out.push({ level: "critico", metric: `Nível de Competição · Tier ${tk}`,
-        ref: `Coef. médio ponderado: ${fd(avgC, 2)} · Tier ${tk} — ${TIER[tk].label} · Referência mínima: ≥0.74 (Tier B)`,
+        ref: `Coef. médio ponderado: ${fd(avgC, 2)} · Tier ${tk} — ${TIER[tk].label} · Referência mínima: >=0.74 (Tier B)`,
         text: "Nível inferior de competição reduz o peso das estatísticas na avaliação de mercado. Necessário confirmar desempenho em competições de maior coeficiente." });
     }
   }
@@ -228,17 +227,17 @@ function buildInsights(
 
     if (acc >= 78) {
       out.push({ level: "bom", metric: "Passes · Alta Precisão",
-        ref: `Atual: ${Math.round(acc)}% (${t.passes_completed}/${t.passes_total}) · ${fd(vol, 1)}/90 min · ${fd(kp, 1)} decisivos/90 · Elite: ≥78% · Mínimo: 65%${prevAccStr}`,
+        ref: `Atual: ${Math.round(acc)}% (${t.passes_completed}/${t.passes_total}) · ${fd(vol, 1)}/90 min · ${fd(kp, 1)} decisivos/90 · Elite: >=78% · Mínimo: 65%${prevAccStr}`,
         text: "Circulação de bola acima da média de mercado. Aproveitamento de passe que diferencia o atleta no cenário competitivo.",
         yoy: hasPrev ? yoyStr(pDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(pDelta) : undefined });
     } else if (acc >= 65) {
       out.push({ level: "regular", metric: "Passes · Aproveitamento Regular",
-        ref: `Atual: ${Math.round(acc)}% (${t.passes_completed}/${t.passes_total}) · ${fd(vol, 1)}/90 min · Referência alta: ≥78% · Mínimo aceitável: 65%${prevAccStr}`,
-        text: "Precisão dentro do esperado para a posição. Margem de evolução para alcançar o padrão de alto nível (≥78%).",
+        ref: `Atual: ${Math.round(acc)}% (${t.passes_completed}/${t.passes_total}) · ${fd(vol, 1)}/90 min · Referência alta: >=78% · Mínimo aceitável: 65%${prevAccStr}`,
+        text: "Precisão dentro do esperado para a posição. Margem de evolução para alcançar o padrão de alto nível (>=78%).",
         yoy: hasPrev ? yoyStr(pDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(pDelta) : undefined });
     } else {
       out.push({ level: "critico", metric: "Passes · Precisão Crítica",
-        ref: `Atual: ${Math.round(acc)}% (${t.passes_completed}/${t.passes_total}) · ${fd(vol, 1)}/90 min · Mínimo aceitável: 65% · Elite: ≥78%${prevAccStr}`,
+        ref: `Atual: ${Math.round(acc)}% (${t.passes_completed}/${t.passes_total}) · ${fd(vol, 1)}/90 min · Mínimo aceitável: 65% · Elite: >=78%${prevAccStr}`,
         text: "Aproveitamento abaixo do mínimo aceitável. Alta taxa de perda compromete a circulação e expõe a equipe a transições adversas.",
         yoy: hasPrev ? yoyStr(pDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(pDelta) : undefined });
     }
@@ -250,15 +249,15 @@ function buildInsights(
     const vol = p90(t.shots, min);
     if (acc >= 42) {
       out.push({ level: "bom", metric: "Finalização · Alta Conversão",
-        ref: `Atual: ${Math.round(acc)}% no alvo (${t.shots_on_target}/${t.shots}) · ${fd(vol, 1)} fin./90 min · Elite: ≥42% · Regular: 28–41% · Crítico: <28%`,
+        ref: `Atual: ${Math.round(acc)}% no alvo (${t.shots_on_target}/${t.shots}) · ${fd(vol, 1)} fin./90 min · Elite: >=42% · Regular: 28–41% · Crítico: <28%`,
         text: "Direcionamento de elite. Atleta com alto aproveitamento das oportunidades de finalização." });
     } else if (acc >= 28) {
       out.push({ level: "regular", metric: "Finalização · Eficiência Regular",
-        ref: `Atual: ${Math.round(acc)}% no alvo (${t.shots_on_target}/${t.shots}) · ${fd(vol, 1)} fin./90 min · Elite: ≥42% · Regular: 28–41% · Crítico: <28%`,
+        ref: `Atual: ${Math.round(acc)}% no alvo (${t.shots_on_target}/${t.shots}) · ${fd(vol, 1)} fin./90 min · Elite: >=42% · Regular: 28–41% · Crítico: <28%`,
         text: "Taxa de finalização dentro da faixa média para a posição. Evolução no direcionamento pode gerar impacto ofensivo direto." });
     } else {
       out.push({ level: "critico", metric: "Finalização · Baixa Eficiência",
-        ref: `Atual: ${Math.round(acc)}% no alvo (${t.shots_on_target}/${t.shots}) · ${fd(vol, 1)} fin./90 min · Mínimo: 28% · Elite: ≥42%`,
+        ref: `Atual: ${Math.round(acc)}% no alvo (${t.shots_on_target}/${t.shots}) · ${fd(vol, 1)} fin./90 min · Mínimo: 28% · Elite: >=42%`,
         text: "Taxa crítica de chutes no alvo. Alto volume de finalizações sem efetividade ofensiva real." });
     }
   }
@@ -273,23 +272,23 @@ function buildInsights(
     if (f === "fwd") {
       if (g >= 0.50) {
         out.push({ level: "bom", metric: "Gols/90 · Artilheiro de Elite",
-          ref: `Atual: ${fd(g, 2)}/90 (${t.goals} gols em ${matches} jogos) · Elite: ≥0.50/90 · Regular: 0.25–0.49/90 · Abaixo: <0.25/90${prevGStr}`,
+          ref: `Atual: ${fd(g, 2)}/90 (${t.goals} gols em ${matches} jogos) · Elite: >=0.50/90 · Regular: 0.25–0.49/90 · Abaixo: <0.25/90${prevGStr}`,
           text: "Índice de artilharia de alto nível. Atacante com conversão dominante nas oportunidades da temporada.",
           yoy: hasPrev ? yoyStr(gDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(gDelta) : undefined });
       } else if (g >= 0.25) {
         out.push({ level: "regular", metric: "Gols/90 · Produção Regular",
-          ref: `Atual: ${fd(g, 2)}/90 (${t.goals} gols) · Regular: 0.25–0.49/90 · Elite: ≥0.50/90 · Insuficiente: <0.25/90${prevGStr}`,
-          text: "Produção ofensiva dentro da faixa esperada para um atacante. Há espaço para crescimento em direção ao patamar de elite (≥0.50/90).",
+          ref: `Atual: ${fd(g, 2)}/90 (${t.goals} gols) · Regular: 0.25–0.49/90 · Elite: >=0.50/90 · Insuficiente: <0.25/90${prevGStr}`,
+          text: "Produção ofensiva dentro da faixa esperada para um atacante. Há espaço para crescimento em direção ao patamar de elite (>=0.50/90).",
           yoy: hasPrev ? yoyStr(gDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(gDelta) : undefined });
       } else {
         out.push({ level: "critico", metric: "Gols/90 · Produção Insuficiente",
-          ref: `Atual: ${fd(g, 2)}/90 (${t.goals} gols) · Mínimo regular: 0.25/90 · Elite: ≥0.50/90${prevGStr}`,
+          ref: `Atual: ${fd(g, 2)}/90 (${t.goals} gols) · Mínimo regular: 0.25/90 · Elite: >=0.50/90${prevGStr}`,
           text: "Produção de gols abaixo do esperado para a posição de atacante. Eficiência ofensiva precisa de revisão tática e individual.",
           yoy: hasPrev ? yoyStr(gDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(gDelta) : undefined });
       }
     } else if (g >= 0.20) {
       out.push({ level: "bom", metric: "Gols/90 · Meio-campo Decisivo",
-        ref: `Atual: ${fd(g, 2)}/90 (${t.goals} gols) · Referência destaque para meia: ≥0.20/90${prevGStr}`,
+        ref: `Atual: ${fd(g, 2)}/90 (${t.goals} gols) · Referência destaque para meia: >=0.20/90${prevGStr}`,
         text: "Contribuição ofensiva acima do esperado para a posição de meio-campo.",
         yoy: hasPrev ? yoyStr(gDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(gDelta) : undefined });
     }
@@ -304,17 +303,17 @@ function buildInsights(
 
     if (a >= 0.30) {
       out.push({ level: "bom", metric: "Assistências · Alto Nível",
-        ref: `Atual: ${fd(a, 2)}/90 (${t.assists} total) · Alto nível: ≥0.30/90 · Regular: 0.12–0.29/90${prevAStr}`,
+        ref: `Atual: ${fd(a, 2)}/90 (${t.assists} total) · Alto nível: >=0.30/90 · Regular: 0.12–0.29/90${prevAStr}`,
         text: "Criação coletiva de elite. Assistente prolífico com alto impacto no jogo ofensivo da equipe.",
         yoy: hasPrev ? yoyStr(aDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(aDelta) : undefined });
     } else if (a >= 0.12) {
       out.push({ level: "regular", metric: "Assistências · Contribuição Regular",
-        ref: `Atual: ${fd(a, 2)}/90 (${t.assists} total) · Alto nível: ≥0.30/90 · Mínimo regular: 0.12/90${prevAStr}`,
+        ref: `Atual: ${fd(a, 2)}/90 (${t.assists} total) · Alto nível: >=0.30/90 · Mínimo regular: 0.12/90${prevAStr}`,
         text: "Participação ofensiva coletiva dentro do padrão esperado para a posição.",
         yoy: hasPrev ? yoyStr(aDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(aDelta) : undefined });
     } else if (matches >= 10 && t.assists === 0) {
       out.push({ level: "critico", metric: "Assistências · Ausência Total",
-        ref: `Atual: 0 assist. em ${matches} jogos · Mínimo regular: 0.12/90 · Alto nível: ≥0.30/90${prevAStr}`,
+        ref: `Atual: 0 assist. em ${matches} jogos · Mínimo regular: 0.12/90 · Alto nível: >=0.30/90${prevAStr}`,
         text: "Participação na criação coletiva precisa evoluir significativamente. Nenhuma assistência ao longo da temporada.",
         yoy: hasPrev ? yoyStr(aDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(aDelta) : undefined });
     }
@@ -326,11 +325,11 @@ function buildInsights(
     const vol = p90(t.dribbles_success, min);
     if (acc >= 65 && vol >= 2.0) {
       out.push({ level: "bom", metric: "Dribles · Dominância Individual",
-        ref: `Atual: ${Math.round(acc)}% de êxito (${t.dribbles_success}/${t.dribbles_total}) · ${fd(vol, 1)} dribles/90 · Elite: ≥65% com ≥2.0/90`,
+        ref: `Atual: ${Math.round(acc)}% de êxito (${t.dribbles_success}/${t.dribbles_total}) · ${fd(vol, 1)} dribles/90 · Elite: >=65% com >=2.0/90`,
         text: "Diferencial técnico individual notável. Atleta dominante em situações de 1×1." });
     } else if (acc < 40 && t.dribbles_total >= 15) {
       out.push({ level: "critico", metric: "Dribles · Baixa Eficiência",
-        ref: `Atual: ${Math.round(acc)}% de êxito (${t.dribbles_success}/${t.dribbles_total}) · Mínimo aceitável: 40% · Elite: ≥65%`,
+        ref: `Atual: ${Math.round(acc)}% de êxito (${t.dribbles_success}/${t.dribbles_total}) · Mínimo aceitável: 40% · Elite: >=65%`,
         text: "Perda de bola frequente em situações de 1×1. Alta taxa de dribles frustrados expõe a equipe em transições." });
     }
   }
@@ -345,17 +344,17 @@ function buildInsights(
     const dYoyC = hasPrev ? yoyColor(dDelta) : undefined;
     if (w >= 55) {
       out.push({ level: "bom", metric: "Duelos Terrestres · Dominante",
-        ref: `Atual: ${Math.round(w)}% vencidos (${t.ground_duels_won}/${t.ground_duels_total}) · Dominante: ≥55% · Regular: 44–54% · Deficitário: <44%${prevDStr}`,
+        ref: `Atual: ${Math.round(w)}% vencidos (${t.ground_duels_won}/${t.ground_duels_total}) · Dominante: >=55% · Regular: 44–54% · Deficitário: <44%${prevDStr}`,
         text: "Superioridade física e tática clara em confrontos diretos.",
         yoy: dYoy, yoyColor: dYoyC });
     } else if (w < 44) {
       out.push({ level: "critico", metric: "Duelos Terrestres · Deficitário",
-        ref: `Atual: ${Math.round(w)}% vencidos (${t.ground_duels_won}/${t.ground_duels_total}) · Mínimo: 44% · Dominante: ≥55%${prevDStr}`,
+        ref: `Atual: ${Math.round(w)}% vencidos (${t.ground_duels_won}/${t.ground_duels_total}) · Mínimo: 44% · Dominante: >=55%${prevDStr}`,
         text: "Fragilidade em confrontos diretos. Déficit físico ou tático que compromete o desempenho coletivo.",
         yoy: dYoy, yoyColor: dYoyC });
     } else {
       out.push({ level: "regular", metric: "Duelos Terrestres · Regular",
-        ref: `Atual: ${Math.round(w)}% vencidos (${t.ground_duels_won}/${t.ground_duels_total}) · Dominante: ≥55% · Regular: 44–54% · Mínimo: 44%${prevDStr}`,
+        ref: `Atual: ${Math.round(w)}% vencidos (${t.ground_duels_won}/${t.ground_duels_total}) · Dominante: >=55% · Regular: 44–54% · Mínimo: 44%${prevDStr}`,
         text: "Desempenho dentro da média para a posição em confrontos diretos.",
         yoy: dYoy, yoyColor: dYoyC });
     }
@@ -366,11 +365,11 @@ function buildInsights(
     const w = pctN(t.aerial_duels_won, t.aerial_duels_total)!;
     if (w >= 60) {
       out.push({ level: "bom", metric: "Jogo Aéreo · Dominante",
-        ref: `Atual: ${Math.round(w)}% ganhos (${t.aerial_duels_won}/${t.aerial_duels_total}) · Dominante: ≥60% · Mínimo: 38%`,
+        ref: `Atual: ${Math.round(w)}% ganhos (${t.aerial_duels_won}/${t.aerial_duels_total}) · Dominante: >=60% · Mínimo: 38%`,
         text: "Forte presença física em bolas aéreas, escanteios e cruzamentos." });
     } else if (w < 38) {
       out.push({ level: "critico", metric: "Jogo Aéreo · Deficitário",
-        ref: `Atual: ${Math.round(w)}% ganhos (${t.aerial_duels_won}/${t.aerial_duels_total}) · Mínimo: 38% · Dominante: ≥60%`,
+        ref: `Atual: ${Math.round(w)}% ganhos (${t.aerial_duels_won}/${t.aerial_duels_total}) · Mínimo: 38% · Dominante: >=60%`,
         text: "Déficit significativo no jogo aéreo. Fragiliza a marcação em bolas cruzadas e bolas paradas." });
     }
   }
@@ -382,12 +381,12 @@ function buildInsights(
     const rc = p90(t.recoveries, min);
     const cl = p90(t.clearances, min);
     if (f === "def") {
-      if (tk >= 3.5)               out.push({ level: "bom",     metric: "Desarmes · Alta Intensidade", ref: `Atual: ${fd(tk, 1)}/90 (${t.tackles} total) · Alta intensidade: ≥3.5/90 · Mínimo esperado: 1.5/90`, text: "Defensor com marcação intensa, agressiva e dentro dos limites técnicos." });
-      else if (tk < 1.5 && matches >= 8) out.push({ level: "critico", metric: "Desarmes · Volume Baixo",   ref: `Atual: ${fd(tk, 1)}/90 (${t.tackles} total) · Mínimo esperado: 1.5/90 · Alta intensidade: ≥3.5/90`, text: "Volume de desarmes abaixo do mínimo esperado para um defensor. Baixa presença defensiva ativa." });
-      if (ic >= 2.5) out.push({ level: "bom", metric: "Interceptações · Leitura de Jogo", ref: `Atual: ${fd(ic, 1)}/90 (${t.interceptions} total) · Referência alta: ≥2.5/90`, text: "Excelente antecipação e leitura de jogo defensiva." });
-      if (cl >= 4.0) out.push({ level: "bom", metric: "Cortes · Proteção da Área",       ref: `Atual: ${fd(cl, 1)}/90 (${t.clearances} total) · Referência alta: ≥4.0/90`, text: "Forte presença de limpeza na área defensiva." });
+      if (tk >= 3.5)               out.push({ level: "bom",     metric: "Desarmes · Alta Intensidade", ref: `Atual: ${fd(tk, 1)}/90 (${t.tackles} total) · Alta intensidade: >=3.5/90 · Mínimo esperado: 1.5/90`, text: "Defensor com marcação intensa, agressiva e dentro dos limites técnicos." });
+      else if (tk < 1.5 && matches >= 8) out.push({ level: "critico", metric: "Desarmes · Volume Baixo",   ref: `Atual: ${fd(tk, 1)}/90 (${t.tackles} total) · Mínimo esperado: 1.5/90 · Alta intensidade: >=3.5/90`, text: "Volume de desarmes abaixo do mínimo esperado para um defensor. Baixa presença defensiva ativa." });
+      if (ic >= 2.5) out.push({ level: "bom", metric: "Interceptações · Leitura de Jogo", ref: `Atual: ${fd(ic, 1)}/90 (${t.interceptions} total) · Referência alta: >=2.5/90`, text: "Excelente antecipação e leitura de jogo defensiva." });
+      if (cl >= 4.0) out.push({ level: "bom", metric: "Cortes · Proteção da Área",       ref: `Atual: ${fd(cl, 1)}/90 (${t.clearances} total) · Referência alta: >=4.0/90`, text: "Forte presença de limpeza na área defensiva." });
     }
-    if (f === "mid" && rc >= 5.0) out.push({ level: "bom", metric: "Recuperações · Volante Combativo", ref: `Atual: ${fd(rc, 1)}/90 (${t.recoveries} total) · Referência alta: ≥5.0/90`, text: "Perfil combativo com alta intensidade no setor intermediário." });
+    if (f === "mid" && rc >= 5.0) out.push({ level: "bom", metric: "Recuperações · Volante Combativo", ref: `Atual: ${fd(rc, 1)}/90 (${t.recoveries} total) · Referência alta: >=5.0/90`, text: "Perfil combativo com alta intensidade no setor intermediário." });
   }
 
   // ─── 11. Goleiro ─────────────────────────────────────────────────────────
@@ -397,13 +396,13 @@ function buildInsights(
     const cs  = pctN(t.clean_sheets, matches);
     const gc  = matches > 0 ? t.goals_conceded / matches : null;
     if (sp !== null && tot >= 10) {
-      if      (sp >= 72) out.push({ level: "bom",     metric: "Defesas · Goleiro de Elite",       ref: `Atual: ${Math.round(sp)}% (${t.saves}/${tot}) · Elite: ≥72% · Regular: 58–71% · Crítico: <58%`, text: "Índice de aproveitamento de elite. Goleiro com alto impacto na solidez defensiva." });
-      else if (sp <  58) out.push({ level: "critico", metric: "Defesas · Taxa Abaixo do Padrão",  ref: `Atual: ${Math.round(sp)}% (${t.saves}/${tot}) · Mínimo: 58% · Elite: ≥72%`, text: `${t.goals_conceded} gols sofridos em ${matches} jogos. Taxa abaixo do mínimo esperado para a posição.` });
-      else               out.push({ level: "regular", metric: "Defesas · Aproveitamento Regular", ref: `Atual: ${Math.round(sp)}% (${t.saves}/${tot}) · Elite: ≥72% · Regular: 58–71% · Mínimo: 58%`, text: "Aproveitamento dentro do padrão esperado para a posição." });
+      if      (sp >= 72) out.push({ level: "bom",     metric: "Defesas · Goleiro de Elite",       ref: `Atual: ${Math.round(sp)}% (${t.saves}/${tot}) · Elite: >=72% · Regular: 58–71% · Crítico: <58%`, text: "Índice de aproveitamento de elite. Goleiro com alto impacto na solidez defensiva." });
+      else if (sp <  58) out.push({ level: "critico", metric: "Defesas · Taxa Abaixo do Padrão",  ref: `Atual: ${Math.round(sp)}% (${t.saves}/${tot}) · Mínimo: 58% · Elite: >=72%`, text: `${t.goals_conceded} gols sofridos em ${matches} jogos. Taxa abaixo do mínimo esperado para a posição.` });
+      else               out.push({ level: "regular", metric: "Defesas · Aproveitamento Regular", ref: `Atual: ${Math.round(sp)}% (${t.saves}/${tot}) · Elite: >=72% · Regular: 58–71% · Mínimo: 58%`, text: "Aproveitamento dentro do padrão esperado para a posição." });
     }
     if (cs !== null && matches >= 5) {
-      if      (cs >= 36) out.push({ level: "bom",     metric: "Clean Sheets · Alta Confiabilidade", ref: `Atual: ${t.clean_sheets}/${matches} jogos (${Math.round(cs)}%) · Alta: ≥36% · Baixa: <16%`, text: "Goleiro com alta frequência de jogos sem sofrer gols — solidez defensiva de alto nível." });
-      else if (cs <  16) out.push({ level: "critico", metric: "Clean Sheets · Frequência Baixa",    ref: `Atual: ${t.clean_sheets}/${matches} jogos (${Math.round(cs)}%) · Mínimo: 16% · Alta confiabilidade: ≥36%`, text: "Baixa frequência de partidas sem sofrer gols ao longo da temporada." });
+      if      (cs >= 36) out.push({ level: "bom",     metric: "Clean Sheets · Alta Confiabilidade", ref: `Atual: ${t.clean_sheets}/${matches} jogos (${Math.round(cs)}%) · Alta: >=36% · Baixa: <16%`, text: "Goleiro com alta frequência de jogos sem sofrer gols — solidez defensiva de alto nível." });
+      else if (cs <  16) out.push({ level: "critico", metric: "Clean Sheets · Frequência Baixa",    ref: `Atual: ${t.clean_sheets}/${matches} jogos (${Math.round(cs)}%) · Mínimo: 16% · Alta confiabilidade: >=36%`, text: "Baixa frequência de partidas sem sofrer gols ao longo da temporada." });
     }
     if (gc !== null && matches >= 5) {
       if      (gc < 0.95) out.push({ level: "bom",     metric: "Gols Sofridos · Solidez de Elite", ref: `Atual: ${fd(gc, 2)} gols/jogo · Excelente: <0.95/jogo · Preocupante: >1.60/jogo`, text: "Média de gols sofridos de elite. Goleiro decisivo na manutenção do resultado." });
@@ -415,8 +414,8 @@ function buildInsights(
   const ct = t.crosses_success + t.crosses_failed;
   if (ct >= 15) {
     const ca = pctN(t.crosses_success, ct)!;
-    if      (ca >= 40) out.push({ level: "bom",     metric: "Cruzamentos · Alta Precisão",    ref: `Atual: ${Math.round(ca)}% (${t.crosses_success}/${ct}) · Alta precisão: ≥40% · Mínimo: 25%`, text: "Qualidade acima da média no jogo pelas laterais. Cruzamentos efetivos e de boa conversão." });
-    else if (ca <  25) out.push({ level: "critico", metric: "Cruzamentos · Baixa Eficiência", ref: `Atual: ${Math.round(ca)}% (${t.crosses_success}/${ct}) · Mínimo: 25% · Alta precisão: ≥40%`, text: "Baixa efetividade nos cruzamentos. Contribuição pelas laterais com pouco aproveitamento real." });
+    if      (ca >= 40) out.push({ level: "bom",     metric: "Cruzamentos · Alta Precisão",    ref: `Atual: ${Math.round(ca)}% (${t.crosses_success}/${ct}) · Alta precisão: >=40% · Mínimo: 25%`, text: "Qualidade acima da média no jogo pelas laterais. Cruzamentos efetivos e de boa conversão." });
+    else if (ca <  25) out.push({ level: "critico", metric: "Cruzamentos · Baixa Eficiência", ref: `Atual: ${Math.round(ca)}% (${t.crosses_success}/${ct}) · Mínimo: 25% · Alta precisão: >=40%`, text: "Baixa efetividade nos cruzamentos. Contribuição pelas laterais com pouco aproveitamento real." });
   }
 
   // ─── 13. Disciplina ─────────────────────────────────────────────────────
@@ -443,12 +442,12 @@ function buildInsights(
     const bp = p90(t.possession_lost, min);
     if (bp >= 8.0) {
       out.push({ level: "critico", metric: "Posse · Alta Perda de Bola",
-        ref: `Atual: ${fd(bp, 1)}/90 (${t.possession_lost} total) · Preocupante: ≥8.0/90`,
+        ref: `Atual: ${fd(bp, 1)}/90 (${t.possession_lost} total) · Preocupante: >=8.0/90`,
         text: "Frequência elevada de perdas de posse expõe a equipe a transições adversas recorrentes." });
     }
   }
 
-  // ─── 15. Comparações YoY exclusivas (mudanças ≥10%) ─────────────────────
+  // ─── 15. Comparações YoY exclusivas (mudanças >=10%) ─────────────────────
   if (hasPrev && prevT && prevYear) {
     const checks: { label: string; curr: number; prev: number; unit: string; invertBad?: boolean }[] = [
       { label: "Minutagem total",  curr: min,        prev: prevT.minutes, unit: "min"     },
@@ -509,17 +508,18 @@ const s = StyleSheet.create({
   secTxt:  { fontSize: 9, fontWeight: 700, color: C.g600, letterSpacing: 1.2, textTransform: "uppercase" },
   secLine: { height: 1, backgroundColor: C.g200, flex: 1, marginLeft: 8 },
 
-  // Competition list (summary only, no stat boxes)
-  compList: { borderRadius: 6, borderWidth: 1, borderColor: C.g200, marginBottom: 14, overflow: "hidden" },
-  compListHdr: { flexDirection: "row", alignItems: "center", backgroundColor: C.g100, paddingHorizontal: 12, paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: C.g200 },
-  compListHdrTxt: { fontSize: 6.5, fontWeight: 700, color: C.g500, textTransform: "uppercase", letterSpacing: 0.8 },
-  compRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 12, paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: C.g100 },
+  // Competition list
+  compList:    { borderRadius: 6, borderWidth: 1, borderColor: C.g200, marginBottom: 14, overflow: "hidden" },
+  compHdr:     { flexDirection: "row", alignItems: "center", backgroundColor: C.g100, paddingHorizontal: 12, paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: C.g200 },
+  compHdrTxt:  { fontSize: 6.5, fontWeight: 700, color: C.g500, textTransform: "uppercase", letterSpacing: 0.8 },
+  compRow:     { flexDirection: "row", alignItems: "center", paddingHorizontal: 12, paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: C.g100 },
   compRowLast: { flexDirection: "row", alignItems: "center", paddingHorizontal: 12, paddingVertical: 9 },
-  compName: { fontSize: 9.5, fontWeight: 600, color: C.g900, flex: 1 },
-  compTier: { fontSize: 7.5, fontWeight: 800, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 3, marginRight: 8 },
-  compCoef: { fontSize: 8, color: C.g400, width: 48, textAlign: "right" },
-  compStat: { fontSize: 8, color: C.g600, width: 36, textAlign: "right" },
-  compStatB: { fontSize: 8, fontWeight: 700, color: C.g700, width: 36, textAlign: "right" },
+  // col widths — must match between header and data rows exactly
+  cName:  { flex: 1, fontSize: 9.5, fontWeight: 600, color: C.g900 },
+  cTier:  { width: 24, fontSize: 7.5, fontWeight: 800, textAlign: "center", paddingHorizontal: 4, paddingVertical: 2, borderRadius: 3, marginRight: 4 },
+  cCoef:  { width: 42, fontSize: 8, color: C.g500, textAlign: "right" },
+  cNum:   { width: 34, fontSize: 8, color: C.g700, textAlign: "right" },
+  cNumB:  { width: 34, fontSize: 8, fontWeight: 700, color: C.g700, textAlign: "right" },
 
   // Total card — light background, red accent border
   tc:     { borderRadius: 6, borderWidth: 1, borderColor: C.g200, marginBottom: 12, overflow: "hidden", borderTopWidth: 3, borderTopColor: C.red },
@@ -544,35 +544,27 @@ const s = StyleSheet.create({
   tcCatW: { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 4, borderBottomWidth: 1, borderBottomColor: C.g100 },
   tcCatL: { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 8 },
 
-  wCard:  { borderRadius: 6, backgroundColor: C.g950, marginBottom: 14, paddingHorizontal: 16, paddingVertical: 14 },
-  wTitle: { fontSize: 9, fontWeight: 700, color: C.white, marginBottom: 2 },
-  wSub:   { fontSize: 7.5, color: C.g500, marginBottom: 14 },
-  wGrid:  { flexDirection: "row" },
-  wItem:  { flex: 1, alignItems: "center", borderRightWidth: 1, borderRightColor: "rgba(255,255,255,0.07)", paddingHorizontal: 4 },
-  wItemL: { flex: 1, alignItems: "center", paddingHorizontal: 4 },
-  wVal:   { fontSize: 18, fontWeight: 800, color: C.white, marginBottom: 3 },
-  wLbl:   { fontSize: 6, color: C.g500, textTransform: "uppercase", letterSpacing: 0.5, textAlign: "center", marginBottom: 2 },
-  wBrt:   { fontSize: 7, color: C.amber, textAlign: "center" },
-
   // Insight section
-  iSec:   { marginBottom: 12 },
-  iHdr:   { flexDirection: "row", alignItems: "center", paddingHorizontal: 12, paddingVertical: 8, borderTopLeftRadius: 6, borderTopRightRadius: 6 },
-  iHdrTx: { fontSize: 9, fontWeight: 700 },
-  iHdrCt: { fontSize: 8, fontWeight: 400, marginLeft: 4 },
-  iBody:  { borderLeftWidth: 3, borderRightWidth: 1, borderBottomWidth: 1, borderBottomLeftRadius: 6, borderBottomRightRadius: 6, paddingHorizontal: 12, paddingTop: 4, paddingBottom: 6 },
+  iSec:    { marginBottom: 10 },
+  iHdr:    { flexDirection: "row", alignItems: "center", paddingHorizontal: 10, paddingVertical: 7, borderTopLeftRadius: 6, borderTopRightRadius: 6 },
+  iHdrTx:  { fontSize: 9, fontWeight: 700 },
+  iHdrCt:  { fontSize: 8, fontWeight: 400, marginLeft: 4 },
+  iBody:   { borderLeftWidth: 3, borderRightWidth: 1, borderBottomWidth: 1, borderBottomLeftRadius: 6, borderBottomRightRadius: 6, paddingHorizontal: 10, paddingTop: 2, paddingBottom: 4 },
 
   // Each insight item — wrap={false} prevents splitting across pages
-  iItem:   { paddingTop: 10, paddingBottom: 10 },
+  iItem:   { paddingTop: 8, paddingBottom: 8 },
   iSep:    { height: 1 },
-  iTopRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 5 },
-  iDotW:   { width: 16, flexShrink: 0 },
-  iDot:    { width: 8, height: 8, borderRadius: 4, marginTop: 1 },
-  iMetric: { fontSize: 8, fontWeight: 700, letterSpacing: 0.2, flex: 1 },
-  iYoy:    { fontSize: 7, fontWeight: 700, paddingHorizontal: 5, paddingVertical: 2, borderRadius: 3, flexShrink: 0, marginLeft: 8 },
-  // Reference line with blue background
-  iRef:    { fontSize: 7.5, color: C.infoBlue, backgroundColor: C.infoBlueBg, paddingHorizontal: 7, paddingVertical: 4, borderRadius: 3, marginBottom: 5, marginLeft: 16 },
+  iTopRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4 },
+  iDotW:   { width: 14, flexShrink: 0 },
+  iDot:    { width: 7, height: 7, borderRadius: 3.5, marginTop: 1 },
+  iMetric: { fontSize: 8, fontWeight: 700, letterSpacing: 0.1, flex: 1 },
+  iYoy:    { fontSize: 6.5, fontWeight: 700, paddingHorizontal: 4, paddingVertical: 1.5, borderRadius: 3, flexShrink: 0, marginLeft: 6 },
+  // Ref block: two lines inside a blue box
+  iRefWrap:  { backgroundColor: C.infoBlueBg, borderRadius: 3, paddingHorizontal: 6, paddingVertical: 4, marginBottom: 4, marginLeft: 14 },
+  iRefCurr:  { fontSize: 7.5, fontWeight: 700, color: "#1D4ED8", marginBottom: 2 },
+  iRefBench: { fontSize: 7, color: C.infoBlue },
   // Analysis text
-  iTxt:    { fontSize: 8.5, color: C.g600, lineHeight: 1.55, marginLeft: 16 },
+  iTxt:    { fontSize: 8, color: C.g600, lineHeight: 1.5, marginLeft: 14 },
 
   footer: { position: "absolute", bottom: 22, left: 36, right: 36, flexDirection: "row", justifyContent: "space-between", borderTopWidth: 1, borderTopColor: C.g200, paddingTop: 8 },
   ftxt:   { fontSize: 7, color: C.g400 },
@@ -700,35 +692,34 @@ function statBlocks(t: Agg, isGK: boolean) {
 function CompList({ rows, meta }: { rows: PublicSeasonRow[]; meta: Record<string, CompetitionMeta> }) {
   return (
     <View style={s.compList} wrap={false}>
-      {/* Cabeçalho da tabela */}
-      <View style={s.compListHdr}>
-        <Text style={[s.compListHdrTxt, { flex: 1 }]}>Competição</Text>
-        <Text style={[s.compListHdrTxt, { width: 80 }]}>Tier</Text>
-        <Text style={[s.compListHdrTxt, { width: 48, textAlign: "right" }]}>Coef.</Text>
-        <Text style={[s.compListHdrTxt, { width: 36, textAlign: "right" }]}>Jogos</Text>
-        <Text style={[s.compListHdrTxt, { width: 48, textAlign: "right" }]}>Minutos</Text>
-        <Text style={[s.compListHdrTxt, { width: 36, textAlign: "right" }]}>Gols</Text>
-        <Text style={[s.compListHdrTxt, { width: 44, textAlign: "right" }]}>Assist.</Text>
+      {/* Header */}
+      <View style={s.compHdr}>
+        <Text style={[s.compHdrTxt, { flex: 1 }]}>Competição</Text>
+        <Text style={[s.compHdrTxt, { width: 24, textAlign: "center", marginRight: 4 }]}>Tier</Text>
+        <Text style={[s.compHdrTxt, { width: 42, textAlign: "right" }]}>Coef.</Text>
+        <Text style={[s.compHdrTxt, { width: 34, textAlign: "right" }]}>Jogos</Text>
+        <Text style={[s.compHdrTxt, { width: 34, textAlign: "right" }]}>Min.</Text>
+        <Text style={[s.compHdrTxt, { width: 34, textAlign: "right" }]}>Gols</Text>
+        <Text style={[s.compHdrTxt, { width: 34, textAlign: "right" }]}>Ass.</Text>
       </View>
-      {/* Linhas */}
+      {/* Rows */}
       {rows.map((row, i) => {
-        const t     = toAgg(row.stats);
-        const name  = row.competition_name ?? (row.competition_id ? meta[row.competition_id]?.name : undefined) ?? "—";
-        const coeff = row.competition_id ? (meta[row.competition_id]?.final_coefficient ?? 0) : 0;
-        const tk    = tierK(coeff);
-        const tier  = TIER[tk];
+        const t      = toAgg(row.stats);
+        const name   = row.competition_name ?? (row.competition_id ? meta[row.competition_id]?.name : undefined) ?? "—";
+        const coeff  = row.competition_id ? (meta[row.competition_id]?.final_coefficient ?? 0) : 0;
+        const tk     = tierK(coeff);
+        const tier   = TIER[tk];
         const isLast = i === rows.length - 1;
         return (
           <View key={row.id} style={isLast ? s.compRowLast : s.compRow}>
-            <Text style={s.compName}>{name}</Text>
-            <View style={{ width: 80 }}>
-              <Text style={[s.compTier, { backgroundColor: tier.bg, color: tier.fg, alignSelf: "flex-start" }]}>{tk} · {tier.label}</Text>
-            </View>
-            <Text style={s.compCoef}>{coeff > 0 ? fd(coeff, 2) : "—"}</Text>
-            <Text style={s.compStat}>{t.matches}</Text>
-            <Text style={s.compStatB}>{t.minutes}</Text>
-            <Text style={[s.compStatB, { color: t.goals > 0 ? C.green : C.g600 }]}>{t.goals}</Text>
-            <Text style={[s.compStatB, { width: 44, color: t.assists > 0 ? C.green : C.g600 }]}>{t.assists}</Text>
+            <Text style={s.cName}>{name}</Text>
+            {/* Tier: only the letter to keep column narrow */}
+            <Text style={[s.cTier, { backgroundColor: tier.bg, color: tier.fg }]}>{tk}</Text>
+            <Text style={s.cCoef}>{coeff > 0 ? fd(coeff, 2) : "—"}</Text>
+            <Text style={s.cNum}>{t.matches}</Text>
+            <Text style={s.cNumB}>{t.minutes}</Text>
+            <Text style={[s.cNumB, { color: t.goals   > 0 ? C.green : C.g600 }]}>{t.goals}</Text>
+            <Text style={[s.cNumB, { color: t.assists > 0 ? C.green : C.g600 }]}>{t.assists}</Text>
           </View>
         );
       })}
@@ -785,8 +776,18 @@ function InsightSection({ title, count, items, color, bgHdr, dotColor, metricCol
                   </Text>
                 )}
               </View>
-              {/* Linha de referência (benchmark azul) */}
-              <Text style={s.iRef}>{ins.ref}</Text>
+              {/* Ref: 2 linhas — valor atual (negrito) + benchmarks (leve) */}
+              {(() => {
+                const parts = ins.ref.split(" · ");
+                const curr  = parts[0] ?? "";
+                const bench = parts.slice(1).join("  ·  ");
+                return (
+                  <View style={s.iRefWrap}>
+                    <Text style={s.iRefCurr}>{curr}</Text>
+                    {bench ? <Text style={s.iRefBench}>{bench}</Text> : null}
+                  </View>
+                );
+              })()}
               {/* Texto de análise */}
               <Text style={s.iTxt}>{ins.text}</Text>
             </View>
@@ -836,24 +837,6 @@ export function PlayerSeasonPdfDocument({
   const regs  = ins.filter(i => i.level === "regular");
   const goods = ins.filter(i => i.level === "bom");
 
-  // Números ponderados por coeficiente × minutos
-  let wG = 0, wA = 0, wPa = 0, wPd = 0, wDa = 0, wDd = 0, cSum = 0, cN = 0;
-  rows.forEach(r => {
-    const c = r.competition_id ? (competitionMeta[r.competition_id]?.final_coefficient ?? 1) : 1;
-    const m = r.stats.minutes;
-    if (!m) return;
-    wG += p90(r.stats.goals, m) * c;
-    wA += p90(r.stats.assists, m) * c;
-    if (r.stats.passes_total > 0)       { wPa += pctN(r.stats.passes_completed, r.stats.passes_total)! * c; wPd += c; }
-    if (r.stats.ground_duels_total > 0) { wDa += pctN(r.stats.ground_duels_won, r.stats.ground_duels_total)! * c; wDd += c; }
-    cSum += c; cN++;
-  });
-  const avgC     = cN ? cSum / cN : 1;
-  const wGoals   = cN ? wG / cN : 0;
-  const wAssists = cN ? wA / cN : 0;
-  const wPass    = wPd ? wPa / wPd : null;
-  const wDuel    = wDd ? wDa / wDd : null;
-
   return (
     <Document title={`Relatório · ${playerName} · ${year}`} author="M3Scout" subject="Relatório de Temporada">
       <Page size="A4" style={s.page}>
@@ -879,26 +862,6 @@ export function PlayerSeasonPdfDocument({
         {/* 02 */}
         <SectionHead num="02" label="Total Consolidado" />
         <TotalCard t={total} year={year} isGK={isGK} />
-
-        {/* Ponderados */}
-        <View style={s.wCard} wrap={false}>
-          <Text style={s.wTitle}>Números Ponderados por Coeficiente de Competição</Text>
-          <Text style={s.wSub}>Eficiência real de mercado — peso proporcional ao final_coefficient · Coef. médio: {fd(avgC, 2)}</Text>
-          <View style={s.wGrid}>
-            {[
-              { label: "Gols / 90\nPonderado",    value: fd(wGoals, 2),                              bruto: `bruto: ${fd(p90(total.goals, total.minutes), 2)} / 90`   },
-              { label: "Assist. / 90\nPonderado", value: fd(wAssists, 2),                            bruto: `bruto: ${fd(p90(total.assists, total.minutes), 2)} / 90` },
-              { label: "Passe %\nPonderado",      value: wPass !== null ? `${Math.round(wPass)}%` : "—", bruto: `bruto: ${pctS(total.passes_completed, total.passes_total)}` },
-              { label: "Duelo %\nPonderado",      value: wDuel !== null ? `${Math.round(wDuel)}%` : "—", bruto: `bruto: ${pctS(total.ground_duels_won, total.ground_duels_total)}` },
-            ].map((w, i, arr) => (
-              <View key={i} style={i < arr.length - 1 ? s.wItem : s.wItemL}>
-                <Text style={s.wVal}>{w.value}</Text>
-                <Text style={s.wLbl}>{w.label}</Text>
-                <Text style={s.wBrt}>{w.bruto}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
 
         {/* 03 */}
         <SectionHead num="03" label="Inteligência de Scout · Análise Tática" />
