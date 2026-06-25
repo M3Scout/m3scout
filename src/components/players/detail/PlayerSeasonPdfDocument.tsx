@@ -152,6 +152,7 @@ function buildInsights(
   rows: PublicSeasonRow[] = [],
   prevT?: Agg,
   prevYear?: number,
+  year: number = 0,
 ): Ins[] {
   const out: Ins[] = [];
   const f = fam(position);
@@ -169,173 +170,294 @@ function buildInsights(
   const avgC = cMin > 0 ? cSum / cMin : null;
 
   // ─── 1. Minutagem ──────────────────────────────────────────────────────────
-  const minDelta = hasPrev ? delta(min, prevT!.minutes) : null;
-  const minYoy   = hasPrev ? yoyStr(minDelta, prevYear!) : undefined;
-  const minYoyC  = hasPrev ? yoyColor(minDelta) : undefined;
+  const minDelta   = hasPrev ? delta(min, prevT!.minutes) : null;
+  const minYoy     = hasPrev ? yoyStr(minDelta, prevYear!) : undefined;
+  const minYoyC    = hasPrev ? yoyColor(minDelta) : undefined;
   const prevMinStr = hasPrev ? ` · ${prevYear}: ${n(prevT!.minutes)} min` : "";
 
   if (min > 4200) {
     out.push({ level: "critico", metric: "Minutagem · Zona de Risco",
-      ref: `Atual: ${n(min)} min em ${matches} jogos · Máximo seguro: 4.200 min · Protagonista: 2.500–4.200 min${prevMinStr}`,
-      text: "Carga acima do limite de segurança FIFPRO. Alta propensão a fadiga e lesões. Rotação imediata e monitoramento físico intensivo recomendados.",
+      ref: `Atual: ${n(min)} min em ${matches} jogos · Maximo seguro: 4.200 min · Protagonista: 2.500-4.200 min${prevMinStr}`,
+      text: "Carga acima do limite de segurança FIFPRO. Alta propensao a fadiga e lesoes. Rotacao imediata e monitoramento fisico intensivo recomendados.",
       yoy: minYoy, yoyColor: minYoyC });
   } else if (min >= 2500) {
     out.push({ level: "bom", metric: "Minutagem · Protagonista",
-      ref: `Atual: ${n(min)} min em ${matches} jogos · Protagonista: 2.500–4.200 min · Máximo seguro: 4.200 min${prevMinStr}`,
-      text: "Titular absoluto com volume de participação ideal. Dados altamente confiáveis para análise e negociação de mercado.",
+      ref: `Atual: ${n(min)} min em ${matches} jogos · Protagonista: 2.500-4.200 min · Maximo seguro: 4.200 min${prevMinStr}`,
+      text: "Titular absoluto com volume de participação ideal. Dados altamente confiaveis para analise e negociacao de mercado.",
       yoy: minYoy, yoyColor: minYoyC });
   } else if (min >= 1200) {
     out.push({ level: "regular", metric: "Minutagem · Jogador de Elenco",
-      ref: `Atual: ${n(min)} min em ${matches} jogos · Protagonista: >=2.500 min · Mínimo confiável: 1.200 min${prevMinStr}`,
-      text: "Reserva imediato ou titular que perdeu espaço por opção técnica ou lesão. Dados confiáveis dentro do contexto, porém amostra parcial da temporada.",
+      ref: `Atual: ${n(min)} min em ${matches} jogos · Protagonista: >=2.500 min · Minimo confiavel: 1.200 min${prevMinStr}`,
+      text: "Reserva imediato ou titular que perdeu espaço por opção tecnica ou lesao. Dados confiaveis dentro do contexto, porem amostra parcial da temporada.",
       yoy: minYoy, yoyColor: minYoyC });
   } else {
     out.push({ level: "critico", metric: "Minutagem · Amostragem Baixa",
-      ref: `Atual: ${n(min)} min em ${matches} jogos · Mínimo recomendado: 1.200 min · Ideal (Protagonista): >=2.500 min${prevMinStr}`,
-      text: "Minutagem escassa compromete a confiabilidade estatística. O atleta precisa de sequência de minutos para que os números sejam representativos de seu real nível.",
+      ref: `Atual: ${n(min)} min em ${matches} jogos · Minimo recomendado: 1.200 min · Ideal (Protagonista): >=2.500 min${prevMinStr}`,
+      text: "Minutagem escassa compromete a confiabilidade estatistica. O atleta precisa de sequencia de minutos para que os numeros sejam representativos de seu real nivel.",
       yoy: minYoy, yoyColor: minYoyC });
   }
 
-  // ─── 2. Nível de competição ────────────────────────────────────────────────
+  // ─── 1b. Media de minutos por jogo ─────────────────────────────────────────
+  if (matches >= 5) {
+    const mpg = min / matches;
+    if (mpg >= 82) {
+      out.push({ level: "bom", metric: "Aproveitamento · Titular Integral",
+        ref: `Atual: ${Math.round(mpg)} min/jogo em ${matches} partidas · Titular integral: >=82 min/jogo · Com rotacao: 60-81 · Impacto: <60`,
+        text: "Atleta que raramente e substituido — confianca total da comissao tecnica. Perfil de lideranca dentro de campo." });
+    } else if (mpg >= 60) {
+      out.push({ level: "regular", metric: "Aproveitamento · Titular com Rotacao",
+        ref: `Atual: ${Math.round(mpg)} min/jogo em ${matches} partidas · Titular integral: >=82 min/jogo · Com rotacao: 60-81 · Impacto: <60`,
+        text: "Atleta que participa como titular mas frequentemente e substituido. Pode indicar questoes fisicas, taticas ou concorrencia interna." });
+    } else if (mpg < 40) {
+      out.push({ level: "regular", metric: "Aproveitamento · Jogador de Impacto",
+        ref: `Atual: ${Math.round(mpg)} min/jogo em ${matches} partidas · Titular integral: >=82 min/jogo · Com rotacao: 60-81 · Impacto: <60`,
+        text: "Papel predominantemente de reserva. Media baixa de minutos por jogo sugere perfil substituto ou disputa constante por posicao." });
+    }
+  }
+
+  // ─── 2. Nivel de competicao ────────────────────────────────────────────────
   if (avgC !== null) {
     const tk = getTierFromCoefficient(avgC) as keyof typeof TIER;
     if (tk === "S" || tk === "A") {
-      out.push({ level: "bom", metric: `Nível de Competição · Tier ${tk}`,
-        ref: `Coef. médio ponderado: ${fd(avgC, 2)} · Tier ${tk} — ${TIER[tk].label} · Referência S: >=0.94 · A: >=0.85`,
-        text: "Estatísticas obtidas contra concorrência de alto nível, o que aumenta o valor de mercado dos números desta temporada." });
+      out.push({ level: "bom", metric: `Nivel de Competicao · Tier ${tk}`,
+        ref: `Coef. medio ponderado: ${fd(avgC, 2)} · Tier ${tk} — ${TIER[tk].label} · Referencia S: >=0.94 · A: >=0.85`,
+        text: "Estatisticas obtidas contra concorrencia de alto nivel, o que aumenta o valor de mercado dos numeros desta temporada." });
     } else if (tk === "B") {
-      out.push({ level: "regular", metric: "Nível de Competição · Tier B",
-        ref: `Coef. médio ponderado: ${fd(avgC, 2)} · Tier B — Intermediário · Referência alta: >=0.85 (Tier A)`,
-        text: "Nível de competição moderado. Os números representam bom parâmetro base, mas exigem ajuste ao comparar com mercados de topo." });
+      out.push({ level: "regular", metric: "Nivel de Competicao · Tier B",
+        ref: `Coef. medio ponderado: ${fd(avgC, 2)} · Tier B — Intermediario · Referencia alta: >=0.85 (Tier A)`,
+        text: "Nivel de competicao moderado. Os numeros representam bom parametro base, mas exigem ajuste ao comparar com mercados de topo." });
     } else {
-      out.push({ level: "critico", metric: `Nível de Competição · Tier ${tk}`,
-        ref: `Coef. médio ponderado: ${fd(avgC, 2)} · Tier ${tk} — ${TIER[tk].label} · Referência mínima: >=0.74 (Tier B)`,
-        text: "Nível inferior de competição reduz o peso das estatísticas na avaliação de mercado. Necessário confirmar desempenho em competições de maior coeficiente." });
+      out.push({ level: "critico", metric: `Nivel de Competicao · Tier ${tk}`,
+        ref: `Coef. medio ponderado: ${fd(avgC, 2)} · Tier ${tk} — ${TIER[tk].label} · Referencia minima: >=0.74 (Tier B)`,
+        text: "Nivel inferior de competicao reduz o peso das estatisticas na avaliacao de mercado. Necessario confirmar desempenho em competicoes de maior coeficiente." });
     }
   }
 
   if (min < 270) return out;
 
-  // ─── 3. Precisão de passe ─────────────────────────────────────────────────
+  // ─── 3. Precisao de passe ─────────────────────────────────────────────────
   if (t.passes_total >= 40) {
-    const acc = pctN(t.passes_completed, t.passes_total)!;
-    const vol = p90(t.passes_total, min);
-    const kp  = p90(t.key_passes, min);
+    const acc     = pctN(t.passes_completed, t.passes_total)!;
+    const vol     = p90(t.passes_total, min);
     const prevAcc = hasPrev && prevT!.passes_total > 0 ? pctN(prevT!.passes_completed, prevT!.passes_total)! : null;
     const pDelta  = prevAcc !== null ? delta(acc, prevAcc) : null;
     const prevAccStr = prevAcc !== null ? ` · ${prevYear}: ${Math.round(prevAcc)}%` : "";
 
     if (acc >= 78) {
-      out.push({ level: "bom", metric: "Passes · Alta Precisão",
-        ref: `Atual: ${Math.round(acc)}% (${t.passes_completed}/${t.passes_total}) · ${fd(vol, 1)}/90 min · ${fd(kp, 1)} decisivos/90 · Elite: >=78% · Mínimo: 65%${prevAccStr}`,
-        text: "Circulação de bola acima da média de mercado. Aproveitamento de passe que diferencia o atleta no cenário competitivo.",
+      out.push({ level: "bom", metric: "Passes · Alta Precisao",
+        ref: `Atual: ${Math.round(acc)}% (${t.passes_completed}/${t.passes_total}) · ${fd(vol, 1)}/90 · Elite: >=78% · Minimo: 65%${prevAccStr}`,
+        text: "Circulacao de bola acima da media de mercado. Aproveitamento de passe que diferencia o atleta no cenario competitivo.",
         yoy: hasPrev ? yoyStr(pDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(pDelta) : undefined });
     } else if (acc >= 65) {
       out.push({ level: "regular", metric: "Passes · Aproveitamento Regular",
-        ref: `Atual: ${Math.round(acc)}% (${t.passes_completed}/${t.passes_total}) · ${fd(vol, 1)}/90 min · Referência alta: >=78% · Mínimo aceitável: 65%${prevAccStr}`,
-        text: "Precisão dentro do esperado para a posição. Margem de evolução para alcançar o padrão de alto nível (>=78%).",
+        ref: `Atual: ${Math.round(acc)}% (${t.passes_completed}/${t.passes_total}) · ${fd(vol, 1)}/90 · Elite: >=78% · Minimo: 65%${prevAccStr}`,
+        text: "Precisao dentro do esperado para a posicao. Margem de evolucao para alcançar o padrao de alto nivel (>=78%).",
         yoy: hasPrev ? yoyStr(pDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(pDelta) : undefined });
     } else {
-      out.push({ level: "critico", metric: "Passes · Precisão Crítica",
-        ref: `Atual: ${Math.round(acc)}% (${t.passes_completed}/${t.passes_total}) · ${fd(vol, 1)}/90 min · Mínimo aceitável: 65% · Elite: >=78%${prevAccStr}`,
-        text: "Aproveitamento abaixo do mínimo aceitável. Alta taxa de perda compromete a circulação e expõe a equipe a transições adversas.",
+      out.push({ level: "critico", metric: "Passes · Precisao Critica",
+        ref: `Atual: ${Math.round(acc)}% (${t.passes_completed}/${t.passes_total}) · ${fd(vol, 1)}/90 · Minimo: 65% · Elite: >=78%${prevAccStr}`,
+        text: "Aproveitamento abaixo do minimo aceitavel. Alta taxa de perda compromete a circulacao e expoe a equipe a transicoes adversas.",
         yoy: hasPrev ? yoyStr(pDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(pDelta) : undefined });
     }
   }
 
-  // ─── 4. Finalização ──────────────────────────────────────────────────────
-  if (f !== "gk" && t.shots >= 8) {
-    const acc = pctN(t.shots_on_target, t.shots)!;
-    const vol = p90(t.shots, min);
+  // ─── 3b. Passes decisivos / chaves ────────────────────────────────────────
+  if (t.key_passes >= 3) {
+    const kp90    = p90(t.key_passes, min);
+    const prevKp  = hasPrev && prevT!.minutes > 0 ? p90(prevT!.key_passes, prevT!.minutes) : null;
+    const kpDelta = prevKp !== null ? delta(kp90, prevKp) : null;
+    const prevKpStr = prevKp !== null ? ` · ${prevYear}: ${fd(prevKp, 1)}/90` : "";
+
+    if (kp90 >= 2.5) {
+      out.push({ level: "bom", metric: "Criacao · Passes Decisivos de Elite",
+        ref: `Atual: ${fd(kp90, 1)}/90 (${t.key_passes} total) · Elite: >=2.5/90 · Regular: 1.0-2.4/90${prevKpStr}`,
+        text: "Excelente capacidade criativa. Atleta que frequentemente gera chances claras de gol para companheiros.",
+        yoy: hasPrev ? yoyStr(kpDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(kpDelta) : undefined });
+    } else if (kp90 >= 1.0) {
+      out.push({ level: "regular", metric: "Criacao · Passes Decisivos",
+        ref: `Atual: ${fd(kp90, 1)}/90 (${t.key_passes} total) · Elite: >=2.5/90 · Regular: 1.0-2.4/90${prevKpStr}`,
+        text: "Participacao criativa dentro da media esperada para a posicao.",
+        yoy: hasPrev ? yoyStr(kpDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(kpDelta) : undefined });
+    } else if (f === "mid" || f === "fwd") {
+      out.push({ level: "critico", metric: "Criacao · Baixa Geracao de Chances",
+        ref: `Atual: ${fd(kp90, 1)}/90 (${t.key_passes} total) · Minimo para meia/atacante: 1.0/90 · Elite: >=2.5/90${prevKpStr}`,
+        text: "Producao de passes decisivos abaixo do esperado para a posicao. Atleta com baixo impacto direto na geracao de chances ofensivas.",
+        yoy: hasPrev ? yoyStr(kpDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(kpDelta) : undefined });
+    }
+  }
+
+  // ─── 4. Finalizacao ──────────────────────────────────────────────────────
+  if (f !== "gk" && t.shots >= 5) {
+    const acc     = pctN(t.shots_on_target, t.shots)!;
+    const vol     = p90(t.shots, min);
+    const prevSot = hasPrev && prevT!.shots > 0 ? pctN(prevT!.shots_on_target, prevT!.shots)! : null;
+    const sDelta  = prevSot !== null ? delta(acc, prevSot) : null;
+    const prevSotStr = prevSot !== null ? ` · ${prevYear}: ${Math.round(prevSot)}%` : "";
+
     if (acc >= 42) {
-      out.push({ level: "bom", metric: "Finalização · Alta Conversão",
-        ref: `Atual: ${Math.round(acc)}% no alvo (${t.shots_on_target}/${t.shots}) · ${fd(vol, 1)} fin./90 min · Elite: >=42% · Regular: 28–41% · Crítico: <28%`,
-        text: "Direcionamento de elite. Atleta com alto aproveitamento das oportunidades de finalização." });
+      out.push({ level: "bom", metric: "Finalizacao · Alta Conversao",
+        ref: `Atual: ${Math.round(acc)}% no alvo (${t.shots_on_target}/${t.shots}) · ${fd(vol, 1)} fin./90 · Elite: >=42% · Regular: 28-41%${prevSotStr}`,
+        text: "Direcionamento de elite. Atleta com alto aproveitamento das oportunidades de finalizacao.",
+        yoy: hasPrev ? yoyStr(sDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(sDelta) : undefined });
     } else if (acc >= 28) {
-      out.push({ level: "regular", metric: "Finalização · Eficiência Regular",
-        ref: `Atual: ${Math.round(acc)}% no alvo (${t.shots_on_target}/${t.shots}) · ${fd(vol, 1)} fin./90 min · Elite: >=42% · Regular: 28–41% · Crítico: <28%`,
-        text: "Taxa de finalização dentro da faixa média para a posição. Evolução no direcionamento pode gerar impacto ofensivo direto." });
+      out.push({ level: "regular", metric: "Finalizacao · Eficiencia Regular",
+        ref: `Atual: ${Math.round(acc)}% no alvo (${t.shots_on_target}/${t.shots}) · ${fd(vol, 1)} fin./90 · Elite: >=42% · Regular: 28-41%${prevSotStr}`,
+        text: "Taxa de finalizacao dentro da faixa media para a posicao. Evolucao no direcionamento pode gerar impacto ofensivo direto.",
+        yoy: hasPrev ? yoyStr(sDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(sDelta) : undefined });
     } else {
-      out.push({ level: "critico", metric: "Finalização · Baixa Eficiência",
-        ref: `Atual: ${Math.round(acc)}% no alvo (${t.shots_on_target}/${t.shots}) · ${fd(vol, 1)} fin./90 min · Mínimo: 28% · Elite: >=42%`,
-        text: "Taxa crítica de chutes no alvo. Alto volume de finalizações sem efetividade ofensiva real." });
+      out.push({ level: "critico", metric: "Finalizacao · Baixa Eficiencia",
+        ref: `Atual: ${Math.round(acc)}% no alvo (${t.shots_on_target}/${t.shots}) · ${fd(vol, 1)} fin./90 · Minimo: 28% · Elite: >=42%${prevSotStr}`,
+        text: "Taxa critica de chutes no alvo. Alto volume de finalizacoes sem efetividade ofensiva real.",
+        yoy: hasPrev ? yoyStr(sDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(sDelta) : undefined });
     }
   }
 
   // ─── 5. Gols / 90 ────────────────────────────────────────────────────────
   if (f === "fwd" || f === "mid") {
-    const g  = p90(t.goals, min);
-    const pg = hasPrev && prevT!.minutes > 0 ? p90(prevT!.goals, prevT!.minutes) : null;
-    const gDelta   = pg !== null ? delta(g, pg) : null;
+    const g      = p90(t.goals, min);
+    const pg     = hasPrev && prevT!.minutes > 0 ? p90(prevT!.goals, prevT!.minutes) : null;
+    const gDelta = pg !== null ? delta(g, pg) : null;
     const prevGStr = pg !== null ? ` · ${prevYear}: ${fd(pg, 2)}/90 (${prevT!.goals} gols)` : "";
 
     if (f === "fwd") {
       if (g >= 0.50) {
         out.push({ level: "bom", metric: "Gols/90 · Artilheiro de Elite",
-          ref: `Atual: ${fd(g, 2)}/90 (${t.goals} gols em ${matches} jogos) · Elite: >=0.50/90 · Regular: 0.25–0.49/90 · Abaixo: <0.25/90${prevGStr}`,
-          text: "Índice de artilharia de alto nível. Atacante com conversão dominante nas oportunidades da temporada.",
+          ref: `Atual: ${fd(g, 2)}/90 (${t.goals} gols em ${matches} jogos) · Elite: >=0.50/90 · Regular: 0.25-0.49/90 · Abaixo: <0.25/90${prevGStr}`,
+          text: "Indice de artilharia de alto nivel. Atacante com conversao dominante nas oportunidades da temporada.",
           yoy: hasPrev ? yoyStr(gDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(gDelta) : undefined });
       } else if (g >= 0.25) {
-        out.push({ level: "regular", metric: "Gols/90 · Produção Regular",
-          ref: `Atual: ${fd(g, 2)}/90 (${t.goals} gols) · Regular: 0.25–0.49/90 · Elite: >=0.50/90 · Insuficiente: <0.25/90${prevGStr}`,
-          text: "Produção ofensiva dentro da faixa esperada para um atacante. Há espaço para crescimento em direção ao patamar de elite (>=0.50/90).",
+        out.push({ level: "regular", metric: "Gols/90 · Producao Regular",
+          ref: `Atual: ${fd(g, 2)}/90 (${t.goals} gols) · Regular: 0.25-0.49/90 · Elite: >=0.50/90 · Insuficiente: <0.25/90${prevGStr}`,
+          text: "Producao ofensiva dentro da faixa esperada para um atacante. Ha espaco para crescimento em direcao ao patamar de elite (>=0.50/90).",
           yoy: hasPrev ? yoyStr(gDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(gDelta) : undefined });
       } else {
-        out.push({ level: "critico", metric: "Gols/90 · Produção Insuficiente",
-          ref: `Atual: ${fd(g, 2)}/90 (${t.goals} gols) · Mínimo regular: 0.25/90 · Elite: >=0.50/90${prevGStr}`,
-          text: "Produção de gols abaixo do esperado para a posição de atacante. Eficiência ofensiva precisa de revisão tática e individual.",
+        out.push({ level: "critico", metric: "Gols/90 · Producao Insuficiente",
+          ref: `Atual: ${fd(g, 2)}/90 (${t.goals} gols) · Minimo regular: 0.25/90 · Elite: >=0.50/90${prevGStr}`,
+          text: "Producao de gols abaixo do esperado para a posicao de atacante. Eficiencia ofensiva precisa de revisao tatica e individual.",
           yoy: hasPrev ? yoyStr(gDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(gDelta) : undefined });
       }
-    } else if (g >= 0.20) {
-      out.push({ level: "bom", metric: "Gols/90 · Meio-campo Decisivo",
-        ref: `Atual: ${fd(g, 2)}/90 (${t.goals} gols) · Referência destaque para meia: >=0.20/90${prevGStr}`,
-        text: "Contribuição ofensiva acima do esperado para a posição de meio-campo.",
-        yoy: hasPrev ? yoyStr(gDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(gDelta) : undefined });
+    } else {
+      if (g >= 0.20) {
+        out.push({ level: "bom", metric: "Gols/90 · Meio-campo Decisivo",
+          ref: `Atual: ${fd(g, 2)}/90 (${t.goals} gols) · Destaque meia: >=0.20/90 · Regular: 0.10-0.19/90${prevGStr}`,
+          text: "Contribuicao ofensiva direta acima do esperado para a posicao de meio-campo.",
+          yoy: hasPrev ? yoyStr(gDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(gDelta) : undefined });
+      } else if (g >= 0.10) {
+        out.push({ level: "regular", metric: "Gols/90 · Participacao Ofensiva",
+          ref: `Atual: ${fd(g, 2)}/90 (${t.goals} gols) · Destaque meia: >=0.20/90 · Regular: 0.10-0.19/90${prevGStr}`,
+          text: "Contribuicao ofensiva dentro da media esperada para meia.",
+          yoy: hasPrev ? yoyStr(gDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(gDelta) : undefined });
+      } else if (t.goals === 0 && matches >= 10) {
+        out.push({ level: "critico", metric: "Gols/90 · Sem Contribuicao Ofensiva Direta",
+          ref: `Atual: 0 gols em ${matches} jogos · Referencia meia: >=0.10/90 · Destaque: >=0.20/90${prevGStr}`,
+          text: "Meio-campo sem nenhum gol na temporada. Contribuicao ofensiva direta inexistente.",
+          yoy: hasPrev ? yoyStr(gDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(gDelta) : undefined });
+      }
     }
   }
 
-  // ─── 6. Assistências ─────────────────────────────────────────────────────
+  // ─── 5b. Gols de defensor (bonus ofensivo) ────────────────────────────────
+  if (f === "def" && t.goals >= 2) {
+    const g90 = p90(t.goals, min);
+    out.push({ level: "bom", metric: "Contribuicao Ofensiva · Defensor Decisivo",
+      ref: `Atual: ${t.goals} gols · ${fd(g90, 2)}/90 · Destaque para defensor: >=2 gols na temporada`,
+      text: "Defensor com participacao ofensiva acima da media, especialmente em bolas paradas. Agrega valor duplo ao perfil do atleta." });
+  }
+
+  // ─── 6. Assistencias ─────────────────────────────────────────────────────
   if (f === "fwd" || f === "mid") {
-    const a  = p90(t.assists, min);
-    const pa = hasPrev && prevT!.minutes > 0 ? p90(prevT!.assists, prevT!.minutes) : null;
-    const aDelta   = pa !== null ? delta(a, pa) : null;
+    const a      = p90(t.assists, min);
+    const pa     = hasPrev && prevT!.minutes > 0 ? p90(prevT!.assists, prevT!.minutes) : null;
+    const aDelta = pa !== null ? delta(a, pa) : null;
     const prevAStr = pa !== null ? ` · ${prevYear}: ${prevT!.assists} assist. (${fd(pa, 2)}/90)` : "";
 
     if (a >= 0.30) {
-      out.push({ level: "bom", metric: "Assistências · Alto Nível",
-        ref: `Atual: ${fd(a, 2)}/90 (${t.assists} total) · Alto nível: >=0.30/90 · Regular: 0.12–0.29/90${prevAStr}`,
-        text: "Criação coletiva de elite. Assistente prolífico com alto impacto no jogo ofensivo da equipe.",
+      out.push({ level: "bom", metric: "Assistencias · Alto Nivel",
+        ref: `Atual: ${fd(a, 2)}/90 (${t.assists} total) · Alto nivel: >=0.30/90 · Regular: 0.12-0.29/90${prevAStr}`,
+        text: "Criacao coletiva de elite. Assistente prolifico com alto impacto no jogo ofensivo da equipe.",
         yoy: hasPrev ? yoyStr(aDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(aDelta) : undefined });
     } else if (a >= 0.12) {
-      out.push({ level: "regular", metric: "Assistências · Contribuição Regular",
-        ref: `Atual: ${fd(a, 2)}/90 (${t.assists} total) · Alto nível: >=0.30/90 · Mínimo regular: 0.12/90${prevAStr}`,
-        text: "Participação ofensiva coletiva dentro do padrão esperado para a posição.",
+      out.push({ level: "regular", metric: "Assistencias · Contribuicao Regular",
+        ref: `Atual: ${fd(a, 2)}/90 (${t.assists} total) · Alto nivel: >=0.30/90 · Minimo: 0.12/90${prevAStr}`,
+        text: "Participacao ofensiva coletiva dentro do padrao esperado para a posicao.",
         yoy: hasPrev ? yoyStr(aDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(aDelta) : undefined });
-    } else if (matches >= 10 && t.assists === 0) {
-      out.push({ level: "critico", metric: "Assistências · Ausência Total",
-        ref: `Atual: 0 assist. em ${matches} jogos · Mínimo regular: 0.12/90 · Alto nível: >=0.30/90${prevAStr}`,
-        text: "Participação na criação coletiva precisa evoluir significativamente. Nenhuma assistência ao longo da temporada.",
+    } else if (matches >= 8 && t.assists === 0) {
+      out.push({ level: "critico", metric: "Assistencias · Ausencia Total",
+        ref: `Atual: 0 assist. em ${matches} jogos · Minimo regular: 0.12/90 · Alto nivel: >=0.30/90${prevAStr}`,
+        text: "Participacao na criacao coletiva precisa evoluir. Nenhuma assistencia ao longo da temporada.",
         yoy: hasPrev ? yoyStr(aDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(aDelta) : undefined });
+    }
+  }
+
+  // ─── 6b. G+A combinado por 90 ─────────────────────────────────────────────
+  if (f !== "gk" && min >= 450) {
+    const ga      = t.goals + t.assists;
+    const ga90    = p90(ga, min);
+    const prevGa  = hasPrev && prevT!.minutes >= 270 ? prevT!.goals + prevT!.assists : null;
+    const prevGa90 = prevGa !== null ? p90(prevGa, prevT!.minutes) : null;
+    const gaDelta  = prevGa90 !== null ? delta(ga90, prevGa90) : null;
+    const prevGaStr = prevGa90 !== null ? ` · ${prevYear}: ${fd(prevGa90, 2)}/90` : "";
+
+    if (f === "fwd") {
+      if (ga90 >= 0.70) {
+        out.push({ level: "bom", metric: "G+A/90 · Atacante de Alta Producao",
+          ref: `Atual: ${fd(ga90, 2)}/90 (${t.goals}G + ${t.assists}A) · Elite atacante: >=0.70/90 · Regular: 0.35-0.69/90${prevGaStr}`,
+          text: "Combinacao de gols e assistencias de alto nivel. Atacante determinante no resultado das partidas.",
+          yoy: hasPrev ? yoyStr(gaDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(gaDelta) : undefined });
+      } else if (ga90 < 0.35) {
+        out.push({ level: "critico", metric: "G+A/90 · Contribuicao Ofensiva Baixa",
+          ref: `Atual: ${fd(ga90, 2)}/90 (${t.goals}G + ${t.assists}A) · Minimo para atacante: 0.35/90 · Elite: >=0.70/90${prevGaStr}`,
+          text: "Producao combinada de gols e assistencias abaixo do esperado para a posicao de atacante.",
+          yoy: hasPrev ? yoyStr(gaDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(gaDelta) : undefined });
+      }
+    } else if (f === "mid") {
+      if (ga90 >= 0.45) {
+        out.push({ level: "bom", metric: "G+A/90 · Meia Criativo",
+          ref: `Atual: ${fd(ga90, 2)}/90 (${t.goals}G + ${t.assists}A) · Elite meia: >=0.45/90 · Regular: 0.18-0.44/90${prevGaStr}`,
+          text: "Contribuicao ofensiva direta de alto nivel para um meia. Atleta que influencia diretamente o marcador.",
+          yoy: hasPrev ? yoyStr(gaDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(gaDelta) : undefined });
+      } else if (ga90 < 0.18 && matches >= 8) {
+        out.push({ level: "regular", metric: "G+A/90 · Baixa Participacao Ofensiva",
+          ref: `Atual: ${fd(ga90, 2)}/90 (${t.goals}G + ${t.assists}A) · Referencia: >=0.18/90 · Elite meia: >=0.45/90${prevGaStr}`,
+          text: "Participacao ofensiva direta abaixo da media. Perfil predominantemente de construcao e marcacao.",
+          yoy: hasPrev ? yoyStr(gaDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(gaDelta) : undefined });
+      }
+    } else if (f === "def" && ga90 >= 0.15) {
+      out.push({ level: "bom", metric: "G+A/90 · Defensor com Producao Ofensiva",
+        ref: `Atual: ${fd(ga90, 2)}/90 (${t.goals}G + ${t.assists}A) · Destaque para defensor: >=0.15/90${prevGaStr}`,
+        text: "Defensor com contribuicao ofensiva relevante na temporada. Perfil versatil de alto valor no mercado.",
+        yoy: hasPrev ? yoyStr(gaDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(gaDelta) : undefined });
     }
   }
 
   // ─── 7. Dribles ──────────────────────────────────────────────────────────
-  if (t.dribbles_total >= 10) {
-    const acc = pctN(t.dribbles_success, t.dribbles_total)!;
-    const vol = p90(t.dribbles_success, min);
-    if (acc >= 65 && vol >= 2.0) {
-      out.push({ level: "bom", metric: "Dribles · Dominância Individual",
-        ref: `Atual: ${Math.round(acc)}% de êxito (${t.dribbles_success}/${t.dribbles_total}) · ${fd(vol, 1)} dribles/90 · Elite: >=65% com >=2.0/90`,
-        text: "Diferencial técnico individual notável. Atleta dominante em situações de 1×1." });
-    } else if (acc < 40 && t.dribbles_total >= 15) {
-      out.push({ level: "critico", metric: "Dribles · Baixa Eficiência",
-        ref: `Atual: ${Math.round(acc)}% de êxito (${t.dribbles_success}/${t.dribbles_total}) · Mínimo aceitável: 40% · Elite: >=65%`,
-        text: "Perda de bola frequente em situações de 1×1. Alta taxa de dribles frustrados expõe a equipe em transições." });
+  if (t.dribbles_total >= 6) {
+    const acc      = pctN(t.dribbles_success, t.dribbles_total)!;
+    const vol      = p90(t.dribbles_success, min);
+    const prevDrib = hasPrev && prevT!.dribbles_total > 0 ? pctN(prevT!.dribbles_success, prevT!.dribbles_total)! : null;
+    const dribDelta = prevDrib !== null ? delta(acc, prevDrib) : null;
+    const prevDribStr = prevDrib !== null ? ` · ${prevYear}: ${Math.round(prevDrib)}%` : "";
+
+    if (acc >= 65 && vol >= 1.5) {
+      out.push({ level: "bom", metric: "Dribles · Dominancia Individual",
+        ref: `Atual: ${Math.round(acc)}% de exito (${t.dribbles_success}/${t.dribbles_total}) · ${fd(vol, 1)}/90 · Elite: >=65% com >=1.5/90${prevDribStr}`,
+        text: "Diferencial tecnico individual notavel. Atleta dominante em situacoes de 1x1.",
+        yoy: hasPrev ? yoyStr(dribDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(dribDelta) : undefined });
+    } else if (acc >= 50) {
+      out.push({ level: "regular", metric: "Dribles · Eficiencia Moderada",
+        ref: `Atual: ${Math.round(acc)}% de exito (${t.dribbles_success}/${t.dribbles_total}) · ${fd(vol, 1)}/90 · Elite: >=65% · Regular: 50-64%${prevDribStr}`,
+        text: "Taxa de drible dentro da faixa aceitavel. Ha espaco para maior assertividade em situacoes de 1x1.",
+        yoy: hasPrev ? yoyStr(dribDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(dribDelta) : undefined });
+    } else if (acc < 40 && t.dribbles_total >= 10) {
+      out.push({ level: "critico", metric: "Dribles · Baixa Eficiencia",
+        ref: `Atual: ${Math.round(acc)}% de exito (${t.dribbles_success}/${t.dribbles_total}) · ${fd(vol, 1)}/90 · Minimo: 40% · Elite: >=65%${prevDribStr}`,
+        text: "Perda de bola frequente em situacoes de 1x1. Alta taxa de dribles frustrados expoe a equipe em transicoes.",
+        yoy: hasPrev ? yoyStr(dribDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(dribDelta) : undefined });
     }
   }
 
   // ─── 8. Duelos terrestres ────────────────────────────────────────────────
-  if (t.ground_duels_total >= 15) {
+  if (t.ground_duels_total >= 10) {
     const w      = pctN(t.ground_duels_won, t.ground_duels_total)!;
     const prevW  = hasPrev && prevT!.ground_duels_total > 0 ? pctN(prevT!.ground_duels_won, prevT!.ground_duels_total)! : null;
     const dDelta = prevW !== null ? delta(w, prevW) : null;
@@ -344,122 +466,180 @@ function buildInsights(
     const dYoyC = hasPrev ? yoyColor(dDelta) : undefined;
     if (w >= 55) {
       out.push({ level: "bom", metric: "Duelos Terrestres · Dominante",
-        ref: `Atual: ${Math.round(w)}% vencidos (${t.ground_duels_won}/${t.ground_duels_total}) · Dominante: >=55% · Regular: 44–54% · Deficitário: <44%${prevDStr}`,
-        text: "Superioridade física e tática clara em confrontos diretos.",
+        ref: `Atual: ${Math.round(w)}% vencidos (${t.ground_duels_won}/${t.ground_duels_total}) · Dominante: >=55% · Regular: 44-54% · Deficitario: <44%${prevDStr}`,
+        text: "Superioridade fisica e tatica clara em confrontos diretos.",
         yoy: dYoy, yoyColor: dYoyC });
     } else if (w < 44) {
-      out.push({ level: "critico", metric: "Duelos Terrestres · Deficitário",
-        ref: `Atual: ${Math.round(w)}% vencidos (${t.ground_duels_won}/${t.ground_duels_total}) · Mínimo: 44% · Dominante: >=55%${prevDStr}`,
-        text: "Fragilidade em confrontos diretos. Déficit físico ou tático que compromete o desempenho coletivo.",
+      out.push({ level: "critico", metric: "Duelos Terrestres · Deficitario",
+        ref: `Atual: ${Math.round(w)}% vencidos (${t.ground_duels_won}/${t.ground_duels_total}) · Minimo: 44% · Dominante: >=55%${prevDStr}`,
+        text: "Fragilidade em confrontos diretos. Deficit fisico ou tatico que compromete o desempenho coletivo.",
         yoy: dYoy, yoyColor: dYoyC });
     } else {
       out.push({ level: "regular", metric: "Duelos Terrestres · Regular",
-        ref: `Atual: ${Math.round(w)}% vencidos (${t.ground_duels_won}/${t.ground_duels_total}) · Dominante: >=55% · Regular: 44–54% · Mínimo: 44%${prevDStr}`,
-        text: "Desempenho dentro da média para a posição em confrontos diretos.",
+        ref: `Atual: ${Math.round(w)}% vencidos (${t.ground_duels_won}/${t.ground_duels_total}) · Dominante: >=55% · Regular: 44-54%${prevDStr}`,
+        text: "Desempenho dentro da media para a posicao em confrontos diretos.",
         yoy: dYoy, yoyColor: dYoyC });
     }
   }
 
-  // ─── 9. Duelos aéreos ────────────────────────────────────────────────────
-  if (t.aerial_duels_total >= 10 && (f === "def" || f === "fwd")) {
-    const w = pctN(t.aerial_duels_won, t.aerial_duels_total)!;
+  // ─── 9. Duelos aereos ────────────────────────────────────────────────────
+  if (t.aerial_duels_total >= 6) {
+    const w       = pctN(t.aerial_duels_won, t.aerial_duels_total)!;
+    const prevAer = hasPrev && prevT!.aerial_duels_total > 0 ? pctN(prevT!.aerial_duels_won, prevT!.aerial_duels_total)! : null;
+    const aerDelta = prevAer !== null ? delta(w, prevAer) : null;
+    const prevAerStr = prevAer !== null ? ` · ${prevYear}: ${Math.round(prevAer)}%` : "";
+
     if (w >= 60) {
-      out.push({ level: "bom", metric: "Jogo Aéreo · Dominante",
-        ref: `Atual: ${Math.round(w)}% ganhos (${t.aerial_duels_won}/${t.aerial_duels_total}) · Dominante: >=60% · Mínimo: 38%`,
-        text: "Forte presença física em bolas aéreas, escanteios e cruzamentos." });
-    } else if (w < 38) {
-      out.push({ level: "critico", metric: "Jogo Aéreo · Deficitário",
-        ref: `Atual: ${Math.round(w)}% ganhos (${t.aerial_duels_won}/${t.aerial_duels_total}) · Mínimo: 38% · Dominante: >=60%`,
-        text: "Déficit significativo no jogo aéreo. Fragiliza a marcação em bolas cruzadas e bolas paradas." });
+      out.push({ level: "bom", metric: "Jogo Aereo · Dominante",
+        ref: `Atual: ${Math.round(w)}% ganhos (${t.aerial_duels_won}/${t.aerial_duels_total}) · Dominante: >=60% · Regular: 38-59%${prevAerStr}`,
+        text: "Forte presenca fisica em bolas aereas, escanteios e cruzamentos.",
+        yoy: hasPrev ? yoyStr(aerDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(aerDelta) : undefined });
+    } else if (w >= 38) {
+      out.push({ level: "regular", metric: "Jogo Aereo · Regular",
+        ref: `Atual: ${Math.round(w)}% ganhos (${t.aerial_duels_won}/${t.aerial_duels_total}) · Dominante: >=60% · Regular: 38-59%${prevAerStr}`,
+        text: "Desempenho dentro da media em duelos aereos para a posicao.",
+        yoy: hasPrev ? yoyStr(aerDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(aerDelta) : undefined });
+    } else if (t.aerial_duels_total >= 10) {
+      out.push({ level: "critico", metric: "Jogo Aereo · Deficitario",
+        ref: `Atual: ${Math.round(w)}% ganhos (${t.aerial_duels_won}/${t.aerial_duels_total}) · Minimo: 38% · Dominante: >=60%${prevAerStr}`,
+        text: "Deficit significativo no jogo aereo. Fragiliza a marcacao em bolas cruzadas e bolas paradas.",
+        yoy: hasPrev ? yoyStr(aerDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(aerDelta) : undefined });
     }
   }
 
-  // ─── 10. Ações defensivas ────────────────────────────────────────────────
+  // ─── 10. Acoes defensivas ────────────────────────────────────────────────
   if (f === "def" || f === "mid") {
-    const tk = p90(t.tackles, min);
-    const ic = p90(t.interceptions, min);
-    const rc = p90(t.recoveries, min);
-    const cl = p90(t.clearances, min);
+    const tk90  = p90(t.tackles, min);
+    const ic90  = p90(t.interceptions, min);
+    const rc90  = p90(t.recoveries, min);
+    const cl90  = p90(t.clearances, min);
+    const prevRc   = hasPrev && prevT!.minutes > 0 ? p90(prevT!.recoveries, prevT!.minutes) : null;
+    const rcDelta  = prevRc !== null ? delta(rc90, prevRc) : null;
+    const prevRcStr = prevRc !== null ? ` · ${prevYear}: ${fd(prevRc, 1)}/90` : "";
+
     if (f === "def") {
-      if (tk >= 3.5)               out.push({ level: "bom",     metric: "Desarmes · Alta Intensidade", ref: `Atual: ${fd(tk, 1)}/90 (${t.tackles} total) · Alta intensidade: >=3.5/90 · Mínimo esperado: 1.5/90`, text: "Defensor com marcação intensa, agressiva e dentro dos limites técnicos." });
-      else if (tk < 1.5 && matches >= 8) out.push({ level: "critico", metric: "Desarmes · Volume Baixo",   ref: `Atual: ${fd(tk, 1)}/90 (${t.tackles} total) · Mínimo esperado: 1.5/90 · Alta intensidade: >=3.5/90`, text: "Volume de desarmes abaixo do mínimo esperado para um defensor. Baixa presença defensiva ativa." });
-      if (ic >= 2.5) out.push({ level: "bom", metric: "Interceptações · Leitura de Jogo", ref: `Atual: ${fd(ic, 1)}/90 (${t.interceptions} total) · Referência alta: >=2.5/90`, text: "Excelente antecipação e leitura de jogo defensiva." });
-      if (cl >= 4.0) out.push({ level: "bom", metric: "Cortes · Proteção da Área",       ref: `Atual: ${fd(cl, 1)}/90 (${t.clearances} total) · Referência alta: >=4.0/90`, text: "Forte presença de limpeza na área defensiva." });
+      if (tk90 >= 3.5)          out.push({ level: "bom",     metric: "Desarmes · Alta Intensidade", ref: `Atual: ${fd(tk90, 1)}/90 (${t.tackles} total) · Alta: >=3.5/90 · Regular: 1.5-3.4/90`, text: "Defensor com marcacao intensa, agressiva e dentro dos limites tecnicos." });
+      else if (tk90 >= 1.5)     out.push({ level: "regular", metric: "Desarmes · Volume Regular",   ref: `Atual: ${fd(tk90, 1)}/90 (${t.tackles} total) · Alta: >=3.5/90 · Regular: 1.5-3.4/90`, text: "Volume de desarmes dentro do esperado para a posicao defensiva." });
+      else if (matches >= 7)    out.push({ level: "critico", metric: "Desarmes · Volume Baixo",     ref: `Atual: ${fd(tk90, 1)}/90 (${t.tackles} total) · Minimo: 1.5/90 · Alta: >=3.5/90`, text: "Volume de desarmes abaixo do minimo esperado para um defensor. Baixa presenca defensiva ativa." });
+      if (ic90 >= 2.5)          out.push({ level: "bom",     metric: "Interceptacoes · Leitura de Jogo",  ref: `Atual: ${fd(ic90, 1)}/90 (${t.interceptions} total) · Alta: >=2.5/90 · Regular: 1.0-2.4/90`, text: "Excelente antecipacao e leitura de jogo defensiva." });
+      else if (ic90 >= 1.0)     out.push({ level: "regular", metric: "Interceptacoes · Volume Regular",   ref: `Atual: ${fd(ic90, 1)}/90 (${t.interceptions} total) · Alta: >=2.5/90 · Regular: 1.0-2.4/90`, text: "Volume de interceptacoes dentro da media para defensores." });
+      if (cl90 >= 4.0)          out.push({ level: "bom",     metric: "Cortes · Protecao da Area",         ref: `Atual: ${fd(cl90, 1)}/90 (${t.clearances} total) · Alta: >=4.0/90 · Regular: 2.0-3.9/90`, text: "Forte presenca de limpeza na area defensiva." });
+      else if (cl90 >= 2.0)     out.push({ level: "regular", metric: "Cortes · Volume Regular",           ref: `Atual: ${fd(cl90, 1)}/90 (${t.clearances} total) · Alta: >=4.0/90 · Regular: 2.0-3.9/90`, text: "Volume de cortes dentro do esperado para a posicao." });
+
+      // Recuperacoes para defensores
+      if (rc90 >= 7.0)          out.push({ level: "bom",     metric: "Recuperacoes · Defensor Combativo", ref: `Atual: ${fd(rc90, 1)}/90 (${t.recoveries} total) · Elite: >=7.0/90 · Regular: 3.0-6.9/90${prevRcStr}`, text: "Alto indice de recuperacoes de bola — defensor combativo e ativo na reconquista da posse.", yoy: hasPrev ? yoyStr(rcDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(rcDelta) : undefined });
+      else if (rc90 >= 3.0)     out.push({ level: "regular", metric: "Recuperacoes · Volume Regular",     ref: `Atual: ${fd(rc90, 1)}/90 (${t.recoveries} total) · Elite: >=7.0/90 · Regular: 3.0-6.9/90${prevRcStr}`, text: "Volume de recuperacoes dentro do padrao esperado para defensores.", yoy: hasPrev ? yoyStr(rcDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(rcDelta) : undefined });
+      else if (matches >= 8)    out.push({ level: "critico", metric: "Recuperacoes · Volume Abaixo",      ref: `Atual: ${fd(rc90, 1)}/90 (${t.recoveries} total) · Minimo: 3.0/90 · Elite: >=7.0/90${prevRcStr}`, text: "Baixo numero de recuperacoes para um defensor. Pode indicar posicionamento passivo ou sistema tatico especifico.", yoy: hasPrev ? yoyStr(rcDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(rcDelta) : undefined });
     }
-    if (f === "mid" && rc >= 5.0) out.push({ level: "bom", metric: "Recuperações · Volante Combativo", ref: `Atual: ${fd(rc, 1)}/90 (${t.recoveries} total) · Referência alta: >=5.0/90`, text: "Perfil combativo com alta intensidade no setor intermediário." });
+
+    if (f === "mid") {
+      if (rc90 >= 5.0)          out.push({ level: "bom",     metric: "Recuperacoes · Volante Combativo", ref: `Atual: ${fd(rc90, 1)}/90 (${t.recoveries} total) · Elite meia: >=5.0/90 · Regular: 2.5-4.9/90${prevRcStr}`, text: "Perfil combativo com alta intensidade no setor intermediario.", yoy: hasPrev ? yoyStr(rcDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(rcDelta) : undefined });
+      else if (rc90 >= 2.5)     out.push({ level: "regular", metric: "Recuperacoes · Meia com Cobertura", ref: `Atual: ${fd(rc90, 1)}/90 (${t.recoveries} total) · Elite: >=5.0/90 · Regular: 2.5-4.9/90${prevRcStr}`, text: "Meia com boa participacao defensiva e reconquista de bola no setor intermediario.", yoy: hasPrev ? yoyStr(rcDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(rcDelta) : undefined });
+      else if (matches >= 7)    out.push({ level: "critico", metric: "Recuperacoes · Baixo Volume", ref: `Atual: ${fd(rc90, 1)}/90 (${t.recoveries} total) · Minimo meia: 2.5/90 · Elite: >=5.0/90${prevRcStr}`, text: "Meia com baixo volume de reconquista de bola — contribuicao defensiva abaixo do esperado.", yoy: hasPrev ? yoyStr(rcDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(rcDelta) : undefined });
+    }
+  }
+
+  // ─── 10b. Pressing / Recuperacoes para atacantes ─────────────────────────
+  if (f === "fwd" && t.recoveries > 0) {
+    const rc90 = p90(t.recoveries, min);
+    if (rc90 >= 3.5) {
+      out.push({ level: "bom", metric: "Pressing · Atacante Combativo",
+        ref: `Atual: ${fd(rc90, 1)} recuperacoes/90 (${t.recoveries} total) · Referencia para atacante: >=3.5/90`,
+        text: "Atacante com alto volume de pressing e reconquista de bola no campo adversario. Perfil de alta intensidade defensiva." });
+    }
   }
 
   // ─── 11. Goleiro ─────────────────────────────────────────────────────────
   if (f === "gk") {
-    const tot = t.saves + t.goals_conceded;
-    const sp  = pctN(t.saves, tot);
-    const cs  = pctN(t.clean_sheets, matches);
-    const gc  = matches > 0 ? t.goals_conceded / matches : null;
+    const tot   = t.saves + t.goals_conceded;
+    const sp    = pctN(t.saves, tot);
+    const cs    = pctN(t.clean_sheets, matches);
+    const gc    = matches > 0 ? t.goals_conceded / matches : null;
+    const prevSp = hasPrev && (prevT!.saves + prevT!.goals_conceded) > 0
+      ? pctN(prevT!.saves, prevT!.saves + prevT!.goals_conceded)! : null;
+    const spDelta  = prevSp !== null && sp !== null ? delta(sp, prevSp) : null;
+    const prevSpStr = prevSp !== null ? ` · ${prevYear}: ${Math.round(prevSp)}%` : "";
+
     if (sp !== null && tot >= 10) {
-      if      (sp >= 72) out.push({ level: "bom",     metric: "Defesas · Goleiro de Elite",       ref: `Atual: ${Math.round(sp)}% (${t.saves}/${tot}) · Elite: >=72% · Regular: 58–71% · Crítico: <58%`, text: "Índice de aproveitamento de elite. Goleiro com alto impacto na solidez defensiva." });
-      else if (sp <  58) out.push({ level: "critico", metric: "Defesas · Taxa Abaixo do Padrão",  ref: `Atual: ${Math.round(sp)}% (${t.saves}/${tot}) · Mínimo: 58% · Elite: >=72%`, text: `${t.goals_conceded} gols sofridos em ${matches} jogos. Taxa abaixo do mínimo esperado para a posição.` });
-      else               out.push({ level: "regular", metric: "Defesas · Aproveitamento Regular", ref: `Atual: ${Math.round(sp)}% (${t.saves}/${tot}) · Elite: >=72% · Regular: 58–71% · Mínimo: 58%`, text: "Aproveitamento dentro do padrão esperado para a posição." });
+      if      (sp >= 72) out.push({ level: "bom",     metric: "Defesas · Goleiro de Elite",       ref: `Atual: ${Math.round(sp)}% (${t.saves}/${tot}) · Elite: >=72% · Regular: 58-71%${prevSpStr}`, text: "Indice de aproveitamento de elite. Goleiro com alto impacto na solidez defensiva.", yoy: hasPrev ? yoyStr(spDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(spDelta) : undefined });
+      else if (sp <  58) out.push({ level: "critico", metric: "Defesas · Taxa Abaixo do Padrao",  ref: `Atual: ${Math.round(sp)}% (${t.saves}/${tot}) · Minimo: 58% · Elite: >=72%${prevSpStr}`, text: `${t.goals_conceded} gols sofridos em ${matches} jogos. Taxa abaixo do minimo esperado.`, yoy: hasPrev ? yoyStr(spDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(spDelta) : undefined });
+      else               out.push({ level: "regular", metric: "Defesas · Aproveitamento Regular", ref: `Atual: ${Math.round(sp)}% (${t.saves}/${tot}) · Elite: >=72% · Regular: 58-71%${prevSpStr}`, text: "Aproveitamento dentro do padrao esperado para a posicao.", yoy: hasPrev ? yoyStr(spDelta, prevYear!) : undefined, yoyColor: hasPrev ? yoyColor(spDelta) : undefined });
     }
     if (cs !== null && matches >= 5) {
-      if      (cs >= 36) out.push({ level: "bom",     metric: "Clean Sheets · Alta Confiabilidade", ref: `Atual: ${t.clean_sheets}/${matches} jogos (${Math.round(cs)}%) · Alta: >=36% · Baixa: <16%`, text: "Goleiro com alta frequência de jogos sem sofrer gols — solidez defensiva de alto nível." });
-      else if (cs <  16) out.push({ level: "critico", metric: "Clean Sheets · Frequência Baixa",    ref: `Atual: ${t.clean_sheets}/${matches} jogos (${Math.round(cs)}%) · Mínimo: 16% · Alta confiabilidade: >=36%`, text: "Baixa frequência de partidas sem sofrer gols ao longo da temporada." });
+      if      (cs >= 36) out.push({ level: "bom",     metric: "Clean Sheets · Alta Confiabilidade", ref: `Atual: ${t.clean_sheets}/${matches} jogos (${Math.round(cs)}%) · Alta: >=36% · Regular: 16-35% · Baixa: <16%`, text: "Goleiro com alta frequencia de jogos sem sofrer gols — solidez defensiva de alto nivel." });
+      else if (cs >= 16) out.push({ level: "regular", metric: "Clean Sheets · Frequencia Regular",   ref: `Atual: ${t.clean_sheets}/${matches} jogos (${Math.round(cs)}%) · Alta: >=36% · Regular: 16-35% · Baixa: <16%`, text: "Frequencia de jogos sem sofrer gols dentro da media para a posicao." });
+      else               out.push({ level: "critico", metric: "Clean Sheets · Frequencia Baixa",     ref: `Atual: ${t.clean_sheets}/${matches} jogos (${Math.round(cs)}%) · Minimo: 16% · Alta: >=36%`, text: "Baixa frequencia de partidas sem sofrer gols ao longo da temporada." });
     }
     if (gc !== null && matches >= 5) {
-      if      (gc < 0.95) out.push({ level: "bom",     metric: "Gols Sofridos · Solidez de Elite", ref: `Atual: ${fd(gc, 2)} gols/jogo · Excelente: <0.95/jogo · Preocupante: >1.60/jogo`, text: "Média de gols sofridos de elite. Goleiro decisivo na manutenção do resultado." });
-      else if (gc > 1.60) out.push({ level: "critico", metric: "Gols Sofridos · Índice Alto",      ref: `Atual: ${fd(gc, 2)} gols/jogo · Excelente: <0.95/jogo · Preocupante: >1.60/jogo`, text: "Alta média de gols sofridos por partida — sistema defensivo fragilizado ou dificuldades técnicas." });
+      if      (gc < 0.95) out.push({ level: "bom",     metric: "Gols Sofridos · Solidez de Elite", ref: `Atual: ${fd(gc, 2)} gols/jogo · Excelente: <0.95 · Regular: 0.95-1.60 · Preocupante: >1.60`, text: "Media de gols sofridos de elite. Goleiro decisivo na manutencao do resultado." });
+      else if (gc <= 1.60) out.push({ level: "regular", metric: "Gols Sofridos · Media Regular",    ref: `Atual: ${fd(gc, 2)} gols/jogo · Excelente: <0.95 · Regular: 0.95-1.60 · Preocupante: >1.60`, text: "Media de gols sofridos dentro do padrao para a posicao." });
+      else                 out.push({ level: "critico", metric: "Gols Sofridos · Indice Alto",      ref: `Atual: ${fd(gc, 2)} gols/jogo · Excelente: <0.95 · Preocupante: >1.60`, text: "Alta media de gols sofridos por partida — sistema defensivo fragilizado ou dificuldades tecnicas." });
     }
   }
 
   // ─── 12. Cruzamentos ─────────────────────────────────────────────────────
   const ct = t.crosses_success + t.crosses_failed;
-  if (ct >= 15) {
-    const ca = pctN(t.crosses_success, ct)!;
-    if      (ca >= 40) out.push({ level: "bom",     metric: "Cruzamentos · Alta Precisão",    ref: `Atual: ${Math.round(ca)}% (${t.crosses_success}/${ct}) · Alta precisão: >=40% · Mínimo: 25%`, text: "Qualidade acima da média no jogo pelas laterais. Cruzamentos efetivos e de boa conversão." });
-    else if (ca <  25) out.push({ level: "critico", metric: "Cruzamentos · Baixa Eficiência", ref: `Atual: ${Math.round(ca)}% (${t.crosses_success}/${ct}) · Mínimo: 25% · Alta precisão: >=40%`, text: "Baixa efetividade nos cruzamentos. Contribuição pelas laterais com pouco aproveitamento real." });
+  if (ct >= 8) {
+    const ca   = pctN(t.crosses_success, ct)!;
+    const cvol = p90(ct, min);
+    if      (ca >= 40) out.push({ level: "bom",     metric: "Cruzamentos · Alta Precisao",     ref: `Atual: ${Math.round(ca)}% (${t.crosses_success}/${ct}) · ${fd(cvol, 1)}/90 · Alta: >=40% · Regular: 25-39%`, text: "Qualidade acima da media no jogo pelas laterais. Cruzamentos efetivos e de boa conversao." });
+    else if (ca >= 25) out.push({ level: "regular", metric: "Cruzamentos · Eficiencia Regular", ref: `Atual: ${Math.round(ca)}% (${t.crosses_success}/${ct}) · ${fd(cvol, 1)}/90 · Alta: >=40% · Regular: 25-39%`, text: "Taxa de cruzamentos dentro da media. Ha espaco para maior precisao no jogo pelas laterais." });
+    else               out.push({ level: "critico", metric: "Cruzamentos · Baixa Eficiencia",   ref: `Atual: ${Math.round(ca)}% (${t.crosses_success}/${ct}) · ${fd(cvol, 1)}/90 · Minimo: 25% · Alta: >=40%`, text: "Baixa efetividade nos cruzamentos. Contribuicao pelas laterais com pouco aproveitamento real." });
   }
 
   // ─── 13. Disciplina ─────────────────────────────────────────────────────
   if (t.red_cards > 0) {
-    out.push({ level: "critico", metric: "Disciplina · Expulsões",
-      ref: `Atual: ${t.red_cards} expulsão${t.red_cards > 1 ? "ões" : ""} em ${matches} jogos · Referência ideal: 0 vermelhos/temporada`,
-      text: "Expulsões têm impacto direto na disponibilidade do atleta e no risco disciplinar percebido pelo mercado." });
+    out.push({ level: "critico", metric: "Disciplina · Expulsoes",
+      ref: `Atual: ${t.red_cards} expulsao${t.red_cards > 1 ? "es" : ""} em ${matches} jogos · Referencia ideal: 0 vermelhos/temporada`,
+      text: "Expulsoes tem impacto direto na disponibilidade do atleta e no risco disciplinar percebido pelo mercado." });
   }
   if (matches > 0) {
     const yp10 = (t.yellow_cards / matches) * 10;
     if (yp10 >= 3.5) {
       out.push({ level: "critico", metric: "Disciplina · Alta Taxa de Amarelos",
-        ref: `Atual: ${t.yellow_cards} amarelos em ${matches} jogos (${fd(yp10, 1)}/10 partidas) · Referência segura: ≤1.2/10 jogos`,
-        text: "Taxa de cartões acima do limiar de risco. Suspensões frequentes comprometem a disponibilidade." });
-    } else if (yp10 <= 1.2 && matches >= 10) {
+        ref: `Atual: ${t.yellow_cards} amarelos em ${matches} jogos (${fd(yp10, 1)}/10 jogos) · Referencia segura: <=1.2/10 jogos`,
+        text: "Taxa de cartoes acima do limiar de risco. Suspensoes frequentes comprometem a disponibilidade." });
+    } else if (yp10 <= 1.2 && matches >= 8) {
       out.push({ level: "bom", metric: "Disciplina · Perfil Equilibrado",
-        ref: `Atual: ${t.yellow_cards} amarelos em ${matches} jogos (${fd(yp10, 1)}/10 partidas) · Referência segura: ≤1.2/10 jogos`,
-        text: "Atleta com perfil disciplinado ao longo da temporada. Baixo risco de suspensões e impacto negativo de imagem." });
+        ref: `Atual: ${t.yellow_cards} amarelos em ${matches} jogos (${fd(yp10, 1)}/10 jogos) · Referencia segura: <=1.2/10 jogos`,
+        text: "Atleta com perfil disciplinado ao longo da temporada. Baixo risco de suspensoes e impacto negativo de imagem." });
     }
   }
 
-  // ─── 14. Bolas perdidas ──────────────────────────────────────────────────
+  // ─── 14. Posse de bola ───────────────────────────────────────────────────
   if (t.possession_lost > 0 && min >= 450) {
     const bp = p90(t.possession_lost, min);
     if (bp >= 8.0) {
       out.push({ level: "critico", metric: "Posse · Alta Perda de Bola",
-        ref: `Atual: ${fd(bp, 1)}/90 (${t.possession_lost} total) · Preocupante: >=8.0/90`,
-        text: "Frequência elevada de perdas de posse expõe a equipe a transições adversas recorrentes." });
+        ref: `Atual: ${fd(bp, 1)}/90 (${t.possession_lost} total) · Preocupante: >=8.0/90 · Regular: 4.0-7.9/90`,
+        text: "Frequencia elevada de perdas de posse expoe a equipe a transicoes adversas recorrentes." });
+    } else if (bp <= 3.5 && t.passes_total >= 50) {
+      out.push({ level: "bom", metric: "Posse · Seguranca com a Bola",
+        ref: `Atual: ${fd(bp, 1)}/90 (${t.possession_lost} total) · Seguro: <=3.5/90 · Regular: 4.0-7.9/90`,
+        text: "Baixa taxa de perda de posse em atleta com alto volume de passes. Excelente controle e decisao com a bola." });
     }
   }
 
-  // ─── 15. Comparações YoY exclusivas (mudanças >=10%) ─────────────────────
+  // ─── 15. Comparacoes YoY exclusivas (mudancas >=10%) ─────────────────────
   if (hasPrev && prevT && prevYear) {
+    const curYearLabel = year > 0 ? `${year}` : "Atual";
     const checks: { label: string; curr: number; prev: number; unit: string; invertBad?: boolean }[] = [
-      { label: "Minutagem total",  curr: min,        prev: prevT.minutes, unit: "min"     },
-      { label: "Gols totais",      curr: t.goals,    prev: prevT.goals,   unit: "gols"    },
-      { label: "Assistências",     curr: t.assists,  prev: prevT.assists, unit: "assist." },
+      { label: "Minutagem",    curr: min,        prev: prevT.minutes, unit: "min"     },
+      { label: "Gols",         curr: t.goals,    prev: prevT.goals,   unit: "gols"    },
+      { label: "Assistencias", curr: t.assists,  prev: prevT.assists, unit: "assist." },
     ];
-    if (min >= 450 && prevT.minutes >= 450 && (f === "fwd" || f === "mid")) {
-      checks.push({ label: "Gols/90 min", curr: p90(t.goals, min), prev: p90(prevT.goals, prevT.minutes), unit: "/90" });
+    if (min >= 450 && prevT.minutes >= 450) {
+      if (f === "fwd" || f === "mid")
+        checks.push({ label: "Gols/90", curr: p90(t.goals, min), prev: p90(prevT.goals, prevT.minutes), unit: "/90" });
+      if (t.tackles > 0 && prevT.tackles > 0 && (f === "def" || f === "mid"))
+        checks.push({ label: "Desarmes/90", curr: p90(t.tackles, min), prev: p90(prevT.tackles, prevT.minutes), unit: "/90" });
+      if (t.recoveries > 0 && prevT.recoveries > 0)
+        checks.push({ label: "Recuperacoes/90", curr: p90(t.recoveries, min), prev: p90(prevT.recoveries, prevT.minutes), unit: "/90" });
+      if (t.key_passes > 0 && prevT.key_passes > 0)
+        checks.push({ label: "Passes decisivos/90", curr: p90(t.key_passes, min), prev: p90(prevT.key_passes, prevT.minutes), unit: "/90" });
     }
 
     checks.forEach(({ label, curr, prev, unit, invertBad }) => {
-      // Evita duplicar insights que já foram gerados acima
       const alreadyCovered = out.some(i =>
         i.metric.toLowerCase().includes(label.toLowerCase().split(" ")[0])
         && i.yoy !== undefined
@@ -474,12 +654,12 @@ function buildInsights(
       const pfmt     = unit === "/90" ? fd(prev, 2) : n(Math.round(prev));
       out.push({
         level: improved ? "bom" : "critico",
-        metric: improved ? `Evolução vs ${prevYear} · ${label}` : `Regressão vs ${prevYear} · ${label}`,
-        ref: `${year}: ${fmt} ${unit} · ${prevYear}: ${pfmt} ${unit} · Variação: ${sign}${Math.round(d)}%`,
+        metric: improved ? `Evolucao vs ${prevYear} · ${label}` : `Regressao vs ${prevYear} · ${label}`,
+        ref: `${curYearLabel}: ${fmt} ${unit} · ${prevYear}: ${pfmt} ${unit} · Variacao: ${sign}${Math.round(d)}%`,
         text: improved
-          ? `Crescimento de ${sign}${Math.round(d)}% em ${label.toLowerCase()} em relação à temporada ${prevYear}. Tendência positiva relevante para avaliação de desenvolvimento.`
-          : `Queda de ${Math.round(Math.abs(d))}% em ${label.toLowerCase()} em relação à temporada ${prevYear}. Inversão de tendência que requer acompanhamento e análise contextual.`,
-        yoy: `${sign}${Math.round(d)}% vs ${prevYear}${improved ? " ↑" : " ↓"}`,
+          ? `Crescimento de ${sign}${Math.round(d)}% em ${label.toLowerCase()} em relacao a temporada ${prevYear}. Tendencia positiva relevante para avaliacao de desenvolvimento.`
+          : `Queda de ${Math.round(Math.abs(d))}% em ${label.toLowerCase()} em relacao a temporada ${prevYear}. Inversao de tendencia que requer acompanhamento e analise contextual.`,
+        yoy: `${sign}${Math.round(d)}% vs ${prevYear}`,
         yoyColor: improved ? C.green : C.red,
       });
     });
@@ -838,7 +1018,7 @@ export function PlayerSeasonPdfDocument({
   const total = computeTotals(rows);
   const prevT = prevRows && prevRows.length > 0 ? computeTotals(prevRows) : undefined;
 
-  const ins   = buildInsights(total, playerPosition, competitionMeta, rows, prevT, prevYear);
+  const ins   = buildInsights(total, playerPosition, competitionMeta, rows, prevT, prevYear, year);
   const crits = ins.filter(i => i.level === "critico");
   const regs  = ins.filter(i => i.level === "regular");
   const goods = ins.filter(i => i.level === "bom");
