@@ -138,6 +138,17 @@ export function ExportSeasonReportModal({
 
   const bracket = MIN_BRACKET(preview.minutes);
 
+  // Temporada anterior (ano imediatamente anterior com dados disponíveis)
+  const prevYear = useMemo(() => {
+    const sorted = allSeasons.filter(y => y < selectedYear).sort((a, b) => b - a);
+    return sorted[0] ?? undefined;
+  }, [allSeasons, selectedYear]);
+
+  const prevRows = useMemo(
+    () => prevYear !== undefined ? mergeSeasonRows(mergedBySeason[prevYear] ?? []) : undefined,
+    [prevYear, mergedBySeason],
+  );
+
   const handleExport = useCallback(async () => {
     setIsExporting(true);
     try {
@@ -156,6 +167,8 @@ export function ExportSeasonReportModal({
           rows={yearRows}
           competitionMeta={competitionMeta}
           generatedAt={generatedAt}
+          prevRows={prevRows}
+          prevYear={prevYear}
         />,
         {
           filename: `M3Scout_${playerName.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, "_")}_${selectedYear}.pdf`,
