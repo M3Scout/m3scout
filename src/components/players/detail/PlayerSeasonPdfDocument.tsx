@@ -3,7 +3,8 @@
  * Cada insight exibe: valor atual · referência ideal · variação vs ano anterior.
  */
 import React from "react";
-import { Document, Page, View, Text, StyleSheet } from "@react-pdf/renderer";
+import { Document, Page, View, Text, StyleSheet, Image } from "@react-pdf/renderer";
+import logoM3 from "@/assets/logo-relatorio.png";
 import { getTierFromCoefficient } from "@/lib/tierClassification";
 import type { PublicSeasonRow } from "@/lib/mergeSeasonStats";
 
@@ -676,7 +677,8 @@ const s = StyleSheet.create({
   hdr:   { flexDirection: "row", alignItems: "flex-start", marginBottom: 20 },
   hLine: { height: 3, backgroundColor: C.red, marginBottom: 20 },
   hL:    { flex: 1 },
-  hR:    { backgroundColor: C.g50, borderWidth: 1, borderColor: C.g200, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 10, alignItems: "flex-end", minWidth: 140 },
+  hR:    { alignItems: "flex-end", justifyContent: "center" },
+  hLogo: { width: 110, height: 36, objectFit: "contain" },
   hName: { fontSize: 22, fontWeight: 800, color: C.black, letterSpacing: -0.5, marginBottom: 3 },
   hSub:  { fontSize: 9, color: C.g500 },
   hTag:  { fontSize: 8, fontWeight: 700, color: C.red, letterSpacing: 0.5, marginBottom: 4 },
@@ -1034,9 +1036,7 @@ export function PlayerSeasonPdfDocument({
             <Text style={s.hSub}>{playerPosition ?? "—"} · Temporada {year}{prevYear ? ` · comparado com ${prevYear}` : ""}</Text>
           </View>
           <View style={s.hR}>
-            <Text style={s.hTag}>RELATÓRIO GERAL</Text>
-            <Text style={s.hMeta}>Temporada {year}</Text>
-            <Text style={s.hBrand}>M3Scout · Intelligence Platform</Text>
+            <Image src={logoM3} style={s.hLogo} />
           </View>
         </View>
         <View style={s.hLine} fixed />
